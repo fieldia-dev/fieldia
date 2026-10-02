@@ -24,7 +24,7 @@ import {
   type Type,
 } from '@angular/core';
 import type { ActionRequest, DataSource, DraftStore, Form, FormState, Locale, Page, RecordId, Scheduler, Value, Values } from '@fieldia/core';
-import { mountViewer, type Skin, type SlotRenderer, type ViewerHandle, type ViewerLabels } from '@fieldia/viewer';
+import { mountViewer, type Skin, type SlotRenderer, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import type { PreferenceStore, WidgetFactory, WidgetState } from '@fieldia/widgets';
 
 /**
@@ -88,6 +88,7 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly scheduler = input<Scheduler | undefined>(undefined);
   readonly confirm = input<((message: string) => Promise<boolean>) | undefined>(undefined);
   readonly preferences = input<PreferenceStore | undefined>(undefined);
+  readonly relatedPages = input<ViewerOptions['relatedPages']>(undefined);
 
   readonly ready = output<ViewerHandle>();
   readonly action = output<ActionRequest>();
@@ -185,6 +186,7 @@ export class FieldiaFormComponent implements OnDestroy {
       scheduler: this.scheduler(),
       confirm: this.confirm(),
       preferences: this.preferences(),
+      relatedPages: this.relatedPages(),
       onAction: (request) => this.action.emit(request),
     });
     this.ready.emit(this.handle);

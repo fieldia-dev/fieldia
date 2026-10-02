@@ -5,7 +5,7 @@ import type { Form, Locale, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { createApp, defineComponent, h, ref, type PropType } from 'vue';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { pages, sampleDataSource } from '../shared/sample-data';
+import { pages, sampleDataSource, relatedPages } from '../shared/sample-data';
 
 /** The same demo again, mounted by Vue with render functions. */
 const params = new URLSearchParams(location.search);
@@ -69,6 +69,7 @@ createApp({
         locale: (params.get('locale') as Locale | null) ?? undefined,
         fieldTypes: { 'char.shout': Shout },
         widgets: { ...gridWidgets, ...codeWidgets },
+        relatedPages,
         onAction: (request: { action: string }) => void actions.push(request.action),
         onReady: (handle: ViewerHandle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions } }),
       },

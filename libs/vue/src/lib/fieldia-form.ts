@@ -1,5 +1,5 @@
 import type { ActionRequest, DataSource, DraftStore, Field, FieldNode, Form, FormState, Locale, Page, RecordId, Scheduler, Value, Values } from '@fieldia/core';
-import { mountViewer, type Skin, type SlotRenderer, type ViewerHandle, type ViewerLabels } from '@fieldia/viewer';
+import { mountViewer, type Skin, type SlotRenderer, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import type { PreferenceStore, WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
   defineComponent,
@@ -75,6 +75,7 @@ export const FieldiaForm = defineComponent({
     scheduler: { type: Object as PropType<Scheduler>, default: undefined },
     confirm: { type: Function as PropType<(message: string) => Promise<boolean>>, default: undefined },
     preferences: { type: Object as PropType<PreferenceStore>, default: undefined },
+    relatedPages: { type: [Object, Function] as PropType<ViewerOptions['relatedPages']>, default: undefined },
   },
   emits: {
     ready: (_handle: ViewerHandle) => true,
@@ -148,6 +149,7 @@ export const FieldiaForm = defineComponent({
         confirm: props.confirm,
         // The app's own store, not Vue's reactive copy of it.
         preferences: props.preferences ? toRaw(props.preferences) : undefined,
+        relatedPages: props.relatedPages ? toRaw(props.relatedPages) : undefined,
         onAction: (request) => emit('action', request),
       });
       portals.value = found;

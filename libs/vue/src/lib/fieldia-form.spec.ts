@@ -124,6 +124,17 @@ describe('<FieldiaForm> for Vue', () => {
     wrapper.unmount();
   });
 
+  it('lets links open records of the related pages it is given', () => {
+    const seen: boolean[] = [];
+    const spy = (context: { dialogs?: { canOpen(model: string): boolean }; document: Document }) => {
+      seen.push(context.dialogs?.canOpen('partner') ?? false);
+      return { element: context.document.createElement('div'), update: () => undefined };
+    };
+    const wrapper = mount(FieldiaForm, { props: { page: custom, widgets: { 'char.shout': spy as never }, relatedPages: { partner: page('customer') } }, attachTo: document.body });
+    expect(seen[0]).toBe(true);
+    wrapper.unmount();
+  });
+
   it('cleans up when it unmounts', () => {
     const wrapper = mount(FieldiaForm, { props: { page: page('survey') }, attachTo: document.body });
     const host = wrapper.element as HTMLElement;

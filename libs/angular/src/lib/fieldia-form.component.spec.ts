@@ -150,6 +150,22 @@ describe('<fieldia-form> for Angular', () => {
     fixture.destroy();
   });
 
+  it('lets links open records of the related pages it is given', async () => {
+    const seen: boolean[] = [];
+    const spy = (context: { dialogs?: { canOpen(model: string): boolean }; document: Document }) => {
+      seen.push(context.dialogs?.canOpen('partner') ?? false);
+      return { element: context.document.createElement('div'), update: () => undefined };
+    };
+    const fixture = TestBed.createComponent(FieldiaFormComponent);
+    fixture.componentRef.setInput('page', custom);
+    fixture.componentRef.setInput('widgets', { 'char.shout': spy as never });
+    fixture.componentRef.setInput('relatedPages', { partner: page('customer') });
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    expect(seen[0]).toBe(true);
+    fixture.destroy();
+  });
+
   it('cleans up when it is destroyed', async () => {
     const { fixture } = await setup(page('survey'));
     fixture.destroy();

@@ -16,6 +16,9 @@ export const pages: Record<string, Page> = {
   custom: customPage,
 };
 
+/** The pages records of other models open in, in a dialog: a customer from a link to it. */
+export const relatedPages: Record<string, Page> = { partner: customer as Page };
+
 const PRODUCT_PRICES: Record<number, number> = { 1: 1890, 2: 380, 3: 749, 4: 6425, 5: 215 };
 const round = (n: number) => Math.round(n * 100) / 100;
 
