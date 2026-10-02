@@ -26,6 +26,14 @@
     "@fieldia/widgets": "0.0.0",
     "tslib": "^2.8.1"
   },
+  "peerDependencies": {
+    "@grafloria/element": ">=0.4.83"
+  },
+  "peerDependenciesMeta": {
+    "@grafloria/element": {
+      "optional": true
+    }
+  },
   "sideEffects": false,
   "repository": {
     "type": "git",

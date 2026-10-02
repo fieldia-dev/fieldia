@@ -22,12 +22,25 @@ and save through a small data-source interface that your app implements.
 
 | Package | Role | Status |
 |---|---|---|
-| `@fieldia/core` | Headless. The page format, modifiers, validation, record state, the data-source interface. **No DOM.** | in progress |
-| `@fieldia/widgets` | The field inputs, in plain DOM, with two skins | planned |
-| `@fieldia/viewer` | Framework-neutral mount — render a saved page and fill it in | planned |
-| `@fieldia/board` | Page layout on a [Grafloria](https://grafloria.com) board, for canvas-style screens | planned |
-| `@fieldia/designer` | Authoring: the survey editor and the canvas designer | planned |
-| `@fieldia/angular` · `react` · `vue` | Thin bindings over the viewer | planned |
+| `@fieldia/core` | Headless. The page format, modifiers, validation, record state, the data-source interface. **No DOM.** | built, not on npm yet |
+| `@fieldia/widgets` | The field inputs, in plain DOM, with two skins (`underline`, `outlined`) | built, not on npm yet |
+| `@fieldia/viewer` | Framework-neutral mount — render a saved page and fill it in | built, not on npm yet |
+| `@fieldia/designer` | Authoring: an editing model with undo and versions, the survey editor, and the screen editor — a canvas on [Grafloria](https://grafloria.com) boards | built, not on npm yet |
+| `@fieldia/angular` · `react` · `vue` | Thin bindings over the viewer | built, not on npm yet |
+
+### The screen editor
+
+Each section of a screen is a Grafloria board; drag a card to reorder, pull
+its edge to widen it. Grafloria is passed in rather than bundled, so a
+survey-only app never loads it and the app picks the version:
+
+```ts
+import * as grafloria from '@grafloria/element';
+import { blankPage, createDesigner, mountScreenEditor } from '@fieldia/designer';
+
+const designer = createDesigner({ page: blankPage('screen', 'Site visit') });
+mountScreenEditor(document.getElementById('app')!, { designer, grafloria });
+```
 
 ## Four rules
 

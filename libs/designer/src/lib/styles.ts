@@ -5,7 +5,7 @@ export const DESIGNER_CSS = /* css */ `
   display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 10px 14px;
 }
-.fd-designer-title { font-size: 17px; font-weight: 600; max-width: 420px; }
+.fd-designer-title { font-size: 17px; font-weight: 600; flex: 1 1 220px; max-width: 420px; min-width: 0; }
 .fd-designer-status { color: var(--fd-muted); font-size: 13px; }
 .fd-designer .fd-spacer { flex: 1; }
 .fd-designer-issues { white-space: pre-line; }
@@ -51,13 +51,6 @@ export const DESIGNER_CSS = /* css */ `
 
 /* ---- the screen editor: palette, canvas, properties ---- */
 .fd-screen-body { display: grid; grid-template-columns: 172px minmax(0, 1fr) 270px; gap: 16px; align-items: start; }
-@container (max-width: 1000px) {
-  .fd-screen-body { grid-template-columns: minmax(0, 1fr); }
-  /* Stacked, a sticky panel would sit over the canvas: let them scroll, and lay the palette out in a row. */
-  .fd-palette, .fd-properties { position: static; }
-  .fd-palette { display: flex; flex-wrap: wrap; }
-  .fd-palette .fd-panel-title { flex-basis: 100%; }
-}
 .fd-palette, .fd-properties {
   position: sticky; top: 76px; display: grid; gap: 6px; align-content: start;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 12px;
@@ -68,6 +61,14 @@ export const DESIGNER_CSS = /* css */ `
   background: var(--fd-page); border: 1px solid var(--fd-border); border-radius: 6px; padding: 6px 10px;
 }
 .fd-palette-item:hover { border-color: var(--fd-accent); color: var(--fd-accent); }
+/* After the panel rules, so these win when the editor is narrow. */
+@container (max-width: 1000px) {
+  .fd-screen-body { grid-template-columns: minmax(0, 1fr); }
+  /* Stacked, a sticky panel would sit over the canvas: let them scroll, and lay the palette out in a row. */
+  .fd-palette, .fd-properties { position: static; }
+  .fd-palette { display: flex; flex-wrap: wrap; }
+  .fd-palette .fd-panel-title { flex-basis: 100%; }
+}
 .fd-canvas { display: grid; gap: 16px; justify-items: start; min-width: 0; }
 .fd-canvas > * { width: 100%; }
 .fd-canvas > .fd-button { width: auto; }
