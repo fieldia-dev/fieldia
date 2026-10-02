@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import Ajv2020 from 'ajv/dist/2020';
 import { pageJsonSchema } from '../../index';
@@ -24,8 +24,8 @@ describe('page.schema.json', () => {
   it('validates the example pages with a standard JSON Schema validator', () => {
     const ajv = new Ajv2020({ allErrors: true, strict: false });
     const validate = ajv.compile(JSON.parse(readFileSync(SCHEMA_FILE, 'utf8')));
-    for (const name of ['customer', 'survey']) {
-      const page = JSON.parse(readFileSync(join(EXAMPLES, `${name}.page.json`), 'utf8'));
+    for (const name of readdirSync(EXAMPLES).filter((f) => f.endsWith('.page.json'))) {
+      const page = JSON.parse(readFileSync(join(EXAMPLES, name), 'utf8'));
       expect({ name, ok: validate(page), errors: validate.errors ?? null }).toEqual({ name, ok: true, errors: null });
     }
   });

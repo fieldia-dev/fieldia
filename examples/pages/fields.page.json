@@ -1,0 +1,186 @@
+{
+  "fieldia": "0.1",
+  "id": "fit-out",
+  "title": "Every field",
+  "description": "One record that uses every widget Fieldia has: an office fit-out project.",
+  "data": { "kind": "record", "model": "project" },
+  "fields": {
+    "name": { "type": "char", "label": "Project", "required": true },
+    "email": { "type": "char", "label": "Site contact email" },
+    "phone": { "type": "char", "label": "Site phone" },
+    "portal": { "type": "char", "label": "Client portal" },
+    "portal_password": { "type": "char", "label": "Portal password", "help": "Shared with the client's facilities team." },
+    "scope": { "type": "text", "label": "Scope of work" },
+    "brief": { "type": "html", "label": "Design brief" },
+    "seats": { "type": "integer", "label": "Workstations", "min": 1 },
+    "area": { "type": "float", "label": "Floor area (m²)", "digits": [10, 1] },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "currency" },
+    "budget": { "type": "monetary", "label": "Budget", "currencyField": "currency_id" },
+    "client_rating": { "type": "integer", "label": "Client satisfaction", "min": 1, "max": 5 },
+    "readiness": { "type": "integer", "label": "Site readiness", "min": 1, "max": 10, "help": "1 is a bare shell, 10 is ready to move in." },
+    "signed": { "type": "boolean", "label": "Contract signed" },
+    "reminders": { "type": "boolean", "label": "Send weekly updates" },
+    "stage": {
+      "type": "selection",
+      "label": "Stage",
+      "options": [
+        { "value": "survey", "label": "Site survey" },
+        { "value": "design", "label": "Design" },
+        { "value": "build", "label": "Build" },
+        { "value": "handover", "label": "Handover" }
+      ]
+    },
+    "billing": {
+      "type": "selection",
+      "label": "Billing",
+      "options": [
+        { "value": "fixed", "label": "Fixed price" },
+        { "value": "milestones", "label": "By milestone" },
+        { "value": "time", "label": "Time and materials" }
+      ]
+    },
+    "deliverables": {
+      "type": "selection",
+      "label": "Deliverables",
+      "multiple": true,
+      "options": [
+        { "value": "drawings", "label": "Drawings" },
+        { "value": "furniture", "label": "Furniture" },
+        { "value": "cabling", "label": "Network cabling" },
+        { "value": "signage", "label": "Signage" }
+      ]
+    },
+    "start_date": { "type": "date", "label": "Start date" },
+    "kickoff": { "type": "datetime", "label": "Kick-off meeting" },
+    "client_id": { "type": "many2one", "label": "Client", "relation": "partner" },
+    "tag_ids": { "type": "many2many", "label": "Tags", "relation": "partner.tag" },
+    "team_ids": { "type": "many2many", "label": "Team", "relation": "employee" },
+    "service_ids": { "type": "many2many", "label": "Services", "relation": "service" },
+    "source": {
+      "type": "reference",
+      "label": "Came from",
+      "models": [
+        { "value": "partner", "label": "Customer" },
+        { "value": "country", "label": "Country campaign" }
+      ]
+    },
+    "milestone_ids": {
+      "type": "one2many",
+      "label": "Milestones",
+      "relation": "project.milestone",
+      "fields": {
+        "name": { "type": "char", "label": "Milestone", "required": true },
+        "due": { "type": "date", "label": "Due" },
+        "hours": { "type": "float", "label": "Hours", "digits": [6, 1] },
+        "amount": { "type": "monetary", "label": "Amount", "currency": "EGP" },
+        "owner_id": { "type": "many2one", "label": "Owner", "relation": "employee" },
+        "invoiced": { "type": "boolean", "label": "Invoiced" }
+      }
+    },
+    "contract": { "type": "binary", "label": "Signed contract", "accept": ["application/pdf"] },
+    "photo": { "type": "image", "label": "Site photo" },
+    "settings": { "type": "json", "label": "Access control settings" },
+    "extra": { "type": "properties", "label": "Building details" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "sections",
+    "children": [
+      {
+        "type": "section",
+        "id": "s-text",
+        "title": "Text",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-name", "field": "name", "colspan": 2 },
+          { "type": "field", "id": "f-email", "field": "email", "widget": "email" },
+          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone" },
+          { "type": "field", "id": "f-portal", "field": "portal", "widget": "url" },
+          { "type": "field", "id": "f-password", "field": "portal_password", "widget": "password" },
+          { "type": "field", "id": "f-scope", "field": "scope", "colspan": 2 },
+          { "type": "field", "id": "f-brief", "field": "brief", "colspan": 2 }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-numbers",
+        "title": "Numbers",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-seats", "field": "seats" },
+          { "type": "field", "id": "f-area", "field": "area" },
+          { "type": "field", "id": "f-currency", "field": "currency_id" },
+          { "type": "field", "id": "f-budget", "field": "budget" },
+          { "type": "field", "id": "f-rating", "field": "client_rating", "widget": "rating" },
+          { "type": "field", "id": "f-readiness", "field": "readiness", "widget": "scale", "colspan": 2 }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-choices",
+        "title": "Choices",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-signed", "field": "signed" },
+          { "type": "field", "id": "f-reminders", "field": "reminders", "widget": "toggle" },
+          { "type": "field", "id": "f-stage", "field": "stage" },
+          { "type": "field", "id": "f-billing", "field": "billing", "widget": "radio" },
+          { "type": "field", "id": "f-deliverables", "field": "deliverables", "colspan": 2 }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-dates",
+        "title": "Dates",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-start", "field": "start_date" },
+          { "type": "field", "id": "f-kickoff", "field": "kickoff" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-links",
+        "title": "Links to other records",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-client", "field": "client_id" },
+          { "type": "field", "id": "f-source", "field": "source" },
+          { "type": "field", "id": "f-tags", "field": "tag_ids" },
+          { "type": "field", "id": "f-team", "field": "team_ids", "widget": "tags" },
+          { "type": "field", "id": "f-services", "field": "service_ids", "widget": "checkboxes", "colspan": 2 }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-lines",
+        "title": "Lines",
+        "children": [{ "type": "field", "id": "f-milestones", "field": "milestone_ids" }]
+      },
+      {
+        "type": "section",
+        "id": "s-files",
+        "title": "Files",
+        "columns": 2,
+        "collapsible": true,
+        "children": [
+          { "type": "field", "id": "f-contract", "field": "contract" },
+          { "type": "field", "id": "f-photo", "field": "photo" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-structured",
+        "title": "Structured data",
+        "description": "Folded until opened: a section can start collapsed.",
+        "columns": 2,
+        "collapsible": true,
+        "collapsed": true,
+        "children": [
+          { "type": "field", "id": "f-settings", "field": "settings" },
+          { "type": "field", "id": "f-extra", "field": "extra" }
+        ]
+      }
+    ]
+  }
+}

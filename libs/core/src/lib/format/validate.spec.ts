@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { validatePage, FORMAT_VERSION } from '../../index';
 
@@ -14,8 +14,15 @@ function messages(input: unknown): string[] {
   return result.ok ? [] : result.issues.map((i) => `${i.path}: ${i.message}`);
 }
 
-describe('validatePage — the two reference pages', () => {
-  it.each(['customer', 'survey'])('accepts the %s example', (name) => {
+/** Every example page the demos and docs show. */
+const EXAMPLE_NAMES = readdirSync(EXAMPLES).filter((f) => f.endsWith('.page.json')).map((f) => f.replace('.page.json', ''));
+
+describe('validatePage — the example pages', () => {
+  it('finds the example pages', () => {
+    expect(EXAMPLE_NAMES).toEqual(expect.arrayContaining(['customer', 'fields', 'signup', 'survey']));
+  });
+
+  it.each(EXAMPLE_NAMES)('accepts the %s example', (name) => {
     expect(messages(example(name))).toEqual([]);
   });
 

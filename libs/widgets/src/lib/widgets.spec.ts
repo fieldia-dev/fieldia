@@ -272,3 +272,35 @@ describe('installStyles', () => {
     expect(unscoped).toEqual([]);
   });
 });
+
+describe('the example pages', () => {
+  it('show every built-in widget at least once, so every one can be seen and tested in the demos', async () => {
+    const { readdirSync, readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { builtInWidgets } = await import('./widgets');
+    const dir = join(__dirname, '..', '..', '..', '..', 'examples', 'pages');
+    const used = new Set<string>();
+    // The same order createWidget picks a widget in.
+    const keyOf = (field: any, node: any) =>
+      [node.widget ? `${field.type}.${node.widget}` : null, field.type === 'selection' && field.multiple ? 'selection.checkboxes' : null, field.type].find(
+        (key): key is string => !!key && key in builtInWidgets
+      );
+    const walk = (node: any, fields: Record<string, any>) => {
+      if (!node || typeof node !== 'object') return;
+      if (Array.isArray(node)) return node.forEach((child) => walk(child, fields));
+      if (node.type === 'field' && fields[node.field]) {
+        const key = keyOf(fields[node.field], node);
+        if (key) used.add(key);
+        const def = fields[node.field];
+        // A table of lines shows each of its columns with the plain widget for its type.
+        if (def.type === 'one2many') for (const column of node.columns ?? Object.keys(def.fields)) used.add(keyOf(def.fields[column], {}) ?? '');
+      }
+      for (const value of Object.values(node)) walk(value, fields);
+    };
+    for (const file of readdirSync(dir).filter((f: string) => f.endsWith('.page.json'))) {
+      const page = JSON.parse(readFileSync(join(dir, file), 'utf8'));
+      walk(page.layout, page.fields);
+    }
+    expect(Object.keys(builtInWidgets).filter((key) => !used.has(key))).toEqual([]);
+  });
+});
