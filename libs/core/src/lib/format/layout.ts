@@ -23,6 +23,11 @@ export interface FieldNode {
   label?: string;
   /** How the value is shown, when not the type's default: radio, tags, email… */
   widget?: string;
+  /**
+   * Settings for the widget, as each widget documents them: a progress bar's
+   * maximum, a label's prefix. An option whose name ends in "Field" names a field.
+   */
+  options?: { [key: string]: JsonValue };
   placeholder?: string;
   help?: string;
   /** Grid columns this field spans inside a section. */
@@ -200,6 +205,7 @@ export const FieldNodeSchema = z.strictObject({
   field: fieldName,
   label: z.string().optional(),
   widget: z.string().min(1).optional(),
+  options: z.record(z.string(), JsonValueSchema).optional(),
   placeholder: z.string().optional(),
   help: z.string().optional(),
   colspan: z.int().min(1).max(4).optional(),

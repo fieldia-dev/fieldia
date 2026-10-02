@@ -269,6 +269,17 @@ describe('validatePage — references', () => {
     expect(messages(other)).toEqual(['layout.children[1].children[0].children[0].editMode: Invalid option: expected one of "cell"|"row"']);
   });
 
+  it('takes widget options, and checks that an option naming a field names one', () => {
+    const page = example('fields');
+    const progress = page['layout'].children.flatMap((s: any) => s.children ?? []).find((n: any) => n.id === 'f-progress');
+    expect(progress.options).toBeDefined();
+    progress.options = { max: 100, color: 'auto', maxField: 'nothing' };
+    const text = messages(page).join('\n');
+    expect(text).toMatch(/\.options\.maxField: no field "nothing"/);
+    progress.options = 'big';
+    expect(messages(page).join('\n')).toMatch(/\.options: /);
+  });
+
   it('rejects one2many columns that are not among its line fields', () => {
     const page = example('customer');
     page['layout'].children[1].children[0].children[0].columns.push('fax');

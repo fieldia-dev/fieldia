@@ -307,6 +307,36 @@ test.describe('every field', () => {
     await screen(page, `${variant}-fields-german-numbers`);
   });
 
+  test('progress bars fill and colour by how far they have come, and an editable one takes a typed value', async ({ page }) => {
+    await open(page, variant, 'page=fields&skin=outlined');
+    const progress = node(page, 'f-progress');
+    const bar = progress.locator('.fd-progressbar');
+    await expect(bar).toHaveAttribute('data-tone', 'warning');
+    await expect(bar).toHaveText('64%');
+    const box = progress.getByLabel('Fit-out progress');
+    await box.fill('85');
+    await box.press('Tab');
+    await expect(bar).toHaveAttribute('data-tone', 'success');
+    await expect(bar).toHaveText('85%');
+    expect(await value(page, 'progress')).toBe(85);
+    // The fill really covers 85 % of the track.
+    await expect
+      .poll(async () => {
+        const track = (await bar.boundingBox())!;
+        const filled = (await bar.locator('.fd-progressbar-fill').boundingBox())!;
+        return Math.round((filled.width / track.width) * 100);
+      })
+      .toBeGreaterThanOrEqual(83);
+    const spent = node(page, 'f-spent').getByRole('progressbar', { name: 'Spent so far' });
+    await expect(spent).toHaveAttribute('aria-valuetext', '64%');
+    await expect(spent).toHaveAttribute('data-tone', 'warning');
+    const hours = node(page, 'f-hours').getByRole('progressbar', { name: 'Hours logged' });
+    await expect(hours).toHaveAttribute('aria-valuetext', '37%');
+    await expect(hours).toHaveAttribute('data-tone', 'info');
+    await progress.scrollIntoViewIfNeeded();
+    await screen(page, `${variant}-fields-progress`);
+  });
+
   test('a folded section opens from its title and shows its fields', async ({ page }) => {
     await open(page, variant, 'page=fields');
     const title = node(page, 's-structured').getByRole('button', { name: 'Structured data' });

@@ -1807,6 +1807,15 @@
               "type": "string",
               "minLength": 1
             },
+            "options": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              }
+            },
             "placeholder": {
               "type": "string"
             },

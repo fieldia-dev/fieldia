@@ -2,12 +2,18 @@ import { createForm, type Field, type FieldNode, type Form, type Locale, type Pa
 import { createWidget, type Widget, type WidgetFactory } from './widgets';
 
 /** A one-field page, so each test sees one widget and its form. */
-function setup(field: Record<string, unknown>, node: Partial<FieldNode> = {}, registry?: Record<string, WidgetFactory>, locale?: Locale) {
+function setup(
+  field: Record<string, unknown>,
+  node: Partial<FieldNode> = {},
+  registry?: Record<string, WidgetFactory>,
+  locale?: Locale,
+  extra: Record<string, Field> = {}
+) {
   const page = {
     fieldia: '0.1',
     id: 't',
     data: { kind: 'responses' },
-    fields: { x: { label: 'X', ...field } as Field, currency_id: { type: 'many2one', label: 'Currency', relation: 'currency' } as Field },
+    fields: { x: { label: 'X', ...field } as Field, currency_id: { type: 'many2one', label: 'Currency', relation: 'currency' } as Field, ...extra },
     layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n', field: 'x', ...node }] },
   } as Page;
   const form = createForm({ page });
@@ -79,6 +85,57 @@ describe('text widgets', () => {
 
   it('shows a placeholder from the layout', () => {
     expect(q<HTMLInputElement>(setup({ type: 'char' }, { placeholder: 'Your name' }).el, 'input').placeholder).toBe('Your name');
+  });
+});
+
+describe('progress bar', () => {
+  const bar = (el: Element) => q<HTMLElement>(el, '[role="progressbar"]');
+  const fill = (el: Element) => (bar(el).querySelector('.fd-progressbar-fill') as HTMLElement).style.width;
+
+  it('fills to the value against a hundred, coloured by how far it has come', () => {
+    const { form, el } = setup({ type: 'integer' }, { widget: 'progressbar' });
+    form.setValue('x', 64);
+    expect([bar(el).getAttribute('aria-valuenow'), bar(el).getAttribute('aria-valuemax'), bar(el).getAttribute('aria-valuetext')]).toEqual(['64', '100', '64%']);
+    expect(fill(el)).toBe('64%');
+    expect(bar(el).dataset['tone']).toBe('warning');
+    expect(bar(el).textContent).toBe('64%');
+    form.setValue('x', 20);
+    expect(bar(el).dataset['tone']).toBe('danger');
+    form.setValue('x', 85);
+    expect(bar(el).dataset['tone']).toBe('success');
+    form.setValue('x', 150);
+    expect(fill(el)).toBe('100%');
+  });
+
+  it('takes its maximum from the options, or from another field', () => {
+    const fixed = setup({ type: 'float' }, { widget: 'progressbar', options: { max: 200 } });
+    fixed.form.setValue('x', 50);
+    expect(fill(fixed.el)).toBe('25%');
+    const linked = setup({ type: 'float' }, { widget: 'progressbar', options: { maxField: 'cap' } }, undefined, undefined, { cap: { type: 'float', label: 'Cap' } as Field });
+    linked.form.setValue('cap', 40);
+    linked.form.setValue('x', 30);
+    linked.refresh();
+    expect(fill(linked.el)).toBe('75%');
+    expect(bar(linked.el).getAttribute('aria-valuemax')).toBe('40');
+  });
+
+  it('keeps one colour when the options name it, and can leave the percentage out', () => {
+    const { form, el } = setup({ type: 'integer' }, { widget: 'progressbar', options: { color: 'info', showPercent: false } });
+    form.setValue('x', 10);
+    expect(bar(el).dataset['tone']).toBe('info');
+    expect(bar(el).textContent).toBe('');
+  });
+
+  it('when editable, a box beside the bar takes the value, and goes read-only with the field', () => {
+    const { form, el, refresh } = setup({ type: 'integer' }, { widget: 'progressbar', options: { editable: true } });
+    const input = el.querySelector('input') as HTMLInputElement;
+    expect(input.id).toBe('fd-x');
+    expect(bar(el).getAttribute('aria-hidden')).toBe('true');
+    type(input, '80');
+    expect(valueOf(form)).toBe(80);
+    expect(fill(el)).toBe('80%');
+    refresh({ readonly: true });
+    expect(input.readOnly).toBe(true);
   });
 });
 

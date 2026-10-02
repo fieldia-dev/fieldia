@@ -376,6 +376,18 @@ export const FIELDIA_CSS = /* css */ `
 .fd-wizard { display: grid; gap: 20px; }
 .fd-progress { display: grid; gap: 8px; }
 .fd-progress-text { color: var(--fd-muted); font-size: 13px; }
+.fd-progressbar {
+  position: relative; height: 22px; min-width: 120px; border-radius: 999px; overflow: hidden;
+  background: var(--fd-page); border: 1px solid var(--fd-border); font-variant-numeric: tabular-nums;
+}
+.fd-progressbar-fill { height: 100%; background: var(--fd-success); transition: width 0.2s ease; }
+.fd-progressbar[data-tone="warning"] .fd-progressbar-fill { background: #d97706; }
+.fd-progressbar[data-tone="danger"] .fd-progressbar-fill { background: var(--fd-error); }
+.fd-progressbar[data-tone="info"] .fd-progressbar-fill { background: var(--fd-info); }
+.fd-progressbar-text { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 600; color: var(--fd-text); }
+.fd-progressbar-edit { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.fd-progressbar-edit > .fd-progressbar { flex: 1 1 auto; }
+.fd-progressbar-edit > .fd-input { flex: 0 0 96px; }
 .fd-progress-bar { height: 4px; background: var(--fd-border); border-radius: 999px; overflow: hidden; }
 .fd-progress-bar > span { display: block; height: 100%; background: var(--fd-accent); transition: width 0.25s ease; }
 .fd-step { display: grid; gap: 18px; }

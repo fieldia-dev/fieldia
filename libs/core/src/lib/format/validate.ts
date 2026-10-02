@@ -248,6 +248,10 @@ class ReferenceCheck {
         });
       }
     }
+    // Options that point at another field: by convention their names end in "Field".
+    for (const [key, value] of Object.entries(node.options ?? {})) {
+      if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.options.${key}`);
+    }
     if (def && node.editMode && def.type !== 'one2many') {
       this.report(`${path}.editMode`, `editMode only applies to one2many fields; "${node.field}" is a ${def.type}`);
     }
