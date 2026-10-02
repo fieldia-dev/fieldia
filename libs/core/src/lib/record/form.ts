@@ -92,7 +92,10 @@ export interface Form {
   addLine(field: string, values?: Values): string;
   updateLine(field: string, key: string, name: string, value: Value): void;
   removeLine(field: string, key: string): void;
-  search(field: string, query: string, limit?: number): Promise<RelatedRecord[]>;
+  /** Records a many2one, many2many or reference may point to. A reference needs `options.model`. */
+  search(field: string, query: string, limit?: number, options?: { model?: string }): Promise<RelatedRecord[]>;
+  /** The same, for a relation inside a one2many line, filtered by that line's values. */
+  searchLine(field: string, key: string, subfield: string, query: string, limit?: number): Promise<RelatedRecord[]>;
   steps(): string[];
   next(): boolean;
   back(): boolean;
@@ -363,6 +366,32 @@ export function createForm(options: FormOptions): Form {
     }
   }
 
+  async function runSearch(
+    def: Field | LineField,
+    name: string,
+    ctx: Record<string, unknown>,
+    query: string,
+    limit: number,
+    model?: string
+  ): Promise<RelatedRecord[]> {
+    if (def.type !== 'many2one' && def.type !== 'many2many' && def.type !== 'reference') {
+      throw new Error(`"${name}" is not a many2one, many2many or reference`);
+    }
+    if (def.type === 'reference' && !model) throw new Error(`Searching "${name}" needs a model`);
+    const source = options.dataSource;
+    if (!source?.search) return [];
+    const filter: ResolvedFilterCondition[] | undefined =
+      def.type === 'reference'
+        ? undefined
+        : def.filter?.map(({ field: target, op, value, valueFrom }) => ({
+            field: target,
+            op,
+            value: (valueFrom !== undefined ? ctx[valueFrom] ?? null : value ?? null) as JsonValue,
+          }));
+    const relation = def.type === 'reference' ? (model as string) : def.relation;
+    return track(source.search({ model: relation, query, ...(filter ? { filter } : {}), limit }));
+  }
+
   function lineField(field: string) {
     const def = fieldDef(field);
     if (def.type !== 'one2many') throw new Error(`"${field}" is a ${def.type}, not a one2many`);
@@ -454,18 +483,17 @@ export function createForm(options: FormOptions): Form {
       afterEdit(field);
     },
 
-    async search(field, query, limit = 8) {
-      const def = fieldDef(field);
-      if (def.type !== 'many2one' && def.type !== 'many2many') throw new Error(`"${field}" is not a many2one or many2many`);
-      const source = options.dataSource;
-      if (!source?.search) return [];
-      const ctx = context();
-      const filter: ResolvedFilterCondition[] | undefined = def.filter?.map(({ field: target, op, value, valueFrom }) => ({
-        field: target,
-        op,
-        value: (valueFrom !== undefined ? ctx[valueFrom] ?? null : value ?? null) as JsonValue,
-      }));
-      return track(source.search({ model: def.relation, query, ...(filter ? { filter } : {}), limit }));
+    async search(field, query, limit = 8, options = {}) {
+      return runSearch(fieldDef(field), field, context(), query, limit, options.model);
+    },
+
+    async searchLine(field, key, subfield, query, limit = 8) {
+      const def = lineField(field);
+      const sub = def.fields[subfield];
+      if (!sub) throw new Error(`The lines of "${field}" have no field "${subfield}"`);
+      const line = ((state.values[field] as Line[] | null) ?? []).find((l) => l.key === key);
+      if (!line) throw new Error(`"${field}" has no line "${key}"`);
+      return runSearch(sub, subfield, expressionContext(line.values, def.fields as Record<string, LineField>), query, limit);
     },
 
     steps: () => steps.filter((id) => !nodeState(id).invisible),

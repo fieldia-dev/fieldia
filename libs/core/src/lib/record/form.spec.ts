@@ -460,3 +460,45 @@ describe('createForm — messages in the page language', () => {
     expect(form.getState().errors).toEqual({ name: 'Your name est obligatoire' });
   });
 });
+
+describe('createForm — searching references and lines', () => {
+  const orderPage = {
+    fieldia: '0.1',
+    id: 'order',
+    data: { kind: 'record', model: 'order' },
+    fields: {
+      origin: { type: 'reference', label: 'Origin', models: [{ value: 'lead', label: 'Lead' }, { value: 'ticket', label: 'Ticket' }] },
+      line_ids: {
+        type: 'one2many',
+        label: 'Lines',
+        relation: 'order.line',
+        fields: {
+          category: { type: 'selection', label: 'Category', options: [{ value: 'tea', label: 'Tea' }, { value: 'coffee', label: 'Coffee' }] },
+          product_id: { type: 'many2one', label: 'Product', relation: 'product', filter: [{ field: 'category', op: '=', valueFrom: 'category' }] },
+        },
+      },
+    },
+    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-origin', field: 'origin' }, { type: 'field', id: 'f-lines', field: 'line_ids' }] },
+  } as unknown as Page;
+
+  const source = () =>
+    createMemoryDataSource({
+      records: {
+        lead: { 1: { name: 'Hotel fit-out' } },
+        ticket: { 7: { name: 'Broken kettle' } },
+        product: { 1: { name: 'Green tea', category: 'tea' }, 2: { name: 'Espresso', category: 'coffee' } },
+      },
+    });
+
+  it('searches a reference in the model the person picked', async () => {
+    const form = createForm({ page: orderPage, dataSource: source() });
+    expect(await form.search('origin', '', 8, { model: 'ticket' })).toEqual([{ id: 7, label: 'Broken kettle' }]);
+    await expect(form.search('origin', '')).rejects.toThrow('Searching "origin" needs a model');
+  });
+
+  it('searches a relation inside a line, filtered by that line', async () => {
+    const form = createForm({ page: orderPage, dataSource: source() });
+    const key = form.addLine('line_ids', { category: 'coffee' });
+    expect(await form.searchLine('line_ids', key, 'product_id', '')).toEqual([{ id: 2, label: 'Espresso' }]);
+  });
+});
