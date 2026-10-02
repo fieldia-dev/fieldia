@@ -4,11 +4,14 @@ import {
   createGrid,
   themeQuartz,
   type ColDef,
+  type ColumnState,
   type GridApi,
   type ICellEditorComp,
   type ICellEditorParams,
   type ICellRendererComp,
   type ICellRendererParams,
+  type IHeaderComp,
+  type IHeaderParams,
   type SuppressKeyboardEventParams,
 } from 'ag-grid-community';
 import { fill, lineKind, type Field, type FieldNode, type Form, type Line, type LineField, type LineKinds, type Value, type Values } from '@fieldia/core';
@@ -98,6 +101,40 @@ class DeleteRenderer implements ICellRendererComp<Line> {
     this.button.setAttribute('aria-label', params.cell.labels.deleteLine);
     this.button.addEventListener('click', () => {
       if (params.data) params.cell.form.removeLine(params.cell.field, params.data.key);
+    });
+  }
+  getGui() {
+    return this.button;
+  }
+  refresh() {
+    return true;
+  }
+}
+
+/** What the column chooser's header button needs from its grid. */
+interface Chooser {
+  label: string;
+  toggle(button: HTMLButtonElement, fromKeyboard: boolean): void;
+}
+
+/** The header of the last column: a button that opens the column chooser. */
+class ChooserHeader implements IHeaderComp {
+  private button!: HTMLButtonElement;
+  init(params: IHeaderParams & { chooser: Chooser }) {
+    const button = (this.button = document.createElement('button'));
+    button.type = 'button';
+    button.className = 'fd-grid-chooser-button';
+    button.textContent = '⋮';
+    button.tabIndex = -1; // AG Grid moves the focus between header cells itself
+    button.setAttribute('aria-label', params.chooser.label);
+    button.setAttribute('aria-haspopup', 'true');
+    button.setAttribute('aria-expanded', 'false');
+    button.addEventListener('click', () => params.chooser.toggle(button, false));
+    // From the keyboard the header cell has the focus, not the button.
+    params.eGridHeader.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      params.chooser.toggle(button, true);
     });
   }
   getGui() {
@@ -256,13 +293,17 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
 
 const EDITABLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'date', 'datetime', 'selection', 'many2one', 'many2many', 'reference']);
 
-export const gridWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en }) => {
+export const gridWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, preferences }) => {
   const def = field as LineDef;
   const kinds = def.lineKinds;
   const sequence = def.sequenceField;
   // The fields that say what a line is and keep the lines' order never show as columns.
   const columns = (node.columns ?? Object.keys(def.fields)).filter((column) => def.fields[column] && column !== kinds?.field && column !== sequence);
   const kindOf = (line: Line | undefined) => (line ? lineKind(def, line.values) : null);
+  // Columns a person may hide or show, and where their choices (and widths, and order) are kept.
+  const optional = node.optionalColumns ?? {};
+  const optionalIds = columns.filter((column) => column in optional);
+  const columnsKey = `${form.page.id}.${node.id}.columns`;
   // Number columns the page asks to add up, in a row pinned under the lines.
   const totals = (node.totals ?? []).filter((column) => columns.includes(column));
   const totalsRow = (current: Line[]): Line => {
@@ -384,8 +425,10 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       },
       tooltipValueGetter: (p) => (p.node?.rowPinned ? undefined : problemAt(p.data, column, p.api)),
       suppressKeyboardEvent: keys,
-      minWidth: wide ? 140 : sub.type === 'monetary' ? 130 : 96,
+      // Money keeps room for a bold total in the millions (EGP 1,234,567.00).
+      minWidth: wide ? 140 : sub.type === 'monetary' ? 150 : 96,
       flex: wide ? 2 : sub.type === 'monetary' ? 1.3 : 1,
+      hide: optional[column] === 'hide',
       editable: (p) => {
         if (readonly || p.node.rowPinned) return false;
         if (kindOf(p.data)) return spans(p.api);
@@ -422,9 +465,13 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       suppressKeyboardEvent: keys,
     });
   }
+  // AG Grid copies column definitions deeply, so the button calls through, never a copy.
+  const chooser: Chooser = { label: labels.chooseColumns, toggle: (button, fromKeyboard) => toggleChooser(button, fromKeyboard) };
   columnDefs.push({
     colId: '__delete',
     headerName: '',
+    lockPosition: 'right',
+    ...(optionalIds.length ? { headerComponent: ChooserHeader, headerComponentParams: { chooser } } : {}),
     width: 44,
     minWidth: 44,
     maxWidth: 44,
@@ -491,6 +538,82 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     { modules: [AllCommunityModule] }
   );
   apis.set(element, api);
+
+  // ---- columns a person arranged: kept, and brought back ----
+  // A person's widths, order and choices are kept for the next visit. AG Grid
+  // tells of each change a moment after it; bringing a layout back is told too,
+  // and keeping it again changes nothing.
+  api.addEventListener('columnResized', (event) => event.finished && remember(event.source));
+  api.addEventListener('columnMoved', (event) => event.finished && remember(event.source));
+  api.addEventListener('columnVisible', (event) => remember(event.source));
+  /** Sizing the grid does by itself is not a choice to keep. */
+  const automatic = new Set(['gridInitializing', 'flex', 'gridOptionsChanged', 'sizeColumnsToFit', 'autosizeColumns']);
+  function remember(source: string) {
+    // A grid taking itself apart also sends column events: they are not choices.
+    if (automatic.has(source) || !preferences || api.isDestroyed()) return;
+    const state = (api.getColumnState() ?? []).map(({ colId, width, flex, hide }) => ({ colId, width: width ?? null, flex: flex ?? null, hide: !!hide }));
+    preferences.set(columnsKey, state);
+  }
+  const saved = preferences?.get(columnsKey);
+  if (Array.isArray(saved)) {
+    const known = new Set(api.getColumns()?.map((c) => c.getColId()));
+    const state = (saved as { colId?: unknown }[]).filter((s) => typeof s?.colId === 'string' && known.has(s.colId)) as ColumnState[];
+    api.applyColumnState({ state, applyOrder: true });
+  }
+
+  // ---- the column chooser: a short list of the columns a person may hide ----
+  const chooserBox = document.createElement('div');
+  chooserBox.className = 'fd-grid-chooser';
+  chooserBox.setAttribute('role', 'group');
+  chooserBox.setAttribute('aria-label', labels.chooseColumns);
+  chooserBox.hidden = true;
+  element.append(chooserBox);
+  let opener: HTMLButtonElement | null = null;
+  const closeChooser = (refocus: boolean) => {
+    if (chooserBox.hidden) return;
+    chooserBox.hidden = true;
+    opener?.setAttribute('aria-expanded', 'false');
+    if (refocus) api.setFocusedHeader('__delete');
+  };
+  function toggleChooser(button: HTMLButtonElement, fromKeyboard: boolean) {
+    if (!chooserBox.hidden) return closeChooser(fromKeyboard);
+    opener = button;
+    chooserBox.replaceChildren(
+      ...optionalIds.map((column) => {
+        const label = document.createElement('label');
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.className = 'fd-checkbox';
+        box.checked = api.getColumn(column)?.isVisible() ?? false;
+        box.addEventListener('change', () => api.setColumnsVisible([column], box.checked));
+        label.append(box, document.createTextNode(def.fields[column].label));
+        return label;
+      })
+    );
+    // Under the header's end, inside the grid's own box.
+    const at = button.getBoundingClientRect();
+    const frame = element.getBoundingClientRect();
+    chooserBox.style.insetBlockStart = `${at.bottom - frame.top + 4}px`;
+    chooserBox.style.insetInlineEnd = `${frame.right - at.right}px`;
+    chooserBox.hidden = false;
+    button.setAttribute('aria-expanded', 'true');
+    if (fromKeyboard) chooserBox.querySelector('input')?.focus();
+  }
+  chooserBox.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeChooser(true);
+    }
+  });
+  const outside = (event: Event) => {
+    const target = event.target as Node;
+    if (!chooserBox.contains(target) && target !== opener) closeChooser(false);
+  };
+  document.addEventListener('mousedown', outside);
+  chooserBox.addEventListener('focusout', (event) => {
+    const next = event.relatedTarget as Node | null;
+    if (next && !chooserBox.contains(next) && next !== opener) closeChooser(false);
+  });
 
   // Asked for the focus after a refused save: open the first wrong cell for editing.
   element.addEventListener('fd-focus-problem', (event) => {
@@ -584,6 +707,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       element.setAttribute('aria-invalid', String(state.invalid || found.length > 0));
     },
     destroy() {
+      document.removeEventListener('mousedown', outside);
       api.destroy();
       apis.delete(element);
     },

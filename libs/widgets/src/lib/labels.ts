@@ -16,6 +16,8 @@ export interface WidgetLabels {
   lineProblem: string;
   /** Problems beyond the first few. */
   moreProblems: string;
+  /** The button that lets a person hide or show a table's optional columns. */
+  chooseColumns: string;
   upload: string;
   uploadImage: string;
   replace: string;
@@ -37,6 +39,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     total: 'Total',
     lineProblem: 'Line {n}: {message}',
     moreProblems: 'and {n} more',
+    chooseColumns: 'Choose columns',
     upload: 'Upload a file',
     uploadImage: 'Add a photo',
     replace: 'Replace',
@@ -56,6 +59,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     total: 'الإجمالي',
     lineProblem: 'السطر {n}: {message}',
     moreProblems: 'و{n} أخرى',
+    chooseColumns: 'اختيار الأعمدة',
     upload: 'رفع ملف',
     uploadImage: 'إضافة صورة',
     replace: 'استبدال',
@@ -75,6 +79,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     total: 'Summe',
     lineProblem: 'Zeile {n}: {message}',
     moreProblems: 'und {n} weitere',
+    chooseColumns: 'Spalten auswählen',
     upload: 'Datei hochladen',
     uploadImage: 'Foto hinzufügen',
     replace: 'Ersetzen',
@@ -94,6 +99,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     total: 'Total',
     lineProblem: 'Ligne {n} : {message}',
     moreProblems: 'et {n} de plus',
+    chooseColumns: 'Choisir les colonnes',
     upload: 'Téléverser un fichier',
     uploadImage: 'Ajouter une photo',
     replace: 'Remplacer',

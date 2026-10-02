@@ -1,5 +1,6 @@
 import { createMemoryDataSource, type Line, type Page } from '@fieldia/core';
 import { mountViewer, type ViewerHandle } from '@fieldia/viewer';
+import { memoryPreferences, type PreferenceStore } from '@fieldia/widgets';
 import { gridApiOf, gridWidgets } from './grid';
 
 /** A sales order with its lines, shown in the grid. */
@@ -54,13 +55,13 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-async function mount(page: Page = order, rows: Line[] = lines) {
+async function mount(page: Page = order, rows: Line[] = lines, preferences: PreferenceStore = memoryPreferences()) {
   const host = document.createElement('div');
   document.body.append(host);
   const dataSource = createMemoryDataSource({
     records: { 'sale.order': { 1: { name: 'S00118', line_ids: rows } }, product: { 1: { name: 'Office chair' }, 2: { name: 'Desk lamp' }, 3: { name: 'Monitor arm' } } },
   });
-  handle = mountViewer(host, { page, dataSource, recordId: 1, widgets: gridWidgets });
+  handle = mountViewer(host, { page, dataSource, recordId: 1, widgets: gridWidgets, preferences });
   await handle.form.settled();
   await frames();
   const box = host.querySelector('[data-node="f-lines"] .fd-grid-lines') as HTMLElement;
@@ -139,6 +140,50 @@ describe('the grid', () => {
     form.reset();
     expect(box.querySelectorAll('.ag-row')).toHaveLength(2);
     expect(host).toBeTruthy();
+  });
+});
+
+describe('the grid’s columns', () => {
+  /** The order, whose delivery date starts hidden and whose tax column may be hidden. */
+  const choosy = JSON.parse(JSON.stringify(order)) as Page & { layout: any };
+  choosy.layout.children[0].children[1].optionalColumns = { delivery: 'hide', taxed: 'show' };
+  const shownIds = (api: ReturnType<typeof gridApiOf>) => api?.getAllDisplayedColumns().map((c) => c.getColId());
+
+  it('starts an optional column hidden when the page says so, and the chooser shows or hides it', async () => {
+    const { box, api } = await mount(choosy);
+    expect(shownIds(api)).not.toContain('delivery');
+    const button = box.querySelector('button[aria-label="Choose columns"]') as HTMLButtonElement;
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    button.click();
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    const chooser = box.querySelector('.fd-grid-chooser') as HTMLElement;
+    expect(chooser.hidden).toBe(false);
+    const boxes = [...chooser.querySelectorAll('label')].map((l) => [l.textContent, (l.querySelector('input') as HTMLInputElement).checked]);
+    expect(boxes).toEqual([
+      ['Delivery', false],
+      ['Taxed', true],
+    ]);
+    (chooser.querySelector('input') as HTMLInputElement).click();
+    expect(shownIds(api)).toContain('delivery');
+    chooser.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(chooser.hidden).toBe(true);
+  });
+
+  it('remembers widths, order and choices in the preferences, and brings them back', async () => {
+    const preferences = memoryPreferences();
+    const first = await mount(choosy, lines, preferences);
+    first.api?.setColumnWidths([{ key: 'qty', newWidth: 222 }], true);
+    first.api?.moveColumns(['price'], 1);
+    first.api?.setColumnsVisible(['delivery'], true);
+    await frames(); // AG Grid tells its listeners a moment later
+    expect(preferences.get('order.f-lines.columns')).not.toBeNull();
+    handle?.destroy();
+    handle = null;
+    document.body.replaceChildren();
+    const again = await mount(choosy, lines, preferences);
+    expect(again.api?.getColumn('qty')?.getActualWidth()).toBe(222);
+    expect(shownIds(again.api)?.slice(0, 2)).toEqual(['product_id', 'price']);
+    expect(shownIds(again.api)).toContain('delivery');
   });
 });
 

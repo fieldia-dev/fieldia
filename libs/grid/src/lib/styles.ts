@@ -14,6 +14,19 @@ export const GRID_CSS = /* css */ `
 .fd-grid-lines .ag-cell-inline-editing.fd-grid-invalid, .ag-popup-editor .fd-grid-editor.fd-grid-editor-invalid { border-color: var(--fd-error) !important; }
 .fd-grid-lines .ag-cell.fd-grid-invalid { box-shadow: inset 0 0 0 1px var(--fd-error); background: var(--fd-error-soft); }
 .fd-grid-lines .fd-grid-totals { font-weight: 600; background: var(--fd-surface); }
+.fd-grid-lines { position: relative; }
+.fd-grid-chooser-button {
+  border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1;
+  padding: 4px 8px; border-radius: 4px;
+}
+.fd-grid-chooser-button:hover, .fd-grid-chooser-button[aria-expanded="true"] { color: var(--fd-text); background: var(--fd-page); }
+.fd-grid-chooser {
+  position: absolute; z-index: 30; display: grid; gap: 2px; padding: 6px; min-width: 180px;
+  background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 4px);
+  box-shadow: 0 8px 24px rgba(15, 20, 25, 0.12);
+}
+.fd-grid-chooser label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px; cursor: pointer; white-space: nowrap; }
+.fd-grid-chooser label:hover { background: var(--fd-accent-soft); }
 .fd-grid-lines .fd-grid-handle { color: var(--fd-muted); cursor: grab; }
 .fd-grid-lines .fd-grid-handle .ag-drag-handle { margin: 0; }
 .fd-grid-lines .ag-cell .fd-checkbox { margin: 0; vertical-align: middle; }

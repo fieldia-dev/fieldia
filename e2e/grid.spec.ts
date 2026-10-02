@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { open, screen } from './support';
 import { VARIANTS } from './variants';
 
@@ -9,6 +9,31 @@ import { VARIANTS } from './variants';
 
 const grid = (page: Page) => page.locator('[data-node="f-lines"]');
 const cell = (page: Page, row: number, col: string) => grid(page).locator(`.ag-row[row-index="${row}"] .ag-cell[col-id="${col}"]`);
+/** Whether a cell's text fits inside it, padding included: cut-off text is clipped, not overflowing. */
+const textFits = (el: Element) => {
+  const probe = document.createElement('span');
+  probe.textContent = el.textContent;
+  // Each font property on its own: the computed font shorthand can come back empty.
+  const cs = getComputedStyle(el);
+  probe.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font-family:${cs.fontFamily};font-size:${cs.fontSize};font-weight:${cs.fontWeight};font-style:${cs.fontStyle};letter-spacing:${cs.letterSpacing}`;
+  document.body.append(probe);
+  const needed = probe.getBoundingClientRect().width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+  probe.remove();
+  return needed <= el.clientWidth + 0.5;
+};
+
+/** Wait until an element stops moving, so a drag takes hold where it is, not where it was. */
+async function holdsStill(target: Locator) {
+  let last = '';
+  await expect
+    .poll(async () => {
+      const now = JSON.stringify(await target.boundingBox());
+      const still = now === last;
+      last = now;
+      return still;
+    })
+    .toBe(true);
+}
 /** The lines' rows: every row but the totals row pinned under them. */
 const lineRows = (page: Page) => grid(page).locator('.ag-row:not(.fd-grid-totals)');
 const editor = (page: Page) => grid(page).locator('.ag-cell-inline-editing input, .ag-popup-editor input').first();
@@ -51,7 +76,8 @@ for (const variant of VARIANTS) {
             const r = input.getBoundingClientRect();
             const measure = document.createElement('span');
             measure.textContent = input.value;
-            measure.style.cssText = `position:absolute;visibility:hidden;white-space:pre;font:${getComputedStyle(input).font}`;
+            const cs = getComputedStyle(input);
+            measure.style.cssText = `position:absolute;visibility:hidden;white-space:pre;font-family:${cs.fontFamily};font-size:${cs.fontSize};font-weight:${cs.fontWeight}`;
             document.body.append(measure);
             const width = measure.getBoundingClientRect().width;
             measure.remove();
@@ -367,6 +393,78 @@ for (const variant of VARIANTS) {
       await expect(cell(page, NEW, 'product_id')).not.toHaveClass(/fd-grid-invalid/);
       await page.getByRole('button', { name: 'Save' }).click();
       await expect(page.locator('.fd-status')).toHaveText('Saved');
+    });
+    test('a person resizes, moves and chooses columns, and finds them so after a reload', async ({ page }) => {
+      const header = (col: string) => grid(page).locator(`.ag-header-cell[col-id="${col}"]`);
+      // The order a person sees: AG Grid moves header cells on screen, not in the page's markup.
+      const order = () =>
+        grid(page)
+          .locator('.ag-header-cell')
+          .evaluateAll((cells) => cells.map((c) => [c.getAttribute('col-id'), c.getBoundingClientRect().x] as const).sort((p, q) => p[1] - q[1]).map((p) => p[0]));
+      await expect(header('lead_days')).toHaveCount(0);
+
+      // Choose: hide the discount, show the lead time.
+      const button = grid(page).getByRole('button', { name: 'Choose columns' });
+      await button.click();
+      const chooser = grid(page).getByRole('group', { name: 'Choose columns' });
+      await expect(chooser).toBeVisible();
+      await expect(chooser.getByLabel('Disc. %')).toBeChecked();
+      await expect(chooser.getByLabel('Lead time (days)')).not.toBeChecked();
+      await screen(page, `${variant}-grid-chooser`);
+      await chooser.getByLabel('Disc. %').uncheck();
+      await chooser.getByLabel('Lead time (days)').check();
+      await expect(header('discount')).toHaveCount(0);
+      await expect(header('lead_days')).toBeVisible();
+      await page.mouse.click(10, 10); // a click elsewhere closes it
+      await expect(chooser).toBeHidden();
+
+      // Resize: drag the edge of Description 80 px wider, at a hand's pace, once the columns have stopped moving.
+      await holdsStill(header('name'));
+      const edge = (await header('name').locator('.ag-header-cell-resize').boundingBox())!;
+      const before = (await header('name').boundingBox())!.width;
+      await page.mouse.move(edge.x + edge.width / 2, edge.y + edge.height / 2);
+      await page.mouse.down();
+      for (let step = 1; step <= 8; step++) await page.mouse.move(edge.x + edge.width / 2 + step * 10, edge.y + edge.height / 2);
+      await page.mouse.up();
+      await expect.poll(async () => Math.round((await header('name').boundingBox())!.width - before)).toBeGreaterThanOrEqual(70);
+      const widened = (await header('name').boundingBox())!.width;
+
+      // Move: drag Unit price before Quantity.
+      await holdsStill(header('price'));
+      const price = (await header('price').boundingBox())!;
+      const qty = (await header('qty').boundingBox())!;
+      await page.mouse.move(price.x + price.width / 2, price.y + price.height / 2);
+      await page.mouse.down();
+      for (let step = 1; step <= 10; step++) await page.mouse.move(price.x + price.width / 2 + ((qty.x + 10 - (price.x + price.width / 2)) * step) / 10, price.y + price.height / 2);
+      await page.mouse.up();
+      await expect.poll(async () => (await order()).indexOf('price')).toBeLessThan((await order()).indexOf('qty'));
+      const arranged = await order();
+
+      await page.reload();
+      await expect(cell(page, LAMP, 'subtotal')).toHaveText('EGP 4,560.00');
+      expect(await order()).toEqual(arranged);
+      await expect(header('discount')).toHaveCount(0);
+      await expect(cell(page, LAMP, 'lead_days')).toHaveText('7');
+      expect(Math.abs((await header('name').boundingBox())!.width - widened)).toBeLessThanOrEqual(2);
+      // The money total, in bold, still fits its narrower column.
+      const total = grid(page).locator('.ag-grid-pinned-bottom-rows .ag-cell[col-id="subtotal"]');
+      await expect(total).toHaveText('EGP 64,656.00');
+      expect(await total.evaluate(textFits), 'the subtotal total is cut off').toBe(true);
+      await screen(page, `${variant}-grid-arranged`);
+    });
+
+    test('the column chooser opens from the keyboard and gives the focus back', async ({ page }) => {
+      await cell(page, CHAIR, 'taxed').click({ position: { x: 4, y: 4 } });
+      for (const key of ['ArrowRight', 'ArrowRight', 'ArrowUp', 'ArrowUp']) await page.keyboard.press(key);
+      await expect(grid(page).locator('.ag-header-cell[col-id="__delete"]')).toBeFocused();
+      await page.keyboard.press('Enter');
+      const chooser = grid(page).getByRole('group', { name: 'Choose columns' });
+      await expect(chooser.getByLabel('Disc. %')).toBeFocused();
+      await page.keyboard.press('Space');
+      await expect(grid(page).locator('.ag-header-cell[col-id="discount"]')).toHaveCount(0);
+      await page.keyboard.press('Escape');
+      await expect(chooser).toBeHidden();
+      await expect(grid(page).locator('.ag-header-cell[col-id="__delete"]')).toBeFocused();
     });
   });
 }
