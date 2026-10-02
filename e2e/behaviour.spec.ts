@@ -295,7 +295,7 @@ test.describe('every field', () => {
 
   test('numbers are written and read the way a German reader writes them', async ({ page }) => {
     await open(page, variant, 'page=fields&skin=outlined&locale=de');
-    const budget = field(page, 'f-budget');
+    const budget = node(page, 'f-budget').getByLabel('Budget'); // the amount, not the currency beside it
     await expect(budget).toHaveValue('1.850.000,00');
     await expect(field(page, 'f-area')).toHaveValue('640,5'); // the field keeps one decimal
     await budget.fill('2.000.000,5');
