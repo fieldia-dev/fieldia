@@ -59,6 +59,8 @@ export interface ChatterMessage {
   reactions?: Reaction[];
   /** The message this one answers. */
   parentId?: ChatterId | null;
+  /** The people it @mentions. */
+  mentions?: Person[];
 }
 
 export interface NewMessage {

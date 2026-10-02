@@ -2,6 +2,8 @@ import { fill, type Locale } from '@fieldia/core';
 import { installStyles, sanitizeHtml, type IconSet } from '@fieldia/widgets';
 import { attachmentList, composerFiles } from './attachments';
 import { CHATTER_LABELS, type ChatterLabels } from './labels';
+import { mentions } from './mentions';
+import { reactionBar } from './reactions';
 import type { ChatterMessage, ChatterSource, Person, RecordRef } from './source';
 import { installChatterStyles } from './styles';
 
@@ -92,7 +94,11 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
   // ---- composing ----------------------------------------------------------------
 
   let mode: 'message' | 'note' = 'message';
+  let replyTo: ChatterMessage | null = null;
   const box = el('textarea', { class: 'fd-input', rows: '3' });
+  // The mention list takes its keys first: Enter picks a person, Escape closes the list, not the composer.
+  const mentioning = mentions(context, box);
+  const replying = el('p', { class: 'fd-replying', hidden: '' });
   const post = el('button', { type: 'button', class: 'fd-button fd-button-primary' });
   const cancel = el('button', { type: 'button', class: 'fd-button' }, labels.cancel);
   const problem = el('p', { class: 'fd-chatter-problem', role: 'alert', hidden: '' });
@@ -103,11 +109,14 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
   const files = composerFiles(context, say);
   const actions = el('div', { class: 'fd-composer-actions' }, post, cancel);
   if (files.element) actions.append(el('span', { class: 'fd-spacer' }), files.element);
-  const composer = el('div', { class: 'fd-composer', hidden: '' }, box, files.chips, problem, actions);
+  const composer = el('div', { class: 'fd-composer', hidden: '' }, replying, box, mentioning.list, files.chips, problem, actions);
   files.takeDropsOn(composer);
 
-  function openComposer(kind: 'message' | 'note') {
+  function openComposer(kind: 'message' | 'note', answering: ChatterMessage | null = null) {
     mode = kind;
+    replyTo = answering;
+    replying.hidden = !answering;
+    replying.textContent = answering ? fill(labels.replyingTo, { name: answering.author?.name ?? '' }) : '';
     composer.hidden = false;
     composer.classList.toggle('fd-composer-note', kind === 'note');
     box.placeholder = kind === 'note' ? labels.forTeam : labels.forFollowers;
@@ -119,7 +128,9 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
   function closeComposer() {
     composer.hidden = true;
     box.value = '';
+    replyTo = null;
     files.clear();
+    mentioning.reset();
   }
   async function submit() {
     const current = record;
@@ -128,7 +139,14 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
     if (!current || (!box.value.trim() && !attachments.length) || post.disabled || files.busy()) return;
     post.disabled = true;
     try {
-      await options.source.post(current, { kind: mode, body: box.value.trim() ? textToHtml(box.value) : '', attachments });
+      const mentioned = mentioning.picked();
+      await options.source.post(current, {
+        kind: mode,
+        body: box.value.trim() ? textToHtml(box.value) : '',
+        attachments,
+        ...(replyTo ? { parentId: replyTo.id } : {}),
+        ...(mentioned.length ? { mentions: mentioned } : {}),
+      });
       closeComposer();
       await load();
     } catch (error) {
@@ -160,6 +178,9 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
     return el('span', { class: 'fd-avatar-initials', 'aria-hidden': 'true' }, initials(person?.name ?? '?'));
   }
 
+  /** The messages on show, by id: an answer names whom it answers. */
+  let shown = new Map<ChatterMessage['id'], ChatterMessage>();
+
   function messageItem(message: ChatterMessage): HTMLElement {
     const head = el(
       'div',
@@ -171,6 +192,8 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
     const body = el('div', { class: 'fd-message-body' });
     body.innerHTML = sanitizeHtml(message.body, doc);
     const content = el('div', { class: 'fd-message-content' }, head);
+    const parent = message.parentId != null ? shown.get(message.parentId) : undefined;
+    if (parent) content.append(el('p', { class: 'fd-message-parent' }, fill(labels.replyingTo, { name: parent.author?.name ?? '' })));
     if (message.body) content.append(body);
     if (message.tracking?.length) {
       content.append(
@@ -182,6 +205,13 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
       );
     }
     if (message.attachments?.length) content.append(attachmentList(context, message.attachments));
+    // An event is history, not something to answer or react to.
+    if (message.kind !== 'event') {
+      const reply = el('button', { type: 'button', class: 'fd-message-reply', 'aria-label': labels.reply }, '↩');
+      reply.addEventListener('click', () => openComposer('message', message));
+      const reactions = reactionBar(context, message.id, message.reactions ?? []);
+      content.append(el('div', { class: 'fd-message-actions' }, ...(reactions ? [reactions] : []), reply));
+    }
     return el('li', { class: `fd-message fd-message-${message.kind}`, 'data-message': String(message.id) }, avatar(message.author), content);
   }
 
@@ -197,6 +227,7 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
     }
     const messages = await options.source.messages(current);
     if (destroyed || record !== current) return; // another record, or gone, meanwhile
+    shown = new Map(messages.map((message) => [message.id, message]));
     list.replaceChildren(...messages.map(messageItem));
     empty.hidden = messages.length > 0;
   }

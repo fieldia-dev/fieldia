@@ -42,6 +42,24 @@ a.fd-attachment-file:hover { border-color: var(--fd-accent); }
 .fd-attachment-size { color: var(--fd-muted); font-size: 12px; }
 .fd-attachment-remove { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 4px; }
 .fd-attachment-remove:hover { color: var(--fd-text); background: var(--fd-page); }
+.fd-replying, .fd-message-parent { margin: 0; color: var(--fd-muted); font-size: 12.5px; }
+.fd-message-parent::before, .fd-replying::before { content: "↩ "; }
+.fd-message-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fd-reactions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; position: relative; }
+.fd-reaction, .fd-reaction-add, .fd-message-reply, .fd-reaction-picker button {
+  font: inherit; font-size: 13px; line-height: 1; padding: 4px 8px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--fd-border); background: var(--fd-surface); color: var(--fd-muted);
+}
+.fd-reaction[aria-pressed="true"] { border-color: var(--fd-accent); background: var(--fd-accent-soft); color: var(--fd-text); }
+.fd-reaction-add, .fd-message-reply { opacity: 0.75; }
+.fd-message:hover .fd-reaction-add, .fd-message:hover .fd-message-reply, .fd-reaction-add:focus-visible, .fd-message-reply:focus-visible { opacity: 1; }
+.fd-reaction-picker { display: flex; gap: 2px; padding: 4px; border: 1px solid var(--fd-border); border-radius: 999px; background: var(--fd-surface); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.fd-reaction-picker button { border: none; padding: 4px 6px; font-size: 16px; }
+.fd-reaction-picker button:hover { background: var(--fd-page); }
+.fd-mentions { list-style: none; margin: 0; padding: 4px 0; border: 1px solid var(--fd-border); border-radius: var(--fd-radius); background: var(--fd-surface); max-width: 280px; box-shadow: 0 6px 18px rgba(0,0,0,0.1); }
+.fd-mentions [role=option] { padding: 6px 12px; cursor: pointer; }
+.fd-mentions [role=option].fd-active, .fd-mentions [role=option]:hover { background: var(--fd-accent-soft); }
+.fd-mentions .fd-empty { padding: 6px 12px; color: var(--fd-muted); }
 `;
 
 /** Puts the chatter's look in the document once. */

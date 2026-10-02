@@ -176,3 +176,57 @@ describe('attachments', () => {
     expect(button(host, 'Attach a file')).toBeUndefined();
   });
 });
+
+describe('reactions, replies and mentions', () => {
+  it('shows each message’s reactions, and turns the person’s own on and off', async () => {
+    const chatter = source();
+    const host = await mount(chatter);
+    const first = () => messages(host)[0];
+    (first().querySelector('button[aria-label="Add a reaction"]') as HTMLButtonElement).click();
+    (first().querySelector('.fd-reaction-picker button[data-emoji="🎉"]') as HTMLButtonElement).click();
+    await until(() => first().querySelector('.fd-reaction'));
+    const chip = first().querySelector('.fd-reaction') as HTMLButtonElement;
+    expect(chip.textContent).toBe('🎉 1');
+    expect(chip.getAttribute('aria-pressed')).toBe('true');
+    chip.click();
+    await until(() => !first().querySelector('.fd-reaction'));
+    expect(first().querySelector('.fd-reaction')).toBeNull();
+  });
+
+  it('offers no reactions when the source cannot keep them', async () => {
+    const host = await mount({ ...source(), react: undefined });
+    expect(messages(host)[0].querySelector('button[aria-label="Add a reaction"]')).toBeNull();
+  });
+
+  it('answers a message, saying whom to, and the answer says so too', async () => {
+    const chatter = source();
+    const host = await mount(chatter);
+    (messages(host)[0].querySelector('button[aria-label="Reply"]') as HTMLButtonElement).click();
+    expect(host.querySelector('.fd-composer .fd-replying')?.textContent).toBe('Replying to Mona Adel');
+    type(host.querySelector('.fd-composer textarea') as HTMLTextAreaElement, 'Thanks, received.');
+    button(host, 'Send')!.click();
+    await until(() => chatter.posted.length);
+    await flush();
+    expect(chatter.posted[0].parentId).toBe(2);
+    expect(messages(host)[0].querySelector('.fd-message-parent')?.textContent).toBe('Replying to Mona Adel');
+  });
+
+  it('suggests people after an @, takes the one picked, and sends who was mentioned', async () => {
+    const chatter = source();
+    const host = await mount(chatter);
+    button(host, 'Send message')!.click();
+    const box = host.querySelector('.fd-composer textarea') as HTMLTextAreaElement;
+    type(box, 'Over to you @mo');
+    box.setSelectionRange(box.value.length, box.value.length);
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    await until(() => host.querySelector('.fd-mentions [role=option]'));
+    const options = [...host.querySelectorAll('.fd-mentions [role=option]')].map((o) => o.textContent);
+    expect(options).toEqual(['Mona Adel']);
+    box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(box.value).toBe('Over to you @Mona Adel ');
+    expect(host.querySelector('.fd-mentions')?.hasAttribute('hidden')).toBe(true);
+    button(host, 'Send')!.click();
+    await until(() => chatter.posted.length);
+    expect(chatter.posted[0]).toEqual(expect.objectContaining({ mentions: [mona] }));
+  });
+});

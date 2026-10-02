@@ -67,7 +67,7 @@ export function createMemoryChatter(options: MemoryChatterOptions): ChatterSourc
       });
     },
     async post(record, message) {
-      return add(record, { kind: message.kind, body: message.body, attachments: message.attachments ?? [], parentId: message.parentId ?? null });
+      return add(record, { kind: message.kind, body: message.body, attachments: message.attachments ?? [], parentId: message.parentId ?? null, mentions: message.mentions ?? [] });
     },
     async upload(_record, file) {
       // Kept as a data address, so a preview needs nothing else.
