@@ -143,6 +143,67 @@ describe('the grid', () => {
   });
 });
 
+describe('editing a whole line', () => {
+  const rowMode = JSON.parse(JSON.stringify(order)) as Page & { layout: any };
+  rowMode.layout.children[0].children[1].editMode = 'row';
+  const editingCells = (api: ReturnType<typeof gridApiOf>) => api?.getEditingCells().map((c) => c.column?.getColId());
+
+  it('opens every editable cell of the line at once', async () => {
+    const { api } = await mount(rowMode);
+    api?.startEditingCell({ rowIndex: 1, colKey: 'qty' });
+    await frames();
+    expect(editingCells(api)?.sort()).toEqual(['delivery', 'name', 'price', 'product_id', 'qty'].sort());
+  });
+
+  it('edits a link inside its cell, its list floating in the grid’s own box where nothing clips it', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { box, api } = await mount(rowMode);
+    api?.startEditingCell({ rowIndex: 1, colKey: 'product_id' });
+    await frames();
+    expect(box.querySelector('.ag-popup-editor')).toBeNull();
+    const input = box.querySelector('.ag-row[row-index="1"] .ag-cell[col-id="product_id"] input') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    const list = box.querySelector('.fd-grid-floating-list') as HTMLElement;
+    expect(list.getAttribute('role')).toBe('listbox');
+    expect(list.parentElement).toBe(box);
+    expect(warn.mock.calls.flat().join(' ')).not.toMatch(/#98/);
+    api?.stopEditing();
+    await frames();
+    expect(box.querySelector('.fd-grid-floating-list')).toBeNull();
+    warn.mockRestore();
+  });
+
+  it('puts the whole line back on Escape, whichever editor the key was pressed in', async () => {
+    const { box, form, api } = await mount(rowMode);
+    api?.startEditingCell({ rowIndex: 1, colKey: 'qty' });
+    await frames();
+    const inputs = [...box.querySelectorAll('.ag-cell-inline-editing input')] as HTMLInputElement[];
+    const name = box.querySelector('.ag-row[row-index="1"] .ag-cell[col-id="name"] input') as HTMLInputElement;
+    const qty = box.querySelector('.ag-row[row-index="1"] .ag-cell[col-id="qty"] input') as HTMLInputElement;
+    expect(inputs.length).toBeGreaterThan(2);
+    name.value = 'Brass';
+    name.dispatchEvent(new Event('input', { bubbles: true }));
+    qty.value = '9';
+    qty.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(formLines(form)[1].values['name']).toBe('Brass');
+    qty.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await frames();
+    expect(api?.getEditingCells()).toEqual([]);
+    expect(formLines(form)[1].values).toEqual(expect.objectContaining({ name: 'LED, warm white', qty: 6 }));
+  });
+
+  it('takes away a line added a moment ago when Escape is pressed in any of its cells', async () => {
+    const { box, form, api } = await mount(rowMode);
+    (box.querySelector('[data-add="line"]') as HTMLButtonElement).click();
+    await frames();
+    expect(editingCells(api)?.length).toBeGreaterThan(1);
+    const name = box.querySelector('.ag-row[row-index="2"] .ag-cell[col-id="name"] input') as HTMLInputElement;
+    name.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await frames();
+    expect(formLines(form)).toHaveLength(2);
+  });
+});
+
 describe('an empty grid', () => {
   it('shows its columns and no message, and its first line is added from the button and edited at once', async () => {
     const { box, form, api } = await mount(order, []);

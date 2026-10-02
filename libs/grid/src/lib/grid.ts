@@ -44,12 +44,18 @@ interface CellContext {
   defs: Record<string, LineField>;
   labels: WidgetLabels;
   registry?: Record<string, WidgetFactory>;
-  /** An edit ended: kept, or cancelled with Escape (then the line goes back to how it was). */
-  finish(key: string, cancelled: Values | null): void;
+  /** Escape was pressed while editing this line: put it back as it was when the edit began. */
+  cancel(key: string, before: Values): void;
+  /** An editor of this line closed. With a whole line open, several close at once. */
+  finish(key: string): void;
   /** How the lines tell sections and notes from items, when they do. */
   kinds?: LineKinds;
   /** What a line is: a section, a note, or (null) an item. */
   kindOf(line: Line | undefined): 'section' | 'note' | null;
+  /** A whole line is edited at once: AG Grid then takes no popup editors. */
+  rowMode: boolean;
+  /** The grid's own box, which nothing clips: where a link's list floats while its line is open. */
+  layer: HTMLElement;
 }
 
 /** The grid's own columns (the drag handle, the delete button) start with two underscores. */
@@ -153,11 +159,11 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   private params!: ICellEditorParams<Line> & { cell: CellContext; subfield: string };
   /** The line as it was when the edit began, for Escape to put back. */
   private before: Values = {};
-  private cancelled = false;
   /** The line field this editor writes: the column's, or a section's or note's text. */
   private column = '';
   private def!: LineField;
   private note: HTMLTextAreaElement | null = null;
+  private floating: { list: HTMLElement; watch: MutationObserver } | null = null;
 
   init(params: ICellEditorParams<Line> & { cell: CellContext; subfield: string }) {
     this.params = params;
@@ -185,6 +191,7 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     this.box.setAttribute('aria-label', def.label);
     this.box.append(this.widget.element);
     if (kind === 'note') this.growing(this.box.querySelector('textarea'));
+    if (cell.rowMode) this.floatList();
     if (this.isPopup()) {
       // AG Grid places a popup over its cell but leaves its size to the editor.
       const { width, height } = params.eGridCell.getBoundingClientRect();
@@ -195,7 +202,16 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     // A key the widget used itself (Enter picking from its list, Escape closing it) is not the grid's.
     this.box.addEventListener('keydown', (event) => {
       if (event.defaultPrevented) _stopPropagationForAgGrid(event);
-      else if (event.key === 'Escape') this.cancelled = true;
+      else if (event.key === 'Escape') params.cell.cancel(key, this.before);
+    });
+    // Like a spreadsheet, a cell reached from the keyboard has its text selected,
+    // so typing replaces it; a click still puts the caret where it lands.
+    let pointing = false;
+    this.box.addEventListener('pointerdown', () => (pointing = true));
+    this.box.addEventListener('focusin', (event) => {
+      const input = event.target;
+      if (!pointing && input instanceof HTMLInputElement && input.type !== 'checkbox' && input.type !== 'radio') input.select();
+      pointing = false;
     });
     const show = () => {
       const line = this.line();
@@ -227,6 +243,30 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
       this.params.api.stopEditing();
     });
   }
+  /**
+   * In a cell, a link's list would be cut off by the rows around it, so it
+   * floats in the grid's own box, under its input, while the line is open.
+   */
+  private floatList() {
+    const list = this.box.querySelector<HTMLElement>('.fd-listbox');
+    if (!list) return;
+    const { layer, document: doc } = { layer: this.params.cell.layer, document: this.box.ownerDocument };
+    list.classList.add('fd-grid-floating-list');
+    layer.append(list);
+    const place = () => {
+      if (list.hidden || !this.box.isConnected) return;
+      const at = (this.box.querySelector('input') ?? this.box).getBoundingClientRect();
+      const frame = layer.getBoundingClientRect();
+      const rtl = doc.defaultView?.getComputedStyle(layer).direction === 'rtl';
+      list.style.insetBlockStart = `${at.bottom - frame.top + 2}px`;
+      list.style.insetInlineStart = `${rtl ? frame.right - at.right : at.left - frame.left}px`;
+      list.style.minWidth = `${this.params.eGridCell.getBoundingClientRect().width}px`;
+    };
+    const watch = new MutationObserver(place);
+    watch.observe(list, { attributes: true, attributeFilter: ['hidden'], childList: true });
+    this.floating = { list, watch };
+    place();
+  }
   private resize() {
     const area = this.note;
     if (!area) return;
@@ -254,6 +294,8 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     return this.box;
   }
   afterGuiAttached() {
+    // With a whole line open, every editor is attached: only the one clicked takes the focus.
+    if (this.params.cellStartedEdit === false) return;
     this.widget.focus();
     if (this.note) {
       this.note.setSelectionRange(this.note.value.length, this.note.value.length);
@@ -266,8 +308,9 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   getValue() {
     return this.line()?.values[this.column];
   }
-  /** Lists that open below their input need room the cell does not have. */
+  /** Lists that open below their input need room the cell does not have (a whole open line floats them instead). */
   isPopup() {
+    if (this.params.cell.rowMode) return false;
     const type = this.def.type;
     return type === 'many2one' || type === 'many2many' || type === 'reference';
   }
@@ -276,9 +319,11 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   }
   destroy() {
     this.leave();
+    this.floating?.watch.disconnect();
+    this.floating?.list.remove();
     this.widget.destroy?.();
     const { node, api, cell, data } = this.params;
-    cell.finish(data.key, this.cancelled ? this.before : null);
+    cell.finish(data.key);
     // A note's row grew by hand while it was typed; drawing it afresh measures
     // it again from its text (resetting the height would make it one line tall).
     if (this.note) {
@@ -316,10 +361,22 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const values = Object.fromEntries(totals.map((c) => [c, items.reduce((sum, line) => sum + Number(line.values[c] ?? 0), 0)]));
     return { key: '__totals', values: { ...(items[0]?.values ?? {}), ...values } };
   };
-  const cell: CellContext = { form, field: name, fieldId: node.id, defs: def.fields, labels, finish: () => undefined, kinds, kindOf };
+  const element = document.createElement('div');
+  const cell: CellContext = {
+    form,
+    field: name,
+    fieldId: node.id,
+    defs: def.fields,
+    labels,
+    cancel: () => undefined,
+    finish: () => undefined,
+    kinds,
+    kindOf,
+    rowMode: node.editMode === 'row',
+    layer: element,
+  };
   installGridStyles(document);
 
-  const element = document.createElement('div');
   element.className = 'fd-grid-lines';
   element.id = id;
   element.setAttribute('role', 'group');
@@ -358,8 +415,15 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   };
   /** Lines the grid added that nobody has finished an edit in yet: Escape takes them away again. */
   const fresh = new Set<string>();
-  cell.finish = (key, before) => {
+  /** Lines Escape was pressed in, with how they were: the first of their editors to close acts on it. */
+  const cancelling = new Map<string, Values>();
+  cell.cancel = (key, before) => {
+    if (!cancelling.has(key)) cancelling.set(key, before);
+  };
+  cell.finish = (key) => {
+    const before = cancelling.get(key);
     if (!before) return void fresh.delete(key);
+    cancelling.delete(key);
     if (fresh.delete(key)) return form.removeLine(name, key);
     const current = lines();
     if (current.some((l) => l.key === key)) form.setValue(name, current.map((l) => (l.key === key ? { ...l, values: before } : l)));
@@ -520,6 +584,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       // An empty table shows its Add a line button below, not a message inside.
       suppressNoRowsOverlay: true,
       singleClickEdit: true,
+      // A page may ask for a whole line to open at once.
+      editType: node.editMode === 'row' ? 'fullRow' : undefined,
       stopEditingWhenCellsLoseFocus: true,
       // Like a spreadsheet: Enter keeps what was typed and moves down.
       enterNavigatesVerticallyAfterEdit: true,

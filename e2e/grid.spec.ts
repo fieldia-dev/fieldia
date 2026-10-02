@@ -9,6 +9,17 @@ import { VARIANTS } from './variants';
 
 const grid = (page: Page) => page.locator('[data-node="f-lines"]');
 const cell = (page: Page, row: number, col: string) => grid(page).locator(`.ag-row[row-index="${row}"] .ag-cell[col-id="${col}"]`);
+/**
+ * Add to the end of a cell's text the way a person does: once the cell has the
+ * focus and its text is selected, ArrowRight (End only scrolls on a Mac), then type.
+ */
+async function addAtEnd(page: Page, input: Locator, text: string) {
+  await expect(input).toBeFocused();
+  await expect.poll(() => input.evaluate((el: HTMLInputElement) => el.selectionEnd === el.value.length && el.selectionStart === 0)).toBe(true);
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.type(text);
+}
+
 /** Whether a cell's text fits inside it, padding included: cut-off text is clipped, not overflowing. */
 const textFits = (el: Element) => {
   const probe = document.createElement('span');
@@ -527,6 +538,65 @@ for (const variant of VARIANTS) {
       const frame = (await grid(page).locator('.ag-root-wrapper').boundingBox())!;
       const add = (await grid(page).getByRole('button', { name: '+ Add a line' }).boundingBox())!;
       expect(add.y - (frame.y + frame.height)).toBeLessThanOrEqual(12);
+    });
+  });
+
+  test.describe(`${variant} · a grid that opens whole lines`, () => {
+    const deliveries = (page: Page) => page.locator('[data-node="f-deliveries"]');
+    const at = (page: Page, row: number, col: string) => deliveries(page).locator(`.ag-row[row-index="${row}"] .ag-cell[col-id="${col}"]`);
+    const stored = (page: Page) =>
+      page.evaluate(() => ((window as any).fieldiaDemo.handle.form.getState().values['delivery_ids'] as { values: Record<string, unknown> }[]).map((l) => l.values));
+
+    test.beforeEach(async ({ page }) => {
+      await open(page, variant, 'page=order&skin=underline');
+      await page.getByRole('tab', { name: 'Other information' }).click();
+      await expect(at(page, 0, 'place')).toHaveText('Nile Towers, 12th floor');
+    });
+
+    test('a click opens every cell of the line; Tab walks them; the carrier list floats free; Enter keeps the line', async ({ page }) => {
+      await at(page, 0, 'place').click();
+      await expect(deliveries(page).locator('.ag-cell-inline-editing')).toHaveCount(4);
+      await expect(deliveries(page).locator('.ag-popup-editor')).toHaveCount(0);
+      const place = at(page, 0, 'place').locator('input');
+      await addAtEnd(page, place, ', gate B');
+      await page.keyboard.press('Tab');
+      const carrier = at(page, 0, 'carrier_id').locator('input');
+      await expect(carrier).toBeFocused();
+      // Reached from the keyboard, the carrier's text is selected, so typing replaces it.
+      expect(await carrier.evaluate((el: HTMLInputElement) => [el.selectionStart, el.selectionEnd, el.value.length])).toEqual([0, 11, 11]);
+      await page.keyboard.type('bos');
+      const bosta = deliveries(page).getByRole('option', { name: 'Bosta' });
+      await expect(bosta).toBeVisible();
+      const onTop = await bosta.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return [r.top + r.height / 2, r.bottom - 2].every((y) => {
+          const hit = document.elementFromPoint(r.left + r.width / 2, y);
+          return !!hit && (hit === el || el.contains(hit));
+        });
+      });
+      expect(onTop, 'the carrier list is cut off').toBe(true);
+      await screen(page, `${variant}-grid-row-mode`);
+      await page.keyboard.press('ArrowDown');
+      await page.keyboard.press('Enter'); // picks Bosta: the line stays open
+      await expect(carrier).toHaveValue('Bosta');
+      await expect(deliveries(page).locator('.ag-cell-inline-editing')).toHaveCount(4);
+      await page.keyboard.press('Enter'); // keeps the line
+      await expect(deliveries(page).locator('.ag-cell-inline-editing')).toHaveCount(0);
+      expect((await stored(page))[0]).toEqual(expect.objectContaining({ place: 'Nile Towers, 12th floor, gate B', carrier_id: { id: 2, label: 'Bosta' } }));
+      await expect(at(page, 0, 'carrier_id')).toHaveText('Bosta');
+    });
+
+    test('Escape puts the whole line back, whichever cell it was pressed in', async ({ page }) => {
+      await at(page, 1, 'boxes').click();
+      await page.keyboard.type('30');
+      await page.keyboard.press('Shift+Tab');
+      await page.keyboard.press('Shift+Tab');
+      await addAtEnd(page, at(page, 1, 'place').locator('input'), ', loading bay');
+      expect((await stored(page))[1]).toEqual(expect.objectContaining({ boxes: 30, place: 'Nile Towers, 12th floor, loading bay' }));
+      await page.keyboard.press('Escape');
+      await expect(deliveries(page).locator('.ag-cell-inline-editing')).toHaveCount(0);
+      expect((await stored(page))[1]).toEqual(expect.objectContaining({ boxes: 3, place: 'Nile Towers, 12th floor' }));
+      await expect(at(page, 1, 'boxes')).toHaveText('3');
     });
   });
 }

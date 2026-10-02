@@ -45,6 +45,7 @@ export const GRID_CSS = /* css */ `
   box-shadow: var(--ag-cell-editing-shadow);
 }
 /* Its list is as wide as its choices need, never narrower than the cell. */
+.fd-grid-lines > .fd-grid-floating-list { position: absolute; inset-inline-end: auto; width: max-content; max-width: min(420px, 90vw); z-index: 30; }
 .fd-grid-editor .fd-listbox { inset-inline-end: auto; width: max-content; min-width: 100%; max-width: min(420px, 90vw); }
 /* A section heads the lines below it; a note is a remark between them, every line of it shown. */
 .fd-grid-lines .fd-grid-section { background: var(--fd-page); }
