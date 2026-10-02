@@ -144,6 +144,18 @@ for (const variant of VARIANTS) {
       await screen(page, `${variant}-filter-any`, { viewport: true });
     });
 
+    test('the page speaks through the app’s own catalog, in its messages too, and leaves what is typed alone', async ({ page }) => {
+      await open(page, variant, 'page=signup&skin=outlined&translate=fr&locale=fr');
+      await expect(page.getByRole('heading', { name: 'Inscription à l’atelier' })).toBeVisible();
+      await expect(node(page, 'f-name').locator('.fd-label')).toHaveText('Nom complet');
+      await expect(node(page, 'f-role').locator('option').nth(1)).toHaveText('Développeur');
+      await node(page, 'f-company').locator('input').fill('Full name');
+      await page.getByRole('button', { name: 'Envoyer' }).click();
+      await expect(node(page, 'f-name').locator('.fd-error')).toContainText('Nom complet');
+      await expect(node(page, 'f-company').locator('input')).toHaveValue('Full name');
+      await screen(page, `${variant}-translated-page`, { viewport: true });
+    });
+
     test('no ✓ unless the page asks', async ({ page }) => {
       await open(page, variant, 'page=signup&skin=outlined');
       await node(page, 'f-name').locator('input').fill('Sara Hassan');

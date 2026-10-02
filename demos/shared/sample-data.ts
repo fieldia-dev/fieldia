@@ -35,7 +35,8 @@ export function pageFromQuery(params: URLSearchParams): Page {
  * Viewer choices the query string may make: `enterToNext=1` makes Enter move to
  * the next field, `showValid=1` puts a ✓ by each field filled in right, and
  * `saveStatus=toast` or `bar` moves the save's progress, `readonly=1` locks the
- * whole form and `editSwitch=1` adds Edit and Done.
+ * whole form, `editSwitch=1` adds Edit and Done, and `translate=fr` shows the
+ * sign-up in French through an app's own catalog.
  */
 export function optionsFromQuery(params: URLSearchParams): {
   keys?: { enterMovesToNext: boolean };
@@ -43,9 +44,11 @@ export function optionsFromQuery(params: URLSearchParams): {
   saveStatus?: 'inline' | 'toast' | 'bar';
   readonly?: boolean;
   editSwitch?: boolean;
+  translate?: (text: string) => string;
 } {
   const saveStatus = params.get('saveStatus');
   return {
+    ...(params.get('translate') === 'fr' ? { translate: (text: string) => APP_CATALOG_FR[text] ?? text } : {}),
     ...(params.get('readonly') === '1' ? { readonly: true } : {}),
     ...(params.get('editSwitch') === '1' ? { editSwitch: true } : {}),
     ...(params.get('enterToNext') === '1' ? { keys: { enterMovesToNext: true } } : {}),
@@ -53,6 +56,22 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(saveStatus === 'toast' || saveStatus === 'bar' ? { saveStatus } : {}),
   };
 }
+
+/** An app's own catalog, as an app keeps it: the sign-up's words in French. */
+const APP_CATALOG_FR: Record<string, string> = {
+  'Workshop sign-up': 'Inscription à l’atelier',
+  'One day on building forms that people finish. Cairo, 14 November.': 'Une journée pour construire des formulaires que l’on termine. Le Caire, 14 novembre.',
+  'About you': 'À propos de vous',
+  'Full name': 'Nom complet',
+  Email: 'E-mail',
+  'We send the joining details here.': 'Nous envoyons ici les détails pour nous rejoindre.',
+  Company: 'Entreprise',
+  'Your role': 'Votre rôle',
+  Developer: 'Développeur',
+  Designer: 'Designer',
+  Manager: 'Manager',
+  'Something else': 'Autre chose',
+};
 
 /** The pages records of other models open in, in a dialog: a customer from a link to it. */
 export const relatedPages: Record<string, Page> = { partner: customer as Page };

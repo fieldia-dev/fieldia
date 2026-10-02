@@ -101,8 +101,12 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly readonly = input<boolean>(false);
   /** An Edit button that unlocks the form, and a Done that saves and locks it. */
   readonly editSwitch = input<boolean>(false);
-  /** The app's own translator: every word of the page goes through it. */
-  readonly translate = input<ViewerOptions['translate']>(undefined);
+  /**
+   * The app's own translator: every word of the page goes through it. Named
+   * `translator` here because a `[translate]` binding goes to the element's own
+   * HTML `translate` attribute, never to an input.
+   */
+  readonly translator = input<ViewerOptions['translate']>(undefined);
 
   readonly ready = output<ViewerHandle>();
   readonly action = output<ActionRequest>();
@@ -213,7 +217,7 @@ export class FieldiaFormComponent implements OnDestroy {
       saveStatus: this.saveStatus(),
       readonly: this.readonly(),
       editSwitch: this.editSwitch(),
-      translate: this.translate(),
+      translate: this.translator(),
       onAction: (request) => this.action.emit(request),
     });
     this.ready.emit(this.handle);

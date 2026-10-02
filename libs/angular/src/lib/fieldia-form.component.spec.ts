@@ -208,7 +208,7 @@ describe('<fieldia-form> for Angular', () => {
   it('shows the page in the app’s own words', async () => {
     const fixture = TestBed.createComponent(FieldiaFormComponent);
     fixture.componentRef.setInput('page', page('signup'));
-    fixture.componentRef.setInput('translate', (text: string) => (text === 'Full name' ? 'Nom complet' : text));
+    fixture.componentRef.setInput('translator', (text: string) => (text === 'Full name' ? 'Nom complet' : text));
     fixture.autoDetectChanges();
     await fixture.whenStable();
     expect(document.querySelector('[data-node="f-name"] .fd-label')?.textContent).toBe('Nom complet');
