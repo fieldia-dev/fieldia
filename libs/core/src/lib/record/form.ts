@@ -500,16 +500,18 @@ export function createForm(options: FormOptions): Form {
       if (from < 0) throw new Error(`"${field}" has no line "${key}"`);
       const target = Math.max(0, Math.min(to, lines.length - 1));
       if (target === from) return;
+      // The numbers can be reused only if they rise with the lines as shown.
+      const before = lines.map((line) => line.values[sequence]);
+      const trusted = before.every((n, i) => typeof n === 'number' && (i === 0 || n > (before[i - 1] as number)));
       lines.splice(target, 0, ...lines.splice(from, 1));
-      const numbers = lines.map((line) => line.values[sequence]);
-      const distinct = numbers.every((n) => typeof n === 'number') && new Set(numbers).size === numbers.length;
       // The lines that moved take the numbers they held between them, in their
-      // new order; numbers that cannot be trusted are given afresh, 1, 2, 3…
+      // new order, and the rest keep theirs; otherwise every line is numbered
+      // afresh, 1, 2, 3…, so the order saved is the order shown.
       const low = Math.min(from, target);
       const high = Math.max(from, target);
-      const pool = distinct ? (numbers.slice(low, high + 1) as number[]).sort((a, b) => a - b) : [];
+      const pool = trusted ? (before.slice(low, high + 1) as number[]) : [];
       const renumbered = lines.map((line, i) => {
-        const value = distinct ? (i >= low && i <= high ? pool[i - low] : line.values[sequence]) : i + 1;
+        const value = trusted ? (i >= low && i <= high ? pool[i - low] : line.values[sequence]) : i + 1;
         return value === line.values[sequence] ? line : { ...line, values: { ...line.values, [sequence]: value } };
       });
       writeValues({ ...(state.values as Values), [field]: renumbered });

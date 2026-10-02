@@ -268,8 +268,12 @@ describe('createForm — the order of lines', () => {
     expect(form.changes().lines['line_ids'].map((op) => (op.op === 'update' ? op.id : null))).toEqual([3, 2]);
   });
 
-  it('numbers every line afresh when they had no numbers, or the same one twice', async () => {
-    const form = createForm({ page: page('order'), dataSource: orderSource([null, 5, 5, null]), recordId: 1 });
+  it.each([
+    ['had no numbers', [null, 5, 6, null]],
+    ['shared a number', [5, 5, 6, 7]],
+    ['were numbered out of their order', [10, 30, 20, 40]],
+  ])('numbers every line afresh when the lines %s, so the saved order is the one shown', async (_, sequences) => {
+    const form = createForm({ page: page('order'), dataSource: orderSource(sequences), recordId: 1 });
     await form.load();
     form.moveLine('line_ids', 'a', 3);
     expect(order(form)).toEqual([['b', 1], ['c', 2], ['d', 3], ['a', 4]]);
