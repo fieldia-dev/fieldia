@@ -28,6 +28,8 @@ export interface QuestionKind {
   label: string;
   field: (label: string) => Field;
   widget?: string;
+  /** Where the screen editor's palette lists it; a kind for records is refused in a survey. */
+  group?: 'records' | 'more';
 }
 
 const firstOption = (): Option[] => [{ value: 'option_1', label: 'Option 1' }];
@@ -48,6 +50,100 @@ export const QUESTION_KINDS: readonly QuestionKind[] = [
   { id: 'phone', label: 'Phone', field: (label) => ({ type: 'char', label }), widget: 'phone' },
   { id: 'file', label: 'File upload', field: (label) => ({ type: 'binary', label, maxSize: 10 * 1024 * 1024 }) },
 ];
+
+/** Kinds for app screens only: links to other records, a table of lines, and the fields a business record has. */
+export const SCREEN_KINDS: readonly QuestionKind[] = [
+  { id: 'link', label: 'Link to a record', group: 'records', field: (label) => ({ type: 'many2one', label, relation: 'contact' }) },
+  { id: 'links', label: 'Links to records', group: 'records', field: (label) => ({ type: 'many2many', label, relation: 'tag' }) },
+  {
+    id: 'lines',
+    label: 'Table of lines',
+    group: 'records',
+    field: (label) => ({ type: 'one2many', label, relation: 'line', fields: { name: { type: 'char', label: 'Description' }, quantity: { type: 'float', label: 'Quantity' } } }),
+    // The spreadsheet grid where the app has it (`gridWidgets`), the plain table where it does not.
+    widget: 'grid',
+  },
+  { id: 'amount', label: 'Amount', group: 'more', field: (label) => ({ type: 'monetary', label, currency: 'USD' }) },
+  { id: 'progress', label: 'Progress', group: 'more', field: (label) => ({ type: 'integer', label, min: 0, max: 100 }), widget: 'progressbar' },
+  {
+    id: 'status',
+    label: 'Status steps',
+    group: 'more',
+    field: (label) => ({ type: 'selection', label, options: [{ value: 'draft', label: 'Draft' }, { value: 'confirmed', label: 'Confirmed' }, { value: 'done', label: 'Done' }] }),
+    widget: 'statusbar',
+  },
+  { id: 'rich-text', label: 'Rich text', group: 'more', field: (label) => ({ type: 'html', label }) },
+  { id: 'keywords', label: 'Keywords', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'tags' },
+  { id: 'website', label: 'Website', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'url' },
+  { id: 'image', label: 'Image', group: 'more', field: (label) => ({ type: 'image', label }) },
+];
+
+/** The kind a field was made as, from its type and widget; null for one no kind makes. */
+export function kindOfField(field: Field, node: FieldNode): string | null {
+  switch (field.type) {
+    case 'char':
+      return node.widget === 'email' ? 'email' : node.widget === 'phone' ? 'phone' : node.widget === 'url' ? 'website' : node.widget === 'tags' ? 'keywords' : 'short-answer';
+    case 'text':
+      return 'paragraph';
+    case 'html':
+      return 'rich-text';
+    case 'selection':
+      return field.multiple ? 'checkboxes' : node.widget === 'radio' ? 'multiple-choice' : node.widget === 'statusbar' ? 'status' : 'dropdown';
+    case 'integer':
+      return node.widget === 'rating' ? 'rating' : node.widget === 'scale' ? 'scale' : node.widget === 'progressbar' ? 'progress' : 'number';
+    case 'float':
+      return 'number';
+    case 'monetary':
+      return 'amount';
+    case 'date':
+      return 'date';
+    case 'datetime':
+      return 'date-time';
+    case 'boolean':
+      return 'yes-no';
+    case 'binary':
+      return 'file';
+    case 'image':
+      return 'image';
+    case 'many2one':
+      return 'link';
+    case 'many2many':
+      return 'links';
+    case 'one2many':
+      return 'lines';
+    default:
+      return null;
+  }
+}
+
+/** A column of a table of lines, as the screen editor edits it. `name` is kept for a column that already has one. */
+export interface LineColumn {
+  name?: string;
+  label: string;
+  /** `other` keeps a column of a type the editor does not offer, such as a link, as it is. */
+  kind: 'text' | 'number' | 'date' | 'yes-no' | 'other';
+}
+const COLUMN_TYPES = { text: 'char', number: 'float', date: 'date', 'yes-no': 'boolean' } as const;
+
+/** The kind of column a line field is; a whole number and a float are both numbers. */
+export function columnKind(field: Field): LineColumn['kind'] {
+  switch (field.type) {
+    case 'char':
+    case 'text':
+      return 'text';
+    case 'integer':
+    case 'float':
+    case 'monetary':
+      return 'number';
+    case 'date':
+    case 'datetime':
+      return 'date';
+    case 'boolean':
+      return 'yes-no';
+    default:
+      return 'other';
+  }
+}
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), or a record's sheet. */
 export type PageKind = 'survey' | 'screen' | 'sheet';
@@ -183,6 +279,12 @@ export interface Designer {
   /** Put a section's fields in this order with these widths, as one edit (a canvas drag). */
   arrangeSection(sectionId: string, items: { id: string; colspan: number }[]): boolean;
   setPageInfo(info: { title?: string; description?: string }): boolean;
+  /** The records a link, links or a table of lines point to, by their model's name. */
+  setRelation(id: string, model: string): boolean;
+  /** An amount's currency, such as USD. */
+  setCurrency(id: string, code: string): boolean;
+  /** A table of lines' columns, in order. */
+  setLineColumns(id: string, columns: LineColumn[]): boolean;
   undo(): void;
   redo(): void;
   /** Publish the draft as the next version. Returns its number. */
@@ -199,7 +301,7 @@ class Refusal extends Error {}
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
 function kindOf(id: string): QuestionKind {
-  const kind = QUESTION_KINDS.find((k) => k.id === id);
+  const kind = [...QUESTION_KINDS, ...SCREEN_KINDS].find((k) => k.id === id);
   if (!kind) throw new Error(`Unknown question kind "${id}"`);
   return kind;
 }
@@ -289,6 +391,17 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     parent.children.push(node);
   }
 
+  function refuseInSurvey(draft: Page, kind: QuestionKind) {
+    if (kind.group === 'records' && draft.data.kind === 'responses') throw new Refusal('A survey has no records to link to or list: this kind is for app screens');
+  }
+
+  /** A field of the node, when it is one of the given types. */
+  function fieldOfType<T extends Field['type']>(draft: Page, id: string, types: T[], refusal: string): Extract<Field, { type: T }> {
+    const field = draft.fields[fieldNode(draft, id).field];
+    if (!(types as string[]).includes(field.type)) throw new Refusal(refusal);
+    return field as Extract<Field, { type: T }>;
+  }
+
   function fieldNode(draft: Page, id: string): FieldNode {
     const found = findNode(draft, id);
     if (!found || found.node.type !== 'field') throw new Refusal(`There is no question "${id}"`);
@@ -311,6 +424,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       const kind = kindOf(kindId);
       let created = '';
       const ok = apply((draft) => {
+        refuseInSurvey(draft, kind);
         const ids = allIds(draft);
         const field = nextName((name) => name in draft.fields, 'q', '_');
         const id = nextName((name) => ids.has(name), 'q', '-');
@@ -377,6 +491,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     changeKind(id, kindId) {
       const kind = kindOf(kindId);
       return apply((draft) => {
+        refuseInSurvey(draft, kind);
         const node = fieldNode(draft, id);
         const old = draft.fields[node.field] as Field & { help?: string; required?: boolean };
         const next = kind.field(old.label) as Field & { help?: string; required?: boolean };
@@ -650,6 +765,57 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
           }
         },
         `page:${Object.keys(info).join(',')}`
+      );
+    },
+
+    setRelation(id, model) {
+      return apply(
+        (draft) => {
+          const field = fieldOfType(draft, id, ['many2one', 'many2many', 'one2many'], 'Only a link, links or a table of lines point to records');
+          if (!model.trim()) throw new Refusal('Say which records it points to, such as contact');
+          field.relation = model.trim();
+        },
+        `relation:${id}`
+      );
+    },
+
+    setCurrency(id, code) {
+      return apply((draft) => {
+        const field = fieldOfType(draft, id, ['monetary'], 'Only an amount has a currency');
+        const currency = code.trim().toUpperCase();
+        if (!/^[A-Z]{3}$/.test(currency)) throw new Refusal('A currency is three letters, such as USD');
+        field.currency = currency;
+        delete field.currencyField;
+      });
+    },
+
+    setLineColumns(id, columns) {
+      return apply(
+        (draft) => {
+          const field = fieldOfType(draft, id, ['one2many'], 'Only a table of lines has columns');
+          if (!columns.length) throw new Refusal('A table of lines needs a column');
+          const old = field.fields;
+          const taken = new Set(columns.map((c) => c.name).filter((name): name is string => !!name && name in old));
+          const fields: typeof old = {};
+          for (const column of columns) {
+            let name = column.name && column.name in old ? column.name : null;
+            if (!name) {
+              // A new column is named after its label, as a backend names a field.
+              const base = slug(column.label || 'column', '_').replace(/^(\d)/, 'c_$1');
+              name = base;
+              for (let n = 2; taken.has(name); n++) name = `${base}_${n}`;
+              taken.add(name);
+            }
+            // A column of the same kind keeps its field: a whole number stays whole, a link stays a link.
+            const kept = old[name];
+            if (kept && columnKind(kept) === column.kind) fields[name] = { ...kept, label: column.label };
+            else if (column.kind === 'other') throw new Refusal('A new column is text, a number, a date, or yes or no');
+            else fields[name] = { type: COLUMN_TYPES[column.kind], label: column.label } as (typeof old)[string];
+          }
+          field.fields = fields;
+        },
+        // Typing in a column's label is one undo step, as in an option.
+        `columns:${id}:${columns.length}`
       );
     },
 

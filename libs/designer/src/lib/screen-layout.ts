@@ -37,8 +37,11 @@ export function heightOfRows(rows: number): number {
  */
 export function rowsOf(field: Field, node: FieldNode): number {
   switch (field.type) {
+    // About what each takes empty: a table's head and its Add a line, rich text's toolbar over a few lines. The canvas measures and grows from there.
     case 'one2many':
+      return rowsForHeight(180);
     case 'html':
+      return rowsForHeight(200);
     case 'json':
       return rowsForHeight(240);
     case 'text':

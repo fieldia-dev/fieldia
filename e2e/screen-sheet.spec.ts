@@ -24,6 +24,9 @@ test.describe('screen designer · record sheet', () => {
     // Two fields in a row: the cursor goes to each new label.
     await addField(page, 'email', 'Email');
     await addField(page, 'phone', 'Phone');
+    // A link to another record, pointed at its model.
+    await addField(page, 'link', 'Company');
+    await page.getByRole('textbox', { name: 'Links to' }).fill('company');
 
     await page.getByRole('button', { name: 'Add tabs' }).click();
     await expect(page.getByRole('button', { name: 'Add tabs' })).toBeHidden();
@@ -33,6 +36,12 @@ test.describe('screen designer · record sheet', () => {
     await page.getByRole('button', { name: 'Add tab', exact: true }).click();
     await page.getByRole('textbox', { name: 'Tab label' }).fill('Notes');
     await addField(page, 'paragraph', 'Internal notes');
+    // A table of lines, the grid where the app has it, with a column of its own.
+    await addField(page, 'lines', 'Order lines');
+    await page.getByRole('button', { name: 'Add column' }).click();
+    await page.getByRole('textbox', { name: 'Column 3' }).fill('Unit price');
+    await page.getByRole('combobox', { name: 'Kind of column 3' }).selectOption('number');
+    await expect(card(page, 'Order lines').locator('th')).toContainText(['Description', 'Quantity', 'Unit price']);
     await expect(tabs(page)).toHaveText(['Contacts', 'Notes']);
     await expect(tabs(page).nth(1)).toHaveAttribute('aria-selected', 'true');
     await expect(card(page, 'Contact person')).toHaveCount(0);
@@ -59,6 +68,9 @@ test.describe('screen designer · record sheet', () => {
     await expect(preview.locator('[data-node="#title"] input')).toHaveAttribute('placeholder', 'Name');
     await expect(preview.getByRole('tab')).toHaveText(['Contacts', 'Notes']);
     await expect(preview.getByLabel('Contact person')).toBeVisible();
+    await expect(preview.locator('[data-type="many2one"] .fd-label')).toHaveText('Company');
+    await preview.getByRole('tab', { name: 'Notes' }).click();
+    await expect(preview.locator('[data-type="one2many"] th')).toContainText(['Description', 'Quantity', 'Unit price']);
     await screen(page, 'screen-sheet-preview', { viewport: true });
     await page.getByRole('button', { name: 'Preview' }).click();
 
@@ -69,6 +81,15 @@ test.describe('screen designer · record sheet', () => {
     await expect(tabs(page)).toHaveText(['Contacts', 'Notes']);
     await expect(card(page, 'Email')).toBeVisible();
     await expect(card(page, 'Contact person')).toBeVisible();
+    await expect(card(page, 'Company')).toBeVisible();
+    await tabs(page).nth(1).click();
+    await expect(card(page, 'Order lines').locator('th')).toContainText(['Description', 'Quantity', 'Unit price']);
+    const saved = await page.evaluate(() => {
+      const built = (window as any).fieldiaDesigner.designer.getPage();
+      return Object.values(built.fields).map((f: any) => `${f.label}:${f.type}${f.relation ? `>${f.relation}` : ''}`);
+    });
+    expect(saved).toEqual(expect.arrayContaining(['Company:many2one>company', 'Order lines:one2many>line']));
+    await screen(page, 'screen-sheet-reopened', { viewport: true });
     await expect(page.locator('.fd-designer-status')).toHaveText('Published · version 1');
     expect(problems).toEqual([]);
   });

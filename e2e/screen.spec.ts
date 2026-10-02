@@ -147,21 +147,24 @@ test.describe('screen designer', () => {
 
   test('every kind of field fits its card, help text and all', async ({ page }) => {
     await page.goto('/screen/?start=blank');
-    await page.evaluate(() => {
+    // Every kind the palette offers, so a kind added later is checked too.
+    const kinds = await page.locator('.fd-palette-item').evaluateAll((items) => items.map((item) => (item as HTMLElement).dataset['kind'] as string));
+    expect(kinds.length).toBeGreaterThanOrEqual(24);
+    await page.evaluate((kinds) => {
       const { designer } = (window as any).fieldiaDesigner;
-      const kinds = ['short-answer', 'paragraph', 'multiple-choice', 'checkboxes', 'dropdown', 'rating', 'scale', 'number', 'date', 'date-time', 'yes-no', 'email', 'phone', 'file'];
       for (const kind of kinds) {
         const id = designer.addQuestion(kind, { parent: 'section-1' });
         designer.updateQuestion(id, { label: `A ${kind} question`, help: 'Some help for this field', required: true });
         if (kind === 'multiple-choice' || kind === 'checkboxes') designer.setOptions(id, ['First option', 'Second option', 'Third option', 'Fourth option']);
       }
       designer.select(null);
-    });
-    await expect(page.locator('.fd-canvas-field')).toHaveCount(14);
+    }, kinds);
+    await expect(page.locator('.fd-canvas-field')).toHaveCount(kinds.length);
     const clipped = () =>
       page.evaluate(() =>
         [...document.querySelectorAll<HTMLElement>('.fd-canvas-field')]
-          .filter((card) => card.scrollHeight > card.clientHeight + 1)
+          // Clipped by its card, or squeezed inside it: a widget that scrolls, as a statusbar does, shrinks rather than overflow.
+          .filter((card) => card.scrollHeight > card.clientHeight + 1 || [...card.children].some((part) => part.scrollHeight > part.clientHeight + 1))
           .map((card) => card.querySelector('.fd-label')?.textContent)
       );
     await expect.poll(clipped).toEqual([]);

@@ -2,11 +2,11 @@ import { createForm, createMemoryDataSource, wideColumns, type FieldNode, type F
 import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import { createWidget, installStyles, type Widget } from '@fieldia/widgets';
 import { designerBar, elementFactory } from './chrome';
-import { QUESTION_KINDS, type Designer, type DesignerState } from './designer';
+import type { Designer, DesignerState } from './designer';
 import type { Grafloria, GrafloriaBoardHandle, GrafloriaWidget } from './grafloria';
 import { allSections, findField, findTab, tabHolds } from './page-tree';
 import { flowCells, GAP, heightOfRows, orderFromCells, ROW_HEIGHT, rowsForHeight, rowsOf } from './screen-layout';
-import { fieldProperties, pageProperties, sectionProperties, tabProperties, tabsProperties, type PropertiesView } from './screen-properties';
+import { fieldProperties, pageProperties, paletteGroups, sectionProperties, tabProperties, tabsProperties, type PropertiesView } from './screen-properties';
 import { installDesignerStyles } from './styles';
 
 /**
@@ -64,10 +64,13 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const bar = designerBar(root, designer, { titleLabel: 'Screen title', placeholder: 'Untitled screen', extra: [previewToggle] });
 
   const palette = el('aside', { class: 'fd-palette', 'aria-label': 'Add a field' }, el('div', { class: 'fd-panel-title' }, 'Add a field'));
-  for (const kind of QUESTION_KINDS) {
-    const item = el('button', { type: 'button', class: 'fd-palette-item', 'data-kind': kind.id }, kind.label);
-    item.addEventListener('click', () => addField(kind.id));
-    palette.append(item);
+  for (const [title, kinds] of paletteGroups()) {
+    palette.append(el('div', { class: 'fd-palette-heading' }, title));
+    for (const kind of kinds) {
+      const item = el('button', { type: 'button', class: 'fd-palette-item', 'data-kind': kind.id }, kind.label);
+      item.addEventListener('click', () => addField(kind.id));
+      palette.append(item);
+    }
   }
   const sectionsBox = el('div', { class: 'fd-canvas-sections' });
   const addSection = el('button', { type: 'button', class: 'fd-button' }, 'Add section');

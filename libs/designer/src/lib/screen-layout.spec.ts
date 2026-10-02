@@ -25,7 +25,7 @@ describe('rowsOf', () => {
     expect(rowsOf({ type: 'image', label: 'Photo' }, node())).toBeGreaterThan(line);
     const lines = rowsOf({ type: 'one2many', label: 'Lines', relation: 'x', fields: {}, columns: [] } as unknown as Field, node());
     expect(lines).toBeGreaterThan(rowsOf({ type: 'text', label: 'Notes' }, node()));
-    expect(rowsOf({ type: 'html', label: 'Body' }, node())).toBe(lines);
+    expect(rowsOf({ type: 'html', label: 'Body' }, node())).toBeGreaterThan(lines);
   });
 
   it('gives a long list of choices a second line', () => {

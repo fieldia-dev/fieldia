@@ -1,6 +1,7 @@
 import { wideColumns, type FieldNode, type Page, type SheetNode } from '@fieldia/core';
 import { optionsEditor, type ElementFactory } from './chrome';
-import { QUESTION_KINDS, type Designer } from './designer';
+import { columnsEditor } from './columns-editor';
+import { QUESTION_KINDS, SCREEN_KINDS, type Designer, type QuestionKind } from './designer';
 import { allSections, findField, findNode, findTab, sectionLabel } from './page-tree';
 import { kindOfQuestion } from './survey-editor';
 
@@ -23,9 +24,17 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const label = el('input', { class: 'fd-input fd-prop-label', 'aria-label': 'Label' });
   label.addEventListener('input', () => designer.updateQuestion(id, { label: label.value }));
   const kind = el('select', { class: 'fd-input fd-select', 'aria-label': 'Kind of field' });
-  for (const k of QUESTION_KINDS) kind.append(el('option', { value: k.id }, k.label));
+  for (const [title, kinds] of paletteGroups()) kind.append(el('optgroup', { label: title }, ...kinds.map((k) => el('option', { value: k.id }, k.label))));
   kind.addEventListener('change', () => designer.changeKind(id, kind.value));
   const options = optionsEditor(el, designer, id);
+  const relation = el('input', { class: 'fd-input', 'aria-label': 'Links to', placeholder: 'contact' });
+  relation.addEventListener('input', () => designer.setRelation(id, relation.value));
+  const relationRow = prop(el, 'Links to', relation);
+  const currency = el('input', { class: 'fd-input', 'aria-label': 'Currency', maxlength: '3', placeholder: 'USD' });
+  // Only a whole code: two letters on the way to three are not a currency yet.
+  currency.addEventListener('input', () => currency.value.trim().length === 3 && designer.setCurrency(id, currency.value));
+  const currencyRow = prop(el, 'Currency', currency);
+  const lineColumns = columnsEditor(el, designer, id);
   const required = el('input', { type: 'checkbox', 'aria-label': 'Required' });
   required.addEventListener('change', () => designer.updateQuestion(id, { required: required.checked }));
   const help = el('input', { class: 'fd-input', 'aria-label': 'Help text', placeholder: 'Optional' });
@@ -51,6 +60,9 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     prop(el, 'Label', label),
     prop(el, 'Kind', kind),
     options.element,
+    relationRow,
+    currencyRow,
+    lineColumns.element,
     el('label', { class: 'fd-q-required' }, required, el('span', {}, 'Required')),
     prop(el, 'Help text', help),
     widthRow,
@@ -69,6 +81,11 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       kind.value = current ?? '';
       kind.disabled = current === null;
       options.update(def);
+      lineColumns.update(def);
+      relationRow.hidden = !('relation' in def);
+      if (!focused(relation)) relation.value = 'relation' in def ? def.relation : '';
+      currencyRow.hidden = def.type !== 'monetary';
+      if (!focused(currency)) currency.value = def.type === 'monetary' ? def.currency ?? '' : '';
       required.checked = def.required === true;
       if (!focused(help)) help.value = found.node.help ?? def.help ?? '';
       const columns = wideColumns(found.section.columns);
@@ -196,4 +213,13 @@ export function tabProperties(el: ElementFactory, designer: Designer, id: string
       moves.update(page);
     },
   };
+}
+
+/** The kinds a screen offers, in the palette's groups. */
+export function paletteGroups(): [string, readonly QuestionKind[]][] {
+  return [
+    ['Basic', QUESTION_KINDS],
+    ['Records', SCREEN_KINDS.filter((k) => k.group === 'records')],
+    ['More', SCREEN_KINDS.filter((k) => k.group === 'more')],
+  ];
 }

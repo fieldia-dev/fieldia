@@ -99,6 +99,8 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-empty { color: var(--fd-muted); font-size: 13px; padding: 14px 8px 10px; }
 .fd-canvas-field {
   height: 100%; box-sizing: border-box; padding: 7px 10px; overflow: hidden; align-content: start;
+  /* Rows as tall as their content: a widget that scrolls, such as a statusbar, would otherwise shrink to fit the card, and the card would never be measured taller. */
+  grid-auto-rows: max-content;
   background: var(--fd-surface); border: 1px dashed var(--fd-border); border-radius: 6px;
 }
 /* A paragraph's box fills the rows it was given, as a hint of the room it takes. */
@@ -115,6 +117,11 @@ export const DESIGNER_CSS = /* css */ `
 .fd-prop { display: grid; gap: 4px; }
 .fd-prop-name { font-size: 12.5px; color: var(--fd-muted); }
 .fd-props .fd-q-option-box { padding-inline-start: 2px; }
+.fd-palette-heading { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fd-muted); margin-block: 10px 2px; }
+.fd-palette .fd-palette-heading { flex-basis: 100%; }
+.fd-columns-box { display: grid; gap: 6px; }
+.fd-columns { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.fd-column { display: grid; grid-template-columns: minmax(0, 1fr) 104px 28px; gap: 6px; align-items: center; }
 .fd-props-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-block-start: 4px; border-block-start: 1px solid var(--fd-border); }
 .fd-properties-hint { color: var(--fd-muted); font-size: 13px; margin: 0; }
 .fd-screen-preview { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 20px; }

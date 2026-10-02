@@ -2,7 +2,7 @@ import { createMemoryDataSource, type Field, type FieldNode, type Page, type Ste
 import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import { installStyles } from '@fieldia/widgets';
 import { designerBar, elementFactory, iconButton as makeIconButton, optionsEditor } from './chrome';
-import { QUESTION_KINDS, type Designer, type DesignerState } from './designer';
+import { kindOfField, QUESTION_KINDS, type Designer, type DesignerState } from './designer';
 import { installDesignerStyles } from './styles';
 
 /**
@@ -26,33 +26,8 @@ export interface SurveyEditorHandle {
   destroy(): void;
 }
 
-/** Which question kind a field and its node are, for the kind picker. */
-export function kindOfQuestion(field: Field, node: FieldNode): string | null {
-  switch (field.type) {
-    case 'char':
-      return node.widget === 'email' ? 'email' : node.widget === 'phone' ? 'phone' : 'short-answer';
-    case 'text':
-      return 'paragraph';
-    case 'selection':
-      return field.multiple ? 'checkboxes' : node.widget === 'radio' ? 'multiple-choice' : 'dropdown';
-    case 'integer':
-      return node.widget === 'rating' ? 'rating' : node.widget === 'scale' ? 'scale' : 'number';
-    case 'float':
-    case 'monetary':
-      return 'number';
-    case 'date':
-      return 'date';
-    case 'datetime':
-      return 'date-time';
-    case 'boolean':
-      return 'yes-no';
-    case 'binary':
-    case 'image':
-      return 'file';
-    default:
-      return null;
-  }
-}
+/** The kind a question was made as. The same as the designer's `kindOfField`, under the name it had first. */
+export const kindOfQuestion = kindOfField;
 
 /** Choices a later page can depend on: single choices and yes-or-no questions. */
 function choicesOf(field: Field): { value: string; label: string; literal: string | number | boolean }[] | null {
