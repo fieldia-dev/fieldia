@@ -42,3 +42,46 @@ export {
 export { FORMAT_VERSION, PageSchema, type Page, type PageData } from './lib/format/page';
 export { validatePage, type PageIssue, type PageValidation } from './lib/format/validate';
 export { pageJsonSchema } from './lib/format/json-schema';
+export { compileModifier, type CompiledModifier } from './lib/expression/modifier';
+export { evaluateModifier, isModifierValid } from './lib/expression/evaluateModifier';
+export {
+  emptyValue,
+  initialValues,
+  isEmpty,
+  expressionContext,
+  type RecordId,
+  type RelatedRecord,
+  type ReferenceValue,
+  type FileValue,
+  type Line,
+  type Value,
+  type Values,
+} from './lib/record/values';
+export { checkValue, formatBytes } from './lib/record/check';
+export type {
+  DataSource,
+  LoadRequest,
+  SaveRequest,
+  SaveResult,
+  OnchangeRequest,
+  OnchangeResult,
+  SearchRequest,
+  SubmitRequest,
+  SubmitResult,
+  ResolvedFilterCondition,
+  RecordChanges,
+  LineOp,
+  LinkOp,
+} from './lib/record/data-source';
+export { createMemoryDataSource, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
+export { hostScheduler, wait, type Scheduler } from './lib/record/scheduler';
+export {
+  createForm,
+  type Form,
+  type FormOptions,
+  type FormState,
+  type FormStatus,
+  type NodeState,
+  type DraftStore,
+  type ActionRequest,
+} from './lib/record/form';
