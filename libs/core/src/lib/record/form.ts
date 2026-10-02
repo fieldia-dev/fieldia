@@ -92,6 +92,8 @@ export interface Form {
   setValue(name: string, value: Value): void;
   node(id: string): NodeState;
   fieldReadonly(name: string): boolean;
+  /** What a field would be told if the form were checked now, or null when it passes. Nothing is shown. */
+  problem(field: string): string | null;
   validate(): boolean;
   save(): Promise<boolean>;
   reset(): void;
@@ -510,6 +512,14 @@ export function createForm(options: FormOptions): Form {
     node: nodeState,
 
     fieldReadonly: (name) => fieldDef(name).readonly === true,
+
+    problem(name) {
+      const def = fieldDef(name);
+      // Only a field someone can see is asked anything, and required wherever it is shown so.
+      const shown = visibleFieldNodes().filter((node) => node.field === name);
+      if (!shown.length) return null;
+      return checkValue(def, state.values[name], shown.some((node) => nodeState(node.id).required), messages) ?? null;
+    },
 
     validate() {
       const errors = collectErrors();

@@ -578,6 +578,33 @@ describe('createForm — a survey', () => {
   });
 });
 
+describe('createForm — a field’s problem, asked quietly', () => {
+  it('says what a field would be told if checked now, and shows nothing', () => {
+    const form = createForm({ page: page('signup') });
+    expect(form.problem('full_name')).toBe('Full name is required');
+    form.setValue('email', 'sara@');
+    expect(form.problem('email')).not.toBeNull();
+    form.setValue('email', 'sara@example.com');
+    form.setValue('full_name', 'Sara Hassan');
+    expect(form.problem('full_name')).toBeNull();
+    expect(form.problem('email')).toBeNull();
+    expect(form.problem('hourly_rate')).toBeNull(); // empty and optional
+    form.setValue('hourly_rate', -5);
+    expect(form.problem('hourly_rate')).not.toBeNull();
+    expect(form.getState().errors).toEqual({});
+  });
+
+  it('asks nothing of a field no one can see', () => {
+    const form = createForm({ page: page('signup') });
+    // "Which role?" is hidden until the role is Other, the team size until it is Manager.
+    expect(form.problem('other_role')).toBeNull();
+    form.setValue('team_size', 900);
+    expect(form.problem('team_size')).toBeNull();
+    form.setValue('role', 'manager');
+    expect(form.problem('team_size')).not.toBeNull();
+  });
+});
+
 describe('createForm — skipping and jumping between steps', () => {
   /** The survey, with "Using the product" (which has a required question) made optional. */
   const optionalUsage = () => {
