@@ -381,6 +381,14 @@ describe('createForm — loading and saving a record', () => {
     expect(form.changes().lines).toEqual({ child_ids: [{ op: 'delete', id: 2 }] });
   });
 
+  it('a new record sends every value it holds, those it started with and defaults too', async () => {
+    const ds = customerSource();
+    const form = createForm({ page: page('customer'), dataSource: ds, values: { name: 'Hilton Cairo' } });
+    expect(await form.save()).toBe(true);
+    const id = form.getState().recordId as number;
+    expect(ds.records['partner'][id]).toEqual(expect.objectContaining({ name: 'Hilton Cairo', state: 'draft' }));
+  });
+
   it('creates a new record and keeps its new id', async () => {
     const ds = customerSource();
     const form = createForm({ page: page('customer'), dataSource: ds });

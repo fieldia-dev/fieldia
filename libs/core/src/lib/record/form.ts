@@ -8,8 +8,10 @@ import { MESSAGES, type Messages } from './messages';
 import type { DataSource, LineOp, LinkOp, RecordChanges, ResolvedFilterCondition } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
 import {
+  emptyValue,
   expressionContext,
   initialValues,
+  isEmpty,
   lineKind,
   structuredCopy,
   type Line,
@@ -326,10 +328,16 @@ export function createForm(options: FormOptions): Form {
 
   function changes(): RecordChanges {
     const result: RecordChanges = { values: {}, lines: {}, links: {} };
-    for (const name of state.dirty) {
+    // A new record sends every value it holds, those it started with and defaults
+    // included; a stored one sends only what changed since it was loaded.
+    const creating = state.recordId === null || state.recordId === undefined;
+    const names = creating
+      ? Object.keys(page.fields).filter((name) => state.dirty.includes(name) || !isEmpty(page.fields[name], state.values[name]))
+      : state.dirty;
+    for (const name of names) {
       const def = page.fields[name];
       const now = state.values[name];
-      const before = baseline[name];
+      const before = creating ? emptyValue(def) : baseline[name];
       if (def.type === 'one2many') result.lines[name] = lineOps((before as Line[] | null) ?? [], (now as Line[] | null) ?? []);
       else if (def.type === 'many2many') result.links[name] = linkOps((before as RelatedRecord[] | null) ?? [], (now as RelatedRecord[] | null) ?? []);
       else result.values[name] = structuredCopy(now) as Value;
