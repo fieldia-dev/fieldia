@@ -246,6 +246,8 @@ export const FIELDIA_CSS = /* css */ `
 .fd-alert.fd-tone-info, .fd-alert:not([class*="fd-tone-"]) { background: var(--fd-info-soft); border-color: #a9c8ef; color: var(--fd-info); }
 .fd-stats { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0; margin: -24px -28px 0; border-block-end: 1px solid var(--fd-border); }
 .fd-stats:empty { display: none; }
+/* A visible ribbon owns the corner: stat buttons keep clear of it. */
+.fd-card:has(> .fd-ribbon:not([hidden])) .fd-stats { padding-inline-end: 104px; }
 .fd-stat {
   font: inherit; background: none; border: none; border-inline-start: 1px solid var(--fd-border); cursor: pointer;
   padding: 8px 18px; display: grid; justify-items: start; line-height: 1.2; color: var(--fd-text); min-width: 120px;
