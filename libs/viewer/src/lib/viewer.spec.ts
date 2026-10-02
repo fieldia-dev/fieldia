@@ -161,6 +161,79 @@ describe('a wizard’s own labels, skips and step list', () => {
   });
 });
 
+describe('keys', () => {
+  const press = (target: Element, key: string, init: KeyboardEventInit = {}) =>
+    target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init }));
+
+  it('saves with Ctrl+Enter or Cmd+Enter, from a field still being typed in', async () => {
+    const { host, form, dataSource } = sheet();
+    await form.settled();
+    type(input(host, 'f-phone'), '+20 2 1111 2222');
+    press(input(host, 'f-phone'), 'Enter', { ctrlKey: true });
+    await form.settled();
+    expect(dataSource.records['partner'][1]['phone']).toBe('+20 2 1111 2222');
+    type(input(host, 'f-phone'), '+20 2 3333 4444');
+    press(input(host, 'f-phone'), 'Enter', { metaKey: true });
+    await form.settled();
+    expect(dataSource.records['partner'][1]['phone']).toBe('+20 2 3333 4444');
+  });
+
+  it('keeps a tag typed but not yet added when Ctrl+Enter saves', async () => {
+    const dataSource = createMemoryDataSource({ records: { project: { 1: { name: 'Office fit-out', materials: 'oak' } } } });
+    const { host, form } = mount('fields', { dataSource, recordId: 1 });
+    await form.settled();
+    const tags = at(host, 'f-materials').querySelector('input') as HTMLInputElement;
+    type(tags, 'steel');
+    press(tags, 'Enter', { ctrlKey: true });
+    await form.settled();
+    expect(dataSource.records['project'][1]['materials']).toBe('oak, steel');
+  });
+
+  it('leaves Ctrl+Enter alone when the page turns it off, and a plain Enter in a text box to the text box', async () => {
+    const { host, form, dataSource } = sheet({ keys: { saveWithCtrlEnter: false } });
+    await form.settled();
+    type(input(host, 'f-phone'), '+20 2 1111 2222');
+    expect(press(input(host, 'f-phone'), 'Enter', { ctrlKey: true })).toBe(true);
+    await form.settled();
+    expect(dataSource.calls.filter((c) => c.method === 'save')).toEqual([]);
+    const fields = mount('fields', { keys: { enterMovesToNext: true } });
+    const scope = at(fields.host, 'f-scope').querySelector('textarea') as HTMLTextAreaElement;
+    expect(press(scope, 'Enter')).toBe(true); // not prevented: the line break is the text box's
+  });
+
+  it('moves to the next field on Enter when the page asks, without sending anything', async () => {
+    const dataSource = createMemoryDataSource();
+    const { host } = mount('signup', { dataSource, keys: { enterMovesToNext: true } });
+    input(host, 'f-name').focus();
+    expect(press(input(host, 'f-name'), 'Enter')).toBe(false);
+    expect(document.activeElement).toBe(input(host, 'f-email'));
+    press(input(host, 'f-email'), 'Enter');
+    expect(document.activeElement).toBe(input(host, 'f-company'));
+    await flush();
+    expect(dataSource.responses).toEqual([]);
+  });
+
+  it('lets a field use Enter itself first: an open list picks, and the focus stays', async () => {
+    const dataSource = createMemoryDataSource({ records: { partner: { 1: customer }, country: { 1: { name: 'Egypt' }, 2: { name: 'Jordan' } } } });
+    const { host, form } = mount('customer', { dataSource, recordId: 1, keys: { enterMovesToNext: true } });
+    await form.settled();
+    const country = at(host, 'f-country').querySelector('input') as HTMLInputElement;
+    type(country, 'jor');
+    await new Promise((resolve) => setTimeout(resolve, 260));
+    press(country, 'ArrowDown');
+    press(country, 'Enter');
+    expect(form.getState().values['country_id']).toEqual({ id: 2, label: 'Jordan' });
+    expect(document.activeElement).toBe(country);
+  });
+
+  it('does not move on Enter unless asked', () => {
+    const { host } = mount('signup');
+    input(host, 'f-name').focus();
+    press(input(host, 'f-name'), 'Enter');
+    expect(document.activeElement).toBe(input(host, 'f-name'));
+  });
+});
+
 describe('a sections page', () => {
   it('lays out sections with their titles and columns', () => {
     const { host } = mount('signup');

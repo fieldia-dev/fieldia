@@ -187,6 +187,12 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
    * gives them: the inside of a 24×24 SVG, drawn with lines in the text colour.
    */
   icons?: IconSet;
+  /**
+   * Keys around the fields. Ctrl+Enter (Cmd+Enter on a Mac) saves, from
+   * wherever the cursor is, unless `saveWithCtrlEnter` is false. With
+   * `enterMovesToNext`, Enter moves to the next field instead of sending the form.
+   */
+  keys?: { saveWithCtrlEnter?: boolean; enterMovesToNext?: boolean };
 }
 
 export interface ViewerHandle {
@@ -747,6 +753,53 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     event.preventDefault();
     if (wizardForward) void wizardForward();
     else void submitOrSave();
+  });
+
+  // ---- keys -------------------------------------------------------------------
+
+  /** Text typed and not yet taken, such as a tag without its Enter, is taken now. */
+  function commitTyping() {
+    const active = doc.activeElement;
+    if (active && root.contains(active) && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+      active.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
+  /** The fields Enter can move between: on this page, shown, with a box to type or choose in, outside tables of lines. */
+  function nextField(from: HTMLElement): HTMLElement | null {
+    const fields = [...root.querySelectorAll<HTMLElement>('.fd-field')].filter(
+      (field) => !field.closest('[hidden], [data-type="one2many"] .fd-field, .fd-form-dialog') && !field.parentElement?.closest('[data-type="one2many"]')
+    );
+    const here = from.closest('.fd-field');
+    const after = fields.slice(fields.indexOf(here as HTMLElement) + 1);
+    for (const field of after) {
+      const control = field.querySelector<HTMLElement>('input:not([type="hidden"]):not([readonly]):not([disabled]), select:not([disabled]), textarea:not([readonly]), [contenteditable="true"]');
+      if (control) return control;
+    }
+    return null;
+  }
+
+  root.addEventListener('keydown', (event) => {
+    if (event.isComposing || event.key !== 'Enter') return;
+    const keys = options.keys ?? {};
+    if (event.ctrlKey || event.metaKey) {
+      // Saves even after a field used the Enter (a tag box adding its tag); the grid keeps its own keys.
+      if (keys.saveWithCtrlEnter === false || options.showActions === false) return;
+      if ((event.target as Element).closest('.ag-root-wrapper')) return;
+      event.preventDefault();
+      commitTyping();
+      if (wizardForward) void wizardForward();
+      else void submitOrSave();
+      return;
+    }
+    // A plain Enter a field used itself, such as picking from an open list, is the field's.
+    if (event.defaultPrevented || !keys.enterMovesToNext || event.shiftKey || event.altKey) return;
+    const from = event.target as HTMLElement;
+    if (from.tagName !== 'INPUT' && from.tagName !== 'SELECT') return;
+    if (from.closest('[data-type="one2many"]')) return;
+    if (['button', 'submit', 'reset', 'file'].includes((from as HTMLInputElement).type)) return;
+    event.preventDefault();
+    nextField(from)?.focus();
   });
 
   // ---- confirmation dialog -----------------------------------------------------

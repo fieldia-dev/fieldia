@@ -161,6 +161,21 @@ describe('a form in a dialog', () => {
     expect((await result).saved).toBe(false);
   });
 
+  it('saves and closes on Ctrl+Enter or Cmd+Enter', async () => {
+    for (const modifier of [{ ctrlKey: true }, { metaKey: true }]) {
+      const dataSource = customerSource();
+      const result = openFormDialog({ page: page('customer'), dataSource, recordId: 1, title: 'Nile Traders' });
+      await flush();
+      const phone = field('f-phone');
+      typeIn(phone, '+20 2 1111 2222');
+      phone.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, ...modifier }));
+      const done = await result;
+      expect(done.saved).toBe(true);
+      expect(dataSource.records['partner'][1]['phone']).toBe('+20 2 1111 2222');
+      expect(dialog()).toBeNull();
+    }
+  });
+
   it('keeps Tab inside the dialog', async () => {
     void openFormDialog({ page: page('customer'), dataSource: customerSource(), recordId: 1, title: 'Nile Traders' });
     await flush();

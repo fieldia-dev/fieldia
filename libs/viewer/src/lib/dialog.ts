@@ -109,6 +109,15 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
     discard.addEventListener('click', () => close(false));
     closeButton.addEventListener('click', () => close(false));
     box.addEventListener('keydown', (event) => {
+      // Ctrl+Enter is Save & Close from wherever the cursor is, even after a field used the Enter
+      // (a tag box adding its tag), taking what is still being typed. The grid keeps its own keys.
+      if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !event.isComposing) {
+        if ((event.target as Element).closest('.ag-root-wrapper')) return;
+        event.preventDefault();
+        doc.activeElement?.dispatchEvent(new Event('change', { bubbles: true }));
+        saveClose.click();
+        return;
+      }
       // A key a field used itself (Escape closing a list) is not the dialog's.
       if (event.defaultPrevented) return;
       if (event.key === 'Escape') {
