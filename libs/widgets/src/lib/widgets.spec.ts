@@ -252,11 +252,10 @@ describe('every widget', () => {
     expect(valueOf(form)).toBe('signed');
   });
 
-  it('shows what it holds for a type that has no editor yet', () => {
-    const { form, el } = setup({ type: 'properties' });
-    form.setValue('x', { colour: 'teal' });
-    expect(el.textContent).toBe('{"colour":"teal"}');
-    expect(el.getAttribute('data-fd-pending')).toBe('properties');
+  it('every field type has an editor', async () => {
+    const { FIELD_TYPES } = await import('@fieldia/core');
+    const { builtInWidgets } = await import('./widgets');
+    expect(FIELD_TYPES.filter((type) => !builtInWidgets[type])).toEqual([]);
   });
 });
 

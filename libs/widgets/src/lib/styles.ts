@@ -207,6 +207,18 @@ export const FIELDIA_CSS = /* css */ `
 .fd-cell-error { color: var(--fd-error); font-size: 12px; }
 .fd-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* ---- files, images, rich text, json ------------------------------------ */
+.fd-file { display: grid; gap: 8px; justify-items: start; padding: 6px 0; border-radius: var(--fd-control-radius); }
+.fd-file.fd-dragging { outline: 2px dashed var(--fd-accent); outline-offset: 4px; }
+.fd-file-pick { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; cursor: pointer; }
+.fd-file-chosen { display: inline-flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.fd-file-name { font-variant-numeric: tabular-nums; }
+.fd-image-preview { max-width: 160px; max-height: 160px; border-radius: var(--fd-control-radius); border: 1px solid var(--fd-border); object-fit: cover; background: var(--fd-page); }
+.fd-richtext { min-height: 96px; line-height: 1.5; overflow-wrap: anywhere; }
+.fd-richtext[contenteditable="false"] { background: transparent; border-color: transparent; padding-inline: 0; min-height: 0; }
+.fd-richtext p { margin: 0 0 6px; }
+.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; min-height: 96px; }
+
 /* ---- sections, tabs ---------------------------------------------------- */
 .fd-sections { display: grid; gap: 24px; }
 .fd-section { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 14px; }

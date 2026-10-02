@@ -12,6 +12,8 @@ import type {
 import type { WidgetLabels } from './labels';
 import { linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
 import { linesWidget } from './lines';
+import { binaryWidget, imageWidget } from './files';
+import { htmlWidget, jsonWidget } from './extras';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -393,4 +395,9 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'many2many.checkboxes': linkCheckboxesWidget,
   reference: referenceWidget,
   one2many: linesWidget,
+  binary: binaryWidget,
+  image: imageWidget,
+  html: htmlWidget,
+  json: jsonWidget,
+  properties: jsonWidget,
 };
