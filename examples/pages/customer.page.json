@@ -142,15 +142,12 @@
                 "type": "section",
                 "id": "billing",
                 "title": "Credit",
+                "icon": "money",
                 "columns": 2,
+                "readonly": "state == 'blocked'",
                 "children": [
                   { "type": "field", "id": "f-currency", "field": "currency_id" },
-                  {
-                    "type": "field",
-                    "id": "f-credit-limit",
-                    "field": "credit_limit",
-                    "readonly": "state == 'blocked'"
-                  }
+                  { "type": "field", "id": "f-credit-limit", "field": "credit_limit" }
                 ]
               }
             ]

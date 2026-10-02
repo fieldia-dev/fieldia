@@ -129,6 +129,9 @@ export const FIELDIA_CSS = /* css */ `
   /* A section that says how many columns it keeps here keeps them, in either skin. */
   .fd-form .fd-grid[data-columns-medium] { grid-template-columns: repeat(var(--fd-columns-medium), minmax(0, 1fr)); }
   .fd-form .fd-grid[data-columns-medium] > .fd-field { grid-column: span min(var(--fd-span, 1), var(--fd-columns-medium)); }
+  /* Kept side by side here, the underline skin's fields have no room for a label beside: it goes above. */
+  .fd-form[data-fd-skin="underline"] .fd-grid[data-columns-medium]:not([data-columns-medium="1"]) .fd-field { grid-template-columns: minmax(0, 1fr); }
+  .fd-form[data-fd-skin="underline"] .fd-grid[data-columns-medium]:not([data-columns-medium="1"]) .fd-field > * { grid-column: 1 !important; }
 }
 @container (max-width: 520px) {
   .fd-grid { grid-template-columns: minmax(0, 1fr); }
