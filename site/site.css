@@ -99,3 +99,9 @@ tr:last-child td { border-bottom: none; }
   .top { gap: 12px; }
   .top-nav { gap: 14px; }
 }
+
+/* Fieldia's own icons, each with its name. */
+.prose .icon-grid, .icon-grid { list-style: none; margin: 16px 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.icon-grid li { display: grid; justify-items: center; gap: 6px; padding: 12px 6px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); }
+.icon-grid svg { width: 24px; height: 24px; }
+.icon-grid code { font-size: 12px; background: none; padding: 0; color: var(--muted); }

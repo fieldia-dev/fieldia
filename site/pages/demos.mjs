@@ -8,10 +8,10 @@ const FRAMEWORKS = [
 ];
 const PAGES = [
   ['signup', 'Workshop sign-up', 'sections, conditions, validation, a response'],
-  ['survey', 'Survey', 'a wizard that skips the steps that do not apply'],
-  ['customer', 'Customer record', 'a business sheet: statusbar, stat buttons, tabs, lines, links'],
+  ['survey', 'Survey', 'a wizard that skips the steps that do not apply, with a step list to click and an optional step'],
+  ['customer', 'Customer record', 'a business sheet: statusbar, stat buttons, badges, Individual/Company over the name, tabs, lines, links'],
   ['fields', 'Every field', 'one record using every widget, with foldable sections'],
-  ['order', 'Sales order', 'the lines grid: spreadsheet keys, sections and notes, moving lines, totals, columns'],
+  ['order', 'Sales order', 'header groups, and the lines grid: spreadsheet keys, sections and notes, moving lines, totals, columns'],
 ];
 
 export default {
