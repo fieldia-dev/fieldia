@@ -313,9 +313,10 @@ export const FIELDIA_CSS = /* css */ `
 .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); }
 @container (max-width: 860px) { .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr); } }
 .fd-card {
-  position: relative; overflow: hidden; background: var(--fd-surface); border: 1px solid var(--fd-border);
+  position: relative; background: var(--fd-surface); border: 1px solid var(--fd-border);
   border-radius: var(--fd-radius); padding: 24px 28px 28px; display: grid; gap: 18px; min-width: 0;
 }
+.fd-ribbon-frame { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
 .fd-ribbon {
   position: absolute; inset-block-start: 18px; inset-inline-end: -42px; transform: rotate(45deg); width: 160px;
   text-align: center; font-size: 12px; font-weight: 700; padding: 4px 0; color: #fff; background: var(--fd-muted);
@@ -334,7 +335,7 @@ export const FIELDIA_CSS = /* css */ `
 .fd-stats { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0; margin: -24px -28px 0; border-block-end: 1px solid var(--fd-border); }
 .fd-stats:empty { display: none; }
 /* A visible ribbon owns the corner: stat buttons keep clear of it. */
-.fd-card:has(> .fd-ribbon:not([hidden])) .fd-stats { padding-inline-end: 104px; }
+.fd-card:has(> .fd-ribbon-frame > .fd-ribbon:not([hidden])) .fd-stats { padding-inline-end: 104px; }
 .fd-stat {
   font: inherit; background: none; border: none; border-inline-start: 1px solid var(--fd-border); cursor: pointer;
   padding: 8px 18px; display: grid; justify-items: start; line-height: 1.2; color: var(--fd-text); min-width: 120px;

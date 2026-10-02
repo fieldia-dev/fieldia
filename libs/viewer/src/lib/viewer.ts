@@ -519,7 +519,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     if (node.ribbon) {
       const ribbon = el('div', { class: `fd-ribbon fd-tone-${node.ribbon.tone ?? 'muted'}`, 'data-node': node.ribbon.id }, node.ribbon.label);
       hideWhen(ribbon, node.ribbon.id);
-      card.append(ribbon);
+      // The ribbon is clipped to the card's corner by its own frame, so the card itself never clips: lists open past it.
+      card.append(el('div', { class: 'fd-ribbon-frame' }, ribbon));
     }
     if (node.statButtons?.length) {
       const stats = el('div', { class: 'fd-stats' });
