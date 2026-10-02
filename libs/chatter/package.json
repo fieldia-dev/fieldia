@@ -1,0 +1,39 @@
+{
+  "name": "@fieldia/chatter",
+  "version": "0.7.0",
+  "description": "A record's conversation and to-dos beside its Fieldia form: messages, notes, attachments, activities and followers, through an interface your app implements.",
+  "license": "MIT",
+  "homepage": "https://fieldia.dev",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "module": "./src/index.mjs",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": {
+        "import": "./src/index.d.mts",
+        "require": "./src/index.d.ts"
+      },
+      "import": "./src/index.mjs",
+      "require": "./src/index.js",
+      "default": "./src/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@fieldia/core": "0.7.0",
+    "@fieldia/widgets": "0.7.0",
+    "tslib": "^2.8.1"
+  },
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fieldia-dev/fieldia",
+    "directory": "libs/chatter"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ]
+}

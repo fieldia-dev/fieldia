@@ -20,6 +20,7 @@
       "@fieldia/widgets": ["libs/widgets/src/index.ts"],
       "@fieldia/viewer": ["libs/viewer/src/index.ts"],
       "@fieldia/code": ["libs/code/src/index.ts"],
+      "@fieldia/chatter": ["libs/chatter/src/index.ts"],
       "@fieldia/grid": ["libs/grid/src/index.ts"],
       "@fieldia/react": ["libs/react/src/index.ts"],
       "@fieldia/vue": ["libs/vue/src/index.ts"],
