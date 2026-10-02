@@ -193,7 +193,8 @@ describe('one2many lines with sections and notes', () => {
     const refresh = () => widget.update({ value: form.getState().values['line_ids'], values: form.getState().values, readonly: false, required: false, invalid: false });
     form.subscribe(refresh);
     refresh();
-    form.addLine('line_ids', { display_type: 'section', name: 'Workstations' });
+    // A section that still holds a number (a line turned into one) is not counted.
+    form.addLine('line_ids', { display_type: 'section', name: 'Workstations', quantity: 3 });
     const first = form.addLine('line_ids', { quantity: 2 });
     form.addLine('line_ids', { quantity: 5 });
     const footer = () => [...widget.element.querySelectorAll('tfoot td')].map((td) => td.textContent);

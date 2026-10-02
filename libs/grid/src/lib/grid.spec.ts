@@ -231,6 +231,14 @@ describe('the grid with sections and notes', () => {
     expect(api?.getFocusedCell()?.rowIndex).toBe(2);
   });
 
+  it('leaves sections and notes out of the totals, even one that still holds a number', async () => {
+    const totalled = JSON.parse(JSON.stringify(sectioned)) as Page & { layout: any };
+    totalled.layout.children[0].children[1].totals = ['qty'];
+    const rows = withKinds.map((line) => (line.key === 'n1' ? { ...line, values: { ...line.values, qty: 99 } } : line));
+    const { box } = await mount(totalled, rows);
+    expect(box.querySelector('.ag-grid-pinned-bottom-rows .ag-cell[col-id="qty"]')?.textContent?.trim()).toBe('10.00');
+  });
+
   it('edits a note in a box that starts one line tall', async () => {
     const { box, api } = await mount(sectioned, withKinds);
     api?.startEditingCell({ rowIndex: 2, colKey: 'product_id' });
