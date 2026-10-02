@@ -4,9 +4,6 @@ import {
   translatePage,
   wideColumns,
   type ButtonNode,
-  type CreateRequest,
-  type DataSource,
-  type Field,
   type FieldNode,
   type Form,
   type FormOptions,
@@ -14,7 +11,6 @@ import {
   type JsonValue,
   type LayoutNode,
   type Page,
-  type SearchRequest,
   type SectionNode,
   type SheetNode,
   type SlotNode,
@@ -24,176 +20,13 @@ import {
   type Locale,
   MESSAGES,
 } from '@fieldia/core';
-import { browserPreferences, createWidget, drawIcon, installStyles, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetDialogs, type WidgetFactory } from '@fieldia/widgets';
-import { openFormDialog, openSearchDialog } from './dialog';
+import { browserPreferences, createWidget, drawIcon, installStyles, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
+import { pageDialogs } from './related';
 
 export type Skin = 'underline' | 'outlined';
 
-/** Every word the viewer shows, so a page can be translated. `{n}`, `{total}` and `{time}` are filled in. */
-export interface ViewerLabels {
-  save: string;
-  /** Switching a read-only form to editing, and back. */
-  edit: string;
-  done: string;
-  discard: string;
-  saving: string;
-  saved: string;
-  submit: string;
-  next: string;
-  back: string;
-  /** Passing over an optional step. */
-  skip: string;
-  /** The list of a wizard's steps, for screen readers. */
-  steps: string;
-  stepOf: string;
-  submitted: string;
-  submitAnother: string;
-  draftFound: string;
-  restore: string;
-  discardDraft: string;
-  ok: string;
-  cancel: string;
-  loading: string;
-  /** A form in a dialog: the button that saves it and closes the dialog, and the × that closes it. */
-  saveClose: string;
-  close: string;
-  /** The × on an alert that may be dismissed. */
-  dismiss: string;
-  /** Saving again after a save failed. */
-  retry: string;
-  notSaved: string;
-  notSent: string;
-  /** What was not saved or sent, and the fields to look at. */
-  checkFields: string;
-  /** The banner when the server cannot be reached. */
-  offline: string;
-}
-
-export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
-  en: {
-    save: 'Save',
-    edit: 'Edit',
-    done: 'Done',
-    discard: 'Discard',
-    saving: 'Saving…',
-    saved: 'Saved',
-    submit: 'Submit',
-    next: 'Next',
-    back: 'Back',
-    skip: 'Skip',
-    steps: 'Steps',
-    stepOf: 'Step {n} of {total}',
-    submitted: 'Thank you. Your answers were sent.',
-    submitAnother: 'Submit another response',
-    draftFound: 'You have unsaved answers from {time}.',
-    restore: 'Restore',
-    discardDraft: 'Discard',
-    ok: 'OK',
-    cancel: 'Cancel',
-    loading: 'Loading…',
-    saveClose: 'Save & Close',
-    close: 'Close',
-    dismiss: 'Dismiss',
-    retry: 'Retry',
-    notSaved: 'Not saved',
-    notSent: 'Not sent',
-    checkFields: '{what}. Check: {fields}',
-    offline: 'Could not reach the server. Your changes are still here.',
-  },
-  ar: {
-    save: 'حفظ',
-    edit: 'تعديل',
-    done: 'تم',
-    discard: 'تجاهل',
-    saving: 'جارٍ الحفظ…',
-    saved: 'تم الحفظ',
-    submit: 'إرسال',
-    next: 'التالي',
-    back: 'رجوع',
-    skip: 'تخطٍّ',
-    steps: 'الخطوات',
-    stepOf: 'الخطوة {n} من {total}',
-    submitted: 'شكرًا لك. تم إرسال إجاباتك.',
-    submitAnother: 'إرسال إجابة أخرى',
-    draftFound: 'لديك إجابات غير محفوظة من {time}.',
-    restore: 'استعادة',
-    discardDraft: 'تجاهل',
-    ok: 'موافق',
-    cancel: 'إلغاء',
-    loading: 'جارٍ التحميل…',
-    saveClose: 'حفظ وإغلاق',
-    close: 'إغلاق',
-    dismiss: 'إخفاء',
-    retry: 'أعد المحاولة',
-    notSaved: 'لم يُحفظ',
-    notSent: 'لم يُرسل',
-    checkFields: '{what}. راجِع: {fields}',
-    offline: 'تعذّر الوصول إلى الخادم. تعديلاتك ما زالت هنا.',
-  },
-  de: {
-    save: 'Speichern',
-    edit: 'Bearbeiten',
-    done: 'Fertig',
-    discard: 'Verwerfen',
-    saving: 'Wird gespeichert…',
-    saved: 'Gespeichert',
-    submit: 'Absenden',
-    next: 'Weiter',
-    back: 'Zurück',
-    skip: 'Überspringen',
-    steps: 'Schritte',
-    stepOf: 'Schritt {n} von {total}',
-    submitted: 'Vielen Dank. Ihre Antworten wurden gesendet.',
-    submitAnother: 'Weitere Antwort senden',
-    draftFound: 'Sie haben ungespeicherte Antworten vom {time}.',
-    restore: 'Wiederherstellen',
-    discardDraft: 'Verwerfen',
-    ok: 'OK',
-    cancel: 'Abbrechen',
-    loading: 'Wird geladen…',
-    saveClose: 'Speichern und schließen',
-    close: 'Schließen',
-    dismiss: 'Ausblenden',
-    retry: 'Erneut versuchen',
-    notSaved: 'Nicht gespeichert',
-    notSent: 'Nicht gesendet',
-    checkFields: '{what}. Bitte prüfen: {fields}',
-    offline: 'Der Server ist nicht erreichbar. Ihre Änderungen sind noch da.',
-  },
-  fr: {
-    save: 'Enregistrer',
-    edit: 'Modifier',
-    done: 'Terminé',
-    discard: 'Annuler les modifications',
-    saving: 'Enregistrement…',
-    saved: 'Enregistré',
-    submit: 'Envoyer',
-    next: 'Suivant',
-    back: 'Retour',
-    skip: 'Passer',
-    steps: 'Étapes',
-    stepOf: 'Étape {n} sur {total}',
-    submitted: 'Merci. Vos réponses ont été envoyées.',
-    submitAnother: 'Envoyer une autre réponse',
-    draftFound: 'Vous avez des réponses non enregistrées du {time}.',
-    restore: 'Restaurer',
-    discardDraft: 'Ignorer',
-    ok: 'OK',
-    cancel: 'Annuler',
-    loading: 'Chargement…',
-    saveClose: 'Enregistrer et fermer',
-    close: 'Fermer',
-    dismiss: 'Masquer',
-    retry: 'Réessayer',
-    notSaved: 'Non enregistré',
-    notSent: 'Non envoyé',
-    checkFields: '{what}. À vérifier : {fields}',
-    offline: 'Le serveur est injoignable. Vos modifications sont toujours là.',
-  },
-};
-
-/** English, kept under its old name. */
-export const DEFAULT_LABELS: ViewerLabels = VIEWER_LABELS.en;
+import { VIEWER_LABELS, type ViewerLabels } from './labels';
+export { VIEWER_LABELS, DEFAULT_LABELS, type ViewerLabels } from './labels';
 
 /** Fill a slot with the app's own content. Return a function to clean up. */
 export type SlotRenderer = (element: HTMLElement, context: { form: Form; name: string }) => void | (() => void);
@@ -1033,87 +866,5 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   };
 }
 
-/** The field a page's records are named by: its title, or "name", or its first line of text. */
-function nameFieldOf(page: Page): string | null {
-  if (page.layout.type === 'sheet' && page.layout.title?.field) return page.layout.title.field;
-  if (page.fields['name']) return 'name';
-  return Object.entries(page.fields).find(([, def]) => def.type === 'char')?.[0] ?? null;
-}
-
 /** Fields whose ✓ would say nothing: a yes/no box is never wrong, a table or a file has its own look. */
 const NO_VALID_MARK = new Set(['boolean', 'one2many', 'binary', 'image', 'html', 'json', 'properties']);
-
-/** A form made of fields, for values edited in a dialog (a line, for one). */
-function valuesPage(fields: Record<string, Field>, title: string, readonly: boolean): Page {
-  const shown = Object.fromEntries(Object.entries(fields).map(([name, def]) => [name, readonly ? { ...def, readonly: true } : def])) as Page['fields'];
-  return {
-    fieldia: '0.1',
-    id: 'values',
-    title,
-    data: { kind: 'record', model: 'values' },
-    fields: shown,
-    layout: {
-      type: 'sections',
-      id: 'values',
-      children: [{ type: 'section', id: 'values-section', columns: 2, children: Object.keys(shown).map((name) => ({ type: 'field' as const, id: `values-${name}`, field: name })) }],
-    },
-  };
-}
-
-/** Only finding and making linked records: values edited in a dialog are no record of the source's to load, save or recalculate. */
-function lookupsOf(source: DataSource | undefined): DataSource | undefined {
-  if (!source) return undefined;
-  return {
-    ...(source.search ? { search: (request: SearchRequest) => source.search!(request) } : {}),
-    ...(source.create ? { create: (request: CreateRequest) => source.create!(request) } : {}),
-  };
-}
-
-/** The dialogs a page's widgets may open, made from the viewer's own options. */
-function pageDialogs(options: ViewerOptions): WidgetDialogs {
-  const pageFor = (model: string) =>
-    (typeof options.relatedPages === 'function' ? options.relatedPages(model) : options.relatedPages?.[model]) ?? null;
-  // A dialog's page looks and reads like the page that opened it, and can open dialogs of its own.
-  const shared = {
-    locale: options.locale,
-    skin: options.skin,
-    dir: options.dir,
-    widgets: options.widgets,
-    preferences: options.preferences,
-    relatedPages: options.relatedPages,
-    translate: options.translate,
-  };
-  return {
-    canOpen: (model) => pageFor(model) !== null,
-    async openRecord(model, request) {
-      const related = pageFor(model);
-      if (!related) return null;
-      const nameField = nameFieldOf(related);
-      const result = await openFormDialog({
-        ...shared,
-        page: related,
-        dataSource: options.dataSource,
-        recordId: request.recordId ?? null,
-        values: request.name && nameField ? { [nameField]: request.name } : undefined,
-        title: request.title,
-        size: 'large',
-      });
-      if (!result.saved || result.recordId === null) return null;
-      const name = nameField ? result.values[nameField] : null;
-      return { id: result.recordId, label: typeof name === 'string' && name ? name : request.name ?? request.title };
-    },
-    searchMore: (request) => openSearchDialog({ title: request.title, search: request.search, locale: options.locale, skin: options.skin, dir: options.dir }),
-    async editValues(request) {
-      const result = await openFormDialog({
-        ...shared,
-        page: valuesPage(request.fields, request.title, request.readonly === true),
-        dataSource: lookupsOf(options.dataSource),
-        values: request.values,
-        title: request.title,
-        mode: 'values',
-        ...(request.recompute ? { recompute: request.recompute } : {}),
-      });
-      return result.saved ? result.values : null;
-    },
-  };
-}
