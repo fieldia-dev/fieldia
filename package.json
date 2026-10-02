@@ -43,6 +43,9 @@
     "vue": "3.5.43"
   },
   "dependencies": {
+    "@grafloria/element": "0.4.83",
+    "@grafloria/engine": "0.3.16",
+    "@grafloria/renderer": "0.4.16",
     "zod": "^4.6.5"
   }
 }

@@ -157,6 +157,8 @@ export interface Designer {
   setCondition(id: string, condition: { field: string; equals: string | number | boolean } | null): boolean;
   setColumns(sectionId: string, columns: 1 | 2 | 3 | 4): boolean;
   setColspan(nodeId: string, span: number): boolean;
+  /** Put a section's fields in this order with these widths, as one edit (a canvas drag). */
+  arrangeSection(sectionId: string, items: { id: string; colspan: number }[]): boolean;
   setPageInfo(info: { title?: string; description?: string }): boolean;
   undo(): void;
   redo(): void;
@@ -543,6 +545,30 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
         if (span > columns) throw new Refusal(`A field cannot be wider than its section's ${columns} columns`);
         if (span <= 1) delete found.node.colspan;
         else found.node.colspan = span;
+      });
+    },
+
+    arrangeSection(sectionId, items) {
+      return apply((draft) => {
+        const section = findContainer(draft, sectionId) as SectionNode | null;
+        if (!section) throw new Refusal(`There is no section "${sectionId}"`);
+        const fields = section.children.filter((n): n is FieldNode => n.type === 'field');
+        const others = section.children.filter((n) => n.type !== 'field');
+        const byId = new Map(fields.map((n) => [n.id, n]));
+        if (items.length !== fields.length || items.some((item) => !byId.has(item.id))) {
+          throw new Refusal('The arrangement does not match the fields in this section');
+        }
+        const columns = section.columns ?? 1;
+        section.children = [
+          ...items.map(({ id, colspan }) => {
+            const node = byId.get(id) as FieldNode;
+            const span = Math.max(1, Math.min(columns, Math.round(colspan)));
+            if (span === 1) delete node.colspan;
+            else node.colspan = span;
+            return node;
+          }),
+          ...others,
+        ];
       });
     },
 

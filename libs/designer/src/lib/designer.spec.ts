@@ -215,3 +215,28 @@ describe('createDesigner — app screens', () => {
     expect(sections[1].children.map((n) => n.id)[0]).toBe(a);
   });
 });
+
+describe('createDesigner — arranging a section from the canvas', () => {
+  it('reorders fields and sets their widths in one undo step', () => {
+    const designer = createDesigner({ page: blankPage('screen', 'Visit report') });
+    const section = (designer.getPage().layout as { children: SectionNode[] }).children[0].id;
+    const a = designer.addQuestion('short-answer', { parent: section }) as string;
+    const b = designer.addQuestion('date', { parent: section }) as string;
+    const c = designer.addQuestion('paragraph', { parent: section }) as string;
+    expect(designer.arrangeSection(section, [{ id: c, colspan: 2 }, { id: a, colspan: 1 }, { id: b, colspan: 1 }])).toBe(true);
+    const children = (designer.getPage().layout as { children: SectionNode[] }).children[0].children as FieldNode[];
+    expect(children.map((n) => [n.id, n.colspan ?? 1])).toEqual([[c, 2], [a, 1], [b, 1]]);
+    designer.undo();
+    const back = (designer.getPage().layout as { children: SectionNode[] }).children[0].children as FieldNode[];
+    expect(back.map((n) => n.id)).toEqual([a, b, c]);
+  });
+
+  it('refuses an arrangement that loses or invents a field', () => {
+    const designer = createDesigner({ page: blankPage('screen', 'Visit report') });
+    const section = (designer.getPage().layout as { children: SectionNode[] }).children[0].id;
+    const a = designer.addQuestion('short-answer', { parent: section }) as string;
+    designer.addQuestion('date', { parent: section });
+    expect(designer.arrangeSection(section, [{ id: a, colspan: 1 }])).toBe(false);
+    expect(designer.arrangeSection(section, [{ id: a, colspan: 1 }, { id: 'ghost', colspan: 1 }])).toBe(false);
+  });
+});
