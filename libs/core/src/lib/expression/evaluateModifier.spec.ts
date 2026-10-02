@@ -9,6 +9,14 @@
 
 import { evaluateModifier, isModifierValid } from './evaluateModifier';
 
+/** Milliseconds of CPU this process spent on `work`: a busy machine waiting on other processes does not stretch it. */
+function cpuMs(work: () => void): number {
+  const before = process.cpuUsage();
+  work();
+  const spent = process.cpuUsage(before);
+  return (spent.user + spent.system) / 1000;
+}
+
 describe('evaluateModifier', () => {
   describe('Boolean values', () => {
     it('should handle boolean true/false', () => {
@@ -292,14 +300,12 @@ describe('evaluateModifier', () => {
   describe('Performance', () => {
     it('should evaluate simple expressions quickly', () => {
       const ctx = { state: 'draft', amount: 100 };
-      const start = Date.now();
-
-      for (let i = 0; i < 1000; i++) {
-        evaluateModifier("state == 'draft' and amount > 50", ctx);
-      }
-
-      const elapsed = Date.now() - start;
-      expect(elapsed).toBeLessThan(100); // 1000 evaluations in < 100ms
+      const elapsed = cpuMs(() => {
+        for (let i = 0; i < 1000; i++) {
+          evaluateModifier("state == 'draft' and amount > 50", ctx);
+        }
+      });
+      expect(elapsed).toBeLessThan(100); // 1000 evaluations in < 100 ms of this process's own time
     });
 
     it('should evaluate complex expressions reasonably quickly', () => {
@@ -308,17 +314,15 @@ describe('evaluateModifier', () => {
         amount: 100,
         partner_id: { country_id: { code: 'US' } },
       };
-      const start = Date.now();
-
-      for (let i = 0; i < 100; i++) {
-        evaluateModifier(
-          "(state in ['draft', 'sent'] and amount > 50) or (partner_id.country_id.code in ['US', 'CA'] and not is_locked)",
-          { ...ctx, is_locked: false }
-        );
-      }
-
-      const elapsed = Date.now() - start;
-      expect(elapsed).toBeLessThan(100); // 100 evaluations in < 100ms
+      const elapsed = cpuMs(() => {
+        for (let i = 0; i < 100; i++) {
+          evaluateModifier(
+            "(state in ['draft', 'sent'] and amount > 50) or (partner_id.country_id.code in ['US', 'CA'] and not is_locked)",
+            { ...ctx, is_locked: false }
+          );
+        }
+      });
+      expect(elapsed).toBeLessThan(100); // 100 evaluations in < 100 ms of this process's own time
     });
   });
 });
