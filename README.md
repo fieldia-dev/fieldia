@@ -2,7 +2,7 @@
 
 **Fieldia is a form engine and form builder for JavaScript: one JSON page format, rendered in Angular, React, Vue or plain JavaScript, from a simple survey to a full ERP screen.**
 
-> Early days. The page format is being designed; nothing is published to npm yet.
+> **Docs and live demos: [fieldia.dev](https://fieldia.dev).** Version 0.1 is built and checked; it is not on npm yet.
 
 ## The idea
 
