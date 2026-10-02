@@ -1,5 +1,6 @@
 import {
   createForm,
+  translatePage,
   validatePage,
   wideColumns,
   type ButtonNode,
@@ -240,6 +241,11 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
   readonly?: boolean;
   /** An Edit button that unlocks a read-only form, and a Done that saves and locks it again. */
   editSwitch?: boolean;
+  /**
+   * The app's own translator, for apps that keep translations by text or by
+   * key: every word of the page goes through it. Record data never does.
+   */
+  translate?: (text: string) => string;
 }
 
 export interface ViewerHandle {
@@ -271,7 +277,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   if (!checked.ok) {
     throw new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);
   }
-  const page = checked.page;
+  const page = options.translate ? translatePage(checked.page, options.translate) : checked.page;
   const locale = options.locale ?? 'en';
   const preferences = options.preferences ?? browserPreferences();
   const dialogs = pageDialogs(options);
@@ -1074,6 +1080,7 @@ function pageDialogs(options: ViewerOptions): WidgetDialogs {
     widgets: options.widgets,
     preferences: options.preferences,
     relatedPages: options.relatedPages,
+    translate: options.translate,
   };
   return {
     canOpen: (model) => pageFor(model) !== null,

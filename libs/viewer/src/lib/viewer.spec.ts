@@ -368,6 +368,34 @@ describe('a refused save', () => {
   });
 });
 
+describe('a page in the app’s own words', () => {
+  const catalog: Record<string, string> = { 'Full name': 'Nom complet', 'About you': 'À propos de vous', Submit: 'Envoyer' };
+  const translate = (text: string) => catalog[text] ?? text;
+
+  it('shows the page’s words through the app’s translator, in its messages too, and never the data', async () => {
+    const dataSource = createMemoryDataSource();
+    const { host, form } = mount('signup', { dataSource, translate });
+    expect(at(host, 'f-name').querySelector('.fd-label')?.textContent).toBe('Nom complet');
+    expect(at(host, 'about').querySelector('legend')?.textContent).toBe('À propos de vous');
+    type(input(host, 'f-company'), 'Full name');
+    expect(input(host, 'f-company').value).toBe('Full name');
+    button(host, 'Submit').click();
+    await form.settled();
+    expect(at(host, 'f-name').querySelector('.fd-error')?.textContent).toBe('Nom complet is required');
+  });
+
+  it('opens related records in dialogs in the same words', async () => {
+    const dataSource = createMemoryDataSource({ records: { partner: { 1: customer } } });
+    const { host, form } = mount('fields', { dataSource, translate: (t) => (t === 'Name' ? 'Nom' : t), relatedPages: { partner: page('customer') } });
+    form.setValue('client_id', { id: 1, label: 'Nile Traders' });
+    await flush();
+    (at(host, 'f-client').querySelector('button.fd-combo-open') as HTMLButtonElement).click();
+    await flush();
+    const dialog = document.querySelector('.fd-form-dialog') as HTMLElement;
+    expect(dialog.querySelector('[data-node="#title"] .fd-label')?.textContent).toBe('Nom');
+  });
+});
+
 describe('a read-only form', () => {
   const title = (host: Element) => host.querySelector('[data-node="#title"] input') as HTMLInputElement;
 
