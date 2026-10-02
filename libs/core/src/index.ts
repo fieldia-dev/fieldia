@@ -51,6 +51,7 @@ export {
 } from './lib/format/layout';
 export { FORMAT_VERSION, PageSchema, type Page, type PageData } from './lib/format/page';
 export { validatePage, type PageIssue, type PageValidation } from './lib/format/validate';
+export { translatePage } from './lib/format/translate';
 export { pageJsonSchema } from './lib/format/json-schema';
 export { compileModifier, type CompiledModifier } from './lib/expression/modifier';
 export { evaluateModifier, isModifierValid } from './lib/expression/evaluateModifier';
