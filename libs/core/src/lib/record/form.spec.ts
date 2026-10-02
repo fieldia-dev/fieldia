@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { Page } from '../format/page';
 import { createForm, type DraftStore } from './form';
 import { createMemoryDataSource } from './memory-data-source';
+import type { DataSource } from './data-source';
 import type { Scheduler } from './scheduler';
 
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', '..', 'examples', 'pages');
@@ -287,16 +288,16 @@ describe('createForm — onchange', () => {
   });
 
   it('ignores an answer that arrives after a newer change', async () => {
-    const clock = manualClock();
-    const ds = createMemoryDataSource({
-      onchange: { partner: { name: (v) => ({ website: `https://${String(v['name']).toLowerCase()}.example` }) } },
-      delayMs: 10,
-      scheduler: clock,
-    });
-    const form = createForm({ page: page('customer'), dataSource: ds });
+    // The first request is answered last, the way a slow network reorders them.
+    const answers: Array<(website: string) => void> = [];
+    const dataSource: DataSource = {
+      onchange: () => new Promise((resolve) => answers.push((website) => resolve({ values: { website } }))),
+    };
+    const form = createForm({ page: page('customer'), dataSource });
     form.setValue('name', 'First');
     form.setValue('name', 'Second');
-    clock.advance(10);
+    answers[1]('https://second.example');
+    answers[0]('https://first.example');
     await form.settled();
     expect(form.getState().values['website']).toBe('https://second.example');
   });
