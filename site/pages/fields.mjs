@@ -87,6 +87,43 @@ ${code(
 
 <p>When nothing found has the name that was typed, the list ends with <em>Create “…”</em>: it makes the record through the data source's ${c('create')} and links to it. It is offered only when the data source can create, and never on a node with ${c('"create": false')}.</p>
 
+<h2 id="dialogs">Records in dialogs</h2>
+<p>Give the viewer the pages that edit your related records, keyed by model, and a link field opens them in a dialog without leaving the page:</p>
+${code(
+  'ts',
+  `
+mountViewer(host, {
+  page: projectPage,
+  dataSource,
+  relatedPages: { partner: customerPage },   // or (model) => page | null
+});`
+)}
+<p>In React pass ${c('relatedPages={…}')}, in Vue ${c(':related-pages="…"')}, in Angular ${c('[relatedPages]="…"')}. A link to one of those models then offers:</p>
+<ul>
+  <li><strong>↗ beside the link</strong> opens the linked record in a large dialog. Save &amp; Close saves it through the data source, and the link follows a new name.</li>
+  <li><strong>Create and edit…</strong> after a name is typed opens the related page with that name filled in. Save &amp; Close makes the record and links to it.</li>
+</ul>
+<p>Every link, with or without a related page, ends its list with <strong>Search more…</strong> when more records match than the list shows (eight). It opens every match in a dialog with its own search box; a click or Enter picks one.</p>
+<p>A dialog takes the focus to its first field, keeps Tab inside, and gives the focus back where it came from when it closes. Escape closes a list open inside it first, then the dialog, keeping nothing. The page's own Save and Discard give way to the dialog's Discard and Save &amp; Close.</p>
+<h3 id="your-dialogs">Your own dialogs</h3>
+${code(
+  'ts',
+  `
+import { openFormDialog, openSearchDialog } from '@fieldia/viewer';
+
+const { saved, recordId, values } = await openFormDialog({
+  page: taskPage, dataSource, recordId: null,
+  title: 'New task',
+  size: 'medium',          // 'small' | 'medium' | 'large' | 'full'
+});
+
+// "values" mode only checks the form and hands its values back: nothing is saved.
+const line = await openFormDialog({ page: linePage, values, title: 'Line', mode: 'values' });
+
+const picked = await openSearchDialog({ title: 'Customer', search: (query, limit) => mySearch(query, limit) });`
+)}
+<p>${c('openFormDialog')} takes every option ${c('mountViewer')} does. In ${c('"values"')} mode a ${c('recompute(values)')} option recalculates the values as they change, and the dialog shows what comes back.</p>
+
 <h2 id="lines">Tables of lines</h2>
 <p>A ${c('one2many')} declares the fields of each line; the node's ${c('columns')} says which show as columns. Lines are added, edited and removed in place, and saved as ${c('create')}, ${c('update')} and ${c('delete')} operations — see <a href="/data/#changes">what a save sends</a>.</p>
 ${code(
@@ -158,6 +195,7 @@ mountViewer(host, { page, dataSource, widgets: gridWidgets });
   <li><strong>A refused save</strong> marks the wrong cells, lists the problems under the table and opens the first one.</li>
   <li><strong>Long tables</strong> stop growing at 15 lines and scroll inside, drawing only the rows in view.</li>
   <li><strong>A whole line at once.</strong> ${c('"editMode": "row"')} on the node opens every cell of a line together, as an editable list does.</li>
+  <li><strong>A line in a dialog.</strong> ↗ at the end of a line opens all of its fields, the hidden columns too, in a dialog. Its links search the page's data source, and the page's ${c('onchange')} runs as it is edited, so a subtotal follows its quantity there. Save &amp; Close writes the line back; Discard leaves it as it was.</li>
 </ul>
 
 <h2 id="code">JSON in a code editor</h2>

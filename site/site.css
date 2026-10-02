@@ -13,7 +13,8 @@
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+/* A heading reached by its link stops below the sticky bar, not under it. */
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 76px; }
 body { margin: 0; background: var(--page); color: var(--ink); font: 16px/1.6 var(--font); }
 a { color: var(--link); text-underline-offset: 2px; }
 a:hover { color: var(--brand); }

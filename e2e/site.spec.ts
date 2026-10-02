@@ -56,6 +56,15 @@ test('the live form on the front page checks, sends, changes skin and language',
   expect(problems).toEqual([]);
 });
 
+test('a link to a heading shows the heading below the bar, not under it', async ({ page }) => {
+  for (const anchor of ['/fields/#dialogs', '/fields/#grid', '/data/#requests']) {
+    await page.goto(SITE + anchor);
+    const bar = (await page.locator('.top').boundingBox())!;
+    const heading = (await page.locator(anchor.slice(anchor.indexOf('#'))).boundingBox())!;
+    expect(heading.y, `${anchor} is under the bar`).toBeGreaterThanOrEqual(bar.y + bar.height);
+  }
+});
+
 test('every demo the site links to opens a working form', async ({ page }) => {
   const problems = watch(page);
   await page.goto(SITE + '/demos/');
