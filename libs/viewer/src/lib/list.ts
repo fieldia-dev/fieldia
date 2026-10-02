@@ -1,5 +1,6 @@
 import {
   facetsToFilter,
+  groupByFields,
   type ButtonNode,
   type DataSource,
   type Facet,
@@ -16,6 +17,7 @@ import { displayValue, type IconSet, type PreferenceStore } from '@fieldia/widge
 import type { El } from './dom';
 import { startingFacets } from './favourites';
 import type { ViewerLabels } from './labels';
+import { groupRow, type GroupContext, type Row } from './list-groups';
 import { installListStyles } from './list-styles';
 import { searchBar } from './search-bar';
 
@@ -45,8 +47,6 @@ export interface ListView {
   destroy(): void;
 }
 
-type Row = { id: RecordId; values: Record<string, Value> };
-
 /** Numbers line up on the end of their column. */
 const NUMBERS = new Set(['integer', 'float', 'monetary']);
 /** Fields no list can put in order. */
@@ -65,7 +65,13 @@ export function listView(context: ListContext): ListView {
   let sort: SortOrder[] = defaultSort;
   let offset = 0;
   let total = 0;
+  /** The page of records, when the list is not grouped. */
   let rows: Row[] = [];
+  /** Each record's row, for the records on show however they are grouped. */
+  const recordOf = new WeakMap<Element, Row>();
+  const visible = () => [...body.querySelectorAll('.fd-list-row')].map((tr) => recordOf.get(tr) as Row);
+  // Only a page of records gets this far: the page check refuses a list of anything else.
+  const model = page.data.kind === 'record' ? page.data.model : '';
   let facets: Facet[] = startingFacets(node, context.preferences, page);
   /** In the order they were chosen, which is the order the app gets them. */
   const chosen = new Set<RecordId>();
@@ -111,7 +117,7 @@ export function listView(context: ListContext): ListView {
   const failed = el('p', { class: 'fd-list-failed', role: 'alert', hidden: '' }, labels.loadFailed, ' ', retry);
   retry.addEventListener('click', () => void load());
 
-  function row(record: Row): HTMLTableRowElement {
+  function row(record: Row, level = 0): HTMLTableRowElement {
     const name = show(node.columns[0], record.values) || String(record.id);
     const box = el('input', { type: 'checkbox', class: 'fd-list-checkbox', 'aria-label': fill(labels.selectRecord, { name }) });
     box.checked = chosen.has(record.id);
@@ -122,7 +128,7 @@ export function listView(context: ListContext): ListView {
     });
     const tr = el(
       'tr',
-      { class: context.onOpenRecord ? 'fd-list-row fd-list-openable' : 'fd-list-row', tabindex: '0', 'data-id': String(record.id) },
+      { class: context.onOpenRecord ? 'fd-list-row fd-list-openable' : 'fd-list-row', tabindex: '0', 'data-id': String(record.id), 'data-level': level ? String(level) : undefined },
       el('td', { class: 'fd-list-check' }, box),
       // Each value in its own direction: a phone number or an amount reads left to right on a right-to-left page.
       ...node.columns.map((name) => el('td', { class: NUMBERS.has(page.fields[name].type) ? 'fd-num' : undefined }, el('bdi', {}, show(name, record.values))))
@@ -150,6 +156,7 @@ export function listView(context: ListContext): ListView {
         (next as HTMLElement | null)?.focus();
       }
     });
+    recordOf.set(tr, record);
     return tr;
   }
 
@@ -173,7 +180,7 @@ export function listView(context: ListContext): ListView {
     drawChoice();
   });
   chooseAll.addEventListener('change', () => {
-    for (const record of rows) {
+    for (const record of visible()) {
       if (chooseAll.checked) chosen.add(record.id);
       else chosen.delete(record.id);
     }
@@ -182,9 +189,10 @@ export function listView(context: ListContext): ListView {
   });
 
   function drawChoice() {
-    const onPage = rows.filter((record) => chosen.has(record.id)).length;
-    chooseAll.checked = rows.length > 0 && onPage === rows.length;
-    chooseAll.indeterminate = onPage > 0 && onPage < rows.length;
+    const shown = visible();
+    const onPage = shown.filter((record) => chosen.has(record.id)).length;
+    chooseAll.checked = shown.length > 0 && onPage === shown.length;
+    chooseAll.indeterminate = onPage > 0 && onPage < shown.length;
     selection.hidden = chosen.size === 0;
     count.textContent = fill(labels.selected, { n: chosen.size });
     for (const tr of body.querySelectorAll<HTMLElement>('.fd-list-row')) {
@@ -224,25 +232,56 @@ export function listView(context: ListContext): ListView {
 
   // ---- asking for the records ------------------------------------------------------
 
+  /** Rows came or went: what is chosen keeps to the records on show. */
+  function changed() {
+    const shown = new Set(visible().map((record) => record.id));
+    for (const id of [...chosen]) if (!shown.has(id)) chosen.delete(id);
+    drawChoice();
+  }
+
+  const grouped = (source: DataSource): GroupContext => ({
+    page,
+    el,
+    labels,
+    fill,
+    dataSource: source,
+    model,
+    fields,
+    columns: node.columns.length + 1,
+    pageSize,
+    sort: () => sort,
+    recordRow: row,
+    changed,
+  });
+
   async function load(): Promise<void> {
     const mine = ++asking;
     drawSort();
     table.setAttribute('aria-busy', 'true');
+    let drawn: HTMLTableRowElement[] = [];
     try {
       const filter = facetsToFilter(facets, node);
-      // Only a page of records gets this far: the page check refuses a list of anything else.
-      const model = page.data.kind === 'record' ? page.data.model : '';
-      const answer = context.dataSource?.list
-        ? await context.dataSource.list({ model, fields, filter, sort, offset, limit: pageSize })
-        : { records: [], total: 0 };
-      if (mine !== asking || destroyed) return;
-      // Past the end, as when the last record of the last page went: back to the page that is left.
-      if (!answer.records.length && answer.total > 0 && offset > 0) {
-        offset = Math.floor((answer.total - 1) / pageSize) * pageSize;
-        return load();
+      const grouping = groupByFields(facets);
+      const source = context.dataSource;
+      if (grouping.length && source?.groups && source.list) {
+        // Grouped: a row for each value of the first field, each opening into the rest.
+        const groups = await source.groups({ model, field: grouping[0], filter });
+        if (mine !== asking || destroyed) return;
+        rows = [];
+        total = 0;
+        drawn = groups.map((group) => groupRow(grouped(source), group, 0, filter, grouping));
+      } else {
+        const answer = source?.list ? await source.list({ model, fields, filter, sort, offset, limit: pageSize }) : { records: [], total: 0 };
+        if (mine !== asking || destroyed) return;
+        // Past the end, as when the last record of the last page went: back to the page that is left.
+        if (!answer.records.length && answer.total > 0 && offset > 0) {
+          offset = Math.floor((answer.total - 1) / pageSize) * pageSize;
+          return load();
+        }
+        rows = answer.records;
+        total = answer.total;
+        drawn = rows.map((record) => row(record));
       }
-      rows = answer.records;
-      total = answer.total;
       failed.hidden = true;
     } catch {
       if (mine !== asking || destroyed) return;
@@ -250,13 +289,11 @@ export function listView(context: ListContext): ListView {
       total = 0;
       failed.hidden = false;
     }
-    const shown = new Set(rows.map((record) => record.id));
-    for (const id of [...chosen]) if (!shown.has(id)) chosen.delete(id);
-    body.replaceChildren(...rows.map(row));
-    empty.hidden = rows.length > 0 || !failed.hidden;
+    body.replaceChildren(...drawn);
+    empty.hidden = drawn.length > 0 || !failed.hidden;
     table.removeAttribute('aria-busy');
     drawPager();
-    drawChoice();
+    changed();
   }
 
   const search = searchBar({

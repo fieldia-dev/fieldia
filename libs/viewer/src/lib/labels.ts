@@ -81,6 +81,9 @@ export interface ViewerLabels {
   opNotSet: string;
   yes: string;
   no: string;
+  /** A list's groups: the one of records with no value, and the rest of a group's records (`{n}`). */
+  none: string;
+  loadMore: string;
 }
 
 export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
@@ -150,6 +153,8 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     opNotSet: 'is not set',
     yes: 'Yes',
     no: 'No',
+    none: 'None',
+    loadMore: 'Show {n} more',
   },
   ar: {
     save: 'حفظ',
@@ -217,6 +222,8 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     opNotSet: 'غير محدد',
     yes: 'نعم',
     no: 'لا',
+    none: 'بلا قيمة',
+    loadMore: 'عرض {n} أخرى',
   },
   de: {
     save: 'Speichern',
@@ -284,6 +291,8 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     opNotSet: 'ist nicht gesetzt',
     yes: 'Ja',
     no: 'Nein',
+    none: 'Ohne Angabe',
+    loadMore: '{n} weitere anzeigen',
   },
   fr: {
     save: 'Enregistrer',
@@ -351,6 +360,8 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     opNotSet: 'n’est pas défini',
     yes: 'Oui',
     no: 'Non',
+    none: 'Aucun',
+    loadMore: 'Afficher {n} de plus',
   },
 };
 

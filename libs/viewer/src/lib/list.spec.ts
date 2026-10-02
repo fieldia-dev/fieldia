@@ -103,3 +103,82 @@ describe('a list of records', () => {
     other.destroy();
   });
 });
+
+describe('a list grouped by its fields', () => {
+  const groups = (host: Element) => [...host.querySelectorAll('.fd-list-group')].map((tr) => `${'  '.repeat(Number((tr as HTMLElement).dataset['level']))}${tr.textContent}`);
+  const group = (host: Element, name: string) =>
+    [...host.querySelectorAll<HTMLButtonElement>('.fd-group-toggle')].find((b) => b.querySelector('.fd-group-label')?.textContent === name) as HTMLButtonElement;
+  async function groupBy(host: Element, ...names: string[]) {
+    button(host, 'Search options')!.click();
+    for (const name of names) button(host.querySelector('.fd-search-panel [data-group-kind="groupBy"]') as HTMLElement, name)!.click();
+    await until(() => host.querySelector('.fd-list-group'));
+  }
+
+  it('shows a row for each value with how many records have it, and opens one into its records', async () => {
+    const host = await mount();
+    await groupBy(host, 'Country');
+    expect(groups(host)).toEqual(['Egypt (2)', 'Jordan (1)', 'None (1)']);
+    expect(rows(host)).toEqual([]);
+    expect((host.querySelector('.fd-pager') as HTMLElement).hidden).toBe(true);
+    const egypt = group(host, 'Egypt');
+    expect(egypt.getAttribute('aria-expanded')).toBe('false');
+    egypt.click();
+    await until(() => rows(host).length === 2);
+    expect(egypt.getAttribute('aria-expanded')).toBe('true');
+    expect(rows(host).map((r) => cells(r)[0])).toEqual(['Amira Clinics', 'Nile Traders']);
+    // The records sit under their group, before the next one.
+    expect(rows(host)[1].nextElementSibling?.textContent).toBe('Jordan (1)');
+    group(host, 'None').click();
+    await until(() => rows(host).length === 3);
+    expect(rows(host)[2].textContent).toContain('Zamalek Studio');
+    egypt.click();
+    expect(rows(host).map((r) => cells(r)[0])).toEqual(['Zamalek Studio']);
+    expect(egypt.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('opens a group into the next field’s groups, and closes everything under it at once', async () => {
+    const host = await mount();
+    await groupBy(host, 'Country', 'Status');
+    group(host, 'Egypt').click();
+    await until(() => groups(host).length === 5);
+    expect(groups(host)).toEqual(['Egypt (2)', '  Active (1)', '  Draft (1)', 'Jordan (1)', 'None (1)']);
+    group(host, 'Draft').click();
+    await until(() => rows(host).length === 1);
+    expect(cells(rows(host)[0])[0]).toBe('Amira Clinics');
+    expect(rows(host)[0].dataset['level']).toBe('2');
+    group(host, 'Egypt').click();
+    expect(groups(host)).toEqual(['Egypt (2)', 'Jordan (1)', 'None (1)']);
+    expect(rows(host)).toEqual([]);
+  });
+
+  it('shows a group’s records a page at a time, with the rest a click away', async () => {
+    const host = await mount({}, { ...customers, layout: { ...(customers.layout as object), pageSize: 1 } as Page['layout'] });
+    await groupBy(host, 'Country');
+    group(host, 'Egypt').click();
+    await until(() => rows(host).length === 1);
+    const more = button(host, 'Show 1 more')!;
+    expect(more).toBeTruthy();
+    more.click();
+    await until(() => rows(host).length === 2);
+    expect(rows(host).map((r) => cells(r)[0])).toEqual(['Amira Clinics', 'Nile Traders']);
+    expect(host.querySelector('.fd-list-more')).toBeNull();
+  });
+
+  it('chooses the records on show in the open groups, and goes back to pages when the grouping goes', async () => {
+    const pressed: ActionRequest[] = [];
+    const host = await mount({ onAction: (request) => void pressed.push(request) });
+    await groupBy(host, 'Country');
+    group(host, 'Egypt').click();
+    await until(() => rows(host).length === 2);
+    (host.querySelector('thead input[type=checkbox]') as HTMLInputElement).click();
+    button(host.querySelector('.fd-list-selection') as HTMLElement, 'Archive')!.click();
+    await until(() => pressed.length);
+    expect(pressed[0].recordIds).toEqual([2, 1]);
+    // Closed, a group's records are no longer chosen.
+    group(host, 'Egypt').click();
+    expect((host.querySelector('.fd-list-selection') as HTMLElement).hidden).toBe(true);
+    button(host, 'Remove Country')!.click();
+    await until(() => rows(host).length === 2 && !host.querySelector('.fd-list-group'));
+    expect(host.querySelector('.fd-pager-text')?.textContent).toBe('1–2 / 4');
+  });
+});
