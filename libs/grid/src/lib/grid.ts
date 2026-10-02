@@ -291,6 +291,11 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
 
 // ---- the widget -------------------------------------------------------------------
 
+/** Past this many lines a table stops growing and scrolls inside, drawing only the rows in view. */
+const LONG_TABLE = 15;
+const ROW_HEIGHT = 40;
+const HEADER_HEIGHT = 38;
+
 const EDITABLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'date', 'datetime', 'selection', 'many2one', 'many2many', 'reference']);
 
 export const gridWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, preferences }) => {
@@ -496,8 +501,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         borderColor: 'var(--fd-border)',
         accentColor: 'var(--fd-accent)',
         wrapperBorderRadius: 'var(--fd-radius)',
-        rowHeight: 40,
-        headerHeight: 38,
+        rowHeight: ROW_HEIGHT,
+        headerHeight: HEADER_HEIGHT,
       }),
       columnDefs,
       rowData: lines(),
@@ -509,8 +514,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         return kind ? `fd-grid-${kind}` : undefined;
       },
       domLayout: 'autoHeight',
-      // A table that grows to fit its rows draws them all anyway, and lines have few columns.
-      suppressRowVirtualisation: true,
+      // Lines have few columns: all of them are drawn.
       suppressColumnVirtualisation: true,
       readOnlyEdit: true,
       // An empty table shows its Add a line button below, not a message inside.
@@ -673,6 +677,17 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     }
   });
 
+  // A table grows with its lines until it is long; then it keeps a height of
+  // LONG_TABLE rows and scrolls inside, so hundreds of lines draw no more than fit.
+  let long = false;
+  const fitHeight = (count: number) => {
+    if (count > LONG_TABLE === long) return;
+    long = count > LONG_TABLE;
+    host.style.height = long ? `${HEADER_HEIGHT + (LONG_TABLE + (totals.length ? 1 : 0)) * ROW_HEIGHT + 2}px` : '';
+    api.setGridOption('domLayout', long ? 'normal' : 'autoHeight');
+  };
+  fitHeight(lines().length);
+
   let shown: Line[] | null = null;
   let problemsShown = '';
   return {
@@ -692,6 +707,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       if (current !== shown) {
         shown = current;
         api.setGridOption('rowData', current);
+        fitHeight(current.length);
         if (totals.length) api.setGridOption('pinnedBottomRowData', [totalsRow(current)]);
       }
       const found = readonly ? [] : lineProblems();

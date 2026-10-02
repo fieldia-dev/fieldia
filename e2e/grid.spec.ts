@@ -485,5 +485,44 @@ for (const variant of VARIANTS) {
       await page.keyboard.press('Enter');
       await expect(cell(page, 0, 'price')).toHaveText('EGP 1,890.00');
     });
+    test('a long table stops growing, scrolls inside, draws only the rows in view, and keeps its totals in sight', async ({ page }) => {
+      await page.evaluate(() => {
+        const form = (window as any).fieldiaDemo.handle.form;
+        for (let i = 1; i <= 200; i++) form.addLine('line_ids', { product_id: { id: 5, label: 'Cable tray, 120 cm' }, name: `Run ${i}`, qty: 1, price: 215 });
+      });
+      await expect(grid(page).locator('.ag-grid-pinned-bottom-rows .ag-cell[col-id="qty"]')).toHaveText('230.00');
+      const frame = (await grid(page).locator('.ag-root-wrapper').boundingBox())!;
+      expect(frame.height).toBeLessThanOrEqual(38 + 15 * 40 + 40 + 4);
+      expect(await lineRows(page).count()).toBeLessThan(60);
+      // Scrolled to the end inside the table, the last line shows above the totals.
+      await grid(page).locator('.ag-grid-pinned-bottom-rows').scrollIntoViewIfNeeded(); // the page, not the table
+      await grid(page).locator('.ag-body-viewport, .ag-grid-viewport').first().evaluate((el) => (el.scrollTop = el.scrollHeight));
+      await expect(cell(page, 205, 'name')).toHaveText('Run 200');
+      await expect(cell(page, 205, 'name')).toBeInViewport();
+      await expect(grid(page).locator('.ag-grid-pinned-bottom-rows')).toBeInViewport();
+      await screen(page, `${variant}-grid-long`);
+
+      // Tab past the last cell still starts a new line, in view.
+      await cell(page, 205, 'discount').click();
+      await page.keyboard.press('Tab');
+      await expect.poll(() => editing(page)).toEqual([206, 'product_id']);
+      await expect(cell(page, 206, 'product_id')).toBeInViewport();
+    });
+
+    test('a table cut back to a few lines grows to fit them again', async ({ page }) => {
+      await page.evaluate(() => {
+        const form = (window as any).fieldiaDemo.handle.form;
+        for (let i = 1; i <= 30; i++) form.addLine('line_ids', { name: `Run ${i}` });
+      });
+      await expect.poll(async () => (await grid(page).locator('.ag-root-wrapper').boundingBox())!.height).toBeLessThanOrEqual(38 + 15 * 40 + 40 + 4);
+      await page.getByRole('button', { name: 'Discard' }).click();
+      await expect(lineRows(page)).toHaveCount(6);
+      // Back to fitting its rows: no inner scrolling, no blank below the last line.
+      const body = grid(page).locator('.ag-body-viewport, .ag-grid-viewport').first();
+      await expect.poll(() => body.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
+      const last = (await grid(page).locator(`.ag-row[row-index="${LAMP}"]`).boundingBox())!;
+      const totals = (await grid(page).locator('.ag-grid-pinned-bottom-rows').boundingBox())!;
+      expect(totals.y - (last.y + last.height)).toBeLessThanOrEqual(2);
+    });
   });
 }
