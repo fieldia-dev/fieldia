@@ -402,6 +402,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     for (let folded = invalid.closest<HTMLElement>('.fd-section-folded'); folded; folded = folded.parentElement?.closest<HTMLElement>('.fd-section-folded') ?? null) {
       folds.get(folded)?.();
     }
+    // A widget that knows where its problem is (a cell of a grid) takes the focus there itself.
+    if (!invalid.dispatchEvent(new CustomEvent('fd-focus-problem', { cancelable: true }))) return;
     const target = invalid.matches('input, select, textarea, button') ? invalid : invalid.querySelector<HTMLElement>('input, select, textarea, button');
     target?.focus();
   }

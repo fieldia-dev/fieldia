@@ -138,6 +138,31 @@ describe('a sections page', () => {
     await flush();
     expect(document.activeElement).toBe(input(host, 'f-name'));
   });
+
+  it('lets a widget that knows where its problem is take the focus there', async () => {
+    const signup = page('signup');
+    const name = (signup.layout as any).children[0].children.find((n: any) => n.id === 'f-name');
+    name.widget = 'own';
+    let inner: HTMLButtonElement | null = null;
+    const own = ({ document: doc }: { document: Document }) => {
+      const box = doc.createElement('div');
+      const first = doc.createElement('button');
+      inner = doc.createElement('button');
+      box.append(first, inner);
+      box.addEventListener('fd-focus-problem', (event) => {
+        event.preventDefault();
+        inner?.focus();
+      });
+      return { element: box, update: (state: { invalid: boolean }) => box.setAttribute('aria-invalid', String(state.invalid)) };
+    };
+    const host = document.createElement('div');
+    document.body.replaceChildren(host);
+    const handle = mountViewer(host, { page: signup, dataSource: createMemoryDataSource(), widgets: { 'char.own': own as any } });
+    button(host, 'Submit').click();
+    await flush();
+    expect(document.activeElement).toBe(inner);
+    handle.destroy();
+  });
 });
 
 const customer = {
