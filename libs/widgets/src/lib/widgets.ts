@@ -11,6 +11,7 @@ import type {
 } from '@fieldia/core';
 import type { WidgetLabels } from './labels';
 import { linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
+import { linesWidget } from './lines';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -391,4 +392,5 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'many2many.tags': tagsWidget,
   'many2many.checkboxes': linkCheckboxesWidget,
   reference: referenceWidget,
+  one2many: linesWidget,
 };

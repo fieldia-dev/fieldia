@@ -193,6 +193,20 @@ export const FIELDIA_CSS = /* css */ `
 .fd-tags .fd-combo { flex: 1 1 140px; }
 .fd-reference { display: grid; grid-template-columns: minmax(7em, 34%) minmax(0, 1fr); gap: 8px; }
 
+/* ---- one2many lines ------------------------------------------------------- */
+.fd-lines { display: grid; gap: 6px; min-width: 0; }
+.fd-lines-scroll { overflow-x: auto; }
+.fd-lines-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.fd-lines-table th { text-align: start; font-weight: 600; color: var(--fd-muted); font-size: 12.5px; padding: 6px 8px; border-block-end: 1px solid var(--fd-border); white-space: nowrap; }
+.fd-lines-table td { padding: 4px 8px; border-block-end: 1px solid var(--fd-border); vertical-align: top; min-width: 7em; }
+.fd-lines-table td.fd-lines-tools, .fd-lines-table th.fd-lines-tools { width: 32px; min-width: 32px; padding-inline: 0; text-align: center; }
+.fd-lines-table .fd-input { min-height: 28px; }
+.fd-line-delete { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
+.fd-line-delete:hover { color: var(--fd-error); background: var(--fd-error-soft); }
+.fd-lines-add { justify-self: start; }
+.fd-cell-error { color: var(--fd-error); font-size: 12px; }
+.fd-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
 /* ---- sections, tabs ---------------------------------------------------- */
 .fd-sections { display: grid; gap: 24px; }
 .fd-section { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 14px; }
