@@ -10,6 +10,34 @@ const box = async (page: Page, id: string) => (await node(page, id).boundingBox(
 
 for (const variant of VARIANTS) {
   test.describe(`${variant} · sheet and layout parts`, () => {
+    test('the statusbar fills the current stage, its words in its own colour, either way the page reads', async ({ page }) => {
+      for (const [direction, query] of [['ltr', 'page=customer&skin=underline'], ['rtl', 'page=customer&skin=underline&locale=ar&dir=rtl']]) {
+        await open(page, variant, query);
+        const bar = page.locator('.fd-header .fd-statusbar');
+        const current = bar.locator('[aria-current="step"]');
+        await expect(current).toHaveText('Active');
+        // The stage is the shape and the colour; its words carry neither a box nor a background of their own.
+        const look = await current.evaluate((step) => {
+          const label = step.firstElementChild as HTMLElement;
+          const own = getComputedStyle(step);
+          const words = getComputedStyle(label);
+          return { stage: own.backgroundColor, text: words.color, wordsBackground: words.backgroundColor, wordsPadding: words.paddingLeft, wordsClip: words.clipPath };
+        });
+        expect(look, direction).toEqual({ stage: 'rgb(0, 40, 85)', text: 'rgb(255, 255, 255)', wordsBackground: 'rgba(0, 0, 0, 0)', wordsPadding: '0px', wordsClip: 'none' });
+        // The other stages: grey, their words muted, with no box of their own either.
+        const other = await bar.getByRole('button', { name: 'Draft' }).evaluate((step) => {
+          const words = getComputedStyle(step.firstElementChild as HTMLElement);
+          return { stage: getComputedStyle(step).backgroundColor, wordsBackground: words.backgroundColor };
+        });
+        expect(other, direction).toEqual({ stage: 'rgb(242, 243, 245)', wordsBackground: 'rgba(0, 0, 0, 0)' });
+        // Right to left, the words still read the right way round, inside their stage.
+        const [stageBox, wordsBox] = [await current.boundingBox(), await current.locator('span').boundingBox()];
+        expect(wordsBox!.x).toBeGreaterThan(stageBox!.x);
+        expect(wordsBox!.x + wordsBox!.width).toBeLessThan(stageBox!.x + stageBox!.width);
+        await screen(page, `${variant}-statusbar-${direction}`, { viewport: true });
+      }
+    });
+
     test('a sheet shows its badge, then a choice over the title that the onchange follows', async ({ page }) => {
       await open(page, variant, 'page=customer&skin=underline');
       const badge = node(page, 'b-key-account');
