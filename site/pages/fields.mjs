@@ -71,6 +71,63 @@ ${code(
 }`
 )}
 
+<h3 id="sections-notes">Sections and notes</h3>
+<p>Lines can be headings and remarks between the items, the way a quotation is laid out. ${c('lineKinds')} names the line field that says what a line is and the field that holds its text. A section or note runs across the row, and it is never asked for what an item needs, such as a product.</p>
+${code(
+  'json',
+  `
+"line_ids": {
+  "type": "one2many",
+  "label": "Order lines",
+  "relation": "sale.order.line",
+  "lineKinds": { "field": "display_type", "text": "name", "section": "line_section", "note": "line_note" },
+  "sequenceField": "sequence",
+  "fields": { ... }
+}`
+)}
+<p>${c('section')} and ${c('note')} are the values that mark each kind; they default to ${c('"section"')} and ${c('"note"')}. With a ${c('sequenceField')} (an integer line field) lines can be moved, and only the lines that moved are numbered again. Neither field shows as a column.</p>
+
+<h3 id="table-node">On the node</h3>
+<p>The node that shows the table can add up number columns in a row under the lines, and let people hide or show some columns:</p>
+${code(
+  'json',
+  `
+{
+  "type": "field", "id": "f-lines", "field": "line_ids",
+  "widget": "grid",
+  "totals": ["qty", "subtotal"],
+  "optionalColumns": { "discount": "show", "lead_days": "hide" }
+}`
+)}
+<p>${c('"hide"')} starts a column hidden. Sections and notes stay out of the totals.</p>
+
+<h2 id="grid">The grid</h2>
+<p>For orders, invoices and timesheets, ${c('@fieldia/grid')} shows a table of lines as a spreadsheet on <a href="https://www.ag-grid.com/">AG Grid</a>, with Fieldia's own fields in the cells. It is a separate package, so simple forms never load it:</p>
+${code(
+  'sh',
+  `
+npm install @fieldia/grid ag-grid-community`
+)}
+${code(
+  'ts',
+  `
+import { gridWidgets } from '@fieldia/grid';
+
+mountViewer(host, { page, dataSource, widgets: gridWidgets });
+// a one2many node with "widget": "grid" now shows the grid`
+)}
+<p>In React pass ${c('widgets={gridWidgets}')}, in Vue ${c(':widgets="gridWidgets"')}, in Angular ${c('[widgets]="gridWidgets"')}. A node without ${c('"widget": "grid"')} keeps the plain table.</p>
+<ul>
+  <li><strong>Keys.</strong> A click edits a cell. Enter keeps it and moves down; Tab moves across, skipping cells that cannot be edited; Shift+Tab goes back. Tab or Enter at the very end starts a new line. Escape puts the cell back, and takes away a line added a moment ago. Space ticks a yes/no cell. Alt+Up and Alt+Down move a line.</li>
+  <li><strong>Every keystroke reaches the form</strong>, so totals and other computed values follow while a cell is still being typed.</li>
+  <li><strong>Sections and notes</strong> run across the row. A note grows as it is typed; Enter starts a new line of it, Ctrl+Enter (Cmd+Enter) finishes it.</li>
+  <li><strong>Moving lines.</strong> With a ${c('sequenceField')}, each line has a handle to drag it by.</li>
+  <li><strong>Columns.</strong> People resize them and drag them into another order; the button at the end of the header hides and shows the optional ones. Their choices are kept for the next visit, in the browser unless you pass your own ${c('preferences')} store to the viewer.</li>
+  <li><strong>A refused save</strong> marks the wrong cells, lists the problems under the table and opens the first one.</li>
+  <li><strong>Long tables</strong> stop growing at 15 lines and scroll inside, drawing only the rows in view.</li>
+  <li><strong>A whole line at once.</strong> ${c('"editMode": "row"')} on the node opens every cell of a line together, as an editable list does.</li>
+</ul>
+
 <h2 id="custom">Your own widget</h2>
 <p>A widget is a function that gets the field and returns an element, an ${c('update')} that receives the current value, and a ${c('focus')}. Register it under a type, or under ${c('type.widget')} to offer it as a choice:</p>
 ${code(

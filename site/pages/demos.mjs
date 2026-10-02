@@ -11,14 +11,15 @@ const PAGES = [
   ['survey', 'Survey', 'a wizard that skips the steps that do not apply'],
   ['customer', 'Customer record', 'a business sheet: statusbar, stat buttons, tabs, lines, links'],
   ['fields', 'Every field', 'one record using every widget, with foldable sections'],
+  ['order', 'Sales order', 'the lines grid: spreadsheet keys, sections and notes, moving lines, totals, columns'],
 ];
 
 export default {
   path: '/demos/',
   title: 'Demos',
-  description: 'The same four Fieldia pages running in plain JavaScript, React, Vue, Angular and a script tag.',
+  description: 'The same five Fieldia pages running in plain JavaScript, React, Vue, Angular and a script tag.',
   body: `
-<p class="lead">The same four pages in every framework. They are the pages the browser tests drive, so what you see here is what is tested on every change.</p>
+<p class="lead">The same five pages in every framework. They are the pages the browser tests drive, so what you see here is what is tested on every change.</p>
 
 <div class="demo-grid">
 ${FRAMEWORKS.map(
@@ -26,7 +27,7 @@ ${FRAMEWORKS.map(
     <h2>${name}</h2>
     <p>${about}</p>
     <ul>
-${PAGES.map(([page, title, shows]) => `      <li><a href="/demos/${id}/?page=${page}&amp;skin=${page === 'customer' ? 'underline' : 'outlined'}">${title}</a> — ${shows}</li>`).join('\n')}
+${PAGES.map(([page, title, shows]) => `      <li><a href="/demos/${id}/?page=${page}&amp;skin=${page === 'customer' || page === 'order' ? 'underline' : 'outlined'}">${title}</a> — ${shows}</li>`).join('\n')}
     </ul>
   </article>`
 ).join('\n')}
