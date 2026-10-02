@@ -1,0 +1,42 @@
+{
+  "fieldia": "0.1",
+  "id": "customers",
+  "title": "Customers",
+  "data": { "kind": "record", "model": "partner" },
+  "fields": {
+    "name": { "type": "char", "label": "Name" },
+    "email": { "type": "char", "label": "Email" },
+    "phone": { "type": "char", "label": "Phone" },
+    "country_id": { "type": "many2one", "label": "Country", "relation": "country" },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        { "value": "draft", "label": "Draft" },
+        { "value": "active", "label": "Active" },
+        { "value": "blocked", "label": "Blocked" }
+      ]
+    },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "currency" },
+    "credit_limit": { "type": "monetary", "label": "Credit limit", "currencyField": "currency_id" },
+    "sale_order_count": { "type": "integer", "label": "Sales" }
+  },
+  "layout": {
+    "type": "list",
+    "id": "customers-list",
+    "columns": ["name", "email", "phone", "country_id", "state", "credit_limit", "sale_order_count"],
+    "sort": [{ "field": "name" }],
+    "pageSize": 8,
+    "searchFields": ["name", "email", "phone", "country_id", "state"],
+    "filters": [
+      { "id": "active", "label": "Active", "filter": [{ "field": "state", "op": "=", "value": "active" }] },
+      { "id": "blocked", "label": "Blocked", "filter": [{ "field": "state", "op": "=", "value": "blocked" }] },
+      { "id": "big", "label": "Credit over 100,000", "filter": [{ "field": "credit_limit", "op": ">", "value": 100000 }] }
+    ],
+    "groupBy": ["country_id", "state"],
+    "actions": [
+      { "type": "button", "id": "send-statement", "label": "Send statement", "action": "send_statement" },
+      { "type": "button", "id": "archive", "label": "Archive", "action": "archive", "confirm": "Archive the chosen customers?" }
+    ]
+  }
+}

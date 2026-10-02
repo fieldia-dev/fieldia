@@ -33,8 +33,9 @@ export function checkPage(input: unknown): PageValidation {
     }
   }
   const layout = input['layout'];
-  if (!isObject(layout) || !LAYOUTS.includes(layout['type'] as string) || !Array.isArray(layout['children'])) {
-    say('layout', 'the layout is a sheet, sections, tabs or wizard, with children');
+  const isList = isObject(layout) && layout['type'] === 'list';
+  if (!isObject(layout) || (isList ? !Array.isArray(layout['columns']) : !LAYOUTS.includes(layout['type'] as string) || !Array.isArray(layout['children']))) {
+    say('layout', 'the layout is a sheet, sections, tabs or wizard, with children, or a list with columns');
   }
   if (issues.length) return { ok: false, issues };
   const page = input as unknown as Page;

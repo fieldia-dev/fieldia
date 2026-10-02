@@ -41,6 +41,17 @@ describe('checkPage', () => {
     expect(paths(page)).toEqual(['fieldia', 'data', 'fields.full_name', 'layout']);
   });
 
+  it('takes a list of records by its columns, and checks the names in it', () => {
+    const list = { ...example('customer'), layout: { type: 'list', id: 'list', columns: ['name', 'email'], sort: [{ field: 'name' }] } };
+    expect(paths(list)).toEqual([]);
+    expect(paths({ ...list, layout: { type: 'list', id: 'list', children: [] } })).toEqual(['layout']);
+    const wrong = { ...list, layout: { ...list.layout, columns: ['name', 'nickname'] } };
+    const light = checkPage(wrong);
+    const full = validatePage(wrong);
+    expect(light.ok).toBe(false);
+    expect(!light.ok && light.issues).toEqual(!full.ok && full.issues);
+  });
+
   it('reports a part it cannot read instead of throwing', () => {
     const page = example('signup');
     delete page['layout'].children[0].children;

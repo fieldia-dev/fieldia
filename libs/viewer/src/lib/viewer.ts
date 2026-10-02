@@ -11,6 +11,7 @@ import {
   type JsonValue,
   type LayoutNode,
   type Page,
+  type RecordId,
   type SectionNode,
   type SheetNode,
   type SlotNode,
@@ -22,6 +23,7 @@ import {
 } from '@fieldia/core';
 import { browserPreferences, createWidget, drawIcon, installStyles, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { pageDialogs } from './related';
+import { listView } from './list';
 
 export type Skin = 'underline' | 'outlined';
 
@@ -79,6 +81,8 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
    * key: every word of the page goes through it. Record data never does.
    */
   translate?: (text: string) => string;
+  /** A list page: a row was opened, by a click or by Enter. The app shows the record. */
+  onOpenRecord?: (id: RecordId) => void;
 }
 
 export interface ViewerHandle {
@@ -733,7 +737,11 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   if (layout.type === 'sheet') body = sheetLayout(layout);
   else if (layout.type === 'wizard') body = wizardLayout(layout);
   else if (layout.type === 'tabs') body = sectionsLayout({ id: `${layout.id}-page`, children: [layout] });
-  else if (layout.type === 'list') body = el('div', { class: 'fd-list', 'data-node': layout.id });
+  else if (layout.type === 'list') {
+    const list = listView({ page, node: layout, form, dataSource: options.dataSource, doc, el, labels, locale, fill, confirm, withIcon, onOpenRecord: options.onOpenRecord });
+    cleanups.push(list.destroy);
+    body = list.element;
+  }
   else body = sectionsLayout(layout);
 
   const head = layout.type === 'sheet' ? null : pageHead();
@@ -779,7 +787,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   }
 
   root.addEventListener('keydown', (event) => {
-    if (event.isComposing || event.key !== 'Enter') return;
+    // A list has nothing to save, and its rows keep their own keys.
+    if (event.isComposing || event.key !== 'Enter' || layout.type === 'list') return;
     // An app's own content in a slot, such as a chatter's composer, keeps its keys.
     if ((event.target as Element).closest('.fd-slot')) return;
     const keys = options.keys ?? {};

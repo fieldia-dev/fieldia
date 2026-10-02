@@ -38,6 +38,16 @@ export interface ViewerLabels {
   checkFields: string;
   /** The banner when the server cannot be reached. */
   offline: string;
+  /** A list: its pages (`{from}`, `{to}`, `{total}`), what is chosen in it, and an empty one. */
+  previousPage: string;
+  nextPage: string;
+  range: string;
+  selected: string;
+  clearSelection: string;
+  selectAll: string;
+  selectRecord: string;
+  noRecords: string;
+  loadFailed: string;
 }
 
 export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
@@ -70,6 +80,15 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     notSent: 'Not sent',
     checkFields: '{what}. Check: {fields}',
     offline: 'Could not reach the server. Your changes are still here.',
+    previousPage: 'Previous page',
+    nextPage: 'Next page',
+    range: '{from}–{to} / {total}',
+    selected: '{n} selected',
+    clearSelection: 'Clear',
+    selectAll: 'Select all',
+    selectRecord: 'Select {name}',
+    noRecords: 'No records match.',
+    loadFailed: 'Could not load the records.',
   },
   ar: {
     save: 'حفظ',
@@ -100,6 +119,15 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     notSent: 'لم يُرسل',
     checkFields: '{what}. راجِع: {fields}',
     offline: 'تعذّر الوصول إلى الخادم. تعديلاتك ما زالت هنا.',
+    previousPage: 'الصفحة السابقة',
+    nextPage: 'الصفحة التالية',
+    range: '{from}–{to} من {total}',
+    selected: 'تم تحديد {n}',
+    clearSelection: 'إلغاء التحديد',
+    selectAll: 'تحديد الكل',
+    selectRecord: 'تحديد {name}',
+    noRecords: 'لا توجد سجلات مطابقة.',
+    loadFailed: 'تعذّر تحميل السجلات.',
   },
   de: {
     save: 'Speichern',
@@ -130,6 +158,15 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     notSent: 'Nicht gesendet',
     checkFields: '{what}. Bitte prüfen: {fields}',
     offline: 'Der Server ist nicht erreichbar. Ihre Änderungen sind noch da.',
+    previousPage: 'Vorherige Seite',
+    nextPage: 'Nächste Seite',
+    range: '{from}–{to} / {total}',
+    selected: '{n} ausgewählt',
+    clearSelection: 'Auswahl aufheben',
+    selectAll: 'Alle auswählen',
+    selectRecord: '{name} auswählen',
+    noRecords: 'Keine passenden Einträge.',
+    loadFailed: 'Die Einträge konnten nicht geladen werden.',
   },
   fr: {
     save: 'Enregistrer',
@@ -160,6 +197,15 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     notSent: 'Non envoyé',
     checkFields: '{what}. À vérifier : {fields}',
     offline: 'Le serveur est injoignable. Vos modifications sont toujours là.',
+    previousPage: 'Page précédente',
+    nextPage: 'Page suivante',
+    range: '{from}–{to} / {total}',
+    selected: '{n} sélectionné(s)',
+    clearSelection: 'Désélectionner',
+    selectAll: 'Tout sélectionner',
+    selectRecord: 'Sélectionner {name}',
+    noRecords: 'Aucun enregistrement ne correspond.',
+    loadFailed: 'Impossible de charger les enregistrements.',
   },
 };
 

@@ -6,7 +6,7 @@ import { codeWidgets } from '@fieldia/code';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
-import { optionsFromQuery, pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
 
 /**
  * Fieldia with no framework at all: one script, one call. The page, skin and
@@ -43,7 +43,8 @@ const shoutWidget: WidgetFactory = ({ form, name: field, id, document }) => {
 const handle = mountViewer(document.getElementById('app') as HTMLElement, {
   page,
   dataSource,
-  recordId: page.data.kind === 'record' ? 1 : null,
+  recordId: recordFromQuery(params, page),
+  onOpenRecord: (id) => openRecord(params, id),
   skin: (params.get('skin') as Skin) ?? 'underline',
   dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,
   locale: (params.get('locale') as Locale | null) ?? undefined,

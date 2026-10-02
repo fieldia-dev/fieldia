@@ -68,6 +68,8 @@ export interface ActionRequest {
   params?: { [key: string]: JsonValue };
   recordId: RecordId | null;
   values: Values;
+  /** The records chosen in a list, when the button belongs to one. */
+  recordIds?: RecordId[];
 }
 
 export interface FormOptions {
@@ -133,7 +135,8 @@ export interface Form {
    * an optional one instead.
    */
   goTo(step: string): boolean;
-  runAction(id: string): Promise<void>;
+  /** Run a button; a list's button passes the records chosen in it. */
+  runAction(id: string, chosen?: { recordIds: RecordId[] }): Promise<void>;
   restoreDraft(): void;
   discardDraft(): void;
   /** Resolves once every onchange, save and autosave started so far has finished. */
@@ -704,7 +707,7 @@ export function createForm(options: FormOptions): Form {
       return true;
     },
 
-    async runAction(id) {
+    async runAction(id, chosen) {
       const node = index.get(id);
       if (!node || (node.kind !== 'button' && node.kind !== 'stat')) throw new Error(`The page has no button "${id}"`);
       if (nodeState(id).invisible) return;
@@ -717,6 +720,7 @@ export function createForm(options: FormOptions): Form {
             ...('params' in source && source.params ? { params: source.params } : {}),
             recordId: state.recordId,
             values: structuredCopy(state.values as Values),
+            ...(chosen ? { recordIds: [...chosen.recordIds] } : {}),
           })
         )
       );

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page } from '../format/page';
 import type { SheetNode } from '../format/layout';
-import { createForm, type DraftStore } from './form';
+import { createForm, type ActionRequest, type DraftStore } from './form';
 import type { Line } from './values';
 import { createMemoryDataSource } from './memory-data-source';
 import { saveRefused, type DataSource } from './data-source';
@@ -793,6 +793,15 @@ describe('createForm — actions', () => {
     form.setValue('state', 'blocked');
     await form.runAction('activate');
     expect(pressed).toEqual(['open_sales']);
+  });
+
+  it('hands a list’s button the records chosen in it, and only then', async () => {
+    const pressed: ActionRequest[] = [];
+    const form = createForm({ page: page('customer'), onAction: (request) => void pressed.push(request) });
+    await form.runAction('activate', { recordIds: [4, 'b7'] });
+    await form.runAction('activate');
+    expect(pressed[0].recordIds).toEqual([4, 'b7']);
+    expect('recordIds' in pressed[1]).toBe(false);
   });
 });
 
