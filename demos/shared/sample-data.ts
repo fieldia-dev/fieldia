@@ -63,6 +63,12 @@ export function sampleDataSource() {
           invoice_count: 12,
           notes: '<p>Pays within 30 days. Prefers deliveries on Sundays.</p>',
         },
+        // More clients than a link's list shows, so "Search more…" has the rest.
+        ...Object.fromEntries(
+          ['Amira Clinics', 'Bayt Interiors', 'Cairo Coworking', 'Delta Foods', 'Giza Plaza', 'Heliopolis Dental Care', 'Maadi Labs', 'Nour Pharmacies', 'Sahel Resorts', 'Tahrir Books', 'Zamalek Studio'].map(
+            (name, i) => [20 + i, { name, is_company: true, state: 'active', country_id: { id: 1, label: 'Egypt' }, currency_id: { id: 1, label: 'EGP' } }],
+          ),
+        ),
       },
       country: { 1: { name: 'Egypt' }, 2: { name: 'Jordan' }, 3: { name: 'Saudi Arabia' } },
       'country.region': {
