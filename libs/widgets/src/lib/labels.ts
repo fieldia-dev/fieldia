@@ -12,6 +12,10 @@ export interface WidgetLabels {
   deleteLine: string;
   /** Heads the row that adds up a table's number columns. */
   total: string;
+  /** A problem on one line of a table, under the table. `{n}` counts from 1. */
+  lineProblem: string;
+  /** Problems beyond the first few. */
+  moreProblems: string;
   upload: string;
   uploadImage: string;
   replace: string;
@@ -31,6 +35,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addNote: 'Add a note',
     deleteLine: 'Delete line',
     total: 'Total',
+    lineProblem: 'Line {n}: {message}',
+    moreProblems: 'and {n} more',
     upload: 'Upload a file',
     uploadImage: 'Add a photo',
     replace: 'Replace',
@@ -48,6 +54,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addNote: 'إضافة ملاحظة',
     deleteLine: 'حذف السطر',
     total: 'الإجمالي',
+    lineProblem: 'السطر {n}: {message}',
+    moreProblems: 'و{n} أخرى',
     upload: 'رفع ملف',
     uploadImage: 'إضافة صورة',
     replace: 'استبدال',
@@ -65,6 +73,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addNote: 'Notiz hinzufügen',
     deleteLine: 'Zeile löschen',
     total: 'Summe',
+    lineProblem: 'Zeile {n}: {message}',
+    moreProblems: 'und {n} weitere',
     upload: 'Datei hochladen',
     uploadImage: 'Foto hinzufügen',
     replace: 'Ersetzen',
@@ -82,6 +92,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addNote: 'Ajouter une note',
     deleteLine: 'Supprimer la ligne',
     total: 'Total',
+    lineProblem: 'Ligne {n} : {message}',
+    moreProblems: 'et {n} de plus',
     upload: 'Téléverser un fichier',
     uploadImage: 'Ajouter une photo',
     replace: 'Remplacer',

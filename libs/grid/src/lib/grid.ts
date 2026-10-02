@@ -11,7 +11,7 @@ import {
   type ICellRendererParams,
   type SuppressKeyboardEventParams,
 } from 'ag-grid-community';
-import { lineKind, type Field, type FieldNode, type Form, type Line, type LineField, type LineKinds, type Value, type Values } from '@fieldia/core';
+import { fill, lineKind, type Field, type FieldNode, type Form, type Line, type LineField, type LineKinds, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
 import { createWidget, displayValue, kindTextField, lineForm, WIDGET_LABELS, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
 
@@ -162,7 +162,10 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     });
     const show = () => {
       const line = this.line();
-      this.widget.update({ value: line?.values[column], values: line?.values ?? {}, readonly: false, required: def.required === true, invalid: false });
+      // A cell the form found wrong stays marked while it is fixed.
+      const invalid = !!cell.form.getState().errors[`${cell.field}.${key}.${column}`];
+      this.box.classList.toggle('fd-grid-editor-invalid', invalid);
+      this.widget.update({ value: line?.values[column], values: line?.values ?? {}, readonly: false, required: def.required === true, invalid });
     };
     show();
     this.leave = cell.form.subscribe(show);
@@ -276,13 +279,37 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   element.setAttribute('role', 'group');
   const host = document.createElement('div');
   host.className = 'fd-grid-host';
+  // What is wrong on which line, once a save has been refused.
+  const problems = document.createElement('div');
+  problems.className = 'fd-error fd-grid-problems';
+  problems.setAttribute('role', 'alert');
+  problems.hidden = true;
   const adds = document.createElement('div');
   adds.className = 'fd-lines-adds';
-  element.append(host, adds);
+  element.append(host, problems, adds);
 
   let readonly = false;
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
   const firstEditable = () => columns.find((c) => EDITABLE.has(def.fields[c].type) && !def.fields[c].readonly);
+  /** The line field a cell edits: its column's, or a section's or note's text. */
+  const editedField = (line: Line, column: string) => (kindOf(line) && kinds ? kinds.text : column);
+  /** The message for a cell, if the form found its value wrong. */
+  const problemAt = (line: Line | undefined, column: string, api: GridApi<Line>) => {
+    if (!line || (kindOf(line) && spanStart(api)?.getColId() !== column)) return undefined;
+    return form.getState().errors[`${name}.${line.key}.${editedField(line, column)}`];
+  };
+  /** Every line problem, in the order the lines and columns are shown. */
+  const lineProblems = () => {
+    const shown = api.getAllDisplayedColumns().map((c) => c.getColId()).filter((id) => !isTool(id));
+    const found: { index: number; column: string; message: string }[] = [];
+    lines().forEach((line, index) => {
+      for (const column of shown) {
+        const message = problemAt(line, column, api);
+        if (message) found.push({ index, column, message });
+      }
+    });
+    return found;
+  };
   /** Lines the grid added that nobody has finished an edit in yet: Escape takes them away again. */
   const fresh = new Set<string>();
   cell.finish = (key, before) => {
@@ -351,7 +378,11 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       colSpan: (p) => (kindOf(p.data) && spans(p.api) ? spanWidth(p.api) : 1),
       // Rows are measured, so a note of several lines shows all of them.
       autoHeight: !!kinds,
-      cellClassRules: { 'fd-grid-kind-text': (p) => !!kindOf(p.data) },
+      cellClassRules: {
+        'fd-grid-kind-text': (p) => !!kindOf(p.data),
+        'fd-grid-invalid': (p) => !p.node.rowPinned && !!problemAt(p.data, column, p.api),
+      },
+      tooltipValueGetter: (p) => (p.node?.rowPinned ? undefined : problemAt(p.data, column, p.api)),
       suppressKeyboardEvent: keys,
       minWidth: wide ? 140 : sub.type === 'monetary' ? 130 : 96,
       flex: wide ? 2 : sub.type === 'monetary' ? 1.3 : 1,
@@ -461,6 +492,16 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   );
   apis.set(element, api);
 
+  // Asked for the focus after a refused save: open the first wrong cell for editing.
+  element.addEventListener('fd-focus-problem', (event) => {
+    const first = lineProblems()[0];
+    if (!first) return;
+    event.preventDefault();
+    api.ensureIndexVisible(first.index);
+    api.setFocusedCell(first.index, first.column);
+    api.startEditingCell({ rowIndex: first.index, colKey: first.column });
+  });
+
   const addButton = (text: string, values: Values, kind: string) => {
     const button = document.createElement('button');
     button.type = 'button';
@@ -510,6 +551,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   });
 
   let shown: Line[] | null = null;
+  let problemsShown = '';
   return {
     element,
     focus: () => {
@@ -529,6 +571,17 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         api.setGridOption('rowData', current);
         if (totals.length) api.setGridOption('pinnedBottomRowData', [totalsRow(current)]);
       }
+      const found = readonly ? [] : lineProblems();
+      const signature = found.map((p) => `${p.index}.${p.column}:${p.message}`).join('|');
+      if (signature !== problemsShown) {
+        problemsShown = signature;
+        api.refreshCells({ force: true, suppressFlash: true });
+        const listed = found.slice(0, 3).map((p) => fill(labels.lineProblem, { n: p.index + 1, message: p.message }));
+        if (found.length > 3) listed.push(fill(labels.moreProblems, { n: found.length - 3 }));
+        problems.textContent = listed.join(' · ');
+        problems.hidden = !found.length;
+      }
+      element.setAttribute('aria-invalid', String(state.invalid || found.length > 0));
     },
     destroy() {
       api.destroy();

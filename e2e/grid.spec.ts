@@ -331,5 +331,41 @@ for (const variant of VARIANTS) {
       await expect(totals.locator('.ag-drag-handle, button')).toHaveCount(0);
       await screen(page, `${variant}-grid-totals`);
     });
+    test('a save with a line missing its product is refused, the cell marked and opened, and goes through once it is filled', async ({ page }) => {
+      await grid(page).getByRole('button', { name: '+ Add a line' }).click();
+      await expect.poll(() => editing(page)).toEqual([NEW, 'product_id']);
+      await page.getByRole('heading', { name: 'S00118' }).or(page.locator('.fd-title')).first().click(); // leave the line empty
+      await expect.poll(() => editing(page)).toBeNull();
+      await page.getByRole('button', { name: 'Save' }).click();
+      const problems = grid(page).locator('.fd-grid-problems');
+      await expect(problems).toHaveText('Line 7: Product is required');
+      await expect(cell(page, NEW, 'product_id')).toHaveClass(/fd-grid-invalid/);
+      await expect(cell(page, LAMP, 'product_id')).not.toHaveClass(/fd-grid-invalid/);
+      // The focus went straight to the cell to fix, its search open.
+      await expect.poll(() => editing(page)).toEqual([NEW, 'product_id']);
+      await expect(editor(page)).toBeFocused();
+      // The open editor carries the problem too: told to a screen reader, and framed in red.
+      await expect(editor(page)).toHaveAttribute('aria-invalid', 'true');
+      const frame = grid(page).locator('.ag-popup-editor .fd-grid-editor');
+      const red = await page.evaluate(() => getComputedStyle(document.querySelector('.fd-form')!).getPropertyValue('--fd-error').trim());
+      expect(await frame.evaluate((el) => getComputedStyle(el).borderTopColor)).toBe(await page.evaluate((c) => {
+        const probe = document.createElement('i');
+        probe.style.color = c;
+        document.body.append(probe);
+        const rgb = getComputedStyle(probe).color;
+        probe.remove();
+        return rgb;
+      }, red));
+      await screen(page, `${variant}-grid-refused`);
+      await page.keyboard.type('cable');
+      await expect(grid(page).getByRole('option', { name: 'Cable tray, 120 cm' })).toBeVisible();
+      await page.keyboard.press('ArrowDown');
+      await page.keyboard.press('Enter');
+      await expect(problems).toBeHidden();
+      await expect(editor(page)).toHaveAttribute('aria-invalid', 'false');
+      await expect(cell(page, NEW, 'product_id')).not.toHaveClass(/fd-grid-invalid/);
+      await page.getByRole('button', { name: 'Save' }).click();
+      await expect(page.locator('.fd-status')).toHaveText('Saved');
+    });
   });
 }

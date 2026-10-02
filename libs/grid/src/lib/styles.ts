@@ -10,6 +10,9 @@ export const GRID_CSS = /* css */ `
 .fd-grid-lines .ag-root-wrapper { overflow: visible; }
 .fd-grid-lines .ag-root-wrapper-body { overflow: hidden; border-radius: inherit; }
 .fd-grid-lines .fd-grid-tools { padding: 0; display: flex; align-items: center; justify-content: center; }
+/* A cell the form found wrong: an inset red edge, so the row keeps its height. */
+.fd-grid-lines .ag-cell-inline-editing.fd-grid-invalid, .ag-popup-editor .fd-grid-editor.fd-grid-editor-invalid { border-color: var(--fd-error) !important; }
+.fd-grid-lines .ag-cell.fd-grid-invalid { box-shadow: inset 0 0 0 1px var(--fd-error); background: var(--fd-error-soft); }
 .fd-grid-lines .fd-grid-totals { font-weight: 600; background: var(--fd-surface); }
 .fd-grid-lines .fd-grid-handle { color: var(--fd-muted); cursor: grab; }
 .fd-grid-lines .fd-grid-handle .ag-drag-handle { margin: 0; }

@@ -142,6 +142,42 @@ describe('the grid', () => {
   });
 });
 
+describe('the grid’s problems', () => {
+  /** The order, with a product required on every line. */
+  const strict = JSON.parse(JSON.stringify(order)) as Page & { fields: Record<string, any> };
+  strict.fields['line_ids'].fields.product_id.required = true;
+  const productCell = (box: HTMLElement, row: number) => box.querySelector(`.ag-row[row-index="${row}"] .ag-cell[col-id="product_id"]`) as HTMLElement;
+
+  it('marks a required cell left empty, says which line under the table, and clears once it is filled', async () => {
+    const { box, form } = await mount(strict);
+    const key = form.addLine('line_ids');
+    expect(form.validate()).toBe(false);
+    await frames();
+    expect(productCell(box, 2).classList.contains('fd-grid-invalid')).toBe(true);
+    expect(productCell(box, 0).classList.contains('fd-grid-invalid')).toBe(false);
+    expect(box.getAttribute('aria-invalid')).toBe('true');
+    const problems = box.querySelector('.fd-grid-problems') as HTMLElement;
+    expect(problems.hidden).toBe(false);
+    expect(problems.textContent).toBe('Line 3: Product is required');
+    form.updateLine('line_ids', key, 'product_id', { id: 3, label: 'Monitor arm' });
+    await frames();
+    expect(productCell(box, 2).classList.contains('fd-grid-invalid')).toBe(false);
+    expect(box.getAttribute('aria-invalid')).toBe('false');
+    expect(problems.hidden).toBe(true);
+  });
+
+  it('opens the first problem for editing when the page asks for the focus', async () => {
+    const { box, form, api } = await mount(strict);
+    form.addLine('line_ids');
+    form.validate();
+    await frames();
+    const handled = !box.dispatchEvent(new CustomEvent('fd-focus-problem', { cancelable: true }));
+    expect(handled).toBe(true);
+    await frames();
+    expect(api?.getEditingCells().map((c) => [c.rowIndex, c.column?.getColId()])).toEqual([[2, 'product_id']]);
+  });
+});
+
 describe('the grid totals', () => {
   it('pins a totals row under the lines and keeps it current', async () => {
     const totalled = JSON.parse(JSON.stringify(order)) as Page & { layout: any };
