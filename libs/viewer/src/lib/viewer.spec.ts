@@ -234,6 +234,28 @@ describe('a record sheet', () => {
     expect(button(host, 'Save')).toBeUndefined();
   });
 
+  it('shows an onchange warning under the field that changed, and clears it', async () => {
+    const dataSource = createMemoryDataSource({ records: { partner: { 1: customer } } });
+    dataSource.onchange = async ({ changed, values }) =>
+      changed === 'credit_limit' && Number(values['credit_limit']) > 100000 ? { warning: 'Above the approval limit' } : {};
+    const { host, form } = mount('customer', { dataSource, recordId: 1 });
+    await form.settled();
+    (host.querySelector('.fd-tab[data-node="tab-billing"]') as HTMLButtonElement).click();
+    type(input(host, 'f-credit-limit'), '250000');
+    input(host, 'f-credit-limit').dispatchEvent(new Event('change', { bubbles: true }));
+    await form.settled();
+    await flush();
+    const warning = at(host, 'f-credit-limit').querySelector('.fd-warning') as HTMLElement;
+    expect(visible(warning)).toBe(true);
+    expect(warning.textContent).toBe('Above the approval limit');
+    expect(warning.getAttribute('role')).toBe('status');
+    type(input(host, 'f-credit-limit'), '5000');
+    input(host, 'f-credit-limit').dispatchEvent(new Event('change', { bubbles: true }));
+    await form.settled();
+    await flush();
+    expect(visible(at(host, 'f-credit-limit').querySelector('.fd-warning'))).toBe(false);
+  });
+
   it('shows the avatar beside the title', async () => {
     const { host, form } = sheet();
     await form.settled();

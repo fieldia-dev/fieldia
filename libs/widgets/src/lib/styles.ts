@@ -91,6 +91,10 @@ export const FIELDIA_CSS = /* css */ `
 .fd-form[data-fd-skin="outlined"] .fd-field.fd-required > .fd-label::before { content: "* "; color: var(--fd-error); }
 .fd-help { color: var(--fd-muted); font-size: 12.5px; }
 .fd-error { color: var(--fd-error); font-size: 12.5px; }
+.fd-warning {
+  color: var(--fd-warning); background: var(--fd-warning-soft); font-size: 12.5px;
+  padding: 3px 8px; border-radius: var(--fd-control-radius); justify-self: start;
+}
 
 /* underline: label beside the value, the way a Flectra sheet reads */
 .fd-form[data-fd-skin="underline"] .fd-field {

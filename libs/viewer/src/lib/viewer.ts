@@ -207,7 +207,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const helpText = node.help ?? def.help;
     const help = helpText ? el('div', { class: 'fd-help', id: `${id}-help` }, helpText) : null;
     const error = el('div', { class: 'fd-error', id: `${id}-error`, role: 'alert', hidden: '' });
-    wrapper.append(label, widget.element, ...(help ? [help] : []), error);
+    // A warning from the data source's onchange, beside the field whose change brought it.
+    const warning = el('div', { class: 'fd-warning', role: 'status', hidden: '' });
+    wrapper.append(label, widget.element, ...(help ? [help] : []), error, warning);
     if (widget.destroy) cleanups.push(() => widget.destroy?.());
 
     updaters.push((state) => {
@@ -217,6 +219,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const message = state.errors[node.field];
       error.hidden = !message;
       error.textContent = message ?? '';
+      const warned = state.warning && state.warningField === node.field ? state.warning : '';
+      warning.hidden = !warned;
+      warning.textContent = warned;
       widget.update({
         value: state.values[node.field],
         values: state.values,

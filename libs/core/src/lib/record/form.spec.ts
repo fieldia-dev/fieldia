@@ -294,6 +294,20 @@ describe('createForm — onchange', () => {
     expect(form.getState().dirty).toEqual(expect.arrayContaining(['country_id', 'currency_id']));
   });
 
+  it('keeps a warning with the field that changed, until an answer without one', async () => {
+    const dataSource: DataSource = {
+      onchange: async ({ changed, values }) =>
+        changed === 'credit_limit' && Number(values['credit_limit']) > 100000 ? { warning: 'Above the approval limit' } : {},
+    };
+    const form = createForm({ page: page('customer'), dataSource });
+    form.setValue('credit_limit', 250000);
+    await form.settled();
+    expect(form.getState()).toMatchObject({ warning: 'Above the approval limit', warningField: 'credit_limit' });
+    form.setValue('credit_limit', 5000);
+    await form.settled();
+    expect(form.getState()).toMatchObject({ warning: null, warningField: null });
+  });
+
   it('ignores an answer that arrives after a newer change', async () => {
     // The first request is answered last, the way a slow network reorders them.
     const answers: Array<(website: string) => void> = [];

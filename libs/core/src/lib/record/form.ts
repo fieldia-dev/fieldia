@@ -30,6 +30,8 @@ export interface FormState {
   readonly dirty: readonly string[];
   /** A warning from the data source's onchange, shown without blocking. */
   readonly warning: string | null;
+  /** The field whose change brought the warning, so it can be shown beside it. */
+  readonly warningField: string | null;
   /** Why loading or saving failed. */
   readonly error: string | null;
   /** A saved draft that can be restored. */
@@ -139,6 +141,7 @@ export function createForm(options: FormOptions): Form {
     errors: {},
     dirty: [],
     warning: null,
+    warningField: null,
     error: null,
     draft: null,
     step: steps[0] ?? null,
@@ -295,7 +298,7 @@ export function createForm(options: FormOptions): Form {
         (result) => {
           if (seq !== onchangeSeq) return;
           const values = { ...(state.values as Values), ...(result.values ?? {}) };
-          writeValues(values, { warning: result.warning ?? null });
+          writeValues(values, { warning: result.warning ?? null, warningField: result.warning ? changed : null });
         },
         () => undefined
       )
@@ -451,7 +454,7 @@ export function createForm(options: FormOptions): Form {
 
     reset() {
       forgetDraft();
-      set({ values: structuredCopy(baseline), dirty: [], errors: {}, warning: null, draft: null, step: steps[0] ?? null });
+      set({ values: structuredCopy(baseline), dirty: [], errors: {}, warning: null, warningField: null, draft: null, step: steps[0] ?? null });
     },
 
     changes,
