@@ -20,6 +20,12 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   headless('core'),
   {
+    rules: {
+      // `const { a: _a, ...rest } = x` sets `a` aside on purpose.
+      '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true, varsIgnorePattern: '^_', argsIgnorePattern: '^_' }],
+    },
+  },
+  {
     // Specs build broken pages on purpose; typing every one of them would only
     // hide which part is wrong.
     files: ['**/*.spec.ts'],

@@ -1,0 +1,44 @@
+{
+  "name": "@fieldia/react",
+  "version": "0.0.0",
+  "description": "React binding for Fieldia: <FieldiaForm> over the plain-DOM viewer, with custom fields and slots as React components.",
+  "license": "MIT",
+  "homepage": "https://fieldia.dev",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "module": "./src/index.mjs",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": {
+        "import": "./src/index.d.mts",
+        "require": "./src/index.d.ts"
+      },
+      "import": "./src/index.mjs",
+      "require": "./src/index.js",
+      "default": "./src/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@fieldia/core": "0.0.0",
+    "@fieldia/viewer": "0.0.0",
+    "@fieldia/widgets": "0.0.0",
+    "tslib": "^2.8.1"
+  },
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fieldia-dev/fieldia",
+    "directory": "libs/react"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  }
+}
