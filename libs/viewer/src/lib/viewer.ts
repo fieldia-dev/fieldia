@@ -31,6 +31,9 @@ export type Skin = 'underline' | 'outlined';
 /** Every word the viewer shows, so a page can be translated. `{n}`, `{total}` and `{time}` are filled in. */
 export interface ViewerLabels {
   save: string;
+  /** Switching a read-only form to editing, and back. */
+  edit: string;
+  done: string;
   discard: string;
   saving: string;
   saved: string;
@@ -68,6 +71,8 @@ export interface ViewerLabels {
 export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
   en: {
     save: 'Save',
+    edit: 'Edit',
+    done: 'Done',
     discard: 'Discard',
     saving: 'Saving…',
     saved: 'Saved',
@@ -96,6 +101,8 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
   },
   ar: {
     save: 'حفظ',
+    edit: 'تعديل',
+    done: 'تم',
     discard: 'تجاهل',
     saving: 'جارٍ الحفظ…',
     saved: 'تم الحفظ',
@@ -124,6 +131,8 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
   },
   de: {
     save: 'Speichern',
+    edit: 'Bearbeiten',
+    done: 'Fertig',
     discard: 'Verwerfen',
     saving: 'Wird gespeichert…',
     saved: 'Gespeichert',
@@ -152,6 +161,8 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
   },
   fr: {
     save: 'Enregistrer',
+    edit: 'Modifier',
+    done: 'Terminé',
     discard: 'Annuler les modifications',
     saving: 'Enregistrement…',
     saved: 'Enregistré',
@@ -225,6 +236,10 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
   showValid?: boolean;
   /** Where a save's progress shows: beside Save (the default), as a toast in a corner, or as a bar across the top. */
   saveStatus?: 'inline' | 'toast' | 'bar';
+  /** Show the whole form read-only: every field locked, no Save. Buttons still run. */
+  readonly?: boolean;
+  /** An Edit button that unlocks a read-only form, and a Done that saves and locks it again. */
+  editSwitch?: boolean;
 }
 
 export interface ViewerHandle {
@@ -235,6 +250,9 @@ export interface ViewerHandle {
   save(): Promise<boolean>;
   /** Check the form without saving, taking the focus to the first problem. */
   check(): boolean;
+  /** Lock or unlock the whole form. */
+  setReadonly(readonly: boolean): void;
+  isReadonly(): boolean;
   destroy(): void;
 }
 
@@ -338,7 +356,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       widget.update({
         value: state.values[node.field],
         values: state.values,
-        readonly: shown.readonly,
+        readonly: shown.readonly || locked,
         required: shown.required,
         invalid: !!message,
         describedBy: [help?.id, message ? error.id : undefined].filter(Boolean).join(' ') || undefined,
@@ -498,6 +516,32 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
 
   // ---- shared chrome ----------------------------------------------------------
 
+  /** The whole form locked: every field read-only, no Save; buttons still run. */
+  let locked = options.readonly === true;
+  // Edit unlocks; Done saves what changed first, and locks only once that is saved.
+  const editSwitch = options.editSwitch ? el('button', { type: 'button', class: 'fd-button fd-edit-switch' }) : null;
+  editSwitch?.addEventListener('click', async () => {
+    if (!locked) {
+      if (form.getState().dirty.length) {
+        const saved = await form.save();
+        if (!saved) {
+          if (!form.getState().saveProblem) announce(checkText(form.getState()));
+          focusFirstProblem();
+          return;
+        }
+      }
+      locked = true;
+    } else locked = false;
+    root.toggleAttribute('data-readonly', locked);
+    render(form.getState());
+  });
+  root.toggleAttribute('data-readonly', locked);
+  updaters.push(() => {
+    if (!editSwitch) return;
+    editSwitch.textContent = locked ? labels.edit : labels.done;
+    editSwitch.classList.toggle('fd-button-primary', locked);
+  });
+
   // The status says its words alone, so a screen reader hears them; Retry sits beside it.
   const statusText = el('div', { class: 'fd-status', role: 'status', 'aria-live': 'polite' });
   const retry = el('button', { type: 'button', class: 'fd-button fd-button-link fd-retry', hidden: '' }, labels.retry);
@@ -629,11 +673,12 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       discard.addEventListener('click', () => form.reset());
       actions.insertBefore(discard, action);
       updaters.push((state) => {
-        const dirty = state.dirty.length > 0 && state.status !== 'saving';
+        const dirty = state.dirty.length > 0 && state.status !== 'saving' && !locked;
         action.hidden = !dirty;
         discard.hidden = !dirty;
       });
-    }
+    } else updaters.push(() => (action.hidden = locked));
+    if (editSwitch) actions.prepend(editSwitch);
     if (options.showActions === false) return el('div', {}, box);
     if (page.actionsPosition === 'top') {
       actions.classList.add('fd-actions-top');
@@ -729,8 +774,10 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       actions.append(...(node.buttons ?? []).map(buttonItem));
       foot.append(status, discard, save);
     } else actions.append(save, discard, ...(node.buttons ?? []).map(buttonItem), status);
+    // The Edit switch leads the header bar, before Save and the record's own buttons.
+    if (editSwitch && options.showActions !== false) actions.prepend(editSwitch);
     updaters.push((state) => {
-      const dirty = state.dirty.length > 0 && state.status !== 'saving';
+      const dirty = state.dirty.length > 0 && state.status !== 'saving' && !locked;
       save.hidden = !dirty;
       discard.hidden = !dirty;
     });
@@ -834,7 +881,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       options.widgets
     );
     updaters.push((state) =>
-      widget.update({ value: state.values[config.field], values: state.values, readonly: form.node('#statusbar').readonly, required: false, invalid: false })
+      widget.update({ value: state.values[config.field], values: state.values, readonly: form.node('#statusbar').readonly || locked, required: false, invalid: false })
     );
     return widget.element;
   }
@@ -964,6 +1011,12 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       if (!valid) focusFirstProblem();
       return valid;
     },
+    setReadonly(readonly) {
+      locked = readonly;
+      root.toggleAttribute('data-readonly', locked);
+      render(form.getState());
+    },
+    isReadonly: () => locked,
     destroy() {
       unsubscribe();
       for (const cleanup of cleanups) cleanup();

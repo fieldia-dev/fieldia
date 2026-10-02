@@ -152,6 +152,15 @@ describe('<FieldiaForm> for Vue', () => {
     wrapper.unmount();
   });
 
+  it('locks and unlocks the form as its readonly changes', async () => {
+    const wrapper = mount(FieldiaForm, { props: { page: page('signup'), readonly: true }, attachTo: document.body });
+    const name = () => document.querySelector('[data-node="f-name"] input') as HTMLInputElement;
+    expect(name().readOnly).toBe(true);
+    await wrapper.setProps({ readonly: false });
+    expect(name().readOnly).toBe(false);
+    wrapper.unmount();
+  });
+
   it('cleans up when it unmounts', () => {
     const wrapper = mount(FieldiaForm, { props: { page: page('survey') }, attachTo: document.body });
     const host = wrapper.element as HTMLElement;

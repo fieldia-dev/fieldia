@@ -191,6 +191,20 @@ describe('<fieldia-form> for Angular', () => {
     fixture.destroy();
   });
 
+  it('locks and unlocks the form as its readonly changes', async () => {
+    const fixture = TestBed.createComponent(FieldiaFormComponent);
+    fixture.componentRef.setInput('page', page('signup'));
+    fixture.componentRef.setInput('readonly', true);
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    const name = () => document.querySelector('[data-node="f-name"] input') as HTMLInputElement;
+    expect(name().readOnly).toBe(true);
+    fixture.componentRef.setInput('readonly', false);
+    await fixture.whenStable();
+    expect(name().readOnly).toBe(false);
+    fixture.destroy();
+  });
+
   it('cleans up when it is destroyed', async () => {
     const { fixture } = await setup(page('survey'));
     fixture.destroy();

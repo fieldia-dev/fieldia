@@ -97,6 +97,10 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly showValid = input<boolean>(false);
   /** Where a save's progress shows: beside Save, as a toast, or as a bar. */
   readonly saveStatus = input<ViewerOptions['saveStatus']>(undefined);
+  /** The whole form locked; a change is forwarded without mounting again. */
+  readonly readonly = input<boolean>(false);
+  /** An Edit button that unlocks the form, and a Done that saves and locks it. */
+  readonly editSwitch = input<boolean>(false);
 
   readonly ready = output<ViewerHandle>();
   readonly action = output<ActionRequest>();
@@ -130,6 +134,12 @@ export class FieldiaFormComponent implements OnDestroy {
     effect(() => {
       const skin = this.skin();
       untracked(() => this.handle?.setSkin(skin));
+    });
+    effect(() => {
+      const readonly = this.readonly();
+      untracked(() => {
+        if (this.handle && this.handle.isReadonly() !== readonly) this.handle.setReadonly(readonly);
+      });
     });
   }
 
@@ -199,6 +209,8 @@ export class FieldiaFormComponent implements OnDestroy {
       keys: this.keys(),
       showValid: this.showValid(),
       saveStatus: this.saveStatus(),
+      readonly: this.readonly(),
+      editSwitch: this.editSwitch(),
       onAction: (request) => this.action.emit(request),
     });
     this.ready.emit(this.handle);

@@ -368,6 +368,53 @@ describe('a refused save', () => {
   });
 });
 
+describe('a read-only form', () => {
+  const title = (host: Element) => host.querySelector('[data-node="#title"] input') as HTMLInputElement;
+
+  it('shows every field read-only when asked, with no Save and a statusbar that cannot be clicked, until switched', async () => {
+    const { host, form, handle } = sheet({ readonly: true });
+    await form.settled();
+    expect(input(host, 'f-phone').readOnly).toBe(true);
+    expect(title(host).readOnly).toBe(true);
+    expect(host.querySelectorAll('.fd-statusbar button:not([disabled])')).toHaveLength(0);
+    expect(handle.isReadonly()).toBe(true);
+    // Actions still run in a read-only record, as in Odoo.
+    expect(button(host, 'Block')).toBeDefined();
+    handle.setReadonly(false);
+    expect(input(host, 'f-phone').readOnly).toBe(false);
+    expect(host.querySelectorAll('.fd-statusbar button:not([disabled])').length).toBeGreaterThan(0);
+    expect(handle.isReadonly()).toBe(false);
+  });
+
+  it('offers Edit and Done when asked: Done saves first, and stays editing when the save is refused', async () => {
+    const { host, form, dataSource } = sheet({ readonly: true, editSwitch: true });
+    await form.settled();
+    expect(button(host, 'Done')).toBeUndefined();
+    button(host, 'Edit').click();
+    expect(input(host, 'f-phone').readOnly).toBe(false);
+    type(input(host, 'f-phone'), '+20 2 1111 2222');
+    button(host, 'Done').click();
+    await form.settled();
+    await flush();
+    expect(dataSource.records['partner'][1]['phone']).toBe('+20 2 1111 2222');
+    expect(input(host, 'f-phone').readOnly).toBe(true);
+    button(host, 'Edit').click();
+    type(title(host), '');
+    button(host, 'Done').click();
+    await form.settled();
+    await flush();
+    expect(button(host, 'Done')).toBeDefined();
+    expect(title(host).readOnly).toBe(false);
+  });
+
+  it('leaves a form editable, with no switch, unless asked', async () => {
+    const { host, form } = sheet();
+    await form.settled();
+    expect(input(host, 'f-phone').readOnly).toBe(false);
+    expect(button(host, 'Edit')).toBeUndefined();
+  });
+});
+
 describe('a sections page', () => {
   it('lays out sections with their titles and columns', () => {
     const { host } = mount('signup');

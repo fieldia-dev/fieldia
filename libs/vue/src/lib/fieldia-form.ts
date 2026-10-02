@@ -80,6 +80,8 @@ export const FieldiaForm = defineComponent({
     keys: { type: Object as PropType<ViewerOptions['keys']>, default: undefined },
     showValid: { type: Boolean, default: false },
     saveStatus: { type: String as PropType<ViewerOptions['saveStatus']>, default: undefined },
+    readonly: { type: Boolean, default: false },
+    editSwitch: { type: Boolean, default: false },
   },
   emits: {
     ready: (_handle: ViewerHandle) => true,
@@ -158,6 +160,8 @@ export const FieldiaForm = defineComponent({
         keys: props.keys ? toRaw(props.keys) : undefined,
         showValid: props.showValid,
         saveStatus: props.saveStatus,
+        readonly: props.readonly,
+        editSwitch: props.editSwitch,
         onAction: (request) => emit('action', request),
       });
       portals.value = found;
@@ -182,6 +186,10 @@ export const FieldiaForm = defineComponent({
     watch(
       () => props.skin,
       (skin) => handle?.setSkin(skin ?? 'underline')
+    );
+    watch(
+      () => props.readonly,
+      (readonly) => handle?.setReadonly(readonly)
     );
     expose({
       get handle() {

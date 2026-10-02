@@ -191,6 +191,11 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
     handle?.setSkin(props.skin ?? 'underline');
   }, [handle, props.skin]);
 
+  // Locked or not, the same viewer: only a change of `readonly` is forwarded, so Edit inside it keeps working.
+  useEffect(() => {
+    if (handle && props.readonly !== undefined && handle.isReadonly() !== props.readonly) handle.setReadonly(props.readonly);
+  }, [handle, props.readonly]);
+
   return (
     <>
       <div ref={host} className={props.className} style={props.style} />

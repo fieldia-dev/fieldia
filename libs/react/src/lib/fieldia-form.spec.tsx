@@ -62,6 +62,17 @@ describe('<FieldiaForm>', () => {
     expect(mounts).toBe(1);
   });
 
+  it('locks and unlocks the form as its readonly changes, without mounting again', () => {
+    let mounts = 0;
+    const signup = page('signup');
+    const { container, rerender } = render(<FieldiaForm page={signup} readonly onReady={() => mounts++} />);
+    const name = () => container.querySelector('[data-node="f-name"] input') as HTMLInputElement;
+    expect(name().readOnly).toBe(true);
+    rerender(<FieldiaForm page={signup} readonly={false} onReady={() => mounts++} />);
+    expect(name().readOnly).toBe(false);
+    expect(mounts).toBe(1);
+  });
+
   it('hands the viewer out through a ref', () => {
     const ref = createRef<ViewerHandle | null>();
     render(<FieldiaForm ref={ref} page={page('survey')} />);
