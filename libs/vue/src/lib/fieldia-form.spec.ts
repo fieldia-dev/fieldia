@@ -161,6 +161,12 @@ describe('<FieldiaForm> for Vue', () => {
     wrapper.unmount();
   });
 
+  it('shows the page in the app’s own words', () => {
+    const wrapper = mount(FieldiaForm, { props: { page: page('signup'), translate: (text: string) => (text === 'Full name' ? 'Nom complet' : text) }, attachTo: document.body });
+    expect(document.querySelector('[data-node="f-name"] .fd-label')?.textContent).toBe('Nom complet');
+    wrapper.unmount();
+  });
+
   it('cleans up when it unmounts', () => {
     const wrapper = mount(FieldiaForm, { props: { page: page('survey') }, attachTo: document.body });
     const host = wrapper.element as HTMLElement;

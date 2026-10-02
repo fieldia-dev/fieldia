@@ -82,6 +82,7 @@ export const FieldiaForm = defineComponent({
     saveStatus: { type: String as PropType<ViewerOptions['saveStatus']>, default: undefined },
     readonly: { type: Boolean, default: false },
     editSwitch: { type: Boolean, default: false },
+    translate: { type: Function as PropType<ViewerOptions['translate']>, default: undefined },
   },
   emits: {
     ready: (_handle: ViewerHandle) => true,
@@ -162,6 +163,7 @@ export const FieldiaForm = defineComponent({
         saveStatus: props.saveStatus,
         readonly: props.readonly,
         editSwitch: props.editSwitch,
+        translate: props.translate,
         onAction: (request) => emit('action', request),
       });
       portals.value = found;
