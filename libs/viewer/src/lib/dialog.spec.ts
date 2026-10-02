@@ -144,6 +144,23 @@ describe('a form in a dialog', () => {
     expect((await result).values['subtotal']).toBe(600);
   });
 
+  it('leaves Escape to a list open inside it, and closes on the next one', async () => {
+    const countries = createMemoryDataSource({ records: { partner: { 1: { name: 'Nile Traders' } }, country: { 1: { name: 'Egypt' }, 2: { name: 'Jordan' } } } });
+    const result = openFormDialog({ page: page('customer'), dataSource: countries, recordId: 1, title: 'Nile Traders' });
+    await flush();
+    const country = dialog()?.querySelector('[data-node="f-country"] input') as HTMLInputElement;
+    typeIn(country, 'jor');
+    await new Promise((resolve) => setTimeout(resolve, 260));
+    expect(country.getAttribute('aria-expanded')).toBe('true');
+    const escape = () => country.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    escape();
+    expect(country.getAttribute('aria-expanded')).toBe('false');
+    expect(dialog()).not.toBeNull();
+    escape();
+    expect(dialog()).toBeNull();
+    expect((await result).saved).toBe(false);
+  });
+
   it('keeps Tab inside the dialog', async () => {
     void openFormDialog({ page: page('customer'), dataSource: customerSource(), recordId: 1, title: 'Nile Traders' });
     await flush();

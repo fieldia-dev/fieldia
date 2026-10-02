@@ -519,6 +519,26 @@ describe('a link field and its dialogs', () => {
     expect(form.getState().values['country_id']).toEqual({ id: 1, label: 'Egypt (EG)' });
   });
 
+  it('offers Create and edit… only for a typed name', async () => {
+    const { el, input } = mountWithDialogs(fakeDialogs({}), manyCountries());
+    input.focus();
+    input.dispatchEvent(new Event('focus'));
+    await settle();
+    expect(options(el)).toHaveLength(9);
+    expect(options(el)).not.toContain('Create and edit…');
+    expect(options(el).at(-1)).toBe('Search more…');
+  });
+
+  it('opens nothing for a relation the app has no page for', async () => {
+    const dialogs = { ...fakeDialogs({}), canOpen: () => false };
+    const { form, el, input } = mountWithDialogs(dialogs);
+    form.setValue('country_id', { id: 1, label: 'Egypt' });
+    expect(el.querySelector('button[aria-label^="Open"]')).toBeNull();
+    type(input, 'Oman');
+    await settle();
+    expect(options(el)).toEqual(['Create “Oman”']);
+  });
+
   it('offers none of them where the app gave no dialogs', async () => {
     const { form, el, input } = mountWithDialogs(undefined);
     form.setValue('country_id', { id: 1, label: 'Egypt' });
