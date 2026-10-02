@@ -5,7 +5,7 @@ import type { SheetNode } from '../format/layout';
 import { createForm, type DraftStore } from './form';
 import type { Line } from './values';
 import { createMemoryDataSource } from './memory-data-source';
-import type { DataSource } from './data-source';
+import { saveRefused, type DataSource } from './data-source';
 import type { Scheduler } from './scheduler';
 
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', '..', 'examples', 'pages');
@@ -575,6 +575,73 @@ describe('createForm — a survey', () => {
       },
     ]);
     expect(form.getState().status).toBe('saved');
+  });
+});
+
+describe('createForm — a save the server refuses', () => {
+  /** The customer record, saved through a source whose save fails the way it is told. */
+  function refusing(failure: () => unknown) {
+    const ds = customerSource();
+    let fail = true;
+    const source: DataSource = {
+      ...ds,
+      load: (r) => ds.load!(r),
+      save: async (r) => {
+        if (fail) throw failure();
+        return ds.save!(r);
+      },
+    };
+    const form = createForm({ page: page('customer'), dataSource: source, recordId: 1 });
+    return { form, succeed: () => (fail = false) };
+  }
+
+  it('shows a save’s field errors on those fields, each until that field changes', async () => {
+    const { form } = refusing(() =>
+      saveRefused({ kind: 'fields', message: 'Two fields need a look', fields: { email: 'This email is taken', phone: 'Use an international number' } })
+    );
+    await form.load();
+    form.setValue('website', 'https://nile.example');
+    expect(await form.save()).toBe(false);
+    expect(form.getState().status).toBe('error');
+    expect(form.getState().saveProblem).toEqual({ kind: 'fields', message: 'Two fields need a look', fields: { email: 'This email is taken', phone: 'Use an international number' } });
+    expect(form.getState().errors).toEqual({ email: 'This email is taken', phone: 'Use an international number' });
+    form.setValue('website', 'https://nile.example/en');
+    expect(form.getState().errors).toEqual({ email: 'This email is taken', phone: 'Use an international number' });
+    form.setValue('email', 'sales@nile.example');
+    expect(form.getState().errors).toEqual({ phone: 'Use an international number' });
+  });
+
+  it('keeps a business rule for a dialog, and nothing under the fields', async () => {
+    const { form } = refusing(() => saveRefused({ kind: 'rule', message: 'A blocked customer cannot be given credit.' }));
+    await form.load();
+    form.setValue('credit_limit', 5000);
+    expect(await form.save()).toBe(false);
+    expect(form.getState().saveProblem).toEqual({ kind: 'rule', message: 'A blocked customer cannot be given credit.' });
+    expect(form.getState().errors).toEqual({});
+  });
+
+  it('tells a network failure from the rest, a failed fetch included', async () => {
+    const { form } = refusing(() => new TypeError('Failed to fetch'));
+    await form.load();
+    form.setValue('website', 'https://nile.example');
+    expect(await form.save()).toBe(false);
+    expect(form.getState().saveProblem?.kind).toBe('network');
+    const other = refusing(() => new Error('The server said no'));
+    await other.form.load();
+    other.form.setValue('website', 'https://nile.example');
+    await other.form.save();
+    expect(other.form.getState().saveProblem).toEqual({ kind: 'other', message: 'The server said no' });
+  });
+
+  it('forgets the problem once a save goes through, and a server’s field error with it', async () => {
+    const { form, succeed } = refusing(() => saveRefused({ kind: 'fields', message: 'Check the email', fields: { email: 'This email is taken' } }));
+    await form.load();
+    form.setValue('website', 'https://nile.example');
+    await form.save();
+    succeed();
+    expect(await form.save()).toBe(true);
+    expect(form.getState().saveProblem).toBeNull();
+    expect(form.getState().errors).toEqual({});
   });
 });
 

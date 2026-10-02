@@ -111,3 +111,29 @@ export type LinkOp =
   | { op: 'unlink'; id: RecordId }
   | { op: 'set'; ids: RecordId[] }
   | { op: 'clear' };
+
+/**
+ * Why a save was refused, so each kind is shown where it belongs: `fields`
+ * under those fields, a `rule` (a backend's business rule) in a dialog,
+ * `network` in a banner with Retry, and `other` beside Save with Retry.
+ */
+export interface SaveProblem {
+  kind: 'fields' | 'rule' | 'network' | 'other';
+  message: string;
+  /** For `fields`: a message for each field, by name. */
+  fields?: Record<string, string>;
+}
+
+/** An error for a data source's save to throw when the backend refuses it. */
+export function saveRefused(problem: SaveProblem): Error & { problem: SaveProblem } {
+  return Object.assign(new Error(problem.message), { problem });
+}
+
+/** What a failed save tells: its own problem, a failed fetch as the network, anything else as it is. */
+export function saveProblemOf(error: unknown): SaveProblem {
+  const carried = (error as { problem?: SaveProblem } | null)?.problem;
+  if (carried && typeof carried.kind === 'string') return carried;
+  const message = error instanceof Error ? error.message : String(error);
+  if (error instanceof TypeError && /fetch|network|load failed/i.test(message)) return { kind: 'network', message };
+  return { kind: 'other', message };
+}

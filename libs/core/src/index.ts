@@ -82,7 +82,9 @@ export type {
   RecordChanges,
   LineOp,
   LinkOp,
+  SaveProblem,
 } from './lib/record/data-source';
+export { saveRefused, saveProblemOf } from './lib/record/data-source';
 export { createMemoryDataSource, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
 export { hostScheduler, wait, type Scheduler } from './lib/record/scheduler';
 export {

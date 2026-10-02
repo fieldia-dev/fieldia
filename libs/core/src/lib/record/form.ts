@@ -5,7 +5,7 @@ import type { Page } from '../format/page';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import { checkValue } from './check';
 import { MESSAGES, type Messages } from './messages';
-import type { DataSource, LineOp, LinkOp, RecordChanges, ResolvedFilterCondition } from './data-source';
+import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilterCondition, type SaveProblem } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
 import {
   emptyValue,
@@ -43,6 +43,8 @@ export interface FormState {
   readonly step: string | null;
   /** Optional steps passed over with Skip: their answers are left out, and not asked for. */
   readonly skipped: readonly string[];
+  /** Why the last save was refused, until the next one starts or the form is reset. */
+  readonly saveProblem: SaveProblem | null;
 }
 
 /** What a layout element looks like right now. */
@@ -176,7 +178,10 @@ export function createForm(options: FormOptions): Form {
     draft: null,
     step: steps[0] ?? null,
     skipped: [],
+    saveProblem: null,
   };
+  /** Field errors a refused save brought, each kept until its field changes from the value it was refused with. */
+  let serverErrors: Record<string, { message: string; value: string }> = {};
   let lineKeys = 0;
   let onchangeSeq = 0;
   let draftTimer: unknown = null;
@@ -288,6 +293,10 @@ export function createForm(options: FormOptions): Form {
     state = previous;
     const kept: Record<string, string> = {};
     for (const key of Object.keys(state.errors)) if (fresh[key]) kept[key] = fresh[key];
+    for (const [name, refused] of Object.entries(serverErrors)) {
+      if (JSON.stringify(values[name] ?? null) === refused.value) kept[name] ??= refused.message;
+      else delete serverErrors[name];
+    }
     return kept;
   }
 
@@ -392,7 +401,8 @@ export function createForm(options: FormOptions): Form {
       return false;
     }
     const source = options.dataSource;
-    set({ status: 'saving', errors: {}, error: null });
+    serverErrors = {};
+    set({ status: 'saving', errors: {}, error: null, saveProblem: null });
     try {
       if (page.data.kind === 'responses') {
         if (!source?.submit) throw new Error('This page has no data source to send its answers to');
@@ -415,7 +425,10 @@ export function createForm(options: FormOptions): Form {
       set({ status: 'saved', recordId: result.id, values, dirty: [] });
       return true;
     } catch (error) {
-      set({ status: 'error', error: (error as Error).message });
+      const problem = saveProblemOf(error);
+      const fields = problem.kind === 'fields' ? problem.fields ?? {} : {};
+      serverErrors = Object.fromEntries(Object.entries(fields).map(([name, message]) => [name, { message, value: JSON.stringify(state.values[name] ?? null) }]));
+      set({ status: 'error', error: problem.message, saveProblem: problem, errors: { ...fields } });
       return false;
     }
   }
@@ -531,7 +544,8 @@ export function createForm(options: FormOptions): Form {
 
     reset() {
       forgetDraft();
-      set({ values: structuredCopy(baseline), dirty: [], errors: {}, warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [] });
+      serverErrors = {};
+      set({ values: structuredCopy(baseline), dirty: [], errors: {}, warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null });
     },
 
     changes,
