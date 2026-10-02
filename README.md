@@ -68,7 +68,7 @@ npm ci
 npx nx run-many -t typecheck lint test build   # unit gates
 node tools/release.mjs check                    # the packs, installed into an empty project
 npx playwright install chromium
-npx nx run-many -t build -p angular viewer && node tools/build-demos.mjs && npx playwright test   # browser gates, every framework demo
+npx nx run-many -t build -p angular viewer && node tools/build-demos.mjs && node tools/build-site.mjs && npx playwright test   # browser gates: every framework demo, and fieldia.dev
 ```
 
 CI runs exactly these lines — [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is the gate list.

@@ -50,6 +50,8 @@ jobs:
         env:
           NX_DAEMON: 'false'
       - run: node tools/build-demos.mjs
+      # fieldia.dev, gated like the demos: every page, link and the live form.
+      - run: node tools/build-site.mjs
       - run: npx playwright test
       - uses: actions/upload-artifact@v4
         if: always()

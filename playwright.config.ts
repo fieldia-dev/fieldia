@@ -16,9 +16,17 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: {
-    command: 'node tools/serve.mjs dist/demos 4321',
-    url: 'http://127.0.0.1:4321/plain/',
-    reuseExistingServer: !process.env['CI'],
-  },
+  webServer: [
+    {
+      command: 'node tools/serve.mjs dist/demos 4321',
+      url: 'http://127.0.0.1:4321/plain/',
+      reuseExistingServer: !process.env['CI'],
+    },
+    {
+      // fieldia.dev, built by tools/build-site.mjs.
+      command: 'node tools/serve.mjs dist/site 4322',
+      url: 'http://127.0.0.1:4322/',
+      reuseExistingServer: !process.env['CI'],
+    },
+  ],
 });
