@@ -38,8 +38,13 @@ await build({
 const sandbox = { window: {}, self: {}, globalThis: {} };
 runInNewContext(readFileSync(OUT, 'utf8'), sandbox);
 const Fieldia = sandbox.Fieldia;
-for (const name of ['mountViewer', 'createMemoryDataSource', 'createForm', 'validatePage']) {
+for (const name of ['mountViewer', 'createMemoryDataSource', 'createForm', 'checkPage', 'translatePage']) {
   if (typeof Fieldia?.[name] !== 'function') throw new Error(`the script bundle does not define Fieldia.${name}`);
 }
+// Light enough for a page with no build step: no validation library, and under budget.
+const code = readFileSync(OUT, 'utf8');
+if (/ZodError|\$ZodType/.test(code)) throw new Error('the script bundle carries zod: something imports the format schemas');
+const BUDGET_KB = 190;
+if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
 console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(statSync(OUT).size / 1024)} KB)`);

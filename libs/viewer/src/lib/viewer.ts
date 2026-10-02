@@ -1,7 +1,7 @@
 import {
   createForm,
+  checkPage,
   translatePage,
-  validatePage,
   wideColumns,
   type ButtonNode,
   type CreateRequest,
@@ -273,7 +273,8 @@ let mounts = 0;
  */
 export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHandle {
   const doc = host.ownerDocument;
-  const checked = validatePage(options.page);
+  // The quick check of names and conditions: the full one, with its validation library, belongs where pages are made.
+  const checked = checkPage(options.page);
   if (!checked.ok) {
     throw new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);
   }

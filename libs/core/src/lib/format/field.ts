@@ -10,31 +10,8 @@ import { JsonValueSchema } from './json';
  * vocabulary stays unless it is a product name, jargon, or a clash.
  */
 
-/** A field name: what expressions and layout nodes use to refer to a field. */
-export const FIELD_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
-
-export const FIELD_TYPES = [
-  'char',
-  'text',
-  'html',
-  'integer',
-  'float',
-  'monetary',
-  'boolean',
-  'date',
-  'datetime',
-  'selection',
-  'binary',
-  'image',
-  'many2one',
-  'many2many',
-  'one2many',
-  'reference',
-  'properties',
-  'json',
-] as const;
-
-export type FieldType = (typeof FIELD_TYPES)[number];
+import { FIELD_NAME } from './names';
+export { FIELD_NAME, FIELD_TYPES, type FieldType } from './names';
 
 /** One choice in a selection or reference. */
 export const OptionSchema = z

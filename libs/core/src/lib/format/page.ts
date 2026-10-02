@@ -2,8 +2,8 @@ import * as z from 'zod';
 import { FieldsSchema, type Fields } from './field';
 import { RootLayoutSchema, type RootLayout } from './layout';
 
-/** The page format version this build reads and writes. */
-export const FORMAT_VERSION = '0.1' as const;
+import { FORMAT_VERSION } from './version';
+export { FORMAT_VERSION } from './version';
 
 /**
  * Where a page's values go. A `record` page edits records of a model through

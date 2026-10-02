@@ -87,10 +87,7 @@ export interface ColumnsByWidth {
   narrow?: ColumnCount;
 }
 
-/** A section's columns at full width, whichever way they are written. */
-export function wideColumns(columns: ColumnCount | ColumnsByWidth | undefined): ColumnCount {
-  return typeof columns === 'object' ? columns.wide : columns ?? 1;
-}
+export { wideColumns } from './columns';
 
 export interface SectionNode {
   type: 'section';

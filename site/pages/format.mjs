@@ -178,6 +178,6 @@ import { validatePage } from '@fieldia/core';
 const checked = validatePage(json);
 if (!checked.ok) console.log(checked.issues);   // [{ path: 'layout.children[0]...', message: '...' }]`
 )}
-<p>${c('validatePage')} checks the shape, that every id is unique, that every field a node or a condition names exists, and that every condition parses. The viewer runs it too, and refuses a page that fails with the same list of issues. For editors and other languages the format is also a JSON Schema: ${c('@fieldia/core/page.schema.json')}.</p>
+<p>${c('validatePage')} checks the shape, key by key, that every id is unique, that every field a node or a condition names exists, and that every condition parses. Run it where pages are made and tested: in a designer, in your tests, in CI. The viewer runs the lighter ${c('checkPage')} as it shows a page — the page's outline, then the same names and conditions — and refuses a page that fails with the same list of issues; it leaves the validation library out of your app. For editors and other languages the format is also a JSON Schema: ${c('@fieldia/core/page.schema.json')}.</p>
 `,
 };
