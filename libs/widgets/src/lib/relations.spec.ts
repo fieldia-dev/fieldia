@@ -93,6 +93,29 @@ describe('many2one', () => {
     expect(input.getAttribute('aria-expanded')).toBe('false');
   });
 
+  it('keeps the choice the arrow keys reached when a later search answers with it still in the list', async () => {
+    const { form, el } = mount('n-country');
+    const input = el.querySelector('input[role=combobox]') as HTMLInputElement;
+    type(input, 'j');
+    await settle();
+    // More typed, and the arrows move on the list still showing, before its search answers.
+    type(input, 'ja');
+    key(input, 'ArrowDown');
+    key(input, 'ArrowDown');
+    await settle();
+    expect(options(el)).toEqual(['Japan', 'Create “ja”']);
+    expect(input.getAttribute('aria-activedescendant')).toBe(el.querySelectorAll('[role=option]')[0].id);
+    key(input, 'Enter');
+    expect(form.getState().values['country_id']).toEqual({ id: 3, label: 'Japan' });
+    // A choice the answer no longer lists is let go.
+    type(input, 'j');
+    await settle();
+    key(input, 'ArrowDown');
+    type(input, 'jap');
+    await settle();
+    expect(input.hasAttribute('aria-activedescendant')).toBe(false);
+  });
+
   it('chooses with the mouse, keeping focus in the box', async () => {
     const { form, el } = mount('n-country');
     const input = el.querySelector('input[role=combobox]') as HTMLInputElement;
@@ -410,8 +433,8 @@ describe('making a record from a typed name', () => {
 });
 
 describe('a link field and its dialogs', () => {
-  function mountWithDialogs(dialogs: WidgetDialogs | undefined) {
-    const form = createForm({ page, dataSource: source() });
+  function mountWithDialogs(dialogs: WidgetDialogs | undefined, dataSource = source()) {
+    const form = createForm({ page, dataSource });
     const node = (page.layout as { children: FieldNode[] }).children.find((n) => n.id === 'n-country') as FieldNode;
     const widget = createWidget({ form, name: 'country_id', field: page.fields['country_id'] as Field, node, id: 'fd-country', document, labels: WIDGET_LABELS.en, dialogs });
     document.body.replaceChildren(widget.element);
@@ -438,16 +461,38 @@ describe('a link field and its dialogs', () => {
   };
   const optionNamed = (el: Element, name: string) => [...el.querySelectorAll('[role=option]')].find((o) => o.textContent === name) as HTMLElement;
 
-  it('ends its list with Search more…, which picks from a searchable list', async () => {
-    const dialogs = fakeDialogs({ searchMore: async () => ({ id: 3, label: 'Japan' }) });
-    const { form, el, input } = mountWithDialogs(dialogs);
-    type(input, 'j');
+  /** Twelve countries with an "a" in the name: more than the list shows. */
+  const manyCountries = () =>
+    createMemoryDataSource({
+      records: {
+        country: Object.fromEntries(
+          ['Algeria', 'Bahrain', 'Canada', 'Denmark', 'Estonia', 'France', 'Ghana', 'Haiti', 'Iran', 'Jamaica', 'Kenya', 'Latvia'].map((name, i) => [i + 1, { name }]),
+        ),
+      },
+    });
+
+  it('shows eight matches and ends with Search more… when more match, which picks from a searchable list', async () => {
+    const dialogs = fakeDialogs({ searchMore: async () => ({ id: 12, label: 'Latvia' }) });
+    const { form, el, input } = mountWithDialogs(dialogs, manyCountries());
+    type(input, 'a');
     await settle();
-    expect(options(el).at(-1)).toBe('Search more…');
+    expect(options(el)).toEqual(['Algeria', 'Bahrain', 'Canada', 'Denmark', 'Estonia', 'France', 'Ghana', 'Haiti', 'Create “a”', 'Create and edit…', 'Search more…']);
     optionNamed(el, 'Search more…').click();
     await settle();
     expect(dialogs.calls).toEqual([['searchMore', 'Country']]);
-    expect(form.getState().values['country_id']).toEqual({ id: 3, label: 'Japan' });
+    expect(form.getState().values['country_id']).toEqual({ id: 12, label: 'Latvia' });
+  });
+
+  it('leaves Search more… out when the list already shows every match', async () => {
+    const { el, input } = mountWithDialogs(fakeDialogs({}));
+    type(input, 'j');
+    await settle();
+    expect(options(el)).toEqual(['Jordan', 'Japan', 'Create “j”', 'Create and edit…']);
+    const eight = mountWithDialogs(fakeDialogs({}), createMemoryDataSource({ records: { country: Object.fromEntries([...Array(8)].map((_, i) => [i + 1, { name: `Island ${i + 1}` }])) } }));
+    type(eight.input, 'island');
+    await settle();
+    expect(options(eight.el)).not.toContain('Search more…');
+    expect(options(eight.el)).toHaveLength(10);
   });
 
   it('offers Create and edit…, opening the related page with the typed name, and links what was saved', async () => {
@@ -455,7 +500,7 @@ describe('a link field and its dialogs', () => {
     const { form, el, input } = mountWithDialogs(dialogs);
     type(input, 'Oman');
     await settle();
-    expect(options(el)).toEqual(['Create “Oman”', 'Create and edit…', 'Search more…']);
+    expect(options(el)).toEqual(['Create “Oman”', 'Create and edit…']);
     optionNamed(el, 'Create and edit…').click();
     await settle();
     expect(dialogs.calls).toEqual([['openRecord', 'country', { name: 'Oman', title: 'Country' }]]);

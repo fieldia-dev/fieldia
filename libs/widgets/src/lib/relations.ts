@@ -9,6 +9,8 @@ import type { Widget, WidgetContext, WidgetFactory } from './widgets';
  */
 
 const DEBOUNCE_MS = 180;
+/** How many matches a link's list shows, as the data source's search would. */
+const SHOWN = 8;
 
 function fill(template: string, values: Record<string, string>) {
   return template.replace(/\{(\w+)\}/g, (match, name: string) => values[name] ?? match);
@@ -38,8 +40,10 @@ function combobox(options: {
   onCommitEmpty?: () => void;
   /** Make a record from what was typed, offered when nothing found has that name. */
   create?: (text: string) => Promise<RelatedRecord>;
+  /** How many found records the list shows; a search may find one more, to tell there are others. */
+  shown?: number;
   /** Further choices at the end of the list: each acts on the typed text and may hand back a record to pick. */
-  more?: (typed: string) => { label: string; act: (typed: string) => Promise<RelatedRecord | null> }[];
+  more?: (typed: string, overflow: boolean) => { label: string; act: (typed: string) => Promise<RelatedRecord | null> }[];
 }): Combobox {
   const { document: doc, id, labels } = options;
   const listId = `${id}-list`;
@@ -135,8 +139,13 @@ function combobox(options: {
     timer = setTimeout(async () => {
       const found = await options.search(query).catch(() => [] as RelatedRecord[]);
       if (mine !== seq || doc.activeElement !== input) return; // a newer search, or the person left
+      // A record the arrow keys reached stays reached if the answer still lists it.
+      const reached = results[active];
+      const held = reached && reached !== creating && !extras.has(reached) ? reached.id : undefined;
       const hidden = options.exclude?.() ?? new Set();
-      results = found.filter((record) => !hidden.has(record.id));
+      const kept = found.filter((record) => !hidden.has(record.id));
+      const overflow = options.shown !== undefined && kept.length > options.shown;
+      results = overflow ? kept.slice(0, options.shown) : kept;
       // Nothing found by that name: offer to make it.
       const typed = query.trim();
       creating = null;
@@ -146,9 +155,9 @@ function combobox(options: {
         results = [...results, creating];
       }
       creatingText = typed;
-      extras = new Map((options.more?.(typed) ?? []).map((extra, i) => [{ id: `__more_${i}__`, label: extra.label }, extra.act]));
+      extras = new Map((options.more?.(typed, overflow) ?? []).map((extra, i) => [{ id: `__more_${i}__`, label: extra.label }, extra.act]));
       results = [...results, ...extras.keys()];
-      active = -1;
+      active = held === undefined ? -1 : results.findIndex((record) => record.id === held);
       render();
       open();
     }, DEBOUNCE_MS);
@@ -230,18 +239,20 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
     document,
     id,
     labels,
-    search: (query) => form.search(name, query),
+    // One past what the list shows, to know whether Search more… has more to find.
+    search: (query) => form.search(name, query, SHOWN + 1),
+    shown: SHOWN,
     pick: (record) => form.setValue(name, record),
     onCommitEmpty: () => form.setValue(name, null),
     create: creator(form, name, node),
-    // With dialogs: make a record in its own page, or pick from a full list.
-    more: (typed) => {
+    // With dialogs: make a record in its own page, or pick from a full list when the short one has no room.
+    more: (typed, overflow) => {
       if (!dialogs || readonly) return [];
       const choices: { label: string; act: (text: string) => Promise<RelatedRecord | null> }[] = [];
       if (typed && canOpen && node.options?.['create'] !== false) {
         choices.push({ label: labels.createAndEdit, act: (text) => dialogs.openRecord(relation, { name: text, title: field.label }) });
       }
-      choices.push({ label: labels.searchMore, act: () => dialogs.searchMore({ title: field.label, search: (query, limit) => form.search(name, query, limit) }) });
+      if (overflow) choices.push({ label: labels.searchMore, act: () => dialogs.searchMore({ title: field.label, search: (query, limit) => form.search(name, query, limit) }) });
       return choices;
     },
   });
