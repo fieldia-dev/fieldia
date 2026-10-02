@@ -10,6 +10,7 @@
       "@fieldia/viewer": ["libs/viewer/src/index.ts"],
       "@fieldia/grid": ["libs/grid/src/index.ts"],
       "@fieldia/code": ["libs/code/src/index.ts"],
+      "@fieldia/chatter": ["libs/chatter/src/index.ts"],
       "@fieldia/angular": ["dist/libs/angular/src/index.js"]
     }
   }

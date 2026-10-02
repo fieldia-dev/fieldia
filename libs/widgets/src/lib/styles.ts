@@ -376,9 +376,11 @@ export const FIELDIA_CSS = /* css */ `
 [dir="rtl"] .fd-statusbar button, [dir="rtl"] .fd-statusbar span { transform: scaleX(-1); }
 [dir="rtl"] .fd-statusbar button > *, [dir="rtl"] .fd-statusbar span > * { display: inline-block; transform: scaleX(-1); }
 .fd-sheet-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; max-width: var(--fd-page-max, 1180px); margin: 16px auto 0; padding-inline: 16px; }
+/* The sheet keeps its own height: a long side panel beside it must not stretch it. */
+.fd-sheet-layout { align-items: start; }
 /* Save and Discard closing the sheet, when the page puts them at its foot. */
 .fd-sheet-foot { margin: 4px -28px -28px; padding: 12px 28px; border-block-start: 1px solid var(--fd-border); border-end-start-radius: inherit; border-end-end-radius: inherit; }
-.fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); }
+.fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr) minmax(260px, 360px); }
 @container (max-width: 860px) { .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr); } }
 .fd-card {
   position: relative; background: var(--fd-surface); border: 1px solid var(--fd-border);

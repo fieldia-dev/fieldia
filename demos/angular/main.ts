@@ -2,7 +2,9 @@
 // runtime, and compiles this demo's own components. An Angular CLI app would
 // link the package at build time instead; the package is the same.
 import '@angular/compiler';
-import { Component, DestroyRef, Input, inject, provideZonelessChangeDetection, signal, type OnInit, type Signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, Input, inject, provideZonelessChangeDetection, signal, type AfterViewInit, type OnInit, type Signal } from '@angular/core';
+import { chatterSlot } from '@fieldia/chatter';
+import { sampleChatter } from '../shared/sample-chatter';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { FieldiaFormComponent, FieldiaSlotDirective, formState } from '@fieldia/angular';
 import { gridWidgets } from '@fieldia/grid';
@@ -41,6 +43,20 @@ class ShoutComponent {
   }
 }
 
+const chatter = sampleChatter();
+
+/** The chatter in an Angular slot: its own element it mounts into, for as long as the slot lives. */
+@Component({ selector: 'demo-chatter', template: '' })
+class ChatterComponent implements AfterViewInit {
+  @Input() form!: Form;
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
+  ngAfterViewInit() {
+    const done = chatterSlot({ source: chatter, locale: (params.get('locale') as Locale | null) ?? undefined })(this.host.nativeElement, { form: this.form });
+    this.destroyRef.onDestroy(done);
+  }
+}
+
 /** The "note" slot content, as an Angular component with its own state. */
 @Component({
   selector: 'demo-note',
@@ -65,7 +81,7 @@ class NoteComponent implements OnInit {
 
 @Component({
   selector: 'demo-root',
-  imports: [FieldiaFormComponent, FieldiaSlotDirective, NoteComponent],
+  imports: [FieldiaFormComponent, FieldiaSlotDirective, NoteComponent, ChatterComponent],
   template: `<fieldia-form
     [page]="page"
     [dataSource]="dataSource"
@@ -85,13 +101,7 @@ class NoteComponent implements OnInit {
     (ready)="ready($event)"
     (action)="pressed($event)"
   >
-    <ng-template fieldiaSlot="chatter">
-      <div class="demo-feed">
-        <h3>Activity</h3>
-        <p><b>Mona Adel</b> confirmed order SO0018.</p>
-        <p><b>You</b> raised the credit limit to 250,000.</p>
-      </div>
-    </ng-template>
+    <ng-template fieldiaSlot="chatter" let-form><demo-chatter [form]="form" /></ng-template>
     <ng-template fieldiaSlot="note" let-form><demo-note [form]="form" /></ng-template>
   </fieldia-form>`,
 })
@@ -107,7 +117,7 @@ class DemoComponent {
   readonly relatedPages = relatedPages;
   readonly options = optionsFromQuery(params);
   ready(handle: ViewerHandle) {
-    Object.assign(window, { fieldiaDemo: { handle, dataSource, actions } });
+    Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, chatter } });
   }
   pressed(request: ActionRequest) {
     actions.push(request.action);

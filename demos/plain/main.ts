@@ -4,6 +4,8 @@ import type { WidgetFactory } from '@fieldia/widgets';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
 import { clicked, greeting, shout } from '../shared/custom-page';
+import { chatterSlot } from '@fieldia/chatter';
+import { sampleChatter } from '../shared/sample-chatter';
 import { optionsFromQuery, pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
 
 /**
@@ -14,6 +16,7 @@ const params = new URLSearchParams(location.search);
 const name = params.get('page') ?? 'signup';
 const page = pageFromQuery(params);
 const dataSource = sampleDataSource();
+const chatter = sampleChatter();
 const actions: string[] = [];
 
 /** The "shout" field, as a plain-DOM widget. */
@@ -49,10 +52,8 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
   relatedPages,
   ...optionsFromQuery(params),
   slots: {
-    chatter: (element) => {
-      element.innerHTML =
-        '<div class="demo-feed"><h3>Activity</h3><p><b>Mona Adel</b> confirmed order SO0018.</p><p><b>You</b> raised the credit limit to 250,000.</p></div>';
-    },
+    // The record's conversation, to-dos and followers, beside it.
+    chatter: chatterSlot({ source: chatter, locale: (params.get('locale') as Locale | null) ?? undefined, dir: params.get('dir') === 'rtl' ? 'rtl' : undefined }),
     note: (element, { form }) => {
       let clicks = 0;
       const button = document.createElement('button');
@@ -72,4 +73,4 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
   },
 });
 
-Object.assign(window, { fieldiaDemo: { handle, dataSource, actions } });
+Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, chatter } });

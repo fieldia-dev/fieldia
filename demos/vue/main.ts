@@ -3,7 +3,9 @@ import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
 import type { Form, Locale, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
-import { createApp, defineComponent, h, ref, type PropType } from 'vue';
+import { createApp, defineComponent, h, onBeforeUnmount, onMounted, ref, type PropType } from 'vue';
+import { chatterSlot } from '@fieldia/chatter';
+import { sampleChatter } from '../shared/sample-chatter';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { optionsFromQuery, pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
 
@@ -49,12 +51,21 @@ const Note = defineComponent({
   },
 });
 
-const Activity = () =>
-  h('div', { class: 'demo-feed' }, [
-    h('h3', 'Activity'),
-    h('p', [h('b', 'Mona Adel'), ' confirmed order SO0018.']),
-    h('p', [h('b', 'You'), ' raised the credit limit to 250,000.']),
-  ]);
+const chatter = sampleChatter();
+
+/** The chatter in a Vue slot: a box it mounts into, for as long as the slot lives. */
+const Chatter = defineComponent({
+  props: { form: { type: Object as PropType<Form>, required: true } },
+  setup(props) {
+    const box = ref<HTMLElement | null>(null);
+    let done: (() => void) | undefined;
+    onMounted(() => {
+      if (box.value) done = chatterSlot({ source: chatter, locale: (params.get('locale') as Locale | null) ?? undefined })(box.value, { form: props.form });
+    });
+    onBeforeUnmount(() => done?.());
+    return () => h('div', { ref: box });
+  },
+});
 
 createApp({
   render: () =>
@@ -72,10 +83,10 @@ createApp({
         relatedPages,
         ...optionsFromQuery(params),
         onAction: (request: { action: string }) => void actions.push(request.action),
-        onReady: (handle: ViewerHandle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions } }),
+        onReady: (handle: ViewerHandle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, chatter } }),
       },
       {
-        chatter: () => h(Activity),
+        chatter: ({ form }: { form: Form }) => h(Chatter, { form }),
         note: ({ form }: { form: Form }) => h(Note, { form }),
       }
     ),

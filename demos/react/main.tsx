@@ -3,7 +3,9 @@ import { FieldiaForm, useFormState, type FieldComponentProps, type SlotComponent
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
 import type { Skin } from '@fieldia/viewer';
-import { StrictMode, useState } from 'react';
+import { StrictMode, useEffect, useRef, useState } from 'react';
+import { chatterSlot } from '@fieldia/chatter';
+import { sampleChatter } from '../shared/sample-chatter';
 import { createRoot } from 'react-dom/client';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { optionsFromQuery, pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
@@ -38,18 +40,13 @@ function Note({ form }: SlotComponentProps) {
   );
 }
 
-function Activity() {
-  return (
-    <div className="demo-feed">
-      <h3>Activity</h3>
-      <p>
-        <b>Mona Adel</b> confirmed order SO0018.
-      </p>
-      <p>
-        <b>You</b> raised the credit limit to 250,000.
-      </p>
-    </div>
-  );
+const chatter = sampleChatter();
+
+/** The chatter in a React slot: a box it mounts into, for as long as the slot lives. */
+function Chatter({ form }: SlotComponentProps) {
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => (box.current ? chatterSlot({ source: chatter, locale: (params.get('locale') as Locale | null) ?? undefined })(box.current, { form }) : undefined), [form]);
+  return <div ref={box} />;
 }
 
 function Demo() {
@@ -66,8 +63,8 @@ function Demo() {
       widgets={{ ...gridWidgets, ...codeWidgets }}
       relatedPages={relatedPages}
       {...optionsFromQuery(params)}
-      slots={{ chatter: Activity, note: Note }}
-      onReady={(handle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions } })}
+      slots={{ chatter: Chatter, note: Note }}
+      onReady={(handle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, chatter } })}
     />
   );
 }
