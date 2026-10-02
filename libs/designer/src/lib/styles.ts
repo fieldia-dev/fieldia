@@ -18,8 +18,14 @@ export const DESIGNER_CSS = /* css */ `
 .fd-design-step { display: grid; gap: 10px; padding: 14px; border-radius: var(--fd-radius); background: var(--fd-page); border: 1px solid var(--fd-border); }
 .fd-step-head { display: flex; gap: 8px; align-items: center; }
 .fd-step-title { font-weight: 650; font-size: 15px; }
-.fd-step-when { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; color: var(--fd-muted); font-size: 13px; }
-.fd-step-when .fd-select { width: auto; min-width: 140px; }
+.fd-step-when { color: var(--fd-muted); font-size: 13px; }
+.fd-when { display: grid; gap: 6px; justify-items: start; color: var(--fd-muted); font-size: 13px; }
+.fd-q .fd-when { padding: 8px 10px; border-inline-start: 3px solid var(--fd-accent-soft); background: var(--fd-page); border-radius: 4px; width: 100%; box-sizing: border-box; }
+.fd-when-rules { display: grid; gap: 6px; }
+.fd-when-rule, .fd-when-match-row { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.fd-when .fd-select { width: auto; min-width: 140px; }
+.fd-when-custom code { font-size: 12.5px; color: var(--fd-text); }
+.fd-q-when { padding-inline: 4px; }
 .fd-step-cards { display: grid; gap: 10px; }
 .fd-design-step > .fd-button { justify-self: start; }
 .fd-step-cards:empty::before { content: "No questions on this page yet."; color: var(--fd-muted); font-size: 13px; padding: 4px 2px; }

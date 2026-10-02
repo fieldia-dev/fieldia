@@ -103,12 +103,13 @@ describe('survey editor', () => {
     type(cards(host)[0].querySelector('.fd-q-label') as HTMLInputElement, 'Coming?');
     button(host, 'Add page').click();
     const page2 = host.querySelectorAll<HTMLElement>('.fd-design-step')[1];
-    const when = page2.querySelector('.fd-step-when-field') as HTMLSelectElement;
+    const when = page2.querySelector('.fd-when-field') as HTMLSelectElement;
     expect([...when.options].map((o) => o.textContent)).toEqual(['Always', 'Coming?']);
     when.value = nodes(designer.getPage())[0].field;
     when.dispatchEvent(new Event('change', { bubbles: true }));
-    const equals = page2.querySelector('.fd-step-when-value') as HTMLSelectElement;
-    equals.value = 'true';
+    const equals = page2.querySelector('.fd-when-answer') as HTMLSelectElement;
+    expect([...equals.options].map((o) => o.textContent)).toEqual(['is Yes', 'is No', 'is not Yes', 'is not No']);
+    equals.value = 'is:true';
     equals.dispatchEvent(new Event('change', { bubbles: true }));
     const step = (designer.getPage().layout as WizardNode).children[1] as StepNode;
     expect(step.invisible).toBe(`${nodes(designer.getPage())[0].field} != True`);
@@ -178,3 +179,64 @@ describe('survey editor', () => {
     expect(preview.hasAttribute('aria-busy')).toBe(false);
   });
 });
+
+describe('survey editor — a question shown for some answers', () => {
+  /** "Name", "Coming?" (yes or no), "Role" (a dropdown) and "Why not?" on one page. */
+  function threeQuestions() {
+    const mounted = mount();
+    const { designer } = mounted;
+    // A question with no answers to choose from, which no condition can test.
+    designer.updateQuestion(designer.addQuestion('short-answer') as string, { label: 'Name' });
+    const coming = designer.addQuestion('yes-no') as string;
+    designer.updateQuestion(coming, { label: 'Coming?' });
+    const role = designer.addQuestion('dropdown') as string;
+    designer.updateQuestion(role, { label: 'Role' });
+    designer.setOptions(role, ['Developer', 'Manager']);
+    const why = designer.addQuestion('paragraph') as string;
+    designer.updateQuestion(why, { label: 'Why not?' });
+    const card = (id: string) => mounted.host.querySelector(`.fd-q[data-node="${id}"]`) as HTMLElement;
+    const field = (id: string) => (nodes(designer.getPage()).find((n) => n.id === id) as FieldNode).field;
+    const invisible = (id: string) => (nodes(designer.getPage()).find((n) => n.id === id) as FieldNode).invisible;
+    return { ...mounted, coming, role, why, card, field, invisible };
+  }
+  const choose = (select: HTMLSelectElement, value: string) => {
+    select.value = value;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+  const selectIn = (root: Element, label: string) => root.querySelector(`select[aria-label="${label}"]`) as HTMLSelectElement;
+
+  it('offers a condition only from questions before it, and builds one rule by rule', () => {
+    const { card, coming, role, why, field, invisible } = threeQuestions();
+    expect(button(card(coming), 'Show only when…')).toBeUndefined();
+    button(card(why), 'Show only when…').click();
+    const first = selectIn(card(why), 'Show this question');
+    expect([...first.options].map((o) => o.textContent)).toEqual(['Always', 'Coming?', 'Role']);
+    expect(invisible(why)).toBe(`${field(coming)} != True`);
+    choose(selectIn(card(why), 'When the answer is'), 'is:false');
+    expect(invisible(why)).toBe(`${field(coming)} != False`);
+    button(card(why), 'Add a condition').click();
+    choose(selectIn(card(why), 'Condition 2'), field(role));
+    choose(selectIn(card(why), 'Answer 2'), 'not:manager');
+    expect(invisible(why)).toBe(`${field(coming)} != False or ${field(role)} == 'manager'`);
+    choose(selectIn(card(why), 'Match'), 'any');
+    expect(invisible(why)).toBe(`${field(coming)} != False and ${field(role)} == 'manager'`);
+    button(card(why), 'Remove condition 2').click();
+    expect(invisible(why)).toBe(`${field(coming)} != False`);
+    expect(selectIn(card(why), 'Match').closest('[hidden]')).not.toBeNull();
+    choose(selectIn(card(why), 'Show this question'), '');
+    expect(invisible(why)).toBeUndefined();
+    expect(button(card(why), 'Show only when…')).toBeTruthy();
+  });
+
+  it('shows a condition written by hand as it is, and replaces it on request', () => {
+    const { why, designer, field, coming } = threeQuestions();
+    const page = designer.getPage();
+    (nodes(page).find((n) => n.id === why) as FieldNode).invisible = `not (${field(coming)} == True)`;
+    const { host } = mount(page);
+    const custom = host.querySelector(`.fd-q[data-node="${why}"] .fd-when-custom`) as HTMLElement;
+    expect(custom.textContent).toContain(`not (${field(coming)} == True)`);
+    button(custom, 'Replace').click();
+    expect(host.querySelector(`.fd-q[data-node="${why}"] .fd-when-custom`)?.closest('[hidden]')).not.toBeNull();
+  });
+});
+

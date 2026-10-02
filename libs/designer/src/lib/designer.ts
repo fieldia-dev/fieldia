@@ -11,6 +11,7 @@ import {
   type StepNode,
   type TabsNode,
 } from '@fieldia/core';
+import { conditionToHide, type Condition } from './conditions';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 
 /**
@@ -272,8 +273,12 @@ export interface Designer {
   /** One more tab, with a section. Returns its id. */
   addTab(tabsId: string, label: string): string | false;
   renameContainer(id: string, label: string): boolean;
-  /** Show an element only when a field has a value; `null` always shows it. */
-  setCondition(id: string, condition: { field: string; equals: string | number | boolean } | null): boolean;
+  /**
+   * Show a page or a question only when earlier answers say so: all of the
+   * rules, or any. One field and one value is the short form; `null`, or no
+   * rules, always shows it.
+   */
+  setCondition(id: string, condition: Condition | { field: string; equals: string | number | boolean } | null): boolean;
   setColumns(sectionId: string, columns: 1 | 2 | 3 | 4): boolean;
   setColspan(nodeId: string, span: number): boolean;
   /** Put a section's fields in this order with these widths, as one edit (a canvas drag). */
@@ -690,15 +695,22 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
 
     setCondition(id, condition) {
       return apply((draft) => {
-        const target = (findContainer(draft, id) as { invisible?: string } | null) ?? (findNode(draft, id)?.node as { invisible?: string } | undefined);
+        const container = findContainer(draft, id) as { invisible?: string } | null;
+        const found = container ? null : findNode(draft, id);
+        const target = container ?? (found?.node as { invisible?: string } | undefined);
         if (!target) throw new Refusal(`There is no element "${id}"`);
-        if (!condition) {
+        const rules: Condition = !condition
+          ? { join: 'all', rules: [] }
+          : 'rules' in condition
+            ? condition
+            : { join: 'all', rules: [{ field: condition.field, op: 'is', value: condition.equals }] };
+        if (!rules.rules.length) {
           delete target.invisible;
           return;
         }
-        const { field, equals } = condition;
-        const literal = typeof equals === 'string' ? `'${equals.replace(/'/g, '')}'` : typeof equals === 'boolean' ? (equals ? 'True' : 'False') : String(equals);
-        target.invisible = `${field} != ${literal}`;
+        const own = found?.node.type === 'field' ? found.node.field : null;
+        if (own && rules.rules.some((rule) => rule.field === own)) throw new Refusal('A question cannot depend on its own answer');
+        target.invisible = conditionToHide(rules);
       });
     },
 

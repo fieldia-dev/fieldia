@@ -1,8 +1,9 @@
-import { createMemoryDataSource, type Field, type FieldNode, type Page, type StepNode, type WizardNode } from '@fieldia/core';
+import { createMemoryDataSource, type FieldNode, type Page, type StepNode, type WizardNode } from '@fieldia/core';
 import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import { installStyles } from '@fieldia/widgets';
 import { designerBar, elementFactory, iconButton as makeIconButton, optionsEditor } from './chrome';
 import { kindOfField, QUESTION_KINDS, type Designer, type DesignerState } from './designer';
+import { conditionEditor } from './condition-editor';
 import { installDesignerStyles } from './styles';
 
 /**
@@ -30,19 +31,11 @@ export interface SurveyEditorHandle {
 export const kindOfQuestion = kindOfField;
 
 /** Choices a later page can depend on: single choices and yes-or-no questions. */
-function choicesOf(field: Field): { value: string; label: string; literal: string | number | boolean }[] | null {
-  if (field.type === 'selection' && !field.multiple) return field.options.map((o) => ({ value: String(o.value), label: o.label, literal: o.value }));
-  if (field.type === 'boolean') return [{ value: 'true', label: 'Yes', literal: true }, { value: 'false', label: 'No', literal: false }];
-  return null;
-}
-
-/** Read "q_1 != 'no'" or "q_1 != True" back into a field and a value. */
-function readCondition(invisible: unknown): { field: string; value: string } | null {
-  if (typeof invisible !== 'string') return null;
-  const match = /^(\w+) != (?:'([^']*)'|(True|False)|(-?\d+(?:\.\d+)?))$/.exec(invisible);
-  if (!match) return null;
-  const value = match[2] ?? (match[3] ? (match[3] === 'True' ? 'true' : 'false') : match[4]);
-  return { field: match[1], value };
+/** The questions before one, on earlier pages and earlier on its own: the ones its condition may test. */
+function questionsBefore(page: Page, id: string): FieldNode[] {
+  const all = (page.layout as WizardNode).children.flatMap((step) => step.children.filter((n): n is FieldNode => n.type === 'field'));
+  const at = all.findIndex((n) => n.id === id);
+  return at === -1 ? all : all.slice(0, at);
 }
 
 export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOptions): SurveyEditorHandle {
@@ -99,6 +92,9 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     const required = el('label', { class: 'fd-q-required' }, requiredBox, el('span', {}, 'Required'));
     const help = el('input', { class: 'fd-input fd-q-help', 'aria-label': 'Help text', placeholder: 'Help text (optional)' }) as HTMLInputElement;
     help.addEventListener('input', () => designer.updateQuestion(id, { help: help.value }));
+    const when = conditionEditor(el, designer, id, 'question');
+    const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, 'Show only when…');
+    showWhen.addEventListener('click', () => when.start());
     const tools = el(
       'div',
       { class: 'fd-q-tools' },
@@ -110,7 +106,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       }),
       iconButton('Delete', '✕', () => designer.removeNode(id), 'fd-icon-danger')
     );
-    card.append(el('div', { class: 'fd-q-head' }, label, kind), options.element, el('div', { class: 'fd-q-foot' }, required, help, tools));
+    card.append(el('div', { class: 'fd-q-head' }, label, kind), options.element, when.element, el('div', { class: 'fd-q-foot' }, required, help, showWhen, tools));
     card.addEventListener('focusin', () => {
       if (designer.getState().selected !== id) designer.select(id);
     });
@@ -130,6 +126,8 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
         requiredBox.checked = field.required === true;
         if (!focused(help)) help.value = field.help ?? '';
         options.update(field);
+        when.update(page, questionsBefore(page, node.id), node.invisible);
+        showWhen.hidden = !when.element.hidden || !when.canStart();
       },
     };
   }
@@ -138,10 +136,9 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     const section = el('section', { class: 'fd-design-step', 'data-node': id });
     const name = el('input', { class: 'fd-input fd-step-title', 'aria-label': 'Page title' }) as HTMLInputElement;
     name.addEventListener('input', () => designer.renameContainer(id, name.value));
-    const whenField = el('select', { class: 'fd-input fd-select fd-step-when-field', 'aria-label': 'Show this page' }) as HTMLSelectElement;
-    const whenValue = el('select', { class: 'fd-input fd-select fd-step-when-value', 'aria-label': 'When the answer is' }) as HTMLSelectElement;
     const removeStep = iconButton('Delete page', '✕', () => designer.removeNode(id), 'fd-icon-danger');
-    const condition = el('div', { class: 'fd-step-when' }, el('span', {}, 'Show this page'), whenField, whenValue);
+    const when = conditionEditor(el, designer, id, 'page');
+    const condition = el('div', { class: 'fd-step-when' }, when.element);
     const cards = el('div', { class: 'fd-step-cards' });
     const addQuestion = el('button', { type: 'button', class: 'fd-button fd-button-link' }, 'Add question');
     addQuestion.addEventListener('click', () => {
@@ -151,16 +148,6 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     });
     section.append(el('header', { class: 'fd-step-head' }, name, removeStep), condition, cards, addQuestion);
 
-    const choose = () => {
-      const page = designer.getPage();
-      if (!whenField.value) return void designer.setCondition(id, null);
-      const choices = choicesOf(page.fields[whenField.value]) ?? [];
-      const pick = choices.find((c) => c.value === whenValue.value) ?? choices[0];
-      if (pick) designer.setCondition(id, { field: whenField.value, equals: pick.literal });
-    };
-    whenField.addEventListener('change', choose);
-    whenValue.addEventListener('change', choose);
-
     return {
       element: section,
       cards,
@@ -168,18 +155,9 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
         if (!focused(name)) name.value = step.label;
         removeStep.hidden = total === 1;
         // Only questions on earlier pages can decide whether this one shows.
-        const earlier = (page.layout as WizardNode).children
-          .slice(0, index)
-          .flatMap((s) => s.children)
-          .filter((n): n is FieldNode => n.type === 'field' && choicesOf(page.fields[n.field]) !== null);
+        const earlier = (page.layout as WizardNode).children.slice(0, index).flatMap((s) => s.children.filter((n): n is FieldNode => n.type === 'field'));
         condition.hidden = index === 0;
-        const current = readCondition(step.invisible);
-        whenField.replaceChildren(el('option', { value: '' }, 'Always'), ...earlier.map((n) => el('option', { value: n.field }, page.fields[n.field].label)));
-        whenField.value = current?.field ?? '';
-        const choices = current ? choicesOf(page.fields[current.field]) ?? [] : [];
-        whenValue.replaceChildren(...choices.map((c) => el('option', { value: c.value }, `is ${c.label}`)));
-        whenValue.hidden = !current;
-        if (current) whenValue.value = current.value;
+        when.update(page, earlier, step.invisible);
       },
     };
   }

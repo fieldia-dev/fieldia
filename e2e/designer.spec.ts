@@ -83,6 +83,49 @@ test.describe('survey designer', () => {
     await screen(page, 'designer-published');
   });
 
+  test('shows a question only for some answers, all or any of them, live in the preview', async ({ page }) => {
+    const step = page.locator('.fd-design-step').first();
+    const card = (n: number) => page.locator('.fd-q').nth(n);
+    await step.getByRole('button', { name: 'Add question' }).click();
+    await page.keyboard.type('Coming?');
+    await card(0).getByLabel('Kind of question').selectOption({ label: 'Yes or no' });
+    await step.getByRole('button', { name: 'Add question' }).click();
+    await page.keyboard.type('Role');
+    await card(1).getByLabel('Kind of question').selectOption({ label: 'Dropdown' });
+    await card(1).getByLabel('Option 1', { exact: true }).fill('Developer');
+    await card(1).getByRole('button', { name: 'Add option' }).click();
+    await card(1).getByLabel('Option 2', { exact: true }).fill('Manager');
+    await step.getByRole('button', { name: 'Add question' }).click();
+    await page.keyboard.type('Why not?');
+
+    // The first question has nothing before it to depend on.
+    await expect(card(0).getByRole('button', { name: 'Show only when…' })).toBeHidden();
+    await card(2).getByRole('button', { name: 'Show only when…' }).click();
+    await card(2).getByLabel('When the answer is').selectOption({ label: 'is No' });
+    await card(2).getByRole('button', { name: 'Add a condition' }).click();
+    await card(2).getByLabel('Condition 2', { exact: true }).selectOption({ label: 'Role' });
+    await card(2).getByLabel('Answer 2', { exact: true }).selectOption({ label: 'is not Manager' });
+    await expect(card(2).getByLabel('Match')).toHaveValue('all');
+    await screen(page, 'designer-question-condition', { viewport: true });
+
+    const preview = page.locator('.fd-designer-preview');
+    const why = preview.getByText('Why not?');
+    await expect(preview.locator('.fd-designer-preview-host')).not.toHaveAttribute('aria-busy', 'true');
+    await preview.getByLabel('Role').selectOption({ label: 'Manager' });
+    await expect(why).toBeHidden();
+    await preview.getByLabel('Role').selectOption({ label: 'Developer' });
+    await expect(why).toBeVisible();
+    await preview.getByLabel('Coming?').check();
+    await expect(why).toBeHidden();
+
+    // Any of them: a developer who is coming is asked too.
+    await card(2).getByLabel('Match').selectOption({ label: 'any of these' });
+    await expect(preview.locator('.fd-designer-preview-host')).not.toHaveAttribute('aria-busy', 'true');
+    await preview.getByLabel('Coming?').check();
+    await preview.getByLabel('Role').selectOption({ label: 'Developer' });
+    await expect(preview.getByText('Why not?')).toBeVisible();
+  });
+
   test('refuses to delete a question a later page depends on, and says why', async ({ page }) => {
     const step1 = page.locator('.fd-design-step').nth(0);
     await step1.getByRole('button', { name: 'Add question' }).click();
