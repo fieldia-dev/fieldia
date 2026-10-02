@@ -1,6 +1,7 @@
 import { createMemoryDataSource, type Field, type FieldNode, type Page, type StepNode, type WizardNode } from '@fieldia/core';
 import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import { installStyles } from '@fieldia/widgets';
+import { designerBar, elementFactory, iconButton as makeIconButton, optionsEditor } from './chrome';
 import { QUESTION_KINDS, type Designer, type DesignerState } from './designer';
 import { installDesignerStyles } from './styles';
 
@@ -75,34 +76,13 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   installStyles(doc);
   installDesignerStyles(doc);
 
-  const el = <K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string | undefined> = {}, ...children: (Node | string)[]) => {
-    const node = doc.createElement(tag);
-    for (const [name, value] of Object.entries(attrs)) if (value !== undefined) node.setAttribute(name, value);
-    node.append(...children);
-    return node;
-  };
-  const iconButton = (label: string, text: string, onClick: () => void, extra = '') => {
-    const b = el('button', { type: 'button', class: `fd-icon-button ${extra}`.trim(), 'aria-label': label, title: label }, text);
-    b.addEventListener('click', onClick);
-    return b;
-  };
+  const el = elementFactory(doc);
+  const iconButton = (label: string, text: string, onClick: () => void, extra = '') => makeIconButton(el, label, text, onClick, extra);
   const focused = (node: Element) => doc.activeElement === node;
 
   const root = el('div', { class: 'fd-form fd-designer', 'data-fd-skin': options.skin ?? 'outlined' });
 
-  // ---- bar ---------------------------------------------------------------
-  const title = el('input', { class: 'fd-input fd-designer-title', 'aria-label': 'Form title', placeholder: 'Untitled form' }) as HTMLInputElement;
-  title.addEventListener('input', () => designer.setPageInfo({ title: title.value }));
-  const status = el('span', { class: 'fd-designer-status', role: 'status' });
-  const undo = el('button', { type: 'button', class: 'fd-button' }, 'Undo');
-  const redo = el('button', { type: 'button', class: 'fd-button' }, 'Redo');
-  const publish = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, 'Publish');
-  undo.addEventListener('click', () => designer.undo());
-  redo.addEventListener('click', () => designer.redo());
-  publish.addEventListener('click', () => void designer.publish().catch(() => undefined));
-  const bar = el('div', { class: 'fd-designer-bar' }, title, status, el('span', { class: 'fd-spacer' }), undo, redo, publish);
-
-  const issues = el('div', { class: 'fd-alert fd-tone-danger fd-designer-issues', role: 'alert', hidden: '' });
+  const bar = designerBar(root, designer, { titleLabel: 'Form title', placeholder: 'Untitled form' });
   const pages = el('div', { class: 'fd-designer-pages' });
   const addPage = el('button', { type: 'button', class: 'fd-button' }, 'Add page');
   addPage.addEventListener('click', () => {
@@ -113,25 +93,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const previewHost = el('div', { class: 'fd-designer-preview-host' });
   const preview = el('aside', { class: 'fd-designer-preview', 'aria-label': 'Preview' }, el('div', { class: 'fd-designer-preview-title' }, 'Preview'), previewHost);
   const body = el('div', { class: 'fd-designer-body' }, editor, ...(options.preview === false ? [] : [preview]));
-  root.append(bar, issues, body);
-
-  // On the document: clicking an area that cannot take focus leaves focus on
-  // the body, and keys pressed then never reach the editor's own element.
-  const onKey = (event: KeyboardEvent) => {
-    const target = event.target as HTMLElement;
-    if (target !== doc.body && !root.contains(target)) return;
-    const typing = target.closest('input, textarea, select, [contenteditable]');
-    if (typing || !(event.ctrlKey || event.metaKey)) return;
-    const key = event.key.toLowerCase();
-    if (key === 'z' && !event.shiftKey) {
-      event.preventDefault();
-      designer.undo();
-    } else if ((key === 'z' && event.shiftKey) || key === 'y') {
-      event.preventDefault();
-      designer.redo();
-    }
-  };
-  doc.addEventListener('keydown', onKey);
+  root.append(bar.element, bar.issues, body);
 
   // ---- cards ---------------------------------------------------------------
   interface CardView {
@@ -155,15 +117,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     for (const k of QUESTION_KINDS) kind.append(el('option', { value: k.id }, k.label));
     kind.addEventListener('change', () => designer.changeKind(id, kind.value));
 
-    const optionList = el('ul', { class: 'fd-q-options' });
-    const addOption = el('button', { type: 'button', class: 'fd-button fd-button-link' }, 'Add option');
-    const optionBox = el('div', { class: 'fd-q-option-box' }, optionList, addOption);
-    const optionLabels = () => [...optionList.querySelectorAll<HTMLInputElement>('input')].map((i) => i.value);
-    addOption.addEventListener('click', () => {
-      const labels = optionLabels();
-      designer.setOptions(id, [...labels, `Option ${labels.length + 1}`]);
-      (optionList.lastElementChild?.querySelector('input') as HTMLInputElement | null)?.focus();
-    });
+    const options = optionsEditor(el, designer, id);
 
     const requiredBox = el('input', { type: 'checkbox' }) as HTMLInputElement;
     requiredBox.addEventListener('change', () => designer.updateQuestion(id, { required: requiredBox.checked }));
@@ -181,7 +135,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       }),
       iconButton('Delete', '✕', () => designer.removeNode(id), 'fd-icon-danger')
     );
-    card.append(el('div', { class: 'fd-q-head' }, label, kind), optionBox, el('div', { class: 'fd-q-foot' }, required, help, tools));
+    card.append(el('div', { class: 'fd-q-head' }, label, kind), options.element, el('div', { class: 'fd-q-foot' }, required, help, tools));
     card.addEventListener('focusin', () => {
       if (designer.getState().selected !== id) designer.select(id);
     });
@@ -200,33 +154,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
         kind.disabled = current === null;
         requiredBox.checked = field.required === true;
         if (!focused(help)) help.value = field.help ?? '';
-        const choices = field.type === 'selection' ? field.options : null;
-        const multiple = field.type === 'selection' && field.multiple === true;
-        optionBox.hidden = !choices;
-        if (choices) {
-          // Keep option rows by position, so typing in one keeps its focus.
-          while (optionList.children.length > choices.length) optionList.lastElementChild?.remove();
-          while (optionList.children.length < choices.length) {
-            const index = optionList.children.length;
-            const input = el('input', { class: 'fd-input', 'aria-label': `Option ${index + 1}` }) as HTMLInputElement;
-            input.addEventListener('input', () => designer.setOptions(id, optionLabels()));
-            const remove = iconButton('Remove option', '×', () => {
-              const labels = optionLabels();
-              labels.splice([...optionList.children].indexOf(remove.parentElement as Element), 1);
-              designer.setOptions(id, labels);
-            });
-            optionList.append(el('li', { class: 'fd-q-option' }, el('span', { class: 'fd-q-bullet', 'aria-hidden': 'true' }, multiple ? '☐' : '◯'), input, remove));
-          }
-          choices.forEach((option, i) => {
-            const row = optionList.children[i] as HTMLElement;
-            const input = row.querySelector('input') as HTMLInputElement;
-            if (!focused(input)) input.value = option.label;
-            const remove = row.querySelector('button') as HTMLButtonElement;
-            remove.setAttribute('aria-label', `Remove option ${option.label}`);
-            remove.hidden = choices.length === 1;
-            (row.querySelector('.fd-q-bullet') as HTMLElement).textContent = multiple ? '☐' : '◯';
-          });
-        }
+        options.update(field);
       },
     };
   }
@@ -303,14 +231,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   function render(state: DesignerState) {
     const page = state.page;
     const steps = (page.layout as WizardNode).children;
-    if (!focused(title)) title.value = page.title ?? '';
-    undo.hidden = !state.canUndo;
-    redo.hidden = !state.canRedo;
-    publish.hidden = !state.unpublished;
-    const last = state.versions[state.versions.length - 1];
-    status.textContent = !last ? 'Draft, not published yet' : state.unpublished ? 'Changes not published yet' : `Published · version ${last.version}`;
-    issues.hidden = state.issues.length === 0;
-    issues.textContent = state.issues.join('\n');
+    bar.update(state);
 
     const liveSteps = new Set(steps.map((s) => s.id));
     for (const [id, view] of stepViews) {
@@ -356,7 +277,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     element: root,
     destroy() {
       leave();
-      doc.removeEventListener('keydown', onKey);
+      bar.destroy();
       clearTimeout(previewTimer);
       previewHandle?.destroy();
       root.remove();
