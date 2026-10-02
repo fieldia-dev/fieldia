@@ -365,6 +365,23 @@ test.describe('every field', () => {
     await expect(chips).toHaveText(['oak', 'glass', 'steel']);
   });
 
+  test('statusbars in the form: a selection’s states and a link’s stages, moved by a click', async ({ page }) => {
+    await open(page, variant, 'page=fields&skin=outlined');
+    const stage = node(page, 'f-stage').getByRole('list', { name: 'Stage' });
+    await expect(stage.getByRole('listitem')).toHaveText(['Site survey', 'Design', 'Build', 'Handover']);
+    await expect(stage.locator('[aria-current="step"]')).toHaveText('Design');
+    await stage.getByRole('button', { name: 'Build' }).click();
+    await expect(stage.locator('[aria-current="step"]')).toHaveText('Build');
+    expect(await value(page, 'stage')).toBe('build');
+    const permit = node(page, 'f-permit').getByRole('list', { name: 'Building permit' });
+    await expect(permit.getByRole('listitem')).toHaveText(['Applied', 'Inspected', 'Approved']);
+    await expect(permit.locator('[aria-current="step"]')).toHaveText('Inspected');
+    await permit.getByRole('button', { name: 'Approved' }).click();
+    expect(await value(page, 'permit_id')).toEqual({ id: 3, label: 'Approved' });
+    await stage.scrollIntoViewIfNeeded();
+    await screen(page, `${variant}-fields-statusbars`);
+  });
+
   test('a folded section opens from its title and shows its fields', async ({ page }) => {
     await open(page, variant, 'page=fields');
     const title = node(page, 's-structured').getByRole('button', { name: 'Structured data' });

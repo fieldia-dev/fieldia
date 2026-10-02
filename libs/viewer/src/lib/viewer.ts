@@ -6,9 +6,9 @@ import {
   type Form,
   type FormOptions,
   type FormState,
+  type JsonValue,
   type LayoutNode,
   type Page,
-  type RelatedRecord,
   type SectionNode,
   type SheetNode,
   type SlotNode,
@@ -570,34 +570,20 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     return pageBox;
   }
 
+  /** The sheet header's statusbar: the same widget a form can place anywhere. */
   function statusbar(config: NonNullable<SheetNode['statusbar']>): HTMLElement {
     const def = page.fields[config.field];
-    const list = el('ol', { class: 'fd-statusbar', 'aria-label': def.label });
-    if (def.type === 'selection') {
-      const states = def.options.filter((o) => !config.visibleStates || config.visibleStates.includes(o.value));
-      const items = states.map((option) => {
-        const inner = config.clickable ? el('button', { type: 'button' }, el('span', {}, option.label)) : el('span', {}, el('span', {}, option.label));
-        if (inner instanceof HTMLButtonElement) inner.addEventListener('click', () => form.setValue(config.field, option.value));
-        list.append(el('li', {}, inner));
-        return { option, inner };
-      });
-      updaters.push((state) => {
-        const readonly = form.node('#statusbar').readonly;
-        for (const { option, inner } of items) {
-          if (option.value === state.values[config.field]) inner.setAttribute('aria-current', 'step');
-          else inner.removeAttribute('aria-current');
-          if (inner instanceof HTMLButtonElement) inner.disabled = readonly;
-        }
-      });
-    } else {
-      const current = el('span', { 'aria-current': 'step' });
-      list.append(el('li', {}, current));
-      updaters.push((state) => {
-        const value = state.values[config.field] as RelatedRecord | null;
-        current.textContent = value?.label ?? '';
-      });
-    }
-    return list;
+    const barOptions: { [key: string]: JsonValue } = { clickable: config.clickable === true };
+    if (config.visibleStates) barOptions['visibleStates'] = config.visibleStates;
+    const node: FieldNode = { type: 'field', id: '#statusbar', field: config.field, widget: 'statusbar', options: barOptions };
+    const widget = createWidget(
+      { form, name: config.field, field: def, node, id: uid('statusbar'), document: doc, labels: widgetLabels, preferences, locale },
+      options.widgets
+    );
+    updaters.push((state) =>
+      widget.update({ value: state.values[config.field], values: state.values, readonly: form.node('#statusbar').readonly, required: false, invalid: false })
+    );
+    return widget.element;
   }
 
   let wizardForward: (() => Promise<void>) | null = null;

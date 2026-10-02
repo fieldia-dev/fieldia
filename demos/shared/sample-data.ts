@@ -103,6 +103,7 @@ export function sampleDataSource() {
           ],
         },
       },
+      'permit.stage': { 1: { name: 'Applied' }, 2: { name: 'Inspected' }, 3: { name: 'Approved' } },
       employee: { 21: { name: 'Mona Adel' }, 22: { name: 'Karim Fathy' }, 23: { name: 'Salma Nabil' } },
       service: { 31: { name: 'Design' }, 32: { name: 'Project management' }, 33: { name: 'Furniture supply' }, 34: { name: 'After-care' } },
       // The "Every field" page: one record that fills every widget.
@@ -118,6 +119,7 @@ export function sampleDataSource() {
           seats: 48,
           area: 640.5,
           materials: 'oak, glass',
+          permit_id: { id: 2, label: 'Inspected' },
           progress: 64,
           spent: 1184000,
           hours_logged: 118,

@@ -18,6 +18,7 @@ import { linesWidget } from './lines';
 import { binaryWidget, imageWidget } from './files';
 import { progressbarWidget } from './progress';
 import { labelWidget } from './label';
+import { statusbarWidget } from './statusbar';
 import { htmlWidget, jsonWidget } from './extras';
 
 /**
@@ -410,9 +411,11 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   selection: selectWidget,
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),
+  'selection.statusbar': statusbarWidget,
   date: dateWidget,
   datetime: dateTimeWidget,
   many2one: many2oneWidget,
+  'many2one.statusbar': statusbarWidget,
   many2many: tagsWidget,
   'many2many.tags': tagsWidget,
   'many2many.checkboxes': linkCheckboxesWidget,

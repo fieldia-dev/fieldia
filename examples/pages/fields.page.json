@@ -15,6 +15,7 @@
     "seats": { "type": "integer", "label": "Workstations", "min": 1 },
     "area": { "type": "float", "label": "Floor area (m²)", "digits": [10, 1] },
     "materials": { "type": "char", "label": "Materials" },
+    "permit_id": { "type": "many2one", "label": "Building permit", "relation": "permit.stage" },
     "progress": { "type": "integer", "label": "Fit-out progress", "help": "Percent of the fit-out done." },
     "spent": { "type": "monetary", "label": "Spent so far", "currencyField": "currency_id", "readonly": true },
     "hours_logged": { "type": "float", "label": "Hours logged", "digits": [8, 1], "readonly": true },
@@ -138,7 +139,8 @@
         "children": [
           { "type": "field", "id": "f-signed", "field": "signed" },
           { "type": "field", "id": "f-reminders", "field": "reminders", "widget": "toggle" },
-          { "type": "field", "id": "f-stage", "field": "stage" },
+          { "type": "field", "id": "f-stage", "field": "stage", "widget": "statusbar", "options": { "clickable": true }, "colspan": 2 },
+          { "type": "field", "id": "f-permit", "field": "permit_id", "widget": "statusbar", "options": { "clickable": true }, "colspan": 2 },
           { "type": "field", "id": "f-billing", "field": "billing", "widget": "radio" },
           { "type": "field", "id": "f-deliverables", "field": "deliverables", "colspan": 2 }
         ]

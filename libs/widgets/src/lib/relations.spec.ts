@@ -287,3 +287,75 @@ describe('reference', () => {
     expect(form.getState().values['origin']).toEqual({ model: 'ticket', id: 7, label: 'Broken kettle' });
   });
 });
+
+describe('statusbar', () => {
+  const stagePage = (widgetNode: Record<string, unknown>) =>
+    ({
+      fieldia: '0.1',
+      id: 'stages',
+      data: { kind: 'record', model: 'project' },
+      fields: {
+        state: {
+          type: 'selection',
+          label: 'Status',
+          options: [
+            { value: 'draft', label: 'Draft' },
+            { value: 'open', label: 'Open' },
+            { value: 'done', label: 'Done' },
+            { value: 'cancel', label: 'Cancelled' },
+          ],
+        },
+        phase_id: { type: 'many2one', label: 'Phase', relation: 'phase' },
+      },
+      layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n', ...widgetNode }] },
+    }) as unknown as Page;
+  function mountBar(widgetNode: Record<string, unknown>, readonly = false) {
+    const page = stagePage(widgetNode);
+    const dataSource = createMemoryDataSource({ records: { phase: { 1: { name: 'Survey' }, 2: { name: 'Design' }, 3: { name: 'Build' } } } });
+    const form = createForm({ page, dataSource });
+    const node = (page.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: node.field, field: page.fields[node.field] as Field, node, id: 'fd-bar', document, labels: WIDGET_LABELS.en });
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values[node.field], values: form.getState().values, readonly, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    return { form, el: widget.element };
+  }
+  const steps = (el: Element) => [...el.querySelectorAll('li')].map((li) => li.textContent);
+  const current = (el: Element) => el.querySelector('[aria-current="step"]')?.textContent;
+
+  it('shows a selection’s states with the current one marked, and only lets a click change it when asked', () => {
+    const shown = mountBar({ field: 'state', widget: 'statusbar' });
+    shown.form.setValue('state', 'open');
+    expect(steps(shown.el)).toEqual(['Draft', 'Open', 'Done', 'Cancelled']);
+    expect(current(shown.el)).toBe('Open');
+    expect(shown.el.querySelector('button')).toBeNull();
+    const clickable = mountBar({ field: 'state', widget: 'statusbar', options: { clickable: true } });
+    (clickable.el.querySelectorAll('button')[2] as HTMLButtonElement).click();
+    expect(clickable.form.getState().values['state']).toBe('done');
+  });
+
+  it('leaves out states not listed, unless the record is in one', () => {
+    const { form, el } = mountBar({ field: 'state', widget: 'statusbar', options: { visibleStates: ['draft', 'open', 'done'] } });
+    expect(steps(el)).toEqual(['Draft', 'Open', 'Done']);
+    form.setValue('state', 'cancel');
+    expect(steps(el)).toEqual(['Draft', 'Open', 'Done', 'Cancelled']);
+  });
+
+  it('shows the records a link may point to, and a click picks one', async () => {
+    const { form, el } = mountBar({ field: 'phase_id', widget: 'statusbar', options: { clickable: true } });
+    form.setValue('phase_id', { id: 2, label: 'Design' });
+    await settle();
+    expect(steps(el)).toEqual(['Survey', 'Design', 'Build']);
+    expect(current(el)).toBe('Design');
+    (el.querySelectorAll('button')[2] as HTMLButtonElement).click();
+    expect(form.getState().values['phase_id']).toEqual({ id: 3, label: 'Build' });
+  });
+
+  it('cannot be clicked when read-only', () => {
+    const { el } = mountBar({ field: 'state', widget: 'statusbar', options: { clickable: true } }, true);
+    const buttons = [...el.querySelectorAll('button')] as HTMLButtonElement[];
+    expect(buttons).toHaveLength(4);
+    expect(buttons.every((b) => b.disabled)).toBe(true);
+  });
+});
