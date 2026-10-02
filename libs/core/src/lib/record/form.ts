@@ -99,6 +99,12 @@ export interface Form {
   removeLine(field: string, key: string): void;
   /** Move a line to another place among its lines, numbering its sequence field again. */
   moveLine(field: string, key: string, to: number): void;
+  /**
+   * What a line would become with these values once the data source's onchange
+   * has run, as a line edited in a dialog shows its subtotal follow. Nothing is
+   * written: the record, its changes and its autosave stay as they are.
+   */
+  previewLine(field: string, key: string, values: Values): Promise<Values>;
   /** Records a many2one, many2many or reference may point to. A reference needs `options.model`. */
   search(field: string, query: string, limit?: number, options?: { model?: string }): Promise<RelatedRecord[]>;
   /** The same, for a relation inside a one2many line, filtered by that line's values. */
@@ -555,6 +561,20 @@ export function createForm(options: FormOptions): Form {
 
     async search(field, query, limit = 8, options = {}) {
       return runSearch(fieldDef(field), field, context(), query, limit, options.model);
+    },
+
+    async previewLine(field, key, values) {
+      lineField(field);
+      const lines = (state.values[field] as Line[] | null) ?? [];
+      const line = lines.find((l) => l.key === key);
+      if (!line) throw new Error(`"${field}" has no line "${key}"`);
+      const merged = { ...line.values, ...values };
+      const source = options.dataSource;
+      if (!source?.onchange || page.data.kind !== 'record') return merged;
+      const changed = lines.map((l) => (l.key === key ? { ...l, values: merged } : l));
+      const result = await source.onchange({ model: page.data.model, id: state.recordId, changed: field, values: structuredCopy({ ...(state.values as Values), [field]: changed }) });
+      const after = ((result.values?.[field] as Line[] | undefined) ?? []).find((l) => l.key === key);
+      return after ? { ...merged, ...after.values } : merged;
     },
 
     async searchLine(field, key, subfield, query, limit = 8) {

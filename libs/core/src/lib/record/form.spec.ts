@@ -374,6 +374,48 @@ describe('createForm — loading and saving a record', () => {
     expect(ds.records['partner'][1]['tag_ids']).toEqual([{ id: 11, label: 'Wholesale' }]);
   });
 
+  describe('previewLine', () => {
+    const orderSource = (withOnchange: boolean) =>
+      createMemoryDataSource({
+        records: { 'sale.order': { 1: { name: 'S00118', line_ids: [{ key: 'l1', id: 101, values: { name: 'Office chair', qty: 2, price: 100, subtotal: 200 } }] } } },
+        ...(withOnchange
+          ? {
+              onchange: {
+                'sale.order': {
+                  line_ids: (values) => ({
+                    line_ids: (values['line_ids'] as Line[]).map((l) => ({ ...l, values: { ...l.values, subtotal: Number(l.values['qty']) * Number(l.values['price']) } })),
+                    amount_total: 0,
+                  }),
+                },
+              },
+            }
+          : {}),
+      });
+
+    it('shows what a line would become after the onchange, and writes nothing', async () => {
+      const ds = orderSource(true);
+      const form = createForm({ page: page('order'), dataSource: ds, recordId: 1 });
+      await form.load();
+      const before = form.getState();
+      expect(await form.previewLine('line_ids', 'l1', { qty: 5 })).toEqual({ name: 'Office chair', qty: 5, price: 100, subtotal: 500 });
+      expect(form.getState().values).toEqual(before.values);
+      expect(form.getState().dirty).toEqual([]);
+      expect(ds.calls.filter((c) => c.method === 'onchange')).toHaveLength(1);
+    });
+
+    it('hands the values back merged when nothing recalculates', async () => {
+      const form = createForm({ page: page('order'), dataSource: orderSource(false), recordId: 1 });
+      await form.load();
+      expect(await form.previewLine('line_ids', 'l1', { qty: 5 })).toEqual({ name: 'Office chair', qty: 5, price: 100, subtotal: 200 });
+    });
+
+    it('says which line it could not find', async () => {
+      const form = createForm({ page: page('order'), dataSource: orderSource(true), recordId: 1 });
+      await form.load();
+      await expect(form.previewLine('line_ids', 'nope', {})).rejects.toThrow('"line_ids" has no line "nope"');
+    });
+  });
+
   it('deletes a saved line with a delete operation', async () => {
     const form = createForm({ page: page('customer'), dataSource: customerSource(), recordId: 1 });
     await form.load();
