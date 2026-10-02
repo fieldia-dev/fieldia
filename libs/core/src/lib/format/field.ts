@@ -130,7 +130,28 @@ const Many2many = z.object({ type: z.literal('many2many'), ...common, relation, 
 const Reference = z
   .object({ type: z.literal('reference'), ...common, models: z.array(OptionSchema).min(1) })
   .strict();
-const Properties = z.object({ type: z.literal('properties'), ...common }).strict();
+/** One property of a properties field: its own small field, edited with the widget for its type. */
+export const PropertyDefinitionSchema = z
+  .object({
+    name: z.string().regex(FIELD_NAME),
+    label: z.string(),
+    type: z.enum(['char', 'text', 'integer', 'float', 'boolean', 'selection', 'date']),
+    /** For a choice property. */
+    options: z.array(OptionSchema).min(1).optional(),
+  })
+  .strict()
+  .meta({ id: 'PropertyDefinition' });
+
+export type PropertyDefinition = z.infer<typeof PropertyDefinitionSchema>;
+
+const Properties = z
+  .object({
+    type: z.literal('properties'),
+    ...common,
+    /** The properties a record may have. Left out, each property is worked out from its value. */
+    definitions: z.array(PropertyDefinitionSchema).optional(),
+  })
+  .strict();
 const Json = z.object({ type: z.literal('json'), ...common }).strict();
 
 /** A field of a one2many's lines. Lines cannot hold lines of their own. */

@@ -113,6 +113,16 @@ class ReferenceCheck {
           if (condition.valueFrom !== undefined) this.need(condition.valueFrom, `${path}.filter[${i}].valueFrom`, fields);
         });
       }
+      if (def.type === 'properties' && def.definitions) {
+        const seen = new Set<string>();
+        def.definitions.forEach((property, i) => {
+          if (property.type === 'selection' && !property.options) {
+            this.report(`${path}.definitions[${i}].options`, 'a choice property needs its choices');
+          }
+          if (seen.has(property.name)) this.report(`${path}.definitions[${i}].name`, `"${property.name}" is named twice`);
+          seen.add(property.name);
+        });
+      }
       if (def.type === 'one2many') {
         this.checkFields(def.fields, `${path}.fields`);
         if (def.lineKinds) this.checkLineKinds(name, def.lineKinds, def.fields, `${path}.lineKinds`);

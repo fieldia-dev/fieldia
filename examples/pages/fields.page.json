@@ -89,7 +89,25 @@
     "contract": { "type": "binary", "label": "Signed contract", "accept": ["application/pdf"] },
     "photo": { "type": "image", "label": "Site photo" },
     "settings": { "type": "json", "label": "Access control settings" },
-    "extra": { "type": "properties", "label": "Building details" }
+    "extra": {
+      "type": "properties",
+      "label": "Building details",
+      "definitions": [
+        { "name": "floor", "label": "Floor", "type": "integer" },
+        { "name": "lift_access", "label": "Lift access", "type": "char" },
+        { "name": "parking", "label": "Parking spaces", "type": "integer" },
+        { "name": "sprinklers", "label": "Sprinklers fitted", "type": "boolean" },
+        {
+          "name": "zone",
+          "label": "Fire zone",
+          "type": "selection",
+          "options": [
+            { "value": "a", "label": "Zone A" },
+            { "value": "b", "label": "Zone B" }
+          ]
+        }
+      ]
+    }
   },
   "layout": {
     "type": "sections",

@@ -7,6 +7,7 @@ export {
   LineFieldSchema,
   LineKindsSchema,
   OptionSchema,
+  PropertyDefinitionSchema,
   FilterConditionSchema,
   type Field,
   type Fields,
@@ -14,6 +15,7 @@ export {
   type LineField,
   type LineKinds,
   type Option,
+  type PropertyDefinition,
   type FilterCondition,
 } from './lib/format/field';
 export {

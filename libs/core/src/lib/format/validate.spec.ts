@@ -280,6 +280,19 @@ describe('validatePage — references', () => {
     expect(messages(page).join('\n')).toMatch(/\.options: /);
   });
 
+  it('rejects a choice property without choices, and two properties of one name', () => {
+    const page = example('fields');
+    page['fields'].extra.definitions = [
+      { name: 'zone', label: 'Zone', type: 'selection' },
+      { name: 'floor', label: 'Floor', type: 'integer' },
+      { name: 'floor', label: 'Level', type: 'integer' },
+    ];
+    expect(messages(page)).toEqual([
+      'fields.extra.definitions[0].options: a choice property needs its choices',
+      'fields.extra.definitions[2].name: "floor" is named twice',
+    ]);
+  });
+
   it('rejects one2many columns that are not among its line fields', () => {
     const page = example('customer');
     page['layout'].children[1].children[0].children[0].columns.push('fax');

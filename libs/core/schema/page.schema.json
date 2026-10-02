@@ -718,6 +718,12 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "definitions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/PropertyDefinition"
+              }
             }
           },
           "required": [
@@ -1436,6 +1442,12 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "definitions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/PropertyDefinition"
+              }
             }
           },
           "required": [
@@ -1474,6 +1486,43 @@
           "additionalProperties": false
         }
       ]
+    },
+    "PropertyDefinition": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "char",
+            "text",
+            "integer",
+            "float",
+            "boolean",
+            "selection",
+            "date"
+          ]
+        },
+        "options": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Option"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "label",
+        "type"
+      ],
+      "additionalProperties": false
     },
     "LineKinds": {
       "type": "object",
