@@ -20,7 +20,10 @@ function setup(field: Record<string, unknown>, readonly = false, options?: Recor
   return { form, el: widget.element };
 }
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20));
+/** Waits for the file reader, however busy the machine: until the check holds, or two seconds. */
+async function until(check: () => unknown) {
+  for (let waited = 0; !check() && waited < 2000; waited += 10) await new Promise((resolve) => setTimeout(resolve, 10));
+}
 /** The element itself when it matches — a widget is often the editable element — or the first match inside it. */
 const q = <T extends Element>(el: Element, selector: string) => (el.matches(selector) ? el : el.querySelector(selector)) as T;
 function choose(input: HTMLInputElement, file: File) {
@@ -34,7 +37,7 @@ describe('file upload', () => {
     const input = el.querySelector('input[type=file]') as HTMLInputElement;
     expect(input.accept).toBe('application/pdf');
     choose(input, new File(['hello'], 'contract.pdf', { type: 'application/pdf' }));
-    await settle();
+    await until(() => form.getState().values['x']);
     expect(form.getState().values['x']).toEqual({ name: 'contract.pdf', type: 'application/pdf', size: 5, data: 'aGVsbG8=' });
     expect(el.querySelector('.fd-file-name')?.textContent).toBe('contract.pdf · 5 bytes');
   });
@@ -56,7 +59,7 @@ describe('file upload', () => {
     const drop = new Event('drop', { bubbles: true, cancelable: true }) as Event & { dataTransfer: unknown };
     drop.dataTransfer = { files: [new File(['x'], 'drop.txt', { type: 'text/plain' })] };
     el.dispatchEvent(drop);
-    await settle();
+    await until(() => form.getState().values['x']);
     expect((form.getState().values['x'] as FileValue).name).toBe('drop.txt');
   });
 });
@@ -65,7 +68,7 @@ describe('image', () => {
   it('shows a preview of what was chosen', async () => {
     const { el } = setup({ type: 'image' });
     choose(el.querySelector('input[type=file]') as HTMLInputElement, new File(['png'], 'logo.png', { type: 'image/png' }));
-    await settle();
+    await until(() => el.querySelector('img')?.getAttribute('src'));
     expect((el.querySelector('img') as HTMLImageElement).src).toBe('data:image/png;base64,cG5n');
   });
 
