@@ -7,6 +7,8 @@ export interface WidgetLabels {
   remove: string;
   clear: string;
   addLine: string;
+  addSection: string;
+  addNote: string;
   deleteLine: string;
   upload: string;
   uploadImage: string;
@@ -23,6 +25,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     remove: 'Remove {name}',
     clear: 'Clear {label}',
     addLine: 'Add a line',
+    addSection: 'Add a section',
+    addNote: 'Add a note',
     deleteLine: 'Delete line',
     upload: 'Upload a file',
     uploadImage: 'Add a photo',
@@ -37,6 +41,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     remove: 'إزالة {name}',
     clear: 'مسح {label}',
     addLine: 'إضافة سطر',
+    addSection: 'إضافة قسم',
+    addNote: 'إضافة ملاحظة',
     deleteLine: 'حذف السطر',
     upload: 'رفع ملف',
     uploadImage: 'إضافة صورة',
@@ -51,6 +57,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     remove: '{name} entfernen',
     clear: '{label} leeren',
     addLine: 'Zeile hinzufügen',
+    addSection: 'Abschnitt hinzufügen',
+    addNote: 'Notiz hinzufügen',
     deleteLine: 'Zeile löschen',
     upload: 'Datei hochladen',
     uploadImage: 'Foto hinzufügen',
@@ -65,6 +73,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     remove: 'Retirer {name}',
     clear: 'Effacer {label}',
     addLine: 'Ajouter une ligne',
+    addSection: 'Ajouter une section',
+    addNote: 'Ajouter une note',
     deleteLine: 'Supprimer la ligne',
     upload: 'Téléverser un fichier',
     uploadImage: 'Ajouter une photo',

@@ -108,8 +108,81 @@ describe('one2many lines', () => {
   it('offers no add or delete when readonly', () => {
     const { form, el } = mount(true);
     form.addLine('line_ids', { quantity: 3 });
-    expect((el.querySelector('.fd-lines-add') as HTMLButtonElement).hidden).toBe(true);
+    expect(el.querySelector('.fd-lines-add')?.closest('[hidden]')).not.toBeNull();
     expect(el.querySelector('[aria-label="Delete line"]')).toBeNull();
     expect((rows(el)[0].querySelectorAll('input')[1] as HTMLInputElement).readOnly).toBe(true);
+  });
+});
+
+describe('one2many lines with sections and notes', () => {
+  const sectioned = {
+    fieldia: '0.1',
+    id: 'order',
+    data: { kind: 'record', model: 'order' },
+    fields: {
+      line_ids: {
+        type: 'one2many',
+        label: 'Order lines',
+        relation: 'order.line',
+        lineKinds: { field: 'display_type', text: 'name' },
+        fields: {
+          display_type: { type: 'selection', label: 'Line type', options: [{ value: 'section', label: 'Section' }, { value: 'note', label: 'Note' }] },
+          product_id: { type: 'many2one', label: 'Product', relation: 'product', required: true },
+          name: { type: 'text', label: 'Description' },
+          quantity: { type: 'integer', label: 'Quantity' },
+        },
+      },
+    },
+    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n-lines', field: 'line_ids' }] },
+  } as unknown as Page;
+
+  function mountSectioned() {
+    const form = createForm({ page: sectioned });
+    const node = (sectioned.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: 'line_ids', field: sectioned.fields['line_ids'] as Field, node, id: 'fd-lines', document, labels: WIDGET_LABELS.en });
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values['line_ids'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    return { form, el: widget.element };
+  }
+
+  it('never shows the field that says what a line is as a column', () => {
+    const { el } = mountSectioned();
+    expect([...el.querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['Product', 'Description', 'Quantity', '']);
+  });
+
+  it('shows a section as one wide heading and a note as one wide text, each with its delete button', () => {
+    const { form, el } = mountSectioned();
+    form.addLine('line_ids', { display_type: 'section', name: 'Workstations' });
+    form.addLine('line_ids', { product_id: { id: 1, label: 'Chair' }, name: 'Black', quantity: 2 });
+    form.addLine('line_ids', { display_type: 'note', name: 'Fitted on delivery day.' });
+    const [section, item, note] = rows(el);
+    expect(section.classList.contains('fd-line-section')).toBe(true);
+    expect(section.querySelectorAll('td')).toHaveLength(2);
+    expect((section.querySelector('td') as HTMLTableCellElement).colSpan).toBe(3);
+    expect((section.querySelector('input') as HTMLInputElement).value).toBe('Workstations');
+    expect(item.querySelectorAll('td')).toHaveLength(4);
+    expect(note.classList.contains('fd-line-note')).toBe(true);
+    expect((note.querySelector('textarea') as HTMLTextAreaElement).value).toBe('Fitted on delivery day.');
+    expect(note.querySelector('[aria-label="Delete line"]')).not.toBeNull();
+  });
+
+  it('adds a section or a note from its own button and puts the cursor in its text', () => {
+    const { form, el } = mountSectioned();
+    expect([...el.querySelectorAll('.fd-lines-add')].map((b) => b.textContent)).toEqual(['+ Add a line', '+ Add a section', '+ Add a note']);
+    (el.querySelector('[data-add="section"]') as HTMLButtonElement).click();
+    expect(lines(form)[0].values['display_type']).toBe('section');
+    expect(document.activeElement).toBe(rows(el)[0].querySelector('input'));
+    type(rows(el)[0].querySelector('input') as HTMLInputElement, 'Lighting');
+    expect(lines(form)[0].values['name']).toBe('Lighting');
+    (el.querySelector('[data-add="note"]') as HTMLButtonElement).click();
+    expect(lines(form)[1].values['display_type']).toBe('note');
+    expect(document.activeElement).toBe(rows(el)[1].querySelector('textarea'));
+  });
+
+  it('offers no section or note buttons to lines without kinds', () => {
+    const { el } = mount();
+    expect(el.querySelectorAll('.fd-lines-add')).toHaveLength(1);
   });
 });

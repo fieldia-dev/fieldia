@@ -1,4 +1,4 @@
-import type { Field, FieldNode, Form, FormState, Line, LineField, Value } from '@fieldia/core';
+import { lineKind, type Field, type FieldNode, type Form, type FormState, type Line, type LineField, type Value } from '@fieldia/core';
 import { WIDGET_LABELS } from './labels';
 import { createWidget, type Widget, type WidgetFactory } from './widgets';
 
@@ -7,12 +7,20 @@ import { createWidget, type Widget, type WidgetFactory } from './widgets';
  * adapter routes its edits to `updateLine` and its searches to `searchLine`,
  * so a many2one inside a line searches with that line's own values. Rows are
  * matched by line key, so adding or removing a line never rebuilds the others.
+ * When the field declares `lineKinds`, a section or a note is one wide row of
+ * its text.
  */
 
 interface Row {
   element: HTMLTableRowElement;
+  kind: 'section' | 'note' | null;
   cells: { name: string; def: LineField; widget: Widget; error: HTMLElement }[];
   remove: HTMLButtonElement;
+}
+
+/** The field a section or note is typed into: one line for a heading, a growing box for a note. */
+export function kindTextField(def: LineField, kind: 'section' | 'note'): LineField {
+  return kind === 'section' ? ({ ...def, type: 'char' } as LineField) : ({ ...def, type: 'text' } as LineField);
 }
 
 /** The form a cell sees: the line's values, written back into the line. Shared with @fieldia/grid. */
@@ -28,7 +36,9 @@ export function lineForm(form: Form, field: string, key: string): Form {
 
 export const linesWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en }) => {
   const def = field as Extract<Field, { type: 'one2many' }>;
-  const columns = (node.columns ?? Object.keys(def.fields)).filter((column) => def.fields[column]);
+  const kinds = def.lineKinds;
+  // The field that says what a line is never shows as a column.
+  const columns = (node.columns ?? Object.keys(def.fields)).filter((column) => def.fields[column] && column !== kinds?.field);
   const element = document.createElement('div');
   element.className = 'fd-lines';
   element.id = id;
@@ -52,46 +62,62 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   const body = document.createElement('tbody');
   table.append(head, body);
   scroller.append(table);
-  const add = document.createElement('button');
-  add.type = 'button';
-  add.className = 'fd-button fd-button-link fd-lines-add';
-  add.textContent = `+ ${labels.addLine}`;
-  element.append(scroller, add);
+  const adds = document.createElement('div');
+  adds.className = 'fd-lines-adds';
+  const addButton = (text: string, values: Record<string, Value>, kind: string) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'fd-button fd-button-link fd-lines-add';
+    button.dataset['add'] = kind;
+    button.textContent = `+ ${text}`;
+    button.addEventListener('click', () => {
+      focusNew = form.addLine(name, values);
+      const row = rows.get(focusNew);
+      if (row) {
+        row.cells[0]?.widget.focus();
+        focusNew = null;
+      }
+    });
+    adds.append(button);
+  };
+  addButton(labels.addLine, {}, 'line');
+  if (kinds) {
+    addButton(labels.addSection, { [kinds.field]: kinds.section ?? 'section' }, 'section');
+    addButton(labels.addNote, { [kinds.field]: kinds.note ?? 'note' }, 'note');
+  }
+  element.append(scroller, adds);
 
   const rows = new Map<string, Row>();
   let focusNew: string | null = null;
   let readonly = false;
 
-  add.addEventListener('click', () => {
-    focusNew = form.addLine(name);
-    const row = rows.get(focusNew);
-    if (row) {
-      row.cells[0]?.widget.focus();
-      focusNew = null;
-    }
-  });
+  function makeCell(tr: HTMLTableRowElement, line: Line, column: string, sub: LineField, span = 1) {
+    const cellId = `${id}-${line.key}-${column}`;
+    const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column };
+    const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels });
+    const td = document.createElement('td');
+    td.colSpan = span;
+    const label = document.createElement('label');
+    label.className = 'fd-sr-only';
+    label.htmlFor = cellId;
+    label.textContent = sub.label;
+    const error = document.createElement('div');
+    error.className = 'fd-cell-error';
+    error.hidden = true;
+    td.append(label, widget.element, error);
+    tr.append(td);
+    return { name: column, def: sub, widget, error };
+  }
 
   function makeRow(line: Line): Row {
     const tr = document.createElement('tr');
     tr.dataset['line'] = line.key;
-    const adapter = lineForm(form, name, line.key);
-    const cells = columns.map((column) => {
-      const sub = def.fields[column];
-      const cellId = `${id}-${line.key}-${column}`;
-      const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column };
-      const widget = createWidget({ form: adapter, name: column, field: sub as Field, node: subNode, id: cellId, document, labels });
-      const td = document.createElement('td');
-      const label = document.createElement('label');
-      label.className = 'fd-sr-only';
-      label.htmlFor = cellId;
-      label.textContent = sub.label;
-      const error = document.createElement('div');
-      error.className = 'fd-cell-error';
-      error.hidden = true;
-      td.append(label, widget.element, error);
-      tr.append(td);
-      return { name: column, def: sub, widget, error };
-    });
+    const kind = lineKind(def, line.values);
+    if (kind) tr.className = `fd-line-${kind}`;
+    const cells =
+      kind && kinds
+        ? [makeCell(tr, line, kinds.text, kindTextField(def.fields[kinds.text], kind), columns.length)]
+        : columns.map((column) => makeCell(tr, line, column, def.fields[column]));
     const tools = document.createElement('td');
     tools.className = 'fd-lines-tools';
     const remove = document.createElement('button');
@@ -102,15 +128,15 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     remove.addEventListener('click', () => form.removeLine(name, line.key));
     tools.append(remove);
     tr.append(tools);
-    return { element: tr, cells, remove };
+    return { element: tr, kind, cells, remove };
   }
 
   return {
     element,
-    focus: () => (body.querySelector<HTMLElement>('input, select, textarea') ?? add).focus(),
+    focus: () => (body.querySelector<HTMLElement>('input, select, textarea') ?? adds.querySelector('button'))?.focus(),
     update(state) {
       readonly = state.readonly;
-      add.hidden = readonly;
+      adds.hidden = readonly;
       const current = (state.value as Line[] | null) ?? [];
       const errors = form.getState().errors;
       const keep = new Set(current.map((line) => line.key));
@@ -122,6 +148,11 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
       }
       current.forEach((line, index) => {
         let row = rows.get(line.key);
+        // A line that changed kind is drawn afresh.
+        if (row && row.kind !== lineKind(def, line.values)) {
+          row.element.remove();
+          row = undefined;
+        }
         if (!row) {
           row = makeRow(line);
           rows.set(line.key, row);

@@ -219,7 +219,11 @@ export const FIELDIA_CSS = /* css */ `
 .fd-lines-table td > .fd-checkbox, .fd-lines-table td > .fd-switch { margin-block-start: 6px; }
 .fd-line-delete { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
 .fd-line-delete:hover { color: var(--fd-error); background: var(--fd-error-soft); }
-.fd-lines-add { justify-self: start; }
+.fd-lines-adds { display: flex; flex-wrap: wrap; gap: 4px 16px; justify-self: start; }
+/* A section heads the lines below it; a note reads as a remark between them. */
+.fd-line-section td { background: var(--fd-page); }
+.fd-line-section .fd-input { font-weight: 600; }
+.fd-line-note .fd-input { font-style: italic; }
 .fd-cell-error { color: var(--fd-error); font-size: 12px; }
 .fd-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
