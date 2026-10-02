@@ -16,8 +16,16 @@ export interface DataSource {
   onchange?(request: OnchangeRequest): Promise<OnchangeResult>;
   /** Find records a many2one, many2many or reference may point to. */
   search?(request: SearchRequest): Promise<RelatedRecord[]>;
+  /** Make a record from just its name, for "Create 'xyz'" in a link field (a backend's name_create). */
+  create?(request: CreateRequest): Promise<RelatedRecord>;
   /** Store one response to a `responses` page, such as a survey. */
   submit?(request: SubmitRequest): Promise<SubmitResult>;
+}
+
+export interface CreateRequest {
+  model: string;
+  /** What the person typed: the new record's name. */
+  name: string;
 }
 
 export interface LoadRequest {

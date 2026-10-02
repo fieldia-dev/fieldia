@@ -71,6 +71,7 @@ export type {
   OnchangeRequest,
   OnchangeResult,
   SearchRequest,
+  CreateRequest,
   SubmitRequest,
   SubmitResult,
   ResolvedFilterCondition,

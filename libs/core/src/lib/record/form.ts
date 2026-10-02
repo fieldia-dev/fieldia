@@ -101,6 +101,13 @@ export interface Form {
   search(field: string, query: string, limit?: number, options?: { model?: string }): Promise<RelatedRecord[]>;
   /** The same, for a relation inside a one2many line, filtered by that line's values. */
   searchLine(field: string, key: string, subfield: string, query: string, limit?: number): Promise<RelatedRecord[]>;
+  /** Whether a link field can make a record from a typed name: the data source must be able to. */
+  canCreate(field: string): boolean;
+  /** Make a record from a typed name, for the link field to point to. */
+  quickCreate(field: string, name: string): Promise<RelatedRecord>;
+  /** The same, for a link inside a one2many's lines. */
+  canCreateLine(field: string, subfield: string): boolean;
+  quickCreateLine(field: string, subfield: string, name: string): Promise<RelatedRecord>;
   steps(): string[];
   next(): boolean;
   back(): boolean;
@@ -375,6 +382,19 @@ export function createForm(options: FormOptions): Form {
     }
   }
 
+  /** The model a link field's new record belongs to, or null when it cannot make one. */
+  function creatable(def: Field | LineField | undefined): string | null {
+    if (!options.dataSource?.create || !def || def.readonly) return null;
+    return def.type === 'many2one' || def.type === 'many2many' ? def.relation : null;
+  }
+
+  async function runCreate(def: Field | LineField | undefined, name: string, typed: string): Promise<RelatedRecord> {
+    const model = creatable(def);
+    const source = options.dataSource;
+    if (!model || !source?.create) throw new Error(`"${name}" cannot make records: its data source has no create, or it is not a link`);
+    return track(source.create({ model, name: typed.trim() }));
+  }
+
   async function runSearch(
     def: Field | LineField,
     name: string,
@@ -537,6 +557,11 @@ export function createForm(options: FormOptions): Form {
       if (!line) throw new Error(`"${field}" has no line "${key}"`);
       return runSearch(sub, subfield, expressionContext(line.values, def.fields as Record<string, LineField>), query, limit);
     },
+
+    canCreate: (field) => creatable(page.fields[field]) !== null,
+    quickCreate: (field, typed) => runCreate(page.fields[field], field, typed),
+    canCreateLine: (field, subfield) => creatable(lineField(field).fields[subfield]) !== null,
+    quickCreateLine: (field, subfield, typed) => runCreate(lineField(field).fields[subfield], subfield, typed),
 
     steps: () => steps.filter((id) => !nodeState(id).invisible),
 

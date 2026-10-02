@@ -11,6 +11,7 @@ import type {
   SaveRequest,
   SaveResult,
   SearchRequest,
+  CreateRequest,
   SubmitRequest,
   SubmitResult,
 } from './data-source';
@@ -131,6 +132,15 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
         .map(([key]) => ({ id: asId(key), label: labelOf(request.model, asId(key)) }))
         .filter((record) => record.label.toLowerCase().includes(query))
         .slice(0, request.limit ?? 8);
+    },
+
+    async create(request: CreateRequest): Promise<RelatedRecord> {
+      calls.push({ method: 'create', request });
+      await pause();
+      const rows = table(request.model);
+      const id = Object.keys(rows).reduce((top, key) => Math.max(top, Number(key) || 0), 0) + 1;
+      rows[String(id)] = { name: request.name };
+      return { id, label: request.name };
     },
 
     async submit(request: SubmitRequest): Promise<SubmitResult> {

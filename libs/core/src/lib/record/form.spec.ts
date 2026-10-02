@@ -231,6 +231,33 @@ describe('createForm — validation', () => {
   });
 });
 
+describe('createForm — making a record from a name', () => {
+  it('creates a record a link may point to, from what was typed', async () => {
+    const dataSource = createMemoryDataSource({ records: { country: { 1: { name: 'Egypt' } } } });
+    const form = createForm({ page: page('customer'), dataSource });
+    expect(form.canCreate('country_id')).toBe(true);
+    const made = await form.quickCreate('country_id', 'Oman');
+    expect(made).toEqual({ id: 2, label: 'Oman' });
+    expect(dataSource.records['country'][2]).toEqual({ name: 'Oman' });
+    expect(await form.search('country_id', 'om')).toEqual([{ id: 2, label: 'Oman' }]);
+  });
+
+  it('cannot create when the data source does not make records, or the field is not a link', async () => {
+    const form = createForm({ page: page('customer'), dataSource: { search: async () => [] } });
+    expect(form.canCreate('country_id')).toBe(false);
+    await expect(form.quickCreate('country_id', 'Oman')).rejects.toThrow('cannot make records');
+    expect(createForm({ page: page('customer'), dataSource: createMemoryDataSource() }).canCreate('email')).toBe(false);
+  });
+
+  it('creates for a link inside a line, through its own relation', async () => {
+    const dataSource = createMemoryDataSource({ records: { product: { 1: { name: 'Chair' } } } });
+    const form = createForm({ page: page('order'), dataSource });
+    expect(form.canCreateLine('line_ids', 'product_id')).toBe(true);
+    expect(await form.quickCreateLine('line_ids', 'product_id', 'Lamp')).toEqual({ id: 2, label: 'Lamp' });
+    expect(dataSource.records['product'][2]).toEqual({ name: 'Lamp' });
+  });
+});
+
 describe('createForm — the order of lines', () => {
   const orderSource = (sequences: (number | null)[] = [10, 20, 30, 40]) =>
     createMemoryDataSource({
