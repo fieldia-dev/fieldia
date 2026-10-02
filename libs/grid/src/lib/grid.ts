@@ -1,4 +1,5 @@
 import {
+  _stopPropagationForAgGrid,
   AllCommunityModule,
   createGrid,
   themeQuartz,
@@ -8,8 +9,9 @@ import {
   type ICellEditorParams,
   type ICellRendererComp,
   type ICellRendererParams,
+  type SuppressKeyboardEventParams,
 } from 'ag-grid-community';
-import type { Field, FieldNode, Form, Line, LineField, Value } from '@fieldia/core';
+import type { Field, FieldNode, Form, Line, LineField, Value, Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
 import { createWidget, lineForm, WIDGET_LABELS, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
 
@@ -39,6 +41,8 @@ interface CellContext {
   defs: Record<string, LineField>;
   labels: WidgetLabels;
   registry?: Record<string, WidgetFactory>;
+  /** An edit ended: kept, or cancelled with Escape (then the line goes back to how it was). */
+  finish(key: string, cancelled: Values | null): void;
 }
 
 type LineDef = Extract<Field, { type: 'one2many' }>;
@@ -104,25 +108,25 @@ export function displayValue(def: LineField, value: Value | undefined, values: R
 /** Yes or no, ticked in place: no editor to open for one click. */
 class CheckboxRenderer implements ICellRendererComp<Line> {
   private box!: HTMLInputElement;
-  private params!: ICellRendererParams<Line> & { cell: CellContext; column: string };
-  init(params: ICellRendererParams<Line> & { cell: CellContext; column: string }) {
+  private params!: ICellRendererParams<Line> & { cell: CellContext; subfield: string };
+  init(params: ICellRendererParams<Line> & { cell: CellContext; subfield: string }) {
     this.params = params;
     this.box = document.createElement('input');
     this.box.type = 'checkbox';
     this.box.className = 'fd-checkbox';
-    this.box.setAttribute('aria-label', params.cell.defs[params.column].label);
+    this.box.setAttribute('aria-label', params.cell.defs[params.subfield].label);
     this.box.addEventListener('change', () => {
-      const { cell, column, data } = this.params;
-      if (data) cell.form.updateLine(cell.field, data.key, column, this.box.checked);
+      const { cell, subfield, data } = this.params;
+      if (data) cell.form.updateLine(cell.field, data.key, subfield, this.box.checked);
     });
     this.refresh(params);
   }
   getGui() {
     return this.box;
   }
-  refresh(params: ICellRendererParams<Line> & { cell: CellContext; column: string }) {
+  refresh(params: ICellRendererParams<Line> & { cell: CellContext; subfield: string }) {
     this.params = params;
-    this.box.checked = params.data?.values[params.column] === true;
+    this.box.checked = params.data?.values[params.subfield] === true;
     this.box.disabled = params.cell.form.fieldReadonly(params.cell.field);
     return true;
   }
@@ -154,11 +158,15 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   private box!: HTMLElement;
   private widget!: Widget;
   private leave = () => undefined as void;
-  private params!: ICellEditorParams<Line> & { cell: CellContext; column: string };
+  private params!: ICellEditorParams<Line> & { cell: CellContext; subfield: string };
+  /** The line as it was when the edit began, for Escape to put back. */
+  private before: Values = {};
+  private cancelled = false;
 
-  init(params: ICellEditorParams<Line> & { cell: CellContext; column: string }) {
+  init(params: ICellEditorParams<Line> & { cell: CellContext; subfield: string }) {
     this.params = params;
-    const { cell, column } = params;
+    // Not `column`: AG Grid's own params carry the column object under that name.
+    const { cell, subfield: column } = params;
     const key = params.data.key;
     const def = cell.defs[column];
     const node: FieldNode = { type: 'field', id: `${cell.fieldId}.${key}.${column}`, field: column };
@@ -177,6 +185,18 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     this.box.dataset['type'] = def.type;
     this.box.setAttribute('aria-label', def.label);
     this.box.append(this.widget.element);
+    if (this.isPopup()) {
+      // AG Grid places a popup over its cell but leaves its size to the editor.
+      const { width, height } = params.eGridCell.getBoundingClientRect();
+      Object.assign(this.box.style, { width: `${width}px`, height: `${height}px` });
+    }
+    // The form never changes values in place, so holding them is enough.
+    this.before = this.line()?.values ?? {};
+    // A key the widget used itself (Enter picking from its list, Escape closing it) is not the grid's.
+    this.box.addEventListener('keydown', (event) => {
+      if (event.defaultPrevented) _stopPropagationForAgGrid(event);
+      else if (event.key === 'Escape') this.cancelled = true;
+    });
     const show = () => {
       const line = this.line();
       this.widget.update({ value: line?.values[column], values: line?.values ?? {}, readonly: false, required: def.required === true, invalid: false });
@@ -197,11 +217,11 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     if (input && input.type !== 'checkbox' && document.activeElement === input) input.select();
   }
   getValue() {
-    return this.line()?.values[this.params.column];
+    return this.line()?.values[this.params.subfield];
   }
   /** Lists that open below their input need room the cell does not have. */
   isPopup() {
-    const type = this.params.cell.defs[this.params.column].type;
+    const type = this.params.cell.defs[this.params.subfield].type;
     return type === 'many2one' || type === 'many2many' || type === 'reference';
   }
   getPopupPosition(): 'over' {
@@ -210,6 +230,7 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   destroy() {
     this.leave();
     this.widget.destroy?.();
+    this.params.cell.finish(this.params.data.key, this.cancelled ? this.before : null);
   }
 }
 
@@ -220,7 +241,7 @@ const EDITABLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary'
 export const gridWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en }) => {
   const def = field as LineDef;
   const columns = (node.columns ?? Object.keys(def.fields)).filter((column) => def.fields[column]);
-  const cell: CellContext = { form, field: name, fieldId: node.id, defs: def.fields, labels };
+  const cell: CellContext = { form, field: name, fieldId: node.id, defs: def.fields, labels, finish: () => undefined };
   installGridStyles(document);
 
   const element = document.createElement('div');
@@ -238,6 +259,44 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   let readonly = false;
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
   const firstEditable = () => columns.find((c) => EDITABLE.has(def.fields[c].type) && !def.fields[c].readonly);
+  /** Lines the grid added that nobody has finished an edit in yet: Escape takes them away again. */
+  const fresh = new Set<string>();
+  cell.finish = (key, before) => {
+    if (!before) return void fresh.delete(key);
+    if (fresh.delete(key)) return form.removeLine(name, key);
+    const current = lines();
+    if (current.some((l) => l.key === key)) form.setValue(name, current.map((l) => (l.key === key ? { ...l, values: before } : l)));
+  };
+  /** Add a line at the end and start editing its first cell. */
+  const addAndEdit = () => {
+    const key = form.addLine(name);
+    fresh.add(key);
+    const index = lines().findIndex((l) => l.key === key);
+    const column = firstEditable();
+    if (index < 0 || !column) return;
+    api.ensureIndexVisible(index);
+    api.setFocusedCell(index, column);
+    api.startEditingCell({ rowIndex: index, colKey: column });
+  };
+  /**
+   * Keys the grid must leave alone, and the two that run off the end of the
+   * table while editing: Enter on the last line and Tab on its last editable
+   * cell both start a new line.
+   */
+  const keys = ({ event, editing, node, column }: SuppressKeyboardEventParams<Line>) => {
+    if (event.defaultPrevented) return true;
+    if (!editing || event.type !== 'keydown' || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return false;
+    if (node.rowIndex !== lines().length - 1) return false;
+    const shown = api.getAllDisplayedColumns();
+    const lastCell = !shown.slice(shown.indexOf(column) + 1).some((c) => c.isCellEditable(node));
+    if (event.key === 'Enter' || (event.key === 'Tab' && lastCell)) {
+      event.preventDefault();
+      api.stopEditing();
+      addAndEdit();
+      return true;
+    }
+    return false;
+  };
 
   const columnDefs: ColDef<Line>[] = columns.map((column) => {
     const sub = def.fields[column];
@@ -250,17 +309,18 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       valueGetter: (p) => p.data?.values[column],
       valueFormatter: (p) => displayValue(sub, p.value as Value, p.data?.values ?? {}),
       type: numeric ? 'rightAligned' : undefined,
+      suppressKeyboardEvent: keys,
       minWidth: wide ? 140 : sub.type === 'monetary' ? 130 : 96,
       flex: wide ? 2 : sub.type === 'monetary' ? 1.3 : 1,
     };
     if (sub.type === 'boolean') {
-      return { ...base, cellRenderer: CheckboxRenderer, cellRendererParams: { cell, column }, editable: false, flex: 0, width: 100, minWidth: 80 };
+      return { ...base, cellRenderer: CheckboxRenderer, cellRendererParams: { cell, subfield: column }, editable: false, flex: 0, width: 100, minWidth: 80 };
     }
     return {
       ...base,
       editable: () => !readonly && EDITABLE.has(sub.type) && !sub.readonly,
       cellEditor: FieldiaCellEditor,
-      cellEditorParams: { cell, column },
+      cellEditorParams: { cell, subfield: column },
     };
   });
   columnDefs.push({
@@ -277,7 +337,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     cellRendererParams: { cell },
   });
 
-  const api = createGrid<Line>(
+  const api: GridApi<Line> = createGrid<Line>(
     host,
     {
       theme: themeQuartz.withParams({
@@ -305,6 +365,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       suppressNoRowsOverlay: true,
       singleClickEdit: true,
       stopEditingWhenCellsLoseFocus: true,
+      // Like a spreadsheet: Enter keeps what was typed and moves down.
+      enterNavigatesVerticallyAfterEdit: true,
       animateRows: false,
       suppressMovableColumns: false,
       defaultColDef: { sortable: false, resizable: true },
@@ -313,14 +375,24 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   );
   apis.set(element, api);
 
-  add.addEventListener('click', () => {
-    const key = form.addLine(name);
-    const index = lines().findIndex((l) => l.key === key);
-    const column = firstEditable();
-    if (index >= 0 && column) {
-      api.ensureIndexVisible(index);
-      api.setFocusedCell(index, column);
-      api.startEditingCell({ rowIndex: index, colKey: column });
+  add.addEventListener('click', addAndEdit);
+
+  // A focused cell that has no editor still answers keys: Space ticks yes/no,
+  // and Enter or Space presses the delete button. (AG Grid's onCellKeyDown
+  // arrives too late to stop Space scrolling the page.)
+  host.addEventListener('keydown', (event) => {
+    if (readonly || (event.key !== ' ' && event.key !== 'Enter')) return;
+    if (!(event.target as HTMLElement).classList.contains('ag-cell')) return; // a checkbox or an editor answers for itself
+    const focused = api.getFocusedCell();
+    const line = focused ? api.getDisplayedRowAtIndex(focused.rowIndex)?.data : undefined;
+    if (!focused || !line) return;
+    const column = focused.column.getColId();
+    if (event.key === ' ' && def.fields[column]?.type === 'boolean') {
+      event.preventDefault();
+      form.updateLine(name, line.key, column, line.values[column] !== true);
+    } else if (column === '__delete') {
+      event.preventDefault();
+      form.removeLine(name, line.key);
     }
   });
 

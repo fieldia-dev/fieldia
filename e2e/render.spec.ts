@@ -3,7 +3,7 @@ import { expectNoSidewaysScroll, open, screen } from './support';
 import { VARIANTS } from './variants';
 
 for (const variant of VARIANTS) {
-for (const pageName of ['signup', 'survey', 'customer', 'fields', 'custom']) {
+for (const pageName of ['signup', 'survey', 'customer', 'fields', 'order', 'custom']) {
   for (const skin of ['underline', 'outlined']) {
     test(`${variant}: ${pageName} renders in the ${skin} skin without errors`, async ({ page }) => {
       const { problems } = await open(page, variant, `page=${pageName}&skin=${skin}`);
@@ -20,7 +20,7 @@ for (const [width, label] of [
   [390, 'phone'],
   [820, 'tablet'],
 ] as const) {
-  for (const pageName of ['signup', 'customer', 'fields']) {
+  for (const pageName of ['signup', 'customer', 'fields', 'order']) {
     test(`${variant}: ${pageName} fits a ${label} (${width}px)`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await open(page, variant, `page=${pageName}&skin=outlined`);
