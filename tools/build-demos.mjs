@@ -9,7 +9,7 @@ import { join, resolve } from 'node:path';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'dist/demos');
-const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react', 'vue', 'angular'];
+const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react', 'vue', 'angular', 'designer'];
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });

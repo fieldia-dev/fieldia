@@ -18,3 +18,4 @@ html, body { margin: 0; background: #f7f8fa; color: #1f2933; font: 14px/1.45 sys
 .demo-shout output { font-weight: 700; letter-spacing: 0.04em; color: #0b5cad; }
 .demo-note { display: flex; gap: 12px; align-items: center; padding: 12px 0; }
 .demo-hello { margin: 0; }
+#app:has(.fd-designer) { max-width: 1320px; }

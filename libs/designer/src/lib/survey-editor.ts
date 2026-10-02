@@ -115,8 +115,12 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const body = el('div', { class: 'fd-designer-body' }, editor, ...(options.preview === false ? [] : [preview]));
   root.append(bar, issues, body);
 
-  root.addEventListener('keydown', (event) => {
-    const typing = (event.target as HTMLElement).closest('input, textarea, select, [contenteditable]');
+  // On the document: clicking an area that cannot take focus leaves focus on
+  // the body, and keys pressed then never reach the editor's own element.
+  const onKey = (event: KeyboardEvent) => {
+    const target = event.target as HTMLElement;
+    if (target !== doc.body && !root.contains(target)) return;
+    const typing = target.closest('input, textarea, select, [contenteditable]');
     if (typing || !(event.ctrlKey || event.metaKey)) return;
     const key = event.key.toLowerCase();
     if (key === 'z' && !event.shiftKey) {
@@ -126,7 +130,8 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       event.preventDefault();
       designer.redo();
     }
-  });
+  };
+  doc.addEventListener('keydown', onKey);
 
   // ---- cards ---------------------------------------------------------------
   interface CardView {
@@ -334,7 +339,10 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       });
     });
     if (focusLabelOf) {
-      (cardViews.get(focusLabelOf)?.element.querySelector('.fd-q-label') as HTMLInputElement | undefined)?.focus();
+      const label = cardViews.get(focusLabelOf)?.element.querySelector('.fd-q-label') as HTMLInputElement | undefined;
+      // Select the placeholder text, so typing replaces it rather than adding to it.
+      label?.focus();
+      label?.select();
       focusLabelOf = null;
     }
     refreshPreview(page);
@@ -348,6 +356,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     element: root,
     destroy() {
       leave();
+      doc.removeEventListener('keydown', onKey);
       clearTimeout(previewTimer);
       previewHandle?.destroy();
       root.remove();

@@ -38,6 +38,13 @@ describe('survey editor', () => {
     expect(nodes(designer.getPage())).toHaveLength(1);
   });
 
+  it('selects the placeholder label, so the first keystroke replaces it', () => {
+    const { host } = mount();
+    button(host, 'Add question').click();
+    const label = cards(host)[0].querySelector('.fd-q-label') as HTMLInputElement;
+    expect([label.selectionStart, label.selectionEnd]).toEqual([0, 'Untitled question'.length]);
+  });
+
   it('writes a typed label into the page, keeping focus while it does', () => {
     const { host, designer } = mount();
     button(host, 'Add question').click();
@@ -117,6 +124,16 @@ describe('survey editor', () => {
     button(host, 'Redo').click();
     expect(cards(host)).toHaveLength(1);
     expect(button(host, 'Redo')).toBeUndefined();
+  });
+
+  it('undoes from the keyboard even when focus is on the page itself', () => {
+    const { host, designer } = mount();
+    button(host, 'Add question').click();
+    (document.activeElement as HTMLElement).blur();
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }));
+    expect(nodes(designer.getPage())).toHaveLength(0);
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'y', ctrlKey: true, bubbles: true }));
+    expect(nodes(designer.getPage())).toHaveLength(1);
   });
 
   it('publishes, and says which version is live', async () => {

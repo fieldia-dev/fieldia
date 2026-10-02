@@ -21,6 +21,7 @@ export const DESIGNER_CSS = /* css */ `
 .fd-step-when { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; color: var(--fd-muted); font-size: 13px; }
 .fd-step-when .fd-select { width: auto; min-width: 140px; }
 .fd-step-cards { display: grid; gap: 10px; }
+.fd-design-step > .fd-button { justify-self: start; }
 .fd-step-cards:empty::before { content: "No questions on this page yet."; color: var(--fd-muted); font-size: 13px; padding: 4px 2px; }
 .fd-q {
   display: grid; gap: 10px; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius);
