@@ -387,7 +387,8 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     },
 
     setOptions(id, labels) {
-      return apply((draft) => {
+      return apply(
+        (draft) => {
         const node = fieldNode(draft, id);
         const field = draft.fields[node.field];
         if (field.type !== 'selection') throw new Refusal(`"${id}" has no options`);
@@ -404,7 +405,10 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
             used.add(value);
             return { value, label };
           });
-      });
+        },
+        // Typing in one option list is one undo step, like typing in a label.
+        `options:${id}:${labels.length}`
+      );
     },
 
     changeKind(id, kindId) {
@@ -461,13 +465,17 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     removeNode(id) {
       const ok = apply((draft) => {
         const found = findNode(draft, id);
-        if (!found) throw new Refusal(`There is no element "${id}"`);
-        found.parent.children.splice(found.index, 1);
-        if (found.node.type === 'field') {
-          const name = found.node.field;
-          const stillShown = containers(draft).some((c) => c.children.some((n) => n.type === 'field' && n.field === name));
-          if (!stillShown) delete draft.fields[name];
-        }
+        const root = draft.layout as { children: LayoutNode[] | StepNode[] };
+        const topIndex = (root.children as { id: string }[]).findIndex((child) => child.id === id);
+        if (found) found.parent.children.splice(found.index, 1);
+        else if (topIndex !== -1) {
+          // A whole page (wizard step) or a top-level section.
+          if (root.children.length === 1) throw new Refusal('A page needs at least one step or section');
+          root.children.splice(topIndex, 1);
+        } else throw new Refusal(`There is no element "${id}"`);
+        // Drop the fields nothing shows any more.
+        const shown = new Set(containers(draft).flatMap((c) => c.children.filter((n): n is FieldNode => n.type === 'field').map((n) => n.field)));
+        for (const name of Object.keys(draft.fields)) if (!shown.has(name)) delete draft.fields[name];
       });
       if (ok && selected === id) {
         selected = null;
