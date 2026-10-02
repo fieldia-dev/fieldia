@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fieldia — script tag</title>
+    <link rel="stylesheet" href="../demo.css" />
+  </head>
+  <body>
+    <nav class="demo-bar" aria-label="Demo">
+      <strong>Fieldia</strong>
+      <span class="demo-framework">script tag, no build step</span>
+    </nav>
+    <main id="app"></main>
+    <!-- The whole of Fieldia's viewer in one file: core, widgets and viewer, as the global `Fieldia`. -->
+    <script src="fieldia.js"></script>
+    <script>
+      const page = {
+        fieldia: '0.1',
+        id: 'call-back',
+        title: 'Ask for a call back',
+        data: { kind: 'responses' },
+        fields: {
+          name: { type: 'char', label: 'Your name', required: true },
+          phone: { type: 'char', label: 'Phone', required: true },
+          when: {
+            type: 'selection',
+            label: 'Best time',
+            options: [
+              { value: 'morning', label: 'Morning' },
+              { value: 'afternoon', label: 'Afternoon' },
+            ],
+          },
+        },
+        layout: {
+          type: 'sections',
+          id: 'sections',
+          children: [
+            {
+              type: 'section',
+              id: 'you',
+              columns: 2,
+              children: [
+                { type: 'field', id: 'name', field: 'name' },
+                { type: 'field', id: 'phone', field: 'phone' },
+                { type: 'field', id: 'when', field: 'when', widget: 'radio' },
+              ],
+            },
+          ],
+        },
+      };
+      const dataSource = Fieldia.createMemoryDataSource();
+      const handle = Fieldia.mountViewer(document.getElementById('app'), { page, dataSource, skin: 'outlined' });
+      window.fieldiaDemo = { handle, dataSource, version: Fieldia.VERSION };
+    </script>
+  </body>
+</html>

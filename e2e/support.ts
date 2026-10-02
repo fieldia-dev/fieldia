@@ -19,9 +19,9 @@ export async function open(page: Page, variant: string, query: string) {
 /** A field's wrapper, by its layout id. */
 export const node = (page: Page, id: string) => page.locator(`[data-node="${id}"]`);
 
-/** Save a screenshot for a person to look at. */
+/** Save a screenshot for a person to look at — transitions finished, so it shows where things settle. */
 export async function screen(page: Page, name: string) {
-  await page.screenshot({ path: `test-results/screens/${name}.png`, fullPage: true });
+  await page.screenshot({ path: `test-results/screens/${name}.png`, fullPage: true, animations: 'disabled' });
 }
 
 /** Nothing on the page may scroll sideways. */

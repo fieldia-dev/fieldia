@@ -67,7 +67,7 @@ needs is handed to the renderer.
 npm ci
 npx nx run-many -t typecheck lint test build   # unit gates
 npx playwright install chromium
-npx nx run angular:build && node tools/build-demos.mjs && npx playwright test   # browser gates, every framework demo
+npx nx run-many -t build -p angular viewer && node tools/build-demos.mjs && npx playwright test   # browser gates, every framework demo
 ```
 
 CI runs exactly these lines — [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is the gate list.

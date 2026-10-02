@@ -20,10 +20,13 @@
       "cache": true,
       "inputs": [
         "production",
-        "^production"
+        "^production",
+        "{workspaceRoot}/tools/script-entry.ts",
+        "{workspaceRoot}/tools/script-bundle.mjs"
       ],
       "options": {
-        "command": "node tools/dual-build.mjs viewer"
+        "commands": ["node tools/script-bundle.mjs", "node tools/dual-build.mjs viewer"],
+        "parallel": false
       }
     },
     "compile-cjs": {

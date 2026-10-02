@@ -43,7 +43,7 @@ jobs:
       # was not built, so a missing framework cannot skip its gates quietly.
       # The Angular demo consumes the BUILT @fieldia/angular (ngc, partial),
       # so the gates exercise the package as it would be published.
-      - run: npx nx run angular:build
+      - run: npx nx run-many -t build -p angular viewer
         env:
           NX_DAEMON: 'false'
       - run: node tools/build-demos.mjs
