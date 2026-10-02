@@ -226,6 +226,37 @@ describe('keys', () => {
     expect(document.activeElement).toBe(country);
   });
 
+  it('takes what an app’s own field still holds before Ctrl+Enter saves', async () => {
+    // An app's field that keeps what is typed until it changes, as many do.
+    const later = ({ form, name, document: doc }: { form: { setValue(n: string, v: unknown): void }; name: string; document: Document }) => {
+      const box = doc.createElement('input');
+      box.addEventListener('change', () => form.setValue(name, box.value));
+      return { element: box, update: () => undefined };
+    };
+    const p = page('customer');
+    (p.layout as any).children[0].children.find((n: { id: string }) => n.id === 'f-phone').widget = 'later';
+    const dataSource = createMemoryDataSource({ records: { partner: { 1: customer } } });
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountViewer(host, { page: p, dataSource, recordId: 1, widgets: { 'char.later': later as never } });
+    await handle.form.settled();
+    const box = at(host, 'f-phone').querySelector('input') as HTMLInputElement;
+    box.focus();
+    box.value = '+20 2 9999 0000';
+    press(box, 'Enter', { ctrlKey: true });
+    await handle.form.settled();
+    expect(dataSource.records['partner'][1]['phone']).toBe('+20 2 9999 0000');
+  });
+
+  it('leaves Enter in a table of lines to the table', () => {
+    const { host, form } = mount('fields', { keys: { enterMovesToNext: true } });
+    form.addLine('milestone_ids', { name: 'Site survey' });
+    const cell = host.querySelector('[data-node="f-milestones"] input') as HTMLInputElement;
+    cell.focus();
+    expect(press(cell, 'Enter')).toBe(true);
+    expect(document.activeElement).toBe(cell);
+  });
+
   it('does not move on Enter unless asked', () => {
     const { host } = mount('signup');
     input(host, 'f-name').focus();
@@ -248,6 +279,15 @@ describe('a ✓ on a valid field', () => {
     expect(marked(host, 'f-email')).toBe(true);
     type(input(host, 'f-name'), '');
     expect(marked(host, 'f-name')).toBe(false);
+  });
+
+  it('marks no field the person has not touched, however right its value', async () => {
+    const { host, form } = sheet({ showValid: true });
+    await form.settled();
+    expect(input(host, 'f-email').value).not.toBe('');
+    expect(marked(host, 'f-email')).toBe(false);
+    type(input(host, 'f-phone'), '+20 2 1111 2222');
+    expect(marked(host, 'f-phone')).toBe(true);
   });
 
   it('marks nothing unless the page asks', () => {
@@ -292,6 +332,8 @@ describe('a refused save', () => {
     expect(error.getAttribute('role')).toBeNull();
     expect(statusText(host)).toBe('Not saved. Check: Email');
     expect(announced(host)).toBe('Not saved. Check: Email');
+    // Nothing to retry: the fields have to change first.
+    expect(button(host.querySelector('.fd-status-box') as HTMLElement, 'Retry')).toBeUndefined();
     expect(host.querySelector('.fd-announce')?.getAttribute('aria-live')).toBe('assertive');
     expect(document.activeElement).toBe(input(host, 'f-email'));
   });
@@ -408,6 +450,9 @@ describe('a read-only form', () => {
     expect(handle.isReadonly()).toBe(true);
     // Actions still run in a read-only record, as in Odoo.
     expect(button(host, 'Block')).toBeDefined();
+    // A change from the app's own code offers no Save while the record is locked.
+    form.setValue('phone', '+20 2 1111 2222');
+    expect(button(host, 'Save')).toBeUndefined();
     handle.setReadonly(false);
     expect(input(host, 'f-phone').readOnly).toBe(false);
     expect(host.querySelectorAll('.fd-statusbar button:not([disabled])').length).toBeGreaterThan(0);
