@@ -70,6 +70,7 @@ export function sampleDataSource() {
       },
       currency: { 1: { name: 'EGP' }, 2: { name: 'JOD' }, 3: { name: 'SAR' } },
       'partner.tag': { 10: { name: 'Wholesale' }, 11: { name: 'VIP' } },
+      carrier: { 1: { name: 'Aramex' }, 2: { name: 'Bosta' }, 3: { name: 'Our own van' } },
       product: {
         1: { name: 'Office chair, ergonomic', price: 1890 },
         2: { name: 'Desk lamp, LED', price: 380 },
@@ -96,6 +97,10 @@ export function sampleDataSource() {
           amount_tax: 8413.44,
           amount_total: 73069.44,
           note: 'Delivery to the 12th floor by the freight lift, 08:00 to 10:00.',
+          delivery_ids: [
+            { key: 'd1', id: 201, values: { date: '2026-10-11', place: 'Nile Towers, 12th floor', carrier_id: { id: 3, label: 'Our own van' }, boxes: 14 } },
+            { key: 'd2', id: 202, values: { date: '2026-10-13', place: 'Nile Towers, 12th floor', carrier_id: { id: 1, label: 'Aramex' }, boxes: 3 } },
+          ],
         },
       },
       employee: { 21: { name: 'Mona Adel' }, 22: { name: 'Karim Fathy' }, 23: { name: 'Salma Nabil' } },

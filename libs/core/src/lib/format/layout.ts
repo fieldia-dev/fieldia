@@ -33,6 +33,8 @@ export interface FieldNode {
   totals?: string[];
   /** For one2many: columns a person may hide or show, and how each starts. */
   optionalColumns?: { [column: string]: 'show' | 'hide' };
+  /** For one2many shown as a grid: edit one cell at a time (the default), or a whole line at once. */
+  editMode?: 'cell' | 'row';
   invisible?: Modifier;
   readonly?: Modifier;
   required?: Modifier;
@@ -204,6 +206,7 @@ export const FieldNodeSchema = z.strictObject({
   columns: z.array(fieldName).min(1).optional(),
   totals: z.array(fieldName).min(1).optional(),
   optionalColumns: z.record(fieldName, z.enum(['show', 'hide'])).optional(),
+  editMode: z.enum(['cell', 'row']).optional(),
   invisible,
   readonly: ModifierSchema.optional(),
   required: ModifierSchema.optional(),

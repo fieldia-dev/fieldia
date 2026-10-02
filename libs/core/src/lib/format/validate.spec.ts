@@ -260,6 +260,15 @@ describe('validatePage — references', () => {
     expect(messages(page)).toEqual(['layout.children[0].children[0].optionalColumns: optional columns only apply to one2many fields; "partner_id" is a many2one']);
   });
 
+  it('rejects a way of editing lines on a field that has none, or one that is not cell or row', () => {
+    const page = example('order');
+    page['layout'].children[0].children[0].editMode = 'row';
+    expect(messages(page)).toEqual(['layout.children[0].children[0].editMode: editMode only applies to one2many fields; "partner_id" is a many2one']);
+    const other = example('order');
+    other['layout'].children[1].children[0].children[0].editMode = 'page';
+    expect(messages(other)).toEqual(['layout.children[1].children[0].children[0].editMode: Invalid option: expected one of "cell"|"row"']);
+  });
+
   it('rejects one2many columns that are not among its line fields', () => {
     const page = example('customer');
     page['layout'].children[1].children[0].children[0].columns.push('fax');

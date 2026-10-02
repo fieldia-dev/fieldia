@@ -1848,6 +1848,13 @@
                 ]
               }
             },
+            "editMode": {
+              "type": "string",
+              "enum": [
+                "cell",
+                "row"
+              ]
+            },
             "invisible": {
               "$ref": "#/$defs/Modifier"
             },

@@ -248,6 +248,9 @@ class ReferenceCheck {
         });
       }
     }
+    if (def && node.editMode && def.type !== 'one2many') {
+      this.report(`${path}.editMode`, `editMode only applies to one2many fields; "${node.field}" is a ${def.type}`);
+    }
     if (def && node.optionalColumns) {
       if (def.type !== 'one2many') {
         this.report(`${path}.optionalColumns`, `optional columns only apply to one2many fields; "${node.field}" is a ${def.type}`);

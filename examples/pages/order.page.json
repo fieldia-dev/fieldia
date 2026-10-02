@@ -55,6 +55,17 @@
     "amount_untaxed": { "type": "monetary", "label": "Untaxed amount", "currency": "EGP", "readonly": true },
     "amount_tax": { "type": "monetary", "label": "VAT", "currency": "EGP", "readonly": true },
     "amount_total": { "type": "monetary", "label": "Total", "currency": "EGP", "readonly": true },
+    "delivery_ids": {
+      "type": "one2many",
+      "label": "Delivery schedule",
+      "relation": "sale.delivery",
+      "fields": {
+        "date": { "type": "date", "label": "Date", "required": true },
+        "place": { "type": "char", "label": "Deliver to" },
+        "carrier_id": { "type": "many2one", "label": "Carrier", "relation": "carrier" },
+        "boxes": { "type": "integer", "label": "Boxes" }
+      }
+    },
     "note": { "type": "text", "label": "Terms and conditions" }
   },
   "layout": {
@@ -99,7 +110,10 @@
             "type": "tab",
             "id": "tab-other",
             "label": "Other information",
-            "children": [{ "type": "field", "id": "f-note", "field": "note" }]
+            "children": [
+              { "type": "field", "id": "f-deliveries", "field": "delivery_ids", "widget": "grid", "editMode": "row" },
+              { "type": "field", "id": "f-note", "field": "note" }
+            ]
           }
         ]
       }
