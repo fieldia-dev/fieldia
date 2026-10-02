@@ -237,6 +237,8 @@ for (const variant of VARIANTS) {
       await cell(page, CHAIR, 'taxed').click({ position: { x: 4, y: 4 } });
       await page.keyboard.press('ArrowRight');
       await page.keyboard.press('ArrowRight');
+      await expect(cell(page, CHAIR, '__open')).toHaveClass(/ag-cell-focus/);
+      await page.keyboard.press('ArrowRight');
       await expect(cell(page, CHAIR, '__delete')).toHaveClass(/ag-cell-focus/);
       await page.keyboard.press('Enter');
       await expect(lineRows(page)).toHaveCount(5);
@@ -247,10 +249,11 @@ for (const variant of VARIANTS) {
       await expect(cell(page, WORKSTATIONS, 'product_id')).toHaveText('Workstations');
       await expect(cell(page, LIGHTING, 'product_id')).toHaveText('Lighting');
       await expect(cell(page, NOTE, 'product_id')).toHaveText('Warm white only, to match the reception.\nOur electrician fits them on delivery day.');
-      // One wide cell between the drag handle and the delete button; none of an item's columns.
+      // One wide cell between the drag handle and the line's tools; none of an item's columns.
       expect(await grid(page).locator(`.ag-row[row-index="${NOTE}"] .ag-cell`).evaluateAll((cells) => cells.map((c) => c.getAttribute('col-id')))).toEqual([
         '__handle',
         'product_id',
+        '__open',
         '__delete',
       ]);
       await expect(grid(page).locator(`.ag-row[row-index="${WORKSTATIONS}"]`)).toHaveClass(/fd-grid-section/);
@@ -487,7 +490,7 @@ for (const variant of VARIANTS) {
 
     test('the column chooser opens from the keyboard and gives the focus back', async ({ page }) => {
       await cell(page, CHAIR, 'taxed').click({ position: { x: 4, y: 4 } });
-      for (const key of ['ArrowRight', 'ArrowRight', 'ArrowUp', 'ArrowUp']) await page.keyboard.press(key);
+      for (const key of ['ArrowRight', 'ArrowRight', 'ArrowRight', 'ArrowUp', 'ArrowUp']) await page.keyboard.press(key);
       await expect(grid(page).locator('.ag-header-cell[col-id="__delete"]')).toBeFocused();
       await page.keyboard.press('Enter');
       const chooser = grid(page).getByRole('group', { name: 'Choose columns' });
@@ -596,12 +599,15 @@ for (const variant of VARIANTS) {
       expect(await carrier.evaluate((el: HTMLInputElement) => [el.selectionStart, el.selectionEnd, el.value.length])).toEqual([0, 11, 11]);
       await page.keyboard.type('bos');
       const bosta = deliveries(page).getByRole('option', { name: 'Bosta' });
-      await expect(bosta).toBeVisible();
+      // The answer to "bos" itself, not the whole list that opened as the cell was reached.
+      await expect(deliveries(page).getByRole('option').first()).toHaveText('Bosta');
+      await expect(deliveries(page).getByRole('option', { name: 'Aramex' })).toHaveCount(0);
+      // By name, not by element: a search answering late draws the list anew.
       const onTop = await bosta.evaluate((el) => {
         const r = el.getBoundingClientRect();
         return [r.top + r.height / 2, r.bottom - 2].every((y) => {
           const hit = document.elementFromPoint(r.left + r.width / 2, y);
-          return !!hit && (hit === el || el.contains(hit));
+          return hit?.closest('[role=option]')?.textContent === 'Bosta';
         });
       });
       expect(onTop, 'the carrier list is cut off').toBe(true);

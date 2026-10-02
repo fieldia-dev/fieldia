@@ -16,7 +16,7 @@ import {
 } from 'ag-grid-community';
 import { fill, lineKind, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
-import { createWidget, displayValue, kindTextField, lineForm, WIDGET_LABELS, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
+import { createWidget, displayValue, kindTextField, lineForm, WIDGET_LABELS, type WidgetDialogs, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
 
 /**
  * A one2many as a spreadsheet, on AG Grid. Each cell is edited with the same
@@ -58,6 +58,8 @@ interface CellContext {
   layer: HTMLElement;
   /** The page's language, for the numbers and dates typed in a cell. */
   locale?: Locale;
+  /** Dialogs a cell's link may open: Search more…, Create and edit…. */
+  dialogs?: WidgetDialogs;
 }
 
 /** The grid's own columns (the drag handle, the delete button) start with two underscores. */
@@ -94,6 +96,25 @@ class CheckboxRenderer implements ICellRendererComp<Line> {
     this.params = params;
     this.box.checked = params.data?.values[params.subfield] === true;
     this.box.disabled = params.cell.form.fieldReadonly(params.cell.field);
+    return true;
+  }
+}
+
+/** The button that opens a line in a dialog, with every one of its fields. */
+class OpenRenderer implements ICellRendererComp<Line> {
+  private button!: HTMLButtonElement;
+  init(params: ICellRendererParams<Line> & { open: (line: Line) => void; label: string }) {
+    this.button = document.createElement('button');
+    this.button.type = 'button';
+    this.button.className = 'fd-line-open';
+    this.button.textContent = '↗';
+    this.button.setAttribute('aria-label', params.label);
+    this.button.addEventListener('click', () => params.data && params.open(params.data));
+  }
+  getGui() {
+    return this.button;
+  }
+  refresh() {
     return true;
   }
 }
@@ -185,6 +206,7 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
       document,
       labels: cell.labels,
       locale: cell.locale,
+      dialogs: cell.dialogs,
     };
     this.widget = createWidget(context, cell.registry);
     this.box = document.createElement('div');
@@ -346,7 +368,7 @@ const HEADER_HEIGHT = 38;
 
 const EDITABLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'date', 'datetime', 'selection', 'many2one', 'many2many', 'reference']);
 
-export const gridWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, preferences, locale }) => {
+export const gridWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, preferences, locale, dialogs }) => {
   const def = field as LineDef;
   const kinds = def.lineKinds;
   const sequence = def.sequenceField;
@@ -378,6 +400,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     rowMode: node.editMode === 'row',
     layer: element,
     locale,
+    dialogs,
   };
   installGridStyles(document);
 
@@ -538,6 +561,31 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     });
   }
   // AG Grid copies column definitions deeply, so the button calls through, never a copy.
+  // With dialogs, a line can be opened to see and edit every one of its fields at once.
+  const openLine = async (line: Line) => {
+    if (!dialogs) return;
+    const fields = Object.fromEntries(Object.entries(def.fields).filter(([key]) => key !== kinds?.field && key !== sequence)) as Record<string, Field>;
+    const values = await dialogs.editValues({ title: def.label, fields, values: line.values, readonly });
+    if (!values) return;
+    // Written in one go, so the form recalculates once.
+    form.setValue(name, lines().map((l) => (l.key === line.key ? { ...l, values: { ...l.values, ...values } } : l)));
+  };
+  if (dialogs) {
+    columnDefs.push({
+      colId: '__open',
+      headerName: '',
+      width: 40,
+      minWidth: 40,
+      maxWidth: 40,
+      cellClass: 'fd-grid-tools',
+      resizable: false,
+      sortable: false,
+      suppressMovable: true,
+      lockPosition: 'right',
+      cellRendererSelector: (p) => (p.node.rowPinned || kindOf(p.data) ? undefined : { component: OpenRenderer, params: { open: openLine, label: labels.openLine } }),
+      suppressKeyboardEvent: keys,
+    });
+  }
   const chooser: Chooser = { label: labels.chooseColumns, toggle: (button, fromKeyboard) => toggleChooser(button, fromKeyboard) };
   columnDefs.push({
     colId: '__delete',

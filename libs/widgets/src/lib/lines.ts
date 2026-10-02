@@ -37,7 +37,7 @@ export function lineForm(form: Form, field: string, key: string): Form {
   };
 }
 
-export const linesWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, locale }) => {
+export const linesWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, locale, dialogs }) => {
   const def = field as Extract<Field, { type: 'one2many' }>;
   const kinds = def.lineKinds;
   // The fields that say what a line is and keep the lines' order never show as columns.
@@ -117,7 +117,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   function makeCell(tr: HTMLTableRowElement, line: Line, column: string, sub: LineField, span = 1) {
     const cellId = `${id}-${line.key}-${column}`;
     const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column };
-    const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale });
+    const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs });
     const td = document.createElement('td');
     td.colSpan = span;
     const label = document.createElement('label');

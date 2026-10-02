@@ -22,6 +22,8 @@ export interface WidgetLabels {
   createAndEdit: string;
   searchMore: string;
   openNamed: string;
+  /** The button that opens a line of a table in a dialog. */
+  openLine: string;
   /** The button that lets a person hide or show a table's optional columns. */
   chooseColumns: string;
   /** The button beside a date that opens its calendar. */
@@ -75,6 +77,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     createAndEdit: 'Create and edit…',
     searchMore: 'Search more…',
     openNamed: 'Open {name}',
+    openLine: 'Open line',
     chooseDate: 'Choose a date',
     previousMonth: 'Previous month',
     nextMonth: 'Next month',
@@ -121,6 +124,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     createAndEdit: 'إنشاء وتعديل…',
     searchMore: 'بحث موسّع…',
     openNamed: 'فتح {name}',
+    openLine: 'فتح السطر',
     chooseDate: 'اختيار تاريخ',
     previousMonth: 'الشهر السابق',
     nextMonth: 'الشهر التالي',
@@ -167,6 +171,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     createAndEdit: 'Anlegen und bearbeiten…',
     searchMore: 'Weitere suchen…',
     openNamed: '{name} öffnen',
+    openLine: 'Zeile öffnen',
     chooseDate: 'Datum auswählen',
     previousMonth: 'Vorheriger Monat',
     nextMonth: 'Nächster Monat',
@@ -213,6 +218,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     createAndEdit: 'Créer et modifier…',
     searchMore: 'Rechercher plus…',
     openNamed: 'Ouvrir {name}',
+    openLine: 'Ouvrir la ligne',
     chooseDate: 'Choisir une date',
     previousMonth: 'Mois précédent',
     nextMonth: 'Mois suivant',

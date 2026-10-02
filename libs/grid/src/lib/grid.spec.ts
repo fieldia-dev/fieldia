@@ -143,6 +143,44 @@ describe('the grid', () => {
   });
 });
 
+describe('a line in a dialog', () => {
+  const dialogBox = () => document.querySelector('.fd-form-dialog') as HTMLElement | null;
+  const footButton = (name: string) =>
+    [...(dialogBox()?.querySelectorAll('.fd-form-dialog-foot button') ?? [])].find((b) => b.textContent === name) as HTMLButtonElement;
+
+  it('opens every field of a line in a dialog, and Save & Close writes it back', async () => {
+    const { box, form } = await mount();
+    (box.querySelector('.ag-row[row-index="1"] button[aria-label="Open line"]') as HTMLButtonElement).click();
+    await frames();
+    expect(dialogBox()).not.toBeNull();
+    const labels = [...(dialogBox()?.querySelectorAll('.fd-label') ?? [])].map((l) => l.textContent);
+    expect(labels).toEqual(expect.arrayContaining(['Product', 'Description', 'Quantity', 'Unit price', 'Delivery', 'Taxed']));
+    const description = dialogBox()?.querySelector('[data-node="values-name"] input') as HTMLInputElement;
+    expect(description.value).toBe('LED, warm white');
+    description.value = 'LED, daylight';
+    description.dispatchEvent(new Event('input', { bubbles: true }));
+    // Nothing reaches the line until the dialog is saved.
+    expect(formLines(form)[1].values['name']).toBe('LED, warm white');
+    footButton('Save & Close').click();
+    await frames();
+    expect(dialogBox()).toBeNull();
+    expect(formLines(form)[1].values['name']).toBe('LED, daylight');
+    expect(rowCells(box, 1)).toContain('LED, daylight');
+  });
+
+  it('Discard leaves the line as it was', async () => {
+    const { box, form } = await mount();
+    (box.querySelector('.ag-row[row-index="0"] button[aria-label="Open line"]') as HTMLButtonElement).click();
+    await frames();
+    const qty = dialogBox()?.querySelector('[data-node="values-qty"] input') as HTMLInputElement;
+    qty.value = '99';
+    qty.dispatchEvent(new Event('input', { bubbles: true }));
+    footButton('Discard').click();
+    await frames();
+    expect(formLines(form)[0].values['qty']).toBe(4);
+  });
+});
+
 describe('editing a whole line', () => {
   const rowMode = JSON.parse(JSON.stringify(order)) as Page & { layout: any };
   rowMode.layout.children[0].children[1].editMode = 'row';
@@ -303,10 +341,10 @@ describe('the grid totals', () => {
     totalled.layout.children[0].children[1].totals = ['qty', 'price'];
     const { box, form } = await mount(totalled);
     const totals = () => [...box.querySelectorAll('.ag-grid-pinned-bottom-rows .ag-row .ag-cell')].map((c) => (c as HTMLElement).textContent?.trim());
-    expect(totals()).toEqual(['Total', '', '10.00', 'EGP 2,270.00', '', '', '']);
+    expect(totals()).toEqual(['Total', '', '10.00', 'EGP 2,270.00', '', '', '', '']);
     form.updateLine('line_ids', 'l1', 'qty', 14);
     await frames();
-    expect(totals()).toEqual(['Total', '', '20.00', 'EGP 2,270.00', '', '', '']);
+    expect(totals()).toEqual(['Total', '', '20.00', 'EGP 2,270.00', '', '', '', '']);
   });
 
   it('never takes a key pressed on the totals row for one meant for the first line', async () => {
@@ -343,8 +381,9 @@ describe('the grid with sections and notes', () => {
 
   it('draws a section and a note across the line’s columns, beside the delete button', async () => {
     const { box } = await mount(sectioned, withKinds);
-    expect(rowCells(box, 0)).toEqual(['Workstations', '×']);
-    expect(rowCells(box, 2)).toEqual(['Fitted on delivery day.', '×']);
+    // The open button is for items: a section or note has an empty cell there.
+    expect(rowCells(box, 0)).toEqual(['Workstations', '', '×']);
+    expect(rowCells(box, 2)).toEqual(['Fitted on delivery day.', '', '×']);
     expect(rowCells(box, 1)[0]).toBe('Office chair');
     expect(box.querySelector('.ag-row[row-index="0"]')?.classList.contains('fd-grid-section')).toBe(true);
     expect(box.querySelector('.ag-row[row-index="2"]')?.classList.contains('fd-grid-note')).toBe(true);
@@ -375,7 +414,7 @@ describe('the grid with sections and notes', () => {
     expect(shown).not.toContain('sequence');
     expect(api?.getColumnDef('__handle')?.rowDrag).toBeTruthy();
     // A section still spans the item columns, beside the handle and the delete button.
-    expect(rowCells(box, 0)).toEqual(['', 'Workstations', '×']);
+    expect(rowCells(box, 0)).toEqual(['', 'Workstations', '', '×']);
 
     // Alt+Down moves the focused line, which stays focused.
     api?.setFocusedCell(1, 'name');

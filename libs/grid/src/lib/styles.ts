@@ -13,6 +13,8 @@ export const GRID_CSS = /* css */ `
 /* A cell the form found wrong: an inset red edge, so the row keeps its height. */
 .fd-grid-lines .ag-cell-inline-editing.fd-grid-invalid, .ag-popup-editor .fd-grid-editor.fd-grid-editor-invalid { border-color: var(--fd-error) !important; }
 .fd-grid-lines .ag-cell.fd-grid-invalid { box-shadow: inset 0 0 0 1px var(--fd-error); background: var(--fd-error-soft); }
+.fd-grid-lines .fd-line-open { border: none; background: none; cursor: pointer; color: var(--fd-accent); font-size: 14px; padding: 4px 6px; border-radius: 4px; }
+.fd-grid-lines .fd-line-open:hover { background: var(--fd-page); }
 .fd-grid-lines .fd-grid-totals { font-weight: 600; background: var(--fd-surface); }
 .fd-grid-lines { position: relative; }
 .fd-grid-chooser-button {
