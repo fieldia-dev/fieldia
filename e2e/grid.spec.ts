@@ -523,6 +523,10 @@ for (const variant of VARIANTS) {
       const last = (await grid(page).locator(`.ag-row[row-index="${LAMP}"]`).boundingBox())!;
       const totals = (await grid(page).locator('.ag-grid-pinned-bottom-rows').boundingBox())!;
       expect(totals.y - (last.y + last.height)).toBeLessThanOrEqual(2);
+      // And no blank under the table: the add buttons sit right below it.
+      const frame = (await grid(page).locator('.ag-root-wrapper').boundingBox())!;
+      const add = (await grid(page).getByRole('button', { name: '+ Add a line' }).boundingBox())!;
+      expect(add.y - (frame.y + frame.height)).toBeLessThanOrEqual(12);
     });
   });
 }

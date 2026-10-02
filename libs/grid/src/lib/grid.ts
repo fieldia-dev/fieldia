@@ -686,7 +686,6 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     host.style.height = long ? `${HEADER_HEIGHT + (LONG_TABLE + (totals.length ? 1 : 0)) * ROW_HEIGHT + 2}px` : '';
     api.setGridOption('domLayout', long ? 'normal' : 'autoHeight');
   };
-  fitHeight(lines().length);
 
   let shown: Line[] | null = null;
   let problemsShown = '';
