@@ -25,6 +25,24 @@ export interface WidgetLabels {
   /** Heads the column of week numbers: short, and in full. */
   weekShort: string;
   week: string;
+  /** The formatted-text toolbar and its buttons. */
+  formatting: string;
+  bold: string;
+  italic: string;
+  underline: string;
+  textStyle: string;
+  paragraph: string;
+  heading: string;
+  subheading: string;
+  bulletList: string;
+  numberList: string;
+  alignLeft: string;
+  alignCenter: string;
+  alignRight: string;
+  link: string;
+  linkAddress: string;
+  applyLink: string;
+  removeLink: string;
   upload: string;
   uploadImage: string;
   replace: string;
@@ -52,6 +70,23 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     nextMonth: 'Next month',
     weekShort: 'Wk',
     week: 'Week',
+    formatting: 'Formatting',
+    bold: 'Bold',
+    italic: 'Italic',
+    underline: 'Underline',
+    textStyle: 'Text style',
+    paragraph: 'Paragraph',
+    heading: 'Heading',
+    subheading: 'Subheading',
+    bulletList: 'Bulleted list',
+    numberList: 'Numbered list',
+    alignLeft: 'Align left',
+    alignCenter: 'Align centre',
+    alignRight: 'Align right',
+    link: 'Link',
+    linkAddress: 'Link address',
+    applyLink: 'Apply',
+    removeLink: 'Remove link',
     upload: 'Upload a file',
     uploadImage: 'Add a photo',
     replace: 'Replace',
@@ -77,6 +112,23 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     nextMonth: 'الشهر التالي',
     weekShort: 'أسبوع',
     week: 'الأسبوع',
+    formatting: 'التنسيق',
+    bold: 'غامق',
+    italic: 'مائل',
+    underline: 'تسطير',
+    textStyle: 'نمط النص',
+    paragraph: 'فقرة',
+    heading: 'عنوان',
+    subheading: 'عنوان فرعي',
+    bulletList: 'قائمة نقطية',
+    numberList: 'قائمة مرقمة',
+    alignLeft: 'محاذاة لليسار',
+    alignCenter: 'توسيط',
+    alignRight: 'محاذاة لليمين',
+    link: 'رابط',
+    linkAddress: 'عنوان الرابط',
+    applyLink: 'تطبيق',
+    removeLink: 'إزالة الرابط',
     upload: 'رفع ملف',
     uploadImage: 'إضافة صورة',
     replace: 'استبدال',
@@ -102,6 +154,23 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     nextMonth: 'Nächster Monat',
     weekShort: 'KW',
     week: 'Kalenderwoche',
+    formatting: 'Formatierung',
+    bold: 'Fett',
+    italic: 'Kursiv',
+    underline: 'Unterstrichen',
+    textStyle: 'Textstil',
+    paragraph: 'Absatz',
+    heading: 'Überschrift',
+    subheading: 'Unterüberschrift',
+    bulletList: 'Aufzählung',
+    numberList: 'Nummerierte Liste',
+    alignLeft: 'Linksbündig',
+    alignCenter: 'Zentriert',
+    alignRight: 'Rechtsbündig',
+    link: 'Link',
+    linkAddress: 'Linkadresse',
+    applyLink: 'Übernehmen',
+    removeLink: 'Link entfernen',
     upload: 'Datei hochladen',
     uploadImage: 'Foto hinzufügen',
     replace: 'Ersetzen',
@@ -127,6 +196,23 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     nextMonth: 'Mois suivant',
     weekShort: 'Sem.',
     week: 'Semaine',
+    formatting: 'Mise en forme',
+    bold: 'Gras',
+    italic: 'Italique',
+    underline: 'Souligné',
+    textStyle: 'Style du texte',
+    paragraph: 'Paragraphe',
+    heading: 'Titre',
+    subheading: 'Sous-titre',
+    bulletList: 'Liste à puces',
+    numberList: 'Liste numérotée',
+    alignLeft: 'Aligner à gauche',
+    alignCenter: 'Centrer',
+    alignRight: 'Aligner à droite',
+    link: 'Lien',
+    linkAddress: 'Adresse du lien',
+    applyLink: 'Appliquer',
+    removeLink: 'Supprimer le lien',
     upload: 'Téléverser un fichier',
     uploadImage: 'Ajouter une photo',
     replace: 'Remplacer',

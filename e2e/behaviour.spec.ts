@@ -417,6 +417,39 @@ test.describe('every field', () => {
     expect(await value(page, 'start_date')).toBe('2026-10-22');
   });
 
+  test('formatted text: the toolbar makes bold, a heading, a centred line and a link, and keeps them safe', async ({ page }) => {
+    await open(page, variant, 'page=fields&skin=outlined');
+    const brief = node(page, 'f-brief');
+    const text = brief.locator('[contenteditable]');
+    const bar = brief.getByRole('toolbar', { name: 'Formatting' });
+    /** Select the first word of the first paragraph, as a drag across it would. */
+    const selectFirstWord = () =>
+      text.evaluate((el) => {
+        const first = document.createTreeWalker(el, NodeFilter.SHOW_TEXT).nextNode()!;
+        const range = document.createRange();
+        range.setStart(first, 0);
+        range.setEnd(first, 4);
+        (el as HTMLElement).focus();
+        getSelection()!.removeAllRanges();
+        getSelection()!.addRange(range);
+      });
+    await selectFirstWord();
+    await bar.getByRole('button', { name: 'Bold' }).click();
+    await expect.poll(() => value(page, 'brief')).toMatch(/<b>Calm<\/b>/);
+    await expect(bar.getByRole('button', { name: 'Bold' })).toHaveAttribute('aria-pressed', 'true');
+    await bar.getByLabel('Text style').selectOption('h2');
+    await expect.poll(() => value(page, 'brief')).toMatch(/^<h2>/);
+    await bar.getByRole('button', { name: 'Align centre' }).click();
+    await expect.poll(() => value(page, 'brief')).toMatch(/<h2 style="text-align: center;">/);
+    await selectFirstWord();
+    await bar.getByRole('button', { name: 'Link' }).click();
+    await brief.getByLabel('Link address').fill('niletraders.example');
+    await brief.getByRole('button', { name: 'Apply' }).click();
+    await expect.poll(() => value(page, 'brief')).toMatch(/<a href="https:\/\/niletraders\.example">/);
+    await text.scrollIntoViewIfNeeded();
+    await screen(page, `${variant}-fields-richtext`);
+  });
+
   test('a folded section opens from its title and shows its fields', async ({ page }) => {
     await open(page, variant, 'page=fields');
     const title = node(page, 's-structured').getByRole('button', { name: 'Structured data' });

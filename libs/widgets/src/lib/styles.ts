@@ -249,6 +249,24 @@ export const FIELDIA_CSS = /* css */ `
 .fd-avatar .fd-image-pick { width: 88px; height: 88px; }
 .fd-image-preview { max-width: 160px; max-height: 160px; border-radius: var(--fd-control-radius); border: 1px solid var(--fd-border); object-fit: cover; background: var(--fd-page); }
 .fd-richtext { min-height: 96px; line-height: 1.5; overflow-wrap: anywhere; }
+.fd-richtext-box { display: grid; gap: 0; min-width: 0; }
+.fd-richtext-box > .fd-richtext { border-start-start-radius: 0; border-start-end-radius: 0; }
+.fd-richtext-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 4px; min-width: 0;
+  border: 1px solid var(--fd-border); border-block-end: none; border-start-start-radius: var(--fd-control-radius); border-start-end-radius: var(--fd-control-radius);
+  background: var(--fd-page);
+}
+.fd-richtext-style { font: inherit; font-size: 12.5px; padding: 3px 6px; margin-inline-end: 4px; border: 1px solid var(--fd-border); border-radius: 4px; background: var(--fd-surface); color: var(--fd-text); }
+.fd-richtext-tool {
+  display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: none; border-radius: 4px;
+  background: none; cursor: pointer; color: var(--fd-text); font: inherit; font-size: 14px;
+}
+.fd-richtext-tool:hover { background: var(--fd-surface); }
+.fd-richtext-tool[aria-pressed="true"] { background: var(--fd-accent-soft); color: var(--fd-accent); }
+.fd-richtext-tool svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; }
+.fd-richtext-tool svg circle { fill: currentColor; stroke: none; }
+.fd-link-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; border: 1px solid var(--fd-border); border-block-end: none; background: var(--fd-surface); }
+.fd-link-row > .fd-input { flex: 1 1 200px; min-width: 0; }
 .fd-richtext[contenteditable="false"] { background: transparent; border-color: transparent; padding-inline: 0; min-height: 0; }
 .fd-richtext p { margin: 0 0 6px; }
 .fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; min-height: 96px; }

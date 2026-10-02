@@ -3,13 +3,13 @@ import { createWidget } from './widgets';
 import { WIDGET_LABELS } from './labels';
 import { sanitizeHtml } from './extras';
 
-function setup(field: Record<string, unknown>, readonly = false) {
+function setup(field: Record<string, unknown>, readonly = false, options?: Record<string, unknown>) {
   const page = {
     fieldia: '0.1',
     id: 't',
     data: { kind: 'responses' },
     fields: { x: { label: 'Contract', ...field } as Field },
-    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n', field: 'x' }] },
+    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n', field: 'x', ...(options ? { options } : {}) }] },
   } as Page;
   const form = createForm({ page });
   const widget = createWidget({ form, name: 'x', field: page.fields['x'], node: (page.layout as { children: FieldNode[] }).children[0], id: 'fd-x', document, labels: WIDGET_LABELS.en });
@@ -111,7 +111,74 @@ describe('formatted text', () => {
   });
 });
 
+describe('formatted text toolbar', () => {
+  let commands: [string, string | undefined][] = [];
+  beforeEach(() => {
+    commands = [];
+    (document as unknown as { execCommand: unknown }).execCommand = (command: string, _ui: boolean, value?: string) => {
+      commands.push([command, value]);
+      return true;
+    };
+  });
+
+  it('offers the formatting a business text needs, as a toolbar', () => {
+    const { el } = setup({ type: 'html' });
+    const bar = el.querySelector('[role="toolbar"]') as HTMLElement;
+    expect(bar.getAttribute('aria-label')).toBe('Formatting');
+    expect([...bar.querySelectorAll('button')].map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Bold', 'Italic', 'Underline', 'Bulleted list', 'Numbered list', 'Align left', 'Align centre', 'Align right', 'Link',
+    ]);
+    expect((bar.querySelector('select') as HTMLSelectElement).getAttribute('aria-label')).toBe('Text style');
+    const area = q<HTMLElement>(el, '[contenteditable]');
+    expect(area.id).toBe('fd-x');
+    expect(area.getAttribute('aria-labelledby')).toBe('fd-x-label');
+  });
+
+  it('applies each format to what is selected', () => {
+    const { el } = setup({ type: 'html' });
+    const press = (name: string) => (el.querySelector(`[role="toolbar"] button[aria-label="${name}"]`) as HTMLButtonElement).click();
+    press('Bold');
+    press('Bulleted list');
+    press('Align centre');
+    const style = el.querySelector('[role="toolbar"] select') as HTMLSelectElement;
+    style.value = 'h2';
+    style.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(commands).toEqual([
+      ['bold', undefined],
+      ['insertUnorderedList', undefined],
+      ['justifyCenter', undefined],
+      ['formatBlock', '<h2>'],
+    ]);
+  });
+
+  it('asks for a link’s address in place, and only takes a web or mail address', () => {
+    const { el } = setup({ type: 'html' });
+    (el.querySelector('[role="toolbar"] button[aria-label="Link"]') as HTMLButtonElement).click();
+    const address = el.querySelector('input[aria-label="Link address"]') as HTMLInputElement;
+    expect(address).not.toBeNull();
+    address.value = 'javascript:alert(1)';
+    (el.querySelector('button.fd-link-apply') as HTMLButtonElement).click();
+    expect(commands).toEqual([]);
+    address.value = 'niletraders.example/terms';
+    (el.querySelector('button.fd-link-apply') as HTMLButtonElement).click();
+    expect(commands).toEqual([['createLink', 'https://niletraders.example/terms']]);
+  });
+
+  it('has no toolbar when read-only, or when the page turns it off', () => {
+    expect(setup({ type: 'html' }, true).el.querySelector('[role="toolbar"]')?.closest('[hidden]')).not.toBeFalsy();
+    expect(setup({ type: 'html' }, false, { toolbar: false }).el.querySelector('[role="toolbar"]')).toBeNull();
+  });
+});
+
 describe('sanitizeHtml', () => {
+  it('keeps a block’s alignment, and no other style', () => {
+    expect(sanitizeHtml('<p style="text-align: center; color: red">x</p><h2 style="text-align:right">t</h2>')).toBe(
+      '<p style="text-align: center;">x</p><h2 style="text-align: right;">t</h2>'
+    );
+    expect(sanitizeHtml('<span style="text-align: center">x</span><p style="text-align: url(evil)">y</p>')).toBe('<span>x</span><p>y</p>');
+  });
+
+
   it('keeps text structure and safe links, and drops everything else', () => {
     expect(sanitizeHtml('<h2>Terms</h2><ul><li>One</li></ul><a href="https://x.example" target="_blank">x</a><iframe src="//e"></iframe>')).toBe(
       '<h2>Terms</h2><ul><li>One</li></ul><a href="https://x.example">x</a>'
