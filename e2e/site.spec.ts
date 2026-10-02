@@ -4,7 +4,7 @@ import { expectNoSidewaysScroll } from './support';
 /** fieldia.dev, as built into dist/site and served on its own port. */
 /** `SITE_URL=https://fieldia.dev npx playwright test e2e/site.spec.ts` runs the same checks on the live site. */
 const SITE = process.env['SITE_URL'] ?? 'http://127.0.0.1:4322';
-const PAGES = ['/', '/start/', '/pages/', '/fields/', '/data/', '/look/', '/demos/'];
+const PAGES = ['/', '/start/', '/pages/', '/fields/', '/data/', '/behaviour/', '/look/', '/demos/'];
 
 function watch(page: Page) {
   const problems: string[] = [];

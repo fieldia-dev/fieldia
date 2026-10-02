@@ -85,6 +85,24 @@ ${code(
 }`
 )}
 
+<p>A filter's items all hold together; a group of ${c('any')} holds when one of its items does, and ${c('all')} groups nest inside it. Besides ${c('=')} ${c('!=')} ${c('<')} ${c('>')} ${c('<=')} ${c('>=')} ${c('in')} ${c('not in')}, a condition can find text with ${c('like')} (as typed), ${c('ilike')}, ${c('startswith')} or ${c('endswith')} (whatever the case), ask whether a field is ${c('set')} or ${c('notset')}, or take a value ${c('between')} two:</p>
+${code(
+  'json',
+  `
+"approver_id": {
+  "type": "many2one",
+  "label": "Signs off the design",
+  "relation": "employee",
+  "filter": [
+    { "field": "active", "op": "set" },
+    { "any": [
+      { "field": "job", "op": "startswith", "value": "Head of" },
+      { "field": "job", "op": "endswith", "value": "manager" }
+    ] }
+  ]
+}`
+)}
+
 <p>When nothing found has the name that was typed, the list ends with <em>Create “…”</em>: it makes the record through the data source's ${c('create')} and links to it. It is offered only when the data source can create, and never on a node with ${c('"create": false')}.</p>
 
 <h2 id="dialogs">Records in dialogs</h2>

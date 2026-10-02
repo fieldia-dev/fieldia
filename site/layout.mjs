@@ -5,6 +5,7 @@ export const DOCS = [
   { path: '/pages/', title: 'The page format' },
   { path: '/fields/', title: 'Fields' },
   { path: '/data/', title: 'Data sources' },
+  { path: '/behaviour/', title: 'Behaviour' },
   { path: '/look/', title: 'Skins and languages' },
   { path: '/demos/', title: 'Demos' },
 ];
