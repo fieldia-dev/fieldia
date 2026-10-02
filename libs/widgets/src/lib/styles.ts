@@ -166,6 +166,33 @@ export const FIELDIA_CSS = /* css */ `
 .fd-form :focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
 .fd-form .fd-input:focus-visible { outline: none; }
 
+/* ---- pickers: many2one, many2many, reference ------------------------------ */
+.fd-combo { position: relative; display: flex; align-items: center; min-width: 0; }
+.fd-combo-input { padding-inline-end: 28px; }
+.fd-combo-clear {
+  position: absolute; inset-inline-end: 4px; border: none; background: none; cursor: pointer; color: var(--fd-muted);
+  font-size: 16px; line-height: 1; padding: 2px 6px; border-radius: 4px;
+}
+.fd-combo-clear:hover { color: var(--fd-text); background: var(--fd-page); }
+.fd-listbox {
+  position: absolute; inset-inline: 0; inset-block-start: calc(100% + 2px); z-index: 20; margin: 0; padding: 4px 0;
+  list-style: none; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 4px);
+  box-shadow: 0 8px 24px rgba(15, 20, 25, 0.12); max-height: 240px; overflow-y: auto;
+}
+.fd-option { padding: 6px 12px; cursor: pointer; }
+.fd-option:hover, .fd-option.fd-active { background: var(--fd-accent-soft); }
+.fd-empty { padding: 6px 12px; color: var(--fd-muted); font-style: italic; }
+.fd-tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
+.fd-chips { display: contents; list-style: none; margin: 0; padding: 0; }
+.fd-chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 1px 4px 1px 10px; border-radius: 999px;
+  background: var(--fd-accent-soft); color: var(--fd-text); font-size: 13px; line-height: 22px;
+}
+.fd-chip-remove { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 15px; line-height: 1; padding: 0 4px; border-radius: 999px; }
+.fd-chip-remove:hover { color: var(--fd-error); }
+.fd-tags .fd-combo { flex: 1 1 140px; }
+.fd-reference { display: grid; grid-template-columns: minmax(7em, 34%) minmax(0, 1fr); gap: 8px; }
+
 /* ---- sections, tabs ---------------------------------------------------- */
 .fd-sections { display: grid; gap: 24px; }
 .fd-section { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 14px; }

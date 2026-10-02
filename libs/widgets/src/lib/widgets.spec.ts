@@ -253,10 +253,10 @@ describe('every widget', () => {
   });
 
   it('shows what it holds for a type that has no editor yet', () => {
-    const { form, el } = setup({ type: 'many2one', relation: 'country' });
-    form.setValue('x', { id: 1, label: 'Egypt' });
-    expect(el.textContent).toBe('Egypt');
-    expect(el.getAttribute('data-fd-pending')).toBe('many2one');
+    const { form, el } = setup({ type: 'properties' });
+    form.setValue('x', { colour: 'teal' });
+    expect(el.textContent).toBe('{"colour":"teal"}');
+    expect(el.getAttribute('data-fd-pending')).toBe('properties');
   });
 });
 
