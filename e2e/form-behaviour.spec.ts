@@ -118,12 +118,12 @@ for (const variant of VARIANTS) {
       expect(await phone.evaluate((el) => [getComputedStyle(el).backgroundColor, getComputedStyle(el).borderTopColor])).toEqual(['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0)']);
       expect(await node(page, 'f-region').getByRole('combobox').evaluate((el) => getComputedStyle(el, '::placeholder').color)).toBe('rgba(0, 0, 0, 0)');
       await screen(page, `${variant}-locked-record`, { viewport: true });
-      await page.getByRole('button', { name: 'Edit' }).click();
+      await page.getByRole('button', { name: 'Edit', exact: true }).click();
       await expect(phone).toBeEditable();
       await phone.fill('+20 2 1111 2222');
-      await page.getByRole('button', { name: 'Done' }).click();
+      await page.getByRole('button', { name: 'Done', exact: true }).click();
       await expect(phone).not.toBeEditable();
-      await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
       expect(await demo<string>('dataSource.records.partner.1.phone')).toBe('+20 2 1111 2222');
     });
 

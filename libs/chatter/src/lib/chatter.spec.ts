@@ -358,3 +358,93 @@ describe('followers', () => {
     expect(host.querySelector('.fd-followers-toggle')).toBeNull();
   });
 });
+
+describe('the chatter, holding its ground', () => {
+  it('sends nothing while a file is still on its way', async () => {
+    let arrive: (() => void) | undefined;
+    const base = source();
+    const slow = { ...base, upload: (record: { model: string; id: number | string }, file: File) => new Promise<never>((resolve) => (arrive = () => void base.upload!(record, file).then(resolve as never))) };
+    const host = await mount(slow as ChatterSource);
+    button(host, 'Send message')!.click();
+    choose(host.querySelector('.fd-composer input[type=file]') as HTMLInputElement, [new File(['x'], 'big.pdf', { type: 'application/pdf' })]);
+    type(host.querySelector('.fd-composer textarea') as HTMLTextAreaElement, 'With the file.');
+    button(host, 'Send')!.click();
+    await flush();
+    expect(base.posted).toEqual([]);
+    arrive!();
+    await until(() => host.querySelector('.fd-composer .fd-attachment'));
+    button(host, 'Send')!.click();
+    await until(() => base.posted.length);
+    expect(base.posted[0].attachments?.map((a) => a.name)).toEqual(['big.pdf']);
+  });
+
+  it('sends as mentioned only who is still mentioned in the text', async () => {
+    const chatter = source();
+    const host = await mount(chatter);
+    button(host, 'Send message')!.click();
+    const box = host.querySelector('.fd-composer textarea') as HTMLTextAreaElement;
+    type(box, 'Over to @mo');
+    box.setSelectionRange(box.value.length, box.value.length);
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    await until(() => host.querySelector('.fd-mentions [role=option]'));
+    box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    type(box, 'Over to the team after all.');
+    button(host, 'Send')!.click();
+    await until(() => chatter.posted.length);
+    expect(chatter.posted[0].mentions).toEqual([]);
+  });
+
+  it('shows others’ reactions unpressed, and the person’s own pressed', async () => {
+    const chatter = createMemoryChatter({
+      me,
+      records: { 'sale.order:7': { messages: [{ id: 5, kind: 'message', author: mona, date: '2026-10-01T10:00:00Z', body: '<p>Done.</p>', reactions: [{ emoji: '❤️', count: 2, mine: false }] }] } },
+    });
+    const host = await mount(chatter);
+    const chip = messages(host)[0].querySelector('.fd-reaction') as HTMLButtonElement;
+    expect(chip.textContent).toBe('❤️ 2');
+    expect(chip.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('keeps a due date someone chose when the activity’s type changes', async () => {
+    const chatter = createMemoryChatter({
+      me,
+      people: [me, mona],
+      now: () => new Date('2026-10-02T09:30:00Z'),
+      activityTypes: [{ id: 'call', name: 'Call', daysUntilDue: 2 }, { id: 'todo', name: 'To-do', daysUntilDue: 0 }],
+    });
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountChatter(host, { source: chatter, record: order, now: () => new Date('2026-10-02T09:30:00Z') });
+    await flush();
+    button(host, 'Schedule activity')!.click();
+    const form = host.querySelector('.fd-activity-form') as HTMLElement;
+    await until(() => !form.hidden);
+    const due = form.querySelector('input[name="due"]') as HTMLInputElement;
+    due.value = '2026-10-15';
+    due.dispatchEvent(new Event('input', { bubbles: true }));
+    const kind = form.querySelector('select[name="type"]') as HTMLSelectElement;
+    kind.value = 'todo';
+    kind.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(due.value).toBe('2026-10-15');
+  });
+
+  it('never shows a slow answer about the record it has left', async () => {
+    const base = source();
+    let answerOld: (() => void) | undefined;
+    const slow: ChatterSource = {
+      ...base,
+      messages: (record) =>
+        record.id === 7 ? new Promise((resolve) => (answerOld = () => void base.messages(record).then(resolve))) : base.messages(record),
+    };
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountChatter(host, { source: slow, record: order });
+    await flush();
+    await handle.setRecord({ model: 'sale.order', id: 99 });
+    answerOld!();
+    await flush();
+    await flush();
+    expect(messages(host)).toHaveLength(0);
+    expect(host.querySelector('.fd-chatter-empty')?.textContent).toBe('No messages yet.');
+  });
+});

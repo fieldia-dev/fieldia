@@ -198,7 +198,7 @@ test.describe('customer sheet', () => {
     await page.getByRole('button', { name: 'Block', exact: true }).click();
     await expect(page.getByRole('alertdialog')).toContainText('Block this customer? New orders will be refused.');
     await screen(page, `${variant}-customer-confirm`);
-    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     expect(await demo<string[]>('actions')).toEqual([]);
     await page.getByRole('button', { name: 'Block', exact: true }).click();
     await page.getByRole('button', { name: 'OK' }).click();

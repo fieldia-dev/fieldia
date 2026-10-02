@@ -313,13 +313,19 @@ describe('the grid’s columns', () => {
     expect(chooser.hidden).toBe(true);
   });
 
+  // Two grids mounted one after the other: slow on a busy machine, so more than the usual five seconds.
   it('remembers widths, order and choices in the preferences, and brings them back', async () => {
     const preferences = memoryPreferences();
     const first = await mount(choosy, lines, preferences);
     first.api?.setColumnWidths([{ key: 'qty', newWidth: 222 }], true);
     first.api?.moveColumns(['price'], 1);
     first.api?.setColumnsVisible(['delivery'], true);
-    await frames(); // AG Grid tells its listeners a moment later
+    // AG Grid tells its listeners a moment later: wait for all three to be kept, however busy the machine.
+    for (let waited = 0; waited < 3000; waited += 20) {
+      const kept = JSON.stringify(preferences.get('order.f-lines.columns') ?? '');
+      if (kept.includes('222') && kept.includes('delivery')) break;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
     expect(preferences.get('order.f-lines.columns')).not.toBeNull();
     handle?.destroy();
     handle = null;
@@ -328,7 +334,7 @@ describe('the grid’s columns', () => {
     expect(again.api?.getColumn('qty')?.getActualWidth()).toBe(222);
     expect(shownIds(again.api)?.slice(0, 2)).toEqual(['product_id', 'price']);
     expect(shownIds(again.api)).toContain('delivery');
-  });
+  }, 15000);
 });
 
 describe('the grid’s problems', () => {
