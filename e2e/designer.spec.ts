@@ -46,6 +46,8 @@ test.describe('survey designer', () => {
 
     // The preview walks the branch.
     const preview = page.locator('.fd-designer-preview');
+    // The preview of the last change, not the one before it.
+    await expect(preview.locator('.fd-designer-preview-host')).not.toHaveAttribute('aria-busy', 'true');
     await expect(preview.locator('.fd-progress-text')).toHaveText('Step 1 of 1');
     await preview.getByLabel('Your name').fill('Sara');
     await preview.getByLabel('No').check();

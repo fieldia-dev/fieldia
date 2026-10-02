@@ -168,4 +168,13 @@ describe('survey editor', () => {
     await wait(200);
     expect(host.querySelector('.fd-designer-preview .fd-label')?.textContent).toBe('Your name');
   });
+
+  it('says the preview is busy while it is being drawn again, so no one tries the old one', async () => {
+    const { host } = mount();
+    const preview = host.querySelector('.fd-designer-preview-host') as HTMLElement;
+    button(host, 'Add question').click();
+    expect(preview.getAttribute('aria-busy')).toBe('true');
+    await wait(200);
+    expect(preview.hasAttribute('aria-busy')).toBe(false);
+  });
 });

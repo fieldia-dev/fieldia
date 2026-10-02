@@ -216,7 +216,10 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   function refreshPreview(page: Page) {
     if (options.preview === false || page === previewedPage) return;
     clearTimeout(previewTimer);
+    // Busy until drawn again: what is in it now is about to go.
+    previewHost.setAttribute('aria-busy', 'true');
     previewTimer = setTimeout(() => {
+      previewHost.removeAttribute('aria-busy');
       previewedPage = page;
       previewHandle?.destroy();
       previewHost.replaceChildren();
