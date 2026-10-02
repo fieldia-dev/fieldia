@@ -159,14 +159,15 @@ if (mode === 'publish') {
   // A reference, expanded by npm from the environment; the token itself is never written.
   writeFileSync(npmrc, '//registry.npmjs.org/:_authToken=${NPM_TOKEN}\n');
   const env = { ...process.env, npm_config_userconfig: npmrc };
-  for (const [i, { manifest }] of packages.entries()) {
-    let published = false;
+  const onNpm = (name) => {
     try {
-      published = run('npm', ['view', `${manifest.name}@${version}`, 'version'], WORKSPACE, env).trim() === version;
+      return run('npm', ['view', `${name}@${version}`, 'version'], WORKSPACE, env).trim() === version;
     } catch {
-      published = false;
+      return false; // npm answers 404 for a version it does not have
     }
-    if (published) {
+  };
+  for (const [i, { manifest }] of packages.entries()) {
+    if (onNpm(manifest.name)) {
       console.log(`  ${manifest.name}@${version} is already on npm`);
       continue;
     }
