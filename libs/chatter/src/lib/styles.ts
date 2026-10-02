@@ -26,6 +26,22 @@ export const CHATTER_STYLES = `
 .fd-message-body p:last-child { margin-bottom: 0; }
 .fd-message-body img { max-width: 100%; height: auto; }
 .fd-tracking { margin: 0; padding-inline-start: 18px; color: var(--fd-text); }
+.fd-composer-actions .fd-spacer { flex: 1; }
+.fd-attach .fd-icon { width: 1.1em; height: 1.1em; margin-inline-end: 0.35em; vertical-align: -0.2em; }
+.fd-attachments { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.fd-attachment { position: relative; display: flex; align-items: center; gap: 4px; }
+.fd-attachment-image img { display: block; width: 120px; height: 90px; object-fit: cover; border-radius: var(--fd-radius); border: 1px solid var(--fd-border); }
+.fd-attachment-file {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--fd-border); border-radius: var(--fd-radius);
+  background: var(--fd-surface); color: var(--fd-text); text-decoration: none; max-width: 240px;
+}
+a.fd-attachment-file:hover { border-color: var(--fd-accent); }
+.fd-attachment-file .fd-icon { width: 20px; height: 20px; color: var(--fd-muted); flex: none; }
+.fd-attachment-words { display: grid; min-width: 0; }
+.fd-attachment-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.fd-attachment-size { color: var(--fd-muted); font-size: 12px; }
+.fd-attachment-remove { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 4px; }
+.fd-attachment-remove:hover { color: var(--fd-text); background: var(--fd-page); }
 `;
 
 /** Puts the chatter's look in the document once. */

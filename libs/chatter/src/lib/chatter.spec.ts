@@ -123,3 +123,56 @@ describe('the conversation', () => {
     expect(host.querySelector('.fd-chatter-empty')?.textContent).toBe('No messages yet.');
   });
 });
+
+/** Picks files in a file box, as a person would. */
+function choose(input: HTMLInputElement, files: File[]) {
+  Object.defineProperty(input, 'files', { value: files, configurable: true });
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+async function until(check: () => unknown) {
+  for (let waited = 0; !check() && waited < 2000; waited += 10) await new Promise((resolve) => setTimeout(resolve, 10));
+}
+
+describe('attachments', () => {
+  it('uploads chosen files, shows them in the composer, and sends them: an image as a preview, a file as a link', async () => {
+    const chatter = source();
+    const host = await mount(chatter);
+    button(host, 'Send message')!.click();
+    const input = host.querySelector('.fd-composer input[type=file]') as HTMLInputElement;
+    expect(button(host, 'Attach a file')).toBeDefined();
+    choose(input, [new File(['png'], 'site.png', { type: 'image/png' }), new File(['plan'], 'plan.pdf', { type: 'application/pdf' })]);
+    await until(() => host.querySelectorAll('.fd-composer .fd-attachment').length === 2);
+    type(host.querySelector('.fd-composer textarea') as HTMLTextAreaElement, 'Photos from the site.');
+    button(host, 'Send')!.click();
+    await until(() => chatter.posted.length);
+    await flush();
+    expect(chatter.posted[0].attachments?.map((a) => a.name)).toEqual(['site.png', 'plan.pdf']);
+    const sent = messages(host)[0];
+    expect(sent.querySelector('.fd-attachment img')?.getAttribute('src')).toMatch(/^data:image\/png;base64,/);
+    const file = sent.querySelector('a.fd-attachment-file') as HTMLAnchorElement;
+    expect(file.textContent).toContain('plan.pdf');
+    expect(file.textContent).toContain('4 bytes');
+    expect(file.getAttribute('href')).toMatch(/^data:application\/pdf/);
+    expect(host.querySelectorAll('.fd-composer .fd-attachment')).toHaveLength(0);
+  });
+
+  it('takes a file away before sending', async () => {
+    const chatter = source();
+    const host = await mount(chatter);
+    button(host, 'Log note')!.click();
+    choose(host.querySelector('.fd-composer input[type=file]') as HTMLInputElement, [new File(['x'], 'old.txt', { type: 'text/plain' })]);
+    await until(() => host.querySelector('.fd-composer .fd-attachment'));
+    (host.querySelector('.fd-composer button[aria-label="Remove old.txt"]') as HTMLButtonElement).click();
+    type(host.querySelector('.fd-composer textarea') as HTMLTextAreaElement, 'Nothing attached after all.');
+    button(host, 'Log')!.click();
+    await until(() => chatter.posted.length);
+    expect(chatter.posted[0].attachments).toEqual([]);
+  });
+
+  it('offers no attaching when the source cannot store files', async () => {
+    const chatter = { ...source(), upload: undefined };
+    const host = await mount(chatter);
+    button(host, 'Send message')!.click();
+    expect(button(host, 'Attach a file')).toBeUndefined();
+  });
+});

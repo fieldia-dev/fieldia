@@ -1,5 +1,6 @@
 import { fill, type Locale } from '@fieldia/core';
 import { installStyles, sanitizeHtml, type IconSet } from '@fieldia/widgets';
+import { attachmentList, composerFiles } from './attachments';
 import { CHATTER_LABELS, type ChatterLabels } from './labels';
 import type { ChatterMessage, ChatterSource, Person, RecordRef } from './source';
 import { installChatterStyles } from './styles';
@@ -95,7 +96,15 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
   const post = el('button', { type: 'button', class: 'fd-button fd-button-primary' });
   const cancel = el('button', { type: 'button', class: 'fd-button' }, labels.cancel);
   const problem = el('p', { class: 'fd-chatter-problem', role: 'alert', hidden: '' });
-  const composer = el('div', { class: 'fd-composer', hidden: '' }, box, problem, el('div', { class: 'fd-composer-actions' }, post, cancel));
+  const say = (message: string) => {
+    problem.textContent = message;
+    problem.hidden = false;
+  };
+  const files = composerFiles(context, say);
+  const actions = el('div', { class: 'fd-composer-actions' }, post, cancel);
+  if (files.element) actions.append(el('span', { class: 'fd-spacer' }), files.element);
+  const composer = el('div', { class: 'fd-composer', hidden: '' }, box, files.chips, problem, actions);
+  files.takeDropsOn(composer);
 
   function openComposer(kind: 'message' | 'note') {
     mode = kind;
@@ -110,18 +119,20 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
   function closeComposer() {
     composer.hidden = true;
     box.value = '';
+    files.clear();
   }
   async function submit() {
     const current = record;
-    if (!current || !box.value.trim() || post.disabled) return;
+    // Words, files or both; and never while a file is still on its way.
+    const attachments = files.files();
+    if (!current || (!box.value.trim() && !attachments.length) || post.disabled || files.busy()) return;
     post.disabled = true;
     try {
-      await options.source.post(current, { kind: mode, body: textToHtml(box.value) });
+      await options.source.post(current, { kind: mode, body: box.value.trim() ? textToHtml(box.value) : '', attachments });
       closeComposer();
       await load();
     } catch (error) {
-      problem.textContent = fill(labels.couldNotSend, { reason: (error as Error).message });
-      problem.hidden = false;
+      say(fill(labels.couldNotSend, { reason: (error as Error).message }));
     } finally {
       post.disabled = false;
     }
@@ -170,6 +181,7 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
         )
       );
     }
+    if (message.attachments?.length) content.append(attachmentList(context, message.attachments));
     return el('li', { class: `fd-message fd-message-${message.kind}`, 'data-message': String(message.id) }, avatar(message.author), content);
   }
 
@@ -192,7 +204,6 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
   root.append(bar, waiting, composer, empty, list);
   host.append(root);
   void load();
-  void context;
 
   return {
     element: root,
