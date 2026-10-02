@@ -37,7 +37,7 @@ const fail = (message) => {
 
 // ---- which packages, in what order --------------------------------------------
 /** Dependencies before dependants, so a publish never points at a version npm does not have yet. */
-const ORDER = ['core', 'widgets', 'viewer', 'react', 'vue', 'angular', 'designer'];
+const ORDER = ['core', 'widgets', 'viewer', 'grid', 'react', 'vue', 'angular', 'designer'];
 const packages = ORDER.map((dir) => ({ dir, manifest: read(join(WORKSPACE, 'libs', dir, 'package.json')) })).filter((p) => !p.manifest.private);
 const version = packages[0].manifest.version;
 for (const { dir, manifest } of packages) {
@@ -70,7 +70,7 @@ const root = read(join(WORKSPACE, 'package.json'));
 const pin = (name) => `${name}@${(root.dependencies ?? {})[name] ?? root.devDependencies[name]}`.replace(/@[~^]/, '@');
 mkdirSync(SMOKE, { recursive: true });
 writeFileSync(join(SMOKE, 'package.json'), JSON.stringify({ name: 'fieldia-smoke', private: true, version: '0.0.0' }, null, 2));
-const peers = ['react', 'react-dom', '@types/react', 'vue', '@angular/core', '@angular/compiler', 'rxjs'].map(pin);
+const peers = ['react', 'react-dom', '@types/react', 'vue', '@angular/core', '@angular/compiler', 'rxjs', 'ag-grid-community'].map(pin);
 run('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', ...tarballs, ...peers], SMOKE);
 for (const { manifest } of packages) {
   const installed = read(join(SMOKE, 'node_modules', manifest.name, 'package.json')).version;
@@ -82,6 +82,7 @@ const EXPECT = {
   '@fieldia/core': ['validatePage', 'createForm', 'createMemoryDataSource', 'evaluateModifier'],
   '@fieldia/widgets': ['createWidget', 'installStyles', 'sanitizeHtml'],
   '@fieldia/viewer': ['mountViewer', 'VIEWER_LABELS'],
+  '@fieldia/grid': ['gridWidgets', 'gridWidget', 'gridApiOf'],
   '@fieldia/react': ['FieldiaForm', 'useFormState'],
   '@fieldia/vue': ['FieldiaForm', 'useFormState'],
   '@fieldia/angular': ['FieldiaFormComponent', 'FieldiaSlotDirective', 'formState'],
@@ -121,11 +122,12 @@ writeFileSync(
   join(SMOKE, 'types.mts'),
   `import { createForm, createMemoryDataSource, type Page } from '@fieldia/core';
 import { mountViewer, type ViewerHandle } from '@fieldia/viewer';
+import { gridWidgets } from '@fieldia/grid';
 import type { FieldiaFormProps } from '@fieldia/react';
 declare const page: Page;
 declare const host: HTMLElement;
 const form = createForm({ page, dataSource: createMemoryDataSource() });
-const viewer: ViewerHandle = mountViewer(host, { page, form, skin: 'outlined' });
+const viewer: ViewerHandle = mountViewer(host, { page, form, skin: 'outlined', widgets: gridWidgets });
 const props: FieldiaFormProps = { page, skin: 'underline' };
 export { viewer, props };
 `
