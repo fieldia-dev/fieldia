@@ -467,3 +467,57 @@ describe('the viewer itself', () => {
     expect(() => form.setValue('name', 'later')).not.toThrow();
   });
 });
+
+describe('related records in dialogs', () => {
+  const people = () =>
+    createMemoryDataSource({
+      records: {
+        project: { 1: { name: 'Fit-out', client_id: { id: 1, label: 'Nile Traders' } } },
+        partner: { 1: { name: 'Nile Traders', is_company: true, state: 'active' } },
+      },
+    });
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 250));
+  const formDialog = () => document.querySelector('.fd-form-dialog') as HTMLElement | null;
+
+  async function mountProject() {
+    const dataSource = people();
+    const host = document.createElement('div');
+    document.body.replaceChildren(host);
+    const viewer = mountViewer(host, { page: page('fields'), dataSource, recordId: 1, relatedPages: { partner: page('customer') } });
+    await viewer.form.settled();
+    return { host, viewer, dataSource, client: at(host, 'f-client').querySelector('input') as HTMLInputElement };
+  }
+
+  it('makes a new client in its own page, from the name typed, and links it', async () => {
+    const { host, viewer, dataSource, client } = await mountProject();
+    client.focus();
+    client.value = 'Hilton Cairo';
+    client.dispatchEvent(new Event('input', { bubbles: true }));
+    await settle();
+    ([...at(host, 'f-client').querySelectorAll('[role="option"]')].find((o) => o.textContent === 'Create and edit…') as HTMLElement).click();
+    await settle();
+    const title = formDialog()?.querySelector('.fd-title input') as HTMLInputElement;
+    expect(title.value).toBe('Hilton Cairo');
+    ([...(formDialog()?.querySelectorAll('.fd-form-dialog-foot button') ?? [])].find((b) => b.textContent === 'Save & Close') as HTMLButtonElement).click();
+    await settle();
+    expect(formDialog()).toBeNull();
+    expect(viewer.form.getState().values['client_id']).toEqual({ id: 2, label: 'Hilton Cairo' });
+    expect(dataSource.records['partner'][2]).toEqual(expect.objectContaining({ name: 'Hilton Cairo' }));
+    viewer.destroy();
+  });
+
+  it('opens the linked client, and a new name it is saved with follows back', async () => {
+    const { host, viewer, dataSource } = await mountProject();
+    (at(host, 'f-client').querySelector('button[aria-label="Open Nile Traders"]') as HTMLButtonElement).click();
+    await settle();
+    const title = formDialog()?.querySelector('.fd-title input') as HTMLInputElement;
+    expect(title.value).toBe('Nile Traders');
+    title.value = 'Nile Traders Ltd';
+    title.dispatchEvent(new Event('input', { bubbles: true }));
+    ([...(formDialog()?.querySelectorAll('.fd-form-dialog-foot button') ?? [])].find((b) => b.textContent === 'Save & Close') as HTMLButtonElement).click();
+    await settle();
+    expect(viewer.form.getState().values['client_id']).toEqual({ id: 1, label: 'Nile Traders Ltd' });
+    expect(dataSource.records['partner'][1]['name']).toBe('Nile Traders Ltd');
+    viewer.destroy();
+  });
+});

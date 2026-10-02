@@ -1,5 +1,6 @@
-import type { RecordId, Values } from '@fieldia/core';
-import { mountViewer, VIEWER_LABELS, type ViewerOptions } from './viewer';
+import type { Locale, RecordId, RelatedRecord, Values } from '@fieldia/core';
+import { WIDGET_LABELS } from '@fieldia/widgets';
+import { mountViewer, VIEWER_LABELS, type Skin, type ViewerOptions } from './viewer';
 
 /**
  * A page in a dialog: a new related record, a line to edit, a quick task. The
@@ -121,5 +122,119 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
         }
       }
     });
+  });
+}
+
+export interface SearchDialogOptions {
+  title: string;
+  /** Finds records for what is typed: the field's own search, filter and all. */
+  search(query: string, limit: number): Promise<RelatedRecord[]>;
+  locale?: Locale;
+  skin?: Skin;
+  dir?: 'ltr' | 'rtl';
+  /** Where the dialog goes: the document's body by default. */
+  container?: HTMLElement;
+}
+
+/**
+ * A searchable list in a dialog, for "Search more…": every record the field may
+ * point to, narrowed as the person types, picked with a click or the keyboard.
+ * Resolves with the record picked, or null when closed.
+ */
+export function openSearchDialog(options: SearchDialogOptions): Promise<RelatedRecord | null> {
+  const doc = options.container?.ownerDocument ?? document;
+  const container = options.container ?? doc.body;
+  const opener = doc.activeElement instanceof doc.defaultView!.HTMLElement ? (doc.activeElement as HTMLElement) : null;
+  const labels = VIEWER_LABELS[options.locale ?? 'en'];
+  const words = WIDGET_LABELS[options.locale ?? 'en'];
+  const id = `fd-dialog-${++dialogs}`;
+  const make = <K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, text?: string) => {
+    const element = doc.createElement(tag);
+    for (const [name, value] of Object.entries(attrs)) element.setAttribute(name, value);
+    if (text !== undefined) element.textContent = text;
+    return element;
+  };
+  const title = make('h2', { id: `${id}-title`, class: 'fd-form-dialog-title' }, options.title);
+  const closeButton = make('button', { type: 'button', class: 'fd-dialog-close', 'aria-label': labels.close }, '×');
+  const query = make('input', { type: 'search', class: 'fd-input', 'aria-label': words.search, placeholder: words.search, 'aria-controls': `${id}-list`, autocomplete: 'off' });
+  const list = make('ul', { id: `${id}-list`, class: 'fd-search-list', role: 'listbox', 'aria-labelledby': title.id });
+  const cancel = make('button', { type: 'button', class: 'fd-button' }, labels.cancel);
+  const box = make('div', {
+    class: `fd-theme fd-form-dialog fd-search-dialog fd-size-small`,
+    'data-fd-skin': options.skin ?? 'underline',
+    role: 'dialog',
+    'aria-modal': 'true',
+    'aria-labelledby': title.id,
+  });
+  if (options.dir) box.setAttribute('dir', options.dir);
+  const head = make('div', { class: 'fd-form-dialog-head' });
+  head.append(title, closeButton);
+  const body = make('div', { class: 'fd-form-dialog-body fd-search-body' });
+  body.append(query, list);
+  const foot = make('div', { class: 'fd-actions fd-actions-end fd-form-dialog-foot' });
+  foot.append(cancel);
+  box.append(head, body, foot);
+  const backdrop = make('div', { class: 'fd-dialog-backdrop fd-form-dialog-backdrop' });
+  backdrop.append(box);
+  container.append(backdrop);
+  query.focus();
+
+  return new Promise((resolve) => {
+    let found: RelatedRecord[] = [];
+    let active = -1;
+    let asked = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const close = (picked: RelatedRecord | null) => {
+      clearTimeout(timer);
+      asked++;
+      backdrop.remove();
+      opener?.focus();
+      resolve(picked);
+    };
+    const draw = () => {
+      list.replaceChildren(
+        ...found.map((record, i) => {
+          const option = make('li', { id: `${id}-option-${i}`, role: 'option', class: `fd-option${i === active ? ' fd-active' : ''}`, 'aria-selected': String(i === active) }, record.label);
+          option.addEventListener('click', () => close(record));
+          return option;
+        })
+      );
+      if (!found.length) list.append(make('li', { class: 'fd-empty' }, words.noResults));
+      if (active >= 0) query.setAttribute('aria-activedescendant', `${id}-option-${active}`);
+      else query.removeAttribute('aria-activedescendant');
+    };
+    const look = () => {
+      clearTimeout(timer);
+      const mine = ++asked;
+      timer = setTimeout(async () => {
+        const records = await options.search(query.value, 80).catch(() => [] as RelatedRecord[]);
+        if (mine !== asked) return; // a newer search, or the dialog closed
+        found = records;
+        active = -1;
+        draw();
+      }, 180);
+    };
+    query.addEventListener('input', look);
+    query.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (!found.length) return;
+        active = (active + (event.key === 'ArrowDown' ? 1 : -1) + found.length) % found.length;
+        draw();
+        list.children[active]?.scrollIntoView?.({ block: 'nearest' });
+      } else if (event.key === 'Enter' && active >= 0) {
+        event.preventDefault();
+        close(found[active]);
+      }
+    });
+    cancel.addEventListener('click', () => close(null));
+    closeButton.addEventListener('click', () => close(null));
+    box.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        close(null);
+      }
+    });
+    look();
   });
 }

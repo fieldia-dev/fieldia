@@ -2,6 +2,7 @@ import {
   createForm,
   validatePage,
   type ButtonNode,
+  type Field,
   type FieldNode,
   type Form,
   type FormOptions,
@@ -18,7 +19,8 @@ import {
   type Locale,
   MESSAGES,
 } from '@fieldia/core';
-import { browserPreferences, createWidget, installStyles, WIDGET_LABELS, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
+import { browserPreferences, createWidget, installStyles, WIDGET_LABELS, type PreferenceStore, type WidgetDialogs, type WidgetFactory } from '@fieldia/widgets';
+import { openFormDialog, openSearchDialog } from './dialog';
 
 export type Skin = 'underline' | 'outlined';
 
@@ -153,6 +155,11 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
   preferences?: PreferenceStore;
   /** False when something around the page saves it, such as a dialog: the page's own Save, Discard and Submit stay hidden. */
   showActions?: boolean;
+  /**
+   * Pages for the models links point to, so a link can show its record in a
+   * dialog: Create and edit…, and the button that opens the linked record.
+   */
+  relatedPages?: Record<string, Page> | ((model: string) => Page | null | undefined);
 }
 
 export interface ViewerHandle {
@@ -184,6 +191,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   const page = checked.page;
   const locale = options.locale ?? 'en';
   const preferences = options.preferences ?? browserPreferences();
+  const dialogs = pageDialogs(options);
   const ownsForm = !options.form;
   const form = options.form ?? createForm({ ...options, page, messages: options.messages ?? MESSAGES[locale] });
   const labels: ViewerLabels = { ...VIEWER_LABELS[locale], ...options.labels };
@@ -216,7 +224,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const wrapper = el('div', { class: 'fd-field', 'data-node': node.id, 'data-field': node.field, 'data-type': def.type });
     if (node.colspan) wrapper.style.setProperty('--fd-span', String(node.colspan));
     const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, node.label ?? def.label);
-    const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale }, options.widgets);
+    const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs }, options.widgets);
     if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) {
       // `for` stays: a custom field that puts the id on its own input is
       // labelled natively. Only a wrapper with a role (a radio group, say) may
@@ -595,7 +603,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     if (config.visibleStates) barOptions['visibleStates'] = config.visibleStates;
     const node: FieldNode = { type: 'field', id: '#statusbar', field: config.field, widget: 'statusbar', options: barOptions };
     const widget = createWidget(
-      { form, name: config.field, field: def, node, id: uid('statusbar'), document: doc, labels: widgetLabels, preferences, locale },
+      { form, name: config.field, field: def, node, id: uid('statusbar'), document: doc, labels: widgetLabels, preferences, locale, dialogs },
       options.widgets
     );
     updaters.push((state) =>
@@ -678,6 +686,76 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       for (const cleanup of cleanups) cleanup();
       root.remove();
       if (ownsForm) form.dispose();
+    },
+  };
+}
+
+/** The field a page's records are named by: its title, or "name", or its first line of text. */
+function nameFieldOf(page: Page): string | null {
+  if (page.layout.type === 'sheet' && page.layout.title?.field) return page.layout.title.field;
+  if (page.fields['name']) return 'name';
+  return Object.entries(page.fields).find(([, def]) => def.type === 'char')?.[0] ?? null;
+}
+
+/** A form made of fields, for values edited in a dialog (a line, for one). */
+function valuesPage(fields: Record<string, Field>, title: string, readonly: boolean): Page {
+  const shown = Object.fromEntries(Object.entries(fields).map(([name, def]) => [name, readonly ? { ...def, readonly: true } : def])) as Page['fields'];
+  return {
+    fieldia: '0.1',
+    id: 'values',
+    title,
+    data: { kind: 'record', model: 'values' },
+    fields: shown,
+    layout: {
+      type: 'sections',
+      id: 'values',
+      children: [{ type: 'section', id: 'values-section', columns: 2, children: Object.keys(shown).map((name) => ({ type: 'field' as const, id: `values-${name}`, field: name })) }],
+    },
+  };
+}
+
+/** The dialogs a page's widgets may open, made from the viewer's own options. */
+function pageDialogs(options: ViewerOptions): WidgetDialogs {
+  const pageFor = (model: string) =>
+    (typeof options.relatedPages === 'function' ? options.relatedPages(model) : options.relatedPages?.[model]) ?? null;
+  // A dialog's page looks and reads like the page that opened it, and can open dialogs of its own.
+  const shared = {
+    locale: options.locale,
+    skin: options.skin,
+    dir: options.dir,
+    widgets: options.widgets,
+    preferences: options.preferences,
+    relatedPages: options.relatedPages,
+  };
+  return {
+    canOpen: (model) => pageFor(model) !== null,
+    async openRecord(model, request) {
+      const related = pageFor(model);
+      if (!related) return null;
+      const nameField = nameFieldOf(related);
+      const result = await openFormDialog({
+        ...shared,
+        page: related,
+        dataSource: options.dataSource,
+        recordId: request.recordId ?? null,
+        values: request.name && nameField ? { [nameField]: request.name } : undefined,
+        title: request.title,
+        size: 'large',
+      });
+      if (!result.saved || result.recordId === null) return null;
+      const name = nameField ? result.values[nameField] : null;
+      return { id: result.recordId, label: typeof name === 'string' && name ? name : request.name ?? request.title };
+    },
+    searchMore: (request) => openSearchDialog({ title: request.title, search: request.search, locale: options.locale, skin: options.skin, dir: options.dir }),
+    async editValues(request) {
+      const result = await openFormDialog({
+        ...shared,
+        page: valuesPage(request.fields, request.title, request.readonly === true),
+        values: request.values,
+        title: request.title,
+        mode: 'values',
+      });
+      return result.saved ? result.values : null;
     },
   };
 }

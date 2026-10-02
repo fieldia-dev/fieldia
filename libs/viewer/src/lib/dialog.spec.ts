@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMemoryDataSource, type Page } from '@fieldia/core';
-import { openFormDialog } from './dialog';
+import { openFormDialog, openSearchDialog } from './dialog';
 
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', 'examples', 'pages');
 const page = (name: string): Page => JSON.parse(readFileSync(join(EXAMPLES, `${name}.page.json`), 'utf8'));
@@ -102,5 +102,44 @@ describe('a form in a dialog', () => {
     last.focus();
     last.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
     expect(document.activeElement).toBe(focusables[0]);
+  });
+});
+
+describe('a searchable list in a dialog', () => {
+  const countries = [
+    { id: 1, label: 'Egypt' },
+    { id: 2, label: 'Jordan' },
+    { id: 3, label: 'Japan' },
+  ];
+  const search = async (query: string) => countries.filter((c) => c.label.toLowerCase().includes(query.toLowerCase()));
+  const items = () => [...(dialog()?.querySelectorAll('[role="option"]') ?? [])].map((o) => o.textContent);
+
+  it('lists the records, narrows them as you type, and picks with the keyboard', async () => {
+    const result = openSearchDialog({ title: 'Country', search });
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(document.getElementById(dialog()?.getAttribute('aria-labelledby') as string)?.textContent).toBe('Country');
+    expect(items()).toEqual(['Egypt', 'Jordan', 'Japan']);
+    const box = dialog()?.querySelector('input[type="search"]') as HTMLInputElement;
+    expect(document.activeElement).toBe(box);
+    box.value = 'ja';
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(items()).toEqual(['Japan']);
+    box.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(await result).toEqual({ id: 3, label: 'Japan' });
+    expect(dialog()).toBeNull();
+    expect(document.activeElement).toBe(opener);
+  });
+
+  it('picks with a click, and Escape closes it picking nothing', async () => {
+    const clicked = openSearchDialog({ title: 'Country', search });
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    ([...(dialog()?.querySelectorAll('[role="option"]') ?? [])][1] as HTMLElement).click();
+    expect(await clicked).toEqual({ id: 2, label: 'Jordan' });
+    const escaped = openSearchDialog({ title: 'Country', search });
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    (dialog() as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(await escaped).toBeNull();
   });
 });
