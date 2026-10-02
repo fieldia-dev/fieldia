@@ -81,6 +81,7 @@ export type {
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
+export { suggestions, facetsToFilter, groupByFields, type Facet, type Suggestion } from './lib/record/search';
 export { createMemoryDataSource, type MemoryDataSource, type MemoryDataSourceOptions } from './lib/record/memory-data-source';
 export { hostScheduler, wait, type Scheduler } from './lib/record/scheduler';
 export {

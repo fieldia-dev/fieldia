@@ -27,7 +27,8 @@ function meets(values: Values, condition: ResolvedFilterCondition): boolean {
   // A link compares by its id.
   const actual = raw !== null && typeof raw === 'object' && !Array.isArray(raw) && 'id' in raw ? (raw as RelatedRecord).id : (raw as JsonValue | undefined);
   const expected = condition.value;
-  const text = String(actual ?? '');
+  // Text is looked for in a link's name, as a search by name does.
+  const text = raw !== null && typeof raw === 'object' && !Array.isArray(raw) && 'label' in raw ? String((raw as RelatedRecord).label) : String(actual ?? '');
   switch (condition.op) {
     case '=':
       return actual === expected;

@@ -24,6 +24,12 @@ describe('matchesFilter', () => {
     expect(matchesFilter(mona, [{ field: 'job', op: 'endswith', value: 'head' }])).toBe(false);
   });
 
+  it('finds text in a link by its record’s name, as a search by name does', () => {
+    expect(matchesFilter(mona, [{ field: 'manager_id', op: 'ilike', value: 'yous' }])).toBe(true);
+    expect(matchesFilter(mona, [{ field: 'manager_id', op: 'startswith', value: 'kamal' }])).toBe(false);
+    expect(matchesFilter(mona, [{ field: 'manager_id', op: 'endswith', value: 'kamal' }])).toBe(true);
+  });
+
   it('tells a field that is set from one that is not: empty text and an empty list count as not set', () => {
     expect(matchesFilter(mona, [{ field: 'job', op: 'set', value: null }])).toBe(true);
     expect(matchesFilter(mona, [{ field: 'phone', op: 'set', value: null }])).toBe(false);
