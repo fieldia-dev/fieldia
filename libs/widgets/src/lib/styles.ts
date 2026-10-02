@@ -1,0 +1,298 @@
+/**
+ * Fieldia's stylesheet: two skins and the layout chrome, all scoped to the
+ * form's own root (`.fd-form[data-fd-skin=…]`), so two forms on one page can
+ * wear different skins and the host page's own controls are never touched.
+ *
+ * underline — the Flectra and Odoo style: flat inputs on a single line, labels
+ *             beside the field, navy accents.
+ * outlined  — the Ant Design style: boxed inputs with rounded corners, labels
+ *             above the field, a blue focus glow.
+ *
+ * Written with logical properties (inline/block, start/end), so a right-to-left
+ * form mirrors without a second stylesheet.
+ */
+export const FIELDIA_CSS = /* css */ `
+.fd-form {
+  --fd-font: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", sans-serif;
+  --fd-text: #212529;
+  --fd-muted: #6b7280;
+  --fd-page: #f2f3f5;
+  --fd-surface: #ffffff;
+  --fd-border: #cfd4da;
+  --fd-border-strong: #9aa3ad;
+  --fd-accent: #002855;
+  --fd-accent-text: #ffffff;
+  --fd-accent-soft: #e6ebf2;
+  --fd-focus: #002855;
+  --fd-focus-ring: none;
+  --fd-error: #c62828;
+  --fd-error-soft: #fdecea;
+  --fd-success: #2e7d32;
+  --fd-success-soft: #e8f5e9;
+  --fd-warning: #8a5300;
+  --fd-warning-soft: #fff4e0;
+  --fd-info: #0b5cad;
+  --fd-info-soft: #e7f0fb;
+  --fd-radius: 0px;
+  --fd-control-radius: 0px;
+  --fd-pad-y: 3px;
+  --fd-pad-x: 4px;
+  --fd-input-border: 0 0 1px 0;
+  --fd-label-weight: 600;
+  --fd-gap-x: 32px;
+  --fd-gap-y: 14px;
+  container-type: inline-size;
+  font-family: var(--fd-font);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--fd-text);
+  -webkit-text-size-adjust: 100%;
+}
+.fd-form[data-fd-skin="outlined"] {
+  --fd-text: rgba(0, 0, 0, 0.88);
+  --fd-muted: rgba(0, 0, 0, 0.55);
+  --fd-page: #f5f5f5;
+  --fd-border: #d9d9d9;
+  --fd-border-strong: #bfbfbf;
+  --fd-accent: #1677ff;
+  --fd-accent-soft: #e6f4ff;
+  --fd-focus: #1677ff;
+  --fd-focus-ring: 0 0 0 2px rgba(5, 145, 255, 0.12);
+  --fd-error: #ff4d4f;
+  --fd-error-soft: #fff2f0;
+  --fd-radius: 8px;
+  --fd-control-radius: 6px;
+  --fd-pad-y: 4px;
+  --fd-pad-x: 11px;
+  --fd-input-border: 1px;
+  --fd-label-weight: 400;
+  --fd-gap-x: 24px;
+  --fd-gap-y: 18px;
+}
+.fd-form *, .fd-form *::before, .fd-form *::after { box-sizing: border-box; }
+.fd-form [hidden] { display: none !important; }
+
+/* ---- page frame ---------------------------------------------------------- */
+.fd-page-head { display: grid; gap: 4px; margin-block-end: 20px; }
+.fd-page-title { font-size: 22px; font-weight: 650; margin: 0; line-height: 1.25; }
+.fd-page-description { color: var(--fd-muted); margin: 0; }
+
+/* ---- fields ---------------------------------------------------------------- */
+.fd-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--fd-columns, 1), minmax(0, 1fr));
+  gap: var(--fd-gap-y) var(--fd-gap-x);
+  align-items: start;
+}
+.fd-field { display: grid; gap: 4px; min-width: 0; grid-column: span min(var(--fd-span, 1), var(--fd-columns, 1)); }
+.fd-label { font-weight: var(--fd-label-weight); color: var(--fd-text); }
+.fd-field.fd-required > .fd-label::after { content: " *"; color: var(--fd-error); }
+.fd-form[data-fd-skin="outlined"] .fd-field.fd-required > .fd-label::after { content: ""; }
+.fd-form[data-fd-skin="outlined"] .fd-field.fd-required > .fd-label::before { content: "* "; color: var(--fd-error); }
+.fd-help { color: var(--fd-muted); font-size: 12.5px; }
+.fd-error { color: var(--fd-error); font-size: 12.5px; }
+
+/* underline: label beside the value, the way a Flectra sheet reads */
+.fd-form[data-fd-skin="underline"] .fd-field {
+  grid-template-columns: minmax(7em, 38%) minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: baseline;
+}
+.fd-form[data-fd-skin="underline"] .fd-field > .fd-label { grid-column: 1; }
+.fd-form[data-fd-skin="underline"] .fd-field > :not(.fd-label) { grid-column: 2; }
+@container (max-width: 520px) {
+  .fd-grid { grid-template-columns: minmax(0, 1fr); }
+  .fd-field { grid-column: auto; }
+  .fd-form[data-fd-skin="underline"] .fd-field { grid-template-columns: minmax(0, 1fr); }
+  .fd-form[data-fd-skin="underline"] .fd-field > * { grid-column: 1 !important; }
+}
+
+/* ---- inputs ---------------------------------------------------------------- */
+.fd-input {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  color: inherit;
+  background: var(--fd-surface);
+  border: solid var(--fd-border);
+  border-width: var(--fd-input-border);
+  border-radius: var(--fd-control-radius);
+  padding: var(--fd-pad-y) var(--fd-pad-x);
+  min-height: 30px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.fd-input::placeholder { color: var(--fd-muted); opacity: 0.8; }
+.fd-input:hover { border-color: var(--fd-border-strong); }
+.fd-input:focus { outline: none; border-color: var(--fd-focus); box-shadow: var(--fd-focus-ring); }
+.fd-form[data-fd-skin="underline"] .fd-input:focus { box-shadow: 0 1px 0 0 var(--fd-focus); }
+.fd-form[data-fd-skin="underline"] .fd-field.fd-required .fd-input { border-color: var(--fd-accent); }
+.fd-input[readonly] { background: transparent; border-color: transparent; padding-inline: 0; }
+.fd-form[data-fd-skin="outlined"] .fd-input[readonly] { background: rgba(0, 0, 0, 0.04); border-color: var(--fd-border); padding-inline: var(--fd-pad-x); color: var(--fd-muted); }
+.fd-input[aria-invalid="true"] { border-color: var(--fd-error); }
+.fd-form[data-fd-skin="outlined"] .fd-input[aria-invalid="true"]:focus { box-shadow: 0 0 0 2px rgba(255, 38, 5, 0.06); }
+.fd-textarea { resize: vertical; min-height: 64px; }
+.fd-select { appearance: auto; }
+.fd-number { display: flex; align-items: baseline; gap: 6px; }
+.fd-number-input { text-align: end; font-variant-numeric: tabular-nums; }
+.fd-currency { color: var(--fd-muted); font-size: 12.5px; font-weight: 600; }
+.fd-pending { color: var(--fd-muted); font-style: italic; }
+.fd-pending:empty::before { content: "—"; }
+
+.fd-checkbox, .fd-choice input { width: 16px; height: 16px; accent-color: var(--fd-accent); margin: 0; }
+.fd-switch {
+  appearance: none; width: 34px; height: 20px; margin: 0; border-radius: 999px; position: relative;
+  background: var(--fd-border-strong); cursor: pointer; transition: background 0.2s ease;
+}
+.fd-switch::after {
+  content: ""; position: absolute; inset-block-start: 2px; inset-inline-start: 2px; width: 16px; height: 16px;
+  border-radius: 50%; background: #fff; transition: transform 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}
+.fd-switch:checked { background: var(--fd-accent); }
+.fd-switch:checked::after { transform: translateX(14px); }
+[dir="rtl"] .fd-switch:checked::after { transform: translateX(-14px); }
+.fd-choices { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.fd-choice { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.fd-points { display: flex; flex-wrap: wrap; gap: 6px; }
+.fd-points button {
+  font: inherit; cursor: pointer; border: 1px solid var(--fd-border); background: var(--fd-surface);
+  color: var(--fd-text); border-radius: var(--fd-control-radius); min-width: 34px; height: 34px; padding: 0 8px;
+}
+.fd-points button.fd-on { background: var(--fd-accent); color: var(--fd-accent-text); border-color: var(--fd-accent); }
+.fd-rating button { border: none; background: none; font-size: 24px; color: var(--fd-border-strong); padding: 0 2px; min-width: 0; }
+.fd-rating button.fd-on { background: none; color: #f5a623; }
+.fd-points button:disabled, .fd-choice input:disabled { cursor: default; }
+.fd-form :focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+.fd-form .fd-input:focus-visible { outline: none; }
+
+/* ---- sections, tabs ---------------------------------------------------- */
+.fd-sections { display: grid; gap: 24px; }
+.fd-section { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 14px; }
+.fd-section-title { font-size: 15px; font-weight: 650; padding: 0; margin: 0; }
+.fd-form[data-fd-skin="underline"] .fd-section-title {
+  text-transform: uppercase; letter-spacing: 0.05em; font-size: 12.5px; color: var(--fd-muted);
+  border-block-end: 1px solid var(--fd-border); padding-block-end: 6px; width: 100%;
+}
+.fd-section-description { color: var(--fd-muted); margin: 0; }
+.fd-form[data-fd-skin="outlined"] .fd-sections > .fd-section {
+  background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 20px 24px;
+}
+.fd-tablist { display: flex; gap: 2px; border-block-end: 1px solid var(--fd-border); overflow-x: auto; }
+.fd-tab {
+  font: inherit; background: none; border: none; cursor: pointer; padding: 8px 14px; color: var(--fd-muted);
+  border-block-end: 2px solid transparent; margin-block-end: -1px; white-space: nowrap;
+}
+.fd-tab[aria-selected="true"] { color: var(--fd-accent); border-block-end-color: var(--fd-accent); font-weight: 600; }
+.fd-tabpanel { padding-block: 16px; display: grid; gap: 16px; }
+
+/* ---- buttons ---------------------------------------------------------- */
+.fd-button {
+  font: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; justify-content: center;
+  min-height: 32px; padding: 4px 14px; border-radius: var(--fd-control-radius);
+  border: 1px solid var(--fd-border); background: var(--fd-surface); color: var(--fd-text);
+}
+.fd-button:hover { border-color: var(--fd-accent); color: var(--fd-accent); }
+.fd-button-primary { background: var(--fd-accent); border-color: var(--fd-accent); color: var(--fd-accent-text); }
+.fd-button-primary:hover { color: var(--fd-accent-text); filter: brightness(1.12); }
+.fd-button-danger { color: var(--fd-error); border-color: var(--fd-error); }
+.fd-button-danger:hover { background: var(--fd-error); color: #fff; }
+.fd-button-link { border-color: transparent; background: none; color: var(--fd-accent); padding-inline: 4px; }
+.fd-form[data-fd-skin="underline"] .fd-button { border-radius: 3px; }
+.fd-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.fd-actions-end { justify-content: flex-end; margin-block-start: 24px; }
+
+/* ---- record sheet --------------------------------------------------------- */
+.fd-sheet-page { background: var(--fd-page); padding: 0 0 32px; min-width: 0; }
+.fd-header {
+  display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between;
+  background: var(--fd-surface); border-block-end: 1px solid var(--fd-border); padding: 8px 16px;
+}
+.fd-statusbar { display: flex; list-style: none; margin: 0; padding: 0; overflow-x: auto; }
+.fd-statusbar li { display: flex; }
+.fd-statusbar button, .fd-statusbar span {
+  font: inherit; font-size: 13px; border: none; background: var(--fd-page); color: var(--fd-muted);
+  padding: 5px 18px 5px 22px; margin-inline-start: -6px; white-space: nowrap;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%, 10px 50%);
+}
+.fd-statusbar li:first-child button, .fd-statusbar li:first-child span { margin-inline-start: 0; padding-inline-start: 14px;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%); }
+.fd-statusbar button { cursor: pointer; }
+.fd-statusbar [aria-current="step"] { background: var(--fd-accent); color: var(--fd-accent-text); font-weight: 600; }
+[dir="rtl"] .fd-statusbar button, [dir="rtl"] .fd-statusbar span { transform: scaleX(-1); }
+[dir="rtl"] .fd-statusbar button > *, [dir="rtl"] .fd-statusbar span > * { display: inline-block; transform: scaleX(-1); }
+.fd-sheet-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; max-width: 1180px; margin: 16px auto 0; padding-inline: 16px; }
+.fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); }
+@container (max-width: 860px) { .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr); } }
+.fd-card {
+  position: relative; overflow: hidden; background: var(--fd-surface); border: 1px solid var(--fd-border);
+  border-radius: var(--fd-radius); padding: 24px 28px 28px; display: grid; gap: 18px; min-width: 0;
+}
+.fd-ribbon {
+  position: absolute; inset-block-start: 18px; inset-inline-end: -42px; transform: rotate(45deg); width: 160px;
+  text-align: center; font-size: 12px; font-weight: 700; padding: 4px 0; color: #fff; background: var(--fd-muted);
+  text-transform: uppercase; letter-spacing: 0.06em; pointer-events: none;
+}
+[dir="rtl"] .fd-ribbon { transform: rotate(-45deg); }
+.fd-ribbon.fd-tone-danger { background: var(--fd-error); }
+.fd-ribbon.fd-tone-success { background: var(--fd-success); }
+.fd-ribbon.fd-tone-warning { background: #d97706; }
+.fd-ribbon.fd-tone-info { background: var(--fd-info); }
+.fd-alert { padding: 10px 14px; border-radius: var(--fd-control-radius); border: 1px solid; font-size: 13.5px; }
+.fd-alert.fd-tone-warning { background: var(--fd-warning-soft); border-color: #f0c47a; color: var(--fd-warning); }
+.fd-alert.fd-tone-danger { background: var(--fd-error-soft); border-color: #f1a7a7; color: var(--fd-error); }
+.fd-alert.fd-tone-success { background: var(--fd-success-soft); border-color: #a7d7ab; color: var(--fd-success); }
+.fd-alert.fd-tone-info, .fd-alert:not([class*="fd-tone-"]) { background: var(--fd-info-soft); border-color: #a9c8ef; color: var(--fd-info); }
+.fd-stats { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0; margin: -24px -28px 0; border-block-end: 1px solid var(--fd-border); }
+.fd-stats:empty { display: none; }
+.fd-stat {
+  font: inherit; background: none; border: none; border-inline-start: 1px solid var(--fd-border); cursor: pointer;
+  padding: 8px 18px; display: grid; justify-items: start; line-height: 1.2; color: var(--fd-text); min-width: 120px;
+}
+.fd-stat:hover { background: var(--fd-page); }
+.fd-stat-value { font-weight: 700; font-size: 15px; color: var(--fd-accent); font-variant-numeric: tabular-nums; }
+.fd-stat-label { font-size: 12.5px; color: var(--fd-muted); }
+.fd-title { display: grid; gap: 4px; padding-inline-end: 72px; }
+.fd-title .fd-input { font-size: 24px; font-weight: 600; min-height: 40px; }
+.fd-title .fd-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.fd-side { display: grid; gap: 12px; align-content: start; min-width: 0; }
+
+/* ---- wizard -------------------------------------------------------------- */
+.fd-wizard { display: grid; gap: 20px; }
+.fd-progress { display: grid; gap: 8px; }
+.fd-progress-text { color: var(--fd-muted); font-size: 13px; }
+.fd-progress-bar { height: 4px; background: var(--fd-border); border-radius: 999px; overflow: hidden; }
+.fd-progress-bar > span { display: block; height: 100%; background: var(--fd-accent); transition: width 0.25s ease; }
+.fd-step { display: grid; gap: 18px; }
+.fd-step-title { font-size: 18px; font-weight: 650; margin: 0; }
+.fd-wizard-nav { display: flex; gap: 8px; justify-content: space-between; }
+.fd-wizard-nav .fd-spacer { flex: 1; }
+
+/* ---- text, status, dialog ------------------------------------------------- */
+.fd-text-heading { font-size: 16px; font-weight: 650; margin: 0; }
+.fd-text-paragraph { margin: 0; }
+.fd-text-note { margin: 0; color: var(--fd-muted); font-size: 13px; }
+.fd-status { min-height: 1.4em; color: var(--fd-muted); font-size: 13px; }
+.fd-status.fd-status-error { color: var(--fd-error); }
+.fd-status.fd-status-saved { color: var(--fd-success); }
+.fd-draft { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 14px; margin-block-end: 16px;
+  background: var(--fd-info-soft); border: 1px solid #a9c8ef; border-radius: var(--fd-control-radius); }
+.fd-done { padding: 40px 0; text-align: center; display: grid; gap: 12px; justify-items: center; }
+.fd-done-title { font-size: 20px; font-weight: 650; margin: 0; }
+.fd-dialog-backdrop { position: fixed; inset: 0; background: rgba(15, 20, 25, 0.45); display: grid; place-items: center; z-index: 1000; padding: 16px; }
+.fd-dialog {
+  background: var(--fd-surface); color: var(--fd-text); border-radius: max(var(--fd-radius), 6px); max-width: 420px; width: 100%;
+  padding: 20px 22px; display: grid; gap: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); font-family: var(--fd-font);
+}
+.fd-dialog p { margin: 0; }
+@media (prefers-reduced-motion: reduce) { .fd-form *, .fd-form *::before, .fd-form *::after { transition: none !important; } }
+`;
+
+const STYLE_ID = 'fieldia-styles';
+
+/** Add Fieldia's stylesheet to a document, once. */
+export function installStyles(document: Document): void {
+  if (document.getElementById(STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = FIELDIA_CSS;
+  (document.head ?? document.documentElement).append(style);
+}

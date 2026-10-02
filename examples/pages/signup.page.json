@@ -1,0 +1,95 @@
+{
+  "fieldia": "0.1",
+  "id": "workshop-signup",
+  "title": "Workshop sign-up",
+  "description": "One day on building forms that people finish. Cairo, 14 November.",
+  "data": { "kind": "responses" },
+  "fields": {
+    "full_name": { "type": "char", "label": "Full name", "required": true, "size": 80 },
+    "email": {
+      "type": "char",
+      "label": "Email",
+      "required": true,
+      "help": "We send the joining details here.",
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    },
+    "company": { "type": "char", "label": "Company" },
+    "role": {
+      "type": "selection",
+      "label": "Your role",
+      "required": true,
+      "options": [
+        { "value": "developer", "label": "Developer" },
+        { "value": "designer", "label": "Designer" },
+        { "value": "manager", "label": "Manager" },
+        { "value": "other", "label": "Something else" }
+      ]
+    },
+    "other_role": { "type": "char", "label": "Which role?" },
+    "team_size": { "type": "integer", "label": "People in your team", "min": 1, "max": 500 },
+    "experience": {
+      "type": "selection",
+      "label": "Experience with form builders",
+      "options": [
+        { "value": "none", "label": "None yet" },
+        { "value": "some", "label": "Some" },
+        { "value": "lots", "label": "Lots" }
+      ]
+    },
+    "arrival": { "type": "date", "label": "Arriving on" },
+    "attends_dinner": { "type": "boolean", "label": "Joining the dinner" },
+    "dietary": { "type": "text", "label": "Dietary needs", "size": 300 },
+    "ticket": { "type": "monetary", "label": "Ticket price", "currency": "EGP", "readonly": true, "default": 1500 },
+    "hourly_rate": { "type": "float", "label": "Your hourly rate", "digits": [8, 2], "min": 0 },
+    "newsletter": { "type": "boolean", "label": "Send me the workshop notes" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "signup",
+    "children": [
+      {
+        "type": "section",
+        "id": "about",
+        "title": "About you",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-name", "field": "full_name", "placeholder": "Sara Hassan" },
+          { "type": "field", "id": "f-email", "field": "email", "widget": "email", "placeholder": "sara@example.com" },
+          { "type": "field", "id": "f-company", "field": "company" },
+          { "type": "field", "id": "f-role", "field": "role" },
+          {
+            "type": "field",
+            "id": "f-other-role",
+            "field": "other_role",
+            "invisible": "role != 'other'",
+            "required": "role == 'other'"
+          },
+          { "type": "field", "id": "f-team", "field": "team_size", "invisible": "role != 'manager'" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "work",
+        "title": "Your work",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-experience", "field": "experience", "widget": "radio" },
+          { "type": "field", "id": "f-rate", "field": "hourly_rate", "help": "Optional. Used only for the pricing exercise." }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "day",
+        "title": "The day",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-arrival", "field": "arrival" },
+          { "type": "field", "id": "f-ticket", "field": "ticket" },
+          { "type": "field", "id": "f-dinner", "field": "attends_dinner", "widget": "toggle" },
+          { "type": "field", "id": "f-dietary", "field": "dietary", "invisible": "not attends_dinner", "colspan": 2 },
+          { "type": "field", "id": "f-newsletter", "field": "newsletter" }
+        ]
+      }
+    ]
+  }
+}

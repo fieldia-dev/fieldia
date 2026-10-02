@@ -259,3 +259,16 @@ describe('every widget', () => {
     expect(el.getAttribute('data-fd-pending')).toBe('many2one');
   });
 });
+
+describe('installStyles', () => {
+  it('adds the stylesheet once, scoped to Fieldia forms', async () => {
+    const { installStyles, FIELDIA_CSS } = await import('./styles');
+    installStyles(document);
+    installStyles(document);
+    expect(document.querySelectorAll('style#fieldia-styles')).toHaveLength(1);
+    const unscoped = FIELDIA_CSS.split('}')
+      .map((rule) => rule.split('{')[0].trim())
+      .filter((selector) => selector && !selector.startsWith('@') && !selector.includes('.fd-') && !selector.includes('[dir'));
+    expect(unscoped).toEqual([]);
+  });
+});
