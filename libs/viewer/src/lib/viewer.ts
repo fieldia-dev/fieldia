@@ -210,6 +210,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   function tabsItem(node: TabsNode): HTMLElement {
     const box = el('div', { class: 'fd-tabs', 'data-node': node.id });
     const list = el('div', { class: 'fd-tablist', role: 'tablist' });
+    // The tab someone picked. Until they pick, the first visible tab is open —
+    // a tab hidden while the record loads must not leave its neighbour open.
+    let picked: string | null = null;
     let active = node.children[0].id;
     const parts = node.children.map((tab) => {
       const tabId = uid(`${tab.id}-tab`);
@@ -217,7 +220,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const button = el('button', { type: 'button', class: 'fd-tab', role: 'tab', id: tabId, 'aria-controls': panelId, 'data-node': tab.id }, tab.label);
       const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId }, grid(tab.children));
       button.addEventListener('click', () => {
-        active = tab.id;
+        picked = active = tab.id;
         render(form.getState());
       });
       list.append(button);
@@ -231,7 +234,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       event.preventDefault();
       const rtl = root.getAttribute('dir') === 'rtl' && (event.key === 'ArrowRight' || event.key === 'ArrowLeft');
       const next = shown[(at + (rtl ? -move : move) + shown.length) % shown.length];
-      active = next.tab.id;
+      picked = active = next.tab.id;
       render(form.getState());
       next.button.focus();
     });
@@ -239,7 +242,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     updaters.push(() => {
       box.hidden = form.node(node.id).invisible;
       const shown = parts.filter((p) => !form.node(p.tab.id).invisible);
-      if (!shown.some((p) => p.tab.id === active) && shown.length) active = shown[0].tab.id;
+      const keep = picked !== null && shown.some((p) => p.tab.id === picked);
+      if (keep) active = picked as string;
+      else if (shown.length) active = shown[0].tab.id;
       for (const p of parts) {
         const selected = p.tab.id === active;
         p.button.hidden = !shown.includes(p);

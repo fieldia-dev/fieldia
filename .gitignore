@@ -6,3 +6,5 @@ coverage/
 .nx/workspace-data
 *.log
 .DS_Store
+test-results/
+playwright-report/

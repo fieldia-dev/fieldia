@@ -94,7 +94,8 @@ export const FIELDIA_CSS = /* css */ `
 
 /* underline: label beside the value, the way a Flectra sheet reads */
 .fd-form[data-fd-skin="underline"] .fd-field {
-  grid-template-columns: minmax(7em, 38%) minmax(0, 1fr);
+  /* One label width for every field, so a field spanning two columns lines up with its neighbours. */
+  grid-template-columns: var(--fd-label-width, 11em) minmax(0, 1fr);
   column-gap: 12px;
   align-items: baseline;
 }
@@ -124,6 +125,7 @@ export const FIELDIA_CSS = /* css */ `
 .fd-input::placeholder { color: var(--fd-muted); opacity: 0.8; }
 .fd-input:hover { border-color: var(--fd-border-strong); }
 .fd-input:focus { outline: none; border-color: var(--fd-focus); box-shadow: var(--fd-focus-ring); }
+.fd-form[data-fd-skin="underline"] .fd-input { background: transparent; }
 .fd-form[data-fd-skin="underline"] .fd-input:focus { box-shadow: 0 1px 0 0 var(--fd-focus); }
 .fd-form[data-fd-skin="underline"] .fd-field.fd-required .fd-input { border-color: var(--fd-accent); }
 .fd-input[readonly] { background: transparent; border-color: transparent; padding-inline: 0; }
@@ -133,7 +135,7 @@ export const FIELDIA_CSS = /* css */ `
 .fd-textarea { resize: vertical; min-height: 64px; }
 .fd-select { appearance: auto; }
 .fd-number { display: flex; align-items: baseline; gap: 6px; }
-.fd-number-input { text-align: end; font-variant-numeric: tabular-nums; }
+.fd-number-input { font-variant-numeric: tabular-nums; }
 .fd-currency { color: var(--fd-muted); font-size: 12.5px; font-weight: 600; }
 .fd-pending { color: var(--fd-muted); font-style: italic; }
 .fd-pending:empty::before { content: "—"; }
@@ -167,7 +169,8 @@ export const FIELDIA_CSS = /* css */ `
 /* ---- sections, tabs ---------------------------------------------------- */
 .fd-sections { display: grid; gap: 24px; }
 .fd-section { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 14px; }
-.fd-section-title { font-size: 15px; font-weight: 650; padding: 0; margin: 0; }
+.fd-section-title { font-size: 15px; font-weight: 650; padding: 0; margin: 0; float: inline-start; width: 100%; }
+.fd-section-title + * { clear: both; }
 .fd-form[data-fd-skin="underline"] .fd-section-title {
   text-transform: uppercase; letter-spacing: 0.05em; font-size: 12.5px; color: var(--fd-muted);
   border-block-end: 1px solid var(--fd-border); padding-block-end: 6px; width: 100%;
@@ -252,6 +255,8 @@ export const FIELDIA_CSS = /* css */ `
 .fd-stat-label { font-size: 12.5px; color: var(--fd-muted); }
 .fd-title { display: grid; gap: 4px; padding-inline-end: 72px; }
 .fd-title .fd-input { font-size: 24px; font-weight: 600; min-height: 40px; }
+.fd-form[data-fd-skin="underline"] .fd-title .fd-field { grid-template-columns: minmax(0, 1fr); }
+.fd-form[data-fd-skin="underline"] .fd-title .fd-field > * { grid-column: 1; }
 .fd-title .fd-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .fd-side { display: grid; gap: 12px; align-content: start; min-width: 0; }
 

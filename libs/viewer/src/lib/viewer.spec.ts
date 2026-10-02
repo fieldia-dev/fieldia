@@ -211,6 +211,16 @@ describe('a record sheet', () => {
     expect(visible(tab('Contacts'))).toBe(false);
   });
 
+  it('opens the first tab that is visible once the record loads, until someone picks one', async () => {
+    const { host, form } = sheet();
+    await form.settled();
+    const selected = () => host.querySelector('[role=tab][aria-selected="true"]')?.textContent;
+    expect(selected()).toBe('Contacts'); // hidden while loading, shown once is_company arrives
+    ([...host.querySelectorAll('[role=tab]')].find((t) => t.textContent === 'Notes') as HTMLElement).click();
+    form.setValue('website', 'https://x.example');
+    expect(selected()).toBe('Notes');
+  });
+
   it('offers Save once something changes, and saves', async () => {
     const { host, form, dataSource } = sheet();
     await form.settled();

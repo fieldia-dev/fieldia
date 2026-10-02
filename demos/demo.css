@@ -1,0 +1,16 @@
+/* The demo's own frame. Fieldia styles itself; this is only the page around it. */
+html, body { margin: 0; background: #f7f8fa; color: #1f2933; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.demo-bar {
+  display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; padding: 10px 16px;
+  background: #fff; border-bottom: 1px solid #e3e6ea;
+}
+.demo-framework { color: #6b7280; }
+.demo-links { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-inline-start: auto; }
+.demo-links a { color: #0b5cad; text-decoration: none; }
+.demo-links a[aria-current="page"] { font-weight: 700; text-decoration: underline; }
+#app { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; }
+#app:has(.fd-sheet-page) { padding: 0 0 48px; max-width: none; }
+#app:has(.fd-wizard) { max-width: 760px; }
+.demo-feed { background: #fff; border: 1px solid #e3e6ea; padding: 14px 16px; border-radius: 6px; }
+.demo-feed h3 { margin: 0 0 8px; font-size: 14px; }
+.demo-feed p { margin: 6px 0; color: #4b5563; }
