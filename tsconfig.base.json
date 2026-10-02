@@ -16,7 +16,9 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@fieldia/core": ["libs/core/src/index.ts"]
+      "@fieldia/core": ["libs/core/src/index.ts"],
+      "@fieldia/widgets": ["libs/widgets/src/index.ts"],
+      "@fieldia/viewer": ["libs/viewer/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]
