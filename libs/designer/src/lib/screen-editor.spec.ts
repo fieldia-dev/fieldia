@@ -1,59 +1,9 @@
 import type { FieldNode, Page, SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, type Designer } from './designer';
-import type { Grafloria, GrafloriaBoardOptions, GrafloriaWidget } from './grafloria';
-import { mountScreenEditor, type ScreenEditorHandle } from './screen-editor';
+import type { GrafloriaWidget } from './grafloria';
+import { button, choose, field, mount, tick, type, unmount } from './test-screen';
 import { rowsOf } from './screen-layout';
 
-/** A stand-in for Grafloria: paints every widget, and lets a test play the board's part in a gesture. */
-interface FakeBoard {
-  options: GrafloriaBoardOptions;
-  host: HTMLElement | null;
-  hosts: Map<string, HTMLElement>;
-  selected: string | undefined;
-  disposed: boolean;
-}
-function fakeGrafloria() {
-  const boards: FakeBoard[] = [];
-  const kit: Grafloria = {
-    dashboard(options) {
-      const board: FakeBoard = { options, host: null, hosts: new Map(), selected: undefined, disposed: false };
-      boards.push(board);
-      const handle = {
-        selectWidget(id: string | undefined) {
-          board.selected = id;
-          return true;
-        },
-        getSelectedWidget: () => board.selected,
-        widget(id: string) {
-          const widget = options.widgets.find((w) => w.id === id);
-          const host = board.hosts.get(id);
-          return widget && host ? { repaint: () => (host.replaceChildren(), options.renderWidget(widget, host)) } : undefined;
-        },
-        dispose() {
-          board.disposed = true;
-        },
-      };
-      return Object.assign({ handle }, { board });
-    },
-    render(spec, host) {
-      const board = (spec as unknown as { board: FakeBoard }).board;
-      board.host = host;
-      for (const widget of board.options.widgets) {
-        const cell = host.ownerDocument.createElement('div');
-        cell.dataset['widget'] = widget.id;
-        host.append(cell);
-        board.hosts.set(widget.id, cell);
-        board.options.renderWidget(widget, cell);
-      }
-      return { dispose: () => host.replaceChildren() };
-    },
-  };
-  const live = () => boards.filter((b) => !b.disposed);
-  const boardOf = (sectionId: string) => live().find((b) => b.host?.closest(`[data-node="${sectionId}"]`)) as FakeBoard;
-  return { kit, boards, live, boardOf };
-}
-
-const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 const sectionsOf = (page: Page) => (page.layout as { children: SectionNode[] }).children;
 const fieldsOf = (page: Page, section: number) => sectionsOf(page)[section].children as FieldNode[];
 const cellsOf = (widgets: GrafloriaWidget[]) => widgets.map((w) => [w.id, w.x, w.y, w.span, w.rows]);
@@ -80,37 +30,6 @@ function visitReport(): { designer: Designer; ids: Record<string, string>; secti
   designer.updateQuestion(next, { label: 'Next step' });
   designer.select(null);
   return { designer, ids: { customer, date, notes, next }, sections: [visit, followUp] };
-}
-
-let handle: ScreenEditorHandle | null = null;
-afterEach(() => {
-  handle?.destroy();
-  handle = null;
-  document.body.replaceChildren();
-});
-
-function mount(designer: Designer) {
-  const host = document.createElement('div');
-  document.body.append(host);
-  const grafloria = fakeGrafloria();
-  handle = mountScreenEditor(host, { designer, grafloria: grafloria.kit });
-  return { host, ...grafloria };
-}
-
-const button = (root: Element, name: string) =>
-  [...root.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') ?? b.textContent?.trim()) === name && !b.closest('[hidden]')) as HTMLButtonElement;
-const field = (root: Element, label: string) => {
-  const found = [...root.querySelectorAll<HTMLElement>('[aria-label]')].find((e) => e.getAttribute('aria-label') === label && !e.closest('[hidden]'));
-  return found as HTMLInputElement & HTMLSelectElement;
-};
-function type(input: HTMLInputElement, text: string) {
-  input.focus();
-  input.value = text;
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-}
-function choose(select: HTMLSelectElement, value: string) {
-  select.value = value;
-  select.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 describe('screen editor — the canvas', () => {
@@ -183,8 +102,7 @@ describe('screen editor — the canvas', () => {
   it('removes every board when it is destroyed', () => {
     const { designer } = visitReport();
     const { live } = mount(designer);
-    handle?.destroy();
-    handle = null;
+    unmount();
     expect(live()).toHaveLength(0);
   });
 });
@@ -228,6 +146,18 @@ describe('screen editor — adding and changing fields', () => {
     const label = field(host, 'Label');
     expect(document.activeElement).toBe(label);
     expect([label.selectionStart, label.selectionEnd]).toEqual([0, label.value.length]);
+  });
+
+  it('puts the cursor in the new field’s label when another field was selected, so a run of them can be typed', () => {
+    const { designer, ids } = visitReport();
+    const { host } = mount(designer);
+    designer.select(ids['customer']);
+    button(host.querySelector('.fd-palette') as Element, 'Email').click();
+    const added = designer.getState().selected as string;
+    expect(added).not.toBe(ids['customer']);
+    expect(document.activeElement).toBe(field(host, 'Label'));
+    type(field(host, 'Label'), 'Email');
+    expect(designer.getPage().fields[(fieldsOf(designer.getPage(), 0).find((n) => n.id === added) as FieldNode).field].label).toBe('Email');
   });
 
   it('edits the label, repainting the card without rebuilding the board', () => {

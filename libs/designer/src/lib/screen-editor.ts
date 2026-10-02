@@ -1,12 +1,13 @@
-import { createForm, createMemoryDataSource, wideColumns, type FieldNode, type Form, type Page, type SectionNode, type SectionsNode } from '@fieldia/core';
+import { createForm, createMemoryDataSource, wideColumns, type FieldNode, type Form, type LayoutNode, type Page, type SectionNode, type TabsNode } from '@fieldia/core';
 import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import { createWidget, installStyles, type Widget } from '@fieldia/widgets';
-import { designerBar, elementFactory, optionsEditor, type ElementFactory } from './chrome';
+import { designerBar, elementFactory } from './chrome';
 import { QUESTION_KINDS, type Designer, type DesignerState } from './designer';
 import type { Grafloria, GrafloriaBoardHandle, GrafloriaWidget } from './grafloria';
+import { allSections, findField, findTab, tabHolds } from './page-tree';
 import { flowCells, GAP, heightOfRows, orderFromCells, ROW_HEIGHT, rowsForHeight, rowsOf } from './screen-layout';
+import { fieldProperties, pageProperties, sectionProperties, tabProperties, tabsProperties, type PropertiesView } from './screen-properties';
 import { installDesignerStyles } from './styles';
-import { kindOfQuestion } from './survey-editor';
 
 /**
  * The screen editor: an app screen laid out on a canvas. Each section is a
@@ -44,16 +45,10 @@ function contentHeight(card: HTMLElement): number {
   return bottom - top + (parseFloat(style?.paddingBottom ?? '') || 0) + (parseFloat(style?.borderBottomWidth ?? '') || 0);
 }
 
-const sectionsOf = (page: Page) => (page.layout as SectionsNode).children.filter((n): n is SectionNode => n.type === 'section');
+const sectionsOf = allSections;
 const fieldNodes = (section: SectionNode) => section.children.filter((n): n is FieldNode => n.type === 'field');
-
-function findField(page: Page, id: string): { node: FieldNode; section: SectionNode } | null {
-  for (const section of sectionsOf(page)) {
-    const node = fieldNodes(section).find((n) => n.id === id);
-    if (node) return { node, section };
-  }
-  return null;
-}
+/** What sits at the top of a screen or a sheet: sections, and a sheet's tabs. */
+const topOf = (page: Page) => (page.layout as { children: LayoutNode[] }).children;
 
 export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOptions): ScreenEditorHandle {
   const { designer, grafloria } = options;
@@ -80,24 +75,38 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     const created = designer.addContainer(`Section ${sectionsOf(designer.getPage()).length + 1}`);
     if (created) designer.select(created);
   });
-  const canvas = el('div', { class: 'fd-canvas' }, sectionsBox, addSection);
+  const addTabs = el('button', { type: 'button', class: 'fd-button', hidden: '' }, 'Add tabs');
+  addTabs.addEventListener('click', () => {
+    const created = designer.addTabs();
+    const tabs = created ? (topOf(designer.getPage()).find((n) => n.id === created) as TabsNode) : null;
+    if (tabs) designer.select(tabs.children[0].id);
+  });
+  // A sheet's title, as people will see it: big, over everything else.
+  const titleCard = el('button', { type: 'button', class: 'fd-canvas-title', hidden: '' });
+  titleCard.addEventListener('click', () => designer.select(null));
+  const canvas = el('div', { class: 'fd-canvas' }, titleCard, sectionsBox, el('div', { class: 'fd-canvas-adds' }, addSection, addTabs));
   const properties = el('aside', { class: 'fd-properties', 'aria-label': 'Properties' });
   const body = el('div', { class: 'fd-screen-body' }, palette, canvas, properties);
   const previewHost = el('div', { class: 'fd-screen-preview', hidden: '' });
   root.append(bar.element, bar.issues, body, previewHost);
 
   // ---- adding ----------------------------------------------------------------
-  let focusLabel = false;
-  /** The section a new field goes into: the selected one, the selected field's, or the last. */
+  /** The field just added, whose label takes the cursor once its properties show. */
+  let focusLabelOf: string | null = null;
+  /** The section a new field goes into: the selected one, the selected field's, the selected tab's first, or the last on show. */
   function targetSection(page: Page): string {
     const selected = designer.getState().selected;
     const all = sectionsOf(page);
     const owner = all.find((s) => s.id === selected || s.children.some((n) => n.id === selected));
-    return (owner ?? all[all.length - 1]).id;
+    const tab = selected ? findTab(page, selected) : null;
+    const inTab = tab?.tab.children.find((n): n is SectionNode => n.type === 'section');
+    return (owner ?? inTab ?? visible[visible.length - 1] ?? all[all.length - 1]).id;
   }
   function addField(kind: string) {
-    focusLabel = true;
-    if (!designer.addQuestion(kind, { parent: targetSection(designer.getPage()) })) focusLabel = false;
+    // Not before it exists: the edit's first notice still shows the field selected before it.
+    const created = designer.addQuestion(kind, { parent: targetSection(designer.getPage()) });
+    if (!created) return;
+    focusLabelOf = created;
     render(designer.getState());
   }
 
@@ -271,8 +280,15 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     later();
   }
 
+  /** Boards for the sections on show; a section in a closed tab has none until its tab opens. */
   function syncBoards(page: Page) {
-    for (const section of sectionsOf(page)) {
+    const open = new Set(visible.map((section) => section.id));
+    for (const [id, view] of sectionViews) {
+      if (open.has(id) || !view.board) continue;
+      disposeBoard(view);
+      view.layoutKey = '';
+    }
+    for (const section of visible) {
       const view = sectionViews.get(section.id) as SectionView;
       const key = layoutKeyOf(page, section);
       if (key !== view.layoutKey) {
@@ -313,26 +329,40 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
 
   function renderProperties(state: DesignerState) {
     const selected = state.selected;
-    const isField = selected !== null && findField(state.page, selected) !== null;
-    const isSection = selected !== null && sectionsOf(state.page).some((s) => s.id === selected);
-    const key = isField ? `field:${selected}` : isSection ? `section:${selected}` : 'none';
+    const page = state.page;
+    const isField = selected !== null && findField(page, selected) !== null;
+    const kind = isField
+      ? 'field'
+      : selected !== null && sectionsOf(page).some((s) => s.id === selected)
+        ? 'section'
+        : selected !== null && findTab(page, selected)
+          ? 'tab'
+          : selected !== null && topOf(page).some((n) => n.id === selected && n.type === 'tabs')
+            ? 'tabs'
+            : 'page';
+    const key = kind === 'page' ? kind : `${kind}:${selected}`;
     if (key !== propertiesKey) {
       propertiesKey = key;
-      const built = isField
-        ? fieldProperties(el, designer, selected as string)
-        : isSection
-          ? sectionProperties(el, designer, selected as string)
-          : { element: el('p', { class: 'fd-properties-hint' }, 'Select a field or a section to change it.'), update: () => undefined };
-      properties.replaceChildren(el('div', { class: 'fd-panel-title' }, isField ? 'Field' : isSection ? 'Section' : 'Properties'), built.element);
+      const id = selected as string;
+      const panels: Record<typeof kind, [string, () => PropertiesView]> = {
+        field: ['Field', () => fieldProperties(el, designer, id)],
+        section: ['Section', () => sectionProperties(el, designer, id)],
+        tab: ['Tab', () => tabProperties(el, designer, id)],
+        tabs: ['Tabs', () => tabsProperties(el, designer, id)],
+        page: ['Screen', () => pageProperties(el, designer)],
+      };
+      const [title, build] = panels[kind];
+      const built = build();
+      properties.replaceChildren(el('div', { class: 'fd-panel-title' }, title), built.element);
       updateProperties = built.update;
     }
-    updateProperties?.(state.page);
-    if (focusLabel && isField) {
+    updateProperties?.(page);
+    if (focusLabelOf && focusLabelOf === selected && isField) {
       const label = properties.querySelector<HTMLInputElement>('.fd-prop-label');
       // Select the placeholder text, so typing replaces it rather than adding to it.
       label?.focus();
       label?.select();
-      focusLabel = false;
+      focusLabelOf = null;
     }
   }
 
@@ -359,11 +389,73 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     showPreview();
   });
 
+  // ---- tabs ----------------------------------------------------------------------------
+  interface TabsView {
+    element: HTMLElement;
+    strip: HTMLElement;
+    panel: HTMLElement;
+    /** The tab on show. */
+    active: string | null;
+  }
+  const tabsViews = new Map<string, TabsView>();
+
+  function makeTabs(id: string): TabsView {
+    const strip = el('div', { class: 'fd-canvas-tab-strip', role: 'tablist' });
+    const addTab = el('button', { type: 'button', class: 'fd-canvas-add-tab', 'aria-label': 'Add tab' }, '+');
+    const head = el('div', { class: 'fd-canvas-tabs-head' }, strip, addTab);
+    const panel = el('div', { class: 'fd-canvas-tab-panel', role: 'tabpanel' });
+    const element = el('div', { class: 'fd-canvas-tabs', 'data-node': id }, head, panel);
+    const view: TabsView = { element, strip, panel, active: null };
+    addTab.addEventListener('click', () => {
+      const tabs = topOf(designer.getPage()).find((n) => n.id === id) as TabsNode | undefined;
+      const created = tabs && designer.addTab(id, `Tab ${tabs.children.length + 1}`);
+      if (!created) return;
+      view.active = created;
+      designer.select(created);
+    });
+    // The strip's empty space selects the tabs as a whole.
+    head.addEventListener('click', (event) => {
+      if (event.target === head || event.target === strip) designer.select(id);
+    });
+    return view;
+  }
+
+  /** The tabs on the canvas: a strip, and the sections of the tab on show; the tab of what is selected opens. */
+  function drawTabs(node: TabsNode, state: DesignerState, sectionElement: (section: SectionNode) => HTMLElement): HTMLElement {
+    let view = tabsViews.get(node.id);
+    if (!view) tabsViews.set(node.id, (view = makeTabs(node.id)));
+    const holding = node.children.find((tab) => tabHolds(tab, state.selected));
+    if (holding) view.active = holding.id;
+    if (!node.children.some((tab) => tab.id === view.active)) view.active = node.children[0]?.id ?? null;
+    const shownView = view;
+    view.strip.replaceChildren(
+      ...node.children.map((tab) => {
+        const button = el('button', { type: 'button', role: 'tab', class: 'fd-canvas-tab', 'data-node': tab.id, 'aria-selected': String(tab.id === shownView.active) }, tab.label || 'Untitled tab');
+        button.classList.toggle('fd-canvas-selected', state.selected === tab.id);
+        button.addEventListener('click', () => {
+          shownView.active = tab.id;
+          designer.select(tab.id);
+        });
+        return button;
+      })
+    );
+    view.element.classList.toggle('fd-canvas-selected', state.selected === node.id);
+    const open = node.children.find((tab) => tab.id === view.active);
+    const sections = (open?.children ?? []).filter((n): n is SectionNode => n.type === 'section');
+    const children = sections.map(sectionElement);
+    if (children.length !== view.panel.children.length || children.some((child, i) => view.panel.children[i] !== child)) view.panel.replaceChildren(...children);
+    return view.element;
+  }
+
   // ---- render ---------------------------------------------------------------------------
+  /** The sections on show: at the top, and in the open tab of each set of tabs. */
+  let visible: SectionNode[] = [];
+
   function render(state: DesignerState) {
     current = state.page;
     bar.update(state);
-    const sections = sectionsOf(state.page);
+    const page = state.page;
+    const sections = sectionsOf(page);
     const live = new Set(sections.map((s) => s.id));
     for (const [id, view] of sectionViews) {
       if (live.has(id)) continue;
@@ -371,16 +463,37 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       view.element.remove();
       sectionViews.delete(id);
     }
-    sections.forEach((section, index) => {
+    const liveTabs = new Set(topOf(page).filter((n) => n.type === 'tabs').map((n) => n.id));
+    for (const [id, view] of tabsViews) {
+      if (liveTabs.has(id)) continue;
+      view.element.remove();
+      tabsViews.delete(id);
+    }
+    visible = [];
+    const sectionElement = (section: SectionNode) => {
       let view = sectionViews.get(section.id);
       if (!view) sectionViews.set(section.id, (view = makeSection(section.id)));
-      if (sectionsBox.children[index] !== view.element) sectionsBox.insertBefore(view.element, sectionsBox.children[index] ?? null);
       view.title.textContent = section.title || 'Untitled section';
       const columns = section.columns ?? 1;
       view.meta.textContent = columns === 1 ? '1 column' : `${columns} columns`;
+      visible.push(section);
+      return view.element;
+    };
+    const top = topOf(page).flatMap((node) => (node.type === 'section' ? [sectionElement(node)] : node.type === 'tabs' ? [drawTabs(node, state, sectionElement)] : []));
+    // Sections of closed tabs leave the canvas until their tab opens.
+    for (const [id, view] of sectionViews) if (!visible.some((s) => s.id === id)) view.element.remove();
+    top.forEach((element, index) => {
+      if (sectionsBox.children[index] !== element) sectionsBox.insertBefore(element, sectionsBox.children[index] ?? null);
     });
+    while (sectionsBox.children.length > top.length) sectionsBox.lastElementChild?.remove();
+    const root = page.layout;
+    // One set of tabs to a sheet, as a record has.
+    addTabs.hidden = root.type !== 'sheet' || liveTabs.size > 0;
+    titleCard.hidden = root.type !== 'sheet' || !root.title;
+    if (root.type === 'sheet' && root.title) titleCard.textContent = page.fields[root.title.field]?.label ?? root.title.field;
+    titleCard.classList.toggle('fd-canvas-selected', state.selected === null);
     if (inGesture) later();
-    else if (!previewing) syncBoards(state.page);
+    else if (!previewing) syncBoards(page);
     syncSelection(state);
     renderProperties(state);
   }
@@ -405,110 +518,6 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       sectionViews.clear();
       viewer?.destroy();
       root.remove();
-    },
-  };
-}
-
-// ---- the properties panel ----------------------------------------------------------------
-
-interface PropertiesView {
-  element: HTMLElement;
-  update(page: Page): void;
-}
-
-function prop(el: ElementFactory, text: string, control: HTMLElement): HTMLElement {
-  return el('label', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, text), control);
-}
-
-function fieldProperties(el: ElementFactory, designer: Designer, id: string): PropertiesView {
-  const focused = (node: Element) => node.ownerDocument.activeElement === node;
-  const label = el('input', { class: 'fd-input fd-prop-label', 'aria-label': 'Label' });
-  label.addEventListener('input', () => designer.updateQuestion(id, { label: label.value }));
-  const kind = el('select', { class: 'fd-input fd-select', 'aria-label': 'Kind of field' });
-  for (const k of QUESTION_KINDS) kind.append(el('option', { value: k.id }, k.label));
-  kind.addEventListener('change', () => designer.changeKind(id, kind.value));
-  const options = optionsEditor(el, designer, id);
-  const required = el('input', { type: 'checkbox', 'aria-label': 'Required' });
-  required.addEventListener('change', () => designer.updateQuestion(id, { required: required.checked }));
-  const help = el('input', { class: 'fd-input', 'aria-label': 'Help text', placeholder: 'Optional' });
-  help.addEventListener('input', () => designer.updateQuestion(id, { help: help.value }));
-  const width = el('select', { class: 'fd-input fd-select', 'aria-label': 'Width' });
-  width.addEventListener('change', () => designer.setColspan(id, Number(width.value)));
-  const section = el('select', { class: 'fd-input fd-select', 'aria-label': 'Section' });
-  section.addEventListener('change', () => {
-    const target = sectionsOf(designer.getPage()).find((s) => s.id === section.value);
-    if (target) designer.placeNode(id, target.id, target.children.length);
-  });
-  const duplicate = el('button', { type: 'button', class: 'fd-button' }, 'Duplicate');
-  duplicate.addEventListener('click', () => {
-    const copy = designer.duplicateNode(id);
-    if (copy) designer.select(copy);
-  });
-  const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, 'Delete field');
-  remove.addEventListener('click', () => designer.removeNode(id));
-  const widthRow = prop(el, 'Width', width);
-  const element = el(
-    'div',
-    { class: 'fd-props' },
-    prop(el, 'Label', label),
-    prop(el, 'Kind', kind),
-    options.element,
-    el('label', { class: 'fd-q-required' }, required, el('span', {}, 'Required')),
-    prop(el, 'Help text', help),
-    widthRow,
-    prop(el, 'Section', section),
-    el('div', { class: 'fd-props-actions' }, duplicate, remove)
-  );
-
-  return {
-    element,
-    update(page) {
-      const found = findField(page, id);
-      if (!found) return;
-      const def = page.fields[found.node.field];
-      if (!focused(label)) label.value = found.node.label ?? def.label;
-      const current = kindOfQuestion(def, found.node);
-      kind.value = current ?? '';
-      kind.disabled = current === null;
-      options.update(def);
-      required.checked = def.required === true;
-      if (!focused(help)) help.value = found.node.help ?? def.help ?? '';
-      const columns = wideColumns(found.section.columns);
-      widthRow.hidden = columns === 1;
-      if (width.options.length !== columns) {
-        width.replaceChildren(
-          ...Array.from({ length: columns }, (_, i) => {
-            const n = i + 1;
-            const text = n === 1 ? '1 column' : `${n} columns${n === columns ? ' (full width)' : ''}`;
-            return el('option', { value: String(n) }, text);
-          })
-        );
-      }
-      width.value = String(Math.min(found.node.colspan ?? 1, columns));
-      section.replaceChildren(...sectionsOf(page).map((s) => el('option', { value: s.id }, s.title || 'Untitled section')));
-      section.value = found.section.id;
-    },
-  };
-}
-
-function sectionProperties(el: ElementFactory, designer: Designer, id: string): PropertiesView {
-  const focused = (node: Element) => node.ownerDocument.activeElement === node;
-  const title = el('input', { class: 'fd-input', 'aria-label': 'Section title' });
-  title.addEventListener('input', () => designer.renameContainer(id, title.value));
-  const columns = el('select', { class: 'fd-input fd-select', 'aria-label': 'Columns' });
-  for (const n of [1, 2, 3, 4]) columns.append(el('option', { value: String(n) }, String(n)));
-  columns.addEventListener('change', () => designer.setColumns(id, Number(columns.value) as 1 | 2 | 3 | 4));
-  const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, 'Delete section');
-  remove.addEventListener('click', () => designer.removeNode(id));
-  const element = el('div', { class: 'fd-props' }, prop(el, 'Title', title), prop(el, 'Columns', columns), el('div', { class: 'fd-props-actions' }, remove));
-  return {
-    element,
-    update(page) {
-      const section = sectionsOf(page).find((s) => s.id === id);
-      if (!section) return;
-      if (!focused(title)) title.value = section.title ?? '';
-      columns.value = String(section.columns ?? 1);
-      remove.hidden = sectionsOf(page).length === 1;
     },
   };
 }

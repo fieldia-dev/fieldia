@@ -71,7 +71,23 @@ export const DESIGNER_CSS = /* css */ `
 }
 .fd-canvas { display: grid; gap: 16px; justify-items: start; min-width: 0; }
 .fd-canvas > * { width: 100%; }
-.fd-canvas > .fd-button { width: auto; }
+.fd-canvas-adds { display: flex; flex-wrap: wrap; gap: 8px; }
+.fd-canvas-title { all: unset; box-sizing: border-box; cursor: pointer; font-size: 26px; font-weight: 650; line-height: 1.25; color: var(--fd-muted); padding: 8px 14px; border: 1px dashed var(--fd-border-strong); border-radius: var(--fd-radius); background: var(--fd-surface); }
+.fd-canvas-title:hover { color: var(--fd-text); }
+.fd-canvas-title.fd-canvas-selected { border-style: solid; border-color: var(--fd-accent); }
+.fd-canvas-tabs { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 0 6px 6px; }
+.fd-canvas-tabs.fd-canvas-selected { border-color: var(--fd-accent); box-shadow: 0 0 0 1px var(--fd-accent); }
+.fd-canvas-tabs-head { display: flex; align-items: flex-end; gap: 4px; border-block-end: 1px solid var(--fd-border); padding-block-start: 6px; margin-block-end: 10px; cursor: pointer; }
+.fd-canvas-tab-strip { display: flex; flex-wrap: wrap; gap: 2px; }
+.fd-canvas-tab { all: unset; cursor: pointer; padding: 8px 14px; font-weight: 600; font-size: 14px; color: var(--fd-muted); border-block-end: 2px solid transparent; margin-block-end: -1px; }
+.fd-canvas-tab:hover { color: var(--fd-text); }
+.fd-canvas-tab[aria-selected="true"] { color: var(--fd-accent); border-block-end-color: var(--fd-accent); }
+.fd-canvas-tab.fd-canvas-selected { background: var(--fd-accent-soft); border-radius: 3px 3px 0 0; }
+.fd-canvas-tab:focus-visible, .fd-canvas-add-tab:focus-visible, .fd-canvas-title:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+.fd-canvas-add-tab { all: unset; cursor: pointer; width: 28px; height: 28px; margin-block-end: 4px; display: grid; place-items: center; border-radius: 4px; color: var(--fd-muted); font-size: 18px; }
+.fd-canvas-add-tab:hover { background: var(--fd-page); color: var(--fd-accent); }
+.fd-canvas-tab-panel { display: grid; gap: 12px; }
+.fd-canvas-tab-panel > .fd-canvas-section { border-style: dashed; }
 .fd-canvas-sections { display: grid; gap: 16px; }
 .fd-canvas-section { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 12px 6px 6px; }
 .fd-canvas-section.fd-canvas-selected { border-color: var(--fd-accent); box-shadow: 0 0 0 1px var(--fd-accent); }

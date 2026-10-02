@@ -7,8 +7,11 @@ import {
   type Option,
   type Page,
   type SectionNode,
+  type SheetNode,
   type StepNode,
+  type TabsNode,
 } from '@fieldia/core';
+import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -46,8 +49,8 @@ export const QUESTION_KINDS: readonly QuestionKind[] = [
   { id: 'file', label: 'File upload', field: (label) => ({ type: 'binary', label, maxSize: 10 * 1024 * 1024 }) },
 ];
 
-/** What a page is for: a survey (wizard of steps) or an app screen (sections). */
-export type PageKind = 'survey' | 'screen';
+/** What a page is for: a survey (wizard of steps), an app screen (sections), or a record's sheet. */
+export type PageKind = 'survey' | 'screen' | 'sheet';
 
 const slug = (text: string, sep = '_') =>
   text
@@ -67,6 +70,17 @@ export function blankPage(kind: PageKind, title: string): Page {
       data: { kind: 'responses' },
       fields: {},
       layout: { type: 'wizard', id: 'steps', children: [{ type: 'step', id: 'step-1', label: 'Page 1', children: [] }] },
+    };
+  }
+  if (kind === 'sheet') {
+    // A record named in big letters at the top, as a business record is.
+    return {
+      fieldia: '0.1',
+      id,
+      title,
+      data: { kind: 'record', model: slug(title, '.') },
+      fields: { name: { type: 'char', label: 'Name', required: true } },
+      layout: { type: 'sheet', id: 'sheet', title: { field: 'name', placeholder: 'Name' }, children: [{ type: 'section', id: 'section-1', columns: 2, children: [] }] },
     };
   }
   return {
@@ -151,8 +165,16 @@ export interface Designer {
   placeNode(id: string, parent: string, index: number): boolean;
   duplicateNode(id: string): string | false;
   removeNode(id: string): boolean;
-  /** A step for a survey, a section for a screen. Returns its id. */
-  addContainer(label: string): string | false;
+  /** A step for a survey, a section for a screen or a sheet, or a section in a tab (`parent`). Returns its id. */
+  addContainer(label: string, where?: { parent?: string }): string | false;
+  /** A screen of sections becomes a sheet, or a sheet without tabs a screen of sections. */
+  setLayoutKind(kind: 'sections' | 'sheet'): boolean;
+  /** A sheet's title: a text field taken out of its section, or `null` to put it back first in the first section. */
+  setTitleField(nodeId: string | null): boolean;
+  /** Tabs on a sheet, after `after` or at the end: one tab, with a section. Returns the tabs' id. */
+  addTabs(where?: { after?: string }): string | false;
+  /** One more tab, with a section. Returns its id. */
+  addTab(tabsId: string, label: string): string | false;
   renameContainer(id: string, label: string): boolean;
   /** Show an element only when a field has a value; `null` always shows it. */
   setCondition(id: string, condition: { field: string; equals: string | number | boolean } | null): boolean;
@@ -171,72 +193,10 @@ export interface Designer {
   settled(): Promise<void>;
 }
 
-type Container = { id: string; children: LayoutNode[] };
-
 /** Thrown by an edit that cannot be made; `apply` turns it into an issue. */
 class Refusal extends Error {}
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
-
-/** Every container that holds fields: steps, sections, tabs. */
-function containers(page: Page): Container[] {
-  const found: Container[] = [];
-  const walk = (nodes: LayoutNode[]) => {
-    for (const node of nodes) {
-      if (node.type === 'section') {
-        found.push(node);
-        walk(node.children);
-      } else if (node.type === 'tabs') {
-        for (const tab of node.children) {
-          found.push(tab);
-          walk(tab.children);
-        }
-      }
-    }
-  };
-  const root = page.layout;
-  if (root.type === 'wizard') {
-    for (const step of root.children) {
-      found.push(step);
-      walk(step.children);
-    }
-  } else if (root.type === 'tabs') {
-    for (const tab of root.children) {
-      found.push(tab);
-      walk(tab.children);
-    }
-  }
-  else if (root.type !== 'list') {
-    if (root.type === 'sections') found.push(root);
-    walk(root.children);
-  }
-  return found;
-}
-
-function findNode(page: Page, id: string): { node: LayoutNode; parent: Container; index: number } | null {
-  for (const parent of containers(page)) {
-    const index = parent.children.findIndex((child) => child.id === id);
-    if (index !== -1) return { node: parent.children[index], parent, index };
-  }
-  return null;
-}
-
-function findContainer(page: Page, id: string): Container | (StepNode | SectionNode) | null {
-  return containers(page).find((c) => c.id === id) ?? null;
-}
-
-function nextName(taken: (name: string) => boolean, prefix: string, sep: string): string {
-  for (let n = 1; ; n++) if (!taken(`${prefix}${sep}${n}`)) return `${prefix}${sep}${n}`;
-}
-
-function allIds(page: Page): Set<string> {
-  const ids = new Set<string>([page.layout.id]);
-  for (const c of containers(page)) {
-    ids.add(c.id);
-    for (const child of c.children) ids.add(child.id);
-  }
-  return ids;
-}
 
 function kindOf(id: string): QuestionKind {
   const kind = QUESTION_KINDS.find((k) => k.id === id);
@@ -432,11 +392,14 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     moveNode(id, delta) {
       return apply((draft) => {
         const found = findNode(draft, id);
-        if (!found) throw new Refusal(`There is no element "${id}"`);
-        const to = found.index + delta;
-        if (to < 0 || to >= found.parent.children.length) throw new Refusal('It cannot move further');
-        found.parent.children.splice(found.index, 1);
-        found.parent.children.splice(to, 0, found.node);
+        const tab = found ? null : findTab(draft, id);
+        const list = (found?.parent.children ?? tab?.tabs.children) as { id: string }[] | undefined;
+        const index = found?.index ?? tab?.index;
+        if (!list || index === undefined) throw new Refusal(`There is no element "${id}"`);
+        const to = index + delta;
+        if (to < 0 || to >= list.length) throw new Refusal('It cannot move further');
+        const [moved] = list.splice(index, 1);
+        list.splice(to, 0, moved);
       });
     },
 
@@ -467,17 +430,25 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
 
     removeNode(id) {
       const ok = apply((draft) => {
+        const root = draft.layout as { id: string; children: { id: string }[] };
         const found = findNode(draft, id);
-        const root = draft.layout as { children: LayoutNode[] | StepNode[] };
-        const topIndex = (root.children as { id: string }[]).findIndex((child) => child.id === id);
-        if (found) found.parent.children.splice(found.index, 1);
-        else if (topIndex !== -1) {
-          // A whole page (wizard step) or a top-level section.
+        const tab = found ? null : findTab(draft, id);
+        const topIndex = root.children.findIndex((child) => child.id === id);
+        if (topIndex !== -1) {
+          // A whole page (wizard step), or what sits at the top of a screen or a sheet.
           if (root.children.length === 1) throw new Refusal('A page needs at least one step or section');
           root.children.splice(topIndex, 1);
+        } else if (found) found.parent.children.splice(found.index, 1);
+        else if (tab) {
+          tab.tabs.children.splice(tab.index, 1);
+          // Tabs with no tab left go too.
+          if (!tab.tabs.children.length) {
+            const holder = findNode(draft, tab.tabs.id);
+            if (holder) holder.parent.children.splice(holder.index, 1);
+          }
         } else throw new Refusal(`There is no element "${id}"`);
         // Drop the fields nothing shows any more.
-        const shown = new Set(containers(draft).flatMap((c) => c.children.filter((n): n is FieldNode => n.type === 'field').map((n) => n.field)));
+        const shown = shownFields(draft);
         for (const name of Object.keys(draft.fields)) if (!shown.has(name)) delete draft.fields[name];
       });
       if (ok && selected === id) {
@@ -487,18 +458,105 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       return ok;
     },
 
-    addContainer(label) {
+    addContainer(label, where = {}) {
       let created = '';
       const ok = apply((draft) => {
         const ids = allIds(draft);
         const root = draft.layout;
-        if (root.type === 'wizard') {
+        const section = () => {
+          created = nextName((name) => ids.has(name), 'section', '-');
+          return { type: 'section' as const, id: created, title: label, columns: 2 as const, children: [] };
+        };
+        if (where.parent) {
+          const tab = findTab(draft, where.parent);
+          if (!tab) throw new Refusal(`There is no tab "${where.parent}"`);
+          tab.tab.children.push(section());
+        } else if (root.type === 'wizard') {
           created = nextName((name) => ids.has(name), 'step', '-');
           root.children.push({ type: 'step', id: created, label, children: [] });
-        } else if (root.type === 'sections') {
-          created = nextName((name) => ids.has(name), 'section', '-');
-          root.children.push({ type: 'section', id: created, title: label, columns: 2, children: [] });
-        } else throw new Refusal('This page has no steps or sections to add to');
+        } else if (root.type === 'sections' || root.type === 'sheet') root.children.push(section());
+        else throw new Refusal('This page has no steps or sections to add to');
+      });
+      return ok ? created : false;
+    },
+
+    setLayoutKind(kind) {
+      return apply((draft) => {
+        const root = draft.layout;
+        if (root.type === kind) throw new Refusal(`It is a ${kind === 'sheet' ? 'sheet' : 'screen of sections'} already`);
+        const ids = allIds(draft);
+        const rootId = ids.has(kind) ? root.id : kind;
+        if (kind === 'sheet') {
+          if (root.type !== 'sections') throw new Refusal('Only a screen of sections becomes a sheet');
+          draft.layout = { type: 'sheet', id: rootId, children: root.children };
+          return;
+        }
+        if (root.type !== 'sheet') throw new Refusal('Only a sheet becomes a screen of sections');
+        if (root.children.some((n) => n.type === 'tabs')) throw new Refusal('Take the tabs out first: a screen of sections has none');
+        const parts = (['statusbar', 'buttons', 'statButtons', 'ribbon', 'alerts', 'badges', 'sidePanel'] as const).filter((part) => root[part] !== undefined);
+        if (parts.length) throw new Refusal(`A screen of sections cannot show this sheet's ${parts.join(', ')}`);
+        if (root.title) {
+          const first = firstSection(draft);
+          if (!first) throw new Refusal('A screen of sections needs a section for the title field');
+          first.children.unshift({ type: 'field', id: nextName((name) => ids.has(name), 'q', '-'), field: root.title.field });
+        }
+        draft.layout = { type: 'sections', id: rootId, children: root.children };
+      });
+    },
+
+    setTitleField(nodeId) {
+      return apply((draft) => {
+        const root = draft.layout as SheetNode;
+        if (root.type !== 'sheet') throw new Refusal('Only a sheet has a title');
+        const ids = allIds(draft);
+        // The field that was the title goes where the new one was, or first in the first section.
+        const old: FieldNode | null = root.title ? { type: 'field', id: nextName((name) => ids.has(name), 'q', '-'), field: root.title.field } : null;
+        if (nodeId === null) {
+          if (!old) return;
+          delete root.title;
+          const first = firstSection(draft);
+          if (!first) throw new Refusal('The title field needs a section to go back to');
+          first.children.unshift(old);
+          return;
+        }
+        const found = findNode(draft, nodeId);
+        if (!found || found.node.type !== 'field') throw new Refusal(`There is no question "${nodeId}"`);
+        const def = draft.fields[found.node.field];
+        if (def.type !== 'char') throw new Refusal('A title is a text field');
+        found.parent.children.splice(found.index, 1, ...(old ? [old] : []));
+        root.title = { field: found.node.field, placeholder: def.label };
+      });
+    },
+
+    addTabs(where = {}) {
+      let created = '';
+      const ok = apply((draft) => {
+        const root = draft.layout;
+        if (root.type !== 'sheet') throw new Refusal('Tabs go on a sheet');
+        const ids = allIds(draft);
+        const name = (prefix: string) => {
+          const id = nextName((n) => ids.has(n), prefix, '-');
+          ids.add(id);
+          return id;
+        };
+        created = name('tabs');
+        const tabs: TabsNode = { type: 'tabs', id: created, children: [{ type: 'tab', id: name('tab'), label: 'Tab 1', children: [{ type: 'section', id: name('section'), columns: 2, children: [] }] }] };
+        const after = where.after ? root.children.findIndex((n) => n.id === where.after) : -1;
+        if (where.after && after === -1) throw new Refusal(`There is no element "${where.after}" on the sheet`);
+        root.children.splice(after === -1 ? root.children.length : after + 1, 0, tabs);
+      });
+      return ok ? created : false;
+    },
+
+    addTab(tabsId, label) {
+      let created = '';
+      const ok = apply((draft) => {
+        const holder = findNode(draft, tabsId);
+        if (!holder || holder.node.type !== 'tabs') throw new Refusal(`There are no tabs "${tabsId}"`);
+        const ids = allIds(draft);
+        created = nextName((n) => ids.has(n), 'tab', '-');
+        ids.add(created);
+        holder.node.children.push({ type: 'tab', id: created, label, children: [{ type: 'section', id: nextName((n) => ids.has(n), 'section', '-'), columns: 2, children: [] }] });
       });
       return ok ? created : false;
     },
