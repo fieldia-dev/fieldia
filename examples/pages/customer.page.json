@@ -1,0 +1,152 @@
+{
+  "fieldia": "0.1",
+  "id": "customer",
+  "title": "Customer",
+  "data": { "kind": "record", "model": "partner" },
+  "fields": {
+    "name": { "type": "char", "label": "Name", "required": true, "size": 120 },
+    "image": { "type": "image", "label": "Photo", "maxSize": 2097152 },
+    "is_company": { "type": "boolean", "label": "Is a company" },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        { "value": "draft", "label": "Draft" },
+        { "value": "active", "label": "Active" },
+        { "value": "blocked", "label": "Blocked" }
+      ],
+      "default": "draft"
+    },
+    "email": { "type": "char", "label": "Email", "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$" },
+    "phone": { "type": "char", "label": "Phone" },
+    "website": { "type": "char", "label": "Website" },
+    "country_id": { "type": "many2one", "label": "Country", "relation": "country" },
+    "state_id": {
+      "type": "many2one",
+      "label": "Region",
+      "relation": "country.region",
+      "filter": [{ "field": "country_id", "op": "=", "valueFrom": "country_id" }]
+    },
+    "tag_ids": { "type": "many2many", "label": "Tags", "relation": "partner.tag" },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "currency" },
+    "credit_limit": { "type": "monetary", "label": "Credit limit", "currencyField": "currency_id", "min": 0 },
+    "over_limit": { "type": "boolean", "label": "Over credit limit", "readonly": true },
+    "sale_order_count": { "type": "integer", "label": "Sales", "readonly": true },
+    "invoice_count": { "type": "integer", "label": "Invoices", "readonly": true },
+    "child_ids": {
+      "type": "one2many",
+      "label": "Contacts",
+      "relation": "partner",
+      "fields": {
+        "name": { "type": "char", "label": "Name", "required": true },
+        "function": { "type": "char", "label": "Job position" },
+        "email": { "type": "char", "label": "Email" },
+        "phone": { "type": "char", "label": "Phone" }
+      }
+    },
+    "notes": { "type": "html", "label": "Internal notes" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "name", "avatarField": "image" },
+    "statusbar": { "field": "state", "clickable": true },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "activate",
+        "label": "Activate",
+        "action": "activate",
+        "style": "primary",
+        "invisible": "state != 'draft'"
+      },
+      {
+        "type": "button",
+        "id": "block",
+        "label": "Block",
+        "action": "block",
+        "style": "danger",
+        "confirm": "Block this customer? New orders will be refused.",
+        "invisible": "state == 'blocked'"
+      }
+    ],
+    "statButtons": [
+      { "id": "sales", "label": "Sales", "field": "sale_order_count", "icon": "cart", "action": "open_sales" },
+      { "id": "invoices", "label": "Invoices", "field": "invoice_count", "icon": "receipt", "action": "open_invoices" }
+    ],
+    "ribbon": { "id": "blocked-ribbon", "label": "Blocked", "tone": "danger", "invisible": "state != 'blocked'" },
+    "alerts": [
+      {
+        "id": "over-limit",
+        "message": "This customer is over their credit limit.",
+        "tone": "warning",
+        "invisible": "not over_limit"
+      }
+    ],
+    "children": [
+      {
+        "type": "section",
+        "id": "main",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-is-company", "field": "is_company" },
+          { "type": "field", "id": "f-email", "field": "email", "widget": "email" },
+          { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone" },
+          { "type": "field", "id": "f-website", "field": "website", "widget": "url" },
+          { "type": "field", "id": "f-country", "field": "country_id" },
+          { "type": "field", "id": "f-region", "field": "state_id", "invisible": "not country_id" },
+          { "type": "field", "id": "f-tags", "field": "tag_ids", "widget": "tags", "colspan": 2 }
+        ]
+      },
+      {
+        "type": "tabs",
+        "id": "notebook",
+        "children": [
+          {
+            "type": "tab",
+            "id": "tab-contacts",
+            "label": "Contacts",
+            "invisible": "not is_company",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-contacts",
+                "field": "child_ids",
+                "columns": ["name", "function", "email", "phone"]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-billing",
+            "label": "Sales and billing",
+            "children": [
+              {
+                "type": "section",
+                "id": "billing",
+                "title": "Credit",
+                "columns": 2,
+                "children": [
+                  { "type": "field", "id": "f-currency", "field": "currency_id" },
+                  {
+                    "type": "field",
+                    "id": "f-credit-limit",
+                    "field": "credit_limit",
+                    "readonly": "state == 'blocked'"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-notes",
+            "label": "Notes",
+            "children": [{ "type": "field", "id": "f-notes", "field": "notes" }]
+          }
+        ]
+      }
+    ],
+    "sidePanel": { "type": "slot", "id": "side", "name": "chatter" }
+  }
+}

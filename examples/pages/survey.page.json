@@ -1,0 +1,91 @@
+{
+  "fieldia": "0.1",
+  "id": "product-feedback",
+  "title": "Product feedback",
+  "description": "Five minutes, and it shapes what we build next.",
+  "data": { "kind": "responses" },
+  "fields": {
+    "name": { "type": "char", "label": "Your name", "required": true },
+    "email": {
+      "type": "char",
+      "label": "Email",
+      "help": "Only if you want a reply.",
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    },
+    "uses_product": {
+      "type": "selection",
+      "label": "Do you use the product today?",
+      "required": true,
+      "options": [
+        { "value": "yes", "label": "Yes" },
+        { "value": "no", "label": "No" }
+      ]
+    },
+    "rating": { "type": "integer", "label": "How would you rate it?", "required": true, "min": 1, "max": 5 },
+    "liked": {
+      "type": "selection",
+      "label": "What do you like?",
+      "multiple": true,
+      "options": [
+        { "value": "speed", "label": "Speed" },
+        { "value": "design", "label": "Design" },
+        { "value": "support", "label": "Support" },
+        { "value": "price", "label": "Price" }
+      ]
+    },
+    "improvements": { "type": "text", "label": "What should we improve?", "size": 2000 },
+    "reason_not": { "type": "text", "label": "What stops you from using it?", "required": true },
+    "contact_ok": { "type": "boolean", "label": "You may contact me about my answers" }
+  },
+  "layout": {
+    "type": "wizard",
+    "id": "survey",
+    "children": [
+      {
+        "type": "step",
+        "id": "step-about",
+        "label": "About you",
+        "children": [
+          {
+            "type": "text",
+            "id": "intro",
+            "text": "Thanks for taking part. Every answer is read by the product team.",
+            "style": "paragraph"
+          },
+          { "type": "field", "id": "q-name", "field": "name" },
+          { "type": "field", "id": "q-email", "field": "email", "widget": "email" }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "step-usage",
+        "label": "Using the product",
+        "children": [{ "type": "field", "id": "q-uses", "field": "uses_product", "widget": "radio" }]
+      },
+      {
+        "type": "step",
+        "id": "step-experience",
+        "label": "Your experience",
+        "invisible": "uses_product != 'yes'",
+        "children": [
+          { "type": "field", "id": "q-rating", "field": "rating", "widget": "rating" },
+          { "type": "field", "id": "q-liked", "field": "liked", "widget": "checkboxes" },
+          { "type": "field", "id": "q-improve", "field": "improvements" }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "step-reason",
+        "label": "Why not",
+        "invisible": "uses_product != 'no'",
+        "children": [{ "type": "field", "id": "q-reason", "field": "reason_not" }]
+      },
+      {
+        "type": "step",
+        "id": "step-last",
+        "label": "Last thing",
+        "children": [{ "type": "field", "id": "q-contact", "field": "contact_ok" }]
+      }
+    ]
+  }
+}

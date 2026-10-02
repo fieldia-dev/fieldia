@@ -20,6 +20,12 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   headless('core'),
   {
+    // Specs build broken pages on purpose; typing every one of them would only
+    // hide which part is wrong.
+    files: ['**/*.spec.ts'],
+    rules: { '@typescript-eslint/no-explicit-any': 'off' },
+  },
+  {
     files: ['**/*.cjs', '**/*.js'],
     languageOptions: { sourceType: 'commonjs', globals: { require: 'readonly', module: 'writable', __dirname: 'readonly' } },
     rules: { '@typescript-eslint/no-require-imports': 'off' },

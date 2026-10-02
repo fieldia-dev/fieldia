@@ -1,0 +1,167 @@
+import * as z from 'zod';
+import { JsonValueSchema } from './json';
+
+/**
+ * Field definitions: what a page knows about each value it shows or collects.
+ *
+ * A page declares its fields once, by name, and its layout points at them —
+ * the same split a backend's own field metadata uses, so an app can generate
+ * these definitions from it. Names follow Fieldia's naming rule: a backend's
+ * vocabulary stays unless it is a product name, jargon, or a clash.
+ */
+
+/** A field name: what expressions and layout nodes use to refer to a field. */
+export const FIELD_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+export const FIELD_TYPES = [
+  'char',
+  'text',
+  'html',
+  'integer',
+  'float',
+  'monetary',
+  'boolean',
+  'date',
+  'datetime',
+  'selection',
+  'binary',
+  'image',
+  'many2one',
+  'many2many',
+  'one2many',
+  'reference',
+  'properties',
+  'json',
+] as const;
+
+export type FieldType = (typeof FIELD_TYPES)[number];
+
+/** One choice in a selection or reference. */
+export const OptionSchema = z
+  .object({
+    value: z.union([z.string(), z.number()]),
+    label: z.string(),
+  })
+  .strict()
+  .meta({ id: 'Option' });
+
+export type Option = z.infer<typeof OptionSchema>;
+
+/**
+ * One condition limiting which records a relation may point to. Conditions in
+ * a filter all apply together. `valueFrom` compares against another field of
+ * the record being edited, so a region list can follow the chosen country.
+ */
+export const FilterConditionSchema = z
+  .object({
+    field: z.string().min(1),
+    op: z.enum(['=', '!=', '<', '>', '<=', '>=', 'in', 'not in', 'like', 'ilike']),
+    value: JsonValueSchema.optional(),
+    valueFrom: z.string().regex(FIELD_NAME).optional(),
+  })
+  .strict()
+  .refine((c) => (c.value === undefined) !== (c.valueFrom === undefined), {
+    message: 'set exactly one of value or valueFrom',
+  })
+  .meta({ id: 'FilterCondition' });
+
+export type FilterCondition = z.infer<typeof FilterConditionSchema>;
+
+const common = {
+  label: z.string(),
+  help: z.string().optional(),
+  required: z.boolean().optional(),
+  readonly: z.boolean().optional(),
+  default: JsonValueSchema.optional(),
+};
+
+const size = z.int().positive().optional();
+const digits = z.tuple([z.int().positive(), z.int().nonnegative()]).optional();
+const relation = z.string().min(1);
+const filter = z.array(FilterConditionSchema).optional();
+
+const Char = z.object({ type: z.literal('char'), ...common, size, pattern: z.string().optional() }).strict();
+const Text = z.object({ type: z.literal('text'), ...common, size }).strict();
+const Html = z.object({ type: z.literal('html'), ...common }).strict();
+const Integer = z
+  .object({ type: z.literal('integer'), ...common, min: z.number().optional(), max: z.number().optional() })
+  .strict();
+const Float = z
+  .object({ type: z.literal('float'), ...common, min: z.number().optional(), max: z.number().optional(), digits })
+  .strict();
+const Monetary = z
+  .object({
+    type: z.literal('monetary'),
+    ...common,
+    /** The field holding this amount's currency. */
+    currencyField: z.string().regex(FIELD_NAME).optional(),
+    /** A fixed ISO 4217 currency, when the page has no currency field. */
+    currency: z.string().regex(/^[A-Z]{3}$/).optional(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    digits,
+  })
+  .strict();
+const BooleanField = z.object({ type: z.literal('boolean'), ...common }).strict();
+const DateField = z.object({ type: z.literal('date'), ...common }).strict();
+const DateTime = z.object({ type: z.literal('datetime'), ...common }).strict();
+const Selection = z
+  .object({
+    type: z.literal('selection'),
+    ...common,
+    options: z.array(OptionSchema).min(1),
+    /** Several options may be chosen; the value becomes a list. */
+    multiple: z.boolean().optional(),
+  })
+  .strict();
+const Binary = z
+  .object({
+    type: z.literal('binary'),
+    ...common,
+    /** Accepted media types, such as "application/pdf" or "image/*". */
+    accept: z.array(z.string()).optional(),
+    /** Largest accepted file, in bytes. */
+    maxSize: z.int().positive().optional(),
+  })
+  .strict();
+const Image = z.object({ type: z.literal('image'), ...common, maxSize: z.int().positive().optional() }).strict();
+const Many2one = z.object({ type: z.literal('many2one'), ...common, relation, filter }).strict();
+const Many2many = z.object({ type: z.literal('many2many'), ...common, relation, filter }).strict();
+const Reference = z
+  .object({ type: z.literal('reference'), ...common, models: z.array(OptionSchema).min(1) })
+  .strict();
+const Properties = z.object({ type: z.literal('properties'), ...common }).strict();
+const Json = z.object({ type: z.literal('json'), ...common }).strict();
+
+/** A field of a one2many's lines. Lines cannot hold lines of their own. */
+export const LineFieldSchema = z
+  .discriminatedUnion('type', [
+    Char, Text, Html, Integer, Float, Monetary, BooleanField, DateField, DateTime,
+    Selection, Binary, Image, Many2one, Many2many, Reference, Properties, Json,
+  ])
+  .meta({ id: 'LineField' });
+
+export type LineField = z.infer<typeof LineFieldSchema>;
+
+const One2many = z
+  .object({
+    type: z.literal('one2many'),
+    ...common,
+    relation,
+    /** The fields of each line, so lines can be edited in place. */
+    fields: z.record(z.string().regex(FIELD_NAME), LineFieldSchema),
+  })
+  .strict();
+
+export const FieldSchema = z
+  .discriminatedUnion('type', [
+    Char, Text, Html, Integer, Float, Monetary, BooleanField, DateField, DateTime,
+    Selection, Binary, Image, Many2one, Many2many, One2many, Reference, Properties, Json,
+  ])
+  .meta({ id: 'Field' });
+
+export type Field = z.infer<typeof FieldSchema>;
+
+export const FieldsSchema = z.record(z.string().regex(FIELD_NAME), FieldSchema);
+
+export type Fields = z.infer<typeof FieldsSchema>;

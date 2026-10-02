@@ -18,10 +18,12 @@
       "require": "./src/index.js",
       "default": "./src/index.js"
     },
+    "./page.schema.json": "./schema/page.schema.json",
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "tslib": "^2.8.1"
+    "tslib": "^2.8.1",
+    "zod": "^4.6.5"
   },
   "sideEffects": false,
   "repository": {
@@ -31,6 +33,7 @@
   },
   "files": [
     "src",
+    "schema",
     "README.md",
     "LICENSE"
   ]

@@ -1,0 +1,2142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "fieldia": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "data": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "record"
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "model"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "responses"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "fields": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/Field"
+      }
+    },
+    "layout": {
+      "$ref": "#/$defs/RootLayout"
+    }
+  },
+  "required": [
+    "fieldia",
+    "id",
+    "data",
+    "fields",
+    "layout"
+  ],
+  "additionalProperties": false,
+  "title": "Fieldia page",
+  "description": "A form, survey or record screen as data. This schema checks shape; validatePage() also checks that every reference resolves.",
+  "$defs": {
+    "Field": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "char"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "size": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "pattern": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "text"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "size": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "html"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "integer"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "float"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            },
+            "digits": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "monetary"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "currencyField": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            },
+            "digits": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "boolean"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "date"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "datetime"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "selection"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "options": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Option"
+              }
+            },
+            "multiple": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "label",
+            "options"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "binary"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "accept": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "maxSize": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "image"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "maxSize": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "many2one"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "relation": {
+              "type": "string",
+              "minLength": 1
+            },
+            "filter": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/FilterCondition"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "label",
+            "relation"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "many2many"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "relation": {
+              "type": "string",
+              "minLength": 1
+            },
+            "filter": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/FilterCondition"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "label",
+            "relation"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "one2many"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "relation": {
+              "type": "string",
+              "minLength": 1
+            },
+            "fields": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/LineField"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "label",
+            "relation",
+            "fields"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "reference"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "models": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Option"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "label",
+            "models"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "properties"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "json"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "JsonValue": {
+      "$ref": "#/$defs/__schema0"
+    },
+    "__schema0": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema0"
+          }
+        },
+        {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/__schema0"
+          }
+        }
+      ]
+    },
+    "Option": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "label"
+      ],
+      "additionalProperties": false
+    },
+    "FilterCondition": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "=",
+            "!=",
+            "<",
+            ">",
+            "<=",
+            ">=",
+            "in",
+            "not in",
+            "like",
+            "ilike"
+          ]
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "valueFrom": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        }
+      },
+      "required": [
+        "field",
+        "op"
+      ],
+      "additionalProperties": false
+    },
+    "LineField": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "char"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "size": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "pattern": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "text"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "size": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "html"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "integer"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "float"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            },
+            "digits": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "monetary"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "currencyField": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            },
+            "digits": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "boolean"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "date"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "datetime"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "selection"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "options": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Option"
+              }
+            },
+            "multiple": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "label",
+            "options"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "binary"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "accept": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "maxSize": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "image"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "maxSize": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "many2one"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "relation": {
+              "type": "string",
+              "minLength": 1
+            },
+            "filter": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/FilterCondition"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "label",
+            "relation"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "many2many"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "relation": {
+              "type": "string",
+              "minLength": 1
+            },
+            "filter": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/FilterCondition"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "label",
+            "relation"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "reference"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "models": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Option"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "label",
+            "models"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "properties"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "json"
+            },
+            "label": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "required": {
+              "type": "boolean"
+            },
+            "readonly": {
+              "type": "boolean"
+            },
+            "default": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          },
+          "required": [
+            "type",
+            "label"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "RootLayout": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SheetNode"
+        },
+        {
+          "$ref": "#/$defs/SectionsNode"
+        },
+        {
+          "$ref": "#/$defs/TabsNode"
+        },
+        {
+          "$ref": "#/$defs/WizardNode"
+        }
+      ]
+    },
+    "SheetNode": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "sheet"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "title": {
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "subtitleField": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "avatarField": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "placeholder": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "field"
+          ],
+          "additionalProperties": false
+        },
+        "statusbar": {
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "visibleStates": {
+              "type": "array",
+              "items": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              }
+            },
+            "clickable": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "field"
+          ],
+          "additionalProperties": false
+        },
+        "buttons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "button"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1
+              },
+              "params": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/JsonValue"
+                }
+              },
+              "style": {
+                "type": "string",
+                "enum": [
+                  "primary",
+                  "secondary",
+                  "danger",
+                  "link"
+                ]
+              },
+              "confirm": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "invisible": {
+                "$ref": "#/$defs/Modifier"
+              }
+            },
+            "required": [
+              "type",
+              "id",
+              "label",
+              "action"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "statButtons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1
+              },
+              "field": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "invisible": {
+                "$ref": "#/$defs/Modifier"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "action"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "ribbon": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "label": {
+              "type": "string"
+            },
+            "tone": {
+              "type": "string",
+              "enum": [
+                "info",
+                "success",
+                "warning",
+                "danger",
+                "muted"
+              ]
+            },
+            "invisible": {
+              "$ref": "#/$defs/Modifier"
+            }
+          },
+          "required": [
+            "id",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        "alerts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "message": {
+                "type": "string"
+              },
+              "tone": {
+                "type": "string",
+                "enum": [
+                  "info",
+                  "success",
+                  "warning",
+                  "danger",
+                  "muted"
+                ]
+              },
+              "invisible": {
+                "$ref": "#/$defs/Modifier"
+              }
+            },
+            "required": [
+              "id",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LayoutNode"
+          }
+        },
+        "sidePanel": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "slot"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "invisible": {
+              "$ref": "#/$defs/Modifier"
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "name"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "children"
+      ],
+      "additionalProperties": false
+    },
+    "Modifier": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "LayoutNode": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "field"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "field": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "label": {
+              "type": "string"
+            },
+            "widget": {
+              "type": "string",
+              "minLength": 1
+            },
+            "placeholder": {
+              "type": "string"
+            },
+            "help": {
+              "type": "string"
+            },
+            "colspan": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4
+            },
+            "columns": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              }
+            },
+            "invisible": {
+              "$ref": "#/$defs/Modifier"
+            },
+            "readonly": {
+              "$ref": "#/$defs/Modifier"
+            },
+            "required": {
+              "$ref": "#/$defs/Modifier"
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "field"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "button"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "label": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string",
+              "minLength": 1
+            },
+            "params": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              }
+            },
+            "style": {
+              "type": "string",
+              "enum": [
+                "primary",
+                "secondary",
+                "danger",
+                "link"
+              ]
+            },
+            "confirm": {
+              "type": "string"
+            },
+            "icon": {
+              "type": "string"
+            },
+            "invisible": {
+              "$ref": "#/$defs/Modifier"
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "label",
+            "action"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "text"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "text": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string",
+              "enum": [
+                "heading",
+                "paragraph",
+                "note"
+              ]
+            },
+            "invisible": {
+              "$ref": "#/$defs/Modifier"
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "text"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "slot"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "invisible": {
+              "$ref": "#/$defs/Modifier"
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "name"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "$ref": "#/$defs/SectionNode"
+        },
+        {
+          "$ref": "#/$defs/TabsNode"
+        }
+      ]
+    },
+    "SectionNode": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "section"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "columns": {
+          "anyOf": [
+            {
+              "type": "number",
+              "const": 1
+            },
+            {
+              "type": "number",
+              "const": 2
+            },
+            {
+              "type": "number",
+              "const": 3
+            },
+            {
+              "type": "number",
+              "const": 4
+            }
+          ]
+        },
+        "collapsible": {
+          "type": "boolean"
+        },
+        "invisible": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LayoutNode"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "children"
+      ],
+      "additionalProperties": false
+    },
+    "TabsNode": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "tabs"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "invisible": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "children": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TabNode"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "children"
+      ],
+      "additionalProperties": false
+    },
+    "TabNode": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "tab"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "invisible": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LayoutNode"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "label",
+        "children"
+      ],
+      "additionalProperties": false
+    },
+    "SectionsNode": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "sections"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LayoutNode"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "children"
+      ],
+      "additionalProperties": false
+    },
+    "WizardNode": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "wizard"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "children": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/StepNode"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "children"
+      ],
+      "additionalProperties": false
+    },
+    "StepNode": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "step"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "invisible": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LayoutNode"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "label",
+        "children"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

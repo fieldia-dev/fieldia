@@ -3,42 +3,69 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/core/src",
   "projectType": "library",
-  "tags": ["scope:fieldia", "type:core"],
+  "tags": [
+    "scope:fieldia",
+    "type:core"
+  ],
   "targets": {
     "build": {
       "executor": "nx:run-commands",
-      "dependsOn": ["compile-cjs", "compile-esm"],
-      "outputs": ["{workspaceRoot}/dist/libs/core"],
+      "dependsOn": [
+        "compile-cjs",
+        "compile-esm"
+      ],
+      "outputs": [
+        "{workspaceRoot}/dist/libs/core"
+      ],
       "cache": true,
-      "inputs": ["production", "^production"],
+      "inputs": [
+        "production",
+        "^production"
+      ],
       "options": {
         "command": "node tools/dual-build.mjs core"
       }
     },
     "compile-cjs": {
       "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "dist/libs/core",
         "main": "libs/core/src/index.ts",
         "tsConfig": "libs/core/tsconfig.lib.json",
-        "assets": ["libs/core/*.md", "libs/core/LICENSE"]
+        "assets": [
+          "libs/core/*.md",
+          "libs/core/LICENSE",
+          {
+            "input": "libs/core/schema",
+            "glob": "*.json",
+            "output": "schema"
+          }
+        ]
       }
     },
     "compile-esm": {
       "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "tmp/core/esm",
         "main": "libs/core/src/index.ts",
         "tsConfig": "libs/core/tsconfig.lib.esm.json",
         "generatePackageJson": false,
-        "assets": ["libs/core/package.json"]
+        "assets": [
+          "libs/core/package.json"
+        ]
       }
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "outputs": [
+        "{workspaceRoot}/coverage/{projectRoot}"
+      ],
       "options": {
         "jestConfig": "libs/core/jest.config.cjs"
       }
