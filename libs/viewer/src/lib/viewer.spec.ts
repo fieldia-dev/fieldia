@@ -270,6 +270,67 @@ describe('a record sheet', () => {
   });
 });
 
+describe('collapsible sections', () => {
+  const folding: Page = {
+    fieldia: '0.1',
+    id: 'fold',
+    title: 'Delivery',
+    data: { kind: 'responses' },
+    fields: {
+      address: { type: 'char', label: 'Address' },
+      gate: { type: 'char', label: 'Gate code', required: true },
+    },
+    layout: {
+      type: 'sections',
+      id: 'sections',
+      children: [
+        { type: 'section', id: 'main', title: 'Where', children: [{ type: 'field', id: 'f-address', field: 'address' }] },
+        { type: 'section', id: 'more', title: 'Access details', collapsible: true, collapsed: true, children: [{ type: 'field', id: 'f-gate', field: 'gate' }] },
+      ],
+    },
+  };
+  function mountFolding(changes: Partial<Page> = {}) {
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountViewer(host, { page: { ...folding, ...changes }, dataSource: createMemoryDataSource() });
+    return host;
+  }
+  const toggle = (host: Element) => at(host, 'more').querySelector('.fd-section-toggle') as HTMLButtonElement;
+
+  it('folds and unfolds from its title, and says which it is', () => {
+    const host = mountFolding();
+    expect(toggle(host).getAttribute('aria-expanded')).toBe('false');
+    expect(visible(input(host, 'f-gate'))).toBe(false);
+    toggle(host).click();
+    expect(toggle(host).getAttribute('aria-expanded')).toBe('true');
+    expect(visible(input(host, 'f-gate'))).toBe(true);
+    expect(document.getElementById(toggle(host).getAttribute('aria-controls') as string)?.contains(input(host, 'f-gate'))).toBe(true);
+    toggle(host).click();
+    expect(visible(input(host, 'f-gate'))).toBe(false);
+  });
+
+  it('starts open unless it is marked collapsed, and a plain section has no toggle', () => {
+    const host = mountFolding();
+    expect(at(host, 'main').querySelector('.fd-section-toggle')).toBeNull();
+    handle?.destroy();
+    document.body.replaceChildren();
+    const open = mountFolding({
+      layout: { ...folding.layout, children: [{ ...(folding.layout as any).children[1], collapsed: undefined }] } as Page['layout'],
+    });
+    expect(toggle(open).getAttribute('aria-expanded')).toBe('true');
+    expect(visible(input(open, 'f-gate'))).toBe(true);
+  });
+
+  it('opens a folded section when one of its fields stops the answers being sent', async () => {
+    const host = mountFolding();
+    button(host, 'Submit').click();
+    await flush();
+    expect(toggle(host).getAttribute('aria-expanded')).toBe('true');
+    expect(visible(input(host, 'f-gate'))).toBe(true);
+    expect(document.activeElement).toBe(input(host, 'f-gate'));
+  });
+});
+
 describe('the viewer itself', () => {
   it('refuses a page that does not validate, naming the problem', () => {
     const broken = page('survey');

@@ -70,7 +70,10 @@ export interface SectionNode {
   title?: string;
   description?: string;
   columns?: 1 | 2 | 3 | 4;
+  /** The title folds and unfolds the section. Needs a title. */
   collapsible?: boolean;
+  /** A collapsible section that starts folded. */
+  collapsed?: boolean;
   invisible?: Modifier;
   children: LayoutNode[];
 }
@@ -229,6 +232,7 @@ export const SectionNodeSchema = z.strictObject({
   description: z.string().optional(),
   columns: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).optional(),
   collapsible: z.boolean().optional(),
+  collapsed: z.boolean().optional(),
   invisible,
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);

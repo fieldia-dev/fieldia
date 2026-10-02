@@ -272,11 +272,38 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     return box;
   }
 
+  /** Folded sections, and how to open each: a problem inside one has to be seen. */
+  const folds = new Map<HTMLElement, () => void>();
+
   function sectionItem(node: SectionNode): HTMLElement {
     const section = el('fieldset', { class: 'fd-section', 'data-node': node.id });
-    if (node.title) section.append(el('legend', { class: 'fd-section-title' }, node.title));
-    if (node.description) section.append(el('p', { class: 'fd-section-description' }, node.description));
-    section.append(grid(node.children, node.columns ?? 1));
+    const description = node.description ? el('p', { class: 'fd-section-description' }, node.description) : null;
+    const content = grid(node.children, node.columns ?? 1);
+    if (node.title && node.collapsible) {
+      content.id = uid(`${node.id}-content`);
+      const toggle = el(
+        'button',
+        { type: 'button', class: 'fd-section-toggle', 'aria-controls': content.id },
+        el('span', { class: 'fd-section-chevron', 'aria-hidden': 'true' }),
+        node.title
+      );
+      let open = node.collapsed !== true;
+      const show = (next: boolean) => {
+        open = next;
+        toggle.setAttribute('aria-expanded', String(open));
+        content.hidden = !open;
+        if (description) description.hidden = !open;
+        section.classList.toggle('fd-section-folded', !open);
+      };
+      toggle.addEventListener('click', () => show(!open));
+      folds.set(section, () => show(true));
+      show(open);
+      section.append(el('legend', { class: 'fd-section-title' }, toggle));
+    } else if (node.title) {
+      section.append(el('legend', { class: 'fd-section-title' }, node.title));
+    }
+    if (description) section.append(description);
+    section.append(content);
     hideWhen(section, node.id);
     return section;
   }
@@ -372,6 +399,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   function focusFirstProblem() {
     const invalid = root.querySelector<HTMLElement>('[aria-invalid="true"]');
     if (!invalid) return;
+    for (let folded = invalid.closest<HTMLElement>('.fd-section-folded'); folded; folded = folded.parentElement?.closest<HTMLElement>('.fd-section-folded') ?? null) {
+      folds.get(folded)?.();
+    }
     const target = invalid.matches('input, select, textarea, button') ? invalid : invalid.querySelector<HTMLElement>('input, select, textarea, button');
     target?.focus();
   }

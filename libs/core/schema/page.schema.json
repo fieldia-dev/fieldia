@@ -1971,6 +1971,9 @@
         "collapsible": {
           "type": "boolean"
         },
+        "collapsed": {
+          "type": "boolean"
+        },
         "invisible": {
           "$ref": "#/$defs/Modifier"
         },

@@ -153,6 +153,24 @@ describe('validatePage — references', () => {
     expect(text).toMatch(/layout\.children\[0\]\.children\[1\]/);
   });
 
+  it('rejects a collapsible section without a title to fold it by', () => {
+    const page = example('survey');
+    page['layout'].children[0].children = [{ type: 'section', id: 'loose', collapsible: true, children: [] }];
+    expect(messages(page).join('\n')).toMatch(/layout\.children\[0\]\.children\[0\]: a collapsible section needs a title/);
+  });
+
+  it('rejects a section that starts collapsed but cannot fold', () => {
+    const page = example('survey');
+    page['layout'].children[0].children = [{ type: 'section', id: 'stuck', title: 'Stuck', collapsed: true, children: [] }];
+    expect(messages(page).join('\n')).toMatch(/layout\.children\[0\]\.children\[0\]: collapsed needs collapsible: true/);
+  });
+
+  it('accepts a titled section that folds and starts folded', () => {
+    const page = example('survey');
+    page['layout'].children[0].children.push({ type: 'section', id: 'more', title: 'More', collapsible: true, collapsed: true, children: [] });
+    expect(messages(page)).toEqual([]);
+  });
+
   it('rejects a field node that points to an undefined field', () => {
     const page = example('survey');
     page['layout'].children[0].children[1].field = 'nickname';

@@ -248,6 +248,17 @@ export const FIELDIA_CSS = /* css */ `
   border-block-end: 1px solid var(--fd-border); padding-block-end: 6px; width: 100%;
 }
 .fd-section-description { color: var(--fd-muted); margin: 0; }
+.fd-section-toggle {
+  font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px; text-align: start;
+}
+.fd-section-toggle:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; border-radius: 2px; }
+.fd-section-chevron {
+  width: 0.5em; height: 0.5em; border: solid currentColor; border-width: 0 2px 2px 0;
+  transform: rotate(45deg); margin-block-start: -0.2em; transition: transform 0.15s ease; flex: none;
+}
+.fd-section-folded .fd-section-chevron { transform: rotate(-45deg); margin-block-start: 0; }
+[dir="rtl"] .fd-section-folded .fd-section-chevron { transform: rotate(135deg); }
 .fd-form[data-fd-skin="outlined"] .fd-sections > .fd-section {
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 20px 24px;
 }

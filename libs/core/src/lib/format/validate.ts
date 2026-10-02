@@ -141,6 +141,8 @@ class ReferenceCheck {
       case 'field':
         return this.checkFieldNode(node, path);
       case 'section':
+        if (node.collapsible && !node.title) this.report(path, 'a collapsible section needs a title to fold it by');
+        if (node.collapsed && !node.collapsible) this.report(path, 'collapsed needs collapsible: true');
         return this.walkChildren(node.children, path);
       case 'tabs':
         return this.walkTabs(node, path);
