@@ -2,6 +2,7 @@ import { fill, type Locale } from '@fieldia/core';
 import { installStyles, sanitizeHtml, type IconSet } from '@fieldia/widgets';
 import { activitiesPart } from './activities';
 import { attachmentList, composerFiles } from './attachments';
+import { followersPart } from './followers';
 import { CHATTER_LABELS, type ChatterLabels } from './labels';
 import { mentions } from './mentions';
 import { reactionBar } from './reactions';
@@ -228,6 +229,7 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
       return;
     }
     void activities.load();
+    void followers.load();
     const messages = await options.source.messages(current);
     if (destroyed || record !== current) return; // another record, or gone, meanwhile
     shown = new Map(messages.map((message) => [message.id, message]));
@@ -238,7 +240,10 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
   // Marking an activity done posts what came of it: the conversation is fetched again.
   const activities = activitiesPart(context, () => load());
   if (activities.button) bar.append(activities.button);
-  root.append(bar, waiting, composer, ...(activities.element ? [activities.element] : []), empty, list);
+  // Who follows sits at the far end of the bar, its list just under it.
+  const followers = followersPart(context);
+  if (followers.button) bar.append(el('span', { class: 'fd-spacer' }), followers.button);
+  root.append(bar, ...(followers.element ? [followers.element] : []), waiting, composer, ...(activities.element ? [activities.element] : []), empty, list);
   host.append(root);
   void load();
 

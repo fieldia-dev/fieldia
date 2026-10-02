@@ -77,6 +77,18 @@ a.fd-attachment-file:hover { border-color: var(--fd-accent); }
 .fd-activity-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; padding: 12px; border: 1px solid var(--fd-border); border-radius: var(--fd-radius); background: var(--fd-surface); }
 .fd-activity-form .fd-composer-actions { grid-column: 1 / -1; }
 .fd-activity-field { display: grid; gap: 4px; font-size: 13px; color: var(--fd-muted); }
+.fd-followers-toggle { display: inline-flex; align-items: center; gap: 6px; }
+.fd-followers-toggle .fd-icon { width: 1.1em; height: 1.1em; }
+.fd-followers { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--fd-border); border-radius: var(--fd-radius); background: var(--fd-surface); }
+.fd-follower-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.fd-follower { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; }
+.fd-followers-none { margin: 0; color: var(--fd-muted); }
+.fd-followers-add { display: grid; gap: 6px; border-block-start: 1px solid var(--fd-border); padding-block-start: 8px; }
+.fd-followers-add-title { font-size: 12.5px; color: var(--fd-muted); }
+.fd-follower-candidates { list-style: none; margin: 0; padding: 0; }
+.fd-follower-candidates [role=option] { padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+.fd-follower-candidates [role=option]:hover { background: var(--fd-accent-soft); }
+.fd-follower-candidates .fd-empty { padding: 6px 8px; color: var(--fd-muted); }
 `;
 
 /** Puts the chatter's look in the document once. */

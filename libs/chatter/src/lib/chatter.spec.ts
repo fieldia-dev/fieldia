@@ -309,3 +309,52 @@ describe('activities', () => {
     expect(host.querySelector('.fd-activities')).toBeNull();
   });
 });
+
+describe('followers', () => {
+  function followed() {
+    return createMemoryChatter({
+      me,
+      people: [me, mona, { id: 3, name: 'Karim Fathy' }],
+      records: { 'sale.order:7': { followers: [{ id: 61, person: mona }] } },
+    });
+  }
+
+  it('shows how many follow, lists them, takes one away and adds another', async () => {
+    const chatter = followed();
+    const host = await mount(chatter);
+    const toggle = host.querySelector('.fd-followers-toggle') as HTMLButtonElement;
+    await until(() => toggle.textContent?.includes('1'));
+    expect(toggle.getAttribute('aria-label')).toBe('Followers: 1');
+    toggle.click();
+    const panel = host.querySelector('.fd-followers') as HTMLElement;
+    await until(() => !panel.hidden);
+    expect([...panel.querySelectorAll('.fd-follower-name')].map((n) => n.textContent)).toEqual(['Mona Adel']);
+    const find = panel.querySelector('input[type=search]') as HTMLInputElement;
+    find.value = 'kar';
+    find.dispatchEvent(new Event('input', { bubbles: true }));
+    await until(() => panel.querySelector('.fd-follower-candidates [role=option]'));
+    (panel.querySelector('.fd-follower-candidates [role=option]') as HTMLElement).click();
+    await until(() => panel.querySelectorAll('.fd-follower-name').length === 2);
+    expect(toggle.getAttribute('aria-label')).toBe('Followers: 2');
+    (panel.querySelector('button[aria-label="Stop Mona Adel following"]') as HTMLButtonElement).click();
+    await until(() => panel.querySelectorAll('.fd-follower-name').length === 1);
+    expect([...panel.querySelectorAll('.fd-follower-name')].map((n) => n.textContent)).toEqual(['Karim Fathy']);
+  });
+
+  it('offers only people who do not follow yet', async () => {
+    const host = await mount(followed());
+    (host.querySelector('.fd-followers-toggle') as HTMLButtonElement).click();
+    const panel = host.querySelector('.fd-followers') as HTMLElement;
+    await until(() => !panel.hidden);
+    const find = panel.querySelector('input[type=search]') as HTMLInputElement;
+    find.value = '';
+    find.dispatchEvent(new Event('input', { bubbles: true }));
+    await until(() => panel.querySelector('.fd-follower-candidates [role=option]'));
+    expect([...panel.querySelectorAll('.fd-follower-candidates [role=option]')].map((o) => o.textContent)).toEqual(['Ramy Fathi', 'Karim Fathy']);
+  });
+
+  it('shows no followers when the source keeps none', async () => {
+    const host = await mount({ ...source(), followers: undefined });
+    expect(host.querySelector('.fd-followers-toggle')).toBeNull();
+  });
+});
