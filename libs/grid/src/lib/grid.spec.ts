@@ -1,4 +1,4 @@
-import { createMemoryDataSource, type Line, type Page } from '@fieldia/core';
+import { createMemoryDataSource, type Line, type MemoryDataSourceOptions, type Page } from '@fieldia/core';
 import { mountViewer, type ViewerHandle } from '@fieldia/viewer';
 import { memoryPreferences, type PreferenceStore } from '@fieldia/widgets';
 import { gridApiOf, gridWidgets } from './grid';
@@ -55,18 +55,20 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-async function mount(page: Page = order, rows: Line[] = lines, preferences: PreferenceStore = memoryPreferences()) {
+async function mount(page: Page = order, rows: Line[] = lines, preferences: PreferenceStore = memoryPreferences(), onchange?: MemoryOnchange) {
   const host = document.createElement('div');
   document.body.append(host);
   const dataSource = createMemoryDataSource({
     records: { 'sale.order': { 1: { name: 'S00118', line_ids: rows } }, product: { 1: { name: 'Office chair' }, 2: { name: 'Desk lamp' }, 3: { name: 'Monitor arm' } } },
+    ...(onchange ? { onchange } : {}),
   });
   handle = mountViewer(host, { page, dataSource, recordId: 1, widgets: gridWidgets, preferences });
   await handle.form.settled();
   await frames();
   const box = host.querySelector('[data-node="f-lines"] .fd-grid-lines') as HTMLElement;
-  return { host, form: handle.form, box, api: gridApiOf(box) };
+  return { host, form: handle.form, box, api: gridApiOf(box), dataSource };
 }
+type MemoryOnchange = NonNullable<MemoryDataSourceOptions['onchange']>;
 const rowCells = (box: HTMLElement, index: number) =>
   [...box.querySelectorAll(`.ag-row[row-index="${index}"] .ag-cell`)].map((c) => (c as HTMLElement).textContent?.trim());
 const formLines = (form: { getState(): { values: Record<string, unknown> } }) => form.getState().values['line_ids'] as Line[];
@@ -166,6 +168,36 @@ describe('a line in a dialog', () => {
     expect(dialogBox()).toBeNull();
     expect(formLines(form)[1].values['name']).toBe('LED, daylight');
     expect(rowCells(box, 1)).toContain('LED, daylight');
+  });
+
+  it('finds a product through the page’s source, shows the price the onchange gives it, and leaves the line until Save & Close', async () => {
+    const PRICES: Record<number, number> = { 1: 1890, 2: 380, 3: 749 };
+    const onchange: MemoryOnchange = {
+      'sale.order': {
+        line_ids: (values) => ({
+          line_ids: (values['line_ids'] as Line[]).map((l) => ({ ...l, values: { ...l.values, price: PRICES[(l.values['product_id'] as { id: number }).id] } })),
+        }),
+      },
+    };
+    const { box, form, dataSource } = await mount(order, lines, memoryPreferences(), onchange);
+    (box.querySelector('.ag-row[row-index="1"] button[aria-label="Open line"]') as HTMLButtonElement).click();
+    await frames();
+    const product = dialogBox()?.querySelector('[data-node="values-product_id"] input') as HTMLInputElement;
+    product.focus();
+    product.value = 'monitor';
+    product.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 260));
+    const option = [...(dialogBox()?.querySelectorAll('[role=option]') ?? [])].find((o) => o.textContent === 'Monitor arm') as HTMLElement;
+    expect(option).toBeDefined();
+    option.click();
+    await frames();
+    expect((dialogBox()?.querySelector('[data-node="values-price"] input') as HTMLInputElement).value).toMatch(/749\.00/);
+    expect(formLines(form)[1].values).toEqual(expect.objectContaining({ product_id: { id: 2, label: 'Desk lamp' }, price: 380 }));
+    // The dialog only looks things up through the source: it never loads, saves or recalculates a record of its own there.
+    expect(dataSource.calls.filter((c) => (c.request as { model?: string }).model === 'values')).toEqual([]);
+    footButton('Save & Close').click();
+    await frames();
+    expect(formLines(form)[1].values).toEqual(expect.objectContaining({ product_id: { id: 3, label: 'Monitor arm' }, price: 749 }));
   });
 
   it('Discard leaves the line as it was', async () => {

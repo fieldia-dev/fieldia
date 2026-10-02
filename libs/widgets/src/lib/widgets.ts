@@ -60,8 +60,11 @@ export interface WidgetDialogs {
   openRecord(model: string, request: { recordId?: RecordId; name?: string; title: string }): Promise<RelatedRecord | null>;
   /** Pick a record from a searchable list. */
   searchMore(request: { title: string; search(query: string, limit: number): Promise<RelatedRecord[]> }): Promise<RelatedRecord | null>;
-  /** Values edited in a form made of these fields. Resolves with the new values, or null. */
-  editValues(request: { title: string; fields: Record<string, Field>; values: Values; readonly?: boolean }): Promise<Values | null>;
+  /**
+   * Values edited in a form made of these fields. Resolves with the new values,
+   * or null. `recompute` recalculates them as they change, as a line's onchange.
+   */
+  editValues(request: { title: string; fields: Record<string, Field>; values: Values; readonly?: boolean; recompute?: (values: Values) => Promise<Values> }): Promise<Values | null>;
 }
 
 export interface WidgetState {

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createMemoryDataSource, type Page } from '@fieldia/core';
+import { createMemoryDataSource, type Page, type Values } from '@fieldia/core';
 import { openFormDialog, openSearchDialog } from './dialog';
 
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', 'examples', 'pages');
@@ -92,6 +92,56 @@ describe('a form in a dialog', () => {
     const done = await result;
     expect(done.saved).toBe(true);
     expect(done.values).toEqual(expect.objectContaining({ full_name: 'Sara', role: 'designer', email: 'sara@example.com' }));
+  });
+
+  /** A line's fields: its subtotal is worked out from the others. */
+  const linePage: Page = {
+    fieldia: '0.1',
+    id: 'values',
+    title: 'Order line',
+    data: { kind: 'record', model: 'values' },
+    fields: {
+      qty: { type: 'float', label: 'Quantity' },
+      price: { type: 'float', label: 'Unit price' },
+      subtotal: { type: 'float', label: 'Subtotal', readonly: true },
+    },
+    layout: { type: 'sections', id: 'values', children: [{ type: 'section', id: 's', children: ['qty', 'price', 'subtotal'].map((name) => ({ type: 'field' as const, id: `values-${name}`, field: name })) }] },
+  };
+
+  it('in values mode recalculates the values as they change, and shows what comes back', async () => {
+    const asked: unknown[] = [];
+    const recompute = async (values: Values): Promise<Values> => {
+      asked.push(values['qty']);
+      return { ...values, subtotal: Number(values['qty']) * Number(values['price']) };
+    };
+    const result = openFormDialog({ page: linePage, title: 'Order line', mode: 'values', values: { qty: 2, price: 100, subtotal: 200 }, recompute });
+    await flush();
+    typeIn(field('values-qty'), '5');
+    await flush();
+    await flush();
+    expect(field('values-subtotal').value).toBe('500.00');
+    // Writing the answer back is no change to recalculate again.
+    expect(asked).toEqual([5]);
+    button('Save & Close').click();
+    expect((await result).values).toEqual({ qty: 5, price: 100, subtotal: 500 });
+  });
+
+  it('drops an answer for values that have changed since', async () => {
+    const pending: { qty: unknown; answer: () => void }[] = [];
+    const recompute = (values: Values) =>
+      new Promise<Values>((answer) => pending.push({ qty: values['qty'], answer: () => answer({ ...values, subtotal: Number(values['qty']) * 100 }) }));
+    const result = openFormDialog({ page: linePage, title: 'Order line', mode: 'values', values: { qty: 2, price: 100, subtotal: 200 }, recompute });
+    await flush();
+    typeIn(field('values-qty'), '5');
+    typeIn(field('values-qty'), '6');
+    expect(pending.map((p) => p.qty)).toEqual([5, 6]);
+    pending[1].answer();
+    await flush();
+    pending[0].answer();
+    await flush();
+    expect(field('values-subtotal').value).toBe('600.00');
+    button('Save & Close').click();
+    expect((await result).values['subtotal']).toBe(600);
   });
 
   it('keeps Tab inside the dialog', async () => {

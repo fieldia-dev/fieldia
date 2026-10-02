@@ -2,6 +2,8 @@ import {
   createForm,
   validatePage,
   type ButtonNode,
+  type CreateRequest,
+  type DataSource,
   type Field,
   type FieldNode,
   type Form,
@@ -10,6 +12,7 @@ import {
   type JsonValue,
   type LayoutNode,
   type Page,
+  type SearchRequest,
   type SectionNode,
   type SheetNode,
   type SlotNode,
@@ -714,6 +717,15 @@ function valuesPage(fields: Record<string, Field>, title: string, readonly: bool
   };
 }
 
+/** Only finding and making linked records: values edited in a dialog are no record of the source's to load, save or recalculate. */
+function lookupsOf(source: DataSource | undefined): DataSource | undefined {
+  if (!source) return undefined;
+  return {
+    ...(source.search ? { search: (request: SearchRequest) => source.search!(request) } : {}),
+    ...(source.create ? { create: (request: CreateRequest) => source.create!(request) } : {}),
+  };
+}
+
 /** The dialogs a page's widgets may open, made from the viewer's own options. */
 function pageDialogs(options: ViewerOptions): WidgetDialogs {
   const pageFor = (model: string) =>
@@ -751,9 +763,11 @@ function pageDialogs(options: ViewerOptions): WidgetDialogs {
       const result = await openFormDialog({
         ...shared,
         page: valuesPage(request.fields, request.title, request.readonly === true),
+        dataSource: lookupsOf(options.dataSource),
         values: request.values,
         title: request.title,
         mode: 'values',
+        ...(request.recompute ? { recompute: request.recompute } : {}),
       });
       return result.saved ? result.values : null;
     },

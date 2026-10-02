@@ -565,7 +565,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const openLine = async (line: Line) => {
     if (!dialogs) return;
     const fields = Object.fromEntries(Object.entries(def.fields).filter(([key]) => key !== kinds?.field && key !== sequence)) as Record<string, Field>;
-    const values = await dialogs.editValues({ title: def.label, fields, values: line.values, readonly });
+    // The dialog shows what the onchange makes of the line as it is edited; the line itself waits for Save & Close.
+    const values = await dialogs.editValues({ title: def.label, fields, values: line.values, readonly, recompute: (edited) => form.previewLine(name, line.key, edited) });
     if (!values) return;
     // Written in one go, so the form recalculates once.
     form.setValue(name, lines().map((l) => (l.key === line.key ? { ...l, values: { ...l.values, ...values } } : l)));

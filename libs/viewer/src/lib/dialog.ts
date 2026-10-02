@@ -1,6 +1,6 @@
 import type { Locale, RecordId, RelatedRecord, Values } from '@fieldia/core';
 import { WIDGET_LABELS } from '@fieldia/widgets';
-import { mountViewer, VIEWER_LABELS, type Skin, type ViewerOptions } from './viewer';
+import { mountViewer, VIEWER_LABELS, type Skin, type ViewerHandle, type ViewerOptions } from './viewer';
 
 /**
  * A page in a dialog: a new related record, a line to edit, a quick task. The
@@ -18,6 +18,11 @@ export interface FormDialogOptions extends ViewerOptions {
    * a bigger record, such as a line.
    */
   mode?: 'save' | 'values';
+  /**
+   * Recalculates the values as they change, for a dialog with no data source of
+   * its own: a line's subtotal following its quantity. What comes back is shown.
+   */
+  recompute?: (values: Values) => Promise<Values>;
   /** Where the dialog goes: the document's body by default. */
   container?: HTMLElement;
 }
@@ -69,6 +74,8 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
   container.append(backdrop);
 
   const handle = mountViewer(body, { ...options, showActions: false });
+  let done = false;
+  if (options.recompute) recalculate(handle.form, options.page.fields, options.recompute, () => done);
 
   const focusables = () =>
     [...box.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
@@ -82,7 +89,6 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
   });
 
   return new Promise((resolve) => {
-    let done = false;
     const close = (saved: boolean) => {
       if (done) return;
       done = true;
@@ -122,6 +128,30 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
         }
       }
     });
+  });
+}
+
+/** Each change of the values asks for them recalculated, and shows the answer unless they changed again meanwhile. */
+function recalculate(form: ViewerHandle['form'], fields: Record<string, unknown>, recompute: (values: Values) => Promise<Values>, closed: () => boolean) {
+  let seen = JSON.stringify(form.getState().values);
+  let writing = false;
+  form.subscribe(() => {
+    const values = form.getState().values as Values;
+    const now = JSON.stringify(values);
+    if (writing || now === seen) return;
+    seen = now;
+    recompute(values).then(
+      (next) => {
+        if (closed() || JSON.stringify(form.getState().values) !== now) return; // a newer answer is on its way
+        writing = true;
+        for (const [name, value] of Object.entries(next)) {
+          if (name in fields && JSON.stringify(values[name] ?? null) !== JSON.stringify(value ?? null)) form.setValue(name, value);
+        }
+        writing = false;
+        seen = JSON.stringify(form.getState().values);
+      },
+      () => undefined
+    );
   });
 }
 
