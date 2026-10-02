@@ -499,7 +499,13 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const title = el('div', { class: 'fd-title' });
       title.append(fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder }));
       if (node.title.subtitleField) title.append(fieldItem({ type: 'field', id: '#subtitle', field: node.title.subtitleField }));
-      card.append(title);
+      const row = el('div', { class: 'fd-title-row' }, title);
+      if (node.title.avatarField) {
+        const avatar = fieldItem({ type: 'field', id: '#avatar', field: node.title.avatarField });
+        avatar.classList.add('fd-avatar');
+        row.append(avatar);
+      }
+      card.append(row);
     }
     card.append(grid(node.children));
 

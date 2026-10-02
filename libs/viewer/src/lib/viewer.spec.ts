@@ -234,6 +234,13 @@ describe('a record sheet', () => {
     expect(button(host, 'Save')).toBeUndefined();
   });
 
+  it('shows the avatar beside the title', async () => {
+    const { host, form } = sheet();
+    await form.settled();
+    form.setValue('image', { name: 'logo.png', type: 'image/png', size: 3, url: 'https://cdn.example/logo.png' });
+    expect((host.querySelector('.fd-title-row .fd-avatar img') as HTMLImageElement).src).toBe('https://cdn.example/logo.png');
+  });
+
   it('hands the side panel to the app', async () => {
     const { host, form } = sheet({ slots: { chatter: (el) => void (el.textContent = 'Activity feed') } });
     await form.settled();

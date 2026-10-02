@@ -308,7 +308,14 @@ export const FIELDIA_CSS = /* css */ `
 .fd-stat:hover { background: var(--fd-page); }
 .fd-stat-value { font-weight: 700; font-size: 15px; color: var(--fd-accent); font-variant-numeric: tabular-nums; }
 .fd-stat-label { font-size: 12.5px; color: var(--fd-muted); }
-.fd-title { display: grid; gap: 4px; padding-inline-end: 72px; }
+.fd-title-row { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; }
+.fd-title { display: grid; gap: 4px; flex: 1 1 auto; min-width: 0; }
+.fd-avatar { flex: none; }
+.fd-avatar > .fd-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.fd-form[data-fd-skin="underline"] .fd-avatar { grid-template-columns: minmax(0, 1fr); }
+.fd-form[data-fd-skin="underline"] .fd-avatar > * { grid-column: 1 !important; }
+.fd-avatar .fd-image-preview { width: 88px; height: 88px; }
+.fd-avatar .fd-file-pick .fd-help { display: none; }
 .fd-title .fd-input { font-size: 24px; font-weight: 600; min-height: 40px; }
 .fd-form[data-fd-skin="underline"] .fd-title .fd-field { grid-template-columns: minmax(0, 1fr); }
 .fd-form[data-fd-skin="underline"] .fd-title .fd-field > * { grid-column: 1; }
