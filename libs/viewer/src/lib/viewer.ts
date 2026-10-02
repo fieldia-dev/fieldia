@@ -37,6 +37,10 @@ export interface ViewerLabels {
   submit: string;
   next: string;
   back: string;
+  /** Passing over an optional step. */
+  skip: string;
+  /** The list of a wizard's steps, for screen readers. */
+  steps: string;
   stepOf: string;
   submitted: string;
   submitAnother: string;
@@ -60,6 +64,8 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     submit: 'Submit',
     next: 'Next',
     back: 'Back',
+    skip: 'Skip',
+    steps: 'Steps',
     stepOf: 'Step {n} of {total}',
     submitted: 'Thank you. Your answers were sent.',
     submitAnother: 'Submit another response',
@@ -80,6 +86,8 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     submit: 'إرسال',
     next: 'التالي',
     back: 'رجوع',
+    skip: 'تخطٍّ',
+    steps: 'الخطوات',
     stepOf: 'الخطوة {n} من {total}',
     submitted: 'شكرًا لك. تم إرسال إجاباتك.',
     submitAnother: 'إرسال إجابة أخرى',
@@ -100,6 +108,8 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     submit: 'Absenden',
     next: 'Weiter',
     back: 'Zurück',
+    skip: 'Überspringen',
+    steps: 'Schritte',
     stepOf: 'Schritt {n} von {total}',
     submitted: 'Vielen Dank. Ihre Antworten wurden gesendet.',
     submitAnother: 'Weitere Antwort senden',
@@ -120,6 +130,8 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     submit: 'Envoyer',
     next: 'Suivant',
     back: 'Retour',
+    skip: 'Passer',
+    steps: 'Étapes',
     stepOf: 'Étape {n} sur {total}',
     submitted: 'Merci. Vos réponses ont été envoyées.',
     submitAnother: 'Envoyer une autre réponse',
@@ -520,19 +532,38 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const progressText = el('div', { class: 'fd-progress-text' });
     const bar = el('span');
     box.append(el('div', { class: 'fd-progress' }, progressText, el('div', { class: 'fd-progress-bar' }, bar)));
+    // A clickable wizard lists its steps: back to any, forward past those that are complete.
+    const list = node.clickable ? el('ol', { class: 'fd-steps-list' }) : null;
+    const stepButtons = new Map<string, HTMLButtonElement>();
+    if (list) {
+      for (const step of node.children) {
+        const go = el('button', { type: 'button', class: 'fd-step-link' }, ...withIcon(step.icon, step.label));
+        go.addEventListener('click', () => {
+          if (form.goTo(step.id)) focusStep();
+          else focusFirstProblem();
+        });
+        stepButtons.set(step.id, go);
+        list.append(el('li', {}, go));
+      }
+      box.append(el('nav', { class: 'fd-steps', 'aria-label': labels.steps }, list));
+    }
     const panels = node.children.map((step) => {
       const panel = el('section', { class: 'fd-step', 'data-node': step.id, 'aria-labelledby': uid(`${step.id}-title`) });
-      panel.append(el('h2', { class: 'fd-step-title', id: uid(`${step.id}-title`) }, step.label));
+      panel.append(el('h2', { class: 'fd-step-title', id: uid(`${step.id}-title`) }, ...withIcon(step.icon, step.label)));
       if (step.description) panel.append(el('p', { class: 'fd-section-description' }, step.description));
       panel.append(grid(step.children));
       box.append(panel);
       return { step, panel };
     });
-    const back = el('button', { type: 'button', class: 'fd-button' }, labels.back);
+    const back = el('button', { type: 'button', class: 'fd-button' }, node.backLabel ?? labels.back);
+    const skip = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.skip);
     const forward = el('button', { type: 'submit', class: 'fd-button fd-button-primary' });
-    box.append(el('div', { class: 'fd-wizard-nav' }, back, el('span', { class: 'fd-spacer' }), status, forward));
+    box.append(el('div', { class: 'fd-wizard-nav' }, back, el('span', { class: 'fd-spacer' }), status, skip, forward));
     back.addEventListener('click', () => {
       if (form.back()) focusStep();
+    });
+    skip.addEventListener('click', () => {
+      if (form.skip()) focusStep();
     });
     const isLast = () => {
       const steps = form.steps();
@@ -553,8 +584,18 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       progressText.textContent = fill(labels.stepOf, { n: index + 1, total: steps.length });
       bar.style.width = `${((index + 1) / Math.max(1, steps.length)) * 100}%`;
       for (const { step, panel } of panels) panel.hidden = step.id !== state.step;
+      const last = index === steps.length - 1;
       back.hidden = index === 0;
-      forward.textContent = index === steps.length - 1 ? labels.submit : labels.next;
+      skip.hidden = last || !node.children.find((step) => step.id === state.step)?.optional;
+      forward.textContent = last ? node.finishLabel ?? labels.submit : node.nextLabel ?? labels.next;
+      for (const [id, go] of stepButtons) {
+        const at = steps.indexOf(id);
+        (go.parentElement as HTMLElement).hidden = at === -1;
+        go.classList.toggle('fd-step-done', at !== -1 && at < index);
+        go.classList.toggle('fd-step-skipped', state.skipped.includes(id));
+        if (id === state.step) go.setAttribute('aria-current', 'step');
+        else go.removeAttribute('aria-current');
+      }
     });
     return box;
   }

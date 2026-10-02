@@ -78,7 +78,7 @@ describe('a survey (wizard)', () => {
     button(host, 'Next').click();
     type(input(host, 'q-reason'), 'Too expensive for us');
     button(host, 'Next').click();
-    button(host, 'Submit').click();
+    button(host, 'Send my answers').click();
     await form.settled();
     await flush();
     expect(dataSource.responses).toHaveLength(1);
@@ -87,6 +87,77 @@ describe('a survey (wizard)', () => {
     button(host, 'Submit another response').click();
     expect(host.querySelector('.fd-progress-text')?.textContent).toBe('Step 1 of 3');
     expect(input(host, 'q-name').value).toBe('');
+  });
+});
+
+describe('a wizard’s own labels, skips and step list', () => {
+  function mountSurvey(change: (layout: any) => void, options: Partial<ViewerOptions> = {}) {
+    const p = page('survey');
+    change(p.layout);
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountViewer(host, { page: p, ...options });
+    return { host, form: handle.form };
+  }
+  const stepTitle = (host: Element) => host.querySelector('.fd-step:not([hidden]) .fd-step-title')?.textContent;
+
+  it('names its buttons as the page says, and shows a step’s icon', () => {
+    const { host } = mountSurvey((layout) => {
+      Object.assign(layout, { nextLabel: 'Continue', backLabel: 'Previous', finishLabel: 'Send my answers' });
+      layout.children[0].icon = 'user';
+    });
+    expect(host.querySelector('.fd-step:not([hidden]) .fd-step-title svg')?.getAttribute('data-icon')).toBe('user');
+    type(input(host, 'q-name'), 'Sara');
+    button(host, 'Continue').click();
+    expect(button(host, 'Previous')).toBeDefined();
+    (at(host, 'q-uses').querySelectorAll('input[type=radio]')[1] as HTMLInputElement).click();
+    button(host, 'Continue').click();
+    type(input(host, 'q-reason'), 'Too expensive');
+    button(host, 'Continue').click();
+    expect(stepTitle(host)).toBe('Last thing');
+    expect(button(host, 'Send my answers')).toBeDefined();
+    expect(button(host, 'Continue')).toBeUndefined();
+  });
+
+  it('offers Skip on an optional step only, and passes it over', () => {
+    const { host, form } = mountSurvey((layout) => {
+      layout.children[1].optional = true;
+    });
+    expect(button(host, 'Skip')).toBeUndefined();
+    type(input(host, 'q-name'), 'Sara');
+    button(host, 'Next').click();
+    expect(stepTitle(host)).toBe('Using the product');
+    button(host, 'Skip').click();
+    expect(stepTitle(host)).toBe('Last thing');
+    expect(form.getState().skipped).toEqual(['step-usage']);
+    expect(button(host, 'Skip')).toBeUndefined();
+  });
+
+  it('lists its steps to click when it is clickable: back at once, forward only past complete steps', () => {
+    const { host } = mountSurvey((layout) => {
+      layout.clickable = true;
+    });
+    const list = host.querySelector('nav.fd-steps') as HTMLElement;
+    const steps = () => [...list.querySelectorAll('button')].filter((b) => visible(b));
+    expect(steps().map((b) => b.textContent)).toEqual(['About you', 'Using the product', 'Last thing']);
+    expect(steps()[0].getAttribute('aria-current')).toBe('step');
+    steps()[2].click();
+    expect(stepTitle(host)).toBe('About you');
+    expect(visible(at(host, 'q-name').querySelector('.fd-error'))).toBe(true);
+    type(input(host, 'q-name'), 'Sara');
+    (steps()[1] as HTMLButtonElement).click();
+    expect(stepTitle(host)).toBe('Using the product');
+    expect(steps()[1].getAttribute('aria-current')).toBe('step');
+    expect(steps()[0].classList.contains('fd-step-done')).toBe(true);
+    steps()[0].click();
+    expect(stepTitle(host)).toBe('About you');
+  });
+
+  it('shows no step list unless it is clickable', () => {
+    const { host } = mountSurvey((layout) => {
+      delete layout.clickable;
+    });
+    expect(host.querySelector('nav.fd-steps')).toBeNull();
   });
 });
 

@@ -167,7 +167,7 @@ test.describe('survey', () => {
     await page.getByLabel('Support').check();
     await screen(page, `${variant}-survey-experience`);
     await page.getByRole('button', { name: 'Next' }).click();
-    await page.getByRole('button', { name: 'Submit' }).click();
+    await page.getByRole('button', { name: 'Send my answers' }).click();
     await expect(page.locator('.fd-done')).toBeVisible();
     const responses = await demo<{ values: Record<string, unknown> }[]>('dataSource.responses');
     expect(responses[0].values).toMatchObject({ name: 'Omar', uses_product: 'yes', rating: 4, liked: ['speed', 'support'] });

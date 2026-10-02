@@ -485,6 +485,26 @@ export const FIELDIA_CSS = /* css */ `
 .fd-step { display: grid; gap: 18px; }
 .fd-step-title { font-size: 18px; font-weight: 650; margin: 0; }
 .fd-wizard-nav { display: flex; gap: 8px; justify-content: space-between; }
+/* A clickable wizard's steps: numbered, the current one filled, those behind it ticked. */
+.fd-steps-list { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; counter-reset: fd-step; }
+.fd-steps-list > li { counter-increment: fd-step; }
+.fd-step-link {
+  font: inherit; font-size: 13.5px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  border: 1px solid var(--fd-border); background: var(--fd-surface); color: var(--fd-muted); border-radius: 999px; padding: 4px 12px 4px 6px;
+}
+.fd-step-link::before {
+  content: counter(fd-step); display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--fd-page); color: var(--fd-muted); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.fd-step-link:hover { border-color: var(--fd-accent); color: var(--fd-text); }
+.fd-step-link:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+.fd-step-link.fd-step-done { color: var(--fd-text); }
+.fd-step-link.fd-step-done::before { content: "✓"; background: var(--fd-accent-soft); color: var(--fd-accent); }
+/* Skipped is not done: no tick, no colour. */
+.fd-step-link.fd-step-skipped { border-style: dashed; color: var(--fd-muted); }
+.fd-step-link.fd-step-skipped::before { content: "–"; background: var(--fd-page); color: var(--fd-muted); }
+.fd-step-link[aria-current="step"] { border-color: var(--fd-accent); color: var(--fd-accent); font-weight: 600; }
+.fd-step-link[aria-current="step"]::before { content: counter(fd-step); background: var(--fd-accent); color: var(--fd-accent-text); }
 .fd-wizard-nav .fd-spacer { flex: 1; }
 
 /* ---- text, status, dialog ------------------------------------------------- */

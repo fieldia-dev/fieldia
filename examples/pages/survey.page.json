@@ -40,11 +40,14 @@
   "layout": {
     "type": "wizard",
     "id": "survey",
+    "clickable": true,
+    "finishLabel": "Send my answers",
     "children": [
       {
         "type": "step",
         "id": "step-about",
         "label": "About you",
+        "icon": "user",
         "children": [
           {
             "type": "text",
@@ -60,12 +63,15 @@
         "type": "step",
         "id": "step-usage",
         "label": "Using the product",
+        "icon": "chart",
         "children": [{ "type": "field", "id": "q-uses", "field": "uses_product", "widget": "radio" }]
       },
       {
         "type": "step",
         "id": "step-experience",
         "label": "Your experience",
+        "icon": "star",
+        "optional": true,
         "invisible": "uses_product != 'yes'",
         "children": [
           { "type": "field", "id": "q-rating", "field": "rating", "widget": "rating" },
@@ -77,6 +83,7 @@
         "type": "step",
         "id": "step-reason",
         "label": "Why not",
+        "icon": "chat",
         "invisible": "uses_product != 'no'",
         "children": [{ "type": "field", "id": "q-reason", "field": "reason_not" }]
       },
@@ -84,6 +91,7 @@
         "type": "step",
         "id": "step-last",
         "label": "Last thing",
+        "icon": "mail",
         "children": [{ "type": "field", "id": "q-contact", "field": "contact_ok" }]
       }
     ]
