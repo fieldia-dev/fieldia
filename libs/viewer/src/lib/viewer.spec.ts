@@ -156,6 +156,18 @@ describe('a sections page', () => {
     expect(typeof (seen[1] as { get?: unknown })?.get).toBe('function');
   });
 
+  it('a header statusbar on a read-only field cannot be clicked', () => {
+    const customer = page('customer') as any;
+    customer.fields.state.readonly = true;
+    const host = document.createElement('div');
+    document.body.replaceChildren(host);
+    const viewer = mountViewer(host, { page: customer });
+    const buttons = [...host.querySelectorAll('.fd-header .fd-statusbar button')] as HTMLButtonElement[];
+    expect(buttons.length).toBeGreaterThan(1);
+    expect(buttons.every((b) => b.disabled)).toBe(true);
+    viewer.destroy();
+  });
+
   it('writes numbers the way readers of the page’s language write them', () => {
     const { host, form } = mount('signup', { locale: 'de' });
     form.setValue('hourly_rate', 1234.5);
