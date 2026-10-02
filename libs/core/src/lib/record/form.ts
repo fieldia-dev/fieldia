@@ -41,6 +41,8 @@ export interface FormState {
   readonly draft: { savedAt: string } | null;
   /** The wizard step on screen, for a wizard page. */
   readonly step: string | null;
+  /** Optional steps passed over with Skip: their answers are left out, and not asked for. */
+  readonly skipped: readonly string[];
 }
 
 /** What a layout element looks like right now. */
@@ -119,6 +121,14 @@ export interface Form {
   steps(): string[];
   next(): boolean;
   back(): boolean;
+  /** Pass over the step on screen, when it is optional and not the last one. */
+  skip(): boolean;
+  /**
+   * Go to a step that applies. Back, at once; forward, only past steps that are
+   * complete: it stops at the first one with a problem and shows it, and skips
+   * an optional one instead.
+   */
+  goTo(step: string): boolean;
   runAction(id: string): Promise<void>;
   restoreDraft(): void;
   discardDraft(): void;
@@ -163,6 +173,7 @@ export function createForm(options: FormOptions): Form {
     error: null,
     draft: null,
     step: steps[0] ?? null,
+    skipped: [],
   };
   let lineKeys = 0;
   let onchangeSeq = 0;
@@ -229,7 +240,13 @@ export function createForm(options: FormOptions): Form {
       for (let at: string | null = node.id; at; at = index.get(at)?.parent ?? null) if (at === root) return true;
       return false;
     };
-    return [...index.values()].filter((node) => node.kind === 'field' && inside(node) && !nodeState(node.id).invisible);
+    // The whole page leaves out the steps passed over with Skip.
+    const skipped = (node: IndexedNode) => {
+      if (root || !state.skipped.length) return false;
+      for (let at: string | null = node.id; at; at = index.get(at)?.parent ?? null) if (state.skipped.includes(at)) return true;
+      return false;
+    };
+    return [...index.values()].filter((node) => node.kind === 'field' && inside(node) && !skipped(node) && !nodeState(node.id).invisible);
   }
 
   /** Errors for the visible fields under `root`, without publishing them. */
@@ -450,6 +467,11 @@ export function createForm(options: FormOptions): Form {
     return state.step ? steps.indexOf(state.step) : -1;
   }
 
+  /** Whether a step can be passed over with Skip. */
+  function optionalStep(id: string): boolean {
+    return (index.get(id)?.source as { optional?: boolean } | undefined)?.optional === true;
+  }
+
   async function load(): Promise<void> {
     const source = options.dataSource;
     if (state.recordId == null || page.data.kind !== 'record') return;
@@ -499,7 +521,7 @@ export function createForm(options: FormOptions): Form {
 
     reset() {
       forgetDraft();
-      set({ values: structuredCopy(baseline), dirty: [], errors: {}, warning: null, warningField: null, draft: null, step: steps[0] ?? null });
+      set({ values: structuredCopy(baseline), dirty: [], errors: {}, warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [] });
     },
 
     changes,
@@ -600,6 +622,8 @@ export function createForm(options: FormOptions): Form {
 
     next() {
       if (!state.step) return false;
+      // A step skipped before and gone back to is answered now, and checked like any other.
+      if (state.skipped.includes(state.step)) set({ skipped: state.skipped.filter((id) => id !== state.step) });
       const errors = collectErrors(state.step);
       if (Object.keys(errors).length) {
         set({ errors });
@@ -618,6 +642,41 @@ export function createForm(options: FormOptions): Form {
       const previous = steps.slice(0, stepIndex()).reverse().find((id) => visible.includes(id));
       if (!previous) return false;
       set({ step: previous, errors: {} });
+      return true;
+    },
+
+    skip() {
+      const current = state.step;
+      if (!current || !optionalStep(current)) return false;
+      const visible = form.steps();
+      const following = visible[visible.indexOf(current) + 1];
+      if (!following) return false;
+      set({ step: following, errors: {}, skipped: [...state.skipped.filter((id) => id !== current), current] });
+      return true;
+    },
+
+    goTo(target) {
+      const visible = form.steps();
+      const to = visible.indexOf(target);
+      const at = state.step ? visible.indexOf(state.step) : -1;
+      if (to === -1 || at === -1) return false;
+      if (to <= at) {
+        set({ step: target, errors: {} });
+        return true;
+      }
+      const skipped = [...state.skipped];
+      for (const id of visible.slice(at, to)) {
+        if (skipped.includes(id)) continue;
+        const errors = collectErrors(id);
+        if (!Object.keys(errors).length) continue;
+        if (optionalStep(id)) {
+          skipped.push(id);
+          continue;
+        }
+        set({ step: id, errors, skipped });
+        return false;
+      }
+      set({ step: target, errors: {}, skipped });
       return true;
     },
 

@@ -560,6 +560,83 @@ describe('createForm — a survey', () => {
   });
 });
 
+describe('createForm — skipping and jumping between steps', () => {
+  /** The survey, with "Using the product" (which has a required question) made optional. */
+  const optionalUsage = () => {
+    const p = page('survey');
+    (p.layout as { children: { optional?: boolean }[] }).children[1].optional = true;
+    return p;
+  };
+
+  it('skips an optional step without asking for its required answers, and leaves its answers out', async () => {
+    const ds = createMemoryDataSource();
+    const form = createForm({ page: optionalUsage(), dataSource: ds });
+    form.setValue('name', 'Sara');
+    expect(form.next()).toBe(true);
+    form.setValue('uses_product', 'yes'); // answered, then skipped after all
+    form.setValue('uses_product', null);
+    expect(form.skip()).toBe(true);
+    expect(form.getState().step).toBe('step-last');
+    expect(form.getState().skipped).toEqual(['step-usage']);
+    expect(await form.save()).toBe(true);
+    expect(ds.responses[0].values).toEqual({ name: 'Sara', email: null, contact_ok: false });
+  });
+
+  it('skips nothing that is not optional, nor the last step', () => {
+    const form = createForm({ page: optionalUsage() });
+    expect(form.skip()).toBe(false);
+    expect(form.getState().step).toBe('step-about');
+    const p = page('survey');
+    (p.layout as { children: { optional?: boolean }[] }).children[4].optional = true;
+    const last = createForm({ page: p });
+    last.setValue('name', 'Sara');
+    last.setValue('uses_product', 'no');
+    last.setValue('reason_not', 'Too expensive');
+    expect(last.goTo('step-last')).toBe(true);
+    expect(last.skip()).toBe(false);
+  });
+
+  it('asks for a skipped step’s answers again once someone goes back to it and on', () => {
+    const form = createForm({ page: optionalUsage() });
+    form.setValue('name', 'Sara');
+    form.next();
+    form.skip();
+    expect(form.back()).toBe(true);
+    expect(form.getState().step).toBe('step-usage');
+    expect(form.next()).toBe(false);
+    expect(Object.keys(form.getState().errors)).toEqual(['uses_product']);
+    expect(form.getState().skipped).toEqual([]);
+  });
+
+  it('goes back to any step at once, and forward only past steps that are complete', () => {
+    const form = createForm({ page: page('survey') });
+    expect(form.goTo('step-last')).toBe(false);
+    expect(form.getState().step).toBe('step-about');
+    expect(form.getState().errors).toEqual({ name: 'Your name is required' });
+    form.setValue('name', 'Sara');
+    expect(form.goTo('step-last')).toBe(false);
+    expect(form.getState().step).toBe('step-usage');
+    expect(Object.keys(form.getState().errors)).toEqual(['uses_product']);
+    form.setValue('uses_product', 'no');
+    form.setValue('reason_not', 'Too expensive');
+    expect(form.goTo('step-last')).toBe(true);
+    expect(form.getState().step).toBe('step-last');
+    expect(form.goTo('step-about')).toBe(true);
+    expect(form.getState().step).toBe('step-about');
+    expect(form.getState().errors).toEqual({});
+    // A step that does not apply now cannot be gone to.
+    expect(form.goTo('step-experience')).toBe(false);
+    expect(form.getState().step).toBe('step-about');
+  });
+
+  it('jumps past an optional step it cannot complete by skipping it', () => {
+    const form = createForm({ page: optionalUsage() });
+    form.setValue('name', 'Sara');
+    expect(form.goTo('step-last')).toBe(true);
+    expect(form.getState().skipped).toEqual(['step-usage']);
+  });
+});
+
 describe('createForm — actions', () => {
   it('passes a button press to the app, with the record', async () => {
     const pressed: unknown[] = [];
