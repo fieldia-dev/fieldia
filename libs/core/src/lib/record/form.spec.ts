@@ -220,6 +220,13 @@ describe('createForm — loading and saving a record', () => {
     expect(form.getState().dirty).toEqual([]);
   });
 
+  it('settled() waits for a load someone else started', async () => {
+    const form = createForm({ page: page('customer'), dataSource: customerSource(), recordId: 1 });
+    void form.load();
+    await form.settled();
+    expect(form.getState().values['name']).toBe('Nile Traders');
+  });
+
   it('reports a load that fails, in words', async () => {
     const form = createForm({ page: page('customer'), dataSource: customerSource(), recordId: 99 });
     await form.load();

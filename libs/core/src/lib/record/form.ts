@@ -369,6 +369,24 @@ export function createForm(options: FormOptions): Form {
     return state.step ? steps.indexOf(state.step) : -1;
   }
 
+  async function load(): Promise<void> {
+    const source = options.dataSource;
+    if (state.recordId == null || page.data.kind !== 'record') return;
+    if (!source?.load) {
+      set({ status: 'error', error: 'This page has no data source to load from' });
+      return;
+    }
+    set({ status: 'loading', error: null });
+    try {
+      const loaded = await source.load({ model: page.data.model, id: state.recordId, fields: page.fields });
+      baseline = { ...initialValues(page.fields), ...loaded };
+      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {} });
+      offerDraft();
+    } catch (error) {
+      set({ status: 'error', error: (error as Error).message });
+    }
+  }
+
   const form: Form = {
     page,
     getState: () => state,
@@ -378,23 +396,7 @@ export function createForm(options: FormOptions): Form {
       return () => listeners.delete(listener);
     },
 
-    async load() {
-      const source = options.dataSource;
-      if (state.recordId == null || page.data.kind !== 'record') return;
-      if (!source?.load) {
-        set({ status: 'error', error: 'This page has no data source to load from' });
-        return;
-      }
-      set({ status: 'loading', error: null });
-      try {
-        const loaded = await source.load({ model: page.data.model, id: state.recordId, fields: page.fields });
-        baseline = { ...initialValues(page.fields), ...loaded };
-        set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {} });
-        offerDraft();
-      } catch (error) {
-        set({ status: 'error', error: (error as Error).message });
-      }
-    },
+    load: () => track(load()),
 
     setValue(name, value) {
       fieldDef(name);
