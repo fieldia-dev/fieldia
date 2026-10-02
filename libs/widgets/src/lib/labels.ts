@@ -16,6 +16,8 @@ export interface WidgetLabels {
   lineProblem: string;
   /** Problems beyond the first few. */
   moreProblems: string;
+  /** The choice that makes a new record from what was typed. `{name}` is filled in. */
+  createNamed: string;
   /** The button that lets a person hide or show a table's optional columns. */
   chooseColumns: string;
   /** The button beside a date that opens its calendar. */
@@ -65,6 +67,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     lineProblem: 'Line {n}: {message}',
     moreProblems: 'and {n} more',
     chooseColumns: 'Choose columns',
+    createNamed: 'Create “{name}”',
     chooseDate: 'Choose a date',
     previousMonth: 'Previous month',
     nextMonth: 'Next month',
@@ -107,6 +110,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     lineProblem: 'السطر {n}: {message}',
     moreProblems: 'و{n} أخرى',
     chooseColumns: 'اختيار الأعمدة',
+    createNamed: 'إنشاء «{name}»',
     chooseDate: 'اختيار تاريخ',
     previousMonth: 'الشهر السابق',
     nextMonth: 'الشهر التالي',
@@ -149,6 +153,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     lineProblem: 'Zeile {n}: {message}',
     moreProblems: 'und {n} weitere',
     chooseColumns: 'Spalten auswählen',
+    createNamed: '„{name}“ anlegen',
     chooseDate: 'Datum auswählen',
     previousMonth: 'Vorheriger Monat',
     nextMonth: 'Nächster Monat',
@@ -191,6 +196,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     lineProblem: 'Ligne {n} : {message}',
     moreProblems: 'et {n} de plus',
     chooseColumns: 'Choisir les colonnes',
+    createNamed: 'Créer « {name} »',
     chooseDate: 'Choisir une date',
     previousMonth: 'Mois précédent',
     nextMonth: 'Mois suivant',

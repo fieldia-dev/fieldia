@@ -75,7 +75,7 @@ describe('many2one', () => {
     type(input, 'ja');
     await settle();
     expect(input.getAttribute('aria-expanded')).toBe('true');
-    expect(options(el)).toEqual(['Japan']);
+    expect(options(el)).toEqual(['Japan', 'Create “ja”']);
   });
 
   it('chooses with the arrow keys and Enter', async () => {
@@ -83,7 +83,7 @@ describe('many2one', () => {
     const input = el.querySelector('input[role=combobox]') as HTMLInputElement;
     type(input, 'j');
     await settle();
-    expect(options(el)).toEqual(['Jordan', 'Japan']);
+    expect(options(el)).toEqual(['Jordan', 'Japan', 'Create “j”']);
     key(input, 'ArrowDown');
     key(input, 'ArrowDown');
     expect(input.getAttribute('aria-activedescendant')).toBe(el.querySelectorAll('[role=option]')[1].id);
@@ -107,7 +107,9 @@ describe('many2one', () => {
   });
 
   it('puts the chosen name back on Escape, and clears with an emptied box', async () => {
-    const { form, el } = mount('n-country');
+    // A data source that only searches: nothing found is just "No results".
+    const searchOnly = source();
+    const { form, el } = mount('n-country', createForm({ page, dataSource: { search: (request) => searchOnly.search(request) } }));
     form.setValue('country_id', { id: 2, label: 'Jordan' });
     const input = el.querySelector('input[role=combobox]') as HTMLInputElement;
     type(input, 'zz');
@@ -357,5 +359,52 @@ describe('statusbar', () => {
     const buttons = [...el.querySelectorAll('button')] as HTMLButtonElement[];
     expect(buttons).toHaveLength(4);
     expect(buttons.every((b) => b.disabled)).toBe(true);
+  });
+});
+
+describe('making a record from a typed name', () => {
+  function mountLink(nodeId: string, nodeExtra: Record<string, unknown> = {}) {
+    const dataSource = source();
+    const form = createForm({ page, dataSource });
+    const base = (page.layout as { children: FieldNode[] }).children.find((n) => n.id === nodeId) as FieldNode;
+    const node = { ...base, ...nodeExtra } as FieldNode;
+    const widget = createWidget({ form, name: node.field, field: page.fields[node.field] as Field, node, id: `fd-${nodeId}`, document, labels: WIDGET_LABELS.en });
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values[node.field], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    return { form, dataSource, el: widget.element, input: widget.element.querySelector('input') as HTMLInputElement };
+  }
+
+  it('offers to create what was typed when nothing matches it, and points to the new record', async () => {
+    const { form, dataSource, el, input } = mountLink('n-country');
+    type(input, 'Oman');
+    await settle();
+    expect(options(el)).toEqual(['Create “Oman”']);
+    key(input, 'ArrowDown');
+    key(input, 'Enter');
+    await settle();
+    expect(form.getState().values['country_id']).toEqual({ id: 4, label: 'Oman' });
+    expect(dataSource.records['country'][4]).toEqual({ name: 'Oman' });
+  });
+
+  it('never offers it for a name that is already there, or when the page says no', async () => {
+    const exists = mountLink('n-country');
+    type(exists.input, 'egypt');
+    await settle();
+    expect(options(exists.el)).toEqual(['Egypt']);
+    const refused = mountLink('n-country', { options: { create: false } });
+    type(refused.input, 'Oman');
+    await settle();
+    expect(options(refused.el)).not.toContain('Create “Oman”');
+  });
+
+  it('adds a new tag to a many2many the same way', async () => {
+    const { form, el, input } = mountLink('n-tags');
+    type(input, 'Retail');
+    await settle();
+    (([...el.querySelectorAll('[role=option]')].find((o) => o.textContent === 'Create “Retail”') as HTMLElement)).click();
+    await settle();
+    expect(form.getState().values['tag_ids']).toEqual([{ id: 13, label: 'Retail' }]);
   });
 });

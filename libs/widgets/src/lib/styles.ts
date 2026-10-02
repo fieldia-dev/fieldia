@@ -199,6 +199,7 @@ export const FIELDIA_CSS = /* css */ `
 }
 .fd-option { padding: 6px 12px; cursor: pointer; }
 .fd-option:hover, .fd-option.fd-active { background: var(--fd-accent-soft); }
+.fd-option-create { color: var(--fd-accent); border-block-start: 1px solid var(--fd-border); }
 .fd-empty { padding: 6px 12px; color: var(--fd-muted); font-style: italic; }
 .fd-tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
 .fd-chips { display: contents; list-style: none; margin: 0; padding: 0; }

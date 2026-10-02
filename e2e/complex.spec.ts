@@ -26,7 +26,7 @@ for (const variant of VARIANTS) {
       await open(page, variant, 'page=customer');
       const country = node(page, 'f-country').getByRole('combobox');
       await country.fill('a');
-      await expect(node(page, 'f-country').getByRole('option')).toHaveCount(2);
+      await expect(node(page, 'f-country').getByRole('option')).toHaveText(['Jordan', 'Saudi Arabia', 'Create “a”']);
       await page.keyboard.press('ArrowDown');
       await page.keyboard.press('ArrowDown');
       await page.keyboard.press('Enter');

@@ -465,6 +465,20 @@ test.describe('every field', () => {
     await screen(page, `${variant}-fields-properties`);
   });
 
+  test('a client not on the list yet is created from the name typed, and chosen', async ({ page }) => {
+    await open(page, variant, 'page=fields&skin=outlined');
+    const client = node(page, 'f-client').getByRole('combobox');
+    await client.fill('Hilton Cairo');
+    const create = node(page, 'f-client').getByRole('option', { name: 'Create “Hilton Cairo”' });
+    await expect(create).toBeVisible();
+    await screen(page, `${variant}-fields-quick-create`);
+    await create.click();
+    await expect(client).toHaveValue('Hilton Cairo');
+    const made = await value(page, 'client_id');
+    expect(made).toEqual({ id: expect.any(Number), label: 'Hilton Cairo' });
+    expect(await page.evaluate((id) => (window as any).fieldiaDemo.dataSource.records.partner[id], (made as { id: number }).id)).toEqual({ name: 'Hilton Cairo' });
+  });
+
   test('a folded section opens from its title and shows its fields', async ({ page }) => {
     await open(page, variant, 'page=fields');
     const title = node(page, 's-structured').getByRole('button', { name: 'Structured data' });

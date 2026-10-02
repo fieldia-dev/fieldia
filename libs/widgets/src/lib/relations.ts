@@ -1,4 +1,4 @@
-import type { ReferenceValue, RelatedRecord } from '@fieldia/core';
+import type { FieldNode, Form, ReferenceValue, RelatedRecord } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
@@ -36,6 +36,8 @@ function combobox(options: {
   exclude?: () => Set<RelatedRecord['id']>;
   onEmptyBackspace?: () => void;
   onCommitEmpty?: () => void;
+  /** Make a record from what was typed, offered when nothing found has that name. */
+  create?: (text: string) => Promise<RelatedRecord>;
 }): Combobox {
   const { document: doc, id, labels } = options;
   const listId = `${id}-list`;
@@ -56,6 +58,9 @@ function combobox(options: {
   element.append(input, list);
 
   let shown = '';
+  /** The "Create …" choice in the list, and the text it would make a record from. */
+  let creating: RelatedRecord | null = null;
+  let creatingText = '';
   /** True while the person's own typing is in the box. */
   let editing = false;
   let results: RelatedRecord[] = [];
@@ -71,7 +76,7 @@ function combobox(options: {
       option.id = `${listId}-${i}`;
       option.setAttribute('role', 'option');
       option.setAttribute('aria-selected', String(i === active));
-      option.className = i === active ? 'fd-option fd-active' : 'fd-option';
+      option.className = `fd-option${i === active ? ' fd-active' : ''}${record === creating ? ' fd-option-create' : ''}`;
       option.textContent = record.label;
       option.addEventListener('mousedown', (event) => event.preventDefault()); // keep focus in the box
       option.addEventListener('click', () => choose(i));
@@ -105,8 +110,13 @@ function combobox(options: {
   function choose(index: number) {
     const record = results[index];
     if (!record) return;
+    const typed = creatingText;
     close();
     editing = false;
+    if (record === creating && options.create) {
+      void options.create(typed).then(options.pick, () => undefined);
+      return;
+    }
     options.pick(record);
   }
 
@@ -118,6 +128,14 @@ function combobox(options: {
       if (mine !== seq || doc.activeElement !== input) return; // a newer search, or the person left
       const hidden = options.exclude?.() ?? new Set();
       results = found.filter((record) => !hidden.has(record.id));
+      // Nothing found by that name: offer to make it.
+      const typed = query.trim();
+      creating = null;
+      if (options.create && typed && !found.some((record) => record.label.trim().toLowerCase() === typed.toLowerCase())) {
+        creatingText = typed;
+        creating = { id: '__create__', label: fill(labels.createNamed, { name: typed }) };
+        results = [...results, creating];
+      }
       active = -1;
       render();
       open();
@@ -187,7 +205,12 @@ function combobox(options: {
   };
 }
 
-export const many2oneWidget: WidgetFactory = ({ form, name, field, id, document, labels = WIDGET_LABELS.en }) => {
+/** Making a record from a typed name, unless the page turns it off or the data source cannot. */
+function creator(form: Form, name: string, node: FieldNode): ((text: string) => Promise<RelatedRecord>) | undefined {
+  return node.options?.['create'] !== false && form.canCreate(name) ? (text) => form.quickCreate(name, text) : undefined;
+}
+
+export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en }) => {
   const box = combobox({
     document,
     id,
@@ -195,6 +218,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, id, document,
     search: (query) => form.search(name, query),
     pick: (record) => form.setValue(name, record),
     onCommitEmpty: () => form.setValue(name, null),
+    create: creator(form, name, node),
   });
   const clear = document.createElement('button');
   clear.type = 'button';
@@ -221,7 +245,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, id, document,
   } satisfies Widget;
 };
 
-export const tagsWidget: WidgetFactory = ({ form, name, id, document, labels = WIDGET_LABELS.en }) => {
+export const tagsWidget: WidgetFactory = ({ form, name, node, id, document, labels = WIDGET_LABELS.en }) => {
   const current = () => (form.getState().values[name] as RelatedRecord[] | null) ?? [];
   const element = document.createElement('div');
   element.className = 'fd-tags';
@@ -242,6 +266,7 @@ export const tagsWidget: WidgetFactory = ({ form, name, id, document, labels = W
       const records = current();
       if (records.length) form.setValue(name, records.slice(0, -1));
     },
+    create: creator(form, name, node),
   });
   element.append(chips, box.element);
   let readonly = false;
