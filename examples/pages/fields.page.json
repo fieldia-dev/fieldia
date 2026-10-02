@@ -155,7 +155,7 @@
         "type": "section",
         "id": "s-lines",
         "title": "Lines",
-        "children": [{ "type": "field", "id": "f-milestones", "field": "milestone_ids" }]
+        "children": [{ "type": "field", "id": "f-milestones", "field": "milestone_ids", "totals": ["hours", "amount"] }]
       },
       {
         "type": "section",

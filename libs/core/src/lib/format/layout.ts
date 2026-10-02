@@ -29,6 +29,8 @@ export interface FieldNode {
   colspan?: number;
   /** For one2many and many2many: which line fields show as columns. */
   columns?: string[];
+  /** For one2many: number columns added up in a totals row under the lines. */
+  totals?: string[];
   invisible?: Modifier;
   readonly?: Modifier;
   required?: Modifier;
@@ -198,6 +200,7 @@ export const FieldNodeSchema = z.strictObject({
   help: z.string().optional(),
   colspan: z.int().min(1).max(4).optional(),
   columns: z.array(fieldName).min(1).optional(),
+  totals: z.array(fieldName).min(1).optional(),
   invisible,
   readonly: ModifierSchema.optional(),
   required: ModifierSchema.optional(),

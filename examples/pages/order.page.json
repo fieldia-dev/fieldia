@@ -81,7 +81,7 @@
             "id": "tab-lines",
             "label": "Order lines",
             "children": [
-              { "type": "field", "id": "f-lines", "field": "line_ids", "widget": "grid" },
+              { "type": "field", "id": "f-lines", "field": "line_ids", "widget": "grid", "totals": ["qty", "subtotal"] },
               {
                 "type": "section",
                 "id": "totals",

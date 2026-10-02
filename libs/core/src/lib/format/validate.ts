@@ -235,6 +235,19 @@ class ReferenceCheck {
 
   private checkFieldNode(node: FieldNode, path: string) {
     const def = this.need(node.field, `${path}.field`);
+    if (def && node.totals) {
+      if (def.type !== 'one2many') {
+        this.report(`${path}.totals`, `totals only apply to one2many fields; "${node.field}" is a ${def.type}`);
+      } else {
+        node.totals.forEach((column, i) => {
+          const sub = has(def.fields, column) ? def.fields[column] : undefined;
+          if (!sub) this.report(`${path}.totals[${i}]`, `"${column}" is not a field of the lines of "${node.field}"`);
+          else if (!['integer', 'float', 'monetary'].includes(sub.type)) {
+            this.report(`${path}.totals[${i}]`, `"${column}" is a ${sub.type}; only integer, float and monetary columns add up`);
+          }
+        });
+      }
+    }
     if (!def || !node.columns) return;
     if (def.type === 'one2many') {
       node.columns.forEach((column, i) => {

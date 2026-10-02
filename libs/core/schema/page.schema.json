@@ -1826,6 +1826,14 @@
                 "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
               }
             },
+            "totals": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              }
+            },
             "invisible": {
               "$ref": "#/$defs/Modifier"
             },

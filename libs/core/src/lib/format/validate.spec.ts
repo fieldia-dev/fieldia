@@ -220,6 +220,23 @@ describe('validatePage — references', () => {
     expect(messages(page)).toEqual(['fields.line_ids.sequenceField: "name" is a char; the field that keeps the order of lines must be an integer']);
   });
 
+  it('rejects totals of fields the lines do not have, or that are not numbers', () => {
+    const page = example('order');
+    const lines = page['layout'].children[1].children[0].children[0];
+    expect(lines.id).toBe('f-lines');
+    lines.totals = ['weight', 'name'];
+    expect(messages(page)).toEqual([
+      'layout.children[1].children[0].children[0].totals[0]: "weight" is not a field of the lines of "line_ids"',
+      'layout.children[1].children[0].children[0].totals[1]: "name" is a char; only integer, float and monetary columns add up',
+    ]);
+  });
+
+  it('rejects totals on a field that has no lines', () => {
+    const page = example('order');
+    page['layout'].children[0].children[0].totals = ['qty'];
+    expect(messages(page)).toEqual(['layout.children[0].children[0].totals: totals only apply to one2many fields; "partner_id" is a many2one']);
+  });
+
   it('rejects one2many columns that are not among its line fields', () => {
     const page = example('customer');
     page['layout'].children[1].children[0].children[0].columns.push('fax');
