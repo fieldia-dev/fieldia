@@ -6,11 +6,11 @@ import type { Skin } from '@fieldia/viewer';
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { pages, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
 
 /** The same demo as the plain one, mounted by React. StrictMode on, as apps run it. */
 const params = new URLSearchParams(location.search);
-const page = pages[params.get('page') ?? 'signup'] ?? pages['signup'];
+const page = pageFromQuery(params);
 const dataSource = sampleDataSource();
 const actions: string[] = [];
 

@@ -78,6 +78,14 @@ export const FIELDIA_CSS = /* css */ `
 .fd-page-title { font-size: 22px; font-weight: 650; margin: 0; line-height: 1.25; }
 .fd-page-description { color: var(--fd-muted); margin: 0; }
 
+/* ---- how wide a page goes, and Save above its sections ----------------------- */
+.fd-form[data-max-width="narrow"] { --fd-page-max: 640px; }
+.fd-form[data-max-width="medium"] { --fd-page-max: 900px; }
+.fd-form[data-max-width="wide"] { --fd-page-max: 1180px; }
+.fd-form[data-max-width="full"] { --fd-page-max: none; }
+.fd-form[data-max-width] > .fd-content:not(:has(> .fd-sheet-page)) { max-width: var(--fd-page-max); margin-inline: auto; }
+.fd-actions.fd-actions-top { margin-block-start: 0; padding-block-end: 14px; margin-block-end: 18px; border-block-end: 1px solid var(--fd-border); }
+
 /* ---- icons: drawn with lines in the colour of the words beside them ------------ */
 .fd-icon { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; }
 .fd-section-title .fd-icon, .fd-tab .fd-icon, .fd-button .fd-icon, .fd-step-title .fd-icon { margin-inline-end: 0.4em; }
@@ -358,7 +366,9 @@ export const FIELDIA_CSS = /* css */ `
 .fd-statusbar [aria-current="step"] { background: var(--fd-accent); color: var(--fd-accent-text); font-weight: 600; }
 [dir="rtl"] .fd-statusbar button, [dir="rtl"] .fd-statusbar span { transform: scaleX(-1); }
 [dir="rtl"] .fd-statusbar button > *, [dir="rtl"] .fd-statusbar span > * { display: inline-block; transform: scaleX(-1); }
-.fd-sheet-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; max-width: 1180px; margin: 16px auto 0; padding-inline: 16px; }
+.fd-sheet-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; max-width: var(--fd-page-max, 1180px); margin: 16px auto 0; padding-inline: 16px; }
+/* Save and Discard closing the sheet, when the page puts them at its foot. */
+.fd-sheet-foot { margin: 4px -28px -28px; padding: 12px 28px; border-block-start: 1px solid var(--fd-border); border-end-start-radius: inherit; border-end-end-radius: inherit; }
 .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); }
 @container (max-width: 860px) { .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr); } }
 .fd-card {

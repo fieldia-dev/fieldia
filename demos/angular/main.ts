@@ -10,10 +10,10 @@ import { codeWidgets } from '@fieldia/code';
 import type { ActionRequest, Form, FormState, Locale, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { pages, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
 
 const params = new URLSearchParams(location.search);
-const page = pages[params.get('page') ?? 'signup'] ?? pages['signup'];
+const page = pageFromQuery(params);
 const dataSource = sampleDataSource();
 const actions: string[] = [];
 

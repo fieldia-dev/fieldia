@@ -5,11 +5,11 @@ import type { Form, Locale, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { createApp, defineComponent, h, ref, type PropType } from 'vue';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { pages, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
 
 /** The same demo again, mounted by Vue with render functions. */
 const params = new URLSearchParams(location.search);
-const page = pages[params.get('page') ?? 'signup'] ?? pages['signup'];
+const page = pageFromQuery(params);
 const dataSource = sampleDataSource();
 const actions: string[] = [];
 

@@ -228,7 +228,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     return icon ? [icon, text] : [text];
   }
 
-  const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': options.skin ?? 'underline', dir, lang: options.locale });
+  const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': options.skin ?? 'underline', dir, lang: options.locale, 'data-max-width': page.maxWidth });
   const confirm = options.confirm ?? dialogConfirm;
 
   // ---- the parts -------------------------------------------------------
@@ -507,7 +507,12 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         discard.hidden = !dirty;
       });
     }
-    return options.showActions === false ? el('div', {}, box) : el('div', {}, box, actions);
+    if (options.showActions === false) return el('div', {}, box);
+    if (page.actionsPosition === 'top') {
+      actions.classList.add('fd-actions-top');
+      return el('div', {}, actions, box);
+    }
+    return el('div', {}, box, actions);
   }
 
   function wizardLayout(node: WizardNode): HTMLElement {
@@ -560,8 +565,14 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const save = el('button', { type: 'submit', class: 'fd-button fd-button-primary' }, labels.save);
     const discard = el('button', { type: 'button', class: 'fd-button' }, labels.discard);
     discard.addEventListener('click', () => form.reset());
+    // Save and Discard lead the header bar, or close the sheet when the page puts them at its foot.
+    const atFoot = page.actionsPosition === 'bottom';
+    const foot = el('div', { class: 'fd-actions fd-actions-end fd-sheet-foot' });
     if (options.showActions === false) actions.append(...(node.buttons ?? []).map(buttonItem));
-    else actions.append(save, discard, ...(node.buttons ?? []).map(buttonItem), status);
+    else if (atFoot) {
+      actions.append(...(node.buttons ?? []).map(buttonItem));
+      foot.append(status, discard, save);
+    } else actions.append(save, discard, ...(node.buttons ?? []).map(buttonItem), status);
     updaters.push((state) => {
       const dirty = state.dirty.length > 0 && state.status !== 'saving';
       save.hidden = !dirty;
@@ -612,6 +623,12 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       card.append(row);
     }
     card.append(grid(node.children));
+    if (atFoot && options.showActions !== false) {
+      card.append(foot);
+      updaters.push((state) => {
+        foot.hidden = state.dirty.length === 0 && !status.textContent;
+      });
+    }
 
     const layout = el('div', { class: 'fd-sheet-layout' }, card);
     if (node.sidePanel) {

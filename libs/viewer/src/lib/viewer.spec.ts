@@ -532,6 +532,48 @@ describe('columns per width', () => {
   });
 });
 
+describe('a page’s width and where its Save sits', () => {
+  function mountPage(p: Page) {
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountViewer(host, { page: p });
+    return host;
+  }
+  const before = (a: Element, b: Element) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it('puts a sections page’s Save above its sections when asked, and below them by default', () => {
+    const below = mountPage(page('signup'));
+    expect(before(below.querySelector('.fd-sections')!, below.querySelector('.fd-actions')!)).toBe(true);
+    below.remove();
+    const p = page('signup');
+    p.actionsPosition = 'top';
+    const host = mountPage(p);
+    expect(before(host.querySelector('.fd-actions')!, host.querySelector('.fd-sections')!)).toBe(true);
+    expect(host.querySelector('.fd-actions')?.classList.contains('fd-actions-top')).toBe(true);
+  });
+
+  it('puts a sheet’s Save and Discard at the foot of the sheet when asked, its buttons staying in the header', async () => {
+    const p = page('customer');
+    p.actionsPosition = 'bottom';
+    const host = mountPage(p);
+    type(input(host, 'f-phone'), '+20 2 0000 0000');
+    await flush();
+    const save = button(host, 'Save');
+    expect(save).toBeDefined();
+    expect(save.closest('.fd-header')).toBeNull();
+    expect(save.closest('.fd-card')).not.toBeNull();
+    expect(button(host, 'Discard').closest('.fd-sheet-foot')).not.toBeNull();
+    expect(button(host, 'Block').closest('.fd-header')).not.toBeNull();
+  });
+
+  it('hands the page’s width to the stylesheet', () => {
+    const p = page('signup');
+    p.maxWidth = 'narrow';
+    expect(mountPage(p).querySelector('.fd-form')?.getAttribute('data-max-width')).toBe('narrow');
+    expect(mountPage(page('signup')).querySelector('.fd-form')?.hasAttribute('data-max-width')).toBe(false);
+  });
+});
+
 describe('related records in dialogs', () => {
   const people = () =>
     createMemoryDataSource({

@@ -4,7 +4,7 @@ import type { WidgetFactory } from '@fieldia/widgets';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { pages, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
 
 /**
  * Fieldia with no framework at all: one script, one call. The page, skin and
@@ -12,7 +12,7 @@ import { pages, sampleDataSource, relatedPages } from '../shared/sample-data';
  */
 const params = new URLSearchParams(location.search);
 const name = params.get('page') ?? 'signup';
-const page = pages[name] ?? pages['signup'];
+const page = pageFromQuery(params);
 const dataSource = sampleDataSource();
 const actions: string[] = [];
 

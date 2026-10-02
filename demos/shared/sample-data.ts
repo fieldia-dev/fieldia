@@ -16,6 +16,21 @@ export const pages: Record<string, Page> = {
   custom: customPage,
 };
 
+/**
+ * The page the query string names, with the page-wide choices it may also make:
+ * `maxWidth` (narrow, medium, wide, full) and `actions` (top, bottom).
+ */
+export function pageFromQuery(params: URLSearchParams): Page {
+  const page = pages[params.get('page') ?? 'signup'] ?? pages['signup'];
+  const maxWidth = params.get('maxWidth');
+  const actions = params.get('actions');
+  return {
+    ...page,
+    ...(maxWidth ? { maxWidth: maxWidth as Page['maxWidth'] } : {}),
+    ...(actions ? { actionsPosition: actions as Page['actionsPosition'] } : {}),
+  };
+}
+
 /** The pages records of other models open in, in a dialog: a customer from a link to it. */
 export const relatedPages: Record<string, Page> = { partner: customer as Page };
 
