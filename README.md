@@ -2,7 +2,7 @@
 
 **Fieldia is a form engine and form builder for JavaScript: one JSON page format, rendered in Angular, React, Vue or plain JavaScript, from a simple survey to a full ERP screen.**
 
-> **Docs and live demos: [fieldia.dev](https://fieldia.dev).** Version 0.1 is built and checked; it is not on npm yet.
+> **Docs and live demos: [fieldia.dev](https://fieldia.dev).** Version 0.1 is on npm: `npm install @fieldia/viewer` (or `@fieldia/react`, `@fieldia/vue`, `@fieldia/angular`).
 
 ## The idea
 
@@ -22,11 +22,11 @@ and save through a small data-source interface that your app implements.
 
 | Package | Role | Status |
 |---|---|---|
-| `@fieldia/core` | Headless. The page format, modifiers, validation, record state, the data-source interface. **No DOM.** | built, not on npm yet |
-| `@fieldia/widgets` | The field inputs, in plain DOM, with two skins (`underline`, `outlined`) | built, not on npm yet |
-| `@fieldia/viewer` | Framework-neutral mount — render a saved page and fill it in | built, not on npm yet |
+| `@fieldia/core` | Headless. The page format, modifiers, validation, record state, the data-source interface. **No DOM.** | 0.1 on npm |
+| `@fieldia/widgets` | The field inputs, in plain DOM, with two skins (`underline`, `outlined`) | 0.1 on npm |
+| `@fieldia/viewer` | Framework-neutral mount — render a saved page and fill it in | 0.1 on npm |
 | `@fieldia/designer` | Authoring: an editing model with undo and versions, the survey editor, and the screen editor — a canvas on [Grafloria](https://grafloria.com) boards | built, not on npm yet |
-| `@fieldia/angular` · `react` · `vue` | Thin bindings over the viewer | built, not on npm yet |
+| `@fieldia/angular` · `react` · `vue` | Thin bindings over the viewer | 0.1 on npm |
 
 ### The screen editor
 

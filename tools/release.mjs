@@ -5,6 +5,7 @@
  *   node tools/release.mjs check              pack every package, install the packs into
  *                                             an empty project, require/import/type-check them
  *   NPM_TOKEN=… node tools/release.mjs publish  the same check, then publish what is not on npm yet
+ *   node tools/release.mjs verify             after publishing: the same checks on what npm serves
  *
  * Build first: `npx nx run-many -t build`. A package marked `"private": true`
  * (the designer, until it is decided) is never packed or published.
@@ -23,7 +24,9 @@ const WORK = join(WORKSPACE, 'tmp/release');
 const PACKS = join(WORK, 'packs');
 const SMOKE = join(WORK, 'smoke');
 const mode = process.argv[2] ?? 'check';
-if (!['check', 'publish'].includes(mode)) throw new Error(`usage: node tools/release.mjs check|publish (got "${mode}")`);
+if (!['check', 'publish', 'verify'].includes(mode)) throw new Error(`usage: node tools/release.mjs check|publish|verify (got "${mode}")`);
+/** verify installs what npm serves, so it needs no build and packs nothing. */
+const fromRegistry = mode === 'verify';
 
 const read = (file) => JSON.parse(readFileSync(file, 'utf8'));
 const run = (cmd, args, cwd = WORKSPACE, env = process.env) => execFileSync(cmd, args, { cwd, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -42,6 +45,7 @@ for (const { dir, manifest } of packages) {
   for (const [name, wanted] of Object.entries(manifest.dependencies ?? {})) {
     if (name.startsWith('@fieldia/') && wanted !== version) fail(`libs/${dir} depends on ${name}@${wanted}, not ${version}`);
   }
+  if (fromRegistry) continue;
   const built = join(WORKSPACE, 'dist/libs', dir, 'package.json');
   if (!existsSync(built) || read(built).version !== version) fail(`dist/libs/${dir} is missing or stale: run \`npx nx run-many -t build\``);
   if (!existsSync(join(WORKSPACE, 'dist/libs', dir, 'README.md'))) fail(`dist/libs/${dir} has no README.md — its npm page would be empty`);
@@ -51,7 +55,8 @@ console.log(`release ${version}: ${packages.map((p) => p.manifest.name).join(', 
 // ---- pack ----------------------------------------------------------------------
 rmSync(WORK, { recursive: true, force: true });
 mkdirSync(PACKS, { recursive: true });
-const tarballs = packages.map(({ dir }) => {
+const tarballs = packages.map(({ dir, manifest }) => {
+  if (fromRegistry) return `${manifest.name}@${version}`;
   const [packed] = JSON.parse(run('npm', ['pack', join(WORKSPACE, 'dist/libs', dir), '--pack-destination', PACKS, '--json']));
   const files = packed.files.map((f) => f.path);
   const stray = files.filter((f) => /\.spec\.|\.tsbuildinfo$|(^|\/)tmp\//.test(f));
@@ -69,7 +74,7 @@ const peers = ['react', 'react-dom', '@types/react', 'vue', '@angular/core', '@a
 run('npm', ['install', '--no-audit', '--no-fund', '--loglevel=error', ...tarballs, ...peers], SMOKE);
 for (const { manifest } of packages) {
   const installed = read(join(SMOKE, 'node_modules', manifest.name, 'package.json')).version;
-  if (installed !== version) fail(`${manifest.name} installed as ${installed}, from the registry rather than the pack`);
+  if (installed !== version) fail(`${manifest.name} installed as ${installed}, not ${version}`);
 }
 
 // What each package must export, by name.
@@ -150,7 +155,7 @@ const sandbox = {};
 runInNewContext(readFileSync(bundle, 'utf8'), sandbox);
 if (typeof sandbox.Fieldia?.mountViewer !== 'function' || sandbox.Fieldia.VERSION !== version) fail('the packed script bundle does not define Fieldia.mountViewer at this version');
 
-console.log(`  installed into an empty project: require, import, types (.mts and .cts) and the script bundle all check`);
+console.log(`  installed ${fromRegistry ? 'from npm' : 'the packs'} into an empty project: require, import, types (.mts and .cts) and the script bundle all check`);
 
 // ---- publish ---------------------------------------------------------------------
 if (mode === 'publish') {
