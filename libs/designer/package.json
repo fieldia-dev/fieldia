@@ -19,6 +19,29 @@
       "require": "./src/index.js",
       "default": "./src/index.js"
     },
+    "./react": {
+      "types": {
+        "import": "./src/react.d.mts",
+        "require": "./src/react.d.ts"
+      },
+      "import": "./src/react.mjs",
+      "require": "./src/react.js",
+      "default": "./src/react.js"
+    },
+    "./vue": {
+      "types": {
+        "import": "./src/vue.d.mts",
+        "require": "./src/vue.d.ts"
+      },
+      "import": "./src/vue.mjs",
+      "require": "./src/vue.js",
+      "default": "./src/vue.js"
+    },
+    "./angular": {
+      "types": "./angular/index.d.mts",
+      "import": "./angular/index.mjs",
+      "default": "./angular/index.mjs"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -28,10 +51,22 @@
     "tslib": "^2.8.1"
   },
   "peerDependencies": {
-    "@grafloria/element": ">=0.4.83"
+    "@grafloria/element": ">=0.4.83",
+    "react": "^18.0.0 || ^19.0.0",
+    "vue": "^3.4.0",
+    "@angular/core": "^21.0.0 || ^22.0.0"
   },
   "peerDependenciesMeta": {
     "@grafloria/element": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    },
+    "@angular/core": {
       "optional": true
     }
   },
@@ -44,6 +79,7 @@
   "files": [
     "src",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "angular"
   ]
 }

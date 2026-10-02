@@ -1,0 +1,10 @@
+{
+  "extends": "../angular/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../dist/out-tsc",
+    "module": "es2022",
+    "moduleResolution": "bundler",
+    "types": ["jest", "node"]
+  },
+  "include": ["angular/**/*.spec.ts", "angular/test-setup.ts", "src/**/*.d.ts"]
+}

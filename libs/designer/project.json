@@ -11,6 +11,7 @@
     "build": {
       "executor": "nx:run-commands",
       "dependsOn": [
+        "^build",
         "compile-cjs",
         "compile-esm"
       ],
@@ -23,7 +24,11 @@
         "^production"
       ],
       "options": {
-        "command": "node tools/dual-build.mjs designer"
+        "commands": [
+          "node tools/designer-angular-build.mjs",
+          "node tools/dual-build.mjs designer"
+        ],
+        "parallel": false
       }
     },
     "compile-cjs": {
@@ -63,7 +68,10 @@
       ],
       "options": {
         "jestConfig": "libs/designer/jest.config.cjs"
-      }
+      },
+      "dependsOn": [
+        "test-angular"
+      ]
     },
     "typecheck": {
       "executor": "nx:run-commands",
@@ -79,6 +87,15 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "eslint libs/designer"
+      }
+    },
+    "test-angular": {
+      "executor": "@nx/jest:jest",
+      "outputs": [
+        "{workspaceRoot}/coverage/libs/designer-angular"
+      ],
+      "options": {
+        "jestConfig": "libs/designer/jest.angular.config.cjs"
       }
     }
   }

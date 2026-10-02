@@ -9,7 +9,7 @@ import { join, resolve } from 'node:path';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'dist/demos');
-const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react', 'vue', 'angular', 'designer', 'screen', 'script'];
+const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react', 'vue', 'angular', 'designer', 'screen', 'designer-react', 'designer-vue', 'designer-angular', 'script'];
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
@@ -36,6 +36,9 @@ for (const variant of variants) {
   const ownConfig = join(WORKSPACE, 'demos', variant, 'tsconfig.json');
   if (variant === 'angular' && !existsSync(join(WORKSPACE, 'dist/libs/angular/src/index.js'))) {
     throw new Error('demos/angular needs the built package: run `npx nx build angular` first');
+  }
+  if (variant === 'designer-angular' && !existsSync(join(WORKSPACE, 'dist/libs/designer/angular/index.mjs'))) {
+    throw new Error('demos/designer-angular needs the built designer: run `npx nx build designer` first');
   }
   await build({
     entryPoints: [entry],

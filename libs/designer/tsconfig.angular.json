@@ -1,0 +1,27 @@
+{
+  "extends": "../angular/tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": true,
+    "types": [],
+    "rootDir": "angular",
+    "outDir": "../../dist/libs/designer/angular",
+    "paths": {
+      "@fieldia/core": ["dist/libs/core/src/index.d.ts"],
+      "@fieldia/widgets": ["dist/libs/widgets/src/index.d.ts"],
+      "@fieldia/viewer": ["dist/libs/viewer/src/index.d.ts"],
+      "@fieldia/designer": ["dist/libs/designer/src/index.d.ts"]
+    }
+  },
+  "files": [],
+  "include": ["angular/**/*.ts"],
+  "exclude": ["angular/**/*.spec.ts", "angular/test-setup.ts"],
+  "angularCompilerOptions": {
+    "compilationMode": "partial",
+    "strictTemplates": true,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true
+  },
+  "//": "ngc builds the Angular editors against the designer and its siblings as built, never their sources."
+}

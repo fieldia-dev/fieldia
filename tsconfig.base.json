@@ -25,7 +25,10 @@
       "@fieldia/react": ["libs/react/src/index.ts"],
       "@fieldia/vue": ["libs/vue/src/index.ts"],
       "@fieldia/angular": ["libs/angular/src/index.ts"],
-      "@fieldia/designer": ["libs/designer/src/index.ts"]
+      "@fieldia/designer": ["libs/designer/src/index.ts"],
+      "@fieldia/designer/react": ["libs/designer/src/react.ts"],
+      "@fieldia/designer/vue": ["libs/designer/src/vue.ts"],
+      "@fieldia/designer/angular": ["libs/designer/angular/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]
