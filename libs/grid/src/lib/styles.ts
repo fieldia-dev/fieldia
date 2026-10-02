@@ -13,6 +13,8 @@ export const GRID_CSS = /* css */ `
 .fd-grid-lines .ag-cell .fd-checkbox { margin: 0; vertical-align: middle; }
 /* Typed text stays where the shown value was: the cell padding, less the 1px border AG Grid draws round an editor. */
 .fd-grid-editor { height: 100%; display: flex; align-items: center; padding-inline: calc(var(--ag-cell-horizontal-padding) - 1px); box-sizing: border-box; }
+/* A row that measures its height wraps the editor in a flex box of its own: fill it. */
+.ag-cell-wrapper > .fd-grid-editor { flex: 1 1 auto; min-width: 0; align-self: stretch; }
 .fd-grid-editor > * { flex: 1; min-width: 0; }
 .fd-grid-editor .fd-input { border: 0; box-shadow: none; background: transparent; padding-inline: 0; min-height: 0; }
 .fd-grid-editor .fd-combo-input { padding-inline-end: 24px; }
@@ -28,7 +30,8 @@ export const GRID_CSS = /* css */ `
 /* A section heads the lines below it; a note is a remark between them, every line of it shown. */
 .fd-grid-lines .fd-grid-section { background: var(--fd-page); }
 .fd-grid-lines .fd-grid-section .fd-grid-kind-text { font-weight: 600; }
-.fd-grid-lines .fd-grid-note .fd-grid-kind-text { font-style: italic; white-space: pre-wrap; line-height: 20px; padding-block: 10px; }
+.fd-grid-lines .fd-grid-note .fd-grid-kind-text { font-style: italic; white-space: pre-wrap; line-height: 20px; }
+.fd-grid-lines .fd-grid-note .fd-grid-kind-text:not(.ag-cell-inline-editing) { padding-block: 10px; }
 .fd-grid-editor[data-kind="section"] .fd-input { font-weight: 600; }
 .fd-grid-editor[data-kind="note"] { align-items: start; }
 .fd-grid-editor[data-kind="note"] textarea { resize: none; min-height: 0; overflow: hidden; font-style: italic; line-height: 20px; padding-block: 9px; }

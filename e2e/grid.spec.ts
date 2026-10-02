@@ -224,10 +224,25 @@ for (const variant of VARIANTS) {
     test('a note grows as it is typed, taking the rows below with it, and Ctrl+Enter finishes it', async ({ page }) => {
       const row = (index: number) => grid(page).locator(`.ag-row[row-index="${index}"]`);
       const before = (await row(NOTE).boundingBox())!.height;
+      const shown = await cell(page, NOTE, 'product_id').evaluate((el) => {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const r = range.getBoundingClientRect();
+        return { top: r.top, left: r.left, cell: el.getBoundingClientRect().width };
+      });
       await cell(page, NOTE, 'product_id').click();
       await expect.poll(() => editing(page)).toEqual([NOTE, 'product_id']);
       const area = grid(page).locator('.ag-cell-inline-editing textarea');
       await expect(area).toBeFocused();
+      // The note is typed where it was read: same first line, the whole width of the row.
+      const typed = await area.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        return { top: r.top + parseFloat(cs.paddingTop), left: r.left + parseFloat(cs.paddingLeft), width: r.width };
+      });
+      expect(Math.abs(typed.top - shown.top), 'first line moved down').toBeLessThanOrEqual(1.5);
+      expect(Math.abs(typed.left - shown.left), 'text moved sideways').toBeLessThanOrEqual(1.5);
+      expect(typed.width, 'the note box is narrower than its row').toBeGreaterThan(shown.cell - 40);
       await page.keyboard.press('Enter'); // a new line of the note, not the next row
       await page.keyboard.type('Spare bulbs in the second box.');
       await expect.poll(() => editing(page)).toEqual([NOTE, 'product_id']);
