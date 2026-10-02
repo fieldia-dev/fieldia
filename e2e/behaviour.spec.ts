@@ -265,5 +265,45 @@ test.describe('customer sheet', () => {
     await expect(page.getByRole('button', { name: 'Save' })).toBeHidden();
   });
 });
+test.describe('every field', () => {
+  test('loads the record into every widget', async ({ page }) => {
+    await open(page, variant, 'page=fields&skin=outlined');
+    await expect(field(page, 'f-name')).toHaveValue('Office fit-out, Nile Towers 12th floor');
+    await expect(field(page, 'f-password')).toHaveAttribute('type', 'password');
+    await expect(field(page, 'f-password')).toHaveValue('nile-12th-floor');
+    await expect(node(page, 'f-readiness').getByRole('radio', { name: '3', exact: true })).toHaveAttribute('aria-checked', 'true');
+    await expect(node(page, 'f-rating').getByRole('radio', { name: '4 of 5' })).toHaveAttribute('aria-checked', 'true');
+    await expect(field(page, 'f-kickoff')).toHaveValue('2026-10-12T10:00');
+    await expect(node(page, 'f-source').locator('select')).toHaveValue('partner');
+    await expect(node(page, 'f-services').getByLabel('Design', { exact: true })).toBeChecked();
+    await expect(node(page, 'f-services').getByLabel('After-care')).not.toBeChecked();
+    await expect(node(page, 'f-team')).toContainText('Karim Fathy');
+    await expect(node(page, 'f-milestones').locator('tbody tr')).toHaveCount(2);
+    await expect(node(page, 'f-contract').getByRole('button', { name: 'Upload a file' })).toBeVisible();
+  });
+
+  test('a folded section opens from its title and shows its fields', async ({ page }) => {
+    await open(page, variant, 'page=fields');
+    const title = node(page, 's-structured').getByRole('button', { name: 'Structured data' });
+    await expect(title).toHaveAttribute('aria-expanded', 'false');
+    await expect(node(page, 'f-settings')).toBeHidden();
+    await title.click();
+    await expect(title).toHaveAttribute('aria-expanded', 'true');
+    await expect(node(page, 'f-settings').locator('textarea')).toHaveValue(/badge_readers/);
+    await title.press('Enter');
+    await expect(node(page, 'f-settings')).toBeHidden();
+  });
+
+  test('offers Save only after a change, and Discard puts the record back', async ({ page }) => {
+    await open(page, variant, 'page=fields');
+    await expect(field(page, 'f-seats')).toHaveValue('48');
+    await expect(page.getByRole('button', { name: 'Save' })).toBeHidden();
+    await field(page, 'f-seats').fill('52');
+    await page.getByRole('button', { name: 'Discard' }).click();
+    await expect(field(page, 'f-seats')).toHaveValue('48');
+    await expect(page.getByRole('button', { name: 'Save' })).toBeHidden();
+    await screen(page, `${variant}-fields-page`);
+  });
+});
 });
 }

@@ -206,8 +206,10 @@ export const FIELDIA_CSS = /* css */ `
 .fd-reference { display: grid; grid-template-columns: minmax(7em, 34%) minmax(0, 1fr); gap: 8px; }
 
 /* ---- one2many lines ------------------------------------------------------- */
-.fd-lines { display: grid; gap: 6px; min-width: 0; }
-.fd-lines-scroll { overflow-x: auto; }
+.fd-lines { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; }
+/* The table scrolls sideways inside its own box; the grid around it must not grow to the table's width. */
+/* position: relative keeps the cells' hidden labels inside the scroll box; without it they widen the page. */
+.fd-lines-scroll { overflow-x: auto; min-width: 0; position: relative; }
 .fd-lines-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .fd-lines-table th { text-align: start; font-weight: 600; color: var(--fd-muted); font-size: 12.5px; padding: 6px 8px; border-block-end: 1px solid var(--fd-border); white-space: nowrap; }
 .fd-lines-table td { padding: 4px 8px; border-block-end: 1px solid var(--fd-border); vertical-align: top; min-width: 7em; }
