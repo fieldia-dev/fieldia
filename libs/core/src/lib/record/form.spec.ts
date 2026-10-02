@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page } from '../format/page';
 import { createForm, type DraftStore } from './form';
+import type { Line } from './values';
 import { createMemoryDataSource } from './memory-data-source';
 import type { DataSource } from './data-source';
 import type { Scheduler } from './scheduler';
@@ -227,6 +228,64 @@ describe('createForm — validation', () => {
     const note = second.addLine('line_ids', { display_type: 'note' });
     expect(second.validate()).toBe(false);
     expect(second.getState().errors).toEqual({ [`line_ids.${note}.name`]: 'Description is required' });
+  });
+});
+
+describe('createForm — the order of lines', () => {
+  const orderSource = (sequences: (number | null)[] = [10, 20, 30, 40]) =>
+    createMemoryDataSource({
+      records: {
+        'sale.order': {
+          1: {
+            name: 'S00118',
+            line_ids: sequences.map((sequence, i) => ({ key: 'abcd'[i], id: i + 1, values: { sequence, name: 'ABCD'[i] } })),
+          },
+        },
+      },
+    });
+  const order = (form: ReturnType<typeof createForm>) => (form.getState().values['line_ids'] as Line[]).map((l) => [l.key, l.values['sequence']]);
+
+  it('moves a line, handing the lines that moved the numbers they already used', async () => {
+    const form = createForm({ page: page('order'), dataSource: orderSource(), recordId: 1 });
+    await form.load();
+    form.moveLine('line_ids', 'c', 0);
+    expect(order(form)).toEqual([['c', 10], ['a', 20], ['b', 30], ['d', 40]]);
+    expect(form.changes().lines).toEqual({
+      line_ids: [
+        { op: 'update', id: 3, values: { sequence: 10 } },
+        { op: 'update', id: 1, values: { sequence: 20 } },
+        { op: 'update', id: 2, values: { sequence: 30 } },
+      ],
+    });
+    expect(form.getState().dirty).toEqual(['line_ids']);
+  });
+
+  it('leaves the lines outside the move alone', async () => {
+    const form = createForm({ page: page('order'), dataSource: orderSource(), recordId: 1 });
+    await form.load();
+    form.moveLine('line_ids', 'b', 2);
+    expect(order(form)).toEqual([['a', 10], ['c', 20], ['b', 30], ['d', 40]]);
+    expect(form.changes().lines['line_ids'].map((op) => (op.op === 'update' ? op.id : null))).toEqual([3, 2]);
+  });
+
+  it('numbers every line afresh when they had no numbers, or the same one twice', async () => {
+    const form = createForm({ page: page('order'), dataSource: orderSource([null, 5, 5, null]), recordId: 1 });
+    await form.load();
+    form.moveLine('line_ids', 'a', 3);
+    expect(order(form)).toEqual([['b', 1], ['c', 2], ['d', 3], ['a', 4]]);
+  });
+
+  it('numbers a new line after the last one', async () => {
+    const form = createForm({ page: page('order'), dataSource: orderSource(), recordId: 1 });
+    await form.load();
+    const key = form.addLine('line_ids', { name: 'E' });
+    expect((form.getState().values['line_ids'] as Line[]).find((l) => l.key === key)?.values['sequence']).toBe(41);
+  });
+
+  it('refuses to move lines that keep no order of their own', () => {
+    const form = createForm({ page: page('customer') });
+    const key = form.addLine('child_ids', { name: 'Omar' });
+    expect(() => form.moveLine('child_ids', key, 0)).toThrow('The lines of "child_ids" keep no order: give the field a sequenceField');
   });
 });
 

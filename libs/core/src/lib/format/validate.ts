@@ -116,6 +116,13 @@ class ReferenceCheck {
       if (def.type === 'one2many') {
         this.checkFields(def.fields, `${path}.fields`);
         if (def.lineKinds) this.checkLineKinds(name, def.lineKinds, def.fields, `${path}.lineKinds`);
+        if (def.sequenceField !== undefined) {
+          const sequence = def.fields[def.sequenceField];
+          if (!sequence) this.report(`${path}.sequenceField`, `"${def.sequenceField}" is not a field of the lines of "${name}"`);
+          else if (sequence.type !== 'integer') {
+            this.report(`${path}.sequenceField`, `"${def.sequenceField}" is a ${sequence.type}; the field that keeps the order of lines must be an integer`);
+          }
+        }
       }
     }
   }

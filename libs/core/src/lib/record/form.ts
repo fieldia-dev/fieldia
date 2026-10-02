@@ -95,6 +95,8 @@ export interface Form {
   addLine(field: string, values?: Values): string;
   updateLine(field: string, key: string, name: string, value: Value): void;
   removeLine(field: string, key: string): void;
+  /** Move a line to another place among its lines, numbering its sequence field again. */
+  moveLine(field: string, key: string, to: number): void;
   /** Records a many2one, many2many or reference may point to. A reference needs `options.model`. */
   search(field: string, query: string, limit?: number, options?: { model?: string }): Promise<RelatedRecord[]>;
   /** The same, for a relation inside a one2many line, filtered by that line's values. */
@@ -466,8 +468,14 @@ export function createForm(options: FormOptions): Form {
     addLine(field, values = {}) {
       const def = lineField(field);
       const key = `new-${++lineKeys}`;
+      const current = (state.values[field] as Line[] | null) ?? [];
       const line: Line = { key, values: { ...initialValues(def.fields as Record<string, LineField>), ...structuredCopy(values) } };
-      const lines = [...((state.values[field] as Line[] | null) ?? []), line];
+      // A new line comes last, so it is numbered after the last.
+      if (def.sequenceField && line.values[def.sequenceField] == null) {
+        const numbers = current.map((l) => l.values[def.sequenceField as string]).filter((n): n is number => typeof n === 'number');
+        line.values[def.sequenceField] = numbers.length ? Math.max(...numbers) + 1 : 1;
+      }
+      const lines = [...current, line];
       writeValues({ ...(state.values as Values), [field]: lines });
       afterEdit(field);
       return key;
@@ -480,6 +488,31 @@ export function createForm(options: FormOptions): Form {
         line.key === key ? { ...line, values: { ...line.values, [name]: structuredCopy(value) } } : line
       );
       writeValues({ ...(state.values as Values), [field]: lines });
+      afterEdit(field);
+    },
+
+    moveLine(field, key, to) {
+      const def = lineField(field);
+      const sequence = def.sequenceField;
+      if (!sequence) throw new Error(`The lines of "${field}" keep no order: give the field a sequenceField`);
+      const lines = [...((state.values[field] as Line[] | null) ?? [])];
+      const from = lines.findIndex((line) => line.key === key);
+      if (from < 0) throw new Error(`"${field}" has no line "${key}"`);
+      const target = Math.max(0, Math.min(to, lines.length - 1));
+      if (target === from) return;
+      lines.splice(target, 0, ...lines.splice(from, 1));
+      const numbers = lines.map((line) => line.values[sequence]);
+      const distinct = numbers.every((n) => typeof n === 'number') && new Set(numbers).size === numbers.length;
+      // The lines that moved take the numbers they held between them, in their
+      // new order; numbers that cannot be trusted are given afresh, 1, 2, 3…
+      const low = Math.min(from, target);
+      const high = Math.max(from, target);
+      const pool = distinct ? (numbers.slice(low, high + 1) as number[]).sort((a, b) => a - b) : [];
+      const renumbered = lines.map((line, i) => {
+        const value = distinct ? (i >= low && i <= high ? pool[i - low] : line.values[sequence]) : i + 1;
+        return value === line.values[sequence] ? line : { ...line, values: { ...line.values, [sequence]: value } };
+      });
+      writeValues({ ...(state.values as Values), [field]: renumbered });
       afterEdit(field);
     },
 

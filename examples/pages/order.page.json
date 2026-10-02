@@ -31,7 +31,9 @@
       "label": "Order lines",
       "relation": "sale.order.line",
       "lineKinds": { "field": "display_type", "text": "name" },
+      "sequenceField": "sequence",
       "fields": {
+        "sequence": { "type": "integer", "label": "Sequence" },
         "display_type": {
           "type": "selection",
           "label": "Line type",

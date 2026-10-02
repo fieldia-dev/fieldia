@@ -172,6 +172,12 @@ const One2many = z
     /** The fields of each line, so lines can be edited in place. */
     fields: z.record(z.string().regex(FIELD_NAME), LineFieldSchema),
     lineKinds: LineKindsSchema.optional(),
+    /**
+     * The integer line field that keeps the lines' order (a backend's
+     * `sequence`). With it, people can move lines, and the lines that moved
+     * are numbered again.
+     */
+    sequenceField: z.string().regex(FIELD_NAME).optional(),
   })
   .strict();
 

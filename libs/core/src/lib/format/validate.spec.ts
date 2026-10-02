@@ -212,6 +212,14 @@ describe('validatePage — references', () => {
     expect(messages(page)).toEqual(['fields.line_ids.lineKinds.section: "display_type" has no option "line_section"']);
   });
 
+  it('rejects a sequence field the lines do not have, or one that is not a whole number', () => {
+    const page = example('order');
+    page['fields'].line_ids.sequenceField = 'position';
+    expect(messages(page)).toEqual(['fields.line_ids.sequenceField: "position" is not a field of the lines of "line_ids"']);
+    page['fields'].line_ids.sequenceField = 'name';
+    expect(messages(page)).toEqual(['fields.line_ids.sequenceField: "name" is a char; the field that keeps the order of lines must be an integer']);
+  });
+
   it('rejects one2many columns that are not among its line fields', () => {
     const page = example('customer');
     page['layout'].children[1].children[0].children[0].columns.push('fax');
