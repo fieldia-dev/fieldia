@@ -145,6 +145,35 @@ test.describe('screen designer', () => {
     await expect(page.locator('.fd-designer-status')).toHaveText('Published · version 1');
   });
 
+  test('drags a field into another section, where the line shows, as one undo step', async ({ page }) => {
+    const customer = (await card(page, 'Customer').boundingBox())!;
+    const dueBy = (await card(page, 'Due by').boundingBox())!;
+    // Down out of its section, onto the start of "Due by" in the next one.
+    const from = { x: customer.x + 60, y: customer.y + 14 };
+    const to = { x: dueBy.x + 30, y: dueBy.y + 30 };
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 16; i++) await page.mouse.move(from.x + ((to.x - from.x) * i) / 16, from.y + ((to.y - from.y) * i) / 16, { steps: 3 });
+    // The card follows the pointer, the section it is over says so, and a line says where it lands.
+    await expect(page.locator('.fd-drag-ghost')).toBeVisible();
+    await expect(page.locator('.fd-canvas-section.fd-drop-target .fd-canvas-section-title')).toHaveText('Follow-up');
+    const line = (await page.locator('.fd-drop-marker').boundingBox())!;
+    expect(Math.abs(line.x + line.width - dueBy.x), 'the line is not at the start of "Due by"').toBeLessThan(8);
+    await screen(page, 'screen-drag-across', { viewport: true });
+    await page.mouse.up();
+    await expect.poll(() => layout(page)).toEqual([
+      ['Visit date:1', 'Notes:2'],
+      ['Next step:1', 'Customer:1', 'Due by:1', 'Manager to call?:1'],
+    ]);
+    await expect(page.locator('.fd-drag-ghost, .fd-drop-marker')).toHaveCount(0);
+    await expect(card(page, 'Customer')).toBeVisible();
+    await page.getByRole('button', { name: 'Undo' }).click();
+    await expect.poll(() => layout(page)).toEqual([
+      ['Customer:1', 'Visit date:1', 'Notes:2'],
+      ['Next step:1', 'Due by:1', 'Manager to call?:1'],
+    ]);
+  });
+
   test('every kind of field fits its card, help text and all', async ({ page }) => {
     await page.goto('/screen/?start=blank');
     // Every kind the palette offers, so a kind added later is checked too.

@@ -123,6 +123,10 @@ export const DESIGNER_CSS = /* css */ `
 .fd-prop { display: grid; gap: 4px; }
 .fd-prop-name { font-size: 12.5px; color: var(--fd-muted); }
 .fd-props .fd-q-option-box { padding-inline-start: 2px; }
+.fd-drag-ghost { position: fixed; z-index: 100; pointer-events: none; margin: 0; height: auto !important; opacity: 0.92; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2); border: 1px solid var(--fd-accent) !important; background: var(--fd-surface); transform: rotate(-1deg); }
+.fd-canvas-field.fd-drag-source { opacity: 0.35; }
+.fd-drop-marker { position: fixed; z-index: 99; pointer-events: none; background: var(--fd-accent); border-radius: 2px; }
+.fd-canvas-section.fd-drop-target { border-color: var(--fd-accent); box-shadow: 0 0 0 1px var(--fd-accent); background: var(--fd-accent-soft); }
 .fd-palette-heading { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fd-muted); margin-block: 10px 2px; }
 .fd-palette .fd-palette-heading { flex-basis: 100%; }
 .fd-columns-box { display: grid; gap: 6px; }

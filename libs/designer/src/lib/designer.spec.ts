@@ -229,6 +229,19 @@ describe('createDesigner — app screens', () => {
     expect(sections[0].children).toHaveLength(0);
     expect(sections[1].children.map((n) => n.id)[0]).toBe(a);
   });
+
+  it('narrows a field that moves into a section with fewer columns', () => {
+    const designer = createDesigner({ page: blankPage('screen', 'Visit report') });
+    const first = (designer.getPage().layout as { children: SectionNode[] }).children[0].id;
+    designer.setColumns(first, 3);
+    const second = designer.addContainer('Follow-up') as string;
+    designer.setColumns(second, 1);
+    const wide = designer.addQuestion('paragraph', { parent: first }) as string;
+    designer.setColspan(wide, 3);
+    expect(designer.placeNode(wide, second, 0)).toBe(true);
+    const moved = (designer.getPage().layout as { children: SectionNode[] }).children[1].children[0] as FieldNode;
+    expect(moved.colspan).toBeUndefined();
+  });
 });
 
 describe('createDesigner — arranging a section from the canvas', () => {

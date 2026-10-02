@@ -6,6 +6,7 @@ import type { Designer, DesignerState } from './designer';
 import type { Grafloria, GrafloriaBoardHandle, GrafloriaWidget } from './grafloria';
 import { allSections, findField, findTab, tabHolds } from './page-tree';
 import { flowCells, GAP, heightOfRows, orderFromCells, ROW_HEIGHT, rowsForHeight, rowsOf } from './screen-layout';
+import { sectionDrag } from './section-drag';
 import { fieldProperties, pageProperties, paletteGroups, sectionProperties, tabProperties, tabsProperties, type PropertiesView } from './screen-properties';
 import { installDesignerStyles } from './styles';
 
@@ -89,6 +90,13 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   titleCard.addEventListener('click', () => designer.select(null));
   const canvas = el('div', { class: 'fd-canvas' }, titleCard, sectionsBox, el('div', { class: 'fd-canvas-adds' }, addSection, addTabs));
   const properties = el('aside', { class: 'fd-properties', 'aria-label': 'Properties' });
+  // A card dragged onto another section moves there.
+  const crossing = sectionDrag({
+    canvas,
+    move: (id, section, index) => {
+      if (designer.placeNode(id, section, index)) designer.select(id);
+    },
+  });
   const body = el('div', { class: 'fd-screen-body' }, palette, canvas, properties);
   const previewHost = el('div', { class: 'fd-screen-preview', hidden: '' });
   root.append(bar.element, bar.issues, body, previewHost);
@@ -517,6 +525,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       clearTimeout(deferred);
       clearTimeout(measureTimer);
       resized?.disconnect();
+      crossing.destroy();
       for (const view of sectionViews.values()) disposeBoard(view);
       sectionViews.clear();
       viewer?.destroy();

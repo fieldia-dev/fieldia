@@ -531,6 +531,12 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
         if (!parent) throw new Refusal(`There is no step or section "${parentId}"`);
         found.parent.children.splice(found.index, 1);
         parent.children.splice(Math.max(0, Math.min(index, parent.children.length)), 0, found.node);
+        // No wider than its new section.
+        const columns = (parent as SectionNode).type === 'section' ? wideColumns((parent as SectionNode).columns) : null;
+        if (columns && found.node.type === 'field' && (found.node.colspan ?? 1) > columns) {
+          if (columns === 1) delete found.node.colspan;
+          else found.node.colspan = columns;
+        }
       });
     },
 

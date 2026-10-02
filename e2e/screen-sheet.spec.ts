@@ -93,4 +93,41 @@ test.describe('screen designer · record sheet', () => {
     await expect(page.locator('.fd-designer-status')).toHaveText('Published · version 1');
     expect(problems).toEqual([]);
   });
+
+  test('drags a field onto a tab, which opens, and into its section', async ({ page }) => {
+    await page.goto('/screen/?start=sheet');
+    await page.evaluate(() => {
+      const { designer } = (window as any).fieldiaDesigner;
+      const email = designer.addQuestion('email', { parent: 'section-1' });
+      designer.updateQuestion(email, { label: 'Email' });
+      const tabs = designer.addTabs();
+      const block = designer.getPage().layout.children.find((n: any) => n.id === tabs);
+      designer.renameContainer(block.children[0].id, 'Contacts');
+      const notes = designer.addTab(tabs, 'Notes');
+      const inNotes = designer.getPage().layout.children.find((n: any) => n.id === tabs).children[1].children[0].id;
+      designer.updateQuestion(designer.addQuestion('paragraph', { parent: inNotes }), { label: 'Internal notes' });
+      designer.select(null);
+      void notes;
+    });
+    await expect(tabs(page)).toHaveText(['Contacts', 'Notes']);
+    await tabs(page).first().click();
+    const email = (await card(page, 'Email').boundingBox())!;
+    const notesTab = (await tabs(page).nth(1).boundingBox())!;
+    const from = { x: email.x + 60, y: email.y + 14 };
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    const over = { x: notesTab.x + notesTab.width / 2, y: notesTab.y + notesTab.height / 2 };
+    for (let i = 1; i <= 14; i++) await page.mouse.move(from.x + ((over.x - from.x) * i) / 14, from.y + ((over.y - from.y) * i) / 14, { steps: 3 });
+    // Resting on the tab opens it.
+    await expect(tabs(page).nth(1)).toHaveAttribute('aria-selected', 'true');
+    const notes = (await card(page, 'Internal notes').boundingBox())!;
+    await page.mouse.move(notes.x + notes.width - 20, notes.y + notes.height + 30, { steps: 8 });
+    await page.mouse.up();
+    const where = await page.evaluate(() => {
+      const built = (window as any).fieldiaDesigner.designer.getPage();
+      const tabsNode = built.layout.children.find((n: any) => n.type === 'tabs');
+      return tabsNode.children[1].children[0].children.map((n: any) => built.fields[n.field].label);
+    });
+    expect(where).toEqual(['Internal notes', 'Email']);
+  });
 });
