@@ -257,6 +257,31 @@ describe('keys', () => {
     expect(document.activeElement).toBe(cell);
   });
 
+  it('leaves the keys in an app’s own slot to it: Ctrl+Enter there saves nothing, Enter moves nowhere', async () => {
+    let box: HTMLTextAreaElement | null = null;
+    const { host, form, dataSource } = sheet({
+      keys: { enterMovesToNext: true },
+      slots: {
+        chatter: (element) => {
+          box = element.ownerDocument.createElement('textarea');
+          const field = element.ownerDocument.createElement('input');
+          element.append(box, field);
+        },
+      },
+    });
+    await form.settled();
+    type(input(host, 'f-phone'), '+20 2 1111 2222');
+    const typed = box as unknown as HTMLTextAreaElement;
+    typed.focus();
+    expect(press(typed, 'Enter', { ctrlKey: true })).toBe(true);
+    const field = host.querySelector('.fd-slot[data-slot="chatter"] input') as HTMLInputElement;
+    field.focus();
+    expect(press(field, 'Enter')).toBe(true);
+    expect(document.activeElement).toBe(field);
+    await form.settled();
+    expect(dataSource.calls.filter((c) => c.method === 'save')).toEqual([]);
+  });
+
   it('does not move on Enter unless asked', () => {
     const { host } = mount('signup');
     input(host, 'f-name').focus();

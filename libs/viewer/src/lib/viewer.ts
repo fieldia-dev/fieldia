@@ -779,6 +779,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
 
   root.addEventListener('keydown', (event) => {
     if (event.isComposing || event.key !== 'Enter') return;
+    // An app's own content in a slot, such as a chatter's composer, keeps its keys.
+    if ((event.target as Element).closest('.fd-slot')) return;
     const keys = options.keys ?? {};
     if (event.ctrlKey || event.metaKey) {
       // Saves even after a field used the Enter (a tag box adding its tag); the grid keeps its own keys.
