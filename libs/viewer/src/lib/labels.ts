@@ -48,6 +48,39 @@ export interface ViewerLabels {
   selectRecord: string;
   noRecords: string;
   loadFailed: string;
+  /**
+   * A list's search bar: the box (`{field}` and `{text}` in a suggestion), its
+   * chips (`{label}`), the Filters, Group By and Favourites menu (`{name}`),
+   * and the conditions a custom filter offers.
+   */
+  search: string;
+  searchLabel: string;
+  searchFor: string;
+  searchOptions: string;
+  filters: string;
+  groupBy: string;
+  favourites: string;
+  or: string;
+  removeFacet: string;
+  addCustomFilter: string;
+  field: string;
+  condition: string;
+  value: string;
+  apply: string;
+  saveSearch: string;
+  searchName: string;
+  useByDefault: string;
+  deleteFavourite: string;
+  noFavourites: string;
+  opIs: string;
+  opIsNot: string;
+  opContains: string;
+  opGreater: string;
+  opLess: string;
+  opSet: string;
+  opNotSet: string;
+  yes: string;
+  no: string;
 }
 
 export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
@@ -89,6 +122,34 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     selectRecord: 'Select {name}',
     noRecords: 'No records match.',
     loadFailed: 'Could not load the records.',
+    search: 'Search…',
+    searchLabel: 'Search',
+    searchFor: 'Search {field} for: {text}',
+    searchOptions: 'Search options',
+    filters: 'Filters',
+    groupBy: 'Group By',
+    favourites: 'Favourites',
+    or: 'or',
+    removeFacet: 'Remove {label}',
+    addCustomFilter: 'Add a custom filter',
+    field: 'Field',
+    condition: 'Condition',
+    value: 'Value',
+    apply: 'Apply',
+    saveSearch: 'Save current search',
+    searchName: 'Name of the search',
+    useByDefault: 'Use by default',
+    deleteFavourite: 'Delete {name}',
+    noFavourites: 'No saved searches yet.',
+    opIs: 'is',
+    opIsNot: 'is not',
+    opContains: 'contains',
+    opGreater: 'greater than',
+    opLess: 'less than',
+    opSet: 'is set',
+    opNotSet: 'is not set',
+    yes: 'Yes',
+    no: 'No',
   },
   ar: {
     save: 'حفظ',
@@ -128,6 +189,34 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     selectRecord: 'تحديد {name}',
     noRecords: 'لا توجد سجلات مطابقة.',
     loadFailed: 'تعذّر تحميل السجلات.',
+    search: 'بحث…',
+    searchLabel: 'بحث',
+    searchFor: 'ابحث في {field} عن: {text}',
+    searchOptions: 'خيارات البحث',
+    filters: 'عوامل التصفية',
+    groupBy: 'تجميع حسب',
+    favourites: 'المفضلة',
+    or: 'أو',
+    removeFacet: 'إزالة {label}',
+    addCustomFilter: 'إضافة عامل تصفية مخصص',
+    field: 'الحقل',
+    condition: 'الشرط',
+    value: 'القيمة',
+    apply: 'تطبيق',
+    saveSearch: 'حفظ البحث الحالي',
+    searchName: 'اسم البحث',
+    useByDefault: 'استخدامه افتراضيًا',
+    deleteFavourite: 'حذف {name}',
+    noFavourites: 'لا توجد عمليات بحث محفوظة بعد.',
+    opIs: 'يساوي',
+    opIsNot: 'لا يساوي',
+    opContains: 'يحتوي على',
+    opGreater: 'أكبر من',
+    opLess: 'أصغر من',
+    opSet: 'محدد',
+    opNotSet: 'غير محدد',
+    yes: 'نعم',
+    no: 'لا',
   },
   de: {
     save: 'Speichern',
@@ -167,6 +256,34 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     selectRecord: '{name} auswählen',
     noRecords: 'Keine passenden Einträge.',
     loadFailed: 'Die Einträge konnten nicht geladen werden.',
+    search: 'Suchen…',
+    searchLabel: 'Suchen',
+    searchFor: '{field} durchsuchen nach: {text}',
+    searchOptions: 'Suchoptionen',
+    filters: 'Filter',
+    groupBy: 'Gruppieren nach',
+    favourites: 'Favoriten',
+    or: 'oder',
+    removeFacet: '{label} entfernen',
+    addCustomFilter: 'Eigenen Filter hinzufügen',
+    field: 'Feld',
+    condition: 'Bedingung',
+    value: 'Wert',
+    apply: 'Anwenden',
+    saveSearch: 'Aktuelle Suche speichern',
+    searchName: 'Name der Suche',
+    useByDefault: 'Standardmäßig verwenden',
+    deleteFavourite: '{name} löschen',
+    noFavourites: 'Noch keine gespeicherten Suchen.',
+    opIs: 'ist',
+    opIsNot: 'ist nicht',
+    opContains: 'enthält',
+    opGreater: 'größer als',
+    opLess: 'kleiner als',
+    opSet: 'ist gesetzt',
+    opNotSet: 'ist nicht gesetzt',
+    yes: 'Ja',
+    no: 'Nein',
   },
   fr: {
     save: 'Enregistrer',
@@ -206,6 +323,34 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     selectRecord: 'Sélectionner {name}',
     noRecords: 'Aucun enregistrement ne correspond.',
     loadFailed: 'Impossible de charger les enregistrements.',
+    search: 'Rechercher…',
+    searchLabel: 'Rechercher',
+    searchFor: 'Rechercher {field} : {text}',
+    searchOptions: 'Options de recherche',
+    filters: 'Filtres',
+    groupBy: 'Regrouper par',
+    favourites: 'Favoris',
+    or: 'ou',
+    removeFacet: 'Retirer {label}',
+    addCustomFilter: 'Ajouter un filtre personnalisé',
+    field: 'Champ',
+    condition: 'Condition',
+    value: 'Valeur',
+    apply: 'Appliquer',
+    saveSearch: 'Enregistrer la recherche',
+    searchName: 'Nom de la recherche',
+    useByDefault: 'Utiliser par défaut',
+    deleteFavourite: 'Supprimer {name}',
+    noFavourites: 'Aucune recherche enregistrée.',
+    opIs: 'est',
+    opIsNot: 'n’est pas',
+    opContains: 'contient',
+    opGreater: 'supérieur à',
+    opLess: 'inférieur à',
+    opSet: 'est défini',
+    opNotSet: 'n’est pas défini',
+    yes: 'Oui',
+    no: 'Non',
   },
 };
 

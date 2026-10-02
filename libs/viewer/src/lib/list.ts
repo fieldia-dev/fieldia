@@ -12,11 +12,12 @@ import {
   type SortOrder,
   type Value,
 } from '@fieldia/core';
-import { displayValue } from '@fieldia/widgets';
+import { displayValue, type IconSet, type PreferenceStore } from '@fieldia/widgets';
+import type { El } from './dom';
+import { startingFacets } from './favourites';
 import type { ViewerLabels } from './labels';
 import { installListStyles } from './list-styles';
-
-type El = <K extends keyof HTMLElementTagNameMap>(tag: K, attrs?: Record<string, string | undefined>, ...children: (Node | string)[]) => HTMLElementTagNameMap[K];
+import { searchBar } from './search-bar';
 
 export interface ListContext {
   page: Page;
@@ -30,6 +31,10 @@ export interface ListContext {
   fill: (template: string, values: Record<string, string | number>) => string;
   confirm: (message: string) => Promise<boolean>;
   withIcon: (icon: string | undefined, text: string) => (Node | string)[];
+  uid: (id: string) => string;
+  icons?: IconSet;
+  /** Where the list's favourite searches are kept. */
+  preferences: PreferenceStore;
   onOpenRecord?: (id: RecordId) => void;
 }
 
@@ -37,9 +42,6 @@ export interface ListView {
   element: HTMLElement;
   /** Ask for the records again, keeping the page, the order and what is chosen where it still applies. */
   reload(): Promise<void>;
-  /** What the list is narrowed to, as the search bar shows it. Goes back to the first page. */
-  setFacets(facets: Facet[]): void;
-  getFacets(): Facet[];
   destroy(): void;
 }
 
@@ -64,9 +66,7 @@ export function listView(context: ListContext): ListView {
   let offset = 0;
   let total = 0;
   let rows: Row[] = [];
-  let facets: Facet[] = node.defaultFilters?.length
-    ? [{ kind: 'filters', ids: [...node.defaultFilters], labels: node.defaultFilters.map((id) => node.filters?.find((f) => f.id === id)?.label ?? id) }]
-    : [];
+  let facets: Facet[] = startingFacets(node, context.preferences, page);
   /** In the order they were chosen, which is the order the app gets them. */
   const chosen = new Set<RecordId>();
   let asking = 0;
@@ -259,10 +259,28 @@ export function listView(context: ListContext): ListView {
     drawChoice();
   }
 
+  const search = searchBar({
+    page,
+    node,
+    doc,
+    el,
+    labels,
+    fill,
+    uid: context.uid,
+    icons: context.icons,
+    preferences: context.preferences,
+    facets,
+    onChange(next) {
+      facets = next;
+      offset = 0;
+      void load();
+    },
+  });
   const element = el(
     'div',
     { class: 'fd-list', 'data-node': node.id },
-    el('div', { class: 'fd-list-bar' }, selection, pager),
+    el('div', { class: 'fd-list-bar' }, search.element, pager),
+    selection,
     el('div', { class: 'fd-list-scroll' }, table),
     empty,
     failed
@@ -272,14 +290,9 @@ export function listView(context: ListContext): ListView {
   return {
     element,
     reload: load,
-    setFacets(next) {
-      facets = next;
-      offset = 0;
-      void load();
-    },
-    getFacets: () => facets,
     destroy() {
       destroyed = true;
+      search.destroy();
     },
   };
 }

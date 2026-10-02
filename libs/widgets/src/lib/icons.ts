@@ -37,6 +37,9 @@ export const ICONS: IconSet = {
   link: '<path d="M10 14a4 4 0 0 0 5.6 0l3-3a4 4 0 0 0-5.6-5.6l-1 1"/><path d="M14 10a4 4 0 0 0-5.6 0l-3 3a4 4 0 0 0 5.6 5.6l1-1"/>',
   list: '<path d="M8 6h12M8 12h12M8 18h12M4 6v0M4 12v0M4 18v0"/>',
   chat: '<path d="M4 5h16v11H9l-5 4z"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/>',
+  filter: '<path d="M3 5h18l-7 8.5V20l-4-2v-4.5z"/>',
+  layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
 };
 
 /** An icon by name, the app's own first and then Fieldia's; null for a name neither has. */

@@ -738,7 +738,23 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   else if (layout.type === 'wizard') body = wizardLayout(layout);
   else if (layout.type === 'tabs') body = sectionsLayout({ id: `${layout.id}-page`, children: [layout] });
   else if (layout.type === 'list') {
-    const list = listView({ page, node: layout, form, dataSource: options.dataSource, doc, el, labels, locale, fill, confirm, withIcon, onOpenRecord: options.onOpenRecord });
+    const list = listView({
+      page,
+      node: layout,
+      form,
+      dataSource: options.dataSource,
+      doc,
+      el,
+      labels,
+      locale,
+      fill,
+      confirm,
+      withIcon,
+      uid,
+      icons: options.icons,
+      preferences,
+      onOpenRecord: options.onOpenRecord,
+    });
     cleanups.push(list.destroy);
     body = list.element;
   }
@@ -758,6 +774,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
 
   root.addEventListener('submit', (event) => {
     event.preventDefault();
+    if (layout.type === 'list') return;
     if (wizardForward) void wizardForward();
     else void submitOrSave();
   });
