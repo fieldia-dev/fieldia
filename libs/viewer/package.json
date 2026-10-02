@@ -1,6 +1,6 @@
 {
   "name": "@fieldia/viewer",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "Mount a Fieldia page in any web page: plain DOM, no framework.",
   "license": "MIT",
   "homepage": "https://fieldia.dev",
@@ -24,8 +24,8 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@fieldia/core": "0.9.1",
-    "@fieldia/widgets": "0.9.1",
+    "@fieldia/core": "0.9.2",
+    "@fieldia/widgets": "0.9.2",
     "tslib": "^2.8.1"
   },
   "sideEffects": false,

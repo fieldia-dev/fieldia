@@ -1,6 +1,6 @@
 {
   "name": "@fieldia/grid",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "Fieldia's table of lines on AG Grid: spreadsheet editing with Fieldia's own fields in the cells.",
   "license": "MIT",
   "homepage": "https://fieldia.dev",
@@ -21,8 +21,8 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@fieldia/core": "0.9.1",
-    "@fieldia/widgets": "0.9.1",
+    "@fieldia/core": "0.9.2",
+    "@fieldia/widgets": "0.9.2",
     "tslib": "^2.8.1"
   },
   "peerDependencies": {
