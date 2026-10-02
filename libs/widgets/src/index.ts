@@ -5,3 +5,4 @@ export * from './lib/relations';
 export * from './lib/lines';
 export * from './lib/files';
 export * from './lib/extras';
+export * from './lib/display';

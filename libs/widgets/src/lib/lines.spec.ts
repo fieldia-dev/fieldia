@@ -183,6 +183,25 @@ describe('one2many lines with sections and notes', () => {
     expect(document.activeElement).toBe(rows(el)[1].querySelector('textarea'));
   });
 
+  it('adds up the totals columns in a footer, leaving sections and notes out, and keeps it current', () => {
+    const totalled = JSON.parse(JSON.stringify(sectioned)) as Page & { layout: { children: FieldNode[] } };
+    totalled.layout.children[0] = { ...totalled.layout.children[0], totals: ['quantity'] };
+    const form = createForm({ page: totalled });
+    const node = totalled.layout.children[0];
+    const widget = createWidget({ form, name: 'line_ids', field: totalled.fields['line_ids'] as Field, node, id: 'fd-lines', document, labels: WIDGET_LABELS.en });
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values['line_ids'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    form.addLine('line_ids', { display_type: 'section', name: 'Workstations' });
+    const first = form.addLine('line_ids', { quantity: 2 });
+    form.addLine('line_ids', { quantity: 5 });
+    const footer = () => [...widget.element.querySelectorAll('tfoot td')].map((td) => td.textContent);
+    expect(footer()).toEqual(['Total', '', '7', '']);
+    form.updateLine('line_ids', first, 'quantity', 10);
+    expect(footer()).toEqual(['Total', '', '15', '']);
+  });
+
   it('offers no section or note buttons to lines without kinds', () => {
     const { el } = mount();
     expect(el.querySelectorAll('.fd-lines-add')).toHaveLength(1);

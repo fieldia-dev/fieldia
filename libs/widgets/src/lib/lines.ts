@@ -1,4 +1,5 @@
 import { lineKind, type Field, type FieldNode, type Form, type FormState, type Line, type LineField, type Value } from '@fieldia/core';
+import { displayValue } from './display';
 import { WIDGET_LABELS } from './labels';
 import { createWidget, type Widget, type WidgetFactory } from './widgets';
 
@@ -61,6 +62,23 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   head.append(headRow);
   const body = document.createElement('tbody');
   table.append(head, body);
+  // Number columns the page asks to add up, in a row under the lines.
+  const totals = (node.totals ?? []).filter((column) => columns.includes(column));
+  const sums = new Map<string, HTMLTableCellElement>();
+  if (totals.length) {
+    const foot = document.createElement('tfoot');
+    const row = document.createElement('tr');
+    row.className = 'fd-lines-totals';
+    columns.forEach((column, i) => {
+      const td = document.createElement('td');
+      if (totals.includes(column)) sums.set(column, td);
+      else if (i === 0) td.textContent = labels.total;
+      row.append(td);
+    });
+    row.append(document.createElement('td'));
+    foot.append(row);
+    table.append(foot);
+  }
   scroller.append(table);
   const adds = document.createElement('div');
   adds.className = 'fd-lines-adds';
@@ -174,6 +192,10 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
           });
         }
       });
+      for (const [column, td] of sums) {
+        const sum = current.filter((line) => !lineKind(def, line.values)).reduce((total, line) => total + Number(line.values[column] ?? 0), 0);
+        td.textContent = displayValue(def.fields[column], sum, current[0]?.values ?? {});
+      }
       if (focusNew && rows.has(focusNew)) {
         rows.get(focusNew)?.cells[0]?.widget.focus();
         focusNew = null;

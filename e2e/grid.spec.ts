@@ -315,5 +315,19 @@ for (const variant of VARIANTS) {
       expect((await lines(page)).map((l) => l['sequence'])).toEqual([10, 20, 30, 40, 50, 60]);
       expect((await lines(page))[NOTE]['product_id']).toEqual({ id: 2, label: 'Desk lamp, LED' });
     });
+    test('a totals row adds up quantity and subtotal, leaving sections and notes out, and follows a change as it is typed', async ({ page }) => {
+      const totals = grid(page).locator('.ag-grid-pinned-bottom-rows .ag-row');
+      await expect(totals.locator('.ag-cell[col-id="product_id"]')).toHaveText('Total');
+      await expect(totals.locator('.ag-cell[col-id="qty"]')).toHaveText('30.00');
+      await expect(totals.locator('.ag-cell[col-id="subtotal"]')).toHaveText('EGP 64,656.00');
+      await cell(page, LAMP, 'qty').click();
+      await page.keyboard.type('20');
+      await expect(totals.locator('.ag-cell[col-id="qty"]')).toHaveText('38.00');
+      await expect(totals.locator('.ag-cell[col-id="subtotal"]')).toHaveText('EGP 67,696.00');
+      await expect.poll(() => editing(page)).toEqual([LAMP, 'qty']);
+      // The totals row is not a line: nothing to edit, drag or delete there.
+      await expect(totals.locator('.ag-drag-handle, button')).toHaveCount(0);
+      await screen(page, `${variant}-grid-totals`);
+    });
   });
 }

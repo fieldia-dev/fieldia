@@ -10,6 +10,7 @@ export const GRID_CSS = /* css */ `
 .fd-grid-lines .ag-root-wrapper { overflow: visible; }
 .fd-grid-lines .ag-root-wrapper-body { overflow: hidden; border-radius: inherit; }
 .fd-grid-lines .fd-grid-tools { padding: 0; display: flex; align-items: center; justify-content: center; }
+.fd-grid-lines .fd-grid-totals { font-weight: 600; background: var(--fd-surface); }
 .fd-grid-lines .fd-grid-handle { color: var(--fd-muted); cursor: grab; }
 .fd-grid-lines .fd-grid-handle .ag-drag-handle { margin: 0; }
 .fd-grid-lines .ag-cell .fd-checkbox { margin: 0; vertical-align: middle; }

@@ -282,6 +282,17 @@ test.describe('every field', () => {
     await expect(node(page, 'f-contract').getByRole('button', { name: 'Upload a file' })).toBeVisible();
   });
 
+  test('adds up the milestones’ hours and amounts under the table, and follows a change', async ({ page }) => {
+    await open(page, variant, 'page=fields&skin=outlined');
+    const totals = node(page, 'f-milestones').locator('tfoot td');
+    await expect(totals).toHaveText(['Total', '', '76.0', 'EGP 425,000.00', '', '', '']);
+    const hours = node(page, 'f-milestones').locator('tbody tr').first().getByLabel('Hours');
+    await hours.fill('20');
+    await expect(totals.nth(2)).toHaveText('84.0');
+    await node(page, 'f-milestones').scrollIntoViewIfNeeded();
+    await screen(page, `${variant}-fields-totals`);
+  });
+
   test('a folded section opens from its title and shows its fields', async ({ page }) => {
     await open(page, variant, 'page=fields');
     const title = node(page, 's-structured').getByRole('button', { name: 'Structured data' });

@@ -142,6 +142,30 @@ describe('the grid', () => {
   });
 });
 
+describe('the grid totals', () => {
+  it('pins a totals row under the lines and keeps it current', async () => {
+    const totalled = JSON.parse(JSON.stringify(order)) as Page & { layout: any };
+    totalled.layout.children[0].children[1].totals = ['qty', 'price'];
+    const { box, form } = await mount(totalled);
+    const totals = () => [...box.querySelectorAll('.ag-grid-pinned-bottom-rows .ag-row .ag-cell')].map((c) => (c as HTMLElement).textContent?.trim());
+    expect(totals()).toEqual(['Total', '', '10.00', 'EGP 2,270.00', '', '', '']);
+    form.updateLine('line_ids', 'l1', 'qty', 14);
+    await frames();
+    expect(totals()).toEqual(['Total', '', '20.00', 'EGP 2,270.00', '', '', '']);
+  });
+
+  it('never takes a key pressed on the totals row for one meant for the first line', async () => {
+    const totalled = JSON.parse(JSON.stringify(order)) as Page & { layout: any };
+    totalled.layout.children[0].children[1].totals = ['qty'];
+    const { box, form, api } = await mount(totalled);
+    api?.setFocusedCell(0, '__delete', 'bottom');
+    const cell = box.querySelector('.ag-grid-pinned-bottom-rows .ag-cell[col-id="__delete"]') as HTMLElement;
+    cell.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    cell.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(formLines(form).map((l) => l.key)).toEqual(['l1', 'l2']);
+  });
+});
+
 describe('the grid with sections and notes', () => {
   /** The same order, whose lines may be section headings and notes. */
   const sectioned = JSON.parse(JSON.stringify(order)) as Page & { fields: Record<string, any> };
@@ -194,7 +218,7 @@ describe('the grid with sections and notes', () => {
     const shown = api?.getAllDisplayedColumns().map((c) => c.getColId());
     expect(shown?.[0]).toBe('__handle');
     expect(shown).not.toContain('sequence');
-    expect(api?.getColumnDef('__handle')?.rowDrag).toBe(true);
+    expect(api?.getColumnDef('__handle')?.rowDrag).toBeTruthy();
     // A section still spans the item columns, beside the handle and the delete button.
     expect(rowCells(box, 0)).toEqual(['', 'Workstations', '×']);
 

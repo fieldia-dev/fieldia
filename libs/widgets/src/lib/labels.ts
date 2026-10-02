@@ -10,6 +10,8 @@ export interface WidgetLabels {
   addSection: string;
   addNote: string;
   deleteLine: string;
+  /** Heads the row that adds up a table's number columns. */
+  total: string;
   upload: string;
   uploadImage: string;
   replace: string;
@@ -28,6 +30,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addSection: 'Add a section',
     addNote: 'Add a note',
     deleteLine: 'Delete line',
+    total: 'Total',
     upload: 'Upload a file',
     uploadImage: 'Add a photo',
     replace: 'Replace',
@@ -44,6 +47,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addSection: 'إضافة قسم',
     addNote: 'إضافة ملاحظة',
     deleteLine: 'حذف السطر',
+    total: 'الإجمالي',
     upload: 'رفع ملف',
     uploadImage: 'إضافة صورة',
     replace: 'استبدال',
@@ -60,6 +64,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addSection: 'Abschnitt hinzufügen',
     addNote: 'Notiz hinzufügen',
     deleteLine: 'Zeile löschen',
+    total: 'Summe',
     upload: 'Datei hochladen',
     uploadImage: 'Foto hinzufügen',
     replace: 'Ersetzen',
@@ -76,6 +81,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addSection: 'Ajouter une section',
     addNote: 'Ajouter une note',
     deleteLine: 'Supprimer la ligne',
+    total: 'Total',
     upload: 'Téléverser un fichier',
     uploadImage: 'Ajouter une photo',
     replace: 'Remplacer',

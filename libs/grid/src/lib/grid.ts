@@ -13,7 +13,7 @@ import {
 } from 'ag-grid-community';
 import { lineKind, type Field, type FieldNode, type Form, type Line, type LineField, type LineKinds, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
-import { createWidget, kindTextField, lineForm, WIDGET_LABELS, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
+import { createWidget, displayValue, kindTextField, lineForm, WIDGET_LABELS, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
 
 /**
  * A one2many as a spreadsheet, on AG Grid. Each cell is edited with the same
@@ -57,62 +57,6 @@ const spanStart = (api: GridApi<Line>) => api.getAllDisplayedColumns().find((c) 
 const spanWidth = (api: GridApi<Line>) => api.getAllDisplayedColumns().filter((c) => !isTool(c.getColId())).length;
 
 type LineDef = Extract<Field, { type: 'one2many' }>;
-
-// ---- showing values -------------------------------------------------------------
-
-const number = (value: number, digits: number) =>
-  new Intl.NumberFormat('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
-
-function localDate(text: string): Date | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(text);
-  if (!match) return null;
-  const [, y, m, d, hh, mm] = match;
-  return new Date(Number(y), Number(m) - 1, Number(d), Number(hh ?? 0), Number(mm ?? 0));
-}
-
-/** A value as a person reads it in a cell. */
-export function displayValue(def: LineField, value: Value | undefined, values: Record<string, Value> = {}): string {
-  if (value === null || value === undefined || value === '') return '';
-  switch (def.type) {
-    case 'many2one':
-    case 'reference':
-      return (value as { label?: string }).label ?? '';
-    case 'many2many':
-      return ((value as { label: string }[]) ?? []).map((r) => r.label).join(', ');
-    case 'selection': {
-      const label = (v: unknown) => def.options.find((o) => o.value === v)?.label ?? String(v);
-      return Array.isArray(value) ? value.map(label).join(', ') : label(value);
-    }
-    case 'integer':
-      return number(Number(value), 0);
-    case 'float':
-      return number(Number(value), def.digits?.[1] ?? 2);
-    case 'monetary': {
-      const currency = def.currency ?? (def.currencyField ? (values[def.currencyField] as { label?: string } | null)?.label : undefined);
-      const amount = number(Number(value), def.digits?.[1] ?? 2);
-      return currency ? `${currency} ${amount}` : amount;
-    }
-    case 'date': {
-      const date = localDate(String(value));
-      return date ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(date) : String(value);
-    }
-    case 'datetime': {
-      const date = localDate(String(value));
-      return date
-        ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date)
-        : String(value);
-    }
-    case 'html':
-      return String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-    case 'binary':
-    case 'image':
-      return (value as { name?: string }).name ?? '';
-    case 'boolean':
-      return value ? '✓' : '';
-    default:
-      return String(value);
-  }
-}
 
 // ---- cells ------------------------------------------------------------------------
 
@@ -316,6 +260,13 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   // The fields that say what a line is and keep the lines' order never show as columns.
   const columns = (node.columns ?? Object.keys(def.fields)).filter((column) => def.fields[column] && column !== kinds?.field && column !== sequence);
   const kindOf = (line: Line | undefined) => (line ? lineKind(def, line.values) : null);
+  // Number columns the page asks to add up, in a row pinned under the lines.
+  const totals = (node.totals ?? []).filter((column) => columns.includes(column));
+  const totalsRow = (current: Line[]): Line => {
+    const items = current.filter((line) => !kindOf(line));
+    const values = Object.fromEntries(totals.map((c) => [c, items.reduce((sum, line) => sum + Number(line.values[c] ?? 0), 0)]));
+    return { key: '__totals', values: { ...(items[0]?.values ?? {}), ...values } };
+  };
   const cell: CellContext = { form, field: name, fieldId: node.id, defs: def.fields, labels, finish: () => undefined, kinds, kindOf };
   installGridStyles(document);
 
@@ -386,10 +337,15 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       colId: column,
       headerName: sub.label,
       valueGetter: (p) => {
+        if (p.node?.rowPinned) {
+          if (totals.includes(column)) return p.data?.values[column];
+          return spans(p.api) ? labels.total : null;
+        }
         if (!kindOf(p.data)) return p.data?.values[column];
         return kinds && spans(p.api) ? p.data?.values[kinds.text] : null;
       },
-      valueFormatter: (p) => (kindOf(p.data) ? String(p.value ?? '') : displayValue(sub, p.value as Value, p.data?.values ?? {})),
+      valueFormatter: (p) =>
+        kindOf(p.data) || (p.node?.rowPinned && !totals.includes(column)) ? String(p.value ?? '') : displayValue(sub, p.value as Value, p.data?.values ?? {}),
       type: numeric ? 'rightAligned' : undefined,
       // A section or note runs across every column but the delete button.
       colSpan: (p) => (kindOf(p.data) && spans(p.api) ? spanWidth(p.api) : 1),
@@ -400,7 +356,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       minWidth: wide ? 140 : sub.type === 'monetary' ? 130 : 96,
       flex: wide ? 2 : sub.type === 'monetary' ? 1.3 : 1,
       editable: (p) => {
-        if (readonly) return false;
+        if (readonly || p.node.rowPinned) return false;
         if (kindOf(p.data)) return spans(p.api);
         return sub.type !== 'boolean' && EDITABLE.has(sub.type) && !sub.readonly;
       },
@@ -410,7 +366,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     if (sub.type === 'boolean') {
       return {
         ...base,
-        cellRendererSelector: (p) => (kindOf(p.data) ? undefined : { component: CheckboxRenderer, params: { cell, subfield: column } }),
+        cellRendererSelector: (p) => (kindOf(p.data) || p.node.rowPinned ? undefined : { component: CheckboxRenderer, params: { cell, subfield: column } }),
         flex: 0,
         width: 100,
         minWidth: 80,
@@ -423,7 +379,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     columnDefs.unshift({
       colId: '__handle',
       headerName: '',
-      rowDrag: true,
+      rowDrag: (p) => !p.node.rowPinned,
       width: 32,
       minWidth: 32,
       maxWidth: 32,
@@ -445,8 +401,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     resizable: false,
     sortable: false,
     suppressMovable: true,
-    cellRenderer: DeleteRenderer,
-    cellRendererParams: { cell },
+    cellRendererSelector: (p) => (p.node.rowPinned ? undefined : { component: DeleteRenderer, params: { cell } }),
     suppressKeyboardEvent: keys,
   });
 
@@ -468,8 +423,10 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       }),
       columnDefs,
       rowData: lines(),
+      pinnedBottomRowData: totals.length ? [totalsRow(lines())] : undefined,
       getRowId: (p) => p.data.key,
       getRowClass: (p) => {
+        if (p.node.rowPinned) return 'fd-grid-totals';
         const kind = kindOf(p.data);
         return kind ? `fd-grid-${kind}` : undefined;
       },
@@ -524,6 +481,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   // arrives too late to stop Space scrolling the page.)
   host.addEventListener('keydown', (event) => {
     // Alt+Up/Down moves the focused line, for those who do not drag.
+    // The totals row is not a line: its index counts among pinned rows, not lines.
+    if (api.getFocusedCell()?.rowPinned) return;
     if (sequence && !readonly && event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
       const focused = api.getFocusedCell();
       const line = focused ? api.getDisplayedRowAtIndex(focused.rowIndex)?.data : undefined;
@@ -568,6 +527,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       if (current !== shown) {
         shown = current;
         api.setGridOption('rowData', current);
+        if (totals.length) api.setGridOption('pinnedBottomRowData', [totalsRow(current)]);
       }
     },
     destroy() {
