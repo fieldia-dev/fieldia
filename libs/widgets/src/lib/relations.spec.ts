@@ -58,6 +58,15 @@ function type(input: HTMLInputElement, text: string) {
 }
 
 describe('many2one', () => {
+  it('keeps the list closed when a search still on its way comes back after Escape', async () => {
+    const { el } = mount('n-country');
+    const input = el.querySelector('input') as HTMLInputElement;
+    type(input, 'Ja');
+    key(input, 'Escape'); // before the search has answered
+    await settle();
+    expect((el.querySelector('[role=listbox]') as HTMLElement).hidden).toBe(true);
+  });
+
   it('shows the chosen record and finds others as you type', async () => {
     const { form, el } = mount('n-country');
     form.setValue('country_id', { id: 1, label: 'Egypt' });

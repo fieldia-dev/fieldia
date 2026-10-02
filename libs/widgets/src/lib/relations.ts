@@ -93,6 +93,9 @@ function combobox(options: {
   }
 
   function close() {
+    // A search still on its way must not open the list again.
+    clearTimeout(timer);
+    seq++;
     list.hidden = true;
     input.setAttribute('aria-expanded', 'false');
     input.removeAttribute('aria-activedescendant');
