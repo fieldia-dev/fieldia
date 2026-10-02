@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "lib": ["es2022", "dom", "dom.iterable"],
+    "paths": {
+      "@fieldia/core": ["libs/core/src/index.ts"],
+      "@fieldia/widgets": ["libs/widgets/src/index.ts"],
+      "@fieldia/viewer": ["libs/viewer/src/index.ts"],
+      "@fieldia/angular": ["dist/libs/angular/src/index.js"]
+    }
+  }
+}

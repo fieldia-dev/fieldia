@@ -41,6 +41,11 @@ jobs:
       # Each demo mounts the same pages through a different framework; every
       # scenario runs against each one, and variants.spec.ts fails if a demo
       # was not built, so a missing framework cannot skip its gates quietly.
+      # The Angular demo consumes the BUILT @fieldia/angular (ngc, partial),
+      # so the gates exercise the package as it would be published.
+      - run: npx nx run angular:build
+        env:
+          NX_DAEMON: 'false'
       - run: node tools/build-demos.mjs
       - run: npx playwright test
       - uses: actions/upload-artifact@v4

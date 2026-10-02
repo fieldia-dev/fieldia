@@ -9,7 +9,7 @@ import { join, resolve } from 'node:path';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'dist/demos');
-const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react', 'vue'];
+const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react', 'vue', 'angular'];
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
@@ -18,6 +18,12 @@ for (const file of ['demo.css', 'demo-nav.js']) cpSync(join(WORKSPACE, 'demos', 
 for (const variant of variants) {
   const entry = ['main.ts', 'main.tsx'].map((file) => join(WORKSPACE, 'demos', variant, file)).find(existsSync);
   if (!entry) throw new Error(`demos/${variant} has no main.ts or main.tsx`);
+  // A demo may use its own tsconfig — the Angular one consumes the BUILT
+  // @fieldia/angular package, so the gates exercise what would be published.
+  const ownConfig = join(WORKSPACE, 'demos', variant, 'tsconfig.json');
+  if (variant === 'angular' && !existsSync(join(WORKSPACE, 'dist/libs/angular/src/index.js'))) {
+    throw new Error('demos/angular needs the built package: run `npx nx build angular` first');
+  }
   await build({
     entryPoints: [entry],
     jsx: 'automatic',
@@ -26,7 +32,7 @@ for (const variant of variants) {
     target: 'es2022',
     sourcemap: true,
     outfile: join(OUT, variant, 'main.js'),
-    tsconfig: join(WORKSPACE, 'tsconfig.base.json'),
+    tsconfig: existsSync(ownConfig) ? ownConfig : join(WORKSPACE, 'tsconfig.base.json'),
     logLevel: 'warning',
     define: {
       'process.env.NODE_ENV': '"production"',
