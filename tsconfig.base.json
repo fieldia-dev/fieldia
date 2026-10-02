@@ -1,0 +1,23 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "importHelpers": true,
+    "target": "es2022",
+    "module": "esnext",
+    // No DOM here on purpose. A package that renders adds "dom" in its own
+    // tsconfig.lib.json; everything else cannot reach `document` by accident.
+    "lib": ["es2022"],
+    "strict": true,
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@fieldia/core": ["libs/core/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp", "dist"]
+}

@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# This file is the gate list. A check that does not run here does not exist,
+# however often it passes on someone's machine.
+jobs:
+  check:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # `build` ends in tools/dual-build.mjs, which fails when a package's
+      # exports point at missing files or its ESM output would not resolve in
+      # Node — the packaging mistakes that pass every source-level test.
+      - run: npx nx run-many -t typecheck lint test build
+        env:
+          NX_DAEMON: 'false'
