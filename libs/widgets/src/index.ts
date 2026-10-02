@@ -9,3 +9,4 @@ export * from './lib/display';
 export * from './lib/preferences';
 export * from './lib/numbers';
 export * from './lib/progress';
+export * from './lib/label';

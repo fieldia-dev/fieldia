@@ -88,6 +88,34 @@ describe('text widgets', () => {
   });
 });
 
+describe('label', () => {
+  const out = (el: Element) => q<HTMLOutputElement>(el, 'output');
+
+  it('shows the value between a prefix and a suffix, as text, in the page’s language', () => {
+    const { form, el } = setup({ type: 'integer' }, { widget: 'label', options: { prefix: 'About', suffix: 'months' } }, undefined, 'de');
+    form.setValue('x', 2400);
+    expect(out(el).id).toBe('fd-x');
+    expect(out(el).textContent).toBe('About 2.400 months');
+  });
+
+  it('takes its prefix or suffix from another field, and follows it', () => {
+    const extra = { unit: { type: 'char', label: 'Unit' } as Field };
+    const { form, el, refresh } = setup({ type: 'float', digits: [8, 1] }, { widget: 'label', options: { suffixField: 'unit' } }, undefined, 'en', extra);
+    form.setValue('x', 240);
+    form.setValue('unit', 'm');
+    refresh();
+    expect(out(el).textContent).toBe('240.0 m');
+    form.setValue('unit', 'ft');
+    refresh();
+    expect(out(el).textContent).toBe('240.0 ft');
+  });
+
+  it('shows nothing, not a lone prefix, when there is no value', () => {
+    const { el } = setup({ type: 'integer' }, { widget: 'label', options: { prefix: 'About', suffix: 'months' } });
+    expect(out(el).textContent).toBe('');
+  });
+});
+
 describe('progress bar', () => {
   const bar = (el: Element) => q<HTMLElement>(el, '[role="progressbar"]');
   const fill = (el: Element) => (bar(el).querySelector('.fd-progressbar-fill') as HTMLElement).style.width;

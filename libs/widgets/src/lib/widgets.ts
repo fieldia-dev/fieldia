@@ -17,6 +17,7 @@ import { linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } fro
 import { linesWidget } from './lines';
 import { binaryWidget, imageWidget } from './files';
 import { progressbarWidget } from './progress';
+import { labelWidget } from './label';
 import { htmlWidget, jsonWidget } from './extras';
 
 /**
@@ -398,6 +399,9 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'integer.rating': pointsWidget('rating'),
   'integer.scale': pointsWidget('scale'),
   'integer.progressbar': progressbarWidget,
+  'integer.label': labelWidget,
+  'float.label': labelWidget,
+  'monetary.label': labelWidget,
   'float.progressbar': progressbarWidget,
   'monetary.progressbar': progressbarWidget,
   boolean: checkboxWidget(),

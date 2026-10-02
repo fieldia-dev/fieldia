@@ -376,6 +376,7 @@ export const FIELDIA_CSS = /* css */ `
 .fd-wizard { display: grid; gap: 20px; }
 .fd-progress { display: grid; gap: 8px; }
 .fd-progress-text { color: var(--fd-muted); font-size: 13px; }
+.fd-value-text { display: block; padding-block: 6px; font-variant-numeric: tabular-nums; }
 .fd-progressbar {
   position: relative; height: 22px; min-width: 120px; border-radius: 999px; overflow: hidden;
   background: var(--fd-page); border: 1px solid var(--fd-border); font-variant-numeric: tabular-nums;

@@ -337,6 +337,15 @@ test.describe('every field', () => {
     await screen(page, `${variant}-fields-progress`);
   });
 
+  test('labels show a value between words, read from the page or another field', async ({ page }) => {
+    await open(page, variant, 'page=fields&skin=outlined');
+    await expect(page.getByLabel('Warranty')).toHaveText('24 months');
+    await expect(page.getByLabel('Cable run')).toHaveText('240.0 m');
+    await expect(page.getByLabel('Deposit paid')).toHaveText('370,000.00 EGP');
+    await node(page, 'f-warranty').scrollIntoViewIfNeeded();
+    await screen(page, `${variant}-fields-labels`);
+  });
+
   test('a folded section opens from its title and shows its fields', async ({ page }) => {
     await open(page, variant, 'page=fields');
     const title = node(page, 's-structured').getByRole('button', { name: 'Structured data' });
