@@ -53,7 +53,7 @@ export function designerBar(
   undo.addEventListener('click', () => designer.undo());
   redo.addEventListener('click', () => designer.redo());
   publish.addEventListener('click', () => void designer.publish().catch(() => undefined));
-  const element = el('div', { class: 'fd-designer-bar' }, title, status, el('span', { class: 'fd-spacer' }), ...(options.extra ?? []), undo, redo, publish);
+  const element = el('div', { class: 'fd-designer-bar' }, title, status, el('span', { class: 'fd-spacer' }), undo, redo, ...(options.extra ?? []), publish);
   const issues = el('div', { class: 'fd-alert fd-tone-danger fd-designer-issues', role: 'alert', hidden: '' });
 
   // On the document: clicking an area that cannot take focus leaves focus on

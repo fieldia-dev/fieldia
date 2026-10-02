@@ -51,7 +51,13 @@ export const DESIGNER_CSS = /* css */ `
 
 /* ---- the screen editor: palette, canvas, properties ---- */
 .fd-screen-body { display: grid; grid-template-columns: 172px minmax(0, 1fr) 270px; gap: 16px; align-items: start; }
-@container (max-width: 1000px) { .fd-screen-body { grid-template-columns: minmax(0, 1fr); } }
+@container (max-width: 1000px) {
+  .fd-screen-body { grid-template-columns: minmax(0, 1fr); }
+  /* Stacked, a sticky panel would sit over the canvas: let them scroll, and lay the palette out in a row. */
+  .fd-palette, .fd-properties { position: static; }
+  .fd-palette { display: flex; flex-wrap: wrap; }
+  .fd-palette .fd-panel-title { flex-basis: 100%; }
+}
 .fd-palette, .fd-properties {
   position: sticky; top: 76px; display: grid; gap: 6px; align-content: start;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 12px;
@@ -75,8 +81,17 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-board { position: relative; }
 .fd-canvas-empty { color: var(--fd-muted); font-size: 13px; padding: 14px 8px 10px; }
 .fd-canvas-field {
-  height: 100%; box-sizing: border-box; padding: 8px 10px; overflow: hidden; align-content: start;
+  height: 100%; box-sizing: border-box; padding: 7px 10px; overflow: hidden; align-content: start;
   background: var(--fd-surface); border: 1px dashed var(--fd-border); border-radius: 6px;
+}
+/* A paragraph's box fills the rows it was given, as a hint of the room it takes. */
+.fd-canvas-field[data-type="text"] { grid-template-rows: auto minmax(0, 1fr) auto; }
+.fd-canvas-field[data-type="text"] > textarea { height: 100%; min-height: 0; box-sizing: border-box; resize: none; }
+/* The spare row at the end of a section, painted under the cards as a place to drop one last. */
+.fd-canvas-board::before {
+  content: "Drop a field here to put it last"; position: absolute; inset-inline: 8px; bottom: 8px; height: var(--fd-spare-height, 92px); box-sizing: border-box;
+  display: grid; place-items: center; color: var(--fd-muted); font-size: 12.5px; pointer-events: none;
+  border: 1px dashed var(--fd-border); border-radius: 6px;
 }
 .fd-canvas-field.fd-canvas-selected { border: 1px solid var(--fd-accent); box-shadow: inset 0 0 0 1px var(--fd-accent); }
 .fd-props { display: grid; gap: 10px; }

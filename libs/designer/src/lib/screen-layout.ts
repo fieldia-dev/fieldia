@@ -14,24 +14,44 @@ export interface Cell {
   h: number;
 }
 
-/** How many canvas rows a field takes: a paragraph or a table of lines needs more than one line. */
+/**
+ * The canvas grid is fine — short rows, so a card can be about as tall as
+ * its content rather than rounded up to a whole field's height.
+ */
+export const ROW_HEIGHT = 12;
+export const GAP = 8;
+
+/** The rows that hold `px` of content. */
+export function rowsForHeight(px: number): number {
+  return Math.max(1, Math.ceil((px + GAP - 0.5) / (ROW_HEIGHT + GAP)));
+}
+
+/** The px that `rows` rows take, gaps between them included. */
+export function heightOfRows(rows: number): number {
+  return rows * ROW_HEIGHT + (rows - 1) * GAP;
+}
+
+/**
+ * Rows a field starts with, before the canvas has measured its card: a label
+ * and one line for most, more for a paragraph or a table of lines.
+ */
 export function rowsOf(field: Field, node: FieldNode): number {
   switch (field.type) {
     case 'one2many':
     case 'html':
     case 'json':
-      return 3;
+      return rowsForHeight(240);
     case 'text':
     case 'image':
-      return 2;
+      return rowsForHeight(160);
     case 'selection': {
       const listed = field.multiple || node.widget === 'radio';
-      return listed && field.options.length > 4 ? 2 : 1;
+      return rowsForHeight(listed && field.options.length > 4 ? 100 : 70);
     }
     case 'many2many':
-      return node.widget === 'checkboxes' ? 2 : 1;
+      return rowsForHeight(node.widget === 'checkboxes' ? 130 : 70);
     default:
-      return 1;
+      return rowsForHeight(70);
   }
 }
 

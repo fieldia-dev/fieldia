@@ -2,6 +2,7 @@ import type { FieldNode, Page, SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, type Designer } from './designer';
 import type { Grafloria, GrafloriaBoardOptions, GrafloriaWidget } from './grafloria';
 import { mountScreenEditor, type ScreenEditorHandle } from './screen-editor';
+import { rowsOf } from './screen-layout';
 
 /** A stand-in for Grafloria: paints every widget, and lets a test play the board's part in a gesture. */
 interface FakeBoard {
@@ -56,6 +57,9 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 const sectionsOf = (page: Page) => (page.layout as { children: SectionNode[] }).children;
 const fieldsOf = (page: Page, section: number) => sectionsOf(page)[section].children as FieldNode[];
 const cellsOf = (widgets: GrafloriaWidget[]) => widgets.map((w) => [w.id, w.x, w.y, w.span, w.rows]);
+/** Rows a one-line field and a paragraph start with on the canvas. */
+const LINE = rowsOf({ type: 'char', label: 'Line' }, { type: 'field', id: 'line', field: 'line' });
+const PARAGRAPH = rowsOf({ type: 'text', label: 'Paragraph' }, { type: 'field', id: 'paragraph', field: 'paragraph' });
 
 /** A visit report: "Visit" in two columns (customer, date, notes across both) and "Follow-up" in one. */
 function visitReport(): { designer: Designer; ids: Record<string, string>; sections: [string, string] } {
@@ -117,9 +121,9 @@ describe('screen editor — the canvas', () => {
     const visit = boardOf(sections[0]);
     expect(visit.options).toMatchObject({ columns: 2, float: true, sizing: 'grow' });
     expect(cellsOf(visit.options.widgets)).toEqual([
-      [ids['customer'], 0, 0, 1, 1],
-      [ids['date'], 1, 0, 1, 1],
-      [ids['notes'], 0, 1, 2, 2],
+      [ids['customer'], 0, 0, 1, LINE],
+      [ids['date'], 1, 0, 1, LINE],
+      [ids['notes'], 0, LINE, 2, PARAGRAPH],
     ]);
     expect(boardOf(sections[1]).options.columns).toBe(1);
     const labels = [...host.querySelectorAll('.fd-canvas .fd-label')].map((l) => l.textContent);
@@ -140,17 +144,17 @@ describe('screen editor — the canvas', () => {
     const board = boardOf(sections[0]);
     // Notes dragged to the top; customer and date pushed below it.
     board.options.onLayoutChange?.('main', [
-      { id: ids['customer'], x: 0, y: 2, span: 1, rows: 1 },
-      { id: ids['date'], x: 1, y: 2, span: 1, rows: 1 },
-      { id: ids['notes'], x: 0, y: 0, span: 2, rows: 2 },
+      { id: ids['customer'], x: 0, y: PARAGRAPH, span: 1, rows: LINE },
+      { id: ids['date'], x: 1, y: PARAGRAPH, span: 1, rows: LINE },
+      { id: ids['notes'], x: 0, y: 0, span: 2, rows: PARAGRAPH },
     ]);
     expect(fieldsOf(designer.getPage(), 0).map((n) => n.id)).toEqual([ids['notes'], ids['customer'], ids['date']]);
     await tick();
     expect(board.disposed).toBe(true);
     expect(cellsOf(boardOf(sections[0]).options.widgets)).toEqual([
-      [ids['notes'], 0, 0, 2, 2],
-      [ids['customer'], 0, 2, 1, 1],
-      [ids['date'], 1, 2, 1, 1],
+      [ids['notes'], 0, 0, 2, PARAGRAPH],
+      [ids['customer'], 0, PARAGRAPH, 1, LINE],
+      [ids['date'], 1, PARAGRAPH, 1, LINE],
     ]);
     designer.undo();
     expect(fieldsOf(designer.getPage(), 0).map((n) => n.id)).toEqual([ids['customer'], ids['date'], ids['notes']]);
@@ -160,9 +164,9 @@ describe('screen editor — the canvas', () => {
     const { designer, ids, sections } = visitReport();
     const { boardOf } = mount(designer);
     boardOf(sections[0]).options.onLayoutChange?.('main', [
-      { id: ids['customer'], x: 0, y: 0, span: 2, rows: 1 },
-      { id: ids['date'], x: 0, y: 1, span: 1, rows: 1 },
-      { id: ids['notes'], x: 0, y: 2, span: 2, rows: 2 },
+      { id: ids['customer'], x: 0, y: 0, span: 2, rows: LINE },
+      { id: ids['date'], x: 0, y: LINE, span: 1, rows: LINE },
+      { id: ids['notes'], x: 0, y: 2 * LINE, span: 2, rows: PARAGRAPH },
     ]);
     expect(fieldsOf(designer.getPage(), 0)[0].colspan).toBe(2);
   });
@@ -257,7 +261,7 @@ describe('screen editor — adding and changing fields', () => {
     const { host, boardOf } = mount(designer);
     designer.select(ids['next']);
     choose(field(host, 'Kind of field'), 'paragraph');
-    expect(boardOf(sections[1]).options.widgets[0].rows).toBe(2);
+    expect(boardOf(sections[1]).options.widgets[0].rows).toBe(PARAGRAPH);
   });
 
   it('marks a field required and gives it help text', () => {

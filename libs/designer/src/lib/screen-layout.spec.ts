@@ -1,25 +1,39 @@
 import type { Field, FieldNode } from '@fieldia/core';
-import { flowCells, orderFromCells, rowsOf } from './screen-layout';
+import { flowCells, GAP, heightOfRows, orderFromCells, ROW_HEIGHT, rowsForHeight, rowsOf } from './screen-layout';
 
 const node = (widget?: string): FieldNode => ({ type: 'field', id: 'n', field: 'f', ...(widget ? { widget } : {}) });
 
+describe('rows', () => {
+  it('turns a height into rows and back, gaps included', () => {
+    expect(rowsForHeight(ROW_HEIGHT)).toBe(1);
+    expect(rowsForHeight(ROW_HEIGHT + 1)).toBe(2);
+    expect(heightOfRows(3)).toBe(3 * ROW_HEIGHT + 2 * GAP);
+    expect(rowsForHeight(heightOfRows(3))).toBe(3);
+  });
+});
+
 describe('rowsOf', () => {
-  it('gives a one-line field one row and a paragraph two', () => {
-    expect(rowsOf({ type: 'char', label: 'Name' }, node())).toBe(1);
-    expect(rowsOf({ type: 'text', label: 'Notes' }, node())).toBe(2);
+  const height = (rows: number) => heightOfRows(rows);
+
+  it('starts a one-line field with room for its label and input', () => {
+    expect(height(rowsOf({ type: 'char', label: 'Name' }, node()))).toBeGreaterThanOrEqual(70);
   });
 
-  it('gives a table of lines, rich text and an image room to show', () => {
-    expect(rowsOf({ type: 'one2many', label: 'Lines', relation: 'x', fields: {}, columns: [] } as unknown as Field, node())).toBe(3);
-    expect(rowsOf({ type: 'html', label: 'Body' }, node())).toBe(3);
-    expect(rowsOf({ type: 'image', label: 'Photo' }, node())).toBe(2);
+  it('gives a paragraph, a table of lines, rich text and an image more', () => {
+    const line = rowsOf({ type: 'char', label: 'Name' }, node());
+    expect(rowsOf({ type: 'text', label: 'Notes' }, node())).toBeGreaterThan(line);
+    expect(rowsOf({ type: 'image', label: 'Photo' }, node())).toBeGreaterThan(line);
+    const lines = rowsOf({ type: 'one2many', label: 'Lines', relation: 'x', fields: {}, columns: [] } as unknown as Field, node());
+    expect(lines).toBeGreaterThan(rowsOf({ type: 'text', label: 'Notes' }, node()));
+    expect(rowsOf({ type: 'html', label: 'Body' }, node())).toBe(lines);
   });
 
-  it('gives a long list of choices a second row', () => {
+  it('gives a long list of choices a second line', () => {
     const options = (n: number) => Array.from({ length: n }, (_, i) => ({ value: `o${i}`, label: `Option ${i}` }));
-    expect(rowsOf({ type: 'selection', label: 'A', options: options(3) }, node('radio'))).toBe(1);
-    expect(rowsOf({ type: 'selection', label: 'A', options: options(6) }, node('radio'))).toBe(2);
-    expect(rowsOf({ type: 'selection', label: 'A', options: options(6) }, node())).toBe(1); // a dropdown
+    const line = rowsOf({ type: 'char', label: 'Name' }, node());
+    expect(rowsOf({ type: 'selection', label: 'A', options: options(3) }, node('radio'))).toBe(line);
+    expect(rowsOf({ type: 'selection', label: 'A', options: options(6) }, node('radio'))).toBeGreaterThan(line);
+    expect(rowsOf({ type: 'selection', label: 'A', options: options(6) }, node())).toBe(line); // a dropdown
   });
 });
 

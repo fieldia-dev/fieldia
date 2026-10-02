@@ -4,7 +4,7 @@ import { createWidget, installStyles, type Widget } from '@fieldia/widgets';
 import { designerBar, elementFactory, optionsEditor, type ElementFactory } from './chrome';
 import { QUESTION_KINDS, type Designer, type DesignerState } from './designer';
 import type { Grafloria, GrafloriaBoardHandle, GrafloriaWidget } from './grafloria';
-import { flowCells, orderFromCells, rowsOf } from './screen-layout';
+import { flowCells, GAP, heightOfRows, orderFromCells, ROW_HEIGHT, rowsForHeight, rowsOf } from './screen-layout';
 import { installDesignerStyles } from './styles';
 import { kindOfQuestion } from './survey-editor';
 
@@ -32,9 +32,17 @@ export interface ScreenEditorHandle {
   destroy(): void;
 }
 
-/** Canvas row height and gap, px. One row holds a label, an input and a line of help. */
-const ROW_HEIGHT = 84;
-const GAP = 12;
+/** Rows left empty at the end of a section: about one field. */
+const SPARE_ROWS = 5;
+
+/** How far a card's content reaches, padding included — what it needs, whatever box it was given. */
+function contentHeight(card: HTMLElement): number {
+  const top = card.getBoundingClientRect().top;
+  let bottom = top;
+  for (const child of card.children) bottom = Math.max(bottom, child.getBoundingClientRect().bottom);
+  const style = card.ownerDocument.defaultView?.getComputedStyle(card);
+  return bottom - top + (parseFloat(style?.paddingBottom ?? '') || 0) + (parseFloat(style?.borderBottomWidth ?? '') || 0);
+}
 
 const sectionsOf = (page: Page) => (page.layout as SectionsNode).children.filter((n): n is SectionNode => n.type === 'section');
 const fieldNodes = (section: SectionNode) => section.children.filter((n): n is FieldNode => n.type === 'field');
@@ -141,6 +149,13 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     painted: Map<string, string>;
   }
   const sectionViews = new Map<string, SectionView>();
+  /**
+   * Rows each card turned out to need once drawn: its real widget, at its
+   * real width, with its help text. A guess per kind cannot know that a
+   * scale wraps in a narrow column, so the canvas measures and grows.
+   */
+  const measured = new Map<string, number>();
+  const rowsFor = (page: Page, node: FieldNode) => Math.max(rowsOf(page.fields[node.field], node), measured.get(node.id) ?? 1);
   /** Inside a board's own callback: rebuilding it there would pull it down mid-gesture. */
   let inGesture = false;
   let selecting = false;
@@ -174,7 +189,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   }
 
   const layoutKeyOf = (page: Page, section: SectionNode) =>
-    JSON.stringify([section.columns ?? 1, fieldNodes(section).map((n) => [n.id, n.colspan ?? 1, rowsOf(page.fields[n.field], n)])]);
+    JSON.stringify([section.columns ?? 1, fieldNodes(section).map((n) => [n.id, n.colspan ?? 1, rowsFor(page, n)])]);
   const contentKeyOf = (page: Page, node: FieldNode) => JSON.stringify([node, page.fields[node.field]]);
 
   function buildBoard(view: SectionView, page: Page, section: SectionNode) {
@@ -185,14 +200,17 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     view.boardHost.hidden = nodes.length === 0;
     if (!nodes.length) return;
     const columns = section.columns ?? 1;
-    const items = nodes.map((n) => ({ id: n.id, span: n.colspan ?? 1, rows: rowsOf(page.fields[n.field], n) }));
+    const items = nodes.map((n) => ({ id: n.id, span: n.colspan ?? 1, rows: rowsFor(page, n) }));
     const cells = flowCells(items, columns);
     const boardWidgets: GrafloriaWidget[] = nodes.map((n) => {
       const cell = cells.get(n.id) as { x: number; y: number; w: number; h: number };
       return { id: n.id, kind: 'field', x: cell.x, y: cell.y, span: cell.w, rows: cell.h, limits: { minRows: cell.h, maxRows: cell.h }, title: n.label ?? page.fields[n.field].label };
     });
-    const rows = Math.max(...boardWidgets.map((w) => (w.y ?? 0) + (w.rows ?? 1)));
-    view.boardHost.style.height = `${rows * ROW_HEIGHT + (rows + 1) * GAP}px`;
+    // One spare row at the end: somewhere to drop a field last, and room for
+    // the cards a gesture pushes down before the section grows to hold them.
+    const rows = Math.max(...boardWidgets.map((w) => (w.y ?? 0) + (w.rows ?? 1))) + SPARE_ROWS;
+    view.boardHost.style.height = `${heightOfRows(rows) + 2 * GAP}px`;
+    view.boardHost.style.setProperty('--fd-spare-height', `${heightOfRows(SPARE_ROWS)}px`);
     for (const n of nodes) view.painted.set(n.id, contentKeyOf(page, n));
     const sectionId = section.id;
     const spec = grafloria.dashboard({
@@ -215,6 +233,26 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     } finally {
       selecting = false;
     }
+    measureSoon();
+  }
+
+  let measureTimer: ReturnType<typeof setTimeout> | undefined;
+  function measureSoon() {
+    clearTimeout(measureTimer);
+    measureTimer = setTimeout(measure, 30);
+  }
+  /** Give every card the rows its content needs; lay out again if any changed. */
+  function measure() {
+    if (previewing) return;
+    let changed = false;
+    for (const [id, card] of cards) {
+      if (!card.isConnected) continue;
+      const rows = rowsForHeight(contentHeight(card));
+      if ((measured.get(id) ?? 1) === rows) continue;
+      measured.set(id, rows);
+      changed = true;
+    }
+    if (changed) render(designer.getState());
   }
 
   /** A gesture ended: read the board back into the page, then lay the board out again from it. */
@@ -247,6 +285,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
         if (view.painted.get(node.id) === content) continue;
         view.painted.set(node.id, content);
         view.board?.handle.widget(node.id)?.repaint();
+        measureSoon();
       }
     }
   }
@@ -349,6 +388,10 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   host.append(root);
   const leave = designer.subscribe(render);
   render(designer.getState());
+  // A narrower canvas wraps a card's content onto more lines.
+  const View = doc.defaultView as (Window & { ResizeObserver?: typeof ResizeObserver }) | null;
+  const resized = View?.ResizeObserver ? new View.ResizeObserver(() => measureSoon()) : null;
+  resized?.observe(canvas);
 
   return {
     element: root,
@@ -356,6 +399,8 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       leave();
       bar.destroy();
       clearTimeout(deferred);
+      clearTimeout(measureTimer);
+      resized?.disconnect();
       for (const view of sectionViews.values()) disposeBoard(view);
       sectionViews.clear();
       viewer?.destroy();
