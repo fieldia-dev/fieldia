@@ -25,7 +25,7 @@ import {
 } from '@angular/core';
 import type { ActionRequest, DataSource, DraftStore, Form, FormState, Locale, Page, RecordId, Scheduler, Value, Values } from '@fieldia/core';
 import { mountViewer, type Skin, type SlotRenderer, type ViewerHandle, type ViewerLabels } from '@fieldia/viewer';
-import type { WidgetFactory, WidgetState } from '@fieldia/widgets';
+import type { PreferenceStore, WidgetFactory, WidgetState } from '@fieldia/widgets';
 
 /**
  * `<fieldia-form>` — the Angular shell. Thin like the React and Vue ones:
@@ -87,6 +87,7 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly autosave = input<{ delayMs: number } | undefined>(undefined);
   readonly scheduler = input<Scheduler | undefined>(undefined);
   readonly confirm = input<((message: string) => Promise<boolean>) | undefined>(undefined);
+  readonly preferences = input<PreferenceStore | undefined>(undefined);
 
   readonly ready = output<ViewerHandle>();
   readonly action = output<ActionRequest>();
@@ -183,6 +184,7 @@ export class FieldiaFormComponent implements OnDestroy {
       autosave: this.autosave(),
       scheduler: this.scheduler(),
       confirm: this.confirm(),
+      preferences: this.preferences(),
       onAction: (request) => this.action.emit(request),
     });
     this.ready.emit(this.handle);

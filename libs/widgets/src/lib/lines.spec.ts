@@ -203,6 +203,14 @@ describe('one2many lines with sections and notes', () => {
     expect(footer()).toEqual(['Total', '', '15', '']);
   });
 
+  it('leaves out an optional column the page starts hidden', () => {
+    const optional = JSON.parse(JSON.stringify(sectioned)) as Page & { layout: { children: FieldNode[] } };
+    optional.layout.children[0] = { ...optional.layout.children[0], optionalColumns: { quantity: 'hide', name: 'show' } };
+    const form = createForm({ page: optional });
+    const widget = createWidget({ form, name: 'line_ids', field: optional.fields['line_ids'] as Field, node: optional.layout.children[0], id: 'fd-lines', document, labels: WIDGET_LABELS.en });
+    expect([...widget.element.querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['Product', 'Description', '']);
+  });
+
   it('offers no section or note buttons to lines without kinds', () => {
     const { el } = mount();
     expect(el.querySelectorAll('.fd-lines-add')).toHaveLength(1);

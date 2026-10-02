@@ -112,6 +112,18 @@ describe('<FieldiaForm> for Vue', () => {
     wrapper.unmount();
   });
 
+  it('hands widgets the preference store it is given', () => {
+    const seen: unknown[] = [];
+    const store = { get: () => null, set: () => undefined };
+    const spy = (context: { preferences?: unknown; document: Document }) => {
+      seen.push(context.preferences);
+      return { element: context.document.createElement('div'), update: () => undefined };
+    };
+    const wrapper = mount(FieldiaForm, { props: { page: custom, widgets: { 'char.shout': spy as never }, preferences: store }, attachTo: document.body });
+    expect(seen[0]).toBe(store);
+    wrapper.unmount();
+  });
+
   it('cleans up when it unmounts', () => {
     const wrapper = mount(FieldiaForm, { props: { page: page('survey') }, attachTo: document.body });
     const host = wrapper.element as HTMLElement;

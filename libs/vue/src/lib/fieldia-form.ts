@@ -1,6 +1,6 @@
 import type { ActionRequest, DataSource, DraftStore, Field, FieldNode, Form, FormState, Locale, Page, RecordId, Scheduler, Value, Values } from '@fieldia/core';
 import { mountViewer, type Skin, type SlotRenderer, type ViewerHandle, type ViewerLabels } from '@fieldia/viewer';
-import type { WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
+import type { PreferenceStore, WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
   defineComponent,
   getCurrentScope,
@@ -11,6 +11,7 @@ import {
   ref,
   shallowRef,
   Teleport,
+  toRaw,
   watch,
   type Component,
   type PropType,
@@ -73,6 +74,7 @@ export const FieldiaForm = defineComponent({
     autosave: { type: Object as PropType<{ delayMs: number }>, default: undefined },
     scheduler: { type: Object as PropType<Scheduler>, default: undefined },
     confirm: { type: Function as PropType<(message: string) => Promise<boolean>>, default: undefined },
+    preferences: { type: Object as PropType<PreferenceStore>, default: undefined },
   },
   emits: {
     ready: (_handle: ViewerHandle) => true,
@@ -144,6 +146,8 @@ export const FieldiaForm = defineComponent({
         autosave: props.autosave,
         scheduler: props.scheduler,
         confirm: props.confirm,
+        // The app's own store, not Vue's reactive copy of it.
+        preferences: props.preferences ? toRaw(props.preferences) : undefined,
         onAction: (request) => emit('action', request),
       });
       portals.value = found;

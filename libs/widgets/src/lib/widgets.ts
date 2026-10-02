@@ -9,6 +9,7 @@ import type {
   Value,
   Values,
 } from '@fieldia/core';
+import type { PreferenceStore } from './preferences';
 import type { WidgetLabels } from './labels';
 import { linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
 import { linesWidget } from './lines';
@@ -32,6 +33,8 @@ export interface WidgetContext {
   document: Document;
   /** Words the widget shows itself, in the page's language. English when left out. */
   labels?: WidgetLabels;
+  /** Where to keep a person's choices about how the widget looks, such as a table's columns. */
+  preferences?: PreferenceStore;
 }
 
 export interface WidgetState {

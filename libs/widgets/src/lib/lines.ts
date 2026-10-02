@@ -39,7 +39,10 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   const def = field as Extract<Field, { type: 'one2many' }>;
   const kinds = def.lineKinds;
   // The fields that say what a line is and keep the lines' order never show as columns.
-  const columns = (node.columns ?? Object.keys(def.fields)).filter((column) => def.fields[column] && column !== kinds?.field && column !== def.sequenceField);
+  // Optional columns the page starts hidden stay out of the plain table.
+  const columns = (node.columns ?? Object.keys(def.fields)).filter(
+    (column) => def.fields[column] && column !== kinds?.field && column !== def.sequenceField && node.optionalColumns?.[column] !== 'hide'
+  );
   const element = document.createElement('div');
   element.className = 'fd-lines';
   element.id = id;

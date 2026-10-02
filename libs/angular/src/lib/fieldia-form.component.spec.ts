@@ -133,6 +133,23 @@ describe('<fieldia-form> for Angular', () => {
     expect(host.actions[0]).toMatchObject({ action: 'open_sales' });
   });
 
+  it('hands widgets the preference store it is given', async () => {
+    const seen: unknown[] = [];
+    const store = { get: () => null, set: () => undefined };
+    const spy = (context: { preferences?: unknown; document: Document }) => {
+      seen.push(context.preferences);
+      return { element: context.document.createElement('div'), update: () => undefined };
+    };
+    const fixture = TestBed.createComponent(FieldiaFormComponent);
+    fixture.componentRef.setInput('page', custom);
+    fixture.componentRef.setInput('widgets', { 'char.shout': spy as never });
+    fixture.componentRef.setInput('preferences', store);
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    expect(seen[0]).toBe(store);
+    fixture.destroy();
+  });
+
   it('cleans up when it is destroyed', async () => {
     const { fixture } = await setup(page('survey'));
     fixture.destroy();

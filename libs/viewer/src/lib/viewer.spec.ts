@@ -139,6 +139,23 @@ describe('a sections page', () => {
     expect(document.activeElement).toBe(input(host, 'f-name'));
   });
 
+  it('hands every widget the page’s preference store, the browser’s when none is given', () => {
+    const seen: unknown[] = [];
+    const spy = (context: { preferences?: unknown; document: Document }) => {
+      seen.push(context.preferences);
+      return { element: context.document.createElement('div'), update: () => undefined };
+    };
+    const store = { get: () => null, set: () => undefined };
+    const signup = page('signup');
+    (signup.layout as any).children[0].children.find((n: any) => n.id === 'f-name').widget = 'spy';
+    const host = document.createElement('div');
+    document.body.replaceChildren(host);
+    mountViewer(host, { page: signup, widgets: { 'char.spy': spy as any }, preferences: store }).destroy();
+    expect(seen[0]).toBe(store);
+    mountViewer(host, { page: signup, widgets: { 'char.spy': spy as any } }).destroy();
+    expect(typeof (seen[1] as { get?: unknown })?.get).toBe('function');
+  });
+
   it('lets a widget that knows where its problem is take the focus there', async () => {
     const signup = page('signup');
     const name = (signup.layout as any).children[0].children.find((n: any) => n.id === 'f-name');

@@ -18,7 +18,7 @@ import {
   type Locale,
   MESSAGES,
 } from '@fieldia/core';
-import { createWidget, installStyles, WIDGET_LABELS, type WidgetFactory } from '@fieldia/widgets';
+import { browserPreferences, createWidget, installStyles, WIDGET_LABELS, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 
 export type Skin = 'underline' | 'outlined';
 
@@ -138,6 +138,8 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
   dir?: 'ltr' | 'rtl';
   /** How to ask before a button with `confirm` runs. Defaults to a small dialog. */
   confirm?: (message: string) => Promise<boolean>;
+  /** Where a person's choices about the page's look are kept, such as a table's columns. The browser's storage by default. */
+  preferences?: PreferenceStore;
 }
 
 export interface ViewerHandle {
@@ -164,6 +166,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   }
   const page = checked.page;
   const locale = options.locale ?? 'en';
+  const preferences = options.preferences ?? browserPreferences();
   const ownsForm = !options.form;
   const form = options.form ?? createForm({ ...options, page, messages: options.messages ?? MESSAGES[locale] });
   const labels: ViewerLabels = { ...VIEWER_LABELS[locale], ...options.labels };
@@ -196,7 +199,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const wrapper = el('div', { class: 'fd-field', 'data-node': node.id, 'data-field': node.field, 'data-type': def.type });
     if (node.colspan) wrapper.style.setProperty('--fd-span', String(node.colspan));
     const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, node.label ?? def.label);
-    const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels }, options.widgets);
+    const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences }, options.widgets);
     if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) {
       // `for` stays: a custom field that puts the id on its own input is
       // labelled natively. Only a wrapper with a role (a radio group, say) may
