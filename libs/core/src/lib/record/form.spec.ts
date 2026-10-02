@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page } from '../format/page';
+import type { SheetNode } from '../format/layout';
 import { createForm, type DraftStore } from './form';
 import type { Line } from './values';
 import { createMemoryDataSource } from './memory-data-source';
@@ -162,6 +163,23 @@ describe('createForm — modifiers', () => {
     expect(form.node('f-inner-notes').readonly).toBe(true);
     // Outside it, a field keeps its own rule.
     expect(form.node('f-notes').readonly).toBe(false);
+  });
+
+  it('treats the fields above and below the title like any field: conditions, and checks', () => {
+    const p = page('customer');
+    const layout = p.layout as SheetNode;
+    layout.title = { ...layout.title!, above: [{ type: 'field', id: 't-company', field: 'is_company', invisible: "state == 'blocked'" }] };
+    layout.title.below = [{ type: 'field', id: 't-website', field: 'website', required: true }];
+    layout.badges = [{ id: 'b-blocked', label: 'Blocked', invisible: "state != 'blocked'" }];
+    const form = createForm({ page: p });
+    expect(form.node('t-company').invisible).toBe(false);
+    expect(form.node('b-blocked').invisible).toBe(true);
+    form.setValue('state', 'blocked');
+    expect(form.node('t-company').invisible).toBe(true);
+    expect(form.node('b-blocked').invisible).toBe(false);
+    form.setValue('name', 'Delta');
+    expect(form.validate()).toBe(false);
+    expect(Object.keys(form.getState().errors)).toContain('website');
   });
 
   it('shows the ribbon and buttons that match the state', () => {
