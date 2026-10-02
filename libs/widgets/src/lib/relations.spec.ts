@@ -191,6 +191,86 @@ describe('many2many', () => {
   });
 });
 
+describe('free-text tags', () => {
+  const tagPage = {
+    fieldia: '0.1',
+    id: 'tags',
+    data: { kind: 'responses' },
+    fields: { materials: { type: 'char', label: 'Materials' } },
+    layout: {
+      type: 'sections',
+      id: 'root',
+      children: [{ type: 'field', id: 'n-materials', field: 'materials', widget: 'tags', options: { suggestions: ['oak', 'glass', 'steel', 'walnut'] } }],
+    },
+  } as unknown as Page;
+  function mountTags(readonly = false) {
+    const form = createForm({ page: tagPage });
+    const node = (tagPage.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: 'materials', field: tagPage.fields['materials'] as Field, node, id: 'fd-materials', document, labels: WIDGET_LABELS.en });
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values['materials'], values: form.getState().values, readonly, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    return { form, el: widget.element, input: widget.element.querySelector('input') as HTMLInputElement };
+  }
+  const chipText = (el: Element) => [...el.querySelectorAll('.fd-chip-label')].map((c) => c.textContent);
+  const stored = (form: Form) => form.getState().values['materials'];
+
+  it('adds a typed tag on Enter or at a comma, and keeps them as "a, b" text', () => {
+    const { form, el, input } = mountTags();
+    type(input, 'Oak');
+    key(input, 'Enter');
+    expect(stored(form)).toBe('Oak');
+    type(input, 'glass,');
+    expect(stored(form)).toBe('Oak, glass');
+    expect(input.value).toBe('');
+    expect(chipText(el)).toEqual(['Oak', 'glass']);
+  });
+
+  it('offers its suggestions as you type, leaving out tags already there', async () => {
+    const { form, el, input } = mountTags();
+    form.setValue('materials', 'oak');
+    type(input, 'a');
+    await settle();
+    expect(options(el)).toEqual(['glass', 'walnut']);
+    key(input, 'ArrowDown');
+    key(input, 'Enter');
+    expect(stored(form)).toBe('oak, glass');
+  });
+
+  it('never adds the same tag twice, whatever its case', () => {
+    const { form, input } = mountTags();
+    form.setValue('materials', 'Oak');
+    type(input, 'oak');
+    key(input, 'Enter');
+    expect(stored(form)).toBe('Oak');
+  });
+
+  it('takes the last tag away with Backspace in an empty box, or any tag by its button', () => {
+    const { form, el, input } = mountTags();
+    form.setValue('materials', 'oak, glass, steel');
+    key(input, 'Backspace');
+    expect(stored(form)).toBe('oak, glass');
+    (el.querySelector('[aria-label="Remove oak"]') as HTMLButtonElement).click();
+    expect(stored(form)).toBe('glass');
+  });
+
+  it('keeps a tag typed and left without Enter', () => {
+    const { form, input } = mountTags();
+    type(input, 'brass');
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(stored(form)).toBe('brass');
+  });
+
+  it('shows the tags without buttons or a box when read-only', () => {
+    const { form, el } = mountTags(true);
+    form.setValue('materials', 'oak, glass');
+    expect(chipText(el)).toEqual(['oak', 'glass']);
+    expect(el.querySelector('.fd-chip-remove')).toBeNull();
+    expect((el.querySelector('.fd-combo') as HTMLElement).hidden).toBe(true);
+  });
+});
+
 describe('reference', () => {
   it('picks a model, then a record of that model', async () => {
     const { form, el } = mount('n-origin');

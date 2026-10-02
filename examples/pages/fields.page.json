@@ -14,6 +14,7 @@
     "brief": { "type": "html", "label": "Design brief" },
     "seats": { "type": "integer", "label": "Workstations", "min": 1 },
     "area": { "type": "float", "label": "Floor area (m²)", "digits": [10, 1] },
+    "materials": { "type": "char", "label": "Materials" },
     "progress": { "type": "integer", "label": "Fit-out progress", "help": "Percent of the fit-out done." },
     "spent": { "type": "monetary", "label": "Spent so far", "currencyField": "currency_id", "readonly": true },
     "hours_logged": { "type": "float", "label": "Hours logged", "digits": [8, 1], "readonly": true },
@@ -104,6 +105,7 @@
           { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone" },
           { "type": "field", "id": "f-portal", "field": "portal", "widget": "url" },
           { "type": "field", "id": "f-password", "field": "portal_password", "widget": "password" },
+          { "type": "field", "id": "f-materials", "field": "materials", "widget": "tags", "options": { "suggestions": ["oak", "glass", "steel", "walnut", "brass"] } },
           { "type": "field", "id": "f-scope", "field": "scope", "colspan": 2 },
           { "type": "field", "id": "f-brief", "field": "brief", "colspan": 2 }
         ]

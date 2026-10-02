@@ -13,7 +13,7 @@ import type {
 import type { PreferenceStore } from './preferences';
 import { formatNumber, normalizeNumber } from './numbers';
 import type { WidgetLabels } from './labels';
-import { linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
+import { charTagsWidget, linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
 import { linesWidget } from './lines';
 import { binaryWidget, imageWidget } from './files';
 import { progressbarWidget } from './progress';
@@ -392,6 +392,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'char.phone': textWidget('tel'),
   'char.url': textWidget('url'),
   'char.password': textWidget('password'),
+  'char.tags': charTagsWidget,
   text: textareaWidget,
   integer: numberWidget,
   float: numberWidget,

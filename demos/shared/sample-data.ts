@@ -117,6 +117,7 @@ export function sampleDataSource() {
           brief: '<p>Calm, daylight-first. <strong>Keep the river view</strong> from every desk.</p><ul><li>Acoustic panels in meeting rooms</li><li>Oak and white</li></ul>',
           seats: 48,
           area: 640.5,
+          materials: 'oak, glass',
           progress: 64,
           spent: 1184000,
           hours_logged: 118,

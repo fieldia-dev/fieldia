@@ -260,26 +260,116 @@ export const tagsWidget: WidgetFactory = ({ form, name, id, document, labels = W
       if (state.describedBy) box.input.setAttribute('aria-describedby', state.describedBy);
       if (key === drawn) return;
       drawn = key;
-      chips.replaceChildren(
-        ...records.map((record) => {
-          const chip = document.createElement('li');
-          chip.className = 'fd-chip';
-          const text = document.createElement('span');
-          text.className = 'fd-chip-label';
-          text.textContent = record.label;
-          chip.append(text);
-          if (!readonly) {
-            const remove = document.createElement('button');
-            remove.type = 'button';
-            remove.className = 'fd-chip-remove';
-            remove.textContent = '×';
-            remove.setAttribute('aria-label', fill(labels.remove, { name: record.label }));
-            remove.addEventListener('click', () => form.setValue(name, current().filter((r) => r.id !== record.id)));
-            chip.append(remove);
-          }
-          return chip;
-        })
-      );
+      drawChips(chips, records, readonly, labels, (record) => form.setValue(name, current().filter((r) => r.id !== record.id)));
+      box.setText('');
+    },
+  };
+};
+
+/** Chips for tags, each with a remove button unless read-only. */
+function drawChips(chips: HTMLElement, records: RelatedRecord[], readonly: boolean, labels: WidgetLabels, remove: (record: RelatedRecord) => void) {
+  const doc = chips.ownerDocument;
+  chips.replaceChildren(
+    ...records.map((record) => {
+      const chip = doc.createElement('li');
+      chip.className = 'fd-chip';
+      const text = doc.createElement('span');
+      text.className = 'fd-chip-label';
+      text.textContent = record.label;
+      chip.append(text);
+      if (!readonly) {
+        const button = doc.createElement('button');
+        button.type = 'button';
+        button.className = 'fd-chip-remove';
+        button.textContent = '×';
+        button.setAttribute('aria-label', fill(labels.remove, { name: record.label }));
+        button.addEventListener('click', () => remove(record));
+        chip.append(button);
+      }
+      return chip;
+    })
+  );
+}
+
+/**
+ * Free-text tags on a text field, kept as "oak, glass": Enter or a comma adds
+ * what was typed, Backspace in an empty box takes the last one away, and the
+ * node's `options.suggestions` are offered as you type. `options.separator`
+ * is "," unless set.
+ */
+export const charTagsWidget: WidgetFactory = ({ form, name, node, id, document, labels = WIDGET_LABELS.en }) => {
+  const options = node.options ?? {};
+  const separator = typeof options['separator'] === 'string' && options['separator'] ? options['separator'] : ',';
+  const suggestions = Array.isArray(options['suggestions']) ? options['suggestions'].filter((s): s is string => typeof s === 'string') : [];
+  const split = (text: unknown) =>
+    typeof text === 'string' ? text.split(separator).map((t) => t.trim()).filter((t) => t !== '') : [];
+  const current = () => split(form.getState().values[name]);
+  const write = (tags: string[]) => form.setValue(name, tags.length ? tags.join(`${separator} `) : null);
+  const add = (raw: string) => {
+    const tag = raw.trim();
+    const tags = current();
+    if (tag && !tags.some((t) => t.toLowerCase() === tag.toLowerCase())) write([...tags, tag]);
+  };
+
+  const element = document.createElement('div');
+  element.className = 'fd-tags';
+  element.setAttribute('role', 'group');
+  const chips = document.createElement('ul');
+  chips.className = 'fd-chips';
+  const box = combobox({
+    document,
+    id,
+    labels,
+    search: async (query) => {
+      const taken = new Set(current().map((t) => t.toLowerCase()));
+      const wanted = query.trim().toLowerCase();
+      return suggestions
+        .filter((s) => !taken.has(s.toLowerCase()) && s.toLowerCase().includes(wanted))
+        .map((s) => ({ id: s, label: s }));
+    },
+    pick: (record) => {
+      add(record.label);
+      box.input.value = '';
+    },
+    onEmptyBackspace: () => {
+      const tags = current();
+      if (tags.length) write(tags.slice(0, -1));
+    },
+  });
+  // Enter with nothing chosen from the list adds what was typed.
+  box.input.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.defaultPrevented || box.input.value.trim() === '') return;
+    event.preventDefault();
+    add(box.input.value);
+    box.input.value = '';
+    box.close();
+  });
+  // A separator typed ends a tag.
+  box.input.addEventListener('input', () => {
+    const parts = box.input.value.split(separator);
+    if (parts.length < 2) return;
+    for (const part of parts.slice(0, -1)) add(part);
+    box.input.value = parts[parts.length - 1].trimStart();
+  });
+  // Typed and left without Enter: kept. (change comes before blur clears the box.)
+  box.input.addEventListener('change', () => {
+    if (box.input.value.trim()) add(box.input.value);
+  });
+  element.append(chips, box.element);
+  let drawn = '';
+  return {
+    element,
+    focus: () => box.input.focus(),
+    update(state) {
+      const tags = split(state.value);
+      box.setReadonly(state.readonly);
+      box.element.hidden = state.readonly;
+      box.input.setAttribute('aria-invalid', String(state.invalid));
+      if (state.describedBy) box.input.setAttribute('aria-describedby', state.describedBy);
+      const key = JSON.stringify([state.readonly, tags]);
+      if (key === drawn) return;
+      drawn = key;
+      drawChips(chips, tags.map((t) => ({ id: t, label: t })), state.readonly, labels, (record) => write(current().filter((t) => t !== record.label)));
       box.setText('');
     },
   };

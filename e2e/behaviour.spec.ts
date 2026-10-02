@@ -346,6 +346,25 @@ test.describe('every field', () => {
     await screen(page, `${variant}-fields-labels`);
   });
 
+  test('free-text tags: picked from suggestions, typed with a comma, taken away with Backspace', async ({ page }) => {
+    await open(page, variant, 'page=fields&skin=outlined');
+    const tags = node(page, 'f-materials');
+    const chips = tags.locator('.fd-chip-label');
+    await expect(chips).toHaveText(['oak', 'glass']);
+    const box = tags.getByRole('combobox');
+    await box.click();
+    await page.keyboard.type('st');
+    await expect(tags.getByRole('option', { name: 'steel' })).toBeVisible();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('concrete,');
+    await expect(chips).toHaveText(['oak', 'glass', 'steel', 'concrete']);
+    expect(await value(page, 'materials')).toBe('oak, glass, steel, concrete');
+    await screen(page, `${variant}-fields-tags`);
+    await page.keyboard.press('Backspace');
+    await expect(chips).toHaveText(['oak', 'glass', 'steel']);
+  });
+
   test('a folded section opens from its title and shows its fields', async ({ page }) => {
     await open(page, variant, 'page=fields');
     const title = node(page, 's-structured').getByRole('button', { name: 'Structured data' });
