@@ -32,7 +32,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx nx run-many -t build -p angular viewer
+      # Every package a demo consumes as built: the Angular binding, and the designer's Angular editors.
+      - run: npx nx run-many -t build -p angular viewer designer
         env:
           NX_DAEMON: 'false'
       - run: node tools/build-demos.mjs
