@@ -208,8 +208,12 @@ for (const variant of VARIANTS) {
       await expect(cell(page, WORKSTATIONS, 'product_id')).toHaveText('Workstations');
       await expect(cell(page, LIGHTING, 'product_id')).toHaveText('Lighting');
       await expect(cell(page, NOTE, 'product_id')).toHaveText('Warm white only, to match the reception.\nOur electrician fits them on delivery day.');
-      // One wide cell and the delete button; none of an item's columns.
-      await expect(grid(page).locator(`.ag-row[row-index="${NOTE}"] .ag-cell`)).toHaveCount(2);
+      // One wide cell between the drag handle and the delete button; none of an item's columns.
+      expect(await grid(page).locator(`.ag-row[row-index="${NOTE}"] .ag-cell`).evaluateAll((cells) => cells.map((c) => c.getAttribute('col-id')))).toEqual([
+        '__handle',
+        'product_id',
+        '__delete',
+      ]);
       await expect(grid(page).locator(`.ag-row[row-index="${WORKSTATIONS}"]`)).toHaveClass(/fd-grid-section/);
       // The note's two lines both show: its row is taller than an item's, and nothing inside is cut off.
       const note = (await grid(page).locator(`.ag-row[row-index="${NOTE}"]`).boundingBox())!;
@@ -284,6 +288,32 @@ for (const variant of VARIANTS) {
       expect(added[NEW]).toEqual(expect.objectContaining({ display_type: 'section', name: 'Installation' }));
       await expect(grid(page).locator(`.ag-row[row-index="${NEW}"]`)).toHaveClass(/fd-grid-section/);
       await screen(page, `${variant}-grid-section-added`);
+    });
+    test('a line is dragged by its handle to a new place, and the lines are numbered again', async ({ page }) => {
+      const handle = cell(page, LAMP, '__handle').locator('.ag-drag-handle');
+      await expect(handle).toBeVisible();
+      const from = (await handle.boundingBox())!;
+      const desk = (await grid(page).locator(`.ag-row[row-index="${DESK}"]`).boundingBox())!;
+      // A hand's drag: press, move in steps, pause over the desk's row, let go.
+      await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+      await page.mouse.down();
+      for (let step = 1; step <= 8; step++) await page.mouse.move(from.x + from.width / 2, from.y + ((desk.y + 8 - from.y) * step) / 8);
+      await screen(page, `${variant}-grid-dragging`);
+      await page.mouse.up();
+      await expect
+        .poll(async () => (await lines(page)).map((l) => (l['product_id'] as { label?: string } | null)?.label ?? l['name']))
+        .toEqual(['Workstations', 'Office chair, ergonomic', 'Desk lamp, LED', 'Standing desk 160 × 80', 'Lighting', 'Warm white only, to match the reception.\nOur electrician fits them on delivery day.']);
+      expect((await lines(page)).map((l) => l['sequence'])).toEqual([10, 20, 30, 40, 50, 60]);
+      await expect(cell(page, DESK, 'product_id')).toHaveText('Desk lamp, LED');
+    });
+
+    test('Alt+Up moves the focused line up, and it stays focused', async ({ page }) => {
+      await cell(page, LAMP, 'taxed').click({ position: { x: 4, y: 4 } });
+      await page.keyboard.press('Alt+ArrowUp');
+      await expect(cell(page, NOTE, 'product_id')).toHaveText('Desk lamp, LED');
+      await expect(cell(page, NOTE, 'taxed')).toHaveClass(/ag-cell-focus/);
+      expect((await lines(page)).map((l) => l['sequence'])).toEqual([10, 20, 30, 40, 50, 60]);
+      expect((await lines(page))[NOTE]['product_id']).toEqual({ id: 2, label: 'Desk lamp, LED' });
     });
   });
 }

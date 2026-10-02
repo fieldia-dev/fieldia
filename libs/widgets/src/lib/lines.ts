@@ -37,8 +37,8 @@ export function lineForm(form: Form, field: string, key: string): Form {
 export const linesWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en }) => {
   const def = field as Extract<Field, { type: 'one2many' }>;
   const kinds = def.lineKinds;
-  // The field that says what a line is never shows as a column.
-  const columns = (node.columns ?? Object.keys(def.fields)).filter((column) => def.fields[column] && column !== kinds?.field);
+  // The fields that say what a line is and keep the lines' order never show as columns.
+  const columns = (node.columns ?? Object.keys(def.fields)).filter((column) => def.fields[column] && column !== kinds?.field && column !== def.sequenceField);
   const element = document.createElement('div');
   element.className = 'fd-lines';
   element.id = id;

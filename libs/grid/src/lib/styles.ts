@@ -10,6 +10,8 @@ export const GRID_CSS = /* css */ `
 .fd-grid-lines .ag-root-wrapper { overflow: visible; }
 .fd-grid-lines .ag-root-wrapper-body { overflow: hidden; border-radius: inherit; }
 .fd-grid-lines .fd-grid-tools { padding: 0; display: flex; align-items: center; justify-content: center; }
+.fd-grid-lines .fd-grid-handle { color: var(--fd-muted); cursor: grab; }
+.fd-grid-lines .fd-grid-handle .ag-drag-handle { margin: 0; }
 .fd-grid-lines .ag-cell .fd-checkbox { margin: 0; vertical-align: middle; }
 /* Typed text stays where the shown value was: the cell padding, less the 1px border AG Grid draws round an editor. */
 .fd-grid-editor { height: 100%; display: flex; align-items: center; padding-inline: calc(var(--ag-cell-horizontal-padding) - 1px); box-sizing: border-box; }

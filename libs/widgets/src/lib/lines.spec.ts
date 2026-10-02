@@ -125,7 +125,9 @@ describe('one2many lines with sections and notes', () => {
         label: 'Order lines',
         relation: 'order.line',
         lineKinds: { field: 'display_type', text: 'name' },
+        sequenceField: 'sequence',
         fields: {
+          sequence: { type: 'integer', label: 'Sequence' },
           display_type: { type: 'selection', label: 'Line type', options: [{ value: 'section', label: 'Section' }, { value: 'note', label: 'Note' }] },
           product_id: { type: 'many2one', label: 'Product', relation: 'product', required: true },
           name: { type: 'text', label: 'Description' },
@@ -147,7 +149,7 @@ describe('one2many lines with sections and notes', () => {
     return { form, el: widget.element };
   }
 
-  it('never shows the field that says what a line is as a column', () => {
+  it('never shows the field that says what a line is, or the one that keeps their order, as a column', () => {
     const { el } = mountSectioned();
     expect([...el.querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['Product', 'Description', 'Quantity', '']);
   });

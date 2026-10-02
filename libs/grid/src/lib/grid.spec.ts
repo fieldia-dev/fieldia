@@ -185,6 +185,28 @@ describe('the grid with sections and notes', () => {
     expect(formLines(form)[4].values['name']).toBe('Lighting');
   });
 
+  it('leads each line with a drag handle when the lines keep an order, and never shows that field', async () => {
+    const ordered = JSON.parse(JSON.stringify(sectioned)) as Page & { fields: Record<string, any> };
+    ordered.fields['line_ids'].sequenceField = 'sequence';
+    ordered.fields['line_ids'].fields.sequence = { type: 'integer', label: 'Sequence' };
+    const numbered = withKinds.map((line, i) => ({ ...line, values: { ...line.values, sequence: (i + 1) * 10 } }));
+    const { api, box, form } = await mount(ordered, numbered);
+    const shown = api?.getAllDisplayedColumns().map((c) => c.getColId());
+    expect(shown?.[0]).toBe('__handle');
+    expect(shown).not.toContain('sequence');
+    expect(api?.getColumnDef('__handle')?.rowDrag).toBe(true);
+    // A section still spans the item columns, beside the handle and the delete button.
+    expect(rowCells(box, 0)).toEqual(['', 'Workstations', '×']);
+
+    // Alt+Down moves the focused line, which stays focused.
+    api?.setFocusedCell(1, 'name');
+    const focused = box.querySelector('.ag-row[row-index="1"] .ag-cell[col-id="name"]') as HTMLElement;
+    focused.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }));
+    expect(formLines(form).map((l) => l.key)).toEqual(['s1', 'n1', 'l1', 'l2']);
+    expect(formLines(form).map((l) => l.values['sequence'])).toEqual([10, 20, 30, 40]);
+    expect(api?.getFocusedCell()?.rowIndex).toBe(2);
+  });
+
   it('edits a note in a box that starts one line tall', async () => {
     const { box, api } = await mount(sectioned, withKinds);
     api?.startEditingCell({ rowIndex: 2, colKey: 'product_id' });

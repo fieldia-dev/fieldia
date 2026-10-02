@@ -49,10 +49,12 @@ interface CellContext {
   kindOf(line: Line | undefined): 'section' | 'note' | null;
 }
 
-/** The column a section or note spans from: the first one shown, the delete button aside. */
-const spanStart = (api: GridApi<Line>) => api.getAllDisplayedColumns().find((c) => c.getColId() !== '__delete');
-/** How many columns a section or note covers. */
-const spanWidth = (api: GridApi<Line>) => api.getAllDisplayedColumns().filter((c) => c.getColId() !== '__delete').length;
+/** The grid's own columns (the drag handle, the delete button) start with two underscores. */
+const isTool = (id: string) => id.startsWith('__');
+/** The column a section or note spans from: the first field shown. */
+const spanStart = (api: GridApi<Line>) => api.getAllDisplayedColumns().find((c) => !isTool(c.getColId()));
+/** How many columns a section or note covers: every field shown. */
+const spanWidth = (api: GridApi<Line>) => api.getAllDisplayedColumns().filter((c) => !isTool(c.getColId())).length;
 
 type LineDef = Extract<Field, { type: 'one2many' }>;
 
@@ -310,8 +312,9 @@ const EDITABLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary'
 export const gridWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en }) => {
   const def = field as LineDef;
   const kinds = def.lineKinds;
-  // The field that says what a line is never shows as a column.
-  const columns = (node.columns ?? Object.keys(def.fields)).filter((column) => def.fields[column] && column !== kinds?.field);
+  const sequence = def.sequenceField;
+  // The fields that say what a line is and keep the lines' order never show as columns.
+  const columns = (node.columns ?? Object.keys(def.fields)).filter((column) => def.fields[column] && column !== kinds?.field && column !== sequence);
   const kindOf = (line: Line | undefined) => (line ? lineKind(def, line.values) : null);
   const cell: CellContext = { form, field: name, fieldId: node.id, defs: def.fields, labels, finish: () => undefined, kinds, kindOf };
   installGridStyles(document);
@@ -355,6 +358,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
    */
   const keys = ({ event, editing, node, column }: SuppressKeyboardEventParams<Line>) => {
     if (event.defaultPrevented) return true;
+    // Alt+Up/Down moves the line (below), it does not move the focus.
+    if (!editing && event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) return true;
     // In a note, Enter is a new line of the note (Ctrl/Cmd+Enter finishes it).
     if (editing && event.key === 'Enter' && !event.ctrlKey && !event.metaKey && kindOf(node.data) === 'note') return true;
     if (!editing || event.type !== 'keydown' || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return false;
@@ -413,6 +418,23 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     }
     return base;
   });
+  if (sequence) {
+    // Lines that keep an order are moved by a handle at their start.
+    columnDefs.unshift({
+      colId: '__handle',
+      headerName: '',
+      rowDrag: true,
+      width: 32,
+      minWidth: 32,
+      maxWidth: 32,
+      cellClass: 'fd-grid-tools fd-grid-handle',
+      resizable: false,
+      sortable: false,
+      suppressMovable: true,
+      lockPosition: 'left',
+      suppressKeyboardEvent: keys,
+    });
+  }
   columnDefs.push({
     colId: '__delete',
     headerName: '',
@@ -425,6 +447,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     suppressMovable: true,
     cellRenderer: DeleteRenderer,
     cellRendererParams: { cell },
+    suppressKeyboardEvent: keys,
   });
 
   const api: GridApi<Line> = createGrid<Line>(
@@ -461,6 +484,18 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       stopEditingWhenCellsLoseFocus: true,
       // Like a spreadsheet: Enter keeps what was typed and moves down.
       enterNavigatesVerticallyAfterEdit: true,
+      // A line dragged by its handle moves among the others as it goes; where
+      // it is let go, the form moves it too and numbers the lines again.
+      rowDragManaged: !!sequence,
+      rowDragText: (p) => {
+        const line = p.rowNode?.data;
+        const text = line && (kindOf(line) && kinds ? line.values[kinds.text] : line.values[columns[0]]);
+        return text && typeof text === 'object' ? String((text as { label?: string }).label ?? '') : String(text ?? '');
+      },
+      onRowDragEnd: (event) => {
+        const key = event.node.data?.key;
+        if (key && event.node.rowIndex !== null) form.moveLine(name, key, event.node.rowIndex);
+      },
       animateRows: false,
       suppressMovableColumns: false,
       defaultColDef: { sortable: false, resizable: true },
@@ -488,6 +523,18 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   // and Enter or Space presses the delete button. (AG Grid's onCellKeyDown
   // arrives too late to stop Space scrolling the page.)
   host.addEventListener('keydown', (event) => {
+    // Alt+Up/Down moves the focused line, for those who do not drag.
+    if (sequence && !readonly && event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+      const focused = api.getFocusedCell();
+      const line = focused ? api.getDisplayedRowAtIndex(focused.rowIndex)?.data : undefined;
+      if (!focused || !line || api.getEditingCells().length) return;
+      event.preventDefault();
+      const to = focused.rowIndex + (event.key === 'ArrowUp' ? -1 : 1);
+      if (to < 0 || to >= lines().length) return;
+      form.moveLine(name, line.key, to);
+      api.setFocusedCell(to, focused.column);
+      return;
+    }
     if (readonly || (event.key !== ' ' && event.key !== 'Enter')) return;
     if (!(event.target as HTMLElement).classList.contains('ag-cell')) return; // a checkbox or an editor answers for itself
     const focused = api.getFocusedCell();
@@ -514,7 +561,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     update(state) {
       if (state.readonly !== readonly) {
         readonly = state.readonly;
-        api.setGridOption('columnDefs', columnDefs.filter((c) => !(readonly && c.colId === '__delete')));
+        api.setGridOption('columnDefs', columnDefs.filter((c) => !(readonly && (c.colId === '__delete' || c.colId === '__handle'))));
       }
       adds.hidden = readonly;
       const current = (state.value as Line[] | null) ?? [];
