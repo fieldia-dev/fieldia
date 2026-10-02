@@ -149,6 +149,21 @@ describe('createForm — modifiers', () => {
     expect(form.node('f-credit-limit').readonly).toBe(true);
   });
 
+  it('makes every field of a section read-only while the section says so, nested sections too', () => {
+    const p = page('customer');
+    const layout = p.layout as { children: { readonly?: string; children: unknown[] }[] };
+    layout.children[0].readonly = "state == 'blocked'";
+    layout.children[0].children.push({ type: 'section', id: 'inner', children: [{ type: 'field', id: 'f-inner-notes', field: 'notes' }] });
+    const form = createForm({ page: p });
+    expect(form.node('f-email').readonly).toBe(false);
+    expect(form.node('f-inner-notes').readonly).toBe(false);
+    form.setValue('state', 'blocked');
+    expect(form.node('f-email').readonly).toBe(true);
+    expect(form.node('f-inner-notes').readonly).toBe(true);
+    // Outside it, a field keeps its own rule.
+    expect(form.node('f-notes').readonly).toBe(false);
+  });
+
   it('shows the ribbon and buttons that match the state', () => {
     const form = createForm({ page: page('customer') });
     expect(form.node('blocked-ribbon').invisible).toBe(true);

@@ -209,10 +209,15 @@ export function createForm(options: FormOptions): Form {
     for (let parent = node.parent; !invisible && parent; parent = index.get(parent)?.parent ?? null) {
       invisible = index.get(parent)?.invisible.evaluate(ctx) ?? false;
     }
+    // A section read-only right now makes everything inside it read-only too.
+    let readonly = node.readonly.evaluate(ctx);
+    for (let parent = node.parent; !readonly && parent; parent = index.get(parent)?.parent ?? null) {
+      readonly = index.get(parent)?.readonly.evaluate(ctx) ?? false;
+    }
     const def = node.field ? page.fields[node.field] : undefined;
     return {
       invisible,
-      readonly: node.readonly.evaluate(ctx) || def?.readonly === true,
+      readonly: readonly || def?.readonly === true,
       required: node.required.evaluate(ctx) || def?.required === true,
     };
   }
@@ -721,9 +726,11 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
           add(tab, node.id, 'other', { invisible: tab.invisible });
           walk(tab.children, tab.id);
         }
+      } else if (node.type === 'section') {
+        add(node, parent, 'other', { invisible: node.invisible, readonly: node.readonly });
+        walk(node.children, node.id);
       } else {
         add(node, parent, 'other', { invisible: node.invisible });
-        if (node.type === 'section') walk(node.children, node.id);
       }
     }
   };
