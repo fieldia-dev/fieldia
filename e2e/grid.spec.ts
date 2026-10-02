@@ -466,5 +466,24 @@ for (const variant of VARIANTS) {
       await expect(chooser).toBeHidden();
       await expect(grid(page).locator('.ag-header-cell[col-id="__delete"]')).toBeFocused();
     });
+    test('an emptied table takes its first line again from the button', async ({ page }) => {
+      for (let left = 6; left > 0; left--) {
+        await cell(page, 0, '__delete').getByRole('button', { name: 'Delete line' }).click();
+        await expect(lineRows(page)).toHaveCount(left - 1);
+      }
+      await expect(grid(page).locator('.ag-grid-pinned-bottom-rows .ag-cell[col-id="subtotal"]')).toHaveText('EGP 0.00');
+      // No tall blank where the lines were: at most one row's height between the header and the totals.
+      const head = (await grid(page).locator('.ag-header').boundingBox())!;
+      const totals = (await grid(page).locator('.ag-grid-pinned-bottom-rows').boundingBox())!;
+      expect(totals.y - (head.y + head.height)).toBeLessThanOrEqual(42);
+      await screen(page, `${variant}-grid-empty`);
+      await grid(page).getByRole('button', { name: '+ Add a line' }).click();
+      await expect.poll(() => editing(page)).toEqual([0, 'product_id']);
+      await page.keyboard.type('chair');
+      await expect(grid(page).getByRole('option', { name: 'Office chair, ergonomic' })).toBeVisible();
+      await page.keyboard.press('ArrowDown');
+      await page.keyboard.press('Enter');
+      await expect(cell(page, 0, 'price')).toHaveText('EGP 1,890.00');
+    });
   });
 }

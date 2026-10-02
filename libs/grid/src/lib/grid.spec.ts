@@ -143,6 +143,19 @@ describe('the grid', () => {
   });
 });
 
+describe('an empty grid', () => {
+  it('shows its columns and no message, and its first line is added from the button and edited at once', async () => {
+    const { box, form, api } = await mount(order, []);
+    expect(box.querySelectorAll('.ag-header-cell').length).toBeGreaterThan(0);
+    expect(box.querySelectorAll('.ag-row').length).toBe(0);
+    expect(box.querySelector('.ag-overlay-no-rows-wrapper, .ag-overlay')?.textContent?.trim() ?? '').toBe('');
+    (box.querySelector('[data-add="line"]') as HTMLButtonElement).click();
+    await frames();
+    expect(formLines(form)).toHaveLength(1);
+    expect(api?.getEditingCells().map((c) => [c.rowIndex, c.column?.getColId()])).toEqual([[0, 'product_id']]);
+  });
+});
+
 describe('the grid’s columns', () => {
   /** The order, whose delivery date starts hidden and whose tax column may be hidden. */
   const choosy = JSON.parse(JSON.stringify(order)) as Page & { layout: any };
