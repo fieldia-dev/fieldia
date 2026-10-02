@@ -266,6 +266,20 @@ describe('the viewer itself', () => {
     expect(host.querySelector('.fd-progress-text')?.textContent).toBe('الخطوة 1 من 3');
   });
 
+  it('speaks the page language: labels, messages and direction', () => {
+    const { host } = mount('survey', { locale: 'ar' });
+    expect(host.querySelector('.fd-form')?.getAttribute('dir')).toBe('rtl');
+    expect(host.querySelector('.fd-progress-text')?.textContent).toBe('الخطوة 1 من 3');
+    button(host, 'التالي').click();
+    expect(at(host, 'q-name').querySelector('.fd-error')?.textContent).toBe('Your name مطلوب');
+  });
+
+  it('lets labels passed in win over the language defaults', () => {
+    const { host } = mount('survey', { locale: 'de', labels: { next: 'Los' } });
+    expect(button(host, 'Los')).toBeDefined();
+    expect(host.querySelector('.fd-progress-text')?.textContent).toBe('Schritt 1 von 3');
+  });
+
   it('offers a saved draft back', () => {
     const items = new Map<string, string>([
       ['fieldia:draft:product-feedback:new', JSON.stringify({ savedAt: '2026-10-02T09:00:00.000Z', values: { name: 'Sara' } })],

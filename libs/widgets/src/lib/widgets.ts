@@ -9,6 +9,7 @@ import type {
   Value,
   Values,
 } from '@fieldia/core';
+import type { WidgetLabels } from './labels';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -25,6 +26,8 @@ export interface WidgetContext {
   /** The id the field's label points at. */
   id: string;
   document: Document;
+  /** Words the widget shows itself, in the page's language. English when left out. */
+  labels?: WidgetLabels;
 }
 
 export interface WidgetState {

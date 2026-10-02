@@ -15,8 +15,10 @@ import {
   type TabsNode,
   type TextNode,
   type WizardNode,
+  type Locale,
+  MESSAGES,
 } from '@fieldia/core';
-import { createWidget, installStyles, type WidgetFactory } from '@fieldia/widgets';
+import { createWidget, installStyles, WIDGET_LABELS, type WidgetFactory } from '@fieldia/widgets';
 
 export type Skin = 'underline' | 'outlined';
 
@@ -40,24 +42,83 @@ export interface ViewerLabels {
   loading: string;
 }
 
-export const DEFAULT_LABELS: ViewerLabels = {
-  save: 'Save',
-  discard: 'Discard',
-  saving: 'Saving…',
-  saved: 'Saved',
-  submit: 'Submit',
-  next: 'Next',
-  back: 'Back',
-  stepOf: 'Step {n} of {total}',
-  submitted: 'Thank you. Your answers were sent.',
-  submitAnother: 'Submit another response',
-  draftFound: 'You have unsaved answers from {time}.',
-  restore: 'Restore',
-  discardDraft: 'Discard',
-  ok: 'OK',
-  cancel: 'Cancel',
-  loading: 'Loading…',
+export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
+  en: {
+    save: 'Save',
+    discard: 'Discard',
+    saving: 'Saving…',
+    saved: 'Saved',
+    submit: 'Submit',
+    next: 'Next',
+    back: 'Back',
+    stepOf: 'Step {n} of {total}',
+    submitted: 'Thank you. Your answers were sent.',
+    submitAnother: 'Submit another response',
+    draftFound: 'You have unsaved answers from {time}.',
+    restore: 'Restore',
+    discardDraft: 'Discard',
+    ok: 'OK',
+    cancel: 'Cancel',
+    loading: 'Loading…',
+  },
+  ar: {
+    save: 'حفظ',
+    discard: 'تجاهل',
+    saving: 'جارٍ الحفظ…',
+    saved: 'تم الحفظ',
+    submit: 'إرسال',
+    next: 'التالي',
+    back: 'رجوع',
+    stepOf: 'الخطوة {n} من {total}',
+    submitted: 'شكرًا لك. تم إرسال إجاباتك.',
+    submitAnother: 'إرسال إجابة أخرى',
+    draftFound: 'لديك إجابات غير محفوظة من {time}.',
+    restore: 'استعادة',
+    discardDraft: 'تجاهل',
+    ok: 'موافق',
+    cancel: 'إلغاء',
+    loading: 'جارٍ التحميل…',
+  },
+  de: {
+    save: 'Speichern',
+    discard: 'Verwerfen',
+    saving: 'Wird gespeichert…',
+    saved: 'Gespeichert',
+    submit: 'Absenden',
+    next: 'Weiter',
+    back: 'Zurück',
+    stepOf: 'Schritt {n} von {total}',
+    submitted: 'Vielen Dank. Ihre Antworten wurden gesendet.',
+    submitAnother: 'Weitere Antwort senden',
+    draftFound: 'Sie haben ungespeicherte Antworten vom {time}.',
+    restore: 'Wiederherstellen',
+    discardDraft: 'Verwerfen',
+    ok: 'OK',
+    cancel: 'Abbrechen',
+    loading: 'Wird geladen…',
+  },
+  fr: {
+    save: 'Enregistrer',
+    discard: 'Annuler les modifications',
+    saving: 'Enregistrement…',
+    saved: 'Enregistré',
+    submit: 'Envoyer',
+    next: 'Suivant',
+    back: 'Retour',
+    stepOf: 'Étape {n} sur {total}',
+    submitted: 'Merci. Vos réponses ont été envoyées.',
+    submitAnother: 'Envoyer une autre réponse',
+    draftFound: 'Vous avez des réponses non enregistrées du {time}.',
+    restore: 'Restaurer',
+    discardDraft: 'Ignorer',
+    ok: 'OK',
+    cancel: 'Annuler',
+    loading: 'Chargement…',
+  },
 };
+
+/** English, kept under its old name. */
+export const DEFAULT_LABELS: ViewerLabels = VIEWER_LABELS.en;
 
 /** Fill a slot with the app's own content. Return a function to clean up. */
 export type SlotRenderer = (element: HTMLElement, context: { form: Form; name: string }) => void | (() => void);
@@ -70,6 +131,9 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
   /** Widgets that replace or add to the built-in ones, by `type` or `type.widget`. */
   widgets?: Record<string, WidgetFactory>;
   slots?: Record<string, SlotRenderer>;
+  /** The page's language: viewer labels, validation messages and widget words. Arabic runs right to left. */
+  locale?: Locale;
+  /** Labels that win over the language's defaults. */
   labels?: Partial<ViewerLabels>;
   dir?: 'ltr' | 'rtl';
   /** How to ask before a button with `confirm` runs. Defaults to a small dialog. */
@@ -99,9 +163,12 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     throw new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);
   }
   const page = checked.page;
+  const locale = options.locale ?? 'en';
   const ownsForm = !options.form;
-  const form = options.form ?? createForm({ ...options, page });
-  const labels: ViewerLabels = { ...DEFAULT_LABELS, ...options.labels };
+  const form = options.form ?? createForm({ ...options, page, messages: options.messages ?? MESSAGES[locale] });
+  const labels: ViewerLabels = { ...VIEWER_LABELS[locale], ...options.labels };
+  const widgetLabels = WIDGET_LABELS[locale];
+  const dir = options.dir ?? (locale === 'ar' ? 'rtl' : undefined);
   const prefix = `fd${++mounts}`;
   const updaters: Updater[] = [];
   const cleanups: (() => void)[] = [];
@@ -118,7 +185,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     return node;
   }
 
-  const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': options.skin ?? 'underline', dir: options.dir });
+  const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': options.skin ?? 'underline', dir, lang: options.locale });
   const confirm = options.confirm ?? dialogConfirm;
 
   // ---- the parts -------------------------------------------------------
@@ -129,7 +196,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const wrapper = el('div', { class: 'fd-field', 'data-node': node.id, 'data-field': node.field });
     if (node.colspan) wrapper.style.setProperty('--fd-span', String(node.colspan));
     const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, node.label ?? def.label);
-    const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc }, options.widgets);
+    const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels }, options.widgets);
     if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) {
       // `for` stays: a custom field that puts the id on its own input is
       // labelled natively. Only a wrapper with a role (a radio group, say) may
