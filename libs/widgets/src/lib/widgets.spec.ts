@@ -18,7 +18,7 @@ function setup(
   } as Page;
   const form = createForm({ page });
   const widget = createWidget(
-    { form, name: 'x', field: page.fields['x'], node: page.layout.children[0] as FieldNode, id: 'fd-x', document, locale },
+    { form, name: 'x', field: page.fields['x'], node: (page.layout as { children: FieldNode[] }).children[0], id: 'fd-x', document, locale },
     registry
   );
   document.body.replaceChildren(widget.element);

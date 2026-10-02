@@ -1,5 +1,5 @@
 import type { Field, Fields, FilterItem, LineField, LineKinds } from './field';
-import type { FieldNode, LayoutNode, RootLayout, SheetNode, TabsNode } from './layout';
+import type { FieldNode, LayoutNode, ListNode, RootLayout, SheetNode, TabsNode } from './layout';
 import type { Page } from './page';
 import { compileModifier } from '../expression/modifier';
 
@@ -133,12 +133,38 @@ export class ReferenceCheck {
     this.claim(root.id, path);
     if (root.type === 'sheet') return this.walkSheet(root, path);
     if (root.type === 'sections') return this.walkChildren(root.children, path);
+    if (root.type === 'list') return this.walkList(root, path);
     root.children.forEach((step, i) => {
       const stepPath = `${path}.children[${i}]`;
       this.claim(step.id, stepPath);
       this.checkModifiers(step, stepPath);
       this.walkChildren(step.children, stepPath);
     });
+  }
+
+  private walkList(list: ListNode, path: string) {
+    if (this.page.data.kind !== 'record') this.report('data', 'a list shows records: its data needs kind "record" and a model');
+    list.columns.forEach((name, i) => this.need(name, `${path}.columns[${i}]`));
+    list.sort?.forEach((order, i) => this.need(order.field, `${path}.sort[${i}].field`));
+    list.searchFields?.forEach((name, i) => this.need(name, `${path}.searchFields[${i}]`));
+    list.groupBy?.forEach((name, i) => this.need(name, `${path}.groupBy[${i}]`));
+    // A list's filters are about its own records: their fields are the page's, and there is no record to take a value from.
+    const walk = (item: FilterItem, at: string): void => {
+      if ('any' in item) return item.any.forEach((inner, i) => walk(inner, `${at}.any[${i}]`));
+      if ('all' in item) return item.all.forEach((inner, i) => walk(inner, `${at}.all[${i}]`));
+      this.need(item.field, `${at}.field`);
+      if (item.valueFrom !== undefined) this.report(`${at}.valueFrom`, "a list's filter compares with values, not with another field");
+    };
+    const named = new Set<string>();
+    list.filters?.forEach((filter, i) => {
+      this.claim(filter.id, `${path}.filters[${i}]`);
+      named.add(filter.id);
+      filter.filter.forEach((item, j) => walk(item, `${path}.filters[${i}].filter[${j}]`));
+    });
+    list.defaultFilters?.forEach((id, i) => {
+      if (!named.has(id)) this.report(`${path}.defaultFilters[${i}]`, `no filter "${id}" in this list`);
+    });
+    list.actions?.forEach((button, i) => this.claim(button.id, `${path}.actions[${i}]`));
   }
 
   private walkChildren(children: LayoutNode[], path: string) {

@@ -1,6 +1,11 @@
 import type { Field, Fields } from '../format/field';
+import type { JsonValue } from '../format/json';
 import type {
   DataSource,
+  Group,
+  GroupRequest,
+  ListRequest,
+  ListResult,
   LineOp,
   LinkOp,
   LoadRequest,
@@ -15,7 +20,7 @@ import type {
 } from './data-source';
 import { matchesFilter } from './filter';
 import { wait, type Scheduler } from './scheduler';
-import { structuredCopy, type Line, type RecordId, type RelatedRecord, type Values } from './values';
+import { structuredCopy, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 
 export interface MemoryDataSourceOptions {
   /** Records by model, then by id. */
@@ -133,6 +138,47 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
         .slice(0, request.limit ?? 8);
     },
 
+    async list(request: ListRequest): Promise<ListResult> {
+      calls.push({ method: 'list', request });
+      await pause();
+      const matching = Object.entries(table(request.model))
+        .filter(([, values]) => matchesFilter(values, request.filter))
+        .map(([key, values]) => ({ id: asId(key), values }));
+      matching.sort((a, b) => {
+        for (const order of request.sort) {
+          const compared = compareValues(a.values[order.field], b.values[order.field]);
+          // Empty last, whichever way the rest goes.
+          if (compared.empty) return compared.result;
+          if (compared.result) return order.desc ? -compared.result : compared.result;
+        }
+        return 0;
+      });
+      return {
+        total: matching.length,
+        records: matching.slice(request.offset, request.offset + request.limit).map(({ id, values }) => ({
+          id,
+          values: Object.fromEntries(request.fields.map((field) => [field, structuredCopy(values[field] ?? null) as Value])),
+        })),
+      };
+    },
+
+    async groups(request: GroupRequest): Promise<Group[]> {
+      calls.push({ method: 'groups', request });
+      await pause();
+      const counted = new Map<string, Group>();
+      for (const values of Object.values(table(request.model))) {
+        if (!matchesFilter(values, request.filter)) continue;
+        const raw = values[request.field] ?? null;
+        const link = raw !== null && typeof raw === 'object' && !Array.isArray(raw) && 'id' in raw ? (raw as RelatedRecord) : null;
+        const value = (link ? link.id : raw) as JsonValue;
+        const key = JSON.stringify(value);
+        const group = counted.get(key) ?? { value, label: link ? link.label : raw === null || raw === '' ? '' : String(raw), count: 0 };
+        group.count++;
+        counted.set(key, group);
+      }
+      return [...counted.values()].sort((a, b) => (a.value === null) === (b.value === null) ? a.label.localeCompare(b.label) : a.value === null ? 1 : -1);
+    },
+
     async create(request: CreateRequest): Promise<RelatedRecord> {
       calls.push({ method: 'create', request });
       await pause();
@@ -149,4 +195,14 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       return { id: responses.length };
     },
   };
+}
+
+/** Two values in order: a link by its label, text by the reader's rules, numbers by size; `empty` says one of them had nothing. */
+function compareValues(a: unknown, b: unknown): { result: number; empty: boolean } {
+  const blank = (v: unknown) => v === null || v === undefined || v === '';
+  if (blank(a) || blank(b)) return { result: blank(a) === blank(b) ? 0 : blank(a) ? 1 : -1, empty: blank(a) !== blank(b) };
+  const label = (v: unknown) => (typeof v === 'object' && v !== null && 'label' in v ? (v as RelatedRecord).label : v);
+  const [x, y] = [label(a), label(b)];
+  if (typeof x === 'number' && typeof y === 'number') return { result: x - y, empty: false };
+  return { result: String(x).localeCompare(String(y)), empty: false };
 }

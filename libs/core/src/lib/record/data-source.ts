@@ -20,6 +20,10 @@ export interface DataSource {
   create?(request: CreateRequest): Promise<RelatedRecord>;
   /** Store one response to a `responses` page, such as a survey. */
   submit?(request: SubmitRequest): Promise<SubmitResult>;
+  /** Records for a list: filtered, sorted and one page of them, with how many there are in all. */
+  list?(request: ListRequest): Promise<ListResult>;
+  /** How many records fall under each value of a field, for a list's Group By. */
+  groups?(request: GroupRequest): Promise<Group[]>;
 }
 
 export interface CreateRequest {
@@ -77,6 +81,42 @@ export interface SearchRequest {
 }
 
 export type ResolvedFilterCondition = Omit<FilterCondition, 'valueFrom' | 'value'> & { value: JsonValue };
+
+export interface SortOrder {
+  field: string;
+  desc?: boolean;
+}
+
+export interface ListRequest {
+  model: string;
+  /** The fields the list shows. */
+  fields: string[];
+  /** What the search bar and the open groups ask for; an `any` group is an OR. */
+  filter: ResolvedFilter[];
+  /** By the first, then the next: a link by its label, empty values last. */
+  sort: SortOrder[];
+  offset: number;
+  limit: number;
+}
+
+export interface ListResult {
+  records: { id: RecordId; values: Values }[];
+  /** How many records match in all, for the pager. */
+  total: number;
+}
+
+export interface GroupRequest {
+  model: string;
+  field: string;
+  filter: ResolvedFilter[];
+}
+
+/** The records under one value of a field: a link's by its id, and those with none as a group of their own (value null). */
+export interface Group {
+  value: JsonValue;
+  label: string;
+  count: number;
+}
 
 /**
  * A filter as a search receives it: each `valueFrom` already replaced by its

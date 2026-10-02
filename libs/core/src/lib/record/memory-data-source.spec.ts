@@ -114,3 +114,52 @@ describe('createMemoryDataSource — implements every DataSource method', () => 
     expect(ds.calls.map((c) => c.method)).toEqual(['search']);
   });
 });
+
+describe('createMemoryDataSource — lists and groups', () => {
+  const partners = () =>
+    createMemoryDataSource({
+      records: {
+        partner: {
+          1: { name: 'Nile Traders', country_id: { id: 1, label: 'Egypt' }, credit_limit: 250000, state: 'active' },
+          2: { name: 'Amira Clinics', country_id: { id: 1, label: 'Egypt' }, credit_limit: 50000, state: 'draft' },
+          3: { name: 'Petra Tours', country_id: { id: 2, label: 'Jordan' }, credit_limit: 80000, state: 'active' },
+          4: { name: 'Zamalek Studio', country_id: null, credit_limit: null, state: 'blocked' },
+        },
+      },
+    });
+
+  it('lists the fields asked for, filtered, sorted and in pages, with how many there are in all', async () => {
+    const ds = partners();
+    const first = await ds.list!({ model: 'partner', fields: ['name', 'state'], filter: [{ field: 'state', op: '!=', value: 'blocked' }], sort: [{ field: 'name' }], offset: 0, limit: 2 });
+    expect(first).toEqual({
+      total: 3,
+      records: [
+        { id: 2, values: { name: 'Amira Clinics', state: 'draft' } },
+        { id: 1, values: { name: 'Nile Traders', state: 'active' } },
+      ],
+    });
+    const second = await ds.list!({ model: 'partner', fields: ['name'], filter: [{ field: 'state', op: '!=', value: 'blocked' }], sort: [{ field: 'name' }], offset: 2, limit: 2 });
+    expect(second).toEqual({ total: 3, records: [{ id: 3, values: { name: 'Petra Tours' } }] });
+  });
+
+  it('sorts a link by its label and a number by its value, empty last either way', async () => {
+    const ds = partners();
+    const byCountry = await ds.list!({ model: 'partner', fields: ['name'], filter: [], sort: [{ field: 'country_id' }, { field: 'name' }], offset: 0, limit: 10 });
+    expect(byCountry.records.map((r) => r.id)).toEqual([2, 1, 3, 4]);
+    const byLimit = await ds.list!({ model: 'partner', fields: ['name'], filter: [], sort: [{ field: 'credit_limit', desc: true }], offset: 0, limit: 10 });
+    expect(byLimit.records.map((r) => r.id)).toEqual([1, 3, 2, 4]);
+  });
+
+  it('counts the records under each value of a field: a link by its record, nothing as its own group, last', async () => {
+    const ds = partners();
+    expect(await ds.groups!({ model: 'partner', field: 'country_id', filter: [] })).toEqual([
+      { value: 1, label: 'Egypt', count: 2 },
+      { value: 2, label: 'Jordan', count: 1 },
+      { value: null, label: '', count: 1 },
+    ]);
+    expect(await ds.groups!({ model: 'partner', field: 'state', filter: [{ field: 'credit_limit', op: 'set', value: null }] })).toEqual([
+      { value: 'active', label: 'active', count: 2 },
+      { value: 'draft', label: 'draft', count: 1 },
+    ]);
+  });
+});

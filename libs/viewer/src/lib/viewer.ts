@@ -733,6 +733,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   if (layout.type === 'sheet') body = sheetLayout(layout);
   else if (layout.type === 'wizard') body = wizardLayout(layout);
   else if (layout.type === 'tabs') body = sectionsLayout({ id: `${layout.id}-page`, children: [layout] });
+  else if (layout.type === 'list') body = el('div', { class: 'fd-list', 'data-node': layout.id });
   else body = sectionsLayout(layout);
 
   const head = layout.type === 'sheet' ? null : pageHead();

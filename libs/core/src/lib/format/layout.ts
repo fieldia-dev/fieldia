@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { FIELD_NAME } from './field';
+import { FIELD_NAME, FilterItemSchema, type FilterItem } from './field';
 import { JsonValueSchema, type JsonValue } from './json';
 
 /**
@@ -225,11 +225,43 @@ export interface SheetNode {
   sidePanel?: SlotNode;
 }
 
+/** A named filter in a list's search bar, such as "Active" or "Big accounts". */
+export interface ListFilter {
+  id: string;
+  label: string;
+  filter: FilterItem[];
+}
+
+/**
+ * A list of the model's records, with the search bar people know from Odoo:
+ * text searched in the fields it names, named filters, Group By, favourites.
+ * A row opens its record; the selected ones take the list's buttons.
+ */
+export interface ListNode {
+  type: 'list';
+  id: string;
+  /** The fields shown, in order. */
+  columns: string[];
+  /** The order when the list opens: by the first, then the next. */
+  sort?: { field: string; desc?: boolean }[];
+  /** How many records a page holds; 40 unless said. */
+  pageSize?: number;
+  /** The fields what is typed in the search bar is looked for in; the columns unless said. */
+  searchFields?: string[];
+  filters?: ListFilter[];
+  /** The filters on when the list opens, by id. */
+  defaultFilters?: string[];
+  /** The fields the list can be grouped by. */
+  groupBy?: string[];
+  /** Buttons for the records selected. */
+  actions?: ButtonNode[];
+}
+
 /** Anything that can sit inside a section, tab, step or sheet. */
 export type LayoutNode = FieldNode | ButtonNode | TextNode | SlotNode | SectionNode | TabsNode;
 
 /** What a page's `layout` can be: the four page layouts. */
-export type RootLayout = SheetNode | SectionsNode | TabsNode | WizardNode;
+export type RootLayout = SheetNode | SectionsNode | TabsNode | WizardNode | ListNode;
 
 // ---------------------------------------------------------------------------
 // Schemas. Recursion goes through getters on z.strictObject (zod 4's own
@@ -409,6 +441,19 @@ export const SheetNodeSchema = z.strictObject({
   sidePanel: SlotNodeSchema.optional(),
 }).meta({ id: 'SheetNode' });
 
+export const ListNodeSchema = z.strictObject({
+  type: z.literal('list'),
+  id,
+  columns: z.array(fieldName).min(1),
+  sort: z.array(z.strictObject({ field: fieldName, desc: z.boolean().optional() })).optional(),
+  pageSize: z.int().min(1).max(500).optional(),
+  searchFields: z.array(fieldName).optional(),
+  filters: z.array(z.strictObject({ id, label: z.string(), filter: z.array(FilterItemSchema).min(1) })).optional(),
+  defaultFilters: z.array(id).optional(),
+  groupBy: z.array(fieldName).optional(),
+  actions: z.array(ButtonNodeSchema).optional(),
+}).meta({ id: 'ListNode' });
+
 export const RootLayoutSchema = z
-  .discriminatedUnion('type', [SheetNodeSchema, SectionsNodeSchema, TabsNodeSchema, WizardNodeSchema])
+  .discriminatedUnion('type', [SheetNodeSchema, SectionsNodeSchema, TabsNodeSchema, WizardNodeSchema, ListNodeSchema])
   .meta({ id: 'RootLayout' });

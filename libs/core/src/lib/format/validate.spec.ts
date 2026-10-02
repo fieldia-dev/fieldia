@@ -181,6 +181,71 @@ describe('validatePage — filters', () => {
   });
 });
 
+describe('validatePage — lists', () => {
+  const list = (): Record<string, any> => ({
+    fieldia: FORMAT_VERSION,
+    id: 'customers',
+    title: 'Customers',
+    data: { kind: 'record', model: 'partner' },
+    fields: {
+      name: { type: 'char', label: 'Name' },
+      email: { type: 'char', label: 'Email' },
+      country_id: { type: 'many2one', label: 'Country', relation: 'country' },
+      state: { type: 'selection', label: 'Status', options: [{ value: 'active', label: 'Active' }, { value: 'blocked', label: 'Blocked' }] },
+      credit_limit: { type: 'monetary', label: 'Credit limit', currency: 'EGP' },
+    },
+    layout: {
+      type: 'list',
+      id: 'list',
+      columns: ['name', 'email', 'country_id', 'state'],
+      sort: [{ field: 'name' }],
+      pageSize: 40,
+      searchFields: ['name', 'email', 'country_id'],
+      filters: [
+        { id: 'active', label: 'Active', filter: [{ field: 'state', op: '=', value: 'active' }] },
+        { id: 'big', label: 'Big accounts', filter: [{ field: 'credit_limit', op: '>=', value: 100000 }] },
+      ],
+      defaultFilters: ['active'],
+      groupBy: ['country_id', 'state'],
+      actions: [{ type: 'button', id: 'block-all', label: 'Block', action: 'block', style: 'danger', confirm: 'Block these customers?' }],
+    },
+  });
+
+  it('takes a list: its columns, order, page size, filters, Group By and buttons for what is selected', () => {
+    expect(messages(list())).toEqual([]);
+  });
+
+  it('names every field a list asks for that the page does not have', () => {
+    const page = list();
+    page['layout'].columns.push('phone');
+    page['layout'].sort = [{ field: 'joined' }];
+    page['layout'].groupBy = ['city'];
+    page['layout'].searchFields = ['vat'];
+    page['layout'].filters[0].filter = [{ any: [{ field: 'ghost', op: 'set' }] }];
+    page['layout'].defaultFilters = ['nope'];
+    const paths = messages(page).map((m) => m.split(':')[0]);
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        'layout.columns[4]',
+        'layout.sort[0].field',
+        'layout.groupBy[0]',
+        'layout.searchFields[0]',
+        'layout.filters[0].filter[0].any[0].field',
+        'layout.defaultFilters[0]',
+      ])
+    );
+  });
+
+  it('refuses a list on a page that collects responses, and a filter that compares with a field', () => {
+    const responses = list();
+    responses['data'] = { kind: 'responses' };
+    expect(messages(responses).join('\n')).toMatch(/a list shows records/);
+    const page = list();
+    page['layout'].filters[0].filter = [{ field: 'state', op: '=', valueFrom: 'name' }];
+    expect(messages(page).join('\n')).toMatch(/layout\.filters\[0\]\.filter\[0\]\.valueFrom: a list's filter compares with values/);
+  });
+});
+
 describe('validatePage — sheet and layout parts', () => {
   it('takes every part of a sheet, a section, a wizard and a page', () => {
     const page = example('customer');

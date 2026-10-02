@@ -831,6 +831,9 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     }
   } else if (root.type === 'sections') {
     walk(root.children, root.id);
+  } else if (root.type === 'list') {
+    // A list holds no fields of its own record: only the buttons for what is selected.
+    for (const button of root.actions ?? []) add(button, root.id, 'button', { invisible: button.invisible });
   } else {
     // The title and statusbar show fields too, so they are validated like
     // any field node. Their ids start with "#", which no page id can.

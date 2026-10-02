@@ -206,7 +206,7 @@ function containers(page: Page): Container[] {
       walk(tab.children);
     }
   }
-  else {
+  else if (root.type !== 'list') {
     if (root.type === 'sections') found.push(root);
     walk(root.children);
   }

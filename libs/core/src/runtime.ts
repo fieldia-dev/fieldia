@@ -30,6 +30,8 @@ export type {
   ColumnsByWidth,
   LayoutNode,
   RootLayout,
+  ListNode,
+  ListFilter,
 } from './lib/format/layout';
 export { wideColumns } from './lib/format/columns';
 export { FORMAT_VERSION } from './lib/format/version';
@@ -71,6 +73,11 @@ export type {
   LineOp,
   LinkOp,
   SaveProblem,
+  SortOrder,
+  ListRequest,
+  ListResult,
+  GroupRequest,
+  Group,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
