@@ -55,6 +55,14 @@ export interface ViewerLabels {
   close: string;
   /** The × on an alert that may be dismissed. */
   dismiss: string;
+  /** Saving again after a save failed. */
+  retry: string;
+  notSaved: string;
+  notSent: string;
+  /** What was not saved or sent, and the fields to look at. */
+  checkFields: string;
+  /** The banner when the server cannot be reached. */
+  offline: string;
 }
 
 export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
@@ -80,6 +88,11 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     saveClose: 'Save & Close',
     close: 'Close',
     dismiss: 'Dismiss',
+    retry: 'Retry',
+    notSaved: 'Not saved',
+    notSent: 'Not sent',
+    checkFields: '{what}. Check: {fields}',
+    offline: 'Could not reach the server. Your changes are still here.',
   },
   ar: {
     save: 'حفظ',
@@ -103,6 +116,11 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     saveClose: 'حفظ وإغلاق',
     close: 'إغلاق',
     dismiss: 'إخفاء',
+    retry: 'أعد المحاولة',
+    notSaved: 'لم يُحفظ',
+    notSent: 'لم يُرسل',
+    checkFields: '{what}. راجِع: {fields}',
+    offline: 'تعذّر الوصول إلى الخادم. تعديلاتك ما زالت هنا.',
   },
   de: {
     save: 'Speichern',
@@ -126,6 +144,11 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     saveClose: 'Speichern und schließen',
     close: 'Schließen',
     dismiss: 'Ausblenden',
+    retry: 'Erneut versuchen',
+    notSaved: 'Nicht gespeichert',
+    notSent: 'Nicht gesendet',
+    checkFields: '{what}. Bitte prüfen: {fields}',
+    offline: 'Der Server ist nicht erreichbar. Ihre Änderungen sind noch da.',
   },
   fr: {
     save: 'Enregistrer',
@@ -149,6 +172,11 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     saveClose: 'Enregistrer et fermer',
     close: 'Fermer',
     dismiss: 'Masquer',
+    retry: 'Réessayer',
+    notSaved: 'Non enregistré',
+    notSent: 'Non envoyé',
+    checkFields: '{what}. À vérifier : {fields}',
+    offline: 'Le serveur est injoignable. Vos modifications sont toujours là.',
   },
 };
 
@@ -195,6 +223,8 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
   keys?: { saveWithCtrlEnter?: boolean; enterMovesToNext?: boolean };
   /** A ✓ by a field's label once someone has filled it in and it would pass its checks. */
   showValid?: boolean;
+  /** Where a save's progress shows: beside Save (the default), as a toast in a corner, or as a bar across the top. */
+  saveStatus?: 'inline' | 'toast' | 'bar';
 }
 
 export interface ViewerHandle {
@@ -281,7 +311,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     }
     const helpText = node.help ?? def.help;
     const help = helpText ? el('div', { class: 'fd-help', id: `${id}-help` }, helpText) : null;
-    const error = el('div', { class: 'fd-error', id: `${id}-error`, role: 'alert', hidden: '' });
+    // Not an alert of its own: a refused save is announced once, naming every field to look at.
+    const error = el('div', { class: 'fd-error', id: `${id}-error`, hidden: '' });
     // A warning from the data source's onchange, beside the field whose change brought it.
     const warning = el('div', { class: 'fd-warning', role: 'status', hidden: '' });
     wrapper.append(label, widget.element, ...(help ? [help] : []), error, warning);
@@ -467,12 +498,67 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
 
   // ---- shared chrome ----------------------------------------------------------
 
-  const status = el('div', { class: 'fd-status', role: 'status', 'aria-live': 'polite' });
+  // The status says its words alone, so a screen reader hears them; Retry sits beside it.
+  const statusText = el('div', { class: 'fd-status', role: 'status', 'aria-live': 'polite' });
+  const retry = el('button', { type: 'button', class: 'fd-button fd-button-link fd-retry', hidden: '' }, labels.retry);
+  retry.addEventListener('click', () => void submitOrSave());
+  const status = el('div', { class: 'fd-status-box' }, statusText, retry);
+  const notDone = () => (page.data.kind === 'responses' ? labels.notSent : labels.notSaved);
+  /** "Not saved. Check: Email, Phone": the fields with a problem, in the order they show. */
+  function checkText(state: FormState): string {
+    const names: string[] = [];
+    for (const key of Object.keys(state.errors)) {
+      const field = key.split('.')[0];
+      const shown = root.querySelector(`.fd-field[data-field="${field}"]:not([hidden]) > .fd-label`);
+      const name = shown?.firstChild?.textContent ?? page.fields[field]?.label ?? field;
+      if (!names.includes(name)) names.push(name);
+    }
+    const inOrder = [...root.querySelectorAll('.fd-field[data-field] > .fd-label')].map((label) => label.firstChild?.textContent ?? '');
+    names.sort((a, b) => (inOrder.indexOf(a) + 1 || Infinity) - (inOrder.indexOf(b) + 1 || Infinity));
+    return names.length ? fill(labels.checkFields, { what: notDone(), fields: names.join(', ') }) : notDone();
+  }
+  let quietTimer: ReturnType<typeof setTimeout> | undefined;
   updaters.push((state) => {
-    const text = state.status === 'saving' ? labels.saving : state.status === 'saved' ? labels.saved : state.status === 'loading' ? labels.loading : state.status === 'error' ? state.error ?? '' : '';
-    status.textContent = text;
-    status.classList.toggle('fd-status-error', state.status === 'error');
-    status.classList.toggle('fd-status-saved', state.status === 'saved');
+    const problem = state.saveProblem;
+    const text =
+      state.status === 'saving' ? labels.saving
+      : state.status === 'saved' ? labels.saved
+      : state.status === 'loading' ? labels.loading
+      : state.status === 'error' && problem ? (problem.kind === 'fields' ? checkText(state) : problem.kind === 'other' ? problem.message : notDone())
+      : state.status === 'error' ? state.error ?? ''
+      : '';
+    statusText.textContent = text;
+    retry.hidden = !(state.status === 'error' && problem?.kind === 'other');
+    statusText.classList.toggle('fd-status-error', state.status === 'error');
+    statusText.classList.toggle('fd-status-saved', state.status === 'saved');
+    // A toast shows while there is something to say, and lets "Saved" go after a moment.
+    if (options.saveStatus === 'toast') {
+      clearTimeout(quietTimer);
+      status.hidden = !text;
+      if (state.status === 'saved') quietTimer = setTimeout(() => (status.hidden = true), 2500);
+    }
+  });
+
+  // A save the network failed: a banner over the page, with Retry.
+  const bannerRetry = el('button', { type: 'button', class: 'fd-button fd-retry' }, labels.retry);
+  bannerRetry.addEventListener('click', () => void submitOrSave());
+  const banner = el('div', { class: 'fd-banner fd-tone-warning', role: 'alert', hidden: '' }, el('span', { class: 'fd-banner-text' }, labels.offline), bannerRetry);
+  /** Said at once to a screen reader: why a save or send did not go through. */
+  const announcer = el('div', { class: 'fd-announce', role: 'alert', 'aria-live': 'assertive' });
+  function announce(text: string) {
+    announcer.textContent = '';
+    setTimeout(() => (announcer.textContent = text), 0);
+  }
+  // Each new reason a save was refused, from Save or from autosave, is shown where it belongs.
+  let seenProblem: FormState['saveProblem'] = null;
+  updaters.push((state) => {
+    if (state.saveProblem === seenProblem) return;
+    seenProblem = state.saveProblem;
+    banner.hidden = seenProblem?.kind !== 'network';
+    if (!seenProblem) return;
+    if (seenProblem.kind === 'rule') void dialogConfirm(seenProblem.message, false);
+    else if (seenProblem.kind === 'fields') announce(checkText(state));
+    else if (seenProblem.kind === 'other') announce(seenProblem.message);
   });
 
   const draft = el('div', { class: 'fd-draft', hidden: '' });
@@ -507,6 +593,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   async function submitOrSave() {
     const saved = await form.save();
     if (!saved) {
+      // Stopped by the page's own checks: say which fields; a refused save says so above.
+      if (!form.getState().saveProblem) announce(checkText(form.getState()));
       focusFirstProblem();
       return;
     }
@@ -722,7 +810,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     if (atFoot && options.showActions !== false) {
       card.append(foot);
       updaters.push((state) => {
-        foot.hidden = state.dirty.length === 0 && !status.textContent;
+        foot.hidden = state.dirty.length === 0 && !statusText.textContent;
       });
     }
 
@@ -761,8 +849,16 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   else body = sectionsLayout(layout);
 
   const head = layout.type === 'sheet' ? null : pageHead();
-  content.append(...(head ? [head] : []), draft, body);
-  root.append(content, done);
+  content.append(...(head ? [head] : []), banner, draft, body);
+  root.append(content, done, announcer);
+  // The status leaves its place beside Save when the page wants it in a corner or across the top.
+  if (options.saveStatus === 'toast') {
+    status.classList.add('fd-toast');
+    root.append(status);
+  } else if (options.saveStatus === 'bar') {
+    status.classList.add('fd-status-bar');
+    content.prepend(status);
+  }
 
   root.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -819,12 +915,13 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
 
   // ---- confirmation dialog -----------------------------------------------------
 
-  function dialogConfirm(message: string): Promise<boolean> {
+  /** A question with Cancel and OK, or with `withCancel` false a notice with OK alone. */
+  function dialogConfirm(message: string, withCancel = true): Promise<boolean> {
     return new Promise((resolve) => {
       const text = el('p', { id: `${prefix}-confirm` }, message);
       const cancel = el('button', { type: 'button', class: 'fd-button' }, labels.cancel);
       const ok = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.ok);
-      const dialog = el('div', { class: 'fd-dialog', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': text.id }, text, el('div', { class: 'fd-actions fd-actions-end' }, cancel, ok));
+      const dialog = el('div', { class: 'fd-dialog', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': text.id }, text, el('div', { class: 'fd-actions fd-actions-end' }, ...(withCancel ? [cancel, ok] : [ok])));
       const backdrop = el('div', { class: 'fd-dialog-backdrop' }, dialog);
       const close = (answer: boolean) => {
         backdrop.remove();

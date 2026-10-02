@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createMemoryDataSource, type DraftStore, type Page } from '@fieldia/core';
+import { createMemoryDataSource, saveRefused, type DraftStore, type Page } from '@fieldia/core';
 import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', 'examples', 'pages');
@@ -261,6 +261,110 @@ describe('a ✓ on a valid field', () => {
     const { host } = mount('signup', { showValid: true });
     (input(host, 'f-newsletter') as HTMLInputElement).click();
     expect(marked(host, 'f-newsletter')).toBe(false);
+  });
+});
+
+describe('a refused save', () => {
+  /** The customer sheet over a source whose save fails as told until it is let through. */
+  function refusing(failure: () => unknown, options: Partial<ViewerOptions> = {}) {
+    const memory = createMemoryDataSource({ records: { partner: { 1: customer } } });
+    let fail = true;
+    const dataSource = { ...memory, load: memory.load, save: async (r: Parameters<NonNullable<typeof memory.save>>[0]) => {
+      if (fail) throw failure();
+      return memory.save!(r);
+    } };
+    const mounted = mount('customer', { dataSource, recordId: 1, ...options });
+    return { ...mounted, memory, letThrough: () => (fail = false) };
+  }
+  const announced = (host: Element) => host.querySelector('.fd-announce')?.textContent ?? '';
+  const statusText = (host: Element) => host.querySelector('.fd-status')?.textContent ?? '';
+
+  it('puts a server’s field errors under their fields, names them beside Save, and announces it', async () => {
+    const { host, form } = refusing(() => saveRefused({ kind: 'fields', message: 'Check the email', fields: { email: 'This email is taken' } }));
+    await form.settled();
+    type(input(host, 'f-phone'), '+20 2 1111 2222');
+    button(host, 'Save').click();
+    await form.settled();
+    await flush();
+    const error = at(host, 'f-email').querySelector('.fd-error') as HTMLElement;
+    expect(visible(error)).toBe(true);
+    expect(error.textContent).toBe('This email is taken');
+    expect(error.getAttribute('role')).toBeNull();
+    expect(statusText(host)).toBe('Not saved. Check: Email');
+    expect(announced(host)).toBe('Not saved. Check: Email');
+    expect(host.querySelector('.fd-announce')?.getAttribute('aria-live')).toBe('assertive');
+    expect(document.activeElement).toBe(input(host, 'f-email'));
+  });
+
+  it('shows a business rule in a dialog', async () => {
+    const { host, form } = refusing(() => saveRefused({ kind: 'rule', message: 'A blocked customer cannot be given credit.' }));
+    await form.settled();
+    type(input(host, 'f-phone'), '+20 2 1111 2222');
+    button(host, 'Save').click();
+    await form.settled();
+    await flush();
+    const notice = document.querySelector('[role=alertdialog]') as HTMLElement;
+    expect(notice.textContent).toContain('A blocked customer cannot be given credit.');
+    expect(statusText(host)).toBe('Not saved');
+    button(notice, 'OK').click();
+    expect(document.querySelector('[role=alertdialog]')).toBeNull();
+  });
+
+  it('shows a network failure in a banner with Retry, and Retry saves again', async () => {
+    const { host, form, memory, letThrough } = refusing(() => new TypeError('Failed to fetch'));
+    await form.settled();
+    type(input(host, 'f-phone'), '+20 2 1111 2222');
+    button(host, 'Save').click();
+    await form.settled();
+    await flush();
+    const banner = host.querySelector('.fd-banner') as HTMLElement;
+    expect(visible(banner)).toBe(true);
+    expect(banner.getAttribute('role')).toBe('alert');
+    expect(banner.textContent).toContain('Could not reach the server. Your changes are still here.');
+    letThrough();
+    button(banner, 'Retry').click();
+    await form.settled();
+    await flush();
+    expect(memory.records['partner'][1]['phone']).toBe('+20 2 1111 2222');
+    expect(visible(banner)).toBe(false);
+  });
+
+  it('shows any other failure beside Save, with Retry', async () => {
+    const { host, form, letThrough } = refusing(() => new Error('The server said no'));
+    await form.settled();
+    type(input(host, 'f-phone'), '+20 2 1111 2222');
+    button(host, 'Save').click();
+    await form.settled();
+    await flush();
+    expect(statusText(host)).toBe('The server said no');
+    expect(announced(host)).toBe('The server said no');
+    letThrough();
+    button(host.querySelector('.fd-status-box') as HTMLElement, 'Retry').click();
+    await form.settled();
+    await flush();
+    expect(statusText(host)).toBe('Saved');
+    expect(button(host.querySelector('.fd-status-box') as HTMLElement, 'Retry')).toBeUndefined();
+  });
+
+  it('announces a send the page’s own checks stop, naming the fields', async () => {
+    const { host, form } = mount('signup', { dataSource: createMemoryDataSource() });
+    button(host, 'Submit').click();
+    await form.settled();
+    await flush();
+    expect(announced(host)).toBe('Not sent. Check: Full name, Email, Your role');
+  });
+
+  it('shows the status as a toast or as a bar when asked', async () => {
+    const toast = sheet({ saveStatus: 'toast' });
+    await toast.form.settled();
+    expect(toast.host.querySelector('.fd-status-box')?.classList.contains('fd-toast')).toBe(true);
+    expect(toast.host.querySelector('.fd-status')?.closest('.fd-header')).toBeNull();
+    toast.host.remove();
+    const bar = sheet({ saveStatus: 'bar' });
+    await bar.form.settled();
+    const status = bar.host.querySelector('.fd-status-box') as HTMLElement;
+    expect(status.classList.contains('fd-status-bar')).toBe(true);
+    expect(bar.host.querySelector('.fd-content')?.firstElementChild).toBe(status);
   });
 });
 
