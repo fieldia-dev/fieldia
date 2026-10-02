@@ -417,9 +417,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const fresh = new Set<string>();
   /** Lines Escape was pressed in, with how they were: the first of their editors to close acts on it. */
   const cancelling = new Map<string, Values>();
-  cell.cancel = (key, before) => {
-    if (!cancelling.has(key)) cancelling.set(key, before);
-  };
+  // Every editor of an open line took the same picture of it, so any one will do.
+  cell.cancel = (key, before) => void cancelling.set(key, before);
   cell.finish = (key) => {
     const before = cancelling.get(key);
     if (!before) return void fresh.delete(key);
