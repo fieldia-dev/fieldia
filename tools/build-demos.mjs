@@ -13,7 +13,10 @@ const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain'
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
-for (const file of ['demo.css', 'demo-nav.js']) cpSync(join(WORKSPACE, 'demos', file), join(OUT, file));
+// The frame every demo shares, and the list of demos it shows.
+for (const file of ['demo.css', 'shell.css', 'shell.mjs', 'catalog.mjs']) cpSync(join(WORKSPACE, 'demos', file), join(OUT, file));
+cpSync(join(WORKSPACE, 'site/favicon.svg'), join(OUT, 'logo.svg'));
+cpSync(join(WORKSPACE, 'demos/thumbs'), join(OUT, 'thumbs'), { recursive: true });
 
 const SCRIPT_BUNDLE = join(WORKSPACE, 'dist/libs/viewer/bundle/fieldia.js');
 

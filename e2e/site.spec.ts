@@ -65,15 +65,24 @@ test('a link to a heading shows the heading below the bar, not under it', async 
   }
 });
 
-test('every demo the site links to opens a working form', async ({ page }) => {
+test('the gallery shows every demo with its thumbnail, featured first, and each opens a working form', async ({ page }) => {
   const problems = watch(page);
   await page.goto(SITE + '/demos/');
-  const demos = await page.locator('.demo-card a').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).getAttribute('href') as string));
-  // Six pages in each of four frameworks, and the script tag's one.
-  expect(demos.length).toBe(25);
-  for (const href of demos) {
+  const sections = await page.locator('.gallery-section h2').allTextContents();
+  expect(sections[0]).toMatch(/Featured/);
+  const cards = page.locator('a.demo-card');
+  const hrefs = [...new Set(await cards.evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).getAttribute('href') as string)))];
+  // Every demo of the catalog, once each, and the four featured again at the top.
+  expect(hrefs.length).toBe(14);
+  await expect(cards).toHaveCount(18);
+  for (const image of await page.locator('.demo-thumb img').all()) {
+    await image.scrollIntoViewIfNeeded();
+    await expect.poll(() => image.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(600);
+  }
+  for (const href of hrefs) {
     await page.goto(SITE + href);
     await expect(page.locator('.fd-form').first(), href).toBeVisible();
+    await expect(page.locator('.dh-title'), href).not.toBeEmpty();
   }
   expect(problems).toEqual([]);
 });

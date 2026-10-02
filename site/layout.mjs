@@ -9,7 +9,6 @@ export const DOCS = [
   { path: '/lists/', title: 'Lists and search' },
   { path: '/chatter/', title: 'Chatter' },
   { path: '/look/', title: 'Skins and languages' },
-  { path: '/demos/', title: 'Demos' },
 ];
 
 const escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -47,7 +46,7 @@ export function layout({ path, title, description, body, wide = false }) {
   <a class="brand" href="/"><span class="mark" aria-hidden="true"></span>Fieldia</a>
   <nav class="top-nav" aria-label="Site">
     <a href="/start/"${docs ? ' aria-current="true"' : ''}>Docs</a>
-    <a href="/demos/">Demos</a>
+    <a href="/demos/"${path === '/demos/' ? ' aria-current="page"' : ''}>Demos</a>
     <a href="https://github.com/fieldia-dev/fieldia">GitHub</a>
   </nav>
 </header>

@@ -1,43 +1,49 @@
-import { c } from '../layout.mjs';
+import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, demoHref } from '../../demos/catalog.mjs';
 
-const FRAMEWORKS = [
-  ['plain', 'Plain JavaScript', 'One call to mountViewer, no framework.'],
-  ['react', 'React', 'FieldiaForm, with a custom field and a slot written as React components.'],
-  ['vue', 'Vue', 'FieldiaForm, with a custom field and a slot as Vue components.'],
-  ['angular', 'Angular', 'fieldia-form, with a custom field and a slot as Angular components.'],
-];
-const PAGES = [
-  ['signup', 'Workshop sign-up', 'sections, conditions, validation, a response'],
-  ['survey', 'Survey', 'a wizard that skips the steps that do not apply, with a step list to click and an optional step'],
-  ['customer', 'Customer record', 'a business sheet: statusbar, stat buttons, badges, Individual/Company over the name, tabs, lines, links, and its chatter'],
-  ['customers', 'Customers', 'a list: a search bar with suggestions, filters, group by and favourites; sorting, pages, and buttons for the records chosen; a row opens its customer'],
-  ['fields', 'Every field', 'one record using every widget, with foldable sections'],
-  ['order', 'Sales order', 'header groups, and the lines grid: spreadsheet keys, sections and notes, moving lines, totals, columns'],
-];
+const esc = (text) => String(text).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+/** One demo as a card: its thumbnail, its name, the first lines of what it shows, and where it runs. */
+function card(demo) {
+  const colour = CATEGORIES.find((c) => c.id === demo.category)?.colour ?? '#0b5cad';
+  const where = demo.app ? 'One HTML file' : FRAMEWORKS.map((f) => f.label).join(' · ');
+  return `<a class="demo-card" href="/demos/${esc(demoHref(demo))}" style="--cat: ${colour}">
+    <span class="demo-thumb"><img src="/demos/thumbs/${demo.id}.png" alt="" width="600" height="360" loading="lazy"></span>
+    <span class="demo-name">${esc(demo.name)}<span class="demo-go" aria-hidden="true">→</span></span>
+    <span class="demo-blurb">${esc(demo.blurb)}</span>
+    <span class="demo-where">${where}</span>
+  </a>`;
+}
+
+const featured = FEATURED.map((id) => DEMOS.find((d) => d.id === id)).filter(Boolean);
+const sections = CATEGORIES.map((category) => {
+  const demos = DEMOS.filter((d) => d.category === category.id);
+  if (!demos.length) return '';
+  return `<section class="gallery-section" id="${category.id}" aria-labelledby="${category.id}-h">
+    <h2 id="${category.id}-h">${esc(category.label)} <span class="count">${demos.length}</span></h2>
+    <div class="gallery">${demos.map(card).join('')}</div>
+  </section>`;
+}).join('');
 
 export default {
   path: '/demos/',
   title: 'Demos',
-  description: 'The same six Fieldia pages running in plain JavaScript, React, Vue, Angular and a script tag.',
+  description: `${DEMOS.length} live Fieldia demos, each driven by the browser tests on every change, in plain JavaScript, React, Vue and Angular: business records, lists and search, forms and surveys, every field.`,
   body: `
-<p class="lead">The same six pages in every framework. They are the pages the browser tests drive, so what you see here is what is tested on every change.</p>
-
-<div class="demo-grid">
-${FRAMEWORKS.map(
-  ([id, name, about]) => `  <article class="demo-card">
-    <h2>${name}</h2>
-    <p>${about}</p>
-    <ul>
-${PAGES.map(([page, title, shows]) => `      <li><a href="/demos/${id}/?page=${page}&amp;skin=${page === 'customer' || page === 'order' ? 'underline' : 'outlined'}">${title}</a> — ${shows}</li>`).join('\n')}
-    </ul>
-  </article>`
-).join('\n')}
-  <article class="demo-card">
-    <h2>A script tag</h2>
-    <p>No build step: the page loads ${c('fieldia.js')} and calls ${c('Fieldia.mountViewer')}.</p>
-    <ul><li><a href="/demos/script/">Ask for a call back</a> — view the page source to see all of it</li></ul>
-  </article>
-</div>
-<p>Add ${c('&dir=rtl')} or ${c('&locale=ar')} to any demo's address to see it right to left.</p>
-`,
+<header class="gallery-hero">
+  <h1>Demo gallery</h1>
+  <p class="lead"><b>Every demo here is a test.</b> Fieldia’s browser tests drive each of these pages on every change, in plain JavaScript, React, Vue and Angular: if it is here, it works. A demo opens in plain JavaScript; switch framework or look at its top, read how to try it, and open its code.</p>
+  <div class="chips">
+    <span class="chip"><b>${DEMOS.length}</b> demos</span>
+    <span class="chip"><b>${FRAMEWORKS.length}</b> frameworks</span>
+    <span class="chip"><b>MIT</b> — every one of them</span>
+    <a class="chip chip-link" href="/start/">Get started →</a>
+  </div>
+</header>
+<div class="gallery-body">
+  <section class="gallery-section featured" id="featured" aria-labelledby="featured-h">
+    <h2 id="featured-h">★ Featured <span class="count">start here</span></h2>
+    <div class="gallery">${featured.map(card).join('')}</div>
+  </section>
+  ${sections}
+</div>`,
 };

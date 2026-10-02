@@ -1,0 +1,93 @@
+/* The frame around every demo: header, menu, how-to panel and code drawer. The demo inside styles itself. */
+:root {
+  --dh-ink: #1b1f24;
+  --dh-muted: #5b6470;
+  --dh-line: #e3e6ea;
+  --dh-surface: #ffffff;
+  --dh-page: #f6f7f9;
+  --dh-brand: #002855;
+  --dh-link: #0b5cad;
+  --dh-wash: #e7f0fb;
+  --dh-nav: 264px;
+  --dh-howto: 300px;
+}
+
+/* ---- header ---- */
+#demo-head { background: var(--dh-surface); border-bottom: 1px solid var(--dh-line); padding: 10px 20px 12px; }
+.dh-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; min-height: 32px; }
+.dh-brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; color: var(--dh-ink); text-decoration: none; }
+.dh-mark { width: 22px; height: 22px; border-radius: 5px; background: var(--dh-brand) url("logo.svg") center / cover; }
+.dh-crumb { color: var(--dh-muted); font-size: 13px; padding-inline-start: 10px; border-inline-start: 1px solid var(--dh-line); }
+.dh-pills { display: inline-flex; padding: 2px; border: 1px solid var(--dh-line); border-radius: 999px; background: var(--dh-page); }
+.dh-pills a { padding: 3px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--dh-muted); text-decoration: none; }
+.dh-pills a:hover { color: var(--dh-ink); }
+.dh-pills a[aria-current="page"] { background: var(--dh-brand); color: #fff; }
+.dh-links { margin-inline-start: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; font-size: 13.5px; }
+.dh-links a { color: var(--dh-link); text-decoration: none; }
+.dh-links a:hover { text-decoration: underline; }
+.dh-code { font: inherit; font-size: 12.5px; font-weight: 600; color: var(--dh-link); background: var(--dh-wash); border: 1px solid #b8d3f2; border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+.dh-code[aria-expanded="true"] { background: var(--dh-link); color: #fff; border-color: var(--dh-link); }
+.dh-menu { width: 32px; height: 32px; border: 1px solid var(--dh-line); border-radius: 6px; background: var(--dh-surface); cursor: pointer; display: grid; place-items: center; }
+.dh-menu span, .dh-menu span::before, .dh-menu span::after { display: block; width: 14px; height: 1.5px; background: var(--dh-ink); position: relative; content: ''; }
+.dh-menu span::before { position: absolute; top: -4.5px; }
+.dh-menu span::after { position: absolute; top: 4.5px; }
+.dh-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin-block-start: 8px; }
+.dh-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; color: var(--dh-ink); }
+.dh-skins { margin-inline-start: auto; }
+@media (max-width: 600px) {
+  /* A phone keeps the way back to the gallery and the code; the rest is a click away there. */
+  .dh-links a:not(:first-of-type) { display: none; }
+}
+
+/* ---- the menu of every demo ---- */
+#demo-nav { position: fixed; inset-block: 0; inset-inline-start: 0; width: var(--dh-nav); z-index: 40; background: var(--dh-surface); border-inline-end: 1px solid var(--dh-line); display: flex; flex-direction: column; transform: translateX(-100%); transition: transform 0.18s ease; font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+[dir="rtl"] #demo-nav { transform: translateX(100%); }
+body.dn-open #demo-nav { transform: none; box-shadow: 0 0 24px rgba(15, 23, 42, 0.12); }
+.dn-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--dh-line); font-weight: 700; }
+.dn-close { border: none; background: none; font-size: 18px; color: var(--dh-muted); cursor: pointer; padding: 0 4px; }
+.dn-filter { margin: 12px; padding: 7px 10px; border: 1px solid var(--dh-line); border-radius: 8px; font: inherit; font-size: 13.5px; }
+.dn-list { flex: 1; overflow-y: auto; padding: 0 8px 12px; }
+.dn-cat { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dh-muted); padding: 14px 8px 4px; }
+.dn-item { display: block; padding: 6px 10px; border-radius: 6px; color: var(--dh-ink); text-decoration: none; }
+.dn-item:hover { background: var(--dh-page); }
+.dn-item[aria-current="page"] { background: var(--dh-wash); color: var(--dh-link); font-weight: 600; box-shadow: inset 3px 0 0 var(--dh-link); }
+/* A display of their own would beat [hidden]: what the filter hides must go. */
+#demo-nav [hidden] { display: none; }
+.dn-foot { padding: 10px 16px; border-top: 1px solid var(--dh-line); color: var(--dh-muted); font-size: 12px; }
+.dn-foot a { color: var(--dh-link); }
+
+/* ---- about and how to try it ---- */
+#demo-howto { position: fixed; inset-block-start: 12px; inset-inline-end: 12px; width: calc(var(--dh-howto) - 24px); max-height: calc(100vh - 24px); overflow-y: auto; z-index: 30; background: var(--dh-surface); border: 1px solid var(--dh-line); border-radius: 12px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12); font: 13.5px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--dh-ink); display: none; }
+body.ht-open #demo-howto { display: block; }
+.ht-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 8px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dh-link); }
+.ht-close { border: none; background: none; font-size: 18px; color: var(--dh-muted); cursor: pointer; }
+.ht-about { margin: 0 14px 12px; color: var(--dh-muted); }
+.ht-steps { margin: 0 14px; padding-top: 10px; border-top: 1px solid var(--dh-line); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dh-muted); }
+#demo-howto ol { margin: 8px 14px 12px; padding-inline-start: 18px; display: grid; gap: 8px; }
+.ht-tested { margin: 0; padding: 10px 14px 12px; border-top: 1px solid var(--dh-line); color: var(--dh-muted); font-size: 12px; }
+#demo-howto-open { position: fixed; inset-block-end: 18px; inset-inline-end: 18px; z-index: 30; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--dh-line); background: var(--dh-surface); color: var(--dh-link); font: 700 18px system-ui, sans-serif; cursor: pointer; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.14); }
+body.ht-open #demo-howto-open { display: none; }
+
+/* On a wide screen the menu and the panel take room of their own, so they never cover the demo. */
+@media (min-width: 1100px) {
+  body.dn-open { padding-inline-start: var(--dh-nav); }
+  body.dn-open #demo-nav { box-shadow: none; }
+}
+@media (min-width: 1280px) {
+  body.ht-open { padding-inline-end: var(--dh-howto); }
+}
+
+/* ---- code ---- */
+#demo-code { position: fixed; inset-inline: 0; inset-block-end: 0; height: 46vh; z-index: 35; background: var(--dh-surface); border-top: 1px solid var(--dh-line); box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.12); display: flex; flex-direction: column; font: 13.5px system-ui, -apple-system, "Segoe UI", sans-serif; }
+#demo-code[hidden] { display: none; }
+body.dc-open { padding-block-end: 46vh; }
+@media (min-width: 1100px) { body.dn-open #demo-code { inset-inline-start: var(--dh-nav); } }
+@media (min-width: 1280px) { body.ht-open #demo-code { inset-inline-end: var(--dh-howto); } }
+.dc-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 6px 12px; border-bottom: 1px solid var(--dh-line); }
+.dc-tabs { display: flex; gap: 2px; }
+.dc-tabs button { border: none; background: none; padding: 8px 12px; font: inherit; font-weight: 600; color: var(--dh-muted); border-bottom: 2px solid transparent; cursor: pointer; }
+.dc-tabs button[aria-selected="true"] { color: var(--dh-link); border-bottom-color: var(--dh-link); }
+.dc-note { color: var(--dh-muted); font-size: 12.5px; flex: 1; min-width: 0; }
+.dc-copy { border: 1px solid #b8d3f2; background: var(--dh-wash); color: var(--dh-link); border-radius: 6px; padding: 4px 12px; font: inherit; font-weight: 600; cursor: pointer; }
+.dc-close { border: none; background: none; font-size: 18px; color: var(--dh-muted); cursor: pointer; }
+.dc-code { flex: 1; margin: 0; overflow: auto; padding: 14px 18px; background: #fbfcfd; font: 12.5px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: #24292f; white-space: pre; }

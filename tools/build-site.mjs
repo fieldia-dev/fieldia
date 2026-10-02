@@ -43,7 +43,8 @@ writeFileSync(
 for (const file of ['site.css', 'live.js', 'favicon.svg']) cpSync(join(WORKSPACE, 'site', file), join(OUT, file));
 cpSync(BUNDLE, join(OUT, 'fieldia.js'));
 cpSync(join(WORKSPACE, 'examples/pages'), join(OUT, 'examples'), { recursive: true });
-for (const file of ['demo.css', 'demo-nav.js']) cpSync(join(DEMOS, file), join(OUT, 'demos', file));
+for (const file of ['demo.css', 'shell.css', 'shell.mjs', 'catalog.mjs', 'logo.svg']) cpSync(join(DEMOS, file), join(OUT, 'demos', file));
+cpSync(join(DEMOS, 'thumbs'), join(OUT, 'demos/thumbs'), { recursive: true });
 for (const demo of PUBLIC_DEMOS) cpSync(join(DEMOS, demo), join(OUT, 'demos', demo), { recursive: true });
 
 console.log(`site: ${[...paths].join(' ')} → dist/site`);
