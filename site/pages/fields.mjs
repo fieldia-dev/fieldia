@@ -1,24 +1,24 @@
 import { c, code } from '../layout.mjs';
 
 const ROWS = [
-  ['char', 'One line of text', 'email, phone, url, password', 'size, pattern'],
+  ['char', 'One line of text', 'email, phone, url, password, tags (free text)', 'size, pattern'],
   ['text', 'Several lines of text', '', 'size'],
-  ['html', 'Formatted text, cleaned of scripts on every change', '', ''],
-  ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons)', 'min, max'],
-  ['float', 'A decimal number', '', 'min, max, digits'],
-  ['monetary', 'An amount of money', '', 'currencyField or currency, min, max, digits'],
+  ['html', 'Formatted text with a toolbar, cleaned of scripts on every change', '', ''],
+  ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label', 'min, max'],
+  ['float', 'A decimal number', 'progressbar, label', 'min, max, digits'],
+  ['monetary', 'An amount of money', 'progressbar, label', 'currencyField or currency, min, max, digits'],
   ['boolean', 'Yes or no', 'toggle', ''],
   ['date', 'A date', '', ''],
   ['datetime', 'A date and a time', '', ''],
-  ['selection', 'One choice from a list, or several with multiple', 'radio, checkboxes', 'options, multiple'],
-  ['many2one', 'A link to one record of another model, found by typing', '', 'relation, filter'],
+  ['selection', 'One choice from a list, or several with multiple', 'radio, checkboxes, statusbar', 'options, multiple'],
+  ['many2one', 'A link to one record of another model, found by typing', 'statusbar', 'relation, filter'],
   ['many2many', 'Links to several records', 'tags, checkboxes', 'relation, filter'],
   ['one2many', 'A table of lines that belong to this record', '', 'relation, fields; columns on the node'],
   ['reference', 'A link to a record of one of several models', '', 'models'],
   ['binary', 'A file, uploaded or dropped', '', 'accept, maxSize'],
   ['image', 'An image, with a preview', '', 'maxSize'],
-  ['json', 'Structured data, checked as it is typed', '', ''],
-  ['properties', 'Extra values shown read-only', '', ''],
+  ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code)', ''],
+  ['properties', 'Extra values, each edited with the field for its type', '', 'definitions'],
 ];
 
 /** "currencyField or currency" → both names as code; "columns on the node" → the name as code. */
@@ -30,7 +30,7 @@ export default {
   description: 'The eighteen Fieldia field types, how each can be shown, and how to add your own widget.',
   wide: true,
   body: `
-<p class="lead">Every field has a ${c('type')}: what kind of value it holds. A field node can pick a ${c('widget')}: how that value is shown. Leave the widget out and the type's own is used.</p>
+<p class="lead">Every field has a ${c('type')}: what kind of value it holds. A field node can pick a ${c('widget')}, how that value is shown, and give it ${c('options')}. Leave the widget out and the type's own is used.</p>
 
 <div class="table-scroll">
 <table class="fields">
@@ -41,6 +41,36 @@ ${ROWS.map(([type, holds, widgets, options]) => `    <tr><td>${c(type)}</td><td>
 </table>
 </div>
 <p>Every type also takes ${c('label')}, ${c('help')}, ${c('required')}, ${c('readonly')} and ${c('default')}. To see them all at once, open <a href="/demos/plain/?page=fields&amp;skin=outlined">the every-field demo</a>.</p>
+
+<h2 id="options">Widget options</h2>
+<p>A node's ${c('options')} tune its widget. An option whose name ends in ${c('Field')} names another field of the page, and the format checks that it exists.</p>
+${code(
+  'json',
+  `
+{
+  "type": "field", "id": "f-spent", "field": "spent",
+  "widget": "progressbar",
+  "options": { "maxField": "budget" }
+}`
+)}
+<div class="table-scroll">
+<table>
+  <thead><tr><th>Widget</th><th>Options</th></tr></thead>
+  <tbody>
+    <tr><td>${c('progressbar')}</td><td>${c('max')} (100), ${c('maxField')}, ${c('color')} (${c('auto')}: red under 30 %, yellow under 70 %, green from there; or a fixed ${c('success')}, ${c('warning')}, ${c('danger')}, ${c('info')}), ${c('showPercent')}, ${c('editable')} (a box beside the bar)</td></tr>
+    <tr><td>${c('label')}</td><td>${c('prefix')}, ${c('suffix')}, or ${c('prefixField')}, ${c('suffixField')} to take them from another field: “240.0 m”, “370,000.00 EGP”</td></tr>
+    <tr><td>${c('tags')} on a ${c('char')}</td><td>${c('suggestions')} (a list of words), ${c('separator')} (${c('","')}). Kept as ${c('"oak, glass"')}</td></tr>
+    <tr><td>${c('statusbar')}</td><td>${c('clickable')}, ${c('visibleStates')}. On a ${c('many2one')} its steps are the records the link may point to</td></tr>
+    <tr><td>a ${c('monetary')} field</td><td>${c('symbol')}: ${c('"after"')} puts the currency after the amount; ${c('pickCurrency')}: a currency box beside the amount</td></tr>
+    <tr><td>a ${c('date')} or ${c('datetime')}</td><td>${c('weekNumbers')}: a calendar beside the date, with ISO week numbers</td></tr>
+    <tr><td>an ${c('html')} field</td><td>${c('toolbar')}: ${c('false')} leaves the formatting toolbar off</td></tr>
+    <tr><td>a ${c('many2one')} or ${c('many2many')}</td><td>${c('create')}: ${c('false')} never offers to make a record from what was typed</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="numbers">Numbers in the reader's language</h2>
+<p>Numbers are written grouped, with the field's ${c('digits')} (two for money and decimals by default), the way readers of the page's ${c('locale')} write them: ${c('1,850,000.00')} in English, ${c('1.850.000,00')} in German, ${c('1 850 000,00')} in French, in Latin digits in Arabic. What is typed is read the same way, Arabic-Indic digits included.</p>
 
 <h2 id="relations">Links to other records</h2>
 <p>${c('many2one')}, ${c('many2many')} and ${c('reference')} find records through your data source's ${c('search')}. A ${c('filter')} limits what can be picked, and ${c('valueFrom')} follows another field — here, the regions of the chosen country:</p>
@@ -54,6 +84,8 @@ ${code(
   "filter": [{ "field": "country_id", "op": "=", "valueFrom": "country_id" }]
 }`
 )}
+
+<p>When nothing found has the name that was typed, the list ends with <em>Create “…”</em>: it makes the record through the data source's ${c('create')} and links to it. It is offered only when the data source can create, and never on a node with ${c('"create": false')}.</p>
 
 <h2 id="lines">Tables of lines</h2>
 <p>A ${c('one2many')} declares the fields of each line; the node's ${c('columns')} says which show as columns. Lines are added, edited and removed in place, and saved as ${c('create')}, ${c('update')} and ${c('delete')} operations — see <a href="/data/#changes">what a save sends</a>.</p>
@@ -127,6 +159,17 @@ mountViewer(host, { page, dataSource, widgets: gridWidgets });
   <li><strong>Long tables</strong> stop growing at 15 lines and scroll inside, drawing only the rows in view.</li>
   <li><strong>A whole line at once.</strong> ${c('"editMode": "row"')} on the node opens every cell of a line together, as an editable list does.</li>
 </ul>
+
+<h2 id="code">JSON in a code editor</h2>
+<p>${c('@fieldia/code')} shows a ${c('json')} field in CodeMirror, bundled with the package, so it works offline and loads only where it is used. Valid JSON reaches the form as it is typed; text that is not valid is said so, and the last good value stays.</p>
+${code(
+  'ts',
+  `
+import { codeWidgets } from '@fieldia/code';
+
+mountViewer(host, { page, dataSource, widgets: { ...gridWidgets, ...codeWidgets } });
+// a json node with "widget": "code" now shows the editor`
+)}
 
 <h2 id="custom">Your own widget</h2>
 <p>A widget is a function that gets the field and returns an element, an ${c('update')} that receives the current value, and a ${c('focus')}. Register it under a type, or under ${c('type.widget')} to offer it as a choice:</p>

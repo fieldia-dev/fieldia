@@ -15,6 +15,7 @@ interface DataSource {
   save?(request: SaveRequest): Promise<SaveResult>;          // create or update it
   onchange?(request: OnchangeRequest): Promise<OnchangeResult>;  // recalculate after a change
   search?(request: SearchRequest): Promise<RelatedRecord[]>; // find records to link to
+  create?(request: CreateRequest): Promise<RelatedRecord>;   // make one from a typed name
   submit?(request: SubmitRequest): Promise<SubmitResult>;    // store one response
 }`
 )}
@@ -26,6 +27,7 @@ interface DataSource {
     <tr><td>${c('save')}</td><td>Someone presses Save (or autosave fires)</td><td>Record pages</td></tr>
     <tr><td>${c('onchange')}</td><td>A value changes, so the backend can fill in others</td><td>Totals, defaults that depend on other fields</td></tr>
     <tr><td>${c('search')}</td><td>Someone types in a many2one, many2many or reference</td><td>Links to other records</td></tr>
+    <tr><td>${c('create')}</td><td>Someone picks <em>Create “…”</em> in a link field</td><td>Making a record without leaving the page</td></tr>
     <tr><td>${c('submit')}</td><td>Someone sends a responses page</td><td>Surveys, sign-ups</td></tr>
   </tbody>
 </table>
@@ -36,6 +38,7 @@ interface DataSource {
   <li>${c('save({ model, id, fields, changes, values })')} — ${c('id')} is ${c('null')} for a new record. ${c('changes')} holds only what changed since the record was loaded; ${c('values')} holds everything, for backends that save whole records. Return ${c('{ id }')}, and ${c('values')} if your backend recalculated anything.</li>
   <li>${c('onchange({ model, id, changed, values })')} — return ${c('{ values }')} for the fields to update, and an optional ${c('warning')}. The warning appears under the field that changed, without blocking, and goes away with the next answer that has none.</li>
   <li>${c('search({ model, query, filter, limit })')} — the field's filter arrives with every ${c('valueFrom')} already replaced by its value. Return ${c('[{ id, label }]')}.</li>
+  <li>${c('create({ model, name })')} — make a record from just its name (a backend's ${c('name_create')}). Return ${c('{ id, label }')}.</li>
   <li>${c('submit({ pageId, values })')} — the answers to the questions that were shown; skipped steps are left out.</li>
 </ul>
 <p>A slow answer is handled for you: if someone keeps typing, an ${c('onchange')} or ${c('search')} answer that arrives after a newer question is ignored.</p>

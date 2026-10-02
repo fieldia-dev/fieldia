@@ -17,7 +17,7 @@ npm install @fieldia/react      # React 18 or 19
 npm install @fieldia/vue        # Vue 3
 npm install @fieldia/angular    # Angular 21 or 22`
 )}
-<p>Tables of lines that should edit like a spreadsheet add ${c('@fieldia/grid')} — see <a href="/fields/#grid">the grid</a>.</p>
+<p>Tables of lines that should edit like a spreadsheet add ${c('@fieldia/grid')} — see <a href="/fields/#grid">the grid</a>; JSON in a code editor adds ${c('@fieldia/code')} — see <a href="/fields/#code">the code editor</a>.</p>
 <p>No bundler? Load the script bundle instead — it sets the global ${c('Fieldia')}. See <a href="#script">a script tag</a> below.</p>
 
 <h2 id="first-page">A first page</h2>
