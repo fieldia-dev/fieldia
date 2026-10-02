@@ -383,6 +383,35 @@ export const FIELDIA_CSS = /* css */ `
 .fd-progress { display: grid; gap: 8px; }
 .fd-progress-text { color: var(--fd-muted); font-size: 13px; }
 .fd-value-text { display: block; padding-block: 6px; font-variant-numeric: tabular-nums; }
+.fd-date-pick { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.fd-date-pick > .fd-input { flex: 1 1 auto; min-width: 0; }
+.fd-calendar-button {
+  flex: 0 0 auto; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; cursor: pointer;
+  border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); background: var(--fd-surface); color: var(--fd-muted);
+}
+.fd-calendar-button:hover, .fd-calendar-button[aria-expanded="true"] { color: var(--fd-text); background: var(--fd-page); }
+.fd-calendar-button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
+.fd-calendar {
+  position: absolute; inset-block-start: calc(100% + 4px); inset-inline-end: 0; z-index: 30; padding: 8px;
+  background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 6px);
+  box-shadow: 0 8px 24px rgba(15, 20, 25, 0.14);
+}
+.fd-calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 4px 6px; }
+.fd-calendar-head button { border: none; background: none; cursor: pointer; font-size: 18px; line-height: 1; padding: 4px 8px; border-radius: 4px; color: var(--fd-text); }
+.fd-calendar-head button:hover { background: var(--fd-page); }
+.fd-calendar-title { font-weight: 600; }
+.fd-calendar-grid { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.fd-calendar-grid th { font-size: 11.5px; font-weight: 600; color: var(--fd-muted); padding: 4px 0; width: 34px; text-align: center; }
+.fd-calendar-grid .fd-week { color: var(--fd-accent); font-weight: 600; border-inline-end: 1px solid var(--fd-border); }
+.fd-calendar-grid td { padding: 1px; }
+.fd-calendar-grid td button {
+  width: 32px; height: 30px; border: none; border-radius: 4px; background: none; cursor: pointer; color: var(--fd-text); font: inherit; font-size: 13px;
+}
+.fd-calendar-grid td button:hover { background: var(--fd-accent-soft); }
+.fd-calendar-grid td button.fd-outside { color: var(--fd-muted); opacity: 0.6; }
+.fd-calendar-grid td button[aria-current="date"] { box-shadow: inset 0 0 0 1px var(--fd-accent); }
+.fd-calendar-grid td button[aria-selected="true"] { background: var(--fd-accent); color: var(--fd-accent-text); font-weight: 600; }
+.fd-calendar-grid td button:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
 .fd-progressbar {
   position: relative; height: 22px; min-width: 120px; border-radius: 999px; overflow: hidden;
   background: var(--fd-page); border: 1px solid var(--fd-border); font-variant-numeric: tabular-nums;

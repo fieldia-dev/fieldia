@@ -19,6 +19,7 @@ import { binaryWidget, imageWidget } from './files';
 import { progressbarWidget } from './progress';
 import { labelWidget } from './label';
 import { statusbarWidget } from './statusbar';
+import { withCalendar } from './calendar';
 import { htmlWidget, jsonWidget } from './extras';
 
 /**
@@ -329,10 +330,11 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
   };
 }
 
-const dateWidget: WidgetFactory = ({ form, name, id, document }) => {
+const dateWidget: WidgetFactory = (context) => {
+  const { form, name, id, document, node } = context;
   const input = make(document, 'input', { id, type: 'date', class: 'fd-input fd-date' });
   input.addEventListener('input', () => form.setValue(name, input.value || null));
-  return {
+  const widget: Widget = {
     element: input,
     focus: () => input.focus(),
     update(state) {
@@ -342,12 +344,14 @@ const dateWidget: WidgetFactory = ({ form, name, id, document }) => {
       describe(input, state);
     },
   };
+  return node.options?.['weekNumbers'] === true ? withCalendar(widget, context, 'date') : widget;
 };
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
 /** Shown in local time, stored as an ISO instant in UTC. */
-const dateTimeWidget: WidgetFactory = ({ form, name, id, document }) => {
+const dateTimeWidget: WidgetFactory = (context) => {
+  const { form, name, id, document, node } = context;
   const input = make(document, 'input', { id, type: 'datetime-local', class: 'fd-input fd-datetime' });
   const local = (iso: Value | undefined) => {
     if (typeof iso !== 'string' || !iso) return '';
@@ -359,7 +363,7 @@ const dateTimeWidget: WidgetFactory = ({ form, name, id, document }) => {
     const d = new Date(input.value);
     if (!Number.isNaN(d.getTime())) form.setValue(name, d.toISOString());
   });
-  return {
+  const widget: Widget = {
     element: input,
     focus: () => input.focus(),
     update(state) {
@@ -369,6 +373,7 @@ const dateTimeWidget: WidgetFactory = ({ form, name, id, document }) => {
       describe(input, state);
     },
   };
+  return node.options?.['weekNumbers'] === true ? withCalendar(widget, context, 'datetime') : widget;
 };
 
 /** Until a type has its own editor (Phase 5), show what it holds. */

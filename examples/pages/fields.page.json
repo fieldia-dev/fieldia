@@ -151,7 +151,7 @@
         "title": "Dates",
         "columns": 2,
         "children": [
-          { "type": "field", "id": "f-start", "field": "start_date" },
+          { "type": "field", "id": "f-start", "field": "start_date", "options": { "weekNumbers": true } },
           { "type": "field", "id": "f-kickoff", "field": "kickoff" }
         ]
       },

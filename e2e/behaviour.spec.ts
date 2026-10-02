@@ -397,6 +397,26 @@ test.describe('every field', () => {
     await screen(page, `${variant}-fields-currency-picker`);
   });
 
+  test('a calendar with week numbers opens beside a date, and picks a day by mouse or keyboard', async ({ page }) => {
+    await open(page, variant, 'page=fields&skin=outlined');
+    const start = node(page, 'f-start');
+    const button = start.getByRole('button', { name: 'Choose a date' });
+    await button.click();
+    const calendar = start.getByRole('dialog', { name: 'October 2026' });
+    await expect(calendar).toBeVisible();
+    await expect(calendar.locator('tbody th')).toHaveText(['40', '41', '42', '43', '44']);
+    await expect(calendar.getByRole('button', { name: /Sunday,? 11 October 2026/ })).toBeFocused();
+    await screen(page, `${variant}-fields-calendar`);
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await expect(calendar).toBeHidden();
+    expect(await value(page, 'start_date')).toBe('2026-10-18');
+    await expect(button).toBeFocused();
+    await button.click();
+    await start.getByRole('button', { name: /Thursday,? 22 October 2026/ }).click();
+    expect(await value(page, 'start_date')).toBe('2026-10-22');
+  });
+
   test('a folded section opens from its title and shows its fields', async ({ page }) => {
     await open(page, variant, 'page=fields');
     const title = node(page, 's-structured').getByRole('button', { name: 'Structured data' });

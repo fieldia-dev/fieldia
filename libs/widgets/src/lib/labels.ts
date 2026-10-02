@@ -18,6 +18,13 @@ export interface WidgetLabels {
   moreProblems: string;
   /** The button that lets a person hide or show a table's optional columns. */
   chooseColumns: string;
+  /** The button beside a date that opens its calendar. */
+  chooseDate: string;
+  previousMonth: string;
+  nextMonth: string;
+  /** Heads the column of week numbers: short, and in full. */
+  weekShort: string;
+  week: string;
   upload: string;
   uploadImage: string;
   replace: string;
@@ -40,6 +47,11 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     lineProblem: 'Line {n}: {message}',
     moreProblems: 'and {n} more',
     chooseColumns: 'Choose columns',
+    chooseDate: 'Choose a date',
+    previousMonth: 'Previous month',
+    nextMonth: 'Next month',
+    weekShort: 'Wk',
+    week: 'Week',
     upload: 'Upload a file',
     uploadImage: 'Add a photo',
     replace: 'Replace',
@@ -60,6 +72,11 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     lineProblem: 'السطر {n}: {message}',
     moreProblems: 'و{n} أخرى',
     chooseColumns: 'اختيار الأعمدة',
+    chooseDate: 'اختيار تاريخ',
+    previousMonth: 'الشهر السابق',
+    nextMonth: 'الشهر التالي',
+    weekShort: 'أسبوع',
+    week: 'الأسبوع',
     upload: 'رفع ملف',
     uploadImage: 'إضافة صورة',
     replace: 'استبدال',
@@ -80,6 +97,11 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     lineProblem: 'Zeile {n}: {message}',
     moreProblems: 'und {n} weitere',
     chooseColumns: 'Spalten auswählen',
+    chooseDate: 'Datum auswählen',
+    previousMonth: 'Vorheriger Monat',
+    nextMonth: 'Nächster Monat',
+    weekShort: 'KW',
+    week: 'Kalenderwoche',
     upload: 'Datei hochladen',
     uploadImage: 'Foto hinzufügen',
     replace: 'Ersetzen',
@@ -100,6 +122,11 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     lineProblem: 'Ligne {n} : {message}',
     moreProblems: 'et {n} de plus',
     chooseColumns: 'Choisir les colonnes',
+    chooseDate: 'Choisir une date',
+    previousMonth: 'Mois précédent',
+    nextMonth: 'Mois suivant',
+    weekShort: 'Sem.',
+    week: 'Semaine',
     upload: 'Téléverser un fichier',
     uploadImage: 'Ajouter une photo',
     replace: 'Remplacer',
