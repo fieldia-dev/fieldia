@@ -40,6 +40,10 @@ export {
   type StatButton,
   type Ribbon,
   type Alert,
+  type Badge,
+  type ColumnCount,
+  type ColumnsByWidth,
+  wideColumns,
   type LayoutNode,
   type RootLayout,
 } from './lib/format/layout';

@@ -75,17 +75,38 @@ export interface SlotNode {
   invisible?: Modifier;
 }
 
+export type ColumnCount = 1 | 2 | 3 | 4;
+
+/**
+ * Columns at each width of the form: `wide` above 760px, `medium` up to 760px,
+ * `narrow` up to 520px. A width left out stacks the way the skin does by itself.
+ */
+export interface ColumnsByWidth {
+  wide: ColumnCount;
+  medium?: ColumnCount;
+  narrow?: ColumnCount;
+}
+
+/** A section's columns at full width, whichever way they are written. */
+export function wideColumns(columns: ColumnCount | ColumnsByWidth | undefined): ColumnCount {
+  return typeof columns === 'object' ? columns.wide : columns ?? 1;
+}
+
 export interface SectionNode {
   type: 'section';
   id: string;
   title?: string;
+  /** An icon before the title, by name: one of Fieldia's own, or one the app adds. */
+  icon?: string;
   description?: string;
-  columns?: 1 | 2 | 3 | 4;
+  columns?: ColumnCount | ColumnsByWidth;
   /** The title folds and unfolds the section. Needs a title. */
   collapsible?: boolean;
   /** A collapsible section that starts folded. */
   collapsed?: boolean;
   invisible?: Modifier;
+  /** Every field inside is read-only while this holds. */
+  readonly?: Modifier;
   children: LayoutNode[];
 }
 
@@ -111,6 +132,9 @@ export interface StepNode {
   id: string;
   label: string;
   description?: string;
+  icon?: string;
+  /** Can be skipped: its answers are then left out, and its required fields not asked for. */
+  optional?: boolean;
   invisible?: Modifier;
   children: LayoutNode[];
 }
@@ -118,6 +142,12 @@ export interface StepNode {
 export interface WizardNode {
   type: 'wizard';
   id: string;
+  /** The list of steps can be clicked: back to any step, or forward past steps that are complete. */
+  clickable?: boolean;
+  nextLabel?: string;
+  backLabel?: string;
+  /** The last step's button. */
+  finishLabel?: string;
   children: StepNode[];
 }
 
@@ -148,6 +178,17 @@ export interface Alert {
   id: string;
   message: string;
   tone?: Tone;
+  /** Has a × that hides it until the page opens again. */
+  dismissible?: boolean;
+  invisible?: Modifier;
+}
+
+/** A small label by the title, such as "Locked" or "VIP". */
+export interface Badge {
+  id: string;
+  label: string;
+  tone?: Tone;
+  icon?: string;
   invisible?: Modifier;
 }
 
@@ -156,6 +197,10 @@ export interface SheetTitle {
   subtitleField?: string;
   avatarField?: string;
   placeholder?: string;
+  /** Fields over the title, such as an Individual/Company choice. */
+  above?: FieldNode[];
+  /** Fields under the title, such as "Can be sold" and "Can be purchased". */
+  below?: FieldNode[];
 }
 
 export interface Statusbar {
@@ -164,6 +209,8 @@ export interface Statusbar {
   visibleStates?: (string | number)[];
   /** Clicking a state moves the record to it. */
   clickable?: boolean;
+  /** In the header bar (the default), or in the sheet under the title. */
+  position?: 'header' | 'title';
 }
 
 /** The record layout: a header with a statusbar and buttons, then the sheet itself. */
@@ -176,6 +223,7 @@ export interface SheetNode {
   statButtons?: StatButton[];
   ribbon?: Ribbon;
   alerts?: Alert[];
+  badges?: Badge[];
   children: LayoutNode[];
   sidePanel?: SlotNode;
 }
@@ -197,6 +245,7 @@ export const ModifierSchema = z.union([z.boolean(), z.string().min(1)]).meta({ i
 const id = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/);
 const fieldName = z.string().regex(FIELD_NAME);
 const tone = z.enum(['info', 'success', 'warning', 'danger', 'muted']);
+const columnCount = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]);
 const invisible = ModifierSchema.optional();
 
 export const FieldNodeSchema = z.strictObject({
@@ -244,11 +293,13 @@ export const SectionNodeSchema = z.strictObject({
   type: z.literal('section'),
   id,
   title: z.string().optional(),
+  icon: z.string().min(1).optional(),
   description: z.string().optional(),
-  columns: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).optional(),
+  columns: z.union([columnCount, z.strictObject({ wide: columnCount, medium: columnCount.optional(), narrow: columnCount.optional() })]).optional(),
   collapsible: z.boolean().optional(),
   collapsed: z.boolean().optional(),
   invisible,
+  readonly: ModifierSchema.optional(),
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);
   },
@@ -288,6 +339,8 @@ export const StepNodeSchema = z.strictObject({
   id,
   label: z.string(),
   description: z.string().optional(),
+  icon: z.string().min(1).optional(),
+  optional: z.boolean().optional(),
   invisible,
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);
@@ -297,6 +350,10 @@ export const StepNodeSchema = z.strictObject({
 export const WizardNodeSchema = z.strictObject({
   type: z.literal('wizard'),
   id,
+  clickable: z.boolean().optional(),
+  nextLabel: z.string().min(1).optional(),
+  backLabel: z.string().min(1).optional(),
+  finishLabel: z.string().min(1).optional(),
   children: z.array(StepNodeSchema).min(1),
 }).meta({ id: 'WizardNode' });
 
@@ -319,7 +376,9 @@ export const StatButtonSchema = z.strictObject({
 
 export const RibbonSchema = z.strictObject({ id, label: z.string(), tone: tone.optional(), invisible });
 
-export const AlertSchema = z.strictObject({ id, message: z.string(), tone: tone.optional(), invisible });
+export const AlertSchema = z.strictObject({ id, message: z.string(), tone: tone.optional(), dismissible: z.boolean().optional(), invisible });
+
+export const BadgeSchema = z.strictObject({ id, label: z.string(), tone: tone.optional(), icon: z.string().min(1).optional(), invisible });
 
 export const SheetNodeSchema = z.strictObject({
   type: z.literal('sheet'),
@@ -330,6 +389,8 @@ export const SheetNodeSchema = z.strictObject({
       subtitleField: fieldName.optional(),
       avatarField: fieldName.optional(),
       placeholder: z.string().optional(),
+      above: z.array(FieldNodeSchema).optional(),
+      below: z.array(FieldNodeSchema).optional(),
     })
     .optional(),
   statusbar: z
@@ -337,12 +398,14 @@ export const SheetNodeSchema = z.strictObject({
       field: fieldName,
       visibleStates: z.array(z.union([z.string(), z.number()])).optional(),
       clickable: z.boolean().optional(),
+      position: z.enum(['header', 'title']).optional(),
     })
     .optional(),
   buttons: z.array(ButtonNodeSchema).optional(),
   statButtons: z.array(StatButtonSchema).optional(),
   ribbon: RibbonSchema.optional(),
   alerts: z.array(AlertSchema).optional(),
+  badges: z.array(BadgeSchema).optional(),
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);
   },

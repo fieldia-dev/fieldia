@@ -203,6 +203,21 @@ describe('createDesigner — app screens', () => {
     expect(designer.setColspan(a, 3)).toBe(false); // wider than its section
   });
 
+  it('changes the wide count of columns given per width, keeping the narrower ones under it', () => {
+    const page = blankPage('screen', 'Visit report');
+    const first = (page.layout as { children: SectionNode[] }).children[0];
+    first.columns = { wide: 3, medium: 2, narrow: 1 };
+    const designer = createDesigner({ page });
+    const a = designer.addQuestion('short-answer', { parent: first.id }) as string;
+    designer.setColspan(a, 3);
+    designer.setColumns(first.id, 4);
+    expect((designer.getPage().layout as { children: SectionNode[] }).children[0].columns).toEqual({ wide: 4, medium: 2, narrow: 1 });
+    designer.setColumns(first.id, 1);
+    const s = (designer.getPage().layout as { children: SectionNode[] }).children[0];
+    expect(s.columns).toEqual({ wide: 1, medium: 1, narrow: 1 });
+    expect((s.children[0] as FieldNode).colspan).toBe(1);
+  });
+
   it('puts a field in another section, at a place', () => {
     const designer = createDesigner({ page: blankPage('screen', 'Visit report') });
     const first = (designer.getPage().layout as { children: SectionNode[] }).children[0].id;

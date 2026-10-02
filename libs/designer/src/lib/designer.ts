@@ -1,5 +1,6 @@
 import {
   validatePage,
+  wideColumns,
   type Field,
   type FieldNode,
   type LayoutNode,
@@ -532,7 +533,16 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       return apply((draft) => {
         const section = findContainer(draft, sectionId) as SectionNode | null;
         if (!section || !('columns' in section || section.type === 'section')) throw new Refusal(`There is no section "${sectionId}"`);
-        section.columns = columns;
+        // Columns given per width keep their narrower counts, never more than the wide one.
+        const given = section.columns;
+        section.columns =
+          typeof given === 'object'
+            ? {
+                wide: columns,
+                ...(given.medium ? { medium: Math.min(given.medium, columns) as typeof columns } : {}),
+                ...(given.narrow ? { narrow: Math.min(given.narrow, columns) as typeof columns } : {}),
+              }
+            : columns;
         for (const child of section.children) if (child.type === 'field' && (child.colspan ?? 1) > columns) child.colspan = columns;
       });
     },
@@ -541,7 +551,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       return apply((draft) => {
         const found = findNode(draft, nodeId);
         if (!found || found.node.type !== 'field') throw new Refusal(`There is no question "${nodeId}"`);
-        const columns = (found.parent as SectionNode).columns ?? 1;
+        const columns = wideColumns((found.parent as SectionNode).columns);
         if (span > columns) throw new Refusal(`A field cannot be wider than its section's ${columns} columns`);
         if (span <= 1) delete found.node.colspan;
         else found.node.colspan = span;
@@ -558,7 +568,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
         if (items.length !== fields.length || items.some((item) => !byId.has(item.id))) {
           throw new Refusal('The arrangement does not match the fields in this section');
         }
-        const columns = section.columns ?? 1;
+        const columns = wideColumns(section.columns);
         section.children = [
           ...items.map(({ id, colspan }) => {
             const node = byId.get(id) as FieldNode;

@@ -21,6 +21,10 @@ export interface Page {
   data: PageData;
   fields: Fields;
   layout: RootLayout;
+  /** How wide the page goes: narrow 640px, medium 900px, wide 1180px, full the whole width. */
+  maxWidth?: 'narrow' | 'medium' | 'wide' | 'full';
+  /** Where Save and Discard sit: at the top of the page, or at its foot. A wizard keeps its own. */
+  actionsPosition?: 'top' | 'bottom';
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -37,6 +41,8 @@ export const PageSchema = z
     data: PageDataSchema,
     fields: FieldsSchema,
     layout: RootLayoutSchema,
+    maxWidth: z.enum(['narrow', 'medium', 'wide', 'full']).optional(),
+    actionsPosition: z.enum(['top', 'bottom']).optional(),
   })
   .meta({
     title: 'Fieldia page',

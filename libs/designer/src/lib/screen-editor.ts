@@ -1,4 +1,4 @@
-import { createForm, createMemoryDataSource, type FieldNode, type Form, type Page, type SectionNode, type SectionsNode } from '@fieldia/core';
+import { createForm, createMemoryDataSource, wideColumns, type FieldNode, type Form, type Page, type SectionNode, type SectionsNode } from '@fieldia/core';
 import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import { createWidget, installStyles, type Widget } from '@fieldia/widgets';
 import { designerBar, elementFactory, optionsEditor, type ElementFactory } from './chrome';
@@ -199,7 +199,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     view.empty.hidden = nodes.length > 0;
     view.boardHost.hidden = nodes.length === 0;
     if (!nodes.length) return;
-    const columns = section.columns ?? 1;
+    const columns = wideColumns(section.columns);
     const items = nodes.map((n) => ({ id: n.id, span: n.colspan ?? 1, rows: rowsFor(page, n) }));
     const cells = flowCells(items, columns);
     const boardWidgets: GrafloriaWidget[] = nodes.map((n) => {
@@ -473,7 +473,7 @@ function fieldProperties(el: ElementFactory, designer: Designer, id: string): Pr
       options.update(def);
       required.checked = def.required === true;
       if (!focused(help)) help.value = found.node.help ?? def.help ?? '';
-      const columns = found.section.columns ?? 1;
+      const columns = wideColumns(found.section.columns);
       widthRow.hidden = columns === 1;
       if (width.options.length !== columns) {
         width.replaceChildren(

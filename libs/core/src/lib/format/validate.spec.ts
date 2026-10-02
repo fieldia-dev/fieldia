@@ -150,6 +150,55 @@ describe('validatePage — modifiers are read before the page runs', () => {
   });
 });
 
+describe('validatePage — sheet and layout parts', () => {
+  it('takes every part of a sheet, a section, a wizard and a page', () => {
+    const page = example('customer');
+    page['maxWidth'] = 'medium';
+    page['actionsPosition'] = 'bottom';
+    const main = page['layout'].children[0];
+    Object.assign(main, { icon: 'user', readonly: "state == 'blocked'", columns: { wide: 3, medium: 2, narrow: 1 } });
+    page['layout'].badges = [{ id: 'b-vip', label: 'VIP', tone: 'success', icon: 'star', invisible: 'not is_company' }];
+    page['layout'].alerts[0].dismissible = true;
+    page['layout'].title.above = [{ type: 'field', id: 't-company', field: 'is_company' }];
+    page['layout'].title.below = [{ type: 'field', id: 't-tags', field: 'tag_ids' }];
+    page['layout'].statusbar.position = 'title';
+    expect(messages(page)).toEqual([]);
+
+    const survey = example('survey');
+    Object.assign(survey['layout'], { clickable: true, nextLabel: 'Continue', backLabel: 'Previous', finishLabel: 'Send my answers' });
+    Object.assign(survey['layout'].children[1], { optional: true, icon: 'chart' });
+    expect(messages(survey)).toEqual([]);
+  });
+
+  it('checks a section’s readonly, a badge, and the fields above and below the title', () => {
+    const page = example('customer');
+    page['layout'].children[0].readonly = 'ghost_field';
+    page['layout'].badges = [{ id: 'f-is-company', label: 'Twin', invisible: 'ghost_field' }];
+    page['layout'].title.above = [{ type: 'field', id: 't-ghost', field: 'ghost_field' }];
+    const text = messages(page).join('\n');
+    expect(text).toMatch(/layout\.children\[0\]\.readonly: "ghost_field" reads "ghost_field"/);
+    expect(text).toMatch(/layout\.badges\[0\]\.invisible: "ghost_field" reads/);
+    expect(text).toMatch(/duplicate id "f-is-company"/);
+    expect(text).toMatch(/layout\.title\.above\[0\]\.field: no field "ghost_field"/);
+  });
+
+  it('rejects columns per width outside one to four, or without the wide count', () => {
+    const page = example('signup');
+    page['layout'].children[0].columns = { wide: 5 };
+    expect(messages(page).join('\n')).toMatch(/layout\.children\[0\]\.columns/);
+    page['layout'].children[0].columns = { medium: 2 };
+    expect(messages(page).join('\n')).toMatch(/layout\.children\[0\]\.columns/);
+  });
+
+  it('rejects a page width or an actions place it does not know', () => {
+    const page = example('signup');
+    page['maxWidth'] = '900px';
+    page['actionsPosition'] = 'left';
+    const paths = messages(page).map((m) => m.split(':')[0]);
+    expect(paths).toEqual(expect.arrayContaining(['maxWidth', 'actionsPosition']));
+  });
+});
+
 describe('validatePage — references', () => {
   it('rejects two elements with the same id, naming both places', () => {
     const page = example('customer');

@@ -174,7 +174,7 @@ class ReferenceCheck {
 
   private walkNode(node: LayoutNode, path: string) {
     this.claim(node.id, path);
-    this.checkModifiers(node, path, node.type === 'field' ? ['invisible', 'readonly', 'required'] : ['invisible']);
+    this.checkModifiers(node, path, node.type === 'field' ? ['invisible', 'readonly', 'required'] : node.type === 'section' ? ['invisible', 'readonly'] : ['invisible']);
     switch (node.type) {
       case 'field':
         return this.checkFieldNode(node, path);
@@ -231,6 +231,13 @@ class ReferenceCheck {
     if (sheet.ribbon) {
       this.claim(sheet.ribbon.id, `${path}.ribbon`);
       this.checkModifiers(sheet.ribbon, `${path}.ribbon`);
+    }
+    sheet.badges?.forEach((badge, i) => {
+      this.claim(badge.id, `${path}.badges[${i}]`);
+      this.checkModifiers(badge, `${path}.badges[${i}]`);
+    });
+    for (const place of ['above', 'below'] as const) {
+      sheet.title?.[place]?.forEach((node, i) => this.walkNode(node, `${path}.title.${place}[${i}]`));
     }
     sheet.alerts?.forEach((alert, i) => {
       this.claim(alert.id, `${path}.alerts[${i}]`);
