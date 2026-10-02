@@ -1,5 +1,5 @@
 import type * as z from 'zod';
-import type { Field, Fields, LineField, LineKinds } from './field';
+import type { Field, Fields, FilterItem, LineField, LineKinds } from './field';
 import type { FieldNode, LayoutNode, RootLayout, SheetNode, TabsNode } from './layout';
 import { PageSchema, type Page } from './page';
 import { compileModifier } from '../expression/modifier';
@@ -109,8 +109,14 @@ class ReferenceCheck {
         }
       }
       if ((def.type === 'many2one' || def.type === 'many2many') && def.filter) {
-        def.filter.forEach((condition, i) => {
-          if (condition.valueFrom !== undefined) this.need(condition.valueFrom, `${path}.filter[${i}].valueFrom`, fields);
+        // Groups nest: each valueFrom inside them must name a field too.
+        const walk = (item: FilterItem, at: string): void => {
+          if ('any' in item) return item.any.forEach((inner, i) => walk(inner, `${at}.any[${i}]`));
+          if ('all' in item) return item.all.forEach((inner, i) => walk(inner, `${at}.all[${i}]`));
+          if (item.valueFrom !== undefined) this.need(item.valueFrom, `${at}.valueFrom`, fields);
+        };
+        def.filter.forEach((item, i) => {
+          walk(item, `${path}.filter[${i}]`);
         });
       }
       if (def.type === 'properties' && def.definitions) {

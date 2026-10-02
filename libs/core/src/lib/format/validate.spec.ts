@@ -150,6 +150,37 @@ describe('validatePage — modifiers are read before the page runs', () => {
   });
 });
 
+describe('validatePage — filters', () => {
+  const withFilter = (filter: unknown) => {
+    const page = example('customer');
+    page['fields'].state_id.filter = filter;
+    return messages(page);
+  };
+
+  it('takes groups of any and all, nested, and the new ways to compare', () => {
+    expect(
+      withFilter([
+        { any: [{ field: 'name', op: 'startswith', value: 'A' }, { all: [{ field: 'code', op: 'set' }, { field: 'size', op: 'between', value: [1, 9] }] }] },
+        { field: 'country_id', op: '=', valueFrom: 'country_id' },
+        { field: 'retired', op: 'notset' },
+        { field: 'name', op: 'endswith', value: 'ia' },
+      ])
+    ).toEqual([]);
+  });
+
+  it('checks a valueFrom however deep its group, and says where', () => {
+    expect(withFilter([{ any: [{ field: 'name', op: '=', value: 'x' }, { all: [{ field: 'country_id', op: '=', valueFrom: 'ghost_field' }] }] }]).join('\n')).toMatch(
+      /fields\.state_id\.filter\[0\]\.any\[1\]\.all\[0\]\.valueFrom: no field "ghost_field"/
+    );
+  });
+
+  it('refuses a value on set or notset, between without two ends, and an empty group', () => {
+    expect(withFilter([{ field: 'code', op: 'set', value: true }]).join('\n')).toMatch(/set and notset take neither/);
+    expect(withFilter([{ field: 'size', op: 'between', value: [1] }]).join('\n')).toMatch(/between takes value: \[low, high\]/);
+    expect(withFilter([{ any: [] }]).length).toBeGreaterThan(0);
+  });
+});
+
 describe('validatePage — sheet and layout parts', () => {
   it('takes every part of a sheet, a section, a wizard and a page', () => {
     const page = example('customer');

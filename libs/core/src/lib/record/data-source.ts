@@ -72,11 +72,17 @@ export interface SearchRequest {
   model: string;
   query: string;
   /** The field's filter, with every `valueFrom` already replaced by its value. */
-  filter?: ResolvedFilterCondition[];
+  filter?: ResolvedFilter[];
   limit?: number;
 }
 
 export type ResolvedFilterCondition = Omit<FilterCondition, 'valueFrom' | 'value'> & { value: JsonValue };
+
+/**
+ * A filter as a search receives it: each `valueFrom` already replaced by its
+ * value. An adapter must keep the groups: `any` is an OR, `all` an AND.
+ */
+export type ResolvedFilter = ResolvedFilterCondition | { any: ResolvedFilter[] } | { all: ResolvedFilter[] };
 
 export interface SubmitRequest {
   pageId: string;

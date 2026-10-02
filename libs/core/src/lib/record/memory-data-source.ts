@@ -1,5 +1,4 @@
 import type { Field, Fields } from '../format/field';
-import type { JsonValue } from '../format/json';
 import type {
   DataSource,
   LineOp,
@@ -7,7 +6,6 @@ import type {
   LoadRequest,
   OnchangeRequest,
   OnchangeResult,
-  ResolvedFilterCondition,
   SaveRequest,
   SaveResult,
   SearchRequest,
@@ -15,6 +13,7 @@ import type {
   SubmitRequest,
   SubmitResult,
 } from './data-source';
+import { matchesFilter } from './filter';
 import { wait, type Scheduler } from './scheduler';
 import { structuredCopy, type Line, type RecordId, type RelatedRecord, type Values } from './values';
 
@@ -128,7 +127,7 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       await pause();
       const query = request.query.trim().toLowerCase();
       return Object.entries(table(request.model))
-        .filter(([, values]) => (request.filter ?? []).every((condition) => matches(values, condition)))
+        .filter(([, values]) => matchesFilter(values, request.filter ?? []))
         .map(([key]) => ({ id: asId(key), label: labelOf(request.model, asId(key)) }))
         .filter((record) => record.label.toLowerCase().includes(query))
         .slice(0, request.limit ?? 8);
@@ -150,32 +149,4 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       return { id: responses.length };
     },
   };
-}
-
-function matches(values: Values, condition: ResolvedFilterCondition): boolean {
-  const raw = values[condition.field];
-  const actual = raw !== null && typeof raw === 'object' && 'id' in raw ? (raw as RelatedRecord).id : (raw as JsonValue | undefined);
-  const expected = condition.value;
-  switch (condition.op) {
-    case '=':
-      return actual === expected;
-    case '!=':
-      return actual !== expected;
-    case '<':
-      return (actual as number) < (expected as number);
-    case '>':
-      return (actual as number) > (expected as number);
-    case '<=':
-      return (actual as number) <= (expected as number);
-    case '>=':
-      return (actual as number) >= (expected as number);
-    case 'in':
-      return Array.isArray(expected) && expected.includes(actual as JsonValue);
-    case 'not in':
-      return Array.isArray(expected) && !expected.includes(actual as JsonValue);
-    case 'like':
-      return String(actual ?? '').includes(String(expected));
-    case 'ilike':
-      return String(actual ?? '').toLowerCase().includes(String(expected).toLowerCase());
-  }
 }

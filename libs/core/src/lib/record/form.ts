@@ -1,11 +1,11 @@
-import type { Field, LineField } from '../format/field';
+import type { Field, FilterItem, LineField } from '../format/field';
 import type { JsonValue } from '../format/json';
 import type { ButtonNode, LayoutNode, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import { checkValue } from './check';
 import { MESSAGES, type Messages } from './messages';
-import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilterCondition, type SaveProblem } from './data-source';
+import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
 import {
   emptyValue,
@@ -460,14 +460,14 @@ export function createForm(options: FormOptions): Form {
     if (def.type === 'reference' && !model) throw new Error(`Searching "${name}" needs a model`);
     const source = options.dataSource;
     if (!source?.search) return [];
-    const filter: ResolvedFilterCondition[] | undefined =
-      def.type === 'reference'
-        ? undefined
-        : def.filter?.map(({ field: target, op, value, valueFrom }) => ({
-            field: target,
-            op,
-            value: (valueFrom !== undefined ? ctx[valueFrom] ?? null : value ?? null) as JsonValue,
-          }));
+    // Every valueFrom, in groups too, becomes the value it names before the search goes out.
+    const resolve = (item: FilterItem): ResolvedFilter =>
+      'any' in item
+        ? { any: item.any.map(resolve) }
+        : 'all' in item
+          ? { all: item.all.map(resolve) }
+          : { field: item.field, op: item.op, value: (item.valueFrom !== undefined ? ctx[item.valueFrom] ?? null : item.value ?? null) as JsonValue };
+    const filter: ResolvedFilter[] | undefined = def.type === 'reference' ? undefined : def.filter?.map(resolve);
     const relation = def.type === 'reference' ? (model as string) : def.relation;
     return track(source.search({ model: relation, query, ...(filter ? { filter } : {}), limit }));
   }

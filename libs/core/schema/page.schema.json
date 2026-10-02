@@ -573,7 +573,7 @@
             "filter": {
               "type": "array",
               "items": {
-                "$ref": "#/$defs/FilterCondition"
+                "$ref": "#/$defs/FilterItem"
               }
             }
           },
@@ -613,7 +613,7 @@
             "filter": {
               "type": "array",
               "items": {
-                "$ref": "#/$defs/FilterCondition"
+                "$ref": "#/$defs/FilterItem"
               }
             }
           },
@@ -832,6 +832,19 @@
       ],
       "additionalProperties": false
     },
+    "FilterItem": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FilterCondition"
+        },
+        {
+          "$ref": "#/$defs/FilterAny"
+        },
+        {
+          "$ref": "#/$defs/FilterAll"
+        }
+      ]
+    },
     "FilterCondition": {
       "type": "object",
       "properties": {
@@ -851,7 +864,12 @@
             "in",
             "not in",
             "like",
-            "ilike"
+            "ilike",
+            "startswith",
+            "endswith",
+            "set",
+            "notset",
+            "between"
           ]
         },
         "value": {
@@ -865,6 +883,38 @@
       "required": [
         "field",
         "op"
+      ],
+      "additionalProperties": false
+    },
+    "FilterAny": {
+      "type": "object",
+      "properties": {
+        "any": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FilterItem"
+          }
+        }
+      },
+      "required": [
+        "any"
+      ],
+      "additionalProperties": false
+    },
+    "FilterAll": {
+      "type": "object",
+      "properties": {
+        "all": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FilterItem"
+          }
+        }
+      },
+      "required": [
+        "all"
       ],
       "additionalProperties": false
     },
@@ -1349,7 +1399,7 @@
             "filter": {
               "type": "array",
               "items": {
-                "$ref": "#/$defs/FilterCondition"
+                "$ref": "#/$defs/FilterItem"
               }
             }
           },
@@ -1389,7 +1439,7 @@
             "filter": {
               "type": "array",
               "items": {
-                "$ref": "#/$defs/FilterCondition"
+                "$ref": "#/$defs/FilterItem"
               }
             }
           },

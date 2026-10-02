@@ -578,6 +578,32 @@ describe('createForm — a survey', () => {
   });
 });
 
+describe('createForm — a link’s filter with groups', () => {
+  it('sends groups to the search with every valueFrom in them resolved, and the memory source keeps the OR', async () => {
+    const p = page('customer');
+    p.fields['state_id'] = {
+      type: 'many2one',
+      label: 'Region',
+      relation: 'country.region',
+      filter: [{ any: [{ field: 'country_id', op: '=', valueFrom: 'country_id' }, { field: 'name', op: 'startswith', value: 'Ri' }] }],
+    };
+    const ds = createMemoryDataSource({
+      records: {
+        'country.region': {
+          1: { name: 'Cairo', country_id: { id: 1, label: 'Egypt' } },
+          2: { name: 'Amman', country_id: { id: 2, label: 'Jordan' } },
+          3: { name: 'Riyadh', country_id: { id: 3, label: 'Saudi Arabia' } },
+        },
+      },
+    });
+    const form = createForm({ page: p, dataSource: ds });
+    form.setValue('country_id', { id: 1, label: 'Egypt' });
+    expect((await form.search('state_id', '')).map((r) => r.label)).toEqual(['Cairo', 'Riyadh']);
+    const sent = ds.calls.filter((c) => c.method === 'search').at(-1)?.request as { filter: unknown };
+    expect(sent.filter).toEqual([{ any: [{ field: 'country_id', op: '=', value: 1 }, { field: 'name', op: 'startswith', value: 'Ri' }] }]);
+  });
+});
+
 describe('createForm — a save the server refuses', () => {
   /** The customer record, saved through a source whose save fails the way it is told. */
   function refusing(failure: () => unknown) {

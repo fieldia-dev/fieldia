@@ -48,24 +48,50 @@ export const OptionSchema = z
 export type Option = z.infer<typeof OptionSchema>;
 
 /**
- * One condition limiting which records a relation may point to. Conditions in
- * a filter all apply together. `valueFrom` compares against another field of
- * the record being edited, so a region list can follow the chosen country.
+ * One condition limiting which records a relation may point to. `valueFrom`
+ * compares against another field of the record being edited, so a region list
+ * can follow the chosen country. `like` finds text inside; `ilike`,
+ * `startswith` and `endswith` whatever the case; `set` and `notset` take no
+ * value; `between` takes `[low, high]`, both ends included.
  */
 export const FilterConditionSchema = z
   .object({
     field: z.string().min(1),
-    op: z.enum(['=', '!=', '<', '>', '<=', '>=', 'in', 'not in', 'like', 'ilike']),
+    op: z.enum(['=', '!=', '<', '>', '<=', '>=', 'in', 'not in', 'like', 'ilike', 'startswith', 'endswith', 'set', 'notset', 'between']),
     value: JsonValueSchema.optional(),
     valueFrom: z.string().regex(FIELD_NAME).optional(),
   })
   .strict()
-  .refine((c) => (c.value === undefined) !== (c.valueFrom === undefined), {
-    message: 'set exactly one of value or valueFrom',
+  .refine((c) => (c.op === 'set' || c.op === 'notset' ? c.value === undefined && c.valueFrom === undefined : (c.value === undefined) !== (c.valueFrom === undefined)), {
+    message: 'set exactly one of value or valueFrom; set and notset take neither',
+  })
+  .refine((c) => c.op !== 'between' || c.valueFrom !== undefined || (Array.isArray(c.value) && c.value.length === 2), {
+    message: 'between takes value: [low, high]',
   })
   .meta({ id: 'FilterCondition' });
 
 export type FilterCondition = z.infer<typeof FilterConditionSchema>;
+
+/**
+ * What a filter holds: conditions, and groups of them. The items of a filter
+ * all apply together; an `any` group holds when one of its items does, an
+ * `all` group when each does, and groups nest.
+ */
+export type FilterItem = FilterCondition | { any: FilterItem[] } | { all: FilterItem[] };
+
+export const FilterAnySchema = z.strictObject({
+  get any(): z.ZodArray<typeof FilterItemSchema> {
+    return z.array(FilterItemSchema).min(1);
+  },
+}).meta({ id: 'FilterAny' });
+
+export const FilterAllSchema = z.strictObject({
+  get all(): z.ZodArray<typeof FilterItemSchema> {
+    return z.array(FilterItemSchema).min(1);
+  },
+}).meta({ id: 'FilterAll' });
+
+export const FilterItemSchema = z.union([FilterConditionSchema, FilterAnySchema, FilterAllSchema]).meta({ id: 'FilterItem' });
 
 const common = {
   label: z.string(),
@@ -78,7 +104,7 @@ const common = {
 const size = z.int().positive().optional();
 const digits = z.tuple([z.int().positive(), z.int().nonnegative()]).optional();
 const relation = z.string().min(1);
-const filter = z.array(FilterConditionSchema).optional();
+const filter = z.array(FilterItemSchema).optional();
 
 const Char = z.object({ type: z.literal('char'), ...common, size, pattern: z.string().optional() }).strict();
 const Text = z.object({ type: z.literal('text'), ...common, size }).strict();
