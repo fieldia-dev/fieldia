@@ -25,6 +25,9 @@ jobs:
       - run: npx nx run-many -t typecheck lint test build
         env:
           NX_DAEMON: 'false'
+      # Pack every package and install the packs into an empty project:
+      # require, import, types and the script bundle, as a user would meet them.
+      - run: node tools/release.mjs check
 
   browser:
     name: Browser gates (every framework demo)

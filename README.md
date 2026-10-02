@@ -66,6 +66,7 @@ needs is handed to the renderer.
 ```sh
 npm ci
 npx nx run-many -t typecheck lint test build   # unit gates
+node tools/release.mjs check                    # the packs, installed into an empty project
 npx playwright install chromium
 npx nx run-many -t build -p angular viewer && node tools/build-demos.mjs && npx playwright test   # browser gates, every framework demo
 ```
