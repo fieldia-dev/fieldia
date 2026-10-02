@@ -150,7 +150,7 @@ export function sampleDataSource() {
           contract: null,
           photo: null,
           settings: { badge_readers: 4, visitor_hours: '08:00-18:00', zones: ['reception', 'open-plan'] },
-          extra: { floor: 12, lift_access: 'Freight lift, 08:00-10:00', parking: 6 },
+          extra: { floor: 12, lift_access: 'Freight lift, 08:00-10:00', parking: 6, sprinklers: true, zone: 'b' },
         },
       },
     },

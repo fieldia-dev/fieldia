@@ -430,6 +430,11 @@ export const FIELDIA_CSS = /* css */ `
 .fd-calendar-grid td button[aria-current="date"] { box-shadow: inset 0 0 0 1px var(--fd-accent); }
 .fd-calendar-grid td button[aria-selected="true"] { background: var(--fd-accent); color: var(--fd-accent-text); font-weight: 600; }
 .fd-calendar-grid td button:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
+.fd-properties { display: grid; gap: 8px; min-width: 0; }
+.fd-property { display: grid; grid-template-columns: minmax(120px, 30%) minmax(0, 1fr); align-items: center; gap: 12px; min-width: 0; }
+.fd-property > label { color: var(--fd-muted); font-size: 13px; }
+.fd-property[data-type="boolean"] > :last-child { justify-self: start; }
+@container (max-width: 520px) { .fd-property { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
 .fd-progressbar {
   position: relative; height: 22px; min-width: 120px; border-radius: 999px; overflow: hidden;
   background: var(--fd-page); border: 1px solid var(--fd-border); font-variant-numeric: tabular-nums;

@@ -20,6 +20,7 @@ import { progressbarWidget } from './progress';
 import { labelWidget } from './label';
 import { statusbarWidget } from './statusbar';
 import { withCalendar } from './calendar';
+import { propertiesWidget } from './properties';
 import { htmlWidget, jsonWidget } from './extras';
 
 /**
@@ -448,5 +449,5 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   image: imageWidget,
   html: htmlWidget,
   json: jsonWidget,
-  properties: jsonWidget,
+  properties: propertiesWidget,
 };

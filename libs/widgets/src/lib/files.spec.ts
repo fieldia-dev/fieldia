@@ -111,6 +111,50 @@ describe('formatted text', () => {
   });
 });
 
+describe('properties', () => {
+  const definitions = [
+    { name: 'floor', label: 'Floor', type: 'integer' },
+    { name: 'lift_access', label: 'Lift access', type: 'char' },
+    { name: 'sprinklers', label: 'Sprinklers fitted', type: 'boolean' },
+    { name: 'zone', label: 'Fire zone', type: 'selection', options: [{ value: 'a', label: 'Zone A' }, { value: 'b', label: 'Zone B' }] },
+  ];
+  const labelsOf = (el: Element) => [...el.querySelectorAll('.fd-property > label')].map((l) => l.textContent);
+
+  it('edits each property with the field for its type, keeping them one value', () => {
+    const { form, el } = setup({ type: 'properties', definitions });
+    form.setValue('x', { floor: 12, lift_access: 'Freight lift', sprinklers: false, zone: 'a' });
+    expect(labelsOf(el)).toEqual(['Floor', 'Lift access', 'Sprinklers fitted', 'Fire zone']);
+    const floor = el.querySelector('.fd-property input') as HTMLInputElement;
+    expect(floor.value).toBe('12');
+    floor.value = '14';
+    floor.dispatchEvent(new Event('input', { bubbles: true }));
+    (el.querySelector('input[type="checkbox"]') as HTMLInputElement).click();
+    const zone = el.querySelector('select') as HTMLSelectElement;
+    zone.selectedIndex = [...zone.options].findIndex((o) => o.textContent === 'Zone B');
+    zone.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(form.getState().values['x']).toEqual({ floor: 14, lift_access: 'Freight lift', sprinklers: true, zone: 'b' });
+    // Each label names its own box.
+    const first = el.querySelector('.fd-property > label') as HTMLLabelElement;
+    expect(document.getElementById(first.htmlFor)).toBe(floor);
+  });
+
+  it('without definitions, works each property out from its value', () => {
+    const { form, el } = setup({ type: 'properties' });
+    form.setValue('x', { floor: 12, lift_access: 'Freight lift', sprinklers: true });
+    expect(labelsOf(el)).toEqual(['Floor', 'Lift access', 'Sprinklers']);
+    const boxes = [...el.querySelectorAll('.fd-property input')] as HTMLInputElement[];
+    expect([boxes[0].inputMode, boxes[1].type, boxes[2].type]).toEqual(['numeric', 'text', 'checkbox']);
+    expect(boxes[2].checked).toBe(true);
+  });
+
+  it('shows the properties without editing them when read-only', () => {
+    const { form, el } = setup({ type: 'properties', definitions }, true);
+    form.setValue('x', { floor: 12, sprinklers: true });
+    expect((el.querySelector('.fd-property input') as HTMLInputElement).readOnly).toBe(true);
+    expect((el.querySelector('input[type="checkbox"]') as HTMLInputElement).disabled).toBe(true);
+  });
+});
+
 describe('formatted text toolbar', () => {
   let commands: [string, string | undefined][] = [];
   beforeEach(() => {

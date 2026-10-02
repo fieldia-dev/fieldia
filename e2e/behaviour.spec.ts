@@ -450,6 +450,21 @@ test.describe('every field', () => {
     await screen(page, `${variant}-fields-richtext`);
   });
 
+  test('building details are edited one by one, each with the field for its type', async ({ page }) => {
+    await open(page, variant, 'page=fields&skin=outlined');
+    await node(page, 's-structured').getByRole('button', { name: 'Structured data' }).click();
+    const details = node(page, 'f-extra');
+    await expect(details.getByLabel('Floor')).toHaveValue('12');
+    await expect(details.getByLabel('Lift access')).toHaveValue('Freight lift, 08:00-10:00');
+    await expect(details.getByLabel('Sprinklers fitted')).toBeChecked();
+    await details.getByLabel('Floor').fill('14');
+    await details.getByLabel('Sprinklers fitted').uncheck();
+    await details.getByLabel('Fire zone').selectOption({ label: 'Zone A' });
+    expect(await value(page, 'extra')).toEqual({ floor: 14, lift_access: 'Freight lift, 08:00-10:00', parking: 6, sprinklers: false, zone: 'a' });
+    await details.scrollIntoViewIfNeeded();
+    await screen(page, `${variant}-fields-properties`);
+  });
+
   test('a folded section opens from its title and shows its fields', async ({ page }) => {
     await open(page, variant, 'page=fields');
     const title = node(page, 's-structured').getByRole('button', { name: 'Structured data' });

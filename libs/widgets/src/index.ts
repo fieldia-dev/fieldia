@@ -12,3 +12,4 @@ export * from './lib/progress';
 export * from './lib/label';
 export * from './lib/statusbar';
 export * from './lib/calendar';
+export * from './lib/properties';
