@@ -79,6 +79,7 @@ export const FieldiaForm = defineComponent({
     icons: { type: Object as PropType<ViewerOptions['icons']>, default: undefined },
     keys: { type: Object as PropType<ViewerOptions['keys']>, default: undefined },
     showValid: { type: Boolean, default: false },
+    saveStatus: { type: String as PropType<ViewerOptions['saveStatus']>, default: undefined },
   },
   emits: {
     ready: (_handle: ViewerHandle) => true,
@@ -156,6 +157,7 @@ export const FieldiaForm = defineComponent({
         icons: props.icons ? toRaw(props.icons) : undefined,
         keys: props.keys ? toRaw(props.keys) : undefined,
         showValid: props.showValid,
+        saveStatus: props.saveStatus,
         onAction: (request) => emit('action', request),
       });
       portals.value = found;

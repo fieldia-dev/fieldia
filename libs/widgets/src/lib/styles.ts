@@ -543,6 +543,28 @@ export const FIELDIA_CSS = /* css */ `
 .fd-text-paragraph { margin: 0; }
 .fd-text-note { margin: 0; color: var(--fd-muted); font-size: 13px; }
 .fd-status { min-height: 1.4em; color: var(--fd-muted); font-size: 13px; }
+.fd-status-box { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.fd-status-box .fd-retry { font-size: 13px; }
+/* Said to screen readers only. */
+.fd-announce { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* The server out of reach: a banner over the page, with Retry. */
+.fd-banner {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 14px; margin-block-end: 16px;
+  border: 1px solid #f0c47a; border-radius: var(--fd-control-radius); background: var(--fd-warning-soft); color: var(--fd-warning); font-size: 13.5px;
+}
+.fd-banner-text { flex: 1 1 16em; min-width: 0; }
+.fd-content > .fd-banner:has(+ .fd-draft + .fd-sheet-page), .fd-content > .fd-banner:has(+ .fd-sheet-page) { margin: 12px 16px 0; }
+/* The status as a toast in a corner, or as a bar across the top. */
+.fd-status-box.fd-toast {
+  position: fixed; inset-block-end: max(20px, env(safe-area-inset-bottom, 0px)); inset-inline-end: 20px; z-index: 900;
+  padding: 10px 16px; border-radius: 8px; background: var(--fd-text); box-shadow: 0 8px 24px rgba(15, 20, 25, 0.25);
+}
+/* Light words on the dark toast, saved or not: the status's own colours are for a light ground. */
+.fd-toast .fd-status, .fd-toast .fd-status.fd-status-saved, .fd-toast .fd-status.fd-status-error { color: var(--fd-surface); font-size: 13.5px; min-height: 0; }
+.fd-toast .fd-retry { color: var(--fd-surface); text-decoration: underline; }
+.fd-toast:has(.fd-status-error) { background: var(--fd-error); }
+.fd-status-box.fd-status-bar { display: flex; justify-content: center; min-height: 32px; padding: 6px 16px; background: var(--fd-surface); border-block-end: 1px solid var(--fd-border); }
+.fd-status-bar .fd-status-error { color: var(--fd-error); }
 .fd-status.fd-status-error { color: var(--fd-error); }
 .fd-status.fd-status-saved { color: var(--fd-success); }
 .fd-draft { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 14px; margin-block-end: 16px;

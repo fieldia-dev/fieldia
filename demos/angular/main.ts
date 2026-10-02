@@ -78,6 +78,7 @@ class NoteComponent implements OnInit {
     [relatedPages]="relatedPages"
     [keys]="options.keys"
     [showValid]="options.showValid ?? false"
+    [saveStatus]="options.saveStatus ?? 'inline'"
     (ready)="ready($event)"
     (action)="pressed($event)"
   >

@@ -1,8 +1,24 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { node, open, screen } from './support';
 import { VARIANTS } from './variants';
 
-/** Behaviour around the fields: the ✓ of a field filled in right. */
+/** Behaviour around the fields: the ✓ of a field filled in right, a refused save, the save's status. */
+
+/** Makes the demo's data source refuse its saves as told: a refusal by kind, or a fetch that fails. */
+const refuse = (page: Page, how: { kind: string; message: string; fields?: Record<string, string> } | 'network') =>
+  page.evaluate((how) => {
+    const source = (window as any).fieldiaDemo.dataSource;
+    source.realSave ??= source.save;
+    source.save = async () => {
+      if (how === 'network') throw new TypeError('Failed to fetch');
+      throw Object.assign(new Error(how.message), { problem: how });
+    };
+  }, how);
+const letSavesThrough = (page: Page) =>
+  page.evaluate(() => {
+    const source = (window as any).fieldiaDemo.dataSource;
+    source.save = source.realSave;
+  });
 for (const variant of VARIANTS) {
   test.describe(`${variant} · form behaviour`, () => {
     test('a ✓ appears by a field filled in right when the page asks, and goes when it goes wrong', async ({ page }) => {
@@ -24,6 +40,74 @@ for (const variant of VARIANTS) {
       await screen(page, `${variant}-valid-marks`, { viewport: true });
       await name.locator('input').fill('');
       await expect(name.locator('.fd-valid-mark')).toBeHidden();
+    });
+
+    test('a server’s field errors land on their fields, and the refusal is said and announced', async ({ page }) => {
+      await open(page, variant, 'page=customer&skin=underline');
+      await refuse(page, { kind: 'fields', message: 'Check the email', fields: { email: 'This email is already a customer’s' } });
+      await node(page, 'f-phone').locator('input').fill('+20 2 1111 2222');
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await expect(node(page, 'f-email').locator('.fd-error')).toHaveText('This email is already a customer’s');
+      await expect(page.locator('.fd-status')).toHaveText('Not saved. Check: Email');
+      await expect(page.locator('.fd-announce')).toHaveText('Not saved. Check: Email');
+      await expect(node(page, 'f-email').locator('input')).toBeFocused();
+      await screen(page, `${variant}-save-refused-fields`, { viewport: true });
+      await node(page, 'f-email').locator('input').fill('sales@niletraders.example');
+      await expect(node(page, 'f-email').locator('.fd-error')).toBeHidden();
+    });
+
+    test('a business rule appears in a dialog', async ({ page }) => {
+      await open(page, variant, 'page=customer&skin=underline');
+      await refuse(page, { kind: 'rule', message: 'A blocked customer cannot be given more credit.' });
+      await node(page, 'f-phone').locator('input').fill('+20 2 1111 2222');
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      const notice = page.getByRole('alertdialog');
+      await expect(notice).toContainText('A blocked customer cannot be given more credit.');
+      await screen(page, `${variant}-save-refused-rule`, { viewport: true });
+      await notice.getByRole('button', { name: 'OK' }).click();
+      await expect(notice).toBeHidden();
+      await expect(page.locator('.fd-status')).toHaveText('Not saved');
+    });
+
+    test('a network failure shows a banner, and Retry saves once the server answers', async ({ page }) => {
+      const { demo } = await open(page, variant, 'page=customer&skin=underline');
+      await refuse(page, 'network');
+      await node(page, 'f-phone').locator('input').fill('+20 2 1111 2222');
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      const banner = page.locator('.fd-banner');
+      await expect(banner).toBeVisible();
+      await expect(banner).toContainText('Could not reach the server. Your changes are still here.');
+      await screen(page, `${variant}-save-offline`, { viewport: true });
+      await letSavesThrough(page);
+      await banner.getByRole('button', { name: 'Retry' }).click();
+      await expect(banner).toBeHidden();
+      await expect(page.locator('.fd-status')).toHaveText('Saved');
+      expect(await demo<string>('dataSource.records.partner.1.phone')).toBe('+20 2 1111 2222');
+    });
+
+    test('the save’s status can be a toast in a corner, which goes once saved, or a bar across the top', async ({ page }) => {
+      await open(page, variant, 'page=customer&skin=underline&saveStatus=toast');
+      await node(page, 'f-phone').locator('input').fill('+20 2 1111 2222');
+      await page.keyboard.press('ControlOrMeta+Enter');
+      const toast = page.locator('.fd-toast');
+      await expect(toast.locator('.fd-status')).toHaveText('Saved');
+      const box = (await toast.boundingBox())!;
+      const view = page.viewportSize()!;
+      expect(view.width - (box.x + box.width)).toBeLessThan(40);
+      expect(view.height - (box.y + box.height)).toBeLessThan(40);
+      // Light words on the toast's dark ground, whatever the status colours them elsewhere.
+      const [ink, ground] = await toast.evaluate((el) => [getComputedStyle(el.querySelector('.fd-status')!).color, getComputedStyle(el).backgroundColor]);
+      expect(ink).toBe('rgb(255, 255, 255)');
+      expect(ground).not.toBe(ink);
+      await screen(page, `${variant}-save-toast`, { viewport: true });
+      await expect(toast).toBeHidden({ timeout: 5000 });
+      await open(page, variant, 'page=customer&skin=underline&saveStatus=bar');
+      await node(page, 'f-phone').locator('input').fill('+20 2 3333 4444');
+      await page.keyboard.press('ControlOrMeta+Enter');
+      const bar = page.locator('.fd-status-bar');
+      await expect(bar.locator('.fd-status')).toHaveText('Saved');
+      expect((await bar.boundingBox())!.y).toBeLessThan((await page.locator('.fd-header').boundingBox())!.y);
+      await screen(page, `${variant}-save-bar`, { viewport: true });
     });
 
     test('no ✓ unless the page asks', async ({ page }) => {

@@ -33,12 +33,19 @@ export function pageFromQuery(params: URLSearchParams): Page {
 
 /**
  * Viewer choices the query string may make: `enterToNext=1` makes Enter move to
- * the next field, `showValid=1` puts a ✓ by each field filled in right.
+ * the next field, `showValid=1` puts a ✓ by each field filled in right, and
+ * `saveStatus=toast` or `bar` moves the save's progress.
  */
-export function optionsFromQuery(params: URLSearchParams): { keys?: { enterMovesToNext: boolean }; showValid?: boolean } {
+export function optionsFromQuery(params: URLSearchParams): {
+  keys?: { enterMovesToNext: boolean };
+  showValid?: boolean;
+  saveStatus?: 'inline' | 'toast' | 'bar';
+} {
+  const saveStatus = params.get('saveStatus');
   return {
     ...(params.get('enterToNext') === '1' ? { keys: { enterMovesToNext: true } } : {}),
     ...(params.get('showValid') === '1' ? { showValid: true } : {}),
+    ...(saveStatus === 'toast' || saveStatus === 'bar' ? { saveStatus } : {}),
   };
 }
 

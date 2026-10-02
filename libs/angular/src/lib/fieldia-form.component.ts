@@ -95,6 +95,8 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly keys = input<ViewerOptions['keys']>(undefined);
   /** A ✓ by each field filled in right. */
   readonly showValid = input<boolean>(false);
+  /** Where a save's progress shows: beside Save, as a toast, or as a bar. */
+  readonly saveStatus = input<ViewerOptions['saveStatus']>(undefined);
 
   readonly ready = output<ViewerHandle>();
   readonly action = output<ActionRequest>();
@@ -196,6 +198,7 @@ export class FieldiaFormComponent implements OnDestroy {
       icons: this.icons(),
       keys: this.keys(),
       showValid: this.showValid(),
+      saveStatus: this.saveStatus(),
       onAction: (request) => this.action.emit(request),
     });
     this.ready.emit(this.handle);
