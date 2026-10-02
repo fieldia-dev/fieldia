@@ -38,6 +38,8 @@ function combobox(options: {
   onCommitEmpty?: () => void;
   /** Make a record from what was typed, offered when nothing found has that name. */
   create?: (text: string) => Promise<RelatedRecord>;
+  /** Further choices at the end of the list: each acts on the typed text and may hand back a record to pick. */
+  more?: (typed: string) => { label: string; act: (typed: string) => Promise<RelatedRecord | null> }[];
 }): Combobox {
   const { document: doc, id, labels } = options;
   const listId = `${id}-list`;
@@ -61,6 +63,8 @@ function combobox(options: {
   /** The "Create …" choice in the list, and the text it would make a record from. */
   let creating: RelatedRecord | null = null;
   let creatingText = '';
+  /** The further choices at the end of the list, by the entry that stands for each. */
+  let extras = new Map<RelatedRecord, (typed: string) => Promise<RelatedRecord | null>>();
   /** True while the person's own typing is in the box. */
   let editing = false;
   let results: RelatedRecord[] = [];
@@ -76,7 +80,7 @@ function combobox(options: {
       option.id = `${listId}-${i}`;
       option.setAttribute('role', 'option');
       option.setAttribute('aria-selected', String(i === active));
-      option.className = `fd-option${i === active ? ' fd-active' : ''}${record === creating ? ' fd-option-create' : ''}`;
+      option.className = `fd-option${i === active ? ' fd-active' : ''}${record === creating || extras.has(record) ? ' fd-option-create' : ''}`;
       option.textContent = record.label;
       option.addEventListener('mousedown', (event) => event.preventDefault()); // keep focus in the box
       option.addEventListener('click', () => choose(i));
@@ -117,6 +121,11 @@ function combobox(options: {
       void options.create(typed).then(options.pick, () => undefined);
       return;
     }
+    const act = extras.get(record);
+    if (act) {
+      void act(typed).then((picked) => picked && options.pick(picked), () => undefined);
+      return;
+    }
     options.pick(record);
   }
 
@@ -136,6 +145,9 @@ function combobox(options: {
         creating = { id: '__create__', label: fill(labels.createNamed, { name: typed }) };
         results = [...results, creating];
       }
+      creatingText = typed;
+      extras = new Map((options.more?.(typed) ?? []).map((extra, i) => [{ id: `__more_${i}__`, label: extra.label }, extra.act]));
+      results = [...results, ...extras.keys()];
       active = -1;
       render();
       open();
@@ -210,7 +222,10 @@ function creator(form: Form, name: string, node: FieldNode): ((text: string) => 
   return node.options?.['create'] !== false && form.canCreate(name) ? (text) => form.quickCreate(name, text) : undefined;
 }
 
-export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en }) => {
+export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, dialogs }) => {
+  const relation = field.type === 'many2one' ? field.relation : '';
+  const canOpen = !!dialogs && dialogs.canOpen(relation);
+  let readonly = false;
   const box = combobox({
     document,
     id,
@@ -219,7 +234,31 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
     pick: (record) => form.setValue(name, record),
     onCommitEmpty: () => form.setValue(name, null),
     create: creator(form, name, node),
+    // With dialogs: make a record in its own page, or pick from a full list.
+    more: (typed) => {
+      if (!dialogs || readonly) return [];
+      const choices: { label: string; act: (text: string) => Promise<RelatedRecord | null> }[] = [];
+      if (typed && canOpen && node.options?.['create'] !== false) {
+        choices.push({ label: labels.createAndEdit, act: (text) => dialogs.openRecord(relation, { name: text, title: field.label }) });
+      }
+      choices.push({ label: labels.searchMore, act: () => dialogs.searchMore({ title: field.label, search: (query, limit) => form.search(name, query, limit) }) });
+      return choices;
+    },
   });
+  // The linked record, opened in a dialog where the app can show it; a new name it is saved with follows here.
+  const open = canOpen ? document.createElement('button') : null;
+  if (open) {
+    open.type = 'button';
+    open.className = 'fd-combo-open';
+    open.textContent = '↗';
+    open.hidden = true;
+    open.addEventListener('click', async () => {
+      const current = form.getState().values[name] as RelatedRecord | null;
+      if (!current || !dialogs) return;
+      const saved = await dialogs.openRecord(relation, { recordId: current.id, title: current.label });
+      if (saved && saved.label !== current.label) form.setValue(name, saved);
+    });
+  }
   const clear = document.createElement('button');
   clear.type = 'button';
   clear.className = 'fd-combo-clear';
@@ -229,15 +268,20 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
     form.setValue(name, null);
     box.input.focus();
   });
-  box.element.append(clear);
+  box.element.append(clear, ...(open ? [open] : []));
   return {
     element: box.element,
     focus: () => box.input.focus(),
     update(state) {
       const record = state.value as RelatedRecord | null | undefined;
+      readonly = state.readonly;
       box.setText(record?.label ?? '');
       box.setReadonly(state.readonly);
       clear.hidden = !record || state.readonly;
+      if (open) {
+        open.hidden = !record;
+        if (record) open.setAttribute('aria-label', fill(labels.openNamed, { name: record.label }));
+      }
       box.input.setAttribute('aria-invalid', String(state.invalid));
       box.input.setAttribute('aria-required', String(state.required));
       if (state.describedBy) box.input.setAttribute('aria-describedby', state.describedBy);

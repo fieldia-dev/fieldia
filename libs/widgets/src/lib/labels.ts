@@ -18,6 +18,10 @@ export interface WidgetLabels {
   moreProblems: string;
   /** The choice that makes a new record from what was typed. `{name}` is filled in. */
   createNamed: string;
+  /** Choices at the end of a link's list, and the button that opens the linked record (`{name}`). */
+  createAndEdit: string;
+  searchMore: string;
+  openNamed: string;
   /** The button that lets a person hide or show a table's optional columns. */
   chooseColumns: string;
   /** The button beside a date that opens its calendar. */
@@ -68,6 +72,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     moreProblems: 'and {n} more',
     chooseColumns: 'Choose columns',
     createNamed: 'Create “{name}”',
+    createAndEdit: 'Create and edit…',
+    searchMore: 'Search more…',
+    openNamed: 'Open {name}',
     chooseDate: 'Choose a date',
     previousMonth: 'Previous month',
     nextMonth: 'Next month',
@@ -111,6 +118,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     moreProblems: 'و{n} أخرى',
     chooseColumns: 'اختيار الأعمدة',
     createNamed: 'إنشاء «{name}»',
+    createAndEdit: 'إنشاء وتعديل…',
+    searchMore: 'بحث موسّع…',
+    openNamed: 'فتح {name}',
     chooseDate: 'اختيار تاريخ',
     previousMonth: 'الشهر السابق',
     nextMonth: 'الشهر التالي',
@@ -154,6 +164,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     moreProblems: 'und {n} weitere',
     chooseColumns: 'Spalten auswählen',
     createNamed: '„{name}“ anlegen',
+    createAndEdit: 'Anlegen und bearbeiten…',
+    searchMore: 'Weitere suchen…',
+    openNamed: '{name} öffnen',
     chooseDate: 'Datum auswählen',
     previousMonth: 'Vorheriger Monat',
     nextMonth: 'Nächster Monat',
@@ -197,6 +210,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     moreProblems: 'et {n} de plus',
     chooseColumns: 'Choisir les colonnes',
     createNamed: 'Créer « {name} »',
+    createAndEdit: 'Créer et modifier…',
+    searchMore: 'Rechercher plus…',
+    openNamed: 'Ouvrir {name}',
     chooseDate: 'Choisir une date',
     previousMonth: 'Mois précédent',
     nextMonth: 'Mois suivant',

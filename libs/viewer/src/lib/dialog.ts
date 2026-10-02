@@ -51,7 +51,9 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
   const discard = make('button', { type: 'button', class: 'fd-button' }, labels.discard);
   const saveClose = make('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.saveClose);
   const box = make('div', {
-    class: `fd-form-dialog fd-size-${options.size ?? 'medium'}`,
+    // Its own tokens and skin: the dialog sits outside the page that opened it.
+    class: `fd-theme fd-form-dialog fd-size-${options.size ?? 'medium'}`,
+    'data-fd-skin': options.skin ?? 'underline',
     role: 'dialog',
     'aria-modal': 'true',
     'aria-labelledby': title.id,

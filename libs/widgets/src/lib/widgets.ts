@@ -5,6 +5,7 @@ import type {
   Form,
   Line,
   Locale,
+  RecordId,
   ReferenceValue,
   RelatedRecord,
   Value,
@@ -44,6 +45,23 @@ export interface WidgetContext {
   preferences?: PreferenceStore;
   /** The page's language: numbers and dates are written as its readers write them. English when left out. */
   locale?: Locale;
+  /** Dialogs the page can open: a related record, a searchable list, values to edit. Left out, widgets offer none. */
+  dialogs?: WidgetDialogs;
+}
+
+/** What a widget may ask of the page around it in a dialog. The viewer provides these. */
+export interface WidgetDialogs {
+  /** Whether a record of this model can be shown in a dialog: the app gave a page for it. */
+  canOpen(model: string): boolean;
+  /**
+   * A record in a dialog: an existing one (`recordId`) or a new one, whose name
+   * starts as `name`. Resolves with the record once saved, or null.
+   */
+  openRecord(model: string, request: { recordId?: RecordId; name?: string; title: string }): Promise<RelatedRecord | null>;
+  /** Pick a record from a searchable list. */
+  searchMore(request: { title: string; search(query: string, limit: number): Promise<RelatedRecord[]> }): Promise<RelatedRecord | null>;
+  /** Values edited in a form made of these fields. Resolves with the new values, or null. */
+  editValues(request: { title: string; fields: Record<string, Field>; values: Values; readonly?: boolean }): Promise<Values | null>;
 }
 
 export interface WidgetState {

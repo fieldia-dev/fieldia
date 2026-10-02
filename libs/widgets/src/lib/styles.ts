@@ -12,7 +12,8 @@
  * form mirrors without a second stylesheet.
  */
 export const FIELDIA_CSS = /* css */ `
-.fd-form {
+/* .fd-theme carries the same tokens for things outside a form, such as a dialog over the page. */
+.fd-form, .fd-theme {
   --fd-font: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", sans-serif;
   --fd-text: #212529;
   --fd-muted: #6b7280;
@@ -48,7 +49,7 @@ export const FIELDIA_CSS = /* css */ `
   color: var(--fd-text);
   -webkit-text-size-adjust: 100%;
 }
-.fd-form[data-fd-skin="outlined"] {
+.fd-form[data-fd-skin="outlined"], .fd-theme[data-fd-skin="outlined"] {
   --fd-text: rgba(0, 0, 0, 0.88);
   --fd-muted: rgba(0, 0, 0, 0.55);
   --fd-page: #f5f5f5;
@@ -192,6 +193,13 @@ export const FIELDIA_CSS = /* css */ `
   font-size: 16px; line-height: 1; padding: 2px 6px; border-radius: 4px;
 }
 .fd-combo-clear:hover { color: var(--fd-text); background: var(--fd-page); }
+/* A link that can be opened has its open button beside the clear button. */
+.fd-combo:has(> .fd-combo-open:not([hidden])) .fd-combo-input { padding-inline-end: 52px; }
+.fd-combo-open {
+  position: absolute; inset-inline-end: 28px; border: none; background: none; cursor: pointer; color: var(--fd-accent);
+  font-size: 14px; line-height: 1; padding: 2px 6px; border-radius: 4px;
+}
+.fd-combo-open:hover { background: var(--fd-page); }
 .fd-listbox {
   position: absolute; inset-inline: 0; inset-block-start: calc(100% + 2px); z-index: 20; margin: 0; padding: 4px 0;
   list-style: none; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 4px);

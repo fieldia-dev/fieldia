@@ -1,5 +1,5 @@
 import { createForm, createMemoryDataSource, type Field, type FieldNode, type Form, type Page } from '@fieldia/core';
-import { createWidget } from './widgets';
+import { createWidget, type WidgetDialogs } from './widgets';
 import { WIDGET_LABELS } from './labels';
 
 const page = {
@@ -406,5 +406,80 @@ describe('making a record from a typed name', () => {
     (([...el.querySelectorAll('[role=option]')].find((o) => o.textContent === 'Create “Retail”') as HTMLElement)).click();
     await settle();
     expect(form.getState().values['tag_ids']).toEqual([{ id: 13, label: 'Retail' }]);
+  });
+});
+
+describe('a link field and its dialogs', () => {
+  function mountWithDialogs(dialogs: WidgetDialogs | undefined) {
+    const form = createForm({ page, dataSource: source() });
+    const node = (page.layout as { children: FieldNode[] }).children.find((n) => n.id === 'n-country') as FieldNode;
+    const widget = createWidget({ form, name: 'country_id', field: page.fields['country_id'] as Field, node, id: 'fd-country', document, labels: WIDGET_LABELS.en, dialogs });
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values['country_id'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    return { form, el: widget.element, input: widget.element.querySelector('input') as HTMLInputElement };
+  }
+  const fakeDialogs = (answers: Partial<WidgetDialogs>): WidgetDialogs & { calls: unknown[][] } => {
+    const calls: unknown[][] = [];
+    return {
+      calls,
+      canOpen: (model) => model === 'country',
+      openRecord: async (...args) => {
+        calls.push(['openRecord', ...args]);
+        return answers.openRecord ? answers.openRecord(...args) : null;
+      },
+      searchMore: async (request) => {
+        calls.push(['searchMore', request.title]);
+        return answers.searchMore ? answers.searchMore(request) : null;
+      },
+      editValues: async () => null,
+    };
+  };
+  const optionNamed = (el: Element, name: string) => [...el.querySelectorAll('[role=option]')].find((o) => o.textContent === name) as HTMLElement;
+
+  it('ends its list with Search more…, which picks from a searchable list', async () => {
+    const dialogs = fakeDialogs({ searchMore: async () => ({ id: 3, label: 'Japan' }) });
+    const { form, el, input } = mountWithDialogs(dialogs);
+    type(input, 'j');
+    await settle();
+    expect(options(el).at(-1)).toBe('Search more…');
+    optionNamed(el, 'Search more…').click();
+    await settle();
+    expect(dialogs.calls).toEqual([['searchMore', 'Country']]);
+    expect(form.getState().values['country_id']).toEqual({ id: 3, label: 'Japan' });
+  });
+
+  it('offers Create and edit…, opening the related page with the typed name, and links what was saved', async () => {
+    const dialogs = fakeDialogs({ openRecord: async () => ({ id: 9, label: 'Oman' }) });
+    const { form, el, input } = mountWithDialogs(dialogs);
+    type(input, 'Oman');
+    await settle();
+    expect(options(el)).toEqual(['Create “Oman”', 'Create and edit…', 'Search more…']);
+    optionNamed(el, 'Create and edit…').click();
+    await settle();
+    expect(dialogs.calls).toEqual([['openRecord', 'country', { name: 'Oman', title: 'Country' }]]);
+    expect(form.getState().values['country_id']).toEqual({ id: 9, label: 'Oman' });
+  });
+
+  it('opens the linked record from a button beside it, and follows a new name', async () => {
+    const dialogs = fakeDialogs({ openRecord: async () => ({ id: 1, label: 'Egypt (EG)' }) });
+    const { form, el } = mountWithDialogs(dialogs);
+    form.setValue('country_id', { id: 1, label: 'Egypt' });
+    const open = el.querySelector('button[aria-label="Open Egypt"]') as HTMLButtonElement;
+    expect(open).not.toBeNull();
+    open.click();
+    await settle();
+    expect(dialogs.calls).toEqual([['openRecord', 'country', { recordId: 1, title: 'Egypt' }]]);
+    expect(form.getState().values['country_id']).toEqual({ id: 1, label: 'Egypt (EG)' });
+  });
+
+  it('offers none of them where the app gave no dialogs', async () => {
+    const { form, el, input } = mountWithDialogs(undefined);
+    form.setValue('country_id', { id: 1, label: 'Egypt' });
+    expect(el.querySelector('button[aria-label^="Open"]')).toBeNull();
+    type(input, 'Oman');
+    await settle();
+    expect(options(el)).toEqual(['Create “Oman”']);
   });
 });
