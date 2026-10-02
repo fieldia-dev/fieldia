@@ -193,6 +193,8 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
    * `enterMovesToNext`, Enter moves to the next field instead of sending the form.
    */
   keys?: { saveWithCtrlEnter?: boolean; enterMovesToNext?: boolean };
+  /** A ✓ by a field's label once someone has filled it in and it would pass its checks. */
+  showValid?: boolean;
 }
 
 export interface ViewerHandle {
@@ -263,6 +265,12 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const wrapper = el('div', { class: 'fd-field', 'data-node': node.id, 'data-field': node.field, 'data-type': def.type });
     if (node.colspan) wrapper.style.setProperty('--fd-span', String(node.colspan));
     const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, node.label ?? def.label);
+    // The ✓ of a field filled in right; never on a yes/no box, a table or a file, where it would say nothing.
+    const mark = options.showValid && !NO_VALID_MARK.has(def.type) ? drawIcon(doc, 'check') : null;
+    if (mark) {
+      mark.classList.add('fd-valid-mark');
+      label.append(mark);
+    }
     const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs }, options.widgets);
     if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) {
       // `for` stays: a custom field that puts the id on its own input is
@@ -289,6 +297,13 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const warned = state.warning && state.warningField === node.field ? state.warning : '';
       warning.hidden = !warned;
       warning.textContent = warned;
+      if (mark) {
+        const value = state.values[node.field];
+        const filled = value !== null && value !== undefined && value !== '' && !(Array.isArray(value) && !value.length);
+        const valid = !shown.readonly && !message && filled && state.dirty.includes(node.field) && form.problem(node.field) === null;
+        wrapper.classList.toggle('fd-valid', valid);
+        mark.toggleAttribute('hidden', !valid);
+      }
       widget.update({
         value: state.values[node.field],
         values: state.values,
@@ -867,6 +882,9 @@ function nameFieldOf(page: Page): string | null {
   if (page.fields['name']) return 'name';
   return Object.entries(page.fields).find(([, def]) => def.type === 'char')?.[0] ?? null;
 }
+
+/** Fields whose ✓ would say nothing: a yes/no box is never wrong, a table or a file has its own look. */
+const NO_VALID_MARK = new Set(['boolean', 'one2many', 'binary', 'image', 'html', 'json', 'properties']);
 
 /** A form made of fields, for values edited in a dialog (a line, for one). */
 function valuesPage(fields: Record<string, Field>, title: string, readonly: boolean): Page {

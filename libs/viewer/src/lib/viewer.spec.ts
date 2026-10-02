@@ -234,6 +234,36 @@ describe('keys', () => {
   });
 });
 
+describe('a ✓ on a valid field', () => {
+  const marked = (host: Element, id: string) => at(host, id).classList.contains('fd-valid') && visible(at(host, id).querySelector('.fd-valid-mark'));
+
+  it('marks a field once the person has filled it in right, and takes the mark away when it goes wrong', () => {
+    const { host } = mount('signup', { showValid: true });
+    expect(marked(host, 'f-name')).toBe(false); // nothing typed yet
+    type(input(host, 'f-name'), 'Sara Hassan');
+    expect(marked(host, 'f-name')).toBe(true);
+    type(input(host, 'f-email'), 'sara@');
+    expect(marked(host, 'f-email')).toBe(false);
+    type(input(host, 'f-email'), 'sara@example.com');
+    expect(marked(host, 'f-email')).toBe(true);
+    type(input(host, 'f-name'), '');
+    expect(marked(host, 'f-name')).toBe(false);
+  });
+
+  it('marks nothing unless the page asks', () => {
+    const { host } = mount('signup');
+    type(input(host, 'f-name'), 'Sara Hassan');
+    expect(marked(host, 'f-name')).toBe(false);
+    expect(at(host, 'f-name').querySelector('.fd-valid-mark')).toBeNull();
+  });
+
+  it('marks no yes/no box: a tick there would say nothing', () => {
+    const { host } = mount('signup', { showValid: true });
+    (input(host, 'f-newsletter') as HTMLInputElement).click();
+    expect(marked(host, 'f-newsletter')).toBe(false);
+  });
+});
+
 describe('a sections page', () => {
   it('lays out sections with their titles and columns', () => {
     const { host } = mount('signup');

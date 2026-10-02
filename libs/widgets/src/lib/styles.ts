@@ -100,6 +100,8 @@ export const FIELDIA_CSS = /* css */ `
 }
 .fd-field { display: grid; gap: 4px; min-width: 0; grid-column: span min(var(--fd-span, 1), var(--fd-columns, 1)); }
 .fd-label { font-weight: var(--fd-label-weight); color: var(--fd-text); }
+/* The ✓ of a field filled in right, by its label. */
+.fd-valid-mark { color: var(--fd-success); width: 1em; height: 1em; margin-inline-start: 6px; vertical-align: -0.15em; stroke-width: 2.4; }
 .fd-field.fd-required > .fd-label::after { content: " *"; color: var(--fd-error); }
 .fd-form[data-fd-skin="outlined"] .fd-field.fd-required > .fd-label::after { content: ""; }
 .fd-form[data-fd-skin="outlined"] .fd-field.fd-required > .fd-label::before { content: "* "; color: var(--fd-error); }
