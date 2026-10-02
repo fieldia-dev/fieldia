@@ -110,6 +110,8 @@ export class FieldiaFormComponent implements OnDestroy {
 
   readonly ready = output<ViewerHandle>();
   readonly action = output<ActionRequest>();
+  /** A list's row was opened: the app shows the record. */
+  readonly openRecord = output<RecordId>();
 
   private readonly slotTemplates = contentChildren(FieldiaSlotDirective);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -219,6 +221,7 @@ export class FieldiaFormComponent implements OnDestroy {
       editSwitch: this.editSwitch(),
       translate: this.translator(),
       onAction: (request) => this.action.emit(request),
+      onOpenRecord: (id) => this.openRecord.emit(id),
     });
     this.ready.emit(this.handle);
   }

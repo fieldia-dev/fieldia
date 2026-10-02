@@ -9,15 +9,17 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { FieldiaFormComponent, FieldiaSlotDirective, formState } from '@fieldia/angular';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
-import type { ActionRequest, Form, FormState, Locale, Value } from '@fieldia/core';
+import type { ActionRequest, Form, FormState, Locale, RecordId, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { optionsFromQuery, pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
 
 const params = new URLSearchParams(location.search);
 const page = pageFromQuery(params);
 const dataSource = sampleDataSource();
 const actions: string[] = [];
+/** Every button press in full, with the records chosen in a list. */
+const requests: ActionRequest[] = [];
 
 /** The "shout" field, as an Angular component. */
 @Component({
@@ -100,6 +102,7 @@ class NoteComponent implements OnInit {
     [translator]="options.translate"
     (ready)="ready($event)"
     (action)="pressed($event)"
+    (openRecord)="open($event)"
   >
     <ng-template fieldiaSlot="chatter" let-form><demo-chatter [form]="form" /></ng-template>
     <ng-template fieldiaSlot="note" let-form><demo-note [form]="form" /></ng-template>
@@ -108,7 +111,7 @@ class NoteComponent implements OnInit {
 class DemoComponent {
   readonly page = page;
   readonly dataSource = dataSource;
-  readonly recordId = page.data.kind === 'record' ? 1 : null;
+  readonly recordId = recordFromQuery(params, page);
   readonly skin = ((params.get('skin') as Skin) ?? 'underline') as Skin;
   readonly dir: 'ltr' | 'rtl' | undefined = params.get('dir') === 'rtl' ? 'rtl' : undefined;
   readonly locale = (params.get('locale') as Locale | null) ?? undefined;
@@ -117,10 +120,14 @@ class DemoComponent {
   readonly relatedPages = relatedPages;
   readonly options = optionsFromQuery(params);
   ready(handle: ViewerHandle) {
-    Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, chatter } });
+    Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter } });
   }
   pressed(request: ActionRequest) {
     actions.push(request.action);
+    requests.push(request);
+  }
+  open(id: RecordId) {
+    openRecord(params, id);
   }
 }
 

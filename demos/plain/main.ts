@@ -1,4 +1,4 @@
-import type { Locale } from '@fieldia/core';
+import type { ActionRequest, Locale } from '@fieldia/core';
 import { mountViewer, type Skin } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import { gridWidgets } from '@fieldia/grid';
@@ -18,6 +18,8 @@ const page = pageFromQuery(params);
 const dataSource = sampleDataSource();
 const chatter = sampleChatter();
 const actions: string[] = [];
+/** Every button press in full, with the records chosen in a list. */
+const requests: ActionRequest[] = [];
 
 /** The "shout" field, as a plain-DOM widget. */
 const shoutWidget: WidgetFactory = ({ form, name: field, id, document }) => {
@@ -48,7 +50,10 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
   skin: (params.get('skin') as Skin) ?? 'underline',
   dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,
   locale: (params.get('locale') as Locale | null) ?? undefined,
-  onAction: (request) => void actions.push(request.action),
+  onAction: (request) => {
+    actions.push(request.action);
+    requests.push(request);
+  },
   widgets: { 'char.shout': shoutWidget, ...gridWidgets, ...codeWidgets },
   relatedPages,
   ...optionsFromQuery(params),
@@ -74,4 +79,4 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
   },
 });
 
-Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, chatter } });
+Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter } });

@@ -87,6 +87,8 @@ export const FieldiaForm = defineComponent({
   emits: {
     ready: (_handle: ViewerHandle) => true,
     action: (_request: ActionRequest) => true,
+    /** A list's row was opened: the app shows the record. */
+    openRecord: (_id: RecordId) => true,
   },
   setup(props, { slots, emit, expose }) {
     const host = ref<HTMLElement>();
@@ -165,6 +167,7 @@ export const FieldiaForm = defineComponent({
         editSwitch: props.editSwitch,
         translate: props.translate,
         onAction: (request) => emit('action', request),
+        onOpenRecord: (id) => emit('openRecord', id),
       });
       portals.value = found;
       emit('ready', handle);

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { createForm, type Page } from '@fieldia/core';
+import { createForm, createMemoryDataSource, type Page, type RecordId } from '@fieldia/core';
 import type { ViewerHandle } from '@fieldia/viewer';
 import { createRef, useState } from 'react';
 import { FieldiaForm, useFormState, type FieldComponentProps, type SlotComponentProps } from './fieldia-form';
@@ -103,6 +103,20 @@ describe('<FieldiaForm>', () => {
     render(<FieldiaForm page={shared.page} form={shared} />);
     act(() => shared.setValue('name', 'Shared'));
     expect((document.querySelector('[data-node="q-name"] input') as HTMLInputElement).value).toBe('Shared');
+  });
+
+  it('opens a list’s record through the newest onOpenRecord it was given, without mounting again', async () => {
+    const dataSource = createMemoryDataSource({ records: { partner: { 7: { name: 'Delta Foods' } } } });
+    const first: RecordId[] = [];
+    const second: RecordId[] = [];
+    const customers = page('customers');
+    const { rerender } = render(<FieldiaForm page={customers} dataSource={dataSource} onOpenRecord={(id) => first.push(id)} />);
+    const row = await screen.findByText('Delta Foods');
+    fireEvent.click(row);
+    rerender(<FieldiaForm page={customers} dataSource={dataSource} onOpenRecord={(id) => second.push(id)} />);
+    fireEvent.click(screen.getByText('Delta Foods'));
+    expect(first).toEqual([7]);
+    expect(second).toEqual([7]);
   });
 
   it('cleans up when it unmounts', () => {

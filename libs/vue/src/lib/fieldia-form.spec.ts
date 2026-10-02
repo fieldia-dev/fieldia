@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { mount } from '@vue/test-utils';
-import { createForm, type Form, type Page } from '@fieldia/core';
+import { createForm, createMemoryDataSource, type Form, type Page } from '@fieldia/core';
 import type { ViewerHandle } from '@fieldia/viewer';
 import { defineComponent, h, nextTick, ref, type PropType } from 'vue';
 import { FieldiaForm, useFormState } from './fieldia-form';
@@ -100,6 +100,15 @@ describe('<FieldiaForm> for Vue', () => {
     const wrapper = mount(FieldiaForm, { props: { page: page('customer') }, attachTo: document.body });
     await handleOf(wrapper)!.form.runAction('sales');
     expect(wrapper.emitted('action')?.[0]?.[0]).toMatchObject({ action: 'open_sales' });
+    wrapper.unmount();
+  });
+
+  it('passes a list’s opened row on as an openRecord event', async () => {
+    const dataSource = createMemoryDataSource({ records: { partner: { 7: { name: 'Delta Foods' } } } });
+    const wrapper = mount(FieldiaForm, { props: { page: page('customers'), dataSource }, attachTo: document.body });
+    for (let waited = 0; !wrapper.find('.fd-list-row').exists() && waited < 2000; waited += 10) await new Promise((resolve) => setTimeout(resolve, 10));
+    await wrapper.find('.fd-list-row td:nth-child(2)').trigger('click');
+    expect(wrapper.emitted('openRecord')?.[0]?.[0]).toBe(7);
     wrapper.unmount();
   });
 

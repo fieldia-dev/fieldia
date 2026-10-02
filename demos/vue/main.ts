@@ -1,19 +1,21 @@
 import { FieldiaForm, useFormState } from '@fieldia/vue';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
-import type { Form, Locale, Value } from '@fieldia/core';
+import type { ActionRequest, Form, Locale, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { createApp, defineComponent, h, onBeforeUnmount, onMounted, ref, type PropType } from 'vue';
 import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { optionsFromQuery, pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
 
 /** The same demo again, mounted by Vue with render functions. */
 const params = new URLSearchParams(location.search);
 const page = pageFromQuery(params);
 const dataSource = sampleDataSource();
 const actions: string[] = [];
+/** Every button press in full, with the records chosen in a list. */
+const requests: ActionRequest[] = [];
 
 /** The "shout" field, as a Vue component. */
 const Shout = defineComponent({
@@ -74,7 +76,8 @@ createApp({
       {
         page,
         dataSource,
-        recordId: page.data.kind === 'record' ? 1 : null,
+        recordId: recordFromQuery(params, page),
+        onOpenRecord: (id: string | number) => openRecord(params, id),
         skin: (params.get('skin') as Skin) ?? 'underline',
         dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,
         locale: (params.get('locale') as Locale | null) ?? undefined,
@@ -82,8 +85,11 @@ createApp({
         widgets: { ...gridWidgets, ...codeWidgets },
         relatedPages,
         ...optionsFromQuery(params),
-        onAction: (request: { action: string }) => void actions.push(request.action),
-        onReady: (handle: ViewerHandle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, chatter } }),
+        onAction: (request: ActionRequest) => {
+          actions.push(request.action);
+          requests.push(request);
+        },
+        onReady: (handle: ViewerHandle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter } }),
       },
       {
         chatter: ({ form }: { form: Form }) => h(Chatter, { form }),

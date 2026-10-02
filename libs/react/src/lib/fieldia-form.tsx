@@ -176,6 +176,8 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       widgets,
       slots,
       onAction: (request) => latest.current.onAction?.(request),
+      // The newest handler, as for actions; rows look openable only when there is one.
+      onOpenRecord: options.onOpenRecord && ((id) => latest.current.onOpenRecord?.(id)),
     });
     setHandle(mounted);
     setPortals(found);

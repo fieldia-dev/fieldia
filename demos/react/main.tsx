@@ -1,4 +1,4 @@
-import type { Locale } from '@fieldia/core';
+import type { ActionRequest, Locale } from '@fieldia/core';
 import { FieldiaForm, useFormState, type FieldComponentProps, type SlotComponentProps } from '@fieldia/react';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
@@ -8,13 +8,15 @@ import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
 import { createRoot } from 'react-dom/client';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { optionsFromQuery, pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
 
 /** The same demo as the plain one, mounted by React. StrictMode on, as apps run it. */
 const params = new URLSearchParams(location.search);
 const page = pageFromQuery(params);
 const dataSource = sampleDataSource();
 const actions: string[] = [];
+/** Every button press in full, with the records chosen in a list. */
+const requests: ActionRequest[] = [];
 
 /** The "shout" field, as a React component. */
 function Shout({ id, value, readonly, onChange }: FieldComponentProps) {
@@ -54,17 +56,21 @@ function Demo() {
     <FieldiaForm
       page={page}
       dataSource={dataSource}
-      recordId={page.data.kind === 'record' ? 1 : null}
+      recordId={recordFromQuery(params, page)}
+      onOpenRecord={(id) => openRecord(params, id)}
       skin={(params.get('skin') as Skin) ?? 'underline'}
       dir={params.get('dir') === 'rtl' ? 'rtl' : undefined}
       locale={(params.get('locale') as Locale | null) ?? undefined}
-      onAction={(request) => void actions.push(request.action)}
+      onAction={(request) => {
+        actions.push(request.action);
+        requests.push(request);
+      }}
       fieldTypes={{ 'char.shout': Shout }}
       widgets={{ ...gridWidgets, ...codeWidgets }}
       relatedPages={relatedPages}
       {...optionsFromQuery(params)}
       slots={{ chatter: Chatter, note: Note }}
-      onReady={(handle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, chatter } })}
+      onReady={(handle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter } })}
     />
   );
 }

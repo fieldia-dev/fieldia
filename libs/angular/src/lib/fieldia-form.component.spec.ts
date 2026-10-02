@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Component, DestroyRef, inject, input, signal, type OnInit, type Signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import type { ActionRequest, Form, FormState, Page, Value } from '@fieldia/core';
+import { createMemoryDataSource, type ActionRequest, type Form, type FormState, type Page, type RecordId, type Value } from '@fieldia/core';
 import type { ViewerHandle } from '@fieldia/viewer';
 import { FieldiaFormComponent, FieldiaSlotDirective, formState } from './fieldia-form.component';
 
@@ -78,6 +78,16 @@ class HostComponent {
   }
 }
 
+@Component({
+  imports: [FieldiaFormComponent],
+  template: `<fieldia-form [page]="page" [dataSource]="dataSource" (openRecord)="opened.push($event)" />`,
+})
+class ListHostComponent {
+  readonly page = page('customers');
+  readonly dataSource = createMemoryDataSource({ records: { partner: { 7: { name: 'Delta Foods' } } } });
+  readonly opened: RecordId[] = [];
+}
+
 async function setup(start: Page = custom) {
   const fixture = TestBed.createComponent(HostComponent);
   fixture.componentInstance.page.set(start);
@@ -131,6 +141,16 @@ describe('<fieldia-form> for Angular', () => {
     const { host, handle } = await setup(page('customer'));
     await handle().form.runAction('sales');
     expect(host.actions[0]).toMatchObject({ action: 'open_sales' });
+  });
+
+  it('passes a list’s opened row on as an openRecord output', async () => {
+    const fixture = TestBed.createComponent(ListHostComponent);
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    for (let waited = 0; !el.querySelector('.fd-list-row') && waited < 2000; waited += 10) await new Promise((resolve) => setTimeout(resolve, 10));
+    (el.querySelector('.fd-list-row td:nth-child(2)') as HTMLElement).click();
+    expect(fixture.componentInstance.opened).toEqual([7]);
   });
 
   it('hands widgets the preference store it is given', async () => {
