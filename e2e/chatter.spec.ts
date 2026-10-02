@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { node, open, screen } from './support';
+import { expectNoSidewaysScroll, node, open, screen } from './support';
 import { VARIANTS } from './variants';
 
 /** The chatter beside the customer sheet, in every framework. */
@@ -18,6 +18,24 @@ for (const variant of VARIANTS) {
       const summary = (await chatter(page).locator('.fd-activity-summary').nth(1).boundingBox())!;
       expect(summary.width, 'the summary is squeezed').toBeGreaterThan(150);
       await screen(page, `${variant}-chatter`, { viewport: true });
+    });
+
+    test('keeps every value readable where the sheet and its chatter share a middling width', async ({ page }) => {
+      for (const width of [960, 1100]) {
+        await page.setViewportSize({ width, height: 900 });
+        await open(page, variant, 'page=customer&skin=underline');
+        await expect(chatter(page).locator('.fd-activity')).toHaveCount(3);
+        // A text box too narrow to read its value is a layout that ran out of room.
+        const narrow = await page.locator('.fd-card .fd-field input.fd-input:visible').evaluateAll((inputs) =>
+          inputs
+            // A table of lines scrolls its own cells.
+            .filter((input) => !input.closest('[data-type="one2many"]') && (input as HTMLElement).getBoundingClientRect().width < 140)
+            .map((input) => input.closest('.fd-field')?.getAttribute('data-field'))
+        );
+        expect(narrow, `at ${width}px`).toEqual([]);
+        await expectNoSidewaysScroll(page);
+        await screen(page, `${variant}-chatter-${width}`, { viewport: true });
+      }
     });
 
     test('sends a message mentioning someone, with a file, and logs a note with Ctrl+Enter, the record staying unsaved', async ({ page }) => {

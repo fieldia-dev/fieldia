@@ -381,10 +381,13 @@ export const FIELDIA_CSS = /* css */ `
 /* Save and Discard closing the sheet, when the page puts them at its foot. */
 .fd-sheet-foot { margin: 4px -28px -28px; padding: 12px 28px; border-block-start: 1px solid var(--fd-border); border-end-start-radius: inherit; border-end-end-radius: inherit; }
 .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr) minmax(260px, 360px); }
-@container (max-width: 860px) { .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr); } }
+/* The side panel goes under the sheet before the sheet is left too narrow for a label beside its value. */
+@container (max-width: 1000px) { .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr); } }
 .fd-card {
   position: relative; background: var(--fd-surface); border: 1px solid var(--fd-border);
   border-radius: var(--fd-radius); padding: 24px 28px 28px; display: grid; gap: 18px; min-width: 0;
+  /* The card's own width decides its columns, not the page's: beside a side panel it has less. */
+  container-type: inline-size;
 }
 .fd-ribbon-frame { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
 .fd-ribbon {
