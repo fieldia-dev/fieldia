@@ -91,6 +91,8 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly relatedPages = input<ViewerOptions['relatedPages']>(undefined);
   /** The app's own icons, by the names its pages give them. */
   readonly icons = input<ViewerOptions['icons']>(undefined);
+  /** Ctrl+Enter saving, and Enter moving to the next field. */
+  readonly keys = input<ViewerOptions['keys']>(undefined);
 
   readonly ready = output<ViewerHandle>();
   readonly action = output<ActionRequest>();
@@ -190,6 +192,7 @@ export class FieldiaFormComponent implements OnDestroy {
       preferences: this.preferences(),
       relatedPages: this.relatedPages(),
       icons: this.icons(),
+      keys: this.keys(),
       onAction: (request) => this.action.emit(request),
     });
     this.ready.emit(this.handle);

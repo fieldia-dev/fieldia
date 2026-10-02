@@ -143,6 +143,15 @@ describe('<FieldiaForm> for Vue', () => {
     wrapper.unmount();
   });
 
+  it('passes its keys on: Enter moves to the next field when asked', () => {
+    const wrapper = mount(FieldiaForm, { props: { page: page('signup'), keys: { enterMovesToNext: true } }, attachTo: document.body });
+    const name = document.querySelector('[data-node="f-name"] input') as HTMLInputElement;
+    name.focus();
+    name.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(document.querySelector('[data-node="f-email"] input'));
+    wrapper.unmount();
+  });
+
   it('cleans up when it unmounts', () => {
     const wrapper = mount(FieldiaForm, { props: { page: page('survey') }, attachTo: document.body });
     const host = wrapper.element as HTMLElement;

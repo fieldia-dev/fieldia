@@ -31,6 +31,11 @@ export function pageFromQuery(params: URLSearchParams): Page {
   };
 }
 
+/** The keys the query string asks for: `enterToNext=1` makes Enter move to the next field. */
+export function keysFromQuery(params: URLSearchParams): { enterMovesToNext?: boolean } | undefined {
+  return params.get('enterToNext') === '1' ? { enterMovesToNext: true } : undefined;
+}
+
 /** The pages records of other models open in, in a dialog: a customer from a link to it. */
 export const relatedPages: Record<string, Page> = { partner: customer as Page };
 

@@ -178,6 +178,19 @@ describe('<fieldia-form> for Angular', () => {
     fixture.destroy();
   });
 
+  it('passes its keys on: Enter moves to the next field when asked', async () => {
+    const fixture = TestBed.createComponent(FieldiaFormComponent);
+    fixture.componentRef.setInput('page', page('signup'));
+    fixture.componentRef.setInput('keys', { enterMovesToNext: true });
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    const name = document.querySelector('[data-node="f-name"] input') as HTMLInputElement;
+    name.focus();
+    name.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(document.querySelector('[data-node="f-email"] input'));
+    fixture.destroy();
+  });
+
   it('cleans up when it is destroyed', async () => {
     const { fixture } = await setup(page('survey'));
     fixture.destroy();

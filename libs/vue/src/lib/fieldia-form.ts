@@ -77,6 +77,7 @@ export const FieldiaForm = defineComponent({
     preferences: { type: Object as PropType<PreferenceStore>, default: undefined },
     relatedPages: { type: [Object, Function] as PropType<ViewerOptions['relatedPages']>, default: undefined },
     icons: { type: Object as PropType<ViewerOptions['icons']>, default: undefined },
+    keys: { type: Object as PropType<ViewerOptions['keys']>, default: undefined },
   },
   emits: {
     ready: (_handle: ViewerHandle) => true,
@@ -152,6 +153,7 @@ export const FieldiaForm = defineComponent({
         preferences: props.preferences ? toRaw(props.preferences) : undefined,
         relatedPages: props.relatedPages ? toRaw(props.relatedPages) : undefined,
         icons: props.icons ? toRaw(props.icons) : undefined,
+        keys: props.keys ? toRaw(props.keys) : undefined,
         onAction: (request) => emit('action', request),
       });
       portals.value = found;
