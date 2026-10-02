@@ -6,7 +6,7 @@ import type { Skin } from '@fieldia/viewer';
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { keysFromQuery, pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { optionsFromQuery, pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
 
 /** The same demo as the plain one, mounted by React. StrictMode on, as apps run it. */
 const params = new URLSearchParams(location.search);
@@ -65,7 +65,7 @@ function Demo() {
       fieldTypes={{ 'char.shout': Shout }}
       widgets={{ ...gridWidgets, ...codeWidgets }}
       relatedPages={relatedPages}
-      keys={keysFromQuery(params)}
+      {...optionsFromQuery(params)}
       slots={{ chatter: Activity, note: Note }}
       onReady={(handle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions } })}
     />

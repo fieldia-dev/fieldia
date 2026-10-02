@@ -4,7 +4,7 @@ import type { WidgetFactory } from '@fieldia/widgets';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { keysFromQuery, pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { optionsFromQuery, pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
 
 /**
  * Fieldia with no framework at all: one script, one call. The page, skin and
@@ -47,7 +47,7 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
   onAction: (request) => void actions.push(request.action),
   widgets: { 'char.shout': shoutWidget, ...gridWidgets, ...codeWidgets },
   relatedPages,
-  keys: keysFromQuery(params),
+  ...optionsFromQuery(params),
   slots: {
     chatter: (element) => {
       element.innerHTML =

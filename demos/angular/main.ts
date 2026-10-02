@@ -10,7 +10,7 @@ import { codeWidgets } from '@fieldia/code';
 import type { ActionRequest, Form, FormState, Locale, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { keysFromQuery, pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { optionsFromQuery, pageFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
 
 const params = new URLSearchParams(location.search);
 const page = pageFromQuery(params);
@@ -76,7 +76,8 @@ class NoteComponent implements OnInit {
     [fieldTypes]="fieldTypes"
     [widgets]="widgets"
     [relatedPages]="relatedPages"
-    [keys]="keys"
+    [keys]="options.keys"
+    [showValid]="options.showValid ?? false"
     (ready)="ready($event)"
     (action)="pressed($event)"
   >
@@ -100,7 +101,7 @@ class DemoComponent {
   readonly fieldTypes = { 'char.shout': ShoutComponent };
   readonly widgets = { ...gridWidgets, ...codeWidgets };
   readonly relatedPages = relatedPages;
-  readonly keys = keysFromQuery(params);
+  readonly options = optionsFromQuery(params);
   ready(handle: ViewerHandle) {
     Object.assign(window, { fieldiaDemo: { handle, dataSource, actions } });
   }

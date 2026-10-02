@@ -93,6 +93,8 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly icons = input<ViewerOptions['icons']>(undefined);
   /** Ctrl+Enter saving, and Enter moving to the next field. */
   readonly keys = input<ViewerOptions['keys']>(undefined);
+  /** A ✓ by each field filled in right. */
+  readonly showValid = input<boolean>(false);
 
   readonly ready = output<ViewerHandle>();
   readonly action = output<ActionRequest>();
@@ -193,6 +195,7 @@ export class FieldiaFormComponent implements OnDestroy {
       relatedPages: this.relatedPages(),
       icons: this.icons(),
       keys: this.keys(),
+      showValid: this.showValid(),
       onAction: (request) => this.action.emit(request),
     });
     this.ready.emit(this.handle);
