@@ -60,6 +60,23 @@ a.fd-attachment-file:hover { border-color: var(--fd-accent); }
 .fd-mentions [role=option] { padding: 6px 12px; cursor: pointer; }
 .fd-mentions [role=option].fd-active, .fd-mentions [role=option]:hover { background: var(--fd-accent-soft); }
 .fd-mentions .fd-empty { padding: 6px 12px; color: var(--fd-muted); }
+.fd-activities { display: grid; gap: 8px; }
+.fd-activity-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.fd-activity { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--fd-border); border-radius: var(--fd-radius); background: var(--fd-surface); }
+.fd-activity-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: #fff; background: var(--fd-success); }
+.fd-activity[data-when="overdue"] .fd-activity-icon { background: var(--fd-error); }
+.fd-activity[data-when="today"] .fd-activity-icon { background: #d97706; }
+.fd-activity-icon .fd-icon { width: 16px; height: 16px; }
+.fd-activity-content { display: grid; min-width: 0; }
+.fd-activity-summary { font-weight: 600; overflow-wrap: anywhere; }
+.fd-activity-meta { color: var(--fd-muted); font-size: 12.5px; }
+.fd-activity[data-when="overdue"] .fd-activity-due { color: var(--fd-error); font-weight: 600; }
+.fd-activity[data-when="today"] .fd-activity-due { color: #b45309; font-weight: 600; }
+.fd-activity-actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.fd-activity-finish { grid-column: 1 / -1; display: grid; gap: 6px; }
+.fd-activity-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; padding: 12px; border: 1px solid var(--fd-border); border-radius: var(--fd-radius); background: var(--fd-surface); }
+.fd-activity-form .fd-composer-actions { grid-column: 1 / -1; }
+.fd-activity-field { display: grid; gap: 4px; font-size: 13px; color: var(--fd-muted); }
 `;
 
 /** Puts the chatter's look in the document once. */

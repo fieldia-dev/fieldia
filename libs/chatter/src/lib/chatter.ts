@@ -1,5 +1,6 @@
 import { fill, type Locale } from '@fieldia/core';
 import { installStyles, sanitizeHtml, type IconSet } from '@fieldia/widgets';
+import { activitiesPart } from './activities';
 import { attachmentList, composerFiles } from './attachments';
 import { CHATTER_LABELS, type ChatterLabels } from './labels';
 import { mentions } from './mentions';
@@ -223,8 +224,10 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
       closeComposer();
       list.replaceChildren();
       empty.hidden = true;
+      if (activities.element) activities.element.hidden = true;
       return;
     }
+    void activities.load();
     const messages = await options.source.messages(current);
     if (destroyed || record !== current) return; // another record, or gone, meanwhile
     shown = new Map(messages.map((message) => [message.id, message]));
@@ -232,7 +235,10 @@ export function mountChatter(host: HTMLElement, options: ChatterOptions): Chatte
     empty.hidden = messages.length > 0;
   }
 
-  root.append(bar, waiting, composer, empty, list);
+  // Marking an activity done posts what came of it: the conversation is fetched again.
+  const activities = activitiesPart(context, () => load());
+  if (activities.button) bar.append(activities.button);
+  root.append(bar, waiting, composer, ...(activities.element ? [activities.element] : []), empty, list);
   host.append(root);
   void load();
 

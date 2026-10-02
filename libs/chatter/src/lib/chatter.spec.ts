@@ -230,3 +230,82 @@ describe('reactions, replies and mentions', () => {
     expect(chatter.posted[0]).toEqual(expect.objectContaining({ mentions: [mona] }));
   });
 });
+
+describe('activities', () => {
+  function planned() {
+    return createMemoryChatter({
+      me,
+      people: [me, mona],
+      now: () => new Date('2026-10-02T09:30:00Z'),
+      activityTypes: [
+        { id: 'call', name: 'Call', icon: 'phone', daysUntilDue: 2 },
+        { id: 'todo', name: 'To-do', icon: 'check', daysUntilDue: 0 },
+      ],
+      records: {
+        'sale.order:7': {
+          activities: [
+            { id: 51, type: { id: 'todo', name: 'To-do' }, summary: 'Send the floor plan', due: '2026-09-30', assignee: me },
+            { id: 52, type: { id: 'call', name: 'Call' }, summary: 'Confirm the van', due: '2026-10-02', assignee: mona },
+            { id: 53, type: { id: 'call', name: 'Call' }, summary: 'After-care visit', due: '2026-10-20', assignee: mona },
+          ],
+        },
+      },
+    });
+  }
+  async function mountPlanned(chatter = planned()) {
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountChatter(host, { source: chatter, record: order, now: () => new Date('2026-10-02T09:30:00Z') });
+    await until(() => host.querySelector('.fd-activity'));
+    return host;
+  }
+  const activities = (host: Element) => [...host.querySelectorAll('.fd-activity')] as HTMLElement[];
+
+  it('lists what is to be done, overdue first, each marked overdue, today or planned', async () => {
+    const host = await mountPlanned();
+    expect(activities(host).map((a) => a.querySelector('.fd-activity-summary')?.textContent)).toEqual(['Send the floor plan', 'Confirm the van', 'After-care visit']);
+    expect(activities(host).map((a) => a.getAttribute('data-when'))).toEqual(['overdue', 'today', 'planned']);
+    expect(activities(host)[1].textContent).toContain('Mona Adel');
+  });
+
+  it('schedules an activity, its due date taken from its type until one is chosen', async () => {
+    const chatter = planned();
+    const host = await mountPlanned(chatter);
+    button(host, 'Schedule activity')!.click();
+    const form = host.querySelector('.fd-activity-form') as HTMLElement;
+    await until(() => !form.hidden);
+    const type = form.querySelector('select[name="type"]') as HTMLSelectElement;
+    const due = form.querySelector('input[name="due"]') as HTMLInputElement;
+    expect(due.value).toBe('2026-10-04'); // a call: in two days
+    type.value = 'todo';
+    type.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(due.value).toBe('2026-10-02');
+    (form.querySelector('input[name="summary"]') as HTMLInputElement).value = 'Book the electrician';
+    (form.querySelector('select[name="assignee"]') as HTMLSelectElement).value = '2';
+    button(form, 'Schedule')!.click();
+    await until(() => activities(host).length === 4);
+    expect(activities(host).map((a) => a.querySelector('.fd-activity-summary')?.textContent)).toContain('Book the electrician');
+    expect(form.hidden).toBe(true);
+  });
+
+  it('marks one done with what came of it, which joins the conversation, and cancels another', async () => {
+    const chatter = planned();
+    const host = await mountPlanned(chatter);
+    button(activities(host)[1], 'Mark done')!.click();
+    const feedback = activities(host)[1].querySelector('textarea') as HTMLTextAreaElement;
+    feedback.value = 'They want it on the 11th.';
+    button(activities(host)[1], 'Done')!.click();
+    await until(() => activities(host).length === 2);
+    await until(() => messages(host).length);
+    expect(messages(host)[0].textContent).toContain('They want it on the 11th.');
+    button(activities(host)[1], 'Cancel activity')!.click();
+    await until(() => activities(host).length === 1);
+    expect(activities(host)[0].querySelector('.fd-activity-summary')?.textContent).toBe('Send the floor plan');
+  });
+
+  it('shows no activities when the source has none to give', async () => {
+    const host = await mount({ ...source(), activities: undefined, schedule: undefined });
+    expect(button(host, 'Schedule activity')).toBeUndefined();
+    expect(host.querySelector('.fd-activities')).toBeNull();
+  });
+});
