@@ -40,6 +40,9 @@ export interface ViewerLabels {
   ok: string;
   cancel: string;
   loading: string;
+  /** A form in a dialog: the button that saves it and closes the dialog, and the × that closes it. */
+  saveClose: string;
+  close: string;
 }
 
 export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
@@ -60,6 +63,8 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     ok: 'OK',
     cancel: 'Cancel',
     loading: 'Loading…',
+    saveClose: 'Save & Close',
+    close: 'Close',
   },
   ar: {
     save: 'حفظ',
@@ -78,6 +83,8 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     ok: 'موافق',
     cancel: 'إلغاء',
     loading: 'جارٍ التحميل…',
+    saveClose: 'حفظ وإغلاق',
+    close: 'إغلاق',
   },
   de: {
     save: 'Speichern',
@@ -96,6 +103,8 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     ok: 'OK',
     cancel: 'Abbrechen',
     loading: 'Wird geladen…',
+    saveClose: 'Speichern und schließen',
+    close: 'Schließen',
   },
   fr: {
     save: 'Enregistrer',
@@ -114,6 +123,8 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     ok: 'OK',
     cancel: 'Annuler',
     loading: 'Chargement…',
+    saveClose: 'Enregistrer et fermer',
+    close: 'Fermer',
   },
 };
 
@@ -140,12 +151,18 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
   confirm?: (message: string) => Promise<boolean>;
   /** Where a person's choices about the page's look are kept, such as a table's columns. The browser's storage by default. */
   preferences?: PreferenceStore;
+  /** False when something around the page saves it, such as a dialog: the page's own Save, Discard and Submit stay hidden. */
+  showActions?: boolean;
 }
 
 export interface ViewerHandle {
   readonly form: Form;
   readonly element: HTMLElement;
   setSkin(skin: Skin): void;
+  /** Save the record, or take the focus to the first problem when the form refuses. */
+  save(): Promise<boolean>;
+  /** Check the form without saving, taking the focus to the first problem. */
+  check(): boolean;
   destroy(): void;
 }
 
@@ -458,7 +475,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         discard.hidden = !dirty;
       });
     }
-    return el('div', {}, box, actions);
+    return options.showActions === false ? el('div', {}, box) : el('div', {}, box, actions);
   }
 
   function wizardLayout(node: WizardNode): HTMLElement {
@@ -511,7 +528,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const save = el('button', { type: 'submit', class: 'fd-button fd-button-primary' }, labels.save);
     const discard = el('button', { type: 'button', class: 'fd-button' }, labels.discard);
     discard.addEventListener('click', () => form.reset());
-    actions.append(save, discard, ...(node.buttons ?? []).map(buttonItem), status);
+    if (options.showActions === false) actions.append(...(node.buttons ?? []).map(buttonItem));
+    else actions.append(save, discard, ...(node.buttons ?? []).map(buttonItem), status);
     updaters.push((state) => {
       const dirty = state.dirty.length > 0 && state.status !== 'saving';
       save.hidden = !dirty;
@@ -644,6 +662,16 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     element: root,
     setSkin(skin) {
       root.setAttribute('data-fd-skin', skin);
+    },
+    async save() {
+      const saved = await form.save();
+      if (!saved) focusFirstProblem();
+      return saved;
+    },
+    check() {
+      const valid = form.validate();
+      if (!valid) focusFirstProblem();
+      return valid;
     },
     destroy() {
       unsubscribe();

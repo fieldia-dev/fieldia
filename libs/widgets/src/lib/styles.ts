@@ -472,6 +472,25 @@ export const FIELDIA_CSS = /* css */ `
   padding: 20px 22px; display: grid; gap: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); font-family: var(--fd-font);
 }
 .fd-dialog p { margin: 0; }
+/* A page in a dialog: a head with its title and ×, a body that scrolls, a foot with Discard and Save & Close. */
+.fd-form-dialog {
+  display: flex; flex-direction: column; width: 100%; max-height: min(90vh, 100%); min-height: 0;
+  background: var(--fd-page); color: var(--fd-text); border-radius: max(var(--fd-radius), 8px);
+  box-shadow: 0 24px 64px rgba(15, 20, 25, 0.3); overflow: hidden;
+}
+.fd-form-dialog:focus { outline: none; }
+.fd-form-dialog.fd-size-small { max-width: 440px; }
+.fd-form-dialog.fd-size-medium { max-width: 760px; }
+.fd-form-dialog.fd-size-large { max-width: 1080px; }
+.fd-form-dialog-backdrop:has(> .fd-size-full) { padding: 0; }
+.fd-form-dialog.fd-size-full { max-width: none; max-height: none; height: 100%; border-radius: 0; }
+.fd-form-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-block-end: 1px solid var(--fd-border); background: var(--fd-surface); }
+.fd-form-dialog-title { margin: 0; font-size: 16px; font-weight: 600; }
+.fd-dialog-close { border: none; background: none; cursor: pointer; font-size: 22px; line-height: 1; padding: 2px 8px; border-radius: 4px; color: var(--fd-muted); }
+.fd-dialog-close:hover { background: var(--fd-page); color: var(--fd-text); }
+.fd-form-dialog-body { flex: 1 1 auto; min-height: 0; overflow: auto; container-type: inline-size; }
+.fd-form-dialog-body .fd-sheet-layout { margin-block-start: 12px; }
+.fd-form-dialog-foot { padding: 12px 16px; border-block-start: 1px solid var(--fd-border); background: var(--fd-surface); margin: 0; }
 @media (prefers-reduced-motion: reduce) { .fd-form *, .fd-form *::before, .fd-form *::after { transition: none !important; } }
 `;
 
