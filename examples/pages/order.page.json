@@ -48,6 +48,7 @@
         "price": { "type": "monetary", "label": "Unit price", "currency": "EGP" },
         "discount": { "type": "float", "label": "Disc. %", "digits": [5, 1] },
         "taxed": { "type": "boolean", "label": "VAT 14%" },
+        "lead_days": { "type": "integer", "label": "Lead time (days)" },
         "subtotal": { "type": "monetary", "label": "Subtotal", "currency": "EGP", "readonly": true }
       }
     },
@@ -81,7 +82,7 @@
             "id": "tab-lines",
             "label": "Order lines",
             "children": [
-              { "type": "field", "id": "f-lines", "field": "line_ids", "widget": "grid", "totals": ["qty", "subtotal"] },
+              { "type": "field", "id": "f-lines", "field": "line_ids", "widget": "grid", "totals": ["qty", "subtotal"], "optionalColumns": { "discount": "show", "taxed": "show", "lead_days": "hide" } },
               {
                 "type": "section",
                 "id": "totals",

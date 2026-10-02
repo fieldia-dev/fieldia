@@ -1834,6 +1834,20 @@
                 "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
               }
             },
+            "optionalColumns": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "enum": [
+                  "show",
+                  "hide"
+                ]
+              }
+            },
             "invisible": {
               "$ref": "#/$defs/Modifier"
             },

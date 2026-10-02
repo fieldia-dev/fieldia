@@ -248,6 +248,17 @@ class ReferenceCheck {
         });
       }
     }
+    if (def && node.optionalColumns) {
+      if (def.type !== 'one2many') {
+        this.report(`${path}.optionalColumns`, `optional columns only apply to one2many fields; "${node.field}" is a ${def.type}`);
+      } else {
+        // The columns the table shows: those named, or every line field but the structural ones.
+        const shown = node.columns ?? Object.keys(def.fields).filter((c) => c !== def.lineKinds?.field && c !== def.sequenceField);
+        for (const column of Object.keys(node.optionalColumns)) {
+          if (!shown.includes(column)) this.report(`${path}.optionalColumns.${column}`, `"${column}" is not a column of "${node.field}"`);
+        }
+      }
+    }
     if (!def || !node.columns) return;
     if (def.type === 'one2many') {
       node.columns.forEach((column, i) => {

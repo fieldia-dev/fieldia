@@ -31,6 +31,8 @@ export interface FieldNode {
   columns?: string[];
   /** For one2many: number columns added up in a totals row under the lines. */
   totals?: string[];
+  /** For one2many: columns a person may hide or show, and how each starts. */
+  optionalColumns?: { [column: string]: 'show' | 'hide' };
   invisible?: Modifier;
   readonly?: Modifier;
   required?: Modifier;
@@ -201,6 +203,7 @@ export const FieldNodeSchema = z.strictObject({
   colspan: z.int().min(1).max(4).optional(),
   columns: z.array(fieldName).min(1).optional(),
   totals: z.array(fieldName).min(1).optional(),
+  optionalColumns: z.record(fieldName, z.enum(['show', 'hide'])).optional(),
   invisible,
   readonly: ModifierSchema.optional(),
   required: ModifierSchema.optional(),

@@ -237,6 +237,29 @@ describe('validatePage — references', () => {
     expect(messages(page)).toEqual(['layout.children[0].children[0].totals: totals only apply to one2many fields; "partner_id" is a many2one']);
   });
 
+  it('rejects optional columns the table does not show, and choices other than show or hide', () => {
+    const page = example('order');
+    const lines = page['layout'].children[1].children[0].children[0];
+    lines.optionalColumns = { weight: 'show', qty: 'maybe' };
+    expect(messages(page)).toEqual([
+      'layout.children[1].children[0].children[0].optionalColumns.qty: Invalid option: expected one of "show"|"hide"',
+    ]);
+    lines.optionalColumns = { weight: 'show' };
+    lines.columns = ['product_id', 'qty'];
+    lines.totals = ['qty'];
+    lines.optionalColumns = { weight: 'show', price: 'hide' };
+    expect(messages(page)).toEqual([
+      'layout.children[1].children[0].children[0].optionalColumns.weight: "weight" is not a column of "line_ids"',
+      'layout.children[1].children[0].children[0].optionalColumns.price: "price" is not a column of "line_ids"',
+    ]);
+  });
+
+  it('rejects optional columns on a field that has no lines', () => {
+    const page = example('order');
+    page['layout'].children[0].children[0].optionalColumns = { qty: 'show' };
+    expect(messages(page)).toEqual(['layout.children[0].children[0].optionalColumns: optional columns only apply to one2many fields; "partner_id" is a many2one']);
+  });
+
   it('rejects one2many columns that are not among its line fields', () => {
     const page = example('customer');
     page['layout'].children[1].children[0].children[0].columns.push('fax');
