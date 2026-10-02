@@ -104,6 +104,11 @@ export const FIELDIA_CSS = /* css */ `
 .fd-form[data-fd-skin="underline"] .fd-field[data-type="one2many"] { grid-template-columns: minmax(0, 1fr); }
 .fd-form[data-fd-skin="underline"] .fd-field[data-type="one2many"] > * { grid-column: 1 !important; }
 .fd-form[data-fd-skin="underline"] .fd-field > :not(.fd-label) { grid-column: 2; }
+/* A label beside every value needs room twice over: the underline skin stacks its columns sooner. */
+@container (max-width: 760px) {
+  .fd-form[data-fd-skin="underline"] .fd-grid { grid-template-columns: minmax(0, 1fr); }
+  .fd-form[data-fd-skin="underline"] .fd-field { grid-column: auto; }
+}
 @container (max-width: 520px) {
   .fd-grid { grid-template-columns: minmax(0, 1fr); }
   .fd-field { grid-column: auto; }

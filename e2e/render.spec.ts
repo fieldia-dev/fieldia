@@ -31,3 +31,20 @@ for (const [width, label] of [
   }
 }
 }
+
+/** A field squeezed beside its label is as broken as one off the screen: every text box keeps room to type in. */
+for (const skin of ['underline', 'outlined']) {
+  for (const width of [600, 720, 820]) {
+    test(`plain: every input keeps room to type in, ${skin} at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await open(page, 'plain', `page=signup&skin=${skin}`);
+      const narrow = await page.locator('.fd-field input:not([type=checkbox]):not([type=radio]):not([type=file]), .fd-field select').evaluateAll((inputs) =>
+        inputs
+          .filter((input) => (input as HTMLElement).offsetParent !== null)
+          .map((input) => ({ name: input.closest('.fd-field')?.querySelector('.fd-label')?.textContent, width: Math.round(input.getBoundingClientRect().width) }))
+          .filter((input) => input.width < 160)
+      );
+      expect(narrow).toEqual([]);
+    });
+  }
+}
