@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { expectNoSidewaysScroll, node, open, screen } from './support';
+import { VARIANTS } from './variants';
 
 /**
  * The React engine's Playwright scenarios, ported: the same promises, kept by
@@ -10,16 +11,18 @@ const field = (page: Page, id: string) => node(page, id).locator('input, textare
 const value = (page: Page, name: string) =>
   page.evaluate((n) => (window as any).fieldiaDemo.handle.form.getState().values[n], name);
 
+for (const variant of VARIANTS) {
+test.describe(variant, () => {
 test.describe('sign-up form', () => {
   test('marks required fields and shows help', async ({ page }) => {
-    await open(page, 'plain', 'page=signup&skin=outlined');
+    await open(page, variant, 'page=signup&skin=outlined');
     await expect(node(page, 'f-name')).toHaveClass(/fd-required/);
     await expect(node(page, 'f-company')).not.toHaveClass(/fd-required/);
     await expect(node(page, 'f-email').locator('.fd-help')).toHaveText('We send the joining details here.');
   });
 
   test('typing in the middle of a word keeps focus and the caret', async ({ page }) => {
-    await open(page, 'plain', 'page=signup');
+    await open(page, variant, 'page=signup');
     const name = field(page, 'f-name');
     await name.click();
     await page.keyboard.type('Nile Trading');
@@ -33,7 +36,7 @@ test.describe('sign-up form', () => {
   });
 
   test('a decimal can be typed one keystroke at a time', async ({ page }) => {
-    await open(page, 'plain', 'page=signup');
+    await open(page, variant, 'page=signup');
     const rate = field(page, 'f-rate');
     await rate.click();
     await page.keyboard.type('1.');
@@ -45,7 +48,7 @@ test.describe('sign-up form', () => {
   });
 
   test('deleting from the middle of a decimal keeps the rest', async ({ page }) => {
-    await open(page, 'plain', 'page=signup');
+    await open(page, variant, 'page=signup');
     const rate = field(page, 'f-rate');
     await rate.click();
     await page.keyboard.type('12.34');
@@ -57,7 +60,7 @@ test.describe('sign-up form', () => {
   });
 
   test('a trailing point is kept while typing and tidied on leaving', async ({ page }) => {
-    await open(page, 'plain', 'page=signup');
+    await open(page, variant, 'page=signup');
     const rate = field(page, 'f-rate');
     await rate.click();
     await page.keyboard.type('7.');
@@ -67,7 +70,7 @@ test.describe('sign-up form', () => {
   });
 
   test('conditions show and require fields as answers change', async ({ page }) => {
-    await open(page, 'plain', 'page=signup');
+    await open(page, variant, 'page=signup');
     await expect(node(page, 'f-other-role')).toBeHidden();
     await field(page, 'f-role').selectOption({ label: 'Something else' });
     await expect(node(page, 'f-other-role')).toBeVisible();
@@ -80,7 +83,7 @@ test.describe('sign-up form', () => {
   });
 
   test('a toggle reveals the question it controls', async ({ page }) => {
-    await open(page, 'plain', 'page=signup');
+    await open(page, variant, 'page=signup');
     await expect(node(page, 'f-dietary')).toBeHidden();
     await field(page, 'f-dinner').click();
     await expect(node(page, 'f-dietary')).toBeVisible();
@@ -89,7 +92,7 @@ test.describe('sign-up form', () => {
   });
 
   test('Tab moves through the fields in reading order', async ({ page }) => {
-    await open(page, 'plain', 'page=signup');
+    await open(page, variant, 'page=signup');
     await field(page, 'f-name').click();
     const focused = () => page.evaluate(() => document.activeElement?.closest('[data-node]')?.getAttribute('data-node'));
     const order = [];
@@ -101,7 +104,7 @@ test.describe('sign-up form', () => {
   });
 
   test('keeps special characters and very long text exactly', async ({ page }) => {
-    await open(page, 'plain', 'page=signup');
+    await open(page, variant, 'page=signup');
     const special = `"<b>O'Neil & Sons</b>" — ١٢٣ 🙂 \\ / %`;
     await field(page, 'f-company').fill(special);
     expect(await value(page, 'company')).toBe(special);
@@ -111,7 +114,7 @@ test.describe('sign-up form', () => {
   });
 
   test('rapid typing loses nothing', async ({ page }) => {
-    await open(page, 'plain', 'page=signup');
+    await open(page, variant, 'page=signup');
     const text = 'The quick brown fox jumps over the lazy dog 0123456789';
     await field(page, 'f-company').click();
     await page.keyboard.type(text, { delay: 0 });
@@ -119,13 +122,13 @@ test.describe('sign-up form', () => {
   });
 
   test('an empty submit names every missing answer, then a full one is sent', async ({ page }) => {
-    const { demo } = await open(page, 'plain', 'page=signup');
+    const { demo } = await open(page, variant, 'page=signup');
     await page.getByRole('button', { name: 'Submit' }).click();
     await expect(node(page, 'f-name').locator('.fd-error')).toHaveText('Full name is required');
     await expect(node(page, 'f-email').locator('.fd-error')).toHaveText('Email is required');
     await expect(node(page, 'f-role').locator('.fd-error')).toHaveText('Your role is required');
     await expect(field(page, 'f-name')).toBeFocused();
-    await screen(page, 'plain-signup-errors');
+    await screen(page, `${variant}-signup-errors`);
 
     await field(page, 'f-name').fill('Sara Hassan');
     await field(page, 'f-email').fill('sara@example.com');
@@ -139,19 +142,19 @@ test.describe('sign-up form', () => {
   });
 
   test('runs right to left', async ({ page }) => {
-    await open(page, 'plain', 'page=signup&skin=outlined&dir=rtl');
+    await open(page, variant, 'page=signup&skin=outlined&dir=rtl');
     await expect(page.locator('.fd-form')).toHaveAttribute('dir', 'rtl');
     const nameBox = await field(page, 'f-name').boundingBox();
     const emailBox = await field(page, 'f-email').boundingBox();
     expect(nameBox!.x).toBeGreaterThan(emailBox!.x); // the first column is on the right
     await expectNoSidewaysScroll(page);
-    await screen(page, 'plain-signup-rtl');
+    await screen(page, `${variant}-signup-rtl`);
   });
 });
 
 test.describe('survey', () => {
   test('walks the branch the answers choose, then submits', async ({ page }) => {
-    const { demo } = await open(page, 'plain', 'page=survey&skin=outlined');
+    const { demo } = await open(page, variant, 'page=survey&skin=outlined');
     await expect(page.locator('.fd-progress-text')).toHaveText('Step 1 of 3');
     await field(page, 'q-name').fill('Omar');
     await page.getByRole('button', { name: 'Next' }).click();
@@ -162,7 +165,7 @@ test.describe('survey', () => {
     await node(page, 'q-rating').getByRole('radio', { name: '4 of 5' }).click();
     await page.getByLabel('Speed').check();
     await page.getByLabel('Support').check();
-    await screen(page, 'plain-survey-experience');
+    await screen(page, `${variant}-survey-experience`);
     await page.getByRole('button', { name: 'Next' }).click();
     await page.getByRole('button', { name: 'Submit' }).click();
     await expect(page.locator('.fd-done')).toBeVisible();
@@ -172,7 +175,7 @@ test.describe('survey', () => {
   });
 
   test('a rating answers to the arrow keys', async ({ page }) => {
-    await open(page, 'plain', 'page=survey');
+    await open(page, variant, 'page=survey');
     await field(page, 'q-name').fill('Omar');
     await page.getByRole('button', { name: 'Next' }).click();
     await page.getByLabel('Yes').check();
@@ -188,13 +191,13 @@ test.describe('survey', () => {
 
 test.describe('customer sheet', () => {
   test('asks before blocking, moves through states, and saves', async ({ page }) => {
-    const { demo } = await open(page, 'plain', 'page=customer&skin=underline');
+    const { demo } = await open(page, variant, 'page=customer&skin=underline');
     await expect(page.locator('.fd-title input')).toHaveValue('Nile Traders');
     await expect(page.getByRole('button', { name: 'Activate' })).toBeHidden();
 
     await page.getByRole('button', { name: 'Block', exact: true }).click();
     await expect(page.getByRole('alertdialog')).toContainText('Block this customer? New orders will be refused.');
-    await screen(page, 'plain-customer-confirm');
+    await screen(page, `${variant}-customer-confirm`);
     await page.getByRole('button', { name: 'Cancel' }).click();
     expect(await demo<string[]>('actions')).toEqual([]);
     await page.getByRole('button', { name: 'Block', exact: true }).click();
@@ -213,7 +216,7 @@ test.describe('customer sheet', () => {
     }
     await page.getByRole('tab', { name: 'Sales and billing' }).click();
     await expect(field(page, 'f-credit-limit')).toHaveJSProperty('readOnly', true);
-    await screen(page, 'plain-customer-blocked');
+    await screen(page, `${variant}-customer-blocked`);
 
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.locator('.fd-status')).toHaveText('Saved');
@@ -223,13 +226,13 @@ test.describe('customer sheet', () => {
   });
 
   test('stat buttons hand their action to the app', async ({ page }) => {
-    const { demo } = await open(page, 'plain', 'page=customer');
+    const { demo } = await open(page, variant, 'page=customer');
     await page.getByRole('button', { name: /18\s*Sales/ }).click();
     await expect.poll(() => demo<string[]>('actions')).toEqual(['open_sales']);
   });
 
   test('tabs switch, and a tab hides when its condition fails', async ({ page }) => {
-    await open(page, 'plain', 'page=customer&skin=outlined');
+    await open(page, variant, 'page=customer&skin=outlined');
     await expect(page.getByRole('tab', { name: 'Contacts' })).toHaveAttribute('aria-selected', 'true');
     await page.getByRole('tab', { name: 'Notes' }).click();
     await expect(node(page, 'f-notes')).toBeVisible();
@@ -240,10 +243,12 @@ test.describe('customer sheet', () => {
   });
 
   test('Discard puts the record back', async ({ page }) => {
-    await open(page, 'plain', 'page=customer');
+    await open(page, variant, 'page=customer');
     await field(page, 'f-website').fill('https://changed.example');
     await page.getByRole('button', { name: 'Discard' }).click();
     await expect(field(page, 'f-website')).toHaveValue('');
     await expect(page.getByRole('button', { name: 'Save' })).toBeHidden();
   });
 });
+});
+}

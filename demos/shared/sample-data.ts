@@ -2,12 +2,14 @@ import { createMemoryDataSource, type Page } from '@fieldia/core';
 import customer from '../../examples/pages/customer.page.json';
 import signup from '../../examples/pages/signup.page.json';
 import survey from '../../examples/pages/survey.page.json';
+import { customPage } from './custom-page';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
   signup: signup as Page,
   survey: survey as Page,
   customer: customer as Page,
+  custom: customPage,
 };
 
 /** A customer to edit, and the records its relations point to. Sample data. */

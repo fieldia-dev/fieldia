@@ -131,8 +131,10 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, node.label ?? def.label);
     const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc }, options.widgets);
     if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) {
-      label.removeAttribute('for');
-      widget.element.setAttribute('aria-labelledby', label.id);
+      // `for` stays: a custom field that puts the id on its own input is
+      // labelled natively. Only a wrapper with a role (a radio group, say) may
+      // carry a name; ARIA forbids naming a plain div or span.
+      if (widget.element.getAttribute('role')) widget.element.setAttribute('aria-labelledby', label.id);
       label.addEventListener('click', () => widget.focus());
     }
     const helpText = node.help ?? def.help;

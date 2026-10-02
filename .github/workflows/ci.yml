@@ -25,3 +25,27 @@ jobs:
       - run: npx nx run-many -t typecheck lint test build
         env:
           NX_DAEMON: 'false'
+
+  browser:
+    name: Browser gates (every framework demo)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # Each demo mounts the same pages through a different framework; every
+      # scenario runs against each one, and variants.spec.ts fails if a demo
+      # was not built, so a missing framework cannot skip its gates quietly.
+      - run: node tools/build-demos.mjs
+      - run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screens
+          path: test-results/
+          retention-days: 14

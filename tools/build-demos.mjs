@@ -4,21 +4,23 @@
  * the same example pages; the browser gates in e2e/ drive all of them.
  */
 import { build } from 'esbuild';
-import { cpSync, mkdirSync, rmSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'dist/demos');
-const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain'];
+const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain', 'react'];
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 for (const file of ['demo.css', 'demo-nav.js']) cpSync(join(WORKSPACE, 'demos', file), join(OUT, file));
 
 for (const variant of variants) {
-  const entry = join(WORKSPACE, 'demos', variant, variant === 'plain' ? 'main.ts' : 'main.tsx');
+  const entry = ['main.ts', 'main.tsx'].map((file) => join(WORKSPACE, 'demos', variant, file)).find(existsSync);
+  if (!entry) throw new Error(`demos/${variant} has no main.ts or main.tsx`);
   await build({
-    entryPoints: [entry.endsWith('.tsx') ? entry : entry],
+    entryPoints: [entry],
+    jsx: 'automatic',
     bundle: true,
     format: 'iife',
     target: 'es2022',
@@ -31,4 +33,3 @@ for (const variant of variants) {
   cpSync(join(WORKSPACE, 'demos', variant, 'index.html'), join(OUT, variant, 'index.html'));
   console.log(`demo ${variant}: ${join('dist/demos', variant)}`);
 }
-mkdirSync(dirname(OUT), { recursive: true });

@@ -52,10 +52,13 @@ needs is handed to the renderer.
 
 ```sh
 npm ci
-npx nx run-many -t typecheck lint test build
+npx nx run-many -t typecheck lint test build   # unit gates
+npx playwright install chromium
+node tools/build-demos.mjs && npx playwright test   # browser gates, every framework demo
 ```
 
-CI runs exactly that line — [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is the gate list.
+CI runs exactly these lines — [`.github/workflows/ci.yml`](.github/workflows/ci.yml) is the gate list.
+The demos live in [`demos/`](demos); `node tools/serve.mjs dist/demos 4321` serves them after a build.
 
 ## License
 

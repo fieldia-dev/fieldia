@@ -14,3 +14,7 @@ html, body { margin: 0; background: #f7f8fa; color: #1f2933; font: 14px/1.45 sys
 .demo-feed { background: #fff; border: 1px solid #e3e6ea; padding: 14px 16px; border-radius: 6px; }
 .demo-feed h3 { margin: 0 0 8px; font-size: 14px; }
 .demo-feed p { margin: 6px 0; color: #4b5563; }
+.demo-shout { display: grid; gap: 4px; }
+.demo-shout output { font-weight: 700; letter-spacing: 0.04em; color: #0b5cad; }
+.demo-note { display: flex; gap: 12px; align-items: center; padding: 12px 0; }
+.demo-hello { margin: 0; }
