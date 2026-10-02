@@ -270,6 +270,22 @@ describe('a record sheet', () => {
   });
 });
 
+describe('a record laid out in sections', () => {
+  it('offers Save and Discard only once something changes, as a sheet does', async () => {
+    const dataSource = createMemoryDataSource({ records: { project: { 1: { name: 'Office fit-out', seats: 48 } } } });
+    const { host, form } = mount('fields', { dataSource, recordId: 1 });
+    await form.settled();
+    expect(button(host, 'Save')).toBeUndefined();
+    expect(button(host, 'Discard')).toBeUndefined();
+    type(input(host, 'f-seats'), '52');
+    expect(button(host, 'Save')).toBeDefined();
+    button(host, 'Discard').click();
+    await flush();
+    expect(input(host, 'f-seats').value).toBe('48');
+    expect(button(host, 'Save')).toBeUndefined();
+  });
+});
+
 describe('collapsible sections', () => {
   const folding: Page = {
     fieldia: '0.1',

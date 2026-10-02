@@ -442,6 +442,17 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const box = el('div', { class: 'fd-sections', 'data-node': node.id }, ...node.children.map(item));
     const action = el('button', { type: 'submit', class: 'fd-button fd-button-primary' }, page.data.kind === 'responses' ? labels.submit : labels.save);
     const actions = el('div', { class: 'fd-actions fd-actions-end' }, status, action);
+    if (page.data.kind === 'record') {
+      // A record offers Save and Discard once something changes, the same as on a sheet.
+      const discard = el('button', { type: 'button', class: 'fd-button' }, labels.discard);
+      discard.addEventListener('click', () => form.reset());
+      actions.insertBefore(discard, action);
+      updaters.push((state) => {
+        const dirty = state.dirty.length > 0 && state.status !== 'saving';
+        action.hidden = !dirty;
+        discard.hidden = !dirty;
+      });
+    }
     return el('div', {}, box, actions);
   }
 

@@ -213,6 +213,8 @@ export const FIELDIA_CSS = /* css */ `
 .fd-lines-table td { padding: 4px 8px; border-block-end: 1px solid var(--fd-border); vertical-align: top; min-width: 7em; }
 .fd-lines-table td.fd-lines-tools, .fd-lines-table th.fd-lines-tools { width: 32px; min-width: 32px; padding-inline: 0; text-align: center; }
 .fd-lines-table .fd-input { min-height: 28px; }
+/* A yes/no cell sits level with the inputs beside it. */
+.fd-lines-table td > .fd-checkbox, .fd-lines-table td > .fd-switch { margin-block-start: 6px; }
 .fd-line-delete { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
 .fd-line-delete:hover { color: var(--fd-error); background: var(--fd-error-soft); }
 .fd-lines-add { justify-self: start; }
