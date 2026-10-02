@@ -76,6 +76,7 @@ export const FieldiaForm = defineComponent({
     confirm: { type: Function as PropType<(message: string) => Promise<boolean>>, default: undefined },
     preferences: { type: Object as PropType<PreferenceStore>, default: undefined },
     relatedPages: { type: [Object, Function] as PropType<ViewerOptions['relatedPages']>, default: undefined },
+    icons: { type: Object as PropType<ViewerOptions['icons']>, default: undefined },
   },
   emits: {
     ready: (_handle: ViewerHandle) => true,
@@ -150,6 +151,7 @@ export const FieldiaForm = defineComponent({
         // The app's own store, not Vue's reactive copy of it.
         preferences: props.preferences ? toRaw(props.preferences) : undefined,
         relatedPages: props.relatedPages ? toRaw(props.relatedPages) : undefined,
+        icons: props.icons ? toRaw(props.icons) : undefined,
         onAction: (request) => emit('action', request),
       });
       portals.value = found;

@@ -89,6 +89,8 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly confirm = input<((message: string) => Promise<boolean>) | undefined>(undefined);
   readonly preferences = input<PreferenceStore | undefined>(undefined);
   readonly relatedPages = input<ViewerOptions['relatedPages']>(undefined);
+  /** The app's own icons, by the names its pages give them. */
+  readonly icons = input<ViewerOptions['icons']>(undefined);
 
   readonly ready = output<ViewerHandle>();
   readonly action = output<ActionRequest>();
@@ -187,6 +189,7 @@ export class FieldiaFormComponent implements OnDestroy {
       confirm: this.confirm(),
       preferences: this.preferences(),
       relatedPages: this.relatedPages(),
+      icons: this.icons(),
       onAction: (request) => this.action.emit(request),
     });
     this.ready.emit(this.handle);

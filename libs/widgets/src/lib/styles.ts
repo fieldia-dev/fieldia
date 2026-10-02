@@ -78,6 +78,11 @@ export const FIELDIA_CSS = /* css */ `
 .fd-page-title { font-size: 22px; font-weight: 650; margin: 0; line-height: 1.25; }
 .fd-page-description { color: var(--fd-muted); margin: 0; }
 
+/* ---- icons: drawn with lines in the colour of the words beside them ------------ */
+.fd-icon { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; }
+.fd-section-title .fd-icon, .fd-tab .fd-icon, .fd-button .fd-icon, .fd-step-title .fd-icon { margin-inline-end: 0.4em; }
+.fd-section-title .fd-icon { color: var(--fd-muted); }
+
 /* ---- fields ---------------------------------------------------------------- */
 .fd-grid {
   display: grid;
@@ -113,12 +118,18 @@ export const FIELDIA_CSS = /* css */ `
 @container (max-width: 760px) {
   .fd-form[data-fd-skin="underline"] .fd-grid { grid-template-columns: minmax(0, 1fr); }
   .fd-form[data-fd-skin="underline"] .fd-field { grid-column: auto; }
+  /* A section that says how many columns it keeps here keeps them, in either skin. */
+  .fd-form .fd-grid[data-columns-medium] { grid-template-columns: repeat(var(--fd-columns-medium), minmax(0, 1fr)); }
+  .fd-form .fd-grid[data-columns-medium] > .fd-field { grid-column: span min(var(--fd-span, 1), var(--fd-columns-medium)); }
 }
 @container (max-width: 520px) {
   .fd-grid { grid-template-columns: minmax(0, 1fr); }
   .fd-field { grid-column: auto; }
   .fd-form[data-fd-skin="underline"] .fd-field { grid-template-columns: minmax(0, 1fr); }
   .fd-form[data-fd-skin="underline"] .fd-field > * { grid-column: 1 !important; }
+  /* The narrow count, or one column when only the medium one was given. */
+  .fd-form .fd-grid[data-columns-medium], .fd-form .fd-grid[data-columns-narrow] { grid-template-columns: repeat(var(--fd-columns-narrow, 1), minmax(0, 1fr)); }
+  .fd-form .fd-grid[data-columns-medium] > .fd-field, .fd-form .fd-grid[data-columns-narrow] > .fd-field { grid-column: span min(var(--fd-span, 1), var(--fd-columns-narrow, 1)); }
 }
 
 /* ---- inputs ---------------------------------------------------------------- */
@@ -379,6 +390,9 @@ export const FIELDIA_CSS = /* css */ `
   padding: 8px 18px; display: grid; justify-items: start; line-height: 1.2; color: var(--fd-text); min-width: 120px;
 }
 .fd-stat:hover { background: var(--fd-page); }
+.fd-stat:has(> .fd-icon) { grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 10px; }
+.fd-stat > .fd-icon { width: 22px; height: 22px; color: var(--fd-muted); }
+.fd-stat-words { display: grid; justify-items: start; }
 .fd-stat-value { font-weight: 700; font-size: 15px; color: var(--fd-accent); font-variant-numeric: tabular-nums; }
 .fd-stat-label { font-size: 12.5px; color: var(--fd-muted); }
 .fd-title-row { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; }

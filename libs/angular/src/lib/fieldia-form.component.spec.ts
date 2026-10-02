@@ -166,6 +166,18 @@ describe('<fieldia-form> for Angular', () => {
     fixture.destroy();
   });
 
+  it('draws the app’s own icons it is given', async () => {
+    const p = page('customer');
+    (p.layout as any).statButtons[0].icon = 'rocket';
+    const fixture = TestBed.createComponent(FieldiaFormComponent);
+    fixture.componentRef.setInput('page', p);
+    fixture.componentRef.setInput('icons', { rocket: '<path d="M12 2v20"/>' });
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    expect(document.querySelector('[data-node="sales"] svg')?.getAttribute('data-icon')).toBe('rocket');
+    fixture.destroy();
+  });
+
   it('cleans up when it is destroyed', async () => {
     const { fixture } = await setup(page('survey'));
     fixture.destroy();

@@ -468,6 +468,70 @@ describe('the viewer itself', () => {
   });
 });
 
+describe('icons', () => {
+  function mountPage(p: Page, options: Partial<ViewerOptions> = {}) {
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountViewer(host, { page: p, ...options });
+    return host;
+  }
+  const iconOf = (el: Element | null) => el?.querySelector('svg.fd-icon')?.getAttribute('data-icon') ?? null;
+
+  it('draws the icons a page names on its sections, tabs, buttons and stat buttons, beside their words', () => {
+    const p = page('customer');
+    const layout = p.layout as any;
+    Object.assign(layout.children[0], { title: 'Contact', icon: 'user' });
+    layout.children[1].children[1].icon = 'money';
+    layout.buttons[0].icon = 'check';
+    const host = mountPage(p);
+    expect(iconOf(at(host, 'main').querySelector('legend'))).toBe('user');
+    expect(at(host, 'main').querySelector('legend')?.textContent).toBe('Contact');
+    expect(iconOf(host.querySelector('[role=tab][data-node="tab-billing"]'))).toBe('money');
+    expect(iconOf(at(host, 'activate'))).toBe('check');
+    expect(at(host, 'activate').textContent).toBe('Activate');
+    expect(iconOf(at(host, 'sales'))).toBe('cart');
+    expect(iconOf(at(host, 'invoices'))).toBe('receipt');
+    // No icon named, none drawn.
+    expect(iconOf(host.querySelector('[role=tab][data-node="tab-notes"]'))).toBeNull();
+  });
+
+  it('draws an app’s own icons, and nothing for a name no one has', () => {
+    const p = page('customer');
+    const layout = p.layout as any;
+    Object.assign(layout.children[0], { title: 'Contact', icon: 'rocket' });
+    layout.children[1].children[1].icon = 'no-such-icon';
+    const host = mountPage(p, { icons: { rocket: '<path d="M12 2v20"/>' } });
+    expect(iconOf(at(host, 'main').querySelector('legend'))).toBe('rocket');
+    expect(host.querySelector('[role=tab][data-node="tab-billing"] svg')).toBeNull();
+  });
+
+  it('draws a collapsible section’s icon inside the button that folds it', () => {
+    const p = page('signup');
+    Object.assign((p.layout as any).children[1], { collapsible: true, icon: 'building' });
+    const host = mountPage(p);
+    expect(iconOf(host.querySelector('[data-node="work"] .fd-section-toggle'))).toBe('building');
+  });
+});
+
+describe('columns per width', () => {
+  it('hands the counts for narrower widths to the stylesheet, and only those given', () => {
+    const p = page('signup');
+    (p.layout as any).children[0].columns = { wide: 3, medium: 2 };
+    (p.layout as any).children[1].columns = 2;
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountViewer(host, { page: p });
+    const about = at(host, 'about').querySelector('.fd-grid') as HTMLElement;
+    expect(about.style.getPropertyValue('--fd-columns')).toBe('3');
+    expect(about.getAttribute('data-columns-medium')).toBe('2');
+    expect(about.style.getPropertyValue('--fd-columns-medium')).toBe('2');
+    expect(about.hasAttribute('data-columns-narrow')).toBe(false);
+    const work = at(host, 'work').querySelector('.fd-grid') as HTMLElement;
+    expect(work.style.getPropertyValue('--fd-columns')).toBe('2');
+    expect(work.hasAttribute('data-columns-medium')).toBe(false);
+  });
+});
+
 describe('related records in dialogs', () => {
   const people = () =>
     createMemoryDataSource({

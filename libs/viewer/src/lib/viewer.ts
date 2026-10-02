@@ -1,6 +1,7 @@
 import {
   createForm,
   validatePage,
+  wideColumns,
   type ButtonNode,
   type CreateRequest,
   type DataSource,
@@ -22,7 +23,7 @@ import {
   type Locale,
   MESSAGES,
 } from '@fieldia/core';
-import { browserPreferences, createWidget, installStyles, WIDGET_LABELS, type PreferenceStore, type WidgetDialogs, type WidgetFactory } from '@fieldia/widgets';
+import { browserPreferences, createWidget, drawIcon, installStyles, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetDialogs, type WidgetFactory } from '@fieldia/widgets';
 import { openFormDialog, openSearchDialog } from './dialog';
 
 export type Skin = 'underline' | 'outlined';
@@ -163,6 +164,11 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
    * dialog: Create and edit…, and the button that opens the linked record.
    */
   relatedPages?: Record<string, Page> | ((model: string) => Page | null | undefined);
+  /**
+   * The app's own icons, or replacements for Fieldia's, by the name a page
+   * gives them: the inside of a 24×24 SVG, drawn with lines in the text colour.
+   */
+  icons?: IconSet;
 }
 
 export interface ViewerHandle {
@@ -214,6 +220,12 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     for (const [name, value] of Object.entries(attrs)) if (value !== undefined) node.setAttribute(name, value);
     node.append(...children);
     return node;
+  }
+
+  /** Words with the icon a page names before them, when there is such an icon. */
+  function withIcon(name: string | undefined, text: string): (Node | string)[] {
+    const icon = drawIcon(doc, name, options.icons);
+    return icon ? [icon, text] : [text];
   }
 
   const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': options.skin ?? 'underline', dir, lang: options.locale });
@@ -272,7 +284,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   }
 
   function buttonItem(node: ButtonNode): HTMLElement {
-    const button = el('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, node.label);
+    const button = el('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, ...withIcon(node.icon, node.label));
     button.addEventListener('click', async () => {
       if (node.confirm && !(await confirm(node.confirm))) return;
       await form.runAction(node.id);
@@ -296,9 +308,18 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     return element;
   }
 
-  function grid(children: LayoutNode[], columns = 1): HTMLElement {
+  function grid(children: LayoutNode[], columns: SectionNode['columns'] = 1): HTMLElement {
     const box = el('div', { class: 'fd-grid' });
-    box.style.setProperty('--fd-columns', String(columns));
+    box.style.setProperty('--fd-columns', String(wideColumns(columns)));
+    // Counts given for the narrower widths replace the skin's own stacking there.
+    if (typeof columns === 'object') {
+      for (const width of ['medium', 'narrow'] as const) {
+        const count = columns[width];
+        if (count === undefined) continue;
+        box.setAttribute(`data-columns-${width}`, String(count));
+        box.style.setProperty(`--fd-columns-${width}`, String(count));
+      }
+    }
     box.append(...children.map(item));
     return box;
   }
@@ -309,14 +330,14 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   function sectionItem(node: SectionNode): HTMLElement {
     const section = el('fieldset', { class: 'fd-section', 'data-node': node.id });
     const description = node.description ? el('p', { class: 'fd-section-description' }, node.description) : null;
-    const content = grid(node.children, node.columns ?? 1);
+    const content = grid(node.children, node.columns);
     if (node.title && node.collapsible) {
       content.id = uid(`${node.id}-content`);
       const toggle = el(
         'button',
         { type: 'button', class: 'fd-section-toggle', 'aria-controls': content.id },
         el('span', { class: 'fd-section-chevron', 'aria-hidden': 'true' }),
-        node.title
+        ...withIcon(node.icon, node.title)
       );
       let open = node.collapsed !== true;
       const show = (next: boolean) => {
@@ -331,7 +352,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       show(open);
       section.append(el('legend', { class: 'fd-section-title' }, toggle));
     } else if (node.title) {
-      section.append(el('legend', { class: 'fd-section-title' }, node.title));
+      section.append(el('legend', { class: 'fd-section-title' }, ...withIcon(node.icon, node.title)));
     }
     if (description) section.append(description);
     section.append(content);
@@ -349,7 +370,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const parts = node.children.map((tab) => {
       const tabId = uid(`${tab.id}-tab`);
       const panelId = uid(`${tab.id}-panel`);
-      const button = el('button', { type: 'button', class: 'fd-tab', role: 'tab', id: tabId, 'aria-controls': panelId, 'data-node': tab.id }, tab.label);
+      const button = el('button', { type: 'button', class: 'fd-tab', role: 'tab', id: tabId, 'aria-controls': panelId, 'data-node': tab.id }, ...withIcon(tab.icon, tab.label));
       const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId }, grid(tab.children));
       button.addEventListener('click', () => {
         picked = active = tab.id;
@@ -560,7 +581,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const stats = el('div', { class: 'fd-stats' });
       for (const stat of node.statButtons) {
         const value = el('span', { class: 'fd-stat-value' });
-        const button = el('button', { type: 'button', class: 'fd-stat', 'data-node': stat.id }, value, el('span', { class: 'fd-stat-label' }, stat.label));
+        const icon = drawIcon(doc, stat.icon, options.icons);
+        const words = el('span', { class: 'fd-stat-words' }, value, el('span', { class: 'fd-stat-label' }, stat.label));
+        const button = el('button', { type: 'button', class: 'fd-stat', 'data-node': stat.id }, ...(icon ? [icon, words] : [words]));
         button.addEventListener('click', () => void form.runAction(stat.id));
         updaters.push((state) => {
           button.hidden = form.node(stat.id).invisible;

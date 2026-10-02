@@ -135,6 +135,14 @@ describe('<FieldiaForm> for Vue', () => {
     wrapper.unmount();
   });
 
+  it('draws the app’s own icons it is given', () => {
+    const p = page('customer');
+    (p.layout as any).statButtons[0].icon = 'rocket';
+    const wrapper = mount(FieldiaForm, { props: { page: p, icons: { rocket: '<path d="M12 2v20"/>' } }, attachTo: document.body });
+    expect(document.querySelector('[data-node="sales"] svg')?.getAttribute('data-icon')).toBe('rocket');
+    wrapper.unmount();
+  });
+
   it('cleans up when it unmounts', () => {
     const wrapper = mount(FieldiaForm, { props: { page: page('survey') }, attachTo: document.body });
     const host = wrapper.element as HTMLElement;
