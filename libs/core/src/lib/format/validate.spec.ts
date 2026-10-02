@@ -96,6 +96,53 @@ describe('validatePage — structure', () => {
   });
 });
 
+describe('validatePage — modifiers are read before the page runs', () => {
+  it('rejects a modifier that cannot be read', () => {
+    const page = example('customer');
+    page['layout'].buttons[0].invisible = "state != 'draft";
+    expect(messages(page).join('\n')).toMatch(/layout\.buttons\[0\]\.invisible: cannot read "state != 'draft"/);
+  });
+
+  it('rejects a modifier that reads a field the page does not define', () => {
+    const page = example('survey');
+    page['layout'].children[2].invisible = "uses_produkt != 'yes'";
+    expect(messages(page).join('\n')).toMatch(
+      /layout\.children\[2\]\.invisible: "uses_produkt != 'yes'" reads "uses_produkt", which is not a field of this page/
+    );
+  });
+
+  it('checks every place a modifier can sit', () => {
+    const page = example('customer');
+    const bad = 'ghost_field';
+    page['layout'].children[0].children[1].readonly = bad;
+    page['layout'].children[0].children[2].required = bad;
+    page['layout'].children[1].children[0].invisible = bad;
+    page['layout'].statButtons[0].invisible = bad;
+    page['layout'].ribbon.invisible = bad;
+    page['layout'].alerts[0].invisible = bad;
+    page['layout'].sidePanel.invisible = bad;
+    const paths = messages(page).map((m) => m.split(':')[0]);
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        'layout.children[0].children[1].readonly',
+        'layout.children[0].children[2].required',
+        'layout.children[1].children[0].invisible',
+        'layout.statButtons[0].invisible',
+        'layout.ribbon.invisible',
+        'layout.alerts[0].invisible',
+        'layout.sidePanel.invisible',
+      ])
+    );
+  });
+
+  it('accepts a dotted read by its first field, and constants', () => {
+    const page = example('customer');
+    page['layout'].children[0].children[5].invisible = 'not country_id.code or active == True';
+    page['fields'].active = { type: 'boolean', label: 'Active' };
+    expect(messages(page)).toEqual([]);
+  });
+});
+
 describe('validatePage — references', () => {
   it('rejects two elements with the same id, naming both places', () => {
     const page = example('customer');

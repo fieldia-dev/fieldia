@@ -2,6 +2,7 @@ import type * as z from 'zod';
 import type { Field, Fields, LineField } from './field';
 import type { FieldNode, LayoutNode, RootLayout, SheetNode, TabsNode } from './layout';
 import { PageSchema, type Page } from './page';
+import { compileModifier } from '../expression/modifier';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -13,8 +14,9 @@ export type PageValidation = { ok: true; page: Page } | { ok: false; issues: Pag
 
 /**
  * Check a page in two passes: its shape against the format, then every
- * reference inside it — ids unique, and every field a layout, title,
- * statusbar, stat button, currency or filter names actually defined.
+ * reference inside it — ids unique, every field a layout, title, statusbar,
+ * stat button, currency or filter names actually defined, and every modifier
+ * readable and reading only fields of this page.
  *
  * Returns the page as validated. Nothing is coerced or filled in: a page that
  * passes is returned equal to the input.
@@ -74,6 +76,26 @@ class ReferenceCheck {
     return undefined;
   }
 
+  /** Every modifier on `owner` must read, and read only fields of this page. */
+  private checkModifiers(owner: object, path: string, keys: readonly string[] = ['invisible']) {
+    for (const key of keys) {
+      const value = (owner as Record<string, unknown>)[key];
+      if (typeof value !== 'string') continue;
+      let fields: readonly string[];
+      try {
+        fields = compileModifier(value).fields;
+      } catch (error) {
+        this.report(`${path}.${key}`, `cannot read "${value}": ${(error as Error).message}`);
+        continue;
+      }
+      for (const name of fields) {
+        if (!has(this.page.fields, name)) {
+          this.report(`${path}.${key}`, `"${value}" reads "${name}", which is not a field of this page`);
+        }
+      }
+    }
+  }
+
   private checkFields(fields: Fields | Record<string, LineField>, base: string) {
     for (const [name, def] of Object.entries(fields)) {
       const path = `${base}.${name}`;
@@ -103,6 +125,7 @@ class ReferenceCheck {
     root.children.forEach((step, i) => {
       const stepPath = `${path}.children[${i}]`;
       this.claim(step.id, stepPath);
+      this.checkModifiers(step, stepPath);
       this.walkChildren(step.children, stepPath);
     });
   }
@@ -113,6 +136,7 @@ class ReferenceCheck {
 
   private walkNode(node: LayoutNode, path: string) {
     this.claim(node.id, path);
+    this.checkModifiers(node, path, node.type === 'field' ? ['invisible', 'readonly', 'required'] : ['invisible']);
     switch (node.type) {
       case 'field':
         return this.checkFieldNode(node, path);
@@ -129,6 +153,7 @@ class ReferenceCheck {
     node.children.forEach((tab, i) => {
       const tabPath = `${path}.children[${i}]`;
       this.claim(tab.id, tabPath);
+      this.checkModifiers(tab, tabPath);
       this.walkChildren(tab.children, tabPath);
     });
   }
@@ -154,15 +179,28 @@ class ReferenceCheck {
         });
       }
     }
-    sheet.buttons?.forEach((button, i) => this.claim(button.id, `${path}.buttons[${i}]`));
+    sheet.buttons?.forEach((button, i) => {
+      this.claim(button.id, `${path}.buttons[${i}]`);
+      this.checkModifiers(button, `${path}.buttons[${i}]`);
+    });
     sheet.statButtons?.forEach((stat, i) => {
       this.claim(stat.id, `${path}.statButtons[${i}]`);
+      this.checkModifiers(stat, `${path}.statButtons[${i}]`);
       if (stat.field !== undefined) this.need(stat.field, `${path}.statButtons[${i}].field`);
     });
-    if (sheet.ribbon) this.claim(sheet.ribbon.id, `${path}.ribbon`);
-    sheet.alerts?.forEach((alert, i) => this.claim(alert.id, `${path}.alerts[${i}]`));
+    if (sheet.ribbon) {
+      this.claim(sheet.ribbon.id, `${path}.ribbon`);
+      this.checkModifiers(sheet.ribbon, `${path}.ribbon`);
+    }
+    sheet.alerts?.forEach((alert, i) => {
+      this.claim(alert.id, `${path}.alerts[${i}]`);
+      this.checkModifiers(alert, `${path}.alerts[${i}]`);
+    });
     this.walkChildren(sheet.children, path);
-    if (sheet.sidePanel) this.claim(sheet.sidePanel.id, `${path}.sidePanel`);
+    if (sheet.sidePanel) {
+      this.claim(sheet.sidePanel.id, `${path}.sidePanel`);
+      this.checkModifiers(sheet.sidePanel, `${path}.sidePanel`);
+    }
   }
 
   private checkFieldNode(node: FieldNode, path: string) {
