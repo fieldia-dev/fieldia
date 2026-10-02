@@ -30,8 +30,17 @@
       "type": "one2many",
       "label": "Order lines",
       "relation": "sale.order.line",
+      "lineKinds": { "field": "display_type", "text": "name" },
       "fields": {
-        "product_id": { "type": "many2one", "label": "Product", "relation": "product" },
+        "display_type": {
+          "type": "selection",
+          "label": "Line type",
+          "options": [
+            { "value": "section", "label": "Section" },
+            { "value": "note", "label": "Note" }
+          ]
+        },
+        "product_id": { "type": "many2one", "label": "Product", "relation": "product", "required": true },
         "name": { "type": "char", "label": "Description" },
         "qty": { "type": "float", "label": "Quantity", "digits": [8, 2] },
         "price": { "type": "monetary", "label": "Unit price", "currency": "EGP" },

@@ -22,6 +22,7 @@ const round = (n: number) => Math.round(n * 100) / 100;
 /** What a server's onchange does for a sales order, in a few lines: prices, subtotals, totals. */
 export function recalculateOrder(values: Values): Values {
   const lines = ((values['line_ids'] as Line[] | null) ?? []).map((line) => {
+    if (line.values['display_type']) return line; // a section or a note has nothing to price
     const v = { ...line.values };
     const product = v['product_id'] as { id: number; label: string } | null;
     if (product && !v['price']) {
@@ -84,8 +85,11 @@ export function sampleDataSource() {
           date_order: '2026-10-02',
           payment_term: '30',
           line_ids: [
+            { key: 's1', id: 100, values: { display_type: 'section', name: 'Workstations' } },
             { key: 'l1', id: 101, values: { product_id: { id: 1, label: 'Office chair, ergonomic' }, name: 'Black mesh back', qty: 12, price: 1890, discount: 5, taxed: true, subtotal: 21546 } },
             { key: 'l2', id: 102, values: { product_id: { id: 4, label: 'Standing desk 160 × 80' }, name: 'Oak top, black frame', qty: 6, price: 6425, discount: 0, taxed: true, subtotal: 38550 } },
+            { key: 's2', id: 104, values: { display_type: 'section', name: 'Lighting' } },
+            { key: 'n1', id: 105, values: { display_type: 'note', name: 'Warm white only, to match the reception.\nOur electrician fits them on delivery day.' } },
             { key: 'l3', id: 103, values: { product_id: { id: 2, label: 'Desk lamp, LED' }, name: 'Warm white', qty: 12, price: 380, discount: 0, taxed: false, subtotal: 4560 } },
           ],
           amount_untaxed: 64656,

@@ -20,20 +20,23 @@ const editing = (page: Page) =>
 const lines = (page: Page) =>
   page.evaluate(() => ((window as any).fieldiaDemo.handle.form.getState().values['line_ids'] as { values: Record<string, unknown> }[]).map((l) => l.values));
 
+/** The sample order's rows: a section, two items, a section and a note, and one more item. */
+const WORKSTATIONS = 0, CHAIR = 1, DESK = 2, LIGHTING = 3, NOTE = 4, LAMP = 5, NEW = 6;
+
 for (const variant of VARIANTS) {
   test.describe(`${variant} · lines grid`, () => {
     test.beforeEach(async ({ page }) => {
       await open(page, variant, 'page=order&skin=underline');
-      await expect(cell(page, 2, 'subtotal')).toHaveText('EGP 4,560.00');
+      await expect(cell(page, LAMP, 'subtotal')).toHaveText('EGP 4,560.00');
     });
 
     test('a number cell selects its value, typing replaces it, and the subtotal follows while still editing', async ({ page }) => {
-      await cell(page, 2, 'qty').click();
+      await cell(page, LAMP, 'qty').click();
       await expect(editor(page)).toBeFocused();
       await page.keyboard.type('20');
       await expect(editor(page)).toHaveValue('20');
-      await expect(cell(page, 2, 'subtotal')).toHaveText('EGP 7,600.00');
-      await expect.poll(() => editing(page)).toEqual([2, 'qty']);
+      await expect(cell(page, LAMP, 'subtotal')).toHaveText('EGP 7,600.00');
+      await expect.poll(() => editing(page)).toEqual([LAMP, 'qty']);
       await screen(page, `${variant}-grid-editing`);
     });
 
@@ -58,10 +61,10 @@ for (const variant of VARIANTS) {
           return [r.left, r.right];
         });
       for (const col of ['name', 'qty']) {
-        const [shownStart, shownEnd] = await textEdges(1, col);
-        await cell(page, 1, col).click();
-        await expect.poll(() => editing(page)).toEqual([1, col]);
-        const [typedStart, typedEnd] = await textEdges(1, col);
+        const [shownStart, shownEnd] = await textEdges(DESK, col);
+        await cell(page, DESK, col).click();
+        await expect.poll(() => editing(page)).toEqual([DESK, col]);
+        const [typedStart, typedEnd] = await textEdges(DESK, col);
         // The cell's own frame marks it as edited; the skin's underline would be a second line inside it.
         expect(await editor(page).evaluate((el) => getComputedStyle(el).boxShadow)).toBe('none');
         if (col === 'name') expect(Math.abs(typedStart - shownStart), `${col}: text moved sideways`).toBeLessThanOrEqual(1.5);
@@ -72,63 +75,64 @@ for (const variant of VARIANTS) {
     });
 
     test('Enter moves down a row; Tab moves across, skipping cells that cannot be edited; Shift+Tab goes back', async ({ page }) => {
-      await cell(page, 0, 'qty').click();
+      await cell(page, CHAIR, 'qty').click();
       await page.keyboard.press('Enter');
       await expect.poll(() => editing(page)).toBeNull();
-      await expect(cell(page, 1, 'qty')).toHaveClass(/ag-cell-focus/);
+      await expect(cell(page, DESK, 'qty')).toHaveClass(/ag-cell-focus/);
       await page.keyboard.press('Enter');
-      await expect.poll(() => editing(page)).toEqual([1, 'qty']);
+      await expect.poll(() => editing(page)).toEqual([DESK, 'qty']);
       await page.keyboard.press('Tab');
-      await expect.poll(() => editing(page)).toEqual([1, 'price']);
+      await expect.poll(() => editing(page)).toEqual([DESK, 'price']);
       await page.keyboard.press('Tab');
-      await expect.poll(() => editing(page)).toEqual([1, 'discount']);
-      await page.keyboard.press('Tab'); // past VAT, Subtotal and the delete button
-      await expect.poll(() => editing(page)).toEqual([2, 'product_id']);
+      await expect.poll(() => editing(page)).toEqual([DESK, 'discount']);
+      await page.keyboard.press('Tab'); // past VAT, Subtotal and the delete button, into the next section's heading
+      await expect.poll(() => editing(page)).toEqual([LIGHTING, 'product_id']);
+      await expect(editor(page)).toHaveValue('Lighting');
       await page.keyboard.press('Shift+Tab');
-      await expect.poll(() => editing(page)).toEqual([1, 'discount']);
+      await expect.poll(() => editing(page)).toEqual([DESK, 'discount']);
     });
 
     test('Tab on the last cell adds a line and carries on typing into it', async ({ page }) => {
-      await cell(page, 2, 'discount').click();
+      await cell(page, LAMP, 'discount').click();
       await page.keyboard.press('Tab');
-      await expect(grid(page).locator('.ag-row')).toHaveCount(4);
-      await expect.poll(() => editing(page)).toEqual([3, 'product_id']);
-      expect((await lines(page)).length).toBe(4);
+      await expect(grid(page).locator('.ag-row')).toHaveCount(7);
+      await expect.poll(() => editing(page)).toEqual([NEW, 'product_id']);
+      expect((await lines(page)).length).toBe(7);
       // The product search opens its list on arrival: the first Escape closes it,
       // the second takes the line that was only just added away again.
       await expect(grid(page).getByRole('listbox')).toBeVisible();
       await page.keyboard.press('Escape');
       await expect(grid(page).getByRole('listbox')).toBeHidden();
-      await expect(grid(page).locator('.ag-row')).toHaveCount(4);
+      await expect(grid(page).locator('.ag-row')).toHaveCount(7);
       await page.keyboard.press('Escape');
-      await expect(grid(page).locator('.ag-row')).toHaveCount(3);
-      expect((await lines(page)).length).toBe(3);
+      await expect(grid(page).locator('.ag-row')).toHaveCount(6);
+      expect((await lines(page)).length).toBe(6);
     });
 
     test('Enter on the last row adds a line', async ({ page }) => {
-      await cell(page, 2, 'name').click();
+      await cell(page, LAMP, 'name').click();
       await page.keyboard.press('Enter');
-      await expect(grid(page).locator('.ag-row')).toHaveCount(4);
-      await expect.poll(() => editing(page)).toEqual([3, 'product_id']);
+      await expect(grid(page).locator('.ag-row')).toHaveCount(7);
+      await expect.poll(() => editing(page)).toEqual([NEW, 'product_id']);
     });
 
     test('Escape puts the cell back as it was', async ({ page }) => {
-      await cell(page, 1, 'name').click();
+      await cell(page, DESK, 'name').click();
       await page.keyboard.type('Walnut top');
       await expect(editor(page)).toHaveValue('Walnut top');
       await page.keyboard.press('Escape');
       await expect.poll(() => editing(page)).toBeNull();
-      await expect(cell(page, 1, 'name')).toHaveText('Oak top, black frame');
-      expect((await lines(page))[1]['name']).toBe('Oak top, black frame');
+      await expect(cell(page, DESK, 'name')).toHaveText('Oak top, black frame');
+      expect((await lines(page))[DESK]['name']).toBe('Oak top, black frame');
     });
 
     test('a product is searched inside its cell and picked with the keyboard; its price comes with it', async ({ page }) => {
       await grid(page).getByRole('button', { name: '+ Add a line' }).click();
-      await expect.poll(() => editing(page)).toEqual([3, 'product_id']);
+      await expect.poll(() => editing(page)).toEqual([NEW, 'product_id']);
       await expect(editor(page)).toBeFocused();
       // The search box covers its cell exactly, so the value underneath never shows through.
       const box = (await grid(page).locator('.ag-popup-editor .fd-grid-editor').boundingBox())!;
-      const under = (await cell(page, 3, 'product_id').boundingBox())!;
+      const under = (await cell(page, NEW, 'product_id').boundingBox())!;
       for (const side of ['x', 'y', 'width', 'height'] as const) expect(Math.abs(box[side] - under[side]), `search box ${side}`).toBeLessThanOrEqual(1);
       expect(await editor(page).evaluate((el) => getComputedStyle(el).boxShadow)).toBe('none');
       await page.keyboard.type('monitor');
@@ -137,24 +141,25 @@ for (const variant of VARIANTS) {
       // The first Escape only closes the list (and clears the search); the cell is still being edited.
       await page.keyboard.press('Escape');
       await expect(grid(page).getByRole('listbox')).toBeHidden();
-      await expect.poll(() => editing(page)).toEqual([3, 'product_id']);
+      await expect.poll(() => editing(page)).toEqual([NEW, 'product_id']);
       await expect(editor(page)).toHaveValue('');
       await page.keyboard.type('monitor');
       await expect(grid(page).getByRole('option', { name: 'Monitor arm, dual' })).toBeVisible();
       await page.keyboard.press('ArrowDown');
       await page.keyboard.press('Enter');
       await expect(editor(page)).toHaveValue('Monitor arm, dual');
-      await expect(cell(page, 3, 'price')).toHaveText('EGP 749.00');
-      await expect(cell(page, 3, 'subtotal')).toHaveText('EGP 749.00');
+      await expect(cell(page, NEW, 'price')).toHaveText('EGP 749.00');
+      await expect(cell(page, NEW, 'subtotal')).toHaveText('EGP 749.00');
       // Enter picked the product and nothing else: the cell is still the one being edited.
-      await expect.poll(() => editing(page)).toEqual([3, 'product_id']);
+      await expect.poll(() => editing(page)).toEqual([NEW, 'product_id']);
       await page.keyboard.press('Tab');
-      await expect.poll(() => editing(page)).toEqual([3, 'name']);
-      await expect(cell(page, 3, 'product_id')).toHaveText('Monitor arm, dual');
+      await expect.poll(() => editing(page)).toEqual([NEW, 'name']);
+      await expect(cell(page, NEW, 'product_id')).toHaveText('Monitor arm, dual');
     });
 
     test('the last line’s product list opens in full below the table, and its bottom choice can be clicked', async ({ page }) => {
-      await cell(page, 2, 'product_id').click();
+      await page.setViewportSize({ width: 1280, height: 1000 }); // the whole list fits the window
+      await cell(page, LAMP, 'product_id').click();
       const last = grid(page).getByRole('option', { name: 'Cable tray, 120 cm' });
       await expect(last).toBeVisible();
       // Nothing clips it: the choice itself is what sits under its middle and just above its bottom edge.
@@ -170,33 +175,100 @@ for (const variant of VARIANTS) {
       await last.click();
       await expect(editor(page)).toHaveValue('Cable tray, 120 cm');
       await page.keyboard.press('Tab');
-      await expect(cell(page, 2, 'product_id')).toHaveText('Cable tray, 120 cm');
+      await expect(cell(page, LAMP, 'product_id')).toHaveText('Cable tray, 120 cm');
     });
 
     test('yes or no is ticked by a click, or by Space on the focused cell', async ({ page }) => {
-      await cell(page, 2, 'taxed').locator('input').click();
-      expect((await lines(page))[2]['taxed']).toBe(true);
-      await cell(page, 2, 'taxed').click({ position: { x: 4, y: 4 } });
+      await cell(page, LAMP, 'taxed').locator('input').click();
+      expect((await lines(page))[LAMP]['taxed']).toBe(true);
+      await cell(page, LAMP, 'taxed').click({ position: { x: 4, y: 4 } });
       await page.keyboard.press('Space');
-      expect((await lines(page))[2]['taxed']).toBe(false);
+      expect((await lines(page))[LAMP]['taxed']).toBe(false);
     });
 
     test('the delete button removes a line, and Discard brings it back', async ({ page }) => {
-      await cell(page, 0, '__delete').getByRole('button', { name: 'Delete line' }).click();
-      await expect(grid(page).locator('.ag-row')).toHaveCount(2);
+      await cell(page, CHAIR, '__delete').getByRole('button', { name: 'Delete line' }).click();
+      await expect(grid(page).locator('.ag-row')).toHaveCount(5);
       await page.getByRole('button', { name: 'Discard' }).click();
-      await expect(grid(page).locator('.ag-row')).toHaveCount(3);
-      await expect(cell(page, 0, 'product_id')).toHaveText('Office chair, ergonomic');
+      await expect(grid(page).locator('.ag-row')).toHaveCount(6);
+      await expect(cell(page, CHAIR, 'product_id')).toHaveText('Office chair, ergonomic');
     });
 
     test('the delete button is reached with the arrow keys and pressed with Enter', async ({ page }) => {
-      await cell(page, 0, 'taxed').click({ position: { x: 4, y: 4 } });
+      await cell(page, CHAIR, 'taxed').click({ position: { x: 4, y: 4 } });
       await page.keyboard.press('ArrowRight');
       await page.keyboard.press('ArrowRight');
-      await expect(cell(page, 0, '__delete')).toHaveClass(/ag-cell-focus/);
+      await expect(cell(page, CHAIR, '__delete')).toHaveClass(/ag-cell-focus/);
       await page.keyboard.press('Enter');
-      await expect(grid(page).locator('.ag-row')).toHaveCount(2);
-      expect((await lines(page)).map((l) => l['name'])).toEqual(['Oak top, black frame', 'Warm white']);
+      await expect(grid(page).locator('.ag-row')).toHaveCount(5);
+      expect((await lines(page)).map((l) => l['product_id'] ?? l['name'])).not.toContainEqual(expect.objectContaining({ label: 'Office chair, ergonomic' }));
+      expect(await lines(page)).toHaveLength(5);
+    });
+    test('a section heads the lines below it and a note shows every line of its text, each across the row', async ({ page }) => {
+      await expect(cell(page, WORKSTATIONS, 'product_id')).toHaveText('Workstations');
+      await expect(cell(page, LIGHTING, 'product_id')).toHaveText('Lighting');
+      await expect(cell(page, NOTE, 'product_id')).toHaveText('Warm white only, to match the reception.\nOur electrician fits them on delivery day.');
+      // One wide cell and the delete button; none of an item's columns.
+      await expect(grid(page).locator(`.ag-row[row-index="${NOTE}"] .ag-cell`)).toHaveCount(2);
+      await expect(grid(page).locator(`.ag-row[row-index="${WORKSTATIONS}"]`)).toHaveClass(/fd-grid-section/);
+      // The note's two lines both show: its row is taller than an item's, and nothing inside is cut off.
+      const note = (await grid(page).locator(`.ag-row[row-index="${NOTE}"]`).boundingBox())!;
+      const item = (await grid(page).locator(`.ag-row[row-index="${LAMP}"]`).boundingBox())!;
+      expect(note.height).toBeGreaterThanOrEqual(item.height + 18);
+      expect(await cell(page, NOTE, 'product_id').evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+      expect(note.y + note.height).toBeLessThanOrEqual(item.y + 1);
+      await expect(grid(page).getByRole('columnheader', { name: 'Line type' })).toHaveCount(0);
+      await screen(page, `${variant}-grid-sections`);
+    });
+
+    test('a note grows as it is typed, taking the rows below with it, and Ctrl+Enter finishes it', async ({ page }) => {
+      const row = (index: number) => grid(page).locator(`.ag-row[row-index="${index}"]`);
+      const before = (await row(NOTE).boundingBox())!.height;
+      await cell(page, NOTE, 'product_id').click();
+      await expect.poll(() => editing(page)).toEqual([NOTE, 'product_id']);
+      const area = grid(page).locator('.ag-cell-inline-editing textarea');
+      await expect(area).toBeFocused();
+      await page.keyboard.press('Enter'); // a new line of the note, not the next row
+      await page.keyboard.type('Spare bulbs in the second box.');
+      await expect.poll(() => editing(page)).toEqual([NOTE, 'product_id']);
+      await expect.poll(async () => (await row(NOTE).boundingBox())!.height).toBeGreaterThanOrEqual(before + 18);
+      // The lamp's row moved down with it: nothing overlaps.
+      const grown = (await row(NOTE).boundingBox())!;
+      const lamp = (await row(LAMP).boundingBox())!;
+      expect(grown.y + grown.height).toBeLessThanOrEqual(lamp.y + 1);
+      await screen(page, `${variant}-grid-note-growing`);
+      await page.keyboard.press(process.platform === 'darwin' ? 'Meta+Enter' : 'Control+Enter');
+      await expect.poll(() => editing(page)).toBeNull();
+      expect((await lines(page))[NOTE]['name']).toBe('Warm white only, to match the reception.\nOur electrician fits them on delivery day.\nSpare bulbs in the second box.');
+      await expect(cell(page, NOTE, 'product_id')).toContainText('Spare bulbs in the second box.');
+      expect(await cell(page, NOTE, 'product_id').evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+    });
+
+    test('Escape on a note puts back its text and its height', async ({ page }) => {
+      const row = grid(page).locator(`.ag-row[row-index="${NOTE}"]`);
+      const before = (await row.boundingBox())!.height;
+      await cell(page, NOTE, 'product_id').click();
+      await page.keyboard.press('Enter');
+      await page.keyboard.press('Enter');
+      await page.keyboard.type('Gone.');
+      await expect.poll(async () => (await row.boundingBox())!.height).toBeGreaterThan(before + 30);
+      await page.keyboard.press('Escape');
+      await expect.poll(() => editing(page)).toBeNull();
+      await expect.poll(async () => Math.round((await row.boundingBox())!.height)).toBe(Math.round(before));
+      expect((await lines(page))[NOTE]['name']).toBe('Warm white only, to match the reception.\nOur electrician fits them on delivery day.');
+    });
+
+    test('a section is added from its button and its heading typed in place', async ({ page }) => {
+      await grid(page).getByRole('button', { name: '+ Add a section' }).click();
+      await expect.poll(() => editing(page)).toEqual([NEW, 'product_id']);
+      await page.keyboard.type('Installation');
+      await expect(editor(page)).toHaveValue('Installation');
+      await page.keyboard.press('Tab'); // the heading is a section's only cell: Tab starts the next line
+      await expect.poll(() => editing(page)).toEqual([NEW + 1, 'product_id']);
+      const added = await lines(page);
+      expect(added[NEW]).toEqual(expect.objectContaining({ display_type: 'section', name: 'Installation' }));
+      await expect(grid(page).locator(`.ag-row[row-index="${NEW}"]`)).toHaveClass(/fd-grid-section/);
+      await screen(page, `${variant}-grid-section-added`);
     });
   });
 }

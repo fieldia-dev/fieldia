@@ -54,13 +54,13 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-async function mount() {
+async function mount(page: Page = order, rows: Line[] = lines) {
   const host = document.createElement('div');
   document.body.append(host);
   const dataSource = createMemoryDataSource({
-    records: { 'sale.order': { 1: { name: 'S00118', line_ids: lines } }, product: { 1: { name: 'Office chair' }, 2: { name: 'Desk lamp' }, 3: { name: 'Monitor arm' } } },
+    records: { 'sale.order': { 1: { name: 'S00118', line_ids: rows } }, product: { 1: { name: 'Office chair' }, 2: { name: 'Desk lamp' }, 3: { name: 'Monitor arm' } } },
   });
-  handle = mountViewer(host, { page: order, dataSource, recordId: 1, widgets: gridWidgets });
+  handle = mountViewer(host, { page, dataSource, recordId: 1, widgets: gridWidgets });
   await handle.form.settled();
   await frames();
   const box = host.querySelector('[data-node="f-lines"] .fd-grid-lines') as HTMLElement;
@@ -139,5 +139,58 @@ describe('the grid', () => {
     form.reset();
     expect(box.querySelectorAll('.ag-row')).toHaveLength(2);
     expect(host).toBeTruthy();
+  });
+});
+
+describe('the grid with sections and notes', () => {
+  /** The same order, whose lines may be section headings and notes. */
+  const sectioned = JSON.parse(JSON.stringify(order)) as Page & { fields: Record<string, any> };
+  sectioned.fields['line_ids'].lineKinds = { field: 'display_type', text: 'name' };
+  sectioned.fields['line_ids'].fields = {
+    display_type: { type: 'selection', label: 'Line type', options: [{ value: 'section', label: 'Section' }, { value: 'note', label: 'Note' }] },
+    ...sectioned.fields['line_ids'].fields,
+  };
+  const withKinds: Line[] = [
+    { key: 's1', id: 10, values: { display_type: 'section', name: 'Workstations' } },
+    lines[0],
+    { key: 'n1', id: 13, values: { display_type: 'note', name: 'Fitted on delivery day.' } },
+    lines[1],
+  ];
+
+  it('never shows the field that says what a line is as a column', async () => {
+    const { api } = await mount(sectioned, withKinds);
+    expect(api?.getColumns()?.map((c) => c.getColId())).not.toContain('display_type');
+  });
+
+  it('draws a section and a note across the line’s columns, beside the delete button', async () => {
+    const { box } = await mount(sectioned, withKinds);
+    expect(rowCells(box, 0)).toEqual(['Workstations', '×']);
+    expect(rowCells(box, 2)).toEqual(['Fitted on delivery day.', '×']);
+    expect(rowCells(box, 1)[0]).toBe('Office chair');
+    expect(box.querySelector('.ag-row[row-index="0"]')?.classList.contains('fd-grid-section')).toBe(true);
+    expect(box.querySelector('.ag-row[row-index="2"]')?.classList.contains('fd-grid-note')).toBe(true);
+  });
+
+  it('adds a section from its button and edits its heading in place', async () => {
+    const { box, form, api } = await mount(sectioned, withKinds);
+    expect([...box.querySelectorAll('.fd-lines-add')].map((b) => b.textContent)).toEqual(['+ Add a line', '+ Add a section', '+ Add a note']);
+    (box.querySelector('[data-add="section"]') as HTMLButtonElement).click();
+    await frames();
+    const added = formLines(form)[4];
+    expect(added.values['display_type']).toBe('section');
+    expect(api?.getEditingCells().map((c) => [c.rowIndex, c.column?.getColId()])).toEqual([[4, 'product_id']]);
+    const input = box.querySelector('.ag-cell-inline-editing input') as HTMLInputElement;
+    input.value = 'Lighting';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(formLines(form)[4].values['name']).toBe('Lighting');
+  });
+
+  it('edits a note in a box that starts one line tall', async () => {
+    const { box, api } = await mount(sectioned, withKinds);
+    api?.startEditingCell({ rowIndex: 2, colKey: 'product_id' });
+    await frames();
+    const area = box.querySelector('.ag-cell-inline-editing textarea') as HTMLTextAreaElement;
+    expect(area.value).toBe('Fitted on delivery day.');
+    expect(area.rows).toBe(1);
   });
 });

@@ -25,6 +25,13 @@ export const GRID_CSS = /* css */ `
 }
 /* Its list is as wide as its choices need, never narrower than the cell. */
 .fd-grid-editor .fd-listbox { inset-inline-end: auto; width: max-content; min-width: 100%; max-width: min(420px, 90vw); }
+/* A section heads the lines below it; a note is a remark between them, every line of it shown. */
+.fd-grid-lines .fd-grid-section { background: var(--fd-page); }
+.fd-grid-lines .fd-grid-section .fd-grid-kind-text { font-weight: 600; }
+.fd-grid-lines .fd-grid-note .fd-grid-kind-text { font-style: italic; white-space: pre-wrap; line-height: 20px; padding-block: 10px; }
+.fd-grid-editor[data-kind="section"] .fd-input { font-weight: 600; }
+.fd-grid-editor[data-kind="note"] { align-items: start; }
+.fd-grid-editor[data-kind="note"] textarea { resize: none; min-height: 0; overflow: hidden; font-style: italic; line-height: 20px; padding-block: 9px; }
 .fd-grid-editor[data-type="integer"] input, .fd-grid-editor[data-type="float"] input, .fd-grid-editor[data-type="monetary"] input { text-align: end; }
 `;
 

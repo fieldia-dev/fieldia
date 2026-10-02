@@ -11,9 +11,9 @@ import {
   type ICellRendererParams,
   type SuppressKeyboardEventParams,
 } from 'ag-grid-community';
-import type { Field, FieldNode, Form, Line, LineField, Value, Values } from '@fieldia/core';
+import { lineKind, type Field, type FieldNode, type Form, type Line, type LineField, type LineKinds, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
-import { createWidget, lineForm, WIDGET_LABELS, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
+import { createWidget, kindTextField, lineForm, WIDGET_LABELS, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
 
 /**
  * A one2many as a spreadsheet, on AG Grid. Each cell is edited with the same
@@ -43,7 +43,16 @@ interface CellContext {
   registry?: Record<string, WidgetFactory>;
   /** An edit ended: kept, or cancelled with Escape (then the line goes back to how it was). */
   finish(key: string, cancelled: Values | null): void;
+  /** How the lines tell sections and notes from items, when they do. */
+  kinds?: LineKinds;
+  /** What a line is: a section, a note, or (null) an item. */
+  kindOf(line: Line | undefined): 'section' | 'note' | null;
 }
+
+/** The column a section or note spans from: the first one shown, the delete button aside. */
+const spanStart = (api: GridApi<Line>) => api.getAllDisplayedColumns().find((c) => c.getColId() !== '__delete');
+/** How many columns a section or note covers. */
+const spanWidth = (api: GridApi<Line>) => api.getAllDisplayedColumns().filter((c) => c.getColId() !== '__delete').length;
 
 type LineDef = Extract<Field, { type: 'one2many' }>;
 
@@ -162,13 +171,19 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   /** The line as it was when the edit began, for Escape to put back. */
   private before: Values = {};
   private cancelled = false;
+  /** The line field this editor writes: the column's, or a section's or note's text. */
+  private column = '';
+  private def!: LineField;
+  private note: HTMLTextAreaElement | null = null;
 
   init(params: ICellEditorParams<Line> & { cell: CellContext; subfield: string }) {
     this.params = params;
     // Not `column`: AG Grid's own params carry the column object under that name.
-    const { cell, subfield: column } = params;
+    const { cell } = params;
     const key = params.data.key;
-    const def = cell.defs[column];
+    const kind = cell.kindOf(params.data);
+    const column = (this.column = kind && cell.kinds ? cell.kinds.text : params.subfield);
+    const def = (this.def = kind ? kindTextField(cell.defs[column], kind) : cell.defs[column]);
     const node: FieldNode = { type: 'field', id: `${cell.fieldId}.${key}.${column}`, field: column };
     const context: WidgetContext = {
       form: lineForm(cell.form, cell.field, key),
@@ -183,8 +198,10 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     this.box = document.createElement('div');
     this.box.className = 'fd-grid-editor';
     this.box.dataset['type'] = def.type;
+    if (kind) this.box.dataset['kind'] = kind;
     this.box.setAttribute('aria-label', def.label);
     this.box.append(this.widget.element);
+    if (kind === 'note') this.growing(this.box.querySelector('textarea'));
     if (this.isPopup()) {
       // AG Grid places a popup over its cell but leaves its size to the editor.
       const { width, height } = params.eGridCell.getBoundingClientRect();
@@ -204,6 +221,45 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     show();
     this.leave = cell.form.subscribe(show);
   }
+  /**
+   * A note is typed in a box that starts one line tall and grows with its text,
+   * taking its row (and the rows below) with it: the lessons of the bench.
+   */
+  private growing(area: HTMLTextAreaElement | null) {
+    if (!area) return;
+    this.note = area;
+    area.rows = 1; // a textarea is two lines tall by default, which made a one-line note jump
+    area.addEventListener('input', () => {
+      this.resize();
+      requestAnimationFrame(() => this.keepBottomInView());
+    });
+    // Enter makes a new line; Ctrl/Cmd+Enter finishes the note.
+    area.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return;
+      event.preventDefault();
+      _stopPropagationForAgGrid(event);
+      this.params.api.stopEditing();
+    });
+  }
+  private resize() {
+    const area = this.note;
+    if (!area) return;
+    const { node, api } = this.params;
+    area.style.height = 'auto';
+    const content = area.scrollHeight;
+    area.style.height = `${content}px`;
+    const height = Math.max(40, content + 2);
+    if (height === node.rowHeight) return;
+    node.setRowHeight(height);
+    api.onRowHeightChanged();
+  }
+  /** While typing on a note's last line, keep its bottom edge in view, not just the caret. */
+  private keepBottomInView() {
+    const area = this.note;
+    if (!area?.isConnected || area.value.indexOf('\n', area.selectionEnd) !== -1) return;
+    const hidden = area.getBoundingClientRect().bottom + 4 - window.innerHeight;
+    if (hidden > 0) window.scrollBy(0, hidden);
+  }
   private line(): Line | undefined {
     const lines = (this.params.cell.form.getState().values[this.params.cell.field] as Line[] | null) ?? [];
     return lines.find((l) => l.key === this.params.data.key);
@@ -213,15 +269,20 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   }
   afterGuiAttached() {
     this.widget.focus();
+    if (this.note) {
+      this.note.setSelectionRange(this.note.value.length, this.note.value.length);
+      this.resize();
+      return;
+    }
     const input = this.box.querySelector('input');
     if (input && input.type !== 'checkbox' && document.activeElement === input) input.select();
   }
   getValue() {
-    return this.line()?.values[this.params.subfield];
+    return this.line()?.values[this.column];
   }
   /** Lists that open below their input need room the cell does not have. */
   isPopup() {
-    const type = this.params.cell.defs[this.params.subfield].type;
+    const type = this.def.type;
     return type === 'many2one' || type === 'many2many' || type === 'reference';
   }
   getPopupPosition(): 'over' {
@@ -230,7 +291,15 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   destroy() {
     this.leave();
     this.widget.destroy?.();
-    this.params.cell.finish(this.params.data.key, this.cancelled ? this.before : null);
+    const { node, api, cell, data } = this.params;
+    cell.finish(data.key, this.cancelled ? this.before : null);
+    // A note's row grew by hand while it was typed; drawing it afresh measures
+    // it again from its text (resetting the height would make it one line tall).
+    if (this.note) {
+      setTimeout(() => {
+        if (!api.isDestroyed() && node.rowIndex !== null) api.redrawRows({ rowNodes: [node] });
+      });
+    }
   }
 }
 
@@ -240,8 +309,11 @@ const EDITABLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary'
 
 export const gridWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en }) => {
   const def = field as LineDef;
-  const columns = (node.columns ?? Object.keys(def.fields)).filter((column) => def.fields[column]);
-  const cell: CellContext = { form, field: name, fieldId: node.id, defs: def.fields, labels, finish: () => undefined };
+  const kinds = def.lineKinds;
+  // The field that says what a line is never shows as a column.
+  const columns = (node.columns ?? Object.keys(def.fields)).filter((column) => def.fields[column] && column !== kinds?.field);
+  const kindOf = (line: Line | undefined) => (line ? lineKind(def, line.values) : null);
+  const cell: CellContext = { form, field: name, fieldId: node.id, defs: def.fields, labels, finish: () => undefined, kinds, kindOf };
   installGridStyles(document);
 
   const element = document.createElement('div');
@@ -250,11 +322,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   element.setAttribute('role', 'group');
   const host = document.createElement('div');
   host.className = 'fd-grid-host';
-  const add = document.createElement('button');
-  add.type = 'button';
-  add.className = 'fd-button fd-button-link fd-lines-add';
-  add.textContent = `+ ${labels.addLine}`;
-  element.append(host, add);
+  const adds = document.createElement('div');
+  adds.className = 'fd-lines-adds';
+  element.append(host, adds);
 
   let readonly = false;
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
@@ -267,12 +337,12 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const current = lines();
     if (current.some((l) => l.key === key)) form.setValue(name, current.map((l) => (l.key === key ? { ...l, values: before } : l)));
   };
-  /** Add a line at the end and start editing its first cell. */
-  const addAndEdit = () => {
-    const key = form.addLine(name);
+  /** Add a line (or a section or note) at the end and start editing its first cell. */
+  const addAndEdit = (values: Values = {}) => {
+    const key = form.addLine(name, values);
     fresh.add(key);
     const index = lines().findIndex((l) => l.key === key);
-    const column = firstEditable();
+    const column = kindOf(lines()[index]) ? spanStart(api)?.getColId() : firstEditable();
     if (index < 0 || !column) return;
     api.ensureIndexVisible(index);
     api.setFocusedCell(index, column);
@@ -285,6 +355,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
    */
   const keys = ({ event, editing, node, column }: SuppressKeyboardEventParams<Line>) => {
     if (event.defaultPrevented) return true;
+    // In a note, Enter is a new line of the note (Ctrl/Cmd+Enter finishes it).
+    if (editing && event.key === 'Enter' && !event.ctrlKey && !event.metaKey && kindOf(node.data) === 'note') return true;
     if (!editing || event.type !== 'keydown' || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return false;
     if (node.rowIndex !== lines().length - 1) return false;
     const shown = api.getAllDisplayedColumns();
@@ -303,25 +375,43 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const numeric = sub.type === 'integer' || sub.type === 'float' || sub.type === 'monetary';
     // Words get the room; numbers and yes/no take what they need.
     const wide = ['char', 'text', 'html', 'many2one', 'many2many', 'reference', 'selection'].includes(sub.type);
+    /** Whether this column is where a section's or note's text starts. */
+    const spans = (api: GridApi<Line>) => spanStart(api)?.getColId() === column;
     const base: ColDef<Line> = {
       colId: column,
       headerName: sub.label,
-      valueGetter: (p) => p.data?.values[column],
-      valueFormatter: (p) => displayValue(sub, p.value as Value, p.data?.values ?? {}),
+      valueGetter: (p) => {
+        if (!kindOf(p.data)) return p.data?.values[column];
+        return kinds && spans(p.api) ? p.data?.values[kinds.text] : null;
+      },
+      valueFormatter: (p) => (kindOf(p.data) ? String(p.value ?? '') : displayValue(sub, p.value as Value, p.data?.values ?? {})),
       type: numeric ? 'rightAligned' : undefined,
+      // A section or note runs across every column but the delete button.
+      colSpan: (p) => (kindOf(p.data) && spans(p.api) ? spanWidth(p.api) : 1),
+      // Rows are measured, so a note of several lines shows all of them.
+      autoHeight: !!kinds,
+      cellClassRules: { 'fd-grid-kind-text': (p) => !!kindOf(p.data) },
       suppressKeyboardEvent: keys,
       minWidth: wide ? 140 : sub.type === 'monetary' ? 130 : 96,
       flex: wide ? 2 : sub.type === 'monetary' ? 1.3 : 1,
-    };
-    if (sub.type === 'boolean') {
-      return { ...base, cellRenderer: CheckboxRenderer, cellRendererParams: { cell, subfield: column }, editable: false, flex: 0, width: 100, minWidth: 80 };
-    }
-    return {
-      ...base,
-      editable: () => !readonly && EDITABLE.has(sub.type) && !sub.readonly,
+      editable: (p) => {
+        if (readonly) return false;
+        if (kindOf(p.data)) return spans(p.api);
+        return sub.type !== 'boolean' && EDITABLE.has(sub.type) && !sub.readonly;
+      },
       cellEditor: FieldiaCellEditor,
       cellEditorParams: { cell, subfield: column },
     };
+    if (sub.type === 'boolean') {
+      return {
+        ...base,
+        cellRendererSelector: (p) => (kindOf(p.data) ? undefined : { component: CheckboxRenderer, params: { cell, subfield: column } }),
+        flex: 0,
+        width: 100,
+        minWidth: 80,
+      };
+    }
+    return base;
   });
   columnDefs.push({
     colId: '__delete',
@@ -356,6 +446,10 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       columnDefs,
       rowData: lines(),
       getRowId: (p) => p.data.key,
+      getRowClass: (p) => {
+        const kind = kindOf(p.data);
+        return kind ? `fd-grid-${kind}` : undefined;
+      },
       domLayout: 'autoHeight',
       // A table that grows to fit its rows draws them all anyway, and lines have few columns.
       suppressRowVirtualisation: true,
@@ -375,7 +469,20 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   );
   apis.set(element, api);
 
-  add.addEventListener('click', addAndEdit);
+  const addButton = (text: string, values: Values, kind: string) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'fd-button fd-button-link fd-lines-add';
+    button.dataset['add'] = kind;
+    button.textContent = `+ ${text}`;
+    button.addEventListener('click', () => addAndEdit(values));
+    adds.append(button);
+  };
+  addButton(labels.addLine, {}, 'line');
+  if (kinds) {
+    addButton(labels.addSection, { [kinds.field]: kinds.section ?? 'section' }, 'section');
+    addButton(labels.addNote, { [kinds.field]: kinds.note ?? 'note' }, 'note');
+  }
 
   // A focused cell that has no editor still answers keys: Space ticks yes/no,
   // and Enter or Space presses the delete button. (AG Grid's onCellKeyDown
@@ -387,7 +494,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const line = focused ? api.getDisplayedRowAtIndex(focused.rowIndex)?.data : undefined;
     if (!focused || !line) return;
     const column = focused.column.getColId();
-    if (event.key === ' ' && def.fields[column]?.type === 'boolean') {
+    if (event.key === ' ' && def.fields[column]?.type === 'boolean' && !kindOf(line)) {
       event.preventDefault();
       form.updateLine(name, line.key, column, line.values[column] !== true);
     } else if (column === '__delete') {
@@ -402,14 +509,14 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     focus: () => {
       const column = firstEditable();
       if (lines().length && column) api.setFocusedCell(0, column);
-      else add.focus();
+      else adds.querySelector('button')?.focus();
     },
     update(state) {
       if (state.readonly !== readonly) {
         readonly = state.readonly;
         api.setGridOption('columnDefs', columnDefs.filter((c) => !(readonly && c.colId === '__delete')));
       }
-      add.hidden = readonly;
+      adds.hidden = readonly;
       const current = (state.value as Line[] | null) ?? [];
       if (current !== shown) {
         shown = current;
