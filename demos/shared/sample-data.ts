@@ -34,15 +34,20 @@ export function pageFromQuery(params: URLSearchParams): Page {
 /**
  * Viewer choices the query string may make: `enterToNext=1` makes Enter move to
  * the next field, `showValid=1` puts a ✓ by each field filled in right, and
- * `saveStatus=toast` or `bar` moves the save's progress.
+ * `saveStatus=toast` or `bar` moves the save's progress, `readonly=1` locks the
+ * whole form and `editSwitch=1` adds Edit and Done.
  */
 export function optionsFromQuery(params: URLSearchParams): {
   keys?: { enterMovesToNext: boolean };
   showValid?: boolean;
   saveStatus?: 'inline' | 'toast' | 'bar';
+  readonly?: boolean;
+  editSwitch?: boolean;
 } {
   const saveStatus = params.get('saveStatus');
   return {
+    ...(params.get('readonly') === '1' ? { readonly: true } : {}),
+    ...(params.get('editSwitch') === '1' ? { editSwitch: true } : {}),
     ...(params.get('enterToNext') === '1' ? { keys: { enterMovesToNext: true } } : {}),
     ...(params.get('showValid') === '1' ? { showValid: true } : {}),
     ...(saveStatus === 'toast' || saveStatus === 'bar' ? { saveStatus } : {}),

@@ -167,6 +167,10 @@ export const FIELDIA_CSS = /* css */ `
 .fd-form[data-fd-skin="underline"] .fd-field.fd-required .fd-input { border-color: var(--fd-accent); }
 .fd-input[readonly] { background: transparent; border-color: transparent; padding-inline: 0; }
 .fd-form[data-fd-skin="outlined"] .fd-input[readonly] { background: rgba(0, 0, 0, 0.04); border-color: var(--fd-border); padding-inline: var(--fd-pad-x); color: var(--fd-muted); }
+/* A whole form locked reads as a record: plain values in either skin, no boxes, and no prompts to type. */
+.fd-form[data-readonly] .fd-input[readonly] { background: transparent; border-color: transparent; padding-inline: 0; color: var(--fd-text); }
+.fd-form[data-readonly] .fd-input::placeholder { color: transparent; }
+.fd-form[data-readonly] select.fd-input:disabled { appearance: none; background: transparent; border-color: transparent; padding-inline: 0; color: var(--fd-text); opacity: 1; }
 .fd-input[aria-invalid="true"] { border-color: var(--fd-error); }
 .fd-form[data-fd-skin="outlined"] .fd-input[aria-invalid="true"]:focus { box-shadow: 0 0 0 2px rgba(255, 38, 5, 0.06); }
 .fd-textarea { resize: vertical; min-height: 64px; }

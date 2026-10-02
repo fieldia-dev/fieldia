@@ -110,6 +110,23 @@ for (const variant of VARIANTS) {
       await screen(page, `${variant}-save-bar`, { viewport: true });
     });
 
+    test('a locked record reads as plain values, and Edit then Done unlocks it, saves and locks it again', async ({ page }) => {
+      const { demo } = await open(page, variant, 'page=customer&skin=outlined&readonly=1&editSwitch=1');
+      const phone = node(page, 'f-phone').locator('input');
+      await expect(phone).not.toBeEditable();
+      // No box around a value, and no "Search…" inviting typing where none is allowed.
+      expect(await phone.evaluate((el) => [getComputedStyle(el).backgroundColor, getComputedStyle(el).borderTopColor])).toEqual(['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0)']);
+      expect(await node(page, 'f-region').getByRole('combobox').evaluate((el) => getComputedStyle(el, '::placeholder').color)).toBe('rgba(0, 0, 0, 0)');
+      await screen(page, `${variant}-locked-record`, { viewport: true });
+      await page.getByRole('button', { name: 'Edit' }).click();
+      await expect(phone).toBeEditable();
+      await phone.fill('+20 2 1111 2222');
+      await page.getByRole('button', { name: 'Done' }).click();
+      await expect(phone).not.toBeEditable();
+      await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();
+      expect(await demo<string>('dataSource.records.partner.1.phone')).toBe('+20 2 1111 2222');
+    });
+
     test('no ✓ unless the page asks', async ({ page }) => {
       await open(page, variant, 'page=signup&skin=outlined');
       await node(page, 'f-name').locator('input').fill('Sara Hassan');

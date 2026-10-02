@@ -79,6 +79,8 @@ class NoteComponent implements OnInit {
     [keys]="options.keys"
     [showValid]="options.showValid ?? false"
     [saveStatus]="options.saveStatus ?? 'inline'"
+    [readonly]="options.readonly ?? false"
+    [editSwitch]="options.editSwitch ?? false"
     (ready)="ready($event)"
     (action)="pressed($event)"
   >
