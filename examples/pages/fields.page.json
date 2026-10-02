@@ -126,7 +126,7 @@
           { "type": "field", "id": "f-cable", "field": "cable_length", "widget": "label", "options": { "suffixField": "cable_unit" } },
           { "type": "field", "id": "f-deposit", "field": "deposit", "widget": "label", "options": { "suffixField": "currency_id" } },
           { "type": "field", "id": "f-currency", "field": "currency_id" },
-          { "type": "field", "id": "f-budget", "field": "budget" },
+          { "type": "field", "id": "f-budget", "field": "budget", "options": { "pickCurrency": true } },
           { "type": "field", "id": "f-rating", "field": "client_rating", "widget": "rating" },
           { "type": "field", "id": "f-readiness", "field": "readiness", "widget": "scale", "colspan": 2 }
         ]

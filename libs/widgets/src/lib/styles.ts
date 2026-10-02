@@ -149,6 +149,12 @@ export const FIELDIA_CSS = /* css */ `
 .fd-number { display: flex; align-items: baseline; gap: 6px; }
 .fd-number-input { font-variant-numeric: tabular-nums; }
 .fd-currency { color: var(--fd-muted); font-size: 12.5px; font-weight: 600; }
+/* With the currency after it, the amount ends right beside it. */
+.fd-currency-after > .fd-number-input { text-align: end; }
+/* A picked currency is a small box of its own beside the amount. */
+.fd-currency-picked { align-items: center; }
+.fd-currency-picked > :not(.fd-number-input) { flex: 0 0 104px; min-width: 0; }
+.fd-currency-picked > .fd-number-input { flex: 1 1 auto; min-width: 0; }
 .fd-pending { color: var(--fd-muted); font-style: italic; }
 .fd-pending:empty::before { content: "—"; }
 

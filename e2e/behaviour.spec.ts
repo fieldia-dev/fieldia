@@ -382,6 +382,21 @@ test.describe('every field', () => {
     await screen(page, `${variant}-fields-statusbars`);
   });
 
+  test('money can change its currency beside the amount, and every field on that currency follows', async ({ page }) => {
+    await open(page, variant, 'page=fields&skin=outlined');
+    const budget = node(page, 'f-budget');
+    const picker = budget.getByRole('combobox', { name: 'Currency' });
+    await expect(picker).toHaveValue('EGP');
+    await expect(budget.getByLabel('Budget')).toHaveValue('1,850,000.00');
+    await picker.click();
+    await picker.fill('jo');
+    await budget.getByRole('option', { name: 'JOD' }).click();
+    expect(await value(page, 'currency_id')).toEqual({ id: 2, label: 'JOD' });
+    await expect(page.getByLabel('Deposit paid')).toHaveText('370,000.00 JOD');
+    await budget.scrollIntoViewIfNeeded();
+    await screen(page, `${variant}-fields-currency-picker`);
+  });
+
   test('a folded section opens from its title and shows its fields', async ({ page }) => {
     await open(page, variant, 'page=fields');
     const title = node(page, 's-structured').getByRole('button', { name: 'Structured data' });

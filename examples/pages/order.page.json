@@ -101,7 +101,7 @@
                 "children": [
                   { "type": "field", "id": "f-untaxed", "field": "amount_untaxed" },
                   { "type": "field", "id": "f-tax", "field": "amount_tax" },
-                  { "type": "field", "id": "f-total", "field": "amount_total" }
+                  { "type": "field", "id": "f-total", "field": "amount_total", "options": { "symbol": "after" } }
                 ]
               }
             ]

@@ -88,6 +88,32 @@ describe('text widgets', () => {
   });
 });
 
+describe('money', () => {
+  const cur = { cur: { type: 'selection', label: 'Currency', options: [{ value: 'EGP', label: 'EGP' }, { value: 'USD', label: 'USD' }] } as Field };
+
+  it('puts the currency before the amount, or after it when asked', () => {
+    const before = setup({ type: 'monetary', currency: 'EGP' });
+    expect([...before.el.children].map((c) => c.tagName)).toEqual(['SPAN', 'INPUT']);
+    const after = setup({ type: 'monetary', currency: 'EGP' }, { options: { symbol: 'after' } });
+    expect([...after.el.children].map((c) => c.tagName)).toEqual(['INPUT', 'SPAN']);
+    expect(after.el.classList.contains('fd-currency-after')).toBe(true);
+  });
+
+  it('lets the currency be changed beside the amount', () => {
+    const { form, el, refresh } = setup({ type: 'monetary', currencyField: 'cur' }, { options: { pickCurrency: true } }, undefined, 'en', cur);
+    form.setValue('cur', 'EGP');
+    refresh();
+    const picker = el.querySelector('select') as HTMLSelectElement;
+    expect(picker.getAttribute('aria-label')).toBe('Currency');
+    expect(picker.selectedOptions[0]?.textContent).toBe('EGP');
+    expect(el.querySelector('.fd-currency')).toBeNull();
+    picker.selectedIndex = [...picker.options].findIndex((o) => o.textContent === 'USD');
+    picker.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(form.getState().values['cur']).toBe('USD');
+    expect(q<HTMLInputElement>(el, 'input').id).toBe('fd-x');
+  });
+});
+
 describe('label', () => {
   const out = (el: Element) => q<HTMLOutputElement>(el, 'output');
 

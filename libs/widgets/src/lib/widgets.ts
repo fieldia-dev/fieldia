@@ -175,8 +175,23 @@ const numberWidget: WidgetFactory = (context) => {
     input.value = shown(form.getState().values[name]);
   });
 
-  const currency = field.type === 'monetary' ? make(document, 'span', { class: 'fd-currency', 'aria-hidden': 'true' }) : null;
-  const element = currency ? make(document, 'span', { class: 'fd-number' }, currency, input) : input;
+  // Money shows its currency beside the amount (options.symbol "after" puts it
+  // after), or with options.pickCurrency the currency field's own widget, to change it.
+  const options = node.options ?? {};
+  const currencyField = field.type === 'monetary' ? field.currencyField : undefined;
+  const currencyDef = currencyField ? form.page.fields[currencyField] : undefined;
+  const picker =
+    currencyField && currencyDef && options['pickCurrency'] === true
+      ? createWidget({ ...context, name: currencyField, field: currencyDef, node: { type: 'field', id: `${node.id}.currency`, field: currencyField }, id: `${id}-currency` })
+      : null;
+  if (picker && currencyDef) picker.element.querySelector('input, select')?.setAttribute('aria-label', currencyDef.label);
+  if (picker?.element.matches('input, select') && currencyDef) picker.element.setAttribute('aria-label', currencyDef.label);
+  const currency = field.type === 'monetary' && !picker ? make(document, 'span', { class: 'fd-currency', 'aria-hidden': 'true' }) : null;
+  const side = picker?.element ?? currency;
+  const after = options['symbol'] === 'after';
+  const element = side
+    ? make(document, 'span', { class: `fd-number${after ? ' fd-currency-after' : ''}${picker ? ' fd-currency-picked' : ''}` }, ...(after ? [input, side] : [side, input]))
+    : input;
 
   return {
     element,
@@ -191,6 +206,9 @@ const numberWidget: WidgetFactory = (context) => {
       }
       input.readOnly = state.readonly;
       describe(input, state);
+      if (picker && currencyField) {
+        picker.update({ value: state.values[currencyField], values: state.values, readonly: state.readonly, required: false, invalid: false });
+      }
       if (currency && field.type === 'monetary') {
         const holder = field.currencyField ? state.values[field.currencyField] : null;
         currency.textContent =
