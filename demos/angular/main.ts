@@ -5,6 +5,7 @@ import '@angular/compiler';
 import { Component, DestroyRef, Input, inject, provideZonelessChangeDetection, signal, type OnInit, type Signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { FieldiaFormComponent, FieldiaSlotDirective, formState } from '@fieldia/angular';
+import { gridWidgets } from '@fieldia/grid';
 import type { ActionRequest, Form, FormState, Locale, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { clicked, greeting, shout } from '../shared/custom-page';
@@ -72,6 +73,7 @@ class NoteComponent implements OnInit {
     [dir]="dir"
     [locale]="locale"
     [fieldTypes]="fieldTypes"
+    [widgets]="widgets"
     (ready)="ready($event)"
     (action)="pressed($event)"
   >
@@ -93,6 +95,7 @@ class DemoComponent {
   readonly dir: 'ltr' | 'rtl' | undefined = params.get('dir') === 'rtl' ? 'rtl' : undefined;
   readonly locale = (params.get('locale') as Locale | null) ?? undefined;
   readonly fieldTypes = { 'char.shout': ShoutComponent };
+  readonly widgets = gridWidgets;
   ready(handle: ViewerHandle) {
     Object.assign(window, { fieldiaDemo: { handle, dataSource, actions } });
   }

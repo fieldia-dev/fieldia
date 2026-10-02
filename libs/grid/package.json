@@ -1,0 +1,42 @@
+{
+  "name": "@fieldia/grid",
+  "version": "0.2.0",
+  "description": "Fieldia's table of lines on AG Grid: spreadsheet editing with Fieldia's own fields in the cells.",
+  "license": "MIT",
+  "homepage": "https://fieldia.dev",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "module": "./src/index.mjs",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": {
+        "import": "./src/index.d.mts",
+        "require": "./src/index.d.ts"
+      },
+      "import": "./src/index.mjs",
+      "require": "./src/index.js",
+      "default": "./src/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@fieldia/core": "0.2.0",
+    "@fieldia/widgets": "0.2.0",
+    "tslib": "^2.8.1"
+  },
+  "peerDependencies": {
+    "ag-grid-community": "^36.0.0"
+  },
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fieldia-dev/fieldia",
+    "directory": "libs/grid"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ]
+}

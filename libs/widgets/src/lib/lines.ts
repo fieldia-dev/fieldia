@@ -15,8 +15,8 @@ interface Row {
   remove: HTMLButtonElement;
 }
 
-/** The form a cell sees: the line's values, written back into the line. */
-function lineForm(form: Form, field: string, key: string): Form {
+/** The form a cell sees: the line's values, written back into the line. Shared with @fieldia/grid. */
+export function lineForm(form: Form, field: string, key: string): Form {
   const values = () => (((form.getState().values[field] as Line[] | null) ?? []).find((l) => l.key === key)?.values ?? {});
   return {
     ...form,

@@ -1,6 +1,7 @@
-import { createMemoryDataSource, type Page } from '@fieldia/core';
+import { createMemoryDataSource, type Line, type Page, type Values } from '@fieldia/core';
 import customer from '../../examples/pages/customer.page.json';
 import fields from '../../examples/pages/fields.page.json';
+import order from '../../examples/pages/order.page.json';
 import signup from '../../examples/pages/signup.page.json';
 import survey from '../../examples/pages/survey.page.json';
 import { customPage } from './custom-page';
@@ -11,8 +12,30 @@ export const pages: Record<string, Page> = {
   survey: survey as Page,
   customer: customer as Page,
   fields: fields as Page,
+  order: order as Page,
   custom: customPage,
 };
+
+const PRODUCT_PRICES: Record<number, number> = { 1: 1890, 2: 380, 3: 749, 4: 6425, 5: 215 };
+const round = (n: number) => Math.round(n * 100) / 100;
+
+/** What a server's onchange does for a sales order, in a few lines: prices, subtotals, totals. */
+export function recalculateOrder(values: Values): Values {
+  const lines = ((values['line_ids'] as Line[] | null) ?? []).map((line) => {
+    const v = { ...line.values };
+    const product = v['product_id'] as { id: number; label: string } | null;
+    if (product && !v['price']) {
+      v['price'] = PRODUCT_PRICES[product.id] ?? 0;
+      if (!v['name']) v['name'] = product.label;
+    }
+    if (v['qty'] == null && product) v['qty'] = 1;
+    v['subtotal'] = round(Number(v['qty'] ?? 0) * Number(v['price'] ?? 0) * (1 - Number(v['discount'] ?? 0) / 100));
+    return { ...line, values: v };
+  });
+  const untaxed = round(lines.reduce((sum, l) => sum + Number(l.values['subtotal'] ?? 0), 0));
+  const tax = round(lines.filter((l) => l.values['taxed']).reduce((sum, l) => sum + Number(l.values['subtotal'] ?? 0) * 0.14, 0));
+  return { line_ids: lines, amount_untaxed: untaxed, amount_tax: tax, amount_total: round(untaxed + tax) };
+}
 
 /** A customer to edit, and the records its relations point to. Sample data. */
 export function sampleDataSource() {
@@ -46,6 +69,31 @@ export function sampleDataSource() {
       },
       currency: { 1: { name: 'EGP' }, 2: { name: 'JOD' }, 3: { name: 'SAR' } },
       'partner.tag': { 10: { name: 'Wholesale' }, 11: { name: 'VIP' } },
+      product: {
+        1: { name: 'Office chair, ergonomic', price: 1890 },
+        2: { name: 'Desk lamp, LED', price: 380 },
+        3: { name: 'Monitor arm, dual', price: 749 },
+        4: { name: 'Standing desk 160 × 80', price: 6425 },
+        5: { name: 'Cable tray, 120 cm', price: 215 },
+      },
+      'sale.order': {
+        1: {
+          name: 'S00118',
+          state: 'sent',
+          partner_id: { id: 1, label: 'Nile Traders' },
+          date_order: '2026-10-02',
+          payment_term: '30',
+          line_ids: [
+            { key: 'l1', id: 101, values: { product_id: { id: 1, label: 'Office chair, ergonomic' }, name: 'Black mesh back', qty: 12, price: 1890, discount: 5, taxed: true, subtotal: 21546 } },
+            { key: 'l2', id: 102, values: { product_id: { id: 4, label: 'Standing desk 160 × 80' }, name: 'Oak top, black frame', qty: 6, price: 6425, discount: 0, taxed: true, subtotal: 38550 } },
+            { key: 'l3', id: 103, values: { product_id: { id: 2, label: 'Desk lamp, LED' }, name: 'Warm white', qty: 12, price: 380, discount: 0, taxed: false, subtotal: 4560 } },
+          ],
+          amount_untaxed: 64656,
+          amount_tax: 8413.44,
+          amount_total: 73069.44,
+          note: 'Delivery to the 12th floor by the freight lift, 08:00 to 10:00.',
+        },
+      },
       employee: { 21: { name: 'Mona Adel' }, 22: { name: 'Karim Fathy' }, 23: { name: 'Salma Nabil' } },
       service: { 31: { name: 'Design' }, 32: { name: 'Project management' }, 33: { name: 'Furniture supply' }, 34: { name: 'After-care' } },
       // The "Every field" page: one record that fills every widget.
@@ -88,6 +136,8 @@ export function sampleDataSource() {
       },
     },
     onchange: {
+      // Order lines: a picked product brings its name and price; every line gets its subtotal; the order its totals.
+      'sale.order': { line_ids: recalculateOrder },
       partner: {
         country_id: (values) => {
           const id = (values['country_id'] as { id: number } | null)?.id;

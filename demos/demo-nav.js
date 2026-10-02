@@ -10,7 +10,7 @@
     if (page === current.page && skin === current.skin) a.setAttribute('aria-current', 'page');
     return a;
   };
-  for (const page of ['signup', 'survey', 'customer', 'fields']) {
+  for (const page of ['signup', 'survey', 'customer', 'fields', 'order']) {
     for (const skin of ['underline', 'outlined']) box.append(link(page, skin, `${page} · ${skin}`));
   }
 })();
