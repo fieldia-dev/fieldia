@@ -1,7 +1,7 @@
 {
   "name": "@fieldia/designer",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Build Fieldia pages without writing JSON: an editing model with undo and versions, a survey editor, and a canvas.",
   "license": "MIT",
   "homepage": "https://fieldia.dev",
@@ -22,9 +22,9 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@fieldia/core": "0.7.0",
-    "@fieldia/viewer": "0.7.0",
-    "@fieldia/widgets": "0.7.0",
+    "@fieldia/core": "0.8.0",
+    "@fieldia/viewer": "0.8.0",
+    "@fieldia/widgets": "0.8.0",
     "tslib": "^2.8.1"
   },
   "peerDependencies": {
