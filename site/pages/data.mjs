@@ -3,9 +3,9 @@ import { c, code } from '../layout.mjs';
 export default {
   path: '/data/',
   title: 'Data sources',
-  description: 'Connect Fieldia to your backend: the five methods of a data source, what each receives, and an adapter for a REST API.',
+  description: 'Connect Fieldia to your backend: the methods of a data source, what each receives, and an adapter for a REST API.',
   body: `
-<p class="lead">Fieldia has no backend of its own. A page's records and responses travel through a <em>data source</em>: an object your app writes, with up to five methods. Implement only the ones your pages use.</p>
+<p class="lead">Fieldia has no backend of its own. A page's records and responses travel through a <em>data source</em>: an object your app writes, with up to eight methods. Implement only the ones your pages use.</p>
 
 ${code(
   'ts',
@@ -17,6 +17,8 @@ interface DataSource {
   search?(request: SearchRequest): Promise<RelatedRecord[]>; // find records to link to
   create?(request: CreateRequest): Promise<RelatedRecord>;   // make one from a typed name
   submit?(request: SubmitRequest): Promise<SubmitResult>;    // store one response
+  list?(request: ListRequest): Promise<ListResult>;          // a page of records, for a list
+  groups?(request: GroupRequest): Promise<Group[]>;          // a list's groups and their counts
 }`
 )}
 
@@ -29,6 +31,8 @@ interface DataSource {
     <tr><td>${c('search')}</td><td>Someone types in a many2one, many2many or reference</td><td>Links to other records</td></tr>
     <tr><td>${c('create')}</td><td>Someone picks <em>Create “…”</em> in a link field</td><td>Making a record without leaving the page</td></tr>
     <tr><td>${c('submit')}</td><td>Someone sends a responses page</td><td>Surveys, sign-ups</td></tr>
+    <tr><td>${c('list')}</td><td>A list opens, is searched, sorted or paged</td><td>Lists of records — see <a href="/lists/#data">lists</a></td></tr>
+    <tr><td>${c('groups')}</td><td>A list is grouped by a field</td><td>Group By</td></tr>
   </tbody>
 </table>
 
@@ -87,7 +91,7 @@ export const api: DataSource = {
 )}
 
 <h2 id="memory">The memory data source</h2>
-<p>${c('createMemoryDataSource()')} implements all five methods in memory. It is what the demos and tests use, and a good way to try a page before a backend exists. You can seed it with records, search labels and onchange rules:</p>
+<p>${c('createMemoryDataSource()')} implements every method in memory. It is what the demos and tests use, and a good way to try a page before a backend exists. You can seed it with records, search labels and onchange rules:</p>
 ${code(
   'ts',
   `

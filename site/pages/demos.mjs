@@ -10,6 +10,7 @@ const PAGES = [
   ['signup', 'Workshop sign-up', 'sections, conditions, validation, a response'],
   ['survey', 'Survey', 'a wizard that skips the steps that do not apply, with a step list to click and an optional step'],
   ['customer', 'Customer record', 'a business sheet: statusbar, stat buttons, badges, Individual/Company over the name, tabs, lines, links, and its chatter'],
+  ['customers', 'Customers', 'a list: a search bar with suggestions, filters, group by and favourites; sorting, pages, and buttons for the records chosen; a row opens its customer'],
   ['fields', 'Every field', 'one record using every widget, with foldable sections'],
   ['order', 'Sales order', 'header groups, and the lines grid: spreadsheet keys, sections and notes, moving lines, totals, columns'],
 ];
@@ -17,9 +18,9 @@ const PAGES = [
 export default {
   path: '/demos/',
   title: 'Demos',
-  description: 'The same five Fieldia pages running in plain JavaScript, React, Vue, Angular and a script tag.',
+  description: 'The same six Fieldia pages running in plain JavaScript, React, Vue, Angular and a script tag.',
   body: `
-<p class="lead">The same five pages in every framework. They are the pages the browser tests drive, so what you see here is what is tested on every change.</p>
+<p class="lead">The same six pages in every framework. They are the pages the browser tests drive, so what you see here is what is tested on every change.</p>
 
 <div class="demo-grid">
 ${FRAMEWORKS.map(

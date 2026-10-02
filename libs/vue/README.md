@@ -22,4 +22,5 @@ const dataSource = createMemoryDataSource();
 ```
 
 Custom fields can be Vue components (`fieldTypes`), slot content goes in named
-slots, and `useFormState(form)` gives you a form's state as a ref. MIT licensed.
+slots, and `useFormState(form)` gives you a form's state as a ref. A list page
+opens a row through the `@open-record` event. MIT licensed.

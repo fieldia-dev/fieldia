@@ -20,4 +20,5 @@ export function Customer() {
 ```
 
 Custom fields and slot content can be React components (`fieldTypes`, `slots`);
-`useFormState(form)` gives you a form's state as React state. MIT licensed.
+`useFormState(form)` gives you a form's state as React state. A list page opens
+a row through `onOpenRecord`. MIT licensed.

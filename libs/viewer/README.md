@@ -2,7 +2,8 @@
 
 Show a [Fieldia](https://fieldia.dev) page and let people fill it in. Plain DOM,
 no framework: sections, tabs and wizards, the statusbar, stat buttons, drafts,
-right-to-left layout, and messages in English, Arabic, German and French.
+lists of records with a search bar, right-to-left layout, and messages in
+English, Arabic, German and French.
 
 ```sh
 npm install @fieldia/viewer
@@ -21,6 +22,14 @@ const viewer = mountViewer(document.getElementById('app')!, {
 });
 // later: viewer.destroy()
 ```
+
+## Lists
+
+A page whose layout is a `list` shows its records as a table: pages, sorting,
+a search bar with suggestions, filters, group by and favourites. Your data
+source answers `list` and `groups`; a row opens through `onOpenRecord`, and the
+page's buttons reach `onAction` with the chosen `recordIds`. See
+[lists and search](https://fieldia.dev/lists/).
 
 ## With no build step
 

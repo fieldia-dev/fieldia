@@ -4,7 +4,7 @@ import { expectNoSidewaysScroll } from './support';
 /** fieldia.dev, as built into dist/site and served on its own port. */
 /** `SITE_URL=https://fieldia.dev npx playwright test e2e/site.spec.ts` runs the same checks on the live site. */
 const SITE = process.env['SITE_URL'] ?? 'http://127.0.0.1:4322';
-const PAGES = ['/', '/start/', '/pages/', '/fields/', '/data/', '/behaviour/', '/chatter/', '/look/', '/demos/'];
+const PAGES = ['/', '/start/', '/pages/', '/fields/', '/data/', '/behaviour/', '/lists/', '/chatter/', '/look/', '/demos/'];
 
 function watch(page: Page) {
   const problems: string[] = [];
@@ -69,7 +69,8 @@ test('every demo the site links to opens a working form', async ({ page }) => {
   const problems = watch(page);
   await page.goto(SITE + '/demos/');
   const demos = await page.locator('.demo-card a').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).getAttribute('href') as string));
-  expect(demos.length).toBe(21);
+  // Six pages in each of four frameworks, and the script tag's one.
+  expect(demos.length).toBe(25);
   for (const href of demos) {
     await page.goto(SITE + href);
     await expect(page.locator('.fd-form').first(), href).toBeVisible();

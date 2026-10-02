@@ -57,7 +57,7 @@ ${code(
 <p>Every field has a ${c('type')} and a ${c('label')}, and may have ${c('help')}, ${c('required')}, ${c('readonly')} and a ${c('default')}. Each type adds its own options — ${c('options')} for a selection, ${c('relation')} for a link to another record, ${c('min')} and ${c('max')} for a number. <a href="/fields/">Fields</a> lists them all.</p>
 
 <h2 id="layout">layout: how it is arranged</h2>
-<p>A page's layout is one of four kinds:</p>
+<p>A page's layout is one of five kinds:</p>
 <table>
   <thead><tr><th>Layout</th><th>For</th></tr></thead>
   <tbody>
@@ -65,6 +65,7 @@ ${code(
     <tr><td>${c('sheet')}</td><td>A business record: a title (with an optional photo and fields over and under it), a statusbar, buttons, stat buttons, badges, a ribbon, alerts, then sections and tabs, and an optional side panel. See <a href="#sheet">the parts of a sheet</a>.</td></tr>
     <tr><td>${c('tabs')}</td><td>Tabs at the top level, each holding sections and fields.</td></tr>
     <tr><td>${c('wizard')}</td><td>Steps, one at a time, with a progress bar. A step whose condition is false is skipped — that is how a survey branches. Steps can be clicked, skipped when optional, and its buttons named — see <a href="#wizard">wizards</a>.</td></tr>
+    <tr><td>${c('list')}</td><td>Many records as a table, with a search bar, filters, group by and favourites, and buttons for the records chosen. It names ${c('columns')}, not children — see <a href="/lists/">lists and search</a>.</td></tr>
   </tbody>
 </table>
 <p>Inside them, these nodes can be nested freely:</p>

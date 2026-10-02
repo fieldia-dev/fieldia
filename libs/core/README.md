@@ -21,7 +21,8 @@ form.subscribe((state) => console.log(state.values, state.errors));
 ```
 
 Fieldia knows no backend. Records load and save through a `DataSource` — `load`,
-`save`, `onchange`, `search`, `submit` — that your app implements;
+`save`, `onchange`, `search`, `create`, `submit`, and `list` and `groups` for a
+list of records — that your app implements;
 `createMemoryDataSource` implements all of it in memory, for tests and demos.
 
 The page format is also a JSON Schema, for editors and other languages:

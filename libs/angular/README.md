@@ -29,4 +29,5 @@ Custom fields can be Angular components (`fieldTypes`), slot content goes in
 `<ng-template fieldiaSlot="name">`, and `formState(form)` gives you a form's state
 as a signal. The viewer's options are inputs of the same names, but for the
 app's translator: `[translator]`, because a `[translate]` binding goes to the
-element's own HTML attribute. MIT licensed.
+element's own HTML attribute. A list page opens a row through the
+`(openRecord)` output. MIT licensed.
