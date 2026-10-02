@@ -498,6 +498,19 @@ export const FIELDIA_CSS = /* css */ `
 .fd-dialog-close:hover { background: var(--fd-page); color: var(--fd-text); }
 .fd-form-dialog-body { flex: 1 1 auto; min-height: 0; overflow: auto; container-type: inline-size; }
 .fd-form-dialog-body .fd-sheet-layout { margin-block-start: 12px; }
+/* The dialog's head names the page; a record in a dialog leaves its side panel (the chatter) to the full page. */
+.fd-form-dialog-body .fd-page-title { display: none; }
+.fd-form-dialog-body .fd-page-head:not(:has(.fd-page-description)) { display: none; }
+.fd-form-dialog-body .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr); }
+.fd-form-dialog-body .fd-side { display: none; }
+/* Search more…: a search box over a list of rows. */
+.fd-search-body { display: grid; gap: 12px; align-content: start; }
+.fd-search-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); overflow: auto; max-height: min(60vh, 520px); }
+.fd-search-list .fd-option { padding: 8px 12px; }
+.fd-search-list .fd-option + .fd-option { border-block-start: 1px solid var(--fd-border); }
+.fd-search-list .fd-empty { padding: 10px 12px; color: var(--fd-muted); }
+/* A page with no sheet of its own sits on the dialog's surface, clear of its edges. */
+.fd-form-dialog-body:not(:has(.fd-sheet-layout)) { background: var(--fd-surface); padding: 16px 20px 20px; }
 .fd-form-dialog-foot { padding: 12px 16px; border-block-start: 1px solid var(--fd-border); background: var(--fd-surface); margin: 0; }
 @media (prefers-reduced-motion: reduce) { .fd-form *, .fd-form *::before, .fd-form *::after { transition: none !important; } }
 `;
