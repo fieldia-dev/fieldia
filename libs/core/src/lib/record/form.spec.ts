@@ -269,7 +269,7 @@ describe('createForm — the order of lines', () => {
   });
 
   it.each([
-    ['had no numbers', [null, 5, 6, null]],
+    ['had a line with no number', [null, 5, 6, 7]],
     ['shared a number', [5, 5, 6, 7]],
     ['were numbered out of their order', [10, 30, 20, 40]],
   ])('numbers every line afresh when the lines %s, so the saved order is the one shown', async (_, sequences) => {
