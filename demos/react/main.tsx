@@ -1,3 +1,4 @@
+import type { Locale } from '@fieldia/core';
 import { FieldiaForm, useFormState, type FieldComponentProps, type SlotComponentProps } from '@fieldia/react';
 import type { Skin } from '@fieldia/viewer';
 import { StrictMode, useState } from 'react';
@@ -56,7 +57,8 @@ function Demo() {
       dataSource={dataSource}
       recordId={page.data.kind === 'record' ? 1 : null}
       skin={(params.get('skin') as Skin) ?? 'underline'}
-      dir={params.get('dir') === 'rtl' ? 'rtl' : 'ltr'}
+      dir={params.get('dir') === 'rtl' ? 'rtl' : undefined}
+      locale={(params.get('locale') as Locale | null) ?? undefined}
       onAction={(request) => void actions.push(request.action)}
       fieldTypes={{ 'char.shout': Shout }}
       slots={{ chatter: Activity, note: Note }}

@@ -1,5 +1,5 @@
 import { FieldiaForm, useFormState } from '@fieldia/vue';
-import type { Form, Value } from '@fieldia/core';
+import type { Form, Locale, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { createApp, defineComponent, h, ref, type PropType } from 'vue';
 import { clicked, greeting, shout } from '../shared/custom-page';
@@ -63,7 +63,8 @@ createApp({
         dataSource,
         recordId: page.data.kind === 'record' ? 1 : null,
         skin: (params.get('skin') as Skin) ?? 'underline',
-        dir: params.get('dir') === 'rtl' ? 'rtl' : 'ltr',
+        dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,
+        locale: (params.get('locale') as Locale | null) ?? undefined,
         fieldTypes: { 'char.shout': Shout },
         onAction: (request: { action: string }) => void actions.push(request.action),
         onReady: (handle: ViewerHandle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions } }),

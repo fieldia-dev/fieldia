@@ -23,7 +23,7 @@ import {
   type Signal,
   type Type,
 } from '@angular/core';
-import type { ActionRequest, DataSource, DraftStore, Form, FormState, Page, RecordId, Scheduler, Value, Values } from '@fieldia/core';
+import type { ActionRequest, DataSource, DraftStore, Form, FormState, Locale, Page, RecordId, Scheduler, Value, Values } from '@fieldia/core';
 import { mountViewer, type Skin, type SlotRenderer, type ViewerHandle, type ViewerLabels } from '@fieldia/viewer';
 import type { WidgetFactory, WidgetState } from '@fieldia/widgets';
 
@@ -78,6 +78,7 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly values = input<Values | undefined>(undefined);
   readonly skin = input<Skin>('underline');
   readonly dir = input<'ltr' | 'rtl' | undefined>(undefined);
+  readonly locale = input<Locale | undefined>(undefined);
   readonly labels = input<Partial<ViewerLabels> | undefined>(undefined);
   readonly widgets = input<Record<string, WidgetFactory> | undefined>(undefined);
   /** Custom fields as Angular components, by `type.widget` or `type`. They receive the inputs they declare. */
@@ -109,6 +110,7 @@ export class FieldiaFormComponent implements OnDestroy {
         dataSource: this.dataSource(),
         recordId: this.recordId(),
         dir: this.dir(),
+        locale: this.locale(),
         labels: this.labels(),
         fieldTypes: this.fieldTypes(),
         slotNames: this.slotTemplates().map((slot) => slot.name()).join('|'),
@@ -125,7 +127,7 @@ export class FieldiaFormComponent implements OnDestroy {
     this.unmount();
   }
 
-  private mount(options: { page: Page; form?: Form; dataSource?: DataSource; recordId: RecordId | null; dir?: 'ltr' | 'rtl'; labels?: Partial<ViewerLabels>; fieldTypes?: Record<string, Type<unknown>> }) {
+  private mount(options: { page: Page; form?: Form; dataSource?: DataSource; recordId: RecordId | null; dir?: 'ltr' | 'rtl'; locale?: Locale; labels?: Partial<ViewerLabels>; fieldTypes?: Record<string, Type<unknown>> }) {
     this.unmount();
     const widgets: Record<string, WidgetFactory> = { ...this.widgets() };
     for (const [key, type] of Object.entries(options.fieldTypes ?? {})) {
@@ -173,6 +175,7 @@ export class FieldiaFormComponent implements OnDestroy {
       values: this.values(),
       skin: this.skin(),
       dir: options.dir,
+      locale: options.locale,
       labels: options.labels,
       widgets,
       slots,

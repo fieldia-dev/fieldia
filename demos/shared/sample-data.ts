@@ -36,6 +36,12 @@ export function sampleDataSource() {
         },
       },
       country: { 1: { name: 'Egypt' }, 2: { name: 'Jordan' }, 3: { name: 'Saudi Arabia' } },
+      'country.region': {
+        1: { name: 'Cairo', country_id: { id: 1, label: 'Egypt' } },
+        2: { name: 'Alexandria', country_id: { id: 1, label: 'Egypt' } },
+        3: { name: 'Amman', country_id: { id: 2, label: 'Jordan' } },
+        4: { name: 'Riyadh', country_id: { id: 3, label: 'Saudi Arabia' } },
+      },
       currency: { 1: { name: 'EGP' }, 2: { name: 'JOD' }, 3: { name: 'SAR' } },
       'partner.tag': { 10: { name: 'Wholesale' }, 11: { name: 'VIP' } },
     },

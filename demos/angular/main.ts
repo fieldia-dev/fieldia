@@ -5,7 +5,7 @@ import '@angular/compiler';
 import { Component, DestroyRef, Input, inject, provideZonelessChangeDetection, signal, type OnInit, type Signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { FieldiaFormComponent, FieldiaSlotDirective, formState } from '@fieldia/angular';
-import type { ActionRequest, Form, FormState, Value } from '@fieldia/core';
+import type { ActionRequest, Form, FormState, Locale, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { pages, sampleDataSource } from '../shared/sample-data';
@@ -70,6 +70,7 @@ class NoteComponent implements OnInit {
     [recordId]="recordId"
     [skin]="skin"
     [dir]="dir"
+    [locale]="locale"
     [fieldTypes]="fieldTypes"
     (ready)="ready($event)"
     (action)="pressed($event)"
@@ -89,7 +90,8 @@ class DemoComponent {
   readonly dataSource = dataSource;
   readonly recordId = page.data.kind === 'record' ? 1 : null;
   readonly skin = ((params.get('skin') as Skin) ?? 'underline') as Skin;
-  readonly dir: 'ltr' | 'rtl' = params.get('dir') === 'rtl' ? 'rtl' : 'ltr';
+  readonly dir: 'ltr' | 'rtl' | undefined = params.get('dir') === 'rtl' ? 'rtl' : undefined;
+  readonly locale = (params.get('locale') as Locale | null) ?? undefined;
   readonly fieldTypes = { 'char.shout': ShoutComponent };
   ready(handle: ViewerHandle) {
     Object.assign(window, { fieldiaDemo: { handle, dataSource, actions } });

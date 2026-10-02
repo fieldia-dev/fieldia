@@ -9,6 +9,7 @@ export interface WidgetLabels {
   addLine: string;
   deleteLine: string;
   upload: string;
+  uploadImage: string;
   replace: string;
   removeFile: string;
   dropHere: string;
@@ -24,6 +25,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addLine: 'Add a line',
     deleteLine: 'Delete line',
     upload: 'Upload a file',
+    uploadImage: 'Add a photo',
     replace: 'Replace',
     removeFile: 'Remove',
     dropHere: 'or drop it here',
@@ -37,6 +39,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addLine: 'إضافة سطر',
     deleteLine: 'حذف السطر',
     upload: 'رفع ملف',
+    uploadImage: 'إضافة صورة',
     replace: 'استبدال',
     removeFile: 'إزالة',
     dropHere: 'أو أفلته هنا',
@@ -50,6 +53,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addLine: 'Zeile hinzufügen',
     deleteLine: 'Zeile löschen',
     upload: 'Datei hochladen',
+    uploadImage: 'Foto hinzufügen',
     replace: 'Ersetzen',
     removeFile: 'Entfernen',
     dropHere: 'oder hier ablegen',
@@ -63,6 +67,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addLine: 'Ajouter une ligne',
     deleteLine: 'Supprimer la ligne',
     upload: 'Téléverser un fichier',
+    uploadImage: 'Ajouter une photo',
     replace: 'Remplacer',
     removeFile: 'Retirer',
     dropHere: 'ou déposez-le ici',

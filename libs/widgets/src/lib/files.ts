@@ -37,11 +37,11 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
     preview.hidden = true;
 
     const pick = document.createElement('label');
-    pick.className = 'fd-file-pick';
+    pick.className = kind === 'image' ? 'fd-file-pick fd-image-pick' : 'fd-file-pick';
     pick.htmlFor = id;
     const pickText = document.createElement('span');
     pickText.className = 'fd-button';
-    pickText.textContent = labels.upload;
+    pickText.textContent = kind === 'image' ? labels.uploadImage : labels.upload;
     const hint = document.createElement('span');
     hint.className = 'fd-help';
     hint.textContent = labels.dropHere;

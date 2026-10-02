@@ -1,4 +1,4 @@
-import type { ActionRequest, DataSource, DraftStore, Field, FieldNode, Form, FormState, Page, RecordId, Scheduler, Value, Values } from '@fieldia/core';
+import type { ActionRequest, DataSource, DraftStore, Field, FieldNode, Form, FormState, Locale, Page, RecordId, Scheduler, Value, Values } from '@fieldia/core';
 import { mountViewer, type Skin, type SlotRenderer, type ViewerHandle, type ViewerLabels } from '@fieldia/viewer';
 import type { WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
@@ -65,6 +65,7 @@ export const FieldiaForm = defineComponent({
     values: { type: Object as PropType<Values>, default: undefined },
     skin: { type: String as PropType<Skin>, default: 'underline' },
     dir: { type: String as PropType<'ltr' | 'rtl'>, default: undefined },
+    locale: { type: String as PropType<Locale>, default: undefined },
     labels: { type: Object as PropType<Partial<ViewerLabels>>, default: undefined },
     widgets: { type: Object as PropType<Record<string, WidgetFactory>>, default: undefined },
     fieldTypes: { type: Object as PropType<Record<string, Component>>, default: undefined },
@@ -135,6 +136,7 @@ export const FieldiaForm = defineComponent({
         values: props.values,
         skin: props.skin,
         dir: props.dir,
+        locale: props.locale,
         labels: props.labels,
         widgets,
         slots: slotRenderers,
@@ -157,7 +159,7 @@ export const FieldiaForm = defineComponent({
     onMounted(mount);
     onBeforeUnmount(unmount);
     watch(
-      () => [props.page, props.form, props.dataSource, props.recordId, props.dir, JSON.stringify(props.labels ?? {})],
+      () => [props.page, props.form, props.dataSource, props.recordId, props.dir, props.locale, JSON.stringify(props.labels ?? {})],
       () => {
         unmount();
         mount();
