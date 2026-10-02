@@ -333,6 +333,9 @@ export const FIELDIA_CSS = /* css */ `
 .fd-avatar .fd-image-pick { width: 88px; height: 88px; }
 .fd-image-preview { width: 88px; height: 88px; }
 .fd-avatar .fd-file-pick .fd-help { display: none; }
+.fd-avatar .fd-file-name { display: none; }
+.fd-avatar .fd-file { justify-items: center; gap: 2px; padding: 0; }
+.fd-avatar .fd-file-chosen { gap: 2px 8px; justify-content: center; font-size: 12.5px; }
 .fd-title .fd-input { font-size: 24px; font-weight: 600; min-height: 40px; }
 .fd-form[data-fd-skin="underline"] .fd-title .fd-field { grid-template-columns: minmax(0, 1fr); }
 .fd-form[data-fd-skin="underline"] .fd-title .fd-field > * { grid-column: 1; }
