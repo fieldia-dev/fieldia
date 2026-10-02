@@ -247,6 +247,9 @@ describe('createForm — making a record from a name', () => {
     expect(form.canCreate('country_id')).toBe(false);
     await expect(form.quickCreate('country_id', 'Oman')).rejects.toThrow('cannot make records');
     expect(createForm({ page: page('customer'), dataSource: createMemoryDataSource() }).canCreate('email')).toBe(false);
+    const fixed = page('customer') as any;
+    fixed.fields.country_id.readonly = true;
+    expect(createForm({ page: fixed, dataSource: createMemoryDataSource() }).canCreate('country_id')).toBe(false);
   });
 
   it('creates for a link inside a line, through its own relation', async () => {
