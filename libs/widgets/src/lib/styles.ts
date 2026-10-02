@@ -386,7 +386,11 @@ export const FIELDIA_CSS = /* css */ `
 .fd-ribbon.fd-tone-success { background: var(--fd-success); }
 .fd-ribbon.fd-tone-warning { background: #d97706; }
 .fd-ribbon.fd-tone-info { background: var(--fd-info); }
-.fd-alert { padding: 10px 14px; border-radius: var(--fd-control-radius); border: 1px solid; font-size: 13.5px; }
+.fd-alert { padding: 10px 14px; border-radius: var(--fd-control-radius); border: 1px solid; font-size: 13.5px; display: flex; align-items: flex-start; gap: 10px; }
+.fd-alert-message { flex: 1 1 auto; min-width: 0; }
+.fd-alert-close { border: none; background: none; color: inherit; cursor: pointer; font: inherit; font-size: 18px; line-height: 1; padding: 0 4px; border-radius: 4px; opacity: 0.75; }
+.fd-alert-close:hover { opacity: 1; }
+.fd-alert-close:focus-visible { outline: 2px solid var(--fd-focus); opacity: 1; }
 .fd-alert.fd-tone-warning { background: var(--fd-warning-soft); border-color: #f0c47a; color: var(--fd-warning); }
 .fd-alert.fd-tone-danger { background: var(--fd-error-soft); border-color: #f1a7a7; color: var(--fd-error); }
 .fd-alert.fd-tone-success { background: var(--fd-success-soft); border-color: #a7d7ab; color: var(--fd-success); }
@@ -423,10 +427,32 @@ export const FIELDIA_CSS = /* css */ `
 .fd-avatar .fd-file-name { display: none; }
 .fd-avatar .fd-file { justify-items: center; gap: 2px; padding: 0; }
 .fd-avatar .fd-file-chosen { gap: 2px 8px; justify-content: center; font-size: 12.5px; }
-.fd-title .fd-input { font-size: 24px; font-weight: 600; min-height: 40px; }
-.fd-form[data-fd-skin="underline"] .fd-title .fd-field { grid-template-columns: minmax(0, 1fr); }
-.fd-form[data-fd-skin="underline"] .fd-title .fd-field > * { grid-column: 1; }
-.fd-title .fd-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* The title and subtitle themselves: big, their labels only for screen readers. */
+.fd-title > .fd-field .fd-input { font-size: 24px; font-weight: 600; min-height: 40px; }
+.fd-form[data-fd-skin="underline"] .fd-title > .fd-field { grid-template-columns: minmax(0, 1fr); }
+.fd-form[data-fd-skin="underline"] .fd-title > .fd-field > * { grid-column: 1; }
+.fd-title > .fd-field > .fd-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* Fields over and under the title: one row, each label beside its control. */
+.fd-title-above, .fd-title-below { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 24px; }
+.fd-title-above { margin-block-end: 4px; }
+.fd-title-below { margin-block-start: 6px; }
+.fd-form .fd-title-above > .fd-field, .fd-form .fd-title-below > .fd-field { display: flex; align-items: center; gap: 8px; grid-template-columns: none; }
+.fd-form .fd-title-above > .fd-field > *, .fd-form .fd-title-below > .fd-field > * { grid-column: auto !important; }
+.fd-title-above .fd-label:empty, .fd-title-below .fd-label:empty { display: none; }
+/* A choice over the title, such as Individual or Company, speaks for itself: its label is for screen readers. */
+.fd-title-above > .fd-field > .fd-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.fd-title-statusbar { display: flex; }
+/* Badges over the title. */
+.fd-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.fd-badge {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; line-height: 1; padding: 5px 10px;
+  border-radius: 999px; border: 1px solid var(--fd-border); background: var(--fd-page); color: var(--fd-muted);
+}
+.fd-badge .fd-icon { width: 13px; height: 13px; }
+.fd-badge.fd-tone-info { background: var(--fd-info-soft); border-color: #a9c8ef; color: var(--fd-info); }
+.fd-badge.fd-tone-success { background: var(--fd-success-soft); border-color: #a7d7ab; color: var(--fd-success); }
+.fd-badge.fd-tone-warning { background: var(--fd-warning-soft); border-color: #f0c47a; color: var(--fd-warning); }
+.fd-badge.fd-tone-danger { background: var(--fd-error-soft); border-color: #f1a7a7; color: var(--fd-error); }
 .fd-side { display: grid; gap: 12px; align-content: start; min-width: 0; }
 
 /* ---- wizard -------------------------------------------------------------- */

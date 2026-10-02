@@ -64,6 +64,7 @@ export function sampleDataSource() {
         1: {
           name: 'Nile Traders',
           is_company: true,
+          company_type: 'company',
           state: 'active',
           email: 'orders@niletraders.example',
           phone: '+20 2 2345 6789',
@@ -81,7 +82,7 @@ export function sampleDataSource() {
         // More clients than a link's list shows, so "Search more…" has the rest.
         ...Object.fromEntries(
           ['Amira Clinics', 'Bayt Interiors', 'Cairo Coworking', 'Delta Foods', 'Giza Plaza', 'Heliopolis Dental Care', 'Maadi Labs', 'Nour Pharmacies', 'Sahel Resorts', 'Tahrir Books', 'Zamalek Studio'].map(
-            (name, i) => [20 + i, { name, is_company: true, state: 'active', country_id: { id: 1, label: 'Egypt' }, currency_id: { id: 1, label: 'EGP' } }],
+            (name, i) => [20 + i, { name, is_company: true, company_type: 'company', state: 'active', country_id: { id: 1, label: 'Egypt' }, currency_id: { id: 1, label: 'EGP' } }],
           ),
         ),
       },
@@ -108,6 +109,7 @@ export function sampleDataSource() {
           state: 'sent',
           partner_id: { id: 1, label: 'Nile Traders' },
           date_order: '2026-10-02',
+          validity_date: '2026-11-01',
           payment_term: '30',
           line_ids: [
             { key: 's1', id: 100, values: { sequence: 10, display_type: 'section', name: 'Workstations' } },
@@ -183,6 +185,8 @@ export function sampleDataSource() {
       // Order lines: a picked product brings its name and price; every line gets its subtotal; the order its totals.
       'sale.order': { line_ids: recalculateOrder },
       partner: {
+        // Individual or company, as Odoo keeps them: the choice over the name sets is_company.
+        company_type: (values) => ({ is_company: values['company_type'] === 'company' }),
         country_id: (values) => {
           const id = (values['country_id'] as { id: number } | null)?.id;
           const currency = id === 2 ? { id: 2, label: 'JOD' } : id === 3 ? { id: 3, label: 'SAR' } : { id: 1, label: 'EGP' };

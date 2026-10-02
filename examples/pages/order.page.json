@@ -17,6 +17,7 @@
     },
     "partner_id": { "type": "many2one", "label": "Customer", "relation": "partner", "required": true },
     "date_order": { "type": "date", "label": "Order date" },
+    "validity_date": { "type": "date", "label": "Expiration" },
     "payment_term": {
       "type": "selection",
       "label": "Payment terms",
@@ -73,15 +74,29 @@
     "id": "sheet",
     "title": { "field": "name" },
     "statusbar": { "field": "state", "clickable": true },
+    "badges": [{ "id": "b-locked", "label": "Locked", "tone": "muted", "icon": "lock", "invisible": "state != 'sale'" }],
     "children": [
       {
         "type": "section",
         "id": "header",
-        "columns": 2,
+        "columns": { "wide": 2, "medium": 2 },
         "children": [
-          { "type": "field", "id": "f-partner", "field": "partner_id" },
-          { "type": "field", "id": "f-date", "field": "date_order" },
-          { "type": "field", "id": "f-terms", "field": "payment_term" }
+          {
+            "type": "section",
+            "id": "header-left",
+            "children": [
+              { "type": "field", "id": "f-partner", "field": "partner_id" },
+              { "type": "field", "id": "f-terms", "field": "payment_term" }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "header-right",
+            "children": [
+              { "type": "field", "id": "f-validity", "field": "validity_date" },
+              { "type": "field", "id": "f-date", "field": "date_order" }
+            ]
+          }
         ]
       },
       {

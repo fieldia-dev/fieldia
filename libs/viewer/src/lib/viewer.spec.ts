@@ -295,7 +295,7 @@ describe('a record sheet', () => {
   it('loads the record and shows its title, statusbar and stat buttons', async () => {
     const { host, form } = sheet();
     await form.settled();
-    expect((host.querySelector('.fd-title input') as HTMLInputElement).value).toBe('Nile Traders');
+    expect((host.querySelector('[data-node="#title"] input') as HTMLInputElement).value).toBe('Nile Traders');
     const states = [...host.querySelectorAll('.fd-statusbar li')].map((li) => li.textContent);
     expect(states).toEqual(['Draft', 'Active', 'Blocked']);
     expect(host.querySelector('.fd-statusbar [aria-current="step"]')?.textContent).toBe('Active');
@@ -399,6 +399,83 @@ describe('a record sheet', () => {
     const { host, form } = sheet({ slots: { chatter: (el) => void (el.textContent = 'Activity feed') } });
     await form.settled();
     expect(host.querySelector('.fd-slot[data-slot="chatter"]')?.textContent).toBe('Activity feed');
+  });
+});
+
+describe('the parts of a sheet', () => {
+  function mountCustomer(change: (layout: any) => void) {
+    const p = page('customer');
+    change(p.layout);
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountViewer(host, { page: p });
+    return { host, form: handle.form };
+  }
+  const follows = (a: Element, b: Element) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it('shows badges over the title, each with its tone and icon, each by its condition', () => {
+    const { host, form } = mountCustomer((layout) => {
+      layout.badges = [
+        { id: 'b-company', label: 'Company', tone: 'info', icon: 'building', invisible: 'not is_company' },
+        { id: 'b-blocked', label: 'Blocked', tone: 'danger', invisible: "state != 'blocked'" },
+      ];
+    });
+    const company = at(host, 'b-company');
+    expect(company.closest('.fd-badges')).not.toBeNull();
+    expect(company.textContent).toBe('Company');
+    expect(company.classList.contains('fd-tone-info')).toBe(true);
+    expect(company.querySelector('svg')?.getAttribute('data-icon')).toBe('building');
+    expect(follows(company, host.querySelector('[data-node="#title"] input')!)).toBe(true);
+    expect(visible(company)).toBe(false); // a new record is not a company yet
+    form.setValue('is_company', true);
+    expect(visible(company)).toBe(true);
+    expect(visible(at(host, 'b-blocked'))).toBe(false);
+  });
+
+  it('lets a dismissible alert be closed, and keeps it closed until the page opens again', () => {
+    const { host, form } = mountCustomer((layout) => {
+      layout.alerts[0].dismissible = true;
+    });
+    form.setValue('over_limit', true);
+    const alert = at(host, 'over-limit');
+    expect(visible(alert)).toBe(true);
+    const close = alert.querySelector('button[aria-label="Dismiss"]') as HTMLButtonElement;
+    close.click();
+    expect(visible(alert)).toBe(false);
+    form.setValue('over_limit', false);
+    form.setValue('over_limit', true);
+    expect(visible(alert)).toBe(false);
+  });
+
+  it('gives an alert no × unless it may be dismissed', () => {
+    const { host, form } = mountCustomer((layout) => {
+      delete layout.alerts[0].dismissible;
+    });
+    form.setValue('over_limit', true);
+    expect(at(host, 'over-limit').querySelector('button')).toBeNull();
+  });
+
+  it('shows fields over and under the title, in that order', () => {
+    const { host } = mountCustomer((layout) => {
+      layout.title.above = [{ type: 'field', id: 't-company', field: 'is_company' }];
+      layout.title.below = [{ type: 'field', id: 't-website', field: 'website' }];
+    });
+    const title = host.querySelector('[data-node="#title"] input') as HTMLElement;
+    expect(at(host, 't-company').closest('.fd-title-above')).not.toBeNull();
+    expect(at(host, 't-website').closest('.fd-title-below')).not.toBeNull();
+    expect(follows(at(host, 't-company'), title)).toBe(true);
+    expect(follows(title, at(host, 't-website'))).toBe(true);
+  });
+
+  it('puts the statusbar under the title when asked, leaving the header its buttons', () => {
+    const { host } = mountCustomer((layout) => {
+      layout.statusbar.position = 'title';
+    });
+    expect(host.querySelector('.fd-header .fd-statusbar')).toBeNull();
+    const bar = host.querySelector('.fd-card .fd-statusbar') as HTMLElement;
+    expect(bar).not.toBeNull();
+    expect(follows(host.querySelector('[data-node="#title"] input')!, bar)).toBe(true);
+    expect(button(host, 'Activate').closest('.fd-header')).not.toBeNull();
   });
 });
 
@@ -673,7 +750,7 @@ describe('related records in dialogs', () => {
     await settle();
     ([...at(host, 'f-client').querySelectorAll('[role="option"]')].find((o) => o.textContent === 'Create and edit…') as HTMLElement).click();
     await settle();
-    const title = formDialog()?.querySelector('.fd-title input') as HTMLInputElement;
+    const title = formDialog()?.querySelector('[data-node="#title"] input') as HTMLInputElement;
     expect(title.value).toBe('Hilton Cairo');
     ([...(formDialog()?.querySelectorAll('.fd-form-dialog-foot button') ?? [])].find((b) => b.textContent === 'Save & Close') as HTMLButtonElement).click();
     await settle();
@@ -687,7 +764,7 @@ describe('related records in dialogs', () => {
     const { host, viewer, dataSource } = await mountProject();
     (at(host, 'f-client').querySelector('button[aria-label="Open Nile Traders"]') as HTMLButtonElement).click();
     await settle();
-    const title = formDialog()?.querySelector('.fd-title input') as HTMLInputElement;
+    const title = formDialog()?.querySelector('[data-node="#title"] input') as HTMLInputElement;
     expect(title.value).toBe('Nile Traders');
     title.value = 'Nile Traders Ltd';
     title.dispatchEvent(new Event('input', { bubbles: true }));

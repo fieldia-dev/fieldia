@@ -173,12 +173,12 @@ describe('validatePage — sheet and layout parts', () => {
   it('checks a section’s readonly, a badge, and the fields above and below the title', () => {
     const page = example('customer');
     page['layout'].children[0].readonly = 'ghost_field';
-    page['layout'].badges = [{ id: 'f-is-company', label: 'Twin', invisible: 'ghost_field' }];
+    page['layout'].badges = [{ id: 'f-email', label: 'Twin', invisible: 'ghost_field' }];
     page['layout'].title.above = [{ type: 'field', id: 't-ghost', field: 'ghost_field' }];
     const text = messages(page).join('\n');
     expect(text).toMatch(/layout\.children\[0\]\.readonly: "ghost_field" reads "ghost_field"/);
     expect(text).toMatch(/layout\.badges\[0\]\.invisible: "ghost_field" reads/);
-    expect(text).toMatch(/duplicate id "f-is-company"/);
+    expect(text).toMatch(/duplicate id "f-email"/);
     expect(text).toMatch(/layout\.title\.above\[0\]\.field: no field "ghost_field"/);
   });
 
@@ -202,9 +202,9 @@ describe('validatePage — sheet and layout parts', () => {
 describe('validatePage — references', () => {
   it('rejects two elements with the same id, naming both places', () => {
     const page = example('customer');
-    page['layout'].children[0].children[1].id = 'f-is-company';
+    page['layout'].children[0].children[1].id = 'f-email';
     const text = messages(page).join('\n');
-    expect(text).toMatch(/duplicate id "f-is-company"/);
+    expect(text).toMatch(/duplicate id "f-email"/);
     expect(text).toMatch(/layout\.children\[0\]\.children\[0\]/);
     expect(text).toMatch(/layout\.children\[0\]\.children\[1\]/);
   });
@@ -282,8 +282,8 @@ describe('validatePage — references', () => {
 
   it('rejects totals on a field that has no lines', () => {
     const page = example('order');
-    page['layout'].children[0].children[0].totals = ['qty'];
-    expect(messages(page)).toEqual(['layout.children[0].children[0].totals: totals only apply to one2many fields; "partner_id" is a many2one']);
+    page['layout'].children[0].children[0].children[0].totals = ['qty'];
+    expect(messages(page)).toEqual(['layout.children[0].children[0].children[0].totals: totals only apply to one2many fields; "partner_id" is a many2one']);
   });
 
   it('rejects optional columns the table does not show, and choices other than show or hide', () => {
@@ -305,14 +305,14 @@ describe('validatePage — references', () => {
 
   it('rejects optional columns on a field that has no lines', () => {
     const page = example('order');
-    page['layout'].children[0].children[0].optionalColumns = { qty: 'show' };
-    expect(messages(page)).toEqual(['layout.children[0].children[0].optionalColumns: optional columns only apply to one2many fields; "partner_id" is a many2one']);
+    page['layout'].children[0].children[0].children[0].optionalColumns = { qty: 'show' };
+    expect(messages(page)).toEqual(['layout.children[0].children[0].children[0].optionalColumns: optional columns only apply to one2many fields; "partner_id" is a many2one']);
   });
 
   it('rejects a way of editing lines on a field that has none, or one that is not cell or row', () => {
     const page = example('order');
-    page['layout'].children[0].children[0].editMode = 'row';
-    expect(messages(page)).toEqual(['layout.children[0].children[0].editMode: editMode only applies to one2many fields; "partner_id" is a many2one']);
+    page['layout'].children[0].children[0].children[0].editMode = 'row';
+    expect(messages(page)).toEqual(['layout.children[0].children[0].children[0].editMode: editMode only applies to one2many fields; "partner_id" is a many2one']);
     const other = example('order');
     other['layout'].children[1].children[0].children[0].editMode = 'page';
     expect(messages(other)).toEqual(['layout.children[1].children[0].children[0].editMode: Invalid option: expected one of "cell"|"row"']);

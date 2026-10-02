@@ -15,7 +15,7 @@ for (const variant of VARIANTS) {
       await client.fill('Hilton Cairo');
       await node(page, 'f-client').getByRole('option', { name: 'Create and edit…' }).click();
       const dialog = page.getByRole('dialog', { name: 'Client' });
-      await expect(dialog.locator('.fd-title input')).toHaveValue('Hilton Cairo');
+      await expect(dialog.locator('[data-node="#title"] input')).toHaveValue('Hilton Cairo');
       expect(await holdsFocus(page)).toBe(true);
       await dialog.locator('[data-node="f-email"] input').fill('events@hiltoncairo.example');
       await screen(page, `${variant}-dialog-create-and-edit`, { viewport: true });
@@ -32,7 +32,7 @@ for (const variant of VARIANTS) {
       await open(page, variant, 'page=fields&skin=outlined');
       await node(page, 'f-client').getByRole('button', { name: 'Open Nile Traders' }).click();
       const dialog = page.getByRole('dialog', { name: 'Nile Traders' });
-      const name = dialog.locator('.fd-title input');
+      const name = dialog.locator('[data-node="#title"] input');
       await expect(name).toHaveValue('Nile Traders');
       await expect(dialog.locator('[data-node="f-email"] input')).toHaveValue('orders@niletraders.example');
       // Large: most of a wide window, never past it.
@@ -66,7 +66,7 @@ for (const variant of VARIANTS) {
       for (const leave of ['Escape', 'Discard']) {
         await opener.click();
         const dialog = page.getByRole('dialog', { name: 'Nile Traders' });
-        await dialog.locator('.fd-title input').fill('Someone else');
+        await dialog.locator('[data-node="#title"] input').fill('Someone else');
         if (leave === 'Escape') await page.keyboard.press('Escape');
         else await dialog.getByRole('button', { name: 'Discard' }).click();
         await expect(dialog).toBeHidden();

@@ -7,6 +7,15 @@
     "name": { "type": "char", "label": "Name", "required": true, "size": 120 },
     "image": { "type": "image", "label": "Photo", "maxSize": 2097152 },
     "is_company": { "type": "boolean", "label": "Is a company" },
+    "company_type": {
+      "type": "selection",
+      "label": "Company type",
+      "options": [
+        { "value": "person", "label": "Individual" },
+        { "value": "company", "label": "Company" }
+      ],
+      "default": "person"
+    },
     "state": {
       "type": "selection",
       "label": "Status",
@@ -49,7 +58,11 @@
   "layout": {
     "type": "sheet",
     "id": "sheet",
-    "title": { "field": "name", "avatarField": "image" },
+    "title": {
+      "field": "name",
+      "avatarField": "image",
+      "above": [{ "type": "field", "id": "f-company-type", "field": "company_type", "widget": "radio" }]
+    },
     "statusbar": { "field": "state", "clickable": true },
     "buttons": [
       {
@@ -80,8 +93,13 @@
         "id": "over-limit",
         "message": "This customer is over their credit limit.",
         "tone": "warning",
+        "dismissible": true,
         "invisible": "not over_limit"
       }
+    ],
+    "badges": [
+      { "id": "b-key-account", "label": "Key account", "tone": "success", "icon": "star", "invisible": "sale_order_count < 10" },
+      { "id": "b-new", "label": "New customer", "tone": "info", "invisible": "sale_order_count" }
     ],
     "children": [
       {
@@ -89,7 +107,6 @@
         "id": "main",
         "columns": 2,
         "children": [
-          { "type": "field", "id": "f-is-company", "field": "is_company" },
           { "type": "field", "id": "f-email", "field": "email", "widget": "email" },
           { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone" },
           { "type": "field", "id": "f-website", "field": "website", "widget": "url" },

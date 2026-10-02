@@ -192,7 +192,7 @@ test.describe('survey', () => {
 test.describe('customer sheet', () => {
   test('asks before blocking, moves through states, and saves', async ({ page }) => {
     const { demo } = await open(page, variant, 'page=customer&skin=underline');
-    await expect(page.locator('.fd-title input')).toHaveValue('Nile Traders');
+    await expect(page.locator('[data-node="#title"] input')).toHaveValue('Nile Traders');
     await expect(page.getByRole('button', { name: 'Activate' })).toBeHidden();
 
     await page.getByRole('button', { name: 'Block', exact: true }).click();
@@ -238,13 +238,13 @@ test.describe('customer sheet', () => {
     await expect(node(page, 'f-notes')).toBeVisible();
     await page.getByRole('tab', { name: 'Notes' }).press('ArrowLeft');
     await expect(page.getByRole('tab', { name: 'Sales and billing' })).toBeFocused();
-    await field(page, 'f-is-company').uncheck();
+    await node(page, 'f-company-type').getByLabel('Individual').check();
     await expect(page.getByRole('tab', { name: 'Contacts' })).toBeHidden();
   });
 
   test('a warning from the server appears under the field that changed', async ({ page }) => {
     await open(page, variant, 'page=customer&skin=underline');
-    await expect(page.locator('.fd-title input')).toHaveValue('Nile Traders');
+    await expect(page.locator('[data-node="#title"] input')).toHaveValue('Nile Traders');
     await page.getByRole('tab', { name: 'Sales and billing' }).click();
     const limit = field(page, 'f-credit-limit');
     await limit.fill('250000');

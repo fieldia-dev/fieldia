@@ -53,6 +53,8 @@ export interface ViewerLabels {
   /** A form in a dialog: the button that saves it and closes the dialog, and the × that closes it. */
   saveClose: string;
   close: string;
+  /** The × on an alert that may be dismissed. */
+  dismiss: string;
 }
 
 export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
@@ -77,6 +79,7 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     loading: 'Loading…',
     saveClose: 'Save & Close',
     close: 'Close',
+    dismiss: 'Dismiss',
   },
   ar: {
     save: 'حفظ',
@@ -99,6 +102,7 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     loading: 'جارٍ التحميل…',
     saveClose: 'حفظ وإغلاق',
     close: 'إغلاق',
+    dismiss: 'إخفاء',
   },
   de: {
     save: 'Speichern',
@@ -121,6 +125,7 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     loading: 'Wird geladen…',
     saveClose: 'Speichern und schließen',
     close: 'Schließen',
+    dismiss: 'Ausblenden',
   },
   fr: {
     save: 'Enregistrer',
@@ -143,6 +148,7 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
     loading: 'Chargement…',
     saveClose: 'Enregistrer et fermer',
     close: 'Fermer',
+    dismiss: 'Masquer',
   },
 };
 
@@ -620,7 +626,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       discard.hidden = !dirty;
     });
     const header = el('div', { class: 'fd-header' }, actions);
-    if (node.statusbar) header.append(statusbar(node.statusbar));
+    const underTitle = node.statusbar?.position === 'title';
+    if (node.statusbar && !underTitle) header.append(statusbar(node.statusbar));
 
     const card = el('div', { class: 'fd-card' });
     if (node.ribbon) {
@@ -647,14 +654,40 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       card.append(stats);
     }
     for (const alert of node.alerts ?? []) {
-      const box = el('div', { class: `fd-alert fd-tone-${alert.tone ?? 'info'}`, role: 'status', 'data-node': alert.id }, alert.message);
-      hideWhen(box, alert.id);
+      const box = el('div', { class: `fd-alert fd-tone-${alert.tone ?? 'info'}`, role: 'status', 'data-node': alert.id }, el('span', { class: 'fd-alert-message' }, alert.message));
+      if (alert.dismissible) {
+        // Closed, it stays closed while the page is open, whatever its condition does.
+        let dismissed = false;
+        const close = el('button', { type: 'button', class: 'fd-alert-close', 'aria-label': labels.dismiss }, '×');
+        close.addEventListener('click', () => {
+          dismissed = true;
+          box.hidden = true;
+        });
+        box.append(close);
+        updaters.push(() => {
+          box.hidden = dismissed || form.node(alert.id).invisible;
+        });
+      } else hideWhen(box, alert.id);
       card.append(box);
+    }
+    if (node.badges?.length) {
+      const badges = el('div', { class: 'fd-badges' });
+      for (const badge of node.badges) {
+        const chip = el('span', { class: `fd-badge fd-tone-${badge.tone ?? 'muted'}`, 'data-node': badge.id }, ...withIcon(badge.icon, badge.label));
+        hideWhen(chip, badge.id);
+        badges.append(chip);
+      }
+      updaters.push(() => {
+        badges.hidden = [...badges.children].every((chip) => (chip as HTMLElement).hidden);
+      });
+      card.append(badges);
     }
     if (node.title) {
       const title = el('div', { class: 'fd-title' });
+      if (node.title.above?.length) title.append(el('div', { class: 'fd-title-above' }, ...node.title.above.map(fieldItem)));
       title.append(fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder }));
       if (node.title.subtitleField) title.append(fieldItem({ type: 'field', id: '#subtitle', field: node.title.subtitleField }));
+      if (node.title.below?.length) title.append(el('div', { class: 'fd-title-below' }, ...node.title.below.map(fieldItem)));
       const row = el('div', { class: 'fd-title-row' }, title);
       if (node.title.avatarField) {
         const avatar = fieldItem({ type: 'field', id: '#avatar', field: node.title.avatarField });
@@ -663,6 +696,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       }
       card.append(row);
     }
+    if (node.statusbar && underTitle) card.append(el('div', { class: 'fd-title-statusbar' }, statusbar(node.statusbar)));
     card.append(grid(node.children));
     if (atFoot && options.showActions !== false) {
       card.append(foot);
