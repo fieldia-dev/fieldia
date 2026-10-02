@@ -9,6 +9,8 @@ import { VARIANTS } from './variants';
 
 const grid = (page: Page) => page.locator('[data-node="f-lines"]');
 const cell = (page: Page, row: number, col: string) => grid(page).locator(`.ag-row[row-index="${row}"] .ag-cell[col-id="${col}"]`);
+/** The lines' rows: every row but the totals row pinned under them. */
+const lineRows = (page: Page) => grid(page).locator('.ag-row:not(.fd-grid-totals)');
 const editor = (page: Page) => grid(page).locator('.ag-cell-inline-editing input, .ag-popup-editor input').first();
 /** Where the grid is editing, as [row, column], or null: an editor in its cell, or a popup editor over the focused cell. */
 const editing = (page: Page) =>
@@ -95,7 +97,7 @@ for (const variant of VARIANTS) {
     test('Tab on the last cell adds a line and carries on typing into it', async ({ page }) => {
       await cell(page, LAMP, 'discount').click();
       await page.keyboard.press('Tab');
-      await expect(grid(page).locator('.ag-row')).toHaveCount(7);
+      await expect(lineRows(page)).toHaveCount(7);
       await expect.poll(() => editing(page)).toEqual([NEW, 'product_id']);
       expect((await lines(page)).length).toBe(7);
       // The product search opens its list on arrival: the first Escape closes it,
@@ -103,16 +105,16 @@ for (const variant of VARIANTS) {
       await expect(grid(page).getByRole('listbox')).toBeVisible();
       await page.keyboard.press('Escape');
       await expect(grid(page).getByRole('listbox')).toBeHidden();
-      await expect(grid(page).locator('.ag-row')).toHaveCount(7);
+      await expect(lineRows(page)).toHaveCount(7);
       await page.keyboard.press('Escape');
-      await expect(grid(page).locator('.ag-row')).toHaveCount(6);
+      await expect(lineRows(page)).toHaveCount(6);
       expect((await lines(page)).length).toBe(6);
     });
 
     test('Enter on the last row adds a line', async ({ page }) => {
       await cell(page, LAMP, 'name').click();
       await page.keyboard.press('Enter');
-      await expect(grid(page).locator('.ag-row')).toHaveCount(7);
+      await expect(lineRows(page)).toHaveCount(7);
       await expect.poll(() => editing(page)).toEqual([NEW, 'product_id']);
     });
 
@@ -188,9 +190,9 @@ for (const variant of VARIANTS) {
 
     test('the delete button removes a line, and Discard brings it back', async ({ page }) => {
       await cell(page, CHAIR, '__delete').getByRole('button', { name: 'Delete line' }).click();
-      await expect(grid(page).locator('.ag-row')).toHaveCount(5);
+      await expect(lineRows(page)).toHaveCount(5);
       await page.getByRole('button', { name: 'Discard' }).click();
-      await expect(grid(page).locator('.ag-row')).toHaveCount(6);
+      await expect(lineRows(page)).toHaveCount(6);
       await expect(cell(page, CHAIR, 'product_id')).toHaveText('Office chair, ergonomic');
     });
 
@@ -200,7 +202,7 @@ for (const variant of VARIANTS) {
       await page.keyboard.press('ArrowRight');
       await expect(cell(page, CHAIR, '__delete')).toHaveClass(/ag-cell-focus/);
       await page.keyboard.press('Enter');
-      await expect(grid(page).locator('.ag-row')).toHaveCount(5);
+      await expect(lineRows(page)).toHaveCount(5);
       expect((await lines(page)).map((l) => l['product_id'] ?? l['name'])).not.toContainEqual(expect.objectContaining({ label: 'Office chair, ergonomic' }));
       expect(await lines(page)).toHaveLength(5);
     });
