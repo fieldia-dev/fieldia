@@ -66,7 +66,7 @@ test.describe('sign-up form', () => {
     await page.keyboard.type('7.');
     await expect(rate).toHaveValue('7.');
     await page.keyboard.press('Tab');
-    await expect(rate).toHaveValue('7');
+    await expect(rate).toHaveValue('7.00'); // at rest, with the field's two decimals
   });
 
   test('conditions show and require fields as answers change', async ({ page }) => {
@@ -291,6 +291,20 @@ test.describe('every field', () => {
     await expect(totals.nth(2)).toHaveText('84.0');
     await node(page, 'f-milestones').scrollIntoViewIfNeeded();
     await screen(page, `${variant}-fields-totals`);
+  });
+
+  test('numbers are written and read the way a German reader writes them', async ({ page }) => {
+    await open(page, variant, 'page=fields&skin=outlined&locale=de');
+    const budget = field(page, 'f-budget');
+    await expect(budget).toHaveValue('1.850.000,00');
+    await expect(field(page, 'f-area')).toHaveValue('640,5'); // the field keeps one decimal
+    await budget.fill('2.000.000,5');
+    await budget.press('Tab');
+    await expect(budget).toHaveValue('2.000.000,50');
+    expect(await value(page, 'budget')).toBe(2000000.5);
+    await expect(node(page, 'f-milestones').locator('tfoot td').nth(3)).toHaveText('EGP 425.000,00');
+    await budget.scrollIntoViewIfNeeded();
+    await screen(page, `${variant}-fields-german-numbers`);
   });
 
   test('a folded section opens from its title and shows its fields', async ({ page }) => {

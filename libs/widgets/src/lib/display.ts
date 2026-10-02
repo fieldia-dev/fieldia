@@ -1,7 +1,6 @@
-import type { LineField, Value } from '@fieldia/core';
+import type { LineField, Locale, Value } from '@fieldia/core';
+import { formatNumber } from './numbers';
 
-const number = (value: number, digits: number) =>
-  new Intl.NumberFormat('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
 
 function localDate(text: string): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(text);
@@ -14,7 +13,8 @@ function localDate(text: string): Date | null {
  * A value as a person reads it where it is not being edited: a cell of the
  * lines grid, a totals row. Shared by the plain lines table and @fieldia/grid.
  */
-export function displayValue(def: LineField, value: Value | undefined, values: Record<string, Value> = {}): string {
+export function displayValue(def: LineField, value: Value | undefined, values: Record<string, Value> = {}, locale: Locale = 'en'): string {
+  const number = (n: number, digits: number) => formatNumber(n, digits, locale);
   if (value === null || value === undefined || value === '') return '';
   switch (def.type) {
     case 'many2one':
@@ -37,12 +37,12 @@ export function displayValue(def: LineField, value: Value | undefined, values: R
     }
     case 'date': {
       const date = localDate(String(value));
-      return date ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(date) : String(value);
+      return date ? new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : locale, { day: 'numeric', month: 'short', year: 'numeric', numberingSystem: 'latn' }).format(date) : String(value);
     }
     case 'datetime': {
       const date = localDate(String(value));
       return date
-        ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date)
+        ? new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : locale, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', numberingSystem: 'latn' }).format(date)
         : String(value);
     }
     case 'html':

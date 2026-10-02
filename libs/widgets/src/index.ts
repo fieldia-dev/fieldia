@@ -7,3 +7,4 @@ export * from './lib/files';
 export * from './lib/extras';
 export * from './lib/display';
 export * from './lib/preferences';
+export * from './lib/numbers';

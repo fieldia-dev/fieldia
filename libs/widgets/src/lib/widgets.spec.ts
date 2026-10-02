@@ -1,8 +1,8 @@
-import { createForm, type Field, type FieldNode, type Form, type Page } from '@fieldia/core';
+import { createForm, type Field, type FieldNode, type Form, type Locale, type Page } from '@fieldia/core';
 import { createWidget, type Widget, type WidgetFactory } from './widgets';
 
 /** A one-field page, so each test sees one widget and its form. */
-function setup(field: Record<string, unknown>, node: Partial<FieldNode> = {}, registry?: Record<string, WidgetFactory>) {
+function setup(field: Record<string, unknown>, node: Partial<FieldNode> = {}, registry?: Record<string, WidgetFactory>, locale?: Locale) {
   const page = {
     fieldia: '0.1',
     id: 't',
@@ -12,7 +12,7 @@ function setup(field: Record<string, unknown>, node: Partial<FieldNode> = {}, re
   } as Page;
   const form = createForm({ page });
   const widget = createWidget(
-    { form, name: 'x', field: page.fields['x'], node: page.layout.children[0] as FieldNode, id: 'fd-x', document },
+    { form, name: 'x', field: page.fields['x'], node: page.layout.children[0] as FieldNode, id: 'fd-x', document, locale },
     registry
   );
   document.body.replaceChildren(widget.element);
@@ -82,6 +82,81 @@ describe('text widgets', () => {
   });
 });
 
+describe('number widgets — in the reader’s language', () => {
+  const focusIn = (input: HTMLInputElement) => {
+    input.focus();
+    input.dispatchEvent(new Event('focus'));
+  };
+  const focusOut = (input: HTMLInputElement) => {
+    input.blur();
+    input.dispatchEvent(new Event('blur'));
+  };
+
+  it.each([
+    ['en', '1,850,000.50', '1850000.5'],
+    ['de', '1.850.000,50', '1850000,5'],
+    ['fr', '1\u202f850\u202f000,50', '1850000,5'],
+    ['ar', '1,850,000.50', '1850000.5'],
+  ] as const)('%s: grouped, with its decimals; entering the box changes nothing, and typing is read back', (locale, shown, typing) => {
+    const { form, el } = setup({ type: 'float', digits: [12, 2] }, {}, undefined, locale);
+    form.setValue('x', 1850000.5);
+    const input = q<HTMLInputElement>(el, 'input');
+    expect(input.value).toBe(shown);
+    focusIn(input);
+    expect(input.value).toBe(shown);
+    type(input, typing);
+    expect(valueOf(form)).toBe(1850000.5);
+    focusOut(input);
+    expect(input.value).toBe(shown);
+  });
+
+  it.each([
+    ['en', '1,234.5', 1234.5],
+    ['de', '1.234,5', 1234.5],
+    ['de', '12,5', 12.5],
+    ['fr', '1 234,5', 1234.5],
+    ['ar', '١٢٣٤٫٥', 1234.5],
+  ] as const)('%s: reads "%s" as %s', (locale, typed, value) => {
+    const { form, el } = setup({ type: 'float' }, {}, undefined, locale);
+    type(q<HTMLInputElement>(el, 'input'), typed);
+    expect(valueOf(form)).toBe(value);
+  });
+
+  it('keeps a whole-text selection as the box is entered, so typing replaces it', () => {
+    const { form, el } = setup({ type: 'monetary', currency: 'EGP' });
+    form.setValue('x', 250000);
+    const input = q<HTMLInputElement>(el, 'input');
+    input.select(); // as a browser does on Tab, and a test tool before it types
+    focusIn(input);
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, input.value.length]);
+    type(input, '5000');
+    expect(valueOf(form)).toBe(5000);
+  });
+
+  it('reads a grouped number typed into a box', () => {
+    const { form, el } = setup({ type: 'monetary', currency: 'EGP' });
+    type(q<HTMLInputElement>(el, 'input'), '250,000.5');
+    expect(valueOf(form)).toBe(250000.5);
+  });
+
+  it('keeps "1," in the box while a German number is still being typed', () => {
+    const { form, el } = setup({ type: 'float' }, {}, undefined, 'de');
+    const input = q<HTMLInputElement>(el, 'input');
+    type(input, '1,');
+    expect(valueOf(form)).toBe(1);
+    expect(input.value).toBe('1,');
+  });
+
+  it('shows whole numbers grouped, and money with its currency’s two decimals', () => {
+    const whole = setup({ type: 'integer' });
+    whole.form.setValue('x', 12000);
+    expect(q<HTMLInputElement>(whole.el, 'input').value).toBe('12,000');
+    const money = setup({ type: 'monetary', currency: 'EGP' });
+    money.form.setValue('x', 64656);
+    expect(q<HTMLInputElement>(money.el, 'input').value).toBe('64,656.00');
+  });
+});
+
 describe('number widgets — typing a number is not one keystroke', () => {
   it('keeps "1." in the box while the value is already 1', () => {
     const { form, el } = setup({ type: 'float' });
@@ -109,7 +184,7 @@ describe('number widgets — typing a number is not one keystroke', () => {
     type(input, '2.');
     input.blur();
     input.dispatchEvent(new Event('blur'));
-    expect(input.value).toBe('2');
+    expect(input.value).toBe('2.00');
   });
 
   it('passes text that is not a number on, so validation can name it', () => {

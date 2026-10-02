@@ -35,7 +35,7 @@ export function lineForm(form: Form, field: string, key: string): Form {
   };
 }
 
-export const linesWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en }) => {
+export const linesWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, locale }) => {
   const def = field as Extract<Field, { type: 'one2many' }>;
   const kinds = def.lineKinds;
   // The fields that say what a line is and keep the lines' order never show as columns.
@@ -115,7 +115,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   function makeCell(tr: HTMLTableRowElement, line: Line, column: string, sub: LineField, span = 1) {
     const cellId = `${id}-${line.key}-${column}`;
     const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column };
-    const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels });
+    const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale });
     const td = document.createElement('td');
     td.colSpan = span;
     const label = document.createElement('label');
@@ -197,7 +197,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
       });
       for (const [column, td] of sums) {
         const sum = current.filter((line) => !lineKind(def, line.values)).reduce((total, line) => total + Number(line.values[column] ?? 0), 0);
-        td.textContent = displayValue(def.fields[column], sum, current[0]?.values ?? {});
+        td.textContent = displayValue(def.fields[column], sum, current[0]?.values ?? {}, locale);
       }
       if (focusNew && rows.has(focusNew)) {
         rows.get(focusNew)?.cells[0]?.widget.focus();

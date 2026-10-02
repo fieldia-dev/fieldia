@@ -128,7 +128,7 @@ describe('a sections page', () => {
   it('shows a read-only price with its currency', () => {
     const { host } = mount('signup');
     expect(input(host, 'f-ticket').readOnly).toBe(true);
-    expect(input(host, 'f-ticket').value).toBe('1500');
+    expect(input(host, 'f-ticket').value).toBe('1,500.00');
     expect(at(host, 'f-ticket').querySelector('.fd-currency')?.textContent).toBe('EGP');
   });
 
@@ -154,6 +154,13 @@ describe('a sections page', () => {
     expect(seen[0]).toBe(store);
     mountViewer(host, { page: signup, widgets: { 'char.spy': spy as any } }).destroy();
     expect(typeof (seen[1] as { get?: unknown })?.get).toBe('function');
+  });
+
+  it('writes numbers the way readers of the page’s language write them', () => {
+    const { host, form } = mount('signup', { locale: 'de' });
+    form.setValue('hourly_rate', 1234.5);
+    expect(input(host, 'f-rate').value).toBe('1.234,50');
+    expect(input(host, 'f-ticket').value).toBe('1.500,00');
   });
 
   it('lets a widget that knows where its problem is take the focus there', async () => {

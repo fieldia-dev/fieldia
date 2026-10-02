@@ -539,6 +539,15 @@ for (const variant of VARIANTS) {
       const add = (await grid(page).getByRole('button', { name: '+ Add a line' }).boundingBox())!;
       expect(add.y - (frame.y + frame.height)).toBeLessThanOrEqual(12);
     });
+    test('in French the grid writes its numbers and dates as a French reader does', async ({ page }) => {
+      await open(page, variant, 'page=order&skin=underline&locale=fr');
+      await expect(cell(page, CHAIR, 'price')).toHaveText('EGP 1\u202f890,00');
+      await expect(grid(page).locator('.ag-grid-pinned-bottom-rows .ag-cell[col-id="subtotal"]')).toHaveText('EGP 64\u202f656,00');
+      await cell(page, LAMP, 'qty').click();
+      await page.keyboard.type('20,5');
+      await expect(cell(page, LAMP, 'subtotal')).toHaveText('EGP 7\u202f790,00');
+      await screen(page, `${variant}-grid-french`);
+    });
   });
 
   test.describe(`${variant} · a grid that opens whole lines`, () => {

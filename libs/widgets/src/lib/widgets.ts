@@ -4,12 +4,14 @@ import type {
   FileValue,
   Form,
   Line,
+  Locale,
   ReferenceValue,
   RelatedRecord,
   Value,
   Values,
 } from '@fieldia/core';
 import type { PreferenceStore } from './preferences';
+import { formatNumber, normalizeNumber } from './numbers';
 import type { WidgetLabels } from './labels';
 import { linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
 import { linesWidget } from './lines';
@@ -35,6 +37,8 @@ export interface WidgetContext {
   labels?: WidgetLabels;
   /** Where to keep a person's choices about how the widget looks, such as a table's columns. */
   preferences?: PreferenceStore;
+  /** The page's language: numbers and dates are written as its readers write them. English when left out. */
+  locale?: Locale;
 }
 
 export interface WidgetState {
@@ -138,16 +142,23 @@ const textareaWidget: WidgetFactory = ({ form, name, field, node, id, document }
 const NUMBER = /^-?(\d+\.?\d*|\.\d+)$/;
 const UNFINISHED = /^-?\.?$/;
 
-/** Numbers stay as typed while focused: "1." means 1 now and 1.5 a keystroke later. */
+/**
+ * Numbers are written as readers of the page's language write them, grouped,
+ * with the field's decimals, and read back the same way. What is typed stays
+ * as typed while focused: "1." means 1 now and 1.5 a keystroke later. The box
+ * keeps its spelling when entered, so a selection made on the way in holds.
+ */
 const numberWidget: WidgetFactory = (context) => {
-  const { form, name, field, node, id, document } = context;
+  const { form, name, field, node, id, document, locale = 'en' } = context;
   const integer = field.type === 'integer';
+  const decimals = integer ? 0 : (field.type === 'float' || field.type === 'monetary' ? field.digits?.[1] : undefined) ?? 2;
+  const shown = (value: Value | undefined) => (typeof value === 'number' ? formatNumber(value, decimals, locale) : textOf(value));
   const input = make(document, 'input', { id, type: 'text', class: 'fd-input fd-number-input', autocomplete: 'off' });
   input.inputMode = integer ? 'numeric' : 'decimal';
   if (node.placeholder) input.placeholder = node.placeholder;
 
   const parse = (raw: string): Value | undefined => {
-    const text = raw.trim();
+    const text = normalizeNumber(raw.trim(), locale);
     if (text === '') return null;
     if (NUMBER.test(text)) return Number(text);
     if (UNFINISHED.test(text)) return undefined; // "-" or ".": keep typing
@@ -158,7 +169,7 @@ const numberWidget: WidgetFactory = (context) => {
     if (value !== undefined) form.setValue(name, value);
   });
   input.addEventListener('blur', () => {
-    input.value = textOf(form.getState().values[name]);
+    input.value = shown(form.getState().values[name]);
   });
 
   const currency = field.type === 'monetary' ? make(document, 'span', { class: 'fd-currency', 'aria-hidden': 'true' }) : null;
@@ -172,7 +183,7 @@ const numberWidget: WidgetFactory = (context) => {
       const parsed = parse(input.value);
       const showsSame = parsed === undefined || parsed === state.value;
       if (!(typing && showsSame)) {
-        const text = textOf(state.value);
+        const text = shown(state.value);
         if (input.value !== text) input.value = text;
       }
       input.readOnly = state.readonly;

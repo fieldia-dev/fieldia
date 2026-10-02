@@ -14,7 +14,7 @@ import {
   type IHeaderParams,
   type SuppressKeyboardEventParams,
 } from 'ag-grid-community';
-import { fill, lineKind, type Field, type FieldNode, type Form, type Line, type LineField, type LineKinds, type Value, type Values } from '@fieldia/core';
+import { fill, lineKind, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
 import { createWidget, displayValue, kindTextField, lineForm, WIDGET_LABELS, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
 
@@ -56,6 +56,8 @@ interface CellContext {
   rowMode: boolean;
   /** The grid's own box, which nothing clips: where a link's list floats while its line is open. */
   layer: HTMLElement;
+  /** The page's language, for the numbers and dates typed in a cell. */
+  locale?: Locale;
 }
 
 /** The grid's own columns (the drag handle, the delete button) start with two underscores. */
@@ -182,6 +184,7 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
       id: `${cell.fieldId}-${key}-${column}-editor`,
       document,
       labels: cell.labels,
+      locale: cell.locale,
     };
     this.widget = createWidget(context, cell.registry);
     this.box = document.createElement('div');
@@ -343,7 +346,7 @@ const HEADER_HEIGHT = 38;
 
 const EDITABLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'date', 'datetime', 'selection', 'many2one', 'many2many', 'reference']);
 
-export const gridWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, preferences }) => {
+export const gridWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, preferences, locale }) => {
   const def = field as LineDef;
   const kinds = def.lineKinds;
   const sequence = def.sequenceField;
@@ -374,6 +377,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     kindOf,
     rowMode: node.editMode === 'row',
     layer: element,
+    locale,
   };
   installGridStyles(document);
 
@@ -481,7 +485,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         return kinds && spans(p.api) ? p.data?.values[kinds.text] : null;
       },
       valueFormatter: (p) =>
-        kindOf(p.data) || (p.node?.rowPinned && !totals.includes(column)) ? String(p.value ?? '') : displayValue(sub, p.value as Value, p.data?.values ?? {}),
+        kindOf(p.data) || (p.node?.rowPinned && !totals.includes(column)) ? String(p.value ?? '') : displayValue(sub, p.value as Value, p.data?.values ?? {}, locale),
       type: numeric ? 'rightAligned' : undefined,
       // A section or note runs across every column but the delete button.
       colSpan: (p) => (kindOf(p.data) && spans(p.api) ? spanWidth(p.api) : 1),

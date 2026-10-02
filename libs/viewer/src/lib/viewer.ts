@@ -199,7 +199,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const wrapper = el('div', { class: 'fd-field', 'data-node': node.id, 'data-field': node.field, 'data-type': def.type });
     if (node.colspan) wrapper.style.setProperty('--fd-span', String(node.colspan));
     const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, node.label ?? def.label);
-    const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences }, options.widgets);
+    const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale }, options.widgets);
     if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) {
       // `for` stays: a custom field that puts the id on its own input is
       // labelled natively. Only a wrapper with a role (a radio group, say) may
