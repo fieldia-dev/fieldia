@@ -48,6 +48,44 @@ export const DESIGNER_CSS = /* css */ `
 .fd-designer-preview { position: sticky; top: 76px; display: grid; gap: 8px; }
 .fd-designer-preview-title { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fd-muted); }
 .fd-designer-preview-host { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 18px; max-height: 80vh; overflow: auto; }
+
+/* ---- the screen editor: palette, canvas, properties ---- */
+.fd-screen-body { display: grid; grid-template-columns: 172px minmax(0, 1fr) 270px; gap: 16px; align-items: start; }
+@container (max-width: 1000px) { .fd-screen-body { grid-template-columns: minmax(0, 1fr); } }
+.fd-palette, .fd-properties {
+  position: sticky; top: 76px; display: grid; gap: 6px; align-content: start;
+  background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 12px;
+}
+.fd-panel-title { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fd-muted); margin-block-end: 2px; }
+.fd-palette-item {
+  font: inherit; font-size: 13.5px; text-align: start; color: var(--fd-text); cursor: pointer;
+  background: var(--fd-page); border: 1px solid var(--fd-border); border-radius: 6px; padding: 6px 10px;
+}
+.fd-palette-item:hover { border-color: var(--fd-accent); color: var(--fd-accent); }
+.fd-canvas { display: grid; gap: 16px; justify-items: start; min-width: 0; }
+.fd-canvas > * { width: 100%; }
+.fd-canvas > .fd-button { width: auto; }
+.fd-canvas-sections { display: grid; gap: 16px; }
+.fd-canvas-section { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 12px 6px 6px; }
+.fd-canvas-section.fd-canvas-selected { border-color: var(--fd-accent); box-shadow: 0 0 0 1px var(--fd-accent); }
+.fd-canvas-section-head { display: flex; align-items: baseline; gap: 10px; padding-inline: 8px; }
+.fd-canvas-section-title { font: inherit; font-size: 15px; font-weight: 650; color: var(--fd-text); background: none; border: none; padding: 0; cursor: pointer; }
+.fd-canvas-section-title:hover { color: var(--fd-accent); }
+.fd-canvas-section-meta { color: var(--fd-muted); font-size: 12.5px; }
+.fd-canvas-board { position: relative; }
+.fd-canvas-empty { color: var(--fd-muted); font-size: 13px; padding: 14px 8px 10px; }
+.fd-canvas-field {
+  height: 100%; box-sizing: border-box; padding: 8px 10px; overflow: hidden; align-content: start;
+  background: var(--fd-surface); border: 1px dashed var(--fd-border); border-radius: 6px;
+}
+.fd-canvas-field.fd-canvas-selected { border: 1px solid var(--fd-accent); box-shadow: inset 0 0 0 1px var(--fd-accent); }
+.fd-props { display: grid; gap: 10px; }
+.fd-prop { display: grid; gap: 4px; }
+.fd-prop-name { font-size: 12.5px; color: var(--fd-muted); }
+.fd-props .fd-q-option-box { padding-inline-start: 2px; }
+.fd-props-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-block-start: 4px; border-block-start: 1px solid var(--fd-border); }
+.fd-properties-hint { color: var(--fd-muted); font-size: 13px; margin: 0; }
+.fd-screen-preview { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 20px; }
 `;
 
 const STYLE_ID = 'fieldia-designer-styles';
