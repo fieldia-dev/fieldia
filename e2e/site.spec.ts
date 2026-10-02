@@ -60,7 +60,7 @@ test('every demo the site links to opens a working form', async ({ page }) => {
   const problems = watch(page);
   await page.goto(SITE + '/demos/');
   const demos = await page.locator('.demo-card a').evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).getAttribute('href') as string));
-  expect(demos.length).toBe(13);
+  expect(demos.length).toBe(17);
   for (const href of demos) {
     await page.goto(SITE + href);
     await expect(page.locator('.fd-form').first(), href).toBeVisible();

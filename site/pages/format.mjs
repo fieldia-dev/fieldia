@@ -62,7 +62,7 @@ ${code(
   <thead><tr><th>Node</th><th>What it is</th></tr></thead>
   <tbody>
     <tr><td>${c('field')}</td><td>A field, by name: ${c('{ "type": "field", "id": "email", "field": "email" }')}. It can override the ${c('label')}, choose a ${c('widget')} (such as ${c('radio')} or ${c('tags')}), set a ${c('placeholder')}, span ${c('colspan')} columns, and carry conditions.</td></tr>
-    <tr><td>${c('section')}</td><td>A titled group with ${c('columns')} (1–4) and a ${c('description')}.</td></tr>
+    <tr><td>${c('section')}</td><td>A titled group with ${c('columns')} (1–4) and a ${c('description')}. With ${c('collapsible')} its title folds and unfolds it; add ${c('collapsed')} to start folded. A folded section opens by itself when one of its fields stops a save.</td></tr>
     <tr><td>${c('tabs')}</td><td>Tabs, each a ${c('tab')} with a label and children.</td></tr>
     <tr><td>${c('button')}</td><td>A button that names an ${c('action')}. Fieldia hands the press to your app with the record; your app decides what it does. It can ask to ${c('confirm')} first.</td></tr>
     <tr><td>${c('text')}</td><td>A heading, a paragraph or a note.</td></tr>

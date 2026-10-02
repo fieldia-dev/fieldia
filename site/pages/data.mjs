@@ -34,7 +34,7 @@ interface DataSource {
 <ul>
   <li>${c('load({ model, id, fields })')} — the page's fields come along, so you can read exactly the columns the page shows.</li>
   <li>${c('save({ model, id, fields, changes, values })')} — ${c('id')} is ${c('null')} for a new record. ${c('changes')} holds only what changed since the record was loaded; ${c('values')} holds everything, for backends that save whole records. Return ${c('{ id }')}, and ${c('values')} if your backend recalculated anything.</li>
-  <li>${c('onchange({ model, id, changed, values })')} — return ${c('{ values }')} for the fields to update, and an optional ${c('warning')} to show.</li>
+  <li>${c('onchange({ model, id, changed, values })')} — return ${c('{ values }')} for the fields to update, and an optional ${c('warning')}. The warning appears under the field that changed, without blocking, and goes away with the next answer that has none.</li>
   <li>${c('search({ model, query, filter, limit })')} — the field's filter arrives with every ${c('valueFrom')} already replaced by its value. Return ${c('[{ id, label }]')}.</li>
   <li>${c('submit({ pageId, values })')} — the answers to the questions that were shown; skipped steps are left out.</li>
 </ul>
@@ -93,6 +93,7 @@ import { createMemoryDataSource } from '@fieldia/core';
 const dataSource = createMemoryDataSource({
   records: { partner: { 1: { name: 'Nile Towers', is_company: true } }, country: { 63: { name: 'Egypt' } } },
   onchange: { partner: { is_company: (values) => ({ title: values.is_company ? null : values.title }) } },
+  warnings: { partner: { credit_limit: (values) => (values.credit_limit > 100000 ? 'Above the approval limit' : null) } },
   delayMs: 300,   // answer slowly, to see loading states
 });
 dataSource.responses;   // every submitted response, for tests`

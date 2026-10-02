@@ -40,7 +40,7 @@ ${ROWS.map(([type, holds, widgets, options]) => `    <tr><td>${c(type)}</td><td>
   </tbody>
 </table>
 </div>
-<p>Every type also takes ${c('label')}, ${c('help')}, ${c('required')}, ${c('readonly')} and ${c('default')}.</p>
+<p>Every type also takes ${c('label')}, ${c('help')}, ${c('required')}, ${c('readonly')} and ${c('default')}. To see them all at once, open <a href="/demos/plain/?page=fields&amp;skin=outlined">the every-field demo</a>.</p>
 
 <h2 id="relations">Links to other records</h2>
 <p>${c('many2one')}, ${c('many2many')} and ${c('reference')} find records through your data source's ${c('search')}. A ${c('filter')} limits what can be picked, and ${c('valueFrom')} follows another field — here, the regions of the chosen country:</p>
