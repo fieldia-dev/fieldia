@@ -64,6 +64,20 @@
     "client_id": { "type": "many2one", "label": "Client", "relation": "partner" },
     "tag_ids": { "type": "many2many", "label": "Tags", "relation": "partner.tag" },
     "team_ids": { "type": "many2many", "label": "Team", "relation": "employee" },
+    "approver_id": {
+      "type": "many2one",
+      "label": "Signs off the design",
+      "relation": "employee",
+      "help": "A head of department or a manager.",
+      "filter": [
+        {
+          "any": [
+            { "field": "job", "op": "startswith", "value": "Head of" },
+            { "field": "job", "op": "endswith", "value": "manager" }
+          ]
+        }
+      ]
+    },
     "service_ids": { "type": "many2many", "label": "Services", "relation": "service" },
     "source": {
       "type": "reference",
@@ -184,6 +198,7 @@
           { "type": "field", "id": "f-source", "field": "source" },
           { "type": "field", "id": "f-tags", "field": "tag_ids" },
           { "type": "field", "id": "f-team", "field": "team_ids", "widget": "tags" },
+          { "type": "field", "id": "f-approver", "field": "approver_id" },
           { "type": "field", "id": "f-services", "field": "service_ids", "widget": "checkboxes", "colspan": 2 }
         ]
       },

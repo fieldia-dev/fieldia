@@ -127,6 +127,23 @@ for (const variant of VARIANTS) {
       expect(await demo<string>('dataSource.records.partner.1.phone')).toBe('+20 2 1111 2222');
     });
 
+    test('a link’s filter with an OR offers only the people either side of it allows', async ({ page }) => {
+      await open(page, variant, 'page=fields&skin=outlined');
+      const approver = node(page, 'f-approver');
+      await approver.getByRole('combobox').click();
+      // Heads of a department, or managers: not the site engineer, nor the draughtsperson.
+      await expect(approver.getByRole('option')).toHaveText(['Mona Adel', 'Salma Nabil', 'Youssef Kamal']);
+      await approver.getByRole('combobox').fill('sal');
+      await expect(approver.getByRole('option').first()).toHaveText('Salma Nabil');
+      await approver.getByRole('combobox').fill('karim');
+      await expect(approver.getByRole('option', { name: 'Karim Fathy' })).toHaveCount(0);
+      await approver.getByRole('combobox').fill('');
+      await approver.getByRole('combobox').click();
+      await expect(approver.getByRole('option')).toHaveCount(3);
+      await approver.scrollIntoViewIfNeeded();
+      await screen(page, `${variant}-filter-any`, { viewport: true });
+    });
+
     test('no ✓ unless the page asks', async ({ page }) => {
       await open(page, variant, 'page=signup&skin=outlined');
       await node(page, 'f-name').locator('input').fill('Sara Hassan');
