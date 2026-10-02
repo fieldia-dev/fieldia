@@ -1,6 +1,7 @@
 import type { Locale } from '@fieldia/core';
 import { FieldiaForm, useFormState, type FieldComponentProps, type SlotComponentProps } from '@fieldia/react';
 import { gridWidgets } from '@fieldia/grid';
+import { codeWidgets } from '@fieldia/code';
 import type { Skin } from '@fieldia/viewer';
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -62,7 +63,7 @@ function Demo() {
       locale={(params.get('locale') as Locale | null) ?? undefined}
       onAction={(request) => void actions.push(request.action)}
       fieldTypes={{ 'char.shout': Shout }}
-      widgets={gridWidgets}
+      widgets={{ ...gridWidgets, ...codeWidgets }}
       slots={{ chatter: Activity, note: Note }}
       onReady={(handle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions } })}
     />

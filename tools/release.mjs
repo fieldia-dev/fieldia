@@ -37,7 +37,7 @@ const fail = (message) => {
 
 // ---- which packages, in what order --------------------------------------------
 /** Dependencies before dependants, so a publish never points at a version npm does not have yet. */
-const ORDER = ['core', 'widgets', 'viewer', 'grid', 'react', 'vue', 'angular', 'designer'];
+const ORDER = ['core', 'widgets', 'viewer', 'grid', 'code', 'react', 'vue', 'angular', 'designer'];
 const packages = ORDER.map((dir) => ({ dir, manifest: read(join(WORKSPACE, 'libs', dir, 'package.json')) })).filter((p) => !p.manifest.private);
 const version = packages[0].manifest.version;
 for (const { dir, manifest } of packages) {
@@ -83,6 +83,7 @@ const EXPECT = {
   '@fieldia/widgets': ['createWidget', 'installStyles', 'sanitizeHtml'],
   '@fieldia/viewer': ['mountViewer', 'VIEWER_LABELS'],
   '@fieldia/grid': ['gridWidgets', 'gridWidget', 'gridApiOf'],
+  '@fieldia/code': ['codeWidgets', 'codeWidget'],
   '@fieldia/react': ['FieldiaForm', 'useFormState'],
   '@fieldia/vue': ['FieldiaForm', 'useFormState'],
   '@fieldia/angular': ['FieldiaFormComponent', 'FieldiaSlotDirective', 'formState'],
@@ -123,11 +124,12 @@ writeFileSync(
   `import { createForm, createMemoryDataSource, type Page } from '@fieldia/core';
 import { mountViewer, type ViewerHandle } from '@fieldia/viewer';
 import { gridWidgets } from '@fieldia/grid';
+import { codeWidgets } from '@fieldia/code';
 import type { FieldiaFormProps } from '@fieldia/react';
 declare const page: Page;
 declare const host: HTMLElement;
 const form = createForm({ page, dataSource: createMemoryDataSource() });
-const viewer: ViewerHandle = mountViewer(host, { page, form, skin: 'outlined', widgets: gridWidgets });
+const viewer: ViewerHandle = mountViewer(host, { page, form, skin: 'outlined', widgets: { ...gridWidgets, ...codeWidgets } });
 const props: FieldiaFormProps = { page, skin: 'underline' };
 export { viewer, props };
 `

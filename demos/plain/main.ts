@@ -2,6 +2,7 @@ import type { Locale } from '@fieldia/core';
 import { mountViewer, type Skin } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import { gridWidgets } from '@fieldia/grid';
+import { codeWidgets } from '@fieldia/code';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { pages, sampleDataSource } from '../shared/sample-data';
 
@@ -44,7 +45,7 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
   dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,
   locale: (params.get('locale') as Locale | null) ?? undefined,
   onAction: (request) => void actions.push(request.action),
-  widgets: { 'char.shout': shoutWidget, ...gridWidgets },
+  widgets: { 'char.shout': shoutWidget, ...gridWidgets, ...codeWidgets },
   slots: {
     chatter: (element) => {
       element.innerHTML =

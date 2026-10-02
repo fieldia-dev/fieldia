@@ -479,6 +479,23 @@ test.describe('every field', () => {
     expect(await page.evaluate((id) => (window as any).fieldiaDemo.dataSource.records.partner[id], (made as { id: number }).id)).toEqual({ name: 'Hilton Cairo' });
   });
 
+  test('a JSON field in the code editor: typed JSON reaches the form, broken JSON is said so', async ({ page }) => {
+    await open(page, variant, 'page=fields&skin=outlined');
+    await node(page, 's-structured').getByRole('button', { name: 'Structured data' }).click();
+    const doors = node(page, 'f-doors');
+    const editor = doors.getByRole('textbox', { name: 'Door schedule' });
+    await expect(editor).toContainText('"weekdays": "07:00-20:00"');
+    await editor.click();
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.type('{ "weekdays": "08:00-18:00", "weekends": "closed" }');
+    await expect.poll(() => value(page, 'door_schedule')).toEqual({ weekdays: '08:00-18:00', weekends: 'closed' });
+    await page.keyboard.press('Backspace'); // the closing brace: no longer valid
+    await expect(doors.getByRole('alert')).toHaveText('Not valid JSON');
+    expect(await value(page, 'door_schedule')).toEqual({ weekdays: '08:00-18:00', weekends: 'closed' });
+    await doors.scrollIntoViewIfNeeded();
+    await screen(page, `${variant}-fields-code-editor`);
+  });
+
   test('a folded section opens from its title and shows its fields', async ({ page }) => {
     await open(page, variant, 'page=fields');
     const title = node(page, 's-structured').getByRole('button', { name: 'Structured data' });

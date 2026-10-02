@@ -89,6 +89,7 @@
     "contract": { "type": "binary", "label": "Signed contract", "accept": ["application/pdf"] },
     "photo": { "type": "image", "label": "Site photo" },
     "settings": { "type": "json", "label": "Access control settings" },
+    "door_schedule": { "type": "json", "label": "Door schedule" },
     "extra": {
       "type": "properties",
       "label": "Building details",
@@ -213,6 +214,7 @@
         "collapsed": true,
         "children": [
           { "type": "field", "id": "f-settings", "field": "settings" },
+          { "type": "field", "id": "f-doors", "field": "door_schedule", "widget": "code" },
           { "type": "field", "id": "f-extra", "field": "extra" }
         ]
       }

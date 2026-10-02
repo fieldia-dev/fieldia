@@ -1,5 +1,6 @@
 import { FieldiaForm, useFormState } from '@fieldia/vue';
 import { gridWidgets } from '@fieldia/grid';
+import { codeWidgets } from '@fieldia/code';
 import type { Form, Locale, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { createApp, defineComponent, h, ref, type PropType } from 'vue';
@@ -67,7 +68,7 @@ createApp({
         dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,
         locale: (params.get('locale') as Locale | null) ?? undefined,
         fieldTypes: { 'char.shout': Shout },
-        widgets: gridWidgets,
+        widgets: { ...gridWidgets, ...codeWidgets },
         onAction: (request: { action: string }) => void actions.push(request.action),
         onReady: (handle: ViewerHandle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions } }),
       },

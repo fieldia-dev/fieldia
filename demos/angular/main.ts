@@ -6,6 +6,7 @@ import { Component, DestroyRef, Input, inject, provideZonelessChangeDetection, s
 import { bootstrapApplication } from '@angular/platform-browser';
 import { FieldiaFormComponent, FieldiaSlotDirective, formState } from '@fieldia/angular';
 import { gridWidgets } from '@fieldia/grid';
+import { codeWidgets } from '@fieldia/code';
 import type { ActionRequest, Form, FormState, Locale, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { clicked, greeting, shout } from '../shared/custom-page';
@@ -95,7 +96,7 @@ class DemoComponent {
   readonly dir: 'ltr' | 'rtl' | undefined = params.get('dir') === 'rtl' ? 'rtl' : undefined;
   readonly locale = (params.get('locale') as Locale | null) ?? undefined;
   readonly fieldTypes = { 'char.shout': ShoutComponent };
-  readonly widgets = gridWidgets;
+  readonly widgets = { ...gridWidgets, ...codeWidgets };
   ready(handle: ViewerHandle) {
     Object.assign(window, { fieldiaDemo: { handle, dataSource, actions } });
   }
