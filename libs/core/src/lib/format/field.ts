@@ -143,6 +143,27 @@ export const LineFieldSchema = z
 
 export type LineField = z.infer<typeof LineFieldSchema>;
 
+/**
+ * Lines that are not items: section headings and notes between them, told
+ * apart by a line field's value (a backend's `display_type`). Their text spans
+ * the row, and they are not asked for the fields an item needs.
+ */
+export const LineKindsSchema = z
+  .object({
+    /** The line field whose value says what a line is. */
+    field: z.string().regex(FIELD_NAME),
+    /** The line field a section or note keeps its text in. */
+    text: z.string().regex(FIELD_NAME),
+    /** The value that marks a section heading. Default "section". */
+    section: z.string().min(1).optional(),
+    /** The value that marks a note. Default "note". */
+    note: z.string().min(1).optional(),
+  })
+  .strict()
+  .meta({ id: 'LineKinds' });
+
+export type LineKinds = z.infer<typeof LineKindsSchema>;
+
 const One2many = z
   .object({
     type: z.literal('one2many'),
@@ -150,6 +171,7 @@ const One2many = z
     relation,
     /** The fields of each line, so lines can be edited in place. */
     fields: z.record(z.string().regex(FIELD_NAME), LineFieldSchema),
+    lineKinds: LineKindsSchema.optional(),
   })
   .strict();
 

@@ -643,6 +643,9 @@
               "additionalProperties": {
                 "$ref": "#/$defs/LineField"
               }
+            },
+            "lineKinds": {
+              "$ref": "#/$defs/LineKinds"
             }
           },
           "required": [
@@ -1467,6 +1470,32 @@
           "additionalProperties": false
         }
       ]
+    },
+    "LineKinds": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "text": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "section": {
+          "type": "string",
+          "minLength": 1
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "field",
+        "text"
+      ],
+      "additionalProperties": false
     },
     "RootLayout": {
       "oneOf": [

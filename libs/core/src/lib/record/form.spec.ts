@@ -206,6 +206,28 @@ describe('createForm — validation', () => {
     expect(form.validate()).toBe(false);
     expect(form.getState().errors).toEqual({ [`child_ids.${key}.name`]: 'Name is required' });
   });
+
+  it('asks a section or note line only for its text', () => {
+    const order = page('order');
+    const form = createForm({ page: order });
+    form.setValue('name', 'S00119');
+    form.setValue('partner_id', { id: 1, label: 'Nile Traders' });
+    form.addLine('line_ids', { display_type: 'section', name: 'Workstations' });
+    form.addLine('line_ids', { display_type: 'note' });
+    const item = form.addLine('line_ids', { name: 'Black mesh back' });
+    expect(form.validate()).toBe(false);
+    expect(form.getState().errors).toEqual({ [`line_ids.${item}.product_id`]: 'Product is required' });
+
+    // When the text itself is required, a section or note needs it too.
+    const strict = page('order') as any;
+    strict.fields.line_ids.fields.name.required = true;
+    const second = createForm({ page: strict });
+    second.setValue('name', 'S00120');
+    second.setValue('partner_id', { id: 1, label: 'Nile Traders' });
+    const note = second.addLine('line_ids', { display_type: 'note' });
+    expect(second.validate()).toBe(false);
+    expect(second.getState().errors).toEqual({ [`line_ids.${note}.name`]: 'Description is required' });
+  });
 });
 
 describe('createForm — loading and saving a record', () => {

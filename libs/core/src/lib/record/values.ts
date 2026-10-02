@@ -120,6 +120,19 @@ function forExpressions(field: AnyField, value: Value): unknown {
   }
 }
 
+/**
+ * What a line of a one2many is: a section heading, a note, or (null) an item.
+ * Lines only have kinds when the field declares `lineKinds`.
+ */
+export function lineKind(field: Extract<Field, { type: 'one2many' }>, values: Values): 'section' | 'note' | null {
+  const kinds = field.lineKinds;
+  if (!kinds) return null;
+  const value = values[kinds.field];
+  if (value === (kinds.section ?? 'section')) return 'section';
+  if (value === (kinds.note ?? 'note')) return 'note';
+  return null;
+}
+
 /** A deep copy of plain JSON. */
 export function structuredCopy<T>(value: T): T {
   return value === undefined ? value : (JSON.parse(JSON.stringify(value)) as T);

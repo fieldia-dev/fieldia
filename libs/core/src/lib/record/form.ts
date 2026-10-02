@@ -10,6 +10,7 @@ import { hostScheduler, type Scheduler } from './scheduler';
 import {
   expressionContext,
   initialValues,
+  lineKind,
   structuredCopy,
   type Line,
   type RecordId,
@@ -220,7 +221,10 @@ export function createForm(options: FormOptions): Form {
       if (message) errors[name] = message;
       if (def.type === 'one2many') {
         for (const line of (state.values[name] as Line[] | null) ?? []) {
+          // A section or note answers only for its text, never for what an item needs.
+          const kind = lineKind(def, line.values);
           for (const [sub, subDef] of Object.entries(def.fields)) {
+            if (kind && sub !== def.lineKinds?.text) continue;
             const lineMessage = checkValue(subDef, line.values[sub], subDef.required === true, messages);
             if (lineMessage) errors[`${name}.${line.key}.${sub}`] = lineMessage;
           }

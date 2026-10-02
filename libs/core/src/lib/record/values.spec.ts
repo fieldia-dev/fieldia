@@ -1,5 +1,5 @@
 import type { Field } from '../format/field';
-import { emptyValue, initialValues, isEmpty, expressionContext, type Values } from './values';
+import { emptyValue, initialValues, isEmpty, expressionContext, lineKind, type Values } from './values';
 
 const F = (field: Record<string, unknown>) => ({ label: 'X', ...field }) as Field;
 
@@ -102,5 +102,38 @@ describe('expressionContext — what modifiers see', () => {
       file: null,
       state: null,
     });
+  });
+});
+
+describe('lineKind — what a line is', () => {
+  const lines = (lineKinds?: object): Extract<Field, { type: 'one2many' }> =>
+    ({
+      type: 'one2many',
+      label: 'Lines',
+      relation: 'order.line',
+      ...(lineKinds ? { lineKinds } : {}),
+      fields: {
+        display_type: { type: 'selection', label: 'Type', options: [{ value: 'section', label: 'Section' }, { value: 'line_note', label: 'Note' }] },
+        name: { type: 'text', label: 'Description' },
+      },
+    }) as Extract<Field, { type: 'one2many' }>;
+
+  it('reads the kind field, with section and note as the default values', () => {
+    const def = lines({ field: 'display_type', text: 'name' });
+    expect(lineKind(def, { display_type: 'section' })).toBe('section');
+    expect(lineKind(def, { display_type: 'note' })).toBe('note');
+    expect(lineKind(def, { display_type: null })).toBeNull();
+    expect(lineKind(def, {})).toBeNull();
+  });
+
+  it('honours the values a backend uses', () => {
+    const def = lines({ field: 'display_type', text: 'name', section: 'line_section', note: 'line_note' });
+    expect(lineKind(def, { display_type: 'line_section' })).toBe('section');
+    expect(lineKind(def, { display_type: 'line_note' })).toBe('note');
+    expect(lineKind(def, { display_type: 'section' })).toBeNull();
+  });
+
+  it('calls every line an item when the lines have no kinds', () => {
+    expect(lineKind(lines(), { display_type: 'section' })).toBeNull();
   });
 });

@@ -1,5 +1,5 @@
 import type * as z from 'zod';
-import type { Field, Fields, LineField } from './field';
+import type { Field, Fields, LineField, LineKinds } from './field';
 import type { FieldNode, LayoutNode, RootLayout, SheetNode, TabsNode } from './layout';
 import { PageSchema, type Page } from './page';
 import { compileModifier } from '../expression/modifier';
@@ -113,7 +113,28 @@ class ReferenceCheck {
           if (condition.valueFrom !== undefined) this.need(condition.valueFrom, `${path}.filter[${i}].valueFrom`, fields);
         });
       }
-      if (def.type === 'one2many') this.checkFields(def.fields, `${path}.fields`);
+      if (def.type === 'one2many') {
+        this.checkFields(def.fields, `${path}.fields`);
+        if (def.lineKinds) this.checkLineKinds(name, def.lineKinds, def.fields, `${path}.lineKinds`);
+      }
+    }
+  }
+
+  private checkLineKinds(field: string, kinds: LineKinds, lineFields: Record<string, LineField>, path: string) {
+    const kindField = lineFields[kinds.field];
+    if (!kindField) this.report(`${path}.field`, `"${kinds.field}" is not a field of the lines of "${field}"`);
+    else if (kindField.type !== 'selection' && kindField.type !== 'char') {
+      this.report(`${path}.field`, `"${kinds.field}" is a ${kindField.type}; the field that says what a line is must be a selection or char`);
+    } else if (kindField.type === 'selection') {
+      for (const which of ['section', 'note'] as const) {
+        const value = kinds[which] ?? which;
+        if (!kindField.options.some((o) => o.value === value)) this.report(`${path}.${which}`, `"${kinds.field}" has no option "${value}"`);
+      }
+    }
+    const text = lineFields[kinds.text];
+    if (!text) this.report(`${path}.text`, `"${kinds.text}" is not a field of the lines of "${field}"`);
+    else if (text.type !== 'char' && text.type !== 'text') {
+      this.report(`${path}.text`, `"${kinds.text}" is a ${text.type}; a section's or note's text must be a char or text field`);
     }
   }
 

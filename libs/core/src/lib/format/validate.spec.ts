@@ -190,6 +190,28 @@ describe('validatePage — references', () => {
     expect(messages(page).join('\n')).toMatch(/layout\.statusbar\.field: .*selection or many2one/);
   });
 
+  it('rejects line kinds that point at fields the lines do not have', () => {
+    const page = example('order');
+    page['fields'].line_ids.lineKinds = { field: 'kind', text: 'title' };
+    const text = messages(page).join('\n');
+    expect(text).toMatch(/fields\.line_ids\.lineKinds\.field: "kind" is not a field of the lines of "line_ids"/);
+    expect(text).toMatch(/fields\.line_ids\.lineKinds\.text: "title" is not a field of the lines of "line_ids"/);
+  });
+
+  it('rejects a line kind field that is not a selection or char, and text that is not char or text', () => {
+    const page = example('order');
+    page['fields'].line_ids.lineKinds = { field: 'qty', text: 'taxed' };
+    const text = messages(page).join('\n');
+    expect(text).toMatch(/fields\.line_ids\.lineKinds\.field: "qty" is a float; .*selection or char/);
+    expect(text).toMatch(/fields\.line_ids\.lineKinds\.text: "taxed" is a boolean; .*char or text/);
+  });
+
+  it('rejects a selection kind field without the values that mark sections and notes', () => {
+    const page = example('order');
+    page['fields'].line_ids.lineKinds = { field: 'display_type', text: 'name', section: 'line_section' };
+    expect(messages(page)).toEqual(['fields.line_ids.lineKinds.section: "display_type" has no option "line_section"']);
+  });
+
   it('rejects one2many columns that are not among its line fields', () => {
     const page = example('customer');
     page['layout'].children[1].children[0].children[0].columns.push('fax');
