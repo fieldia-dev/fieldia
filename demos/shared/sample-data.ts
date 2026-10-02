@@ -54,5 +54,11 @@ export function sampleDataSource() {
         },
       },
     },
+    warnings: {
+      partner: {
+        credit_limit: (values) =>
+          Number(values['credit_limit']) > 100000 ? 'Above the 100,000 approval limit: a manager has to sign this off.' : null,
+      },
+    },
   });
 }

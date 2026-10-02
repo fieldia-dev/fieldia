@@ -83,6 +83,18 @@ describe('createMemoryDataSource — implements every DataSource method', () => 
     expect(await ds.onchange({ model: 'partner', id: 1, changed: 'email', values: {} })).toEqual({});
   });
 
+  it('warns about a change without blocking it, beside any recalculation', async () => {
+    const ds = createMemoryDataSource({
+      onchange: { partner: { credit_limit: () => ({ approved: false }) } },
+      warnings: { partner: { credit_limit: (values) => (Number(values['credit_limit']) > 100000 ? 'Above the approval limit' : null) } },
+    });
+    expect(await ds.onchange({ model: 'partner', id: 1, changed: 'credit_limit', values: { credit_limit: 250000 } })).toEqual({
+      values: { approved: false },
+      warning: 'Above the approval limit',
+    });
+    expect(await ds.onchange({ model: 'partner', id: 1, changed: 'credit_limit', values: { credit_limit: 5000 } })).toEqual({ values: { approved: false } });
+  });
+
   it('searches by label, applies a filter and a limit', async () => {
     const ds = source();
     expect((await ds.search({ model: 'country', query: 'e' })).map((r) => r.label)).toEqual(['Egypt', 'Estonia']);

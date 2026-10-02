@@ -22,6 +22,8 @@ export interface MemoryDataSourceOptions {
   records?: Record<string, Record<string, Values>>;
   /** Recalculation rules by model, then by the field that changed. */
   onchange?: Record<string, Record<string, (values: Values) => Values>>;
+  /** Warnings by model, then by the field that changed: a message, or null for none. */
+  warnings?: Record<string, Record<string, (values: Values) => string | null>>;
   /** Which value names a record in search results, per model. Defaults to `name`. */
   labelField?: Record<string, string>;
   /** Answer after this long, so a demo shows its loading states. */
@@ -114,7 +116,10 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       calls.push({ method: 'onchange', request });
       await pause();
       const rule = options.onchange?.[request.model]?.[request.changed];
-      return rule ? { values: rule(structuredCopy(request.values)) } : {};
+      const warn = options.warnings?.[request.model]?.[request.changed];
+      const result: OnchangeResult = rule ? { values: rule(structuredCopy(request.values)) } : {};
+      const warning = warn?.(structuredCopy(request.values));
+      return warning ? { ...result, warning } : result;
     },
 
     async search(request: SearchRequest): Promise<RelatedRecord[]> {

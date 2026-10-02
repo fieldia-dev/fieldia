@@ -242,6 +242,21 @@ test.describe('customer sheet', () => {
     await expect(page.getByRole('tab', { name: 'Contacts' })).toBeHidden();
   });
 
+  test('a warning from the server appears under the field that changed', async ({ page }) => {
+    await open(page, variant, 'page=customer&skin=underline');
+    await expect(page.locator('.fd-title input')).toHaveValue('Nile Traders');
+    await page.getByRole('tab', { name: 'Sales and billing' }).click();
+    const limit = field(page, 'f-credit-limit');
+    await limit.fill('250000');
+    await limit.press('Tab');
+    const warning = node(page, 'f-credit-limit').locator('.fd-warning');
+    await expect(warning).toHaveText('Above the 100,000 approval limit: a manager has to sign this off.');
+    await screen(page, `${variant}-onchange-warning`);
+    await limit.fill('5000');
+    await limit.press('Tab');
+    await expect(warning).toBeHidden();
+  });
+
   test('Discard puts the record back', async ({ page }) => {
     await open(page, variant, 'page=customer');
     await field(page, 'f-website').fill('https://changed.example');
