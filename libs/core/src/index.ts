@@ -85,3 +85,4 @@ export {
   type DraftStore,
   type ActionRequest,
 } from './lib/record/form';
+export { MESSAGES, fill, type Messages, type Locale } from './lib/record/messages';

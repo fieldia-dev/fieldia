@@ -451,3 +451,12 @@ describe('createForm — autosave', () => {
     expect(form.getState().errors).toEqual({});
   });
 });
+
+describe('createForm — messages in the page language', () => {
+  it('reports errors with the messages it is given', async () => {
+    const { MESSAGES } = await import('./messages');
+    const form = createForm({ page: page('survey'), messages: MESSAGES.fr });
+    form.next();
+    expect(form.getState().errors).toEqual({ name: 'Your name est obligatoire' });
+  });
+});

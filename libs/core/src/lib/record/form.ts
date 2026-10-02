@@ -4,6 +4,7 @@ import type { ButtonNode, LayoutNode, Modifier, RootLayout, StatButton, StepNode
 import type { Page } from '../format/page';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import { checkValue } from './check';
+import { MESSAGES, type Messages } from './messages';
 import type { DataSource, LineOp, LinkOp, RecordChanges, ResolvedFilterCondition } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
 import {
@@ -72,6 +73,8 @@ export interface FormOptions {
   drafts?: { store: DraftStore; restore?: 'auto' | 'ask'; delayMs?: number };
   autosave?: { delayMs: number };
   scheduler?: Scheduler;
+  /** Validation messages in the page's language. English by default. */
+  messages?: Messages;
 }
 
 export interface Form {
@@ -120,6 +123,7 @@ interface IndexedNode {
 export function createForm(options: FormOptions): Form {
   const { page } = options;
   const scheduler = options.scheduler ?? hostScheduler;
+  const messages = options.messages ?? MESSAGES.en;
   const index = indexLayout(page.layout);
   const steps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
   const draftKey = () => `fieldia:draft:${page.id}:${state.recordId ?? 'new'}`;
@@ -206,12 +210,12 @@ export function createForm(options: FormOptions): Form {
       const name = node.field as string;
       if (errors[name]) continue;
       const def = page.fields[name];
-      const message = checkValue(def, state.values[name], nodeState(node.id).required);
+      const message = checkValue(def, state.values[name], nodeState(node.id).required, messages);
       if (message) errors[name] = message;
       if (def.type === 'one2many') {
         for (const line of (state.values[name] as Line[] | null) ?? []) {
           for (const [sub, subDef] of Object.entries(def.fields)) {
-            const lineMessage = checkValue(subDef, line.values[sub], subDef.required === true);
+            const lineMessage = checkValue(subDef, line.values[sub], subDef.required === true, messages);
             if (lineMessage) errors[`${name}.${line.key}.${sub}`] = lineMessage;
           }
         }

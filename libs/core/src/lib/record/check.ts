@@ -1,4 +1,5 @@
 import type { Field, LineField } from '../format/field';
+import { fill, MESSAGES, type Messages } from './messages';
 import { isEmpty, type FileValue, type ReferenceValue, type RelatedRecord, type Value } from './values';
 
 /**
@@ -9,65 +10,72 @@ import { isEmpty, type FileValue, type ReferenceValue, type RelatedRecord, type 
  * An empty optional value passes everything: a pattern or a minimum applies
  * to what someone typed, not to a field they left alone.
  */
-export function checkValue(field: Field | LineField, value: Value | undefined, required: boolean): string | undefined {
+export function checkValue(
+  field: Field | LineField,
+  value: Value | undefined,
+  required: boolean,
+  messages: Messages = MESSAGES.en
+): string | undefined {
   const label = field.label || 'This field';
-  if (isEmpty(field, value)) return required ? `${label} is required` : undefined;
+  const say = (key: keyof Messages, values: Record<string, string | number> = {}) => fill(messages[key], { label, ...values });
+  if (isEmpty(field, value)) return required ? say('required') : undefined;
 
   switch (field.type) {
     case 'char':
     case 'text':
     case 'html': {
-      if (typeof value !== 'string') return `${label} must be text`;
+      if (typeof value !== 'string') return say('text');
       if ((field.type === 'char' || field.type === 'text') && field.size !== undefined && value.length > field.size) {
-        return `Maximum ${field.size} characters allowed`;
+        return say('maxLength', { max: field.size });
       }
       if (field.type === 'char' && field.pattern !== undefined && !new RegExp(field.pattern).test(value)) {
-        return `${label} is not in the expected format`;
+        return say('pattern');
       }
       return undefined;
     }
     case 'integer':
     case 'float':
     case 'monetary': {
-      if (typeof value !== 'number' || !Number.isFinite(value)) return `${label} must be a number`;
-      if (field.type === 'integer' && !Number.isInteger(value)) return `${label} must be a whole number`;
-      if (field.min !== undefined && value < field.min) return `${label} must be at least ${field.min}`;
-      if (field.max !== undefined && value > field.max) return `${label} must be at most ${field.max}`;
+      if (typeof value !== 'number' || !Number.isFinite(value)) return say('number');
+      if (field.type === 'integer' && !Number.isInteger(value)) return say('integer');
+      if (field.min !== undefined && value < field.min) return say('min', { min: field.min });
+      if (field.max !== undefined && value > field.max) return say('max', { max: field.max });
       if (field.type !== 'integer' && field.digits && decimals(value) > field.digits[1]) {
-        return `Maximum ${field.digits[1]} decimal places allowed`;
+        return say('decimals', { digits: field.digits[1] });
       }
       return undefined;
     }
     case 'boolean':
-      return typeof value === 'boolean' ? undefined : `${label} must be yes or no`;
+      return typeof value === 'boolean' ? undefined : say('boolean');
     case 'date':
-      return checkDate(value);
+      return checkDate(value, say);
     case 'datetime':
-      return checkDateTime(value);
+      return checkDateTime(value, say);
     case 'selection': {
       const allowed = new Set(field.options.map((o) => o.value));
-      const listing = `Must be one of: ${field.options.map((o) => o.label).join(', ')}`;
+      const listing = say('choice', { options: field.options.map((o) => o.label).join(', ') });
       if (field.multiple) {
-        if (!Array.isArray(value)) return `${label} must be a list of choices`;
+        if (!Array.isArray(value)) return say('choices');
         return value.every((v) => allowed.has(v as string | number)) ? undefined : listing;
       }
       return allowed.has(value as string | number) ? undefined : listing;
     }
     case 'many2one':
-      return isRecord(value) ? undefined : `${label} must be a record`;
+      return isRecord(value) ? undefined : say('record');
     case 'many2many':
-      return Array.isArray(value) && value.every(isRecord) ? undefined : `${label} must be a list of records`;
+      return Array.isArray(value) && value.every(isRecord) ? undefined : say('records');
     case 'reference': {
       const ref = value as ReferenceValue;
-      if (!isRecord(value) || typeof ref.model !== 'string') return `${label} must be a record`;
+      if (!isRecord(value) || typeof ref.model !== 'string') return say('record');
       if (!field.models.some((m) => m.value === ref.model)) {
-        return `${label} must point to ${article(field.models.map((m) => m.label).join(' or '))}`;
+        const models = listOr(field.models.map((m) => m.label), messages.or);
+        return say('reference', { models, aModels: article(models) });
       }
       return undefined;
     }
     case 'binary':
     case 'image':
-      return checkFile(field, label, value);
+      return checkFile(field, value, say, messages);
     default:
       return undefined;
   }
@@ -90,19 +98,21 @@ function isRecord(value: unknown): value is RelatedRecord {
   );
 }
 
-function checkDate(value: Value | undefined): string | undefined {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return 'Invalid date format (expected YYYY-MM-DD)';
+type Say = (key: keyof Messages, values?: Record<string, string | number>) => string;
+
+function checkDate(value: Value | undefined, say: Say): string | undefined {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return say('dateFormat');
   const [y, m, d] = value.split('-').map(Number);
-  return realDay(y, m, d) ? undefined : 'Invalid date (check month/day values)';
+  return realDay(y, m, d) ? undefined : say('dateInvalid');
 }
 
 const ISO_DATETIME = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:\d{2})?$/;
 
-function checkDateTime(value: Value | undefined): string | undefined {
+function checkDateTime(value: Value | undefined, say: Say): string | undefined {
   const match = typeof value === 'string' ? ISO_DATETIME.exec(value) : null;
-  if (!match) return 'Invalid date and time format (expected YYYY-MM-DDTHH:MM:SS)';
+  if (!match) return say('datetimeFormat');
   const [y, mo, d, h, mi, s] = match.slice(1).map((part) => Number(part ?? 0));
-  return realDay(y, mo, d) && h < 24 && mi < 60 && s < 60 ? undefined : 'Invalid date and time (check the values)';
+  return realDay(y, mo, d) && h < 24 && mi < 60 && s < 60 ? undefined : say('datetimeInvalid');
 }
 
 function realDay(year: number, month: number, day: number): boolean {
@@ -111,14 +121,15 @@ function realDay(year: number, month: number, day: number): boolean {
   return day <= lengths[month - 1];
 }
 
-function checkFile(field: Field | LineField, label: string, value: Value | undefined): string | undefined {
+function checkFile(field: Field | LineField, value: Value | undefined, say: Say, messages: Messages): string | undefined {
   const file = value as FileValue;
-  if (!isFile(value)) return `${label} must be a file`;
+  if (!isFile(value)) return say('file');
   if ('maxSize' in field && field.maxSize !== undefined && file.size > field.maxSize) {
-    return `${label} is larger than ${formatBytes(field.maxSize)}`;
+    return say('fileSize', { size: formatBytes(field.maxSize) });
   }
   if (field.type === 'binary' && field.accept && !field.accept.some((pattern) => matchesType(pattern, file.type))) {
-    return `${label} must be ${article(listOr(field.accept.map(describeType)))} file`;
+    const types = listOr(field.accept.map(describeType), messages.or);
+    return say('fileType', { types, aTypes: article(types) });
   }
   return undefined;
 }
@@ -138,9 +149,9 @@ function describeType(pattern: string): string {
   return (pattern.split('/')[1] ?? pattern).toUpperCase();
 }
 
-function listOr(items: string[]): string {
+function listOr(items: string[], or: string): string {
   if (items.length <= 1) return items.join('');
-  return `${items.slice(0, -1).join(', ')} or ${items[items.length - 1]}`;
+  return `${items.slice(0, -1).join(', ')} ${or} ${items[items.length - 1]}`;
 }
 
 function article(phrase: string): string {

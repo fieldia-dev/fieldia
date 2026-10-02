@@ -125,3 +125,32 @@ describe('checkValue — files', () => {
     expect(checkValue(upload, { name: 'a.png', type: 'image/png', size: 10 }, false)).toBeUndefined();
   });
 });
+
+describe('checkValue — other languages', () => {
+  const name = F({ type: 'char', label: 'الاسم' });
+
+  it('speaks Arabic, German and French', async () => {
+    const { MESSAGES } = await import('./messages');
+    expect(checkValue(name, null, true, MESSAGES.ar)).toBe('الاسم مطلوب');
+    expect(checkValue(F({ type: 'integer', label: 'Bewertung', min: 1 }), 0, false, MESSAGES.de)).toBe('Bewertung muss mindestens 1 sein');
+    expect(checkValue(F({ type: 'char', label: 'Nom', size: 3 }), 'abcd', false, MESSAGES.fr)).toBe('3 caractères au maximum');
+  });
+
+  it('joins choices with the language’s own "or"', async () => {
+    const { MESSAGES } = await import('./messages');
+    const upload = F({ type: 'binary', label: 'العقد', accept: ['application/pdf', 'image/*'] });
+    expect(checkValue(upload, { name: 'a.zip', type: 'application/zip', size: 1 }, false, MESSAGES.ar)).toBe('يجب أن يكون العقد ملف PDF أو image');
+  });
+
+  it('gives every language every message, with only the placeholders English uses', async () => {
+    const { MESSAGES } = await import('./messages');
+    const placeholders = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
+    for (const [locale, messages] of Object.entries(MESSAGES)) {
+      expect({ locale, keys: Object.keys(messages).sort() }).toEqual({ locale, keys: Object.keys(MESSAGES.en).sort() });
+      for (const [key, text] of Object.entries(messages)) {
+        const allowed = new Set([...placeholders(MESSAGES.en[key as keyof typeof MESSAGES.en]), 'label', 'aTypes', 'aModels', 'types', 'models']);
+        for (const used of placeholders(text)) expect({ locale, key, used, ok: allowed.has(used) }).toEqual({ locale, key, used, ok: true });
+      }
+    }
+  });
+});
