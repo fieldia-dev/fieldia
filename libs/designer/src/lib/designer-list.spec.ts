@@ -92,6 +92,9 @@ describe('a list page', () => {
     expect(list(designer).actions).toEqual([{ type: 'button', id: archive, label: 'Archive', action: 'archive' }]);
     expect(designer.updateListAction(archive, { confirm: 'Archive these customers?', style: 'danger' })).toBe(true);
     expect(list(designer).actions?.[0]).toMatchObject({ confirm: 'Archive these customers?', style: 'danger' });
+    // Nothing in "Asks first": it acts at once, and the page says nothing about asking.
+    designer.updateListAction(archive, { confirm: '' });
+    expect(list(designer).actions?.[0]).not.toHaveProperty('confirm');
     expect(designer.removeListAction(archive)).toBe(true);
     expect(list(designer).actions).toBeUndefined();
   });

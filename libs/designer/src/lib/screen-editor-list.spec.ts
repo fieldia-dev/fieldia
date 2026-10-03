@@ -119,6 +119,8 @@ describe('screen editor — a list page', () => {
     choose(field(host, 'Filter field'), 'state');
     choose(field(host, 'Filter value'), 'active');
     expect(filters()[0]).toEqual({ id, label: 'Active', filter: [{ field: 'state', op: '=', value: 'active' }] });
+    // Not on when the list opens: the search bar does not show it yet.
+    expect(host.querySelectorAll('.fd-search .fd-facet')).toHaveLength(0);
     (field(host, 'On when the list opens') as HTMLInputElement).click();
     expect(list(designer).defaultFilters).toEqual([id]);
     expect([...host.querySelectorAll('.fd-search .fd-facet')].map((f) => f.textContent)).toEqual(['Active']);
