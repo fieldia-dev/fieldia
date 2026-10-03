@@ -25,21 +25,26 @@ and save through a small data-source interface that your app implements.
 | `@fieldia/core` | Headless. The page format, modifiers, validation, record state, the data-source interface. **No DOM.** | on npm |
 | `@fieldia/widgets` | The field inputs, in plain DOM, with two skins (`underline`, `outlined`) | on npm |
 | `@fieldia/viewer` | Framework-neutral mount — render a saved page and fill it in | on npm |
-| `@fieldia/designer` | Authoring: an editing model with undo and versions, the survey editor, and the screen editor — a canvas on [Grafloria](https://grafloria.com) boards | built, not on npm yet |
+| `@fieldia/designer` | Authoring: an editing model with undo and versions, the survey editor, and the screen editor — the page drawn as the viewer draws it, edited where it stands | built, not on npm yet |
 | `@fieldia/angular` · `react` · `vue` | Thin bindings over the viewer | on npm |
 
 ### The screen editor
 
-Each section of a screen is a Grafloria board; drag a card to reorder, pull
-its edge to widen it. Grafloria is passed in rather than bundled, so a
-survey-only app never loads it and the app picks the version:
+The screen is drawn the way the viewer draws it, and edited where it stands:
+pick a field and type its label and help in place, switch how it is shown from
+the bar on it, drag it to another place or section, and drag new ones in from
+a toolbox of icons. Given the backend's model, the toolbox lists the model's
+fields first, and a field from the model keeps what it holds — it only changes
+editor, among those that suit its data:
 
 ```ts
-import * as grafloria from '@grafloria/element';
 import { blankPage, createDesigner, mountScreenEditor } from '@fieldia/designer';
 
-const designer = createDesigner({ page: blankPage('screen', 'Site visit') });
-mountScreenEditor(document.getElementById('app')!, { designer, grafloria });
+const designer = createDesigner({
+  page: blankPage('sheet', 'Customer'),
+  model: { email: { type: 'char', label: 'Email' }, credit_limit: { type: 'monetary', label: 'Credit limit', currency: 'EGP' } },
+});
+mountScreenEditor(document.getElementById('app')!, { designer });
 ```
 
 ## Four rules
