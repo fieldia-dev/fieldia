@@ -84,6 +84,47 @@ describe('dragging questions down a survey page', () => {
   });
 });
 
+describe('dragging columns along a list', () => {
+  it('places a column by where the pointer is across the row, the line down the whole table', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const rects = new Map<Element, DOMRect>();
+    const place = (element: Element, left: number, top: number, width: number, height: number) =>
+      rects.set(element, { left, top, width, height, right: left + width, bottom: top + height, x: left, y: top, toJSON: () => ({}) } as DOMRect);
+    const table = document.createElement('div');
+    table.dataset['dropSection'] = 'columns';
+    table.dataset['dropFlow'] = 'row';
+    place(table, 0, 0, 600, 240);
+    const heads = ['name', 'email', 'state'].map((id, i) => {
+      const th = document.createElement('div');
+      th.className = 'fd-th';
+      th.dataset['node'] = id;
+      table.append(th);
+      place(th, 40 + i * 150, 0, 150, 34);
+      return th;
+    });
+    host.append(table);
+    const dropped: [DragSource, string, number][] = [];
+    const drag = canvasDrag({ canvas: host, cards: '.fd-th[data-node]', drop: (source, to, index) => void dropped.push([source, to, index]), rectOf: (e) => rects.get(e) ?? e.getBoundingClientRect() });
+    const pointer = (type: string, target: EventTarget, x: number, y: number) =>
+      target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0 }) as unknown as PointerEvent);
+    pointer('pointerdown', heads[2], 400, 15);
+    // Low down among the rows, but left of the middle of "email": before it.
+    pointer('pointermove', document, 160, 200);
+    const line = document.querySelector('.fd-drop-marker') as HTMLElement;
+    expect([line.style.left, line.style.top, line.style.width, line.style.height]).toEqual(['189px', '0px', '3px', '240px']);
+    pointer('pointerup', document, 160, 200);
+    expect(dropped).toEqual([[{ node: 'state' }, 'columns', 1]]);
+    // Past the last: the line down its far edge.
+    pointer('pointerdown', heads[0], 60, 15);
+    pointer('pointermove', document, 590, 100);
+    expect([line.isConnected, (document.querySelector('.fd-drop-marker') as HTMLElement).style.left]).toEqual([false, '489px']);
+    pointer('pointerup', document, 590, 100);
+    expect(dropped[1]).toEqual([{ node: 'name' }, 'columns', 2]);
+    drag.destroy();
+  });
+});
+
 describe('dragging on the canvas', () => {
   it('carries a field to another section, a line where it lands, and drops it there', () => {
     const { card, pointer, second, dropped } = canvas();

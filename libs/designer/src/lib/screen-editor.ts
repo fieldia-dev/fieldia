@@ -5,6 +5,9 @@ import { designerBar, elementFactory } from './chrome';
 import { QUESTION_KINDS, SCREEN_KINDS, type Designer, type DesignerState, type Where } from './designer';
 import { findHeaderPart } from './header-commands';
 import { headerPartProperties, statusbarProperties } from './header-properties';
+import { listCanvas } from './list-canvas';
+import { canBeColumn } from './list-commands';
+import { columnProperties, listActionProperties, listProperties } from './list-properties';
 import { allSections, findField, findTab } from './page-tree';
 import { screenCanvas } from './screen-canvas';
 import { fieldProperties, pageProperties, sectionProperties, tabProperties, tabsProperties, type PropertiesView } from './screen-properties';
@@ -53,16 +56,24 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     more: (part) => openPanel(part),
     dropTool: (spec, section, index) => add(spec, { parent: section, index }),
   });
+  const list = listCanvas({
+    el,
+    doc,
+    designer,
+    more: (part) => openPanel(part),
+    dropTool: (spec, index) => spec.startsWith('model:') && designer.addColumn(spec.slice('model:'.length), index),
+  });
+  const isList = () => designer.getPage().layout.type === 'list';
   const tools = toolbox({
     el,
     doc,
     kinds: [...QUESTION_KINDS, ...SCREEN_KINDS],
     layout: true,
     onPick: (spec) => add(spec, null),
-    onPress: (spec, event, tile) => canvas.drag.press({ tool: spec }, event, tile),
+    onPress: (spec, event, tile) => (isList() ? list.drag : canvas.drag).press({ tool: spec }, event, tile),
   });
   const properties = el('aside', { class: 'fd-properties', 'aria-label': 'Properties' });
-  const body = el('div', { class: 'fd-screen-body' }, tools.element, el('div', { class: 'fd-canvas-scroll' }, canvas.element), properties);
+  const body = el('div', { class: 'fd-screen-body' }, tools.element, el('div', { class: 'fd-canvas-scroll' }, canvas.element, list.element), properties);
   root.append(bar.element, bar.issues, body, trial.element);
 
   // ---- adding ------------------------------------------------------------------
@@ -83,6 +94,11 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   function add(spec: string, where: Where | null) {
     const page = designer.getPage();
     const [kind, name] = [spec.slice(0, spec.indexOf(':')), spec.slice(spec.indexOf(':') + 1)];
+    // A list takes the model's fields as columns, at the end.
+    if (page.layout.type === 'list') {
+      if (kind === 'model') designer.addColumn(name);
+      return;
+    }
     if (kind === 'kind') {
       const created = designer.addQuestion(name, where ?? target(page));
       // A new field comes with its name selected, to be typed over where it stands.
@@ -109,8 +125,15 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   function renderPanel(state: DesignerState) {
     const { selected, page } = state;
     const part = selected !== null ? findHeaderPart(page, selected) : null;
+    const layout = page.layout;
     const kind =
-      part
+      layout.type === 'list'
+        ? selected?.startsWith('column:') && layout.columns.includes(selected.slice('column:'.length))
+          ? 'column'
+          : selected && layout.actions?.some((a) => a.id === selected)
+            ? 'action'
+            : 'list'
+        : part
         ? 'part'
         : selected === '#statusbar' && page.layout.type === 'sheet' && page.layout.statusbar
           ? 'statusbar'
@@ -123,7 +146,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
             : selected !== null && topOf(page).some((n) => n.id === selected && n.type === 'tabs')
               ? 'tabs'
               : 'page';
-    const key = kind === 'page' ? kind : `${kind}:${selected}`;
+    const key = kind === 'page' || kind === 'list' ? kind : `${kind}:${selected}`;
     if (key !== panelKey) {
       panelKey = key;
       const id = selected as string;
@@ -136,6 +159,9 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
         tab: ['Tab', () => tabProperties(el, designer, id)],
         tabs: ['Tabs', () => tabsProperties(el, designer, id)],
         page: ['Screen', () => pageProperties(el, designer)],
+        list: ['List', () => listProperties(el, designer)],
+        column: ['Column', () => columnProperties(el, designer, id.slice('column:'.length))],
+        action: ['Button', () => listActionProperties(el, designer, id)],
       };
       const [title, build] = panels[kind];
       panel = build();
@@ -145,7 +171,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   }
 
   /** The rest of a field, in the panel: brought forward, and pointed out. */
-  function openPanel(part: 'field' | 'when') {
+  function openPanel(part: 'field' | 'when' | 'filters') {
     panel?.focus?.(part);
     properties.classList.remove('fd-flash');
     void properties.offsetWidth;
@@ -160,11 +186,26 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     if (trial.trying || event.defaultPrevented) return;
     const selected = designer.getState().selected;
     const typing = target.closest('input, textarea, select, [contenteditable]');
+    const layout = designer.getPage().layout;
     if (event.key === 'Escape' && selected) {
       // Escape leaves the box being typed in and puts the field down.
       if (typing && !target.closest('.fd-canvas')) return;
       (typing as HTMLElement | null)?.blur();
       designer.select(null);
+      return;
+    }
+    // A list's column moves along the row, and goes with Delete; so does a button for the rows chosen.
+    if (!typing && selected && layout.type === 'list') {
+      const column = selected.startsWith('column:') ? selected.slice('column:'.length) : null;
+      const back = event.key === 'ArrowLeft' || event.key === 'ArrowUp';
+      if (column && event.altKey && (back || event.key === 'ArrowRight' || event.key === 'ArrowDown')) {
+        event.preventDefault();
+        designer.moveColumn(column, layout.columns.indexOf(column) + (back ? -1 : 1));
+      } else if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault();
+        if (column) designer.removeColumn(column);
+        else if (layout.actions?.some((a) => a.id === selected)) designer.removeListAction(selected);
+      }
       return;
     }
     // A part of the header moves along its row, and goes with Delete.
@@ -193,8 +234,17 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   // ---- render -----------------------------------------------------------------------
   function render(state: DesignerState) {
     bar.update(state);
-    canvas.update(state);
-    tools.update({ modelFields: designer.modelFields(), tabs: state.page.layout.type === 'sheet' && !topOf(state.page).some((n) => n.type === 'tabs') });
+    const listing = state.page.layout.type === 'list';
+    canvas.element.hidden = listing;
+    list.element.hidden = !listing;
+    if (listing) list.update(state);
+    else canvas.update(state);
+    tools.update({
+      // A list shows only what the model has, and only what a column can show.
+      modelFields: listing ? designer.modelFields().filter((m) => canBeColumn(m.field)) : designer.modelFields(),
+      tabs: state.page.layout.type === 'sheet' && !topOf(state.page).some((n) => n.type === 'tabs'),
+      kinds: !listing,
+    });
     renderPanel(state);
   }
 
@@ -209,6 +259,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       bar.destroy();
       doc.removeEventListener('keydown', onKey);
       canvas.destroy();
+      list.destroy();
       trial.destroy();
       root.remove();
     },

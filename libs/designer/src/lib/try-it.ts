@@ -1,8 +1,9 @@
-import { createMemoryDataSource } from '@fieldia/core';
+import { createMemoryDataSource, type Page, type Values } from '@fieldia/core';
 import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { designerIcon } from './icons';
+import { sampleRows } from './samples';
 
 /**
  * Try it: the page working as people will use it, in place of the editor —
@@ -31,6 +32,13 @@ export interface TryIt {
 
 type Width = 'desktop' | 'tablet' | 'phone';
 type Direction = 'ltr' | 'rtl';
+
+/** A list's records to try it with: made up, enough for a few pages. */
+function madeUp(page: Page): Record<string, Record<string, Values>> {
+  if (page.layout.type !== 'list' || page.data.kind !== 'record') return {};
+  const rows = sampleRows(page.fields, Object.keys(page.fields), 36);
+  return { [page.data.model]: Object.fromEntries(rows.map((values, i) => [String(i + 1), values as Values])) };
+}
 
 export function tryIt(options: TryItOptions): TryIt {
   const { el, doc, designer } = options;
@@ -70,9 +78,10 @@ export function tryIt(options: TryItOptions): TryIt {
     frame.replaceChildren();
     if (!trying) return;
     frame.dataset['width'] = width;
+    const page = designer.getPage();
     viewer = mountViewer(frame, {
-      page: designer.getPage(),
-      dataSource: createMemoryDataSource(),
+      page,
+      dataSource: createMemoryDataSource({ records: madeUp(page) }),
       skin: options.skin,
       dir: direction,
       ...(direction === 'rtl' ? { locale: 'ar' as const } : {}),

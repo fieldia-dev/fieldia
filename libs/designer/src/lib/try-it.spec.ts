@@ -23,6 +23,26 @@ function setup() {
 }
 
 describe('try it', () => {
+  it('fills a list with made-up records, so its filters, order and pages can be tried', async () => {
+    const designer = createDesigner({
+      page: blankPage('list', 'Customers'),
+      model: { state: { type: 'selection', label: 'Status', options: [{ value: 'active', label: 'Active' }, { value: 'blocked', label: 'Blocked' }] } },
+    });
+    designer.addColumn('state');
+    designer.updateListFilter(designer.addListFilter('Active', [{ field: 'state', op: '=', value: 'active' }]) as string, { on: true });
+    designer.setListOptions({ pageSize: 10 });
+    handle = tryIt({ el: elementFactory(document), doc: document, designer, skin: 'outlined', onChange: () => undefined });
+    document.body.append(handle.toggle, handle.element);
+    (handle.toggle.querySelector('button[data-mode="try"]') as HTMLButtonElement).click();
+    const rows = () => [...(handle?.element.querySelectorAll('.fd-list-row') ?? [])];
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
+    // Only the active ones, as the filter on when it opens says.
+    expect(rows().length).toBeGreaterThan(0);
+    expect(rows().every((tr) => tr.querySelectorAll('td')[2]?.textContent === 'Active')).toBe(true);
+    expect(handle.element.querySelector('.fd-pager-text')?.textContent).toMatch(/^1–\d+ \/ \d+$/);
+  });
+
   it('switches between designing and trying the page as people will use it', () => {
     const { changes, mode, viewer } = setup();
     expect(mode('design').getAttribute('aria-pressed')).toBe('true');

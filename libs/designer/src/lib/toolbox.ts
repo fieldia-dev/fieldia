@@ -26,8 +26,8 @@ export interface ToolboxOptions {
 
 export interface ToolboxHandle {
   element: HTMLElement;
-  /** The model's fields still to place, and whether tabs can be added. */
-  update(state: { modelFields: ModelField[]; tabs: boolean }): void;
+  /** The model's fields still to place, whether tabs can be added, and whether new fields can be — a list shows only what the model has. */
+  update(state: { modelFields: ModelField[]; tabs: boolean; kinds?: boolean }): void;
 }
 
 /** The kinds in the order and groups the toolbox shows them. */
@@ -44,6 +44,7 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
   const offered = new Map(options.kinds.map((k) => [k.id, k]));
   const folded = new Set<string>();
   let query = '';
+  let kindsOn = true;
 
   const find = el('input', { type: 'search', class: 'fd-input fd-tool-find', placeholder: 'Find a field or a kind', 'aria-label': 'Find a field or a kind' });
   const none = el('p', { class: 'fd-tool-none', hidden: '' }, 'Nothing by that name.');
@@ -104,7 +105,7 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
       let shown = 0;
       for (const t of g.tiles.children as HTMLCollectionOf<HTMLElement>) {
         const name = t.querySelector('.fd-tool-name')?.textContent?.toLowerCase() ?? '';
-        const unavailable = t === tabsTile && tabsTile.dataset['allowed'] !== 'true';
+        const unavailable = (g !== fromModel && !kindsOn) || (t === tabsTile && tabsTile.dataset['allowed'] !== 'true');
         t.hidden = unavailable || (!!query && !name.includes(query));
         if (!t.hidden) shown++;
       }
@@ -121,7 +122,8 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
 
   return {
     element,
-    update({ modelFields, tabs }) {
+    update({ modelFields, tabs, kinds = true }) {
+      kindsOn = kinds;
       const key = modelFields.map((m) => `${m.name}:${m.field.label}:${m.field.type}`).join('|');
       if (fromModel.element.dataset['key'] !== key) {
         fromModel.element.dataset['key'] = key;

@@ -16,7 +16,7 @@ export interface PropertiesView {
   element: HTMLElement;
   update(page: Page): void;
   /** Bring a part of the panel forward: a field's settings, or when it shows. */
-  focus?(part: 'field' | 'when'): void;
+  focus?(part: 'field' | 'when' | 'filters'): void;
 }
 
 export function prop(el: ElementFactory, text: string, control: HTMLElement): HTMLElement {

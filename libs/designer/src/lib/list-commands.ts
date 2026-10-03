@@ -47,6 +47,12 @@ export interface ListCommands {
 /** Kinds of field a column cannot show: lines, rich text, files and raw data. */
 const NOT_IN_A_COLUMN = new Set(['one2many', 'html', 'binary', 'json']);
 
+/** Whether a column can show this field. */
+export const canBeColumn = (field: Field) => !NOT_IN_A_COLUMN.has(field.type);
+
+/** How a column is picked on the canvas: by its field. */
+export const columnId = (field: string) => `column:${field}`;
+
 const actionName = (label: string) =>
   label
     .normalize('NFKD')
@@ -60,8 +66,17 @@ export function filterFields(items: readonly FilterItem[]): string[] {
   return items.flatMap((item) => ('any' in item ? filterFields(item.any) : 'all' in item ? filterFields(item.all) : [item.field]));
 }
 
-export function listCommands(context: { apply(edit: (draft: Page) => void, merge?: string | null): boolean; select(id: string): void; model: Record<string, Field> }): ListCommands {
+export function listCommands(context: {
+  apply(edit: (draft: Page) => void, merge?: string | null): boolean;
+  select(id: string | null): void;
+  selected(): string | null;
+  model: Record<string, Field>;
+}): ListCommands {
   const { apply, model } = context;
+  /** What was picked is gone: nothing is. */
+  const unpick = (id: string) => {
+    if (context.selected() === id) context.select(null);
+  };
   const listOf = (draft: Page): ListNode => {
     if (draft.layout.type !== 'list') throw new Refusal('Only a list has columns');
     return draft.layout;
@@ -97,7 +112,7 @@ export function listCommands(context: { apply(edit: (draft: Page) => void, merge
         const list = listOf(draft);
         const def = fieldFor(draft, field);
         if (list.columns.includes(field)) throw new Refusal(`${def.label} is a column already`);
-        if (NOT_IN_A_COLUMN.has(def.type)) throw new Refusal(`A list cannot show ${def.label} in a column: it holds ${storedAs(def)}`);
+        if (!canBeColumn(def)) throw new Refusal(`A list cannot show ${def.label} in a column: it holds ${storedAs(def)}`);
         list.columns.splice(index === undefined ? list.columns.length : Math.max(0, Math.min(index, list.columns.length)), 0, field);
       });
     },
@@ -113,7 +128,7 @@ export function listCommands(context: { apply(edit: (draft: Page) => void, merge
     },
 
     removeColumn(field) {
-      return apply((draft) => {
+      const ok = apply((draft) => {
         const list = listOf(draft);
         const at = list.columns.indexOf(field);
         if (at === -1) throw new Refusal(`"${field}" is not a column`);
@@ -124,6 +139,8 @@ export function listCommands(context: { apply(edit: (draft: Page) => void, merge
         if (!list.sort?.length) delete list.sort;
         prune(draft);
       });
+      if (ok) unpick(columnId(field));
+      return ok;
     },
 
     setListOptions(options) {
@@ -233,11 +250,13 @@ export function listCommands(context: { apply(edit: (draft: Page) => void, merge
     },
 
     removeListAction(id) {
-      return apply((draft) => {
+      const ok = apply((draft) => {
         const list = listOf(draft);
         list.actions?.splice(actionOf(list, id), 1);
         if (!list.actions?.length) delete list.actions;
       });
+      if (ok) unpick(id);
+      return ok;
     },
   };
 }

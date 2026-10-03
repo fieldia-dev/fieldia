@@ -349,6 +349,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       selected = id;
       notify();
     },
+    selected: () => selected,
     model,
   });
 

@@ -5,7 +5,8 @@ import type { Skin } from '@fieldia/viewer';
 /**
  * The screen editor on its own page, opened on a small site-visit screen.
  * `?start=blank` opens an empty one, `?start=sheet` an empty customer sheet
- * with the customer's model behind it, its fields first in the toolbox.
+ * with the customer's model behind it, its fields first in the toolbox, and
+ * `?start=list` the customers' list, on the same model.
  */
 const customer: Record<string, Field> = {
   name: { type: 'char', label: 'Name', required: true },
@@ -40,11 +41,23 @@ function siteVisit() {
   return draft.getPage();
 }
 
+function customers() {
+  const draft = createDesigner({ page: blankPage('list', 'Customers'), model: customer });
+  for (const name of ['email', 'country_id', 'state', 'credit_limit']) draft.addColumn(name);
+  const active = draft.addListFilter('Active', [{ field: 'state', op: '=', value: 'active' }]) as string;
+  draft.updateListFilter(active, { on: true });
+  draft.addListFilter('Blocked', [{ field: 'state', op: '=', value: 'blocked' }]);
+  draft.setListOptions({ sort: [{ field: 'name' }], groupBy: ['country_id', 'state'] });
+  draft.addListAction('Archive');
+  return draft.getPage();
+}
+
 const params = new URLSearchParams(location.search);
 const store = createMemoryPageStore();
 const start = params.get('start');
-const model = start === 'sheet' ? customer : undefined;
-const designer = createDesigner({ page: start === 'blank' ? blankPage('screen', 'New screen') : start === 'sheet' ? blankPage('sheet', 'Customer') : siteVisit(), store, model });
+const model = start === 'sheet' || start === 'list' ? customer : undefined;
+const first = start === 'blank' ? blankPage('screen', 'New screen') : start === 'sheet' ? blankPage('sheet', 'Customer') : start === 'list' ? customers() : siteVisit();
+const designer = createDesigner({ page: first, store, model });
 const skin = (params.get('skin') as Skin) ?? 'outlined';
 const app = document.getElementById('app') as HTMLElement;
 const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin }), reopen };

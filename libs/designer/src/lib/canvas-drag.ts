@@ -6,6 +6,9 @@
  * Escape, and nothing changes. Resting on a closed tab opens it, so a field
  * can go into another tab.
  *
+ * A list's columns, side by side, take the same drag: their row carries
+ * `data-drop-flow="row"`, and a line down the whole table shows the place.
+ *
  * A press that does not move is a click, left to the click handlers; the
  * click that ends a real drag is swallowed. Places are read from where things
  * are on screen, not hit-tested, so a field's own widget — inert on the
@@ -132,9 +135,10 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
     // Its own place is not counted: in its own section the others close up around it.
     const others = cardsIn(section).filter((c) => c !== current.element);
     const rects = others.map(rectOf);
-    // One under another, height alone decides; in a grid, reading order.
-    const column = section.dataset['dropFlow'] === 'column';
-    const index = column ? rects.filter((r) => (r.top + r.bottom) / 2 < y).length : dropIndex(rects, x, y);
+    // One under another, height alone decides; side by side, as a list's columns are, the side alone; in a grid, reading order.
+    const flow = section.dataset['dropFlow'];
+    const column = flow === 'column';
+    const index = column ? rects.filter((r) => (r.top + r.bottom) / 2 < y).length : flow === 'row' ? rects.filter((r) => (r.left + r.right) / 2 < x).length : dropIndex(rects, x, y);
     current.target = { section: section.dataset['dropSection'] as string, index };
     if (!current.marker) return;
     current.marker.hidden = false;
@@ -143,7 +147,9 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
     const area = rectOf(section);
     // In a grid, before a field: a line down its leading edge. Down a column, a line across over it. After them all, a line across under the last.
     const line =
-      at && !column
+      flow === 'row'
+        ? { left: (at ? at.left : last ? last.right : area.left) - 1, top: area.top, width: 3, height: area.bottom - area.top }
+        : at && !column
         ? { left: at.left - 5, top: at.top, width: 3, height: at.bottom - at.top }
         : at
           ? { left: at.left, top: at.top - 6, width: at.right - at.left, height: 3 }

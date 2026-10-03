@@ -274,6 +274,43 @@ export const DESIGNER_CSS = /* css */ `
 .fd-properties-hint { color: var(--fd-muted); font-size: 13px; margin: 0; }
 .fd-kind-note { font-size: 12px; margin-block-start: -4px; }
 .fd-prop-when { gap: 6px; justify-items: start; }
+.fd-props > .fd-prop > .fd-button { justify-self: start; }
+.fd-list-search-fields { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.fd-list-filters { display: grid; gap: 8px; }
+.fd-list-filter { margin: 0; display: grid; gap: 6px; padding: 8px; border: 1px solid var(--fd-border); border-radius: 6px; min-width: 0; }
+.fd-list-filter-condition { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 6px; }
+.fd-list-filter-value { display: contents; }
+.fd-list-filter-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fd-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fd-chips:empty { display: none; }
+.fd-chip { display: inline-flex; align-items: center; gap: 4px; padding-block: 2px; padding-inline: 8px 2px; border-radius: 4px; background: var(--fd-success-soft); color: var(--fd-success); font-size: 13px; }
+.fd-chip-remove { all: unset; cursor: pointer; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 3px; font-size: 15px; line-height: 1; }
+.fd-chip-remove:hover, .fd-chip-remove:focus-visible { background: var(--fd-surface); }
+
+/* A list on the canvas: the viewer's own list, its columns picked by a click and carried along the row. */
+.fd-list-canvas .fd-canvas-search { cursor: pointer; border-radius: var(--fd-control-radius); }
+.fd-list-canvas .fd-canvas-search:hover .fd-search-field { border-color: var(--fd-accent); }
+.fd-list-canvas .fd-canvas-search:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+.fd-search-placeholder { color: var(--fd-muted); font-size: 14px; padding: 5px 4px; }
+.fd-canvas-selection { display: flex; }
+.fd-canvas-selection-hint { color: var(--fd-muted); font-size: 12.5px; margin-inline-end: 4px; }
+.fd-canvas-list-actions { display: contents; }
+.fd-canvas-list-scroll { position: relative; }
+.fd-list-canvas .fd-list-table th.fd-canvas-column { position: relative; cursor: grab; user-select: none; }
+.fd-list-canvas .fd-list-table th.fd-canvas-column:hover { background: var(--fd-page); }
+.fd-list-canvas .fd-list-table th.fd-canvas-column:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: -2px; }
+.fd-list-canvas .fd-list-table th.fd-picked { box-shadow: inset 0 0 0 2px var(--fd-accent); background: var(--fd-accent-soft); }
+.fd-list-canvas .fd-list-table td.fd-picked { background: var(--fd-accent-soft); }
+.fd-list-canvas .fd-list-table td { cursor: pointer; }
+.fd-list-canvas .fd-list-table .fd-list-checkbox { cursor: default; }
+.fd-list-canvas .fd-list-row:hover td { background: none; }
+.fd-list-canvas .fd-list-row:hover td.fd-picked { background: var(--fd-accent-soft); }
+.fd-column-bar { bottom: auto; top: calc(100% + 6px); inset-inline-end: auto; inset-inline-start: 0; }
+/* "+ Column" stays at the row's end however far the table scrolls. */
+.fd-list-canvas .fd-list-table .fd-canvas-add-column { position: sticky; inset-inline-end: 0; z-index: 1; width: 1%; padding-inline: 8px; background: var(--fd-surface); border-inline-start: 1px solid var(--fd-border); }
+.fd-canvas-add-column .fd-canvas-add-part { padding: 2px 8px; font-weight: 400; }
+.fd-canvas.fd-dragging .fd-list-table th.fd-canvas-column { cursor: grabbing; }
+.fd-drag-ghost.fd-canvas-column { display: block; padding: 8px 12px; font-weight: 600; font-size: 13px; }
 /* After the panel rules, so these win when the editor is narrow: the toolbox and the panel stack around the canvas. */
 @container (max-width: 1000px) {
   .fd-screen-body { grid-template-columns: minmax(0, 1fr); }
