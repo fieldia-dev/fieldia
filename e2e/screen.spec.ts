@@ -236,7 +236,7 @@ test.describe('screen designer · fields the backend already has', () => {
     await page.goto('/screen/?start=sheet');
     const model = page.locator('.fd-tool-group-model');
     // Name is the sheet's title already: the others are offered.
-    await expect(model.locator('.fd-tool-name')).toHaveText(['Email', 'Phone', 'Website', 'VAT number', 'Country', 'Tags', 'Credit limit', 'Payment terms', 'Visits a year']);
+    await expect(model.locator('.fd-tool-name')).toHaveText(['Email', 'Phone', 'Website', 'VAT number', 'Country', 'Tags', 'Credit limit', 'Payment terms', 'Visits a year', 'Status', 'Invoices']);
     await screen(page, 'screen-model-toolbox', { viewport: true });
     await tile(page, 'model:credit_limit').click();
     await expect(model.locator('[data-tool="model:credit_limit"]')).toHaveCount(0);
