@@ -14,6 +14,7 @@ import {
 import { conditionToHide, type Condition } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { listCommands, type ListCommands } from './list-commands';
+import { fixCheck, pageChecks, type PageCheck } from './page-checks';
 import { COLUMN_TYPES, columnKind, kindById, kindFits, kindsFor, orList, storedAs, type LineColumn, type QuestionKind } from './kinds';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
@@ -35,6 +36,7 @@ export { columnKind, kindFits, kindOfField, kindsFor, QUESTION_KINDS, SCREEN_KIN
 export type { LineColumn, QuestionKind } from './kinds';
 export type { HeaderCommands, HeaderPartKind, HeaderPartPatch } from './header-commands';
 export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-commands';
+export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-checks';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
 export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
@@ -221,6 +223,10 @@ export interface Designer extends HeaderCommands, ListCommands {
   redo(): void;
   /** Publish the draft as the next version. Returns its number. */
   publish(): Promise<number>;
+  /** What people would trip over on the page as it is, what would stop them first. */
+  checks(): PageCheck[];
+  /** Do a check's fix: delete an empty page, drop a rule that can never hold, or pick what it is about. */
+  fixCheck(check: PageCheck): boolean;
   /** Make a published version the draft again. Undoable. */
   revertTo(version: number): boolean;
   /** Resolves once every draft save started so far has finished. */
@@ -898,6 +904,9 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       notify();
       return version;
     },
+
+    checks: () => pageChecks(page),
+    fixCheck: (check) => fixCheck(designer, check),
 
     revertTo(version) {
       const found = versions.find((v) => v.version === version);
