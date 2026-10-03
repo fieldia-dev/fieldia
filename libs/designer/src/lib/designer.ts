@@ -15,7 +15,7 @@ import { conditionToHide, conditionToHold, type Condition } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { listCommands, type ListCommands } from './list-commands';
 import { fixCheck, pageChecks, type PageCheck } from './page-checks';
-import { COLUMN_TYPES, columnKind, kindById, kindFits, kindsFor, orList, storedAs, type LineColumn, type QuestionKind } from './kinds';
+import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, orList, storedAs, type LineColumn, type QuestionKind } from './kinds';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
 
@@ -225,6 +225,12 @@ export interface Designer extends HeaderCommands, ListCommands {
   setCurrency(id: string, code: string): boolean;
   /** Where a rating, a scale or a progress runs from and to. */
   setRange(id: string, range: { min: number; max: number }): boolean;
+  /** An "Other" choice after the options, with a box for an answer of one's own: for multiple choice and checkboxes. */
+  setOther(id: string, on: boolean): boolean;
+  /** How the field's widget shows it, such as the words at a scale's ends; `null` or nothing takes a setting away. */
+  setWidgetOptions(id: string, patch: Record<string, string | number | boolean | null>): boolean;
+  /** Which kinds of file a file upload takes (media types, such as image/*), and the largest, in bytes. */
+  setFileRules(id: string, rules: { accept?: string[]; maxSize?: number | null }): boolean;
   /** A table of lines' columns, in order. */
   setLineColumns(id: string, columns: LineColumn[]): boolean;
   undo(): void;
@@ -535,7 +541,11 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
           return;
         }
         const next = kind.field(old.label) as Field & { help?: string; required?: boolean };
-        if (old.type === 'selection' && next.type === 'selection') next.options = old.options;
+        if (old.type === 'selection' && next.type === 'selection') {
+          next.options = old.options;
+          // "Other" stays where the new kind has it too; a dropdown has none.
+          if (old.other && (kind.id === 'multiple-choice' || kind.id === 'checkboxes')) next.other = true;
+        }
         if (old.help) next.help = old.help;
         if (old.required) next.required = true;
         draft.fields[node.field] = next;
@@ -878,6 +888,48 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
         const { min, max } = range;
         if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max) throw new Refusal('A range runs from a smaller whole number to a bigger one');
         Object.assign(field, { min, max });
+      });
+    },
+
+    setOther(id, on) {
+      return apply((draft) => {
+        const ask = 'Only multiple choice and checkboxes take an answer of one’s own';
+        const field = fieldOfType(draft, id, ['selection'], ask, (label) => `Whether ${label} takes an answer of its own comes from the model`);
+        const kind = kindOfField(field, fieldNode(draft, id));
+        if (kind !== 'multiple-choice' && kind !== 'checkboxes') throw new Refusal(ask);
+        if (on) field.other = true;
+        else delete field.other;
+      });
+    },
+
+    setWidgetOptions(id, patch) {
+      return apply(
+        (draft) => {
+          const node = fieldNode(draft, id);
+          const options = { ...(node.options ?? {}) } as Record<string, unknown>;
+          for (const [key, value] of Object.entries(patch)) {
+            if (value === null || value === '') delete options[key];
+            else options[key] = value;
+          }
+          if (Object.keys(options).length) node.options = options as FieldNode['options'];
+          else delete node.options;
+        },
+        `widget:${id}:${Object.keys(patch).join(',')}`
+      );
+    },
+
+    setFileRules(id, rules) {
+      return apply((draft) => {
+        const field = fieldOfType(draft, id, ['binary'], 'Only a file upload takes files', (label) => `The files ${label} takes come from the model`);
+        if (rules.accept !== undefined) {
+          if (rules.accept.length) field.accept = [...rules.accept];
+          else delete field.accept;
+        }
+        if (rules.maxSize !== undefined) {
+          if (rules.maxSize === null) delete field.maxSize;
+          else if (!Number.isInteger(rules.maxSize) || rules.maxSize <= 0) throw new Refusal('The largest file is a size in bytes, more than nothing');
+          else field.maxSize = rules.maxSize;
+        }
       });
     },
 

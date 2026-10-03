@@ -241,7 +241,10 @@ export function pageChanges(before: Page | null, after: Page): string[] {
       for (const o of added) out.push(`“${name}”: added the option “${o.label}”`);
       for (const o of gone) out.push(`“${name}”: removed the option “${o.label}”`);
       if (!added.length && !gone.length && JSON.stringify(was.field.options) !== JSON.stringify(p.field.options)) out.push(`“${name}”: its options changed`);
+      if (!was.field.other !== !p.field.other) out.push(p.field.other ? `“${name}”: takes an answer of its own (“Other”)` : `“${name}”: no longer takes an answer of its own`);
     }
+    if (JSON.stringify(was.node.options ?? {}) !== JSON.stringify(p.node.options ?? {})) out.push(`“${name}”: how it shows changed`);
+    if (was.field.type === 'binary' && p.field.type === 'binary' && JSON.stringify([was.field.accept, was.field.maxSize]) !== JSON.stringify([p.field.accept, p.field.maxSize])) out.push(`“${name}”: the files it takes changed`);
     const shows = whenItShows(name, was.node.invisible, p.node.invisible, answers);
     if (shows) out.push(shows);
     if (was.holder.id !== p.holder.id) out.push(`Moved “${name}” to “${holderName(p.holder)}”`);

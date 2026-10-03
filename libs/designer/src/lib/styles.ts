@@ -138,6 +138,14 @@ export const DESIGNER_CSS = /* css */ `
 .fd-q-bullet { color: var(--fd-muted); width: 16px; text-align: center; }
 .fd-q-option-box { display: grid; gap: 4px; justify-items: start; }
 .fd-q-option-box > ul { width: 100%; }
+/* "Add option or add "Other"", and "Other…" once added: words and links, never boxes — pointed at, only a line under them. */
+.fd-q-add-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.fd-q-option-box .fd-q-add-row > .fd-button-link { border: 0; background-color: transparent; box-shadow: none; padding: 2px 0; min-height: 0; font-weight: 400; }
+.fd-q-option-box .fd-q-add-row > .fd-button-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+.fd-q-option-box .fd-q-add-row > .fd-button-link:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; border-radius: 2px; }
+.fd-q-or { color: var(--fd-muted); font-size: 13px; }
+.fd-q-option-other { display: flex; align-items: center; gap: 8px; width: 100%; }
+.fd-q-other-words { flex: 1; min-width: 0; color: var(--fd-muted); padding: 6px 0; border-bottom: 1px dotted color-mix(in srgb, var(--fd-text) 38%, transparent); }
 .fd-q-foot { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; border-block-start: 1px solid var(--fd-border); padding-block-start: 10px; }
 .fd-icon-button {
   font: inherit; border: none; background: none; cursor: pointer; color: var(--fd-muted); width: 30px; height: 30px; border-radius: 6px;
@@ -308,6 +316,20 @@ export const DESIGNER_CSS = /* css */ `
 .fd-designer .fd-inline-select:focus-visible, .fd-designer .fd-inline-input:focus-visible, .fd-designer .fd-inline-settings .fd-column > .fd-input:focus-visible { outline: none; }
 .fd-inline-select:focus, .fd-inline-input:focus, .fd-inline-settings .fd-column > .fd-input:focus { border-bottom: 2px solid var(--fd-accent); padding-bottom: 1px; }
 .fd-inline-settings .fd-columns-box { width: 100%; justify-items: start; }
+.fd-inline-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; width: 100%; }
+/* A scale's end, its number then its words. */
+.fd-inline-end { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 360px; }
+.fd-inline-end-number { min-width: 20px; color: var(--fd-text); font-variant-numeric: tabular-nums; }
+.fd-inline-end-words { flex: 1; width: auto; }
+/* Kinds of file, on or off. */
+.fd-inline-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fd-inline-chip {
+  all: unset; box-sizing: border-box; cursor: pointer; padding: 3px 10px; border-radius: 999px; font-size: 12.5px; color: var(--fd-text);
+  background: color-mix(in srgb, var(--fd-text) 6%, transparent);
+}
+.fd-inline-chip:hover { background: color-mix(in srgb, var(--fd-text) 10%, transparent); }
+.fd-inline-chip[aria-pressed="true"] { background: var(--fd-accent-soft); color: var(--fd-accent); font-weight: 600; }
+.fd-inline-chip:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
 .fd-inline-settings .fd-columns { width: 100%; }
 .fd-inline-settings .fd-column { grid-template-columns: minmax(0, 1fr) 110px 28px; }
 .fd-canvas-tabs-head { display: flex; align-items: flex-end; gap: 4px; }
@@ -473,6 +495,8 @@ export const DESIGNER_CSS = /* css */ `
 /* What goes in the answer, said on a dotted line. */
 .fd-q-preview { color: var(--fd-muted); font-size: 14px; padding-block: 8px 6px; border-block-end: 1px dotted color-mix(in srgb, var(--fd-text) 38%, transparent); width: min(50%, 380px); }
 .fd-q-preview-long { width: min(80%, 600px); }
+.fd-q-preview-date { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fd-q-preview-date > .fd-dicon { width: 18px; height: 18px; flex: none; }
 .fd-q-preview-list { list-style: none; margin: 0; padding: 0; border: 0; width: auto; display: grid; gap: 10px; color: var(--fd-text); }
 /* Where answers lead: the pages on one line, those for some answers off it and back. */
 .fd-branch-map { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: 8px; padding: 10px 16px 12px; min-width: 0; }
@@ -502,10 +526,19 @@ export const DESIGNER_CSS = /* css */ `
 .fd-survey-canvas .fd-q-option > .fd-icon-button { opacity: 0.55; font-size: 20px; }
 .fd-survey-canvas .fd-q-option > .fd-icon-button:hover { opacity: 1; }
 .fd-survey-canvas .fd-q-option-box { gap: 0; }
-.fd-survey-canvas .fd-q-option-box > .fd-button-link { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0; color: var(--fd-muted); font-weight: 400; text-decoration: none; }
-.fd-survey-canvas .fd-q-option-box > .fd-button-link::before { content: ""; width: 20px; height: 20px; box-sizing: border-box; border: 2px solid var(--fd-border); border-radius: 50%; }
-.fd-survey-canvas .fd-q-option-box[data-multiple] > .fd-button-link::before { border-radius: 3px; }
-.fd-survey-canvas .fd-q-option-box > .fd-button-link:hover { color: var(--fd-text); }
+.fd-survey-canvas .fd-q-add-row { min-height: 44px; gap: 6px; }
+/* The ghost of the next option: an empty ring, box or number before "Add option", as Google Forms draws it. */
+.fd-survey-canvas .fd-q-add-option { display: inline-flex; align-items: center; gap: 12px; color: var(--fd-muted) !important; text-decoration: none; }
+.fd-survey-canvas .fd-q-add-option::before { content: ""; flex: none; width: 20px; height: 20px; box-sizing: border-box; border: 2px solid var(--fd-border); border-radius: 50%; }
+.fd-survey-canvas [data-multiple] .fd-q-add-option::before { border-radius: 3px; }
+.fd-survey-canvas [data-numbered] .fd-q-add-option::before { content: var(--fd-next-number, ""); border: 0; width: auto; min-width: 20px; height: auto; font-size: 14px; color: var(--fd-muted); }
+/* Pointed at: a line grows under its words, past the ring — a box never. */
+.fd-survey-canvas .fd-q-add-option { background-image: linear-gradient(currentColor, currentColor); background-size: 0 1px; background-repeat: no-repeat; background-position: 32px 100%; padding-bottom: 3px !important; transition: background-size 200ms; }
+.fd-survey-canvas .fd-q-add-option:hover { color: var(--fd-text) !important; text-decoration: none !important; background-size: calc(100% - 32px) 1px; }
+.fd-survey-canvas .fd-q-add-other { color: var(--fd-accent); }
+.fd-survey-canvas [data-numbered] .fd-q-bullet { font-size: 14px; border: 0; border-radius: 0; width: auto; min-width: 20px; height: auto; color: var(--fd-text); }
+.fd-survey-canvas .fd-q-option-other { min-height: 44px; gap: 12px; }
+@media (prefers-reduced-motion: reduce) { .fd-survey-canvas .fd-q-add-option { transition: none; } }
 /* The foot: copy, delete, a line, Required, ⋮ — at the end, as Google Forms has them. */
 .fd-survey-canvas .fd-q-foot { justify-content: flex-end; gap: 2px; min-height: 48px; padding-block-start: 8px; margin-block-start: 4px; }
 .fd-q-tool { all: unset; box-sizing: border-box; width: 40px; height: 40px; border-radius: 50%; display: inline-grid; place-items: center; color: var(--fd-muted); cursor: pointer; transition: background-color 150ms; }

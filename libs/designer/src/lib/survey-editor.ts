@@ -66,6 +66,8 @@ const PREVIEW_WORDS: Record<string, string> = {
   number: 'A number',
   amount: 'An amount',
   keywords: 'Keywords',
+  date: 'Day, month, year',
+  'date-time': 'Day, month, year, time',
 };
 
 /** A box whose line grows from the middle when it is typed in, the Google Forms way. */
@@ -272,6 +274,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   function preview(page: Page, node: FieldNode): HTMLElement | null {
     const def = page.fields[node.field];
     const kind = kindOfField(def, node);
+    if (kind === 'date' || kind === 'date-time') return el('div', { class: 'fd-q-preview fd-q-preview-short fd-q-preview-date' }, PREVIEW_WORDS[kind], designerIcon(doc, 'date'));
     if (kind && PREVIEW_WORDS[kind]) return el('div', { class: `fd-q-preview fd-q-preview-${kind === 'paragraph' ? 'long' : 'short'}` }, PREVIEW_WORDS[kind]);
     if (kind === 'dropdown' && def.type === 'selection') return el('ol', { class: 'fd-q-preview fd-q-preview-list' }, ...def.options.map((o, i) => el('li', {}, `${i + 1}. ${o.label}`)));
     return null;
@@ -466,7 +469,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
           kindIcon.replaceChildren(designerIcon(doc, current ?? 'short-answer'));
         }
         required.setAttribute('aria-checked', String(def.required === true));
-        choices.update(def);
+        choices.update(def, node);
         answer.hidden = !choices.element.hidden;
         if (!answer.hidden) painter.paint(page, node);
         when.update(page, questionsBefore(page, node.id), node.invisible);

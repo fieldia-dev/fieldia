@@ -204,3 +204,76 @@ describe('survey editor — putting a question down', () => {
     expect(designer.getState().selected).toBe(q);
   });
 });
+
+describe('survey editor — every kind’s own details, as Google Forms has them', () => {
+  const fieldOfQ = (designer: ReturnType<typeof createDesigner>, id: string) => designer.getPage().fields[nodes(designer.getPage()).find((n) => n.id === id)?.field as string];
+  const nodeOfQ = (designer: ReturnType<typeof createDesigner>, id: string) => nodes(designer.getPage()).find((n) => n.id === id) as FieldNode;
+
+  it('adds “Other” to multiple choice from beside “Add option”, shows it after the options, and takes it away', () => {
+    const { host, designer } = mount();
+    const q = designer.addQuestion('multiple-choice') as string;
+    expect(open(host).querySelector('.fd-q-add-row')?.textContent).toBe('Add optionoradd “Other”');
+    (button(open(host), 'add “Other”') as HTMLButtonElement).click();
+    expect(fieldOfQ(designer, q)).toMatchObject({ other: true });
+    expect(shown(open(host).querySelector('.fd-q-option-other'))).toBe(true);
+    expect(open(host).querySelector('.fd-q-option-other')?.textContent).toContain('Other…');
+    // Once there, it is not offered again.
+    expect(button(open(host), 'add “Other”')).toBeUndefined();
+    // The closed card shows it as people will see it: “Other:” and its box.
+    designer.select(null);
+    expect(host.querySelector(`.fd-q[data-node="${q}"] .fd-choice-other`)?.textContent).toContain('Other:');
+    designer.select(q);
+    (button(open(host), 'Remove “Other”') as HTMLButtonElement).click();
+    expect(fieldOfQ(designer, q)).not.toHaveProperty('other');
+    expect(button(open(host), 'add “Other”')).toBeDefined();
+  });
+
+  it('numbers a dropdown’s options, and offers it no “Other”', () => {
+    const { host, designer } = mount();
+    const q = designer.addQuestion('dropdown') as string;
+    designer.setOptions(q, ['Red', 'Green']);
+    expect([...open(host).querySelectorAll('.fd-q-options .fd-q-bullet')].map((b) => b.textContent)).toEqual(['1.', '2.']);
+    expect(open(host).querySelector('.fd-q-option-box')?.hasAttribute('data-numbered')).toBe(true);
+    expect(button(open(host), 'add “Other”')).toBeUndefined();
+  });
+
+  it('puts words at a linear scale’s ends, typed beside its first and last numbers', () => {
+    const { host, designer } = mount();
+    const q = designer.addQuestion('scale') as string;
+    const start = open(host).querySelector('[aria-label="Words at the start"]') as HTMLInputElement;
+    expect(start.closest('.fd-inline-end')?.textContent).toContain('0');
+    type(start, 'Not likely');
+    type(open(host).querySelector('[aria-label="Words at the end"]') as HTMLInputElement, 'Very likely');
+    expect(nodeOfQ(designer, q).options).toEqual({ startLabel: 'Not likely', endLabel: 'Very likely' });
+    designer.select(null);
+    expect([...host.querySelectorAll(`.fd-q[data-node="${q}"] .fd-scale-ends span`)].map((s) => s.textContent)).toEqual(['Not likely', 'Very likely']);
+  });
+
+  it('says which files an upload takes, and the largest', () => {
+    const { host, designer } = mount();
+    const q = designer.addQuestion('file') as string;
+    (button(open(host), 'Images') as HTMLButtonElement).click();
+    (button(open(host), 'PDF') as HTMLButtonElement).click();
+    expect(fieldOfQ(designer, q)).toMatchObject({ accept: ['image/*', 'application/pdf'] });
+    expect(button(open(host), 'Images')?.getAttribute('aria-pressed')).toBe('true');
+    const largest = open(host).querySelector('[aria-label="Largest file"]') as HTMLSelectElement;
+    expect(largest.value).toBe(String(10 * 1024 * 1024));
+    largest.value = String(1024 * 1024);
+    largest.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(fieldOfQ(designer, q)).toMatchObject({ maxSize: 1048576 });
+    (button(open(host), 'Images') as HTMLButtonElement).click();
+    (button(open(host), 'PDF') as HTMLButtonElement).click();
+    // None picked: any file.
+    expect(fieldOfQ(designer, q)).not.toHaveProperty('accept');
+  });
+
+  it('shows a date as a dotted line saying what goes there, with a calendar', () => {
+    const { host, designer } = mount();
+    const day = designer.addQuestion('date') as string;
+    const moment = designer.addQuestion('date-time') as string;
+    designer.select(null);
+    expect(host.querySelector(`.fd-q[data-node="${day}"] .fd-q-preview`)?.textContent).toBe('Day, month, year');
+    expect(host.querySelector(`.fd-q[data-node="${moment}"] .fd-q-preview`)?.textContent).toBe('Day, month, year, time');
+    expect(host.querySelector(`.fd-q[data-node="${day}"] .fd-q-preview svg`)).not.toBeNull();
+  });
+});

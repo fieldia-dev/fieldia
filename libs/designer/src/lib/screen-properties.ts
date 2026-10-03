@@ -120,7 +120,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       const kept = def.type === 'selection' ? 'Its options come from the model.' : def.type === 'monetary' ? 'Its currency comes from the model.' : ['many2one', 'many2many', 'one2many'].includes(def.type) ? 'The records it points to come from the model.' : '';
       fromModelNote.textContent = kept;
       fromModelNote.hidden = !fromModel || !kept;
-      options.update(def);
+      options.update(def, found.node);
       options.element.hidden ||= fromModel;
       lineColumns.update(def);
       lineColumns.element.hidden ||= fromModel;

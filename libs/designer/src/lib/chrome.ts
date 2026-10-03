@@ -1,6 +1,7 @@
-import type { Field } from '@fieldia/core';
+import type { Field, FieldNode } from '@fieldia/core';
 import type { Designer, DesignerState } from './designer';
 import { openFind, type FindItem } from './find-anything';
+import { kindOfField } from './kinds';
 import { designerIcon } from './icons';
 import { checksButton, openPublishDialog, statusWords, versionsMenu, type GoTo } from './publish-ui';
 
@@ -152,8 +153,8 @@ export function designerBar(
 
 export interface OptionsEditor {
   element: HTMLElement;
-  /** Show the field's options; hidden for a field without any. */
-  update(field: Field): void;
+  /** Show the field's options; hidden for a field without any. With its node, the kind decides the rest: numbers for a dropdown, "Other" for multiple choice and checkboxes. */
+  update(field: Field, node?: FieldNode): void;
 }
 
 /**
@@ -164,8 +165,15 @@ export interface OptionsEditor {
  */
 export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: string): OptionsEditor {
   const list = el('ul', { class: 'fd-q-options' });
-  const add = el('button', { type: 'button', class: 'fd-button fd-button-link' }, 'Add option');
-  const element = el('div', { class: 'fd-q-option-box' }, list, add);
+  const add = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-add-option' }, 'Add option');
+  // Google Forms' "Add option or add "Other"": an answer of one's own, after the options.
+  const addOther = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-add-other' }, 'add “Other”');
+  addOther.addEventListener('click', () => designer.setOther(nodeId, true));
+  const or = el('span', { class: 'fd-q-or' }, 'or');
+  const removeOther = iconButton(el, 'Remove “Other”', '×', () => designer.setOther(nodeId, false));
+  const otherRow = el('div', { class: 'fd-q-option fd-q-option-other', hidden: '' }, el('span', { class: 'fd-q-bullet', 'aria-hidden': 'true' }), el('span', { class: 'fd-q-other-words' }, 'Other…'), removeOther);
+  const addRow = el('div', { class: 'fd-q-add-row' }, add, or, addOther);
+  const element = el('div', { class: 'fd-q-option-box' }, list, otherRow, addRow);
   const inputs = () => [...list.querySelectorAll<HTMLInputElement>('input')];
   const labels = () => inputs().map((i) => i.value);
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
@@ -204,13 +212,20 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
   };
   return {
     element,
-    update(field) {
+    update(field, node) {
       const choices = field.type === 'selection' ? field.options : null;
       const multiple = field.type === 'selection' && field.multiple === true;
       element.hidden = !choices;
       if (!choices) return;
-      // Rings for one of them, boxes for several: the look draws them.
+      // Rings for one of them, boxes for several, numbers down a dropdown: the look draws them.
       element.toggleAttribute('data-multiple', multiple);
+      const kind = node ? kindOfField(field, node) : null;
+      element.toggleAttribute('data-numbered', kind === 'dropdown');
+      const takesOther = (kind === 'multiple-choice' || kind === 'checkboxes') && !designer.isFromModel(nodeId);
+      const hasOther = field.type === 'selection' && field.other === true;
+      otherRow.hidden = !hasOther;
+      or.hidden = addOther.hidden = !takesOther || hasOther;
+      element.style.setProperty('--fd-next-number', `"${choices.length + 1}."`);
       while (list.children.length > choices.length) list.lastElementChild?.remove();
       while (list.children.length < choices.length) {
         const index = list.children.length;
@@ -292,7 +307,7 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
         const remove = row.querySelector('button') as HTMLButtonElement;
         remove.setAttribute('aria-label', `Remove option ${option.label}`);
         remove.hidden = choices.length === 1;
-        (row.querySelector('.fd-q-bullet') as HTMLElement).textContent = multiple ? '☐' : '◯';
+        (row.querySelector('.fd-q-bullet') as HTMLElement).textContent = kind === 'dropdown' ? `${i + 1}.` : multiple ? '☐' : '◯';
       });
     },
   };

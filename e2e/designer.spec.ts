@@ -375,3 +375,43 @@ test.describe('survey designer · putting a question down', () => {
     await screen(page, 'designer-put-down', { viewport: true });
   });
 });
+
+test.describe('survey designer · “Other”', () => {
+  test('added from beside “Add option”, shown as people will see it, and answered in words of one’s own', async ({ page }) => {
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+    await page.goto('/designer/');
+    await page.locator('.fd-toolbox [data-tool="kind:multiple-choice"]').click();
+    await page.keyboard.type('How did you hear of us?');
+    const card = picked(page);
+    await card.getByLabel('Option 1', { exact: true }).fill('A friend');
+    await card.getByRole('button', { name: 'Add option' }).click();
+    await card.getByLabel('Option 2', { exact: true }).fill('An advert');
+    // Pointed at, “Add option” draws no box: only words.
+    await card.getByRole('button', { name: 'Add option' }).hover();
+    const ghost = await card.getByRole('button', { name: 'Add option' }).evaluate((b) => { const s = getComputedStyle(b); return [s.borderTopWidth, s.outlineStyle, s.boxShadow]; });
+    expect(ghost).toEqual(['0px', 'none', 'none']);
+    await card.getByRole('button', { name: 'add “Other”' }).click();
+    await expect(card.locator('.fd-q-option-other')).toContainText('Other…');
+    await expect(card.getByRole('button', { name: 'add “Other”' })).toBeHidden();
+    await screen(page, 'designer-other-open', { viewport: true });
+    // Closed: “Other:” with its box, as people will see it.
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.fd-q').first().locator('.fd-choice-other')).toContainText('Other:');
+    await screen(page, 'designer-other-closed', { viewport: true });
+
+    // Tried: typing in its box picks “Other”; picking “Other” puts the cursor there.
+    await page.getByRole('button', { name: 'Try it' }).click();
+    const tried = page.locator('.fd-try');
+    const own = tried.getByRole('textbox', { name: 'Your own answer' });
+    await own.fill('A podcast');
+    await expect(tried.getByRole('radio', { name: 'Other:' })).toBeChecked();
+    await tried.getByRole('radio', { name: 'A friend' }).check();
+    await expect(tried.getByRole('radio', { name: 'Other:' })).not.toBeChecked();
+    await expect(own).toHaveValue('A podcast');
+    await tried.getByRole('radio', { name: 'Other:' }).check();
+    await expect(own).toBeFocused();
+    await screen(page, 'designer-other-tried', { viewport: true });
+    expect(problems).toEqual([]);
+  });
+});

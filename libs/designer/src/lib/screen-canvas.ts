@@ -175,7 +175,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       // Right under the tabs, the bar goes below the field, so it does not cover the tabs' names.
       element.classList.toggle('fd-bar-below', place.underTabs && place.index < wideColumns(section.columns));
       card.bar?.update(page);
-      card.options?.update(def);
+      card.options?.update(def, node);
       // A table's columns, typed in, stand in for the table itself.
       card.widgetBox.hidden = card.settings?.update(page, node) === true;
     } else {
