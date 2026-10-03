@@ -20,87 +20,166 @@ function mount(page: Page = blankPage('survey', 'Event feedback'), store = creat
 const button = (root: Element, name: string) =>
   [...root.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') ?? b.textContent?.trim()) === name && !b.closest('[hidden]')) as HTMLButtonElement;
 const cards = (host: Element) => [...host.querySelectorAll<HTMLElement>('.fd-q')];
+const open = (host: Element) => host.querySelector('.fd-q-selected') as HTMLElement;
+const label = (card: Element) => card.querySelector('.fd-q-label') as HTMLInputElement;
 const nodes = (page: Page) => (page.layout as WizardNode).children.flatMap((s) => s.children as FieldNode[]);
+const fieldOf = (page: Page, node: FieldNode) => page.fields[node.field];
+const tile = (host: Element, spec: string) => host.querySelector(`.fd-toolbox [data-tool="${spec}"]`) as HTMLButtonElement;
 function type(input: HTMLInputElement, text: string) {
   input.focus();
   input.value = text;
   input.dispatchEvent(new Event('input', { bubbles: true }));
 }
+const key = (k: string, options: KeyboardEventInit = {}, target: Element = document.activeElement ?? document.body) =>
+  target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...options }));
+/** Switch the open question's kind from its menu. */
+function kind(host: Element, id: string) {
+  (open(host).querySelector('.fd-q-kind') as HTMLButtonElement).click();
+  (document.querySelector(`.fd-menu [data-item="${id}"]`) as HTMLElement).click();
+}
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-describe('survey editor', () => {
-  it('adds a question, selects it and puts the cursor in its label', () => {
+describe('survey editor — questions as people see them, the one picked open', () => {
+  it('adds a question, opens it, and puts the cursor in its words, every word selected', () => {
     const { host, designer } = mount();
     button(host, 'Add question').click();
     expect(cards(host)).toHaveLength(1);
     expect(cards(host)[0].classList.contains('fd-q-selected')).toBe(true);
-    expect(document.activeElement).toBe(cards(host)[0].querySelector('.fd-q-label'));
+    const words = label(cards(host)[0]);
+    expect(document.activeElement).toBe(words);
+    expect([words.selectionStart, words.selectionEnd]).toEqual([0, 'Untitled question'.length]);
     expect(nodes(designer.getPage())).toHaveLength(1);
   });
 
-  it('selects the placeholder label, so the first keystroke replaces it', () => {
-    const { host } = mount();
-    button(host, 'Add question').click();
-    const label = cards(host)[0].querySelector('.fd-q-label') as HTMLInputElement;
-    expect([label.selectionStart, label.selectionEnd]).toEqual([0, 'Untitled question'.length]);
-  });
-
-  it('writes a typed label into the page, keeping focus while it does', () => {
+  it('shows a question not picked as people will see it: its words, its help and its real answer box, not usable here', () => {
     const { host, designer } = mount();
     button(host, 'Add question').click();
-    const label = cards(host)[0].querySelector('.fd-q-label') as HTMLInputElement;
-    type(label, 'What did you think?');
-    expect(document.activeElement).toBe(label);
-    expect(designer.getPage().fields[nodes(designer.getPage())[0].field].label).toBe('What did you think?');
+    type(label(open(host)), 'Your name');
+    type(open(host).querySelector('.fd-q-help') as HTMLInputElement, 'As on your badge');
+    designer.updateQuestion(nodes(designer.getPage())[0].id, { required: true });
+    designer.select(null);
+    const card = cards(host)[0];
+    expect(card.classList.contains('fd-q-selected')).toBe(false);
+    expect(card.querySelector('.fd-q-label')).toBeNull();
+    expect(card.querySelector('.fd-q-text')?.textContent).toBe('Your name');
+    expect(card.classList.contains('fd-required')).toBe(true);
+    expect(card.querySelector('.fd-help')?.textContent).toBe('As on your badge');
+    const answer = card.querySelector('.fd-q-answer') as HTMLElement;
+    expect(answer.hasAttribute('inert')).toBe(true);
+    expect(answer.querySelector('input')).not.toBeNull();
   });
 
-  it('switches kind, then edits options', () => {
+  it('opens a question where it is clicked, the cursor in its words when they were clicked', () => {
     const { host, designer } = mount();
     button(host, 'Add question').click();
-    const kind = cards(host)[0].querySelector('.fd-q-kind') as HTMLSelectElement;
-    kind.value = 'multiple-choice';
-    kind.dispatchEvent(new Event('change', { bubbles: true }));
-    const optionInputs = () => [...cards(host)[0].querySelectorAll<HTMLInputElement>('.fd-q-option input')];
+    button(host, 'Add question').click();
+    designer.select(null);
+    (cards(host)[0].querySelector('.fd-q-text') as HTMLElement).click();
+    expect(open(host)).toBe(cards(host)[0]);
+    expect(document.activeElement).toBe(label(cards(host)[0]));
+    expect(cards(host).filter((c) => c.classList.contains('fd-q-selected'))).toHaveLength(1);
+  });
+
+  it('writes typed words into the page, keeping the cursor while it does', () => {
+    const { host, designer } = mount();
+    button(host, 'Add question').click();
+    const words = label(open(host));
+    type(words, 'What did you think?');
+    expect(document.activeElement).toBe(words);
+    expect(label(open(host))).toBe(words);
+    expect(fieldOf(designer.getPage(), nodes(designer.getPage())[0]).label).toBe('What did you think?');
+  });
+
+  it('switches kind from a menu with icons, offering only what a survey asks; then the options are typed in place', () => {
+    const { host, designer } = mount();
+    button(host, 'Add question').click();
+    const menuButton = open(host).querySelector('.fd-q-kind') as HTMLButtonElement;
+    expect(menuButton.getAttribute('aria-label')).toBe('Kind of question: Short answer');
+    menuButton.click();
+    const offered = [...document.querySelectorAll('.fd-menu [role="menuitemradio"]')].map((i) => i.getAttribute('data-item'));
+    expect(offered).toContain('multiple-choice');
+    expect(offered).not.toContain('link');
+    expect(document.querySelector('.fd-menu [data-item="multiple-choice"] svg')).not.toBeNull();
+    (document.querySelector('.fd-menu [data-item="multiple-choice"]') as HTMLElement).click();
+    const optionInputs = () => [...open(host).querySelectorAll<HTMLInputElement>('.fd-q-option input')];
     expect(optionInputs().map((i) => i.value)).toEqual(['Option 1']);
-    button(cards(host)[0], 'Add option').click();
+    button(open(host), 'Add option').click();
     type(optionInputs()[0], 'Yes');
     type(optionInputs()[1], 'No');
-    const field = designer.getPage().fields[nodes(designer.getPage())[0].field];
-    expect(field).toMatchObject({ type: 'selection', options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }] });
-    button(cards(host)[0], 'Remove option No').click();
+    expect(fieldOf(designer.getPage(), nodes(designer.getPage())[0])).toMatchObject({ type: 'selection', options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }] });
+    button(open(host), 'Remove option No').click();
     expect(optionInputs().map((i) => i.value)).toEqual(['Yes']);
   });
 
-  it('marks a question required', () => {
+  it('makes a question required with its switch', () => {
     const { host, designer } = mount();
     button(host, 'Add question').click();
-    (cards(host)[0].querySelector('.fd-q-required input') as HTMLInputElement).click();
-    expect(designer.getPage().fields[nodes(designer.getPage())[0].field]).toMatchObject({ required: true });
+    const required = button(open(host), 'Required');
+    expect(required.getAttribute('role')).toBe('switch');
+    expect(required.getAttribute('aria-checked')).toBe('false');
+    required.click();
+    expect(fieldOf(designer.getPage(), nodes(designer.getPage())[0])).toMatchObject({ required: true });
+    expect(button(open(host), 'Required').getAttribute('aria-checked')).toBe('true');
   });
 
   it('moves, duplicates and deletes questions', () => {
     const { host, designer } = mount();
     button(host, 'Add question').click();
-    type(cards(host)[0].querySelector('.fd-q-label') as HTMLInputElement, 'First');
+    type(label(open(host)), 'First');
     button(host, 'Add question').click();
-    type(cards(host)[1].querySelector('.fd-q-label') as HTMLInputElement, 'Second');
-    button(cards(host)[1], 'Move up').click();
-    const labels = () => cards(host).map((c) => (c.querySelector('.fd-q-label') as HTMLInputElement).value);
+    type(label(open(host)), 'Second');
+    button(open(host), 'Move up').click();
+    const labels = () => nodes(designer.getPage()).map((n) => fieldOf(designer.getPage(), n).label);
     expect(labels()).toEqual(['Second', 'First']);
-    button(cards(host)[0], 'Duplicate').click();
+    expect(cards(host)[0].classList.contains('fd-q-selected')).toBe(true);
+    button(open(host), 'Duplicate').click();
     expect(labels()).toEqual(['Second', 'Second', 'First']);
-    button(cards(host)[2], 'Delete').click();
-    expect(labels()).toEqual(['Second', 'Second']);
+    button(open(host), 'Delete').click();
+    expect(labels()).toEqual(['Second', 'First']);
     expect(Object.keys(designer.getPage().fields)).toHaveLength(2);
+  });
+
+  it('adds from the toolbox after the question picked, or at the end of the page picked', () => {
+    const { host, designer } = mount();
+    expect(tile(host, 'kind:link')).toBeNull();
+    button(host, 'Add question').click();
+    button(host, 'Add question').click();
+    const [first] = nodes(designer.getPage());
+    designer.select(first.id);
+    tile(host, 'kind:rating').click();
+    expect(nodes(designer.getPage()).map((n) => n.widget ?? '')).toEqual(['', 'rating', '']);
+    expect(document.activeElement).toBe(label(open(host)));
+    button(host, 'Add page').click();
+    const second = (designer.getPage().layout as WizardNode).children[1].id;
+    designer.select(second);
+    tile(host, 'kind:yes-no').click();
+    expect(((designer.getPage().layout as WizardNode).children[1] as StepNode).children).toHaveLength(1);
+  });
+
+  it('moves the question picked with Alt and an arrow, deletes it with Delete, and puts it down with Escape', () => {
+    const { host, designer } = mount();
+    button(host, 'Add question').click();
+    type(label(open(host)), 'First');
+    button(host, 'Add question').click();
+    type(label(open(host)), 'Second');
+    const labels = () => nodes(designer.getPage()).map((n) => fieldOf(designer.getPage(), n).label);
+    // In the words, the keys are the box's own.
+    key('Delete', {}, label(open(host)));
+    expect(labels()).toEqual(['First', 'Second']);
+    key('Escape', {}, label(open(host)));
+    expect(open(host)).toBeNull();
+    designer.select(nodes(designer.getPage())[1].id);
+    key('ArrowUp', { altKey: true }, document.body);
+    expect(labels()).toEqual(['Second', 'First']);
+    key('Delete', {}, document.body);
+    expect(labels()).toEqual(['First']);
   });
 
   it('adds a page that is shown only for one answer', () => {
     const { host, designer } = mount();
     button(host, 'Add question').click();
-    const kind = cards(host)[0].querySelector('.fd-q-kind') as HTMLSelectElement;
-    kind.value = 'yes-no';
-    kind.dispatchEvent(new Event('change', { bubbles: true }));
-    type(cards(host)[0].querySelector('.fd-q-label') as HTMLInputElement, 'Coming?');
+    kind(host, 'yes-no');
+    type(label(open(host)), 'Coming?');
     button(host, 'Add page').click();
     const page2 = host.querySelectorAll<HTMLElement>('.fd-design-step')[1];
     const when = page2.querySelector('.fd-when-field') as HTMLSelectElement;
@@ -144,20 +223,19 @@ describe('survey editor', () => {
     await wait(10);
     expect(host.querySelector('.fd-designer-status')?.textContent).toBe('Published · version 1');
     expect(button(host, 'Publish')).toBeUndefined();
-    type(cards(host)[0].querySelector('.fd-q-label') as HTMLInputElement, 'Changed');
+    type(label(open(host)), 'Changed');
     expect(host.querySelector('.fd-designer-status')?.textContent).toBe('Changes not published yet');
   });
 
   it('shows why an edit was refused', () => {
     const { host, designer } = mount();
     button(host, 'Add question').click();
-    const kind = cards(host)[0].querySelector('.fd-q-kind') as HTMLSelectElement;
-    kind.value = 'yes-no';
-    kind.dispatchEvent(new Event('change', { bubbles: true }));
+    kind(host, 'yes-no');
     button(host, 'Add page').click();
     const step = (designer.getPage().layout as WizardNode).children[1].id;
     designer.setCondition(step, { field: nodes(designer.getPage())[0].field, equals: true });
-    button(cards(host)[0], 'Delete').click(); // a later page depends on this question
+    designer.select(nodes(designer.getPage())[0].id);
+    button(open(host), 'Delete').click(); // a later page depends on this question
     expect(host.querySelector('.fd-designer-issues')?.textContent).toMatch(/reads "q_1", which is not a field/);
     expect(cards(host)).toHaveLength(1);
   });
@@ -165,7 +243,7 @@ describe('survey editor', () => {
   it('previews the page as people will see it', async () => {
     const { host } = mount();
     button(host, 'Add question').click();
-    type(cards(host)[0].querySelector('.fd-q-label') as HTMLInputElement, 'Your name');
+    type(label(open(host)), 'Your name');
     await wait(200);
     expect(host.querySelector('.fd-designer-preview .fd-label')?.textContent).toBe('Your name');
   });
@@ -206,8 +284,11 @@ describe('survey editor — a question shown for some answers', () => {
   const selectIn = (root: Element, label: string) => root.querySelector(`select[aria-label="${label}"]`) as HTMLSelectElement;
 
   it('offers a condition only from questions before it, and builds one rule by rule', () => {
-    const { card, coming, role, why, field, invisible } = threeQuestions();
+    const { designer, card, coming, role, why, field, invisible } = threeQuestions();
+    designer.select(coming);
+    expect(card(coming).classList.contains('fd-q-selected')).toBe(true);
     expect(button(card(coming), 'Show only when…')).toBeUndefined();
+    designer.select(why);
     button(card(why), 'Show only when…').click();
     const first = selectIn(card(why), 'Show this question');
     expect([...first.options].map((o) => o.textContent)).toEqual(['Always', 'Coming?', 'Role']);
@@ -228,15 +309,23 @@ describe('survey editor — a question shown for some answers', () => {
     expect(button(card(why), 'Show only when…')).toBeTruthy();
   });
 
+  it('marks a question not picked that shows only for some answers', () => {
+    const { designer, card, coming, why, field } = threeQuestions();
+    designer.setCondition(why, { field: field(coming), equals: false });
+    designer.select(null);
+    expect(card(why).querySelector('.fd-q-when-note')?.textContent).toBe('Shown only for some answers');
+    expect(card(coming).querySelector('.fd-q-when-note')).toBeNull();
+  });
+
   it('shows a condition written by hand as it is, and replaces it on request', () => {
     const { why, designer, field, coming } = threeQuestions();
     const page = designer.getPage();
     (nodes(page).find((n) => n.id === why) as FieldNode).invisible = `not (${field(coming)} == True)`;
-    const { host } = mount(page);
+    const { host, designer: second } = mount(page);
+    second.select(why);
     const custom = host.querySelector(`.fd-q[data-node="${why}"] .fd-when-custom`) as HTMLElement;
     expect(custom.textContent).toContain(`not (${field(coming)} == True)`);
     button(custom, 'Replace').click();
     expect(host.querySelector(`.fd-q[data-node="${why}"] .fd-when-custom`)?.closest('[hidden]')).not.toBeNull();
   });
 });
-
