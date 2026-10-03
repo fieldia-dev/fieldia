@@ -40,6 +40,19 @@ describe('fields the backend already has', () => {
     expect(nodes(designer.getPage()).map((n) => n.id)).toEqual([first, between, second]);
   });
 
+  it('adds at a place within a section, as a drop does, in one step', () => {
+    const designer = customer();
+    const name = designer.addModelField('name') as string;
+    const email = designer.addModelField('email') as string;
+    const steps = designer.getState().canUndo;
+    const credit = designer.addModelField('credit_limit', { parent: 'section-1', index: 1 }) as string;
+    const date = designer.addQuestion('date', { parent: 'section-1', index: 0 }) as string;
+    expect(steps).toBe(true);
+    expect(nodes(designer.getPage()).map((n) => n.id)).toEqual([date, name, credit, email]);
+    designer.undo();
+    expect(nodes(designer.getPage()).map((n) => n.id)).toEqual([name, credit, email]);
+  });
+
   it('refuses a field the model does not have, or one already on the page', () => {
     const designer = customer();
     expect(designer.addModelField('nickname')).toBe(false);

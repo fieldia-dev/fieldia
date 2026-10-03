@@ -133,6 +133,13 @@ export interface QuestionPatch {
   placeholder?: string;
 }
 
+/** Where something is added: after an element, or in a container — at a place among its children, or at its end. */
+export interface Where {
+  after?: string;
+  parent?: string;
+  index?: number;
+}
+
 /** A field of the backend's model, by its name. */
 export interface ModelField {
   name: string;
@@ -144,7 +151,7 @@ export interface Designer {
   /** The model's fields not on the page yet, in the model's order. Empty without a model. */
   modelFields(): ModelField[];
   /** Show a field of the model, as the model has it: after `after`, or at the end of `parent` (or of the last container). Returns its node's id. */
-  addModelField(name: string, where?: { after?: string; parent?: string }): string | false;
+  addModelField(name: string, where?: Where): string | false;
   /** The kinds a question can be shown as: for a field from the model, only those that fit what it holds. */
   kindsFor(id: string): QuestionKind[];
   /** Whether the question shows a field of the model, whose definition is the backend's. */
@@ -153,7 +160,7 @@ export interface Designer {
   subscribe(listener: (state: DesignerState) => void): () => void;
   select(id: string | null): void;
   /** Add a question after `after`, or at the end of `parent` (or of the last container). Returns its id. */
-  addQuestion(kind: string, where?: { after?: string; parent?: string }): string | false;
+  addQuestion(kind: string, where?: Where): string | false;
   updateQuestion(id: string, patch: QuestionPatch): boolean;
   setOptions(id: string, labels: string[]): boolean;
   changeKind(id: string, kind: string): boolean;
@@ -281,7 +288,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     return true;
   }
 
-  function placeAfter(draft: Page, node: LayoutNode, where: { after?: string; parent?: string } = {}): void {
+  function placeAfter(draft: Page, node: LayoutNode, where: Where = {}): void {
     if (where.after) {
       const found = findNode(draft, where.after);
       if (!found) throw new Refusal(`There is no element "${where.after}"`);
@@ -291,7 +298,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     const all = containers(draft);
     const parent = where.parent ? all.find((c) => c.id === where.parent) : all[all.length - 1];
     if (!parent) throw new Refusal(`There is no step or section "${where.parent}"`);
-    parent.children.push(node);
+    parent.children.splice(where.index === undefined ? parent.children.length : Math.max(0, Math.min(where.index, parent.children.length)), 0, node);
   }
 
   function refuseInSurvey(draft: Page, kind: QuestionKind) {
