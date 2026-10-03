@@ -121,6 +121,15 @@ describe('fields the backend already has', () => {
     expect(kinds).not.toContain('amount');
   });
 
+  it('says which fields came from the model, for the editor to explain itself', () => {
+    const designer = customer();
+    const credit = designer.addModelField('credit_limit') as string;
+    const made = designer.addQuestion('short-answer') as string;
+    expect(designer.isFromModel(credit)).toBe(true);
+    expect(designer.isFromModel(made)).toBe(false);
+    expect(designer.isFromModel('nothing')).toBe(false);
+  });
+
   it('has no model fields to offer when it was given no model', () => {
     const designer = createDesigner({ page: blankPage('screen', 'Note') });
     expect(designer.modelFields()).toEqual([]);

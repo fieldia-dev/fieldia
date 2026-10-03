@@ -147,6 +147,8 @@ export interface Designer {
   addModelField(name: string, where?: { after?: string; parent?: string }): string | false;
   /** The kinds a question can be shown as: for a field from the model, only those that fit what it holds. */
   kindsFor(id: string): QuestionKind[];
+  /** Whether the question shows a field of the model, whose definition is the backend's. */
+  isFromModel(id: string): boolean;
   getState(): DesignerState;
   subscribe(listener: (state: DesignerState) => void): () => void;
   select(id: string | null): void;
@@ -333,6 +335,11 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       selected = created;
       notify();
       return created;
+    },
+
+    isFromModel(id) {
+      const found = findNode(page, id);
+      return found?.node.type === 'field' && fromModel(found.node.field);
     },
 
     kindsFor(id) {
