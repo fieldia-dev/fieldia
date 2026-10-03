@@ -64,6 +64,10 @@ describe('survey editor — questions as people see them, the one picked open', 
     expect(card.querySelector('.fd-q-text')?.textContent).toBe('Your name');
     expect(card.classList.contains('fd-required')).toBe(true);
     expect(card.querySelector('.fd-help')?.textContent).toBe('As on your badge');
+    expect((card.querySelector('.fd-help') as HTMLElement).hidden).toBe(false);
+    // A question with no help shows none.
+    designer.updateQuestion(nodes(designer.getPage())[0].id, { help: '' });
+    expect((cards(host)[0].querySelector('.fd-help') as HTMLElement).hidden).toBe(true);
     const answer = card.querySelector('.fd-q-answer') as HTMLElement;
     expect(answer.hasAttribute('inert')).toBe(true);
     expect(answer.querySelector('input')).not.toBeNull();
@@ -103,6 +107,8 @@ describe('survey editor — questions as people see them, the one picked open', 
     (document.querySelector('.fd-menu [data-item="multiple-choice"]') as HTMLElement).click();
     const optionInputs = () => [...open(host).querySelectorAll<HTMLInputElement>('.fd-q-option input')];
     expect(optionInputs().map((i) => i.value)).toEqual(['Option 1']);
+    // A choice shows its options to type, in place of its answer box.
+    expect((open(host).querySelector('.fd-q-answer') as HTMLElement).hidden).toBe(true);
     button(open(host), 'Add option').click();
     type(optionInputs()[0], 'Yes');
     type(optionInputs()[1], 'No');
@@ -132,8 +138,13 @@ describe('survey editor — questions as people see them, the one picked open', 
     const labels = () => nodes(designer.getPage()).map((n) => fieldOf(designer.getPage(), n).label);
     expect(labels()).toEqual(['Second', 'First']);
     expect(cards(host)[0].classList.contains('fd-q-selected')).toBe(true);
+    // At the top, it cannot go further up.
+    expect(button(open(host), 'Move up')).toBeUndefined();
+    expect(button(open(host), 'Move down')).toBeTruthy();
     button(open(host), 'Duplicate').click();
     expect(labels()).toEqual(['Second', 'Second', 'First']);
+    // The copy is picked, right after what it copies.
+    expect(cards(host)[1].classList.contains('fd-q-selected')).toBe(true);
     button(open(host), 'Delete').click();
     expect(labels()).toEqual(['Second', 'First']);
     expect(Object.keys(designer.getPage().fields)).toHaveLength(2);
@@ -150,10 +161,12 @@ describe('survey editor — questions as people see them, the one picked open', 
     expect(nodes(designer.getPage()).map((n) => n.widget ?? '')).toEqual(['', 'rating', '']);
     expect(document.activeElement).toBe(label(open(host)));
     button(host, 'Add page').click();
-    const second = (designer.getPage().layout as WizardNode).children[1].id;
-    designer.select(second);
+    // The first page picked, not the last: the question goes to the end of it.
+    designer.select((designer.getPage().layout as WizardNode).children[0].id);
     tile(host, 'kind:yes-no').click();
-    expect(((designer.getPage().layout as WizardNode).children[1] as StepNode).children).toHaveLength(1);
+    const steps = (designer.getPage().layout as WizardNode).children as StepNode[];
+    expect(steps.map((s) => s.children.length)).toEqual([4, 0]);
+    expect((steps[0].children[3] as FieldNode).widget).toBe('toggle');
   });
 
   it('moves the question picked with Alt and an arrow, deletes it with Delete, and puts it down with Escape', () => {
@@ -181,6 +194,8 @@ describe('survey editor — questions as people see them, the one picked open', 
     kind(host, 'yes-no');
     type(label(open(host)), 'Coming?');
     button(host, 'Add page').click();
+    // The first page has nothing before it to depend on.
+    expect((host.querySelectorAll<HTMLElement>('.fd-design-step')[0].querySelector('.fd-step-when') as HTMLElement).hidden).toBe(true);
     const page2 = host.querySelectorAll<HTMLElement>('.fd-design-step')[1];
     const when = page2.querySelector('.fd-when-field') as HTMLSelectElement;
     expect([...when.options].map((o) => o.textContent)).toEqual(['Always', 'Coming?']);
