@@ -213,6 +213,9 @@ describe('survey editor — every kind’s own details, as Google Forms has them
     const { host, designer } = mount();
     const q = designer.addQuestion('multiple-choice') as string;
     expect(open(host).querySelector('.fd-q-add-row')?.textContent).toBe('Add optionoradd “Other”');
+    // The ghost before “Add option” is the next one's mark: a ring here, and the number a dropdown would give it.
+    designer.setOptions(q, ['Yes', 'No']);
+    expect((open(host).querySelector('.fd-q-option-box') as HTMLElement).style.getPropertyValue('--fd-next-number')).toBe('"3."');
     (button(open(host), 'add “Other”') as HTMLButtonElement).click();
     expect(fieldOfQ(designer, q)).toMatchObject({ other: true });
     expect(shown(open(host).querySelector('.fd-q-option-other'))).toBe(true);
@@ -225,6 +228,12 @@ describe('survey editor — every kind’s own details, as Google Forms has them
     designer.select(q);
     (button(open(host), 'Remove “Other”') as HTMLButtonElement).click();
     expect(fieldOfQ(designer, q)).not.toHaveProperty('other');
+    expect(button(open(host), 'add “Other”')).toBeDefined();
+  });
+
+  it('offers “Other” to checkboxes too', () => {
+    const { host, designer } = mount();
+    designer.addQuestion('checkboxes');
     expect(button(open(host), 'add “Other”')).toBeDefined();
   });
 
@@ -241,12 +250,15 @@ describe('survey editor — every kind’s own details, as Google Forms has them
     const { host, designer } = mount();
     const q = designer.addQuestion('scale') as string;
     const start = open(host).querySelector('[aria-label="Words at the start"]') as HTMLInputElement;
-    expect(start.closest('.fd-inline-end')?.textContent).toContain('0');
+    expect([...open(host).querySelectorAll('.fd-inline-end-number')].map((n) => n.textContent)).toEqual(['0', '10']);
     type(start, 'Not likely');
     type(open(host).querySelector('[aria-label="Words at the end"]') as HTMLInputElement, 'Very likely');
     expect(nodeOfQ(designer, q).options).toEqual({ startLabel: 'Not likely', endLabel: 'Very likely' });
     designer.select(null);
     expect([...host.querySelectorAll(`.fd-q[data-node="${q}"] .fd-scale-ends span`)].map((s) => s.textContent)).toEqual(['Not likely', 'Very likely']);
+    // Opened again, the words are where they were typed.
+    designer.select(q);
+    expect((open(host).querySelector('[aria-label="Words at the start"]') as HTMLInputElement).value).toBe('Not likely');
   });
 
   it('says which files an upload takes, and the largest', () => {
@@ -257,10 +269,15 @@ describe('survey editor — every kind’s own details, as Google Forms has them
     expect(fieldOfQ(designer, q)).toMatchObject({ accept: ['image/*', 'application/pdf'] });
     expect(button(open(host), 'Images')?.getAttribute('aria-pressed')).toBe('true');
     const largest = open(host).querySelector('[aria-label="Largest file"]') as HTMLSelectElement;
+    expect([...largest.options].map((o) => o.textContent)).toEqual(['1 MB', '10 MB', '100 MB', '1 GB']);
     expect(largest.value).toBe(String(10 * 1024 * 1024));
     largest.value = String(1024 * 1024);
     largest.dispatchEvent(new Event('change', { bubbles: true }));
     expect(fieldOfQ(designer, q)).toMatchObject({ maxSize: 1048576 });
+    // Opened again, it says the size set.
+    designer.select(null);
+    designer.select(q);
+    expect((open(host).querySelector('[aria-label="Largest file"]') as HTMLSelectElement).value).toBe('1048576');
     (button(open(host), 'Images') as HTMLButtonElement).click();
     (button(open(host), 'PDF') as HTMLButtonElement).click();
     // None picked: any file.
@@ -275,5 +292,6 @@ describe('survey editor — every kind’s own details, as Google Forms has them
     expect(host.querySelector(`.fd-q[data-node="${day}"] .fd-q-preview`)?.textContent).toBe('Day, month, year');
     expect(host.querySelector(`.fd-q[data-node="${moment}"] .fd-q-preview`)?.textContent).toBe('Day, month, year, time');
     expect(host.querySelector(`.fd-q[data-node="${day}"] .fd-q-preview svg`)).not.toBeNull();
+    expect(host.querySelector(`.fd-q[data-node="${moment}"] .fd-q-preview svg`)).not.toBeNull();
   });
 });

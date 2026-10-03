@@ -52,6 +52,17 @@ describe('a scale’s ends in words', () => {
     designer.setWidgetOptions(q, { endLabel: null });
     expect(nodeOf(designer.getPage(), q).options).toBeUndefined();
   });
+
+  it('takes words typed letter by letter back in one undo, and says how it shows changed', () => {
+    const designer = createDesigner({ page: blankPage('survey', 'Feedback') });
+    const q = designer.addQuestion('scale') as string;
+    const before = designer.getPage();
+    designer.setWidgetOptions(q, { startLabel: 'N' });
+    designer.setWidgetOptions(q, { startLabel: 'No' });
+    expect(pageChanges(before, designer.getPage())).toEqual(['“Untitled question”: how it shows changed']);
+    designer.undo();
+    expect(nodeOf(designer.getPage(), q).options).toBeUndefined();
+  });
 });
 
 describe('which files a question takes', () => {
@@ -65,5 +76,19 @@ describe('which files a question takes', () => {
     const text = designer.addQuestion('short-answer') as string;
     expect(designer.setFileRules(text, { maxSize: 10 })).toBe(false);
     expect(designer.getState().issues).toEqual(['Only a file upload takes files']);
+  });
+
+  it('takes a size in whole bytes, more than nothing, lifts it, and says the files changed', () => {
+    const designer = createDesigner({ page: blankPage('survey', 'Feedback') });
+    const q = designer.addQuestion('file') as string;
+    const before = designer.getPage();
+    designer.setFileRules(q, { maxSize: 2048 });
+    expect(pageChanges(before, designer.getPage())).toEqual(['“Untitled question”: the files it takes changed']);
+    for (const size of [0, -1, 1.5]) {
+      expect(designer.setFileRules(q, { maxSize: size })).toBe(false);
+      expect(designer.getState().issues).toEqual(['The largest file is a size in bytes, more than nothing']);
+    }
+    expect(designer.setFileRules(q, { maxSize: null })).toBe(true);
+    expect(fieldOf(designer.getPage(), q)).not.toHaveProperty('maxSize');
   });
 });
