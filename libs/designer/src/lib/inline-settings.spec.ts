@@ -39,6 +39,8 @@ describe('settings in the picked field itself', () => {
     expect(fieldOf(designer, id)).toMatchObject({ currency: 'EUR' });
     type(inline(host, 'Currency') ?? undefined, 'EU');
     expect(fieldOf(designer, id)).toMatchObject({ currency: 'EUR' });
+    // Half typed is not wrong yet: nothing is said.
+    expect(designer.getState().issues).toEqual([]);
   });
 
   it('sets what a link points to', () => {
@@ -51,6 +53,8 @@ describe('settings in the picked field itself', () => {
   it('names a table’s columns, and adds one', () => {
     const { designer, id, host } = screenWith('lines');
     expect(inline(host, 'Column 1')?.value).toBe('Description');
+    // The columns typed in stand in for the table while it is picked.
+    expect((host.querySelector('.fd-canvas-field.fd-editing .fd-canvas-widget') as HTMLElement).hidden).toBe(true);
     (host.querySelector('.fd-canvas-field.fd-editing .fd-inline-settings [data-add-column], .fd-canvas-field.fd-editing .fd-inline-settings button.fd-button-link') as HTMLButtonElement).click();
     const field = fieldOf(designer, id);
     expect(field.type === 'one2many' && Object.keys(field.fields)).toHaveLength(3);

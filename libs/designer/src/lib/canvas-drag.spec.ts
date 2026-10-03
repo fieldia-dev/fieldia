@@ -347,6 +347,17 @@ describe('dragging on the canvas', () => {
     pointer('pointerup', document, 420, 150);
   });
 
+  it('carries a field not picked by its grip too', () => {
+    const { card, pointer, dropped } = canvas();
+    const grip = document.createElement('button');
+    grip.dataset['grip'] = '';
+    card('customer').append(grip);
+    pointer('pointerdown', grip, 100, 60);
+    pointer('pointermove', document, 300, 470);
+    pointer('pointerup', document, 300, 470);
+    expect(dropped).toEqual([[{ node: 'customer' }, 'follow', 1]]);
+  });
+
   it('goes quiet once taken down', () => {
     const { card, pointer, dropped, drag } = canvas();
     drag.destroy();
