@@ -1,5 +1,7 @@
 import type { Field } from '@fieldia/core';
 import type { Designer, DesignerState } from './designer';
+import { openFind, type FindItem } from './find-anything';
+import { designerIcon } from './icons';
 import { checksButton, openPublishDialog, statusWords, versionsMenu, type GoTo } from './publish-ui';
 
 /** The parts both editors share: the bar with undo and publish, and the list of options. */
@@ -42,7 +44,7 @@ export interface DesignerBar {
 export function designerBar(
   root: HTMLElement,
   designer: Designer,
-  options: { titleLabel: string; placeholder: string; extra?: Node[]; goTo?: GoTo }
+  options: { titleLabel: string; placeholder: string; extra?: Node[]; goTo?: GoTo; find?: () => FindItem[] }
 ): DesignerBar {
   const doc = root.ownerDocument;
   const el = elementFactory(doc);
@@ -59,7 +61,23 @@ export function designerBar(
   undo.addEventListener('click', () => designer.undo());
   redo.addEventListener('click', () => designer.redo());
   publish.addEventListener('click', () => openPublishDialog(el, designer, root, goTo));
-  const element = el('div', { class: 'fd-designer-bar' }, title, el('span', { class: 'fd-designer-status-box', role: 'status' }, status), el('span', { class: 'fd-spacer' }), undo, redo, ...(options.extra ?? []), checks.element, publish);
+  // Find anything: what the editor offers, then what the bar itself can do.
+  const findItems = (): FindItem[] => {
+    const state = designer.getState();
+    return [
+      ...(options.find?.() ?? []),
+      { label: 'Show the checks', hint: checks.element.getAttribute('aria-label') ?? '', run: () => checks.element.click() },
+      ...(state.unpublished ? [{ label: 'Publish', hint: `version ${(state.versions[state.versions.length - 1]?.version ?? 0) + 1}`, run: () => publish.click() }] : []),
+      ...(state.canUndo ? [{ label: 'Undo', hint: '⌘Z', run: () => designer.undo() }] : []),
+      ...(state.canRedo ? [{ label: 'Redo', hint: '⇧⌘Z', run: () => designer.redo() }] : []),
+      ...(state.versions.length ? [{ label: 'Open an earlier version', hint: 'versions', run: () => status.click() }] : []),
+    ];
+  };
+  const mac = /Mac|iPhone|iPad/.test(doc.defaultView?.navigator.platform ?? '');
+  const keys = mac ? '⌘K' : 'Ctrl K';
+  const find = el('button', { type: 'button', class: 'fd-button fd-find-button', 'aria-label': 'Find anything', title: `Find anything · ${keys} or /` }, designerIcon(doc, 'search'), el('kbd', { class: 'fd-find-keys', 'aria-hidden': 'true' }, keys));
+  find.addEventListener('click', () => openFind(el, root, findItems()));
+  const element = el('div', { class: 'fd-designer-bar' }, title, el('span', { class: 'fd-designer-status-box', role: 'status' }, status), el('span', { class: 'fd-spacer' }), find, undo, redo, ...(options.extra ?? []), checks.element, publish);
   const issues = el('div', { class: 'fd-alert fd-tone-danger fd-designer-issues', role: 'alert', hidden: '' });
 
   // On the document: clicking an area that cannot take focus leaves focus on
@@ -68,8 +86,16 @@ export function designerBar(
     const target = event.target as HTMLElement;
     if (target !== doc.body && !root.contains(target)) return;
     const typing = target.closest('input, textarea, select, [contenteditable]');
-    if (typing || !(event.ctrlKey || event.metaKey)) return;
     const key = event.key.toLowerCase();
+    // ⌘K or Ctrl+K anywhere, / when not typing: Find anything. Not with Shift: Ctrl+Shift+K moves a question.
+    const chord = (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && key === 'k';
+    const slash = key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey;
+    if ((chord || slash) && !root.querySelector('.fd-find')) {
+      event.preventDefault();
+      openFind(el, root, findItems());
+      return;
+    }
+    if (typing || !(event.ctrlKey || event.metaKey)) return;
     if (key === 'z' && !event.shiftKey) {
       event.preventDefault();
       designer.undo();

@@ -297,3 +297,34 @@ test.describe('survey designer · checks and versions', () => {
     expect(problems).toEqual([]);
   });
 });
+
+/** Find anything, from the keyboard. */
+test.describe('survey designer · find anything', () => {
+  test('⌘K, a few letters, Enter: a question added where the cursor was, or the editor at another', async ({ page }) => {
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+    await page.goto('/designer/?start=survey');
+    await page.locator('.fd-q').first().click();
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('ControlOrMeta+k');
+    const box = page.getByRole('combobox', { name: 'Find anything' });
+    await expect(box).toBeFocused();
+    await page.keyboard.type('scale');
+    await expect(page.getByRole('dialog', { name: 'Find anything' }).getByRole('option')).toHaveText([/^Add a question: Linear scale/]);
+    await screen(page, 'designer-find', { viewport: true });
+    await page.keyboard.press('Enter');
+    await expect(box).toHaveCount(0);
+    await expect(picked(page).locator('.fd-q-kind')).toHaveAttribute('aria-label', 'Kind of question: Linear scale');
+    await expect(picked(page).locator('.fd-q-label')).toBeFocused();
+    await page.keyboard.type('How likely are you to come back?');
+    await page.keyboard.press('Escape');
+
+    // / when not typing; the words of a question further down.
+    await page.keyboard.press('/');
+    await page.keyboard.type('go improve');
+    await page.keyboard.press('Enter');
+    await expect(picked(page).locator('.fd-q-label')).toHaveValue('What should we improve?');
+    await expect(picked(page).locator('.fd-q-label')).toBeFocused();
+    expect(problems).toEqual([]);
+  });
+});

@@ -31,6 +31,27 @@ export const DESIGNER_CSS = /* css */ `
 .fd-check[data-severity="should"] .fd-check-severity { color: var(--fd-warning); background: var(--fd-warning-soft); }
 .fd-check-text { margin: 0; font-size: 13.5px; line-height: 1.45; }
 .fd-check-fix { min-height: 30px; padding-block: 2px; font-size: 13px; }
+/* Find anything: one box over all the editor can add, go to or do. */
+.fd-find-button { display: inline-flex; align-items: center; gap: 6px; color: var(--fd-muted); }
+.fd-find-button > .fd-dicon { width: 15px; height: 15px; }
+.fd-find-keys { font: inherit; font-size: 11.5px; padding: 0 5px; border: 1px solid var(--fd-border); border-radius: 4px; color: var(--fd-muted); }
+.fd-find-backdrop { z-index: 80; place-items: start center; padding-block-start: 12vh; }
+.fd-find {
+  width: min(560px, 100%); display: grid; overflow: hidden; background: var(--fd-surface); color: var(--fd-text);
+  border: 1px solid var(--fd-border); border-radius: 12px; box-shadow: 0 24px 64px rgba(15, 20, 25, 0.3); animation: fd-menu-in 120ms cubic-bezier(0, 0, 0.2, 1);
+}
+.fd-find-input { font: inherit; font-size: 16px; color: inherit; background: none; border: 0; border-block-end: 1px solid var(--fd-border); padding: 14px 18px; outline: none; }
+.fd-designer .fd-find-input:focus-visible { outline: none; }
+.fd-find-list { max-height: min(360px, 50vh); overflow: auto; padding: 6px; display: grid; gap: 1px; }
+.fd-find-list:empty { display: none; }
+.fd-find-option { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 7px; cursor: pointer; font-size: 14px; }
+.fd-find-option[aria-selected="true"] { background: var(--fd-accent-soft); }
+.fd-find-option:hover { background: var(--fd-page); }
+.fd-find-option[aria-selected="true"]:hover { background: var(--fd-accent-soft); }
+.fd-find-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-find-hint { flex: none; font-size: 12px; color: var(--fd-muted); max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-find-none { margin: 0; padding: 16px 18px; color: var(--fd-muted); }
+@media (prefers-reduced-motion: reduce) { .fd-find { animation: none; } }
 /* Publish, asked first. */
 .fd-publish-backdrop { z-index: 70; }
 .fd-publish-dialog { max-width: 480px; background: var(--fd-surface); }

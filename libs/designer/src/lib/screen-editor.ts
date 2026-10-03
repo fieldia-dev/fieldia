@@ -1,4 +1,4 @@
-import type { LayoutNode, Page, TabsNode } from '@fieldia/core';
+import type { FieldNode, LayoutNode, Page, TabsNode } from '@fieldia/core';
 import type { Skin } from '@fieldia/viewer';
 import { installStyles } from '@fieldia/widgets';
 import { designerBar, elementFactory } from './chrome';
@@ -8,7 +8,8 @@ import { headerPartProperties, statusbarProperties } from './header-properties';
 import { listCanvas } from './list-canvas';
 import { canBeColumn } from './list-commands';
 import { columnProperties, listActionProperties, listProperties } from './list-properties';
-import { allSections, findField, findTab } from './page-tree';
+import type { FindItem } from './find-anything';
+import { allSections, findField, findTab, sectionLabel } from './page-tree';
 import { screenCanvas } from './screen-canvas';
 import { fieldProperties, pageProperties, sectionProperties, tabProperties, tabsProperties, type PropertiesView } from './screen-properties';
 import { installDesignerStyles } from './styles';
@@ -52,6 +53,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     titleLabel: 'Screen title',
     placeholder: 'Untitled screen',
     extra: [trial.toggle],
+    find: () => [...findItems(), ...trial.items()],
     // A check about a field's words or options: it is open on the canvas by now, the cursor goes there.
     goTo(id, part) {
       if (part === 'label') return canvas.focus(id, 'label', true);
@@ -127,6 +129,37 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       const tabs = created ? (topOf(designer.getPage()).find((n) => n.id === created) as TabsNode) : null;
       if (tabs) designer.select(tabs.children[0].id);
     }
+  }
+
+  // ---- find anything -----------------------------------------------------------
+  /** On a screen: a field of the model or a kind to add, a field or a section to go to. On a list: a column to add or go to. */
+  function findItems(): FindItem[] {
+    const page = designer.getPage();
+    const layout = page.layout;
+    if (layout.type === 'list') {
+      const own = Object.entries(page.fields).filter(([name]) => !layout.columns.includes(name)).map(([name, field]) => ({ name, field }));
+      return [
+        ...[...own, ...designer.modelFields()].filter(({ field }) => canBeColumn(field)).map(({ name, field }) => ({ label: `Add the column “${field.label}”`, hint: 'column', run: () => designer.addColumn(name) })),
+        ...layout.columns.map((name) => ({ label: `Go to the column “${page.fields[name]?.label ?? name}”`, hint: 'column', run: () => designer.select(`column:${name}`) })),
+        { label: 'Add a button for the rows chosen', hint: 'list', run: () => (root.querySelector('[data-add-part="action"]') as HTMLButtonElement | null)?.click() },
+      ];
+    }
+    const fields = allSections(page).flatMap((section) => section.children.filter((n): n is FieldNode => n.type === 'field').map((node) => ({ node, section })));
+    return [
+      ...designer.modelFields().map(({ name, field }) => ({ label: `Add “${field.label}”`, hint: 'from the model', run: () => add(`model:${name}`, null) })),
+      ...[...QUESTION_KINDS, ...SCREEN_KINDS].map((kind) => ({ label: `Add a field: ${kind.label}`, hint: 'new field', run: () => add(`kind:${kind.id}`, null) })),
+      ...fields.map(({ node, section }) => ({
+        label: `Go to “${(node as FieldNode & { label?: string }).label ?? page.fields[node.field]?.label ?? node.id}”`,
+        hint: sectionLabel(page, section),
+        run: () => {
+          designer.select(node.id);
+          canvas.focus(node.id, 'label');
+        },
+      })),
+      ...allSections(page).map((section) => ({ label: `Go to the section “${sectionLabel(page, section)}”`, hint: 'section', run: () => designer.select(section.id) })),
+      { label: 'Add a section', hint: 'layout', run: () => add('layout:section', null) },
+      ...(layout.type === 'sheet' && !topOf(page).some((n) => n.type === 'tabs') ? [{ label: 'Add tabs', hint: 'layout', run: () => add('layout:tabs', null) }] : []),
+    ];
   }
 
   // ---- the panel -------------------------------------------------------------------

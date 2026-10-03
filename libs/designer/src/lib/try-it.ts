@@ -2,6 +2,7 @@ import { createMemoryDataSource, type Page, type Values } from '@fieldia/core';
 import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
+import type { FindItem } from './find-anything';
 import { designerIcon } from './icons';
 import { sampleRows } from './samples';
 
@@ -27,6 +28,8 @@ export interface TryIt {
   /** Where the page is tried. */
   element: HTMLElement;
   readonly trying: boolean;
+  /** For Find anything: trying it, at a phone's width, in Arabic; or back to designing. */
+  items(): FindItem[];
   destroy(): void;
 }
 
@@ -124,6 +127,28 @@ export function tryIt(options: TryItOptions): TryIt {
     element,
     get trying() {
       return trying;
+    },
+    items() {
+      if (trying) return [{ label: 'Back to designing', hint: 'Design', run: () => design.click() }];
+      return [
+        { label: 'Try it', hint: 'as people will use it', run: () => tryButton.click() },
+        {
+          label: 'Try it at a phone’s width',
+          hint: 'Try it',
+          run: () => {
+            tryButton.click();
+            widths.phone.click();
+          },
+        },
+        {
+          label: 'Try it in Arabic, right to left',
+          hint: 'Try it',
+          run: () => {
+            tryButton.click();
+            directions.rtl.click();
+          },
+        },
+      ];
     },
     destroy() {
       viewer?.destroy();

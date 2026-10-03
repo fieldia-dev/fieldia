@@ -5,6 +5,7 @@ import { canvasDrag } from './canvas-drag';
 import { designerBar, elementFactory, iconButton as makeIconButton, optionsEditor, type ElementFactory, type OptionsEditor } from './chrome';
 import { conditionEditor } from './condition-editor';
 import { kindOfField, QUESTION_KINDS, type Designer, type DesignerState, type Where } from './designer';
+import type { FindItem } from './find-anything';
 import { designerIcon } from './icons';
 import { kindById } from './kinds';
 import { openMenu, type MenuItem } from './menu';
@@ -84,6 +85,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     titleLabel: 'Form title',
     placeholder: 'Untitled form',
     extra: [trial.toggle],
+    find: () => [...findItems(), ...trial.items()],
     // A check about a question's words or options: its card is open by now, the cursor goes there.
     goTo(id, part) {
       const card = root.querySelector(`.fd-q[data-node="${id}"]`);
@@ -125,6 +127,29 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   });
   const body = el('div', { class: 'fd-designer-body fd-survey-body' }, tools.element, editor);
   root.append(bar.element, bar.issues, body, trial.element);
+
+  // ---- find anything -----------------------------------------------------------
+  /** A kind to add, a question or a page to go to, a page to add. */
+  function findItems(): FindItem[] {
+    const page = designer.getPage();
+    const steps = stepsOf(page);
+    const goTo = (id: string, selector: string) => {
+      designer.select(id);
+      const box = root.querySelector<HTMLInputElement>(selector);
+      box?.focus();
+      box?.setSelectionRange(box.value.length, box.value.length);
+    };
+    return [
+      ...QUESTION_KINDS.map((kind) => ({ label: `Add a question: ${kind.label}`, hint: 'new question', run: () => add(kind.id, target()) })),
+      ...steps.flatMap((step) =>
+        step.children
+          .filter((n): n is FieldNode => n.type === 'field')
+          .map((node) => ({ label: `Go to “${page.fields[node.field]?.label ?? node.id}”`, hint: step.label, run: () => goTo(node.id, '.fd-q-selected .fd-q-label') }))
+      ),
+      ...steps.map((step) => ({ label: `Go to the page “${step.label}”`, hint: 'page', run: () => goTo(step.id, `.fd-design-step[data-node="${step.id}"] .fd-step-title`) })),
+      { label: 'Add a page', hint: 'page', run: () => addPage.click() },
+    ];
+  }
 
   // ---- adding ------------------------------------------------------------------
   /** The question just added, whose words take the cursor once it is drawn. */
