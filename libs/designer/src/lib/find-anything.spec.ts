@@ -101,14 +101,17 @@ describe('find anything', () => {
   it('says when nothing is found', () => {
     survey();
     key('k', { metaKey: true }, document.body);
+    const none = document.querySelector('.fd-find-none') as HTMLElement;
+    expect(none.hidden).toBe(true);
     find('zebra');
     expect(options()).toEqual([]);
-    expect(document.querySelector('.fd-find-none')?.textContent).toBe('Nothing by that name.');
+    expect(none.hidden).toBe(false);
+    expect(none.textContent).toBe('Nothing by that name.');
   });
 });
 
 describe('find anything — a screen with a model, and a list', () => {
-  const model: Record<string, Field> = { name: { type: 'char', label: 'Name' }, email: { type: 'char', label: 'Email' }, state: { type: 'selection', label: 'Status', options: [{ value: 'a', label: 'Active' }] } };
+  const model: Record<string, Field> = { name: { type: 'char', label: 'Name' }, email: { type: 'char', label: 'Email' }, state: { type: 'selection', label: 'Status', options: [{ value: 'a', label: 'Active' }] }, child_ids: { type: 'one2many', label: 'Contacts', relation: 'contact', fields: { name: { type: 'char', label: 'Name' } } } };
   function screen(kind: 'screen' | 'list') {
     const host = document.createElement('div');
     document.body.append(host);
@@ -133,5 +136,9 @@ describe('find anything — a screen with a model, and a list', () => {
     expect(options()).toEqual(['Add the column “Status”']);
     key('Enter', {}, box() as HTMLInputElement);
     expect((designer.getPage().layout as ListNode).columns).toEqual(['name', 'state']);
+    // Lines of a table are no column.
+    key('k', { metaKey: true }, document.body);
+    find('contacts');
+    expect(options()).toEqual([]);
   });
 });
