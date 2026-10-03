@@ -11,6 +11,7 @@ import { designerIcon } from './icons';
 import { kindById } from './kinds';
 import { openMenu, type MenuItem } from './menu';
 import { rail as sideRail } from './rail';
+import { inlineSettings } from './inline-settings';
 import { installDesignerStyles } from './styles';
 import { toolbox, TOOLBOX_GROUPS } from './toolbox';
 import { tryIt } from './try-it';
@@ -377,6 +378,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     const choices: OptionsEditor = optionsEditor(el, designer, id);
     const answer = el('div', { class: 'fd-q-answer', inert: '' });
     const painter = answerBox(answer, id);
+    const settings = inlineSettings(el, designer, id);
     const when = conditionEditor(el, designer, id, 'question');
     const tool = (label: string, icon: string, onClick: () => void, extra = '') => {
       const button = el('button', { type: 'button', class: `fd-q-tool ${extra}`.trim(), 'aria-label': label, title: label }, designerIcon(doc, icon));
@@ -444,6 +446,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       helpBox,
       choices.element,
       answer,
+      settings.element,
       when.element,
       foot
     );
@@ -467,6 +470,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
         answer.hidden = !choices.element.hidden;
         if (!answer.hidden) painter.paint(page, node);
         when.update(page, questionsBefore(page, node.id), node.invisible);
+        settings.update(page, node);
       },
       destroy: () => painter.destroy(),
     };

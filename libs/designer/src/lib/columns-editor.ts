@@ -16,7 +16,7 @@ const KINDS: [LineColumn['kind'], string][] = [
  */
 export function columnsEditor(el: ElementFactory, designer: Designer, nodeId: string) {
   const list = el('ul', { class: 'fd-columns' });
-  const add = el('button', { type: 'button', class: 'fd-button fd-button-link' }, 'Add column');
+  const add = el('button', { type: 'button', class: 'fd-button fd-button-link', 'data-add-column': '' }, 'Add column');
   const element = el('div', { class: 'fd-columns-box' }, el('span', { class: 'fd-prop-name' }, 'Columns'), list, add);
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
   const read = (): LineColumn[] =>

@@ -23,6 +23,11 @@ test.describe('designer look', () => {
     await check(page, 'screen-option-typing');
     await page.locator('.fd-canvas-section-title').first().click();
     await check(page, 'screen-section-picked');
+    // The kinds with settings of their own, each picked.
+    for (const kind of ['rating', 'scale', 'amount', 'link', 'lines']) {
+      await page.locator(`.fd-toolbox [data-tool="kind:${kind}"]`).click();
+      await check(page, `screen-${kind}-picked`);
+    }
     expect(problems).toEqual([]);
   });
 

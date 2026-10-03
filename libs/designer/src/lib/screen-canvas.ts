@@ -6,6 +6,7 @@ import { elementFactory, optionsEditor, type OptionsEditor } from './chrome';
 import type { Designer, DesignerState } from './designer';
 import { fieldBar, type FieldBar } from './field-bar';
 import { designerIcon } from './icons';
+import { inlineSettings, type InlineSettings } from './inline-settings';
 import { tabHolds } from './page-tree';
 import { sampleRows } from './samples';
 
@@ -84,6 +85,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     help: HTMLElement;
     bar: FieldBar | null;
     options: OptionsEditor | null;
+    settings: InlineSettings | null;
   }
   const cards = new Map<string, Card>();
 
@@ -101,7 +103,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       const label = el('label', { class: 'fd-label' });
       const help = el('div', { class: 'fd-help' });
       const element = el('div', { class: 'fd-field fd-canvas-field', 'data-node': id }, gripOf(), label, widgetBox, help);
-      return { element, editing, widgetBox, widget: null, painted: '', label, help, bar: null, options: null };
+      return { element, editing, widgetBox, widget: null, painted: '', label, help, bar: null, options: null, settings: null };
     }
     const bar = fieldBar({ el, doc, designer, id, more: options.more });
     const label = el('input', { class: 'fd-canvas-label-input', 'data-inline': 'label', 'aria-label': 'Label', autocomplete: 'off' });
@@ -125,6 +127,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       }
     });
     const choices = ownChoice ? optionsEditor(el, designer, id) : null;
+    const settings = inlineSettings(el, designer, id);
     const element = el(
       'div',
       { class: 'fd-field fd-canvas-field fd-editing', 'data-node': id },
@@ -132,9 +135,10 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       bar.element,
       el('div', { class: 'fd-label fd-canvas-label-row' }, label),
       ...(choices ? [choices.element] : [widgetBox]),
+      settings.element,
       help
     );
-    return { element, editing, widgetBox, widget: null, painted: '', label, help, bar, options: choices };
+    return { element, editing, widgetBox, widget: null, painted: '', label, help, bar, options: choices, settings };
   }
 
   /** As wide as its words, so the required mark stays beside them. */
@@ -172,6 +176,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       element.classList.toggle('fd-bar-below', place.underTabs && place.index < wideColumns(section.columns));
       card.bar?.update(page);
       card.options?.update(def);
+      // A table's columns, typed in, stand in for the table itself.
+      card.widgetBox.hidden = card.settings?.update(page, node) === true;
     } else {
       card.label.textContent = labelText;
       card.help.textContent = helpText;

@@ -223,6 +223,8 @@ export interface Designer extends HeaderCommands, ListCommands {
   setRelation(id: string, model: string): boolean;
   /** An amount's currency, such as USD. */
   setCurrency(id: string, code: string): boolean;
+  /** Where a rating, a scale or a progress runs from and to. */
+  setRange(id: string, range: { min: number; max: number }): boolean;
   /** A table of lines' columns, in order. */
   setLineColumns(id: string, columns: LineColumn[]): boolean;
   undo(): void;
@@ -867,6 +869,15 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
         if (!/^[A-Z]{3}$/.test(currency)) throw new Refusal('A currency is three letters, such as USD');
         field.currency = currency;
         delete field.currencyField;
+      });
+    },
+
+    setRange(id, range) {
+      return apply((draft) => {
+        const field = fieldOfType(draft, id, ['integer'], 'Only a rating, a scale or a progress has a range', (label) => `The range of ${label} comes from the model`);
+        const { min, max } = range;
+        if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max) throw new Refusal('A range runs from a smaller whole number to a bigger one');
+        Object.assign(field, { min, max });
       });
     },
 

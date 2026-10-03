@@ -295,6 +295,21 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-help-input:hover, .fd-canvas-help-input:focus { border-bottom-color: var(--fd-border-strong); }
 .fd-canvas-help-input::placeholder { color: var(--fd-muted); opacity: 0.75; }
 .fd-canvas-field .fd-q-option-box { padding-block: 2px; }
+/* A kind's own settings, in the picked field: words and a line to type or pick on — no boxes in it. */
+.fd-inline-settings { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding-block: 4px 2px; font-size: 13px; color: var(--fd-muted); }
+.fd-inline-setting { display: inline-flex; align-items: center; gap: 6px; }
+.fd-inline-select, .fd-inline-input, .fd-inline-settings .fd-column > .fd-input {
+  font: inherit; font-size: 13.5px; color: var(--fd-text); background: none; border: 0; border-bottom: 1px solid var(--fd-border-strong);
+  border-radius: 0; box-shadow: none; padding: 2px 0; min-height: 0;
+}
+.fd-inline-select { padding-inline-end: 2px; cursor: pointer; }
+.fd-inline-input { width: 12ch; }
+.fd-inline-currency { width: 4.5ch; text-transform: uppercase; }
+.fd-designer .fd-inline-select:focus-visible, .fd-designer .fd-inline-input:focus-visible, .fd-designer .fd-inline-settings .fd-column > .fd-input:focus-visible { outline: none; }
+.fd-inline-select:focus, .fd-inline-input:focus, .fd-inline-settings .fd-column > .fd-input:focus { border-bottom: 2px solid var(--fd-accent); padding-bottom: 1px; }
+.fd-inline-settings .fd-columns-box { width: 100%; justify-items: start; }
+.fd-inline-settings .fd-columns { width: 100%; }
+.fd-inline-settings .fd-column { grid-template-columns: minmax(0, 1fr) 110px 28px; }
 .fd-canvas-tabs-head { display: flex; align-items: flex-end; gap: 4px; }
 .fd-canvas-tabs-head > .fd-tablist { flex: 1; }
 .fd-canvas-tab.fd-canvas-selected { background: var(--fd-accent-soft); border-radius: 3px 3px 0 0; }
