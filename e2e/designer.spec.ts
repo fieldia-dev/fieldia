@@ -411,7 +411,21 @@ test.describe('survey designer · “Other”', () => {
     await expect(own).toHaveValue('A podcast');
     await tried.getByRole('radio', { name: 'Other:' }).check();
     await expect(own).toBeFocused();
+    // Not required: a pick can be taken back, as Google Forms has it.
+    const clear = tried.getByRole('button', { name: 'Clear selection' });
+    await expect(clear).toBeVisible();
     await screen(page, 'designer-other-tried', { viewport: true });
+    await clear.click();
+    await expect(tried.getByRole('radio', { name: 'Other:' })).not.toBeChecked();
+    await expect(tried.getByRole('radio', { name: 'A friend' })).not.toBeChecked();
+    await expect(clear).toBeHidden();
+    // Required: an answer is wanted, so there is none to take back.
+    await page.getByRole('button', { name: 'Design' }).click();
+    await page.locator('.fd-q').first().click();
+    await picked(page).getByRole('switch', { name: 'Required' }).click();
+    await page.getByRole('button', { name: 'Try it' }).click();
+    await tried.getByRole('radio', { name: 'A friend' }).check();
+    await expect(tried.getByRole('button', { name: 'Clear selection' })).toBeHidden();
     expect(problems).toEqual([]);
   });
 });
