@@ -28,8 +28,13 @@ export function dropIndex(cards: readonly Rect[], x: number, y: number): number 
 export type DragSource = { node: string } | { tool: string };
 
 export interface CanvasDragOptions {
-  /** The canvas: its sections carry `data-drop-section`, its fields `.fd-canvas-field[data-node]`. */
+  /**
+   * The canvas: its sections carry `data-drop-section` — and `data-drop-flow="column"`
+   * where they are one column, as a survey's page is — its fields `.fd-canvas-field[data-node]`.
+   */
   canvas: HTMLElement;
+  /** What can be carried, when not the screen's fields: a survey's questions, say. */
+  cards?: string;
   drop(source: DragSource, sectionId: string, index: number): void;
   /** Where an element is on screen; the browser's own by default. */
   rectOf?: (element: Element) => DOMRect;
@@ -69,7 +74,8 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
   let tabUnder: HTMLElement | null = null;
 
   const sections = () => [...canvas.querySelectorAll<HTMLElement>('[data-drop-section]')].filter((s) => !s.closest('[hidden]'));
-  const cardsIn = (section: HTMLElement) => [...section.querySelectorAll<HTMLElement>('.fd-canvas-field[data-node]')];
+  const cardSelector = options.cards ?? '.fd-canvas-field[data-node]';
+  const cardsIn = (section: HTMLElement) => [...section.querySelectorAll<HTMLElement>(cardSelector)];
   /** A section and the gap under it, where a place to drop last is drawn. */
   const reach = (r: Rect): Rect => ({ left: r.left, top: r.top, right: r.right, bottom: r.bottom + REACH });
   const sectionAt = (x: number, y: number) => sections().find((s) => inside(reach(rectOf(s)), x, y)) ?? null;
@@ -85,7 +91,7 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
   function onDown(event: PointerEvent) {
     if (event.button !== 0 || drag) return;
     const target = event.target as Element;
-    const card = target.closest?.<HTMLElement>('.fd-canvas-field[data-node]');
+    const card = target.closest?.<HTMLElement>(cardSelector);
     if (!card || !canvas.contains(card)) return;
     const grip = target.closest('[data-grip]');
     if (card.classList.contains('fd-editing') ? !grip : target.closest('input, select, textarea, button, a, [contenteditable]')) return;
@@ -126,17 +132,22 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
     // Its own place is not counted: in its own section the others close up around it.
     const others = cardsIn(section).filter((c) => c !== current.element);
     const rects = others.map(rectOf);
-    const index = dropIndex(rects, x, y);
+    // One under another, height alone decides; in a grid, reading order.
+    const column = section.dataset['dropFlow'] === 'column';
+    const index = column ? rects.filter((r) => (r.top + r.bottom) / 2 < y).length : dropIndex(rects, x, y);
     current.target = { section: section.dataset['dropSection'] as string, index };
     if (!current.marker) return;
     current.marker.hidden = false;
     const at = rects[index];
     const last = rects[rects.length - 1];
     const area = rectOf(section);
-    // Before a field: a line down its leading edge; after them all, a line across under the last.
-    const line = at
-      ? { left: at.left - 5, top: at.top, width: 3, height: at.bottom - at.top }
-      : { left: area.left + 6, top: (last ? last.bottom : area.top + 30) + 4, width: area.right - area.left - 12, height: 3 };
+    // In a grid, before a field: a line down its leading edge. Down a column, a line across over it. After them all, a line across under the last.
+    const line =
+      at && !column
+        ? { left: at.left - 5, top: at.top, width: 3, height: at.bottom - at.top }
+        : at
+          ? { left: at.left, top: at.top - 6, width: at.right - at.left, height: 3 }
+          : { left: area.left + 6, top: (last ? last.bottom : area.top + 30) + 4, width: area.right - area.left - 12, height: 3 };
     Object.assign(current.marker.style, { left: `${line.left}px`, top: `${line.top}px`, width: `${line.width}px`, height: `${line.height}px` });
   }
 

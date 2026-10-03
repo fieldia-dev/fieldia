@@ -49,6 +49,41 @@ describe('dropIndex', () => {
   });
 });
 
+describe('dragging questions down a survey page', () => {
+  it('places a question by height in a column, the line across under the one it follows', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const rects = new Map<Element, DOMRect>();
+    const place = (element: Element, top: number, height: number) =>
+      rects.set(element, { left: 0, top, width: 600, height, right: 600, bottom: top + height, x: 0, y: top, toJSON: () => ({}) } as DOMRect);
+    const page = document.createElement('div');
+    page.dataset['dropSection'] = 'step-1';
+    page.dataset['dropFlow'] = 'column';
+    place(page, 0, 400);
+    const cards = ['name', 'email', 'coming'].map((id, i) => {
+      const card = document.createElement('div');
+      card.className = 'fd-q';
+      card.dataset['node'] = id;
+      page.append(card);
+      place(card, i * 120, 100);
+      return card;
+    });
+    host.append(page);
+    const dropped: [DragSource, string, number][] = [];
+    const drag = canvasDrag({ canvas: host, cards: '.fd-q[data-node]', drop: (source, to, index) => void dropped.push([source, to, index]), rectOf: (e) => rects.get(e) ?? e.getBoundingClientRect() });
+    const pointer = (type: string, target: EventTarget, x: number, y: number) =>
+      target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0 }) as unknown as PointerEvent);
+    pointer('pointerdown', cards[2], 500, 260);
+    // Far to the right but in the top half of "email": before it, whatever the side.
+    pointer('pointermove', document, 580, 150);
+    const line = document.querySelector('.fd-drop-marker') as HTMLElement;
+    expect([line.style.top, line.style.height]).toEqual(['114px', '3px']);
+    pointer('pointerup', document, 580, 150);
+    expect(dropped).toEqual([[{ node: 'coming' }, 'step-1', 1]]);
+    drag.destroy();
+  });
+});
+
 describe('dragging on the canvas', () => {
   it('carries a field to another section, a line where it lands, and drops it there', () => {
     const { card, pointer, second, dropped } = canvas();
