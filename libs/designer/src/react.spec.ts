@@ -8,7 +8,7 @@ describe('the editors in React', () => {
   it('mounts the survey editor, hands out its handle, and takes it down when it goes', () => {
     const designer = createDesigner({ page: blankPage('survey', 'Event feedback') });
     const ref = createRef<SurveyEditorHandle>();
-    const { container, unmount } = render(createElement(SurveyEditor, { designer, ref, preview: false }));
+    const { container, unmount } = render(createElement(SurveyEditor, { designer, ref }));
     expect(container.querySelector('.fd-designer')).not.toBeNull();
     expect(ref.current?.element.classList.contains('fd-designer')).toBe(true);
     // An edit made through the model shows in the editor.

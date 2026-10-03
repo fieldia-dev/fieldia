@@ -255,21 +255,19 @@ describe('survey editor — questions as people see them, the one picked open', 
     expect(cards(host)).toHaveLength(1);
   });
 
-  it('previews the page as people will see it', async () => {
-    const { host } = mount();
+  it('tries the survey as people will answer it, in place of the editor, its keys resting', () => {
+    const { host, designer } = mount();
     button(host, 'Add question').click();
     type(label(open(host)), 'Your name');
-    await wait(200);
-    expect(host.querySelector('.fd-designer-preview .fd-label')?.textContent).toBe('Your name');
-  });
-
-  it('says the preview is busy while it is being drawn again, so no one tries the old one', async () => {
-    const { host } = mount();
-    const preview = host.querySelector('.fd-designer-preview-host') as HTMLElement;
-    button(host, 'Add question').click();
-    expect(preview.getAttribute('aria-busy')).toBe('true');
-    await wait(200);
-    expect(preview.hasAttribute('aria-busy')).toBe(false);
+    (host.querySelector('.fd-designer-bar button[data-mode="try"]') as HTMLButtonElement).click();
+    expect((host.querySelector('.fd-survey-body') as HTMLElement).hidden).toBe(true);
+    const trying = host.querySelector('.fd-try') as HTMLElement;
+    expect(trying.querySelector('.fd-label')?.textContent).toBe('Your name');
+    key('Delete', {}, document.body);
+    expect(nodes(designer.getPage())).toHaveLength(1);
+    (host.querySelector('.fd-designer-bar button[data-mode="design"]') as HTMLButtonElement).click();
+    expect(trying.hidden).toBe(true);
+    expect((host.querySelector('.fd-survey-body') as HTMLElement).hidden).toBe(false);
   });
 });
 

@@ -44,6 +44,11 @@ const SHAPES: Record<string, string> = {
   more: '<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  play: '<path d="M7 5l12 7-12 7z"/>',
+  desktop: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/>',
+  tablet: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/>',
+  device: '<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>',
   model: '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>',
 };
 

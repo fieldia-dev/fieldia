@@ -57,8 +57,8 @@ test.describe('screen designer · record sheet', () => {
     await expect(await cardOf(page, 'Internal notes')).toHaveCount(0);
 
     // The preview is the real sheet: its title, and its tabs.
-    await page.getByRole('button', { name: 'Preview' }).click();
-    const preview = page.locator('.fd-screen-preview');
+    await page.getByRole('button', { name: 'Try it' }).click();
+    const preview = page.locator('.fd-try');
     await expect(preview.locator('[data-node="#title"] input')).toHaveAttribute('placeholder', 'Name');
     await expect(preview.getByRole('tab')).toHaveText(['Contacts', 'Notes']);
     await expect(preview.getByLabel('Contact person')).toBeVisible();
@@ -66,7 +66,7 @@ test.describe('screen designer · record sheet', () => {
     await preview.getByRole('tab', { name: 'Notes' }).click();
     await expect(preview.locator('[data-type="one2many"] th')).toContainText(['Description', 'Quantity', 'Unit price']);
     await screen(page, 'screen-sheet-preview', { viewport: true });
-    await page.getByRole('button', { name: 'Preview' }).click();
+    await page.getByRole('button', { name: 'Design', exact: true }).click();
 
     await page.getByRole('button', { name: 'Publish' }).click();
     await expect(page.locator('.fd-designer-status')).toHaveText('Published · version 1');

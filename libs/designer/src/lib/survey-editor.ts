@@ -1,5 +1,5 @@
-import { createForm, createMemoryDataSource, type FieldNode, type Form, type Page, type StepNode, type WizardNode } from '@fieldia/core';
-import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
+import { createForm, type FieldNode, type Form, type Page, type StepNode, type WizardNode } from '@fieldia/core';
+import type { Skin } from '@fieldia/viewer';
 import { createWidget, installStyles, type Widget } from '@fieldia/widgets';
 import { canvasDrag } from './canvas-drag';
 import { designerBar, elementFactory, iconButton as makeIconButton, optionsEditor, type OptionsEditor } from './chrome';
@@ -10,13 +10,15 @@ import { kindById } from './kinds';
 import { openMenu, type MenuItem } from './menu';
 import { installDesignerStyles } from './styles';
 import { toolbox, TOOLBOX_GROUPS } from './toolbox';
+import { tryIt } from './try-it';
 
 /**
  * The survey editor, the Google Forms way: pages of questions, each shown as
  * people will see it, and the one picked opened into a card to edit — its
  * words, its kind from a menu with icons, its options typed in place, when it
  * shows, and a Required switch. A toolbox of the kinds a survey asks sits on
- * the left; questions are dragged within and between pages. Plain DOM, so a
+ * the left; questions are dragged within and between pages; Try it shows the
+ * survey working as people will answer it. Plain DOM, so a
  * framework binding is a thin shell around it, like the viewer's.
  *
  * Every card and page is keyed by id and patched in place, so typing in a
@@ -25,8 +27,6 @@ import { toolbox, TOOLBOX_GROUPS } from './toolbox';
 
 export interface SurveyEditorOptions {
   designer: Designer;
-  /** Show a live preview beside the editor. On by default. */
-  preview?: boolean;
   skin?: Skin;
 }
 
@@ -57,8 +57,10 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const iconButton = (label: string, text: string, onClick: () => void, extra = '') => makeIconButton(el, label, text, onClick, extra);
   const focused = (node: Element) => doc.activeElement === node;
 
-  const root = el('div', { class: 'fd-form fd-designer fd-survey-designer', 'data-fd-skin': options.skin ?? 'outlined' });
-  const bar = designerBar(root, designer, { titleLabel: 'Form title', placeholder: 'Untitled form' });
+  const skin = options.skin ?? 'outlined';
+  const root = el('div', { class: 'fd-form fd-designer fd-survey-designer', 'data-fd-skin': skin });
+  const trial = tryIt({ el, doc, designer, skin, onChange: (trying) => (body.hidden = trying) });
+  const bar = designerBar(root, designer, { titleLabel: 'Form title', placeholder: 'Untitled form', extra: [trial.toggle] });
   const pages = el('div', { class: 'fd-designer-pages' });
   const addPage = el('button', { type: 'button', class: 'fd-button' }, 'Add page');
   addPage.addEventListener('click', () => {
@@ -73,10 +75,8 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     onPick: (spec) => add(spec.slice(spec.indexOf(':') + 1), target()),
     onPress: (spec, event, tile) => drag.press({ tool: spec }, event, tile),
   });
-  const previewHost = el('div', { class: 'fd-designer-preview-host' });
-  const preview = el('aside', { class: 'fd-designer-preview', 'aria-label': 'Preview' }, el('div', { class: 'fd-designer-preview-title' }, 'Preview'), previewHost);
-  const body = el('div', { class: 'fd-designer-body fd-survey-body' }, tools.element, editor, ...(options.preview === false ? [] : [preview]));
-  root.append(bar.element, bar.issues, body);
+  const body = el('div', { class: 'fd-designer-body fd-survey-body' }, tools.element, editor);
+  root.append(bar.element, bar.issues, body, trial.element);
 
   // ---- adding ------------------------------------------------------------------
   /** The question just added, whose words take the cursor once it is drawn. */
@@ -316,7 +316,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const onKey = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement;
     if (target !== doc.body && !root.contains(target)) return;
-    if (event.defaultPrevented) return;
+    if (trial.trying || event.defaultPrevented) return;
     const selected = designer.getState().selected;
     if (!selected || !cardViews.has(selected)) return;
     const typing = target.closest('input, textarea, select, [contenteditable]');
@@ -338,27 +338,6 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   doc.addEventListener('keydown', onKey);
 
   // ---- render ----------------------------------------------------------------------
-  let previewTimer: ReturnType<typeof setTimeout> | undefined;
-  let previewHandle: ViewerHandle | null = null;
-  let previewedPage: Page | null = null;
-  function refreshPreview(page: Page) {
-    if (options.preview === false || page === previewedPage) return;
-    clearTimeout(previewTimer);
-    // Busy until drawn again: what is in it now is about to go.
-    previewHost.setAttribute('aria-busy', 'true');
-    previewTimer = setTimeout(() => {
-      previewHost.removeAttribute('aria-busy');
-      previewedPage = page;
-      previewHandle?.destroy();
-      previewHost.replaceChildren();
-      try {
-        previewHandle = mountViewer(previewHost, { page, dataSource: createMemoryDataSource(), skin: options.skin ?? 'outlined' });
-      } catch (error) {
-        previewHost.textContent = (error as Error).message;
-      }
-    }, 120);
-  }
-
   function render(state: DesignerState) {
     const page = state.page;
     const steps = stepsOf(page);
@@ -400,7 +379,6 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       label?.select();
       focusLabelOf = null;
     }
-    refreshPreview(page);
   }
 
   host.append(root);
@@ -414,9 +392,8 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       bar.destroy();
       drag.destroy();
       doc.removeEventListener('keydown', onKey);
-      clearTimeout(previewTimer);
       for (const view of cardViews.values()) view.destroy();
-      previewHandle?.destroy();
+      trial.destroy();
       root.remove();
     },
   };

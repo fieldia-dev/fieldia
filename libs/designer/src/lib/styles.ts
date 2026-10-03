@@ -10,8 +10,8 @@ export const DESIGNER_CSS = /* css */ `
 .fd-designer .fd-spacer { flex: 1; }
 .fd-designer-issues { white-space: pre-line; }
 .fd-designer-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr); gap: 20px; align-items: start; }
-.fd-survey-body { grid-template-columns: 228px minmax(0, 1fr) minmax(260px, 0.7fr); gap: 16px; }
-@container (max-width: 1100px) { .fd-survey-body { grid-template-columns: 228px minmax(0, 1fr); } .fd-survey-body > .fd-designer-preview { grid-column: 1 / -1; position: static; } }
+.fd-survey-body { grid-template-columns: 228px minmax(0, 1fr); gap: 16px; }
+.fd-survey-body > .fd-designer-editor { max-width: 860px; }
 @container (max-width: 900px) { .fd-designer-body, .fd-survey-body { grid-template-columns: minmax(0, 1fr); } .fd-survey-body > .fd-toolbox { position: static; max-height: none; } .fd-survey-body .fd-tools { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); } }
 .fd-designer-editor { display: grid; gap: 14px; justify-items: start; }
 .fd-designer-editor > * { width: 100%; }
@@ -88,9 +88,24 @@ export const DESIGNER_CSS = /* css */ `
 }
 .fd-icon-button:hover { background: var(--fd-page); color: var(--fd-text); }
 .fd-icon-danger:hover { color: var(--fd-error); background: var(--fd-error-soft); }
-.fd-designer-preview { position: sticky; top: 76px; display: grid; gap: 8px; }
-.fd-designer-preview-title { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fd-muted); }
-.fd-designer-preview-host { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 18px; max-height: 80vh; overflow: auto; }
+
+/* ---- Design or Try it: the page working as people will use it ---- */
+.fd-mode { display: inline-flex; padding: 2px; border-radius: 9px; background: var(--fd-page); border: 1px solid var(--fd-border); }
+.fd-mode-button { all: unset; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 7px; font-size: 13.5px; font-weight: 600; color: var(--fd-muted); cursor: pointer; }
+.fd-mode-button[aria-pressed="true"] { background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 1px 2px rgba(15, 20, 25, 0.12); }
+.fd-mode-button[data-mode="try"][aria-pressed="true"] { background: var(--fd-success); color: #ffffff; }
+.fd-mode-button:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
+.fd-try { display: grid; gap: 14px; }
+.fd-try-bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 8px 12px; }
+.fd-try-group { display: inline-flex; padding: 2px; border-radius: 8px; background: var(--fd-page); border: 1px solid var(--fd-border); }
+.fd-try-button { all: unset; display: inline-grid; place-items: center; min-width: 30px; height: 28px; padding: 0 9px; border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--fd-muted); cursor: pointer; }
+.fd-try-button[aria-pressed="true"] { background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 1px 2px rgba(15, 20, 25, 0.12); }
+.fd-try-button:focus-visible { outline: 2px solid var(--fd-focus); }
+.fd-try-note { margin: 0; color: var(--fd-muted); font-size: 13px; flex: 1 1 220px; text-align: center; }
+.fd-try-frame { margin-inline: auto; width: 100%; max-width: 1100px; box-sizing: border-box; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 20px; transition: max-width 0.3s ease; }
+.fd-try-frame[data-width="tablet"] { max-width: 768px; }
+.fd-try-frame[data-width="phone"] { max-width: 390px; padding: 14px; }
+@media (prefers-reduced-motion: reduce) { .fd-try-frame { transition: none; } }
 
 /* ---- the screen editor: toolbox, canvas, panel ---- */
 .fd-screen-body { display: grid; grid-template-columns: 228px minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
@@ -235,7 +250,6 @@ export const DESIGNER_CSS = /* css */ `
 .fd-properties-hint { color: var(--fd-muted); font-size: 13px; margin: 0; }
 .fd-kind-note { font-size: 12px; margin-block-start: -4px; }
 .fd-prop-when { gap: 6px; justify-items: start; }
-.fd-screen-preview { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 20px; }
 /* After the panel rules, so these win when the editor is narrow: the toolbox and the panel stack around the canvas. */
 @container (max-width: 1000px) {
   .fd-screen-body { grid-template-columns: minmax(0, 1fr); }

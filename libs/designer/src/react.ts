@@ -17,10 +17,7 @@ interface Common {
   style?: CSSProperties;
 }
 
-export interface SurveyEditorProps extends Common {
-  /** The preview beside the editor; on unless false. */
-  preview?: boolean;
-}
+export type SurveyEditorProps = Common;
 
 export type ScreenEditorProps = Common;
 
@@ -29,13 +26,13 @@ export const SurveyEditor = forwardRef<SurveyEditorHandle | null, SurveyEditorPr
   const [handle, setHandle] = useState<SurveyEditorHandle | null>(null);
   useImperativeHandle(ref, () => handle as SurveyEditorHandle, [handle]);
   useEffect(() => {
-    const mounted = mountSurveyEditor(host.current as HTMLDivElement, { designer: props.designer, skin: props.skin, preview: props.preview });
+    const mounted = mountSurveyEditor(host.current as HTMLDivElement, { designer: props.designer, skin: props.skin });
     setHandle(mounted);
     return () => {
       mounted.destroy();
       setHandle(null);
     };
-  }, [props.designer, props.skin, props.preview]);
+  }, [props.designer, props.skin]);
   return createElement('div', { ref: host, className: props.className, style: props.style });
 });
 

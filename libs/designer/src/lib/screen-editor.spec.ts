@@ -188,16 +188,22 @@ describe('screen editor — the keyboard', () => {
   });
 });
 
-describe('screen editor — preview', () => {
-  it('shows the screen as people will use it, and back', () => {
+describe('screen editor — try it', () => {
+  it('shows the screen working as people will use it, in place of the editor, and back', () => {
     const { designer } = visitReport();
     const { host } = mount(designer);
-    button(host, 'Preview')?.click();
+    const mode = (name: string) => host.querySelector(`.fd-designer-bar button[data-mode="${name}"]`) as HTMLButtonElement;
+    mode('try').click();
     expect((host.querySelector('.fd-screen-body') as HTMLElement).hidden).toBe(true);
-    const preview = host.querySelector('.fd-screen-preview') as HTMLElement;
-    expect([...preview.querySelectorAll('.fd-label')].map((l) => l.textContent)).toEqual(['Customer', 'Date', 'Notes', 'Next step']);
-    button(host, 'Preview')?.click();
-    expect(preview.hidden).toBe(true);
+    const trying = host.querySelector('.fd-try') as HTMLElement;
+    expect(trying.hidden).toBe(false);
+    expect([...trying.querySelectorAll('.fd-label')].map((l) => l.textContent)).toEqual(['Customer', 'Date', 'Notes', 'Next step']);
+    // The editor's keys rest while the page is tried.
+    designer.select(fieldsOf(designer.getPage(), 0)[0].id);
+    press('Delete', {}, document.body);
+    expect(fieldsOf(designer.getPage(), 0)).toHaveLength(3);
+    mode('design').click();
+    expect(trying.hidden).toBe(true);
     expect((host.querySelector('.fd-screen-body') as HTMLElement).hidden).toBe(false);
   });
 });

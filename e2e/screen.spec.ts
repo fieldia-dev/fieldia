@@ -158,12 +158,12 @@ test.describe('screen designer', () => {
     await expect(photos.locator('.fd-canvas-field')).toHaveCount(1);
     await screen(page, 'screen-new-section');
 
-    await page.getByRole('button', { name: 'Preview' }).click();
-    const preview = page.locator('.fd-screen-preview');
+    await page.getByRole('button', { name: 'Try it' }).click();
+    const preview = page.locator('.fd-try');
     await expect(preview.locator('.fd-label')).toHaveText(['Customer', 'Visit date', 'Notes', 'Next step', 'Due by', 'Manager to call?', 'Photo of the site']);
     await preview.getByLabel('Customer').fill('Nile Towers');
     await expect(preview.getByLabel('Customer')).toHaveValue('Nile Towers');
-    await page.getByRole('button', { name: 'Preview' }).click();
+    await page.getByRole('button', { name: 'Design', exact: true }).click();
     await expect(page.locator('.fd-canvas-field')).toHaveCount(7);
 
     await page.getByRole('button', { name: 'Publish' }).click();
@@ -200,6 +200,33 @@ test.describe('screen designer', () => {
     await expect.poll(problemsWith).toEqual({ clipped: [], overlapping: [] });
     await expectNoSidewaysScroll(page);
     await screen(page, 'screen-every-kind-narrow');
+  });
+});
+
+test.describe('screen designer · try it', () => {
+  test('tries the screen at a phone’s width in Arabic, right to left, and at a desktop’s again', async ({ page }) => {
+    const problems = watch(page);
+    await page.goto('/screen/');
+    await page.getByRole('button', { name: 'Try it' }).click();
+    const frame = page.locator('.fd-try-frame');
+    await page.getByRole('button', { name: 'Phone' }).click();
+    await page.getByRole('button', { name: 'العربية' }).click();
+    await expect(frame.locator('form.fd-form')).toHaveAttribute('dir', 'rtl');
+    await expect.poll(async () => (await frame.boundingBox())!.width).toBeLessThanOrEqual(390);
+    // Laid out for the phone: one field under another.
+    const customer = (await frame.locator('[data-type="char"]').first().boundingBox())!;
+    const date = (await frame.locator('[data-type="date"]').first().boundingBox())!;
+    expect(date.y).toBeGreaterThan(customer.y + customer.height - 1);
+    // Right to left: the label sits at the right edge.
+    const label = (await frame.locator('.fd-label').first().boundingBox())!;
+    expect(customer.x + customer.width - (label.x + label.width)).toBeLessThan(4);
+    await expectNoSidewaysScroll(page);
+    await screen(page, 'screen-try-phone-arabic', { viewport: true });
+    await page.getByRole('button', { name: 'Desktop' }).click();
+    await page.getByRole('button', { name: 'English' }).click();
+    await expect(frame.locator('form.fd-form')).toHaveAttribute('dir', 'ltr');
+    await expect.poll(async () => (await frame.boundingBox())!.width).toBeGreaterThan(700);
+    expect(problems).toEqual([]);
   });
 });
 

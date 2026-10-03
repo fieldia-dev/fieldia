@@ -1,5 +1,5 @@
-import { createMemoryDataSource, type LayoutNode, type Page, type TabsNode } from '@fieldia/core';
-import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
+import type { LayoutNode, Page, TabsNode } from '@fieldia/core';
+import type { Skin } from '@fieldia/viewer';
 import { installStyles } from '@fieldia/widgets';
 import { designerBar, elementFactory } from './chrome';
 import { QUESTION_KINDS, SCREEN_KINDS, type Designer, type DesignerState, type Where } from './designer';
@@ -8,6 +8,7 @@ import { screenCanvas } from './screen-canvas';
 import { fieldProperties, pageProperties, sectionProperties, tabProperties, tabsProperties, type PropertiesView } from './screen-properties';
 import { installDesignerStyles } from './styles';
 import { toolbox } from './toolbox';
+import { tryIt } from './try-it';
 
 /**
  * The screen editor: an app screen built where it is seen. On the left, the
@@ -15,7 +16,8 @@ import { toolbox } from './toolbox';
  * middle, the screen drawn as the viewer draws it, the field picked edited in
  * place; on the right, the panel with everything about what is picked.
  * Fields are dragged in from the toolbox and about the canvas, one undoable
- * edit per gesture.
+ * edit per gesture. Try it shows the screen working, at a desktop's, a
+ * tablet's or a phone's width, left to right or right to left.
  */
 
 export interface ScreenEditorOptions {
@@ -40,8 +42,8 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const skin = options.skin ?? 'outlined';
 
   const root = el('div', { class: 'fd-form fd-designer fd-screen-designer', 'data-fd-skin': skin });
-  const previewToggle = el('button', { type: 'button', class: 'fd-button', 'aria-pressed': 'false' }, 'Preview');
-  const bar = designerBar(root, designer, { titleLabel: 'Screen title', placeholder: 'Untitled screen', extra: [previewToggle] });
+  const trial = tryIt({ el, doc, designer, skin, onChange: (trying) => (body.hidden = trying) });
+  const bar = designerBar(root, designer, { titleLabel: 'Screen title', placeholder: 'Untitled screen', extra: [trial.toggle] });
 
   const canvas = screenCanvas({
     designer,
@@ -59,8 +61,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   });
   const properties = el('aside', { class: 'fd-properties', 'aria-label': 'Properties' });
   const body = el('div', { class: 'fd-screen-body' }, tools.element, el('div', { class: 'fd-canvas-scroll' }, canvas.element), properties);
-  const previewHost = el('div', { class: 'fd-screen-preview', hidden: '' });
-  root.append(bar.element, bar.issues, body, previewHost);
+  root.append(bar.element, bar.issues, body, trial.element);
 
   // ---- adding ------------------------------------------------------------------
   /** Where something picked in the toolbox goes: after the field picked, into the section picked or a picked tab's first, or the last on show. */
@@ -146,7 +147,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const onKey = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement;
     if (target !== doc.body && !root.contains(target)) return;
-    if (previewing || event.defaultPrevented) return;
+    if (trial.trying || event.defaultPrevented) return;
     const selected = designer.getState().selected;
     const typing = target.closest('input, textarea, select, [contenteditable]');
     if (event.key === 'Escape' && selected) {
@@ -167,23 +168,6 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   };
   doc.addEventListener('keydown', onKey);
 
-  // ---- preview ----------------------------------------------------------------------
-  let previewing = false;
-  let viewer: ViewerHandle | null = null;
-  function showPreview() {
-    previewToggle.setAttribute('aria-pressed', String(previewing));
-    body.hidden = previewing;
-    previewHost.hidden = !previewing;
-    viewer?.destroy();
-    viewer = null;
-    previewHost.replaceChildren();
-    if (previewing) viewer = mountViewer(previewHost, { page: designer.getPage(), dataSource: createMemoryDataSource(), skin });
-  }
-  previewToggle.addEventListener('click', () => {
-    previewing = !previewing;
-    showPreview();
-  });
-
   // ---- render -----------------------------------------------------------------------
   function render(state: DesignerState) {
     bar.update(state);
@@ -203,7 +187,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       bar.destroy();
       doc.removeEventListener('keydown', onKey);
       canvas.destroy();
-      viewer?.destroy();
+      trial.destroy();
       root.remove();
     },
   };

@@ -16,8 +16,6 @@ export const SurveyEditor = defineComponent({
   props: {
     designer: { type: Object as PropType<Designer>, required: true },
     skin: { type: String as PropType<Skin>, default: undefined },
-    /** The preview beside the editor. */
-    preview: { type: Boolean, default: true },
   },
   emits: { ready: (_handle: SurveyEditorHandle) => true },
   setup(props, { emit, expose }) {
@@ -25,11 +23,11 @@ export const SurveyEditor = defineComponent({
     let handle: SurveyEditorHandle | null = null;
     const mount = () => {
       handle?.destroy();
-      handle = mountSurveyEditor(host.value as HTMLElement, { designer: props.designer, skin: props.skin, preview: props.preview });
+      handle = mountSurveyEditor(host.value as HTMLElement, { designer: props.designer, skin: props.skin });
       emit('ready', handle);
     };
     onMounted(mount);
-    watch(() => [props.designer, props.skin, props.preview], mount);
+    watch(() => [props.designer, props.skin], mount);
     onBeforeUnmount(() => handle?.destroy());
     expose({ handle: () => handle });
     return () => h('div', { ref: host });

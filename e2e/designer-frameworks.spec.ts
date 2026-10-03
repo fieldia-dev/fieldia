@@ -11,16 +11,15 @@ function watch(page: Page) {
 
 for (const framework of ['react', 'vue', 'angular']) {
   test.describe(`designer in ${framework}`, () => {
-    test('builds a survey: a question typed in shows in the preview', async ({ page }) => {
+    test('builds a survey: a question typed in shows when it is tried', async ({ page }) => {
       const problems = watch(page);
       await page.goto(`/designer-${framework}/`);
       await expect(page.locator('.fd-designer')).toBeVisible();
       await page.locator('.fd-design-step').first().getByRole('button', { name: 'Add question' }).click();
       await expect(page.locator('.fd-q-label').first()).toBeFocused();
       await page.keyboard.type('Will you come back?');
-      const preview = page.locator('.fd-designer-preview');
-      await expect(preview.locator('.fd-designer-preview-host')).not.toHaveAttribute('aria-busy', 'true');
-      await expect(preview.getByText('Will you come back?')).toBeVisible();
+      await page.getByRole('button', { name: 'Try it' }).click();
+      await expect(page.locator('.fd-try').getByText('Will you come back?')).toBeVisible();
       await screen(page, `designer-${framework}`, { viewport: true });
       expect(problems).toEqual([]);
     });

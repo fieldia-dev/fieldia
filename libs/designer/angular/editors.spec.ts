@@ -7,7 +7,7 @@ import { FieldiaScreenEditorComponent, FieldiaSurveyEditorComponent } from './ed
   imports: [FieldiaSurveyEditorComponent, FieldiaScreenEditorComponent],
   template: `
     @if (shown()) {
-      <fieldia-survey-editor [designer]="survey()" [preview]="false" (ready)="ready.push($event)" />
+      <fieldia-survey-editor [designer]="survey()" (ready)="ready.push($event)" />
     }
     <fieldia-screen-editor [designer]="screen()" />
   `,

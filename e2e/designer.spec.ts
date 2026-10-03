@@ -54,17 +54,18 @@ test.describe('survey designer', () => {
     await kind(picked(page), 'Paragraph');
     await screen(page, 'designer-built');
 
-    // The preview walks the branch.
-    const preview = page.locator('.fd-designer-preview');
-    // The preview of the last change, not the one before it.
-    await expect(preview.locator('.fd-designer-preview-host')).not.toHaveAttribute('aria-busy', 'true');
+    // Try it walks the branch.
+    await page.getByRole('button', { name: 'Try it' }).click();
+    const preview = page.locator('.fd-try');
+    await expect(page.locator('.fd-survey-body')).toBeHidden();
     await expect(preview.locator('.fd-progress-text')).toHaveText('Step 1 of 1');
     await preview.getByLabel('Your name').fill('Sara');
     await preview.getByLabel('No').check();
     await expect(preview.locator('.fd-progress-text')).toHaveText('Step 1 of 2');
     await preview.getByRole('button', { name: 'Next' }).click();
     await expect(preview.getByText('What would change your mind?')).toBeVisible();
-    await screen(page, 'designer-preview-branch');
+    await screen(page, 'designer-try-branch');
+    await page.getByRole('button', { name: 'Design', exact: true }).click();
 
     // Undo and redo from the keyboard, outside any text box.
     await page.locator('.fd-designer-status').click();
@@ -123,9 +124,9 @@ test.describe('survey designer', () => {
     await expect(card(2).getByLabel('Match')).toHaveValue('all');
     await screen(page, 'designer-question-condition', { viewport: true });
 
-    const preview = page.locator('.fd-designer-preview');
+    await page.getByRole('button', { name: 'Try it' }).click();
+    const preview = page.locator('.fd-try');
     const why = preview.getByText('Why not?');
-    await expect(preview.locator('.fd-designer-preview-host')).not.toHaveAttribute('aria-busy', 'true');
     await preview.getByLabel('Role').selectOption({ label: 'Manager' });
     await expect(why).toBeHidden();
     await preview.getByLabel('Role').selectOption({ label: 'Developer' });
@@ -134,8 +135,9 @@ test.describe('survey designer', () => {
     await expect(why).toBeHidden();
 
     // Any of them: a developer who is coming is asked too.
+    await page.getByRole('button', { name: 'Design', exact: true }).click();
     await card(2).getByLabel('Match').selectOption({ label: 'any of these' });
-    await expect(preview.locator('.fd-designer-preview-host')).not.toHaveAttribute('aria-busy', 'true');
+    await page.getByRole('button', { name: 'Try it' }).click();
     await preview.getByLabel('Coming?').check();
     await preview.getByLabel('Role').selectOption({ label: 'Developer' });
     await expect(preview.getByText('Why not?')).toBeVisible();

@@ -6,7 +6,7 @@ import { ScreenEditor, SurveyEditor } from './vue';
 describe('the editors in Vue', () => {
   it('mounts the survey editor, says when it is ready, and takes it down when it goes', async () => {
     const designer = createDesigner({ page: blankPage('survey', 'Event feedback') });
-    const wrapper = mount(SurveyEditor, { props: { designer, preview: false }, attachTo: document.body });
+    const wrapper = mount(SurveyEditor, { props: { designer }, attachTo: document.body });
     expect(wrapper.find('.fd-designer').exists()).toBe(true);
     expect(wrapper.emitted('ready')).toHaveLength(1);
     designer.addQuestion('short-answer');

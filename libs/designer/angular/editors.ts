@@ -5,7 +5,7 @@ import type { Skin } from '@fieldia/viewer';
 /**
  * The designer's editors as Angular components: `@fieldia/designer/angular`.
  * Each mounts the plain-DOM editor into its own element and takes it down
- * when it goes; a new designer, skin or kit mounts it again. `ready` hands
+ * when it goes; a new designer or skin mounts it again. `ready` hands
  * out the handle.
  */
 
@@ -13,15 +13,13 @@ import type { Skin } from '@fieldia/viewer';
 export class FieldiaSurveyEditorComponent implements OnDestroy {
   readonly designer = input.required<Designer>();
   readonly skin = input<Skin | undefined>(undefined);
-  /** The preview beside the editor. */
-  readonly preview = input<boolean>(true);
   readonly ready = output<SurveyEditorHandle>();
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private handle: SurveyEditorHandle | null = null;
 
   constructor() {
     effect(() => {
-      const options = { designer: this.designer(), skin: this.skin(), preview: this.preview() };
+      const options = { designer: this.designer(), skin: this.skin() };
       untracked(() => {
         this.handle?.destroy();
         this.handle = mountSurveyEditor(this.host.nativeElement, options);
