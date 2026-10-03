@@ -177,3 +177,29 @@ test.describe('screen designer · a record’s header', () => {
     expect(problems).toEqual([]);
   });
 });
+
+test.describe('screen designer · outline and data', () => {
+  test('the page as a tree to pick from, the model’s fields, and a made-up record filling the sheet', async ({ page }) => {
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+    await page.goto('/screen/?start=sheet');
+    for (const spec of ['model:email', 'model:phone', 'model:credit_limit', 'model:country_id']) await tile(page, spec).click();
+    await page.keyboard.press('Escape');
+
+    // Data: the model's fields, and a made-up customer on the canvas.
+    await page.getByRole('tab', { name: 'Data' }).click();
+    await expect(page.locator('.fd-data-count')).toHaveText('12 fields · 5 on this page');
+    await page.getByRole('button', { name: 'Record 1' }).click();
+    const email = (await cardOf(page, 'Email')).locator('input');
+    await expect(email).toHaveValue('hello@acme.example');
+    await screen(page, 'screen-data-sample', { viewport: true });
+
+    // Outline: the sheet as a tree; a pick opens the field.
+    await page.getByRole('tab', { name: 'Outline' }).click();
+    await expect(page.locator('.fd-outline [data-pick] .fd-outline-label')).toHaveText(['Untitled section', 'Email', 'Phone', 'Credit limit', 'Country']);
+    await page.locator('.fd-outline [data-pick]').filter({ hasText: 'Credit limit' }).click();
+    await expect(await cardOf(page, 'Credit limit')).toHaveClass(/fd-editing/);
+    await screen(page, 'screen-outline', { viewport: true });
+    expect(problems).toEqual([]);
+  });
+});

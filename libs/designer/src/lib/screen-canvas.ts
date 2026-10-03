@@ -366,7 +366,12 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       }
       const root = page.layout;
       titleCard.hidden = root.type !== 'sheet' || !root.title;
-      if (root.type === 'sheet' && root.title) titleCard.textContent = page.fields[root.title.field]?.label ?? root.title.field;
+      if (root.type === 'sheet' && root.title) {
+        // A made-up record names itself in the title; else the field's name stands in, as a placeholder does.
+        const value = sample === null ? null : form().getState().values[root.title.field];
+        titleCard.textContent = typeof value === 'string' && value ? value : (page.fields[root.title.field]?.label ?? root.title.field);
+        titleCard.classList.toggle('fd-canvas-title-filled', typeof value === 'string' && !!value);
+      }
       titleCard.classList.toggle('fd-canvas-selected', selected === null);
       header.update(page, selected, form);
     },

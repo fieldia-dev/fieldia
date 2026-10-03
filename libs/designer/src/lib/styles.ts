@@ -204,8 +204,8 @@ export const DESIGNER_CSS = /* css */ `
 .fd-outline-kind { flex: none; font-size: 11px; color: var(--fd-muted); max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fd-data-card { display: grid; gap: 2px; padding: 10px; border-radius: 8px; background: var(--fd-page); font-size: 12.5px; color: var(--fd-muted); }
 .fd-data-model { font-size: 14px; color: var(--fd-text); overflow-wrap: anywhere; }
-.fd-seg { display: flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: 8px; background: var(--fd-page); }
-.fd-seg-button { all: unset; box-sizing: border-box; cursor: pointer; padding: 4px 7px; border-radius: 6px; font-size: 12px; color: var(--fd-muted); }
+.fd-seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px; padding: 2px; border-radius: 8px; background: var(--fd-page); }
+.fd-seg-button { all: unset; box-sizing: border-box; cursor: pointer; padding: 4px 6px; border-radius: 6px; font-size: 12px; color: var(--fd-muted); text-align: center; font-variant-numeric: tabular-nums; }
 .fd-seg-button[aria-pressed="true"] { background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 1px 2px rgba(15, 20, 25, 0.12); }
 .fd-seg-button:focus-visible { outline: 2px solid var(--fd-focus); }
 .fd-data-rows { display: grid; gap: 0; }
@@ -248,6 +248,7 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-scroll { min-width: 0; }
 .fd-canvas { container-type: inline-size; display: grid; gap: 18px; min-width: 0; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 22px 24px 30px; }
 .fd-canvas-body { display: grid; gap: 26px; }
+.fd-canvas-title.fd-canvas-title-filled { color: var(--fd-text); }
 .fd-canvas-title { all: unset; box-sizing: border-box; cursor: pointer; font-size: 26px; font-weight: 650; line-height: 1.25; color: var(--fd-muted); padding: 8px 14px; border: 1px dashed var(--fd-border-strong); border-radius: var(--fd-radius); background: var(--fd-surface); }
 .fd-canvas-title:hover { color: var(--fd-text); }
 .fd-canvas-title.fd-canvas-selected { border-style: solid; border-color: var(--fd-accent); }

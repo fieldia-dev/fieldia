@@ -164,7 +164,8 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
   function drawSteps(root: SheetNode, page: Page, form: () => Form): HTMLElement {
     const config = root.statusbar as NonNullable<SheetNode['statusbar']>;
     const def = page.fields[config.field];
-    const key = JSON.stringify([config, def]);
+    // The record on the canvas, made up or empty, stands on one of the steps.
+    const key = JSON.stringify([config, def, form().getState().values[config.field] ?? null]);
     if (key !== statusKey) {
       statusKey = key;
       statusWidget?.destroy?.();

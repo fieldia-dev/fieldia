@@ -170,8 +170,8 @@ export function rail(options: RailOptions): Rail {
             el(
               'div',
               { class: 'fd-seg', role: 'group', 'aria-label': 'Record on the canvas' },
-              ...([['none', 'Empty'], ['0', 'Record 1'], ['1', 'Record 2'], ['2', 'Record 3']] as const).map(([key, words]) => {
-                const button = el('button', { type: 'button', class: 'fd-seg-button', 'data-sample': key, 'aria-pressed': String((sample === null ? 'none' : String(sample)) === key) }, words);
+              ...([['none', 'Empty', 'Empty'], ['0', '1', 'Record 1'], ['1', '2', 'Record 2'], ['2', '3', 'Record 3']] as const).map(([key, words, name]) => {
+                const button = el('button', { type: 'button', class: 'fd-seg-button', 'data-sample': key, 'aria-label': name, title: name, 'aria-pressed': String((sample === null ? 'none' : String(sample)) === key) }, words);
                 button.addEventListener('click', () => {
                   sample = key === 'none' ? null : Number(key);
                   options.onSample?.(sample);

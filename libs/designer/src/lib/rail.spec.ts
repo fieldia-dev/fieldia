@@ -106,8 +106,12 @@ describe('the rail on a record’s screen', () => {
     tab(host, 'data').click();
     const email = () => host.querySelector(`.fd-canvas-field[data-node="${id}"] input`) as HTMLInputElement;
     expect(email().value).toBe('');
+    const title = host.querySelector('.fd-canvas-title') as HTMLElement;
+    expect(title.textContent).toBe('Name');
     (host.querySelector('.fd-data [data-sample="0"]') as HTMLButtonElement).click();
     expect(email().value).toBe('hello@acme.example');
+    // The record names itself in the title.
+    expect(title.textContent).toBe('Acme Trading');
     (host.querySelector('.fd-data [data-sample="1"]') as HTMLButtonElement).click();
     expect(email().value).toBe('hello@blue.example');
     (host.querySelector('.fd-data [data-sample="none"]') as HTMLButtonElement).click();
