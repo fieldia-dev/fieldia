@@ -284,11 +284,7 @@ const selectWidget: WidgetFactory = ({ form, name, field, id, document }) => {
  */
 function clearSelection(document: Document, words: WidgetLabels, clear: () => void) {
   const button = make(document, 'button', { type: 'button', class: 'fd-choice-clear', hidden: '' }, words.clearSelection);
-  button.addEventListener('click', () => {
-    clear();
-    // Nothing picked now: nothing to take back.
-    button.hidden = true;
-  });
+  button.addEventListener('click', clear);
   let open = false;
   return {
     button,
@@ -336,8 +332,6 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
       } else {
         form.setValue(name, [...choices.filter((_, i) => inputs[i].checked).map((option) => option.value), ...(own !== null ? [own] : [])]);
       }
-      // "Other" picked with its box still empty changes no answer, but is a pick to take back.
-      clear?.show(picked());
     }
     group.addEventListener('change', (event) => {
       if (event.target !== otherBox) save();
