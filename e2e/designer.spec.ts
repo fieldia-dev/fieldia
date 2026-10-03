@@ -180,8 +180,14 @@ test.describe('survey designer', () => {
     await page.mouse.down();
     for (let i = 1; i <= 8; i++) await page.mouse.move(from.x + 10, from.y + 5 + ((height - 12 - from.y - 5) * i) / 8, { steps: 3 });
     await expect.poll(async () => { const box = await cards.boundingBox(); return !!box && box.y + 8 < height - 60; }, { timeout: 5000 }).toBe(true);
-    const empty = (await cards.boundingBox())!;
-    await page.mouse.move(from.x + 10, empty.y + 8, { steps: 6 });
+    // Away from the edge, the page stops scrolling; then onto page 2 where it is now, until the gap is there.
+    await page.mouse.move(from.x + 10, height / 2, { steps: 4 });
+    for (let look = 0; look < 4; look++) {
+      const empty = (await cards.boundingBox())!;
+      await page.mouse.move(from.x + 10, empty.y + 8, { steps: 4 });
+      await page.waitForTimeout(80);
+    }
+    await expect(page.locator('.fd-design-step').nth(1).locator('.fd-drop-slot')).toHaveCount(1);
     await page.mouse.up();
     await expect.poll(labels).toEqual([['Your name', 'How was it?'], ['Email']]);
   });
