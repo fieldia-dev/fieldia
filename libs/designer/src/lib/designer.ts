@@ -437,16 +437,27 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
         const old = field.options;
         const used = new Set<string | number>();
         const placeholder = (o: Option | undefined) => !!o && /^option_\d+$/.test(String(o.value)) && /^Option \d+$/.test(o.label);
-        field.options = labels
-          .map((label) => label.trim())
-          .filter(Boolean)
-          .map((label, i) => {
-            // Keep a value the answers already use, unless it was a placeholder.
-            let value: string | number = old[i] && !placeholder(old[i]) ? old[i].value : slug(label);
-            while (used.has(value)) value = `${value}_${i + 1}`;
-            used.add(value);
-            return { value, label };
-          });
+        const clean = labels.map((label) => label.trim()).filter(Boolean);
+        // The same words are the same option: one put between others, or taken from among them, leaves theirs alone.
+        const claimed = new Set<number>();
+        const same = clean.map((label) => {
+          const at = old.findIndex((o, k) => !claimed.has(k) && o.label === label);
+          if (at !== -1) claimed.add(at);
+          return at;
+        });
+        field.options = clean.map((label, i) => {
+          let value: string | number;
+          if (same[i] !== -1) value = old[same[i]].value;
+          else {
+            // Words changed in place keep the value the answers already use, unless it was a placeholder.
+            const there = claimed.has(i) ? undefined : old[i];
+            if (there) claimed.add(i);
+            value = there && !placeholder(there) ? there.value : slug(label);
+          }
+          while (used.has(value)) value = `${value}_${i + 1}`;
+          used.add(value);
+          return { value, label };
+        });
         },
         // Typing in one option list is one undo step, like typing in a label.
         `options:${id}:${labels.length}`

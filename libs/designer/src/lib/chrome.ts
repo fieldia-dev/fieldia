@@ -99,18 +99,38 @@ export interface OptionsEditor {
   update(field: Field): void;
 }
 
-/** The choices of a question, one input each, kept by position so typing in one keeps its focus. */
+/**
+ * The choices of a question, one input each, kept by position so typing in
+ * one keeps its focus — typed the Google Forms way: Enter adds the next one
+ * under it, Backspace in an empty one takes it away, and one left empty goes
+ * when the cursor leaves it.
+ */
 export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: string): OptionsEditor {
   const list = el('ul', { class: 'fd-q-options' });
   const add = el('button', { type: 'button', class: 'fd-button fd-button-link' }, 'Add option');
   const element = el('div', { class: 'fd-q-option-box' }, list, add);
-  const labels = () => [...list.querySelectorAll<HTMLInputElement>('input')].map((i) => i.value);
+  const inputs = () => [...list.querySelectorAll<HTMLInputElement>('input')];
+  const labels = () => inputs().map((i) => i.value);
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
+  const focusAt = (index: number, atEnd = false) => {
+    const input = inputs()[index];
+    input?.focus();
+    if (input && atEnd) input.setSelectionRange(input.value.length, input.value.length);
+    else input?.select();
+  };
   add.addEventListener('click', () => {
     const current = labels();
     designer.setOptions(nodeId, [...current, `Option ${current.length + 1}`]);
-    (list.lastElementChild?.querySelector('input') as HTMLInputElement | null)?.focus();
+    focusAt(inputs().length - 1);
   });
+  const indexOf = (input: HTMLInputElement) => inputs().indexOf(input);
+  /** Without the option at `index`; an only option stays. */
+  const without = (index: number) => {
+    const current = labels();
+    if (current.length < 2) return false;
+    current.splice(index, 1);
+    return designer.setOptions(nodeId, current);
+  };
   return {
     element,
     update(field) {
@@ -122,7 +142,24 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
       while (list.children.length < choices.length) {
         const index = list.children.length;
         const input = el('input', { class: 'fd-input', 'aria-label': `Option ${index + 1}` });
-        input.addEventListener('input', () => designer.setOptions(nodeId, labels()));
+        // An option emptied while it is typed in stays, empty, until Backspace or the cursor leaving it says what to do.
+        input.addEventListener('input', () => input.value.trim() && designer.setOptions(nodeId, labels()));
+        input.addEventListener('keydown', (event) => {
+          const at = indexOf(input);
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            const current = labels();
+            current.splice(at + 1, 0, `Option ${current.length + 1}`);
+            if (designer.setOptions(nodeId, current)) focusAt(at + 1);
+          } else if (event.key === 'Backspace' && input.value === '' && labels().length > 1) {
+            event.preventDefault();
+            if (without(at)) focusAt(Math.max(0, at - 1), true);
+          }
+        });
+        input.addEventListener('blur', () => {
+          if (input.value.trim() || !input.isConnected) return;
+          if (!without(indexOf(input))) designer.setOptions(nodeId, labels().map((l, i) => (l.trim() ? l : `Option ${i + 1}`)));
+        });
         const remove = iconButton(el, 'Remove option', '×', () => {
           const current = labels();
           current.splice([...list.children].indexOf(remove.parentElement as Element), 1);
