@@ -336,9 +336,9 @@ describe('dragging on the canvas', () => {
     // Over the second half of "date": the gap after it.
     pointer('pointermove', document, 700, 70);
     expect(seen()).toEqual(['date', '[gap]', 'notes']);
-    // Over the gap itself, wherever it is now drawn: it stays.
-    place(slot, 10, 120, 380, 70);
-    pointer('pointermove', document, 200, 150);
+    // Over the gap itself, wherever it is now drawn — even where reading order would say "after notes": it stays.
+    place(slot, 10, 200, 380, 70);
+    pointer('pointermove', document, 200, 230);
     expect(seen()).toEqual(['date', '[gap]', 'notes']);
     // Over the second half of "notes", moved on by the gap: after it.
     place(card('notes'), 400, 120, 380, 70);
