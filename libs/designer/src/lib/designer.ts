@@ -12,8 +12,10 @@ import {
   type TabsNode,
 } from '@fieldia/core';
 import { conditionToHide, type Condition } from './conditions';
+import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { COLUMN_TYPES, columnKind, kindById, kindFits, kindsFor, orList, storedAs, type LineColumn, type QuestionKind } from './kinds';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
+import { Refusal } from './refusal';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -30,6 +32,7 @@ import { allIds, containers, findContainer, findNode, findTab, firstSection, nex
 
 export { columnKind, kindFits, kindOfField, kindsFor, QUESTION_KINDS, SCREEN_KINDS, storedAs } from './kinds';
 export type { LineColumn, QuestionKind } from './kinds';
+export type { HeaderCommands, HeaderPartKind, HeaderPartPatch } from './header-commands';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), or a record's sheet. */
 export type PageKind = 'survey' | 'screen' | 'sheet';
@@ -146,7 +149,7 @@ export interface ModelField {
   field: Field;
 }
 
-export interface Designer {
+export interface Designer extends HeaderCommands {
   getPage(): Page;
   /** The model's fields not on the page yet, in the model's order. Empty without a model. */
   modelFields(): ModelField[];
@@ -206,8 +209,6 @@ export interface Designer {
   settled(): Promise<void>;
 }
 
-/** Thrown by an edit that cannot be made; `apply` turns it into an issue. */
-class Refusal extends Error {}
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
@@ -320,7 +321,17 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     return found.node;
   }
 
+  const header = headerCommands({
+    apply,
+    select(id) {
+      selected = id;
+      notify();
+    },
+    model,
+  });
+
   const designer: Designer = {
+    ...header,
     getPage: () => page,
     modelFields() {
       const shown = shownFields(page);
@@ -684,7 +695,8 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       return apply((draft) => {
         const container = findContainer(draft, id) as { invisible?: string } | null;
         const found = container ? null : findNode(draft, id);
-        const target = container ?? (found?.node as { invisible?: string } | undefined);
+        // A badge, a counter or a button of a sheet's header shows only for some records too.
+        const target = container ?? (found?.node as { invisible?: string } | undefined) ?? (findHeaderPart(draft, id)?.part as { invisible?: string } | undefined);
         if (!target) throw new Refusal(`There is no element "${id}"`);
         const rules: Condition = !condition
           ? { join: 'all', rules: [] }

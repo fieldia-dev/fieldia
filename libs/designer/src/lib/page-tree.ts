@@ -86,6 +86,9 @@ export function allIds(page: Page): Set<string> {
     ids.add(c.id);
     for (const child of c.children) ids.add(child.id);
   }
+  // A sheet's header parts have ids of their own.
+  const root = page.layout;
+  if (root.type === 'sheet') for (const part of [...(root.buttons ?? []), ...(root.statButtons ?? []), ...(root.badges ?? []), ...(root.alerts ?? []), ...(root.ribbon ? [root.ribbon] : [])]) ids.add(part.id);
   return ids;
 }
 
