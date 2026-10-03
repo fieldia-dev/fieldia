@@ -298,10 +298,12 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     if (kind.group === 'records' && draft.data.kind === 'responses') throw new Refusal('A survey has no records to link to or list: this kind is for app screens');
   }
 
-  /** A field of the node, when it is one of the given types. */
-  function fieldOfType<T extends Field['type']>(draft: Page, id: string, types: T[], refusal: string): Extract<Field, { type: T }> {
-    const field = draft.fields[fieldNode(draft, id).field];
+  /** A field of the node, when it is one of the given types and the page's own to change: `owned` says what the model keeps otherwise. */
+  function fieldOfType<T extends Field['type']>(draft: Page, id: string, types: T[], refusal: string, owned: (label: string) => string): Extract<Field, { type: T }> {
+    const name = fieldNode(draft, id).field;
+    const field = draft.fields[name];
     if (!(types as string[]).includes(field.type)) throw new Refusal(refusal);
+    if (fromModel(name)) throw new Refusal(owned(field.label));
     return field as Extract<Field, { type: T }>;
   }
 
@@ -382,7 +384,24 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       return apply(
         (draft) => {
           const node = fieldNode(draft, id);
-            const field = draft.fields[node.field] as Field & { help?: string; required?: boolean };
+          if (fromModel(node.field)) {
+            // The backend's definition stays as it is: what this page says goes on the field's place on it.
+            if (patch.label !== undefined) node.label = patch.label;
+            if (patch.required !== undefined) {
+              if (patch.required) node.required = true;
+              else delete node.required;
+            }
+            if (patch.help !== undefined) {
+              if (patch.help) node.help = patch.help;
+              else delete node.help;
+            }
+            if (patch.placeholder !== undefined) {
+              if (patch.placeholder) node.placeholder = patch.placeholder;
+              else delete node.placeholder;
+            }
+            return;
+          }
+          const field = draft.fields[node.field] as Field & { help?: string; required?: boolean };
           if (patch.label !== undefined) field.label = patch.label;
           if (patch.required !== undefined) {
             if (patch.required) field.required = true;
@@ -407,6 +426,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
         const node = fieldNode(draft, id);
         const field = draft.fields[node.field];
         if (field.type !== 'selection') throw new Refusal(`"${id}" has no options`);
+        if (fromModel(node.field)) throw new Refusal(`The options of ${field.label} come from the model`);
         const old = field.options;
         const used = new Set<string | number>();
         const placeholder = (o: Option | undefined) => !!o && /^option_\d+$/.test(String(o.value)) && /^Option \d+$/.test(o.label);
@@ -732,7 +752,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     setRelation(id, model) {
       return apply(
         (draft) => {
-          const field = fieldOfType(draft, id, ['many2one', 'many2many', 'one2many'], 'Only a link, links or a table of lines point to records');
+          const field = fieldOfType(draft, id, ['many2one', 'many2many', 'one2many'], 'Only a link, links or a table of lines point to records', (label) => `What ${label} points to comes from the model`);
           if (!model.trim()) throw new Refusal('Say which records it points to, such as contact');
           field.relation = model.trim();
         },
@@ -742,7 +762,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
 
     setCurrency(id, code) {
       return apply((draft) => {
-        const field = fieldOfType(draft, id, ['monetary'], 'Only an amount has a currency');
+        const field = fieldOfType(draft, id, ['monetary'], 'Only an amount has a currency', (label) => `The currency of ${label} comes from the model`);
         const currency = code.trim().toUpperCase();
         if (!/^[A-Z]{3}$/.test(currency)) throw new Refusal('A currency is three letters, such as USD');
         field.currency = currency;
@@ -753,7 +773,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     setLineColumns(id, columns) {
       return apply(
         (draft) => {
-          const field = fieldOfType(draft, id, ['one2many'], 'Only a table of lines has columns');
+          const field = fieldOfType(draft, id, ['one2many'], 'Only a table of lines has columns', (label) => `The columns of ${label} come from the model`);
           if (!columns.length) throw new Refusal('A table of lines needs a column');
           const old = field.fields;
           const taken = new Set(columns.map((c) => c.name).filter((name): name is string => !!name && name in old));

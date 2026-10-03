@@ -130,6 +130,33 @@ describe('fields the backend already has', () => {
     expect(designer.isFromModel('nothing')).toBe(false);
   });
 
+  it('keeps a model field’s label, help and required on the page, leaving the model’s definition alone', () => {
+    const designer = customer();
+    const email = designer.addModelField('email') as string;
+    expect(designer.updateQuestion(email, { label: 'Work email' })).toBe(true);
+    expect(designer.updateQuestion(email, { help: 'Where invoices go' })).toBe(true);
+    expect(designer.updateQuestion(email, { required: true })).toBe(true);
+    const page = designer.getPage();
+    expect(nodeOf(page, email)).toMatchObject({ label: 'Work email', help: 'Where invoices go', required: true });
+    expect(page.fields['email']).toEqual(model['email']);
+    designer.updateQuestion(email, { required: false, help: '' });
+    expect(nodeOf(designer.getPage(), email).required).toBeUndefined();
+    expect(nodeOf(designer.getPage(), email).help).toBeUndefined();
+  });
+
+  it('leaves the options, links and currency of a model field to the model', () => {
+    const designer = customer();
+    const terms = designer.addModelField('payment_terms') as string;
+    expect(designer.setOptions(terms, ['Now', 'Later'])).toBe(false);
+    expect(designer.getState().issues).toEqual(['The options of Payment terms come from the model']);
+    const tags = designer.addModelField('tag_ids') as string;
+    expect(designer.setRelation(tags, 'label')).toBe(false);
+    const credit = designer.addModelField('credit_limit') as string;
+    expect(designer.setCurrency(credit, 'USD')).toBe(false);
+    expect(designer.getState().issues).toEqual(['The currency of Credit limit comes from the model']);
+    expect(designer.getPage().fields).toEqual({ payment_terms: model['payment_terms'], tag_ids: model['tag_ids'], credit_limit: model['credit_limit'] });
+  });
+
   it('has no model fields to offer when it was given no model', () => {
     const designer = createDesigner({ page: blankPage('screen', 'Note') });
     expect(designer.modelFields()).toEqual([]);
