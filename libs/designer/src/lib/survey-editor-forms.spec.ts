@@ -66,6 +66,13 @@ describe('survey editor — the Google Forms way', () => {
     expect(shown(open(host).querySelector('.fd-q-preview'))).toBe(true);
   });
 
+  it('gives a question not picked a grip too, to carry it by', () => {
+    const { host, designer } = mount();
+    const q = designer.addQuestion('short-answer') as string;
+    designer.select(null);
+    expect(host.querySelector(`.fd-q[data-node="${q}"] [data-grip]`)?.getAttribute('aria-label')).toBe('Drag to move');
+  });
+
   it('shows a dropdown not picked as its numbered options', () => {
     const { host, designer } = mount();
     const role = designer.addQuestion('dropdown') as string;

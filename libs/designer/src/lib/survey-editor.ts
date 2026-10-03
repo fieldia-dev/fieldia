@@ -304,7 +304,9 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     const help = el('div', { class: 'fd-help' });
     const answer = el('div', { class: 'fd-q-answer', inert: '' });
     const note = el('span', { class: 'fd-q-when-note' }, 'Shown only for some answers');
-    const element = el('div', { class: 'fd-q fd-q-closed', 'data-node': id }, title, help, answer);
+    // Forms' six dots, across the top when pointed at: what it is carried by.
+    const grip = el('button', { type: 'button', class: 'fd-q-grip', 'data-grip': '', 'aria-label': 'Drag to move', title: 'Drag to move · Ctrl+Shift+K or J moves it too', tabindex: '-1' }, designerIcon(doc, 'grip'));
+    const element = el('div', { class: 'fd-q fd-q-closed', 'data-node': id }, grip, title, help, answer);
     const painter = answerBox(answer, id);
     element.addEventListener('click', (event) => {
       if (designer.getState().selected === id) return;

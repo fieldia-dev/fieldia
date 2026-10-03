@@ -87,14 +87,9 @@ export const DESIGNER_CSS = /* css */ `
 .fd-when-custom code { font-size: 12.5px; color: var(--fd-text); }
 .fd-q-when { padding-inline: 4px; }
 .fd-step-cards { display: grid; gap: 10px; position: relative; }
-.fd-step-cards.fd-drop-target { outline: 2px dashed var(--fd-accent); outline-offset: 4px; border-radius: 6px; }
-/* While a question is carried, the gap under each page's questions is a place to drop it last. */
 .fd-designer-editor.fd-dragging { user-select: none; -webkit-user-select: none; }
-.fd-designer-editor.fd-dragging .fd-step-cards::after {
-  content: "Drop here to put it last"; position: absolute; inset-inline: 0; top: calc(100% + 4px); height: 18px; display: grid; place-items: center;
-  color: var(--fd-muted); font-size: 11.5px; border: 1px dashed var(--fd-border-strong); border-radius: 5px; pointer-events: none;
-}
-.fd-q.fd-drag-source { opacity: 0.35; }
+/* Carried, a question leaves its place: the gap shows where it goes. */
+.fd-q.fd-drag-source { display: none; }
 .fd-add-question { display: inline-flex; gap: 6px; align-items: center; }
 .fd-design-step > .fd-button { justify-self: start; }
 .fd-step-cards:empty::before { content: "No questions on this page yet."; color: var(--fd-muted); font-size: 13px; padding: 4px 2px; }
@@ -246,7 +241,17 @@ export const DESIGNER_CSS = /* css */ `
 
 /* The canvas: the page as the viewer draws it, measured against its own width. */
 .fd-canvas-scroll { min-width: 0; }
-.fd-canvas { container-type: inline-size; display: grid; gap: 18px; min-width: 0; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 22px 24px 30px; }
+.fd-canvas { container-type: inline-size; display: grid; gap: 18px; min-width: 0; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 22px 32px 30px; }
+/* A field's grip: six dots just beside it, shown when it is pointed at or picked. */
+.fd-card-grip {
+  all: unset; box-sizing: border-box; position: absolute; top: 6px; inset-inline-start: -20px; width: 16px; height: 24px; display: grid; place-items: center;
+  border-radius: 4px; color: var(--fd-muted); cursor: grab; opacity: 0; transition: opacity 120ms; touch-action: none;
+}
+.fd-card-grip > .fd-dicon { width: 14px; height: 14px; }
+.fd-canvas-field:hover > .fd-card-grip, .fd-canvas-field.fd-editing > .fd-card-grip, .fd-card-grip:focus-visible { opacity: 1; }
+.fd-card-grip:hover { background: var(--fd-page); color: var(--fd-text); }
+.fd-card-grip:active { cursor: grabbing; }
+@media (prefers-reduced-motion: reduce) { .fd-card-grip { transition: none; } }
 .fd-canvas-body { display: grid; gap: 26px; }
 .fd-canvas-title.fd-canvas-title-filled { color: var(--fd-text); }
 .fd-canvas-title { all: unset; box-sizing: border-box; cursor: pointer; font-size: 26px; font-weight: 650; line-height: 1.25; color: var(--fd-muted); padding: 8px 14px; border: 1px dashed var(--fd-border-strong); border-radius: var(--fd-radius); background: var(--fd-surface); }
@@ -367,19 +372,22 @@ export const DESIGNER_CSS = /* css */ `
 .fd-menu-roomy .fd-menu-divider { margin: 8px 0; }
 @media (prefers-reduced-motion: reduce) { .fd-menu { animation: none; } }
 
-/* Dragging: a copy follows the pointer, a line shows where it lands. */
-.fd-drag-ghost { position: fixed; z-index: 100; pointer-events: none; margin: 0; height: auto !important; opacity: 0.92; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2); outline: 1px solid var(--fd-accent) !important; background: var(--fd-surface); border-radius: 6px; transform: rotate(-1deg); }
-.fd-drag-ghost.fd-tool { display: grid; width: 76px !important; }
-.fd-canvas-field.fd-drag-source { opacity: 0.35; }
-.fd-drop-marker { position: fixed; z-index: 99; pointer-events: none; background: var(--fd-accent); border-radius: 2px; }
-.fd-canvas-section.fd-drop-target { outline: 2px dashed var(--fd-accent); background: var(--fd-accent-soft); }
-/* While something is carried, the gap under each section is a place to drop it last — drawn in the gap, so nothing moves. */
-.fd-canvas-section { position: relative; }
-.fd-canvas.fd-dragging .fd-canvas-section::after {
-  content: "Drop here to put it last"; position: absolute; inset-inline: 0; top: calc(100% + 6px); height: 18px; display: grid; place-items: center;
-  color: var(--fd-muted); font-size: 11.5px; border: 1px dashed var(--fd-border-strong); border-radius: 5px; pointer-events: none;
+/* Dragging: a chip with its name follows the pointer; a gap its size opens where it lands, the others moving aside. */
+.fd-drag-ghost.fd-drag-chip {
+  position: fixed; z-index: 100; pointer-events: none; margin: 0; max-width: 260px; padding: 6px 12px; box-sizing: border-box;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--fd-text);
+  background: var(--fd-surface); border: 1px solid var(--fd-accent); border-radius: 8px; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
 }
-.fd-canvas.fd-dragging .fd-canvas-section.fd-drop-target::after { border-color: var(--fd-accent); color: var(--fd-accent); }
+.fd-drop-slot {
+  box-sizing: border-box; min-height: 44px; border: 2px dashed var(--fd-accent); border-radius: 8px; background: var(--fd-accent-soft);
+  grid-column: span min(var(--fd-span, 1), var(--fd-columns, 1));
+}
+.fd-canvas-field.fd-drag-source { display: none; }
+.fd-drag-source-dim { opacity: 0.35; }
+.fd-drop-marker { position: fixed; z-index: 99; pointer-events: none; background: var(--fd-accent); border-radius: 2px; }
+.fd-canvas-section { position: relative; }
+/* With the gap in it, an empty section says nothing about being empty. */
+.fd-canvas-section:has(.fd-drop-slot) .fd-canvas-empty { display: none; }
 
 .fd-props { display: grid; gap: 10px; }
 .fd-prop { display: grid; gap: 4px; }
@@ -547,7 +555,6 @@ export const DESIGNER_CSS = /* css */ `
 .fd-list-canvas .fd-list-table .fd-canvas-add-column { position: sticky; inset-inline-end: 0; z-index: 1; width: 1%; padding-inline: 8px; background: var(--fd-surface); border-inline-start: 1px solid var(--fd-border); box-shadow: -6px 0 8px -6px rgba(15, 23, 42, 0.18); }
 .fd-canvas-add-column .fd-canvas-add-part { padding: 2px 6px; font-weight: 400; border: 0; color: var(--fd-accent); }
 .fd-canvas.fd-dragging .fd-list-table th.fd-canvas-column { cursor: grabbing; }
-.fd-drag-ghost.fd-canvas-column { display: block; padding: 8px 12px; font-weight: 600; font-size: 13px; }
 /* After the panel rules, so these win when the editor is narrow: the toolbox and the panel stack around the canvas. */
 @container (max-width: 1000px) {
   .fd-screen-body { grid-template-columns: minmax(0, 1fr); }

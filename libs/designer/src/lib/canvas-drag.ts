@@ -1,13 +1,20 @@
 /**
- * Dragging on the screen canvas: a field to another place, in its section or
- * another, or a tile from the toolbox onto the page. The pointer is followed
- * by a copy of what is carried, with a line where it would land; let go over
- * a section, it lands there as one edit; let go anywhere else, or press
- * Escape, and nothing changes. Resting on a closed tab opens it, so a field
- * can go into another tab.
+ * Dragging on the canvas: a field to another place, in its section or
+ * another, or a tile from the toolbox onto the page. What is carried leaves
+ * its place, and a gap of its size opens where it would land, the fields
+ * around it moving aside — so where it goes is seen, not guessed; a small
+ * chip with its name follows the pointer. Let go over a section, it lands in
+ * the gap as one edit; let go anywhere else, or press Escape, and nothing
+ * changes. Resting on a closed tab opens it, so a field can go into another
+ * tab. Held at the window's top or bottom edge, the page scrolls.
+ *
+ * The gap moves only when the pointer crosses the middle of another field —
+ * over the gap itself nothing moves — so the fields moving aside never chase
+ * the pointer into a flicker.
  *
  * A list's columns, side by side, take the same drag: their row carries
- * `data-drop-flow="row"`, and a line down the whole table shows the place.
+ * `data-drop-flow="row"`, and a line down the whole table shows the place,
+ * as a table's columns cannot make room the way a grid's fields do.
  *
  * A press that does not move is a click, left to the click handlers; the
  * click that ends a real drag is swallowed. Places are read from where things
@@ -34,6 +41,7 @@ export interface CanvasDragOptions {
   /**
    * The canvas: its sections carry `data-drop-section` — and `data-drop-flow="column"`
    * where they are one column, as a survey's page is — its fields `.fd-canvas-field[data-node]`.
+   * A section's fields sit in its `[data-drop-grid]`, or in the section itself.
    */
   canvas: HTMLElement;
   /** What can be carried, when not the screen's fields: a survey's questions, say. */
@@ -53,12 +61,24 @@ export interface CanvasDrag {
 const SLOP = 4;
 /** How long the pointer rests on a tab before it opens. */
 const TAB_DELAY = 450;
-/** How far under a section a drop still lands in it, last: the gap where its place to drop last is drawn. */
+/**
+ * How far under a table a column still lands in it. A grid's gap needs none:
+ * its last place is the room beside or after its last field — and a reach
+ * under a section would let the gap grow the section away from the pointer.
+ */
 const REACH = 24;
 /** How near the window's top or bottom something carried scrolls the page, faster the nearer. */
 const EDGE = 48;
 /** How long it rests there first: a drop made quickly near the edge stays where it was let go. */
 const EDGE_DELAY = 250;
+
+/** The words a carried thing goes by, for the chip that follows the pointer. */
+function nameOf(element: HTMLElement): string {
+  // The words being typed in, for a field open to edit; else the words it shows.
+  const box = element.querySelector<HTMLInputElement>('.fd-canvas-label-input, .fd-q-label');
+  const words = box?.value || element.querySelector('.fd-label, .fd-q-text, .fd-tool-name, .fd-list-sort')?.textContent || element.textContent || '';
+  return words.trim().replace(/\s+/g, ' ').slice(0, 48) || 'Field';
+}
 
 export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
   const { canvas } = options;
@@ -70,10 +90,12 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
     source: DragSource;
     element: HTMLElement;
     start: { x: number; y: number };
-    offset: { x: number; y: number };
     started: boolean;
     ghost: HTMLElement | null;
     marker: HTMLElement | null;
+    /** The gap where it would land; for a field, first in its own place. */
+    slot: HTMLElement | null;
+    /** Where the gap is: the section, and how many of its other fields come before it. */
     target: { section: string; index: number } | null;
   }
   let drag: Drag | null = null;
@@ -98,17 +120,17 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
   }
 
   const sections = () => [...canvas.querySelectorAll<HTMLElement>('[data-drop-section]')].filter((s) => !s.closest('[hidden]'));
+  const flowOf = (section: HTMLElement | null) => section?.dataset['dropFlow'] ?? 'grid';
   const cardSelector = options.cards ?? '.fd-canvas-field[data-node]';
   const cardsIn = (section: HTMLElement) => [...section.querySelectorAll<HTMLElement>(cardSelector)];
-  /** A section and the gap under it, where a place to drop last is drawn. */
+  /** A section and the gap under it, where it can still be dropped last. */
   const reach = (r: Rect): Rect => ({ left: r.left, top: r.top, right: r.right, bottom: r.bottom + REACH });
-  const sectionAt = (x: number, y: number) => sections().find((s) => inside(reach(rectOf(s)), x, y)) ?? null;
+  const sectionAt = (x: number, y: number) => sections().find((s) => inside(flowOf(s) === 'row' ? reach(rectOf(s)) : rectOf(s), x, y)) ?? null;
   const closedTabAt = (x: number, y: number) =>
     [...canvas.querySelectorAll<HTMLElement>('.fd-tab')].find((t) => t.getAttribute('aria-selected') !== 'true' && inside(rectOf(t), x, y)) ?? null;
 
   function begin(source: DragSource, element: HTMLElement, x: number, y: number) {
-    const r = rectOf(element);
-    drag = { source, element, start: { x, y }, offset: { x: x - r.left, y: y - r.top }, started: false, ghost: null, marker: null, target: null };
+    drag = { source, element, start: { x, y }, started: false, ghost: null, marker: null, slot: null, target: null };
   }
 
   /** A press on a field: anywhere on one not being edited, or on the grip of the one being edited. */
@@ -118,64 +140,118 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
     const card = target.closest?.<HTMLElement>(cardSelector);
     if (!card || !canvas.contains(card)) return;
     const grip = target.closest('[data-grip]');
-    if (card.classList.contains('fd-editing') ? !grip : target.closest('input, select, textarea, button, a, [contenteditable]')) return;
+    if (card.classList.contains('fd-editing') ? !grip : target.closest('input, select, textarea, button:not([data-grip]), a, [contenteditable]')) return;
     begin({ node: card.dataset['node'] as string }, card, event.clientX, event.clientY);
   }
 
+
   function lift(current: Drag) {
     current.started = true;
-    // While something is carried, each section shows a place to drop it last, and nothing on the page is selected.
+    // While something is carried, nothing on the page is selected.
     canvas.classList.add('fd-dragging');
     doc.getSelection()?.removeAllRanges();
-    if ('node' in current.source) current.element.classList.add('fd-drag-source');
-    const r = rectOf(current.element);
-    const ghost = current.element.cloneNode(true) as HTMLElement;
-    ghost.removeAttribute('id');
-    ghost.classList.add('fd-drag-ghost');
+    const home = 'node' in current.source ? current.element.closest<HTMLElement>('[data-drop-section]') : null;
+    // A small chip with its name, so it never hides where it is going.
+    const ghost = doc.createElement('div');
+    ghost.className = 'fd-drag-ghost fd-drag-chip';
     ghost.setAttribute('aria-hidden', 'true');
-    ghost.style.width = `${r.right - r.left}px`;
+    ghost.textContent = nameOf(current.element);
     current.ghost = ghost;
-    current.marker = doc.createElement('div');
-    current.marker.className = 'fd-drop-marker';
-    // Inside the editor, so the copy keeps the form's look.
-    (canvas.closest('.fd-form') ?? doc.body).append(ghost, current.marker);
+    (canvas.closest('.fd-form') ?? doc.body).append(ghost);
+    if (flowOf(home) === 'row' || ('tool' in current.source && canvas.querySelector('[data-drop-flow="row"]'))) {
+      // Columns of a table: a line where it lands; the column dims in its place.
+      if ('node' in current.source) current.element.classList.add('fd-drag-source-dim');
+      current.marker = doc.createElement('div');
+      current.marker.className = 'fd-drop-marker';
+      (canvas.closest('.fd-form') ?? doc.body).append(current.marker);
+      return;
+    }
+    // The gap: as big as what is carried, in its place to begin with.
+    const slot = doc.createElement('div');
+    slot.className = 'fd-drop-slot';
+    slot.setAttribute('aria-hidden', 'true');
+    const r = rectOf(current.element);
+    if ('node' in current.source) {
+      slot.style.height = `${Math.round(Math.min(160, Math.max(44, r.bottom - r.top)))}px`;
+      const span = current.element.style.getPropertyValue('--fd-span');
+      if (span) slot.style.setProperty('--fd-span', span);
+      current.element.before(slot);
+      current.element.classList.add('fd-drag-source');
+      const section = current.element.closest<HTMLElement>('[data-drop-section]');
+      if (section) current.target = { section: section.dataset['dropSection'] as string, index: cardsIn(section).indexOf(current.element) };
+    } else slot.style.height = '56px';
+    current.slot = slot;
+  }
+
+  /** Put the gap before the `index`-th of the section's other fields, or after the last of them. */
+  function placeSlot(slot: HTMLElement, section: HTMLElement, others: HTMLElement[], index: number) {
+    if (index < others.length) {
+      if (others[index].previousElementSibling !== slot) others[index].before(slot);
+    } else if (others.length) {
+      if (others[others.length - 1].nextElementSibling !== slot) others[others.length - 1].after(slot);
+    } else {
+      const grid = section.querySelector('[data-drop-grid]') ?? section;
+      if (slot.parentElement !== grid) grid.append(slot);
+    }
   }
 
   function follow(current: Drag, x: number, y: number) {
     if (current.ghost) {
-      current.ghost.style.left = `${x - current.offset.x}px`;
-      current.ghost.style.top = `${y - current.offset.y}px`;
+      current.ghost.style.left = `${x + 14}px`;
+      current.ghost.style.top = `${y + 10}px`;
     }
     const section = sectionAt(x, y);
     for (const s of sections()) s.classList.toggle('fd-drop-target', s === section);
-    if (!section) {
+    if (current.marker) return followLine(current, section, x, y);
+    const slot = current.slot as HTMLElement;
+    if (!section || flowOf(section) === 'row') {
       current.target = null;
-      if (current.marker) current.marker.hidden = true;
+      // Over no section: back to where it came from, or nowhere for something new.
+      if ('node' in current.source) current.element.before(slot);
+      else slot.remove();
       return;
     }
-    // Its own place is not counted: in its own section the others close up around it.
+    const id = section.dataset['dropSection'] as string;
+    const others = cardsIn(section).filter((c) => c !== current.element);
+    const column = flowOf(section) === 'column';
+    let index: number;
+    const over = others.find((c) => inside(rectOf(c), x, y));
+    if (over) {
+      // Over another field: before it in its first half, after it in its second.
+      const r = rectOf(over);
+      const second = column ? y > (r.top + r.bottom) / 2 : x > (r.left + r.right) / 2;
+      index = others.indexOf(over) + (second ? 1 : 0);
+    } else if (current.target?.section === id && slot.isConnected && inside(rectOf(slot), x, y)) {
+      // Over the gap itself: it stays.
+      index = current.target.index;
+    } else {
+      // In the room between fields: by reading order, or by height down a column.
+      const rects = others.map(rectOf);
+      index = column ? rects.filter((r) => (r.top + r.bottom) / 2 < y).length : dropIndex(rects, x, y);
+    }
+    current.target = { section: id, index };
+    placeSlot(slot, section, others, index);
+  }
+
+  /** Across a table's columns: a line down the table where it would land. */
+  function followLine(current: Drag, section: HTMLElement | null, x: number, y: number) {
+    const marker = current.marker as HTMLElement;
+    if (!section || flowOf(section) !== 'row') {
+      current.target = null;
+      marker.hidden = true;
+      return;
+    }
     const others = cardsIn(section).filter((c) => c !== current.element);
     const rects = others.map(rectOf);
-    // One under another, height alone decides; side by side, as a list's columns are, the side alone; in a grid, reading order.
-    const flow = section.dataset['dropFlow'];
-    const column = flow === 'column';
-    const index = column ? rects.filter((r) => (r.top + r.bottom) / 2 < y).length : flow === 'row' ? rects.filter((r) => (r.left + r.right) / 2 < x).length : dropIndex(rects, x, y);
+    const index = rects.filter((r) => (r.left + r.right) / 2 < x).length;
     current.target = { section: section.dataset['dropSection'] as string, index };
-    if (!current.marker) return;
-    current.marker.hidden = false;
+    marker.hidden = false;
     const at = rects[index];
     const last = rects[rects.length - 1];
     const area = rectOf(section);
-    // In a grid, before a field: a line down its leading edge. Down a column, a line across over it. After them all, a line across under the last.
-    const line =
-      flow === 'row'
-        ? { left: (at ? at.left : last ? last.right : area.left) - 1, top: area.top, width: 3, height: area.bottom - area.top }
-        : at && !column
-        ? { left: at.left - 5, top: at.top, width: 3, height: at.bottom - at.top }
-        : at
-          ? { left: at.left, top: at.top - 6, width: at.right - at.left, height: 3 }
-          : { left: area.left + 6, top: (last ? last.bottom : area.top + 30) + 4, width: area.right - area.left - 12, height: 3 };
-    Object.assign(current.marker.style, { left: `${line.left}px`, top: `${line.top}px`, width: `${line.width}px`, height: `${line.height}px` });
+    const line = { left: (at ? at.left : last ? last.right : area.left) - 1, top: area.top, width: 3, height: area.bottom - area.top };
+    Object.assign(marker.style, { left: `${line.left}px`, top: `${line.top}px`, width: `${line.width}px`, height: `${line.height}px` });
+    void y;
   }
 
   function restOnTab(x: number, y: number) {
@@ -230,7 +306,8 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
     if (!current?.started) return;
     current.ghost?.remove();
     current.marker?.remove();
-    current.element.classList.remove('fd-drag-source');
+    current.slot?.remove();
+    current.element.classList.remove('fd-drag-source', 'fd-drag-source-dim');
     canvas.classList.remove('fd-dragging');
     for (const s of sections()) s.classList.remove('fd-drop-target');
     swallowNextClick();

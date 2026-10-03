@@ -16,7 +16,10 @@ function canvas() {
       const card = document.createElement('div');
       card.className = 'fd-field fd-canvas-field';
       card.dataset['node'] = name;
-      card.append(document.createElement('label'));
+      const label = document.createElement('label');
+      label.className = 'fd-label';
+      label.textContent = name[0].toUpperCase() + name.slice(1);
+      card.append(label);
       element.append(card);
       place(card, 10 + (i % 2) * 390, top + 40 + Math.floor(i / 2) * 80, 380, 70);
     });
@@ -74,10 +77,9 @@ describe('dragging questions down a survey page', () => {
     const pointer = (type: string, target: EventTarget, x: number, y: number) =>
       target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0 }) as unknown as PointerEvent);
     pointer('pointerdown', cards[2], 500, 260);
-    // Far to the right but in the top half of "email": before it, whatever the side.
+    // Far to the right but in the top half of "email": before it, whatever the side — the gap opens there.
     pointer('pointermove', document, 580, 150);
-    const line = document.querySelector('.fd-drop-marker') as HTMLElement;
-    expect([line.style.top, line.style.height]).toEqual(['114px', '3px']);
+    expect((document.querySelector('.fd-drop-slot') as HTMLElement).nextElementSibling).toBe(cards[1]);
     pointer('pointerup', document, 580, 150);
     expect(dropped).toEqual([[{ node: 'coming' }, 'step-1', 1]]);
     drag.destroy();
@@ -126,7 +128,7 @@ describe('dragging columns along a list', () => {
 });
 
 describe('dragging on the canvas', () => {
-  it('carries a field to another section, a line where it lands, and drops it there', () => {
+  it('carries a field to another section, a gap opening where it lands, and drops it there', () => {
     const { card, pointer, second, dropped } = canvas();
     pointer('pointerdown', card('customer').querySelector('label') as Element, 100, 60);
     // A press that has not moved is still a click.
@@ -135,11 +137,12 @@ describe('dragging on the canvas', () => {
     expect(document.querySelector('.fd-drag-ghost')).not.toBeNull();
     expect(card('customer').classList.contains('fd-drag-source')).toBe(true);
     expect(second.classList.contains('fd-drop-target')).toBe(true);
-    expect((document.querySelector('.fd-drop-marker') as HTMLElement).hidden).toBe(false);
+    // In the second half of "next": the gap after it.
+    expect(card('next').nextElementSibling?.classList.contains('fd-drop-slot')).toBe(true);
     pointer('pointerup', document, 300, 470);
     expect(dropped).toEqual([[{ node: 'customer' }, 'follow', 1]]);
     expect(document.querySelector('.fd-drag-ghost')).toBeNull();
-    expect(document.querySelector('.fd-drop-marker')).toBeNull();
+    expect(document.querySelector('.fd-drop-slot')).toBeNull();
     expect(second.classList.contains('fd-drop-target')).toBe(false);
     expect(card('customer').classList.contains('fd-drag-source')).toBe(false);
   });
@@ -169,20 +172,21 @@ describe('dragging on the canvas', () => {
     expect(clicks).toBe(1);
   });
 
-  it('drops last in a section from the gap just under it, and nowhere further down', () => {
+  it('drops last in a section from the room after its last field, and nowhere under the section', () => {
     const { card, pointer, dropped } = canvas();
-    // The first section ends at 300; the second starts at 400.
+    // Beside "notes", the last of the first section, in the room left on its row.
     pointer('pointerdown', card('next'), 100, 460);
+    pointer('pointermove', document, 600, 150);
+    pointer('pointerup', document, 600, 150);
+    expect(dropped).toEqual([[{ node: 'next' }, 'visit', 3]]);
+    // The first section ends at 300: under it is no section.
+    pointer('pointerdown', card('due'), 500, 460);
     pointer('pointermove', document, 300, 318);
     pointer('pointerup', document, 300, 318);
-    expect(dropped).toEqual([[{ node: 'next' }, 'visit', 3]]);
-    pointer('pointerdown', card('due'), 500, 460);
-    pointer('pointermove', document, 300, 340);
-    pointer('pointerup', document, 300, 340);
     expect(dropped).toHaveLength(1);
   });
 
-  it('marks the canvas while something is carried, so each section can show a place to drop it last', () => {
+  it('marks the canvas while something is carried', () => {
     const { host, card, pointer } = canvas();
     pointer('pointerdown', card('customer'), 100, 60);
     expect(host.classList.contains('fd-dragging')).toBe(false);
@@ -224,7 +228,8 @@ describe('dragging on the canvas', () => {
     const { card, pointer, dropped } = canvas();
     pointer('pointerdown', card('date'), 500, 60);
     pointer('pointermove', document, 900, 350);
-    expect((document.querySelector('.fd-drop-marker') as HTMLElement).hidden).toBe(true);
+    // Over no section: the gap goes back to where it came from.
+    expect(card('date').previousElementSibling?.classList.contains('fd-drop-slot')).toBe(true);
     pointer('pointerup', document, 900, 350);
     pointer('pointerdown', card('date'), 500, 60);
     pointer('pointermove', document, 300, 470);
@@ -311,6 +316,35 @@ describe('dragging on the canvas', () => {
     scrollBy.mockRestore();
     jest.useRealTimers();
     drag.destroy();
+  });
+
+  it('opens a gap the size of what is carried in its own place, and moves it only across the middle of another field', () => {
+    const { card, pointer, first, place } = canvas();
+    card('customer').style.setProperty('--fd-span', '2');
+    pointer('pointerdown', card('customer'), 100, 60);
+    pointer('pointermove', document, 106, 64);
+    const slot = document.querySelector('.fd-drop-slot') as HTMLElement;
+    /** What a person sees in the first section, in order: the fields on show, and the gap. */
+    const seen = () => [...first.children].filter((c) => !c.classList.contains('fd-drag-source')).map((c) => (c === slot ? '[gap]' : (c as HTMLElement).dataset['node']));
+    // Where it was, as wide as it was; it is out of the way.
+    expect(seen()).toEqual(['[gap]', 'date', 'notes']);
+    expect(slot.style.getPropertyValue('--fd-span')).toBe('2');
+    expect(slot.style.height).toBe('70px');
+    expect(card('customer').classList.contains('fd-drag-source')).toBe(true);
+    // A chip with its name follows the pointer.
+    expect(document.querySelector('.fd-drag-chip')?.textContent).toBe('Customer');
+    // Over the second half of "date": the gap after it.
+    pointer('pointermove', document, 700, 70);
+    expect(seen()).toEqual(['date', '[gap]', 'notes']);
+    // Over the gap itself, wherever it is now drawn: it stays.
+    place(slot, 10, 120, 380, 70);
+    pointer('pointermove', document, 200, 150);
+    expect(seen()).toEqual(['date', '[gap]', 'notes']);
+    // Over the second half of "notes", moved on by the gap: after it.
+    place(card('notes'), 400, 120, 380, 70);
+    pointer('pointermove', document, 700, 150);
+    expect(seen()).toEqual(['date', 'notes', '[gap]']);
+    pointer('pointerup', document, 420, 150);
   });
 
   it('goes quiet once taken down', () => {

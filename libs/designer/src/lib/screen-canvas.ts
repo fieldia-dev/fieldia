@@ -5,6 +5,7 @@ import { canvasHeader } from './canvas-header';
 import { elementFactory, optionsEditor, type OptionsEditor } from './chrome';
 import type { Designer, DesignerState } from './designer';
 import { fieldBar, type FieldBar } from './field-bar';
+import { designerIcon } from './icons';
 import { tabHolds } from './page-tree';
 import { sampleRows } from './samples';
 
@@ -91,12 +92,15 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     card.element.remove();
   }
 
+  /** Six dots beside a field, shown when it is pointed at or picked: what it is carried by. */
+  const gripOf = () => el('button', { type: 'button', class: 'fd-card-grip', 'data-grip': '', 'aria-label': 'Drag to move', title: 'Drag to move · Alt+↑ or ↓ moves it too', tabindex: '-1' }, designerIcon(doc, 'grip'));
+
   function buildCard(id: string, editing: boolean, ownChoice: boolean): Card {
     const widgetBox = el('div', { class: 'fd-canvas-widget', inert: '' });
     if (!editing) {
       const label = el('label', { class: 'fd-label' });
       const help = el('div', { class: 'fd-help' });
-      const element = el('div', { class: 'fd-field fd-canvas-field', 'data-node': id }, label, widgetBox, help);
+      const element = el('div', { class: 'fd-field fd-canvas-field', 'data-node': id }, gripOf(), label, widgetBox, help);
       return { element, editing, widgetBox, widget: null, painted: '', label, help, bar: null, options: null };
     }
     const bar = fieldBar({ el, doc, designer, id, more: options.more });
@@ -124,6 +128,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     const element = el(
       'div',
       { class: 'fd-field fd-canvas-field fd-editing', 'data-node': id },
+      gripOf(),
       bar.element,
       el('div', { class: 'fd-label fd-canvas-label-row' }, label),
       ...(choices ? [choices.element] : [widgetBox]),
@@ -214,7 +219,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       titleInput.select();
     });
     const legend = el('legend', { class: 'fd-section-title' }, title, titleInput);
-    const grid = el('div', { class: 'fd-grid' });
+    const grid = el('div', { class: 'fd-grid', 'data-drop-grid': '' });
     const empty = el('p', { class: 'fd-canvas-empty' }, 'Drop a field here, or pick one in the toolbox.');
     const element = el('fieldset', { class: 'fd-section fd-canvas-section', 'data-node': id, 'data-drop-section': id }, legend, grid, empty);
     return { element, legend, title, titleInput, grid, empty };

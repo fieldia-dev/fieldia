@@ -160,7 +160,7 @@ test.describe('survey designer', () => {
     await page.mouse.move(rating.x + rating.width / 2, rating.y + 20);
     await page.mouse.down();
     for (let i = 1; i <= 12; i++) await page.mouse.move(rating.x + ((email.x + 100 - rating.x) * i) / 12, rating.y + ((email.y + 12 - rating.y) * i) / 12, { steps: 3 });
-    await expect(page.locator('.fd-drop-marker')).toBeVisible();
+    await expect(page.locator('.fd-drop-slot')).toBeVisible();
     await screen(page, 'designer-drag-tile', { viewport: true });
     await page.mouse.up();
     await expect(picked(page).locator('.fd-q-label')).toBeFocused();

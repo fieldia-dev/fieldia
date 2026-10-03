@@ -60,6 +60,16 @@ describe('the screen canvas — drawn as the viewer draws it', () => {
     expect(widget.querySelector('input')).not.toBeNull();
   });
 
+  it('gives every field a grip to carry it by, picked or not', () => {
+    const { card, date, step, designer } = visit();
+    for (const id of [date, step]) {
+      const grip = card(id).querySelector('[data-grip]') as HTMLElement;
+      expect(grip.getAttribute('aria-label')).toBe('Drag to move');
+    }
+    designer.select(date);
+    expect(card(date).querySelector('.fd-card-grip[data-grip]')).not.toBeNull();
+  });
+
   it('says where to drop in a section with no fields yet', () => {
     setup();
     const empty = canvas.element.querySelector('.fd-canvas-empty') as HTMLElement;

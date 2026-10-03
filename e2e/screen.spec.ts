@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addField, cardOf, drag, editing, layout, publish, tile, watch } from './designer-support';
+import { addField, cardOf, drag, dragToward, editing, layout, publish, tile, watch } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -24,7 +24,7 @@ test.describe('screen designer', () => {
   });
   test.afterEach(() => expect(problems).toEqual([]));
 
-  test('drags a field within its section and into another, a line showing where, one undo step each', async ({ page }) => {
+  test('drags a field within its section and into another, a gap opening where it lands, one undo step each', async ({ page }) => {
     await screen(page, 'screen-start');
     await expectNoSidewaysScroll(page);
     expect(await layout(page)).toEqual(start);
@@ -33,24 +33,27 @@ test.describe('screen designer', () => {
     const notes = await box(page, 'Notes');
     const customer = await box(page, 'Customer');
     await drag(page, { x: notes.x + 40, y: notes.y + 12 }, { x: customer.x + 20, y: customer.y + 20 }, { release: false });
-    await expect(page.locator('.fd-drag-ghost')).toBeVisible();
-    await expect(page.locator('.fd-drop-marker')).toBeVisible();
+    // A chip with its name follows the pointer; a gap as wide as Notes opens first in the section.
+    await expect(page.locator('.fd-drag-chip')).toHaveText('Notes');
+    const gap = (await page.locator('.fd-drop-slot').boundingBox())!;
+    expect(Math.abs(gap.x - customer.x), 'the gap is not where Customer was').toBeLessThan(12);
+    expect(gap.width, 'the gap is not as wide as Notes').toBeGreaterThan(notes.width - 30);
+    await screen(page, 'screen-drag-gap', { viewport: true });
     await page.mouse.up();
     await expect.poll(() => layout(page)).toEqual([['Notes:2', 'Customer:1', 'Visit date:1'], start[1]]);
-    await expect(page.locator('.fd-drag-ghost, .fd-drop-marker')).toHaveCount(0);
+    await expect(page.locator('.fd-drag-ghost, .fd-drop-slot')).toHaveCount(0);
     // The canvas is the viewer's grid: Notes takes the whole row, Customer goes under it.
     await expect.poll(async () => (await box(page, 'Customer')).y - (await box(page, 'Notes')).y).toBeGreaterThan(60);
     await page.locator('.fd-designer-status').click();
     await page.keyboard.press(`${mod}+z`);
     await expect.poll(() => layout(page)).toEqual(start);
 
-    // Customer, down out of its section onto the start of "Due by".
+    // Customer, down out of its section onto the start of "Due by", wherever Due by is as the gap travels.
     const from = await box(page, 'Customer');
-    const dueBy = await box(page, 'Due by');
-    await drag(page, { x: from.x + 40, y: from.y + 12 }, { x: dueBy.x + 20, y: dueBy.y + 24 }, { release: false });
+    await dragToward(page, { x: from.x + 40, y: from.y + 12 }, async () => { const d = await box(page, 'Due by'); return { x: d.x + 20, y: d.y + 24 }; }, { release: false });
     await expect(page.locator('.fd-canvas-section.fd-drop-target .fd-canvas-section-title')).toHaveText('Follow-up');
-    const line = (await page.locator('.fd-drop-marker').boundingBox())!;
-    expect(Math.abs(line.x + line.width - dueBy.x), 'the line is not at the start of "Due by"').toBeLessThan(10);
+    // The gap sits right before Due by.
+    await expect(page.locator('.fd-drop-slot + .fd-canvas-field .fd-label')).toHaveText('Due by');
     await screen(page, 'screen-drag-across', { viewport: true });
     await page.mouse.up();
     await expect.poll(() => layout(page)).toEqual([['Visit date:1', 'Notes:2'], ['Next step:1', 'Customer:1', 'Due by:1', 'Manager to call?:1']]);
@@ -69,9 +72,9 @@ test.describe('screen designer', () => {
 
   test('drags a tile in from the toolbox to a place on the canvas, its name ready to be typed', async ({ page }) => {
     const rating = (await tile(page, 'kind:rating').boundingBox())!;
-    const dueBy = await box(page, 'Due by');
-    await drag(page, { x: rating.x + rating.width / 2, y: rating.y + 20 }, { x: dueBy.x + 20, y: dueBy.y + 24 }, { release: false });
-    await expect(page.locator('.fd-drag-ghost')).toBeVisible();
+    await dragToward(page, { x: rating.x + rating.width / 2, y: rating.y + 20 }, async () => { const d = await box(page, 'Due by'); return { x: d.x + 20, y: d.y + 24 }; }, { release: false });
+    await expect(page.locator('.fd-drag-chip')).toHaveText('Rating');
+    await expect(page.locator('.fd-drop-slot + .fd-canvas-field .fd-label')).toHaveText('Due by');
     await page.mouse.up();
     await expect(editing(page).label).toBeFocused();
     await page.keyboard.type('Visit score');

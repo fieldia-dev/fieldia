@@ -147,3 +147,24 @@ export function doubleLines(page: Page): Promise<string[]> {
     return [...new Set(found)];
   });
 }
+
+/**
+ * Drag as a person aims: towards where the target is now — the fields move
+ * aside as the gap travels — looking again until it stays put. `aim` gives
+ * the point to head for, read afresh each time.
+ */
+export async function dragToward(page: Page, from: { x: number; y: number }, aim: () => Promise<{ x: number; y: number }>, options: { release?: boolean } = {}) {
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  let at = from;
+  for (let look = 0; look < 5; look++) {
+    const to = await aim();
+    const steps = Math.max(2, Math.ceil(Math.hypot(to.x - at.x, to.y - at.y) / 60));
+    for (let i = 1; i <= steps; i++) await page.mouse.move(at.x + ((to.x - at.x) * i) / steps, at.y + ((to.y - at.y) * i) / steps);
+    at = to;
+    await page.waitForTimeout(60);
+    const now = await aim();
+    if (Math.hypot(now.x - to.x, now.y - to.y) < 4) break;
+  }
+  if (options.release !== false) await page.mouse.up();
+}

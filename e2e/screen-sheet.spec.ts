@@ -113,9 +113,14 @@ test.describe('screen designer · record sheet', () => {
     for (let i = 1; i <= 14; i++) await page.mouse.move(from.x + ((over.x - from.x) * i) / 14, from.y + ((over.y - from.y) * i) / 14, { steps: 3 });
     // Resting on the tab opens it.
     await expect(tabs(page).nth(1)).toHaveAttribute('aria-selected', 'true');
-    const notes = (await (await cardOf(page, 'Internal notes')).boundingBox())!;
-    // Into the place to drop last, drawn in the gap under the section.
-    await page.mouse.move(notes.x + notes.width - 20, notes.y + notes.height + 10, { steps: 8 });
+    // Last in its section: over the second half of the field there, wherever the gap has moved it, the gap opens after it.
+    for (let look = 0; look < 3; look++) {
+      const notes = (await (await cardOf(page, 'Internal notes')).boundingBox())!;
+      await page.mouse.move(notes.x + notes.width - 20, notes.y + notes.height / 2, { steps: 8 });
+      await page.waitForTimeout(60);
+    }
+    await expect(page.locator('.fd-canvas-field + .fd-drop-slot')).toHaveCount(1);
+    await screen(page, 'screen-drag-into-tab', { viewport: true });
     await page.mouse.up();
     const where = await page.evaluate(() => {
       const built = (window as any).fieldiaDesigner.designer.getPage();
