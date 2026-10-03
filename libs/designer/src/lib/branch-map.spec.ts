@@ -46,6 +46,17 @@ describe('the branch map', () => {
     expect(map.nodes.map((n) => n.column)).toEqual([0, 1, 2, 3, 4]);
   });
 
+  it('says an answer it is not, and how many rules when there are several', () => {
+    const { designer, yes, no } = branching();
+    const field = ((designer.getPage().layout as WizardNode).children[1].children[0] as FieldNode).field;
+    designer.setCondition(yes, { join: 'all', rules: [{ field, op: 'is not', value: false }] });
+    designer.setCondition(no, { join: 'any', rules: [{ field, op: 'is', value: false }, { field, op: 'is not', value: true }] });
+    const map = branchMap(designer.getPage());
+    expect(map.nodes.find((n) => n.id === yes)?.answer).toBe('not No');
+    expect(map.nodes.find((n) => n.id === no)?.answer).toBe('2 rules');
+    expect(map.nodes.find((n) => n.id === no)?.when).toBe('Do you use it? is No or Do you use it? is not Yes');
+  });
+
   it('says a rule of several, and one written by hand', () => {
     const { designer, yes, no } = branching();
     const page = designer.getPage() as Page;
