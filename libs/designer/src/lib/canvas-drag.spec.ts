@@ -281,6 +281,35 @@ describe('dragging on the canvas', () => {
     pointer('pointerup', document, 60, 360);
   });
 
+  it('scrolls the window while something is held near its top or bottom edge, and stops when let go', () => {
+    jest.useFakeTimers();
+    const { card, pointer, drag } = canvas();
+    const scrolled: number[] = [];
+    const scrollBy = jest.spyOn(window, 'scrollBy').mockImplementation(((_x: number, y: number) => void scrolled.push(y)) as typeof window.scrollBy);
+    pointer('pointerdown', card('customer'), 100, 60);
+    pointer('pointermove', document, 100, 300);
+    expect(scrolled).toEqual([]);
+    // Near the bottom: down, faster the nearer the edge.
+    pointer('pointermove', document, 100, window.innerHeight - 10);
+    jest.advanceTimersByTime(100);
+    expect(scrolled.length).toBeGreaterThan(2);
+    expect(scrolled.every((y) => y > 0)).toBe(true);
+    // Near the top: up.
+    scrolled.length = 0;
+    pointer('pointermove', document, 100, 8);
+    jest.advanceTimersByTime(100);
+    expect(scrolled.length).toBeGreaterThan(0);
+    expect(scrolled.every((y) => y < 0)).toBe(true);
+    // Let go: no more.
+    pointer('pointerup', document, 100, 8);
+    scrolled.length = 0;
+    jest.advanceTimersByTime(200);
+    expect(scrolled).toEqual([]);
+    scrollBy.mockRestore();
+    jest.useRealTimers();
+    drag.destroy();
+  });
+
   it('goes quiet once taken down', () => {
     const { card, pointer, dropped, drag } = canvas();
     drag.destroy();

@@ -55,6 +55,8 @@ const SLOP = 4;
 const TAB_DELAY = 450;
 /** How far under a section a drop still lands in it, last: the gap where its place to drop last is drawn. */
 const REACH = 24;
+/** How near the window's top or bottom something carried scrolls the page, faster the nearer. */
+const EDGE = 48;
 
 export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
   const { canvas } = options;
@@ -75,6 +77,22 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
   let drag: Drag | null = null;
   let tabTimer: ReturnType<typeof setTimeout> | undefined;
   let tabUnder: HTMLElement | null = null;
+  let edgeTimer: ReturnType<typeof setTimeout> | undefined;
+  let pointer = { x: 0, y: 0 };
+
+  /** Held near the window's top or bottom, the page scrolls under what is carried, so it can go to a place out of view. */
+  function edgeScroll() {
+    clearTimeout(edgeTimer);
+    edgeTimer = undefined;
+    const view = doc.defaultView;
+    if (!drag?.started || !view) return;
+    const { x, y } = pointer;
+    const speed = y < EDGE ? -(EDGE - y) : y > view.innerHeight - EDGE ? EDGE - (view.innerHeight - y) : 0;
+    if (!speed) return;
+    view.scrollBy(0, Math.round(speed / 2) || Math.sign(speed));
+    follow(drag, x, y);
+    edgeTimer = setTimeout(edgeScroll, 16);
+  }
 
   const sections = () => [...canvas.querySelectorAll<HTMLElement>('[data-drop-section]')].filter((s) => !s.closest('[hidden]'));
   const cardSelector = options.cards ?? '.fd-canvas-field[data-node]';
@@ -175,6 +193,8 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
     event.preventDefault();
     follow(drag, x, y);
     restOnTab(x, y);
+    pointer = { x, y };
+    if (!edgeTimer) edgeScroll();
   }
 
   /** The click a real drag ends with is not a click on what was under it. */
@@ -199,6 +219,8 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
     drag = null;
     clearTimeout(tabTimer);
     tabUnder = null;
+    clearTimeout(edgeTimer);
+    edgeTimer = undefined;
     if (!current?.started) return;
     current.ghost?.remove();
     current.marker?.remove();

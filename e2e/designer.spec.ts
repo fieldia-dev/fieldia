@@ -171,12 +171,17 @@ test.describe('survey designer', () => {
         return built.layout.children.map((s: any) => s.children.map((n: any) => built.fields[n.field].label));
       });
     expect(await labels()).toEqual([['Your name', 'How was it?', 'Email'], []]);
-    // Email, carried by its words into the empty second page.
+    // Email, carried by its words into the empty second page — below the fold: held at the window's edge, the page scrolls to it.
+    await page.locator('.fd-q').nth(2).scrollIntoViewIfNeeded();
     const from = (await page.locator('.fd-q').nth(2).locator('.fd-q-text').boundingBox())!;
-    const empty = (await page.locator('.fd-design-step').nth(1).locator('.fd-step-cards').boundingBox())!;
+    const cards = page.locator('.fd-design-step').nth(1).locator('.fd-step-cards');
+    const height = page.viewportSize()!.height;
     await page.mouse.move(from.x + 10, from.y + 5);
     await page.mouse.down();
-    for (let i = 1; i <= 12; i++) await page.mouse.move(from.x + 10, from.y + 5 + ((empty.y + 8 - from.y - 5) * i) / 12, { steps: 3 });
+    for (let i = 1; i <= 8; i++) await page.mouse.move(from.x + 10, from.y + 5 + ((height - 12 - from.y - 5) * i) / 8, { steps: 3 });
+    await expect.poll(async () => { const box = await cards.boundingBox(); return !!box && box.y + 8 < height - 60; }, { timeout: 5000 }).toBe(true);
+    const empty = (await cards.boundingBox())!;
+    await page.mouse.move(from.x + 10, empty.y + 8, { steps: 6 });
     await page.mouse.up();
     await expect.poll(labels).toEqual([['Your name', 'How was it?'], ['Email']]);
   });
