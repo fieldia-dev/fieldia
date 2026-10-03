@@ -27,6 +27,30 @@ export function iconButton(el: ElementFactory, label: string, text: string, onCl
   return b;
 }
 
+/** What works on the thing picked, so a click on it keeps it picked: the panel, the toolbox, the bar, a menu, a dialog, and any control. */
+const KEEPS_PICKED = '.fd-properties, .fd-rail, .fd-toolbox, .fd-designer-bar, .fd-designer-issues, .fd-menu, .fd-checks, .fd-find, .fd-dialog-backdrop, .fd-try, button, input, select, textarea, a, label, [role="button"], [role="tab"]';
+
+/**
+ * A click on empty room puts down what is picked: on the canvas around the
+ * fields, between the editor's parts, or anywhere outside the editor. A click
+ * on a field or a part of the page (`pickable`) picks that instead, and one
+ * on the panel, the toolbox or any control works on what is picked, so both
+ * leave it be. Returns the way to stop.
+ */
+export function putDownOnClickOutside(root: HTMLElement, designer: Designer, pickable: string, active: () => boolean): () => void {
+  const doc = root.ownerDocument;
+  const onClick = (event: MouseEvent) => {
+    if (!active() || designer.getState().selected === null) return;
+    const target = event.target as Element | null;
+    // Gone from the page by its own click — a card that opened, a menu that closed: that click picked something.
+    if (!target?.isConnected) return;
+    if (root.contains(target) && target.closest(`${pickable}, ${KEEPS_PICKED}`)) return;
+    designer.select(null);
+  };
+  doc.addEventListener('click', onClick);
+  return () => doc.removeEventListener('click', onClick);
+}
+
 export interface DesignerBar {
   element: HTMLElement;
   /** Why the last edit was refused, if it was. */

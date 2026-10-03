@@ -1,7 +1,7 @@
 import type { FieldNode, LayoutNode, Page, TabsNode } from '@fieldia/core';
 import type { Skin } from '@fieldia/viewer';
 import { installStyles } from '@fieldia/widgets';
-import { designerBar, elementFactory } from './chrome';
+import { designerBar, elementFactory, putDownOnClickOutside } from './chrome';
 import { QUESTION_KINDS, SCREEN_KINDS, type Designer, type DesignerState, type Where } from './designer';
 import { findHeaderPart } from './header-commands';
 import { headerPartProperties, statusbarProperties } from './header-properties';
@@ -291,6 +291,13 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     }
   };
   doc.addEventListener('keydown', onKey);
+  // A click on empty room puts the field down; one on a field, a part of the page or a control does not.
+  const stopPuttingDown = putDownOnClickOutside(
+    root,
+    designer,
+    '.fd-canvas-field, .fd-canvas-section-title, .fd-canvas-tabs-head, .fd-canvas-part, .fd-canvas-statusbar, .fd-canvas-title, .fd-field-bar, .fd-list-table th, .fd-list-table td, .fd-canvas-search, .fd-list-selection',
+    () => !trial.trying
+  );
 
   // ---- render -----------------------------------------------------------------------
   function render(state: DesignerState) {
@@ -320,6 +327,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       leave();
       bar.destroy();
       doc.removeEventListener('keydown', onKey);
+      stopPuttingDown();
       canvas.destroy();
       list.destroy();
       trial.destroy();

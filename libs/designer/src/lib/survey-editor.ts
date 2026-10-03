@@ -3,7 +3,7 @@ import type { Skin } from '@fieldia/viewer';
 import { createWidget, installStyles, type Widget } from '@fieldia/widgets';
 import { branchMap, drawBranchMap } from './branch-map';
 import { canvasDrag } from './canvas-drag';
-import { designerBar, elementFactory, iconButton as makeIconButton, optionsEditor, type ElementFactory, type OptionsEditor } from './chrome';
+import { designerBar, elementFactory, iconButton as makeIconButton, optionsEditor, putDownOnClickOutside, type ElementFactory, type OptionsEditor } from './chrome';
 import { conditionEditor } from './condition-editor';
 import { kindOfField, QUESTION_KINDS, type Designer, type DesignerState, type Where } from './designer';
 import type { FindItem } from './find-anything';
@@ -561,6 +561,8 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     }
   };
   doc.addEventListener('keydown', onKey);
+  // A click on the page around the cards closes the open one; one on a card, a page's card, the map or the bar beside it does not.
+  const stopPuttingDown = putDownOnClickOutside(root, designer, '.fd-q, .fd-step-head, .fd-survey-head, .fd-branch-map, .fd-q-rail', () => !trial.trying);
 
   // ---- render ----------------------------------------------------------------------
   function render(state: DesignerState) {
@@ -631,6 +633,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     destroy() {
       leave();
       watcher?.disconnect();
+      stopPuttingDown();
       bar.destroy();
       drag.destroy();
       doc.removeEventListener('keydown', onKey);

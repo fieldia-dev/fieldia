@@ -207,3 +207,49 @@ describe('screen editor — try it', () => {
     expect((host.querySelector('.fd-screen-body') as HTMLElement).hidden).toBe(false);
   });
 });
+
+describe('screen editor — putting a field down', () => {
+  /** A click as a person makes one, on an element: it bubbles, as a real one does. */
+  const click = (target: Element) => target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+  it('puts the field picked down at a click on the canvas’s empty room, a section’s, or outside the editor', () => {
+    const { designer, ids } = visitReport();
+    const { host } = mount(designer);
+    const canvas = host.querySelector('.fd-canvas') as HTMLElement;
+    for (const target of [canvas, host.querySelector('.fd-canvas-section') as HTMLElement, host.querySelector('.fd-screen-body') as HTMLElement, document.body]) {
+      designer.select(ids['customer']);
+      expect(card(host, ids['customer']).classList.contains('fd-editing')).toBe(true);
+      click(target);
+      expect(designer.getState().selected).toBeNull();
+      expect(card(host, ids['customer']).classList.contains('fd-editing')).toBe(false);
+    }
+  });
+
+  it('keeps it picked at a click on itself, its bar, the panel, the toolbox or the bar at the top', () => {
+    const { designer, ids } = visitReport();
+    const { host } = mount(designer);
+    designer.select(ids['customer']);
+    for (const target of [
+      // Its own tinted room, and its widget, there to be looked at.
+      card(host, ids['customer']),
+      card(host, ids['customer']).querySelector('.fd-canvas-widget') as HTMLElement,
+      card(host, ids['customer']).querySelector('[data-inline="label"]') as HTMLElement,
+      card(host, ids['customer']).querySelector('.fd-field-bar') as HTMLElement,
+      host.querySelector('.fd-properties') as HTMLElement,
+      field(host.querySelector('.fd-properties') as HTMLElement, 'Label') as HTMLElement,
+      host.querySelector('.fd-rail-tabs') as HTMLElement,
+      host.querySelector('.fd-designer-bar') as HTMLElement,
+    ]) {
+      click(target);
+      expect(designer.getState().selected).toBe(ids['customer']);
+    }
+  });
+
+  it('picks another field at a click on it, rather than putting both down', () => {
+    const { designer, ids } = visitReport();
+    const { host } = mount(designer);
+    designer.select(ids['customer']);
+    (card(host, ids['date']).querySelector('.fd-label') as HTMLElement).click();
+    expect(designer.getState().selected).toBe(ids['date']);
+  });
+});

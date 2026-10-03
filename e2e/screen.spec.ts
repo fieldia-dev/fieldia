@@ -265,3 +265,33 @@ test.describe('screen designer · fields the backend already has', () => {
     expect(problems).toEqual([]);
   });
 });
+
+test.describe('screen designer · putting a field down', () => {
+  test('a click on empty room puts the field picked down; a drag leaves the dropped one picked', async ({ page }) => {
+    const problems = watch(page);
+    await page.goto('/screen/');
+    const picked = page.locator('.fd-canvas-field.fd-editing');
+    // On the canvas, in the empty cell beside "Manager to call?".
+    await (await cardOf(page, 'Customer')).click();
+    await expect(picked).toHaveCount(1);
+    const manager = await box(page, 'Manager to call?');
+    await page.mouse.click(manager.x + manager.width + 60, manager.y + manager.height / 2);
+    await expect(picked).toHaveCount(0);
+    await screen(page, 'screen-put-down', { viewport: true });
+    // Outside the editor, on the page around it.
+    await (await cardOf(page, 'Customer')).click();
+    await expect(picked).toHaveCount(1);
+    await page.mouse.click(8, 600);
+    await expect(picked).toHaveCount(0);
+    // In the panel, it stays picked.
+    await (await cardOf(page, 'Customer')).click();
+    await page.locator('.fd-properties').getByRole('textbox', { name: 'Label' }).click();
+    await expect(picked).toHaveCount(1);
+    // Dragged and dropped, it is picked where it landed.
+    await page.keyboard.press('Escape');
+    const notes = await box(page, 'Notes');
+    await dragToward(page, { x: notes.x + 40, y: notes.y + 12 }, async () => { const c = await box(page, 'Customer'); return { x: c.x + 20, y: c.y + 20 }; });
+    await expect(picked.locator('[data-inline="label"]')).toHaveValue('Notes');
+    expect(problems).toEqual([]);
+  });
+});

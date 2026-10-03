@@ -179,3 +179,28 @@ describe('survey editor — the Google Forms way', () => {
     expect(labels(designer)).toEqual(['First', 'Untitled question', 'Untitled question']);
   });
 });
+
+describe('survey editor — putting a question down', () => {
+  const click = (target: Element) => target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+  it('closes the open card at a click on the page around the cards, or outside the editor', () => {
+    const { host, designer } = mount();
+    const q = designer.addQuestion('short-answer') as string;
+    for (const target of [host.querySelector('.fd-survey-canvas') as HTMLElement, host.querySelector('.fd-survey-column') as HTMLElement, document.body]) {
+      designer.select(q);
+      expect(open(host)).not.toBeNull();
+      click(target);
+      expect(open(host)).toBeNull();
+    }
+  });
+
+  it('keeps it open at a click in it, or on the bar beside it', () => {
+    const { host, designer } = mount();
+    const q = designer.addQuestion('short-answer') as string;
+    designer.select(q);
+    click(open(host).querySelector('.fd-q-label') as HTMLElement);
+    click(open(host).querySelector('.fd-q-foot') as HTMLElement);
+    click(host.querySelector('.fd-q-rail') as HTMLElement);
+    expect(designer.getState().selected).toBe(q);
+  });
+});

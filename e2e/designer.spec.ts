@@ -362,3 +362,16 @@ test.describe('survey designer · where answers lead', () => {
     expect(problems).toEqual([]);
   });
 });
+
+test.describe('survey designer · putting a question down', () => {
+  test('a click on the page around the cards closes the open one', async ({ page }) => {
+    await page.goto('/designer/?start=survey');
+    await page.locator('.fd-q').nth(1).click();
+    await expect(picked(page)).toHaveCount(1);
+    const column = (await page.locator('.fd-survey-column').boundingBox())!;
+    // In the tinted room to the left of the cards.
+    await page.mouse.click(column.x - 30, column.y + 400);
+    await expect(picked(page)).toHaveCount(0);
+    await screen(page, 'designer-put-down', { viewport: true });
+  });
+});
