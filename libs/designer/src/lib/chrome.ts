@@ -172,6 +172,30 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
             without(at);
           }
         });
+        // Lines pasted into an option become options, one to a line, as Google Forms makes them; one line is the box's own.
+        input.addEventListener('paste', (event) => {
+          const text = (event as ClipboardEvent).clipboardData?.getData('text/plain') ?? '';
+          const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+          if (lines.length < 2) return;
+          event.preventDefault();
+          const at = indexOf(input);
+          const current = labels();
+          const start = input.selectionStart ?? input.value.length;
+          const end = input.selectionEnd ?? start;
+          const before = input.value.slice(0, start);
+          const after = input.value.slice(end);
+          lines[0] = before + lines[0];
+          lines[lines.length - 1] += after;
+          current.splice(at, 1, ...lines);
+          busy = true;
+          try {
+            input.blur();
+            if (!designer.setOptions(nodeId, current)) return;
+          } finally {
+            busy = false;
+          }
+          focusAt(at + lines.length - 1, true);
+        });
         // An option left empty goes once the cursor has gone somewhere else — after the blur, never inside it.
         input.addEventListener('blur', () => {
           if (busy) return;

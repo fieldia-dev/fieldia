@@ -114,6 +114,27 @@ describe('survey editor — the Google Forms way', () => {
     expect(shown(open(host).querySelector('select[aria-label="Show this question"]'))).toBe(true);
   });
 
+  it('makes one option of each line pasted into an option, as Google Forms does', () => {
+    const { host, designer } = mount();
+    const colour = designer.addQuestion('multiple-choice') as string;
+    const first = open(host).querySelector('.fd-q-option input') as HTMLInputElement;
+    first.focus();
+    first.select();
+    const paste = new Event('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(paste, 'clipboardData', { value: { getData: () => 'Red\r\nGreen\n\n  Blue  \n' } });
+    first.dispatchEvent(paste);
+    expect(paste.defaultPrevented).toBe(true);
+    const field = designer.getPage().fields[nodes(designer.getPage()).find((n) => n.id === colour)?.field as string];
+    expect(field.type === 'selection' && field.options.map((o) => o.label)).toEqual(['Red', 'Green', 'Blue']);
+    // The cursor ends on the last of them.
+    expect(document.activeElement).toBe([...open(host).querySelectorAll('.fd-q-option input')].at(-1));
+    // One line is pasted as it is, by the box itself.
+    const single = new Event('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(single, 'clipboardData', { value: { getData: () => 'Purple' } });
+    first.dispatchEvent(single);
+    expect(single.defaultPrevented).toBe(false);
+  });
+
   it('keeps tools beside the card picked: a question added after it, or a page', () => {
     const { host, designer } = mount();
     const rail = host.querySelector('.fd-q-rail') as HTMLElement;
