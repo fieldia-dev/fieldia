@@ -31,6 +31,8 @@ export interface WidgetLabels {
   /** The choice after the options for an answer of one's own, and its box. */
   other: string;
   otherAnswer: string;
+  /** Under a single choice that need not be answered, once one is picked: takes the pick back. */
+  clearSelection: string;
   previousMonth: string;
   nextMonth: string;
   /** Heads the column of week numbers: short, and in full. */
@@ -84,6 +86,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     chooseDate: 'Choose a date',
     other: 'Other:',
     otherAnswer: 'Your own answer',
+    clearSelection: 'Clear selection',
     previousMonth: 'Previous month',
     nextMonth: 'Next month',
     weekShort: 'Wk',
@@ -133,6 +136,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     chooseDate: 'اختيار تاريخ',
     other: 'أخرى:',
     otherAnswer: 'إجابتك الخاصة',
+    clearSelection: 'محو التحديد',
     previousMonth: 'الشهر السابق',
     nextMonth: 'الشهر التالي',
     weekShort: 'أسبوع',
@@ -182,6 +186,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     chooseDate: 'Datum auswählen',
     other: 'Andere:',
     otherAnswer: 'Eigene Antwort',
+    clearSelection: 'Auswahl löschen',
     previousMonth: 'Vorheriger Monat',
     nextMonth: 'Nächster Monat',
     weekShort: 'KW',
@@ -231,6 +236,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     chooseDate: 'Choisir une date',
     other: 'Autre :',
     otherAnswer: 'Votre propre réponse',
+    clearSelection: 'Effacer la sélection',
     previousMonth: 'Mois précédent',
     nextMonth: 'Mois suivant',
     weekShort: 'Sem.',

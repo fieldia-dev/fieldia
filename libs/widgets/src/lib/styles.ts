@@ -208,6 +208,14 @@ export const FIELDIA_CSS = /* css */ `
 /* A scale's ends in words, under its first and last points. */
 .fd-scale-box { display: inline-grid; gap: 4px; max-width: 100%; }
 .fd-scale-ends { display: flex; justify-content: space-between; gap: 16px; font-size: 12.5px; color: var(--fd-muted); }
+/* "Clear selection", at the question's end, once a single choice that need not be answered has one; never in a table's cell. */
+.fd-choices-box { display: grid; gap: 6px; min-width: 0; }
+.fd-choice-clear {
+  justify-self: end; font: inherit; font-size: 13px; color: var(--fd-muted); background: none; border: 0;
+  padding: 2px 4px; border-radius: 4px; cursor: pointer;
+}
+.fd-choice-clear:hover { color: var(--fd-text); text-decoration: underline; text-underline-offset: 3px; }
+.fd-lines-table .fd-choice-clear, .fd-grid-editor .fd-choice-clear { display: none; }
 .fd-points { display: flex; flex-wrap: wrap; gap: 6px; }
 .fd-points button {
   font: inherit; cursor: pointer; border: 1px solid var(--fd-border); background: var(--fd-surface);

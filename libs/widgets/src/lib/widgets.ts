@@ -278,6 +278,30 @@ const selectWidget: WidgetFactory = ({ form, name, field, id, document }) => {
   };
 };
 
+/**
+ * "Clear selection", as Google Forms has it: under a single choice that need not be answered, once something is
+ * picked — a radio, once picked, cannot be unpicked.
+ */
+function clearSelection(document: Document, words: WidgetLabels, clear: () => void) {
+  const button = make(document, 'button', { type: 'button', class: 'fd-choice-clear', hidden: '' }, words.clearSelection);
+  button.addEventListener('click', () => {
+    clear();
+    // Nothing picked now: nothing to take back.
+    button.hidden = true;
+  });
+  let open = false;
+  return {
+    button,
+    /** Whether the answer may be left out: not required, and not read-only. */
+    allow(state: WidgetState) {
+      open = !state.required && !state.readonly;
+    },
+    show(picked: boolean) {
+      button.hidden = !(open && picked);
+    },
+  };
+}
+
 function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
   return ({ form, name, field, id, document, labels, locale }) => {
     const choices = options(field);
@@ -312,13 +336,25 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
       } else {
         form.setValue(name, [...choices.filter((_, i) => inputs[i].checked).map((option) => option.value), ...(own !== null ? [own] : [])]);
       }
+      // "Other" picked with its box still empty changes no answer, but is a pick to take back.
+      clear?.show(picked());
     }
     group.addEventListener('change', (event) => {
       if (event.target !== otherBox) save();
     });
     const known = new Set(choices.map((o) => o.value as unknown));
+    const picked = () => inputs.some((input) => input.checked) || otherChoice?.checked === true;
+    const clear =
+      kind === 'radio'
+        ? clearSelection(document, words, () => {
+            for (const input of [...inputs, otherChoice]) if (input) input.checked = false;
+            form.setValue(name, null);
+            // The link goes; the cursor stays in the question.
+            (inputs[0] ?? otherChoice)?.focus();
+          })
+        : null;
     return {
-      element: group,
+      element: clear ? make(document, 'div', { class: 'fd-choices-box' }, group, clear.button) : group,
       focus: () => (inputs.find((input) => input.checked) ?? (otherChoice?.checked ? otherBox : null) ?? inputs[0])?.focus(),
       update(state) {
         const chosen = Array.isArray(state.value) ? state.value : [state.value];
@@ -335,6 +371,8 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
           if (own !== undefined && document.activeElement !== otherBox) otherBox.value = own as string;
           otherChoice.disabled = otherBox.disabled = state.readonly;
         }
+        clear?.allow(state);
+        clear?.show(picked());
         describe(group, state);
       },
     };
@@ -343,7 +381,8 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
 
 /** Stars or numbers to pick from, as a radio group with arrow-key support. */
 function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
-  return ({ form, name, field, node, id, document }) => {
+  return ({ form, name, field, node, id, document, labels, locale }) => {
+    const words = labels ?? WIDGET_LABELS[locale ?? 'en'];
     const min = 'min' in field && field.min !== undefined ? field.min : style === 'rating' ? 1 : 0;
     const max = 'max' in field && field.max !== undefined ? field.max : style === 'rating' ? 5 : 10;
     const group = make(document, 'div', { id, class: `fd-points fd-${style}`, role: 'radiogroup' });
@@ -367,12 +406,16 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
     });
     // A scale's ends in words, under its first and last points: "Not likely" … "Very likely".
     const ends = style === 'scale' ? [node.options?.['startLabel'], node.options?.['endLabel']].map((v) => (typeof v === 'string' ? v : '')) : ['', ''];
-    const element = ends.some(Boolean)
+    const clear = clearSelection(document, words, () => {
+      form.setValue(name, null);
+      points[0]?.focus();
+    });
+    const shown = ends.some(Boolean)
       ? make(document, 'div', { class: 'fd-scale-box' }, group, make(document, 'div', { class: 'fd-scale-ends', 'aria-hidden': 'true' }, make(document, 'span', {}, ends[0]), make(document, 'span', {}, ends[1])))
       : group;
     if (ends.some(Boolean)) group.setAttribute('aria-description', ends.filter(Boolean).join(' … '));
     return {
-      element,
+      element: make(document, 'div', { class: 'fd-choices-box' }, shown, clear.button),
       focus: () => (points.find((p) => p.getAttribute('aria-checked') === 'true') ?? points[0])?.focus(),
       update(state) {
         const value = typeof state.value === 'number' ? state.value : null;
@@ -383,6 +426,8 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
           point.tabIndex = n === value || (value === null && i === 0) ? 0 : -1;
           point.disabled = state.readonly;
         });
+        clear.allow(state);
+        clear.show(value !== null);
         describe(group, state);
       },
     };

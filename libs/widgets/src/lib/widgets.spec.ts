@@ -419,6 +419,58 @@ describe('choice widgets', () => {
     expect(el.querySelector('.fd-choice-other')?.textContent).toContain('أخرى:');
   });
 
+  it('lets a single choice that need not be answered be taken back, as Google Forms does', () => {
+    const { form, el, refresh } = setup({ type: 'selection', options, other: true }, { widget: 'radio' });
+    const clear = q<HTMLButtonElement>(el, '.fd-choice-clear');
+    expect(clear.textContent).toBe('Clear selection');
+    // Nothing picked: nothing to take back.
+    expect(clear.hidden).toBe(true);
+    const radios = [...el.querySelectorAll<HTMLInputElement>('input[type=radio]')];
+    radios[1].click();
+    expect(clear.hidden).toBe(false);
+    clear.click();
+    expect(valueOf(form)).toBeNull();
+    expect(radios.some((r) => r.checked)).toBe(false);
+    expect(clear.hidden).toBe(true);
+    // The cursor stays in the question, on its first choice.
+    expect(document.activeElement).toBe(radios[0]);
+    // “Other” picked with its box still empty is a pick too, and is taken back with the rest.
+    radios[2].click();
+    expect(clear.hidden).toBe(false);
+    clear.click();
+    expect(radios[2].checked).toBe(false);
+    // Required: an answer is wanted, so it is not taken back; nor when it cannot be changed.
+    radios[0].click();
+    refresh({ required: true });
+    expect(clear.hidden).toBe(true);
+    refresh({ readonly: true });
+    expect(clear.hidden).toBe(true);
+  });
+
+  it('has nothing to take back on checkboxes, which untick', () => {
+    const { el } = setup({ type: 'selection', options, multiple: true });
+    expect(el.querySelector('.fd-choice-clear')).toBeNull();
+  });
+
+  it('lets a scale or a rating that need not be answered be taken back', () => {
+    const { form, el, refresh } = setup({ type: 'integer', min: 1, max: 5 }, { widget: 'scale', options: { startLabel: 'Low', endLabel: 'High' } });
+    const clear = q<HTMLButtonElement>(el, '.fd-choice-clear');
+    const points = [...el.querySelectorAll<HTMLButtonElement>('[role=radio]')];
+    expect(clear.hidden).toBe(true);
+    points[2].click();
+    expect(clear.hidden).toBe(false);
+    clear.click();
+    expect(valueOf(form)).toBeNull();
+    expect(el.querySelector('[aria-checked=true]')).toBeNull();
+    expect(document.activeElement).toBe(points[0]);
+    points[2].click();
+    refresh({ required: true });
+    expect(clear.hidden).toBe(true);
+    const rating = setup({ type: 'integer', min: 1, max: 5 }, { widget: 'rating' }, undefined, 'ar');
+    rating.el.querySelectorAll<HTMLButtonElement>('[role=radio]')[3].click();
+    expect(q<HTMLButtonElement>(rating.el, '.fd-choice-clear').textContent).toBe('محو التحديد');
+  });
+
   it('puts words at the ends of a scale, when it has them', () => {
     const { el } = setup({ type: 'integer', min: 1, max: 5 }, { widget: 'scale', options: { startLabel: 'Not likely', endLabel: 'Very likely' } });
     expect([...el.querySelectorAll('.fd-scale-ends > span')].map((s) => s.textContent)).toEqual(['Not likely', 'Very likely']);
