@@ -10,7 +10,10 @@
     <nav class="demo-bar" aria-label="Demo">
       <strong>Fieldia</strong>
       <span class="demo-framework">screen designer</span>
+      <a class="demo-back" href="/designer/" hidden>All starting points</a>
     </nav>
+    <!-- On fieldia.dev, where the designer opens from the Designer page: a way back to it. -->
+    <script>if (location.pathname.startsWith('/demos/')) document.querySelector('.demo-back').hidden = false;</script>
     <main id="app"></main>
     <script src="main.js"></script>
   </body>

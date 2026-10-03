@@ -1,10 +1,9 @@
 /**
  * Build fieldia.dev into dist/site: the docs pages from site/pages, the script
- * bundle the front page's live form runs on, the example pages, and the
- * framework demos (built first by tools/build-demos.mjs).
- *
- * The designer's demos are left out on purpose until it is decided whether the
- * designer is part of the open library.
+ * bundle the front page's live form runs on, the example pages, the framework
+ * demos, and the designer's — a preview to try on the site, while
+ * @fieldia/designer itself stays off npm (all built first by
+ * tools/build-demos.mjs).
  */
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -14,7 +13,7 @@ const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'dist/site');
 const DEMOS = join(WORKSPACE, 'dist/demos');
 const BUNDLE = join(WORKSPACE, 'dist/libs/viewer/bundle/fieldia.js');
-const PUBLIC_DEMOS = ['plain', 'react', 'vue', 'angular', 'script'];
+const PUBLIC_DEMOS = ['plain', 'react', 'vue', 'angular', 'script', 'designer', 'screen'];
 
 if (!existsSync(BUNDLE)) throw new Error('the site needs the script bundle: run `npx nx build viewer` first');
 for (const demo of PUBLIC_DEMOS) {

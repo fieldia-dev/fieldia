@@ -47,6 +47,7 @@ export function layout({ path, title, description, body, wide = false }) {
   <nav class="top-nav" aria-label="Site">
     <a href="/start/"${docs ? ' aria-current="true"' : ''}>Docs</a>
     <a href="/demos/"${path === '/demos/' ? ' aria-current="page"' : ''}>Demos</a>
+    <a href="/designer/"${path === '/designer/' ? ' aria-current="page"' : ''}>Designer</a>
     <a href="https://github.com/fieldia-dev/fieldia">GitHub</a>
   </nav>
 </header>

@@ -5,6 +5,8 @@ html, body { margin: 0; background: #f7f8fa; color: #1f2933; font: 14px/1.45 sys
   background: #fff; border-bottom: 1px solid #e3e6ea;
 }
 .demo-framework { color: #6b7280; }
+.demo-back { margin-inline-start: auto; color: #0b5cad; font-size: 13px; text-decoration: none; }
+.demo-back:hover { text-decoration: underline; }
 .demo-links { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-inline-start: auto; }
 .demo-links a { color: #0b5cad; text-decoration: none; }
 .demo-links a[aria-current="page"] { font-weight: 700; text-decoration: underline; }

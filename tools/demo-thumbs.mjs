@@ -18,6 +18,7 @@ const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'demos/thumbs');
 const PORT = 4397;
 const { DEMOS, demoHref } = await import(pathToFileURL(join(WORKSPACE, 'demos/catalog.mjs')).href);
+const { DESIGNER_DEMOS } = await import(pathToFileURL(join(WORKSPACE, 'demos/designer-catalog.mjs')).href);
 
 const server = spawn('node', [join(WORKSPACE, 'tools/serve.mjs'), join(WORKSPACE, 'dist/demos'), String(PORT)], { stdio: 'ignore' });
 try {
@@ -27,8 +28,11 @@ try {
   // Half the pixels: a 1200 × 720 page drawn into 600 × 360.
   const context = await browser.newContext({ viewport: { width: 1200, height: 720 + 200 }, deviceScaleFactor: 0.5 });
   const page = await context.newPage();
-  for (const demo of DEMOS) {
-    await page.goto(`http://localhost:${PORT}/${demoHref(demo)}`);
+  // The gallery's demos, then the designer's starting points.
+  const shots = [...DEMOS.map((demo) => ({ id: demo.id, href: demoHref(demo) })), ...DESIGNER_DEMOS.map((demo) => ({ id: demo.id, href: demo.href }))];
+  for (const demo of shots) {
+    // 127.0.0.1, not localhost: another program may hold the port on another address.
+    await page.goto(`http://127.0.0.1:${PORT}/${demo.href}`);
     await page.locator('.fd-form').first().waitFor();
     // Lists, links and grids fill in after their first answer; fonts settle.
     await page.waitForTimeout(900);

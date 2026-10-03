@@ -4,7 +4,7 @@ import { expectNoSidewaysScroll } from './support';
 /** fieldia.dev, as built into dist/site and served on its own port. */
 /** `SITE_URL=https://fieldia.dev npx playwright test e2e/site.spec.ts` runs the same checks on the live site. */
 const SITE = process.env['SITE_URL'] ?? 'http://127.0.0.1:4322';
-const PAGES = ['/', '/start/', '/pages/', '/fields/', '/data/', '/behaviour/', '/lists/', '/chatter/', '/look/', '/demos/'];
+const PAGES = ['/', '/start/', '/pages/', '/fields/', '/data/', '/behaviour/', '/lists/', '/chatter/', '/look/', '/demos/', '/designer/'];
 
 function watch(page: Page) {
   const problems: string[] = [];
@@ -84,5 +84,27 @@ test('the gallery shows every demo with its thumbnail, featured first, and each 
     await expect(page.locator('.fd-form').first(), href).toBeVisible();
     await expect(page.locator('.dh-title'), href).not.toBeEmpty();
   }
+  expect(problems).toEqual([]);
+});
+
+test('the Designer page opens the designer at each starting point, with a way back', async ({ page }) => {
+  const problems = watch(page);
+  await page.goto(SITE + '/designer/');
+  await expect(page.locator('.top-nav a[aria-current="page"]')).toHaveText('Designer');
+  const cards = page.locator('a.demo-card[data-designer]');
+  await expect(cards).toHaveCount(6);
+  for (const image of await page.locator('.demo-thumb img').all()) {
+    await image.scrollIntoViewIfNeeded();
+    await expect.poll(() => image.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(600);
+  }
+  const hrefs = await cards.evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).getAttribute('href') as string));
+  for (const href of hrefs) {
+    await page.goto(SITE + href);
+    await expect(page.locator('.fd-designer'), href).toBeVisible();
+    await expect(page.locator('.fd-designer-bar [data-checks]'), href).toBeVisible();
+    await expect(page.getByRole('link', { name: 'All starting points' }), href).toBeVisible();
+  }
+  await page.getByRole('link', { name: 'All starting points' }).click();
+  await expect(page).toHaveURL(/\/designer\/$/);
   expect(problems).toEqual([]);
 });
