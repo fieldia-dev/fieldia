@@ -383,6 +383,7 @@ export const DESIGNER_CSS = /* css */ `
 .fd-properties-hint { color: var(--fd-muted); font-size: 13px; margin: 0; }
 .fd-kind-note { font-size: 12px; margin-block-start: -4px; }
 .fd-prop-when { gap: 6px; justify-items: start; }
+.fd-q-required-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
 
 /* ---- The survey, the Google Forms way ------------------------------------------------------------
    On a page tinted with the accent: a card heading the form, then quiet white cards 8px round, 24px in,

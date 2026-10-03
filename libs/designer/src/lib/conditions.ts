@@ -57,3 +57,21 @@ export function readCondition(invisible: unknown): Condition | null | 'custom' {
   if (joins.size > 1) return 'custom';
   return { join: joins.has('and') ? 'any' : 'all', rules };
 }
+
+/**
+ * A rule as it holds — "required when", "read-only when" — rather than its
+ * opposite: "state is Blocked" is `state == 'blocked'`.
+ */
+export function conditionToHold(condition: Condition): string {
+  const parts = condition.rules.map((rule) => `${rule.field} ${rule.op === 'is' ? '==' : '!='} ${literal(rule.value)}`);
+  return parts.join(condition.join === 'all' ? ' and ' : ' or ');
+}
+
+/** A rule written as it holds, read back: `always` for `true`, null for none, `custom` when written another way. */
+export function readHolds(value: unknown): Condition | null | 'custom' | 'always' {
+  if (value === true) return 'always';
+  // The same words as a hiding rule, each turned round: a rule that hides is the opposite of one that holds.
+  const opposite = readCondition(value);
+  if (!opposite || opposite === 'custom') return opposite;
+  return { join: opposite.join === 'all' ? 'any' : 'all', rules: opposite.rules.map((rule) => ({ ...rule, op: rule.op === 'is' ? 'is not' : 'is' })) };
+}

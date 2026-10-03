@@ -11,7 +11,7 @@ import {
   type StepNode,
   type TabsNode,
 } from '@fieldia/core';
-import { conditionToHide, type Condition } from './conditions';
+import { conditionToHide, conditionToHold, type Condition } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { listCommands, type ListCommands } from './list-commands';
 import { fixCheck, pageChecks, type PageCheck } from './page-checks';
@@ -208,6 +208,12 @@ export interface Designer extends HeaderCommands, ListCommands {
    * rules, always shows it.
    */
   setCondition(id: string, condition: Condition | { field: string; equals: string | number | boolean } | null): boolean;
+  /**
+   * A field required, or read-only, only when a rule holds; `null` for no
+   * rule. A field always required becomes required only then; a field the
+   * model always requires cannot be.
+   */
+  setRule(id: string, which: 'required' | 'readonly', condition: Condition | { field: string; equals: string | number | boolean } | null): boolean;
   setColumns(sectionId: string, columns: 1 | 2 | 3 | 4): boolean;
   setColspan(nodeId: string, span: number): boolean;
   /** Put a section's fields in this order with these widths, as one edit (a canvas drag). */
@@ -752,6 +758,28 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
         const own = found?.node.type === 'field' ? found.node.field : null;
         if (own && rules.rules.some((rule) => rule.field === own)) throw new Refusal('A question cannot depend on its own answer');
         target.invisible = conditionToHide(rules);
+      });
+    },
+
+    setRule(id, which, condition) {
+      return apply((draft) => {
+        const found = findNode(draft, id);
+        if (!found || found.node.type !== 'field') throw new Refusal(`There is no field "${id}"`);
+        const node = found.node;
+        const rules: Condition = !condition
+          ? { join: 'all', rules: [] }
+          : 'rules' in condition
+            ? condition
+            : { join: 'all', rules: [{ field: condition.field, op: 'is', value: condition.equals }] };
+        if (rules.rules.some((rule) => rule.field === node.field)) throw new Refusal('A field cannot depend on its own answer');
+        const field = draft.fields[node.field];
+        if (which === 'required' && rules.rules.length && field?.required === true) {
+          // The model's own word stands; a field of the page's own becomes required only when the rule holds.
+          if (fromModel(node.field)) throw new Refusal(`The model requires ${field.label} always, so it cannot be required only sometimes`);
+          delete field.required;
+        }
+        if (rules.rules.length) node[which] = conditionToHold(rules);
+        else delete node[which];
       });
     },
 

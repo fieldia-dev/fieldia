@@ -42,7 +42,20 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const currencyRow = prop(el, 'Currency', currency);
   const lineColumns = columnsEditor(el, designer, id);
   const required = el('input', { type: 'checkbox', 'aria-label': 'Required' });
-  required.addEventListener('change', () => designer.updateQuestion(id, { required: required.checked }));
+  required.addEventListener('change', () => {
+    // Read before anything redraws the panel.
+    const always = required.checked;
+    // Required always, or not at all: a rule for it goes.
+    if (requiredWhen.element.hidden === false) designer.setRule(id, 'required', null);
+    designer.updateQuestion(id, { required: always });
+  });
+  // Required, or read-only, only when a rule holds.
+  const requiredWhen = conditionEditor(el, designer, id, 'question', 'required');
+  const requiredOnly = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when', 'aria-label': 'Required only when…' }, 'Only when…');
+  requiredOnly.addEventListener('click', () => requiredWhen.start());
+  const readonlyWhen = conditionEditor(el, designer, id, 'question', 'readonly');
+  const readonlyOnly = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, 'Read-only when…');
+  readonlyOnly.addEventListener('click', () => readonlyWhen.start());
   const help = el('input', { class: 'fd-input', 'aria-label': 'Help text', placeholder: 'Optional' });
   help.addEventListener('input', () => designer.updateQuestion(id, { help: help.value }));
   const width = el('select', { class: 'fd-input fd-select', 'aria-label': 'Width' });
@@ -77,7 +90,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     relationRow,
     currencyRow,
     lineColumns.element,
-    el('label', { class: 'fd-q-required' }, required, el('span', {}, 'Required')),
+    el('div', { class: 'fd-prop fd-prop-when' }, el('div', { class: 'fd-q-required-row' }, el('label', { class: 'fd-q-required' }, required, el('span', {}, 'Required')), requiredOnly), requiredWhen.element, readonlyWhen.element, readonlyOnly),
     prop(el, 'Help text', help),
     widthRow,
     prop(el, 'Section', section),
@@ -116,6 +129,11 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       currencyRow.hidden = def.type !== 'monetary' || fromModel;
       if (!focused(currency)) currency.value = def.type === 'monetary' ? def.currency ?? '' : '';
       required.checked = def.required === true || found.node.required === true;
+      const others = allSections(page).flatMap((s) => s.children.filter((n): n is FieldNode => n.type === 'field' && n.id !== id && choicesOf(page.fields[n.field]) !== null));
+      requiredWhen.update(page, others, found.node.required);
+      requiredOnly.hidden = required.checked || !requiredWhen.element.hidden || !requiredWhen.canStart();
+      readonlyWhen.update(page, others, found.node.readonly);
+      readonlyOnly.hidden = !readonlyWhen.element.hidden || !readonlyWhen.canStart();
       if (!focused(help)) help.value = found.node.help ?? def.help ?? '';
       const columns = wideColumns(found.section.columns);
       widthRow.hidden = columns === 1;

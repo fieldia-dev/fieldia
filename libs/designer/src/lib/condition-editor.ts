@@ -1,6 +1,6 @@
 import type { Field, FieldNode, Page } from '@fieldia/core';
 import { iconButton, type ElementFactory } from './chrome';
-import { readCondition, type Condition, type ConditionRule } from './conditions';
+import { readCondition, readHolds, type Condition, type ConditionRule } from './conditions';
 import type { Designer } from './designer';
 
 /** The answers a condition can test: a choice of one, or yes or no. */
@@ -13,17 +13,19 @@ export function choicesOf(field: Field | undefined): { key: string; label: strin
 /**
  * When a page or a question shows: "Always", or rules on the answers to
  * questions before it — "is Yes", "is not Manager" — all of them or any of
- * them. A condition written by hand is shown as it is, with Replace.
+ * them. A condition written by hand is shown as it is, with Replace. The
+ * same, for when a field is required or read-only (`kind`).
  */
-export function conditionEditor(el: ElementFactory, designer: Designer, targetId: string, what: 'page' | 'question') {
+export function conditionEditor(el: ElementFactory, designer: Designer, targetId: string, what: 'page' | 'question', kind: 'shows' | 'required' | 'readonly' = 'shows') {
+  const lead = kind === 'shows' ? `Show this ${what}` : kind === 'required' ? 'Required' : 'Read-only';
   const match = el('select', { class: 'fd-input fd-select fd-when-match', 'aria-label': 'Match' }, el('option', { value: 'all' }, 'all of these'), el('option', { value: 'any' }, 'any of these'));
-  const matchRow = el('div', { class: 'fd-when-match-row', hidden: '' }, el('span', {}, `Show this ${what} when`), match, el('span', {}, 'hold'));
+  const matchRow = el('div', { class: 'fd-when-match-row', hidden: '' }, el('span', {}, `${lead} when`), match, el('span', {}, 'hold'));
   const rows = el('div', { class: 'fd-when-rules' });
   const add = el('button', { type: 'button', class: 'fd-button fd-button-link fd-when-add' }, 'Add a condition');
   const customText = el('code', {});
   const replace = el('button', { type: 'button', class: 'fd-button fd-button-link' }, 'Replace');
-  const custom = el('div', { class: 'fd-when-custom', hidden: '' }, el('span', {}, 'Shown when, as written by hand: '), customText, replace);
-  const element = el('div', { class: 'fd-when', role: 'group', 'aria-label': `When this ${what} shows` }, matchRow, rows, add, custom);
+  const custom = el('div', { class: 'fd-when-custom', hidden: '' }, el('span', {}, `${kind === 'shows' ? 'Shown' : lead} when, as written by hand: `), customText, replace);
+  const element = el('div', { class: 'fd-when', role: 'group', 'aria-label': kind === 'shows' ? `When this ${what} shows` : `When it is ${lead.toLowerCase()}` }, matchRow, rows, add, custom);
   let available: FieldNode[] = [];
   let page: Page | null = null;
 
@@ -36,7 +38,7 @@ export function conditionEditor(el: ElementFactory, designer: Designer, targetId
     });
     return { join: match.value as Condition['join'], rules };
   }
-  const save = (condition: Condition) => designer.setCondition(targetId, condition);
+  const save = (condition: Condition) => (kind === 'shows' ? designer.setCondition(targetId, condition) : designer.setRule(targetId, kind, condition));
 
   /** A first rule: the first question it can test, its first answer. */
   function start(field?: string) {
@@ -46,7 +48,7 @@ export function conditionEditor(el: ElementFactory, designer: Designer, targetId
   }
 
   function row(index: number): HTMLElement {
-    const field = el('select', { class: 'fd-input fd-select fd-when-field', 'aria-label': index === 0 ? `Show this ${what}` : `Condition ${index + 1}` });
+    const field = el('select', { class: 'fd-input fd-select fd-when-field', 'aria-label': index === 0 ? (kind === 'shows' ? lead : `${lead} when`) : `Condition ${index + 1}` });
     const answer = el('select', { class: 'fd-input fd-select fd-when-answer', 'aria-label': index === 0 ? 'When the answer is' : `Answer ${index + 1}` });
     const remove = iconButton(el, `Remove condition ${index + 1}`, '×', () => {
       const current = read();
@@ -79,7 +81,9 @@ export function conditionEditor(el: ElementFactory, designer: Designer, targetId
     update(current: Page, before: FieldNode[], invisible: unknown) {
       page = current;
       available = before.filter((n) => choicesOf(current.fields[n.field]) !== null);
-      const condition = readCondition(invisible);
+      const held = kind === 'shows' ? readCondition(invisible) : readHolds(invisible);
+      // Always required is the Required box's, not a rule's.
+      const condition = held === 'always' ? null : held;
       custom.hidden = condition !== 'custom';
       if (condition === 'custom') customText.textContent = String(invisible);
       const rules = condition && condition !== 'custom' ? condition.rules : [];
