@@ -34,7 +34,7 @@ export const DESIGNER_CSS = /* css */ `
 /* Find anything: one box over all the editor can add, go to or do. */
 .fd-find-button { display: inline-flex; align-items: center; gap: 6px; color: var(--fd-muted); }
 .fd-find-button > .fd-dicon { width: 15px; height: 15px; }
-.fd-find-keys { font: inherit; font-size: 11.5px; padding: 0 5px; border: 1px solid var(--fd-border); border-radius: 4px; color: var(--fd-muted); }
+.fd-find-keys { font: inherit; font-size: 11.5px; padding: 1px 5px; border-radius: 4px; background: var(--fd-page); color: var(--fd-muted); }
 .fd-find-backdrop { z-index: 80; place-items: start center; padding-block-start: 12vh; }
 .fd-find {
   width: min(560px, 100%); display: grid; overflow: hidden; background: var(--fd-surface); color: var(--fd-text);
@@ -252,9 +252,11 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-title { all: unset; box-sizing: border-box; cursor: pointer; font-size: 26px; font-weight: 650; line-height: 1.25; color: var(--fd-muted); padding: 8px 14px; border: 1px dashed var(--fd-border-strong); border-radius: var(--fd-radius); background: var(--fd-surface); }
 .fd-canvas-title:hover { color: var(--fd-text); }
 .fd-canvas-title.fd-canvas-selected { border-style: solid; border-color: var(--fd-accent); }
-.fd-canvas-section { border-radius: 6px; outline-offset: 8px; }
-.fd-canvas-section:hover { outline: 1px dashed var(--fd-border-strong); }
-.fd-canvas-section.fd-canvas-selected { outline: 2px solid var(--fd-accent); }
+/* A section pointed at or picked: a bar down its side, just outside it — never a frame round the frames of its fields. */
+.fd-canvas-section { border-radius: 6px; }
+.fd-canvas-section::before { content: ""; position: absolute; inset-block: 0; inset-inline-start: -12px; width: 3px; border-radius: 2px; background: transparent; pointer-events: none; }
+.fd-canvas-section:hover::before { background: var(--fd-border-strong); }
+.fd-canvas-section.fd-canvas-selected::before { background: var(--fd-accent); }
 .fd-canvas-section-title { all: unset; cursor: pointer; }
 .fd-canvas-section-title:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
 .fd-canvas-untitled { color: var(--fd-muted); font-weight: 500; font-style: italic; font-size: 13px; }
@@ -265,8 +267,9 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-field { position: relative; border-radius: 6px; cursor: pointer; padding: 6px 8px; margin: -6px -8px; }
 /* On the canvas a field is picked and moved, not read: pressing on its words starts a drag, not a selection. */
 .fd-canvas-field:not(.fd-editing), .fd-canvas-section-title, .fd-canvas.fd-dragging { user-select: none; -webkit-user-select: none; }
-.fd-canvas-field:hover { outline: 1px dashed var(--fd-border-strong); }
-.fd-canvas-field.fd-editing { outline: 2px solid var(--fd-accent); background: var(--fd-accent-soft); cursor: default; }
+.fd-canvas-field:hover { background: color-mix(in srgb, var(--fd-text) 4%, transparent); }
+/* Picked, the Google Forms way: tinted, with a bar down its side — no frame round its box's own frame. */
+.fd-canvas-field.fd-editing { background: var(--fd-accent-soft); box-shadow: inset 3px 0 0 var(--fd-accent); cursor: default; }
 .fd-canvas-field.fd-hidden-sometimes::after {
   content: "only sometimes"; position: absolute; top: 4px; inset-inline-end: 6px; font-size: 10.5px; font-weight: 600; line-height: 1.5;
   color: var(--fd-warning); background: var(--fd-warning-soft); border-radius: 4px; padding: 0 5px; pointer-events: none;
@@ -277,7 +280,12 @@ export const DESIGNER_CSS = /* css */ `
   font: inherit; font-weight: var(--fd-label-weight); color: var(--fd-text); border: 0; border-bottom: 1px dashed var(--fd-border-strong);
   background: none; padding: 0 0 1px; outline: none; max-width: 100%; min-width: 4ch; field-sizing: content; cursor: text;
 }
-.fd-canvas-label-input:focus { border-bottom: 1px solid var(--fd-accent); }
+.fd-canvas-label-input:focus { border-bottom: 2px solid var(--fd-accent); padding-bottom: 0; }
+/* Typed in where they stand, the line under the words is the focus: no ring round them too. */
+.fd-designer .fd-canvas-label-input:focus-visible, .fd-designer .fd-canvas-help-input:focus-visible, .fd-designer .fd-part-input:focus-visible, .fd-designer .fd-canvas-section-title-input:focus-visible { outline: none; }
+/* A picked choice's options: words on a line, as the survey's, not boxes in the picked field. */
+.fd-canvas-field .fd-q-option > .fd-input { border: 0; border-bottom: 1px solid var(--fd-border); border-radius: 0; background: none; box-shadow: none; padding-inline: 0; min-height: 30px; }
+.fd-canvas-field .fd-q-option > .fd-input:focus { border-bottom: 2px solid var(--fd-accent); }
 .fd-canvas-help-input { font: inherit; font-size: 12.5px; color: var(--fd-muted); border: 0; border-bottom: 1px dashed transparent; background: none; padding: 1px 0; outline: none; width: 100%; box-sizing: border-box; cursor: text; }
 .fd-canvas-help-input:hover, .fd-canvas-help-input:focus { border-bottom-color: var(--fd-border-strong); }
 .fd-canvas-help-input::placeholder { color: var(--fd-muted); opacity: 0.75; }
@@ -298,8 +306,9 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas .fd-canvas-stats { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; margin: 0; border-block-end: 0; }
 .fd-canvas-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .fd-canvas-part { position: relative; cursor: pointer; outline-offset: 3px; }
-.fd-canvas-part:hover { outline: 1px dashed var(--fd-border-strong); }
-.fd-canvas-part.fd-editing { outline: 2px solid var(--fd-accent); cursor: default; }
+.fd-canvas-part:hover { box-shadow: 0 0 0 2px var(--fd-border); }
+/* Picked: its own edge turns the accent, one line, not a ring round it. */
+.fd-canvas-part.fd-editing { box-shadow: 0 0 0 2px var(--fd-accent); cursor: default; }
 .fd-canvas-part:focus-visible { outline: 2px solid var(--fd-focus); }
 .fd-canvas-statusbar { border-radius: 6px; min-width: 0; }
 .fd-canvas-statusbar .fd-canvas-widget { pointer-events: none; }
@@ -536,7 +545,7 @@ export const DESIGNER_CSS = /* css */ `
 .fd-column-bar { bottom: auto; top: calc(100% + 6px); inset-inline-end: auto; inset-inline-start: 0; }
 /* "+ Column" stays at the row's end however far the table scrolls. */
 .fd-list-canvas .fd-list-table .fd-canvas-add-column { position: sticky; inset-inline-end: 0; z-index: 1; width: 1%; padding-inline: 8px; background: var(--fd-surface); border-inline-start: 1px solid var(--fd-border); box-shadow: -6px 0 8px -6px rgba(15, 23, 42, 0.18); }
-.fd-canvas-add-column .fd-canvas-add-part { padding: 2px 8px; font-weight: 400; }
+.fd-canvas-add-column .fd-canvas-add-part { padding: 2px 6px; font-weight: 400; border: 0; color: var(--fd-accent); }
 .fd-canvas.fd-dragging .fd-list-table th.fd-canvas-column { cursor: grabbing; }
 .fd-drag-ghost.fd-canvas-column { display: block; padding: 8px 12px; font-weight: 600; font-size: 13px; }
 /* After the panel rules, so these win when the editor is narrow: the toolbox and the panel stack around the canvas. */
