@@ -12,6 +12,7 @@ import {
   type TabsNode,
 } from '@fieldia/core';
 import { conditionToHide, type Condition } from './conditions';
+import { COLUMN_TYPES, columnKind, kindById, kindFits, kindsFor, orList, storedAs, type LineColumn, type QuestionKind } from './kinds';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 
 /**
@@ -22,129 +23,13 @@ import { allIds, containers, findContainer, findNode, findTab, firstSection, nex
  * refused with the reason, never applied. Each edit is one undo step; a run of
  * typing in one label merges into one. Drafts are saved apart from published
  * versions, so editing never changes a form people are filling in.
+ *
+ * Given the backend's model, it offers the model's fields as they are: a
+ * field from the model keeps what it holds, and only changes editor.
  */
 
-export interface QuestionKind {
-  id: string;
-  label: string;
-  field: (label: string) => Field;
-  widget?: string;
-  /** Where the screen editor's palette lists it; a kind for records is refused in a survey. */
-  group?: 'records' | 'more';
-}
-
-const firstOption = (): Option[] => [{ value: 'option_1', label: 'Option 1' }];
-
-export const QUESTION_KINDS: readonly QuestionKind[] = [
-  { id: 'short-answer', label: 'Short answer', field: (label) => ({ type: 'char', label }) },
-  { id: 'paragraph', label: 'Paragraph', field: (label) => ({ type: 'text', label }) },
-  { id: 'multiple-choice', label: 'Multiple choice', field: (label) => ({ type: 'selection', label, options: firstOption() }), widget: 'radio' },
-  { id: 'checkboxes', label: 'Checkboxes', field: (label) => ({ type: 'selection', label, options: firstOption(), multiple: true }), widget: 'checkboxes' },
-  { id: 'dropdown', label: 'Dropdown', field: (label) => ({ type: 'selection', label, options: firstOption() }) },
-  { id: 'rating', label: 'Rating', field: (label) => ({ type: 'integer', label, min: 1, max: 5 }), widget: 'rating' },
-  { id: 'scale', label: 'Linear scale', field: (label) => ({ type: 'integer', label, min: 0, max: 10 }), widget: 'scale' },
-  { id: 'number', label: 'Number', field: (label) => ({ type: 'float', label }) },
-  { id: 'date', label: 'Date', field: (label) => ({ type: 'date', label }) },
-  { id: 'date-time', label: 'Date and time', field: (label) => ({ type: 'datetime', label }) },
-  { id: 'yes-no', label: 'Yes or no', field: (label) => ({ type: 'boolean', label }), widget: 'toggle' },
-  { id: 'email', label: 'Email', field: (label) => ({ type: 'char', label, pattern: '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$' }), widget: 'email' },
-  { id: 'phone', label: 'Phone', field: (label) => ({ type: 'char', label }), widget: 'phone' },
-  { id: 'file', label: 'File upload', field: (label) => ({ type: 'binary', label, maxSize: 10 * 1024 * 1024 }) },
-];
-
-/** Kinds for app screens only: links to other records, a table of lines, and the fields a business record has. */
-export const SCREEN_KINDS: readonly QuestionKind[] = [
-  { id: 'link', label: 'Link to a record', group: 'records', field: (label) => ({ type: 'many2one', label, relation: 'contact' }) },
-  { id: 'links', label: 'Links to records', group: 'records', field: (label) => ({ type: 'many2many', label, relation: 'tag' }) },
-  {
-    id: 'lines',
-    label: 'Table of lines',
-    group: 'records',
-    field: (label) => ({ type: 'one2many', label, relation: 'line', fields: { name: { type: 'char', label: 'Description' }, quantity: { type: 'float', label: 'Quantity' } } }),
-    // The spreadsheet grid where the app has it (`gridWidgets`), the plain table where it does not.
-    widget: 'grid',
-  },
-  { id: 'amount', label: 'Amount', group: 'more', field: (label) => ({ type: 'monetary', label, currency: 'USD' }) },
-  { id: 'progress', label: 'Progress', group: 'more', field: (label) => ({ type: 'integer', label, min: 0, max: 100 }), widget: 'progressbar' },
-  {
-    id: 'status',
-    label: 'Status steps',
-    group: 'more',
-    field: (label) => ({ type: 'selection', label, options: [{ value: 'draft', label: 'Draft' }, { value: 'confirmed', label: 'Confirmed' }, { value: 'done', label: 'Done' }] }),
-    widget: 'statusbar',
-  },
-  { id: 'rich-text', label: 'Rich text', group: 'more', field: (label) => ({ type: 'html', label }) },
-  { id: 'keywords', label: 'Keywords', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'tags' },
-  { id: 'website', label: 'Website', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'url' },
-  { id: 'image', label: 'Image', group: 'more', field: (label) => ({ type: 'image', label }) },
-];
-
-/** The kind a field was made as, from its type and widget; null for one no kind makes. */
-export function kindOfField(field: Field, node: FieldNode): string | null {
-  switch (field.type) {
-    case 'char':
-      return node.widget === 'email' ? 'email' : node.widget === 'phone' ? 'phone' : node.widget === 'url' ? 'website' : node.widget === 'tags' ? 'keywords' : 'short-answer';
-    case 'text':
-      return 'paragraph';
-    case 'html':
-      return 'rich-text';
-    case 'selection':
-      return field.multiple ? 'checkboxes' : node.widget === 'radio' ? 'multiple-choice' : node.widget === 'statusbar' ? 'status' : 'dropdown';
-    case 'integer':
-      return node.widget === 'rating' ? 'rating' : node.widget === 'scale' ? 'scale' : node.widget === 'progressbar' ? 'progress' : 'number';
-    case 'float':
-      return 'number';
-    case 'monetary':
-      return 'amount';
-    case 'date':
-      return 'date';
-    case 'datetime':
-      return 'date-time';
-    case 'boolean':
-      return 'yes-no';
-    case 'binary':
-      return 'file';
-    case 'image':
-      return 'image';
-    case 'many2one':
-      return 'link';
-    case 'many2many':
-      return 'links';
-    case 'one2many':
-      return 'lines';
-    default:
-      return null;
-  }
-}
-
-/** A column of a table of lines, as the screen editor edits it. `name` is kept for a column that already has one. */
-export interface LineColumn {
-  name?: string;
-  label: string;
-  /** `other` keeps a column of a type the editor does not offer, such as a link, as it is. */
-  kind: 'text' | 'number' | 'date' | 'yes-no' | 'other';
-}
-const COLUMN_TYPES = { text: 'char', number: 'float', date: 'date', 'yes-no': 'boolean' } as const;
-
-/** The kind of column a line field is; a whole number and a float are both numbers. */
-export function columnKind(field: Field): LineColumn['kind'] {
-  switch (field.type) {
-    case 'char':
-    case 'text':
-      return 'text';
-    case 'integer':
-    case 'float':
-    case 'monetary':
-      return 'number';
-    case 'date':
-    case 'datetime':
-      return 'date';
-    case 'boolean':
-      return 'yes-no';
-    default:
-      return 'other';
-  }
-}
+export { columnKind, kindFits, kindOfField, kindsFor, QUESTION_KINDS, SCREEN_KINDS, storedAs } from './kinds';
+export type { LineColumn, QuestionKind } from './kinds';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), or a record's sheet. */
 export type PageKind = 'survey' | 'screen' | 'sheet';
@@ -248,8 +133,20 @@ export interface QuestionPatch {
   placeholder?: string;
 }
 
+/** A field of the backend's model, by its name. */
+export interface ModelField {
+  name: string;
+  field: Field;
+}
+
 export interface Designer {
   getPage(): Page;
+  /** The model's fields not on the page yet, in the model's order. Empty without a model. */
+  modelFields(): ModelField[];
+  /** Show a field of the model, as the model has it: after `after`, or at the end of `parent` (or of the last container). Returns its node's id. */
+  addModelField(name: string, where?: { after?: string; parent?: string }): string | false;
+  /** The kinds a question can be shown as: for a field from the model, only those that fit what it holds. */
+  kindsFor(id: string): QuestionKind[];
   getState(): DesignerState;
   subscribe(listener: (state: DesignerState) => void): () => void;
   select(id: string | null): void;
@@ -305,14 +202,13 @@ class Refusal extends Error {}
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
-function kindOf(id: string): QuestionKind {
-  const kind = [...QUESTION_KINDS, ...SCREEN_KINDS].find((k) => k.id === id);
-  if (!kind) throw new Error(`Unknown question kind "${id}"`);
-  return kind;
-}
+const kindOf = kindById;
 
-export function createDesigner(options: { page: Page; store?: PageStore; versions?: PublishedVersion[] }): Designer {
+export function createDesigner(options: { page: Page; store?: PageStore; versions?: PublishedVersion[]; model?: Record<string, Field> }): Designer {
   const store = options.store;
+  const model = clone(options.model ?? {});
+  /** A field the backend already has: its definition is the model's, not the designer's. */
+  const fromModel = (name: string) => Object.prototype.hasOwnProperty.call(model, name);
   let page = clone(options.page);
   let selected: string | null = null;
   let issues: string[] = [];
@@ -415,6 +311,36 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
 
   const designer: Designer = {
     getPage: () => page,
+    modelFields() {
+      const shown = shownFields(page);
+      return Object.keys(model)
+        .filter((name) => !shown.has(name))
+        .map((name) => ({ name, field: clone(model[name]) }));
+    },
+
+    addModelField(name, where) {
+      let created = '';
+      const ok = apply((draft) => {
+        if (!fromModel(name)) throw new Refusal(`The model has no field "${name}"`);
+        if (shownFields(draft).has(name)) throw new Refusal(`${model[name].label} is on the page already`);
+        // A definition the page already keeps for it stays; otherwise the model's.
+        draft.fields[name] = draft.fields[name] ?? clone(model[name]);
+        const ids = allIds(draft);
+        created = nextName((id) => ids.has(id), 'q', '-');
+        placeAfter(draft, { type: 'field', id: created, field: name }, where);
+      });
+      if (!ok) return false;
+      selected = created;
+      notify();
+      return created;
+    },
+
+    kindsFor(id) {
+      const found = findNode(page, id);
+      if (!found || found.node.type !== 'field') return [];
+      const name = found.node.field;
+      return kindsFor(page.fields[name], { fromModel: fromModel(name), survey: page.data.kind === 'responses' });
+    },
     getState: state,
     subscribe(listener) {
       listeners.add(listener);
@@ -499,6 +425,16 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
         refuseInSurvey(draft, kind);
         const node = fieldNode(draft, id);
         const old = draft.fields[node.field] as Field & { help?: string; required?: boolean };
+        if (fromModel(node.field)) {
+          // What the backend stores stays as it is: only the editor changes.
+          if (!kindFits(kind, old)) {
+            const fitting = kindsFor(old, { fromModel: true, survey: draft.data.kind === 'responses' }).map((k) => k.label);
+            throw new Refusal(`${old.label} is stored as ${storedAs(old)} in the model, so it can only be shown as ${orList(fitting)}`);
+          }
+          if (kind.widget) node.widget = kind.widget;
+          else delete node.widget;
+          return;
+        }
         const next = kind.field(old.label) as Field & { help?: string; required?: boolean };
         if (old.type === 'selection' && next.type === 'selection') next.options = old.options;
         if (old.help) next.help = old.help;
@@ -890,9 +826,9 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
 }
 
 /** Open a page from a store: its latest draft, or else its latest version. */
-createDesigner.open = async (id: string, store: PageStore): Promise<Designer> => {
+createDesigner.open = async (id: string, store: PageStore, options: { model?: Record<string, Field> } = {}): Promise<Designer> => {
   const { draft, versions } = await store.load(id);
   const page = draft ?? versions[versions.length - 1]?.page;
   if (!page) throw new Error(`The store has no page "${id}"`);
-  return createDesigner({ page, store, versions });
+  return createDesigner({ page, store, versions, model: options.model });
 };
