@@ -1,5 +1,6 @@
 import type { Field } from '@fieldia/core';
 import type { Designer, DesignerState } from './designer';
+import { checksButton, openPublishDialog, statusWords, versionsMenu, type GoTo } from './publish-ui';
 
 /** The parts both editors share: the bar with undo and publish, and the list of options. */
 
@@ -33,27 +34,32 @@ export interface DesignerBar {
 }
 
 /**
- * The page title, where the page stands (draft, published), and Undo, Redo
- * and Publish — each shown only when it can act. Ctrl/Cmd+Z and Shift+Z or Y
- * undo and redo anywhere in `root` outside a text box.
+ * The page title, where the page stands (draft, published) opening the
+ * versions published, Undo and Redo, Checks, and Publish asking first — each
+ * shown only when it can act. Ctrl/Cmd+Z and Shift+Z or Y undo and redo
+ * anywhere in `root` outside a text box.
  */
 export function designerBar(
   root: HTMLElement,
   designer: Designer,
-  options: { titleLabel: string; placeholder: string; extra?: Node[] }
+  options: { titleLabel: string; placeholder: string; extra?: Node[]; goTo?: GoTo }
 ): DesignerBar {
   const doc = root.ownerDocument;
   const el = elementFactory(doc);
   const title = el('input', { class: 'fd-input fd-designer-title', 'aria-label': options.titleLabel, placeholder: options.placeholder });
   title.addEventListener('input', () => designer.setPageInfo({ title: title.value }));
-  const status = el('span', { class: 'fd-designer-status', role: 'status' });
+  // Where the page stands, as words a screen reader hears change; pressed, the versions published.
+  const status = el('button', { type: 'button', class: 'fd-designer-status', 'aria-haspopup': 'menu', 'aria-expanded': 'false', title: 'Versions' });
+  status.addEventListener('click', () => versionsMenu(el, designer, status));
+  const goTo: GoTo = options.goTo ?? (() => undefined);
+  const checks = checksButton(el, doc, designer, goTo);
   const undo = el('button', { type: 'button', class: 'fd-button' }, 'Undo');
   const redo = el('button', { type: 'button', class: 'fd-button' }, 'Redo');
   const publish = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, 'Publish');
   undo.addEventListener('click', () => designer.undo());
   redo.addEventListener('click', () => designer.redo());
-  publish.addEventListener('click', () => void designer.publish().catch(() => undefined));
-  const element = el('div', { class: 'fd-designer-bar' }, title, status, el('span', { class: 'fd-spacer' }), undo, redo, ...(options.extra ?? []), publish);
+  publish.addEventListener('click', () => openPublishDialog(el, designer, root, goTo));
+  const element = el('div', { class: 'fd-designer-bar' }, title, el('span', { class: 'fd-designer-status-box', role: 'status' }, status), el('span', { class: 'fd-spacer' }), undo, redo, ...(options.extra ?? []), checks.element, publish);
   const issues = el('div', { class: 'fd-alert fd-tone-danger fd-designer-issues', role: 'alert', hidden: '' });
 
   // On the document: clicking an area that cannot take focus leaves focus on
@@ -82,13 +88,14 @@ export function designerBar(
       undo.hidden = !state.canUndo;
       redo.hidden = !state.canRedo;
       publish.hidden = !state.unpublished;
-      const last = state.versions[state.versions.length - 1];
-      status.textContent = !last ? 'Draft, not published yet' : state.unpublished ? 'Changes not published yet' : `Published · version ${last.version}`;
+      status.textContent = statusWords(state);
+      checks.update();
       issues.hidden = state.issues.length === 0;
       issues.textContent = state.issues.join('\n');
     },
     destroy() {
       doc.removeEventListener('keydown', onKey);
+      checks.destroy();
     },
   };
 }

@@ -249,6 +249,7 @@ describe('survey editor — questions as people see them, the one picked open', 
     const { host } = mount();
     button(host, 'Add question').click();
     button(host, 'Publish').click();
+    button(document.querySelector('[role="dialog"]') as HTMLElement, 'Publish version 1').click();
     await wait(10);
     expect(host.querySelector('.fd-designer-status')?.textContent).toBe('Published · version 1');
     expect(button(host, 'Publish')).toBeUndefined();

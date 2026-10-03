@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addField, cardOf, drag, editing, layout, tile, watch } from './designer-support';
+import { addField, cardOf, drag, editing, layout, publish, tile, watch } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -166,8 +166,7 @@ test.describe('screen designer', () => {
     await page.getByRole('button', { name: 'Design', exact: true }).click();
     await expect(page.locator('.fd-canvas-field')).toHaveCount(7);
 
-    await page.getByRole('button', { name: 'Publish' }).click();
-    await expect(page.locator('.fd-designer-status')).toHaveText('Published · version 1');
+    await publish(page, 1);
   });
 
   test('every kind of field fits its place, help text and all', async ({ page }) => {

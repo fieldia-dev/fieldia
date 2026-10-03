@@ -76,6 +76,15 @@ export async function addField(page: Page, kind: string, label: string) {
   await expect(editing(page).label).toHaveValue(label);
 }
 
+/** Publish as a person does: Publish, then the dialog's own button for the next version. */
+export async function publish(page: Page, version: number) {
+  await page.getByRole('button', { name: 'Publish', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: `Publish version ${version}?` });
+  await dialog.getByRole('button', { name: `Publish version ${version}` }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator('.fd-designer-status')).toHaveText(`Published · version ${version}`);
+}
+
 /** Collect page errors and console errors, for an empty list at the end. */
 export function watch(page: Page): string[] {
   const problems: string[] = [];

@@ -80,7 +80,18 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const skin = options.skin ?? 'outlined';
   const root = el('div', { class: 'fd-form fd-designer fd-survey-designer', 'data-fd-skin': skin });
   const trial = tryIt({ el, doc, designer, skin, onChange: (trying) => (body.hidden = trying) });
-  const bar = designerBar(root, designer, { titleLabel: 'Form title', placeholder: 'Untitled form', extra: [trial.toggle] });
+  const bar = designerBar(root, designer, {
+    titleLabel: 'Form title',
+    placeholder: 'Untitled form',
+    extra: [trial.toggle],
+    // A check about a question's words or options: its card is open by now, the cursor goes there.
+    goTo(id, part) {
+      const card = root.querySelector(`.fd-q[data-node="${id}"]`);
+      const target = card?.querySelector<HTMLInputElement>(part === 'label' ? '.fd-q-label' : '.fd-q-option input');
+      target?.focus();
+      target?.select();
+    },
+  });
   const pages = el('div', { class: 'fd-designer-pages' });
   const addPage = el('button', { type: 'button', class: 'fd-button' }, 'Add page');
   addPage.addEventListener('click', () => {

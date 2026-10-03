@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addField, cardOf, tile } from './designer-support';
+import { addField, cardOf, publish, tile } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /** A record sheet built in the screen editor: a title, a section, tabs with their own sections; previewed, published, reopened. */
@@ -68,8 +68,7 @@ test.describe('screen designer · record sheet', () => {
     await screen(page, 'screen-sheet-preview', { viewport: true });
     await page.getByRole('button', { name: 'Design', exact: true }).click();
 
-    await page.getByRole('button', { name: 'Publish' }).click();
-    await expect(page.locator('.fd-designer-status')).toHaveText('Published · version 1');
+    await publish(page, 1);
     await page.evaluate(() => (window as any).fieldiaDesigner.reopen());
     await expect(page.locator('.fd-canvas-title')).toHaveText('Name');
     await expect(tabs(page)).toHaveText(['Contacts', 'Notes']);
@@ -171,8 +170,7 @@ test.describe('screen designer · a record’s header', () => {
     await page.getByRole('button', { name: 'Design', exact: true }).click();
 
     // Published and opened again, the header is all there.
-    await page.getByRole('button', { name: 'Publish' }).click();
-    await expect(page.locator('.fd-designer-status')).toHaveText('Published · version 1');
+    await publish(page, 1);
     await page.evaluate(() => window.fieldiaDesigner.reopen());
     await expect(page.locator('.fd-canvas-header .fd-button')).toHaveText(['Block', 'Activate']);
     await expect(page.locator('.fd-canvas [data-part="#statusbar"]')).toContainText('Draft');

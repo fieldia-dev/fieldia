@@ -48,7 +48,18 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
 
   const root = el('div', { class: 'fd-form fd-designer fd-screen-designer', 'data-fd-skin': skin });
   const trial = tryIt({ el, doc, designer, skin, onChange: (trying) => (body.hidden = trying) });
-  const bar = designerBar(root, designer, { titleLabel: 'Screen title', placeholder: 'Untitled screen', extra: [trial.toggle] });
+  const bar = designerBar(root, designer, {
+    titleLabel: 'Screen title',
+    placeholder: 'Untitled screen',
+    extra: [trial.toggle],
+    // A check about a field's words or options: it is open on the canvas by now, the cursor goes there.
+    goTo(id, part) {
+      if (part === 'label') return canvas.focus(id, 'label', true);
+      const option = root.querySelector<HTMLInputElement>(`.fd-canvas-field[data-node="${id}"] .fd-q-option input`);
+      option?.focus();
+      option?.select();
+    },
+  });
 
   const canvas = screenCanvas({
     designer,

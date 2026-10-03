@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { publish } from './designer-support';
 import { screen } from './support';
 
 /** The question picked, open to edit. */
@@ -76,15 +77,13 @@ test.describe('survey designer', () => {
     await expect(page.locator('.fd-q').nth(2).locator('.fd-q-kind')).toHaveAttribute('aria-label', 'Kind of question: Paragraph');
 
     // Publish, change, publish again.
-    await page.getByRole('button', { name: 'Publish' }).click();
-    await expect(page.locator('.fd-designer-status')).toHaveText('Published · version 1');
-    await expect(page.getByRole('button', { name: 'Publish' })).toBeHidden();
+    await publish(page, 1);
+    await expect(page.getByRole('button', { name: 'Publish', exact: true })).toBeHidden();
     await page.locator('.fd-q').first().locator('.fd-q-text').click();
     await expect(picked(page).locator('.fd-q-label')).toBeFocused();
     await picked(page).locator('.fd-q-label').fill('Your full name');
     await expect(page.locator('.fd-designer-status')).toHaveText('Changes not published yet');
-    await page.getByRole('button', { name: 'Publish' }).click();
-    await expect(page.locator('.fd-designer-status')).toHaveText('Published · version 2');
+    await publish(page, 2);
 
     // Reopen from the store: the same form comes back.
     const reopened = await page.evaluate(async () => {
@@ -242,6 +241,59 @@ test.describe('survey designer · the Google Forms way', () => {
     await page.keyboard.type('Anything else?');
     await expect(picked(page).locator('.fd-q-label')).toHaveValue('Anything else?');
     await screen(page, 'designer-forms-added', { viewport: true });
+    expect(problems).toEqual([]);
+  });
+});
+
+/** Checks before publishing, Publish asking first, and earlier versions one click away. */
+test.describe('survey designer · checks and versions', () => {
+  test('a check with its fix, Publish listing what changed, and an earlier version made the draft again', async ({ page }) => {
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+    await page.goto('/designer/?start=survey');
+    await expect(page.locator('.fd-q').first()).toBeVisible();
+    const checks = page.locator('.fd-designer-bar [data-checks]');
+    await expect(checks).toHaveAttribute('aria-label', 'Checks: all clear');
+
+    // An empty page: one thing to look at, and its fix.
+    await page.getByRole('button', { name: 'Add page', exact: true }).click();
+    await expect(checks).toHaveAttribute('aria-label', 'Checks: 1 to look at');
+    await checks.click();
+    const list = page.getByRole('dialog', { name: 'Checks before publishing' });
+    await expect(list.locator('.fd-check-text')).toHaveText(['“Page 6” has no questions: people would see an empty page.']);
+    await screen(page, 'designer-checks', { viewport: true });
+    await list.getByRole('button', { name: 'Delete the page' }).click();
+    await expect(checks).toHaveAttribute('aria-label', 'Checks: all clear');
+
+    // The first version says what goes out.
+    await page.getByRole('button', { name: 'Publish', exact: true }).click();
+    const ask = page.getByRole('dialog', { name: 'Publish version 1?' });
+    await expect(ask.locator('.fd-publish-changes li')).toHaveText([/^The first version: \d+ questions on 5 pages$/]);
+    await expect(ask.getByRole('button', { name: 'Publish version 1' })).toBeFocused();
+    await screen(page, 'designer-publish-first', { viewport: true });
+    await ask.getByRole('button', { name: 'Publish version 1' }).click();
+    await expect(page.locator('.fd-designer-status')).toHaveText('Published · version 1');
+
+    // A change, then Publish lists it.
+    await page.locator('.fd-q').first().locator('.fd-q-text').click();
+    await picked(page).locator('.fd-q-label').fill('Your full name');
+    await page.getByRole('button', { name: 'Publish', exact: true }).click();
+    const again = page.getByRole('dialog', { name: 'Publish version 2?' });
+    await expect(again.locator('.fd-publish-changes li')).toHaveText(['Renamed “Your name” to “Your full name”']);
+    await screen(page, 'designer-publish-changes', { viewport: true });
+    await again.getByRole('button', { name: 'Publish version 2' }).click();
+    await expect(page.locator('.fd-designer-status')).toHaveText('Published · version 2');
+
+    // Version 1, one click away: the draft again, and Undo brings version 2 back.
+    await page.locator('.fd-designer-status').click();
+    await expect(page.getByRole('menuitem')).toHaveCount(2);
+    await screen(page, 'designer-versions', { viewport: true });
+    await page.getByRole('menuitem', { name: /^Version 1/ }).click();
+    // Still picked, its words in its box.
+    await expect(picked(page).locator('.fd-q-label')).toHaveValue('Your name');
+    await expect(page.locator('.fd-designer-status')).toHaveText('Changes not published yet');
+    await page.getByRole('button', { name: 'Undo', exact: true }).click();
+    await expect(page.locator('.fd-designer-status')).toHaveText('Published · version 2');
     expect(problems).toEqual([]);
   });
 });

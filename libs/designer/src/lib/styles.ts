@@ -6,7 +6,42 @@ export const DESIGNER_CSS = /* css */ `
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 10px 14px;
 }
 .fd-designer-title { font-size: 17px; font-weight: 600; flex: 1 1 220px; max-width: 420px; min-width: 0; }
-.fd-designer-status { color: var(--fd-muted); font-size: 13px; }
+/* Where the page stands; pressed, the versions published. */
+.fd-designer-status-box { display: inline-flex; }
+.fd-designer-status { all: unset; box-sizing: border-box; cursor: pointer; color: var(--fd-muted); font-size: 13px; padding: 4px 8px; border-radius: 6px; }
+.fd-designer-status::after { content: ""; display: inline-block; width: 5px; height: 5px; margin-inline-start: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-3px) rotate(45deg); }
+.fd-designer-status:hover, .fd-designer-status[aria-expanded="true"] { background: var(--fd-page); color: var(--fd-text); }
+.fd-designer-status:focus-visible { outline: 2px solid var(--fd-focus); }
+/* Checks: a count of what to look at, the colour of the worst of them. */
+.fd-checks-button { display: inline-flex; align-items: center; gap: 6px; }
+.fd-checks-button > .fd-dicon { width: 15px; height: 15px; }
+.fd-checks-count { min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; display: inline-grid; place-items: center; font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; background: var(--fd-page); color: var(--fd-muted); }
+.fd-checks-button[data-state="clear"] .fd-checks-count { background: var(--fd-success-soft); color: var(--fd-success); }
+.fd-checks-button[data-state="should"] .fd-checks-count { background: var(--fd-warning-soft); color: var(--fd-warning); }
+.fd-checks-button[data-state="must"] .fd-checks-count { background: var(--fd-error-soft); color: var(--fd-error); }
+.fd-checks {
+  position: fixed; z-index: 60; width: min(380px, calc(100vw - 16px)); max-height: min(480px, calc(100vh - 16px)); overflow: auto; box-sizing: border-box;
+  background: var(--fd-surface); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: 10px; box-shadow: 0 18px 44px rgba(15, 20, 25, 0.18);
+  padding: 6px; display: grid; gap: 4px; animation: fd-menu-in 120ms cubic-bezier(0, 0, 0.2, 1);
+}
+.fd-check { display: grid; gap: 6px; justify-items: start; padding: 10px; border-radius: 8px; }
+.fd-check + .fd-check { border-block-start: 1px solid var(--fd-border); border-radius: 0; }
+.fd-check-severity { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 1px 6px; }
+.fd-check[data-severity="must"] .fd-check-severity { color: var(--fd-error); background: var(--fd-error-soft); }
+.fd-check[data-severity="should"] .fd-check-severity { color: var(--fd-warning); background: var(--fd-warning-soft); }
+.fd-check-text { margin: 0; font-size: 13.5px; line-height: 1.45; }
+.fd-check-fix { min-height: 30px; padding-block: 2px; font-size: 13px; }
+/* Publish, asked first. */
+.fd-publish-backdrop { z-index: 70; }
+.fd-publish-dialog { max-width: 480px; background: var(--fd-surface); }
+.fd-publish-body { display: grid; gap: 12px; padding: 16px 18px 4px; overflow: auto; }
+.fd-publish-lead { margin: 0; font-weight: 600; }
+.fd-publish-changes { margin: 0; padding-inline-start: 20px; display: grid; gap: 4px; font-size: 14px; }
+.fd-publish-more { list-style: none; margin-inline-start: -20px; color: var(--fd-muted); }
+.fd-publish-blocked { display: grid; gap: 4px; border: 1px solid var(--fd-error); border-radius: 8px; padding: 6px; background: color-mix(in srgb, var(--fd-error-soft) 50%, var(--fd-surface)); }
+.fd-publish-blocked-head { margin: 4px 10px 0; font-weight: 600; color: var(--fd-error); }
+.fd-publish-failed { margin: 0; color: var(--fd-error); }
+.fd-publish-dialog .fd-form-dialog-foot { margin: 0; padding: 12px 18px 16px; }
 .fd-designer .fd-spacer { flex: 1; }
 .fd-designer-issues { white-space: pre-line; }
 .fd-designer-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr); gap: 20px; align-items: start; }
