@@ -47,9 +47,10 @@ describe('a menu of choices', () => {
     expect(document.querySelector('.fd-menu')).toBeNull();
   });
 
-  it('moves with the arrows, picks with Enter, and Escape gives focus back to what opened it', () => {
-    let { items, picked, anchor } = setup();
-    const key = (k: string) => document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+  const key = (k: string) => document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+
+  it('moves with the arrows and picks with Enter', () => {
+    const { items, picked } = setup();
     key('ArrowDown');
     expect(document.activeElement).toBe(items()[2]);
     key('ArrowDown');
@@ -57,8 +58,10 @@ describe('a menu of choices', () => {
     key('ArrowUp');
     key('Enter');
     expect(picked).toEqual(['phone']);
-    document.body.replaceChildren();
-    ({ items, picked, anchor } = setup());
+  });
+
+  it('closes on Escape, giving focus back to what opened it', () => {
+    const { picked, anchor } = setup();
     key('Escape');
     expect(document.querySelector('.fd-menu')).toBeNull();
     expect(document.activeElement).toBe(anchor);
