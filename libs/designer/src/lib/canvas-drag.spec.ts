@@ -289,15 +289,18 @@ describe('dragging on the canvas', () => {
     pointer('pointerdown', card('customer'), 100, 60);
     pointer('pointermove', document, 100, 300);
     expect(scrolled).toEqual([]);
-    // Near the bottom: down, faster the nearer the edge.
+    // Near the bottom: after a moment's rest there, down.
     pointer('pointermove', document, 100, window.innerHeight - 10);
-    jest.advanceTimersByTime(100);
+    jest.advanceTimersByTime(200);
+    expect(scrolled).toEqual([]);
+    jest.advanceTimersByTime(150);
     expect(scrolled.length).toBeGreaterThan(2);
     expect(scrolled.every((y) => y > 0)).toBe(true);
     // Near the top: up.
     scrolled.length = 0;
+    pointer('pointermove', document, 100, 300);
     pointer('pointermove', document, 100, 8);
-    jest.advanceTimersByTime(100);
+    jest.advanceTimersByTime(400);
     expect(scrolled.length).toBeGreaterThan(0);
     expect(scrolled.every((y) => y < 0)).toBe(true);
     // Let go: no more.

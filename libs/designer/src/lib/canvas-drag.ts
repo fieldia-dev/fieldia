@@ -57,6 +57,8 @@ const TAB_DELAY = 450;
 const REACH = 24;
 /** How near the window's top or bottom something carried scrolls the page, faster the nearer. */
 const EDGE = 48;
+/** How long it rests there first: a drop made quickly near the edge stays where it was let go. */
+const EDGE_DELAY = 250;
 
 export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
   const { canvas } = options;
@@ -80,6 +82,7 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
   let edgeTimer: ReturnType<typeof setTimeout> | undefined;
   let pointer = { x: 0, y: 0 };
 
+  const nearEdge = (y: number) => y < EDGE || y > (doc.defaultView?.innerHeight ?? Infinity) - EDGE;
   /** Held near the window's top or bottom, the page scrolls under what is carried, so it can go to a place out of view. */
   function edgeScroll() {
     clearTimeout(edgeTimer);
@@ -194,7 +197,10 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
     follow(drag, x, y);
     restOnTab(x, y);
     pointer = { x, y };
-    if (!edgeTimer) edgeScroll();
+    if (!nearEdge(y)) {
+      clearTimeout(edgeTimer);
+      edgeTimer = undefined;
+    } else if (!edgeTimer) edgeTimer = setTimeout(edgeScroll, EDGE_DELAY);
   }
 
   /** The click a real drag ends with is not a click on what was under it. */
