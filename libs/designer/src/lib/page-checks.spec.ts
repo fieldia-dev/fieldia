@@ -49,6 +49,19 @@ describe('checks before publishing', () => {
     expect((designer.getPage().layout as WizardNode).children).toHaveLength(1);
   });
 
+  it('says an only page or section is empty, with no fix to delete it', () => {
+    const [check] = pageChecks(blankPage('screen', 'Visit'));
+    expect([check.text, check.fix]).toEqual(['“Section 1” has no fields: it would show as an empty box.', undefined]);
+  });
+
+  it('stops a page written by hand that does not hold together, saying where', () => {
+    const page = blankPage('screen', 'Visit');
+    (page.layout as { children: { invisible?: string }[] }).children[0].invisible = "ghost == 'x'";
+    const [check] = pageChecks(page);
+    expect(check.severity).toBe('must');
+    expect(check.text).toMatch(/ghost/);
+  });
+
   it('finds an empty section on a screen', () => {
     const designer = createDesigner({ page: blankPage('screen', 'Visit') });
     designer.addQuestion('short-answer', { parent: 'section-1' });
@@ -69,6 +82,18 @@ describe('checks before publishing', () => {
     expect(check.fix?.label).toBe('Remove that rule');
     expect(designer.fixCheck(check)).toBe(true);
     expect(pageChecks(designer.getPage())).toEqual([]);
+  });
+
+  it('says a rule among others that can never hold, and drops only that rule', () => {
+    const { designer, coming, role, why, field } = survey();
+    designer.setCondition(why, { join: 'any', rules: [{ field: field(role), op: 'is', value: 'manager' }, { field: field(coming), op: 'is', value: false }] });
+    designer.setOptions(role, ['Developer']);
+    const [check] = pageChecks(designer.getPage());
+    // Another rule can still show it: it only reads wrong.
+    expect([check.severity, check.text]).toEqual(['should', '“Why not?”: the rule “Role is manager” can never hold, as Role no longer offers it.']);
+    designer.fixCheck(check);
+    const node = (designer.getPage().layout as WizardNode).children[0].children.find((n) => n.id === why) as FieldNode;
+    expect(node.invisible).toBe(`${field(coming)} != False`);
   });
 
   it('finds two questions asking the same thing', () => {
