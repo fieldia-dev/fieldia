@@ -441,6 +441,23 @@ export const DESIGNER_CSS = /* css */ `
 .fd-q-preview { color: var(--fd-muted); font-size: 14px; padding-block: 8px 6px; border-block-end: 1px dotted color-mix(in srgb, var(--fd-text) 38%, transparent); width: min(50%, 380px); }
 .fd-q-preview-long { width: min(80%, 600px); }
 .fd-q-preview-list { list-style: none; margin: 0; padding: 0; border: 0; width: auto; display: grid; gap: 10px; color: var(--fd-text); }
+/* Where answers lead: the pages on one line, those for some answers off it and back. */
+.fd-branch-map { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: 8px; padding: 10px 16px 12px; min-width: 0; }
+.fd-branch-summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--fd-muted); }
+.fd-branch-summary:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; border-radius: 4px; }
+.fd-branch-scroll { overflow-x: auto; margin-block-start: 10px; }
+.fd-branch-svg { display: block; height: auto; }
+.fd-branch-edge { fill: none; stroke: var(--fd-muted); stroke-width: 1.5; }
+.fd-branch-off { stroke: var(--fd-warning); }
+.fd-branch-head { fill: var(--fd-muted); }
+.fd-branch-box { fill: var(--fd-surface); stroke: var(--fd-border-strong); stroke-width: 1; transition: stroke 120ms; }
+.fd-branch-page { cursor: pointer; outline: none; }
+.fd-branch-page:hover .fd-branch-box, .fd-branch-page:focus-visible .fd-branch-box { stroke: var(--fd-accent); }
+.fd-branch-page:focus-visible .fd-branch-box { stroke-width: 2; }
+.fd-branch-page.fd-picked .fd-branch-box { fill: var(--fd-accent-soft); stroke: var(--fd-accent); stroke-width: 2; }
+.fd-branch-title { fill: var(--fd-text); font-size: 14px; font-weight: 600; }
+.fd-branch-when { fill: var(--fd-warning); font-size: 12.5px; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .fd-branch-box { transition: none; } }
 /* Options: a ring or a box, the words on a line that shows when pointed at, × at the end. */
 .fd-survey-canvas .fd-q-options { gap: 0; }
 .fd-survey-canvas .fd-q-option { min-height: 44px; gap: 12px; }

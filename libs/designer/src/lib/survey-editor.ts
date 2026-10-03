@@ -1,6 +1,7 @@
 import { createForm, type FieldNode, type Form, type Page, type StepNode, type WizardNode } from '@fieldia/core';
 import type { Skin } from '@fieldia/viewer';
 import { createWidget, installStyles, type Widget } from '@fieldia/widgets';
+import { branchMap, drawBranchMap } from './branch-map';
 import { canvasDrag } from './canvas-drag';
 import { designerBar, elementFactory, iconButton as makeIconButton, optionsEditor, type ElementFactory, type OptionsEditor } from './chrome';
 import { conditionEditor } from './condition-editor';
@@ -117,7 +118,25 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   railQuestion.addEventListener('click', () => add('short-answer', railTarget()));
   railPage.addEventListener('click', addPageHere);
 
-  const column = el('div', { class: 'fd-survey-column' }, head, pages, addPage, rail);
+  // Where answers lead: the pages on one line, those for some answers off it.
+  const mapScroll = el('div', { class: 'fd-branch-scroll' });
+  const map = el('details', { class: 'fd-branch-map', open: '', hidden: '' }, el('summary', { class: 'fd-branch-summary' }, 'Where answers lead'), mapScroll);
+  let mapKey = '';
+  function drawMap(page: Page, selected: string | null) {
+    const drawn = branchMap(page);
+    map.hidden = drawn.nodes.length < 2;
+    const key = JSON.stringify([drawn, selected]);
+    if (map.hidden || key === mapKey) return;
+    mapKey = key;
+    mapScroll.replaceChildren(
+      drawBranchMap(doc, drawn, selected, (id) => {
+        designer.select(id);
+        stepViews.get(id)?.element.scrollIntoView?.({ block: 'nearest' });
+      })
+    );
+  }
+
+  const column = el('div', { class: 'fd-survey-column' }, head, map, pages, addPage, rail);
   const editor = el('div', { class: 'fd-designer-editor fd-survey-canvas' }, column);
   const tools = toolbox({
     el,
@@ -545,6 +564,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     tools.update({ modelFields: [], tabs: false });
     side.update(state);
     if (!focused(headTitle)) headTitle.value = page.title ?? '';
+    drawMap(page, state.selected);
     if (!focused(headDescription)) headDescription.value = page.description ?? '';
 
     const liveSteps = new Set(steps.map((s) => s.id));

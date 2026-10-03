@@ -328,3 +328,26 @@ test.describe('survey designer · find anything', () => {
     expect(problems).toEqual([]);
   });
 });
+
+test.describe('survey designer · where answers lead', () => {
+  test('the pages on one line, those for some answers off it, a page picked from the map', async ({ page }) => {
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+    await page.goto('/designer/?start=survey');
+    const map = page.locator('.fd-branch-map');
+    await expect(map.locator('.fd-branch-title')).toHaveText(['About you', 'Using the product', 'Your experience', 'Why not', 'Last thing']);
+    await expect(map.locator('.fd-branch-when')).toHaveText(['Yes', 'No']);
+    // Drawn inside its card, not past it.
+    const card = (await map.boundingBox())!;
+    const drawing = (await map.locator('svg').boundingBox())!;
+    expect(drawing.x + drawing.width).toBeLessThanOrEqual(card.x + card.width);
+    await map.locator('[data-pick]').filter({ hasText: 'Why not' }).click();
+    await expect(page.locator('.fd-design-step.fd-step-selected .fd-step-title')).toHaveValue('Why not');
+    await expect(map.locator('.fd-branch-page.fd-picked .fd-branch-title')).toHaveText('Why not');
+    await screen(page, 'designer-branch-map', { viewport: true });
+    // It folds away when not wanted.
+    await map.locator('summary').click();
+    await expect(map.locator('svg')).toBeHidden();
+    expect(problems).toEqual([]);
+  });
+});
