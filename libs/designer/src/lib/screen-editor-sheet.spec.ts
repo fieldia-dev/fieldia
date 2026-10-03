@@ -1,6 +1,6 @@
 import type { Field, FieldNode, Page, SectionNode, SheetNode, TabsNode } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore } from './designer';
-import { button, choose, field, mount, tile, type } from './test-editor';
+import { button, choose, field, mount, press, tile, type } from './test-editor';
 
 const sheet = (designer: ReturnType<typeof createDesigner>) => designer.getPage().layout as SheetNode;
 const strip = (host: Element) => [...host.querySelectorAll('.fd-canvas-tabs [role="tab"]')].map((tab) => `${tab.textContent}${tab.getAttribute('aria-selected') === 'true' ? ' *' : ''}`);
@@ -149,5 +149,74 @@ describe('screen editor — the kinds of field for a screen', () => {
     expect(fieldOf(designer.getPage(), amount).currency).toBe('USD');
     type(field(host, 'Currency'), 'eur');
     expect(fieldOf(designer.getPage(), amount).currency).toBe('EUR');
+  });
+});
+
+describe('screen editor — a record’s header in the panel', () => {
+  const model: Record<string, Field> = {
+    state: { type: 'selection', label: 'Status', options: [{ value: 'draft', label: 'Draft' }, { value: 'blocked', label: 'Blocked' }] },
+    invoice_count: { type: 'integer', label: 'Invoices' },
+  };
+  const setup = () => {
+    const designer = createDesigner({ page: blankPage('sheet', 'Customer'), model });
+    const { host } = mount(designer);
+    const panel = () => host.querySelector('.fd-properties') as HTMLElement;
+    const part = (id: string) => host.querySelector(`.fd-canvas [data-part="${id}"]`) as HTMLElement;
+    const add = (kind: string) => (host.querySelector(`[data-add-part="${kind}"]`) as HTMLButtonElement).click();
+    return { designer, host, panel, part, add };
+  };
+
+  it('changes a button’s words, action, look and question from the panel, the canvas following', () => {
+    const { designer, panel, part, add } = setup();
+    add('button');
+    const id = sheet(designer).buttons?.[0].id as string;
+    expect(panel().querySelector('.fd-panel-title')?.textContent).toBe('Button');
+    type(field(panel(), 'Words'), 'Confirm');
+    type(field(panel(), 'Action'), 'confirm_order');
+    choose(field(panel(), 'Look'), 'primary');
+    type(field(panel(), 'Asks first'), 'Confirm this order?');
+    expect(sheet(designer).buttons?.[0]).toMatchObject({ label: 'Confirm', action: 'confirm_order', style: 'primary', confirm: 'Confirm this order?' });
+    expect(part(id).classList.contains('fd-button-primary')).toBe(true);
+    expect((part(id).querySelector('input') as HTMLInputElement).value).toBe('Confirm');
+  });
+
+  it('shows a counter’s number from a field, and gives a badge its tone and a rule', () => {
+    const { designer, panel, add } = setup();
+    designer.setStatusbar('state');
+    add('stat');
+    expect([...(field(panel(), 'Number from') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['Nothing', 'Invoices']);
+    choose(field(panel(), 'Number from'), 'invoice_count');
+    expect(sheet(designer).statButtons?.[0].field).toBe('invoice_count');
+    add('badge');
+    choose(field(panel(), 'Tone'), 'danger');
+    expect(sheet(designer).badges?.[0].tone).toBe('danger');
+    button(panel(), 'Show only when…')?.click();
+    expect(sheet(designer).badges?.[0].invisible).toBe("state != 'draft'");
+  });
+
+  it('sets the status steps from the panel: which field, clickable, where, or none', () => {
+    const { designer, panel, part } = setup();
+    designer.setStatusbar('state');
+    designer.select('#statusbar');
+    expect(panel().querySelector('.fd-panel-title')?.textContent).toBe('Status steps');
+    field(panel(), 'People can click a step')?.click();
+    expect(sheet(designer).statusbar).toEqual({ field: 'state', clickable: true });
+    choose(field(panel(), 'Where'), 'title');
+    expect(sheet(designer).statusbar).toEqual({ field: 'state', clickable: true, position: 'title' });
+    button(panel(), 'Remove the status steps')?.click();
+    expect(sheet(designer).statusbar).toBeUndefined();
+    expect(part('#statusbar')).toBeNull();
+  });
+
+  it('moves a part with Alt and an arrow, and takes it away with Delete', () => {
+    const { designer, add } = setup();
+    add('button');
+    add('button');
+    const [first, second] = sheet(designer).buttons?.map((b) => b.id) as string[];
+    (document.activeElement as HTMLElement).blur();
+    press('ArrowLeft', { altKey: true }, document.body);
+    expect(sheet(designer).buttons?.map((b) => b.id)).toEqual([second, first]);
+    press('Delete', {}, document.body);
+    expect(sheet(designer).buttons?.map((b) => b.id)).toEqual([first]);
   });
 });

@@ -193,6 +193,30 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-add-tab:hover { background: var(--fd-page); color: var(--fd-accent); }
 .fd-canvas-add-tab:focus-visible, .fd-canvas-title:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
 
+/* A record's header on the canvas: the viewer's own parts, picked by a click, with a quiet way to add each kind. */
+.fd-canvas-header { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; padding: 6px 0 12px; border-block-end: 1px solid var(--fd-border); }
+.fd-canvas-header-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.fd-canvas-header-card { display: grid; gap: 10px; justify-items: stretch; }
+/* Not at the card's edge here, as the viewer's are: no reaching out to it. */
+.fd-canvas .fd-canvas-stats { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; margin: 0; border-block-end: 0; }
+.fd-canvas-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.fd-canvas-part { position: relative; cursor: pointer; outline-offset: 3px; }
+.fd-canvas-part:hover { outline: 1px dashed var(--fd-border-strong); }
+.fd-canvas-part.fd-editing { outline: 2px solid var(--fd-accent); cursor: default; }
+.fd-canvas-part:focus-visible { outline: 2px solid var(--fd-focus); }
+.fd-canvas-statusbar { border-radius: 6px; min-width: 0; }
+.fd-canvas-statusbar .fd-canvas-widget { pointer-events: none; }
+.fd-part-input { font: inherit; color: inherit; background: none; border: 0; border-bottom: 1px dashed currentColor; padding: 0; outline: none; min-width: 4ch; field-sizing: content; cursor: text; }
+.fd-stat .fd-part-input { font-size: 12px; }
+.fd-part-bar { bottom: calc(100% + 8px); }
+.fd-canvas-add-part {
+  all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; padding: 4px 9px; border-radius: 6px;
+  border: 1px dashed var(--fd-border-strong); color: var(--fd-muted); font-size: 12.5px; white-space: nowrap;
+}
+.fd-canvas-add-part:hover { color: var(--fd-accent); border-color: var(--fd-accent); }
+.fd-canvas-add-part:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+.fd-canvas-add-part .fd-dicon { width: 13px; height: 13px; }
+
 /* The bar on the field being edited: just above it, or below it right under the tabs. */
 .fd-field-bar {
   position: absolute; bottom: calc(100% + 8px); inset-inline-end: 0; z-index: 5; display: flex; align-items: center; gap: 1px; padding: 3px;

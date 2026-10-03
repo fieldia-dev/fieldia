@@ -3,6 +3,8 @@ import type { Skin } from '@fieldia/viewer';
 import { installStyles } from '@fieldia/widgets';
 import { designerBar, elementFactory } from './chrome';
 import { QUESTION_KINDS, SCREEN_KINDS, type Designer, type DesignerState, type Where } from './designer';
+import { findHeaderPart } from './header-commands';
+import { headerPartProperties, statusbarProperties } from './header-properties';
 import { allSections, findField, findTab } from './page-tree';
 import { screenCanvas } from './screen-canvas';
 import { fieldProperties, pageProperties, sectionProperties, tabProperties, tabsProperties, type PropertiesView } from './screen-properties';
@@ -106,8 +108,13 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
 
   function renderPanel(state: DesignerState) {
     const { selected, page } = state;
+    const part = selected !== null ? findHeaderPart(page, selected) : null;
     const kind =
-      selected !== null && findField(page, selected)
+      part
+        ? 'part'
+        : selected === '#statusbar' && page.layout.type === 'sheet' && page.layout.statusbar
+          ? 'statusbar'
+          : selected !== null && findField(page, selected)
         ? 'field'
         : selected !== null && allSections(page).some((s) => s.id === selected)
           ? 'section'
@@ -120,7 +127,10 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     if (key !== panelKey) {
       panelKey = key;
       const id = selected as string;
+      const partTitle = { button: 'Button', stat: 'Counter', badge: 'Badge' } as const;
       const panels: Record<typeof kind, [string, () => PropertiesView]> = {
+        part: [part ? partTitle[part.kind] : '', () => headerPartProperties(el, designer, id)],
+        statusbar: ['Status steps', () => statusbarProperties(el, designer)],
         field: ['Field', () => fieldProperties(el, designer, id)],
         section: ['Section', () => sectionProperties(el, designer, id)],
         tab: ['Tab', () => tabProperties(el, designer, id)],
@@ -155,6 +165,18 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       if (typing && !target.closest('.fd-canvas')) return;
       (typing as HTMLElement | null)?.blur();
       designer.select(null);
+      return;
+    }
+    // A part of the header moves along its row, and goes with Delete.
+    if (!typing && selected && findHeaderPart(designer.getPage(), selected)) {
+      const back = event.key === 'ArrowLeft' || event.key === 'ArrowUp';
+      if (event.altKey && (back || event.key === 'ArrowRight' || event.key === 'ArrowDown')) {
+        event.preventDefault();
+        designer.moveHeaderPart(selected, back ? -1 : 1);
+      } else if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault();
+        designer.removeHeaderPart(selected);
+      }
       return;
     }
     if (typing || !selected || !findField(designer.getPage(), selected)) return;

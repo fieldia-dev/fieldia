@@ -1,6 +1,7 @@
 import { createForm, wideColumns, type FieldNode, type Form, type LayoutNode, type Page, type SectionNode, type TabsNode } from '@fieldia/core';
 import { createWidget, type Widget } from '@fieldia/widgets';
 import { canvasDrag, type CanvasDrag } from './canvas-drag';
+import { canvasHeader } from './canvas-header';
 import { elementFactory, optionsEditor, type OptionsEditor } from './chrome';
 import type { Designer, DesignerState } from './designer';
 import { fieldBar, type FieldBar } from './field-bar';
@@ -37,6 +38,8 @@ export interface ScreenCanvas {
   focus(id: string, part: 'label' | 'help', selectAll?: boolean): void;
   /** Put the cursor in a section's title on the canvas, every word selected. */
   focusTitle(id: string): void;
+  /** Put the cursor in the words of a part of a sheet's header, every word selected. */
+  focusPart(id: string): void;
   destroy(): void;
 }
 
@@ -50,7 +53,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   const titleCard = el('button', { type: 'button', class: 'fd-canvas-title', hidden: '' });
   titleCard.addEventListener('click', () => designer.select(null));
   const body = el('div', { class: 'fd-canvas-body' });
-  const element = el('div', { class: 'fd-canvas' }, titleCard, body);
+  const header = canvasHeader({ el, doc, designer });
+  const element = el('div', { class: 'fd-canvas' }, header.top, header.card, titleCard, body);
   let page = designer.getPage();
   let selected: string | null = null;
   let visible: string[] = [];
@@ -352,9 +356,11 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       titleCard.hidden = root.type !== 'sheet' || !root.title;
       if (root.type === 'sheet' && root.title) titleCard.textContent = page.fields[root.title.field]?.label ?? root.title.field;
       titleCard.classList.toggle('fd-canvas-selected', selected === null);
+      header.update(page, selected, form);
     },
     visibleSections: () => [...visible],
     focus: (id, part, selectAll = false) => focusIn(id, part, selectAll),
+    focusPart: (id) => header.focus(id),
     focusTitle(id) {
       const input = sections.get(id)?.titleInput;
       input?.focus();
@@ -362,6 +368,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     },
     destroy() {
       drag.destroy();
+      header.destroy();
       for (const card of cards.values()) dropCard(card);
       cards.clear();
       sections.clear();

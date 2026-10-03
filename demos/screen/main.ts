@@ -18,6 +18,8 @@ const customer: Record<string, Field> = {
   credit_limit: { type: 'monetary', label: 'Credit limit', currency: 'EGP' },
   payment_terms: { type: 'selection', label: 'Payment terms', options: [{ value: 'now', label: 'Immediate' }, { value: '30', label: '30 days' }, { value: '60', label: '60 days' }] },
   visits: { type: 'integer', label: 'Visits a year' },
+  state: { type: 'selection', label: 'Status', options: [{ value: 'draft', label: 'Draft' }, { value: 'active', label: 'Active' }, { value: 'blocked', label: 'Blocked' }] },
+  invoice_count: { type: 'integer', label: 'Invoices' },
 };
 function siteVisit() {
   const draft = createDesigner({ page: blankPage('screen', 'Site visit') });
