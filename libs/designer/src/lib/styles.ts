@@ -68,7 +68,7 @@ export const DESIGNER_CSS = /* css */ `
 .fd-designer-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr); gap: 20px; align-items: start; }
 .fd-survey-body { grid-template-columns: 228px minmax(0, 1fr); gap: 16px; }
 .fd-survey-body > .fd-designer-editor { max-width: none; }
-@container (max-width: 900px) { .fd-designer-body, .fd-survey-body { grid-template-columns: minmax(0, 1fr); } .fd-survey-body > .fd-toolbox { position: static; max-height: none; } .fd-survey-body .fd-tools { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); } }
+@container (max-width: 900px) { .fd-designer-body, .fd-survey-body { grid-template-columns: minmax(0, 1fr); } .fd-survey-body > .fd-toolbox, .fd-survey-body > .fd-rail { position: static; max-height: none; } .fd-survey-body .fd-tools { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); } }
 .fd-designer-editor { display: grid; gap: 14px; justify-items: start; }
 .fd-designer-editor > * { width: 100%; }
 .fd-designer-editor > .fd-button { width: auto; }
@@ -171,7 +171,7 @@ export const DESIGNER_CSS = /* css */ `
 
 /* ---- the screen editor: toolbox, canvas, panel ---- */
 .fd-screen-body { display: grid; grid-template-columns: 228px minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
-.fd-toolbox, .fd-properties {
+.fd-toolbox, .fd-properties, .fd-rail {
   position: sticky; top: 76px; display: grid; gap: 6px; align-content: start; max-height: calc(100vh - 96px); overflow: auto;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 12px;
 }
@@ -181,6 +181,40 @@ export const DESIGNER_CSS = /* css */ `
 
 /* The toolbox: icons three to a row, in groups that fold, as Quantia's. */
 .fd-toolbox { padding: 10px 6px; gap: 4px; }
+/* Beside the page: Add (the toolbox), Outline and Data, in tabs. */
+.fd-rail { padding: 8px 6px 10px; gap: 8px; }
+.fd-rail > .fd-rail-pane { position: static; max-height: none; overflow: visible; border: 0; padding: 0; background: none; }
+.fd-rail-tabs { display: flex; gap: 2px; padding: 2px; margin: 0 4px; border-radius: 8px; background: var(--fd-page); }
+.fd-rail-tab { all: unset; box-sizing: border-box; flex: 1; text-align: center; cursor: pointer; padding: 5px 4px; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: var(--fd-muted); }
+.fd-rail-tab[aria-selected="true"] { background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 1px 2px rgba(15, 20, 25, 0.12); }
+.fd-rail-tab:focus-visible { outline: 2px solid var(--fd-focus); }
+.fd-outline, .fd-data { display: grid; gap: 8px; padding: 0 4px; min-width: 0; }
+.fd-outline-tree { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.fd-outline-tree button {
+  all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 5px 6px;
+  padding-inline-start: calc(6px + var(--fd-level, 0) * 14px); border-radius: 6px; font-size: 13px; min-width: 0;
+}
+.fd-outline-tree button:hover { background: var(--fd-page); }
+.fd-outline-tree button[aria-current="true"] { background: var(--fd-accent-soft); color: var(--fd-accent); }
+.fd-outline-tree button:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: -2px; }
+.fd-outline-tree button[data-level="0"] { font-weight: 600; }
+.fd-outline-tree .fd-dicon { width: 14px; height: 14px; flex: none; color: var(--fd-muted); }
+.fd-outline-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-outline-when { display: inline-flex; color: var(--fd-warning); }
+.fd-outline-kind { flex: none; font-size: 11px; color: var(--fd-muted); max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-data-card { display: grid; gap: 2px; padding: 10px; border-radius: 8px; background: var(--fd-page); font-size: 12.5px; color: var(--fd-muted); }
+.fd-data-model { font-size: 14px; color: var(--fd-text); overflow-wrap: anywhere; }
+.fd-seg { display: flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: 8px; background: var(--fd-page); }
+.fd-seg-button { all: unset; box-sizing: border-box; cursor: pointer; padding: 4px 7px; border-radius: 6px; font-size: 12px; color: var(--fd-muted); }
+.fd-seg-button[aria-pressed="true"] { background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 1px 2px rgba(15, 20, 25, 0.12); }
+.fd-seg-button:focus-visible { outline: 2px solid var(--fd-focus); }
+.fd-data-rows { display: grid; gap: 0; }
+.fd-data-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 8px; padding: 7px 2px; border-block-start: 1px solid var(--fd-border); font-size: 13px; align-items: center; }
+.fd-data-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-data-used { font-size: 11px; color: var(--fd-muted); }
+.fd-data-used.fd-data-on { color: var(--fd-success); }
+.fd-data-row code { grid-column: 1; font-size: 11px; color: var(--fd-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-data-row .fd-button-link { grid-column: 2; justify-self: end; padding: 0; min-height: 0; font-size: 12px; }
 .fd-tool-find { font-size: 13px; margin: 0 4px 4px; width: auto; }
 .fd-tool-groups { display: grid; gap: 2px; }
 .fd-tool-heading {
@@ -489,7 +523,7 @@ export const DESIGNER_CSS = /* css */ `
 /* After the panel rules, so these win when the editor is narrow: the toolbox and the panel stack around the canvas. */
 @container (max-width: 1000px) {
   .fd-screen-body { grid-template-columns: minmax(0, 1fr); }
-  .fd-toolbox, .fd-properties { position: static; max-height: none; }
+  .fd-toolbox, .fd-properties, .fd-rail { position: static; max-height: none; }
   .fd-tools { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
 }
 @media (prefers-reduced-motion: reduce) { .fd-properties.fd-flash { animation: none; } .fd-tool-caret { transition: none; } }

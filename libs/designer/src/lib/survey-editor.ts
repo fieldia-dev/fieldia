@@ -9,6 +9,7 @@ import type { FindItem } from './find-anything';
 import { designerIcon } from './icons';
 import { kindById } from './kinds';
 import { openMenu, type MenuItem } from './menu';
+import { rail as sideRail } from './rail';
 import { installDesignerStyles } from './styles';
 import { toolbox, TOOLBOX_GROUPS } from './toolbox';
 import { tryIt } from './try-it';
@@ -125,7 +126,15 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     onPick: (spec) => add(spec.slice(spec.indexOf(':') + 1), target()),
     onPress: (spec, event, tile) => drag.press({ tool: spec }, event, tile),
   });
-  const body = el('div', { class: 'fd-designer-body fd-survey-body' }, tools.element, editor);
+  const side = sideRail({
+    el,
+    doc,
+    designer,
+    tools,
+    survey: true,
+    reveal: (id) => root.querySelector(`[data-node="${id}"]`)?.scrollIntoView?.({ block: 'nearest' }),
+  });
+  const body = el('div', { class: 'fd-designer-body fd-survey-body' }, side.element, editor);
   root.append(bar.element, bar.issues, body, trial.element);
 
   // ---- find anything -----------------------------------------------------------
@@ -534,6 +543,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     const steps = stepsOf(page);
     bar.update(state);
     tools.update({ modelFields: [], tabs: false });
+    side.update(state);
     if (!focused(headTitle)) headTitle.value = page.title ?? '';
     if (!focused(headDescription)) headDescription.value = page.description ?? '';
 

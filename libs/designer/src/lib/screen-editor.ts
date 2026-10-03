@@ -12,6 +12,7 @@ import type { FindItem } from './find-anything';
 import { allSections, findField, findTab, sectionLabel } from './page-tree';
 import { screenCanvas } from './screen-canvas';
 import { fieldProperties, pageProperties, sectionProperties, tabProperties, tabsProperties, type PropertiesView } from './screen-properties';
+import { rail } from './rail';
 import { installDesignerStyles } from './styles';
 import { toolbox } from './toolbox';
 import { tryIt } from './try-it';
@@ -85,8 +86,24 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     onPick: (spec) => add(spec, null),
     onPress: (spec, event, tile) => (isList() ? list.drag : canvas.drag).press({ tool: spec }, event, tile),
   });
+  const side = rail({
+    el,
+    doc,
+    designer,
+    tools,
+    survey: false,
+    reveal(id) {
+      const column = id.startsWith('column:') ? `.fd-list-table th[data-node="${id.slice('column:'.length)}"]` : null;
+      root.querySelector(column ?? `[data-node="${id}"], [data-part="${id}"]`)?.scrollIntoView?.({ block: 'nearest' });
+    },
+    addModelField: (name) => (isList() ? designer.addColumn(name) : add(`model:${name}`, null)),
+    onSample(index) {
+      canvas.setSample(index);
+      render(designer.getState());
+    },
+  });
   const properties = el('aside', { class: 'fd-properties', 'aria-label': 'Properties' });
-  const body = el('div', { class: 'fd-screen-body' }, tools.element, el('div', { class: 'fd-canvas-scroll' }, canvas.element, list.element), properties);
+  const body = el('div', { class: 'fd-screen-body' }, side.element, el('div', { class: 'fd-canvas-scroll' }, canvas.element, list.element), properties);
   root.append(bar.element, bar.issues, body, trial.element);
 
   // ---- adding ------------------------------------------------------------------
@@ -289,6 +306,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       tabs: state.page.layout.type === 'sheet' && !topOf(state.page).some((n) => n.type === 'tabs'),
       kinds: !listing,
     });
+    side.update(state);
     renderPanel(state);
   }
 

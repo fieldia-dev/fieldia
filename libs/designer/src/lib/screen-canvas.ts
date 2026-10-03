@@ -6,6 +6,7 @@ import { elementFactory, optionsEditor, type OptionsEditor } from './chrome';
 import type { Designer, DesignerState } from './designer';
 import { fieldBar, type FieldBar } from './field-bar';
 import { tabHolds } from './page-tree';
+import { sampleRows } from './samples';
 
 /**
  * The screen editor's canvas: the page drawn the way the viewer draws it —
@@ -40,6 +41,8 @@ export interface ScreenCanvas {
   focusTitle(id: string): void;
   /** Put the cursor in the words of a part of a sheet's header, every word selected. */
   focusPart(id: string): void;
+  /** Fill the page with the made-up record at `index`, or with nothing: drawn at the next update. */
+  setSample(index: number | null): void;
   destroy(): void;
 }
 
@@ -59,9 +62,15 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   let selected: string | null = null;
   let visible: string[] = [];
 
-  // The widgets are drawn from a form of the page, made again only when the page changes.
-  let drawn: { page: Page; form: Form } | null = null;
-  const form = () => (drawn?.page === page ? drawn.form : (drawn = { page, form: createForm({ page }) }).form);
+  // The widgets are drawn from a form of the page, made again only when the page, or the record filling it, changes.
+  let sample: number | null = null;
+  let drawn: { page: Page; sample: number | null; form: Form } | null = null;
+  const form = () => {
+    if (drawn?.page === page && drawn.sample === sample) return drawn.form;
+    const values = sample === null ? undefined : sampleRows(page.fields, Object.keys(page.fields), sample + 1)[sample];
+    drawn = { page, sample, form: createForm({ page, values }) };
+    return drawn.form;
+  };
 
   // ---- fields ------------------------------------------------------------------
   interface Card {
@@ -170,7 +179,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   /** The field's real widget, inert: on the canvas it is looked at and moved, not typed in. */
   function paint(card: Card, node: FieldNode) {
     const def = page.fields[node.field];
-    const key = JSON.stringify([node, def]);
+    const key = JSON.stringify([node, def, sample]);
     if (card.painted === key && card.widget) return;
     card.painted = key;
     card.widget?.destroy?.();
@@ -332,6 +341,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   return {
     element,
     drag,
+    setSample(index) {
+      sample = index;
+    },
     update(state) {
       page = state.page;
       selected = state.selected;
