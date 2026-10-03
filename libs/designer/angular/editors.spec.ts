@@ -1,10 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { blankPage, createDesigner, type Designer, type SurveyEditorHandle } from '@fieldia/designer';
-import { fakeGrafloria } from '../src/lib/test-screen';
 import { FieldiaScreenEditorComponent, FieldiaSurveyEditorComponent } from './editors';
-
-const kit = fakeGrafloria();
 
 @Component({
   imports: [FieldiaSurveyEditorComponent, FieldiaScreenEditorComponent],
@@ -12,14 +9,13 @@ const kit = fakeGrafloria();
     @if (shown()) {
       <fieldia-survey-editor [designer]="survey()" [preview]="false" (ready)="ready.push($event)" />
     }
-    <fieldia-screen-editor [designer]="screen()" [grafloria]="grafloria" />
+    <fieldia-screen-editor [designer]="screen()" />
   `,
 })
 class HostComponent {
   readonly shown = signal(true);
   readonly survey = signal<Designer>(createDesigner({ page: blankPage('survey', 'Event feedback') }));
   readonly screen = signal<Designer>(createDesigner({ page: blankPage('screen', 'Visit') }));
-  readonly grafloria = kit.kit;
   readonly ready: SurveyEditorHandle[] = [];
 }
 

@@ -1,14 +1,13 @@
 import { createElement, forwardRef, useEffect, useImperativeHandle, useRef, useState, type CSSProperties } from 'react';
 import type { Skin } from '@fieldia/viewer';
 import type { Designer } from './lib/designer';
-import type { Grafloria } from './lib/grafloria';
 import { mountScreenEditor, type ScreenEditorHandle } from './lib/screen-editor';
 import { mountSurveyEditor, type SurveyEditorHandle } from './lib/survey-editor';
 
 /**
  * The designer's editors as React components: `@fieldia/designer/react`. Each
  * mounts the plain-DOM editor into its own element and takes it down when it
- * goes; a new designer, skin or kit mounts it again. The ref is the handle.
+ * goes; a new designer or skin mounts it again. The ref is the handle.
  */
 
 interface Common {
@@ -23,10 +22,7 @@ export interface SurveyEditorProps extends Common {
   preview?: boolean;
 }
 
-export interface ScreenEditorProps extends Common {
-  /** Grafloria's dashboard kit: `import * as grafloria from '@grafloria/element'`. */
-  grafloria: Grafloria;
-}
+export type ScreenEditorProps = Common;
 
 export const SurveyEditor = forwardRef<SurveyEditorHandle | null, SurveyEditorProps>(function SurveyEditor(props, ref) {
   const host = useRef<HTMLDivElement>(null);
@@ -48,12 +44,12 @@ export const ScreenEditor = forwardRef<ScreenEditorHandle | null, ScreenEditorPr
   const [handle, setHandle] = useState<ScreenEditorHandle | null>(null);
   useImperativeHandle(ref, () => handle as ScreenEditorHandle, [handle]);
   useEffect(() => {
-    const mounted = mountScreenEditor(host.current as HTMLDivElement, { designer: props.designer, grafloria: props.grafloria, skin: props.skin });
+    const mounted = mountScreenEditor(host.current as HTMLDivElement, { designer: props.designer, skin: props.skin });
     setHandle(mounted);
     return () => {
       mounted.destroy();
       setHandle(null);
     };
-  }, [props.designer, props.grafloria, props.skin]);
+  }, [props.designer, props.skin]);
   return createElement('div', { ref: host, className: props.className, style: props.style });
 });

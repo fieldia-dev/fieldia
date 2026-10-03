@@ -1,5 +1,5 @@
 import { Component, ElementRef, effect, inject, input, output, untracked, type OnDestroy } from '@angular/core';
-import { mountScreenEditor, mountSurveyEditor, type Designer, type Grafloria, type ScreenEditorHandle, type SurveyEditorHandle } from '@fieldia/designer';
+import { mountScreenEditor, mountSurveyEditor, type Designer, type ScreenEditorHandle, type SurveyEditorHandle } from '@fieldia/designer';
 import type { Skin } from '@fieldia/viewer';
 
 /**
@@ -39,8 +39,6 @@ export class FieldiaSurveyEditorComponent implements OnDestroy {
 @Component({ selector: 'fieldia-screen-editor', template: '', host: { style: 'display: block' } })
 export class FieldiaScreenEditorComponent implements OnDestroy {
   readonly designer = input.required<Designer>();
-  /** Grafloria's dashboard kit: `import * as grafloria from '@grafloria/element'`. */
-  readonly grafloria = input.required<Grafloria>();
   readonly skin = input<Skin | undefined>(undefined);
   readonly ready = output<ScreenEditorHandle>();
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -48,7 +46,7 @@ export class FieldiaScreenEditorComponent implements OnDestroy {
 
   constructor() {
     effect(() => {
-      const options = { designer: this.designer(), grafloria: this.grafloria(), skin: this.skin() };
+      const options = { designer: this.designer(), skin: this.skin() };
       untracked(() => {
         this.handle?.destroy();
         this.handle = mountScreenEditor(this.host.nativeElement, options);

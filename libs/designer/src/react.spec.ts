@@ -2,7 +2,6 @@ import { act, render } from '@testing-library/react';
 import { createElement, createRef } from 'react';
 import { blankPage, createDesigner } from './lib/designer';
 import type { SurveyEditorHandle } from './lib/survey-editor';
-import { fakeGrafloria } from './lib/test-screen';
 import { ScreenEditor, SurveyEditor } from './react';
 
 describe('the editors in React', () => {
@@ -19,15 +18,14 @@ describe('the editors in React', () => {
     expect(container.querySelector('.fd-designer')).toBeNull();
   });
 
-  it('mounts the screen editor with the Grafloria kit it is given, and again for another designer', () => {
-    const grafloria = fakeGrafloria();
+  it('mounts the screen editor, and again for another designer', () => {
     const first = createDesigner({ page: blankPage('screen', 'Visit') });
     first.addQuestion('short-answer');
-    const { container, rerender } = render(createElement(ScreenEditor, { designer: first, grafloria: grafloria.kit }));
+    const { container, rerender } = render(createElement(ScreenEditor, { designer: first }));
     expect(container.querySelector('.fd-screen-designer')).not.toBeNull();
-    expect(grafloria.live()).toHaveLength(1);
+    expect(container.querySelectorAll('.fd-canvas-field')).toHaveLength(1);
     const second = createDesigner({ page: blankPage('screen', 'Other') });
-    rerender(createElement(ScreenEditor, { designer: second, grafloria: grafloria.kit }));
+    rerender(createElement(ScreenEditor, { designer: second }));
     expect(container.querySelectorAll('.fd-screen-designer')).toHaveLength(1);
     expect((container.querySelector('input[aria-label="Screen title"]') as HTMLInputElement).value).toBe('Other');
   });

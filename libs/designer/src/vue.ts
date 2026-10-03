@@ -1,7 +1,6 @@
 import { defineComponent, h, onBeforeUnmount, onMounted, ref, watch, type PropType } from 'vue';
 import type { Skin } from '@fieldia/viewer';
 import type { Designer } from './lib/designer';
-import type { Grafloria } from './lib/grafloria';
 import { mountScreenEditor, type ScreenEditorHandle } from './lib/screen-editor';
 import { mountSurveyEditor, type SurveyEditorHandle } from './lib/survey-editor';
 
@@ -41,8 +40,6 @@ export const ScreenEditor = defineComponent({
   name: 'FieldiaScreenEditor',
   props: {
     designer: { type: Object as PropType<Designer>, required: true },
-    /** Grafloria's dashboard kit: `import * as grafloria from '@grafloria/element'`. */
-    grafloria: { type: Object as PropType<Grafloria>, required: true },
     skin: { type: String as PropType<Skin>, default: undefined },
   },
   emits: { ready: (_handle: ScreenEditorHandle) => true },
@@ -51,11 +48,11 @@ export const ScreenEditor = defineComponent({
     let handle: ScreenEditorHandle | null = null;
     const mount = () => {
       handle?.destroy();
-      handle = mountScreenEditor(host.value as HTMLElement, { designer: props.designer, grafloria: props.grafloria, skin: props.skin });
+      handle = mountScreenEditor(host.value as HTMLElement, { designer: props.designer, skin: props.skin });
       emit('ready', handle);
     };
     onMounted(mount);
-    watch(() => [props.designer, props.grafloria, props.skin], mount);
+    watch(() => [props.designer, props.skin], mount);
     onBeforeUnmount(() => handle?.destroy());
     expose({ handle: () => handle });
     return () => h('div', { ref: host });

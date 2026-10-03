@@ -1,8 +1,24 @@
-import * as grafloria from '@grafloria/element';
+import type { Field } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor } from '@fieldia/designer';
 import type { Skin } from '@fieldia/viewer';
 
-/** The screen editor on its own page, opened on a small site-visit screen. `?start=blank` opens an empty one, `?start=sheet` an empty record sheet. */
+/**
+ * The screen editor on its own page, opened on a small site-visit screen.
+ * `?start=blank` opens an empty one, `?start=sheet` an empty customer sheet
+ * with the customer's model behind it, its fields first in the toolbox.
+ */
+const customer: Record<string, Field> = {
+  name: { type: 'char', label: 'Name', required: true },
+  email: { type: 'char', label: 'Email' },
+  phone: { type: 'char', label: 'Phone' },
+  website: { type: 'char', label: 'Website' },
+  vat: { type: 'char', label: 'VAT number' },
+  country_id: { type: 'many2one', label: 'Country', relation: 'country' },
+  tag_ids: { type: 'many2many', label: 'Tags', relation: 'customer.tag' },
+  credit_limit: { type: 'monetary', label: 'Credit limit', currency: 'EGP' },
+  payment_terms: { type: 'selection', label: 'Payment terms', options: [{ value: 'now', label: 'Immediate' }, { value: '30', label: '30 days' }, { value: '60', label: '60 days' }] },
+  visits: { type: 'integer', label: 'Visits a year' },
+};
 function siteVisit() {
   const draft = createDesigner({ page: blankPage('screen', 'Site visit') });
   const visit = 'section-1';
@@ -25,14 +41,15 @@ function siteVisit() {
 const params = new URLSearchParams(location.search);
 const store = createMemoryPageStore();
 const start = params.get('start');
-const designer = createDesigner({ page: start === 'blank' ? blankPage('screen', 'New screen') : start === 'sheet' ? blankPage('sheet', 'Customer') : siteVisit(), store });
+const model = start === 'sheet' ? customer : undefined;
+const designer = createDesigner({ page: start === 'blank' ? blankPage('screen', 'New screen') : start === 'sheet' ? blankPage('sheet', 'Customer') : siteVisit(), store, model });
 const skin = (params.get('skin') as Skin) ?? 'outlined';
 const app = document.getElementById('app') as HTMLElement;
-const demo = { designer, store, handle: mountScreenEditor(app, { designer, grafloria, skin }), reopen };
+const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin }), reopen };
 /** Close the editor and open the page again from the store, as an app does the next day. */
 async function reopen() {
   demo.handle.destroy();
-  demo.designer = await createDesigner.open(demo.designer.getPage().id, store);
-  demo.handle = mountScreenEditor(app, { designer: demo.designer, grafloria, skin });
+  demo.designer = await createDesigner.open(demo.designer.getPage().id, store, { model });
+  demo.handle = mountScreenEditor(app, { designer: demo.designer, skin });
 }
 Object.assign(window, { fieldiaDesigner: demo });

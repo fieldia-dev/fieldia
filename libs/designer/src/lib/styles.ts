@@ -55,86 +55,148 @@ export const DESIGNER_CSS = /* css */ `
 .fd-designer-preview-title { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fd-muted); }
 .fd-designer-preview-host { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 18px; max-height: 80vh; overflow: auto; }
 
-/* ---- the screen editor: palette, canvas, properties ---- */
-.fd-screen-body { display: grid; grid-template-columns: 172px minmax(0, 1fr) 270px; gap: 16px; align-items: start; }
-.fd-palette, .fd-properties {
-  position: sticky; top: 76px; display: grid; gap: 6px; align-content: start;
+/* ---- the screen editor: toolbox, canvas, panel ---- */
+.fd-screen-body { display: grid; grid-template-columns: 228px minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
+.fd-toolbox, .fd-properties {
+  position: sticky; top: 76px; display: grid; gap: 6px; align-content: start; max-height: calc(100vh - 96px); overflow: auto;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 12px;
 }
 .fd-panel-title { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fd-muted); margin-block-end: 2px; }
-.fd-palette-item {
-  font: inherit; font-size: 13.5px; text-align: start; color: var(--fd-text); cursor: pointer;
-  background: var(--fd-page); border: 1px solid var(--fd-border); border-radius: 6px; padding: 6px 10px;
+.fd-properties.fd-flash { animation: fd-flash 0.8s ease; }
+@keyframes fd-flash { from { box-shadow: 0 0 0 3px var(--fd-accent-soft), inset 3px 0 0 var(--fd-accent); } to { box-shadow: none; } }
+
+/* The toolbox: icons three to a row, in groups that fold, as Quantia's. */
+.fd-toolbox { padding: 10px 6px; gap: 4px; }
+.fd-tool-find { font-size: 13px; margin: 0 4px 4px; width: auto; }
+.fd-tool-groups { display: grid; gap: 2px; }
+.fd-tool-heading {
+  all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 6px; width: 100%; cursor: pointer; padding: 8px 8px 3px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--fd-muted);
 }
-.fd-palette-item:hover { border-color: var(--fd-accent); color: var(--fd-accent); }
-/* After the panel rules, so these win when the editor is narrow. */
-@container (max-width: 1000px) {
-  .fd-screen-body { grid-template-columns: minmax(0, 1fr); }
-  /* Stacked, a sticky panel would sit over the canvas: let them scroll, and lay the palette out in a row. */
-  .fd-palette, .fd-properties { position: static; }
-  .fd-palette { display: flex; flex-wrap: wrap; }
-  .fd-palette .fd-panel-title { flex-basis: 100%; }
+.fd-tool-heading:hover { color: var(--fd-text); }
+.fd-tool-heading:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; border-radius: 3px; }
+.fd-tool-count { font-weight: 600; opacity: 0.75; }
+.fd-tool-caret { width: 0; height: 0; flex: none; border-inline: 3.5px solid transparent; border-top: 4px solid currentColor; transition: transform 0.12s ease; }
+.fd-tool-shut .fd-tool-caret { transform: rotate(-90deg); }
+[dir="rtl"] .fd-tool-shut .fd-tool-caret { transform: rotate(90deg); }
+.fd-tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; }
+.fd-tool {
+  all: unset; box-sizing: border-box; cursor: grab; display: grid; grid-template-rows: 22px auto; place-items: center; align-content: start; row-gap: 4px;
+  height: 60px; padding: 8px 3px 4px; border-radius: 7px; color: var(--fd-muted); min-width: 0; touch-action: none;
 }
-.fd-canvas { display: grid; gap: 16px; justify-items: start; min-width: 0; }
-.fd-canvas > * { width: 100%; }
-.fd-canvas-adds { display: flex; flex-wrap: wrap; gap: 8px; }
+.fd-tool:hover { background: var(--fd-page); color: var(--fd-text); }
+.fd-tool:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: -2px; }
+.fd-tool:active { cursor: grabbing; }
+.fd-tool-model { color: var(--fd-accent); }
+.fd-tool .fd-dicon { width: 20px; height: 20px; }
+.fd-tool-name {
+  font-size: 10.5px; line-height: 1.15; text-align: center; color: var(--fd-text); max-width: 100%; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere;
+}
+.fd-tool-none { color: var(--fd-muted); font-size: 12.5px; margin: 4px 8px; }
+.fd-dicon { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* The canvas: the page as the viewer draws it, measured against its own width. */
+.fd-canvas-scroll { min-width: 0; }
+.fd-canvas { container-type: inline-size; display: grid; gap: 18px; min-width: 0; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 22px 24px 30px; }
+.fd-canvas-body { display: grid; gap: 26px; }
 .fd-canvas-title { all: unset; box-sizing: border-box; cursor: pointer; font-size: 26px; font-weight: 650; line-height: 1.25; color: var(--fd-muted); padding: 8px 14px; border: 1px dashed var(--fd-border-strong); border-radius: var(--fd-radius); background: var(--fd-surface); }
 .fd-canvas-title:hover { color: var(--fd-text); }
 .fd-canvas-title.fd-canvas-selected { border-style: solid; border-color: var(--fd-accent); }
-.fd-canvas-tabs { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 0 6px 6px; }
-.fd-canvas-tabs.fd-canvas-selected { border-color: var(--fd-accent); box-shadow: 0 0 0 1px var(--fd-accent); }
-.fd-canvas-tabs-head { display: flex; align-items: flex-end; gap: 4px; border-block-end: 1px solid var(--fd-border); padding-block-start: 6px; margin-block-end: 10px; cursor: pointer; }
-.fd-canvas-tab-strip { display: flex; flex-wrap: wrap; gap: 2px; }
-.fd-canvas-tab { all: unset; cursor: pointer; padding: 8px 14px; font-weight: 600; font-size: 14px; color: var(--fd-muted); border-block-end: 2px solid transparent; margin-block-end: -1px; }
-.fd-canvas-tab:hover { color: var(--fd-text); }
-.fd-canvas-tab[aria-selected="true"] { color: var(--fd-accent); border-block-end-color: var(--fd-accent); }
+.fd-canvas-section { border-radius: 6px; outline-offset: 8px; }
+.fd-canvas-section:hover { outline: 1px dashed var(--fd-border-strong); }
+.fd-canvas-section.fd-canvas-selected { outline: 2px solid var(--fd-accent); }
+.fd-canvas-section-title { all: unset; cursor: pointer; }
+.fd-canvas-section-title:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+.fd-canvas-untitled { color: var(--fd-muted); font-weight: 500; font-style: italic; font-size: 13px; }
+.fd-canvas-section-title-input { font: inherit; color: inherit; border: 0; border-bottom: 1px dashed var(--fd-border-strong); background: none; padding: 0 0 1px; min-width: 12em; outline: none; }
+.fd-canvas-section-title-input:focus { border-bottom: 1px solid var(--fd-accent); }
+.fd-canvas-empty { color: var(--fd-muted); font-size: 13px; border: 1px dashed var(--fd-border); border-radius: 6px; padding: 16px; text-align: center; margin: 0; }
+/* A field's ring sits in the gap around it: picking or hovering one moves nothing. */
+.fd-canvas-field { position: relative; border-radius: 6px; cursor: pointer; padding: 6px 8px; margin: -6px -8px; }
+.fd-canvas-field:hover { outline: 1px dashed var(--fd-border-strong); }
+.fd-canvas-field.fd-editing { outline: 2px solid var(--fd-accent); background: var(--fd-accent-soft); cursor: default; }
+.fd-canvas-field.fd-hidden-sometimes::after {
+  content: "only sometimes"; position: absolute; top: 4px; inset-inline-end: 6px; font-size: 10.5px; font-weight: 600; line-height: 1.5;
+  color: var(--fd-warning); background: var(--fd-warning-soft); border-radius: 4px; padding: 0 5px; pointer-events: none;
+}
+.fd-canvas-field.fd-editing.fd-hidden-sometimes::after { content: none; }
+.fd-canvas-label-row { display: flex; align-items: center; min-height: 1.45em; }
+.fd-canvas-label-input {
+  font: inherit; font-weight: var(--fd-label-weight); color: var(--fd-text); border: 0; border-bottom: 1px dashed var(--fd-border-strong);
+  background: none; padding: 0 0 1px; outline: none; max-width: 100%; min-width: 4ch; field-sizing: content; cursor: text;
+}
+.fd-canvas-label-input:focus { border-bottom: 1px solid var(--fd-accent); }
+.fd-canvas-help-input { font: inherit; font-size: 12.5px; color: var(--fd-muted); border: 0; border-bottom: 1px dashed transparent; background: none; padding: 1px 0; outline: none; width: 100%; box-sizing: border-box; cursor: text; }
+.fd-canvas-help-input:hover, .fd-canvas-help-input:focus { border-bottom-color: var(--fd-border-strong); }
+.fd-canvas-help-input::placeholder { color: var(--fd-muted); opacity: 0.75; }
+.fd-canvas-field .fd-q-option-box { padding-block: 2px; }
+.fd-canvas-tabs-head { display: flex; align-items: flex-end; gap: 4px; }
+.fd-canvas-tabs-head > .fd-tablist { flex: 1; }
 .fd-canvas-tab.fd-canvas-selected { background: var(--fd-accent-soft); border-radius: 3px 3px 0 0; }
-.fd-canvas-tab:focus-visible, .fd-canvas-add-tab:focus-visible, .fd-canvas-title:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+.fd-canvas-tabs.fd-canvas-selected { outline: 2px solid var(--fd-accent); outline-offset: 6px; border-radius: 4px; }
 .fd-canvas-add-tab { all: unset; cursor: pointer; width: 28px; height: 28px; margin-block-end: 4px; display: grid; place-items: center; border-radius: 4px; color: var(--fd-muted); font-size: 18px; }
 .fd-canvas-add-tab:hover { background: var(--fd-page); color: var(--fd-accent); }
-.fd-canvas-tab-panel { display: grid; gap: 12px; }
-.fd-canvas-tab-panel > .fd-canvas-section { border-style: dashed; }
-.fd-canvas-sections { display: grid; gap: 16px; }
-.fd-canvas-section { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 12px 6px 6px; }
-.fd-canvas-section.fd-canvas-selected { border-color: var(--fd-accent); box-shadow: 0 0 0 1px var(--fd-accent); }
-.fd-canvas-section-head { display: flex; align-items: baseline; gap: 10px; padding-inline: 8px; }
-.fd-canvas-section-title { font: inherit; font-size: 15px; font-weight: 650; color: var(--fd-text); background: none; border: none; padding: 0; cursor: pointer; }
-.fd-canvas-section-title:hover { color: var(--fd-accent); }
-.fd-canvas-section-meta { color: var(--fd-muted); font-size: 12.5px; }
-.fd-canvas-board { position: relative; }
-.fd-canvas-empty { color: var(--fd-muted); font-size: 13px; padding: 14px 8px 10px; }
-.fd-canvas-field {
-  height: 100%; box-sizing: border-box; padding: 7px 10px; overflow: hidden; align-content: start;
-  /* Rows as tall as their content: a widget that scrolls, such as a statusbar, would otherwise shrink to fit the card, and the card would never be measured taller. */
-  grid-auto-rows: max-content;
-  background: var(--fd-surface); border: 1px dashed var(--fd-border); border-radius: 6px;
+.fd-canvas-add-tab:focus-visible, .fd-canvas-title:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+
+/* The bar on the field being edited: just above it, or below it right under the tabs. */
+.fd-field-bar {
+  position: absolute; bottom: calc(100% + 8px); inset-inline-end: 0; z-index: 5; display: flex; align-items: center; gap: 1px; padding: 3px;
+  background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: 8px; box-shadow: 0 6px 16px rgba(15, 20, 25, 0.14); cursor: default;
 }
-/* A paragraph's box fills the rows it was given, as a hint of the room it takes. */
-.fd-canvas-field[data-type="text"] { grid-template-rows: auto minmax(0, 1fr) auto; }
-.fd-canvas-field[data-type="text"] > textarea { height: 100%; min-height: 0; box-sizing: border-box; resize: none; }
-/* The spare row at the end of a section, painted under the cards as a place to drop one last. */
-.fd-canvas-board::before {
-  content: "Drop a field here to put it last"; position: absolute; inset-inline: 8px; bottom: 8px; height: var(--fd-spare-height, 92px); box-sizing: border-box;
-  display: grid; place-items: center; color: var(--fd-muted); font-size: 12.5px; pointer-events: none;
-  border: 1px dashed var(--fd-border); border-radius: 6px;
+.fd-bar-below > .fd-field-bar { bottom: auto; top: calc(100% + 8px); }
+.fd-bar-button {
+  all: unset; box-sizing: border-box; height: 26px; min-width: 26px; padding: 0 5px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  color: var(--fd-text); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
 }
-.fd-canvas-field.fd-canvas-selected { border: 1px solid var(--fd-accent); box-shadow: inset 0 0 0 1px var(--fd-accent); }
+.fd-bar-button:hover { background: var(--fd-page); }
+.fd-bar-button:focus-visible { outline: 2px solid var(--fd-focus); }
+.fd-bar-button[aria-pressed="true"] { background: var(--fd-accent-soft); color: var(--fd-accent); }
+.fd-bar-grip { cursor: grab; color: var(--fd-muted); touch-action: none; }
+.fd-bar-kind-icon { display: inline-flex; }
+.fd-bar-kind > .fd-dicon { width: 12px; height: 12px; color: var(--fd-muted); }
+.fd-bar-sep { width: 1px; align-self: stretch; background: var(--fd-border); margin: 3px 2px; }
+@container (max-width: 560px) { .fd-bar-kind-name { display: none; } }
+
+/* A menu of choices: the editor a field is shown with, or its width. */
+.fd-menu {
+  position: fixed; z-index: 60; min-width: 220px; max-width: min(320px, calc(100vw - 16px)); max-height: min(440px, calc(100vh - 16px)); overflow: auto;
+  background: var(--fd-surface); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: 10px; box-shadow: 0 18px 44px rgba(15, 20, 25, 0.18);
+  padding: 6px; display: grid; gap: 1px;
+}
+.fd-menu-title, .fd-menu-heading { font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--fd-muted); padding: 6px 8px 2px; }
+.fd-menu-item { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 7px; font-size: 13.5px; cursor: pointer; }
+.fd-menu-item:hover, .fd-menu-item:focus-visible { background: var(--fd-page); }
+.fd-menu-item[aria-checked="true"] { color: var(--fd-accent); font-weight: 600; }
+.fd-menu-item[aria-checked="true"]::after { content: "✓"; margin-inline-start: auto; }
+.fd-menu-note { font-size: 12px; color: var(--fd-muted); margin: 4px 8px; line-height: 1.4; }
+
+/* Dragging: a copy follows the pointer, a line shows where it lands. */
+.fd-drag-ghost { position: fixed; z-index: 100; pointer-events: none; margin: 0; height: auto !important; opacity: 0.92; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2); outline: 1px solid var(--fd-accent) !important; background: var(--fd-surface); border-radius: 6px; transform: rotate(-1deg); }
+.fd-drag-ghost.fd-tool { display: grid; width: 76px !important; }
+.fd-canvas-field.fd-drag-source { opacity: 0.35; }
+.fd-drop-marker { position: fixed; z-index: 99; pointer-events: none; background: var(--fd-accent); border-radius: 2px; }
+.fd-canvas-section.fd-drop-target { outline: 2px dashed var(--fd-accent); background: var(--fd-accent-soft); }
+
 .fd-props { display: grid; gap: 10px; }
 .fd-prop { display: grid; gap: 4px; }
 .fd-prop-name { font-size: 12.5px; color: var(--fd-muted); }
 .fd-props .fd-q-option-box { padding-inline-start: 2px; }
-.fd-drag-ghost { position: fixed; z-index: 100; pointer-events: none; margin: 0; height: auto !important; opacity: 0.92; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2); border: 1px solid var(--fd-accent) !important; background: var(--fd-surface); transform: rotate(-1deg); }
-.fd-canvas-field.fd-drag-source { opacity: 0.35; }
-.fd-drop-marker { position: fixed; z-index: 99; pointer-events: none; background: var(--fd-accent); border-radius: 2px; }
-.fd-canvas-section.fd-drop-target { border-color: var(--fd-accent); box-shadow: 0 0 0 1px var(--fd-accent); background: var(--fd-accent-soft); }
-.fd-palette-heading { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fd-muted); margin-block: 10px 2px; }
-.fd-palette .fd-palette-heading { flex-basis: 100%; }
 .fd-columns-box { display: grid; gap: 6px; }
 .fd-columns { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .fd-column { display: grid; grid-template-columns: minmax(0, 1fr) 104px 28px; gap: 6px; align-items: center; }
 .fd-props-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-block-start: 4px; border-block-start: 1px solid var(--fd-border); }
 .fd-properties-hint { color: var(--fd-muted); font-size: 13px; margin: 0; }
+.fd-kind-note { font-size: 12px; margin-block-start: -4px; }
+.fd-prop-when { gap: 6px; justify-items: start; }
 .fd-screen-preview { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 20px; }
+/* After the panel rules, so these win when the editor is narrow: the toolbox and the panel stack around the canvas. */
+@container (max-width: 1000px) {
+  .fd-screen-body { grid-template-columns: minmax(0, 1fr); }
+  .fd-toolbox, .fd-properties { position: static; max-height: none; }
+  .fd-tools { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { .fd-properties.fd-flash { animation: none; } .fd-tool-caret { transition: none; } }
 `;
 
 const STYLE_ID = 'fieldia-designer-styles';

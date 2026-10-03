@@ -1,9 +1,11 @@
 import { wideColumns, type FieldNode, type Page, type SheetNode } from '@fieldia/core';
 import { optionsEditor, type ElementFactory } from './chrome';
 import { columnsEditor } from './columns-editor';
-import { QUESTION_KINDS, SCREEN_KINDS, type Designer, type QuestionKind } from './designer';
+import { choicesOf, conditionEditor } from './condition-editor';
+import type { Designer } from './designer';
+import { kindsReason } from './field-bar';
+import { kindOfField } from './kinds';
 import { allSections, findField, findNode, findTab, sectionLabel } from './page-tree';
-import { kindOfQuestion } from './survey-editor';
 
 /**
  * The screen editor's properties panel: what can be changed about the field,
@@ -13,6 +15,8 @@ import { kindOfQuestion } from './survey-editor';
 export interface PropertiesView {
   element: HTMLElement;
   update(page: Page): void;
+  /** Bring a part of the panel forward: a field's settings, or when it shows. */
+  focus?(part: 'field' | 'when'): void;
 }
 
 export function prop(el: ElementFactory, text: string, control: HTMLElement): HTMLElement {
@@ -23,9 +27,11 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
   const label = el('input', { class: 'fd-input fd-prop-label', 'aria-label': 'Label' });
   label.addEventListener('input', () => designer.updateQuestion(id, { label: label.value }));
-  const kind = el('select', { class: 'fd-input fd-select', 'aria-label': 'Kind of field' });
-  for (const [title, kinds] of paletteGroups()) kind.append(el('optgroup', { label: title }, ...kinds.map((k) => el('option', { value: k.id }, k.label))));
+  // Only the kinds that suit what the field holds, as the bar on the canvas offers them, and why.
+  const kind = el('select', { class: 'fd-input fd-select', 'aria-label': 'Shown as' });
   kind.addEventListener('change', () => designer.changeKind(id, kind.value));
+  const kindNote = el('p', { class: 'fd-properties-hint fd-kind-note' });
+  const fromModelNote = el('p', { class: 'fd-properties-hint', hidden: '' });
   const options = optionsEditor(el, designer, id);
   const relation = el('input', { class: 'fd-input', 'aria-label': 'Links to', placeholder: 'contact' });
   relation.addEventListener('input', () => designer.setRelation(id, relation.value));
@@ -54,11 +60,19 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, 'Delete field');
   remove.addEventListener('click', () => designer.removeNode(id));
   const widthRow = prop(el, 'Width', width);
+  // When it shows: rules on the other fields that hold one of a list, or yes or no.
+  const when = conditionEditor(el, designer, id, 'question');
+  const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, 'Show only when…');
+  showWhen.addEventListener('click', () => when.start());
+  const noRules = el('p', { class: 'fd-properties-hint', hidden: '' }, 'Always. A rule needs another field that holds one of a list, or yes or no.');
+  const whenBox = el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, 'When it shows'), when.element, showWhen, noRules);
   const element = el(
     'div',
     { class: 'fd-props' },
     prop(el, 'Label', label),
-    prop(el, 'Kind', kind),
+    prop(el, 'Shown as', kind),
+    kindNote,
+    fromModelNote,
     options.element,
     relationRow,
     currencyRow,
@@ -67,6 +81,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     prop(el, 'Help text', help),
     widthRow,
     prop(el, 'Section', section),
+    whenBox,
     el('div', { class: 'fd-props-actions' }, duplicate, remove)
   );
 
@@ -76,17 +91,31 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       const found = findField(page, id);
       if (!found) return;
       const def = page.fields[found.node.field];
+      const fromModel = designer.isFromModel(id);
       if (!focused(label)) label.value = found.node.label ?? def.label;
-      const current = kindOfQuestion(def, found.node);
+      const current = kindOfField(def, found.node);
+      const offered = designer.kindsFor(id);
+      const key = offered.map((k) => k.id).join(',');
+      if (kind.dataset['offered'] !== key) {
+        kind.dataset['offered'] = key;
+        kind.replaceChildren(...offered.map((k) => el('option', { value: k.id }, k.label)));
+      }
       kind.value = current ?? '';
-      kind.disabled = current === null;
+      kind.disabled = current === null || offered.length < 2;
+      kindNote.textContent = kindsReason(designer, page, id);
+      // What the model keeps for itself, for the kind of field this is.
+      const kept = def.type === 'selection' ? 'Its options come from the model.' : def.type === 'monetary' ? 'Its currency comes from the model.' : ['many2one', 'many2many', 'one2many'].includes(def.type) ? 'The records it points to come from the model.' : '';
+      fromModelNote.textContent = kept;
+      fromModelNote.hidden = !fromModel || !kept;
       options.update(def);
+      options.element.hidden ||= fromModel;
       lineColumns.update(def);
-      relationRow.hidden = !('relation' in def);
+      lineColumns.element.hidden ||= fromModel;
+      relationRow.hidden = !('relation' in def) || fromModel;
       if (!focused(relation)) relation.value = 'relation' in def ? def.relation : '';
-      currencyRow.hidden = def.type !== 'monetary';
+      currencyRow.hidden = def.type !== 'monetary' || fromModel;
       if (!focused(currency)) currency.value = def.type === 'monetary' ? def.currency ?? '' : '';
-      required.checked = def.required === true;
+      required.checked = def.required === true || found.node.required === true;
       if (!focused(help)) help.value = found.node.help ?? def.help ?? '';
       const columns = wideColumns(found.section.columns);
       widthRow.hidden = columns === 1;
@@ -102,6 +131,20 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       width.value = String(Math.min(found.node.colspan ?? 1, columns));
       section.replaceChildren(...allSections(page).map((s) => el('option', { value: s.id }, sectionLabel(page, s))));
       section.value = found.section.id;
+      const candidates = allSections(page).flatMap((s) => s.children.filter((n): n is FieldNode => n.type === 'field' && n.id !== id && choicesOf(page.fields[n.field]) !== null));
+      when.update(page, candidates, found.node.invisible);
+      showWhen.hidden = !when.element.hidden || !when.canStart();
+      noRules.hidden = !when.element.hidden || when.canStart();
+    },
+    focus(part) {
+      if (part === 'when') {
+        if (!showWhen.hidden) showWhen.click();
+        (whenBox.querySelector('select, button') as HTMLElement | null)?.focus();
+        whenBox.scrollIntoView?.({ block: 'nearest' });
+      } else {
+        label.focus();
+        label.scrollIntoView?.({ block: 'nearest' });
+      }
     },
   };
 }
@@ -213,13 +256,4 @@ export function tabProperties(el: ElementFactory, designer: Designer, id: string
       moves.update(page);
     },
   };
-}
-
-/** The kinds a screen offers, in the palette's groups. */
-export function paletteGroups(): [string, readonly QuestionKind[]][] {
-  return [
-    ['Basic', QUESTION_KINDS],
-    ['Records', SCREEN_KINDS.filter((k) => k.group === 'records')],
-    ['More', SCREEN_KINDS.filter((k) => k.group === 'more')],
-  ];
 }

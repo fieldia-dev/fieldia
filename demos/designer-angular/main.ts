@@ -2,7 +2,6 @@
 import '@angular/compiler';
 import { Component, provideZonelessChangeDetection } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
-import * as grafloria from '@grafloria/element';
 import { blankPage, createDesigner, createMemoryPageStore } from '@fieldia/designer';
 import { FieldiaScreenEditorComponent, FieldiaSurveyEditorComponent } from '@fieldia/designer/angular';
 
@@ -18,7 +17,7 @@ Object.assign(window, { fieldiaDesigner: { designer, store } });
   imports: [FieldiaSurveyEditorComponent, FieldiaScreenEditorComponent],
   template: `
     @if (screen) {
-      <fieldia-screen-editor [designer]="designer" [grafloria]="grafloria" skin="outlined" />
+      <fieldia-screen-editor [designer]="designer" skin="outlined" />
     } @else {
       <fieldia-survey-editor [designer]="designer" skin="outlined" />
     }
@@ -27,7 +26,6 @@ Object.assign(window, { fieldiaDesigner: { designer, store } });
 class DemoComponent {
   readonly screen = screen;
   readonly designer = designer;
-  readonly grafloria = grafloria;
 }
 
 const app = document.getElementById('app') as HTMLElement;

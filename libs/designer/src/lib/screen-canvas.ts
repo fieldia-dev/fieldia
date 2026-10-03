@@ -35,6 +35,8 @@ export interface ScreenCanvas {
   visibleSections(): string[];
   /** Put the cursor in a field's label or help on the canvas; every word of it selected, for a field just added. */
   focus(id: string, part: 'label' | 'help', selectAll?: boolean): void;
+  /** Put the cursor in a section's title on the canvas, every word selected. */
+  focusTitle(id: string): void;
   destroy(): void;
 }
 
@@ -353,6 +355,11 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     },
     visibleSections: () => [...visible],
     focus: (id, part, selectAll = false) => focusIn(id, part, selectAll),
+    focusTitle(id) {
+      const input = sections.get(id)?.titleInput;
+      input?.focus();
+      input?.select();
+    },
     destroy() {
       drag.destroy();
       for (const card of cards.values()) dropCard(card);
