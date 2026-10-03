@@ -138,7 +138,7 @@ export function rail(options: RailOptions): Rail {
 
   function drawData(state: DesignerState) {
     const page = state.page;
-    if (options.survey || page.data.kind !== 'record') {
+    if (page.data.kind !== 'record') {
       data.replaceChildren(
         el('div', { class: 'fd-data-card' }, el('span', {}, 'Answers are kept as responses:'), el('b', { class: 'fd-data-model' }, 'one record per person, one field per question')),
         el('p', { class: 'fd-properties-hint' }, 'A survey makes its own fields: each question added is a new one, so every kind is offered.')
