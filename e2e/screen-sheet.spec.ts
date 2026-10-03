@@ -126,3 +126,56 @@ test.describe('screen designer · record sheet', () => {
     expect(where).toEqual(['Internal notes', 'Email']);
   });
 });
+
+test.describe('screen designer · a record’s header', () => {
+  test('builds the header by hand — buttons, status steps, a counter, a badge — and it works the same when tried', async ({ page }) => {
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+    page.on('console', (message) => message.type() === 'error' && problems.push(message.text()));
+    await page.goto('/screen/?start=sheet');
+    const panel = page.locator('.fd-properties');
+    await page.locator('[data-add-part="button"]').click();
+    await page.keyboard.type('Activate');
+    await panel.getByLabel('Look').selectOption('primary');
+    await page.locator('[data-add-part="button"]').click();
+    await page.keyboard.type('Block');
+    await page.locator('[data-add-part="statusbar"]').click();
+    await page.getByRole('menuitemradio', { name: 'Status' }).click();
+    await panel.getByLabel('People can click a step').check();
+    await page.locator('[data-add-part="stat"]').click();
+    await page.keyboard.type('Invoices');
+    await panel.getByLabel('Number from').selectOption({ label: 'Invoices' });
+    await page.locator('[data-add-part="badge"]').click();
+    await page.keyboard.type('Key account');
+    await panel.getByLabel('Tone').selectOption('success');
+    await page.keyboard.press('Escape');
+    const header = page.locator('.fd-canvas-header');
+    await expect(header.locator('.fd-button')).toHaveText(['Activate', 'Block']);
+    await expect(header.locator('.fd-button').first()).toHaveClass(/fd-button-primary/);
+    await expect(page.locator('.fd-canvas .fd-badge')).toHaveText('Key account');
+    await expect(page.locator('.fd-canvas .fd-stat-label')).toHaveText('Invoices');
+    // Block goes first, from its bar.
+    await header.locator('.fd-button', { hasText: 'Block' }).click();
+    await page.locator('.fd-canvas-part.fd-editing').getByRole('button', { name: 'Move left' }).click();
+    await expect(header.locator('.fd-canvas-part').first().locator('input')).toHaveValue('Block');
+    await screen(page, 'screen-header-built', { viewport: true });
+
+    // Tried, the header is the viewer's own, and the steps can be clicked.
+    await page.getByRole('button', { name: 'Try it' }).click();
+    const tried = page.locator('.fd-try');
+    // The page's own buttons, beside the viewer's Save and Discard.
+    await expect(tried.locator('.fd-header .fd-button[data-node]')).toHaveText(['Block', 'Activate']);
+    await expect(tried.locator('.fd-badge')).toHaveText('Key account');
+    await expect(tried.locator('.fd-statusbar')).toContainText('Blocked');
+    await screen(page, 'screen-header-tried', { viewport: true });
+    await page.getByRole('button', { name: 'Design', exact: true }).click();
+
+    // Published and opened again, the header is all there.
+    await page.getByRole('button', { name: 'Publish' }).click();
+    await expect(page.locator('.fd-designer-status')).toHaveText('Published · version 1');
+    await page.evaluate(() => window.fieldiaDesigner.reopen());
+    await expect(page.locator('.fd-canvas-header .fd-button')).toHaveText(['Block', 'Activate']);
+    await expect(page.locator('.fd-canvas [data-part="#statusbar"]')).toContainText('Draft');
+    expect(problems).toEqual([]);
+  });
+});
