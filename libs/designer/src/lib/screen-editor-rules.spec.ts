@@ -29,6 +29,7 @@ describe('screen editor — required when, read-only when', () => {
     choose(field(panel(), 'When the answer is'), 'is:blocked');
     expect(node('reason').required).toBe("state == 'blocked'");
     expect((field(panel(), 'Required when') as HTMLSelectElement).value).toBe('state');
+    expect([...panel().querySelectorAll('.fd-when-lead')].filter((l) => !(l as HTMLElement).hidden).map((l) => l.textContent)).toEqual(['Required when']);
     expect((field(panel(), 'Required') as HTMLInputElement).checked).toBe(false);
     expect(button(panel(), 'Required only when…')).toBeUndefined();
     // Required always: the rule goes.

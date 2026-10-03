@@ -25,7 +25,9 @@ export function conditionEditor(el: ElementFactory, designer: Designer, targetId
   const customText = el('code', {});
   const replace = el('button', { type: 'button', class: 'fd-button fd-button-link' }, 'Replace');
   const custom = el('div', { class: 'fd-when-custom', hidden: '' }, el('span', {}, `${kind === 'shows' ? 'Shown' : lead} when, as written by hand: `), customText, replace);
-  const element = el('div', { class: 'fd-when', role: 'group', 'aria-label': kind === 'shows' ? `When this ${what} shows` : `When it is ${lead.toLowerCase()}` }, matchRow, rows, add, custom);
+  // One rule for a field's required or read-only: said what it is for; several say it in their match row.
+  const caption = el('span', { class: 'fd-when-lead', hidden: '' }, `${lead} when`);
+  const element = el('div', { class: 'fd-when', role: 'group', 'aria-label': kind === 'shows' ? `When this ${what} shows` : `When it is ${lead.toLowerCase()}` }, caption, matchRow, rows, add, custom);
   let available: FieldNode[] = [];
   let page: Page | null = null;
 
@@ -107,6 +109,7 @@ export function conditionEditor(el: ElementFactory, designer: Designer, targetId
         (r.querySelector('button') as HTMLButtonElement).hidden = rules.length < 2;
       });
       matchRow.hidden = rules.length < 2;
+      caption.hidden = kind === 'shows' || rules.length !== 1;
       match.value = condition && condition !== 'custom' ? condition.join : 'all';
       add.hidden = !rules.length;
       element.hidden = what === 'question' && !rules.length && condition !== 'custom';

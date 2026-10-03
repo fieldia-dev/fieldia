@@ -203,3 +203,26 @@ test.describe('screen designer · outline and data', () => {
     expect(problems).toEqual([]);
   });
 });
+
+test.describe('screen designer · rules', () => {
+  test('a field required only when the status is Blocked, tried on the running page', async ({ page }) => {
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+    await page.goto('/screen/?start=sheet');
+    await tile(page, 'model:state').click();
+    await addField(page, 'paragraph', 'Reason for the block');
+    const panel = page.locator('.fd-properties');
+    await panel.getByRole('button', { name: 'Required only when…' }).click();
+    await panel.getByLabel('When the answer is').selectOption({ label: 'is Blocked' });
+    await expect(panel.getByLabel('Required when', { exact: true })).toHaveValue('state');
+    await screen(page, 'screen-required-when', { viewport: true });
+
+    await page.getByRole('button', { name: 'Try it' }).click();
+    const tried = page.locator('.fd-try');
+    const reason = tried.getByLabel('Reason for the block');
+    await expect(reason).not.toHaveAttribute('aria-required', 'true');
+    await tried.getByLabel('Status').selectOption({ label: 'Blocked' });
+    await expect(reason).toHaveAttribute('aria-required', 'true');
+    expect(problems).toEqual([]);
+  });
+});
