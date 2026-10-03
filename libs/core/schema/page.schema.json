@@ -461,6 +461,9 @@
             },
             "multiple": {
               "type": "boolean"
+            },
+            "other": {
+              "type": "boolean"
             }
           },
           "required": [
@@ -1286,6 +1289,9 @@
               }
             },
             "multiple": {
+              "type": "boolean"
+            },
+            "other": {
               "type": "boolean"
             }
           },

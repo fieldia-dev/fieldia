@@ -19,6 +19,8 @@ export interface Messages {
   datetimeFormat: string;
   datetimeInvalid: string;
   choice: string;
+  /** A choice of a field with an "Other" answer. */
+  choiceOrOther: string;
   choices: string;
   record: string;
   records: string;
@@ -49,6 +51,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     datetimeFormat: 'Invalid date and time format (expected YYYY-MM-DDTHH:MM:SS)',
     datetimeInvalid: 'Invalid date and time (check the values)',
     choice: 'Must be one of: {options}',
+    choiceOrOther: 'Must be one of: {options}, or an answer of its own',
     choices: '{label} must be a list of choices',
     record: '{label} must be a record',
     records: '{label} must be a list of records',
@@ -74,6 +77,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     datetimeFormat: 'صيغة التاريخ والوقت غير صحيحة (المتوقع YYYY-MM-DDTHH:MM:SS)',
     datetimeInvalid: 'التاريخ والوقت غير صحيحين',
     choice: 'يجب أن تكون القيمة واحدة من: {options}',
+    choiceOrOther: 'يجب أن تكون القيمة واحدة من: {options}، أو إجابة أخرى',
     choices: 'يجب أن يكون {label} قائمة اختيارات',
     record: 'يجب أن يكون {label} سجلًا',
     records: 'يجب أن يكون {label} قائمة سجلات',
@@ -99,6 +103,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     datetimeFormat: 'Ungültiges Datums- und Zeitformat (erwartet JJJJ-MM-TTTHH:MM:SS)',
     datetimeInvalid: 'Ungültiges Datum oder ungültige Uhrzeit',
     choice: 'Muss eines davon sein: {options}',
+    choiceOrOther: 'Muss eines davon sein: {options} – oder eine eigene Antwort',
     choices: '{label} muss eine Liste von Optionen sein',
     record: '{label} muss ein Datensatz sein',
     records: '{label} muss eine Liste von Datensätzen sein',
@@ -124,6 +129,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     datetimeFormat: 'Format de date et heure invalide (attendu AAAA-MM-JJTHH:MM:SS)',
     datetimeInvalid: 'Date ou heure invalide',
     choice: 'Doit être parmi : {options}',
+    choiceOrOther: 'Doit être parmi : {options}, ou une réponse libre',
     choices: '{label} doit être une liste de choix',
     record: '{label} doit être un enregistrement',
     records: "{label} doit être une liste d'enregistrements",

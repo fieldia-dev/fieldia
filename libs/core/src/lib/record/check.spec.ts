@@ -96,6 +96,19 @@ describe('checkValue — choices and relations', () => {
     expect(checkValue(multi, 'draft', false)).toBe('Status must be a list of choices');
   });
 
+  it('takes an answer of its own where the field has an “Other” choice, one only, and never a blank one', () => {
+    const other = { ...status, other: true } as Field;
+    expect(checkValue(other, 'Archived last week', false)).toBeUndefined();
+    expect(checkValue(other, 'done', false)).toBeUndefined();
+    // Typed in and rubbed out: nothing was answered.
+    expect(checkValue(other, '   ', true)).toBe('Status is required');
+    expect(checkValue(other, 7, false)).toBe('Must be one of: Draft, Done, or an answer of its own');
+    const several = { ...other, multiple: true } as Field;
+    expect(checkValue(several, ['draft', 'Something else'], false)).toBeUndefined();
+    expect(checkValue(several, ['draft', 'One', 'Two'], false)).toBe('Must be one of: Draft, Done, or an answer of its own');
+    expect(checkValue(several, ['draft', ' '], false)).toBe('Must be one of: Draft, Done, or an answer of its own');
+  });
+
   it('wants a many2one to be a record with an id and a label', () => {
     const country = F({ type: 'many2one', label: 'Country', relation: 'country' });
     expect(checkValue(country, 5, false)).toBe('Country must be a record');

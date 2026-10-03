@@ -115,6 +115,12 @@ const Selection = z
     options: z.array(OptionSchema).min(1),
     /** Several options may be chosen; the value becomes a list. */
     multiple: z.boolean().optional(),
+    /**
+     * An "Other" choice after the options, with a box to type an answer of
+     * one's own: the value is then what was typed — one such answer at most,
+     * among the chosen when several may be.
+     */
+    other: z.boolean().optional(),
   })
   .strict();
 const Binary = z
