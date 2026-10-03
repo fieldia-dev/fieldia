@@ -20,6 +20,9 @@ describe('a record’s header', () => {
     expect(designer.modelFields().map((f) => f.name)).not.toContain('state');
     expect(designer.setStatusbar('state', { clickable: true })).toBe(true);
     expect(sheet(designer).statusbar).toEqual({ field: 'state', clickable: true });
+    // Not clickable is how steps are anyway: the page leaves it unsaid.
+    designer.setStatusbar('state', { clickable: false });
+    expect(sheet(designer).statusbar).toEqual({ field: 'state' });
     expect(validatePage(designer.getPage()).ok).toBe(true);
     expect(designer.setStatusbar(null)).toBe(true);
     expect(sheet(designer).statusbar).toBeUndefined();
@@ -65,6 +68,10 @@ describe('a record’s header', () => {
     designer.updateHeaderPart(confirm, { label: 'Confirm order' });
     expect(designer.updateHeaderPart(confirm, { style: 'primary', action: 'confirm_order', confirm: 'Confirm this order?' })).toBe(true);
     expect(sheet(designer).buttons?.[0]).toMatchObject({ label: 'Confirm order', style: 'primary', action: 'confirm_order', confirm: 'Confirm this order?' });
+    // Nothing to ask: it acts at once, and the page says nothing about asking.
+    designer.updateHeaderPart(confirm, { confirm: '' });
+    expect(sheet(designer).buttons?.[0]).not.toHaveProperty('confirm');
+    designer.undo();
     designer.undo();
     designer.undo();
     expect(sheet(designer).buttons?.[0].label).toBe('Confirm');
@@ -88,6 +95,9 @@ describe('a record’s header', () => {
     expect(designer.updateHeaderPart(invoices, { field: 'email' })).toBe(false);
     expect(designer.getState().issues).toEqual(['A counter shows a number; Email holds text']);
     expect(designer.addHeaderPart('badge', '   ')).toBe(false);
+    const vip = designer.addHeaderPart('badge', 'VIP') as string;
+    expect(designer.updateHeaderPart(vip, { action: 'promote' })).toBe(false);
+    expect(designer.getState().issues).toEqual(['A badge has no action']);
   });
 
   it('moves a part among its own kind, and takes it away', () => {
@@ -97,6 +107,8 @@ describe('a record’s header', () => {
     expect(designer.moveHeaderPart(b, -1)).toBe(true);
     expect(sheet(designer).buttons?.map((x) => x.id)).toEqual([b, a]);
     expect(designer.moveHeaderPart(b, -1)).toBe(false);
+    expect(designer.moveHeaderPart(a, 1)).toBe(false);
+    expect(designer.getState().issues).toEqual(['It cannot move further']);
     expect(designer.removeHeaderPart(b)).toBe(true);
     expect(sheet(designer).buttons?.map((x) => x.id)).toEqual([a]);
     expect(designer.removeHeaderPart(a)).toBe(true);

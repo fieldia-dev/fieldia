@@ -188,6 +188,9 @@ describe('screen editor — a record’s header in the panel', () => {
     choose(field(panel(), 'Number from'), 'invoice_count');
     expect(sheet(designer).statButtons?.[0].field).toBe('invoice_count');
     add('badge');
+    // A badge only shows: no look of a button's, and nothing to ask.
+    expect(field(panel(), 'Look')).toBeUndefined();
+    expect(field(panel(), 'Asks first')).toBeUndefined();
     choose(field(panel(), 'Tone'), 'danger');
     expect(sheet(designer).badges?.[0].tone).toBe('danger');
     button(panel(), 'Show only when…')?.click();
