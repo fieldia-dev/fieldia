@@ -45,6 +45,8 @@ export interface CanvasDrag {
 const SLOP = 4;
 /** How long the pointer rests on a tab before it opens. */
 const TAB_DELAY = 450;
+/** How far under a section a drop still lands in it, last: the gap where its place to drop last is drawn. */
+const REACH = 24;
 
 export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
   const { canvas } = options;
@@ -68,7 +70,9 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
 
   const sections = () => [...canvas.querySelectorAll<HTMLElement>('[data-drop-section]')].filter((s) => !s.closest('[hidden]'));
   const cardsIn = (section: HTMLElement) => [...section.querySelectorAll<HTMLElement>('.fd-canvas-field[data-node]')];
-  const sectionAt = (x: number, y: number) => sections().find((s) => inside(rectOf(s), x, y)) ?? null;
+  /** A section and the gap under it, where a place to drop last is drawn. */
+  const reach = (r: Rect): Rect => ({ left: r.left, top: r.top, right: r.right, bottom: r.bottom + REACH });
+  const sectionAt = (x: number, y: number) => sections().find((s) => inside(reach(rectOf(s)), x, y)) ?? null;
   const closedTabAt = (x: number, y: number) =>
     [...canvas.querySelectorAll<HTMLElement>('.fd-tab')].find((t) => t.getAttribute('aria-selected') !== 'true' && inside(rectOf(t), x, y)) ?? null;
 
@@ -90,6 +94,9 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
 
   function lift(current: Drag) {
     current.started = true;
+    // While something is carried, each section shows a place to drop it last, and nothing on the page is selected.
+    canvas.classList.add('fd-dragging');
+    doc.getSelection()?.removeAllRanges();
     if ('node' in current.source) current.element.classList.add('fd-drag-source');
     const r = rectOf(current.element);
     const ghost = current.element.cloneNode(true) as HTMLElement;
@@ -179,6 +186,7 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
     current.ghost?.remove();
     current.marker?.remove();
     current.element.classList.remove('fd-drag-source');
+    canvas.classList.remove('fd-dragging');
     for (const s of sections()) s.classList.remove('fd-drop-target');
     swallowNextClick();
     if (commit && current.target) options.drop(current.source, current.target.section, current.target.index);

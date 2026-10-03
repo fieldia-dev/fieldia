@@ -93,6 +93,29 @@ describe('dragging on the canvas', () => {
     expect(clicks).toBe(1);
   });
 
+  it('drops last in a section from the gap just under it, and nowhere further down', () => {
+    const { card, pointer, dropped } = canvas();
+    // The first section ends at 300; the second starts at 400.
+    pointer('pointerdown', card('next'), 100, 460);
+    pointer('pointermove', document, 300, 318);
+    pointer('pointerup', document, 300, 318);
+    expect(dropped).toEqual([[{ node: 'next' }, 'visit', 3]]);
+    pointer('pointerdown', card('due'), 500, 460);
+    pointer('pointermove', document, 300, 340);
+    pointer('pointerup', document, 300, 340);
+    expect(dropped).toHaveLength(1);
+  });
+
+  it('marks the canvas while something is carried, so each section can show a place to drop it last', () => {
+    const { host, card, pointer } = canvas();
+    pointer('pointerdown', card('customer'), 100, 60);
+    expect(host.classList.contains('fd-dragging')).toBe(false);
+    pointer('pointermove', document, 300, 470);
+    expect(host.classList.contains('fd-dragging')).toBe(true);
+    pointer('pointerup', document, 300, 470);
+    expect(host.classList.contains('fd-dragging')).toBe(false);
+  });
+
   it('drops nothing outside every section, and Escape calls a drag off', () => {
     const { card, pointer, dropped } = canvas();
     pointer('pointerdown', card('date'), 500, 60);

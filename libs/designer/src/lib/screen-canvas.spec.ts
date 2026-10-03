@@ -128,6 +128,35 @@ describe('the screen canvas — a field edited where it stands', () => {
     expect(field.options.map((o) => o.label)).toEqual(['Send a quote']);
   });
 
+  it('takes an emptied option out from the middle, the others keeping their words', () => {
+    const { designer, card, step } = visit();
+    designer.setOptions(step, ['Send a quote', 'Book a visit', 'Close']);
+    card(step).click();
+    const inputs = () => [...card(step).querySelectorAll<HTMLInputElement>('.fd-q-option input')];
+    inputs()[1].focus();
+    inputs()[1].value = '';
+    inputs()[1].dispatchEvent(new Event('input', { bubbles: true }));
+    inputs()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
+    expect(inputs().map((i) => i.value)).toEqual(['Send a quote', 'Close']);
+    expect(document.activeElement).toBe(inputs()[0]);
+    const field = designer.getPage().fields[nodes(designer.getPage())[1].field] as Field & { options: { label: string }[] };
+    expect(field.options.map((o) => o.label)).toEqual(['Send a quote', 'Close']);
+  });
+
+  it('takes an option left empty away once the cursor goes to another, following it there', async () => {
+    const { designer, card, step } = visit();
+    designer.setOptions(step, ['Send a quote', 'Book a visit', 'Close']);
+    card(step).click();
+    const inputs = () => [...card(step).querySelectorAll<HTMLInputElement>('.fd-q-option input')];
+    inputs()[0].focus();
+    inputs()[0].value = '';
+    inputs()[0].dispatchEvent(new Event('input', { bubbles: true }));
+    inputs()[2].focus();
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(inputs().map((i) => i.value)).toEqual(['Book a visit', 'Close']);
+    expect(document.activeElement).toBe(inputs()[1]);
+  });
+
   it('puts the field down when the page around it is clicked, and the section when its own space is', () => {
     const { designer, card, date } = visit();
     card(date).click();

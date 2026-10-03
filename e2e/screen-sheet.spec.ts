@@ -1,16 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
+import { addField, cardOf, tile } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /** A record sheet built in the screen editor: a title, a section, tabs with their own sections; previewed, published, reopened. */
-const card = (page: Page, label: string) => page.locator('.fd-canvas-field').filter({ has: page.locator('.fd-label', { hasText: new RegExp(`^${label}$`) }) });
 const tabs = (page: Page) => page.locator('.fd-canvas-tabs [role="tab"]');
-
-async function addField(page: Page, kind: string, label: string) {
-  await page.locator(`.fd-palette-item[data-kind="${kind}"]`).click();
-  await expect(page.getByRole('textbox', { name: 'Label' })).toBeFocused();
-  await page.keyboard.type(label);
-  await expect(card(page, label)).toBeVisible();
-}
+const panel = (page: Page) => page.locator('.fd-properties');
 
 test.describe('screen designer · record sheet', () => {
   test('builds a sheet with a title and tabs, previews it, publishes it and opens it again', async ({ page }) => {
@@ -26,41 +20,41 @@ test.describe('screen designer · record sheet', () => {
     await addField(page, 'phone', 'Phone');
     // A link to another record, pointed at its model.
     await addField(page, 'link', 'Company');
-    await page.getByRole('textbox', { name: 'Links to' }).fill('company');
+    await panel(page).getByRole('textbox', { name: 'Links to' }).fill('company');
 
-    await page.getByRole('button', { name: 'Add tabs' }).click();
-    await expect(page.getByRole('button', { name: 'Add tabs' })).toBeHidden();
+    await tile(page, 'layout:tabs').click();
+    await expect(tile(page, 'layout:tabs')).toBeHidden();
     await expect(tabs(page)).toHaveText(['Tab 1']);
-    await page.getByRole('textbox', { name: 'Tab label' }).fill('Contacts');
+    await panel(page).getByRole('textbox', { name: 'Tab label' }).fill('Contacts');
     await addField(page, 'short-answer', 'Contact person');
-    await page.getByRole('button', { name: 'Add tab', exact: true }).click();
-    await page.getByRole('textbox', { name: 'Tab label' }).fill('Notes');
+    await page.getByRole('button', { name: 'Add a tab', exact: true }).click();
+    await panel(page).getByRole('textbox', { name: 'Tab label' }).fill('Notes');
     await addField(page, 'paragraph', 'Internal notes');
     // A table of lines, the grid where the app has it, with a column of its own.
     await addField(page, 'lines', 'Order lines');
-    await page.getByRole('button', { name: 'Add column' }).click();
-    await page.getByRole('textbox', { name: 'Column 3' }).fill('Unit price');
-    await page.getByRole('combobox', { name: 'Kind of column 3' }).selectOption('number');
-    await expect(card(page, 'Order lines').locator('th')).toContainText(['Description', 'Quantity', 'Unit price']);
+    await panel(page).getByRole('button', { name: 'Add column' }).click();
+    await panel(page).getByRole('textbox', { name: 'Column 3' }).fill('Unit price');
+    await panel(page).getByRole('combobox', { name: 'Kind of column 3' }).selectOption('number');
+    await expect((await cardOf(page, 'Order lines')).locator('th')).toContainText(['Description', 'Quantity', 'Unit price']);
     await expect(tabs(page)).toHaveText(['Contacts', 'Notes']);
     await expect(tabs(page).nth(1)).toHaveAttribute('aria-selected', 'true');
-    await expect(card(page, 'Contact person')).toHaveCount(0);
+    await expect(await cardOf(page, 'Contact person')).toHaveCount(0);
 
-    // The strip sits over its tab's section, inside the tabs' frame, under the first section.
+    // The strip sits over its tab's section, inside the tabs, under the first section.
     const strip = (await page.locator('.fd-canvas-tabs-head').boundingBox())!;
-    const inside = (await page.locator('.fd-canvas-tab-panel .fd-canvas-section').boundingBox())!;
+    const inside = (await page.locator('.fd-canvas-tabs .fd-tabpanel .fd-canvas-section').boundingBox())!;
     const frame = (await page.locator('.fd-canvas-tabs').boundingBox())!;
-    const first = (await page.locator('.fd-canvas-sections > .fd-canvas-section').first().boundingBox())!;
+    const first = (await page.locator('.fd-canvas-body > .fd-canvas-section').first().boundingBox())!;
     expect(inside.y, 'the section is not under the strip').toBeGreaterThanOrEqual(strip.y + strip.height);
-    expect(inside.x, 'the section is outside the tabs').toBeGreaterThan(frame.x);
-    expect(inside.x + inside.width).toBeLessThan(frame.x + frame.width);
+    expect(inside.x, 'the section is outside the tabs').toBeGreaterThanOrEqual(frame.x);
+    expect(inside.x + inside.width).toBeLessThanOrEqual(frame.x + frame.width + 1);
     expect(frame.y, 'the tabs are not under the first section').toBeGreaterThan(first.y + first.height);
     await expectNoSidewaysScroll(page);
     await screen(page, 'screen-sheet-built', { viewport: true });
 
     await tabs(page).first().click();
-    await expect(card(page, 'Contact person')).toBeVisible();
-    await expect(card(page, 'Internal notes')).toHaveCount(0);
+    await expect(await cardOf(page, 'Contact person')).toBeVisible();
+    await expect(await cardOf(page, 'Internal notes')).toHaveCount(0);
 
     // The preview is the real sheet: its title, and its tabs.
     await page.getByRole('button', { name: 'Preview' }).click();
@@ -79,11 +73,11 @@ test.describe('screen designer · record sheet', () => {
     await page.evaluate(() => (window as any).fieldiaDesigner.reopen());
     await expect(page.locator('.fd-canvas-title')).toHaveText('Name');
     await expect(tabs(page)).toHaveText(['Contacts', 'Notes']);
-    await expect(card(page, 'Email')).toBeVisible();
-    await expect(card(page, 'Contact person')).toBeVisible();
-    await expect(card(page, 'Company')).toBeVisible();
+    await expect(await cardOf(page, 'Email')).toBeVisible();
+    await expect(await cardOf(page, 'Contact person')).toBeVisible();
+    await expect(await cardOf(page, 'Company')).toBeVisible();
     await tabs(page).nth(1).click();
-    await expect(card(page, 'Order lines').locator('th')).toContainText(['Description', 'Quantity', 'Unit price']);
+    await expect((await cardOf(page, 'Order lines')).locator('th')).toContainText(['Description', 'Quantity', 'Unit price']);
     const saved = await page.evaluate(() => {
       const built = (window as any).fieldiaDesigner.designer.getPage();
       return Object.values(built.fields).map((f: any) => `${f.label}:${f.type}${f.relation ? `>${f.relation}` : ''}`);
@@ -111,7 +105,7 @@ test.describe('screen designer · record sheet', () => {
     });
     await expect(tabs(page)).toHaveText(['Contacts', 'Notes']);
     await tabs(page).first().click();
-    const email = (await card(page, 'Email').boundingBox())!;
+    const email = (await (await cardOf(page, 'Email')).boundingBox())!;
     const notesTab = (await tabs(page).nth(1).boundingBox())!;
     const from = { x: email.x + 60, y: email.y + 14 };
     await page.mouse.move(from.x, from.y);
@@ -120,8 +114,9 @@ test.describe('screen designer · record sheet', () => {
     for (let i = 1; i <= 14; i++) await page.mouse.move(from.x + ((over.x - from.x) * i) / 14, from.y + ((over.y - from.y) * i) / 14, { steps: 3 });
     // Resting on the tab opens it.
     await expect(tabs(page).nth(1)).toHaveAttribute('aria-selected', 'true');
-    const notes = (await card(page, 'Internal notes').boundingBox())!;
-    await page.mouse.move(notes.x + notes.width - 20, notes.y + notes.height + 30, { steps: 8 });
+    const notes = (await (await cardOf(page, 'Internal notes')).boundingBox())!;
+    // Into the place to drop last, drawn in the gap under the section.
+    await page.mouse.move(notes.x + notes.width - 20, notes.y + notes.height + 10, { steps: 8 });
     await page.mouse.up();
     const where = await page.evaluate(() => {
       const built = (window as any).fieldiaDesigner.designer.getPage();

@@ -1,134 +1,160 @@
 import { expect, test, type Page } from '@playwright/test';
+import { addField, cardOf, drag, editing, layout, tile, watch } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
- * Lay out an app screen the way a person would: drag cards on the canvas,
- * pull their edges, pick fields from the palette, change them in the
- * properties panel — with a real mouse on a real Grafloria board.
+ * Lay out an app screen the way a person would: fields dragged about the
+ * canvas and in from the toolbox, edited where they stand, the rest in the
+ * panel — with a real mouse and keyboard.
  */
 
-const card = (page: Page, label: string) => page.locator('.fd-canvas-field').filter({ has: page.locator('.fd-label', { hasText: new RegExp(`^${label}$`) }) });
-
-/** Each section's fields as "Label:width", read from the page being built. */
-const layout = (page: Page) =>
-  page.evaluate(() => {
-    const built = (window as any).fieldiaDesigner.designer.getPage();
-    return built.layout.children.map((s: any) => s.children.map((n: any) => `${built.fields[n.field].label}:${n.colspan ?? 1}`));
-  });
-
-/** Press, move in steps at hand speed, release. */
-async function drag(page: Page, from: { x: number; y: number }, to: { x: number; y: number }) {
-  await page.mouse.move(from.x, from.y);
-  await page.mouse.down();
-  const steps = 10;
-  for (let i = 1; i <= steps; i++) await page.mouse.move(from.x + ((to.x - from.x) * i) / steps, from.y + ((to.y - from.y) * i) / steps, { steps: 3 });
-  await page.mouse.up();
-}
+const start = [
+  ['Customer:1', 'Visit date:1', 'Notes:2'],
+  ['Next step:1', 'Due by:1', 'Manager to call?:1'],
+];
+const mod = process.platform === 'darwin' ? 'Meta' : 'Control';
+const box = async (page: Page, label: string) => (await (await cardOf(page, label)).boundingBox())!;
 
 test.describe('screen designer', () => {
+  let problems: string[] = [];
   test.beforeEach(async ({ page }) => {
-    const problems: string[] = [];
-    page.on('pageerror', (error) => problems.push(error.message));
-    page.on('console', (message) => message.type() === 'error' && problems.push(message.text()));
+    problems = watch(page);
     await page.goto('/screen/');
     await expect(page.locator('.fd-canvas-field')).toHaveCount(6);
-    (page as unknown as { problems: string[] }).problems = problems;
   });
-  test.afterEach(async ({ page }) => {
-    expect((page as unknown as { problems: string[] }).problems).toEqual([]);
-  });
+  test.afterEach(() => expect(problems).toEqual([]));
 
-  test('drags a card to reorder, pulls an edge to widen, one undo step each', async ({ page }) => {
+  test('drags a field within its section and into another, a line showing where, one undo step each', async ({ page }) => {
     await screen(page, 'screen-start');
     await expectNoSidewaysScroll(page);
-    expect(await layout(page)).toEqual([
-      ['Customer:1', 'Visit date:1', 'Notes:2'],
-      ['Next step:1', 'Due by:1', 'Manager to call?:1'],
-    ]);
+    expect(await layout(page)).toEqual(start);
 
-    // Notes, dragged by its label onto Customer, goes first.
-    const notes = (await card(page, 'Notes').boundingBox())!;
-    const customer = (await card(page, 'Customer').boundingBox())!;
-    await drag(page, { x: notes.x + 80, y: notes.y + 14 }, { x: notes.x + 80, y: customer.y + 10 });
-    await expect.poll(() => layout(page)).toEqual([
-      ['Notes:2', 'Customer:1', 'Visit date:1'],
-      ['Next step:1', 'Due by:1', 'Manager to call?:1'],
-    ]);
-    // The canvas is laid out again where the viewer will put each field.
-    // A card is briefly gone while its board is rebuilt, so read both boxes in one go.
-    const gap = async () => {
-      const [top, below] = [await card(page, 'Notes').boundingBox(), await card(page, 'Customer').boundingBox()];
-      return top && below ? below.y - top.y : 0;
-    };
-    await expect.poll(gap).toBeGreaterThan(150);
-    await screen(page, 'screen-dragged');
-
-    // Undo from the keyboard, with focus on nothing in particular.
+    // Notes, dragged by its label onto the start of Customer, goes first.
+    const notes = await box(page, 'Notes');
+    const customer = await box(page, 'Customer');
+    await drag(page, { x: notes.x + 40, y: notes.y + 12 }, { x: customer.x + 20, y: customer.y + 20 }, { release: false });
+    await expect(page.locator('.fd-drag-ghost')).toBeVisible();
+    await expect(page.locator('.fd-drop-marker')).toBeVisible();
+    await page.mouse.up();
+    await expect.poll(() => layout(page)).toEqual([['Notes:2', 'Customer:1', 'Visit date:1'], start[1]]);
+    await expect(page.locator('.fd-drag-ghost, .fd-drop-marker')).toHaveCount(0);
+    // The canvas is the viewer's grid: Notes takes the whole row, Customer goes under it.
+    await expect.poll(async () => (await box(page, 'Customer')).y - (await box(page, 'Notes')).y).toBeGreaterThan(60);
     await page.locator('.fd-designer-status').click();
-    const mod = process.platform === 'darwin' ? 'Meta' : 'Control';
     await page.keyboard.press(`${mod}+z`);
-    await expect.poll(() => layout(page)).toEqual([
-      ['Customer:1', 'Visit date:1', 'Notes:2'],
-      ['Next step:1', 'Due by:1', 'Manager to call?:1'],
-    ]);
+    await expect.poll(() => layout(page)).toEqual(start);
 
-    // Customer, pulled by its corner across the section, takes both columns.
-    // The card itself is inert; the board's widget around it takes the press.
-    await page.getByRole('group', { name: /^Customer, column 1/ }).click();
-    const box = (await card(page, 'Customer').boundingBox())!;
-    const section = (await page.locator('.fd-canvas-section').first().boundingBox())!;
-    await drag(page, { x: box.x + box.width - 3, y: box.y + box.height - 3 }, { x: section.x + section.width - 20, y: box.y + box.height - 3 });
-    await expect.poll(() => layout(page)).toEqual([
-      ['Customer:2', 'Visit date:1', 'Notes:2'],
-      ['Next step:1', 'Due by:1', 'Manager to call?:1'],
-    ]);
-    await expect(page.getByLabel('Width')).toHaveValue('2');
-    await screen(page, 'screen-widened');
+    // Customer, down out of its section onto the start of "Due by".
+    const from = await box(page, 'Customer');
+    const dueBy = await box(page, 'Due by');
+    await drag(page, { x: from.x + 40, y: from.y + 12 }, { x: dueBy.x + 20, y: dueBy.y + 24 }, { release: false });
+    await expect(page.locator('.fd-canvas-section.fd-drop-target .fd-canvas-section-title')).toHaveText('Follow-up');
+    const line = (await page.locator('.fd-drop-marker').boundingBox())!;
+    expect(Math.abs(line.x + line.width - dueBy.x), 'the line is not at the start of "Due by"').toBeLessThan(10);
+    await screen(page, 'screen-drag-across', { viewport: true });
+    await page.mouse.up();
+    await expect.poll(() => layout(page)).toEqual([['Visit date:1', 'Notes:2'], ['Next step:1', 'Customer:1', 'Due by:1', 'Manager to call?:1']]);
+    // A dragged field is picked, open where it landed.
+    await expect(editing(page).label).toHaveValue('Customer');
+    await page.getByRole('button', { name: 'Undo' }).click();
+    await expect.poll(() => layout(page)).toEqual(start);
   });
 
-  test('drops a card on the spare row to put it last', async ({ page }) => {
-    const followUp = page.locator('.fd-canvas-section').nth(1);
-    const next = (await card(page, 'Next step').boundingBox())!;
-    const board = (await followUp.locator('.fd-canvas-board').boundingBox())!;
-    await drag(page, { x: next.x + 60, y: next.y + 14 }, { x: next.x + 60, y: board.y + board.height - 50 });
+  test('drops a field after the last one in a section', async ({ page }) => {
+    const next = await box(page, 'Next step');
+    const last = await box(page, 'Manager to call?');
+    await drag(page, { x: next.x + 40, y: next.y + 12 }, { x: last.x + 200, y: last.y + last.height + 6 });
     await expect.poll(async () => (await layout(page))[1]).toEqual(['Due by:1', 'Manager to call?:1', 'Next step:1']);
   });
 
-  test('adds a field from the palette and changes it in the properties panel', async ({ page }) => {
-    await page.locator('.fd-canvas-section').nth(1).getByRole('button', { name: 'Follow-up' }).click();
-    await expect(page.getByLabel('Section title')).toHaveValue('Follow-up');
-    await page.getByRole('complementary', { name: 'Add a field' }).getByRole('button', { name: 'Rating' }).click();
-    await expect(page.getByLabel('Label')).toBeFocused();
+  test('drags a tile in from the toolbox to a place on the canvas, its name ready to be typed', async ({ page }) => {
+    const rating = (await tile(page, 'kind:rating').boundingBox())!;
+    const dueBy = await box(page, 'Due by');
+    await drag(page, { x: rating.x + rating.width / 2, y: rating.y + 20 }, { x: dueBy.x + 20, y: dueBy.y + 24 }, { release: false });
+    await expect(page.locator('.fd-drag-ghost')).toBeVisible();
+    await page.mouse.up();
+    await expect(editing(page).label).toBeFocused();
     await page.keyboard.type('Visit score');
-    await expect(card(page, 'Visit score')).toBeVisible();
-    await expect(card(page, 'Visit score').locator('.fd-rating')).toBeVisible();
-
-    await page.getByLabel('Required').check();
-    await expect(card(page, 'Visit score')).toHaveClass(/fd-required/);
-    await page.getByLabel('Help text').fill('From 1 to 5');
-    await expect(card(page, 'Visit score').locator('.fd-help')).toHaveText('From 1 to 5');
-    await page.getByLabel('Width').selectOption({ label: '2 columns (full width)' });
-    expect((await layout(page))[1]).toEqual(['Next step:1', 'Due by:1', 'Manager to call?:1', 'Visit score:2']);
-    await screen(page, 'screen-properties');
-
-    // Into the other section, then out of the page.
-    await page.getByLabel('Section').selectOption({ label: 'Visit' });
-    expect((await layout(page))[0]).toEqual(['Customer:1', 'Visit date:1', 'Notes:2', 'Visit score:2']);
-    await expect(page.locator('.fd-canvas-section').first().locator('.fd-canvas-field')).toHaveCount(4);
-    await page.getByRole('button', { name: 'Delete field' }).click();
-    await expect(card(page, 'Visit score')).toHaveCount(0);
-    await expect(page.locator('.fd-properties-hint')).toBeVisible();
+    await expect.poll(async () => (await layout(page))[1]).toEqual(['Next step:1', 'Visit score:1', 'Due by:1', 'Manager to call?:1']);
+    await expect(editing(page).card.locator('.fd-rating')).toBeVisible();
+    // A drop is one step back.
+    await page.getByRole('button', { name: 'Undo' }).click();
+    await page.getByRole('button', { name: 'Undo' }).click();
+    await expect.poll(() => layout(page)).toEqual(start);
   });
 
-  test('adds a section, previews the screen, and publishes it', async ({ page }) => {
-    await page.getByRole('button', { name: 'Add section' }).click();
-    await page.getByLabel('Section title').fill('Photos');
-    await page.getByLabel('Columns').selectOption('1');
+  test('edits a field where it stands: its words, then the bar on it', async ({ page }) => {
+    await (await cardOf(page, 'Customer')).locator('.fd-label').click();
+    const { card, label, help } = editing(page);
+    await expect(label).toBeFocused();
+    await page.keyboard.press(`${mod}+a`);
+    await page.keyboard.type('Customer name');
+    await page.keyboard.press('Enter');
+    await expect(help).toBeFocused();
+    await page.keyboard.type('Who we visited');
+    // The panel follows what is typed on the canvas.
+    await expect(page.locator('.fd-properties').getByRole('textbox', { name: 'Label' })).toHaveValue('Customer name');
+    await expect(page.locator('.fd-properties').getByRole('textbox', { name: 'Help text' })).toHaveValue('Who we visited');
+
+    await card.getByRole('button', { name: 'Required' }).click();
+    await expect(card).toHaveClass(/fd-required/);
+    await card.getByRole('button', { name: 'Width' }).click();
+    await page.getByRole('menuitemradio', { name: 'Full width' }).click();
+    await expect.poll(async () => (await layout(page))[0]).toEqual(['Customer name:2', 'Visit date:1', 'Notes:2']);
+    await card.getByRole('button', { name: 'Show as: Short answer' }).click();
+    await expect(page.getByRole('menu')).toContainText('Made on this page, so it can be any kind');
+    await screen(page, 'screen-show-as', { viewport: true });
+    await page.getByRole('menuitemradio', { name: 'Email' }).click();
+    await expect(page.locator('.fd-properties').getByRole('combobox', { name: 'Shown as' })).toHaveValue('email');
+    await expect(card.getByRole('button', { name: 'Show as: Email' })).toBeVisible();
+    await screen(page, 'screen-edit-in-place', { viewport: true });
+
+    // Escape puts it down; the page shows it as people will see it.
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.fd-editing')).toHaveCount(0);
+    await expect((await cardOf(page, 'Customer name')).locator('.fd-help')).toHaveText('Who we visited');
+  });
+
+  test('types a choice’s options in place, Enter for the next', async ({ page }) => {
+    await (await cardOf(page, 'Next step')).click();
+    const options = editing(page).card.locator('.fd-q-option input');
+    await expect(options).toHaveCount(3);
+    await options.nth(2).click();
+    await page.keyboard.press('End');
+    await page.keyboard.press('Enter');
+    await expect(options).toHaveCount(4);
+    await expect(options.nth(3)).toBeFocused();
+    await page.keyboard.type('Ask a colleague');
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Backspace');
+    await page.keyboard.press('Backspace');
+    await expect(options).toHaveCount(4);
+    const labels = await page.evaluate(() => {
+      const built = window.fieldiaDesigner.designer.getPage();
+      const node = built.layout.children[1].children[0];
+      return built.fields[node.field].options.map((o: any) => o.label);
+    });
+    expect(labels).toEqual(['Send a quote', 'Book a second visit', 'Close', 'Ask a colleague']);
+    await screen(page, 'screen-options-in-place', { viewport: true });
+  });
+
+  test('moves the field picked with Alt and an arrow, and takes it away with Delete', async ({ page }) => {
+    await (await cardOf(page, 'Customer')).click();
+    await page.locator('.fd-designer-status').click();
+    await page.keyboard.press('Alt+ArrowDown');
+    await expect.poll(async () => (await layout(page))[0]).toEqual(['Visit date:1', 'Customer:1', 'Notes:2']);
+    await page.keyboard.press('Delete');
+    await expect.poll(async () => (await layout(page))[0]).toEqual(['Visit date:1', 'Notes:2']);
+  });
+
+  test('adds a section and a field in it, previews the screen, and publishes it', async ({ page }) => {
+    await tile(page, 'layout:section').click();
+    const title = page.locator('.fd-canvas-section-title-input:visible');
+    await expect(title).toBeFocused();
+    await page.keyboard.type('Photos');
+    await page.locator('.fd-properties').getByRole('combobox', { name: 'Columns' }).selectOption('1');
+    await addField(page, 'file', 'Photo of the site');
     const photos = page.locator('.fd-canvas-section').nth(2);
-    await expect(photos.locator('.fd-canvas-section-title')).toHaveText('Photos');
-    await expect(photos.locator('.fd-canvas-empty')).toBeVisible();
-    await page.getByRole('complementary', { name: 'Add a field' }).getByRole('button', { name: 'File upload' }).click();
-    await page.keyboard.type('Photo of the site');
     await expect(photos.locator('.fd-canvas-field')).toHaveCount(1);
     await screen(page, 'screen-new-section');
 
@@ -137,7 +163,6 @@ test.describe('screen designer', () => {
     await expect(preview.locator('.fd-label')).toHaveText(['Customer', 'Visit date', 'Notes', 'Next step', 'Due by', 'Manager to call?', 'Photo of the site']);
     await preview.getByLabel('Customer').fill('Nile Towers');
     await expect(preview.getByLabel('Customer')).toHaveValue('Nile Towers');
-    await screen(page, 'screen-preview');
     await page.getByRole('button', { name: 'Preview' }).click();
     await expect(page.locator('.fd-canvas-field')).toHaveCount(7);
 
@@ -145,42 +170,13 @@ test.describe('screen designer', () => {
     await expect(page.locator('.fd-designer-status')).toHaveText('Published · version 1');
   });
 
-  test('drags a field into another section, where the line shows, as one undo step', async ({ page }) => {
-    const customer = (await card(page, 'Customer').boundingBox())!;
-    const dueBy = (await card(page, 'Due by').boundingBox())!;
-    // Down out of its section, onto the start of "Due by" in the next one.
-    const from = { x: customer.x + 60, y: customer.y + 14 };
-    const to = { x: dueBy.x + 30, y: dueBy.y + 30 };
-    await page.mouse.move(from.x, from.y);
-    await page.mouse.down();
-    for (let i = 1; i <= 16; i++) await page.mouse.move(from.x + ((to.x - from.x) * i) / 16, from.y + ((to.y - from.y) * i) / 16, { steps: 3 });
-    // The card follows the pointer, the section it is over says so, and a line says where it lands.
-    await expect(page.locator('.fd-drag-ghost')).toBeVisible();
-    await expect(page.locator('.fd-canvas-section.fd-drop-target .fd-canvas-section-title')).toHaveText('Follow-up');
-    const line = (await page.locator('.fd-drop-marker').boundingBox())!;
-    expect(Math.abs(line.x + line.width - dueBy.x), 'the line is not at the start of "Due by"').toBeLessThan(8);
-    await screen(page, 'screen-drag-across', { viewport: true });
-    await page.mouse.up();
-    await expect.poll(() => layout(page)).toEqual([
-      ['Visit date:1', 'Notes:2'],
-      ['Next step:1', 'Customer:1', 'Due by:1', 'Manager to call?:1'],
-    ]);
-    await expect(page.locator('.fd-drag-ghost, .fd-drop-marker')).toHaveCount(0);
-    await expect(card(page, 'Customer')).toBeVisible();
-    await page.getByRole('button', { name: 'Undo' }).click();
-    await expect.poll(() => layout(page)).toEqual([
-      ['Customer:1', 'Visit date:1', 'Notes:2'],
-      ['Next step:1', 'Due by:1', 'Manager to call?:1'],
-    ]);
-  });
-
-  test('every kind of field fits its card, help text and all', async ({ page }) => {
+  test('every kind of field fits its place, help text and all', async ({ page }) => {
     await page.goto('/screen/?start=blank');
-    // Every kind the palette offers, so a kind added later is checked too.
-    const kinds = await page.locator('.fd-palette-item').evaluateAll((items) => items.map((item) => (item as HTMLElement).dataset['kind'] as string));
+    // Every kind the toolbox offers, so a kind added later is checked too.
+    const kinds = await page.locator('.fd-toolbox [data-tool^="kind:"]').evaluateAll((tiles) => tiles.map((t) => (t as HTMLElement).dataset['tool']!.slice(5)));
     expect(kinds.length).toBeGreaterThanOrEqual(24);
     await page.evaluate((kinds) => {
-      const { designer } = (window as any).fieldiaDesigner;
+      const { designer } = window.fieldiaDesigner as any;
       for (const kind of kinds) {
         const id = designer.addQuestion(kind, { parent: 'section-1' });
         designer.updateQuestion(id, { label: `A ${kind} question`, help: 'Some help for this field', required: true });
@@ -189,20 +185,54 @@ test.describe('screen designer', () => {
       designer.select(null);
     }, kinds);
     await expect(page.locator('.fd-canvas-field')).toHaveCount(kinds.length);
-    const clipped = () =>
-      page.evaluate(() =>
-        [...document.querySelectorAll<HTMLElement>('.fd-canvas-field')]
-          // Clipped by its card, or squeezed inside it: a widget that scrolls, as a statusbar does, shrinks rather than overflow.
-          .filter((card) => card.scrollHeight > card.clientHeight + 1 || [...card.children].some((part) => part.scrollHeight > part.clientHeight + 1))
-          .map((card) => card.querySelector('.fd-label')?.textContent)
-      );
-    await expect.poll(clipped).toEqual([]);
+    // Nothing spills out of its field, and no two fields overlap.
+    const problemsWith = () =>
+      page.evaluate(() => {
+        const cards = [...document.querySelectorAll<HTMLElement>('.fd-canvas-field')];
+        const clipped = cards.filter((card) => [...card.children].some((part) => part.scrollHeight > part.clientHeight + 1 && getComputedStyle(part).overflowY !== 'visible')).map((c) => c.querySelector('.fd-label')?.textContent);
+        const rects = cards.map((c) => c.getBoundingClientRect());
+        const overlapping = rects.flatMap((a, i) => rects.slice(i + 1).filter((b) => a.left < b.right - 2 && b.left < a.right - 2 && a.top < b.bottom - 2 && b.top < a.bottom - 2).map(() => cards[i].querySelector('.fd-label')?.textContent));
+        return { clipped, overlapping };
+      });
+    await expect.poll(problemsWith).toEqual({ clipped: [], overlapping: [] });
     await screen(page, 'screen-every-kind');
-
-    // Narrower, the same content wraps onto more lines: the cards still hold it.
     await page.setViewportSize({ width: 900, height: 900 });
-    await expect.poll(clipped).toEqual([]);
+    await expect.poll(problemsWith).toEqual({ clipped: [], overlapping: [] });
     await expectNoSidewaysScroll(page);
     await screen(page, 'screen-every-kind-narrow');
+  });
+});
+
+test.describe('screen designer · fields the backend already has', () => {
+  test('lists the model’s fields first, adds one as the model has it, and offers only the editors that suit it', async ({ page }) => {
+    const problems = watch(page);
+    await page.goto('/screen/?start=sheet');
+    const model = page.locator('.fd-tool-group-model');
+    // Name is the sheet's title already: the others are offered.
+    await expect(model.locator('.fd-tool-name')).toHaveText(['Email', 'Phone', 'Website', 'VAT number', 'Country', 'Tags', 'Credit limit', 'Payment terms', 'Visits a year']);
+    await screen(page, 'screen-model-toolbox', { viewport: true });
+    await tile(page, 'model:credit_limit').click();
+    await expect(model.locator('[data-tool="model:credit_limit"]')).toHaveCount(0);
+    const { card, label } = editing(page);
+    await card.getByRole('button', { name: 'Show as: Amount' }).click();
+    await expect(page.getByRole('menuitemradio')).toHaveText(['Amount']);
+    await expect(page.getByRole('menu')).toContainText('Credit limit is stored as an amount in the model, so this is the one way to show it.');
+    await screen(page, 'screen-model-show-as', { viewport: true });
+    await page.keyboard.press('Escape');
+    // Its label typed on the canvas is the page's; the model keeps its own.
+    await label.click();
+    await page.keyboard.press(`${mod}+a`);
+    await page.keyboard.type('Limit');
+    const kept = await page.evaluate(() => {
+      const built = window.fieldiaDesigner.designer.getPage();
+      return built.fields['credit_limit'];
+    });
+    expect(kept).toEqual({ type: 'monetary', label: 'Credit limit', currency: 'EGP' });
+    await tile(page, 'model:visits').click();
+    await editing(page).card.getByRole('button', { name: /^Show as:/ }).click();
+    await expect(page.getByRole('menuitemradio')).toHaveText(['Rating', 'Linear scale', 'Number', 'Progress']);
+    await page.getByRole('menuitemradio', { name: 'Progress' }).click();
+    await expect(editing(page).card.locator('.fd-progress, progress, [role="progressbar"]').first()).toBeVisible();
+    expect(problems).toEqual([]);
   });
 });

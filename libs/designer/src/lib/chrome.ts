@@ -124,12 +124,26 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
     focusAt(inputs().length - 1);
   });
   const indexOf = (input: HTMLInputElement) => inputs().indexOf(input);
-  /** Without the option at `index`; an only option stays. */
+  /** An edit of this list's own: the blur it causes is not a person leaving a box. */
+  let busy = false;
+  /**
+   * Without the option at `index`, the cursor going to the one before it; an
+   * only option stays. The cursor leaves the boxes first, so every box is
+   * redrawn with the words now at its place — rows are kept by position.
+   */
   const without = (index: number) => {
     const current = labels();
     if (current.length < 2) return false;
     current.splice(index, 1);
-    return designer.setOptions(nodeId, current);
+    busy = true;
+    try {
+      (list.ownerDocument.activeElement as HTMLElement | null)?.blur();
+      if (!designer.setOptions(nodeId, current)) return false;
+    } finally {
+      busy = false;
+    }
+    focusAt(Math.max(0, index - 1), true);
+    return true;
   };
   return {
     element,
@@ -153,12 +167,33 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
             if (designer.setOptions(nodeId, current)) focusAt(at + 1);
           } else if (event.key === 'Backspace' && input.value === '' && labels().length > 1) {
             event.preventDefault();
-            if (without(at)) focusAt(Math.max(0, at - 1), true);
+            without(at);
           }
         });
+        // An option left empty goes once the cursor has gone somewhere else — after the blur, never inside it.
         input.addEventListener('blur', () => {
-          if (input.value.trim() || !input.isConnected) return;
-          if (!without(indexOf(input))) designer.setOptions(nodeId, labels().map((l, i) => (l.trim() ? l : `Option ${i + 1}`)));
+          if (busy) return;
+          setTimeout(() => {
+            if (!input.isConnected || input.value.trim() || focused(input)) return;
+            const at = indexOf(input);
+            const current = labels();
+            if (current.length < 2) {
+              designer.setOptions(nodeId, ['Option 1']);
+              return;
+            }
+            current.splice(at, 1);
+            // Gone into another option of this list: it is followed to its new place.
+            const active = list.ownerDocument.activeElement as HTMLInputElement | null;
+            const was = active && list.contains(active) ? indexOf(active) : -1;
+            busy = true;
+            try {
+              if (was !== -1) active?.blur();
+              designer.setOptions(nodeId, current);
+            } finally {
+              busy = false;
+            }
+            if (was !== -1) focusAt(was > at ? was - 1 : was, true);
+          }, 0);
         });
         const remove = iconButton(el, 'Remove option', '×', () => {
           const current = labels();

@@ -114,6 +114,8 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-empty { color: var(--fd-muted); font-size: 13px; border: 1px dashed var(--fd-border); border-radius: 6px; padding: 16px; text-align: center; margin: 0; }
 /* A field's ring sits in the gap around it: picking or hovering one moves nothing. */
 .fd-canvas-field { position: relative; border-radius: 6px; cursor: pointer; padding: 6px 8px; margin: -6px -8px; }
+/* On the canvas a field is picked and moved, not read: pressing on its words starts a drag, not a selection. */
+.fd-canvas-field:not(.fd-editing), .fd-canvas-section-title, .fd-canvas.fd-dragging { user-select: none; -webkit-user-select: none; }
 .fd-canvas-field:hover { outline: 1px dashed var(--fd-border-strong); }
 .fd-canvas-field.fd-editing { outline: 2px solid var(--fd-accent); background: var(--fd-accent-soft); cursor: default; }
 .fd-canvas-field.fd-hidden-sometimes::after {
@@ -177,6 +179,13 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-field.fd-drag-source { opacity: 0.35; }
 .fd-drop-marker { position: fixed; z-index: 99; pointer-events: none; background: var(--fd-accent); border-radius: 2px; }
 .fd-canvas-section.fd-drop-target { outline: 2px dashed var(--fd-accent); background: var(--fd-accent-soft); }
+/* While something is carried, the gap under each section is a place to drop it last — drawn in the gap, so nothing moves. */
+.fd-canvas-section { position: relative; }
+.fd-canvas.fd-dragging .fd-canvas-section::after {
+  content: "Drop here to put it last"; position: absolute; inset-inline: 0; top: calc(100% + 6px); height: 18px; display: grid; place-items: center;
+  color: var(--fd-muted); font-size: 11.5px; border: 1px dashed var(--fd-border-strong); border-radius: 5px; pointer-events: none;
+}
+.fd-canvas.fd-dragging .fd-canvas-section.fd-drop-target::after { border-color: var(--fd-accent); color: var(--fd-accent); }
 
 .fd-props { display: grid; gap: 10px; }
 .fd-prop { display: grid; gap: 4px; }
