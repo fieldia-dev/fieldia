@@ -1,4 +1,4 @@
-import type { FieldNode, LayoutNode, Page, SectionNode, StepNode, TabNode, TabsNode } from '@fieldia/core';
+import type { FieldNode, FilterItem, LayoutNode, Page, SectionNode, StepNode, TabNode, TabsNode } from '@fieldia/core';
 
 /**
  * Finding one's way around a page's layout, for the designer's edits: the
@@ -89,6 +89,8 @@ export function allIds(page: Page): Set<string> {
   // A sheet's header parts have ids of their own.
   const root = page.layout;
   if (root.type === 'sheet') for (const part of [...(root.buttons ?? []), ...(root.statButtons ?? []), ...(root.badges ?? []), ...(root.alerts ?? []), ...(root.ribbon ? [root.ribbon] : [])]) ids.add(part.id);
+  // A list's filters and buttons too.
+  if (root.type === 'list') for (const part of [...(root.filters ?? []), ...(root.actions ?? [])]) ids.add(part.id);
   return ids;
 }
 
@@ -100,6 +102,11 @@ export function shownFields(page: Page): Set<string> {
     const title = root.title;
     for (const name of [title?.field, title?.subtitleField, title?.avatarField, root.statusbar?.field, ...(root.statButtons ?? []).map((s) => s.field)]) if (name) shown.add(name);
     for (const node of [...(title?.above ?? []), ...(title?.below ?? [])]) shown.add(node.field);
+  }
+  // A list names its fields in its columns, order, search, filters and groupings.
+  if (root.type === 'list') {
+    const read = (items: readonly FilterItem[]): string[] => items.flatMap((i) => ('any' in i ? read(i.any) : 'all' in i ? read(i.all) : [i.field]));
+    for (const name of [...root.columns, ...(root.sort ?? []).map((s) => s.field), ...(root.searchFields ?? []), ...(root.groupBy ?? []), ...(root.filters ?? []).flatMap((f) => read(f.filter))]) shown.add(name);
   }
   return shown;
 }

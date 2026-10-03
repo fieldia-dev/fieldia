@@ -13,6 +13,7 @@ import {
 } from '@fieldia/core';
 import { conditionToHide, type Condition } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
+import { listCommands, type ListCommands } from './list-commands';
 import { COLUMN_TYPES, columnKind, kindById, kindFits, kindsFor, orList, storedAs, type LineColumn, type QuestionKind } from './kinds';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
@@ -33,9 +34,10 @@ import { Refusal } from './refusal';
 export { columnKind, kindFits, kindOfField, kindsFor, QUESTION_KINDS, SCREEN_KINDS, storedAs } from './kinds';
 export type { LineColumn, QuestionKind } from './kinds';
 export type { HeaderCommands, HeaderPartKind, HeaderPartPatch } from './header-commands';
+export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-commands';
 
-/** What a page is for: a survey (wizard of steps), an app screen (sections), or a record's sheet. */
-export type PageKind = 'survey' | 'screen' | 'sheet';
+/** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
+export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
 
 const slug = (text: string, sep = '_') =>
   text
@@ -55,6 +57,17 @@ export function blankPage(kind: PageKind, title: string): Page {
       data: { kind: 'responses' },
       fields: {},
       layout: { type: 'wizard', id: 'steps', children: [{ type: 'step', id: 'step-1', label: 'Page 1', children: [] }] },
+    };
+  }
+  if (kind === 'list') {
+    // A list shows at least one column: the records' names, to begin with.
+    return {
+      fieldia: '0.1',
+      id,
+      title,
+      data: { kind: 'record', model: slug(title, '.') },
+      fields: { name: { type: 'char', label: 'Name' } },
+      layout: { type: 'list', id: 'list', columns: ['name'] },
     };
   }
   if (kind === 'sheet') {
@@ -149,7 +162,7 @@ export interface ModelField {
   field: Field;
 }
 
-export interface Designer extends HeaderCommands {
+export interface Designer extends HeaderCommands, ListCommands {
   getPage(): Page;
   /** The model's fields not on the page yet, in the model's order. Empty without a model. */
   modelFields(): ModelField[];
@@ -330,8 +343,18 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     model,
   });
 
+  const list = listCommands({
+    apply,
+    select(id) {
+      selected = id;
+      notify();
+    },
+    model,
+  });
+
   const designer: Designer = {
     ...header,
+    ...list,
     getPage: () => page,
     modelFields() {
       const shown = shownFields(page);
