@@ -201,6 +201,13 @@ export const FIELDIA_CSS = /* css */ `
 [dir="rtl"] .fd-switch:checked::after { transform: translateX(-14px); }
 .fd-choices { display: flex; flex-wrap: wrap; gap: 6px 18px; }
 .fd-choice { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+/* "Other:", with a box for an answer of one's own, a choice like the others. */
+.fd-choice-other { cursor: default; flex: 1 1 260px; max-width: 420px; min-width: 0; }
+.fd-choice-other-pick { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; flex: none; }
+.fd-choice-other .fd-other-input { flex: 1; min-width: 6em; width: auto; min-height: 30px; padding-block: 2px; }
+/* A scale's ends in words, under its first and last points. */
+.fd-scale-box { display: inline-grid; gap: 4px; max-width: 100%; }
+.fd-scale-ends { display: flex; justify-content: space-between; gap: 16px; font-size: 12.5px; color: var(--fd-muted); }
 .fd-points { display: flex; flex-wrap: wrap; gap: 6px; }
 .fd-points button {
   font: inherit; cursor: pointer; border: 1px solid var(--fd-border); background: var(--fd-surface);

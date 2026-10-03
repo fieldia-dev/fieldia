@@ -367,6 +367,64 @@ describe('choice widgets', () => {
     expect(valueOf(form)).toEqual(['yes']);
   });
 
+  it('offers “Other:” after the options, with a box for an answer of one’s own', () => {
+    const { form, el, widget } = setup({ type: 'selection', options, other: true }, { widget: 'radio' });
+    const radios = [...el.querySelectorAll<HTMLInputElement>('input[type=radio]')];
+    expect(radios).toHaveLength(3);
+    expect(el.querySelector('.fd-choice-other')?.textContent).toContain('Other:');
+    const own = q<HTMLInputElement>(el, '.fd-other-input');
+    expect(own.getAttribute('aria-label')).toBe('Your own answer');
+    // Typing picks “Other”, and the answer is what is typed.
+    own.value = 'Maybe later';
+    own.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(radios[2].checked).toBe(true);
+    expect(valueOf(form)).toBe('Maybe later');
+    // Another choice: that is the answer; the words wait in their box.
+    radios[0].click();
+    expect(valueOf(form)).toBe('yes');
+    expect(own.value).toBe('Maybe later');
+    // “Other” again: the words are the answer again, and the cursor goes to them.
+    radios[2].click();
+    expect(valueOf(form)).toBe('Maybe later');
+    expect(document.activeElement).toBe(own);
+    // Rubbed out: nothing answered.
+    own.value = '  ';
+    own.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(valueOf(form)).toBeNull();
+    // An answer of its own from the record: “Other”, with its words.
+    own.blur();
+    form.setValue('x', 'Next year');
+    expect(radios[2].checked).toBe(true);
+    expect(own.value).toBe('Next year');
+    widget.update({ ...form.getState(), value: 'Next year', values: form.getState().values, readonly: true, required: false, invalid: false } as never);
+    expect(own.disabled).toBe(true);
+  });
+
+  it('adds an answer of one’s own to the boxes ticked', () => {
+    const { form, el } = setup({ type: 'selection', options, multiple: true, other: true });
+    const boxes = [...el.querySelectorAll<HTMLInputElement>('input[type=checkbox]')];
+    const own = q<HTMLInputElement>(el, '.fd-other-input');
+    boxes[1].click();
+    own.value = 'Sometimes';
+    own.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(boxes[2].checked).toBe(true);
+    expect(valueOf(form)).toEqual(['no', 'Sometimes']);
+    // Untick “Other”: its words leave the answer.
+    boxes[2].click();
+    expect(valueOf(form)).toEqual(['no']);
+  });
+
+  it('says “Other” in the page’s language', () => {
+    const { el } = setup({ type: 'selection', options, other: true }, { widget: 'radio' }, undefined, 'ar');
+    expect(el.querySelector('.fd-choice-other')?.textContent).toContain('أخرى:');
+  });
+
+  it('puts words at the ends of a scale, when it has them', () => {
+    const { el } = setup({ type: 'integer', min: 1, max: 5 }, { widget: 'scale', options: { startLabel: 'Not likely', endLabel: 'Very likely' } });
+    expect([...el.querySelectorAll('.fd-scale-ends > span')].map((s) => s.textContent)).toEqual(['Not likely', 'Very likely']);
+    expect(el.querySelectorAll('[role=radiogroup] button')).toHaveLength(5);
+  });
+
   it('rates with stars, as a radio group a keyboard can use', () => {
     const { form, el } = setup({ type: 'integer', min: 1, max: 5 }, { widget: 'rating' });
     const group = q<HTMLElement>(el, '[role=radiogroup]');

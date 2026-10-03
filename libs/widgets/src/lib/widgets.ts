@@ -13,7 +13,7 @@ import type {
 } from '@fieldia/core';
 import type { PreferenceStore } from './preferences';
 import { formatNumber, normalizeNumber } from './numbers';
-import type { WidgetLabels } from './labels';
+import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import { charTagsWidget, linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
 import { linesWidget } from './lines';
 import { binaryWidget, imageWidget } from './files';
@@ -279,31 +279,62 @@ const selectWidget: WidgetFactory = ({ form, name, field, id, document }) => {
 };
 
 function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
-  return ({ form, name, field, id, document }) => {
+  return ({ form, name, field, id, document, labels, locale }) => {
     const choices = options(field);
+    const words = labels ?? WIDGET_LABELS[locale ?? 'en'];
     const group = make(document, 'div', { id, class: `fd-choices fd-choices-${kind}`, role: kind === 'radio' ? 'radiogroup' : 'group' });
     const inputs = choices.map((option, i) => {
       const input = make(document, 'input', { type: kind, name: id, value: String(i), id: `${id}-${i}` });
       group.append(make(document, 'label', { class: 'fd-choice', for: `${id}-${i}` }, input, make(document, 'span', {}, option.label)));
       return input;
     });
-    group.addEventListener('change', () => {
+    // "Other:", after the options: a choice of its own, with a box for the answer — as Google Forms has it.
+    const other = field.type === 'selection' && field.other === true;
+    const otherChoice = other ? make(document, 'input', { type: kind, name: id, value: 'other', id: `${id}-other` }) : null;
+    const otherBox = other ? make(document, 'input', { type: 'text', class: 'fd-input fd-other-input', 'aria-label': words.otherAnswer, autocomplete: 'off' }) : null;
+    if (otherChoice && otherBox) {
+      group.append(make(document, 'div', { class: 'fd-choice fd-choice-other' }, make(document, 'label', { class: 'fd-choice-other-pick', for: `${id}-other` }, otherChoice, make(document, 'span', {}, words.other)), otherBox));
+      // Typing picks "Other"; picking "Other" puts the cursor in its box.
+      otherBox.addEventListener('input', () => {
+        if (!otherChoice.checked) otherChoice.checked = true;
+        save();
+      });
+      otherChoice.addEventListener('change', () => {
+        if (otherChoice.checked) otherBox.focus();
+      });
+    }
+    /** The answer the boxes say now: the options picked, and the words of "Other" when it is picked and has any. */
+    function save() {
+      const own = otherChoice?.checked && otherBox && otherBox.value.trim() ? otherBox.value : null;
       if (kind === 'radio') {
         const chosen = inputs.findIndex((input) => input.checked);
-        form.setValue(name, chosen === -1 ? null : choices[chosen].value);
+        form.setValue(name, chosen !== -1 ? choices[chosen].value : own);
       } else {
-        form.setValue(name, choices.filter((_, i) => inputs[i].checked).map((option) => option.value));
+        form.setValue(name, [...choices.filter((_, i) => inputs[i].checked).map((option) => option.value), ...(own !== null ? [own] : [])]);
       }
+    }
+    group.addEventListener('change', (event) => {
+      if (event.target !== otherBox) save();
     });
+    const known = new Set(choices.map((o) => o.value as unknown));
     return {
       element: group,
-      focus: () => (inputs.find((input) => input.checked) ?? inputs[0])?.focus(),
+      focus: () => (inputs.find((input) => input.checked) ?? (otherChoice?.checked ? otherBox : null) ?? inputs[0])?.focus(),
       update(state) {
         const chosen = Array.isArray(state.value) ? state.value : [state.value];
         inputs.forEach((input, i) => {
           input.checked = chosen.includes(choices[i].value as never);
           input.disabled = state.readonly;
         });
+        if (otherChoice && otherBox) {
+          // A value not among the options is an answer of its own: "Other", with its words.
+          const own = chosen.find((v) => typeof v === 'string' && !known.has(v));
+          // Picked with its box still empty, "Other" stays picked until something else is.
+          const waiting = otherChoice.checked && !otherBox.value.trim() && (kind === 'checkbox' || chosen.every((v) => v === null || v === undefined));
+          otherChoice.checked = own !== undefined || waiting;
+          if (own !== undefined && document.activeElement !== otherBox) otherBox.value = own as string;
+          otherChoice.disabled = otherBox.disabled = state.readonly;
+        }
         describe(group, state);
       },
     };
@@ -312,7 +343,7 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
 
 /** Stars or numbers to pick from, as a radio group with arrow-key support. */
 function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
-  return ({ form, name, field, id, document }) => {
+  return ({ form, name, field, node, id, document }) => {
     const min = 'min' in field && field.min !== undefined ? field.min : style === 'rating' ? 1 : 0;
     const max = 'max' in field && field.max !== undefined ? field.max : style === 'rating' ? 5 : 10;
     const group = make(document, 'div', { id, class: `fd-points fd-${style}`, role: 'radiogroup' });
@@ -334,8 +365,14 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
       form.setValue(name, next);
       points[next - min]?.focus();
     });
+    // A scale's ends in words, under its first and last points: "Not likely" … "Very likely".
+    const ends = style === 'scale' ? [node.options?.['startLabel'], node.options?.['endLabel']].map((v) => (typeof v === 'string' ? v : '')) : ['', ''];
+    const element = ends.some(Boolean)
+      ? make(document, 'div', { class: 'fd-scale-box' }, group, make(document, 'div', { class: 'fd-scale-ends', 'aria-hidden': 'true' }, make(document, 'span', {}, ends[0]), make(document, 'span', {}, ends[1])))
+      : group;
+    if (ends.some(Boolean)) group.setAttribute('aria-description', ends.filter(Boolean).join(' … '));
     return {
-      element: group,
+      element,
       focus: () => (points.find((p) => p.getAttribute('aria-checked') === 'true') ?? points[0])?.focus(),
       update(state) {
         const value = typeof state.value === 'number' ? state.value : null;

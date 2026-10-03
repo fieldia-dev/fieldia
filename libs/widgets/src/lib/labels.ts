@@ -28,6 +28,9 @@ export interface WidgetLabels {
   chooseColumns: string;
   /** The button beside a date that opens its calendar. */
   chooseDate: string;
+  /** The choice after the options for an answer of one's own, and its box. */
+  other: string;
+  otherAnswer: string;
   previousMonth: string;
   nextMonth: string;
   /** Heads the column of week numbers: short, and in full. */
@@ -79,6 +82,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     openNamed: 'Open {name}',
     openLine: 'Open line',
     chooseDate: 'Choose a date',
+    other: 'Other:',
+    otherAnswer: 'Your own answer',
     previousMonth: 'Previous month',
     nextMonth: 'Next month',
     weekShort: 'Wk',
@@ -126,6 +131,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     openNamed: 'فتح {name}',
     openLine: 'فتح السطر',
     chooseDate: 'اختيار تاريخ',
+    other: 'أخرى:',
+    otherAnswer: 'إجابتك الخاصة',
     previousMonth: 'الشهر السابق',
     nextMonth: 'الشهر التالي',
     weekShort: 'أسبوع',
@@ -173,6 +180,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     openNamed: '{name} öffnen',
     openLine: 'Zeile öffnen',
     chooseDate: 'Datum auswählen',
+    other: 'Andere:',
+    otherAnswer: 'Eigene Antwort',
     previousMonth: 'Vorheriger Monat',
     nextMonth: 'Nächster Monat',
     weekShort: 'KW',
@@ -220,6 +229,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     openNamed: 'Ouvrir {name}',
     openLine: 'Ouvrir la ligne',
     chooseDate: 'Choisir une date',
+    other: 'Autre :',
+    otherAnswer: 'Votre propre réponse',
     previousMonth: 'Mois précédent',
     nextMonth: 'Mois suivant',
     weekShort: 'Sem.',
