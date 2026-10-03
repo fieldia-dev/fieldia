@@ -90,11 +90,13 @@ describe('the bar on the field being edited', () => {
   });
 
   it('duplicates the field, picking the copy, and deletes it', () => {
-    const { designer, email, bar, button } = setup();
+    const { designer, email, credit, bar, button } = setup();
+    designer.select(email);
     button(bar(email), 'Duplicate').click();
     const copy = designer.getState().selected as string;
     expect(copy).not.toBe(email);
-    expect(nodes(designer.getPage()).map((n) => n.id)).toContain(copy);
+    // Right after the field it copies, and picked.
+    expect(nodes(designer.getPage()).map((n) => n.id)).toEqual([email, copy, credit]);
     button(bar(copy), 'Delete').click();
     expect(nodes(designer.getPage()).map((n) => n.id)).not.toContain(copy);
   });

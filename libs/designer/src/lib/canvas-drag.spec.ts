@@ -116,6 +116,34 @@ describe('dragging on the canvas', () => {
     expect(host.classList.contains('fd-dragging')).toBe(false);
   });
 
+  it('takes a press that wobbles a pixel or two for a click, not a drag', () => {
+    const { card, pointer, dropped } = canvas();
+    let clicks = 0;
+    card('customer').addEventListener('click', () => clicks++);
+    pointer('pointerdown', card('customer'), 100, 60);
+    pointer('pointermove', document, 102, 61);
+    expect(document.querySelector('.fd-drag-ghost')).toBeNull();
+    pointer('pointerup', card('customer'), 102, 61);
+    card('customer').click();
+    expect(dropped).toEqual([]);
+    expect(clicks).toBe(1);
+  });
+
+  it('moves the field being edited by its grip only: elsewhere on it the press is for its boxes and bar', () => {
+    const { card, pointer, dropped } = canvas();
+    const editing = card('customer');
+    editing.classList.add('fd-editing');
+    const bar = document.createElement('button');
+    editing.append(bar);
+    pointer('pointerdown', editing, 100, 60);
+    pointer('pointermove', document, 300, 470);
+    pointer('pointerup', document, 300, 470);
+    pointer('pointerdown', bar, 100, 60);
+    pointer('pointermove', document, 300, 470);
+    pointer('pointerup', document, 300, 470);
+    expect(dropped).toEqual([]);
+  });
+
   it('drops nothing outside every section, and Escape calls a drag off', () => {
     const { card, pointer, dropped } = canvas();
     pointer('pointerdown', card('date'), 500, 60);

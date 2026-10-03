@@ -128,6 +128,17 @@ describe('the screen canvas — a field edited where it stands', () => {
     expect(field.options.map((o) => o.label)).toEqual(['Send a quote']);
   });
 
+  it('puts the next option right under the one Enter is pressed in', () => {
+    const { designer, card, step } = visit();
+    designer.setOptions(step, ['Send a quote', 'Close']);
+    card(step).click();
+    const inputs = () => [...card(step).querySelectorAll<HTMLInputElement>('.fd-q-option input')];
+    inputs()[0].focus();
+    inputs()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(inputs().map((i) => i.value)).toEqual(['Send a quote', 'Option 3', 'Close']);
+    expect(document.activeElement).toBe(inputs()[1]);
+  });
+
   it('takes an emptied option out from the middle, the others keeping their words', () => {
     const { designer, card, step } = visit();
     designer.setOptions(step, ['Send a quote', 'Book a visit', 'Close']);
