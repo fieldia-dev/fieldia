@@ -38,6 +38,13 @@ function kind(host: Element, id: string) {
   (document.querySelector(`.fd-menu [data-item="${id}"]`) as HTMLElement).click();
 }
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+/** An item of a card's ⋮ menu, by its words; undefined when the menu has no such item. */
+function moreItem(card: Element, words: string): HTMLElement | undefined {
+  button(card, 'More options').click();
+  const found = [...document.querySelectorAll<HTMLElement>('.fd-menu [role^="menuitem"]')].find((i) => i.textContent?.trim() === words);
+  if (!found) (document.querySelector('.fd-menu') as HTMLElement | null)?.remove();
+  return found;
+}
 
 describe('survey editor — questions as people see them, the one picked open', () => {
   it('adds a question, opens it, and puts the cursor in its words, every word selected', () => {
@@ -51,10 +58,11 @@ describe('survey editor — questions as people see them, the one picked open', 
     expect(nodes(designer.getPage())).toHaveLength(1);
   });
 
-  it('shows a question not picked as people will see it: its words, its help and its real answer box, not usable here', () => {
+  it('shows a question not picked as people will see it: its words, its help and its answer, not usable here', () => {
     const { host, designer } = mount();
     button(host, 'Add question').click();
     type(label(open(host)), 'Your name');
+    moreItem(open(host), 'Description')?.click();
     type(open(host).querySelector('.fd-q-help') as HTMLInputElement, 'As on your badge');
     designer.updateQuestion(nodes(designer.getPage())[0].id, { required: true });
     designer.select(null);
@@ -70,7 +78,12 @@ describe('survey editor — questions as people see them, the one picked open', 
     expect((cards(host)[0].querySelector('.fd-help') as HTMLElement).hidden).toBe(true);
     const answer = card.querySelector('.fd-q-answer') as HTMLElement;
     expect(answer.hasAttribute('inert')).toBe(true);
-    expect(answer.querySelector('input')).not.toBeNull();
+    expect(answer.querySelector('.fd-q-preview')?.textContent).toBe('Short answer text');
+    // A kind with no words for its answer shows its real answer box.
+    const rating = designer.addQuestion('rating') as string;
+    designer.select(null);
+    expect(host.querySelector(`.fd-q[data-node="${rating}"] .fd-q-answer .fd-q-preview`)).toBeNull();
+    expect(host.querySelector(`.fd-q[data-node="${rating}"] .fd-q-answer`)?.children.length).toBe(1);
   });
 
   it('opens a question where it is clicked, the cursor in its words when they were clicked', () => {
@@ -134,13 +147,14 @@ describe('survey editor — questions as people see them, the one picked open', 
     type(label(open(host)), 'First');
     button(host, 'Add question').click();
     type(label(open(host)), 'Second');
-    button(open(host), 'Move up').click();
+    moreItem(open(host), 'Move up')?.click();
     const labels = () => nodes(designer.getPage()).map((n) => fieldOf(designer.getPage(), n).label);
     expect(labels()).toEqual(['Second', 'First']);
     expect(cards(host)[0].classList.contains('fd-q-selected')).toBe(true);
     // At the top, it cannot go further up.
-    expect(button(open(host), 'Move up')).toBeUndefined();
-    expect(button(open(host), 'Move down')).toBeTruthy();
+    expect(moreItem(open(host), 'Move up')).toBeUndefined();
+    expect(moreItem(open(host), 'Move down')).toBeTruthy();
+    (document.querySelector('.fd-menu') as HTMLElement | null)?.remove();
     button(open(host), 'Duplicate').click();
     expect(labels()).toEqual(['Second', 'Second', 'First']);
     // The copy is picked, right after what it copies.
@@ -300,9 +314,9 @@ describe('survey editor — a question shown for some answers', () => {
     const { designer, card, coming, role, why, field, invisible } = threeQuestions();
     designer.select(coming);
     expect(card(coming).classList.contains('fd-q-selected')).toBe(true);
-    expect(button(card(coming), 'Show only when…')).toBeUndefined();
+    expect(moreItem(card(coming), 'Show only when…')).toBeUndefined();
     designer.select(why);
-    button(card(why), 'Show only when…').click();
+    moreItem(card(why), 'Show only when…')?.click();
     const first = selectIn(card(why), 'Show this question');
     expect([...first.options].map((o) => o.textContent)).toEqual(['Always', 'Coming?', 'Role']);
     expect(invisible(why)).toBe(`${field(coming)} != True`);
@@ -319,7 +333,7 @@ describe('survey editor — a question shown for some answers', () => {
     expect(selectIn(card(why), 'Match').closest('[hidden]')).not.toBeNull();
     choose(selectIn(card(why), 'Show this question'), '');
     expect(invisible(why)).toBeUndefined();
-    expect(button(card(why), 'Show only when…')).toBeTruthy();
+    expect(moreItem(card(why), 'Show only when…')).toBeTruthy();
   });
 
   it('marks a question not picked that shows only for some answers', () => {

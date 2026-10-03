@@ -11,7 +11,7 @@ export const DESIGNER_CSS = /* css */ `
 .fd-designer-issues { white-space: pre-line; }
 .fd-designer-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr); gap: 20px; align-items: start; }
 .fd-survey-body { grid-template-columns: 228px minmax(0, 1fr); gap: 16px; }
-.fd-survey-body > .fd-designer-editor { max-width: 860px; }
+.fd-survey-body > .fd-designer-editor { max-width: none; }
 @container (max-width: 900px) { .fd-designer-body, .fd-survey-body { grid-template-columns: minmax(0, 1fr); } .fd-survey-body > .fd-toolbox { position: static; max-height: none; } .fd-survey-body .fd-tools { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); } }
 .fd-designer-editor { display: grid; gap: 14px; justify-items: start; }
 .fd-designer-editor > * { width: 100%; }
@@ -70,12 +70,18 @@ export const DESIGNER_CSS = /* css */ `
 .fd-q-help { font-size: 13px; }
 .fd-q-sep { width: 1px; height: 24px; background: var(--fd-border); margin-inline: 6px; }
 .fd-q-required-words { font-size: 13px; }
-.fd-switch { all: unset; position: relative; flex: none; width: 36px; height: 20px; border-radius: 10px; background: var(--fd-border-strong); cursor: pointer; }
-.fd-switch::after { content: ""; position: absolute; top: 2px; inset-inline-start: 2px; width: 16px; height: 16px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); transition: inset-inline-start 0.15s ease; }
-.fd-switch[aria-checked="true"] { background: var(--fd-accent); }
-.fd-switch[aria-checked="true"]::after { inset-inline-start: 18px; }
+/* Material's switch, as Google Forms has it: a 14px track, a 20px thumb that slides over in 90ms. */
+.fd-switch { all: unset; position: relative; flex: none; width: 36px; height: 20px; cursor: pointer; border-radius: 10px; }
+.fd-switch::before { content: ""; position: absolute; inset-inline: 0; top: 3px; height: 14px; border-radius: 7px; background: var(--fd-border-strong); transition: background-color 90ms cubic-bezier(0.4, 0, 0.2, 1); }
+.fd-switch::after {
+  content: ""; position: absolute; top: 0; inset-inline-start: 0; width: 20px; height: 20px; border-radius: 50%; background: #ffffff;
+  box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2), 0 1px 1px 0 rgba(0, 0, 0, 0.14), 0 1px 3px 0 rgba(0, 0, 0, 0.12);
+  transition: inset-inline-start 90ms cubic-bezier(0.4, 0, 0.2, 1), background-color 90ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.fd-switch[aria-checked="true"]::before { background: color-mix(in srgb, var(--fd-accent) 54%, transparent); }
+.fd-switch[aria-checked="true"]::after { inset-inline-start: 16px; background: var(--fd-accent); }
 .fd-switch:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { .fd-switch::after { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .fd-switch::before, .fd-switch::after { transition: none; } }
 .fd-q-options { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .fd-q-option { display: flex; gap: 8px; align-items: center; }
 .fd-q-bullet { color: var(--fd-muted); width: 16px; text-align: center; }
@@ -248,6 +254,18 @@ export const DESIGNER_CSS = /* css */ `
 .fd-menu-item[aria-checked="true"] { color: var(--fd-accent); font-weight: 600; }
 .fd-menu-item[aria-checked="true"]::after { content: "✓"; margin-inline-start: auto; }
 .fd-menu-note { font-size: 12px; color: var(--fd-muted); margin: 4px 8px; line-height: 1.4; }
+.fd-menu { animation: fd-menu-in 120ms cubic-bezier(0, 0, 0.2, 1); transform-origin: top center; }
+@keyframes fd-menu-in { from { opacity: 0; transform: scale(0.94); } }
+.fd-menu-divider { height: 1px; background: var(--fd-border); margin: 5px -6px; }
+/* Google Forms' roomy menu: full-width rows, an icon on each, the choice tinted. */
+.fd-menu-roomy { padding: 8px 0; min-width: 224px; border-radius: 6px; }
+.fd-menu-roomy .fd-menu-title { padding: 4px 16px 6px; }
+.fd-menu-roomy .fd-menu-item { min-height: 44px; padding: 0 16px; gap: 16px; border-radius: 0; font-size: 14px; }
+.fd-menu-roomy .fd-menu-item > .fd-dicon { width: 22px; height: 22px; color: var(--fd-muted); flex: none; }
+.fd-menu-roomy .fd-menu-item[aria-checked="true"] { background: var(--fd-accent-soft); }
+.fd-menu-roomy .fd-menu-item[aria-checked="true"] > .fd-dicon { color: var(--fd-accent); }
+.fd-menu-roomy .fd-menu-divider { margin: 8px 0; }
+@media (prefers-reduced-motion: reduce) { .fd-menu { animation: none; } }
 
 /* Dragging: a copy follows the pointer, a line shows where it lands. */
 .fd-drag-ghost { position: fixed; z-index: 100; pointer-events: none; margin: 0; height: auto !important; opacity: 0.92; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2); outline: 1px solid var(--fd-accent) !important; background: var(--fd-surface); border-radius: 6px; transform: rotate(-1deg); }
@@ -274,6 +292,105 @@ export const DESIGNER_CSS = /* css */ `
 .fd-properties-hint { color: var(--fd-muted); font-size: 13px; margin: 0; }
 .fd-kind-note { font-size: 12px; margin-block-start: -4px; }
 .fd-prop-when { gap: 6px; justify-items: start; }
+
+/* ---- The survey, the Google Forms way ------------------------------------------------------------
+   On a page tinted with the accent: a card heading the form, then quiet white cards 8px round, 24px in,
+   12px apart, no wider than 770px. The card picked lifts, a 6px bar down its side; its words sit in a
+   filled box whose line grows from the middle; its tools are beside it, following it down the page. */
+.fd-survey-canvas { background: color-mix(in srgb, var(--fd-accent) 8%, var(--fd-surface)); border-radius: var(--fd-radius); padding: 16px 68px 28px 16px; padding-inline: 16px 68px; }
+.fd-survey-column { position: relative; width: 100%; max-width: 770px; margin-inline: auto; display: grid; gap: 12px; }
+.fd-survey-column > .fd-button { justify-self: start; }
+.fd-line { position: relative; display: block; border-block-end: 1px solid transparent; }
+.fd-line > input { font: inherit; color: inherit; background: none; border: 0; outline: none; width: 100%; box-sizing: border-box; padding: 6px 0; margin: 0; }
+.fd-line > input::placeholder { color: var(--fd-muted); }
+/* The growing line is the focus here, as in Google Forms: no ring around it too. */
+.fd-designer .fd-line > input:focus, .fd-designer .fd-line > input:focus-visible { outline: none; box-shadow: none; }
+.fd-line:hover { border-block-end-color: var(--fd-border); }
+.fd-line::after { content: ""; position: absolute; inset-inline: 0; bottom: -1px; height: 2px; background: var(--fd-accent); transform: scaleX(0); transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1); }
+.fd-line:focus-within::after { transform: scaleX(1); }
+.fd-survey-head { position: relative; display: grid; gap: 6px; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: 8px; padding: 26px 24px 22px; }
+.fd-survey-head::before { content: ""; position: absolute; top: -1px; inset-inline: -1px; height: 10px; background: var(--fd-accent); border-radius: 8px 8px 0 0; }
+.fd-survey-head-title { font-size: 32px !important; line-height: 1.25; }
+.fd-survey-head-description { font-size: 14px !important; }
+.fd-survey-canvas .fd-designer-pages { gap: 12px; }
+/* A page: its own card, its number on a tab over it. */
+.fd-survey-canvas .fd-design-step { background: none; border: 0; padding: 0; gap: 12px; border-radius: 0; }
+.fd-survey-canvas .fd-step-head {
+  position: relative; display: grid; gap: 8px; margin-block-start: 30px; padding: 18px 24px 20px;
+  background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: 0 8px 8px 8px;
+}
+.fd-survey-canvas .fd-step-number { position: absolute; bottom: 100%; inset-inline-start: -1px; border-radius: 8px 8px 0 0; padding: 5px 14px; font-size: 13px; font-weight: 500; }
+.fd-step-head-row { display: flex; gap: 8px; align-items: center; }
+.fd-step-title-box { flex: 1; min-width: 0; }
+.fd-survey-canvas .fd-step-title { font-size: 22px; font-weight: 400; }
+.fd-survey-canvas .fd-step-selected { border: 0; }
+.fd-survey-canvas .fd-step-selected > .fd-step-head { box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2), 0 1px 1px 0 rgba(0, 0, 0, 0.14), 0 1px 3px 0 rgba(0, 0, 0, 0.12); }
+.fd-survey-canvas .fd-step-selected > .fd-step-head::after { content: ""; position: absolute; inset-block: -1px; inset-inline-start: -1px; width: 6px; background: var(--fd-accent); border-end-start-radius: 8px; }
+.fd-survey-canvas .fd-step-cards { gap: 12px; }
+.fd-survey-canvas .fd-add-question { justify-self: start; color: var(--fd-muted); }
+.fd-survey-canvas .fd-add-question:hover { color: var(--fd-accent); }
+/* A question: flat until picked. */
+.fd-survey-canvas .fd-q { border: 1px solid var(--fd-border); border-radius: 8px; padding: 24px; gap: 12px; }
+.fd-survey-canvas .fd-q-closed:hover { border-color: var(--fd-border); }
+.fd-survey-canvas .fd-q-title { font-size: 16px; }
+.fd-survey-canvas .fd-q-selected { padding-block-start: 24px; box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2), 0 1px 1px 0 rgba(0, 0, 0, 0.14), 0 1px 3px 0 rgba(0, 0, 0, 0.12); }
+.fd-survey-canvas .fd-q-selected::before { content: ""; position: absolute; inset-block: -1px; inset-inline-start: -1px; width: 6px; background: var(--fd-accent); border-start-start-radius: 8px; border-end-start-radius: 8px; }
+/* The six dots, across the top, only where the pointer is. */
+.fd-survey-canvas .fd-q-grip { top: 0; height: 24px; transform: translateX(-50%) rotate(90deg); opacity: 0; transition: opacity 150ms; }
+.fd-survey-canvas .fd-q:hover .fd-q-grip, .fd-survey-canvas .fd-q-grip:focus-visible { opacity: 1; }
+.fd-survey-canvas .fd-q-head { gap: 16px; align-items: start; }
+.fd-q-label-box { background: color-mix(in srgb, var(--fd-text) 3%, var(--fd-surface)); border-block-end: 1px solid var(--fd-muted); border-radius: 4px 4px 0 0; }
+.fd-q-label-box:hover { border-block-end-color: var(--fd-text); }
+.fd-q-label-box > .fd-q-label { padding: 16px; min-height: 56px; font-size: 16px; }
+.fd-q-help-box { border-block-end-color: var(--fd-border); }
+.fd-q-help-box > .fd-q-help { font-size: 14px; }
+.fd-survey-canvas .fd-q-kind { min-height: 48px; min-width: 222px; padding: 0 14px; gap: 12px; border-radius: 4px; font-weight: 500; }
+.fd-survey-canvas .fd-q-kind-icon .fd-dicon { color: var(--fd-muted); }
+/* What goes in the answer, said on a dotted line. */
+.fd-q-preview { color: var(--fd-muted); font-size: 14px; padding-block: 8px 6px; border-block-end: 1px dotted color-mix(in srgb, var(--fd-text) 38%, transparent); width: min(50%, 380px); }
+.fd-q-preview-long { width: min(80%, 600px); }
+.fd-q-preview-list { list-style: none; margin: 0; padding: 0; border: 0; width: auto; display: grid; gap: 10px; color: var(--fd-text); }
+/* Options: a ring or a box, the words on a line that shows when pointed at, × at the end. */
+.fd-survey-canvas .fd-q-options { gap: 0; }
+.fd-survey-canvas .fd-q-option { min-height: 44px; gap: 12px; }
+.fd-survey-canvas .fd-q-bullet { font-size: 0; flex: none; width: 20px; height: 20px; box-sizing: border-box; border: 2px solid var(--fd-border-strong); border-radius: 50%; }
+.fd-survey-canvas [data-multiple] .fd-q-bullet { border-radius: 3px; }
+.fd-survey-canvas .fd-q-option > .fd-input { flex: 1; min-width: 0; border: 0; border-block-end: 1px solid transparent; border-radius: 0; background: none; box-shadow: none; padding: 6px 0; min-height: 0; font-size: 14.5px; }
+.fd-survey-canvas .fd-q-option > .fd-input:hover { border-block-end-color: var(--fd-border); }
+.fd-survey-canvas .fd-q-option > .fd-input:focus { border-block-end: 2px solid var(--fd-accent); padding-block-end: 5px; outline: none; box-shadow: none; }
+.fd-survey-canvas .fd-q-option > .fd-icon-button { opacity: 0.55; font-size: 20px; }
+.fd-survey-canvas .fd-q-option > .fd-icon-button:hover { opacity: 1; }
+.fd-survey-canvas .fd-q-option-box { gap: 0; }
+.fd-survey-canvas .fd-q-option-box > .fd-button-link { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0; color: var(--fd-muted); font-weight: 400; text-decoration: none; }
+.fd-survey-canvas .fd-q-option-box > .fd-button-link::before { content: ""; width: 20px; height: 20px; box-sizing: border-box; border: 2px solid var(--fd-border); border-radius: 50%; }
+.fd-survey-canvas .fd-q-option-box[data-multiple] > .fd-button-link::before { border-radius: 3px; }
+.fd-survey-canvas .fd-q-option-box > .fd-button-link:hover { color: var(--fd-text); }
+/* The foot: copy, delete, a line, Required, ⋮ — at the end, as Google Forms has them. */
+.fd-survey-canvas .fd-q-foot { justify-content: flex-end; gap: 2px; min-height: 48px; padding-block-start: 8px; margin-block-start: 4px; }
+.fd-q-tool { all: unset; box-sizing: border-box; width: 40px; height: 40px; border-radius: 50%; display: inline-grid; place-items: center; color: var(--fd-muted); cursor: pointer; transition: background-color 150ms; }
+.fd-q-tool:hover, .fd-q-tool[aria-expanded="true"] { background: color-mix(in srgb, var(--fd-text) 7%, transparent); color: var(--fd-text); }
+.fd-q-tool:focus-visible { outline: 2px solid var(--fd-focus); }
+.fd-q-tool > .fd-dicon { width: 21px; height: 21px; }
+.fd-q-tool-danger:hover { color: var(--fd-error); }
+.fd-survey-canvas .fd-q-sep { height: 32px; margin-inline: 10px; }
+.fd-survey-canvas .fd-q-required-words { font-size: 14px; font-weight: 500; margin-inline-end: 8px; }
+.fd-survey-canvas .fd-q-foot .fd-switch { margin-inline-end: 6px; }
+/* The tools beside the card picked, level with its top, sliding to the next one picked. */
+.fd-q-rail {
+  position: absolute; top: 0; inset-inline-start: calc(100% + 12px); z-index: 4; display: grid; gap: 2px; padding: 4px;
+  background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: 8px;
+  box-shadow: 0 2px 1px -1px rgba(0, 0, 0, 0.2), 0 1px 1px 0 rgba(0, 0, 0, 0.14), 0 1px 3px 0 rgba(0, 0, 0, 0.12);
+  transform: translateY(var(--fd-rail-y, 0px)); transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.fd-rail-button { all: unset; box-sizing: border-box; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: var(--fd-muted); cursor: pointer; }
+.fd-rail-button:hover { background: color-mix(in srgb, var(--fd-text) 7%, transparent); color: var(--fd-text); }
+.fd-rail-button:focus-visible { outline: 2px solid var(--fd-focus); }
+.fd-rail-button > .fd-dicon { width: 22px; height: 22px; }
+@container (max-width: 620px) {
+  .fd-survey-canvas { padding-inline: 10px; }
+  .fd-q-rail { position: sticky; bottom: 12px; inset-inline-start: auto; justify-self: center; display: flex; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .fd-line::after, .fd-q-rail, .fd-survey-canvas .fd-q-grip { transition: none; } }
 .fd-props > .fd-prop > .fd-button { justify-self: start; }
 .fd-list-search-fields { display: flex; flex-wrap: wrap; gap: 4px 14px; }
 .fd-list-filters { display: grid; gap: 8px; }

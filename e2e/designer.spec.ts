@@ -114,9 +114,14 @@ test.describe('survey designer', () => {
     // The first question, opened, has nothing before it to depend on.
     await card(0).click();
     await expect(card(0)).toHaveClass(/fd-q-selected/);
-    await expect(card(0).getByRole('button', { name: 'Show only when…' })).toBeHidden();
+    // The rest of a question is under ⋮, as in Google Forms.
+    await card(0).getByRole('button', { name: 'More options' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Move down' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Show only when…' })).toHaveCount(0);
+    await page.keyboard.press('Escape');
     await card(2).click();
-    await card(2).getByRole('button', { name: 'Show only when…' }).click();
+    await card(2).getByRole('button', { name: 'More options' }).click();
+    await page.getByRole('menuitem', { name: 'Show only when…' }).click();
     await card(2).getByLabel('When the answer is').selectOption({ label: 'is No' });
     await card(2).getByRole('button', { name: 'Add a condition' }).click();
     await card(2).getByLabel('Condition 2', { exact: true }).selectOption({ label: 'Role' });
@@ -188,5 +193,55 @@ test.describe('survey designer', () => {
     await picked(page).getByRole('button', { name: 'Delete' }).click();
     await expect(page.locator('.fd-designer-issues')).toContainText('which is not a field of this page');
     await expect(page.locator('.fd-q')).toHaveCount(1);
+  });
+});
+
+/** The cards, as Google Forms draws and moves them: measured in the browser, not read from the stylesheet. */
+test.describe('survey designer · the Google Forms way', () => {
+  test('quiet cards, the one picked lifted with its bar, its line growing from the middle, the tools level with it', async ({ page }) => {
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+    await page.goto('/designer/?start=survey');
+    const cards = page.locator('.fd-q');
+    await expect(cards.first()).toBeVisible();
+
+    // The heading card: a 10px band of the accent over it.
+    const band = await page.locator('.fd-survey-head').evaluate((head) => getComputedStyle(head, '::before').height);
+    expect(band).toBe('10px');
+    // Not picked, a card is flat: no shadow.
+    expect(await cards.nth(1).evaluate((card) => getComputedStyle(card).boxShadow)).toBe('none');
+
+    await cards.nth(1).click();
+    const open = picked(page);
+    await expect(open).toBeVisible();
+    expect(await open.evaluate((card) => getComputedStyle(card).boxShadow)).not.toBe('none');
+    expect(await open.evaluate((card) => getComputedStyle(card, '::before').width)).toBe('6px');
+
+    // The tools slide to the card picked and stop level with its top.
+    const rail = page.locator('.fd-q-rail');
+    await expect.poll(async () => Math.abs((await rail.boundingBox())!.y - (await open.boundingBox())!.y), { timeout: 2000 }).toBeLessThanOrEqual(1);
+    await screen(page, 'designer-forms-open', { viewport: true });
+
+    // The line under its words grows from the middle once they are typed in.
+    const line = open.locator('.fd-q-label-box');
+    const scale = () => line.evaluate((box) => new DOMMatrix(getComputedStyle(box, '::after').transform).a);
+    expect(await scale()).toBe(0);
+    await open.locator('.fd-q-label').click();
+    await expect.poll(scale, { timeout: 2000 }).toBe(1);
+
+    // A card further down: the tools follow it there.
+    const far = cards.nth(4);
+    await far.scrollIntoViewIfNeeded();
+    await far.click();
+    await expect.poll(async () => Math.abs((await rail.boundingBox())!.y - (await picked(page).boundingBox())!.y), { timeout: 2000 }).toBeLessThanOrEqual(1);
+    // A question added from them lands after the card, and takes the cursor.
+    const before = await cards.count();
+    await rail.getByRole('button', { name: 'Add a question after this one' }).click();
+    await expect(cards).toHaveCount(before + 1);
+    await expect(picked(page).locator('.fd-q-label')).toBeFocused();
+    await page.keyboard.type('Anything else?');
+    await expect(picked(page).locator('.fd-q-label')).toHaveValue('Anything else?');
+    await screen(page, 'designer-forms-added', { viewport: true });
+    expect(problems).toEqual([]);
   });
 });

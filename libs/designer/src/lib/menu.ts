@@ -15,6 +15,8 @@ export interface MenuItem {
   checked?: boolean;
   /** Starts a group of items, under this heading. */
   heading?: string;
+  /** Starts a group of items, under a line. */
+  divider?: boolean;
 }
 
 export interface MenuOptions {
@@ -24,6 +26,13 @@ export interface MenuOptions {
   items: MenuItem[];
   /** A line under the items: why these, and not others. */
   note?: string;
+  /**
+   * Things to do rather than one to choose: items are actions, and an item
+   * with `checked` set is a switch, on or off.
+   */
+  actions?: boolean;
+  /** Google Forms' roomy rows, for a menu with an icon on each. */
+  roomy?: boolean;
   onPick(id: string): void;
 }
 
@@ -33,14 +42,16 @@ export function openMenu(options: MenuOptions): { element: HTMLElement; close():
   open?.close(false);
   const { el, anchor } = options;
   const doc = anchor.ownerDocument;
-  const menu = el('div', { class: 'fd-menu', role: 'menu', 'aria-label': options.title });
+  const menu = el('div', { class: options.roomy ? 'fd-menu fd-menu-roomy' : 'fd-menu', role: 'menu', 'aria-label': options.title });
   if (options.title) menu.append(el('div', { class: 'fd-menu-title', 'aria-hidden': 'true' }, options.title));
   const buttons: HTMLButtonElement[] = [];
   for (const item of options.items) {
+    if (item.divider && buttons.length) menu.append(el('div', { class: 'fd-menu-divider', role: 'separator' }));
     if (item.heading) menu.append(el('div', { class: 'fd-menu-heading', role: 'presentation' }, item.heading));
+    const role = !options.actions ? 'menuitemradio' : item.checked === undefined ? 'menuitem' : 'menuitemcheckbox';
     const button = el(
       'button',
-      { type: 'button', class: 'fd-menu-item', role: 'menuitemradio', 'aria-checked': String(!!item.checked), 'data-item': item.id, tabindex: '-1' },
+      { type: 'button', class: 'fd-menu-item', role, 'aria-checked': role === 'menuitem' ? undefined : String(!!item.checked), 'data-item': item.id, tabindex: '-1' },
       ...(item.icon ? [designerIcon(doc, item.icon)] : []),
       el('span', { class: 'fd-menu-label' }, item.label)
     );
@@ -94,7 +105,8 @@ export function openMenu(options: MenuOptions): { element: HTMLElement; close():
   const below = r.bottom + 6;
   const top = view && below + height > view.innerHeight - 8 && r.top - height - 6 > 8 ? r.top - height - 6 : below;
   Object.assign(menu.style, { left: `${left}px`, top: `${top}px` });
-  (buttons.find((b) => b.getAttribute('aria-checked') === 'true') ?? buttons[0])?.focus();
+  // The current choice takes the keyboard first; in a menu of things to do, the first of them.
+  (options.actions ? buttons[0] : buttons.find((b) => b.getAttribute('aria-checked') === 'true') ?? buttons[0])?.focus();
   open = { close };
   return { element: menu, close: () => close(false) };
 }

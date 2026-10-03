@@ -152,6 +152,8 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
       const multiple = field.type === 'selection' && field.multiple === true;
       element.hidden = !choices;
       if (!choices) return;
+      // Rings for one of them, boxes for several: the look draws them.
+      element.toggleAttribute('data-multiple', multiple);
       while (list.children.length > choices.length) list.lastElementChild?.remove();
       while (list.children.length < choices.length) {
         const index = list.children.length;

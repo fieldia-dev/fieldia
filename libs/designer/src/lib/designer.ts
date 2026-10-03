@@ -185,7 +185,12 @@ export interface Designer extends HeaderCommands, ListCommands {
   duplicateNode(id: string): string | false;
   removeNode(id: string): boolean;
   /** A step for a survey, a section for a screen or a sheet, or a section in a tab (`parent`). Returns its id. */
-  addContainer(label: string, where?: { parent?: string }): string | false;
+  /**
+   * A section, or a survey's page: at the end, in a tab (`parent`), or — a
+   * page — right after a question (`after`), the questions under it on its
+   * page moving onto the new one, as Google Forms adds a section.
+   */
+  addContainer(label: string, where?: { parent?: string; after?: string }): string | false;
   /** A screen of sections becomes a sheet, or a sheet without tabs a screen of sections. */
   setLayoutKind(kind: 'sections' | 'sheet'): boolean;
   /** A sheet's title: a text field taken out of its section, or `null` to put it back first in the first section. */
@@ -615,7 +620,14 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
           tab.tab.children.push(section());
         } else if (root.type === 'wizard') {
           created = nextName((name) => ids.has(name), 'step', '-');
-          root.children.push({ type: 'step', id: created, label, children: [] });
+          const at = where.after ? root.children.findIndex((step) => step.children.some((n) => n.id === where.after)) : -1;
+          if (where.after && at === -1) throw new Refusal(`There is no question "${where.after}"`);
+          if (at === -1) root.children.push({ type: 'step', id: created, label, children: [] });
+          else {
+            const step = root.children[at];
+            const cut = step.children.findIndex((n) => n.id === where.after) + 1;
+            root.children.splice(at + 1, 0, { type: 'step', id: created, label, children: step.children.splice(cut) });
+          }
         } else if (root.type === 'sections' || root.type === 'sheet') root.children.push(section());
         else throw new Refusal('This page has no steps or sections to add to');
       });
