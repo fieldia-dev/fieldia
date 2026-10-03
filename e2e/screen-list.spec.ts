@@ -6,7 +6,7 @@ import { expectNoSidewaysScroll, screen } from './support';
 const headings = (page: Page) => page.locator('.fd-list-canvas .fd-list-table th[data-node]');
 const heading = (page: Page, label: string) => headings(page).filter({ hasText: label });
 const columns = (page: Page) => page.evaluate(() => (window.fieldiaDesigner.designer.getPage().layout as unknown as { columns: string[] }).columns);
-const centre = async (page: Page, label: string) => {
+const spot = async (page: Page, label: string) => {
   const box = (await heading(page, label).boundingBox())!;
   return { x: box.x + box.width / 2, y: box.y + box.height / 2, left: box.x, right: box.x + box.width };
 };
@@ -20,10 +20,19 @@ test.describe('screen designer · list', () => {
     await expect(page.locator('.fd-list-canvas tbody tr')).toHaveCount(5);
     await expect(page.locator('.fd-properties .fd-panel-title')).toHaveText('List');
     await screen(page, 'screen-list-start', { viewport: true });
+    // "+ Column" stays at the row's end like a frozen column: scrolled to its end, the table shows the last heading whole, never under it.
+    await page.locator('.fd-canvas-list-scroll').scrollIntoViewIfNeeded();
+    await page.locator('.fd-canvas-list-scroll').evaluate((box) => (box.scrollLeft = box.scrollWidth));
+    const whole = await headings(page).last().evaluate((th) => {
+      const r = th.getBoundingClientRect();
+      return [r.left + 4, r.right - 4].every((x) => th.contains(document.elementFromPoint(x, r.top + r.height / 2)));
+    });
+    expect(whole, 'the last heading is under "+ Column"').toBe(true);
 
-    // Credit limit carried to just before Email: a line down the table where it lands.
-    const from = await centre(page, 'Credit limit');
-    const email = await centre(page, 'Email');
+    // Credit limit carried to just before Email: a line down the table where it lands. Email first scrolled to the table's start, as a person would.
+    await heading(page, 'Email').evaluate((th) => ((th.closest('.fd-canvas-list-scroll') as HTMLElement).scrollLeft = (th as HTMLElement).offsetLeft - 40));
+    const from = await spot(page, 'Credit limit');
+    const email = await spot(page, 'Email');
     await drag(page, from, { x: email.left + 6, y: email.y + 60 }, { release: false });
     await expect(page.locator('.fd-drop-marker')).toBeVisible();
     await screen(page, 'screen-list-dragging', { viewport: true });
@@ -31,7 +40,7 @@ test.describe('screen designer · list', () => {
     expect(await columns(page)).toEqual(['name', 'credit_limit', 'email', 'country_id', 'state']);
 
     // Phone from the toolbox, let go between Name and Credit limit.
-    const name = await centre(page, 'Name');
+    const name = await spot(page, 'Name');
     const phone = (await tile(page, 'model:phone').boundingBox())!;
     await drag(page, { x: phone.x + phone.width / 2, y: phone.y + phone.height / 2 }, { x: name.right - 4, y: name.y });
     expect(await columns(page)).toEqual(['name', 'phone', 'credit_limit', 'email', 'country_id', 'state']);

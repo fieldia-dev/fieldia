@@ -419,12 +419,14 @@ export const DESIGNER_CSS = /* css */ `
 .fd-list-canvas .fd-list-table th.fd-picked { box-shadow: inset 0 0 0 2px var(--fd-accent); background: var(--fd-accent-soft); }
 .fd-list-canvas .fd-list-table td.fd-picked { background: var(--fd-accent-soft); }
 .fd-list-canvas .fd-list-table td { cursor: pointer; }
+/* Narrower than the running list, so a list's columns fit beside the toolbox and the panel. */
+.fd-list-canvas .fd-list-table td, .fd-list-canvas .fd-list-table th.fd-canvas-column { max-width: 12em; overflow: hidden; text-overflow: ellipsis; }
 .fd-list-canvas .fd-list-table .fd-list-checkbox { cursor: default; }
 .fd-list-canvas .fd-list-row:hover td { background: none; }
 .fd-list-canvas .fd-list-row:hover td.fd-picked { background: var(--fd-accent-soft); }
 .fd-column-bar { bottom: auto; top: calc(100% + 6px); inset-inline-end: auto; inset-inline-start: 0; }
 /* "+ Column" stays at the row's end however far the table scrolls. */
-.fd-list-canvas .fd-list-table .fd-canvas-add-column { position: sticky; inset-inline-end: 0; z-index: 1; width: 1%; padding-inline: 8px; background: var(--fd-surface); border-inline-start: 1px solid var(--fd-border); }
+.fd-list-canvas .fd-list-table .fd-canvas-add-column { position: sticky; inset-inline-end: 0; z-index: 1; width: 1%; padding-inline: 8px; background: var(--fd-surface); border-inline-start: 1px solid var(--fd-border); box-shadow: -6px 0 8px -6px rgba(15, 23, 42, 0.18); }
 .fd-canvas-add-column .fd-canvas-add-part { padding: 2px 8px; font-weight: 400; }
 .fd-canvas.fd-dragging .fd-list-table th.fd-canvas-column { cursor: grabbing; }
 .fd-drag-ghost.fd-canvas-column { display: block; padding: 8px 12px; font-weight: 600; font-size: 13px; }
