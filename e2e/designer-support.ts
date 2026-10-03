@@ -6,9 +6,23 @@ import { expect, type Locator, type Page } from '@playwright/test';
  * edited shows its label in a box, which text matching cannot read.
  */
 
+/** The page being built, as far as these tests read it. */
+export interface BuiltNode {
+  type: string;
+  id: string;
+  field?: string;
+  label?: string;
+  colspan?: number;
+  children?: BuiltNode[];
+}
+export interface BuiltPage {
+  layout: { children: BuiltNode[] };
+  fields: Record<string, { type: string; label: string; options?: { value: string | number; label: string }[] }>;
+}
+
 declare global {
   interface Window {
-    fieldiaDesigner: { designer: { getPage(): any; getState(): any }; reopen(): Promise<void> };
+    fieldiaDesigner: { designer: { getPage(): BuiltPage; getState(): { selected: string | null } }; reopen(): Promise<void> };
   }
 }
 
@@ -16,8 +30,8 @@ declare global {
 async function nodeIds(page: Page): Promise<Record<string, string>> {
   return page.evaluate(() => {
     const built = window.fieldiaDesigner.designer.getPage();
-    const walk = (nodes: any[]): any[] => nodes.flatMap((n) => (n.type === 'field' ? [n] : n.children ? walk(n.children) : []));
-    return Object.fromEntries(walk(built.layout.children).map((n) => [n.label ?? built.fields[n.field].label, n.id]));
+    const walk = (nodes: BuiltNode[]): BuiltNode[] => nodes.flatMap((n) => (n.type === 'field' ? [n] : n.children ? walk(n.children) : []));
+    return Object.fromEntries(walk(built.layout.children).map((n) => [n.label ?? built.fields[n.field ?? '']?.label, n.id]));
   });
 }
 
@@ -30,8 +44,8 @@ export async function cardOf(page: Page, label: string): Promise<Locator> {
 export function layout(page: Page): Promise<string[][]> {
   return page.evaluate(() => {
     const built = window.fieldiaDesigner.designer.getPage();
-    const sections = (nodes: any[]): any[] => nodes.flatMap((n) => (n.type === 'section' ? [n] : n.children ? sections(n.children) : []));
-    return sections(built.layout.children).map((s: any) => s.children.map((n: any) => `${n.label ?? built.fields[n.field].label}:${n.colspan ?? 1}`));
+    const sections = (nodes: BuiltNode[]): BuiltNode[] => nodes.flatMap((n) => (n.type === 'section' ? [n] : n.children ? sections(n.children) : []));
+    return sections(built.layout.children).map((s) => (s.children ?? []).map((n) => `${n.label ?? built.fields[n.field ?? '']?.label}:${n.colspan ?? 1}`));
   });
 }
 

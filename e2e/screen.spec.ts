@@ -131,8 +131,8 @@ test.describe('screen designer', () => {
     await expect(options).toHaveCount(4);
     const labels = await page.evaluate(() => {
       const built = window.fieldiaDesigner.designer.getPage();
-      const node = built.layout.children[1].children[0];
-      return built.fields[node.field].options.map((o: any) => o.label);
+      const node = built.layout.children[1].children?.[0];
+      return built.fields[node?.field ?? '']?.options?.map((o) => o.label);
     });
     expect(labels).toEqual(['Send a quote', 'Book a second visit', 'Close', 'Ask a colleague']);
     await screen(page, 'screen-options-in-place', { viewport: true });
