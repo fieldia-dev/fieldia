@@ -38,6 +38,23 @@ describe('screen editor — required when, read-only when', () => {
     expect(field(panel(), 'Required when')).toBeUndefined();
   });
 
+  it('takes the rule of a field the page made away when it is ticked Required, and offers no Only when then', () => {
+    const designer = createDesigner({ page: blankPage('screen', 'Visit') });
+    const coming = designer.addQuestion('yes-no', { parent: 'section-1' }) as string;
+    designer.updateQuestion(coming, { label: 'Coming?' });
+    const why = designer.addQuestion('paragraph', { parent: 'section-1' }) as string;
+    const node = () => ((designer.getPage().layout as unknown as { children: SectionNode[] }).children[0].children as FieldNode[]).find((n) => n.id === why) as FieldNode;
+    designer.select(why);
+    const { host } = mount(designer);
+    const panel = host.querySelector('.fd-properties') as HTMLElement;
+    (button(panel, 'Required only when…') as HTMLButtonElement).click();
+    expect(node().required).toMatch(/== True$/);
+    (field(panel, 'Required') as HTMLInputElement).click();
+    expect(node().required).toBeUndefined();
+    expect(designer.getPage().fields[node().field].required).toBe(true);
+    expect(button(panel, 'Required only when…')).toBeUndefined();
+  });
+
   it('makes a field read-only when a rule holds, and Always takes it away', () => {
     const { node, panel } = sheet();
     (button(panel(), 'Read-only when…') as HTMLButtonElement).click();
