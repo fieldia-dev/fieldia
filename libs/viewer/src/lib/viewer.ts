@@ -933,11 +933,14 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const ok = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.ok);
       const dialog = el('div', { class: 'fd-dialog', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': text.id }, text, el('div', { class: 'fd-actions fd-actions-end' }, ...(withCancel ? [cancel, ok] : [ok])));
       const backdrop = el('div', { class: 'fd-dialog-backdrop' }, dialog);
-      const opener = root.ownerDocument.activeElement as HTMLElement | null;
+      const doc = root.ownerDocument;
+      const opener = doc.activeElement as HTMLElement | null;
       const close = (answer: boolean) => {
         backdrop.remove();
-        // Back to what had focus when it asked: Save, or the field being left.
-        opener?.focus?.();
+        // Back to what had focus when it asked; or, when that let go of it — Save hides while it saves — to Save, shown again.
+        const shown = (e: HTMLElement | null) => !!e && e !== doc.body && e.isConnected && !e.closest('[hidden]');
+        const back = shown(opener) ? opener : root.querySelector<HTMLElement>('button[type="submit"]:not([hidden])');
+        back?.focus();
         resolve(answer);
       };
       cancel.addEventListener('click', () => close(false));

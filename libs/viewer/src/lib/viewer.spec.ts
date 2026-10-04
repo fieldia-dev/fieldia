@@ -371,6 +371,8 @@ describe('a refused save', () => {
     type(input(host, 'f-phone'), '+20 2 1111 2222');
     button(host, 'Save').focus();
     button(host, 'Save').click();
+    // Hidden while it saves, Save lets go of focus, as a browser does: the notice still brings it back there.
+    (document.activeElement as HTMLElement).blur();
     await form.settled();
     await flush();
     const notice = document.querySelector('[role=alertdialog]') as HTMLElement;
