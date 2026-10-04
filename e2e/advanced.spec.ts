@@ -259,3 +259,25 @@ test('the gutter between two parts of a row trades columns, by the pointer and t
   await page.keyboard.press('ArrowLeft');
   expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who')]).toEqual([1, 2]);
 });
+
+// ---- several picked -----------------------------------------------------------------
+
+test('several picked: Shift adds, the bar puts them side by side, and Ungroup takes them out again', async ({ page }) => {
+  await openAdvanced(page);
+  await part(page, 'h-send').scrollIntoViewIfNeeded();
+  await part(page, 'h-send').click();
+  await part(page, 't-note').click({ modifiers: ['Shift'] });
+  const bar = page.getByRole('toolbar', { name: 'What is picked' });
+  await expect(bar).toBeVisible();
+  await expect(bar.locator('.fd-multi-count')).toHaveText('2 picked');
+  await screen(page, 'advanced-08-two-picked', { viewport: true });
+  await bar.getByRole('button', { name: 'Side by side' }).click();
+  const row = (await where(page, 'h-send'))!;
+  expect([row.style, row.kids]).toEqual(['plain', ['h-send', 't-note']]);
+  // The arrangement just made is picked: it can be ungrouped.
+  await expect(bar.getByRole('button', { name: 'Ungroup' })).toBeVisible();
+  await screen(page, 'advanced-09-side-by-side', { viewport: true });
+  await bar.getByRole('button', { name: 'Ungroup' }).click();
+  expect((await where(page, 'h-send'))?.parent).toBe('new-employee');
+  await expect(bar.locator('.fd-multi-count')).toHaveText('2 picked');
+});

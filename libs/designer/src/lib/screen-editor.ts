@@ -322,7 +322,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const stopPuttingDown = putDownOnClickOutside(
     root,
     designer,
-    '.fd-canvas-field, .fd-canvas-section-title, .fd-canvas-tabs-head, .fd-canvas-part, .fd-canvas-statusbar, .fd-canvas-title, .fd-field-bar, .fd-list-table th, .fd-list-table td, .fd-canvas-search, .fd-list-selection',
+    '.fd-canvas-field, .fd-canvas-section-title, .fd-canvas-tabs-head, .fd-canvas-part, .fd-canvas-statusbar, .fd-canvas-title, .fd-field-bar, .fd-list-table th, .fd-list-table td, .fd-canvas-search, .fd-list-selection, .fd-canvas-body [data-node]:not(.fd-canvas-section), .fd-screen-designer[data-mode="advanced"] .fd-canvas-section, .fd-multi, .fd-width-handle, .fd-gutter, .fd-simple-lock',
     () => !trial.trying
   );
 

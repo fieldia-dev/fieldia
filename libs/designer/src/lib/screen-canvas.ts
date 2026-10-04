@@ -6,6 +6,7 @@ import { blockViews } from './canvas-blocks';
 import { canvasDrag, type CanvasDrag } from './canvas-drag';
 import { canvasHeader } from './canvas-header';
 import { lockWords, type DesignerMode } from './canvas-mode';
+import { multiBar } from './canvas-multi';
 import { widthMarks } from './canvas-width';
 import { elementFactory, optionsEditor, type OptionsEditor } from './chrome';
 import type { Designer, DesignerState } from './designer';
@@ -76,8 +77,10 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   titleCard.addEventListener('click', () => designer.select(null));
   const body = el('div', { class: 'fd-canvas-body' });
   const header = canvasHeader({ el, doc, designer });
+  // Several picked, in Advanced: a bar at the top of the canvas, taking no room.
+  const multi = multiBar({ el, doc, designer });
   // A form of its own, in the form's skin: its look and its widths are the page's, not the designer's.
-  const element = el('div', { class: 'fd-canvas fd-form', 'data-fd-skin': options.skin ?? 'outlined' }, header.top, header.card, titleCard, body);
+  const element = el('div', { class: 'fd-canvas fd-form', 'data-fd-skin': options.skin ?? 'outlined' }, multi.element, header.top, header.card, titleCard, body);
   const blocks = blockViews({ el, doc, designer });
   let page = designer.getPage();
   let selected: string | null = null;
@@ -411,11 +414,18 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   element.addEventListener('click', (event) => {
     const target = event.target as Element;
     // The bar, the boxes and the lists of the field being edited handle themselves.
-    if (target.closest('.fd-field-bar, input, textarea, select, button, .fd-q-option-box')) return;
+    if (target.closest('.fd-field-bar, input, textarea, select, button, .fd-q-option-box, .fd-multi')) return;
+    // In Advanced, Shift, ⌘ or Ctrl adds a part to what is picked, or lets it go.
+    const adding = mode === 'advanced' && (event.shiftKey || event.metaKey || event.ctrlKey);
+    const any = target.closest<HTMLElement>('[data-node]');
+    if (adding && any && body.contains(any) && any.getAttribute('role') !== 'tab') {
+      designer.pick(any.dataset['node'] as string, { add: true });
+      return;
+    }
     const card = target.closest<HTMLElement>('.fd-canvas-field[data-node]');
     if (card) {
       const id = card.dataset['node'] as string;
-      if (selected === id) return;
+      if (selected === id && picked.length <= 1) return;
       // Clicking a field's words opens it with the cursor in those words.
       const part = target.closest('.fd-label') ? 'label' : target.closest('.fd-help') ? 'help' : null;
       designer.select(id);
@@ -426,7 +436,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     const part = target.closest<HTMLElement>('[data-node]');
     if (part && body.contains(part) && part.getAttribute('role') !== 'tab') {
       const id = part.dataset['node'] as string;
-      if (selected !== id) designer.select(id);
+      if (selected !== id || picked.length > 1) designer.select(id);
       return;
     }
     if (target === element || target === body) designer.select(null);
@@ -525,6 +535,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       titleCard.classList.toggle('fd-canvas-selected', selected === null);
       header.update(page, selected, form);
       widths.update(state, mode === 'advanced');
+      multi.update(state, mode === 'advanced');
     },
     visibleSections: () => [...visible],
     focus: (id, part, selectAll = false) => focusIn(id, part, selectAll),

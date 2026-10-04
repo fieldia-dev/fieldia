@@ -62,4 +62,27 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
   position: absolute; z-index: 32; pointer-events: none; background: var(--fd-text); color: var(--fd-surface);
   font-size: 12px; font-weight: 600; line-height: 1; padding: 6px 8px; border-radius: 6px; white-space: nowrap;
 }
+
+/* ---- Advanced: several picked ---- */
+/* Each picked part tinted, with the room round it, as the field being edited is; a block picked alone too. */
+.fd-canvas :is(.fd-canvas-picked:not(.fd-editing):not(.fd-canvas-selected), .fd-canvas-block.fd-canvas-selected) {
+  background: color-mix(in srgb, var(--fd-accent) 9%, transparent); border-radius: 6px; box-shadow: 0 0 0 6px color-mix(in srgb, var(--fd-accent) 9%, transparent);
+}
+/* An arrangement picked: softly tinted, with the room round it, as the mockup marks a plain group. */
+.fd-canvas .fd-canvas-arrangement.fd-canvas-selected { background: color-mix(in srgb, var(--fd-accent) 4%, transparent); border-radius: 6px; box-shadow: 0 0 0 8px color-mix(in srgb, var(--fd-accent) 4%, transparent); }
+/* The bar at the top of the canvas as it scrolls, under the designer's own bar as the rails are, taking no room. */
+.fd-multi-dock { position: sticky; top: 76px; z-index: 40; height: 0; display: flex; justify-content: center; align-items: flex-start; }
+.fd-multi {
+  display: flex; align-items: center; gap: 4px; margin-block-start: -12px; padding: 5px 6px 5px 12px; max-width: calc(100% - 24px); overflow-x: auto;
+  background: var(--fd-text); color: var(--fd-surface); border-radius: 10px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25); font-size: 13px; white-space: nowrap;
+}
+.fd-multi[hidden] { display: none; }
+.fd-multi-count { margin-inline-end: 6px; }
+.fd-multi-button { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 3px 9px; border-radius: 7px; cursor: pointer; }
+.fd-multi-button:hover { background: rgba(127, 127, 127, 0.28); }
+.fd-multi-button:focus-visible { outline: 2px solid var(--fd-surface); outline-offset: 1px; }
+.fd-multi-button[hidden] { display: none; }
+.fd-multi-down > svg { rotate: 45deg; }
+.fd-multi-why { opacity: 0.75; font-size: 12px; padding-inline: 6px; }
+.fd-multi-why[hidden] { display: none; }
 `;
