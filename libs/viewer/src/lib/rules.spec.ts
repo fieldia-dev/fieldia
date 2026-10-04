@@ -86,11 +86,12 @@ describe('a worked-out field', () => {
 });
 
 describe('a warning from an answer rule', () => {
-  it('waits until the person leaves the field, then shows under it, politely', () => {
+  it('waits until the person leaves the field, then shows under it, politely', async () => {
     const { host } = mount();
     type(input(host, 'f-email'), 'sara@gmail.com');
     expect(shown(warningOf(host, 'f-email'))).toBe(false);
     input(host, 'f-postcode').focus();
+    await flush();
     const warning = warningOf(host, 'f-email');
     expect(shown(warning)).toBe(true);
     expect(warning.textContent).toBe('Use your work address if you can');
@@ -99,10 +100,12 @@ describe('a warning from an answer rule', () => {
     expect(input(host, 'f-email').getAttribute('aria-invalid')).toBe('false');
   });
 
-  it('goes as soon as the answer is put right, even while typing', () => {
+  it('goes as soon as the answer is put right, even while typing', async () => {
     const { host } = mount();
     type(input(host, 'f-email'), 'sara@gmail.com');
     input(host, 'f-postcode').focus();
+    await flush();
+    expect(shown(warningOf(host, 'f-email'))).toBe(true);
     type(input(host, 'f-email'), 'sara@acme.com');
     expect(shown(warningOf(host, 'f-email'))).toBe(false);
     expect(input(host, 'f-email').getAttribute('aria-describedby') ?? '').not.toContain('warning');
@@ -123,6 +126,7 @@ describe('an error from an answer rule', () => {
     const { host, form, dataSource } = mount();
     type(input(host, 'f-postcode'), '12');
     input(host, 'f-qty').focus();
+    await flush();
     expect(shown(warningOf(host, 'f-postcode'))).toBe(true);
     expect(await form.save()).toBe(false);
     expect(dataSource.responses).toHaveLength(0);

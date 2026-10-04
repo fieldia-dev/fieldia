@@ -190,7 +190,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     wrapper.addEventListener('focusout', (event) => {
       if (wrapper.contains(event.relatedTarget as Node | null)) return;
       typing = false;
-      update(form.getState());
+      // Not at once: focus also leaves when a redraw removes the focused part
+      // (a deleted line's button), and that redraw must finish first.
+      queueMicrotask(() => update(form.getState()));
     });
 
     const update = (state: FormState) => {
