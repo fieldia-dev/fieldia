@@ -2,6 +2,7 @@ import { createMemoryDataSource, localizePage, type Line, type Page, type Values
 import customer from '../../examples/pages/customer.page.json';
 import fields from '../../examples/pages/fields.page.json';
 import kinds from '../../examples/pages/kinds.page.json';
+import layout from '../../examples/pages/layout.page.json';
 import customers from '../../examples/pages/customers.page.json';
 import order from '../../examples/pages/order.page.json';
 import rules from '../../examples/pages/rules.page.json';
@@ -19,25 +20,29 @@ export const pages: Record<string, Page> = {
   kinds: kinds as Page,
   order: order as Page,
   rules: rules as Page,
+  layout: layout as Page,
   custom: customPage,
 };
 
 /**
  * The page the query string names, with the page-wide choices it may also make:
- * `maxWidth` (narrow, medium, wide, full) and `actions` (top, bottom). With a
- * `locale`, a page that keeps translations shows its words in that language.
+ * `maxWidth` (narrow, medium, wide, full), `actions` (top, bottom) and `scheme`
+ * (light, dark, auto). With `locale`, a page that keeps its own words in that
+ * language shows them.
  */
 export function pageFromQuery(params: URLSearchParams): Page {
-  const named = pages[params.get('page') ?? 'signup'] ?? pages['signup'];
-  const locale = params.get('locale');
-  const page = locale ? localizePage(named, locale) : named;
+  const page = pages[params.get('page') ?? 'signup'] ?? pages['signup'];
   const maxWidth = params.get('maxWidth');
   const actions = params.get('actions');
-  return {
+  const scheme = params.get('scheme') as NonNullable<Page['look']>['scheme'] | null;
+  const locale = params.get('locale');
+  const chosen: Page = {
     ...page,
     ...(maxWidth ? { maxWidth: maxWidth as Page['maxWidth'] } : {}),
     ...(actions ? { actionsPosition: actions as Page['actionsPosition'] } : {}),
+    ...(scheme ? { look: { ...page.look, scheme } } : {}),
   };
+  return locale ? localizePage(chosen, locale) : chosen;
 }
 
 /** The record a record's page opens: `record=…`, or the first one. A list shows many, and opens none. */

@@ -21,12 +21,15 @@ import {
   type SpacerNode,
   type ImageNode,
   type WizardNode,
+  type LabelPlace,
   type Locale,
   MESSAGES,
 } from '@fieldia/core';
 import { browserPreferences, createWidget, drawIcon, installStyles, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { pageDialogs } from './related';
 import { listView } from './list';
+import { applyLook } from './look';
+import { labelPlace, planSection, type Place } from './place';
 
 export type Skin = 'underline' | 'outlined';
 
@@ -150,16 +153,20 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   }
 
   const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': options.skin ?? 'underline', dir, lang: options.locale, 'data-max-width': page.maxWidth });
+  applyLook(root, page.look);
   const confirm = options.confirm ?? dialogConfirm;
 
   // ---- the parts -------------------------------------------------------
 
-  function fieldItem(node: FieldNode): HTMLElement {
+  /** A field with its label, help and messages. `labels` is where labels sit where it is put; the title's own fields take none. */
+  function fieldItem(node: FieldNode, labels?: LabelPlace): HTMLElement {
     const def = page.fields[node.field];
     const id = uid(node.id);
-    const wrapper = el('div', { class: 'fd-field', 'data-node': node.id, 'data-field': node.field, 'data-type': def.type });
+    const labelsAt = labelPlace(node, def.type, labels);
+    const wrapper = el('div', { class: 'fd-field', 'data-node': node.id, 'data-field': node.field, 'data-type': def.type, 'data-labels': labelsAt });
     if (node.colspan) wrapper.style.setProperty('--fd-span', String(node.colspan));
-    const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, node.label ?? def.label);
+    const labelText = node.label ?? def.label;
+    const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, labelText);
     // The ✓ of a field filled in right; never on a yes/no box, a table or a file, where it would say nothing.
     const mark = options.showValid && !NO_VALID_MARK.has(def.type) ? drawIcon(doc, 'check') : null;
     if (mark) {
@@ -167,6 +174,11 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       label.append(mark);
     }
     const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs }, options.widgets);
+    // A label kept out of sight still names the box; the empty box shows it instead, unless the page gives it words of its own.
+    if (labelsAt === 'hidden' && !node.placeholder) {
+      const box = widget.element.matches(TEXT_BOX) ? widget.element : widget.element.querySelector(TEXT_BOX);
+      box?.setAttribute('placeholder', labelText);
+    }
     if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) {
       // `for` stays: a custom field that puts the id on its own input is
       // labelled natively. Only a wrapper with a role (a radio group, say) may
@@ -236,6 +248,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
 
   function buttonItem(node: ButtonNode): HTMLElement {
     const button = el('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, ...withIcon(node.icon, node.label));
+    spans(button, node.colspan);
     button.addEventListener('click', async () => {
       if (node.confirm && !(await confirm(node.confirm))) return;
       await form.runAction(node.id);
@@ -247,6 +260,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   function textItem(node: TextNode): HTMLElement {
     const style = node.style ?? 'paragraph';
     const element = el(style === 'heading' ? 'h3' : 'p', { class: `fd-text-${style}`, 'data-node': node.id }, node.text);
+    spans(element, node.colspan);
     hideWhen(element, node.id);
     return element;
   }
@@ -259,29 +273,53 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     return element;
   }
 
-  function grid(children: LayoutNode[], columns: SectionNode['columns'] = 1): HTMLElement {
+  /** The columns a part spans in the grid it sits in; the stylesheet keeps it within the columns there at each width. */
+  function spans(element: HTMLElement, colspan: number | undefined) {
+    if (colspan) element.style.setProperty('--fd-span', String(colspan));
+  }
+
+  /**
+   * A grid of parts. With `columns` null, it has none of its own: it lays its
+   * parts on the columns of the grid round it (an arrangement on its tracks).
+   */
+  function grid(children: LayoutNode[], columns: SectionNode['columns'] | null, place: Place): HTMLElement {
     const box = el('div', { class: 'fd-grid' });
-    box.style.setProperty('--fd-columns', String(wideColumns(columns)));
-    // Counts given for the narrower widths replace the skin's own stacking there.
-    if (typeof columns === 'object') {
-      for (const width of ['medium', 'narrow'] as const) {
-        const count = columns[width];
-        if (count === undefined) continue;
-        box.setAttribute(`data-columns-${width}`, String(count));
-        box.style.setProperty(`--fd-columns-${width}`, String(count));
+    if (columns !== null) {
+      box.style.setProperty('--fd-columns', String(wideColumns(columns)));
+      // Counts given for the narrower widths replace the skin's own stacking there.
+      if (typeof columns === 'object') {
+        for (const width of ['medium', 'narrow'] as const) {
+          const count = columns[width];
+          if (count === undefined) continue;
+          box.setAttribute(`data-columns-${width}`, String(count));
+          box.style.setProperty(`--fd-columns-${width}`, String(count));
+        }
       }
     }
-    box.append(...children.map(item));
+    box.append(...children.map((child) => item(child, place)));
     return box;
   }
+
+  /** Where the parts of a page, a tab or a step sit: one column, the page's labels. */
+  const top = (onPage: boolean): Place => ({ columns: 1, onPage, labels: page.look?.labels });
 
   /** Folded sections, and how to open each: a problem inside one has to be seen. */
   const folds = new Map<HTMLElement, () => void>();
 
-  function sectionItem(node: SectionNode): HTMLElement {
-    const section = el('fieldset', { class: 'fd-section', 'data-node': node.id });
+  function sectionItem(node: SectionNode, place: Place): HTMLElement {
+    const plan = planSection(node, place);
+    // An arrangement is no group to name, and a fieldset cannot lay its parts on the columns round it.
+    const section = el(plan.arrangement ? 'div' : 'fieldset', {
+      class: 'fd-section',
+      'data-node': node.id,
+      'data-style': plan.style,
+      'data-place': plan.at,
+      'data-on-page': plan.style === 'card' && place.onPage ? '' : undefined,
+    });
+    spans(section, node.colspan);
+    if (node.labelWidth) section.style.setProperty('--fd-label-width', `${node.labelWidth}px`);
     const description = node.description ? el('p', { class: 'fd-section-description' }, node.description) : null;
-    const content = grid(node.children, node.columns);
+    const content = grid(node.children, plan.at === 'tracks' ? null : node.columns, plan.inner);
     if (node.title && node.collapsible) {
       content.id = uid(`${node.id}-content`);
       const toggle = el(
@@ -311,8 +349,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     return section;
   }
 
-  function tabsItem(node: TabsNode): HTMLElement {
+  function tabsItem(node: TabsNode, place: Place): HTMLElement {
     const box = el('div', { class: 'fd-tabs', 'data-node': node.id });
+    spans(box, node.colspan);
     const list = el('div', { class: 'fd-tablist', role: 'tablist' });
     // The tab someone picked. Until they pick, the first visible tab is open —
     // a tab hidden while the record loads must not leave its neighbour open.
@@ -322,7 +361,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const tabId = uid(`${tab.id}-tab`);
       const panelId = uid(`${tab.id}-panel`);
       const button = el('button', { type: 'button', class: 'fd-tab', role: 'tab', id: tabId, 'aria-controls': panelId, 'data-node': tab.id }, ...withIcon(tab.icon, tab.label));
-      const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId }, grid(tab.children));
+      // A tab's parts sit where the tabs do: on the page, or in the box round them.
+      const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId }, grid(tab.children, 1, { columns: 1, onPage: place.onPage, labels: place.labels }));
       button.addEventListener('click', () => {
         picked = active = tab.id;
         render(form.getState());
@@ -360,10 +400,10 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     return box;
   }
 
-  function item(node: LayoutNode): HTMLElement {
+  function item(node: LayoutNode, place: Place): HTMLElement {
     switch (node.type) {
       case 'field':
-        return fieldItem(node);
+        return fieldItem(node, place.labels);
       case 'button':
         return buttonItem(node);
       case 'text':
@@ -371,9 +411,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       case 'slot':
         return slotItem(node);
       case 'section':
-        return sectionItem(node);
+        return sectionItem(node, place);
       case 'tabs':
-        return tabsItem(node);
+        return tabsItem(node, place);
       case 'divider':
       case 'spacer':
       case 'image':
@@ -542,7 +582,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   // ---- the four page layouts ---------------------------------------------------
 
   function sectionsLayout(node: { id: string; children: LayoutNode[] }): HTMLElement {
-    const box = el('div', { class: 'fd-sections', 'data-node': node.id }, ...node.children.map(item));
+    const box = el('div', { class: 'fd-sections', 'data-node': node.id }, ...node.children.map((child) => item(child, top(true))));
     const action = el('button', { type: 'submit', class: 'fd-button fd-button-primary' }, page.data.kind === 'responses' ? labels.submit : labels.save);
     const actions = el('div', { class: 'fd-actions fd-actions-end' }, status, action);
     if (page.data.kind === 'record') {
@@ -589,7 +629,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const panel = el('section', { class: 'fd-step', 'data-node': step.id, 'aria-labelledby': uid(`${step.id}-title`) });
       panel.append(el('h2', { class: 'fd-step-title', id: uid(`${step.id}-title`) }, ...withIcon(step.icon, step.label)));
       if (step.description) panel.append(el('p', { class: 'fd-section-description' }, step.description));
-      panel.append(grid(step.children));
+      // The step is the box: a card in it draws none of its own.
+      panel.append(grid(step.children, 1, top(false)));
       box.append(panel);
       return { step, panel };
     });
@@ -718,10 +759,10 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     }
     if (node.title) {
       const title = el('div', { class: 'fd-title' });
-      if (node.title.above?.length) title.append(el('div', { class: 'fd-title-above' }, ...node.title.above.map(fieldItem)));
+      if (node.title.above?.length) title.append(el('div', { class: 'fd-title-above' }, ...node.title.above.map((part) => fieldItem(part))));
       title.append(fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder }));
       if (node.title.subtitleField) title.append(fieldItem({ type: 'field', id: '#subtitle', field: node.title.subtitleField }));
-      if (node.title.below?.length) title.append(el('div', { class: 'fd-title-below' }, ...node.title.below.map(fieldItem)));
+      if (node.title.below?.length) title.append(el('div', { class: 'fd-title-below' }, ...node.title.below.map((part) => fieldItem(part))));
       const row = el('div', { class: 'fd-title-row' }, title);
       if (node.title.avatarField) {
         const avatar = fieldItem({ type: 'field', id: '#avatar', field: node.title.avatarField });
@@ -731,7 +772,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       card.append(row);
     }
     if (node.statusbar && underTitle) card.append(el('div', { class: 'fd-title-statusbar' }, statusbar(node.statusbar)));
-    card.append(grid(node.children));
+    card.append(grid(node.children, 1, top(false)));
     if (atFoot && options.showActions !== false) {
       card.append(foot);
       updaters.push((state) => {
@@ -928,6 +969,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     },
   };
 }
+
+/** The boxes a label can be shown in, as the words of an empty box. */
+const TEXT_BOX = 'input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), textarea';
 
 /** Fields whose ✓ would say nothing: a yes/no box is never wrong, a table or a file has its own look. */
 const NO_VALID_MARK = new Set(['boolean', 'one2many', 'binary', 'image', 'html', 'json', 'properties']);
