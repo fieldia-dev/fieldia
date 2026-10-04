@@ -109,12 +109,12 @@ describe('survey editor — the Google Forms way', () => {
     const why = designer.addQuestion('paragraph') as string;
     designer.updateQuestion(why, { label: 'Why not?' });
     let items = more(host);
-    expect(items.map((i) => i.textContent?.trim())).toEqual(['Description', 'Show only when…', 'Answer rules', 'Move up']);
+    expect(items.map((i) => i.textContent?.trim())).toEqual(['Description', 'Show only when…', 'Answer rules', 'Worked out from other answers', 'Move up']);
     item(items, 'Move up')?.click();
     expect(labels(designer)).toEqual(['Why not?', 'Coming?']);
     items = more(host);
     // At the top now: no earlier question to depend on, and nowhere further up to go.
-    expect(items.map((i) => i.textContent?.trim())).toEqual(['Description', 'Answer rules', 'Move down']);
+    expect(items.map((i) => i.textContent?.trim())).toEqual(['Description', 'Answer rules', 'Worked out from other answers', 'Move down']);
     item(items, 'Move down')?.click();
     item(more(host), 'Show only when…')?.click();
     expect(shown(open(host).querySelector('.fd-when'))).toBe(true);

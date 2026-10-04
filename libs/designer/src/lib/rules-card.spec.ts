@@ -53,4 +53,26 @@ describe('a survey card’s answer rules', () => {
     more();
     expect(item('Answer rules')).toBeUndefined();
   });
+
+  it('works a number out from other answers, from ⋮', () => {
+    const { designer, card, more, item, host } = survey('number');
+    const first = (designer.getPage().layout as WizardNode).children[0].children[0] as FieldNode;
+    designer.updateQuestion(first.id, { label: 'Adults' });
+    const second = designer.addQuestion('number', { after: first.id }) as string;
+    designer.updateQuestion(second, { label: 'Children' });
+    const total = designer.addQuestion('number', { after: second }) as string;
+    designer.updateQuestion(total, { label: 'Guests' });
+    designer.select(total);
+    more();
+    (item('Worked out from other answers') as HTMLElement).click();
+    const box = card().querySelector('[aria-label="Worked out from"]') as HTMLInputElement;
+    expect(document.activeElement).toBe(box);
+    const names = Object.entries(designer.getPage().fields).map(([name, def]) => [def.label, name]);
+    const name = (label: string) => (names.find(([l]) => l === label) as string[])[1];
+    box.value = `${name('Adults')} + ${name('Children')}`;
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(designer.getPage().fields[name('Guests')].compute).toBe(`${name('Adults')} + ${name('Children')}`);
+    expect(host.querySelector('.fd-q-selected .fd-formula-outcome')?.textContent).toBe('With Adults 120 and Children 80: 200');
+    expect(host.querySelector('.fd-q-selected .fd-formula-reads')?.textContent).toBe('Reads: Adults + Children');
+  });
 });

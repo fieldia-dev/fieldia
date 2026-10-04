@@ -68,8 +68,8 @@ describe('the search box over the settings', () => {
       ['Content', 'Shown as'],
       // In a tab's group, the best first: a name with an s anywhere in it last.
       ['Layout', 'Section', 'Labels'],
+      ['Rules', 'Set when', 'When it shows', 'Answer rules'],
       ['Data', 'Stored as'],
-      ['Rules', 'When it shows', 'Answer rules'],
     ]);
     // The tabs make way while it lists them.
     expect((panel.querySelector('[role="tablist"]') as HTMLElement).hidden).toBe(true);
@@ -94,7 +94,7 @@ describe('the search box over the settings', () => {
     expect(active()).toBe('Shown as');
     // Down the list as it is drawn, tab by tab.
     const drawn: (string | null | undefined)[] = [active()];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       press('ArrowDown', {}, box);
       drawn.push(active());
     }
