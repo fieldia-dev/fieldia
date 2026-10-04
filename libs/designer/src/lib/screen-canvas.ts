@@ -17,6 +17,7 @@ import { fieldBar, type FieldBar } from './field-bar';
 import { designerIcon } from './icons';
 import { inlineSettings, type InlineSettings } from './inline-settings';
 import { locate } from './layout-tree';
+import { ruleMarks } from './rules-marks';
 import { tabHolds } from './page-tree';
 import { sampleRows } from './samples';
 
@@ -562,6 +563,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       guides.update(state, mode === 'advanced');
       widths.update(state, mode === 'advanced');
       multi.update(state, mode === 'advanced');
+      ruleMarks(element, page, designer);
     },
     visibleSections: () => [...visible],
     focus: (id, part, selectAll = false) => focusIn(id, part, selectAll),

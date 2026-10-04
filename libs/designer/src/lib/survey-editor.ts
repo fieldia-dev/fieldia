@@ -14,11 +14,14 @@ import { openMenu, type MenuItem } from './menu';
 import { lookSheet } from './panel-look-sheet';
 import { rail as sideRail } from './rail';
 import { inlineSettings } from './inline-settings';
+import { cardRules } from './rules-card';
+import { ruleMarks } from './rules-marks';
 import { installDesignerStyles } from './styles';
 import { toolbox, TOOLBOX_GROUPS } from './toolbox';
 import { tryIt } from './try-it';
 import { translationsView } from './translations-view';
 import { jsonView } from './json-view';
+import { rulesOverview } from './rules-overview';
 
 /**
  * The survey editor, the Google Forms way: on a tinted page, a card heading
@@ -96,7 +99,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     titleLabel: 'Form title',
     placeholder: 'Untitled form',
     extra: [trial.toggle],
-    find: () => [...findItems(), ...trial.items(), ...words.items(), ...json.items()],
+    find: () => [...findItems(), ...trial.items(), ...words.items(), ...ruleList.items(), ...json.items()],
     // A check about a question's words or options: its card is open by now, the cursor goes there.
     goTo(id, part) {
       const card = root.querySelector(`.fd-q[data-node="${id}"]`);
@@ -166,6 +169,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const json = jsonView({ el, doc, designer, trial, body });
   root.append(bar.element, bar.issues, body, trial.element, json.element);
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
+  const ruleList = rulesOverview({ el, doc, designer, root, body, modes: trial.toggle });
   // The form's look: from the bar, in a sheet at the side; the cards wear it.
   const look = lookSheet({ el, designer, root, bar: bar.element, wearer: editor });
 
@@ -394,6 +398,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     const painter = answerBox(answer, id);
     const settings = inlineSettings(el, designer, id);
     const when = conditionEditor(el, designer, id, 'question');
+    const rules = cardRules(el, designer, id);
     const tool = (label: string, icon: string, onClick: () => void, extra = '') => {
       const button = el('button', { type: 'button', class: `fd-q-tool ${extra}`.trim(), 'aria-label': label, title: label }, designerIcon(doc, icon));
       button.addEventListener('click', onClick);
@@ -413,6 +418,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       const items: MenuItem[] = [
         { id: 'help', label: 'Description', checked: hasHelp },
         ...(when.element.hidden && when.canStart() ? [{ id: 'when', label: 'Show only when…' }] : []),
+        ...rules.menuItems(),
         ...(at > 0 ? [{ id: 'up', label: 'Move up', divider: true }] : []),
         ...(step && at !== -1 && at < step.children.length - 1 ? [{ id: 'down', label: 'Move down', ...(at > 0 ? {} : { divider: true }) }] : []),
       ];
@@ -436,6 +442,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
           } else if (item === 'when') when.start();
           else if (item === 'up') designer.moveNode(id, -1);
           else if (item === 'down') designer.moveNode(id, 1);
+          else rules.pick(item);
         },
       });
     }
@@ -461,6 +468,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       choices.element,
       answer,
       settings.element,
+      rules.element,
       when.element,
       foot
     );
@@ -486,6 +494,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
         answer.hidden = !choices.element.hidden || standsIn;
         if (!answer.hidden) painter.paint(page, node);
         when.update(page, questionsBefore(page, node.id), node.invisible);
+        rules.update(page, node);
       },
       destroy: () => painter.destroy(),
     };
@@ -625,6 +634,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       label?.select();
       focusLabelOf = null;
     }
+    ruleMarks(pages, page, designer);
     placeRail();
   }
 
@@ -657,6 +667,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       trial.destroy();
       words.destroy();
       json.destroy();
+      ruleList.destroy();
       root.remove();
     },
   };

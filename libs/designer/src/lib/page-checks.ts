@@ -5,6 +5,8 @@ import { holderName as placeName, layoutChanges, lookChanges, placements } from 
 import { isWrapper } from './layout-tree';
 import { containers, type Container } from './page-tree';
 import { translationChanges } from './translations';
+import { ruleChanges } from './rules-changes';
+import { fixRuleCheck, ruleChecks, type RuleFix, type RuleFixer } from './rules-checks';
 
 /**
  * Before a page is published: what people would trip over, each with a fix
@@ -15,7 +17,7 @@ import { translationChanges } from './translations';
  * fields on show, so it is required only when shown, as it should be.
  */
 
-export type CheckFix = { kind: 'go'; id: string; part: 'label' | 'options' } | { kind: 'remove'; id: string } | { kind: 'drop-rule'; id: string; rule: number };
+export type CheckFix = { kind: 'go'; id: string; part: 'label' | 'options' } | { kind: 'remove'; id: string } | { kind: 'drop-rule'; id: string; rule: number } | RuleFix;
 
 export interface PageCheck {
   /** The element it is about, or null for the page. */
@@ -72,8 +74,10 @@ function withRules(page: Page): { id: string; name: string; invisible: unknown }
 export function pageChecks(page: Page): PageCheck[] {
   const found: PageCheck[] = [];
   const checked = validatePage(page);
-  // A page written by hand can be wrong in ways the designer would never let it be.
-  if (!checked.ok) for (const issue of checked.issues) found.push({ at: null, severity: 'must', text: issue.path ? `${issue.path}: ${issue.message}` : issue.message });
+  const rules = ruleChecks(page);
+  // A page written by hand can be wrong in ways the designer would never let it be; what the rules' checks say in words is not said again.
+  if (!checked.ok) for (const issue of checked.issues) if (!rules.covers(issue.path)) found.push({ at: null, severity: 'must', text: issue.path ? `${issue.path}: ${issue.message}` : issue.message });
+  found.push(...rules.checks);
   const survey = page.data.kind === 'responses';
   const noun = survey ? 'question' : 'field';
   const placed = placedFields(page);
@@ -118,11 +122,8 @@ export function pageChecks(page: Page): PageCheck[] {
     if (!condition || condition === 'custom') continue;
     condition.rules.forEach((rule, index) => {
       const tested = page.fields[rule.field];
-      // Only a page written by hand can name a field it does not have: the rule cannot be read at all.
-      if (!tested) {
-        found.push({ at: target.id, severity: 'must', text: `“${target.name}” has a rule on “${rule.field}”, which is not a field of this page.`, fix: { label: 'Remove that rule', action: { kind: 'drop-rule', id: target.id, rule: index } } });
-        return;
-      }
+      // A field the page does not have: the rules' own checks say so, with their fix.
+      if (!tested) return;
       if (rule.op !== 'is' || tested?.type !== 'selection' || typeof rule.value !== 'string' || tested.options.some((o) => o.value === rule.value)) return;
       const never = condition.join === 'all';
       found.push({
@@ -131,17 +132,18 @@ export function pageChecks(page: Page): PageCheck[] {
         text: never
           ? `“${target.name}” shows only when ${tested.label} is “${rule.value}”, which ${tested.label} no longer offers, so it never shows.`
           : `“${target.name}”: the rule “${tested.label} is ${rule.value}” can never hold, as ${tested.label} no longer offers it.`,
-        fix: { label: 'Remove that rule', action: { kind: 'drop-rule', id: target.id, rule: index } },
+        fix: { label: 'Remove the rule', action: { kind: 'drop-rule', id: target.id, rule: index } },
       });
     });
   }
 
-  // Two asking the same thing.
+  // Two reading the same on one page: a survey's page, or the whole screen.
   const seen = new Map<string, string>();
+  const pageOf = (p: Placed) => (survey ? (containers(page).find((c) => (c as Holder).type === 'step' && c.children.some((n) => n === p.node || containsNode(n, p.node)))?.id ?? '') : '');
   for (const p of placed) {
     const label = labelOf(p).trim();
     if (!label || UNTITLED.test(label)) continue;
-    const key = label.toLowerCase();
+    const key = `${pageOf(p)}\n${label.toLowerCase()}`;
     if (!seen.has(key)) {
       seen.set(key, p.node.id);
       continue;
@@ -149,8 +151,8 @@ export function pageChecks(page: Page): PageCheck[] {
     found.push({
       at: p.node.id,
       severity: 'should',
-      text: survey ? `Two questions ask “${label}”: people may not tell them apart.` : `Two fields are called “${label}”: people may not tell them apart.`,
-      fix: { label: 'Go to the second', action: { kind: 'go', id: p.node.id, part: 'label' } },
+      text: survey ? `Two questions read “${label}”: people may not tell them apart.` : `Two fields read “${label}”: people may not tell them apart.`,
+      fix: { label: 'Rename the second', action: { kind: 'go', id: p.node.id, part: 'label' } },
     });
   }
 
@@ -159,11 +161,17 @@ export function pageChecks(page: Page): PageCheck[] {
 }
 
 /** What a check's fix needs of the designer. */
-export interface CheckFixer {
+export interface CheckFixer extends RuleFixer {
   getPage(): Page;
   removeNode(id: string): boolean;
   setCondition(id: string, condition: Condition | null): boolean;
   select(id: string | null): void;
+}
+
+/** Whether a part holds another, at any depth. */
+function containsNode(holder: unknown, node: FieldNode): boolean {
+  const children = (holder as { children?: unknown[] }).children;
+  return !!children?.some((child) => child === node || containsNode(child, node));
 }
 
 /** Do what a check's fix says. Going to an element only picks it: the editor puts the cursor where the fix says. */
@@ -175,6 +183,7 @@ export function fixCheck(designer: CheckFixer, check: PageCheck): boolean {
     return true;
   }
   if (action.kind === 'remove') return designer.removeNode(action.id);
+  if (action.kind === 'remove-rule') return fixRuleCheck(designer, action);
   const target = withRules(designer.getPage()).find((t) => t.id === action.id);
   const condition = readCondition(target?.invisible);
   if (!condition || condition === 'custom') return false;
@@ -275,6 +284,7 @@ export function pageChanges(before: Page | null, after: Page): string[] {
   }
 
   out.push(...headerChanges(before, after), ...listChanges(before, after));
+  out.push(...ruleChanges(before, after));
   out.push(...translationChanges(before, after));
   // Something changed that has no words of its own here: say so rather than nothing.
   return out.length ? out : ['Other changes to the page’s settings'];

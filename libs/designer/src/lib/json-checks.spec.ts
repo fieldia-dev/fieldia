@@ -36,7 +36,7 @@ describe('checking the page as JSON', () => {
     const { rows, errors } = checkJson(text);
     expect(errors).toBe(1);
     expect(rows.map((r) => [r.line, r.severity, r.message, r.fix?.label])).toEqual([
-      [lineOf(text, '"invisible"'), 'error', `"colour != 'red'" reads "colour", which is not a field of this page`, 'Remove that rule'],
+      [lineOf(text, '"invisible"'), 'error', `"colour != 'red'" reads "colour", which is not a field of this page`, 'Remove the rule'],
     ]);
   });
 
@@ -101,7 +101,7 @@ describe('checking the page as JSON', () => {
     // The rule on a field the page lacks: one row, the format's words with the check's fix.
     expect(rows.map((r) => [r.severity, r.fix?.label])).toEqual([
       ['should', undefined],
-      ['error', 'Remove that rule'],
+      ['error', 'Remove the rule'],
     ]);
     expect(rows.map((r) => r.line)).toEqual([...rows.map((r) => r.line)].sort((a, b) => a - b));
   });
@@ -110,5 +110,57 @@ describe('checking the page as JSON', () => {
     const rows = checkJson('{ "fieldia": "0.1", "layout": 3 }').rows;
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.every((r) => r.severity === 'error' && r.line === 1)).toBe(true);
+  });
+});
+
+describe('the rules’ fixes, done on the JSON', () => {
+  /** An order: Price and Quantity, a Total worked out from them, and Notes required when Price is filled. */
+  function order() {
+    const designer = createDesigner({ page: blankPage('screen', 'Order') });
+    const add = (kind: string, label: string) => {
+      const id = designer.addQuestion(kind, { parent: 'section-1' }) as string;
+      designer.updateQuestion(id, { label });
+      return id;
+    };
+    const price = add('number', 'Price');
+    const qty = add('number', 'Quantity');
+    const total = add('number', 'Total');
+    const notes = add('paragraph', 'Notes');
+    const name = (id: string) => (designer.getPage().layout as unknown as { children: { children: FieldNode[] }[] }).children[0].children.find((n) => n.id === id)!.field;
+    expect(designer.setCompute(total, `${name(price)} * ${name(qty)}`)).toBe(true);
+    expect(designer.setRule(notes, 'required', { field: name(price), equals: 0 })).toBe(true);
+    return { designer, price, qty, total, notes, name };
+  }
+  const fixOf = (text: string, words: RegExp) => checkJson(text).rows.find((row) => words.test(row.message) && row.fix);
+
+  it('takes away a formula that reads a field no longer on the page', () => {
+    const { designer, qty, total, name } = order();
+    designer.removeNode(qty);
+    const text = designer.pageJson();
+    const row = fixOf(text, /Quantity.*no longer on the page/);
+    expect(row?.fix?.label).toBe('Remove the rule');
+    const fixed = JSON.parse(fixJson(text, row?.fix?.check ?? null) as string) as Page;
+    expect(fixed.fields[name(total)]).not.toHaveProperty('compute');
+  });
+
+  it('takes away “required when” that reads a field no longer on the page', () => {
+    const { designer, price, notes } = order();
+    designer.removeNode(price);
+    const text = designer.pageJson();
+    const row = checkJson(text).rows.find((r) => /Notes/.test(r.message) && /Price/.test(r.message) && r.fix);
+    const fixed = JSON.parse(fixJson(text, row?.fix?.check ?? null) as string) as Page;
+    const node = (fixed.layout as unknown as { children: { children: FieldNode[] }[] }).children[0].children.find((n) => n.id === notes)!;
+    expect(node).not.toHaveProperty('required');
+  });
+
+  it('takes away an answer rule that checks nothing for what the field holds', () => {
+    const { designer, total } = order();
+    const page = JSON.parse(designer.pageJson()) as Page;
+    const node = (page.layout as unknown as { children: { children: FieldNode[] }[] }).children[0].children.find((n) => n.id === total)!;
+    node.validate = [{ minLength: 2 }];
+    const text = JSON.stringify(page, null, 2);
+    const row = fixOf(text, /checks nothing/);
+    const fixed = JSON.parse(fixJson(text, row?.fix?.check ?? null) as string) as Page;
+    expect((fixed.layout as unknown as { children: { children: FieldNode[] }[] }).children[0].children.find((n) => n.id === total)).not.toHaveProperty('validate');
   });
 });

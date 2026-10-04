@@ -261,12 +261,10 @@ describe('survey editor — questions as people see them, the one picked open', 
     const { host, designer } = mount();
     button(host, 'Add question').click();
     kind(host, 'yes-no');
-    button(host, 'Add page').click();
-    const step = (designer.getPage().layout as WizardNode).children[1].id;
-    designer.setCondition(step, { field: nodes(designer.getPage())[0].field, equals: true });
-    designer.select(nodes(designer.getPage())[0].id);
-    button(open(host), 'Delete').click(); // a later page depends on this question
-    expect(host.querySelector('.fd-designer-issues')?.textContent).toMatch(/reads "q_1", which is not a field/);
+    // A question that hangs on its own answer. (Deleting one a later page hangs on is not refused: a check names the rule left behind.)
+    const own = nodes(designer.getPage())[0];
+    designer.setCondition(own.id, { field: own.field, equals: true });
+    expect(host.querySelector('.fd-designer-issues')?.textContent).toBe('A question cannot depend on its own answer');
     expect(cards(host)).toHaveLength(1);
   });
 

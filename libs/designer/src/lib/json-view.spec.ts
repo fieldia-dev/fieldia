@@ -117,7 +117,7 @@ describe('the JSON view', () => {
     type(JSON.stringify(page, null, 2));
     expect(rows()).toHaveLength(1);
     expect(rows()[0]).toContain('reads "colour", which is not a field of this page');
-    named('Remove that rule')?.click();
+    named('Remove the rule')?.click();
     jest.advanceTimersByTime(400);
     expect(rows()).toEqual([]);
     expect(node(JSON.parse(box().value), why).invisible).toBeUndefined();

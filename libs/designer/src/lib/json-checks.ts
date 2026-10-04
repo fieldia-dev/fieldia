@@ -1,5 +1,5 @@
 import type { Page } from '@fieldia/core';
-import { conditionToHide, type Condition } from './conditions';
+import { conditionToHide, conditionToHold, type Condition } from './conditions';
 import { placeOf, pathTo, readJson, type Spot } from './json-text';
 import { fixCheck, pageChecks, type CheckFixer, type PageCheck } from './page-checks';
 import { readPage, type JsonProblem } from './page-json';
@@ -24,7 +24,7 @@ export interface JsonCheck {
   errors: number;
 }
 
-type Node = { id?: unknown; field?: unknown; label?: unknown; invisible?: unknown; children?: unknown };
+type Node = { id?: unknown; field?: unknown; label?: unknown; invisible?: unknown; children?: unknown; [key: string]: unknown };
 
 const isNode = (id: string) => (value: object) => (value as Node).id === id;
 
@@ -35,6 +35,24 @@ function checkPath(value: unknown, check: PageCheck): string {
   if (check.at === null || path === null) return '(page)';
   const action = check.fix?.action;
   if (action?.kind === 'drop-rule') return `${path}.invisible`;
+  // A rule's fix: the place the rule is written — on the part, or on the field it works out.
+  if (action?.kind === 'remove-rule') {
+    const field = findPart((value as Page).layout, check.at)?.part.field;
+    const at = action.index === undefined ? '' : `.${action.index}`;
+    switch (action.rule) {
+      case 'shows':
+        return `${path}.invisible`;
+      case 'required':
+      case 'readonly':
+        return `${path}.${action.rule}`;
+      case 'answer':
+        return `${path}.validate${at}`;
+      case 'compute':
+        return typeof field === 'string' ? `fields.${field}.compute` : path;
+      case 'set':
+        return typeof field === 'string' ? `fields.${field}.setWhen${at}` : path;
+    }
+  }
   if (action?.kind !== 'go') return path;
   // A question's words are its own, or else its field's; its options are its field's.
   const node = findPart((value as Page).layout, check.at)?.part;
@@ -82,6 +100,11 @@ function findPart(value: unknown, id: string): { part: Node; list: unknown[] } |
 
 /** A check's fixes, done on a page read from text: nothing is checked until the text is read again. */
 function textFixer(draft: Page): CheckFixer {
+  /** The field a part on the page shows, to change what it is worked out from. */
+  const fieldOf = (id: string) => {
+    const name = findPart(draft.layout, id)?.part['field'];
+    return typeof name === 'string' ? (draft.fields[name] as unknown as Record<string, unknown> | undefined) : undefined;
+  };
   return {
     getPage: () => draft,
     removeNode(id) {
@@ -95,6 +118,34 @@ function textFixer(draft: Page): CheckFixer {
       if (!found) return false;
       if (condition?.rules.length) found.part.invisible = conditionToHide(condition);
       else delete found.part.invisible;
+      return true;
+    },
+    setRule(id, which, condition: Condition | null) {
+      const found = findPart(draft.layout, id);
+      if (!found) return false;
+      if (condition?.rules.length) found.part[which] = conditionToHold(condition);
+      else delete found.part[which];
+      return true;
+    },
+    setCompute(id, expression) {
+      const field = fieldOf(id);
+      if (!field) return false;
+      if (expression === null) delete field['compute'];
+      else field['compute'] = expression;
+      return true;
+    },
+    setSetWhen(id, items) {
+      const field = fieldOf(id);
+      if (!field) return false;
+      if (items?.length) field['setWhen'] = items;
+      else delete field['setWhen'];
+      return true;
+    },
+    removeAnswerRule(id, index) {
+      const rules = findPart(draft.layout, id)?.part['validate'] as unknown[] | undefined;
+      if (!rules?.[index]) return false;
+      rules.splice(index, 1);
+      if (!rules.length) delete (findPart(draft.layout, id) as { part: Node }).part['validate'];
       return true;
     },
     select: () => undefined,

@@ -19,6 +19,7 @@ import { toolbox } from './toolbox';
 import { tryIt } from './try-it';
 import { translationsView } from './translations-view';
 import { jsonView } from './json-view';
+import { rulesOverview } from './rules-overview';
 
 /**
  * The screen editor: an app screen built where it is seen. On the left, the
@@ -71,7 +72,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     titleLabel: 'Screen title',
     placeholder: 'Untitled screen',
     extra: [modes.element, trial.toggle],
-    find: () => [...findItems(), ...trial.items(), ...words.items(), ...panel.findItems(), ...json.items()],
+    find: () => [...findItems(), ...trial.items(), ...words.items(), ...ruleList.items(), ...panel.findItems(), ...json.items()],
     // A check about a field's words or options: it is open on the canvas by now, the cursor goes there.
     goTo(id, part) {
       if (part === 'label') return canvas.focus(id, 'label', true);
@@ -126,6 +127,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const json = jsonView({ el, doc, designer, trial, body });
   root.append(bar.element, bar.issues, body, trial.element, json.element);
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
+  const ruleList = rulesOverview({ el, doc, designer, root, body, modes: trial.toggle });
 
   // ---- adding ------------------------------------------------------------------
   /** Where something picked in the toolbox goes: after the field picked, into the section picked or a picked tab's first, or the last on show. */
@@ -317,6 +319,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       trial.destroy();
       words.destroy();
       json.destroy();
+      ruleList.destroy();
       root.remove();
     },
   };

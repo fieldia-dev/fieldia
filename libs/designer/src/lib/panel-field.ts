@@ -8,6 +8,7 @@ import { kindOfField, storedAs } from './kinds';
 import { onTab, setting } from './panel-controls';
 import { labelsSetting, widthSetting } from './panel-layout';
 import { allSections, findField, sectionLabel } from './page-tree';
+import { fieldRules } from './rules-panel';
 import type { PropertiesView } from './screen-properties';
 
 /**
@@ -76,6 +77,8 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   showWhen.addEventListener('click', () => when.start());
   const noRules = el('p', { class: 'fd-properties-hint', hidden: '' }, 'Always. A rule needs another field that holds one of a list, or yes or no.');
   const whenBox = onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, 'When it shows'), when.element, showWhen, noRules), 'rules', 'When it shows');
+  // Worked out from others, set when, and the rules its answer keeps.
+  const own = fieldRules(el, designer, id);
 
   // ---- Data: what it is stored under and as ----
   const name = el('code', { class: 'fd-insp-code' });
@@ -106,6 +109,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('div', { class: 'fd-q-required-row' }, el('label', { class: 'fd-q-required' }, required, el('span', {}, 'Required')), requiredOnly), requiredWhen.element), 'rules', 'Required'),
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, readonlyWhen.element, readonlyOnly), 'rules', 'Read-only'),
     whenBox,
+    ...own.rows,
     setting(el, 'data', 'Field name', name, { hint: nameHint }),
     setting(el, 'data', 'Stored as', stored, { hint: fromModelNote }),
     relationRow,
@@ -155,6 +159,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       when.update(page, others, found.node.invisible);
       showWhen.hidden = !when.element.hidden || !when.canStart();
       noRules.hidden = !when.element.hidden || when.canStart();
+      own.update(page);
 
       // Data.
       name.textContent = found.node.field;

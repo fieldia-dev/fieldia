@@ -89,7 +89,7 @@ test.describe('the JSON view of the screen editor', () => {
     const caretLine = await box(page).evaluate((t: HTMLTextAreaElement) => t.value.slice(0, t.selectionStart).split('\n').length);
     expect(caretLine).toBe(lineOf(text, '"invisible"'));
     await screen(page, 'json-rule-problem', { viewport: true });
-    await row.getByRole('button', { name: 'Remove that rule' }).click();
+    await row.getByRole('button', { name: 'Remove the rule' }).click();
     await expect(rows(page)).toHaveCount(0);
     await expect(box(page)).not.toHaveValue(/colour/);
     await expect(page.locator('.fd-json-state')).toHaveText('Fixed in the text. Apply to keep it.');

@@ -79,7 +79,7 @@ describe('checks before publishing', () => {
     designer.setOptions(role, ['Developer']);
     const [check] = pageChecks(designer.getPage());
     expect([check.severity, check.text, check.at]).toEqual(['must', '“Why not?” shows only when Role is “manager”, which Role no longer offers, so it never shows.', why]);
-    expect(check.fix?.label).toBe('Remove that rule');
+    expect(check.fix?.label).toBe('Remove the rule');
     expect(designer.fixCheck(check)).toBe(true);
     expect(pageChecks(designer.getPage())).toEqual([]);
   });
@@ -103,15 +103,16 @@ describe('checks before publishing', () => {
     const node = (page.layout as WizardNode).children[0].children.find((n) => n.id === why) as FieldNode;
     node.invisible = `${node.invisible} or colour != 'red'`;
     const found = pageChecks(page).filter((c) => c.at === why);
-    expect(found.map((c) => [c.severity, c.text, c.fix?.label])).toEqual([['must', '“Why not?” has a rule on “colour”, which is not a field of this page.', 'Remove that rule']]);
-    expect(found[0].fix?.action).toEqual({ kind: 'drop-rule', id: why, rule: 1 });
+    expect(found.map((c) => [c.severity, c.text, c.fix?.label])).toEqual([['must', '“Why not?”: “Shows when Coming? is No and colour is red” reads colour, which is no longer on the page.', 'Remove the rule']]);
+    // Only the part of the rule that reads it goes: "Coming? is No" stays.
+    expect(found[0].fix?.action).toEqual({ kind: 'remove-rule', id: why, rule: 'shows', fields: ['colour'] });
   });
 
   it('finds two questions asking the same thing', () => {
     const { designer } = survey();
     const again = designer.addQuestion('short-answer') as string;
     designer.updateQuestion(again, { label: 'Role' });
-    expect(pageChecks(designer.getPage()).map((c) => [c.severity, c.text, c.at, c.fix?.label])).toEqual([['should', 'Two questions ask “Role”: people may not tell them apart.', again, 'Go to the second']]);
+    expect(pageChecks(designer.getPage()).map((c) => [c.severity, c.text, c.at, c.fix?.label])).toEqual([['should', 'Two questions read “Role”: people may not tell them apart.', again, 'Rename the second']]);
   });
 
   it('lists what stops people before what only looks wrong', () => {
