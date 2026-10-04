@@ -1,4 +1,5 @@
 import type { ElementFactory } from './chrome';
+import { designerIcon } from './icons';
 
 /**
  * Find anything: one box over a list of everything the editor can add, go to
@@ -11,6 +12,8 @@ export interface FindItem {
   label: string;
   /** A quiet word on the right: what kind of thing it is. */
   hint?: string;
+  /** Its icon by name, as it shows elsewhere — the Rules view's, as in the bar. */
+  icon?: string;
   run(): void;
 }
 
@@ -44,7 +47,13 @@ export function openFind(el: ElementFactory, root: HTMLElement, items: FindItem[
     at = Math.min(at, Math.max(0, found.length - 1));
     list.replaceChildren(
       ...found.map((item, i) => {
-        const option = el('div', { class: 'fd-find-option', role: 'option', id: `${id}-${i}`, 'aria-selected': String(i === at) }, el('span', { class: 'fd-find-label' }, item.label), ...(item.hint ? [el('span', { class: 'fd-find-hint' }, item.hint)] : []));
+        const option = el(
+          'div',
+          { class: 'fd-find-option', role: 'option', id: `${id}-${i}`, 'aria-selected': String(i === at) },
+          ...(item.icon ? [designerIcon(doc, item.icon)] : []),
+          el('span', { class: 'fd-find-label' }, item.label),
+          ...(item.hint ? [el('span', { class: 'fd-find-hint' }, item.hint)] : [])
+        );
         option.addEventListener('pointerdown', (event) => event.preventDefault());
         option.addEventListener('click', () => run(item));
         return option;

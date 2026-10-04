@@ -1,6 +1,7 @@
 /**
  * The designer's styles for what closes the gap with other form builders:
- * looks to start from on the Look tab, and the mark of a group that folds.
+ * looks to start from on the Look tab, the mark of a group that folds, and
+ * an icon by what Find anything lists, where it has one of its own.
  */
 export const DESIGNER_GAP_CSS = /* css */ `
 /* Looks to start from: a tile each, its words in its font and accent on its scheme's surface. */
@@ -26,4 +27,7 @@ export const DESIGNER_GAP_CSS = /* css */ `
 .fd-canvas-fold .fd-dicon { width: 15px; height: 15px; }
 .fd-canvas-fold[data-fold="folded"] .fd-dicon { transform: rotate(-90deg); }
 .fd-canvas-fold[data-fold="folded"]:dir(rtl) .fd-dicon { transform: rotate(90deg); }
+/* Find anything: an icon before what has one of its own, as the bar shows it. */
+.fd-find-option > .fd-dicon { width: 16px; height: 16px; margin-inline-end: -4px; color: var(--fd-muted); }
+.fd-find-option[aria-selected="true"] > .fd-dicon { color: var(--fd-accent); }
 `;
