@@ -41,6 +41,7 @@ import { keepWhatRulesRead } from './rules-reads';
 import * as clipboard from './clipboard-ops';
 import * as moves from './outline-moves';
 import { outlineRows } from './outline-rows';
+import { LOOK_PRESETS } from './look-presets';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -387,6 +388,9 @@ export interface Designer extends HeaderCommands, ListCommands {
    * field the page has not got.
    */
   pasteParts(text: string): { ids: string[]; dropped: number } | false;
+  // gap lane
+  /** A look to start from, by its id: its accent, font, spacing, corners and colours, as one undo step; where labels sit is kept. */
+  setLookPreset(id: string): boolean;
 }
 
 /** One of the app's lists of choices, by the name its data source answers to, and the words a person picks it by. */
@@ -1295,6 +1299,14 @@ export function createDesigner(options: {
       selected = picked[picked.length - 1] ?? null;
       notify();
       return done;
+    },
+    // gap lane
+    setLookPreset(id) {
+      return apply((draft) => {
+        const preset = LOOK_PRESETS.find((p) => p.id === id);
+        if (!preset) throw new Refusal(`There is no look “${id}”`);
+        settings.setLook(draft, preset.look);
+      });
     },
   };
   return designer;
