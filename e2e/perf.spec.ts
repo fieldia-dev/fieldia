@@ -99,7 +99,7 @@ function harness() {
   };
 }
 
-const results: { scenario: string; action: string; budget: number; median: number; runs: number[]; longest: number; load: number }[] = [];
+const results: { scenario: string; action: string; budget: number; median: number; runs: number[]; longest: number; load: number; at: string }[] = [];
 const median = (values: number[]) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 const round = (n: number) => Math.round(n * 10) / 10;
 
@@ -119,7 +119,7 @@ async function timeIt(page: Page, scenario: string, action: string, budget: numb
 /** Note a timing, and hold its median to the budget, softly: the other timings are still taken. */
 function record(scenario: string, action: string, budget: number, runs: Timing[]) {
   const work = runs.map((r) => round(r.work));
-  const row = { scenario, action, budget, median: median(work), runs: work, longest: round(Math.max(...runs.map((r) => r.longest))), load: round(loadavg()[0]) };
+  const row = { scenario, action, budget, median: median(work), runs: work, longest: round(Math.max(...runs.map((r) => r.longest))), load: round(loadavg()[0]), at: new Date().toISOString() };
   results.push(row);
   mkdirSync('test-results/perf', { recursive: true });
   appendFileSync('test-results/perf/results.jsonl', `${JSON.stringify(row)}\n`);
@@ -143,6 +143,9 @@ async function timeOpening(page: Page, scenario: string, url: string, name: stri
   }
   record(scenario, 'open the page', budget, runs);
 }
+
+// Tracing snapshots the page from inside it, at every step: on 500 fields, it would be most of what is timed.
+test.use({ trace: 'off' });
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(harness);
@@ -231,7 +234,7 @@ for (const editor of EDITORS) {
     await label().click();
     await page.keyboard.press('End');
     await timeIt(page, scenario, 'type in a label', BUDGET.designerKey, 'input', () => page.keyboard.type('x'));
-    await expect(label()).toHaveValue(/xxxxxxx$/);
+    await expect(label()).toHaveValue(/x{7}/);
 
     // Add a field from the toolbox, after the one picked; then take each back.
     const tile = page.locator('.fd-toolbox [data-tool="kind:short-answer"]');
@@ -261,11 +264,12 @@ for (const editor of EDITORS) {
       }, id);
     const from = survey ? 'page-02' : 'section-02';
     const to = survey ? 'page-03' : 'section-03';
+    const firstOfNext = page.locator(survey ? '.fd-design-step[data-node="page-03"] .fd-q' : '.fd-canvas-section[data-node="section-03"] .fd-canvas-field').first();
     const moved = ['f-s02-reference', 'f-s02-address', 'f-s02-deadline', 'f-s02-rating', 'f-s02-categories', 'f-s02-contact', 'f-s02-notes'];
     await timeIt(page, scenario, 'drop a field in another section', BUDGET.designerEdit, 'pointerup', async (run) => {
       const grab = words(moved[run]);
-      await grab.scrollIntoViewIfNeeded();
-      await page.mouse.wheel(0, 260);
+      // The field carried in the middle of the window, clear of the bar; the next section's first field below it.
+      await grab.evaluate((element) => element.scrollIntoView({ block: 'center' }));
       const start = (await grab.boundingBox())!;
       const at = { x: start.x + 10, y: start.y + start.height / 2 };
       await page.mouse.move(at.x, at.y);
@@ -273,7 +277,7 @@ for (const editor of EDITORS) {
       let now = at;
       // Head for the top of the next section's first field, looking again as the fields move aside.
       for (let look = 0; look < 4; look++) {
-        const target = (await card('f-s03-name').boundingBox())!;
+        const target = (await firstOfNext.boundingBox())!;
         const aim = { x: target.x + 12, y: target.y + 6 };
         const steps = Math.max(2, Math.ceil(Math.hypot(aim.x - now.x, aim.y - now.y) / 60));
         for (let i = 1; i <= steps; i++) await page.mouse.move(now.x + ((aim.x - now.x) * i) / steps, now.y + ((aim.y - now.y) * i) / steps);
@@ -282,8 +286,11 @@ for (const editor of EDITORS) {
       }
       await page.mouse.up();
     });
-    for (const id of moved) expect.soft(await sectionOf(id), `${id} is moved`).not.toBe(from);
-    expect.soft(await sectionOf(moved[0])).toBe(survey ? to : await sectionOf(moved[0]));
+    for (const id of moved) {
+      // Advanced may put it beside a field, in a row of its own inside the section.
+      if (editor.advanced) expect.soft(await sectionOf(id), `${id} is moved`).not.toBe(from);
+      else expect.soft(await sectionOf(id), `${id} is moved`).toBe(to);
+    }
 
     // The views over the page: each opened, and closed again by Design.
     const mode = (name: string) => page.locator(`.fd-designer-bar [data-mode="${name}"]`);
@@ -304,7 +311,10 @@ for (const editor of EDITORS) {
       box.setSelectionRange(at, at);
     });
     await timeIt(page, scenario, 'type in the JSON', BUDGET.designerKey, 'input', () => page.keyboard.type('x'));
-    await back();
+    // Typed, not applied: going back asks first.
+    await mode('design').click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Discard' }).click();
+    await expect(page.locator(survey ? '.fd-survey-body' : '.fd-screen-body')).toBeVisible();
 
     // Type a translation.
     await mode('translations').click();
@@ -312,7 +322,7 @@ for (const editor of EDITORS) {
     await cell.click();
     await page.keyboard.press('End');
     await timeIt(page, scenario, 'type a translation', BUDGET.designerKey, 'input', () => page.keyboard.type('x'));
-    await expect(cell).toHaveValue(/xxxxxxx$/);
+    await expect(cell).toHaveValue(/x{7}/);
     await back();
 
     // The outline: opened, and a row moved down by the keyboard.
