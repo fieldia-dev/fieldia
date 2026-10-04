@@ -1,7 +1,7 @@
 import type { ElementFactory } from './chrome';
 import { designerIcon } from './icons';
 import { shownWithin } from './panel-controls';
-import { tabStrip, tabsFor, type PanelTab, type PartKind } from './panel-tabs';
+import { SIMPLE_RULES, tabStrip, tabsFor, type PanelTab, type PartKind } from './panel-tabs';
 import type { PropertiesView } from './screen-properties';
 
 /**
@@ -56,7 +56,8 @@ export interface InspectorShell {
   /** Where the panel's own controls go above the tabs, such as the search. */
   top: HTMLElement;
   /** Show a view of what is picked: its rows in the tabs that apply. */
-  show(kind: PartKind, view: PropertiesView): void;
+  /** Show a view of what is picked, in the tabs its kind has in this mode. */
+  show(kind: PartKind, view: PropertiesView, mode?: 'simple' | 'advanced'): void;
   head(head: InspectorHead): void;
   current(): PanelTab;
   choose(tab: PanelTab): void;
@@ -100,9 +101,9 @@ export function inspectorShell(el: ElementFactory, doc: Document): InspectorShel
   return {
     element,
     top,
-    show(nextKind, view) {
+    show(nextKind, view, mode = 'advanced') {
       kind = nextKind;
-      const applies = tabsFor(kind);
+      const applies = tabsFor(kind, mode);
       panelOf.clear();
       const make = (at: PanelTab) => {
         const panel = el('div', { class: 'fd-props fd-insp-panel', role: 'tabpanel', id: strip.panelId(at), 'aria-labelledby': strip.tabId(at), 'data-panel': at });
@@ -114,6 +115,11 @@ export function inspectorShell(el: ElementFactory, doc: Document): InspectorShel
       const content = panelOf.get('content');
       for (const row of [...view.element.children] as HTMLElement[]) {
         const at = (row.dataset['tab'] as PanelTab | undefined) ?? 'content';
+        // Simple keeps the Rules tab to when it shows and whether it is required.
+        if (mode === 'simple' && at === 'rules' && !SIMPLE_RULES.has(row.dataset['setting'] ?? '')) {
+          row.remove();
+          continue;
+        }
         if (at === 'content') continue;
         const panel = panelOf.get(at);
         if (panel) panel.append(row);

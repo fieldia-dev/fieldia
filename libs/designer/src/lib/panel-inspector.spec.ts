@@ -60,7 +60,7 @@ function tabOf(host: Element, name: string): string | null {
 describe('the panel — tabs', () => {
   it('heads a field with its kind and name, and gives it Content, Layout, Rules and Data', () => {
     const { designer, ids } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     designer.select(ids['next']);
     expect(head(host)).toEqual(['Dropdown', 'Next step']);
     expect(tabs(host)).toEqual(['Content', 'Layout', 'Rules', 'Data']);
@@ -78,7 +78,7 @@ describe('the panel — tabs', () => {
 
   it('says a field is from the model, and what it is stored under', () => {
     const { designer } = visitReport({ credit_limit: { type: 'monetary', label: 'Credit limit', currency: 'EGP' } });
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     const id = designer.addModelField('credit_limit', { parent: 'section-1' }) as string;
     designer.select(id);
     expect(head(host)).toEqual(['Amount', 'Credit limit']);
@@ -91,7 +91,7 @@ describe('the panel — tabs', () => {
 
   it('gives a group Content, Layout, Look and Rules, and the page Content, Layout and Look', () => {
     const { designer, sections } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     expect(head(host)).toEqual(['Screen', 'Visit report']);
     expect(tabs(host)).toEqual(['Content', 'Layout', 'Look']);
     designer.select(sections[1]);
@@ -101,7 +101,7 @@ describe('the panel — tabs', () => {
 
   it('keeps the tab when another part of the same kind is picked; a part of another kind keeps its own', () => {
     const { designer, ids, sections } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     designer.select(ids['customer']);
     openTab(host, 'Rules');
     designer.select(ids['date']);
@@ -117,7 +117,7 @@ describe('the panel — tabs', () => {
 
   it('goes along the tabs with the arrow keys, the panel following', () => {
     const { designer, ids } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     designer.select(ids['customer']);
     tabButtons(host)[0].focus();
     press('ArrowRight', {}, tabButtons(host)[0]);
@@ -132,7 +132,7 @@ describe('the panel — tabs', () => {
 
   it('opens Rules when the bar on a field asks when it shows', () => {
     const { designer, ids } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     const card = () => host.querySelector(`.fd-canvas-field[data-node="${ids['notes']}"]`) as HTMLElement;
     card().click();
     button(card(), 'Show only when…')?.click();
@@ -142,7 +142,7 @@ describe('the panel — tabs', () => {
 
   it('says Several, and how many, when several are picked', () => {
     const { designer, ids } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     designer.pick(ids['customer']);
     designer.pick(ids['date'], { add: true });
     expect(head(host)).toEqual(['Several', '2 parts picked']);
@@ -151,7 +151,7 @@ describe('the panel — tabs', () => {
 
   it('puts no setting on a tab that does not apply, and shows no empty tab', () => {
     const { designer, ids, sections } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     for (const id of [null, ids['next'], ids['call'], sections[0]]) {
       designer.select(id);
       const names = tabs(host);
@@ -203,7 +203,7 @@ describe('the panel — no setting lost', () => {
 
   it('reaches every control a field, a section and the page had, in some tab', () => {
     const { designer, ids, sections } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     // A dropdown picked whose rules can test “Call back?”.
     const next = sectionsOf(designer.getPage())[1].children[0] as FieldNode;
     designer.placeNode(ids['call'], sections[1], 0);
@@ -222,7 +222,7 @@ describe('the panel — no setting lost', () => {
 
   it('reaches every control a sheet, its tabs and a tab had, in some tab', () => {
     const designer = createDesigner({ page: blankPage('sheet', 'Customer') });
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     expect(reachable(host, BEFORE['sheet'])).toEqual(everywhere(BEFORE['sheet']));
     const tabsId = designer.addTabs() as string;
     designer.addTab(tabsId, 'Tab 2');

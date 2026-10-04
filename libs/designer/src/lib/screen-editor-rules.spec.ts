@@ -16,7 +16,7 @@ function sheet() {
   designer.addModelField('reason', { parent: 'section-1' });
   const node = (name: string) => ((designer.getPage().layout as unknown as { children: SectionNode[] }).children[0].children as FieldNode[]).find((n) => n.field === name) as FieldNode;
   designer.select(node('reason').id);
-  const { host } = mount(designer);
+  const { host } = mount(designer, { mode: 'advanced' });
   openTab(host, 'Rules');
   const panel = () => host.querySelector('.fd-properties') as HTMLElement;
   return { designer, node, panel };
@@ -46,7 +46,7 @@ describe('screen editor — required when, read-only when', () => {
     const why = designer.addQuestion('paragraph', { parent: 'section-1' }) as string;
     const node = () => ((designer.getPage().layout as unknown as { children: SectionNode[] }).children[0].children as FieldNode[]).find((n) => n.id === why) as FieldNode;
     designer.select(why);
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     openTab(host, 'Rules');
     const panel = host.querySelector('.fd-properties') as HTMLElement;
     (button(panel, 'Required only when…') as HTMLButtonElement).click();

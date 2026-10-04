@@ -10,7 +10,9 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-export function mount(designer: Designer) {
+/** The screen editor on the page, in the mode the browser keeps (Simple when it keeps none), or in the one asked for. */
+export function mount(designer: Designer, options: { mode?: 'simple' | 'advanced' } = {}) {
+  if (options.mode) window.localStorage.setItem('fieldia.designer.mode', options.mode);
   const host = document.createElement('div');
   document.body.append(host);
   handle = mountScreenEditor(host, { designer });

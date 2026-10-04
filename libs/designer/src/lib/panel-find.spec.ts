@@ -10,7 +10,7 @@ function editor() {
   const id = designer.addQuestion('short-answer', { parent: 'section-1' }) as string;
   designer.updateQuestion(id, { label: 'Customer' });
   designer.select(null);
-  const { host } = mount(designer);
+  const { host } = mount(designer, { mode: 'advanced' });
   const panel = host.querySelector('.fd-properties') as HTMLElement;
   /** ⌘K, the words typed, and what it lists. */
   const find = (words: string) => {

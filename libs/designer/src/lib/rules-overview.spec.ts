@@ -28,7 +28,7 @@ function screen(withRules = true) {
     section.children[1] = { ...section.children[1], required: 'vip == True' } as never;
   }
   const designer = createDesigner({ page });
-  const { host } = mount(designer);
+  const { host } = mount(designer, { mode: 'advanced' });
   const view = () => host.querySelector('.fd-rules-view') as HTMLElement;
   const toggle = () => host.querySelector('.fd-designer-bar [data-mode="rules"]') as HTMLButtonElement;
   const groups = () =>

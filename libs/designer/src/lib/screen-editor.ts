@@ -77,6 +77,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     root.dataset['mode'] = next;
     modes.set(next);
     canvas.setMode(next);
+    panel.setMode(next);
     render(designer.getState());
   }
   const bar = designerBar(root, designer, {
@@ -135,6 +136,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     },
   });
   const panel = screenPanel({ el, doc, designer, wearer: canvas.element });
+  panel.setMode(mode);
   // A blank screen: templates to start from.
   const start = startHere({ el, doc, designer, root, survey: false, templates: options.templates, assistant: options.assistant ?? designer.assistant(), blankFocus: () => root.querySelector('.fd-tool-find') });
   const body = el('div', { class: 'fd-screen-body' }, side.element, el('div', { class: 'fd-canvas-scroll' }, start.element, canvas.element, list.element), panel.element);

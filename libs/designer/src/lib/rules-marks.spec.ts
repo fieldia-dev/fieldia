@@ -24,7 +24,7 @@ function screen() {
   section.children[3] = { ...section.children[3], invisible: 'vip != True', validate: [{ endsWith: '@acme.com' }] } as never;
   page.fields = JSON.parse(JSON.stringify(fields));
   const designer = createDesigner({ page });
-  const { host } = mount(designer);
+  const { host } = mount(designer, { mode: 'advanced' });
   const marks = (id: string) => [...host.querySelectorAll<HTMLElement>(`[data-node="${id}"] .fd-rule-mark`)];
   return { designer, host, marks };
 }

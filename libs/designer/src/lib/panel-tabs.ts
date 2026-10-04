@@ -37,7 +37,13 @@ export type PartKind =
   | 'column'
   | 'action';
 
-export function tabsFor(kind: PartKind): PanelTab[] {
+/** On a field's Rules tab in Simple mode: when it shows and whether it is required. The rest waits for Advanced. */
+export const SIMPLE_RULES: ReadonlySet<string> = new Set(['Required', 'When it shows']);
+
+export function tabsFor(kind: PartKind, mode: 'simple' | 'advanced' = 'advanced'): PanelTab[] {
+  // Simple keeps to what most forms need: a field's words and its rules, every other part's words — and what the
+  // page is, a screen or a record sheet, which no form can do without.
+  if (mode === 'simple' && kind !== 'several') return kind === 'field' ? ['content', 'rules'] : kind === 'page' ? ['content', 'layout'] : ['content'];
   switch (kind) {
     case 'page':
       return ['content', 'layout', 'look'];

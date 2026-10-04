@@ -31,6 +31,8 @@ export interface ScreenPanel {
   open(part: 'field' | 'when' | 'filters'): void;
   /** For Find anything: the settings of what is picked, and the page's look. */
   findItems(): FindItem[];
+  /** Simple or Advanced: the tabs and settings on show follow it. */
+  setMode(mode: 'simple' | 'advanced'): void;
 }
 
 /** The tab each part the canvas asks for is on. */
@@ -101,6 +103,7 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
   const search = settingSearch(el, doc, shell);
   let key = '';
   let view: PropertiesView | null = null;
+  let mode: 'simple' | 'advanced' = 'advanced';
 
   function viewOf(kind: PartKind, picked: readonly string[]): PropertiesView {
     const id = picked[picked.length - 1] ?? '';
@@ -149,17 +152,22 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
     update(state) {
       const { page, picked } = state;
       const kind = partKindOf(page, picked);
-      const now = kind === 'page' || kind === 'list' ? kind : `${kind}:${picked.join(',')}`;
+      const now = `${mode}:${kind === 'page' || kind === 'list' ? kind : `${kind}:${picked.join(',')}`}`;
       if (now !== key) {
         key = now;
         view = viewOf(kind, picked);
-        shell.show(kind, view);
+        shell.show(kind, view, mode);
       }
       view?.update(page);
       shell.head(headOf(page, kind, picked, (id) => designer.isFromModel(id)));
       search.refresh();
       // The canvas wears the page's look as it is set.
       if (wearer) wearLook(wearer, page.look);
+    },
+    setMode(next) {
+      mode = next;
+      key = '';
+      this.update(designer.getState());
     },
     findItems() {
       const page = designer.getPage();
@@ -168,8 +176,8 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
         own.map((row) => ({ ...row, tab: TAB_NAMES[row.tab], row })),
         ({ row }, choice) => go(row.tab, row.name, choice)
       );
-      // The page's look, from wherever: what is picked is put down to show it.
-      if (partKindOf(page, designer.getState().picked) === 'page' || page.layout.type === 'list') return items;
+      // The page's look, from wherever: what is picked is put down to show it. Simple keeps the look as it is.
+      if (mode === 'simple' || partKindOf(page, designer.getState().picked) === 'page' || page.layout.type === 'list') return items;
       const look = pageLookSettings(el, designer);
       look.update(page);
       const names = new Set(own.map((row) => row.name));

@@ -27,7 +27,7 @@ const card = (host: Element, id: string) => host.querySelector(`.fd-canvas-field
 describe('screen editor — adding from the toolbox', () => {
   it('adds after the field picked, with its name selected on the canvas to be typed over', () => {
     const { designer, ids } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     designer.select(ids['customer']);
     tile(host, 'kind:email').click();
     const added = designer.getState().selected as string;
@@ -46,7 +46,7 @@ describe('screen editor — adding from the toolbox', () => {
 
   it('adds at the end of the section picked, or of the last one on show', () => {
     const { designer, sections } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     tile(host, 'kind:date').click();
     expect(fieldsOf(designer.getPage(), 1)).toHaveLength(2);
     designer.select(sections[0]);
@@ -56,7 +56,7 @@ describe('screen editor — adding from the toolbox', () => {
 
   it('adds the model’s fields as they are, and lists only those not on the page', () => {
     const { designer } = visitReport({ vat: { type: 'char', label: 'VAT number' }, credit_limit: { type: 'monetary', label: 'Credit limit', currency: 'EGP' } });
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     expect([...host.querySelectorAll('.fd-tool-group-model [data-tool]')].map((t) => t.getAttribute('data-tool'))).toEqual(['model:vat', 'model:credit_limit']);
     tile(host, 'model:credit_limit').click();
     expect(designer.getPage().fields['credit_limit']).toEqual({ type: 'monetary', label: 'Credit limit', currency: 'EGP' });
@@ -65,7 +65,7 @@ describe('screen editor — adding from the toolbox', () => {
 
   it('adds a section from the layout tiles', () => {
     const { designer } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     tile(host, 'layout:section').click();
     expect(sectionsOf(designer.getPage())).toHaveLength(3);
     const created = sectionsOf(designer.getPage())[2].id;
@@ -80,7 +80,7 @@ describe('screen editor — adding from the toolbox', () => {
 describe('screen editor — the panel', () => {
   it('shows the field picked, and changes it: label, kind, required, help', () => {
     const { designer, ids } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     card(host, ids['next']).click();
     expect(host.querySelector('.fd-properties .fd-panel-title')?.textContent).toBe('Dropdown');
     type(field(host, 'Label'), 'Next steps');
@@ -97,7 +97,7 @@ describe('screen editor — the panel', () => {
 
   it('offers a model field only the kinds that fit it, and says why', () => {
     const { designer } = visitReport({ credit_limit: { type: 'monetary', label: 'Credit limit', currency: 'EGP' } });
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     tile(host, 'model:credit_limit').click();
     const kind = field(host, 'Shown as') as HTMLSelectElement;
     expect([...kind.options].map((o) => o.value)).toEqual(['amount']);
@@ -109,7 +109,7 @@ describe('screen editor — the panel', () => {
 
   it('sets the width, and moves a field to another section', () => {
     const { designer, ids, sections } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     designer.select(ids['customer']);
     openTab(host, 'Layout');
     const width = host.querySelector('.fd-properties [role="group"][aria-label="Width"]') as HTMLElement;
@@ -124,7 +124,7 @@ describe('screen editor — the panel', () => {
 
   it('shows a field only for some answers, set from the bar on the field', () => {
     const { designer, ids } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     const call = designer.addQuestion('yes-no', { parent: 'section-1' }) as string;
     designer.updateQuestion(call, { label: 'Call back?' });
     card(host, ids['notes']).click();
@@ -140,7 +140,7 @@ describe('screen editor — the panel', () => {
 
   it('duplicates and deletes the field picked', () => {
     const { designer, ids } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     designer.select(ids['date']);
     button(host.querySelector('.fd-properties') as Element, 'Duplicate')?.click();
     expect(fieldsOf(designer.getPage(), 0)).toHaveLength(4);
@@ -150,7 +150,7 @@ describe('screen editor — the panel', () => {
 
   it('renames a section, changes its columns, and deletes one', () => {
     const { designer, sections } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     designer.select(sections[1]);
     type(field(host.querySelector('.fd-properties') as Element, 'Section title'), 'Next steps');
     openTab(host, 'Layout');
@@ -168,7 +168,7 @@ describe('screen editor — the panel', () => {
 describe('screen editor — the keyboard', () => {
   it('moves the field picked with Alt and an arrow, and deletes it with Delete', () => {
     const { designer, ids } = visitReport();
-    mount(designer);
+    mount(designer, { mode: 'advanced' });
     designer.select(ids['customer']);
     press('ArrowDown', { altKey: true }, document.body);
     expect(fieldsOf(designer.getPage(), 0).map((n) => n.id)).toEqual([ids['date'], ids['customer'], ids['notes']]);
@@ -180,7 +180,7 @@ describe('screen editor — the keyboard', () => {
 
   it('leaves Delete to the box being typed in, and puts the field down on Escape', () => {
     const { designer, ids } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     card(host, ids['date']).click();
     const label = card(host, ids['date']).querySelector('[data-inline="label"]') as HTMLInputElement;
     label.focus();
@@ -195,7 +195,7 @@ describe('screen editor — the keyboard', () => {
 describe('screen editor — try it', () => {
   it('shows the screen working as people will use it, in place of the editor, and back', () => {
     const { designer } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     const mode = (name: string) => host.querySelector(`.fd-designer-bar button[data-mode="${name}"]`) as HTMLButtonElement;
     mode('try').click();
     expect((host.querySelector('.fd-screen-body') as HTMLElement).hidden).toBe(true);
@@ -218,7 +218,7 @@ describe('screen editor — putting a field down', () => {
 
   it('puts the field picked down at a click on the canvas’s empty room, a section’s, or outside the editor', () => {
     const { designer, ids } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'simple' });
     const canvas = host.querySelector('.fd-canvas') as HTMLElement;
     for (const target of [canvas, host.querySelector('.fd-canvas-section') as HTMLElement, host.querySelector('.fd-screen-body') as HTMLElement, document.body]) {
       designer.select(ids['customer']);
@@ -231,7 +231,7 @@ describe('screen editor — putting a field down', () => {
 
   it('keeps it picked at a click on itself, its bar, the panel, the toolbox or the bar at the top', () => {
     const { designer, ids } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     designer.select(ids['customer']);
     for (const target of [
       // Its own tinted room, and its widget, there to be looked at.
@@ -251,7 +251,7 @@ describe('screen editor — putting a field down', () => {
 
   it('picks another field at a click on it, rather than putting both down', () => {
     const { designer, ids } = visitReport();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     designer.select(ids['customer']);
     (card(host, ids['date']).querySelector('.fd-label') as HTMLElement).click();
     expect(designer.getState().selected).toBe(ids['date']);

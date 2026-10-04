@@ -12,7 +12,7 @@ function screenEditor() {
   const designer = createDesigner({ page: blankPage('screen', 'Visit') });
   designer.addQuestion('short-answer', { parent: 'section-1' });
   designer.select(null);
-  const { host } = mount(designer);
+  const { host } = mount(designer, { mode: 'advanced' });
   const panel = host.querySelector('.fd-properties') as HTMLElement;
   const canvas = host.querySelector('.fd-canvas') as HTMLElement;
   const shown = () => panel.querySelector('[role="tabpanel"]:not([hidden])') as HTMLElement;
@@ -94,7 +94,7 @@ describe('the Look tab — the page', () => {
 describe('the Look tab — a group', () => {
   it('draws a group as a card, plain, with a line under its title, or framed', () => {
     const designer = createDesigner({ page: blankPage('screen', 'Visit') });
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     designer.select('section-1');
     openTab(host, 'Look');
     const panel = host.querySelector('.fd-properties [role="tabpanel"]:not([hidden])') as HTMLElement;

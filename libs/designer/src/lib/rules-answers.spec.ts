@@ -23,7 +23,7 @@ function screen(pick: string) {
   page.fields = JSON.parse(JSON.stringify(fields));
   const designer = createDesigner({ page });
   designer.select(`f-${pick}`);
-  const { host } = mount(designer);
+  const { host } = mount(designer, { mode: 'advanced' });
   openTab(host, 'Rules');
   const panel = () => host.querySelector('.fd-properties') as HTMLElement;
   const node = () => (designer.getPage().layout as unknown as { children: SectionNode[] }).children[0].children.find((n) => n.id === `f-${pick}`) as FieldNode;

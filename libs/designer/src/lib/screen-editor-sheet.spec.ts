@@ -23,7 +23,7 @@ describe('screen editor — a record sheet', () => {
     const company = designer.addQuestion('short-answer') as string;
     designer.updateQuestion(company, { label: 'Company' });
     designer.select(null);
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'simple' });
     const title = host.querySelector('.fd-canvas-title') as HTMLElement;
     expect(title.hidden).toBe(true);
     expect(field(host, 'Title field')).toBeUndefined();
@@ -44,7 +44,7 @@ describe('screen editor — a record sheet', () => {
 
   it('adds tabs: a strip of them, each showing its own sections', () => {
     const { designer } = sheetDesigner();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     tile(host, 'layout:tabs').click();
     const tabs = sheet(designer).children.find((n) => n.type === 'tabs') as TabsNode;
     expect(strip(host)).toEqual(['Tab 1 *']);
@@ -69,7 +69,7 @@ describe('screen editor — a record sheet', () => {
 
   it('renames, moves and deletes a tab from its properties', () => {
     const { designer } = sheetDesigner();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     tile(host, 'layout:tabs').click();
     button(host, 'Add a tab')?.click();
     type(field(host, 'Tab label'), 'Notes');
@@ -82,7 +82,7 @@ describe('screen editor — a record sheet', () => {
 
   it('names the tab a section is in where a field picks its section, and opens the tab of what is picked', () => {
     const { designer, email } = sheetDesigner();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     tile(host, 'layout:tabs').click();
     button(host, 'Add a tab')?.click();
     designer.select(email);
@@ -97,7 +97,7 @@ describe('screen editor — a record sheet', () => {
 
   it('moves a section and the tabs up and down the sheet, and deletes the tabs', () => {
     const { designer } = sheetDesigner();
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     tile(host, 'layout:tabs').click();
     const tabs = (sheet(designer).children.find((n) => n.type === 'tabs') as TabsNode).id;
     designer.select(tabs);
@@ -119,7 +119,7 @@ describe('screen editor — the kinds of field for a screen', () => {
 
   it('draws a table of lines with its columns, and edits them from the panel', () => {
     const designer = createDesigner({ page: blankPage('screen', 'Order') });
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     tile(host, 'kind:lines').click();
     const lines = designer.getState().selected as string;
     expect(headers(host, lines)).toEqual(['Description', 'Quantity']);
@@ -138,7 +138,7 @@ describe('screen editor — the kinds of field for a screen', () => {
 
   it('points a link at its records, and gives an amount its currency', () => {
     const designer = createDesigner({ page: blankPage('screen', 'Order') });
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     tile(host, 'kind:link').click();
     const link = designer.getState().selected as string;
     expect(field(host, 'Links to')?.value).toBe('contact');
@@ -162,7 +162,7 @@ describe('screen editor — a record’s header in the panel', () => {
   };
   const setup = () => {
     const designer = createDesigner({ page: blankPage('sheet', 'Customer'), model });
-    const { host } = mount(designer);
+    const { host } = mount(designer, { mode: 'advanced' });
     const panel = () => host.querySelector('.fd-properties') as HTMLElement;
     const part = (id: string) => host.querySelector(`.fd-canvas [data-part="${id}"]`) as HTMLElement;
     const add = (kind: string) => (host.querySelector(`[data-add-part="${kind}"]`) as HTMLButtonElement).click();

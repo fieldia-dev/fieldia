@@ -10,7 +10,7 @@ import { employeeDesigner, nodeOf } from './test-layout';
 
 function picked(id: string) {
   const designer = employeeDesigner();
-  const { host } = mount(designer);
+  const { host } = mount(designer, { mode: 'advanced' });
   designer.select(id);
   const panel = host.querySelector('.fd-properties') as HTMLElement;
   if ([...panel.querySelectorAll('[role="tab"]')].some((t) => t.textContent === 'Layout')) openTab(host, 'Layout');
