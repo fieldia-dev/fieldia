@@ -1,4 +1,5 @@
 import type { Designer } from './designer';
+import { echo } from './drop-echo';
 import { dropSpot, type DropSpot } from './outline-drop';
 import type { OutlineRow } from './outline-rows';
 
@@ -126,6 +127,8 @@ export function outlineDrag(options: OutlineDragOptions): { destroy(): void } {
     chip.classList.toggle('fd-outline-refused', !spot || !!current.refused);
     line.hidden = !spot || !!spot.into;
     line.classList.toggle('fd-outline-line-refused', !!current.refused);
+    // gap lane: the canvas draws where it lands too.
+    echo(tree, { source: 'outline', spot: current.refused ? null : spot, name: nameOf(current.ids), words: current.words });
     if (!spot) return;
     if (spot.into) {
       options.viewOf(spot.into)?.classList.add('fd-outline-into');
@@ -208,6 +211,7 @@ export function outlineDrag(options: OutlineDragOptions): { destroy(): void } {
     if (!current?.started) return;
     current.chip?.remove();
     current.line?.remove();
+    echo(tree, { source: 'outline', spot: null });
     tree.classList.remove('fd-outline-dragging');
     for (const marked of tree.querySelectorAll('.fd-outline-into, .fd-outline-carried')) marked.classList.remove('fd-outline-into', 'fd-outline-carried');
     swallowNextClick();

@@ -54,7 +54,17 @@ const ROW_BAND = 8;
 const OUT = 5;
 const THICK = 4;
 
-type Side = 'left' | 'right' | 'top' | 'bottom';
+export type Side = 'left' | 'right' | 'top' | 'bottom';
+
+/** The drop line by one side of a box: just off it, as thick as a drop line is. The outline's drag draws the same line on the canvas. */
+export function edgeLine(r: Rect, at: Side): Rect {
+  return at === 'left' || at === 'right'
+    ? { left: (at === 'right' ? r.left + r.width + OUT : r.left - OUT) - THICK / 2, top: r.top, width: THICK, height: r.height }
+    : { left: r.left, top: (at === 'bottom' ? r.top + r.height + OUT : r.top - OUT) - THICK / 2, width: r.width, height: THICK };
+}
+
+/** The line where a part goes into an empty group: across the top of what holds its parts. */
+export const intoLine = (r: Rect): Rect => ({ left: r.left + 8, top: r.top + 8, width: r.width - 16, height: THICK });
 
 /** The edge of a box nearest a point, each measured against the box's own size. */
 function nearestSide(r: DOMRect, x: number, y: number): Side {
@@ -73,9 +83,7 @@ export function findDrop(finder: DropFinder, target: Element | null, x: number, 
     const sideways = at === 'left' || at === 'right';
     const visualAfter = at === 'right' || at === 'bottom';
     const after = sideways && finder.rtl ? !visualAfter : visualAfter;
-    const line = sideways
-      ? { left: (at === 'right' ? r.right + OUT : r.left - OUT) - THICK / 2, top: r.top, width: THICK, height: r.height }
-      : { left: r.left, top: (at === 'bottom' ? r.bottom + OUT : r.top - OUT) - THICK / 2, width: r.width, height: THICK };
+    const line = edgeLine(r, at);
     const zone = whole ? { left: r.left, top: r.top, width: r.width, height: r.height } : null;
     return { drop: { how: sideways ? 'beside' : 'under', target: id, after, whole }, line, zone };
   }
@@ -160,7 +168,7 @@ export function findDrop(finder: DropFinder, target: Element | null, x: number, 
     const near = nearestInside(content);
     if (near) return near;
     const r = rectOf(content);
-    return { drop: { how: 'into', container: content.dataset['container'] as string }, line: { left: r.left + 8, top: r.top + 8, width: r.width - 16, height: THICK }, zone: leaf ? rectOf(leaf) : r };
+    return { drop: { how: 'into', container: content.dataset['container'] as string }, line: intoLine(r), zone: leaf ? rectOf(leaf) : r };
   }
   // 2. A boundary between the rows of the grid the part sits in.
   const grid = leaf.parentElement?.closest<HTMLElement>('[data-container]');

@@ -25,6 +25,7 @@ import { rulesOverview } from './rules-overview';
 import type { DesignerAssistant } from './assistant';
 import type { PageTemplate } from './templates';
 import { startHere } from './templates-start';
+import { dropEcho } from './drop-echo';
 
 /**
  * The screen editor: an app screen built where it is seen. On the left, the
@@ -149,6 +150,15 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const ruleList = rulesOverview({ el, doc, designer, root, body, modes: trial.toggle });
   const clip = clipboardKeys({ root, designer, active: () => !trial.trying && !json.open });
   const shortcuts = shortcutKeys({ el, root, survey: false, active: () => !trial.trying && !json.open });
+  // gap lane: a drag in the outline shows where it lands on the canvas, and one on the canvas in the outline.
+  const echoes = dropEcho({
+    editor: root,
+    canvas: canvas.element,
+    parts: canvas.element.querySelector('.fd-canvas-body') as HTMLElement,
+    tree: side.element.querySelector('.fd-outline-tree') as HTMLElement,
+    designer,
+    rtl: () => doc.defaultView?.getComputedStyle(canvas.element).direction === 'rtl',
+  });
 
   // ---- adding ------------------------------------------------------------------
   /** Where something picked in the toolbox goes: after the field picked, into the section picked or a picked tab's first, or the last on show. */
@@ -345,6 +355,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       words.destroy();
       json.destroy();
       ruleList.destroy();
+      echoes.destroy();
       root.remove();
     },
   };

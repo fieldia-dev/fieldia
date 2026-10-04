@@ -1,5 +1,6 @@
 import type { DragSource } from './canvas-drag';
 import { findDrop, type DropMark } from './canvas-drop';
+import { echo } from './drop-echo';
 import type { Designer } from './designer';
 import type { Drop, NewPart } from './layout-ops';
 import { nameOf, nodeOf } from './layout-tree';
@@ -170,6 +171,8 @@ export function advancedDrag(options: AdvancedDragOptions): AdvancedDrag {
     (current.where as HTMLElement).textContent = !mark ? 'Not here' : (refused ?? designer.describeDrop(mark.drop, moving(current)));
     bar.hidden = !current.drop;
     zone.hidden = !current.drop || !mark?.zone;
+    // gap lane: the outline draws where it lands too.
+    echo(canvas, { source: 'canvas', drop: current.drop, moving: moving(current) });
     if (mark && current.drop) {
       inCanvas(mark.line, bar);
       if (mark.zone) inCanvas(mark.zone, zone);
@@ -229,6 +232,7 @@ export function advancedDrag(options: AdvancedDragOptions): AdvancedDrag {
     edgeTimer = undefined;
     if (!current?.started) return;
     for (const mark of [current.chip, current.bar, current.zone]) mark?.remove();
+    echo(canvas, { source: 'canvas', drop: null });
     current.element.classList.remove('fd-drag-carried');
     canvas.classList.remove('fd-dragging');
     swallowNextClick();
