@@ -1,8 +1,11 @@
 import {
   validatePage,
   wideColumns,
+  type ColumnCount,
+  type ColumnsByWidth,
   type Field,
   type FieldNode,
+  type LabelPlace,
   type LayoutNode,
   type Option,
   type Page,
@@ -17,7 +20,7 @@ import { listCommands, type ListCommands } from './list-commands';
 import { fixCheck, pageChecks, type PageCheck } from './page-checks';
 import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, orList, storedAs, type LineColumn, type QuestionKind } from './kinds';
 import * as ops from './layout-ops';
-import type { Drop, NewPart } from './layout-ops';
+import type { BlockKind, Drop, LookPatch, NewPart, SectionLook } from './layout-ops';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
 
@@ -39,7 +42,7 @@ export type { LineColumn, QuestionKind } from './kinds';
 export type { HeaderCommands, HeaderPartKind, HeaderPartPatch } from './header-commands';
 export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-commands';
 export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-checks';
-export type { BlockKind, Drop, NewPart } from './layout-ops';
+export type { BlockKind, Drop, LookPatch, NewPart, SectionLook } from './layout-ops';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
 export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
@@ -219,7 +222,9 @@ export interface Designer extends HeaderCommands, ListCommands {
    * model always requires cannot be.
    */
   setRule(id: string, which: 'required' | 'readonly', condition: Condition | { field: string; equals: string | number | boolean } | null): boolean;
-  setColumns(sectionId: string, columns: 1 | 2 | 3 | 4): boolean;
+  /** A group's columns: one count, or a count for a desktop (`wide`), a tablet (`medium`) and a phone (`narrow`). */
+  setColumns(sectionId: string, columns: ColumnCount | ColumnsByWidth): boolean;
+  /** How many columns a field, a group, tabs, words, a button, a spacer or an image spans. */
   setColspan(nodeId: string, span: number): boolean;
   /** Put a section's fields in this order with these widths, as one edit (a canvas drag). */
   arrangeSection(sectionId: string, items: { id: string; colspan: number }[]): boolean;
@@ -255,6 +260,14 @@ export interface Designer extends HeaderCommands, ListCommands {
   remove(ids: string[]): boolean;
   /** Pick a part; with `add`, pick it as well as those picked, or let it go if it was. */
   pick(id: string, options?: { add?: boolean }): void;
+  /** How a group looks, and where its fields' labels sit and how wide; `null` takes a setting back. */
+  setSectionLook(id: string, look: SectionLook): boolean;
+  /** Where one field's label sits; `null` for where its group or the page puts labels. */
+  setFieldLabels(id: string, place: LabelPlace | null): boolean;
+  /** The page's look: colour, font, spacing, corners, labels, scheme; `null` takes a setting back. */
+  setLook(patch: LookPatch): boolean;
+  /** A block after `after`, or in `parent` at `index`, or at the end of the last container. Returns its id, and picks it. */
+  addBlock(kind: BlockKind, where?: Where): string | false;
   /** A table of lines' columns, in order. */
   setLineColumns(id: string, columns: LineColumn[]): boolean;
   undo(): void;
@@ -854,34 +867,8 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       });
     },
 
-    setColumns(sectionId, columns) {
-      return apply((draft) => {
-        const section = findContainer(draft, sectionId) as SectionNode | null;
-        if (!section || !('columns' in section || section.type === 'section')) throw new Refusal(`There is no section "${sectionId}"`);
-        // Columns given per width keep their narrower counts, never more than the wide one.
-        const given = section.columns;
-        section.columns =
-          typeof given === 'object'
-            ? {
-                wide: columns,
-                ...(given.medium ? { medium: Math.min(given.medium, columns) as typeof columns } : {}),
-                ...(given.narrow ? { narrow: Math.min(given.narrow, columns) as typeof columns } : {}),
-              }
-            : columns;
-        for (const child of section.children) if (child.type === 'field' && (child.colspan ?? 1) > columns) child.colspan = columns;
-      });
-    },
-
-    setColspan(nodeId, span) {
-      return apply((draft) => {
-        const found = findNode(draft, nodeId);
-        if (!found || found.node.type !== 'field') throw new Refusal(`There is no question "${nodeId}"`);
-        const columns = wideColumns((found.parent as SectionNode).columns);
-        if (span > columns) throw new Refusal(`A field cannot be wider than its section's ${columns} columns`);
-        if (span <= 1) delete found.node.colspan;
-        else found.node.colspan = span;
-      });
-    },
+    setColumns: (sectionId, columns) => apply((draft) => ops.setColumns(draft, sectionId, columns)),
+    setColspan: (nodeId, span) => apply((draft) => ops.setColspan(draft, nodeId, span)),
 
     arrangeSection(sectionId, items) {
       return apply((draft) => {
@@ -1010,6 +997,10 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       selected = off ? (picked[picked.length - 1] ?? null) : id;
       notify();
     },
+    setSectionLook: (id, look) => apply((draft) => ops.setSectionLook(draft, id, look), `section-look:${id}:${Object.keys(look).join(',')}`),
+    setFieldLabels: (id, place) => apply((draft) => ops.setFieldLabels(draft, id, place)),
+    setLook: (patch) => apply((draft) => ops.setLook(draft, patch), `look:${Object.keys(patch).join(',')}`),
+    addBlock: (kind, where) => layoutEdit((draft) => ops.addBlock(draft, kind, where)),
 
     setLineColumns(id, columns) {
       return apply(
