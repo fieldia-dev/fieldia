@@ -64,7 +64,7 @@ export const DESIGNER_JSON_CSS = /* css */ `
   all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 9px 10px 7px;
   font-size: 13.5px; font-weight: 600; color: var(--fd-muted); border-block-end: 2px solid transparent;
 }
-.fd-try-tab[aria-selected="true"] { color: var(--fd-text); border-block-end-color: var(--fd-accent); }
+.fd-try-tab[aria-expanded="true"] { color: var(--fd-text); border-block-end-color: var(--fd-accent); }
 .fd-try-tab:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: -2px; border-radius: 4px; }
 .fd-try-count { min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; display: inline-grid; place-items: center; font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; background: var(--fd-error-soft); color: var(--fd-error); }
 .fd-try-count[hidden] { display: none; }

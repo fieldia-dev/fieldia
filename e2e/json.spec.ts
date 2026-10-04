@@ -169,12 +169,12 @@ test.describe('Try it’s drawer', () => {
     await expect(page.locator('.fd-json-state')).toHaveText('Applied. Undo takes it back.');
     await page.getByRole('button', { name: 'Try it' }).click();
     const drawer = page.locator('.fd-try-drawer');
-    await expect(drawer.getByRole('tab', { name: 'Problems' })).toContainText('1');
-    await drawer.getByRole('tab', { name: 'Data' }).click();
+    await expect(drawer.getByRole('button', { name: 'Problems' })).toContainText('1');
+    await drawer.getByRole('button', { name: 'Data', exact: true }).click();
     await page.locator('.fd-try-frame').getByLabel('Notes').fill('Bring the plans');
     await expect(drawer.locator('.fd-try-data')).toContainText('"Bring the plans"');
     await screen(page, 'json-try-data', { viewport: true });
-    await drawer.getByRole('tab', { name: 'Problems' }).click();
+    await drawer.getByRole('button', { name: 'Problems' }).click();
     await expect(drawer.locator('.fd-try-problem')).toHaveText(['CustomerCustomer is required']);
     await drawer.locator('.fd-try-problem').click();
     await expect(page.locator('.fd-try-frame').getByLabel('Customer')).toBeFocused();

@@ -48,11 +48,11 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
   if (page.layout.type === 'list') return null;
 
   const id = `${frame.id || 'fd-try'}-drawer`;
-  const tab = (name: Tab, words: string) =>
-    el('button', { type: 'button', class: 'fd-try-tab', role: 'tab', id: `${id}-${name}`, 'aria-controls': `${id}-${name}-panel` }, words);
+  // Two buttons that each open their part of the drawer, the open one folding it: no tabs, so the page tried keeps the only tabs here.
+  const tab = (name: Tab, words: string) => el('button', { type: 'button', class: 'fd-try-tab', id: `${id}-${name}`, 'aria-controls': `${id}-${name}-panel` }, words);
   const tabs: Record<Tab, HTMLButtonElement> = { data: tab('data', 'Data'), problems: tab('problems', 'Problems') };
   const count = el('span', { class: 'fd-try-count' });
-  tabs.problems.append(count);
+  tabs.problems.append(' ', count);
   const said = el('span', { class: 'fd-try-said', role: 'status' });
   const copy = el('button', { type: 'button', class: 'fd-button fd-button-link fd-try-copy' }, 'Copy data');
   const fold = el('button', { type: 'button', class: 'fd-button fd-button-link fd-try-fold', 'aria-controls': `${id}-panels` });
@@ -60,20 +60,19 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
   const list = el('ul', { class: 'fd-try-problems' });
   const none = el('p', { class: 'fd-try-none' }, 'Nothing stands in the way of sending this.');
   const panels: Record<Tab, HTMLElement> = {
-    data: el('div', { class: 'fd-try-panel', role: 'tabpanel', id: `${id}-data-panel`, 'aria-labelledby': `${id}-data` }, data),
-    problems: el('div', { class: 'fd-try-panel', role: 'tabpanel', id: `${id}-problems-panel`, 'aria-labelledby': `${id}-problems` }, list, none),
+    data: el('div', { class: 'fd-try-panel', role: 'region', id: `${id}-data-panel`, 'aria-labelledby': `${id}-data` }, data),
+    problems: el('div', { class: 'fd-try-panel', role: 'region', id: `${id}-problems-panel`, 'aria-labelledby': `${id}-problems` }, list, none),
   };
   const drawer = el(
     'section',
     { class: 'fd-try-drawer', 'aria-label': 'Data and problems' },
-    el('div', { class: 'fd-try-drawer-bar' }, el('div', { class: 'fd-try-tabs', role: 'tablist', 'aria-label': 'Data and problems' }, tabs.data, tabs.problems), said, copy, fold),
+    el('div', { class: 'fd-try-drawer-bar' }, el('div', { class: 'fd-try-tabs' }, tabs.data, tabs.problems), said, copy, fold),
     el('div', { class: 'fd-try-panels', id: `${id}-panels` }, panels.data, panels.problems)
   );
 
   function show() {
     for (const name of ['data', 'problems'] as const) {
-      tabs[name].setAttribute('aria-selected', String(name === mine.tab && !mine.folded));
-      tabs[name].tabIndex = name === mine.tab ? 0 : -1;
+      tabs[name].setAttribute('aria-expanded', String(name === mine.tab && !mine.folded));
       panels[name].hidden = name !== mine.tab;
     }
     (drawer.querySelector('.fd-try-panels') as HTMLElement).hidden = mine.folded;
@@ -125,17 +124,6 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
       draw(form.getState());
     });
   }
-  // Arrows move between the two tabs, as a tab list's do.
-  drawer.querySelector('[role="tablist"]')?.addEventListener('keydown', (event) => {
-    const key = (event as KeyboardEvent).key;
-    if (key !== 'ArrowLeft' && key !== 'ArrowRight') return;
-    event.preventDefault();
-    mine.tab = mine.tab === 'data' ? 'problems' : 'data';
-    mine.folded = false;
-    show();
-    draw(form.getState());
-    tabs[mine.tab].focus();
-  });
   fold.addEventListener('click', () => {
     mine.folded = !mine.folded;
     show();

@@ -23,7 +23,7 @@ function setup() {
   document.body.append(handle.toggle, handle.element);
   (handle.toggle.querySelector('button[data-mode="try"]') as HTMLButtonElement).click();
   const drawer = () => handle?.element.querySelector('.fd-try-drawer') as HTMLElement;
-  const tab = (words: string) => [...drawer().querySelectorAll<HTMLButtonElement>('[role="tab"]')].find((t) => t.textContent?.startsWith(words)) as HTMLButtonElement;
+  const tab = (words: string) => [...drawer().querySelectorAll<HTMLButtonElement>('.fd-try-tab')].find((t) => t.textContent?.startsWith(words)) as HTMLButtonElement;
   const data = () => JSON.parse(drawer().querySelector('.fd-try-data')?.textContent ?? 'null');
   const problems = () => [...drawer().querySelectorAll('.fd-try-problem')].map((p) => p.textContent);
   const fieldOf = (label: string) => {
@@ -46,7 +46,7 @@ describe('Try it’s drawer of data and problems', () => {
     expect((drawer().querySelector('.fd-try-panels') as HTMLElement).hidden).toBe(true);
     expect(drawer().querySelector('.fd-try-data')?.textContent).toBe('');
     tab('Data').click();
-    expect(tab('Data').getAttribute('aria-selected')).toBe('true');
+    expect(tab('Data').getAttribute('aria-expanded')).toBe('true');
     expect(Object.values(data())).toEqual([null, null, null]);
     fill('Name', 'Mona');
     expect(Object.values(data())).toContain('Mona');
@@ -57,9 +57,11 @@ describe('Try it’s drawer of data and problems', () => {
 
   it('lists the problems the answers have now, by question, and a click goes to the question', () => {
     const { tab, problems, fill, fieldOf, drawer } = setup();
-    expect(tab('Problems').textContent).toBe('Problems2');
+    expect(tab('Problems').textContent).toBe('Problems 2');
+    // Not tabs: the page tried keeps the only tabs here.
+    expect(drawer().querySelector('[role=tab], [role=tablist]')).toBeNull();
     tab('Problems').click();
-    expect(tab('Problems').getAttribute('aria-selected')).toBe('true');
+    expect(tab('Problems').getAttribute('aria-expanded')).toBe('true');
     expect(drawer().querySelector('.fd-try-data')?.closest('[hidden]')).not.toBeNull();
     expect(problems()).toEqual(['NameName is required', 'CommentsComments is required']);
     fill('Email', 'not an address');
@@ -84,7 +86,7 @@ describe('Try it’s drawer of data and problems', () => {
     document.body.append(handle.toggle, handle.element);
     (handle.toggle.querySelector('button[data-mode="try"]') as HTMLButtonElement).click();
     const drawer = handle.element.querySelector('.fd-try-drawer') as HTMLElement;
-    expect(drawer.querySelector('[role="tab"]:last-child')?.textContent).toBe('Problems');
+    expect(drawer.querySelector('.fd-try-tab:last-child')?.textContent).toBe('Problems ');
     expect(drawer.querySelector('.fd-try-none')?.textContent).toBe('Nothing stands in the way of sending this.');
   });
 
