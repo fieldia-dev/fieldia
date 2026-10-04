@@ -85,3 +85,21 @@ describe('the guides on the canvas', () => {
     expect(bands()).toEqual([]);
   });
 });
+
+describe('the guides and the canvas drawn again', () => {
+  it('leave the part being typed in where it is, and the cursor in it, as each key redraws the canvas', () => {
+    const designer = createDesigner({ page: employeePage() });
+    const { host } = mount(designer, { mode: 'advanced' });
+    designer.select('f-first_name');
+    const card = host.querySelector('.fd-canvas-field[data-node="f-first_name"]') as HTMLElement;
+    const label = card.querySelector('[data-inline="label"]') as HTMLInputElement;
+    expect(host.querySelector('.fd-guides')).not.toBeNull();
+    label.focus();
+    for (const word of ['G', 'Gi', 'Giv', 'Given name']) {
+      label.value = word;
+      label.dispatchEvent(new Event('input', { bubbles: true }));
+      expect([word, document.activeElement === label, card.isConnected]).toEqual([word, true, true]);
+    }
+    expect(host.querySelector('.fd-guides')).not.toBeNull();
+  });
+});

@@ -426,11 +426,20 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   }
 
   /** Put these children in this order, moving only what is out of place. */
+  /**
+   * Put a container's parts in this order, moving only what is out of place: a part moved loses the focus,
+   * so the one being typed in stays put. What the canvas draws over the parts (the guides) is left alone.
+   */
   function arrange(parent: HTMLElement, children: HTMLElement[]) {
+    const now = [...parent.children].filter((c) => !c.classList.contains('fd-guides')) as HTMLElement[];
     children.forEach((child, index) => {
-      if (parent.children[index] !== child) parent.insertBefore(child, parent.children[index] ?? null);
+      if (now[index] === child) return;
+      parent.insertBefore(child, now[index] ?? null);
+      const was = now.indexOf(child);
+      if (was !== -1) now.splice(was, 1);
+      now.splice(index, 0, child);
     });
-    while (parent.children.length > children.length) parent.lastElementChild?.remove();
+    for (const extra of now.slice(children.length)) extra.remove();
   }
 
   // ---- picking -----------------------------------------------------------------
