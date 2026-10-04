@@ -134,7 +134,9 @@ function make<K extends keyof HTMLElementTagNameMap>(
 
 function describe(element: HTMLElement, state: WidgetState) {
   element.setAttribute('aria-invalid', String(state.invalid));
-  element.setAttribute('aria-required', String(state.required));
+  // ARIA has no "required" for a group of checkboxes: its label's mark says it there.
+  if (element.getAttribute('role') === 'group') element.removeAttribute('aria-required');
+  else element.setAttribute('aria-required', String(state.required));
   if (state.describedBy) element.setAttribute('aria-describedby', state.describedBy);
   else element.removeAttribute('aria-describedby');
 }
