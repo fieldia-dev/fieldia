@@ -41,6 +41,7 @@ import { keepWhatRulesRead } from './rules-reads';
 import * as clipboard from './clipboard-ops';
 import * as moves from './outline-moves';
 import { outlineRows } from './outline-rows';
+import { keepUnchanged } from './keep-unchanged';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -449,6 +450,15 @@ export function createDesigner(options: {
     picked = back.picked.filter((id) => ids.has(id));
     selected = back.selected !== null && picked.includes(back.selected) ? back.selected : (picked[picked.length - 1] ?? null);
   }
+  /** Whether the draft differs from the version published last: compared once for each page and version, however often the state is asked for. */
+  let compared: { page: Page; published: Page | null; differs: boolean } | null = null;
+  function unpublished(): boolean {
+    const last = published();
+    if (compared?.page !== page || compared.published !== last) compared = { page, published: last, differs: JSON.stringify(page) !== JSON.stringify(last) };
+    return compared.differs;
+  }
+  /** The checks of the page, worked out once for each page. */
+  let checksOf: { page: Page; checks: PageCheck[] } | null = null;
   const state = (): DesignerState => ({
     page,
     selected,
@@ -456,7 +466,7 @@ export function createDesigner(options: {
     canUndo: past.length > 0,
     canRedo: future.length > 0,
     issues,
-    unpublished: JSON.stringify(page) !== JSON.stringify(published()),
+    unpublished: unpublished(),
     versions,
   });
   const notify = () => {
@@ -503,7 +513,8 @@ export function createDesigner(options: {
     mergeKey = merge;
     future = [];
     leave(page);
-    page = checked.page;
+    // What the edit left alone stays the same objects, so the views can skip it.
+    page = keepUnchanged(page, checked.page);
     issues = [];
     notify();
     saveDraft();
@@ -1207,7 +1218,10 @@ export function createDesigner(options: {
       return version;
     },
 
-    checks: () => pageChecks(page),
+    checks() {
+      if (checksOf?.page !== page) checksOf = { page, checks: pageChecks(page) };
+      return [...checksOf.checks];
+    },
     fixCheck: (check) => fixCheck(designer, check),
 
     revertTo(version) {
