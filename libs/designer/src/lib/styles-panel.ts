@@ -14,8 +14,22 @@ export const DESIGNER_PANEL_CSS = /* css */ `
 .fd-insp-icon { display: inline-flex; flex: none; }
 .fd-insp-icon > .fd-dicon { width: 13px; height: 13px; }
 .fd-insp-name { font-size: 15px; font-weight: 600; color: var(--fd-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fd-insp-top { flex: none; }
+.fd-insp-top { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .fd-insp-top:empty { display: none; }
+/* Search the settings: a box under the head; what it finds, by tab, in place of the tabs. */
+.fd-insp-search { position: relative; flex: none; margin: 10px 14px 4px; }
+.fd-insp-search-icon { position: absolute; inset-inline-start: 9px; inset-block-start: 50%; transform: translateY(-50%); display: inline-flex; color: var(--fd-muted); pointer-events: none; }
+.fd-insp-search-icon > .fd-dicon { width: 14px; height: 14px; }
+.fd-properties .fd-insp-search-box { padding-inline-start: 30px; min-height: 32px; font-size: 13px; }
+.fd-insp-found { display: grid; gap: 10px; align-content: start; padding: 6px 6px 14px; min-height: 0; overflow: auto; }
+.fd-insp-found-group { display: grid; gap: 1px; }
+.fd-insp-found-tab { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--fd-muted); padding: 4px 8px 2px; }
+.fd-insp-found-option { display: flex; align-items: baseline; gap: 8px; padding: 7px 8px; border-radius: 6px; cursor: pointer; font-size: 13.5px; }
+.fd-insp-found-option:hover { background: var(--fd-page); }
+.fd-insp-found-option[aria-selected="true"] { background: var(--fd-accent-soft); }
+.fd-insp-found-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-insp-found-value { flex: none; font-size: 12px; color: var(--fd-muted); }
+.fd-properties .fd-insp-none { padding: 8px 14px 14px; margin: 0; }
 .fd-insp-tabs { flex: none; display: flex; padding-inline: 8px; border-block-end: 1px solid var(--fd-border); overflow-x: auto; scrollbar-width: none; }
 .fd-insp-tab {
   all: unset; box-sizing: border-box; cursor: pointer; white-space: nowrap; padding: 9px 8px 8px;

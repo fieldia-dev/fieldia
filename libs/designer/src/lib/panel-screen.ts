@@ -11,6 +11,7 @@ import { arrangementProperties, groupProperties } from './panel-group';
 import { inspectorShell, type InspectorHead } from './panel-inspector';
 import { pageProperties } from './panel-page';
 import { blockProperties, severalProperties } from './panel-parts';
+import { settingSearch } from './panel-search';
 import { partKindOf, type PanelTab, type PartKind } from './panel-tabs';
 import { tabProperties, tabsProperties, type PropertiesView } from './screen-properties';
 
@@ -93,6 +94,7 @@ export function headOf(page: Page, kind: PartKind, picked: readonly string[], fr
 export function screenPanel(options: { el: ElementFactory; doc: Document; designer: Designer }): ScreenPanel {
   const { el, doc, designer } = options;
   const shell = inspectorShell(el, doc);
+  const search = settingSearch(el, doc, shell);
   let key = '';
   let view: PropertiesView | null = null;
 
@@ -141,6 +143,7 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
       }
       view?.update(page);
       shell.head(headOf(page, kind, picked, (id) => designer.isFromModel(id)));
+      search.refresh();
     },
     open(part) {
       shell.choose(PART_TAB[part]);
