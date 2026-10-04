@@ -60,10 +60,31 @@ export function describeDrop(page: Page, drop: Drop, moving?: string): string {
     const edge = drop.after ? target.children[target.children.length - 1] : target.children[0];
     return `new column beside “${nameOf(page, edge)}”`;
   }
+  const at = locate(page, drop.target);
+  const grows = drop.how === 'beside' && !drop.whole && at ? growsTo(page, at, moving) : 0;
+  if (grows) return `a ${ORDINAL[grows]} column of “${nameOf(page, at?.parent ?? null)}”, beside ${seenAs(page, target)}`;
   const whole = drop.whole ? (drop.how === 'beside' ? 'new column ' : 'new row ') : '';
   const name = seenAs(page, target);
   if (drop.how === 'beside') return `${whole}beside ${name}`;
   return `${whole}${drop.after ? 'under' : 'above'} ${name}`;
+}
+
+const ORDINAL: Record<number, string> = { 2: 'second', 3: 'third', 4: 'fourth' };
+
+/**
+ * Beside a one-column part whose row is full, in a group with columns of its
+ * own (a titled group, or one with a look): the columns the group grows to,
+ * four at most — or 0 where the drop does something else: a free cell in the
+ * row takes it, a wider part gives half its width, and an arrangement or a
+ * group of four shares the part's cell. `moving` is left out of the row.
+ */
+function growsTo(page: Page, at: Spot, moving?: string): number {
+  const group = at.parent;
+  if (!isSection(group) || isWrapper(group) || moving === at.node.id) return 0;
+  const cols = across(page, group);
+  if (cols >= 4 || Math.min(spanOf(at.node), cols) >= 2) return 0;
+  const row = rowsOf(page, group, moving).find((r) => r.items.includes(at.node));
+  return row && row.used < cols ? 0 : cols + 1;
 }
 
 // ---- changing the page --------------------------------------------------------------------------------
@@ -188,8 +209,14 @@ export function placeAt(page: Page, node: Part, drop: Drop): void {
       setSpan(node, Math.floor(span / 2));
       setSpan(target, span - Math.floor(span / 2));
       at.list.splice(index, 0, node);
+    } else if (growsTo(page, at, node.id)) {
+      // A group's full row: the group takes one more column; a part as wide as the group stays as wide.
+      for (const part of parent.children) if (part !== target && spanOf(part) >= cols) setSpan(part, cols + 1);
+      setSpan(node, 1);
+      at.list.splice(index, 0, node);
+      setRowColumns(parent as SectionNode, cols + 1);
     } else {
-      // One column wide: the two share its cell, side by side (they stack where it is narrow). On the page, a row of two.
+      // One column wide, in a group of four or an arrangement: the two share its cell, side by side (they stack where it is narrow). On the page, a row of two.
       const span = Math.min(spanOf(target), cols);
       setSpan(target, 1);
       setSpan(node, 1);

@@ -27,8 +27,8 @@ describe('words for a drop', () => {
     expect(words((d) => d.place('f-last_name', { how: 'beside', target: 'f-first_name', after: true }))).toEqual(['Put “First name” and “Last name” side by side']);
   });
 
-  it('a part put beside a part in another group: put there, not just moved', () => {
-    expect(words((d) => d.place('f-mobile', { how: 'beside', target: 'f-ec_phone', after: true }))).toEqual(['Put “Mobile” beside “Phone”']);
+  it('a part put beside a part in another group: put there, not just moved — and the group’s column more, not the widths that only kept up', () => {
+    expect(words((d) => d.place('f-mobile', { how: 'beside', target: 'f-ec_phone', after: true }))).toEqual(['Put “Mobile” beside “Phone”', '“Emergency contact”: 2 columns']);
   });
 
   it('a part put in a free cell of another row', () => {

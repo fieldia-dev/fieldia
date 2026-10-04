@@ -69,11 +69,12 @@ describe('free cells and rows', () => {
     expect(where(other.getPage(), end)?.kids.slice(-3)).toEqual(['f-end_date', end, 'f-salary']);
   });
 
-  it('in a one-column group, parts beside one make a row that grows', () => {
+  it('in a one-column group, parts beside one give the group a column each, the rest staying the whole width', () => {
     const d = employeeDesigner();
     d.place('f-mobile', { how: 'beside', target: 'f-ec_phone', after: true });
     d.place('f-email', { how: 'beside', target: 'f-ec_phone', after: true });
-    expect(where(d.getPage(), 'f-email')).toMatchObject({ kids: ['f-ec_phone', 'f-email', 'f-mobile'], columns: { wide: 3, narrow: 1 }, grand: 'emergency' });
+    expect(where(d.getPage(), 'f-email')).toMatchObject({ parent: 'emergency', kids: ['f-ec_name', 'f-ec_relation', 'f-ec_phone', 'f-email', 'f-mobile'], columns: 3 });
+    expect(['f-ec_name', 'f-ec_relation', 'f-ec_phone', 'f-email', 'f-mobile'].map((id) => nodeOf(d.getPage(), id)?.['colspan'])).toEqual([3, 3, undefined, undefined, undefined]);
   });
 
   it('in a grid, a second part beside one sharing a cell shares a cell of its own there', () => {
@@ -84,12 +85,12 @@ describe('free cells and rows', () => {
     expect(where(d.getPage(), id)).toMatchObject({ kids: ['f-first_name', id], grand: shared });
   });
 
-  it('a titled group is never a row, nor is a row with a line across it', () => {
+  it('a titled group is never a row — it takes a column more, its parts in its own columns — nor is a row with a line across it', () => {
     const d = employeeDesigner();
     const group = d.wrap(['h-send', 't-note'], 'group') as string;
     d.place('send', { how: 'beside', target: 'h-send', after: true });
-    expect(nodeOf(d.getPage(), group)?.['columns']).toEqual({ wide: 2, narrow: 1 });
-    expect(where(d.getPage(), 'send')?.kids).toEqual(['h-send', 'send']);
+    expect(nodeOf(d.getPage(), group)?.['columns']).toEqual({ wide: 3, narrow: 1 });
+    expect(where(d.getPage(), 'send')).toMatchObject({ parent: group, kids: ['h-send', 'send', 't-note'] });
     const other = employeeDesigner();
     const row = other.wrap(['f-confirm', 'send'], 'side') as string;
     other.addBlock('divider', { after: 'f-confirm' });

@@ -25,6 +25,73 @@ describe('a drop beside a part', () => {
     expectValid(d.getPage());
   });
 
+  /** The site visit as the screen demo starts it: Customer and Visit date side by side, Notes the whole width under them. */
+  function visit() {
+    const d = watched(createDesigner({ page: blankPage('screen', 'Site visit') }));
+    d.renameContainer('section-1', 'Visit');
+    d.setColumns('section-1', 2);
+    const ids = ['Customer', 'Visit date', 'Notes'].map((label, i) => {
+      const id = d.addQuestion(['short-answer', 'date', 'paragraph'][i], { parent: 'section-1' }) as string;
+      d.updateQuestion(id, { label });
+      return id;
+    });
+    d.setColspan(ids[2], 2);
+    return { d, ids, kids: () => where(d.getPage(), ids[0])?.kids, span: (id: string) => nodeOf(d.getPage(), id)?.['colspan'] };
+  }
+
+  it('beside a field in a group’s full row: the group takes one more column, and a part as wide as the group stays as wide', () => {
+    const { d, ids, kids, span } = visit();
+    const drop = { how: 'beside', target: ids[1], after: true } as const;
+    expect(d.describeDrop(drop)).toBe('a third column of “Visit”, beside “Visit date”');
+    const id = d.place({ kind: 'number' }, drop) as string;
+    expect(nodeOf(d.getPage(), 'section-1')?.['columns']).toBe(3);
+    expect(kids()).toEqual([ids[0], ids[1], id, ids[2]]);
+    expect([span(ids[0]), span(ids[1]), span(id), span(ids[2])]).toEqual([undefined, undefined, undefined, 3]);
+    expectValid(d.getPage());
+  });
+
+  it('a part of the group moved beside a field of its full row: the third column is that part', () => {
+    const { d, ids, kids, span } = visit();
+    const drop = { how: 'beside', target: ids[1], after: true } as const;
+    expect(d.describeDrop(drop, ids[2])).toBe('a third column of “Visit”, beside “Visit date”');
+    d.place(ids[2], drop);
+    expect(nodeOf(d.getPage(), 'section-1')?.['columns']).toBe(3);
+    expect(kids()).toEqual(ids);
+    expect(span(ids[2])).toBeUndefined();
+    // Moved along its own row, with room there, it only changes places: no column more.
+    expect(d.describeDrop({ how: 'beside', target: ids[1], after: true }, ids[0])).toBe('beside “Visit date”');
+    expectValid(d.getPage());
+  });
+
+  it('a group of one column takes a second: the rest stay the whole width', () => {
+    const d = employeeDesigner();
+    const id = d.place({ kind: 'email' }, { how: 'beside', target: 'f-ec_name', after: true }) as string;
+    const page = d.getPage();
+    expect(nodeOf(page, 'emergency')?.['columns']).toBe(2);
+    expect(where(page, id)?.kids).toEqual(['f-ec_name', id, 'f-ec_relation', 'f-ec_phone']);
+    expect(['f-ec_name', id, 'f-ec_relation', 'f-ec_phone'].map((n) => nodeOf(page, n)?.['colspan'])).toEqual([undefined, undefined, 2, 2]);
+    expectValid(page);
+  });
+
+  it('columns given per screen size: the desktop’s grow, the tablet’s and the phone’s stay', () => {
+    const d = employeeDesigner();
+    expect(d.describeDrop({ how: 'beside', target: 'f-manager', after: true })).toBe('a fourth column of “Role”, beside “Manager”');
+    d.place({ kind: 'number' }, { how: 'beside', target: 'f-manager', after: true });
+    expect(nodeOf(d.getPage(), 'role')?.['columns']).toEqual({ wide: 4, medium: 2, narrow: 1 });
+    expectValid(d.getPage());
+  });
+
+  it('a group of four columns takes no fifth: beside a field of a full row, the two share its cell', () => {
+    const d = employeeDesigner();
+    d.place({ kind: 'number' }, { how: 'beside', target: 'f-manager', after: true });
+    const drop = { how: 'beside', target: 'f-department', after: true } as const;
+    expect(d.describeDrop(drop)).toBe('beside “Department”');
+    const id = d.place({ kind: 'date' }, drop) as string;
+    expect(nodeOf(d.getPage(), 'role')?.['columns']).toEqual({ wide: 4, medium: 2, narrow: 1 });
+    expect(where(d.getPage(), id)).toMatchObject({ style: 'plain', kids: ['f-department', id], grand: 'role' });
+    expectValid(d.getPage());
+  });
+
   it('before it, when dropped on its leading edge', () => {
     const d = employeeDesigner();
     d.place('f-nationality', { how: 'beside', target: 'f-first_name', after: false });

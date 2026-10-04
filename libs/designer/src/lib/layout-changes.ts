@@ -1,5 +1,5 @@
 import type { Page, PageLook, SectionNode, TabsNode } from '@fieldia/core';
-import { andList, isSection, isWrapper, listOf, nameOf, rowsOf, seenAs, spanOf, type Holder, type Part } from './layout-tree';
+import { across, andList, isSection, isWrapper, listOf, nameOf, rowsOf, seenAs, spanOf, type Holder, type Part } from './layout-tree';
 import { FOLD_WORDS, foldOf } from './group-fold';
 
 /**
@@ -238,7 +238,10 @@ export function layoutChanges(before: Page, after: Page): LayoutChanges {
       if (old.labels !== node.labels) lines.push(`${name}: labels ${node.labels ? LABELS[node.labels] : 'where the page puts them'}`);
       if (old.labelWidth !== node.labelWidth) lines.push(`${name}: labels ${node.labelWidth ? `${node.labelWidth} px wide` : 'as wide as the page has them'}`);
     }
-    if (now.holder.has(id) && !said.has(id) && was.holder.get(id)?.id === now.holder.get(id)?.id && spanOf(old) !== spanOf(node)) {
+    // As wide as its group before and after, as when the group takes a column more, its width did not change.
+    const whole = (page: Page, holder: Holder | undefined, part: Part) => !!holder && spanOf(part) >= across(page, holder);
+    const stillWhole = whole(before, was.parent.get(id), old) && whole(after, now.parent.get(id), node);
+    if (now.holder.has(id) && !said.has(id) && was.holder.get(id)?.id === now.holder.get(id)?.id && spanOf(old) !== spanOf(node) && !stillWhole) {
       lines.push(`${name}: ${plural(spanOf(node), 'column')} wide`);
     }
     if (node.type === 'field' && old.type === 'field' && old.labels !== node.labels) lines.push(`${name}: its label ${node.labels ? LABEL[node.labels] : 'where its group puts it'}`);
