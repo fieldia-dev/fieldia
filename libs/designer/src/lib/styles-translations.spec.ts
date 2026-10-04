@@ -1,10 +1,11 @@
 import { FIELDIA_CSS } from '@fieldia/widgets';
 import { DESIGNER_CSS, installDesignerStyles } from './styles';
 import { DESIGNER_KINDS_CSS } from './styles-kinds';
+import { DESIGNER_TRANSLATIONS_CSS } from './styles-translations';
 
-/** The designer's part for the newer kinds: installed with the rest, and restyling nothing that was there before it. */
+/** The Translations view's stylesheet: installed with the rest, and restyling nothing that was there before it. */
 
-/** The rules of `css` that name no class of its own: none that `base` does not use already. */
+/** The selectors of `css` that name no class of their own: none that `base` does not use already. */
 function foreignRules(css: string, base: string): string[] {
   const taken = new Set(base.match(/\.fd-[\w-]+/g) ?? []);
   return css
@@ -16,18 +17,18 @@ function foreignRules(css: string, base: string): string[] {
     .filter((one) => !(one.match(/\.fd-[\w-]+/g) ?? []).some((name) => !taken.has(name)));
 }
 
-describe('the designer’s stylesheet for the newer kinds', () => {
+describe('the Translations view’s stylesheet', () => {
   it('is installed with the designer’s own', () => {
     document.head.replaceChildren();
     installDesignerStyles(document);
-    expect(document.getElementById('fieldia-designer-styles')?.textContent).toContain(DESIGNER_KINDS_CSS);
+    expect(document.getElementById('fieldia-designer-styles')?.textContent).toContain(DESIGNER_TRANSLATIONS_CSS);
   });
 
   it('names a class of its own in every rule, so the designer and the form look as they did', () => {
-    expect(foreignRules(DESIGNER_KINDS_CSS, DESIGNER_CSS + FIELDIA_CSS)).toEqual([]);
+    expect(foreignRules(DESIGNER_TRANSLATIONS_CSS, DESIGNER_CSS + DESIGNER_KINDS_CSS + FIELDIA_CSS)).toEqual([]);
   });
 
   it('can sit in a template literal once minified', () => {
-    expect(DESIGNER_KINDS_CSS).not.toMatch(/[`\\]|\$\{/);
+    expect(DESIGNER_TRANSLATIONS_CSS).not.toMatch(/[`\\]|\$\{/);
   });
 });
