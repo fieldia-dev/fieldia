@@ -165,6 +165,13 @@ export const DESIGNER_CSS = /* css */ `
 .fd-mode-button[aria-pressed="true"] { background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 1px 2px rgba(15, 20, 25, 0.12); }
 .fd-mode-button[data-mode="try"][aria-pressed="true"] { background: var(--fd-success); color: #ffffff; }
 .fd-mode-button:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
+/* On a narrow bar the ways to look at the page share one row: their words alone, each on one line. */
+.fd-designer-bar { container-type: inline-size; }
+@container (max-width: 520px) {
+  .fd-mode { display: flex; width: 100%; }
+  .fd-mode-button { flex: 1 1 auto; justify-content: center; padding-inline: 6px; white-space: nowrap; }
+  .fd-mode-button > .fd-dicon { display: none; }
+}
 .fd-try { display: grid; gap: 14px; }
 .fd-try-bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 8px 12px; }
 .fd-try-group { display: inline-flex; padding: 2px; border-radius: 8px; background: var(--fd-page); border: 1px solid var(--fd-border); }
