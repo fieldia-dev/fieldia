@@ -33,7 +33,9 @@ export function onTab<T extends HTMLElement>(row: T, tab: PanelTab, name?: strin
 export interface Choice<T> {
   value: T;
   words: string;
-  /** Said in full where the words are short, such as "1" for one column. */
+  /** Its name in full where the words are short, such as "1 column" for "1"; it starts with the words, as a screen reader's user says them. */
+  label?: string;
+  /** A line of help shown on pointing at it. */
   title?: string;
   /** Drawn above the words, such as a small picture of a group's style. */
   picture?: Node;
@@ -62,7 +64,7 @@ export function segmented<T extends string | number>(
   const buttons = choices.map((choice) => {
     const button = el(
       'button',
-      { type: 'button', class: 'fd-seg-button', 'data-choice': String(choice.value), 'aria-pressed': 'false', title: choice.title, 'aria-label': choice.title },
+      { type: 'button', class: 'fd-seg-button', 'data-choice': String(choice.value), 'aria-pressed': 'false', title: choice.title ?? choice.label, 'aria-label': choice.label },
       ...(choice.picture ? [choice.picture] : []),
       el('span', { class: 'fd-seg-words' }, choice.words)
     );

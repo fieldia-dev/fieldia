@@ -168,7 +168,8 @@ describe('the panel — no setting lost', () => {
     lines: ['Add column', 'Column 1', 'Kind of column 1'],
     link: ['Links to'],
     amount: ['Currency'],
-    section: ['Section title', 'Columns', 'Move up', 'Delete section'],
+    // Columns, a list of counts once, are now a count for each size of screen.
+    section: ['Section title', 'Columns on a desktop', 'Move up', 'Delete section'],
     page: ['Layout'],
     sheet: ['Layout', 'Title field'],
     tabs: ['Delete tabs'],

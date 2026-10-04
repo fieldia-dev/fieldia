@@ -3,6 +3,7 @@ import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { findNode, findTab } from './page-tree';
 import { onTab, setting } from './panel-controls';
+import { widthSetting } from './panel-layout';
 
 /**
  * The screen editor's properties: what a view of a part is, and the views of
@@ -47,13 +48,21 @@ export function tabsProperties(el: ElementFactory, designer: Designer, id: strin
   const moves = movers(el, designer, id, ['Move up', 'Move down']);
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, 'Delete tabs');
   remove.addEventListener('click', () => designer.removeNode(id));
+  const width = widthSetting(el, designer, id);
   const element = el(
     'div',
     { class: 'fd-props' },
     el('p', { class: 'fd-properties-hint' }, 'Tabs show one page of sections at a time. Select a tab to rename it.'),
-    onTab(el('div', { class: 'fd-props-actions' }, ...moves.buttons, remove), 'content', 'Move or delete')
+    onTab(el('div', { class: 'fd-props-actions' }, ...moves.buttons, remove), 'content', 'Move or delete'),
+    ...width.rows
   );
-  return { element, update: (page) => moves.update(page) };
+  return {
+    element,
+    update(page) {
+      moves.update(page);
+      width.update(page);
+    },
+  };
 }
 
 /** One tab: its label, its place among the others, and taking it away. */

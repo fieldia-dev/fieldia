@@ -64,8 +64,19 @@ export const DESIGNER_PANEL_CSS = /* css */ `
 @keyframes fd-set-found { from { box-shadow: 0 0 0 4px var(--fd-accent-soft); background: var(--fd-accent-soft); } to { box-shadow: 0 0 0 4px transparent; background: transparent; } }
 
 /* A choice of a few, side by side, as wide as the panel. */
-.fd-properties .fd-insp-seg { width: 100%; box-sizing: border-box; border: 1px solid var(--fd-border); }
-.fd-properties .fd-insp-seg > .fd-seg-button { min-height: 28px; font-size: 13px; font-weight: 600; display: grid; place-items: center; padding: 4px; }
+.fd-properties .fd-insp-seg { width: 100%; box-sizing: border-box; border: 1px solid var(--fd-border); grid-auto-columns: minmax(max-content, 1fr); }
+.fd-properties .fd-insp-seg > .fd-seg-button { min-height: 28px; font-size: 13px; font-weight: 600; display: grid; place-items: center; padding: 4px 6px; white-space: nowrap; }
 .fd-properties .fd-insp-seg > .fd-seg-button[hidden] { display: none; }
+/* Columns on each size of screen: its name, then its counts, a row each. */
+.fd-insp-screens { display: grid; gap: 5px; }
+.fd-insp-screen { display: grid; grid-template-columns: 62px minmax(0, 1fr); align-items: center; gap: 8px; }
+.fd-insp-screen-name { font-size: 12.5px; color: var(--fd-muted); }
+.fd-properties .fd-insp-screen .fd-seg-button { min-height: 26px; padding-inline: 2px; }
+.fd-properties .fd-insp-screen .fd-seg-button[data-choice="0"] { font-size: 12px; }
+/* A width in pixels: a slider and the number, side by side. */
+.fd-insp-range { display: flex; align-items: center; gap: 8px; }
+.fd-insp-slider { flex: 1; min-width: 0; margin: 0; accent-color: var(--fd-accent); }
+.fd-properties .fd-insp-number { width: 64px; flex: none; min-height: 30px; padding-block: 3px; font-variant-numeric: tabular-nums; }
+.fd-insp-unit { font-size: 12px; color: var(--fd-muted); }
 @media (prefers-reduced-motion: reduce) { .fd-set-found { animation: none; } }
 `;

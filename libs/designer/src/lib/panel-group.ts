@@ -1,10 +1,11 @@
-import type { FieldNode, SectionNode } from '@fieldia/core';
+import type { FieldNode } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { choicesOf, conditionEditor } from './condition-editor';
 import type { Designer } from './designer';
-import { contains, isSection, locate, nodeOf } from './layout-tree';
+import { contains, isSection, nodeOf } from './layout-tree';
 import { allSections, findNode } from './page-tree';
 import { onTab, setting } from './panel-controls';
+import { columnsSetting, labelsSetting, widthSetting } from './panel-layout';
 import { movers, type PropertiesView } from './screen-properties';
 
 /**
@@ -17,9 +18,9 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
   const title = el('input', { class: 'fd-input', 'aria-label': 'Section title' });
   title.addEventListener('input', () => designer.renameContainer(id, title.value));
-  const columns = el('select', { class: 'fd-input fd-select', 'aria-label': 'Columns' });
-  for (const n of [1, 2, 3, 4]) columns.append(el('option', { value: String(n) }, String(n)));
-  columns.addEventListener('change', () => designer.setColumns(id, Number(columns.value) as 1 | 2 | 3 | 4));
+  const columns = columnsSetting(el, designer, id);
+  const labels = labelsSetting(el, designer, id, 'group');
+  const width = widthSetting(el, designer, id);
   const moves = movers(el, designer, id, ['Move up', 'Move down']);
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, 'Delete section');
   remove.addEventListener('click', () => designer.removeNode(id));
@@ -33,7 +34,9 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
     { class: 'fd-props' },
     setting(el, 'content', 'Title', title),
     onTab(el('div', { class: 'fd-props-actions' }, ...moves.buttons, remove), 'content', 'Move or delete'),
-    setting(el, 'layout', 'Columns', columns),
+    ...columns.rows,
+    ...labels.rows,
+    ...width.rows,
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, 'When it shows'), when.element, showWhen, noRules), 'rules', 'When it shows')
   );
   return {
@@ -42,7 +45,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
       const section = nodeOf(page, id);
       if (!isSection(section)) return;
       if (!focused(title)) title.value = section.title ?? '';
-      columns.value = String(typeof section.columns === 'object' ? section.columns.wide : (section.columns ?? 1));
+      for (const part of [columns, labels, width]) part.update(page);
       moves.update(page);
       // A page keeps one thing at its top, and a tab its last section.
       const holder = findNode(page, id)?.parent;
@@ -55,18 +58,17 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
   };
 }
 
-/** Parts side by side: how many columns they take. */
+/** Parts side by side: the columns they take, and how wide they are where they sit. */
 export function arrangementProperties(el: ElementFactory, designer: Designer, id: string): PropertiesView {
-  const columns = el('select', { class: 'fd-input fd-select', 'aria-label': 'Columns' });
-  for (const n of [1, 2, 3, 4]) columns.append(el('option', { value: String(n) }, String(n)));
-  columns.addEventListener('change', () => designer.setColumns(id, Number(columns.value) as 1 | 2 | 3 | 4));
-  const element = el('div', { class: 'fd-props' }, setting(el, 'layout', 'Columns', columns));
+  const columns = columnsSetting(el, designer, id, 'Columns');
+  const width = widthSetting(el, designer, id);
+  const element = el('div', { class: 'fd-props' }, ...columns.rows, ...width.rows);
   return {
     element,
     update(page) {
-      const section = locate(page, id)?.node as SectionNode | undefined;
-      if (!isSection(section)) return;
-      columns.value = String(typeof section.columns === 'object' ? section.columns.wide : (section.columns ?? 1));
+      if (!isSection(nodeOf(page, id))) return;
+      columns.update(page);
+      width.update(page);
     },
   };
 }

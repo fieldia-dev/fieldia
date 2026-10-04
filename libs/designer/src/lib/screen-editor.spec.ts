@@ -112,9 +112,9 @@ describe('screen editor — the panel', () => {
     const { host } = mount(designer);
     designer.select(ids['customer']);
     openTab(host, 'Layout');
-    const width = field(host, 'Width') as HTMLSelectElement;
-    expect([...width.options].map((o) => o.textContent)).toEqual(['1 column', '2 columns (full width)']);
-    choose(width, '2');
+    const width = host.querySelector('.fd-properties [role="group"][aria-label="Width"]') as HTMLElement;
+    expect([...width.querySelectorAll('button')].map((b) => b.getAttribute('aria-label'))).toEqual(['1 column', 'All 2 columns']);
+    button(width, 'All 2 columns')?.click();
     expect(fieldsOf(designer.getPage(), 0)[0].colspan).toBe(2);
     expect(card(host, ids['customer']).style.getPropertyValue('--fd-span')).toBe('2');
     choose(field(host, 'Section'), sections[1]);
@@ -154,7 +154,7 @@ describe('screen editor — the panel', () => {
     designer.select(sections[1]);
     type(field(host.querySelector('.fd-properties') as Element, 'Section title'), 'Next steps');
     openTab(host, 'Layout');
-    choose(field(host, 'Columns'), '3');
+    button(host.querySelector('.fd-properties [role="group"][aria-label="Columns on a desktop"]') as Element, '3 columns')?.click();
     expect(sectionsOf(designer.getPage())[1]).toMatchObject({ title: 'Next steps', columns: 3 });
     const shown = host.querySelector(`[data-node="${sections[1]}"]`) as HTMLElement;
     expect((shown.querySelector('.fd-grid') as HTMLElement).style.getPropertyValue('--fd-columns')).toBe('3');

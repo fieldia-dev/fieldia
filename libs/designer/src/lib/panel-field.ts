@@ -6,8 +6,8 @@ import type { Designer } from './designer';
 import { kindsReason } from './field-bar';
 import { kindOfField, storedAs } from './kinds';
 import { onTab, setting } from './panel-controls';
+import { labelsSetting, widthSetting } from './panel-layout';
 import { allSections, findField, sectionLabel } from './page-tree';
-import { across, locate } from './layout-tree';
 import type { PropertiesView } from './screen-properties';
 
 /**
@@ -46,9 +46,8 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   remove.addEventListener('click', () => designer.removeNode(id));
 
   // ---- Layout: how wide it is, and where it sits ----
-  const width = el('select', { class: 'fd-input fd-select', 'aria-label': 'Width' });
-  width.addEventListener('change', () => designer.setColspan(id, Number(width.value)));
-  const widthRow = setting(el, 'layout', 'Width', width);
+  const width = widthSetting(el, designer, id);
+  const labels = labelsSetting(el, designer, id, 'field');
   const section = el('select', { class: 'fd-input fd-select', 'aria-label': 'Section' });
   section.addEventListener('change', () => {
     const target = allSections(designer.getPage()).find((s) => s.id === section.value);
@@ -101,7 +100,8 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     optionsRow,
     onTab(lineColumns.element, 'content', 'Columns'),
     onTab(el('div', { class: 'fd-props-actions' }, duplicate, remove), 'content', 'Duplicate or delete'),
-    widthRow,
+    ...width.rows,
+    ...labels.rows,
     setting(el, 'layout', 'Section', section),
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('div', { class: 'fd-q-required-row' }, el('label', { class: 'fd-q-required' }, required, el('span', {}, 'Required')), requiredOnly), requiredWhen.element), 'rules', 'Required'),
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, readonlyWhen.element, readonlyOnly), 'rules', 'Read-only'),
@@ -140,18 +140,8 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       lineColumns.element.hidden ||= fromModel;
 
       // Layout.
-      const columns = across(page, locate(page, id)?.parent ?? found.section);
-      widthRow.hidden = columns === 1;
-      if (width.options.length !== columns) {
-        width.replaceChildren(
-          ...Array.from({ length: columns }, (_, i) => {
-            const n = i + 1;
-            const text = n === 1 ? '1 column' : `${n} columns${n === columns ? ' (full width)' : ''}`;
-            return el('option', { value: String(n) }, text);
-          })
-        );
-      }
-      width.value = String(Math.min(found.node.colspan ?? 1, columns));
+      width.update(page);
+      labels.update(page);
       section.replaceChildren(...allSections(page).map((s) => el('option', { value: s.id }, sectionLabel(page, s))));
       section.value = found.section.id;
 
