@@ -22,6 +22,12 @@
       ]
     },
     "rating": { "type": "integer", "label": "How would you rate it?", "required": true, "min": 1, "max": 5 },
+    "parts": {
+      "type": "matrix",
+      "label": "How easy was each part?",
+      "rows": [{ "value": "setup", "label": "Setting it up" }, { "value": "daily", "label": "Everyday use" }, { "value": "support", "label": "Getting help" }],
+      "columns": [{ "value": 1, "label": "Hard" }, { "value": 2, "label": "OK" }, { "value": 3, "label": "Easy" }]
+    },
     "liked": {
       "type": "selection",
       "label": "What do you like?",
@@ -75,6 +81,7 @@
         "invisible": "uses_product != 'yes'",
         "children": [
           { "type": "field", "id": "q-rating", "field": "rating", "widget": "rating" },
+          { "type": "field", "id": "q-parts", "field": "parts" },
           { "type": "field", "id": "q-liked", "field": "liked", "widget": "checkboxes" },
           { "type": "field", "id": "q-improve", "field": "improvements" }
         ]

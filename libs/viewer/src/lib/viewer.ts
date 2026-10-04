@@ -17,6 +17,9 @@ import {
   type SlotNode,
   type TabsNode,
   type TextNode,
+  type DividerNode,
+  type SpacerNode,
+  type ImageNode,
   type WizardNode,
   type Locale,
   MESSAGES,
@@ -355,7 +358,22 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         return sectionItem(node);
       case 'tabs':
         return tabsItem(node);
+      case 'divider':
+      case 'spacer':
+      case 'image':
+        return blockItem(node);
     }
+  }
+
+  /** A line across the row, empty room, or a picture: shown and hidden by its rule like any part. */
+  function blockItem(node: DividerNode | SpacerNode | ImageNode): HTMLElement {
+    const element =
+      node.type === 'divider' ? el('hr', { class: 'fd-divider', 'data-node': node.id })
+      : node.type === 'spacer' ? el('div', { class: 'fd-block fd-spacer', 'aria-hidden': 'true', 'data-node': node.id })
+      : el('img', { class: 'fd-block fd-image', src: node.src, alt: node.alt, loading: 'lazy', 'data-node': node.id });
+    if (node.type !== 'divider' && node.colspan) element.style.setProperty('--fd-span', String(node.colspan));
+    hideWhen(element, node.id);
+    return element;
   }
 
   // ---- shared chrome ----------------------------------------------------------

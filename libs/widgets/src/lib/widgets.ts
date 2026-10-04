@@ -23,6 +23,7 @@ import { statusbarWidget } from './statusbar';
 import { withCalendar } from './calendar';
 import { propertiesWidget } from './properties';
 import { htmlWidget, jsonWidget } from './extras';
+import { matrixWidget } from './matrix';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -547,4 +548,5 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   html: htmlWidget,
   json: jsonWidget,
   properties: propertiesWidget,
+  matrix: matrixWidget,
 };

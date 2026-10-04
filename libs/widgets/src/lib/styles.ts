@@ -566,6 +566,18 @@ export const FIELDIA_CSS = /* css */ `
 
 /* ---- text, status, dialog ------------------------------------------------- */
 .fd-text-heading { font-size: 16px; font-weight: 650; margin: 0; }
+/* Blocks between fields: a line across the row; empty room or a picture that spans like a field. */
+/* A matrix: rows against columns; it scrolls sideways in its own box on a narrow screen. */
+.fd-matrix { overflow-x: auto; max-width: 100%; }
+.fd-matrix-table { border-collapse: collapse; min-width: 100%; }
+.fd-matrix-table th, .fd-matrix-table td { padding: 6px 10px; text-align: center; border-bottom: 1px solid var(--fd-border); }
+.fd-matrix-table thead th { font-weight: 500; font-size: 13px; color: var(--fd-muted); }
+.fd-matrix-table tbody th { text-align: start; font-weight: 500; }
+.fd-matrix-table input { accent-color: var(--fd-accent); width: 16px; height: 16px; margin: 0; }
+.fd-divider { grid-column: 1 / -1; width: 100%; border: 0; border-top: 1px solid var(--fd-border); margin: 4px 0; }
+.fd-block { min-width: 0; grid-column: span min(var(--fd-span, 1), var(--fd-columns, 1)); }
+.fd-spacer { min-height: 24px; }
+.fd-image { display: block; max-width: 100%; height: auto; border-radius: var(--fd-radius); }
 .fd-text-paragraph { margin: 0; }
 .fd-text-note { margin: 0; color: var(--fd-muted); font-size: 13px; }
 .fd-status { min-height: 1.4em; color: var(--fd-muted); font-size: 13px; }
