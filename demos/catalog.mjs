@@ -149,6 +149,18 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'lists',
+    name: 'Delivery address',
+    category: 'forms',
+    query: 'page=lists&skin=outlined',
+    blurb: 'Choices that come from the app’s own lists, as a server keeps them: the countries delivered to, and each one’s cities, loaded again when the country changes.',
+    howTo: [
+      'Watch the countries load as the form opens: the app answers after a moment, as a server does.',
+      'Pick Egypt: its cities load. Pick Alexandria.',
+      'Change the country to Jordan: Jordan’s cities load, and Alexandria stays, marked as no longer offered, until you pick again.',
+    ],
+  },
+  {
     id: 'custom',
     name: 'Your own parts',
     category: 'fields',

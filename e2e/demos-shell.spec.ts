@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { DEMOS, FRAMEWORKS, demoHref } from '../demos/catalog.mjs';
+import { readFileSync } from 'node:fs';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -17,6 +18,18 @@ function watch(page: Page) {
   return problems;
 }
 const menu = (page: Page) => page.locator('#demo-nav');
+
+test('every page the demos serve has a card of its own, so a visitor can find it and it is named', () => {
+  // The pages the demos serve, by the names `?page=` takes, as demos/shared/sample-data.ts lists them.
+  const source = readFileSync('demos/shared/sample-data.ts', 'utf8');
+  const list = source.slice(source.indexOf('export const pages'), source.indexOf('};', source.indexOf('export const pages')));
+  const pages = Object.fromEntries([...list.matchAll(/^ {2}'?([a-z-]+)'?:/gm)].map((m) => [m[1], true]));
+  expect(Object.keys(pages).length).toBeGreaterThan(10);
+  // A card with no page in its address shows the sign-up, as the demos do.
+  const shown = new Set(DEMOS.map((demo) => new URLSearchParams(demo.query ?? '').get('page') ?? 'signup'));
+  const unnamed = Object.keys(pages).filter((name) => !shown.has(name));
+  expect(unnamed).toEqual([]);
+});
 
 test.describe('the demo frame', () => {
   test('gives a visitor the menu of every demo, how to try this one, and its code', async ({ page, context }) => {
