@@ -19,6 +19,14 @@ const model: Record<string, Field> = {
   topics: { type: 'selection', label: 'Topics', multiple: true, options: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }] },
   born: { type: 'date', label: 'Born' },
   photo: { type: 'binary', label: 'Photo' },
+  notes: { type: 'text', label: 'Notes' },
+  rich: { type: 'html', label: 'Rich' },
+  cost: { type: 'monetary', label: 'Cost', currency: 'USD' },
+  at: { type: 'datetime', label: 'At' },
+  extra: { type: 'json', label: 'Extra' },
+  flag: { type: 'boolean', label: 'Flag' },
+  pick: { type: 'selection', label: 'Pick', other: true, options: [{ value: 'a', label: 'A' }] },
+  one: { type: 'selection', label: 'One', options: [{ value: 'a', label: 'A' }] },
 };
 
 /** A screen of the page's own fields, as if typed in: not the model's. */
@@ -234,5 +242,104 @@ describe('the words before publishing', () => {
     designer.removeAnswerRule(id('email'), 0);
     designer.setSetWhen(id('kind'), null);
     expect(pageChanges(after, designer.getPage())).toEqual(['“Email”: removed the rule — Must end with @acme.com (only warns)', '“Total” is no longer worked out', '“Kind” is no longer set by a rule']);
+  });
+});
+
+describe('the cases a mutation pass found unguarded', () => {
+  it('works out every kind of field the format lets a formula give a value to', () => {
+    const { designer, id } = order();
+    const formulas: [string, string][] = [['notes', "name + '!'"], ['rich', 'name'], ['cost', 'price * 2'], ['born', 'today()'], ['at', 'today()'], ['extra', 'name'], ['flag', 'qty > 1'], ['state', "'draft'"]];
+    for (const [field, formula] of formulas) expect([field, designer.setCompute(id(field), formula)]).toEqual([field, true]);
+    expect(designer.setCompute('nope', 'qty')).toBe(false);
+    expect(designer.getState().issues).toEqual(['There is no field "nope"']);
+  });
+
+  it('says why each ask does not fit a field', () => {
+    const { designer, id } = order();
+    const misfits: [string, object, string][] = [
+      ['qty', { maxLength: 3 }, '“Quantity” holds a whole number: a length does not fit it'],
+      ['qty', { endsWith: 'x' }, '“Quantity” holds a whole number: an ending does not fit it'],
+      ['born', { pattern: 'x' }, '“Born” holds a date: a pattern does not fit it'],
+      ['name', { min: 1 }, '“Name” holds text: a range does not fit it'],
+      ['name', { max: 1 }, '“Name” holds text: a range does not fit it'],
+      ['name', { atLeast: 1 }, '“Name” holds text: how many are ticked does not fit it'],
+      ['name', { atMost: 1 }, '“Name” holds text: how many are ticked does not fit it'],
+      ['name', { date: 'past' }, '“Name” holds text: a date in the past or the future does not fit it'],
+    ];
+    for (const [field, rule, words] of misfits) {
+      expect(designer.addAnswerRule(id(field), rule)).toBe(false);
+      expect(designer.getState().issues).toEqual([words]);
+    }
+  });
+
+  it('wants lengths and counts in whole numbers, a range in numbers, and lets both ends be the same', () => {
+    const { designer, id } = order();
+    const refused: [string, object, string][] = [
+      ['name', { minLength: 2.5 }, 'A length is a whole number of letters'],
+      ['name', { maxLength: 0 }, 'A length is a whole number of letters'],
+      ['topics', { atLeast: -1 }, 'How many are ticked is a whole number'],
+      ['topics', { atMost: 0 }, 'How many are ticked is a whole number'],
+      ['price', { min: Number.NaN }, 'A range runs between numbers'],
+      ['price', { max: Number.NaN }, 'A range runs between numbers'],
+      ['topics', { atLeast: 3, atMost: 2 }, 'At least 3 is more than at most 2'],
+    ];
+    for (const [field, rule, words] of refused) {
+      expect(designer.addAnswerRule(id(field), rule)).toBe(false);
+      expect(designer.getState().issues).toEqual([words]);
+    }
+    for (const [field, rule] of [['name', { minLength: 0 }], ['name', { minLength: 3, maxLength: 3 }], ['price', { min: 5, max: 5 }], ['topics', { atLeast: 0 }], ['topics', { atLeast: 2, atMost: 2 }]] as [string, object][]) {
+      expect([field, rule, designer.addAnswerRule(id(field), rule)]).toEqual([field, rule, true]);
+    }
+  });
+
+  it('says what each kind of field cannot hold, and takes what it can, a formula too', () => {
+    const { designer, id } = order();
+    const refused: [string, string, string][] = [
+      ['qty', '2.5', '“Quantity” holds a whole number, not 2.5'],
+      ['qty', 'True', '“Quantity” holds a whole number, not Yes'],
+      ['qty', 'False', '“Quantity” holds a whole number, not No'],
+      ['price', "'x'", '“Price” holds a number, not “x”'],
+      ['cost', "'x'", '“Cost” holds an amount, not “x”'],
+      ['flag', "'yes'", '“Flag” holds yes or no, not “yes”'],
+      ['born', "'soon'", '“Born” holds a date, not “soon”'],
+      ['name', 'True', '“Name” holds text, not Yes'],
+      ['one', "'b'", '“One” offers A, not “b”'],
+    ];
+    for (const [field, value, words] of refused) {
+      expect(designer.setSetWhen(id(field), [{ when: 'qty > 1', value }])).toBe(false);
+      expect(designer.getState().issues).toEqual([words]);
+    }
+    const taken: [string, string][] = [['born', "'2026-01-02'"], ['at', "'2026-01-02 10:00'"], ['name', '5'], ['pick', "'my own'"], ['qty', 'qty * 2'], ['flag', 'True']];
+    for (const [field, value] of taken) expect([field, designer.setSetWhen(id(field), [{ when: 'price > 1', value }])]).toEqual([field, true]);
+  });
+
+  it('refuses values set on a field of the model, on a file, and a value that does not read', () => {
+    const { designer, id } = order();
+    expect(designer.setSetWhen(id('photo'), [{ when: 'qty > 1', value: "'x'" }])).toBe(false);
+    expect(designer.getState().issues).toEqual(['“Photo” holds a file, which cannot be set by a rule']);
+    expect(designer.setSetWhen(id('kind'), [{ when: 'qty > 1', value: 'qtty' }])).toBe(false);
+    expect(designer.getState().issues).toEqual(['Set to: Unknown field “qtty” at 1–4']);
+    const fromModel = createDesigner({ page: blankPage('screen', 'Order'), model });
+    const total = fromModel.addModelField('total', { parent: 'section-1' }) as string;
+    fromModel.addModelField('qty', { parent: 'section-1' });
+    expect(fromModel.setSetWhen(total, [{ when: 'qty > 1', value: '1' }])).toBe(false);
+    expect(fromModel.getState().issues).toEqual(['What sets “Total” comes from the model']);
+  });
+
+  it('makes typing in one row’s box one undo step when there are several rows', () => {
+    const { designer, id } = order();
+    designer.setSetWhen(id('kind'), [{ when: 'qty > 1', value: "'a'" }, { when: 'qty > 5', value: "'b'" }]);
+    designer.setSetWhen(id('kind'), [{ when: 'qty > 1', value: "'ab'" }, { when: 'qty > 5', value: "'b'" }]);
+    designer.setSetWhen(id('kind'), [{ when: 'qty > 1', value: "'abc'" }, { when: 'qty > 5', value: "'b'" }]);
+    designer.undo();
+    expect(designer.getPage().fields['kind'].setWhen).toEqual([{ when: 'qty > 1', value: "'a'" }, { when: 'qty > 5', value: "'b'" }]);
+  });
+
+  it('leaves an empty message out, and names the rule that is not there to remove', () => {
+    const { designer, id, node } = order();
+    designer.addAnswerRule(id('name'), { minLength: 2, message: '' });
+    expect(node('name').validate).toEqual([{ minLength: 2 }]);
+    expect(designer.removeAnswerRule(id('email'), 0)).toBe(false);
+    expect(designer.getState().issues).toEqual(['“Email” has no rule 1']);
   });
 });

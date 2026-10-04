@@ -135,3 +135,89 @@ describe('a value set that the field cannot hold', () => {
     expect(designer.getPage().fields['state'].setWhen).toBeUndefined();
   });
 });
+
+describe('the cases a mutation pass found unguarded', () => {
+  const nodeOf = (page: Page, id: string) => (page.layout as unknown as { children: SectionNode[] }).children[0].children.find((n) => n.id === id) as FieldNode;
+
+  it('names two fields gone at once', () => {
+    const designer = screen();
+    designer.setCompute('f-total', 'price * qty');
+    designer.removeNode('f-price');
+    designer.removeNode('f-qty');
+    expect(pageChecks(designer.getPage()).map((c) => c.text)).toEqual(['“Total”: “Worked out from Price × Quantity” reads Price and Quantity, which are no longer on the page.']);
+  });
+
+  it('finds a read-only rule waiting for a choice gone, and takes it away', () => {
+    const designer = screen();
+    designer.setRule('f-name', 'readonly', { field: 'state', equals: 'closed' });
+    designer.setOptions('f-state', ['Draft', 'Active']);
+    const checks = pageChecks(designer.getPage());
+    expect(checks.map((c) => c.text)).toEqual(['“Name”: the rule “Status is closed” can never hold, as Status no longer offers it.']);
+    designer.fixCheck(checks[0]);
+    expect(nodeOf(designer.getPage(), 'f-name')).not.toHaveProperty('readonly');
+  });
+
+  it('leaves alone a rule that a choice gone only makes always hold', () => {
+    const designer = screen();
+    designer.setRule('f-name', 'required', { join: 'all', rules: [{ field: 'state', op: 'is not', value: 'closed' }] });
+    designer.setOptions('f-state', ['Draft', 'Active']);
+    expect(pageChecks(designer.getPage())).toEqual([]);
+  });
+
+  it('takes away a whole answer rule, or a whole value set, whose “only when” waits for a choice gone', () => {
+    const designer = screen();
+    designer.addAnswerRule('f-name', { minLength: 2, when: "state == 'closed'" });
+    designer.setSetWhen('f-name', [{ when: "state == 'closed'", value: "'x'" }]);
+    designer.setOptions('f-state', ['Draft', 'Active']);
+    const checks = pageChecks(designer.getPage());
+    expect(checks.map((c) => [c.text, c.fix?.label])).toEqual([
+      ['“Name”: the rule “Status is closed” can never hold, as Status no longer offers it.', 'Remove the rule'],
+      ['“Name”: the rule “Status is closed” can never hold, as Status no longer offers it.', 'Remove the rule'],
+    ]);
+    designer.fixCheck(checks[0]);
+    designer.fixCheck(pageChecks(designer.getPage())[0]);
+    expect(nodeOf(designer.getPage(), 'f-name')).not.toHaveProperty('validate');
+    expect(designer.getPage().fields['name'].setWhen).toBeUndefined();
+  });
+
+  it('reads a condition written by hand without tripping, and takes it away whole when it reads a field gone', () => {
+    const designer = screen((_, nodes) => {
+      nodes[3].required = "state == 'closed' and qty > 1";
+      nodes[0].invisible = 'qty > 1';
+    });
+    expect(pageChecks(designer.getPage())).toEqual([]);
+    designer.removeNode('f-qty');
+    const gone = pageChecks(designer.getPage()).find((c) => c.at === 'f-price') as NonNullable<ReturnType<typeof pageChecks>[number]>;
+    expect(gone.text).toBe('“Price”: “Hidden when Quantity > 1” reads Quantity, which is no longer on the page.');
+    designer.fixCheck(gone);
+    expect(nodeOf(designer.getPage(), 'f-price')).not.toHaveProperty('invisible');
+  });
+
+  it('says a value set that no longer reads, once', () => {
+    const designer = screen((page) => {
+      page.fields['name'] = { type: 'char', label: 'Name', setWhen: [{ when: 'price > 1', value: 'qty *' }] };
+    });
+    expect(said(designer.getPage())).toEqual([['must', '“Name”: “Set to Quantity × when Price > 1” no longer reads — Something is missing after “*” at 5.', 'f-name', 'Remove it']]);
+  });
+
+  it('says a pattern that does not read once, in words', () => {
+    const designer = screen((_, nodes) => {
+      nodes[3].validate = [{ pattern: '([a-z' }];
+    });
+    expect(said(designer.getPage())).toEqual([['must', '“Name”: the rule’s pattern “([a-z” cannot be read.', 'f-name', 'Remove the rule']]);
+  });
+
+  it('does nothing for a fix whose rule is gone already', () => {
+    const designer = screen();
+    designer.setCompute('f-total', 'price * qty');
+    designer.removeNode('f-price');
+    const [check] = pageChecks(designer.getPage());
+    designer.setCompute('f-total', null);
+    expect(designer.fixCheck(check)).toBe(false);
+  });
+
+  it('still says what is wrong with a list in the page’s own words', () => {
+    const page: Page = { fieldia: '0.1', id: 'l', data: { kind: 'record', model: 'x' }, fields: { name: { type: 'char', label: 'Name' } }, layout: { type: 'list', id: 'l', columns: ['ghost'] } };
+    expect(pageChecks(page).map((c) => [c.severity, c.text])).toEqual([['must', expect.stringMatching(/ghost/)]]);
+  });
+});

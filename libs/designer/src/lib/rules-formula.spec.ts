@@ -66,6 +66,11 @@ describe('a field worked out from itself', () => {
     expect(wouldCircle(chained, 'total', 'price + tax')).toBe('“Total” would be worked out from itself: Total → Tax → Total');
     expect(wouldCircle(chained, 'total', 'price * qty')).toBeNull();
   });
+
+  it('ends when other fields are worked out from each other, and it is not among them', () => {
+    const tangled = page({ ...order.fields, tax: { type: 'float', label: 'Tax', compute: 'extra * 2' }, extra: { type: 'float', label: 'Extra', compute: 'tax + 1' } });
+    expect(wouldCircle(tangled, 'total', 'tax + price')).toBeNull();
+  });
 });
 
 describe('a formula in words', () => {

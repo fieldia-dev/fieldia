@@ -105,12 +105,21 @@ function askWords(rule: AnswerRule): { say: string; must: string }[] {
   return out;
 }
 
-/** When a rule holds, in words: "Status is Active"; empty when it always does. */
+/**
+ * When a rule holds, in words: "Status is Active" — a condition the designer
+ * builds reads the same through the formula's words, `==` as "is" and a
+ * choice by its label. Empty when it always holds.
+ */
 function whenWords(page: Page, when: AnswerRule['when']): string {
-  if (when === undefined || when === true) return '';
-  if (when === false) return 'never';
-  const held = readHolds(when);
-  return held && held !== 'custom' && held !== 'always' ? conditionInWords(page, held) : formulaInWords(page, when);
+  return typeof when === 'string' ? formulaInWords(page, when) : '';
+}
+
+/** What is said after a rule's asks: that it only warns, and when it is checked. */
+function notesOf(page: Page, rule: AnswerRule): string[] {
+  const notes = rule.level === 'warning' ? ['only warns'] : [];
+  if (rule.when === false) notes.push('never checked');
+  else if (whenWords(page, rule.when)) notes.push(`only when ${whenWords(page, rule.when)}`);
+  return notes;
 }
 
 /** An answer rule as it reads in a list: "Ends with @acme.com — only warns, only when VIP is Yes". */
@@ -118,8 +127,7 @@ export function answerRuleSentence(page: Page, rule: AnswerRule): string {
   const asks = askWords(rule);
   if (!asks.length) return 'Asks for nothing yet';
   const said = [asks[0].say, ...asks.slice(1).map((a) => lower(a.say))].join(', ');
-  const when = whenWords(page, rule.when);
-  const notes = [...(rule.level === 'warning' ? ['only warns'] : []), ...(when ? [`only when ${when}`] : [])];
+  const notes = notesOf(page, rule);
   return notes.length ? `${said} — ${notes.join(', ')}` : said;
 }
 
@@ -128,8 +136,7 @@ export function answerRuleMust(page: Page, rule: AnswerRule): string {
   const asks = askWords(rule);
   if (!asks.length) return 'Asks for nothing';
   const said = [asks[0].must, ...asks.slice(1).map((a) => lower(a.must))].join(', ');
-  const when = whenWords(page, rule.when);
-  const notes = [...(rule.level === 'warning' ? ['only warns'] : []), ...(when ? [`only when ${when}`] : [])];
+  const notes = notesOf(page, rule);
   return notes.length ? `${said} (${notes.join(', ')})` : said;
 }
 
@@ -192,10 +199,10 @@ function shows(page: Page, invisible: unknown): string {
   return `Shows when ${conditionInWords(page, condition)}`;
 }
 
+/** A rule written as it holds — required when, read-only when — in words; written by hand or by the designer, it reads the same. */
 function holds(page: Page, lead: string, value: unknown): string {
   const held = readHolds(value);
-  if (!held || held === 'always') return '';
-  return held === 'custom' ? `${lead} when ${formulaInWords(page, String(value))}` : `${lead} when ${conditionInWords(page, held)}`;
+  return !held || held === 'always' ? '' : `${lead} when ${formulaInWords(page, String(value))}`;
 }
 
 const reads = (value: unknown) => fieldsReadBy(typeof value === 'string' ? value : undefined);
@@ -217,7 +224,7 @@ export function pageRules(page: Page): RuleEntry[] {
   const visit = (node: Visited) => {
     const name = node.type === 'step' ? node.label || 'Untitled page' : nameOf(page, node as never) || node.label || '';
     const hidden = shows(page, node.invisible);
-    if (hidden) out.push({ kind: 'shows', part: node.id, name, sentence: hidden, reads: reads(node.invisible), ...(node.type === 'field' ? { field: node.field } : {}) });
+    if (hidden) out.push({ kind: 'shows', part: node.id, name, sentence: hidden, reads: reads(node.invisible) });
     if (node.type === 'field' && node.field) {
       const required = holds(page, 'Required', node.required);
       if (required) out.push({ kind: 'required', part: node.id, field: node.field, name, sentence: required, reads: reads(node.required) });

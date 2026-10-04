@@ -117,7 +117,8 @@ export function ruleChecks(page: Page): { checks: PageCheck[]; covers(path: stri
     // A condition waiting for a choice no longer offered (when a part shows is the page's older check's).
     if (rule.kind !== 'shows' && rule.kind !== 'compute' && rule.part) choiceGone(page, rule, say);
   }
-  return { checks, covers: (path) => covered.some((at) => path === at || path.startsWith(`${at}.`) || path.startsWith(`${at}[`)) };
+  // A path names the rule itself, or something inside it: its pattern, its condition.
+  return { checks, covers: (path) => covered.some((at) => path === at || path.startsWith(`${at}.`)) };
 }
 
 type Say = (rule: RuleEntry, severity: PageCheck['severity'], text: string, fix: string, extra?: Partial<RuleFix>) => void;
@@ -168,9 +169,8 @@ function choiceGone(page: Page, rule: RuleEntry, say: Say) {
   condition?.rules.forEach((part, index) => {
     const tested = page.fields[part.field];
     if (part.op !== 'is' || tested?.type !== 'selection' || typeof part.value !== 'string' || tested.options.some((o) => o.value === part.value)) return;
-    // A field's own rule loses only that part; an answer rule or a value set goes whole.
-    const whole = rule.kind === 'answer' || rule.kind === 'set';
-    say(rule, 'should', `“${rule.name}”: the rule “${tested.label} is ${part.value}” can never hold, as ${tested.label} no longer offers it.`, 'Remove the rule', whole ? {} : { parts: [index] });
+    // A field's own rule loses only that part; an answer rule or a value set goes whole (the fix takes those whole).
+    say(rule, 'should', `“${rule.name}”: the rule “${tested.label} is ${part.value}” can never hold, as ${tested.label} no longer offers it.`, 'Remove the rule', { parts: [index] });
   });
 }
 

@@ -1,5 +1,5 @@
 import type { AnswerRule, Field, Page } from '@fieldia/core';
-import { answerRuleKinds, answerRuleMust, answerRuleSentence, kindsFitting, pageRules, ruleAsks } from './rules-words';
+import { answerRuleKinds, answerRuleMust, answerRuleSentence, conditionInWords, kindsFitting, pageRules, ruleAsks } from './rules-words';
 
 /** Every rule as a sentence a person reads, and which rules fit which fields. */
 
@@ -87,6 +87,27 @@ describe('an answer rule as a sentence', () => {
     expect(answerRuleMust(page, { pattern: 'x+', when: 'vip == True' })).toBe('Must match the pattern x+ (only when VIP is Yes)');
   });
 
+  it('says what each ask alone must be, and several asks and notes together', () => {
+    const must = (rule: AnswerRule) => answerRuleMust(page, rule);
+    expect(must({ minLength: 2 })).toBe('Must be at least 2 letters');
+    expect(must({ maxLength: 1 })).toBe('Must be at most 1 letter');
+    expect(must({ min: 18 })).toBe('Must be at least 18');
+    expect(must({ max: 99 })).toBe('Must be at most 99');
+    expect(must({ min: 5, max: 5 })).toBe('Must be exactly 5');
+    expect(must({ atLeast: 1, atMost: 3 })).toBe('Must tick between 1 and 3');
+    expect(must({ atMost: 3 })).toBe('Must tick at most 3');
+    expect(must({ minLength: 2, endsWith: '.com' })).toBe('Must be at least 2 letters, must end with .com');
+    expect(must({ minLength: 2, level: 'warning', when: 'vip == True' })).toBe('Must be at least 2 letters (only warns, only when VIP is Yes)');
+    expect(must({ message: 'Hm' })).toBe('Asks for nothing');
+  });
+
+  it('says a range of one number, a rule always or never checked, and one that asks for nothing yet', () => {
+    expect(say({ min: 5, max: 5 })).toBe('Exactly 5');
+    expect(say({ minLength: 2, when: true })).toBe('At least 2 letters');
+    expect(say({ minLength: 2, when: false })).toBe('At least 2 letters — never checked');
+    expect(say({ message: 'Hm' })).toBe('Asks for nothing yet');
+  });
+
   it('knows a rule that asks for nothing', () => {
     expect(ruleAsks({ message: 'Hm' })).toEqual([]);
     expect(ruleAsks({ minLength: 2, endsWith: 'x', level: 'warning' })).toEqual(['minLength', 'endsWith']);
@@ -130,5 +151,59 @@ describe('every rule on the page', () => {
     expect(total).toMatchObject({ part: 't', field: 'total', reads: ['price', 'qty'] });
     const email = pageRules(page).find((r) => r.kind === 'answer' && r.part === 'e');
     expect(email).toMatchObject({ index: 0, reads: ['vip'] });
+  });
+});
+
+describe('a condition in words', () => {
+  it('joins its parts with and, or with or', () => {
+    const rules = [{ field: 'vip', op: 'is' as const, value: true }, { field: 'state', op: 'is not' as const, value: 'draft' }];
+    expect(conditionInWords(page, { join: 'all', rules })).toBe('VIP is Yes and Status is not Draft');
+    expect(conditionInWords(page, { join: 'any', rules })).toBe('VIP is Yes or Status is not Draft');
+  });
+});
+
+describe('every rule of other kinds of page', () => {
+  const base = (layout: Page['layout'], kind: 'record' | 'responses' = 'record'): Page => ({
+    fieldia: '0.1',
+    id: 'p',
+    data: kind === 'record' ? { kind, model: 'x' } : { kind },
+    fields: { name: fields['name'], state: fields['state'], vip: fields['vip'] },
+    layout,
+  });
+
+  it('names a survey’s pages, an untitled one too', () => {
+    const survey = base(
+      {
+        type: 'wizard',
+        id: 'w',
+        children: [
+          { type: 'step', id: 'p1', label: 'About', children: [{ type: 'field', id: 'v', field: 'vip' }] },
+          { type: 'step', id: 'p2', label: '', invisible: 'vip != True', children: [] },
+          { type: 'step', id: 'p3', label: 'Travel', invisible: 'vip == True', children: [] },
+        ],
+      },
+      'responses'
+    );
+    expect(pageRules(survey).map((r) => `${r.part} · ${r.name} · ${r.sentence}`)).toEqual(['p2 · Untitled page · Shows when VIP is Yes', 'p3 · Travel · Shows when VIP is not Yes']);
+  });
+
+  it('reads a sheet’s header, a group read-only by a rule, and a part always hidden', () => {
+    const sheet = base({
+      type: 'sheet',
+      id: 'sheet',
+      buttons: [{ type: 'button', id: 'b-confirm', label: 'Confirm', action: 'confirm', invisible: "state != 'draft'" }],
+      badges: [{ id: 'badge-vip', label: 'VIP', invisible: 'vip != True' }],
+      children: [{ type: 'section', id: 's1', title: 'Order', readonly: 'vip == True', children: [{ type: 'field', id: 'n', field: 'name', invisible: true }] }],
+    });
+    expect(pageRules(sheet).map((r) => `${r.kind} · ${r.part} · ${r.name} · ${r.sentence}`)).toEqual([
+      'shows · b-confirm · Confirm · Shows when Status is Draft',
+      'shows · badge-vip · VIP · Shows when VIP is Yes',
+      'readonly · s1 · Order · Read-only when VIP is Yes',
+      'shows · n · Name · Always hidden',
+    ]);
+  });
+
+  it('finds none on a list', () => {
+    expect(pageRules(base({ type: 'list', id: 'l', columns: ['name'] }))).toEqual([]);
   });
 });
