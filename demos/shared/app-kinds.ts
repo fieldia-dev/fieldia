@@ -53,8 +53,9 @@ function installStyles(document: Document) {
   const style = document.createElement('style');
   style.id = STYLE_ID;
   style.textContent = `
-.demo-iban { display: grid; gap: 4px; min-width: 0; }
-.demo-iban .fd-input { font-variant-numeric: tabular-nums; direction: ltr; text-align: start; text-overflow: ellipsis; }
+/* An IBAN runs to 34 letters and digits: the box measures itself, and its words get no bigger than fit it whole, in any font. */
+.demo-iban { display: grid; gap: 4px; min-width: 0; container-type: inline-size; }
+.demo-iban .fd-input { font-variant-numeric: tabular-nums; direction: ltr; text-align: start; text-overflow: ellipsis; font-size: min(1em, calc((100cqi - 26px) / 22)); }
 [dir="rtl"] .demo-iban .fd-input { text-align: end; }
 .demo-iban-check { margin: 0; font-size: 12.5px; line-height: 1.4; color: var(--fd-muted); }
 .demo-iban-check:empty { display: none; }
