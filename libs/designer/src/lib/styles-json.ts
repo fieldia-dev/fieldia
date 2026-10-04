@@ -52,4 +52,39 @@ export const DESIGNER_JSON_CSS = /* css */ `
 .fd-json-problem[data-severity="should"] .fd-json-severity { color: var(--fd-warning); background: var(--fd-warning-soft); }
 .fd-json-message { flex: 1 1 240px; min-width: 0; overflow-wrap: anywhere; }
 .fd-json-fix { min-height: 28px; padding: 2px 6px; font-size: 13px; font-weight: 600; }
+/* Try it's drawer: the answers as JSON and the problems they have, kept in sight as the page is filled. */
+.fd-try-drawer {
+  position: sticky; bottom: 8px; z-index: 5; display: grid; margin-inline: auto; width: 100%; max-width: 1100px; box-sizing: border-box;
+  background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); box-shadow: 0 -6px 18px rgba(15, 20, 25, 0.08);
+}
+.fd-try-drawer-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; padding: 2px 10px; }
+.fd-try-drawer-bar:has(+ .fd-try-panels:not([hidden])) { border-block-end: 1px solid var(--fd-border); }
+.fd-try-tabs { display: flex; gap: 2px; margin-inline-end: auto; }
+.fd-try-tab {
+  all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 9px 10px 7px;
+  font-size: 13.5px; font-weight: 600; color: var(--fd-muted); border-block-end: 2px solid transparent;
+}
+.fd-try-tab[aria-selected="true"] { color: var(--fd-text); border-block-end-color: var(--fd-accent); }
+.fd-try-tab:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: -2px; border-radius: 4px; }
+.fd-try-count { min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; display: inline-grid; place-items: center; font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; background: var(--fd-error-soft); color: var(--fd-error); }
+.fd-try-count[hidden] { display: none; }
+.fd-try-said { font-size: 12.5px; color: var(--fd-muted); }
+.fd-try-said:empty { display: none; }
+.fd-try-copy, .fd-try-fold { min-height: 30px; padding: 2px 6px; font-size: 13px; font-weight: 600; }
+.fd-try-panels { max-height: min(260px, 38vh); overflow: auto; overscroll-behavior: contain; }
+.fd-try-panels[hidden] { display: none; }
+.fd-try-panel { padding: 10px 14px; }
+.fd-try-panel[hidden] { display: none; }
+.fd-try-data { margin: 0; font: 12.5px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace; white-space: pre; overflow-x: auto; color: var(--fd-text); }
+.fd-try-data:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; border-radius: 2px; }
+.fd-try-problems { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.fd-try-problems:empty { display: none; }
+.fd-try-problem { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; width: 100%; padding: 6px 8px; border-radius: 6px; font-size: 13.5px; line-height: 1.45; }
+.fd-try-problem:hover { background: var(--fd-page); }
+.fd-try-problem:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: -2px; }
+.fd-try-problem strong { font-weight: 600; }
+.fd-try-problem span { color: var(--fd-error); }
+.fd-try-problem[data-warning] span { color: var(--fd-warning); }
+.fd-try-none { margin: 0; color: var(--fd-muted); font-size: 13.5px; }
+.fd-try-none[hidden] { display: none; }
 `;
