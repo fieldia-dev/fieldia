@@ -14,6 +14,7 @@ import { openMenu, type MenuItem } from './menu';
 import { lookSheet } from './panel-look-sheet';
 import { rail as sideRail } from './rail';
 import { inlineSettings } from './inline-settings';
+import { cardRules } from './rules-card';
 import { installDesignerStyles } from './styles';
 import { toolbox, TOOLBOX_GROUPS } from './toolbox';
 import { tryIt } from './try-it';
@@ -390,6 +391,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     const painter = answerBox(answer, id);
     const settings = inlineSettings(el, designer, id);
     const when = conditionEditor(el, designer, id, 'question');
+    const rules = cardRules(el, designer, id);
     const tool = (label: string, icon: string, onClick: () => void, extra = '') => {
       const button = el('button', { type: 'button', class: `fd-q-tool ${extra}`.trim(), 'aria-label': label, title: label }, designerIcon(doc, icon));
       button.addEventListener('click', onClick);
@@ -409,6 +411,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       const items: MenuItem[] = [
         { id: 'help', label: 'Description', checked: hasHelp },
         ...(when.element.hidden && when.canStart() ? [{ id: 'when', label: 'Show only when…' }] : []),
+        ...rules.menuItems(),
         ...(at > 0 ? [{ id: 'up', label: 'Move up', divider: true }] : []),
         ...(step && at !== -1 && at < step.children.length - 1 ? [{ id: 'down', label: 'Move down', ...(at > 0 ? {} : { divider: true }) }] : []),
       ];
@@ -432,6 +435,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
           } else if (item === 'when') when.start();
           else if (item === 'up') designer.moveNode(id, -1);
           else if (item === 'down') designer.moveNode(id, 1);
+          else rules.pick(item);
         },
       });
     }
@@ -457,6 +461,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       choices.element,
       answer,
       settings.element,
+      rules.element,
       when.element,
       foot
     );
@@ -482,6 +487,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
         answer.hidden = !choices.element.hidden || standsIn;
         if (!answer.hidden) painter.paint(page, node);
         when.update(page, questionsBefore(page, node.id), node.invisible);
+        rules.update(page, node);
       },
       destroy: () => painter.destroy(),
     };

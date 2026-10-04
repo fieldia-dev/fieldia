@@ -16,18 +16,26 @@ export function choicesOf(field: Field | undefined): { key: string; label: strin
  * them. A condition written by hand is shown as it is, with Replace. The
  * same, for when a field is required or read-only (`kind`).
  */
-export function conditionEditor(el: ElementFactory, designer: Designer, targetId: string, what: 'page' | 'question' | 'group', kind: 'shows' | 'required' | 'readonly' = 'shows') {
-  const lead = kind === 'shows' ? `Show this ${what}` : kind === 'required' ? 'Required' : 'Read-only';
+export function conditionEditor(
+  el: ElementFactory,
+  designer: Designer,
+  targetId: string,
+  what: 'page' | 'question' | 'group',
+  kind: 'shows' | 'required' | 'readonly' = 'shows',
+  /** A rule kept elsewhere, such as when an answer rule holds: its own words, and where it is saved. Read as it holds. */
+  custom?: { lead: string; label: string; save(condition: Condition): boolean }
+) {
+  const lead = custom?.lead ?? (kind === 'shows' ? `Show this ${what}` : kind === 'required' ? 'Required' : 'Read-only');
   const match = el('select', { class: 'fd-input fd-select fd-when-match', 'aria-label': 'Match' }, el('option', { value: 'all' }, 'all of these'), el('option', { value: 'any' }, 'any of these'));
   const matchRow = el('div', { class: 'fd-when-match-row', hidden: '' }, el('span', {}, `${lead} when`), match, el('span', {}, 'hold'));
   const rows = el('div', { class: 'fd-when-rules' });
   const add = el('button', { type: 'button', class: 'fd-button fd-button-link fd-when-add' }, 'Add a condition');
   const customText = el('code', {});
   const replace = el('button', { type: 'button', class: 'fd-button fd-button-link' }, 'Replace');
-  const custom = el('div', { class: 'fd-when-custom', hidden: '' }, el('span', {}, `${kind === 'shows' ? 'Shown' : lead} when, as written by hand: `), customText, replace);
+  const customBox = el('div', { class: 'fd-when-custom', hidden: '' }, el('span', {}, `${kind === 'shows' ? 'Shown' : lead} when, as written by hand: `), customText, replace);
   // One rule for a field's required or read-only: said what it is for; several say it in their match row.
   const caption = el('span', { class: 'fd-when-lead', hidden: '' }, `${lead} when`);
-  const element = el('div', { class: 'fd-when', role: 'group', 'aria-label': kind === 'shows' ? `When this ${what} shows` : `When it is ${lead.toLowerCase()}` }, caption, matchRow, rows, add, custom);
+  const element = el('div', { class: 'fd-when', role: 'group', 'aria-label': custom?.label ?? (kind === 'shows' ? `When this ${what} shows` : `When it is ${lead.toLowerCase()}`) }, caption, matchRow, rows, add, customBox);
   let available: FieldNode[] = [];
   let page: Page | null = null;
 
@@ -40,7 +48,7 @@ export function conditionEditor(el: ElementFactory, designer: Designer, targetId
     });
     return { join: match.value as Condition['join'], rules };
   }
-  const save = (condition: Condition) => (kind === 'shows' ? designer.setCondition(targetId, condition) : designer.setRule(targetId, kind, condition));
+  const save = (condition: Condition) => (custom ? custom.save(condition) : kind === 'shows' ? designer.setCondition(targetId, condition) : designer.setRule(targetId, kind, condition));
 
   /** A first rule: the first question it can test, its first answer. */
   function start(field?: string) {
@@ -86,7 +94,7 @@ export function conditionEditor(el: ElementFactory, designer: Designer, targetId
       const held = kind === 'shows' ? readCondition(invisible) : readHolds(invisible);
       // Always required is the Required box's, not a rule's.
       const condition = held === 'always' ? null : held;
-      custom.hidden = condition !== 'custom';
+      customBox.hidden = condition !== 'custom';
       if (condition === 'custom') customText.textContent = String(invisible);
       const rules = condition && condition !== 'custom' ? condition.rules : [];
       // A page shows "Always" in its first row; a question shows nothing until it has a rule.
