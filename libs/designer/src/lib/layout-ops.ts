@@ -1,0 +1,438 @@
+import { wideColumns, type ColumnCount, type ColumnsByWidth, type Field, type LayoutNode, type Page, type SectionNode, type TabNode, type TabsNode } from '@fieldia/core';
+import { kindById, type QuestionKind } from './kinds';
+import { allIds, nextName, shownFields } from './page-tree';
+import { Refusal } from './refusal';
+
+/**
+ * Laying a page out by dropping parts where they go, as the approved mockup
+ * does (the way Grafloria's split board drops): beside a part, under it, into
+ * a group, or as a new full-width row of a grid. A page keeps order and
+ * widths, never positions, so each drop is worked out as which list a part
+ * goes in, where, and how wide.
+ *
+ * Two words carry it. An *arrangement* is a section with no title in the
+ * plain style: it is there only to hold parts side by side, or one under
+ * another. In a section with columns, an arrangement lays its parts on the
+ * columns it covers there, so they line up with everything above and below —
+ * unless it is one column wide with columns of its own, when the parts share
+ * that one cell. After every drop the page is tidied: an arrangement left
+ * holding one part or none folds away, and so does a column in a column.
+ */
+
+/** Where a dragged part lands. */
+export type Drop =
+  | { how: 'into'; container: string }
+  | { how: 'beside' | 'under'; target: string; after: boolean; whole?: boolean }
+  | { how: 'row'; container: string; index: number };
+
+/** What the toolbox adds besides fields: groups, tabs, and the blocks between fields. */
+export type BlockKind = 'group' | 'side' | 'tabs' | 'heading' | 'text' | 'divider' | 'spacer' | 'image' | 'button';
+
+/** A new part: a field of a kind, a field of the backend's model, or a block. */
+export type NewPart = { kind: string } | { field: string } | { block: BlockKind };
+
+/** What the store lends a layout edit: the backend's model, to put its fields on the page as it has them. */
+export interface LayoutContext {
+  model: Record<string, Field>;
+}
+
+/** Anything in a list of parts; a tab sits in its tabs' list. */
+type Part = LayoutNode | TabNode;
+/** Anything with a list of parts: a section, a tab, tabs, a step, or the page's own layout. */
+type Holder = { id: string; type: string; children: Part[] };
+interface Spot {
+  node: Part;
+  parent: Holder;
+  list: Part[];
+  index: number;
+}
+
+// ---- reading the page --------------------------------------------------------------------------------
+
+const listOf = (node: { type: string } | undefined): Part[] | null => {
+  const children = (node as { children?: unknown } | undefined)?.children;
+  return Array.isArray(children) ? (children as Part[]) : null;
+};
+
+/** A part inside a holder, the list it is in, and its place there, however deep. */
+function find(holder: Holder, id: string): Spot | null {
+  const list = listOf(holder) ?? [];
+  for (let index = 0; index < list.length; index++) {
+    const node = list[index];
+    if (node.id === id) return { node, parent: holder, list, index };
+    const deeper = find(node as Holder, id);
+    if (deeper) return deeper;
+  }
+  return null;
+}
+
+/** A part, the list it is in, and its place there, wherever it sits on the page. */
+export const locate = (page: Page, id: string): Spot | null => find(page.layout as Holder, id);
+
+/** The part, or the page's own layout, by id. */
+function nodeOf(page: Page, id: string): Part | Holder | null {
+  return page.layout.id === id ? (page.layout as Holder) : (locate(page, id)?.node ?? null);
+}
+
+/** Whether `inner` is `outer` or sits somewhere inside it. */
+function contains(page: Page, outer: string, inner: string): boolean {
+  const node = nodeOf(page, outer);
+  return outer === inner || (!!node && !!find(node as Holder, inner));
+}
+
+const isSection = (node: unknown): node is SectionNode => (node as { type?: string } | null)?.type === 'section';
+
+/** An arrangement: a section with no title in the plain style, there only to hold parts side by side or one under another. */
+export const isWrapper = (node: unknown): node is SectionNode => isSection(node) && node.style === 'plain' && !node.title;
+
+const spanOf = (node: Part): number => (node as { colspan?: number }).colspan ?? 1;
+
+/** The columns a section has: its own, or — an arrangement in a grid — the ones it covers there. */
+export function colsOf(page: Page, section: SectionNode): number {
+  if (onTracks(page, section)) return Math.min(spanOf(section), colsOf(page, locate(page, section.id)?.parent as SectionNode));
+  return wideColumns(section.columns);
+}
+
+/** How many places a list has across: a section's columns, or one for the page, a step and a tab. */
+const across = (page: Page, holder: Holder | Part): number => (isSection(holder) ? colsOf(page, holder) : 1);
+
+/** Whether a part sits in a grid with columns (not on the page, in a tab or in one column). */
+function inGrid(page: Page, node: Part): boolean {
+  const parent = locate(page, node.id)?.parent;
+  return isSection(parent) && colsOf(page, parent) > 1;
+}
+
+/** One column wide with columns of its own: parts sharing one cell, side by side. */
+const sharesOneCell = (section: SectionNode) => spanOf(section) === 1 && wideColumns(section.columns) > 1;
+
+/** An arrangement in a section with columns lays its parts on the columns it covers there. */
+function onTracks(page: Page, section: SectionNode): boolean {
+  if (!isWrapper(section) || sharesOneCell(section)) return false;
+  const parent = locate(page, section.id)?.parent;
+  return isSection(parent) && parent.columns !== undefined && colsOf(page, parent) > 1;
+}
+
+/** A row of parts on the page or in a tab: an arrangement with as many columns as parts. */
+function isRow(page: Page, node: Part | Holder | null): node is SectionNode {
+  if (!isWrapper(node) || inGrid(page, node) || onTracks(page, node)) return false;
+  const cols = colsOf(page, node);
+  return cols >= 2 && node.children.length === cols;
+}
+
+/**
+ * The rows a list's parts fall into, in reading order as the grid places them:
+ * a part too wide for what is left of a row starts the next. A divider is a
+ * line across the whole row.
+ */
+function rowsOf(page: Page, holder: Holder, skip?: string): { items: Part[]; used: number }[] {
+  const cols = across(page, holder);
+  const rows: { items: Part[]; used: number }[] = [];
+  let row: Part[] = [];
+  let used = 0;
+  for (const part of holder.children) {
+    if (part.id === skip) continue;
+    const span = part.type === 'divider' ? cols : Math.min(spanOf(part), cols);
+    if (used + span > cols && row.length) {
+      rows.push({ items: row, used });
+      row = [];
+      used = 0;
+    }
+    row.push(part);
+    used += span;
+  }
+  if (row.length) rows.push({ items: row, used });
+  return rows;
+}
+
+// ---- names --------------------------------------------------------------------------------------------
+
+/** A part's name as a person reads it. */
+export function nameOf(page: Page, node: Part | Holder | null): string {
+  if (!node) return '';
+  if (node.id === page.layout.id) return page.title || 'Page';
+  const part = node as Part;
+  switch (part.type) {
+    case 'field':
+      return part.label ?? page.fields[part.field]?.label ?? part.field;
+    case 'section': {
+      if (part.title) return part.title;
+      const cols = colsOf(page, part);
+      return cols > 1 ? (part.children.length > cols ? `${cols} columns` : 'Side by side') : 'Column';
+    }
+    case 'tabs':
+      return 'Tabs';
+    case 'tab':
+      return part.label;
+    case 'text':
+      return part.text.length > 34 ? `${part.text.slice(0, 32)}…` : part.text;
+    case 'button':
+      return part.label;
+    case 'image':
+      return part.alt || 'Image';
+    case 'slot':
+      return part.name;
+    default:
+      return part.type === 'divider' ? 'Divider' : 'Spacer';
+  }
+}
+
+const andList = (words: string[]) => (words.length <= 2 ? words.join(' and ') : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`);
+
+/** A part as people see it: an arrangement is named by what it holds. */
+export function seenAs(page: Page, node: Part | Holder): string {
+  if (!isWrapper(node)) return `“${nameOf(page, node)}”`;
+  return andList(node.children.map((c) => `“${nameOf(page, c)}”`));
+}
+
+/** What a drop means, in the words the drag chip says. */
+export function describeDrop(page: Page, drop: Drop, moving?: string): string {
+  if (drop.how === 'into') {
+    const box = nodeOf(page, drop.container);
+    return box?.id === page.layout.id ? 'into the page' : `into “${nameOf(page, box)}”`;
+  }
+  if (drop.how === 'row') {
+    const box = nodeOf(page, drop.container);
+    const next = (listOf(box ?? undefined) ?? []).filter((c) => c.id !== moving)[drop.index];
+    return next ? `new full-width row above “${nameOf(page, next)}”` : `new full-width row at the end of “${nameOf(page, box)}”`;
+  }
+  const target = nodeOf(page, drop.target);
+  if (!target) return '';
+  // A row of parts takes one more column: name the part it goes next to.
+  if (drop.how === 'beside' && isRow(page, target)) {
+    const edge = drop.after ? target.children[target.children.length - 1] : target.children[0];
+    return `new column beside “${nameOf(page, edge)}”`;
+  }
+  const whole = drop.whole ? (drop.how === 'beside' ? 'new column ' : 'new row ') : '';
+  const name = seenAs(page, target);
+  if (drop.how === 'beside') return `${whole}beside ${name}`;
+  return `${whole}${drop.after ? 'under' : 'above'} ${name}`;
+}
+
+// ---- changing the page --------------------------------------------------------------------------------
+
+const SPANNED = new Set(['field', 'button', 'text', 'section', 'tabs', 'spacer', 'image']);
+
+/** Set how many columns a part spans; one is the default, and a part that spans nothing (a divider) is left as it is. */
+export function setSpan(node: Part, span: number): void {
+  if (!SPANNED.has(node.type)) return;
+  const own = node as { colspan?: number };
+  if (span <= 1) delete own.colspan;
+  else own.colspan = span;
+}
+
+/** Columns written as plainly as they can be: a number when only the widest is given. */
+export function columnsValue(wide: number, medium?: number, narrow?: number): ColumnCount | ColumnsByWidth {
+  const by: ColumnsByWidth = { wide: wide as ColumnCount };
+  if (medium) by.medium = medium as ColumnCount;
+  if (narrow) by.narrow = narrow as ColumnCount;
+  return by.medium || by.narrow ? by : by.wide;
+}
+
+/** A row's columns, one per part (four at most); the narrower widths never more than that. */
+function setRowColumns(section: SectionNode, count: number): void {
+  const wide = Math.max(1, Math.min(4, count));
+  const given = section.columns;
+  section.columns = typeof given === 'object' ? columnsValue(wide, given.medium && Math.min(given.medium, wide), given.narrow && Math.min(given.narrow, wide)) : wide as ColumnCount;
+}
+
+/** Take a part out of where it is; a row it leaves closes up. */
+function detach(page: Page, id: string): void {
+  const at = locate(page, id);
+  if (!at) return;
+  const wasRow = isRow(page, at.parent);
+  at.list.splice(at.index, 1);
+  if (wasRow && at.parent.children.length >= 2) setRowColumns(at.parent as SectionNode, at.parent.children.length);
+}
+
+/** An arrangement with nothing of its own to lose: no rule, no label settings, no words. */
+const bare = (section: SectionNode) => Object.keys(section).every((key) => ['type', 'id', 'style', 'columns', 'colspan', 'children'].includes(key));
+
+/** Fold away what holds one part or none, and a column inside a column. */
+export function tidy(page: Page, holder: Holder = page.layout as Holder): void {
+  const list = listOf(holder);
+  if (!list) return;
+  for (let i = list.length - 1; i >= 0; i--) {
+    const node = list[i];
+    if (listOf(node)) tidy(page, node as Holder);
+    if (!isWrapper(node) || !bare(node)) continue;
+    if (!node.children.length) list.splice(i, 1);
+    else if (node.children.length === 1) {
+      const only = node.children[0];
+      setSpan(only, Math.min(spanOf(node), across(page, holder)));
+      list.splice(i, 1, only);
+    } else if (colsOf(page, node) === 1 && across(page, holder) === 1) list.splice(i, 1, ...node.children);
+  }
+}
+
+/** A name for each new part, none taken twice in one edit. */
+export function namer(page: Page): (prefix: string, sep?: string) => string {
+  const ids = allIds(page);
+  return (prefix, sep = '-') => {
+    const id = nextName((n) => ids.has(n), prefix, sep);
+    ids.add(id);
+    return id;
+  };
+}
+
+const arrangement = (id: string, colspan: number, columns: ColumnCount | ColumnsByWidth, children: Part[]): SectionNode => {
+  const made: SectionNode = { type: 'section', id, style: 'plain', columns, children: children as LayoutNode[] };
+  setSpan(made, colspan);
+  return made;
+};
+
+/** Put a part where a drop says, then tidy the page. The part may be new, or moved from where it is. */
+export function placeAt(page: Page, node: Part, drop: Drop): void {
+  const name = namer(page);
+  if (locate(page, node.id)) detach(page, node.id);
+  if (drop.how === 'into') {
+    const box = nodeOf(page, drop.container) as Holder;
+    setSpan(node, Math.min(spanOf(node), across(page, box)));
+    box.children.push(node);
+  } else if (drop.how === 'row') {
+    const box = nodeOf(page, drop.container) as Holder;
+    setSpan(node, across(page, box));
+    box.children.splice(Math.min(drop.index, box.children.length), 0, node);
+  } else {
+    const at = locate(page, drop.target) as Spot;
+    const parent = at.parent;
+    const target = at.node;
+    const index = at.index + (drop.after ? 1 : 0);
+    const cols = across(page, parent);
+    const pair = drop.after ? [target, node] : [node, target];
+    if (drop.how === 'under') {
+      if (cols === 1) {
+        setSpan(node, 1);
+        at.list.splice(index, 0, node);
+      } else {
+        // Its cell becomes a column of two: the row keeps its parts, and grows.
+        const span = Math.min(spanOf(target), cols);
+        setSpan(target, span);
+        setSpan(node, span);
+        at.list.splice(at.index, 1, arrangement(name('column'), span, span as ColumnCount, pair));
+      }
+    } else if (isRow(page, target) && target.children.length < 4) {
+      // Beside a whole row of parts: one more column of that row, never a row in a row.
+      setSpan(node, 1);
+      target.children.splice(drop.after ? target.children.length : 0, 0, node as LayoutNode);
+      setRowColumns(target, target.children.length);
+    } else if (isRow(page, parent) && parent.children.length < 4) {
+      setSpan(node, 1);
+      at.list.splice(index, 0, node);
+      setRowColumns(parent, parent.children.length);
+    } else if (cols > 1 && !isRow(page, parent) && (rowsOf(page, parent, node.id).find((r) => r.items.includes(target))?.used ?? cols) < cols) {
+      // A free cell in its row: nothing else moves.
+      setSpan(node, 1);
+      at.list.splice(index, 0, node);
+    } else if (cols > 1 && Math.min(spanOf(target), cols) >= 2) {
+      // A part two or more columns wide gives half its width: both stay on the columns, nothing else moves.
+      const span = Math.min(spanOf(target), cols);
+      setSpan(node, Math.floor(span / 2));
+      setSpan(target, span - Math.floor(span / 2));
+      at.list.splice(index, 0, node);
+    } else {
+      // One column wide: the two share its cell, side by side (they stack where it is narrow). On the page, a row of two.
+      const span = Math.min(spanOf(target), cols);
+      setSpan(target, 1);
+      setSpan(node, 1);
+      at.list.splice(at.index, 1, arrangement(name('side'), span, columnsValue(2, undefined, 1), pair));
+    }
+  }
+  tidy(page);
+}
+
+/** Why a drop cannot be made, or null when it can. */
+export function dropRefusal(page: Page, drop: Drop, moving?: string): string | null {
+  const moved = moving ? locate(page, moving) : null;
+  if (moving && !moved) return `There is no part “${moving}”`;
+  if (moved?.node.type === 'tab') return 'A tab moves only among its tabs';
+  if (drop.how === 'into' || drop.how === 'row') {
+    const box = nodeOf(page, drop.container);
+    if (!box) return `There is no part “${drop.container}”`;
+    if (box.type === 'tabs') return 'Put it in one of the tabs';
+    if (!listOf(box)) return `“${nameOf(page, box)}” holds no parts`;
+    if (moving && contains(page, moving, drop.container)) return 'A part cannot go inside itself';
+    return null;
+  }
+  const at = locate(page, drop.target);
+  if (!at) return `There is no part “${drop.target}”`;
+  if (at.node.type === 'tab') return 'Put it in one of the tabs';
+  if (moving === drop.target) return 'A part cannot go beside or under itself';
+  if (moving && contains(page, moving, drop.target)) return 'A part cannot go inside itself';
+  if (drop.how === 'beside') {
+    const full = (node: Part | Holder) => isRow(page, node) && node.children.length >= 4 && !node.children.some((c) => c.id === moving);
+    if (full(at.node) || (!isRow(page, at.node) && full(at.parent))) return 'A row holds four';
+  }
+  return null;
+}
+
+const IMAGE_PLACEHOLDER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"%3E%3Crect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="%23888"/%3E%3C/svg%3E';
+
+/** A new block, named so no id is taken twice. */
+export function makeBlock(kind: BlockKind, name: (prefix: string) => string): LayoutNode {
+  switch (kind) {
+    case 'group':
+      return { type: 'section', id: name('section'), title: 'New group', columns: columnsValue(2, undefined, 1), children: [] };
+    case 'side': {
+      const id = name('side');
+      const left: SectionNode = { type: 'section', id: name('section'), title: 'Left', children: [] };
+      const right: SectionNode = { type: 'section', id: name('section'), title: 'Right', children: [] };
+      return arrangement(id, 1, columnsValue(2, undefined, 1), [left, right]) as LayoutNode;
+    }
+    case 'tabs': {
+      const tabs: TabsNode = { type: 'tabs', id: name('tabs'), children: [] };
+      tabs.children.push({ type: 'tab', id: name('tab'), label: 'First', children: [] }, { type: 'tab', id: name('tab'), label: 'Second', children: [] });
+      return tabs;
+    }
+    case 'heading':
+      return { type: 'text', id: name('heading'), style: 'heading', text: 'New heading' };
+    case 'text':
+      return { type: 'text', id: name('text'), style: 'paragraph', text: 'Words that help people fill this in.' };
+    case 'button':
+      return { type: 'button', id: name('button'), label: 'Button', action: 'button', style: 'secondary' };
+    case 'image':
+      return { type: 'image', id: name('image'), src: IMAGE_PLACEHOLDER, alt: '' };
+    case 'divider':
+      return { type: 'divider', id: name('divider') };
+    case 'spacer':
+      return { type: 'spacer', id: name('spacer') };
+  }
+}
+
+const BLOCKS = new Set<string>(['group', 'side', 'tabs', 'heading', 'text', 'divider', 'spacer', 'image', 'button']);
+
+/** A new part from the toolbox, its field (if any) added to the page's. Refuses what the store's rules refuse. */
+export function makePart(page: Page, part: NewPart, context: LayoutContext): LayoutNode {
+  const name = namer(page);
+  if ('block' in part) {
+    if (!BLOCKS.has(part.block)) throw new Refusal(`There is no kind of part “${part.block}”`);
+    return makeBlock(part.block, name);
+  }
+  if ('field' in part) {
+    const def = Object.prototype.hasOwnProperty.call(context.model, part.field) ? context.model[part.field] : null;
+    if (!def) throw new Refusal(`The model has no field "${part.field}"`);
+    if (shownFields(page).has(part.field)) throw new Refusal(`${def.label} is on the page already`);
+    // A definition the page already keeps for it stays; otherwise the model's.
+    page.fields[part.field] = page.fields[part.field] ?? JSON.parse(JSON.stringify(def));
+    return { type: 'field', id: name('q'), field: part.field };
+  }
+  let kind: QuestionKind;
+  try {
+    kind = kindById(part.kind);
+  } catch {
+    throw new Refusal(`There is no kind of part “${part.kind}”`);
+  }
+  if (kind.group === 'records' && page.data.kind === 'responses') throw new Refusal('A survey has no records to link to or list: this kind is for app screens');
+  const field = nextName((n) => n in page.fields, 'q', '_');
+  page.fields[field] = kind.field('Untitled question');
+  return { type: 'field', id: name('q'), field, ...(kind.widget ? { widget: kind.widget } : {}) };
+}
+
+/** Drop a part — one on the page, or a new one — where the drop says. Returns its id. */
+export function place(page: Page, target: string | NewPart, drop: Drop, context: LayoutContext): string {
+  const moving = typeof target === 'string' ? target : undefined;
+  const refused = dropRefusal(page, drop, moving);
+  if (refused) throw new Refusal(refused);
+  const node = moving ? (locate(page, moving) as Spot).node : makePart(page, target as NewPart, context);
+  placeAt(page, node, drop);
+  return node.id;
+}

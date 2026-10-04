@@ -16,6 +16,8 @@ import { findHeaderPart, headerCommands, type HeaderCommands } from './header-co
 import { listCommands, type ListCommands } from './list-commands';
 import { fixCheck, pageChecks, type PageCheck } from './page-checks';
 import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, orList, storedAs, type LineColumn, type QuestionKind } from './kinds';
+import * as ops from './layout-ops';
+import type { Drop, NewPart } from './layout-ops';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
 
@@ -37,6 +39,7 @@ export type { LineColumn, QuestionKind } from './kinds';
 export type { HeaderCommands, HeaderPartKind, HeaderPartPatch } from './header-commands';
 export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-commands';
 export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-checks';
+export type { BlockKind, Drop, NewPart } from './layout-ops';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
 export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
@@ -135,6 +138,8 @@ export interface DesignerState {
   page: Page;
   /** The element being edited. */
   selected: string | null;
+  /** Every part picked, in the order picked: `selected` is the one picked last. */
+  picked: string[];
   canUndo: boolean;
   canRedo: boolean;
   /** Why the last edit was refused. Empty when it was applied. */
@@ -231,6 +236,15 @@ export interface Designer extends HeaderCommands, ListCommands {
   setWidgetOptions(id: string, patch: Record<string, string | number | boolean | null>): boolean;
   /** Which kinds of file a file upload takes (media types, such as image/*), and the largest, in bytes. */
   setFileRules(id: string, rules: { accept?: string[]; maxSize?: number | null }): boolean;
+  /**
+   * Drop a part where it goes, as one edit: a part on the page, by its id, or
+   * a new one from the toolbox. Returns its id, and picks it.
+   */
+  place(part: string | NewPart, drop: Drop): string | false;
+  /** What a drop would do, in the words the drag chip says: "beside “First name”". `moving` is the part dragged, when it is on the page. */
+  describeDrop(drop: Drop, moving?: string): string;
+  /** Why a drop cannot be made, such as "A row holds four"; null when it can. */
+  dropRefusal(drop: Drop, moving?: string): string | null;
   /** A table of lines' columns, in order. */
   setLineColumns(id: string, columns: LineColumn[]): boolean;
   undo(): void;
@@ -259,6 +273,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
   const fromModel = (name: string) => Object.prototype.hasOwnProperty.call(model, name);
   let page = clone(options.page);
   let selected: string | null = null;
+  let picked: string[] = [];
   let issues: string[] = [];
   let past: Page[] = [];
   let future: Page[] = [];
@@ -270,9 +285,12 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
   let saveRunning = false;
 
   const published = () => versions[versions.length - 1]?.page ?? null;
+  /** The picks: an editor that sets only `selected` picks that one alone. */
+  const pickedNow = () => (selected === null ? [] : picked.includes(selected) ? picked : [selected]);
   const state = (): DesignerState => ({
     page,
     selected,
+    picked: pickedNow(),
     canUndo: past.length > 0,
     canRedo: future.length > 0,
     issues,
@@ -353,6 +371,16 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     return field as Extract<Field, { type: T }>;
   }
 
+  /** A layout edit, one undo step: what it made or moved is picked after. */
+  function layoutEdit<T extends string | string[]>(edit: (draft: Page) => T): T | false {
+    let made = null as T | null;
+    if (!apply((draft) => void (made = edit(draft))) || made === null) return false;
+    picked = ([] as string[]).concat(made);
+    selected = picked[0] ?? null;
+    notify();
+    return made;
+  }
+
   function fieldNode(draft: Page, id: string): FieldNode {
     const found = findNode(draft, id);
     if (!found || found.node.type !== 'field') throw new Refusal(`There is no question "${id}"`);
@@ -424,6 +452,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     },
     select(id) {
       selected = id;
+      picked = id === null ? [] : [id];
       notify();
     },
 
@@ -932,6 +961,10 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
         }
       });
     },
+
+    place: (part, drop) => layoutEdit((draft) => ops.place(draft, part, drop, { model })),
+    describeDrop: (drop, moving) => ops.describeDrop(page, drop, moving),
+    dropRefusal: (drop, moving) => ops.dropRefusal(page, drop, moving),
 
     setLineColumns(id, columns) {
       return apply(
