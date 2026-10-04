@@ -21,6 +21,8 @@ const page = (rules: AnswerRule[], extra: { required?: boolean } = {}): Page => 
     end: { type: 'date', label: 'Contract ends' },
     paid: { type: 'monetary', label: 'Paid' },
     total: { type: 'monetary', label: 'Total' },
+    ref: { type: 'char', label: 'Reference' },
+    tags: { type: 'selection', label: 'Tags', multiple: true, options: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }] },
   },
   layout: {
     type: 'sections',
@@ -30,6 +32,8 @@ const page = (rules: AnswerRule[], extra: { required?: boolean } = {}): Page => 
       { type: 'field', id: 'n_end', field: 'end', validate: rules, ...(extra.required ? { required: true } : {}) },
       { type: 'field', id: 'n_paid', field: 'paid' },
       { type: 'field', id: 'n_total', field: 'total' },
+      { type: 'field', id: 'n_ref', field: 'ref' },
+      { type: 'field', id: 'n_tags', field: 'tags' },
     ],
   },
 });
@@ -62,6 +66,21 @@ describe('a rule across fields', () => {
     expect(errorWith([endsAfter], { start: '2026-05-01' })).toBeUndefined();
     expect(errorWith([endsAfter], { end: '2026-04-30' })).toBeUndefined();
     expect(errorWith([endsAfter], { start: '', end: '2026-04-30' })).toBeUndefined();
+  });
+
+  it('waits for text that is only spaces, and for choices none of which is ticked', () => {
+    const coded: AnswerRule = { holds: "ref == 'A1'" };
+    expect(errorWith([coded], { end: '2026-01-01', ref: '   ' })).toBeUndefined();
+    expect(errorWith([coded], { end: '2026-01-01', ref: 'B2' })).toBe('Contract ends does not agree with the other answers');
+    const tagged: AnswerRule = { holds: "'a' in tags" };
+    expect(errorWith([tagged], { end: '2026-01-01', tags: [] })).toBeUndefined();
+    expect(errorWith([tagged], { end: '2026-01-01', tags: ['b'] })).toBe('Contract ends does not agree with the other answers');
+    expect(errorWith([tagged], { end: '2026-01-01', tags: ['a'] })).toBeUndefined();
+  });
+
+  it('is asked after what else the same rule asks', () => {
+    // A day in the future and after the start: a day in the past is said as that first.
+    expect(errorWith([{ date: 'future', holds: 'end >= start' }], { start: '2000-05-01', end: '2000-04-30' })).toBe('Contract ends must be in the future');
   });
 
   it('reads any field of the page, not only its own: what is paid is no more than the total', () => {

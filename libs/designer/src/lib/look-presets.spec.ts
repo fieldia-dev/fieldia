@@ -16,8 +16,9 @@ import { mount, openTab } from './test-editor';
 const DARK_SURFACE = '#1f2329';
 
 describe('the presets', () => {
-  it('are a short row of named looks', () => {
+  it('are a short row of named looks, Night the dark one', () => {
     expect(LOOK_PRESETS.map((p) => p.name)).toEqual(['Fieldia', 'Calm', 'Compact', 'Rounded', 'Night']);
+    expect(LOOK_PRESETS.map((p) => p.look.scheme)).toEqual(['light', 'light', 'light', 'light', 'dark']);
     for (const preset of LOOK_PRESETS) expect(Object.keys(preset.look).sort()).toEqual(['accent', 'corners', 'density', 'font', 'scheme']);
   });
 

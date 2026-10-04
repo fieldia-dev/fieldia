@@ -18,6 +18,7 @@ const fields: Record<string, Field> = {
   total: { type: 'monetary', label: 'Total', currency: 'EGP' },
   name: { type: 'char', label: 'Name' },
   photo: { type: 'binary', label: 'Photo' },
+  customer: { type: 'many2one', label: 'Customer', relation: 'customer' },
 };
 
 function contract(): { page: Page; designer: ReturnType<typeof createDesigner>; node: (name: string) => FieldNode } {
@@ -110,6 +111,10 @@ describe('a rule across fields, on made-up values', () => {
     expect(sampleHolds(page, 'False')).toBe('Never holds');
   });
 
+  it('says it waits for a field with no made-up value, as the form waits for one left empty', () => {
+    expect(sampleHolds(page, 'customer and end >= start')).toBe('Checked once Customer is filled in');
+  });
+
   it('says nothing for a formula that does not read', () => {
     expect(sampleHolds(page, 'end >=')).toBe('');
     expect(sampleHolds(page, 'ends > start')).toBe('');
@@ -158,7 +163,8 @@ describe('a rule across fields, in the panel', () => {
     box.setSelectionRange(2, 2);
     box.dispatchEvent(new Event('input', { bubbles: true }));
     const options = [...panel().querySelectorAll('.fd-answer-rule-across [role="option"] .fd-formula-suggest-label')].map((o) => o.textContent);
-    expect(options).toEqual(['Start date']);
+    // Those starting so first, then those holding it.
+    expect(options).toEqual(['Start date', 'Customer']);
     press('Enter', {}, box);
     expect(box.value).toBe('start');
   });
@@ -175,6 +181,15 @@ describe('a rule across fields, in the panel', () => {
     expect(across.querySelector('.fd-formula-outcome')?.textContent).toBe('With Contract ends 2026-03-14 and Start date 2026-03-01: does not hold');
     // Not said as a success.
     expect(across.querySelector('.fd-formula-result')?.hasAttribute('data-fails')).toBe(true);
+  });
+
+  it('keeps the rule as it was when its box is emptied, saying nothing is wrong: × takes it away', () => {
+    const { panel, node, designer } = panelFor('end');
+    designer.addAnswerRule('f-end', { holds: 'end >= start' });
+    (panel().querySelector('.fd-answer-rule-say') as HTMLButtonElement).click();
+    type(field(panel(), 'Must hold'), '');
+    expect(node('end').validate).toEqual([{ holds: 'end >= start' }]);
+    expect((panel().querySelector('.fd-answer-rule-problem') as HTMLElement).hidden).toBe(true);
   });
 
   it('takes a message, stops sending or only warns, as other rules do', () => {

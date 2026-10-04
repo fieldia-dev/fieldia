@@ -8,7 +8,7 @@ import { mount, openTab } from './test-editor';
  * and the panel says so.
  */
 
-const model: Record<string, Field> = { email: { type: 'char', label: 'Email', required: true } };
+const model: Record<string, Field> = { email: { type: 'char', label: 'Email', required: true }, phone: { type: 'char', label: 'Work phone' } };
 
 function form() {
   const designer = createDesigner({ page: blankPage('screen', 'Visit'), model });
@@ -18,9 +18,10 @@ function form() {
     return id;
   });
   const email = designer.addModelField('email', { parent: 'section-1' }) as string;
+  const phone = designer.addModelField('phone', { parent: 'section-1' }) as string;
   const node = (id: string) => ((designer.getPage().layout as unknown as { children: SectionNode[] }).children[0].children as FieldNode[]).find((n) => n.id === id) as FieldNode;
   const required = (id: string) => designer.getPage().fields[node(id).field].required === true || node(id).required === true;
-  return { designer, ids, email, node, required };
+  return { designer, ids, email, phone, node, required };
 }
 
 describe('several fields made required, in the store', () => {
@@ -95,12 +96,31 @@ describe('several fields made required, in the panel', () => {
     expect(ids.map(required)).toEqual([true, false, false]);
   });
 
-  it('says a field the model requires stays required', () => {
-    const { host, row, press, email, required } = picked((m) => [m.ids[0], m.email]);
+  it('says a field the model requires stays required — only that one, not one required here', () => {
+    const { host, row, press, email, required, designer, ids } = picked((m) => [m.ids[0], m.email]);
+    designer.updateQuestion(ids[0], { required: true });
     openTab(host, 'Rules');
     expect(row()?.querySelector('.fd-set-hint')?.textContent).toBe('“Email” stays required: the model requires it.');
     press('No');
     expect(required(email)).toBe(true);
+    expect(required(ids[0])).toBe(false);
+  });
+
+  it('counts a field of the model required on its place on the page as required', () => {
+    const { host, pressed, press, phone, required } = picked((m) => [m.ids[0], m.phone]);
+    openTab(host, 'Rules');
+    press('Yes');
+    expect(required(phone)).toBe(true);
+    expect(pressed()).toEqual(['Yes']);
+  });
+
+  it('changes nothing when As they are is pressed while they are alike', () => {
+    const { host, pressed, press, picked: ids, required } = picked((m) => m.ids);
+    openTab(host, 'Rules');
+    press('Yes');
+    press('As they are');
+    expect(ids.map(required)).toEqual([true, true, true]);
+    expect(pressed()).toEqual(['Yes']);
   });
 
   it('is not offered when a part picked is not a field', () => {

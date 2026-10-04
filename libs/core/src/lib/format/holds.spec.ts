@@ -25,8 +25,8 @@ describe('a rule across fields, in the format', () => {
     expect(problems(page([{ holds: 'end >= start', message: 'Ends after it starts', level: 'warning', when: 'start' }]))).toEqual([]);
   });
 
-  it('is not empty', () => {
-    expect(problems(page([{ holds: '' }]))).toEqual([expect.stringMatching(/validate\[0\]/)]);
+  it('is not empty: the format itself says so', () => {
+    expect(problems(page([{ holds: '' }]))).toEqual([expect.stringMatching(/^layout\.children\[1\]\.validate\[0\]\.holds: Too small/)]);
   });
 
   it('is said among what a rule can ask for, when a rule asks for nothing', () => {
