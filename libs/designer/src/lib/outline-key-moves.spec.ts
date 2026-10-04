@@ -55,6 +55,12 @@ describe('outlineKeyMove', () => {
     expect(outlineKeyMove(d.getPage(), [two], alt('ArrowUp'), false)).toEqual({ parent: 'steps', index: 0 });
   });
 
+  it('a survey of one page keeps its questions on it', () => {
+    const d = createDesigner({ page: blankPage('survey', 'Feedback') });
+    const q = d.addQuestion('short-answer') as string;
+    expect(outlineKeyMove(d.getPage(), [q], alt('ArrowLeft'), false)).toEqual({ said: 'A question goes on a page' });
+  });
+
   it('parts from different groups do not move together', () => {
     expect(outlineKeyMove(page, ['f-city', 'f-email'], alt('ArrowUp'), false)).toEqual({ said: 'Pick parts in the same group to move them together' });
   });

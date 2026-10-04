@@ -77,6 +77,27 @@ describe('dropSpot', () => {
     expect(dropSpot(sheet, 'sheet', 1, 0.1, 0, new Set(), yes)).toMatchObject({ parent: 'sheet', index: 0, level: 0 });
   });
 
+  it('at the very edges of a row’s bands: a third in is still into, half way is after', () => {
+    expect(dropSpot(rows, 'root', at('address'), 0.3, 0, new Set(), yes)).toMatchObject({ into: 'address' });
+    expect(dropSpot(rows, 'root', at('address'), 1 - 0.3, 0, new Set(), yes)).toMatchObject({ into: 'address' });
+    expect(dropSpot(rows, 'root', at('f-city'), 0.5, 9, new Set(), yes)).toMatchObject({ parent: 'address', index: 2 });
+    // Into refused: a row that holds parts splits at its middle too.
+    const notInto = (parent: string) => parent !== 'emergency';
+    const folded = new Set(['emergency']);
+    const shown = shownRows(rows, folded);
+    expect(dropSpot(shown, 'root', at('emergency', shown), 0.5, 1, folded, notInto)).toMatchObject({ parent: 'side-1', index: 2, level: 1 });
+    expect(dropSpot(shown, 'root', at('emergency', shown), 0.49, 1, folded, notInto)).toMatchObject({ parent: 'side-1', index: 1, level: 1 });
+  });
+
+  it('never a depth the gap does not allow, even where none it allows takes the part', () => {
+    const d = createDesigner({ page: blankPage('survey', 'Feedback') });
+    d.addQuestion('short-answer');
+    d.addQuestion('short-answer');
+    const survey = outlineRows(d.getPage());
+    // Between two questions only a question's depth fits: the page's own list would take it, but is not there to take.
+    expect(dropSpot(survey, 'steps', 2, 0.1, 1, new Set(), (parent) => parent === 'steps')).toMatchObject({ parent: 'step-1', level: 1 });
+  });
+
   it('below every row, at the end of the page', () => {
     expect(dropSpot(rows, 'root', rows.length - 1, 1, 0, new Set(), yes)).toMatchObject({ parent: 'root', index: 8, level: 0, gap: rows.length });
   });

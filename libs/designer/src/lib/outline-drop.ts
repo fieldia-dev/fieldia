@@ -36,8 +36,8 @@ export function dropSpot(rows: readonly OutlineRow[], root: string, over: number
   if (row.holds && fraction >= EDGE && fraction <= 1 - EDGE && takes(row.id)) {
     return { parent: row.id, index: row.children, level: row.level + 1, gap: -1, into: row.id };
   }
-  const after = row.holds ? fraction > 1 - EDGE || (fraction >= EDGE && fraction >= 0.5) : fraction >= 0.5;
-  return inGap(rows, root, over + (after ? 1 : 0), wanted, folded, takes);
+  // Its top half puts it before the row, its bottom half after.
+  return inGap(rows, root, over + (fraction >= 0.5 ? 1 : 0), wanted, folded, takes);
 }
 
 /** A part let go in the gap before the row at `gap`, at the depth nearest `wanted` that takes it. */

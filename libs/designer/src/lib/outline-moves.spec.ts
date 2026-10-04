@@ -135,6 +135,12 @@ describe('describeMove', () => {
     expect(d.describeMove(['f-city'], 'job-tabs', 0)).toBe('Put it in one of the tabs');
   });
 
+  it('parts from here and elsewhere go into it; parts gathered up go before the part they meet', () => {
+    const d = employeeDesigner();
+    expect(d.describeMove(['f-city', 'f-email'], 'address', 0)).toBe('into “Home address”, before “Street and number”');
+    expect(d.describeMove(['f-street', 'f-postcode'], 'address', 0)).toBe('before “City”');
+  });
+
   it('names a survey’s page by its title', () => {
     const d = createDesigner({ page: blankPage('survey', 'Feedback') });
     const q = d.addQuestion('short-answer') as string;
