@@ -38,7 +38,7 @@ export const DESIGNER_TRANSLATIONS_CSS = /* css */ `
 .fd-words-status { margin: 0; font-size: 13px; color: var(--fd-muted); }
 .fd-words-status:empty { display: none; }
 
-/* The grid: its own box, scrolling both ways, never the page. */
+/* The grid: its own box, scrolling both ways, never the page. Lines of words a whole number of pixels high, so the held column's rows meet the rest exactly and no line between rows is painted over. */
 .fd-words-scroll {
   container: fd-words / inline-size; overflow: auto; max-height: max(320px, calc(100vh - 260px)); overscroll-behavior: contain;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius);
@@ -51,7 +51,7 @@ export const DESIGNER_TRANSLATIONS_CSS = /* css */ `
 /* The page's own words stay in sight as the languages scroll by. */
 .fd-words-table tbody th, .fd-words-table thead th:first-child { position: sticky; inset-inline-start: 0; box-shadow: 1px 0 0 var(--fd-border); }
 .fd-words-table thead th:first-child { z-index: 3; width: 34%; }
-.fd-words-table tbody th { z-index: 1; min-width: 180px; max-width: 320px; padding: 8px 10px; background: var(--fd-surface); font-weight: 400; line-height: 1.45; overflow-wrap: anywhere; }
+.fd-words-table tbody th { z-index: 1; min-width: 180px; max-width: 320px; padding: 8px 10px; background: var(--fd-surface); font-weight: 400; line-height: 20px; overflow-wrap: anywhere; }
 .fd-words-head { display: flex; align-items: center; gap: 6px; min-height: 24px; }
 .fd-words-lang { font-weight: 650; }
 .fd-words-native { color: var(--fd-muted); font-weight: 400; font-size: 12.5px; }
@@ -63,7 +63,7 @@ export const DESIGNER_TRANSLATIONS_CSS = /* css */ `
 .fd-words-cell {
   display: block; box-sizing: border-box; width: 100%; min-width: 200px; min-height: 38px; margin: 0; padding: 8px 10px;
   border: 0; border-radius: 0; resize: none; field-sizing: content; overflow: hidden;
-  background: transparent; color: inherit; font: inherit; line-height: 1.45; text-align: start;
+  background: transparent; color: inherit; font: inherit; line-height: 20px; text-align: start;
 }
 /* The whole cell answers, however tall its row: tinted while empty, lit under the pointer, underlined while typed in. */
 .fd-words-grid td:has(> .fd-words-cell[data-empty]) { background: color-mix(in srgb, var(--fd-page) 55%, transparent); }
@@ -77,7 +77,7 @@ export const DESIGNER_TRANSLATIONS_CSS = /* css */ `
 .fd-words-stale-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
 .fd-words-stale-title { margin: 0; font-size: 14px; font-weight: 650; }
 .fd-words-stale-note { margin: 0; flex: 1 1 220px; font-size: 13px; color: var(--fd-muted); }
-.fd-words-stale-grid .fd-words-gone { padding: 8px 10px; color: var(--fd-muted); line-height: 1.45; }
+.fd-words-stale-grid .fd-words-gone { padding: 8px 10px; color: var(--fd-muted); line-height: 20px; }
 .fd-words-stale-grid .fd-words-gone-remove { width: 1%; min-width: 0; padding: 4px; text-align: center; vertical-align: middle; }
 @container (max-width: 620px) {
   .fd-words-table tbody th, .fd-words-table thead th:first-child { min-width: 120px; max-width: 150px; }

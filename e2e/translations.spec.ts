@@ -22,6 +22,28 @@ async function openTranslations(page: Page, path = '/designer/?start=survey') {
   return problems;
 }
 
+/** The rows of the held column of words whose line under them is not on the screen, by where it should be. */
+async function missingRowLines(page: Page): Promise<number[]> {
+  const bounds = await view(page)
+    .locator('.fd-words-grid tbody th')
+    .evaluateAll((cells) => cells.map((th) => ({ x: Math.round(th.getBoundingClientRect().left + 8), y: th.getBoundingClientRect().bottom })).filter((b) => b.y < innerHeight - 2));
+  const shot = (await page.screenshot()).toString('base64');
+  return page.evaluate(
+    async ({ shot, bounds }) => {
+      const picture = new Image();
+      picture.src = `data:image/png;base64,${shot}`;
+      await picture.decode();
+      const canvas = document.createElement('canvas');
+      [canvas.width, canvas.height] = [picture.width, picture.height];
+      const pixels = canvas.getContext('2d')!;
+      pixels.drawImage(picture, 0, 0);
+      const drawn = (x: number, y: number) => pixels.getImageData(x, y, 1, 1).data[0] < 235;
+      return bounds.filter((b) => ![-2, -1, 0, 1].some((d) => drawn(b.x, Math.round(b.y) + d))).map((b) => Math.round(b.y));
+    },
+    { shot, bounds }
+  );
+}
+
 async function addLanguage(page: Page, name: string) {
   await page.getByRole('combobox', { name: 'Add a language' }).fill(name);
   await page.getByRole('combobox', { name: 'Add a language' }).press('Enter');
@@ -124,6 +146,8 @@ test('says which language the page is written in, refusing one it is translated 
   await own.selectOption({ label: 'Arabic' });
   await expect(page.locator('.fd-designer-issues')).toHaveText('The page keeps a translation into Arabic: remove Arabic first to write the page in it');
   await expect(own).toHaveValue('fr');
+  // Every line between the rows is drawn under the held column of words too, as the screen shows it.
+  expect(await missingRowLines(page)).toEqual([]);
   await screen(page, 'translations-own-language', { viewport: true });
   await page.getByRole('button', { name: 'Publish', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Publish version 2?' });
