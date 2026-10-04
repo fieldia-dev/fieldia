@@ -144,6 +144,12 @@ describe('the outline as a tree', () => {
     expect(focused()).toBe('f-city');
   });
 
+  it('names read in their own direction, and a group’s columns stay desktop first', () => {
+    mount();
+    expect(row('who').querySelector('.fd-outline-name')?.getAttribute('dir')).toBe('auto');
+    expect(row('who').querySelector('.fd-outline-badge')?.getAttribute('dir')).toBe('ltr');
+  });
+
   it('right to left, ← opens and → folds', () => {
     mount();
     view.element.setAttribute('dir', 'rtl');

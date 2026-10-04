@@ -21,6 +21,8 @@ export const DESIGNER_OUTLINE_CSS = /* css */ `
 .fd-outline-row[aria-expanded="false"] .fd-outline-twist .fd-dicon { transform: rotate(-90deg); }
 .fd-outline-row[aria-expanded="false"]:dir(rtl) .fd-outline-twist .fd-dicon { transform: rotate(90deg); }
 .fd-outline-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* On a right-to-left page a name in a left-to-right language sits by its icon, its start in view. */
+.fd-outline-row:dir(rtl) .fd-outline-name { text-align: right; }
 .fd-outline-row .fd-outline-kind { font-size: inherit; color: var(--fd-muted); max-width: none; }
 .fd-outline-row[aria-selected="true"] .fd-outline-kind { color: inherit; opacity: 0.8; }
 .fd-outline-row .fd-outline-required .fd-dicon { width: 11px; height: 11px; }
@@ -33,6 +35,7 @@ export const DESIGNER_OUTLINE_CSS = /* css */ `
 .fd-outline .fd-outline-tree { position: relative; }
 .fd-outline-dragging, .fd-outline-dragging .fd-outline-row { cursor: grabbing; }
 .fd-outline-row.fd-outline-carried { opacity: 0.4; }
+.fd-outline-dragging .fd-outline-row:hover:not(.fd-outline-into):not([aria-selected="true"]) { background: none; }
 .fd-outline-row.fd-outline-into { background: var(--fd-accent-soft); box-shadow: inset 0 0 0 1.5px var(--fd-accent); }
 .fd-outline-line {
   position: absolute; z-index: 2; height: 2px; margin-block-start: -1px; pointer-events: none; border-radius: 2px; background: var(--fd-accent);

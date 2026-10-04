@@ -115,10 +115,11 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
     view.replaceChildren(
       open ? el('span', { class: 'fd-outline-twist', 'data-twist': '', 'aria-hidden': 'true' }, designerIcon(doc, 'chevron')) : el('span', { class: 'fd-outline-twist', 'aria-hidden': 'true' }),
       icon,
-      el('span', { class: 'fd-outline-name' }, el('span', { class: 'fd-outline-label' }, row.label), ...(kind ? [kind] : [])),
+      // A name reads in its own direction: an English label on a right-to-left page keeps its start in view.
+      el('span', { class: 'fd-outline-name', dir: 'auto' }, el('span', { class: 'fd-outline-label' }, row.label), ...(kind ? [kind] : [])),
       ...(row.ruled ? [el('span', { class: 'fd-outline-when', title: options.survey ? 'Shown only for some answers' : 'Shown only for some records', 'aria-hidden': 'true' }, designerIcon(doc, 'when'))] : []),
       ...(row.required ? [el('span', { class: 'fd-outline-required', title: 'Required', 'aria-hidden': 'true' }, designerIcon(doc, 'required'))] : []),
-      ...(row.badge ? [el('span', { class: 'fd-outline-badge', title: row.badgeWords, 'aria-hidden': 'true' }, row.badge)] : [])
+      ...(row.badge ? [el('span', { class: 'fd-outline-badge', title: row.badgeWords, 'aria-hidden': 'true', dir: 'ltr' }, row.badge)] : [])
     );
     return view;
   }
