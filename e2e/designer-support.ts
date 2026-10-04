@@ -122,8 +122,13 @@ export function doubleLines(page: Page, scope = '.fd-designer *, .fd-find, .fd-c
     };
     const name = (e: Element) => `${e.tagName.toLowerCase()}${typeof e.className === 'string' && e.className.trim() ? '.' + e.className.trim().split(/\s+/).slice(0, 2).join('.') : ''}`;
     const found: string[] = [];
+    /** Floated over the page and lifted by a shadow — a bar over a picked field, a menu: an overlay, not a box in a box. */
+    const floats = (e: Element) => {
+      const s = getComputedStyle(e);
+      return (s.position === 'absolute' || s.position === 'fixed') && /(^|,\s*)(rgba?\([^)]*\)\s+)?-?\d+(\.\d+)?px -?\d+(\.\d+)?px [1-9]/.test(s.boxShadow) && !/inset/.test(s.boxShadow);
+    };
     for (const e of document.querySelectorAll(scope)) {
-      if (!shown(e) || e.closest('svg')) continue;
+      if (!shown(e) || e.closest('svg') || floats(e)) continue;
       const own = lines(e);
       // Only a box drawn all round counts as a box in a box.
       if (!(own.top && own.bottom && own.left && own.right)) continue;

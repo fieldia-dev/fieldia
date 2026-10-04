@@ -73,3 +73,20 @@ test.describe('designer look', () => {
     expect(problems).toEqual([]);
   });
 });
+
+test('the double-line check catches a box hugging its card, and leaves a floating bar alone', async ({ page }) => {
+  await page.goto('/screen/');
+  await expect(page.locator('.fd-canvas-section').first()).toBeVisible();
+  // A bordered box 4px inside a card on every side: drawn twice, as a person sees it.
+  await page.locator('.fd-canvas-section').first().evaluate((card) => {
+    const box = document.createElement('div');
+    box.id = 'probe';
+    box.style.cssText = 'position: absolute; inset: 4px; border: 1px solid #888; pointer-events: none';
+    (card as HTMLElement).style.position = 'relative';
+    card.append(box);
+  });
+  expect(await doubleLines(page)).toEqual(expect.arrayContaining([expect.stringMatching(/^div in fieldset\.fd-section/)]));
+  // The same box lifted by a shadow, as a toolbar or a menu is: an overlay, not a box in a box.
+  await page.locator('#probe').evaluate((box) => ((box as HTMLElement).style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.14)'));
+  expect(await doubleLines(page)).toEqual([]);
+});
