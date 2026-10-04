@@ -159,6 +159,24 @@ describe('words for a page written by hand', () => {
   });
 });
 
+describe('words for what has no name yet', () => {
+  it('a group with an empty title is an untitled section, and a page with one is the page', () => {
+    const before = employeePage();
+    before.title = '';
+    (before.layout as { children: unknown[] }).children.push({ type: 'section', id: 'blank', title: '', children: [] });
+    const after: Page = JSON.parse(JSON.stringify(before));
+    const blank = spot(after, 'blank')?.node as unknown as { children: unknown[] };
+    const city = spot(after, 'f-city');
+    blank.children.push(...(city?.parent.children as unknown[]).splice(city?.index ?? 0, 1));
+    const mobile = spot(after, 'f-mobile');
+    (after.layout as { children: unknown[] }).children.push(...(mobile?.parent.children as unknown[]).splice(mobile?.index ?? 0, 1));
+    expect(pageChanges(before, after)).toEqual(['Moved “Mobile” to “the page”', 'Moved “City” to “Untitled section”']);
+    const added: Page = JSON.parse(JSON.stringify(after));
+    (added.layout as { children: unknown[] }).children.push({ type: 'section', id: 'blank-2', title: '', children: [] });
+    expect(pageChanges(after, added)).toEqual(['Added the section “Untitled section”']);
+  });
+});
+
 describe('words for blocks', () => {
   it('each block added, by what it is', () => {
     expect(

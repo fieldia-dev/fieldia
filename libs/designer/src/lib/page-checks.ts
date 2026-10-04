@@ -58,7 +58,7 @@ function parts(page: Page): Holder[] {
 }
 
 const labelOf = (placed: { node: FieldNode; field: Field }) => (placed.node as FieldNode & { label?: string }).label ?? placed.field.label;
-const holderName = (holder: Holder) => holder.label ?? holder.title ?? 'Untitled section';
+const holderName = (holder: Holder) => holder.label || holder.title || 'Untitled section';
 
 /** Every element with its own `invisible`: fields, and the steps and sections that hold them. */
 function withRules(page: Page): { id: string; name: string; invisible: unknown }[] {
