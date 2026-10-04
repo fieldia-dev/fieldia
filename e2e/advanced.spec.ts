@@ -29,22 +29,28 @@ function boxes(page: Page, root: string): Promise<Record<string, { x: number; y:
   }, root);
 }
 
-test('the canvas draws each part where the form puts it', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 1000 });
+/** The canvas at a size of screen, its parts' boxes; then the form as wide as the canvas, its parts' boxes, compared. */
+async function agreeAt(page: Page, size: 'desktop' | 'tablet' | 'phone', viewport: number) {
+  await page.setViewportSize({ width: viewport, height: 1000 });
   await page.goto(LAYOUT);
+  await page.getByRole('group', { name: 'Editing mode' }).getByRole('button', { name: 'Advanced' }).click();
+  await page.getByRole('group', { name: 'Screen size' }).getByRole('button', { name: size[0].toUpperCase() + size.slice(1) }).click();
+  await expect(page.locator('.fd-canvas.fd-form')).toHaveAttribute('data-size', size);
   await expect(page.locator('.fd-canvas-body [data-node="who"]')).toBeVisible();
   const width = await page.locator('.fd-canvas-body').evaluate((e) => e.getBoundingClientRect().width);
   const onCanvas = await boxes(page, '.fd-canvas-body');
-  await screen(page, 'advanced-01-canvas');
+  await screen(page, `advanced-01-canvas-${size}`);
 
-  // The same page in the form, the form as wide as the canvas: its widths are measured against the form's own.
+  // The same page in the form, its parts as wide as the canvas's. The form takes its columns from its own width: on a
+  // desktop it is wider than 760px — its parts held to the canvas's width, as the canvas shows a desktop's columns at its own.
   await page.goto('/plain/?page=layout&skin=outlined');
   const sections = page.locator('.fd-sections').first();
   await expect(sections).toBeVisible();
-  await page.evaluate((width) => {
+  await page.evaluate(([width, desktop]) => {
     const form = (document.querySelector('.fd-sections') as HTMLElement).closest('.fd-form') as HTMLElement;
-    form.style.width = `${width}px`;
-  }, width);
+    form.style.width = `${desktop ? Math.max(width, 961) : width}px`;
+    (form.querySelector('.fd-content') as HTMLElement).style.maxWidth = `${width}px`;
+  }, [width, size === 'desktop'] as const);
   // The canvas shows every part, and the first tab open; the form shows "Contract ends" only for a fixed term — shown here as it is.
   await page.evaluate(() => {
     for (const part of document.querySelectorAll<HTMLElement>('.fd-sections [data-node][hidden]')) if (!part.closest('.fd-tabpanel[hidden]')) part.hidden = false;
@@ -55,7 +61,41 @@ test('the canvas draws each part where the form puts it', async ({ page }) => {
   const compared = Object.keys(inForm).filter((id) => onCanvas[id]);
   expect(compared.length, 'parts compared').toBeGreaterThan(20);
   const off = compared.filter((id) => ['x', 'y', 'w', 'h'].some((k) => Math.abs(onCanvas[id][k as 'x'] - inForm[id][k as 'x']) > 3)).map((id) => `${id}: canvas ${JSON.stringify(onCanvas[id])} form ${JSON.stringify(inForm[id])}`);
-  expect(off, 'parts the canvas draws elsewhere than the form').toEqual([]);
+  expect(off, `${size}: parts the canvas draws elsewhere than the form`).toEqual([]);
+  return width;
+}
+
+test('the canvas draws each part where the form puts it, on a desktop, a tablet and a phone', async ({ page }) => {
+  await agreeAt(page, 'desktop', 1280);
+  expect(await agreeAt(page, 'tablet', 1280)).toBeLessThanOrEqual(760);
+  expect(await agreeAt(page, 'phone', 1280)).toBeLessThanOrEqual(520);
+});
+
+test('each size shows its own columns, whatever the canvas’s width; Simple shows a desktop’s', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/screen/');
+  // A group with three columns on a desktop, two on a tablet, one on a phone — as the panel sets them.
+  await page.evaluate(() => (window as unknown as { fieldiaDesigner: { designer: { setColumns(id: string, c: unknown): boolean } } }).fieldiaDesigner.designer.setColumns('section-1', { wide: 3, medium: 2, narrow: 1 }));
+  const across = () => page.locator('.fd-canvas [data-node="section-1"] > .fd-grid').evaluate((g) => getComputedStyle(g).gridTemplateColumns.split(' ').length);
+  await expect(page.locator('.fd-screen-designer')).toHaveAttribute('data-mode', 'simple');
+  expect(await across()).toBe(3);
+  await page.getByRole('group', { name: 'Editing mode' }).getByRole('button', { name: 'Advanced' }).click();
+  const sizes = page.getByRole('group', { name: 'Screen size' });
+  expect(await across()).toBe(3);
+  await sizes.getByRole('button', { name: 'Tablet' }).click();
+  await expect.poll(across).toBe(2);
+  await screen(page, 'advanced-13-size-tablet', { viewport: true });
+  await sizes.getByRole('button', { name: 'Phone' }).click();
+  await expect.poll(across).toBe(1);
+  expect(await page.locator('.fd-canvas.fd-form').evaluate((c) => Math.round(c.getBoundingClientRect().width))).toBe(390);
+  await screen(page, 'advanced-14-size-phone', { viewport: true });
+  await sizes.getByRole('button', { name: 'Desktop' }).click();
+  await expect.poll(across).toBe(3);
+  await screen(page, 'advanced-15-size-desktop', { viewport: true });
+  // Kept for the next time, in this browser.
+  await sizes.getByRole('button', { name: 'Phone' }).click();
+  await page.reload();
+  await expect(page.locator('.fd-canvas.fd-form')).toHaveAttribute('data-size', 'phone');
 });
 
 // ---- dropping in Advanced ----------------------------------------------------------
@@ -145,8 +185,7 @@ test('between two rows of a grid: a new full-width row, from the toolbox', async
 
 test('on a group’s outer edge in a row of groups: a new column, never a fifth', async ({ page }) => {
   await openAdvanced(page);
-  // Stacked at this width, the row's outer edge is its last group's: the row takes one more column, named by its last part.
-  for (const [kind, expected] of [['kind:email', 'new column beside “Emergency contact”'], ['kind:phone', 'new column beside “Untitled question”']] as const) {
+  for (const [kind, expected] of [['kind:email', 'new column beside “Emergency contact”'], ['kind:phone', 'new column beside “Emergency contact”']] as const) {
     const emergency = await box(page, 'emergency');
     const { words } = await dropAt(page, await tileAt(page, kind), { x: emergency.x + emergency.width - 4, y: emergency.y + emergency.height / 2 });
     expect(words).toBe(expected);
@@ -227,7 +266,7 @@ test('the width handle on a picked part’s end edge snaps to the columns, sayin
   await page.mouse.down();
   const steps = [h.x - 60, h.x - 120, h.x - 180, contract.x + contract.width / 2 - 10];
   for (const x of steps) await page.mouse.move(x, h.y + 15);
-  await expect(page.locator('.fd-width-chip')).toHaveText('1 of 2 columns');
+  await expect(page.locator('.fd-width-chip')).toHaveText('1 of 3 columns');
   await screen(page, 'advanced-06-width-handle', { viewport: true });
   await page.mouse.up();
   expect(await spanOf(page, 'f-contract')).toBe(1);
