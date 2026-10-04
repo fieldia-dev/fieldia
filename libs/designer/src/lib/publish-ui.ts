@@ -47,7 +47,8 @@ export function checksButton(el: ElementFactory, doc: Document, designer: Design
     const checks = designer.checks();
     const panel = el(
       'div',
-      { class: 'fd-checks', role: 'dialog', 'aria-label': 'Checks before publishing' },
+      // It takes focus when it opens; with nothing to fix it has no button to take it, so it takes it itself.
+      { class: 'fd-checks', role: 'dialog', 'aria-label': 'Checks before publishing', tabindex: '-1' },
       el('div', { class: 'fd-menu-title' }, checks.length ? `${checks.length} to look at before publishing` : 'All clear'),
       ...(checks.length
         ? checks.map((check) =>
@@ -67,10 +68,16 @@ export function checksButton(el: ElementFactory, doc: Document, designer: Design
       close();
       element.focus();
     };
+    // Not modal: Tab on past it closes it, rather than leaving it open over the page with no one in it.
+    const onLeave = (event: FocusEvent) => {
+      const next = event.relatedTarget as Node | null;
+      if (next && !panel.contains(next) && next !== element) close();
+    };
     function close() {
       panel.remove();
       doc.removeEventListener('pointerdown', onOutside, true);
       panel.removeEventListener('keydown', onKey);
+      panel.removeEventListener('focusout', onLeave);
       element.setAttribute('aria-expanded', 'false');
       open = null;
     }
@@ -80,8 +87,9 @@ export function checksButton(el: ElementFactory, doc: Document, designer: Design
     Object.assign(panel.style, { top: `${r.bottom + 6}px`, left: `${Math.max(8, Math.min(r.right - width, (doc.defaultView?.innerWidth ?? 1024) - width - 8))}px` });
     doc.addEventListener('pointerdown', onOutside, true);
     panel.addEventListener('keydown', onKey);
+    panel.addEventListener('focusout', onLeave);
     element.setAttribute('aria-expanded', 'true');
-    panel.querySelector<HTMLElement>('button')?.focus();
+    (panel.querySelector<HTMLElement>('button') ?? panel).focus();
     open = close;
   }
   element.addEventListener('click', () => (open ? open() : show()));
