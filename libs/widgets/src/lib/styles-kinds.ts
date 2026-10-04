@@ -33,4 +33,32 @@ export const KINDS_CSS = /* css */ `
 .fd-slider-empty .fd-slider-input { opacity: 0.5; }
 .fd-slider-empty .fd-slider-value { color: var(--fd-muted); font-weight: 400; }
 .fd-slider .fd-choice-clear { grid-column: 1 / -1; }
+/* Pictures to choose from: cards of a picture over its words, a ring or a box before the words, the card picked edged in the accent. */
+.fd-image-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 12px; width: 100%; min-width: 0; }
+.fd-image-card {
+  position: relative; display: grid; grid-template-rows: auto 1fr; padding: 0; margin: 0; overflow: hidden; cursor: pointer;
+  font: inherit; color: var(--fd-text); text-align: start; background: var(--fd-surface);
+  border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 6px);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.fd-image-card:hover:not(:disabled) { border-color: var(--fd-accent); }
+.fd-image-card:disabled { cursor: default; }
+.fd-image-card:disabled:not([aria-checked="true"]) { opacity: 0.6; }
+.fd-image-card[aria-checked="true"] { border-color: var(--fd-accent); box-shadow: 0 0 0 1px var(--fd-accent); }
+.fd-image-card-picture { display: block; aspect-ratio: 4 / 3; background: var(--fd-page); border-block-end: 1px solid var(--fd-border); }
+.fd-image-card-picture img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.fd-image-card-blank { display: grid; place-items: center; width: 100%; height: 100%; color: var(--fd-border-strong); }
+.fd-image-card-blank svg { width: 36%; height: 36%; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.fd-image-card-words { display: flex; align-items: flex-start; gap: 8px; padding: 9px 10px; font-size: 13.5px; line-height: 1.35; }
+.fd-image-card-words::before {
+  content: ""; flex: none; width: 16px; height: 16px; margin-block-start: 1px; box-sizing: border-box;
+  border: 1.5px solid var(--fd-border-strong); border-radius: 50%; background: var(--fd-surface);
+}
+.fd-image-card[role="checkbox"] .fd-image-card-words::before { border-radius: 4px; }
+.fd-image-card[aria-checked="true"] .fd-image-card-words::before { border-color: var(--fd-accent); background: var(--fd-accent); box-shadow: inset 0 0 0 3px var(--fd-surface); }
+.fd-image-card[role="checkbox"][aria-checked="true"] .fd-image-card-words::before {
+  box-shadow: none;
+  background: var(--fd-accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-7' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 13px no-repeat;
+}
+.fd-image-choices + .fd-choice-clear { justify-self: end; }
 `;
