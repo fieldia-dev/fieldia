@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { cardOf, doubleLines, layout, watch } from './designer-support';
+import { cardOf, doubleLines, inAdvanced, layout, watch } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -23,8 +23,10 @@ async function check(page: Page, name: string) {
 }
 
 test.describe('the panel', () => {
+  // Every setting of the panel: Advanced, which Simple keeps to what most forms need.
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
+    await inAdvanced(page);
   });
 
   test('a field picked: its tabs, by mouse and by keyboard, kept for the next field', async ({ page }) => {

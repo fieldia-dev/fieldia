@@ -174,3 +174,17 @@ export async function dragToward(page: Page, from: { x: number; y: number }, aim
   }
   if (options.release !== false) await page.mouse.up();
 }
+
+/**
+ * Open the designers in Advanced, as a person who chose it finds them again: the browser remembers.
+ * Call before going to the page. A fresh browser opens Simple, which keeps the panel to what most forms need.
+ */
+export async function inAdvanced(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('fieldia.designer.mode', 'advanced');
+    } catch {
+      // A browser that keeps nothing opens Simple.
+    }
+  });
+}

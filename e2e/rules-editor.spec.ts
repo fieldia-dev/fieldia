@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addField, cardOf, doubleLines, watch } from './designer-support';
+import { addField, cardOf, doubleLines, inAdvanced, watch } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -50,8 +50,10 @@ async function workOutTotal(page: Page) {
 }
 
 test.describe('rules in the designers', () => {
+  // Answer rules and values worked out are Advanced's: Simple keeps a field to when it shows and whether it is required.
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
+    await inAdvanced(page);
   });
 
   test('Total worked out from Price × Quantity, typed with suggestions, its result live, then tried', async ({ page }) => {

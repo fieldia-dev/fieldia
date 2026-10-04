@@ -155,6 +155,8 @@ test.describe('screen designer', () => {
     const title = page.locator('.fd-canvas-section-title-input:visible');
     await expect(title).toBeFocused();
     await page.keyboard.type('Photos');
+    // A group's columns are Advanced's.
+    await page.getByRole('button', { name: 'Advanced', exact: true }).click();
     await page.locator('.fd-properties').getByRole('tab', { name: 'Layout' }).click();
     await page.locator('.fd-properties').getByRole('group', { name: 'Columns on a desktop' }).getByRole('button', { name: '1 column' }).click();
     await addField(page, 'file', 'Photo of the site');
