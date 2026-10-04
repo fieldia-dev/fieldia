@@ -1,6 +1,6 @@
 import type { Field, FilterItem, LineField } from '../format/field';
 import type { JsonValue } from '../format/json';
-import type { ButtonNode, LayoutNode, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
+import type { ButtonNode, FieldNode, LayoutNode, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import type { ExpressionEnv } from '../expression/functions';
@@ -8,6 +8,7 @@ import { localDay } from '../expression/functions';
 import { checkValue } from './check';
 import { compileComputed } from './compute';
 import { compileSetWhen } from './set-when';
+import { checkRules, compileRules, type CompiledRule } from './rules';
 import { expressionEnv } from './env';
 import { MESSAGES, type Messages } from './messages';
 import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
@@ -36,6 +37,11 @@ export interface FormState {
   readonly errors: Readonly<Record<string, string>>;
   /** Fields that differ from the record as loaded or last saved. */
   readonly dirty: readonly string[];
+  /**
+   * Warnings by field name, from answer rules at the warning level: shown,
+   * never blocking. Kept current as values change, for the fields people can see.
+   */
+  readonly warnings: Readonly<Record<string, string>>;
   /** A warning from the data source's onchange, shown without blocking. */
   readonly warning: string | null;
   /** The field whose change brought the warning, so it can be shown beside it. */
@@ -172,6 +178,14 @@ export function createForm(options: FormOptions): Form {
   const scheduler = options.scheduler ?? hostScheduler;
   const messages = options.messages ?? MESSAGES.en;
   const index = indexLayout(page.layout);
+  /** Each field node's answer rules, read once. */
+  const nodeRules = new Map<string, CompiledRule[]>();
+  for (const node of index.values()) {
+    const rules = (node.source as { validate?: FieldNode['validate'] }).validate;
+    if (node.kind === 'field' && rules) nodeRules.set(node.id, compileRules(rules));
+  }
+  /** Whether any rule only warns: without one, there are never warnings to look for. */
+  const warns = [...nodeRules.values()].some((rules) => rules.some((compiled) => compiled.rule.level === 'warning'));
   const steps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
   const draftKey = () => `fieldia:draft:${page.id}:${state.recordId ?? 'new'}`;
   const today = () => localDay(options.now?.() ?? new Date());
@@ -187,6 +201,7 @@ export function createForm(options: FormOptions): Form {
     values: structuredCopy(baseline),
     errors: {},
     dirty: [],
+    warnings: {},
     warning: null,
     warningField: null,
     error: null,
@@ -275,6 +290,45 @@ export function createForm(options: FormOptions): Form {
     return [...index.values()].filter((node) => node.kind === 'field' && inside(node) && !skipped(node) && !nodeState(node.id).invisible);
   }
 
+  /** What a field node's answer rules say of its value now: the first error and the first warning. */
+  function ruleCheck(node: IndexedNode): { error?: string; warning?: string } {
+    const rules = nodeRules.get(node.id);
+    if (!rules) return {};
+    const name = node.field as string;
+    const def = page.fields[name];
+    const label = (node.source as FieldNode).label ?? def.label;
+    const { context: ctx, env } = reading();
+    return checkRules(def, label, state.values[name], rules, { context: ctx, env, now: options.now?.() ?? new Date(), messages });
+  }
+
+  /** A field node's error now: its field's own rules first, then its answer rules. */
+  function nodeError(node: IndexedNode): string | undefined {
+    const name = node.field as string;
+    return checkValue(page.fields[name], state.values[name], nodeState(node.id).required, messages) ?? ruleCheck(node).error;
+  }
+
+  /** Warnings for the visible fields of the page, without publishing them. */
+  function collectWarnings(): Record<string, string> {
+    const warnings: Record<string, string> = {};
+    if (!warns) return warnings;
+    for (const node of visibleFieldNodes()) {
+      const warning = nodeRules.has(node.id) ? ruleCheck(node).warning : undefined;
+      if (warning) warnings[node.field as string] ??= warning;
+    }
+    return warnings;
+  }
+
+  /** What would be found for these values, without publishing them or touching the form. */
+  function withValues<T>(values: Values, find: () => T): T {
+    const previous = state;
+    state = { ...state, values };
+    try {
+      return find();
+    } finally {
+      state = previous;
+    }
+  }
+
   /** Errors for the visible fields under `root`, without publishing them. */
   function collectErrors(root?: string): Record<string, string> {
     const errors: Record<string, string> = {};
@@ -282,7 +336,7 @@ export function createForm(options: FormOptions): Form {
       const name = node.field as string;
       if (errors[name]) continue;
       const def = page.fields[name];
-      const message = checkValue(def, state.values[name], nodeState(node.id).required, messages);
+      const message = nodeError(node);
       if (message) errors[name] = message;
       if (def.type === 'one2many') {
         for (const line of (state.values[name] as Line[] | null) ?? []) {
@@ -326,15 +380,12 @@ export function createForm(options: FormOptions): Form {
   function writeValues(written: Values, extra: Partial<FormState> = {}, fresh = false) {
     const values = fresh ? startFrom(written) : settle(written);
     const errors = Object.keys(state.errors).length ? revalidateShown(values) : state.errors;
-    set({ values, dirty: dirtyFields(values), errors, ...extra });
+    set({ values, dirty: dirtyFields(values), errors, warnings: withValues(values, collectWarnings), ...extra });
   }
 
   /** Once errors are on screen, keep them current as the person fixes things. */
   function revalidateShown(values: Values): Record<string, string> {
-    const previous = state;
-    state = { ...state, values };
-    const fresh = collectErrors(state.step ?? undefined);
-    state = previous;
+    const fresh = withValues(values, () => collectErrors(state.step ?? undefined));
     const kept: Record<string, string> = {};
     for (const key of Object.keys(state.errors)) if (fresh[key]) kept[key] = fresh[key];
     for (const [name, refused] of Object.entries(serverErrors)) {
@@ -466,7 +517,7 @@ export function createForm(options: FormOptions): Form {
       forgetDraft();
       const values = startFrom(result.values ? { ...(state.values as Values), ...result.values } : (state.values as Values));
       baseline = structuredCopy(values);
-      set({ status: 'saved', recordId: result.id, values, dirty: [] });
+      set({ status: 'saved', recordId: result.id, values, dirty: [], warnings: withValues(values, collectWarnings) });
       return true;
     } catch (error) {
       const problem = saveProblemOf(error);
@@ -542,7 +593,7 @@ export function createForm(options: FormOptions): Form {
     try {
       const loaded = await source.load({ model: page.data.model, id: state.recordId, fields: page.fields });
       baseline = startFrom({ ...initialValues(page.fields), ...loaded });
-      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {} });
+      set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings) });
       offerDraft();
     } catch (error) {
       set({ status: 'error', error: (error as Error).message });
@@ -575,7 +626,8 @@ export function createForm(options: FormOptions): Form {
       // Only a field someone can see is asked anything, and required wherever it is shown so.
       const shown = visibleFieldNodes().filter((node) => node.field === name);
       if (!shown.length) return null;
-      return checkValue(def, state.values[name], shown.some((node) => nodeState(node.id).required), messages) ?? null;
+      const own = checkValue(def, state.values[name], shown.some((node) => nodeState(node.id).required), messages);
+      return own ?? shown.map((node) => ruleCheck(node).error).find((error) => error !== undefined) ?? null;
     },
 
     validate() {
@@ -590,7 +642,7 @@ export function createForm(options: FormOptions): Form {
       forgetDraft();
       serverErrors = {};
       holding = setWhen.holding(baseline);
-      set({ values: structuredCopy(baseline), dirty: [], errors: {}, warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null });
+      set({ values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null });
     },
 
     changes,
@@ -791,6 +843,8 @@ export function createForm(options: FormOptions): Form {
     },
   };
 
+  // A record's starting values may already break a warning rule; nothing listens yet.
+  state = { ...state, warnings: collectWarnings() };
   if (state.recordId == null) offerDraft();
   return form;
 }
