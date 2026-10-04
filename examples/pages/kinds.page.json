@@ -162,6 +162,27 @@
           "label": "Needs a desk"
         }
       }
+    },
+    "kitchen_floor": {
+      "type": "selection",
+      "label": "Quick check: which floor is the kitchen on?",
+      "options": [
+        {
+          "value": "ground",
+          "label": "The ground floor",
+          "score": 0
+        },
+        {
+          "value": "third",
+          "label": "The third floor",
+          "score": 1
+        },
+        {
+          "value": "roof",
+          "label": "Up on the roof",
+          "score": 0
+        }
+      ]
     }
   },
   "layout": {
@@ -249,6 +270,22 @@
               "max": 4,
               "itemLabel": "Person",
               "addLabel": "Add a person"
+            }
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-check",
+        "title": "Did you read the guide?",
+        "children": [
+          {
+            "type": "field",
+            "id": "q-kitchen-floor",
+            "field": "kitchen_floor",
+            "widget": "radio",
+            "options": {
+              "shuffle": true
             }
           }
         ]

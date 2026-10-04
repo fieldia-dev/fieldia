@@ -61,6 +61,7 @@ export {
   type Values,
 } from './lib/record/values';
 export { checkValue, formatBytes } from './lib/record/check';
+export { scoreOf, type Score } from './lib/record/score';
 export type {
   DataSource,
   LoadRequest,
