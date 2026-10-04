@@ -205,10 +205,14 @@ export function translationsView(options: TranslationsViewOptions): Translations
     render();
   }
   toggle.addEventListener('click', () => show(true));
-  // Design or Try it: the view gives way.
+  // Design or Try it: the view gives way, and the editor comes back. Another view in its place (the JSON): it only steps aside.
   const onMode = (event: Event) => {
-    const button = (event.target as Element).closest('[data-mode]');
-    if (open && button && button !== toggle) show(false);
+    const button = (event.target as Element).closest<HTMLElement>('[data-mode]');
+    if (!open || !button || button === toggle) return;
+    if (button.dataset['mode'] === 'design' || button.dataset['mode'] === 'try') return show(false);
+    open = false;
+    element.hidden = true;
+    toggle.setAttribute('aria-pressed', 'false');
   };
   modes.addEventListener('click', onMode);
 
