@@ -69,6 +69,10 @@ export interface WidgetLabels {
   clearDrawing: string;
   /** A slider not slid yet, as a screen reader reads it. */
   notAnswered: string;
+  /** A ranking's buttons for a line (`{label}`), and where it went, said aloud: `{n}` of `{total}`, counted from 1. */
+  moveUp: string;
+  moveDown: string;
+  movedTo: string;
 }
 
 export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
@@ -126,6 +130,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     typeSignature: 'Or type your name',
     clearDrawing: 'Clear',
     notAnswered: 'Not answered',
+    moveUp: 'Move {label} up',
+    moveDown: 'Move {label} down',
+    movedTo: '{label} moved to place {n} of {total}',
   },
   ar: {
     search: 'بحث…',
@@ -181,6 +188,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     typeSignature: 'أو اكتب اسمك',
     clearDrawing: 'مسح',
     notAnswered: 'لم تتم الإجابة',
+    moveUp: 'نقل {label} لأعلى',
+    moveDown: 'نقل {label} لأسفل',
+    movedTo: 'أصبح {label} في المرتبة {n} من {total}',
   },
   de: {
     search: 'Suchen…',
@@ -236,6 +246,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     typeSignature: 'Oder Namen eingeben',
     clearDrawing: 'Löschen',
     notAnswered: 'Nicht beantwortet',
+    moveUp: '{label} nach oben verschieben',
+    moveDown: '{label} nach unten verschieben',
+    movedTo: '{label} ist jetzt auf Platz {n} von {total}',
   },
   fr: {
     search: 'Rechercher…',
@@ -291,5 +304,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     typeSignature: 'Ou tapez votre nom',
     clearDrawing: 'Effacer',
     notAnswered: 'Pas de réponse',
+    moveUp: 'Monter {label}',
+    moveDown: 'Descendre {label}',
+    movedTo: '{label} est maintenant en position {n} sur {total}',
   },
 };

@@ -111,6 +111,33 @@
           "image": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 120'%3E%3Crect width='160' height='120' fill='%23e6f0f3'/%3E%3Crect y='100' width='160' height='20' fill='%2300000014'/%3E%3Crect x='54' y='14' width='52' height='88' rx='6' fill='%23cfe0e6' stroke='%237c98a3' stroke-width='3'/%3E%3Cpath d='M54 50h52' stroke='%237c98a3' stroke-width='3'/%3E%3Crect x='94' y='26' width='4' height='14' rx='2' fill='%235a7480'/%3E%3Crect x='94' y='60' width='4' height='22' rx='2' fill='%235a7480'/%3E%3C/svg%3E"
         }
       ]
+    },
+    "priorities": {
+      "type": "selection",
+      "label": "Put these in order: what matters most at your desk?",
+      "multiple": true,
+      "options": [
+        {
+          "value": "daylight",
+          "label": "Daylight"
+        },
+        {
+          "value": "quiet",
+          "label": "Quiet"
+        },
+        {
+          "value": "kitchen",
+          "label": "Near the kitchen"
+        },
+        {
+          "value": "storage",
+          "label": "Storage"
+        },
+        {
+          "value": "screens",
+          "label": "Two screens"
+        }
+      ]
     }
   },
   "layout": {
@@ -166,6 +193,12 @@
             "id": "q-kitchen",
             "field": "kitchen",
             "widget": "image-choice"
+          },
+          {
+            "type": "field",
+            "id": "q-priorities",
+            "field": "priorities",
+            "widget": "ranking"
           }
         ]
       },

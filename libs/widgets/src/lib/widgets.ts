@@ -28,6 +28,7 @@ import { signatureWidget } from './signature';
 import { sliderWidget } from './slider';
 import { choiceTagsWidget } from './choice-tags';
 import { imageChoiceWidget } from './choice-images';
+import { rankingWidget } from './ranking';
 import { clearSelection } from './kind-parts';
 
 /**
@@ -522,6 +523,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'selection.checkboxes': choiceGroup('checkbox'),
   'selection.tags': choiceTagsWidget,
   'selection.image-choice': imageChoiceWidget,
+  'selection.ranking': rankingWidget,
   'selection.statusbar': statusbarWidget,
   date: dateWidget,
   datetime: dateTimeWidget,
