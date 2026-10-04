@@ -100,7 +100,7 @@ describe('checks before publishing', () => {
     const { designer } = survey();
     const again = designer.addQuestion('short-answer') as string;
     designer.updateQuestion(again, { label: 'Role' });
-    expect(pageChecks(designer.getPage()).map((c) => [c.severity, c.text, c.at, c.fix?.label])).toEqual([['should', 'Two questions ask “Role”: people may not tell them apart.', again, 'Go to the second']]);
+    expect(pageChecks(designer.getPage()).map((c) => [c.severity, c.text, c.at, c.fix?.label])).toEqual([['should', 'Two questions read “Role”: people may not tell them apart.', again, 'Rename the second']]);
   });
 
   it('lists what stops people before what only looks wrong', () => {
