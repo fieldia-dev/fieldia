@@ -89,9 +89,8 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 /* ---- Advanced: the keyboard ---- */
 /* What a key just did, said to a screen reader and not shown. */
 .fd-canvas-said { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-/* The keys, behind a small "?" in the canvas's corner; Advanced only. */
-.fd-canvas-help { position: absolute; z-index: 35; inset-block-start: 6px; inset-inline-end: 8px; }
-.fd-canvas:not([data-mode="advanced"]) > .fd-canvas-help { display: none; }
+/* The keys, behind a small "?" at the stage's end. */
+.fd-canvas-help { position: relative; z-index: 35; margin-inline-start: auto; }
 .fd-canvas-help-button {
   all: unset; box-sizing: border-box; display: grid; place-items: center; width: 22px; height: 22px; margin-inline-start: auto; border-radius: 50%;
   color: var(--fd-muted); font-size: 12px; font-weight: 700; cursor: pointer; background: var(--fd-page);
@@ -107,4 +106,34 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 .fd-canvas-keys[hidden] { display: none; }
 .fd-canvas-keys dt { font-weight: 650; white-space: nowrap; }
 .fd-canvas-keys dd { margin: 0; color: var(--fd-muted); }
+
+/* ---- Advanced: the guides ---- */
+/* The columns of the grid a picked part sits on: tinted bands under the parts, laid out as the grid's own columns, numbered. */
+.fd-canvas .fd-grid:has(> .fd-guides) { position: relative; }
+.fd-canvas .fd-grid:has(> .fd-guides) > [data-node] { position: relative; z-index: 1; }
+.fd-guides {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none; display: grid;
+  grid-template-columns: repeat(var(--fd-cols, 1), minmax(0, 1fr)); column-gap: var(--fd-gap-x);
+}
+.fd-guides > i { position: relative; border-radius: 4px; background: color-mix(in srgb, var(--fd-accent) 7%, transparent); }
+.fd-guides > i::after {
+  content: attr(data-n); position: absolute; inset-block-start: -15px; inset-inline-start: 50%; translate: -50% 0;
+  font: 600 10px/1 system-ui, sans-serif; font-style: normal; color: color-mix(in srgb, var(--fd-accent) 70%, var(--fd-muted));
+}
+
+/* ---- Advanced: the stage — the size of screen shown, and the keys ---- */
+.fd-canvas-stage { display: flex; align-items: center; gap: 8px; }
+.fd-canvas:not([data-mode="advanced"]) > .fd-canvas-stage { display: none; }
+.fd-canvas-sizes { display: inline-flex; padding: 2px; border-radius: 9px; background: var(--fd-page); border: 1px solid var(--fd-border); }
+.fd-canvas-size {
+  all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 7px;
+  font-size: 12.5px; font-weight: 600; color: var(--fd-muted); cursor: pointer;
+}
+.fd-canvas-size[aria-pressed="true"] { background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 1px 2px rgba(15, 20, 25, 0.12); }
+.fd-canvas-size:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
+/* Pictures only where the canvas has no room for their names. */
+@container (max-width: 520px) { .fd-canvas-size-name { display: none; } }
+/* On a tablet or a phone, the canvas is as wide as one. */
+.fd-canvas[data-size="tablet"] { width: 100%; max-width: 768px; margin-inline: auto; }
+.fd-canvas[data-size="phone"] { width: 100%; max-width: 390px; margin-inline: auto; }
 `;

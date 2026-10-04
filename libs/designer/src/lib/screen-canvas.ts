@@ -7,7 +7,9 @@ import { canvasDrag, type CanvasDrag } from './canvas-drag';
 import { canvasHeader } from './canvas-header';
 import { canvasKeys, type CanvasKeys } from './canvas-keys';
 import { lockWords, type DesignerMode } from './canvas-mode';
+import { columnsAt, readSize, sizeSwitch, writeSize, type ScreenSize } from './canvas-size';
 import { multiBar } from './canvas-multi';
+import { canvasGuides } from './canvas-guides';
 import { widthMarks } from './canvas-width';
 import { elementFactory, optionsEditor, type OptionsEditor } from './chrome';
 import type { Designer, DesignerState } from './designer';
@@ -84,12 +86,23 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   const multi = multiBar({ el, doc, designer });
   const keys = canvasKeys({ el, designer, rtl: () => doc.defaultView?.getComputedStyle(element).direction === 'rtl' });
   // A form of its own, in the form's skin: its look and its widths are the page's, not the designer's.
-  const element = el('div', { class: 'fd-canvas fd-form', 'data-fd-skin': options.skin ?? 'outlined' }, multi.element, header.top, header.card, titleCard, body, keys.help, keys.said);
+  // The size of screen shown, chosen on the stage at the canvas's top, with the keys' help; Advanced only.
+  let size: ScreenSize = readSize(doc.defaultView);
+  const sizes = sizeSwitch(el, doc, size, (next) => {
+    size = next;
+    writeSize(doc.defaultView, next);
+    sizes.set(next);
+    api.update(designer.getState());
+  });
+  const stage = el('div', { class: 'fd-canvas-stage' }, sizes.element, keys.help);
+  const element = el('div', { class: 'fd-canvas fd-form', 'data-fd-skin': options.skin ?? 'outlined' }, multi.element, stage, header.top, header.card, titleCard, body, keys.said);
   const blocks = blockViews({ el, doc, designer });
   let page = designer.getPage();
   let selected: string | null = null;
   let picked: string[] = [];
   let mode: DesignerMode = 'simple';
+  /** The size shown: the one chosen, in Advanced; a desktop, in Simple. */
+  const shownSize = (): ScreenSize => (mode === 'advanced' ? size : 'desktop');
   let visible: string[] = [];
   /** Every part drawn this time round, by id. */
   let drawnIds = new Set<string>();
@@ -315,6 +328,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     const columns = plan.at === 'tracks' ? null : section.columns;
     if (columns === null) grid.style.removeProperty('--fd-columns');
     else grid.style.setProperty('--fd-columns', String(typeof columns === 'object' ? columns.wide : (columns ?? 1)));
+    // The columns of the size shown, whatever the canvas's own width: on a grid's tracks, or sharing a cell, as the form lays them.
+    if (plan.at) grid.style.removeProperty('--fd-cols');
+    else grid.style.setProperty('--fd-cols', String(columnsAt(section.columns, shownSize(), options.skin ?? 'outlined')));
     for (const width of ['medium', 'narrow'] as const) {
       const count = typeof columns === 'object' && columns !== null ? columns[width] : undefined;
       if (count === undefined) {
@@ -476,6 +492,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   });
   advanced.setEnabled(false);
   // Advanced's width handle and gutter, on the part picked.
+  // Advanced's guides: the columns of the grid the picked part sits on.
+  const guides = canvasGuides({ root: body, designer });
   const widths = widthMarks({ canvas: element, root: body, designer, rtl: () => doc.defaultView?.getComputedStyle(element).direction === 'rtl' });
   const drag: CanvasDrag = {
     press: (source, event, tile) => (mode === 'advanced' ? advanced : simpleDrag).press(source, event, tile),
@@ -485,7 +503,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     },
   };
 
-  return {
+  const api: ScreenCanvas = {
     element,
     drag,
     keys,
@@ -498,6 +516,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       advanced.setEnabled(next === 'advanced');
     },
     update(state) {
+      element.dataset['size'] = shownSize();
       page = state.page;
       selected = state.selected;
       picked = state.picked;
@@ -540,6 +559,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       }
       titleCard.classList.toggle('fd-canvas-selected', selected === null);
       header.update(page, selected, form);
+      guides.update(state, mode === 'advanced');
       widths.update(state, mode === 'advanced');
       multi.update(state, mode === 'advanced');
     },
@@ -562,4 +582,5 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       body.replaceChildren();
     },
   };
+  return api;
 }
