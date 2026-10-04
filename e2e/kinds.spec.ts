@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { expectNoSidewaysScroll, node, open, screen } from './support';
+import { VARIANTS } from './variants';
 
 /**
  * The newer kinds of question, used as a person uses them — with the mouse,
@@ -192,6 +193,16 @@ test.describe('the new kinds in the viewer', () => {
     await screen(page, 'kinds-phone');
   });
 });
+
+/** Every framework draws the same widgets: the page renders in each, with nothing said in the console. */
+for (const variant of VARIANTS) {
+  test(`${variant}: the office move page renders every new kind`, async ({ page }) => {
+    const { problems } = await open(page, variant, 'page=kinds&skin=outlined');
+    for (const selector of ['.fd-signature', '.fd-slider', '.fd-choice-tags', '.fd-image-choices', '.fd-ranking', '.fd-address', '.fd-cards']) await expect(page.locator(selector).first()).toBeVisible();
+    await expectNoSidewaysScroll(page);
+    expect(problems).toEqual([]);
+  });
+}
 
 test.describe('the new kinds right to left, in Arabic', () => {
   let problems: string[] = [];
