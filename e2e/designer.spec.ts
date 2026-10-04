@@ -369,8 +369,10 @@ test.describe('survey designer · putting a question down', () => {
     await page.locator('.fd-q').nth(1).click();
     await expect(picked(page)).toHaveCount(1);
     const column = (await page.locator('.fd-survey-column').boundingBox())!;
-    // In the tinted room to the left of the cards.
-    await page.mouse.click(column.x - 30, column.y + 400);
+    const canvas = (await page.locator('.fd-survey-canvas').boundingBox())!;
+    const bar = (await page.locator('.fd-designer-bar').boundingBox())!;
+    // In the tinted room to the left of the cards, halfway across it, and below the bar however tall the bar is.
+    await page.mouse.click((canvas.x + column.x) / 2, Math.max(column.y, bar.y + bar.height) + 60);
     await expect(picked(page)).toHaveCount(0);
     await screen(page, 'designer-put-down', { viewport: true });
   });
