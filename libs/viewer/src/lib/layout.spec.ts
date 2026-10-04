@@ -29,6 +29,8 @@ const fields = {
   phone: { type: 'char', label: 'Phone' },
   role: { type: 'char', label: 'Role' },
   team: { type: 'char', label: 'Team' },
+  agree: { type: 'boolean', label: 'I agree' },
+  terms: { type: 'boolean', label: 'I read the terms' },
   rate: { type: 'matrix', label: 'How was it?', rows: [{ value: 'food', label: 'Food' }], columns: [{ value: 1, label: 'Poor' }, { value: 2, label: 'Fine' }] },
 } as Page['fields'];
 
@@ -247,6 +249,25 @@ describe('where labels sit', () => {
     expect(input.placeholder).toBe('First name');
     // A placeholder the page gives is kept.
     expect((at(host, 'email').querySelector('input') as HTMLInputElement).placeholder).toBe('name@acme.com');
+  });
+
+  it('writes a tick box’s words after the box, whatever the group or the field says about labels', () => {
+    const host = mount(page([{ type: 'section', id: 's', labels: 'beside', children: [field('agree', { widget: 'tick' }), field('terms', { widget: 'tick', labels: 'hidden' })] }]));
+    for (const [id, words] of [['agree', 'I agree'], ['terms', 'I read the terms']]) {
+      const item = at(host, id);
+      expect(item.getAttribute('data-labels')).toBe('after');
+      const box = item.querySelector('input.fd-tick[type="checkbox"]') as HTMLInputElement;
+      const label = item.querySelector('.fd-label') as HTMLLabelElement;
+      expect(label.htmlFor).toBe(box.id);
+      expect(label.textContent).toBe(words);
+      // The box first, then its words: read in the order they are seen.
+      expect(box.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+  });
+
+  it('keeps a yes/no box without the tick its label where the group puts it', () => {
+    const host = mount(page([{ type: 'section', id: 's', labels: 'beside', children: [field('agree')] }]));
+    expect(at(host, 'agree').getAttribute('data-labels')).toBe('beside');
   });
 });
 

@@ -237,6 +237,30 @@ test('layout: a label kept out of sight still names its box', async ({ page }) =
   expect(Math.abs(box.y - field.y)).toBeLessThanOrEqual(1);
 });
 
+test('layout: a tick box writes its words after it, on its line, and a note sits in a soft panel', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  for (const [query, after] of [[LAYOUT, true], [ARABIC, false]] as const) {
+    await open(page, 'plain', query);
+    const confirm = node(page, 'f-confirm');
+    const box = confirm.locator('input[type="checkbox"]');
+    const words = confirm.locator('.fd-label');
+    const b = (await box.boundingBox())!;
+    const w = (await words.boundingBox())!;
+    // After the box as the language reads: right of it, or left of it right to left.
+    if (after) expect(w.x).toBeGreaterThanOrEqual(b.x + b.width);
+    else expect(w.x + w.width).toBeLessThanOrEqual(b.x);
+    expect(Math.abs(w.y + w.height / 2 - (b.y + b.height / 2)), query).toBeLessThanOrEqual(4);
+    // The words are the box's name, and ticking them ticks it.
+    await expect(page.getByRole('checkbox', { name: after ? 'I confirm these details are correct' : 'أؤكد أن هذه البيانات صحيحة' })).toBeVisible();
+    await words.click();
+    await expect(box).toBeChecked();
+    const note = node(page, 't-note');
+    expect(await note.evaluate((e) => getComputedStyle(e).backgroundColor), query).not.toBe('rgba(0, 0, 0, 0)');
+    await note.scrollIntoViewIfNeeded();
+    await screen(page, after ? 'layout-tick-note' : 'layout-tick-note-arabic');
+  }
+});
+
 test('layout: right to left in Arabic, mirrored part for part', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const { problems } = await open(page, 'plain', ARABIC);

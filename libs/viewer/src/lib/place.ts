@@ -53,8 +53,12 @@ export function planSection(node: SectionNode, place: Place): SectionPlan {
 /** Kinds shown as a table: no room beside them for a label, which goes above. */
 const TABLES = new Set<FieldType>(['one2many', 'matrix']);
 
-/** Where a field's label sits: its own place, else where it is put; a table's label beside it goes above. */
-export function labelPlace(node: FieldNode, type: FieldType, place: LabelPlace | undefined): LabelPlace | undefined {
+/**
+ * Where a field's label sits: its own place, else where it is put; a table's label beside it goes above.
+ * A tick box's words always come after the box: they are all it says, and beside or out of sight would part them from it.
+ */
+export function labelPlace(node: FieldNode, type: FieldType, place: LabelPlace | undefined): LabelPlace | 'after' | undefined {
+  if (type === 'boolean' && node.widget === 'tick') return 'after';
   const chosen = node.labels ?? place;
   return chosen === 'beside' && TABLES.has(type) ? 'above' : chosen;
 }

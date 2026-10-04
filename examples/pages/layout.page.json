@@ -236,7 +236,7 @@
         "text": "HR goes through every detail with you on your first day. Nothing here is shared outside the company.",
         "style": "note"
       },
-      { "type": "field", "id": "f-confirm", "field": "confirm" },
+      { "type": "field", "id": "f-confirm", "field": "confirm", "widget": "tick" },
       { "type": "button", "id": "b-later", "label": "Save and finish later", "action": "finish_later", "style": "secondary" }
     ]
   },

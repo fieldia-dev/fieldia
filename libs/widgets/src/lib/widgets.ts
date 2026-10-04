@@ -251,9 +251,11 @@ const numberWidget: WidgetFactory = (context) => {
   };
 };
 
-function checkboxWidget(role?: 'switch'): WidgetFactory {
+/** A box to tick: plain under its label, a switch, or a tick box with its words after it (the viewer puts them there). */
+function checkboxWidget(look: 'box' | 'switch' | 'tick' = 'box'): WidgetFactory {
+  const attrs = look === 'switch' ? { class: 'fd-switch', role: 'switch' } : { class: look === 'tick' ? 'fd-checkbox fd-tick' : 'fd-checkbox' };
   return ({ form, name, id, document }) => {
-    const box = make(document, 'input', { id, type: 'checkbox', class: role ? 'fd-switch' : 'fd-checkbox', role });
+    const box = make(document, 'input', { id, type: 'checkbox', ...attrs });
     box.addEventListener('change', () => form.setValue(name, box.checked));
     return {
       element: box,
@@ -524,6 +526,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'monetary.progressbar': progressbarWidget,
   boolean: checkboxWidget(),
   'boolean.toggle': checkboxWidget('switch'),
+  'boolean.tick': checkboxWidget('tick'),
   selection: selectWidget,
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),

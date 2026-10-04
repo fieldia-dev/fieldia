@@ -192,7 +192,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const error = el('div', { class: 'fd-error', id: `${id}-error`, hidden: '' });
     // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
     const warning = el('div', { class: 'fd-warning', id: `${id}-warning`, role: 'status', hidden: '' });
-    wrapper.append(label, widget.element, ...(help ? [help] : []), error, warning);
+    wrapper.append(...(labelsAt === 'after' ? [widget.element, label] : [label, widget.element]), ...(help ? [help] : []), error, warning);
     if (widget.destroy) cleanups.push(() => widget.destroy?.());
     // An answer rule's warning waits until the person leaves the field: no advice
     // mid-word. One already shown stays while they put it right, and goes once they have.
