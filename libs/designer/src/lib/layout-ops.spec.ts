@@ -311,3 +311,189 @@ describe('new parts from the toolbox', () => {
     expect(d.getPage().fields['q_1']).toMatchObject({ type: 'selection', label: 'Untitled question' });
   });
 });
+
+describe('several parts at once: a group, side by side, tabs', () => {
+  it('Group puts the parts in a new group where they were, as wide as where they were, and picks it', () => {
+    const d = employeeDesigner();
+    const group = d.wrap(['f-last_name', 'f-first_name'], 'group') as string;
+    expect(nodeOf(d.getPage(), group)).toMatchObject({ type: 'section', title: 'New group', columns: { wide: 2, narrow: 1 }, colspan: 2 });
+    expect(where(d.getPage(), 'f-first_name')).toMatchObject({ parent: group, kids: ['f-first_name', 'f-last_name'], grand: 'who' });
+    expect(where(d.getPage(), group)?.kids.slice(0, 2)).toEqual([group, 'f-email']);
+    expect(picked(d)).toEqual([group]);
+    expectValid(d.getPage());
+    d.undo();
+    expect(where(d.getPage(), 'f-first_name')?.parent).toBe('who');
+  });
+
+  it('Group on the page: two columns for two parts, one for one', () => {
+    const d = employeeDesigner();
+    const two = d.wrap(['h-send', 't-note'], 'group') as string;
+    expect(nodeOf(d.getPage(), two)).toMatchObject({ columns: { wide: 2, narrow: 1 } });
+    expect(nodeOf(d.getPage(), two)?.['colspan']).toBeUndefined();
+    const one = d.wrap(['send'], 'group') as string;
+    expect(nodeOf(d.getPage(), one)?.['columns']).toBe(1);
+  });
+
+  it('Side by side on the page: as many columns as parts, two on a tablet, one on a phone', () => {
+    const d = employeeDesigner();
+    const row = d.wrap(['h-send', 't-note'], 'side') as string;
+    expect(nodeOf(d.getPage(), row)).toMatchObject({ style: 'plain', columns: { wide: 2, medium: 2, narrow: 1 } });
+    expect(where(d.getPage(), 'h-send')?.kids).toEqual(['h-send', 't-note']);
+    const wide = d.wrap(['f-confirm', 'send', 'div-1'], 'side') as string;
+    expect(nodeOf(d.getPage(), wide)?.['columns']).toEqual({ wide: 3, medium: 2, narrow: 1 });
+    expectValid(d.getPage());
+  });
+
+  it('Side by side in a grid: they keep their widths, on the grid’s own columns', () => {
+    const d = employeeDesigner();
+    const row = d.wrap(['f-start_date', 'f-contract'], 'side') as string;
+    expect(nodeOf(d.getPage(), row)).toMatchObject({ style: 'plain', colspan: 3, columns: 3 });
+    expect(nodeOf(d.getPage(), 'f-contract')?.['colspan']).toBe(2);
+    const two = d.wrap(['f-first_name', 'f-mobile'], 'side') as string;
+    expect(nodeOf(d.getPage(), two)).toMatchObject({ colspan: 2, columns: 2, children: [{ id: 'f-first_name' }, { id: 'f-mobile' }] });
+    expectValid(d.getPage());
+  });
+
+  it('Tabs makes a tab of each, named after it', () => {
+    const d = employeeDesigner();
+    const tabs = d.wrap(['address', 'emergency'], 'tabs') as string;
+    const made = nodeOf(d.getPage(), tabs) as unknown as { children: { label: string; children: { id: string }[] }[] };
+    expect(made.children.map((t) => [t.label, t.children.map((c) => c.id)])).toEqual([
+      ['Home address', ['address']],
+      ['Emergency contact', ['emergency']],
+    ]);
+    // The row they were in held only the tabs then, and folded away.
+    expect(where(d.getPage(), tabs)?.parent).toBe('root');
+    expectValid(d.getPage());
+    const other = employeeDesigner();
+    const words = other.wrap(['f-confirm', 'side-1', 't-note'], 'tabs') as string;
+    const labels = (nodeOf(other.getPage(), words)?.['children'] as { label: string }[]).map((t) => t.label);
+    expect(labels).toEqual(['Tab 1', 'HR goes through every detail with you on your first day. Nothing here is shared outside the company.', 'I confirm these details are correct']);
+    expectValid(other.getPage());
+  });
+
+  it('wants parts that sit in the same group, and two or more for side by side', () => {
+    const d = employeeDesigner();
+    expect(d.wrap(['f-first_name', 'f-street'], 'group')).toBe(false);
+    expect(d.getState().issues).toEqual(['Pick parts that sit in the same group']);
+    expect(d.wrap([], 'group')).toBe(false);
+    expect(d.getState().issues).toEqual(['Pick parts that sit in the same group']);
+    expect(d.wrap(['tab-job', 'tab-pay'], 'tabs')).toBe(false);
+    expect(d.getState().issues).toEqual(['Pick parts that sit in the same group']);
+    expect(d.wrap(['f-first_name', 'f-ghost'], 'side')).toBe(false);
+    expect(d.getState().issues).toEqual(['There is no part “f-ghost”']);
+    expect(d.wrap(['send'], 'side')).toBe(false);
+    expect(d.getState().issues).toEqual(['Pick two or more to put side by side']);
+  });
+});
+
+describe('ungroup', () => {
+  it('takes the parts out of a group, where it was, and picks them', () => {
+    const d = employeeDesigner();
+    expect(d.ungroup('side-1')).toBe(true);
+    expect(where(d.getPage(), 'address')?.kids.slice(0, 4)).toEqual(['personal', 'address', 'emergency', 'job-tabs']);
+    expect(picked(d)).toEqual(['address', 'emergency']);
+    expect(d.getState().selected).toBe('address');
+    expectValid(d.getPage());
+  });
+
+  it('no wider than where they land', () => {
+    const d = employeeDesigner();
+    d.ungroup('personal');
+    expect(where(d.getPage(), 'who')?.kids.slice(0, 3)).toEqual(['f-photo', 'who', 'side-1']);
+    expect(nodeOf(d.getPage(), 'who')?.['colspan']).toBeUndefined();
+    d.ungroup('address');
+    expect(nodeOf(d.getPage(), 'f-street')?.['colspan']).toBe(2);
+    expectValid(d.getPage());
+  });
+
+  it('takes the parts out of every tab', () => {
+    const d = employeeDesigner();
+    d.ungroup('job-tabs');
+    expect(where(d.getPage(), 'role')?.kids.slice(2, 5)).toEqual(['role', 'docs', 'bank']);
+    expect(picked(d)).toEqual(['role', 'docs', 'bank']);
+    expectValid(d.getPage());
+  });
+
+  it('only a group or tabs', () => {
+    const d = employeeDesigner();
+    expect(d.ungroup('f-email')).toBe(false);
+    expect(d.getState().issues).toEqual(['Only a group or tabs can be ungrouped']);
+    expect(d.ungroup('nothing')).toBe(false);
+    expect(d.getState().issues).toEqual(['There is no part “nothing”']);
+  });
+});
+
+describe('duplicate and remove several', () => {
+  it('duplicates each right after itself, with ids and fields of its own, and picks the copies', () => {
+    const d = employeeDesigner();
+    const copies = d.duplicate(['f-mobile', 'address']) as string[];
+    expect(copies).toHaveLength(2);
+    const page = d.getPage();
+    expect(where(page, copies[0])?.kids.slice(3, 5)).toEqual(['f-mobile', copies[0]]);
+    expect(where(page, copies[1])?.kids).toEqual(['address', copies[1], 'emergency']);
+    const copy = nodeOf(page, copies[0]) as unknown as { field: string; widget: string };
+    expect(copy.field).not.toBe('mobile');
+    expect(copy.widget).toBe('phone');
+    expect(page.fields[copy.field]).toEqual(page.fields['mobile']);
+    const inner = (nodeOf(page, copies[1])?.['children'] as { id: string; field: string; colspan?: number }[]);
+    expect(inner.map((n) => n.colspan)).toEqual([2, undefined, undefined, 2]);
+    expect(inner.every((n) => !['f-street', 'f-city', 'f-postcode', 'f-country'].includes(n.id) && !['street', 'city', 'postcode', 'country'].includes(n.field))).toBe(true);
+    expect(picked(d)).toEqual(copies);
+    expectValid(page);
+  });
+
+  it('duplicates a tab’s contents, not a tab on its own', () => {
+    const d = employeeDesigner();
+    expect(d.duplicate(['tab-pay'])).toBe(false);
+    expect(d.getState().issues).toEqual(['A tab cannot be duplicated on its own: duplicate the tabs, or what is in it']);
+    const copy = (d.duplicate(['job-tabs']) as string[])[0];
+    expect((nodeOf(d.getPage(), copy)?.['children'] as { label: string }[]).map((t) => t.label)).toEqual(['Job', 'Documents', 'Pay']);
+    expectValid(d.getPage());
+    expect(d.duplicate(['f-ghost'])).toBe(false);
+    expect(d.getState().issues).toEqual(['There is no part “f-ghost”']);
+  });
+
+  it('removes several in one step, and the fields nothing shows any more', () => {
+    const d = employeeDesigner();
+    d.pick('f-mobile');
+    d.pick('f-email', { add: true });
+    expect(d.remove(['f-mobile', 'f-email'])).toBe(true);
+    expect(where(d.getPage(), 'f-first_name')?.kids).toEqual(['f-first_name', 'f-last_name', 'f-birthday', 'f-nationality']);
+    expect(Object.keys(d.getPage().fields)).not.toContain('mobile');
+    expect(Object.keys(d.getPage().fields)).not.toContain('email');
+    expect(picked(d)).toEqual([]);
+    expect(d.getState().selected).toBeNull();
+    d.undo();
+    expect(nodeOf(d.getPage(), 'f-mobile')).toBeTruthy();
+  });
+
+  it('a row closes up, and what is left of it on its own folds away', () => {
+    const d = employeeDesigner();
+    d.place({ kind: 'email' }, { how: 'beside', target: 'emergency', after: true });
+    d.remove(['emergency']);
+    expect(nodeOf(d.getPage(), 'side-1')?.['columns']).toEqual({ wide: 2, medium: 1 });
+    d.remove(['address']);
+    expect(nodeOf(d.getPage(), 'side-1')).toBeUndefined();
+    expectValid(d.getPage());
+  });
+
+  it('removes a group and what is in it, a tab, and tabs left with none', () => {
+    const d = employeeDesigner();
+    d.remove(['personal', 'f-first_name', 'tab-pay']);
+    expect(nodeOf(d.getPage(), 'personal')).toBeUndefined();
+    expect(Object.keys(d.getPage().fields)).not.toContain('first_name');
+    expect((nodeOf(d.getPage(), 'job-tabs')?.['children'] as { id: string }[]).map((t) => t.id)).toEqual(['tab-job', 'tab-docs']);
+    d.remove(['tab-job', 'tab-docs']);
+    expect(nodeOf(d.getPage(), 'job-tabs')).toBeUndefined();
+    expectValid(d.getPage());
+  });
+
+  it('keeps a page with something on it, and says what it cannot find', () => {
+    const d = createDesigner({ page: blankPage('screen', 'Visit') });
+    expect(d.remove(['section-1'])).toBe(false);
+    expect(d.getState().issues).toEqual(['A page needs at least one step or section']);
+    expect(d.remove(['nothing'])).toBe(false);
+    expect(d.getState().issues).toEqual(['There is no part “nothing”']);
+  });
+});

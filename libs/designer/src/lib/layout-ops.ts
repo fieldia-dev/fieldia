@@ -436,3 +436,131 @@ export function place(page: Page, target: string | NewPart, drop: Drop, context:
   placeAt(page, node, drop);
   return node.id;
 }
+
+// ---- several parts at once ----------------------------------------------------------------------------
+
+/** Each part by id, or a refusal naming the one not found. */
+function spotsOf(page: Page, ids: string[]): Spot[] {
+  return [...new Set(ids)].map((id) => {
+    const at = locate(page, id);
+    if (!at) throw new Refusal(`There is no part “${id}”`);
+    return at;
+  });
+}
+
+/** The parts, in reading order, when they sit in one list — never tabs among their tabs. */
+function siblings(page: Page, ids: string[]): Spot[] {
+  const spots = spotsOf(page, ids);
+  if (!spots.length || new Set(spots.map((s) => s.list)).size !== 1 || spots[0].parent.type === 'tabs') throw new Refusal('Pick parts that sit in the same group');
+  return spots.sort((a, b) => a.index - b.index);
+}
+
+/** What a tab made of a part is called: the group's title, the field's label, the words. */
+function tabLabel(page: Page, node: LayoutNode): string {
+  if (node.type === 'section') return node.title ?? '';
+  if (node.type === 'field' || node.type === 'button') return nameOf(page, node);
+  return node.type === 'text' ? node.text : '';
+}
+
+/**
+ * Parts that sit together, in a new group (titled “New group”), side by side
+ * (an arrangement), or in tabs, a tab each — where the first of them was.
+ * Returns what holds them.
+ */
+export function wrap(page: Page, ids: string[], kind: 'group' | 'side' | 'tabs'): string {
+  const spots = siblings(page, ids);
+  const parent = spots[0].parent;
+  const parentCols = across(page, parent);
+  const nodes = spots.map((s) => s.node as LayoutNode);
+  const name = namer(page);
+  let made: LayoutNode;
+  if (kind === 'group') {
+    const cols = isSection(parent) ? parentCols : Math.min(2, nodes.length);
+    made = { type: 'section', id: name('section'), title: 'New group', columns: cols === 1 ? 1 : columnsValue(cols, undefined, 1), children: nodes };
+    setSpan(made, parentCols);
+  } else if (kind === 'side') {
+    if (nodes.length < 2) throw new Refusal('Pick two or more to put side by side');
+    if (parentCols > 1) {
+      // In a grid: they keep their widths, on the grid's own columns.
+      const total = Math.min(parentCols, nodes.reduce((sum, n) => sum + Math.min(spanOf(n), parentCols), 0));
+      made = arrangement(name('side'), total, total as ColumnCount, nodes);
+    } else {
+      const count = Math.min(4, nodes.length);
+      for (const n of nodes) setSpan(n, 1);
+      made = arrangement(name('side'), parentCols, columnsValue(count, Math.min(2, count), 1), nodes);
+    }
+  } else {
+    const tabs: TabsNode = { type: 'tabs', id: name('tabs'), children: [] };
+    nodes.forEach((n, i) => tabs.children.push({ type: 'tab', id: name('tab'), label: tabLabel(page, n) || `Tab ${i + 1}`, children: [n] }));
+    setSpan(tabs, parentCols);
+    made = tabs;
+  }
+  for (const s of [...spots].reverse()) s.list.splice(s.index, 1);
+  spots[0].list.splice(spots[0].index, 0, made);
+  tidy(page);
+  return made.id;
+}
+
+/** A group's parts, or every tab's, where it was, no wider than there. Returns them. */
+export function ungroup(page: Page, id: string): string[] {
+  const at = spotsOf(page, [id])[0];
+  const node = at.node;
+  if (node.type !== 'section' && node.type !== 'tabs') throw new Refusal('Only a group or tabs can be ungrouped');
+  const inner: LayoutNode[] = node.type === 'tabs' ? node.children.flatMap((tab) => tab.children) : node.children;
+  const cols = across(page, at.parent);
+  for (const part of inner) setSpan(part, Math.min(spanOf(part), cols));
+  at.list.splice(at.index, 1, ...inner);
+  tidy(page);
+  return inner.map((part) => part.id).filter((part) => locate(page, part));
+}
+
+/** What a copy's id starts with. */
+const prefixOf = (node: Part): string => (node.type === 'field' ? 'q' : isWrapper(node) ? 'side' : node.type === 'text' && node.style === 'heading' ? 'heading' : node.type);
+
+/** A copy made new: ids of its own, and fields of its own, as a copied question has. */
+function renew(page: Page, node: Part, name: (prefix: string) => string): Part {
+  node.id = name(prefixOf(node));
+  if (node.type === 'field') {
+    const field = nextName((n) => n in page.fields, 'q', '_');
+    page.fields[field] = JSON.parse(JSON.stringify(page.fields[node.field]));
+    node.field = field;
+  }
+  for (const child of listOf(node) ?? []) renew(page, child, name);
+  return node;
+}
+
+/** A copy of each part right after it. Returns the copies. */
+export function duplicate(page: Page, ids: string[]): string[] {
+  const spots = spotsOf(page, ids).filter((s) => s.node.type !== 'tab');
+  if (!spots.length) throw new Refusal('A tab cannot be duplicated on its own: duplicate the tabs, or what is in it');
+  const name = namer(page);
+  return spots.map((s) => {
+    const copy = renew(page, JSON.parse(JSON.stringify(s.node)), name);
+    s.list.splice(s.list.indexOf(s.node) + 1, 0, copy);
+    return copy.id;
+  });
+}
+
+/** Drop the fields nothing on the page shows any more. */
+function prune(page: Page): void {
+  const shown = shownFields(page);
+  for (const name of Object.keys(page.fields)) if (!shown.has(name)) delete page.fields[name];
+}
+
+/** Take parts off the page: a row they leave closes up, tabs left with none go too, and so do the fields nothing shows. */
+export function remove(page: Page, ids: string[]): void {
+  const spots = spotsOf(page, ids);
+  const root = page.layout as Holder;
+  for (const { node } of spots) {
+    const at = locate(page, node.id);
+    if (!at) continue; // In one taken off already.
+    if (at.parent.type !== 'tabs') detach(page, node.id);
+    else {
+      at.list.splice(at.index, 1);
+      if (!at.list.length) detach(page, at.parent.id);
+    }
+  }
+  tidy(page);
+  if (!root.children.length) throw new Refusal('A page needs at least one step or section');
+  prune(page);
+}

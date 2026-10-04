@@ -245,6 +245,16 @@ export interface Designer extends HeaderCommands, ListCommands {
   describeDrop(drop: Drop, moving?: string): string;
   /** Why a drop cannot be made, such as "A row holds four"; null when it can. */
   dropRefusal(drop: Drop, moving?: string): string | null;
+  /** Parts that sit together, in a new group, side by side, or a tab each. Returns what holds them, and picks it. */
+  wrap(ids: string[], kind: 'group' | 'side' | 'tabs'): string | false;
+  /** A group's parts, or every tab's, where it was; they are picked. */
+  ungroup(id: string): boolean;
+  /** A copy of each part right after it; the copies are picked. */
+  duplicate(ids: string[]): string[] | false;
+  /** Take several parts off the page, as one edit. */
+  remove(ids: string[]): boolean;
+  /** Pick a part; with `add`, pick it as well as those picked, or let it go if it was. */
+  pick(id: string, options?: { add?: boolean }): void;
   /** A table of lines' columns, in order. */
   setLineColumns(id: string, columns: LineColumn[]): boolean;
   undo(): void;
@@ -379,6 +389,14 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     selected = picked[0] ?? null;
     notify();
     return made;
+  }
+
+  /** Picks of parts no longer on the page are let go; the one picked last of the rest leads. */
+  function forgetGone() {
+    const ids = allIds(page);
+    picked = pickedNow().filter((id) => ids.has(id));
+    if (selected !== null && !ids.has(selected)) selected = picked[picked.length - 1] ?? null;
+    notify();
   }
 
   function fieldNode(draft: Page, id: string): FieldNode {
@@ -965,6 +983,21 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     place: (part, drop) => layoutEdit((draft) => ops.place(draft, part, drop, { model })),
     describeDrop: (drop, moving) => ops.describeDrop(page, drop, moving),
     dropRefusal: (drop, moving) => ops.dropRefusal(page, drop, moving),
+    wrap: (ids, kind) => layoutEdit((draft) => ops.wrap(draft, ids, kind)),
+    ungroup: (id) => layoutEdit((draft) => ops.ungroup(draft, id)) !== false,
+    duplicate: (ids) => layoutEdit((draft) => ops.duplicate(draft, ids)),
+    remove(ids) {
+      const ok = apply((draft) => ops.remove(draft, ids));
+      if (ok) forgetGone();
+      return ok;
+    },
+    pick(id, options = {}) {
+      const now = pickedNow();
+      const off = !!options.add && now.includes(id);
+      picked = !options.add ? [id] : off ? now.filter((p) => p !== id) : [...now, id];
+      selected = off ? (picked[picked.length - 1] ?? null) : id;
+      notify();
+    },
 
     setLineColumns(id, columns) {
       return apply(
