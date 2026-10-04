@@ -21,7 +21,8 @@ test.describe('screen designer · record sheet', () => {
     await addField(page, 'phone', 'Phone');
     // A link to another record, pointed at its model.
     await addField(page, 'link', 'Company');
-    await panel(page).getByRole('tab', { name: 'Data' }).click();
+    // What it links to is what it offers: on Content, beside its words.
+    await panel(page).getByRole('tab', { name: 'Content' }).click();
     await panel(page).getByRole('textbox', { name: 'Links to' }).fill('company');
 
     await tile(page, 'layout:tabs').click();

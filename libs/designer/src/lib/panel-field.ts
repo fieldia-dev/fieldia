@@ -89,11 +89,11 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const fromModelNote = el('p', { class: 'fd-properties-hint fd-set-hint', hidden: '' });
   const relation = el('input', { class: 'fd-input', 'aria-label': 'Links to', placeholder: 'contact' });
   relation.addEventListener('input', () => designer.setRelation(id, relation.value));
-  const relationRow = setting(el, 'data', 'Links to', relation);
+  const relationRow = setting(el, 'content', 'Links to', relation);
   const currency = el('input', { class: 'fd-input', 'aria-label': 'Currency', maxlength: '3', placeholder: 'USD' });
   // Only a whole code: two letters on the way to three are not a currency yet.
   currency.addEventListener('input', () => currency.value.trim().length === 3 && designer.setCurrency(id, currency.value));
-  const currencyRow = setting(el, 'data', 'Currency', currency);
+  const currencyRow = setting(el, 'content', 'Currency', currency);
 
   const element = el(
     'div',
