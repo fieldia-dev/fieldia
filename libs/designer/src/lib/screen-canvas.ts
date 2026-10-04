@@ -554,52 +554,53 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   const guides = canvasGuides({ root: body, designer });
   const widths = widthMarks({ canvas: element, root: body, designer, rtl: () => doc.defaultView?.getComputedStyle(element).direction === 'rtl' });
   /**
-   * The width handle goes where the part picked is, so it is measured: in the
-   * next frame, once the whole editor has written this change, the page is
-   * laid out once — measured now, it would be laid out here and again after.
+   * What is measured goes in the next frame, once the whole editor has written
+   * this change, so the page is laid out once — measured now, it would be laid
+   * out here and again after: the width handle goes where the part picked is,
+   * and the picked field's bar, lined up with the field's far edge, is nudged
+   * back inside the canvas where that edge would put it past the near one, as
+   * over a phone's first column. The bar is read before the handle is written,
+   * and moved only when it must.
    */
   let widthsFor: DesignerState | null = null;
+  let frameAsked = false;
   let gone = false;
-  function placeWidths(state: DesignerState) {
+  let nudged = { bar: null as HTMLElement | null, by: 0 };
+  function nextFrame(state: DesignerState | null) {
+    if (state) widthsFor = state;
     const view = doc.defaultView;
-    if (!view?.requestAnimationFrame) return widths.update(state, mode === 'advanced');
-    const asked = widthsFor !== null;
-    widthsFor = state;
-    if (asked) return;
+    if (!view?.requestAnimationFrame) {
+      if (state) widths.update(state, mode === 'advanced');
+      return;
+    }
+    if (frameAsked) return;
+    frameAsked = true;
     view.requestAnimationFrame(() => {
+      frameAsked = false;
       const latest = widthsFor;
       widthsFor = null;
-      if (latest && !gone) widths.update(latest, mode === 'advanced');
+      if (gone) return;
+      const nudge = barNudge();
+      if (latest) widths.update(latest, mode === 'advanced');
+      nudge?.();
     });
   }
-  /**
-   * The picked field's bar lines up with the field's far edge, as wide as its
-   * tools are: over a narrow field near the canvas's edge, as a phone's first
-   * column is, it is nudged back inside the canvas. Read once a frame, for that
-   * one field, and written only when it moves.
-   */
-  let barAsked = false;
-  let nudged = { bar: null as HTMLElement | null, by: 0 };
-  function placeBar() {
-    const view = doc.defaultView;
-    if (!view?.requestAnimationFrame || barAsked) return;
-    barAsked = true;
-    view.requestAnimationFrame(() => {
-      barAsked = false;
-      const bar = selected === null ? null : cards.get(selected)?.bar?.element;
-      if (gone || !bar?.isConnected) return;
-      const by = nudged.bar === bar ? nudged.by : 0;
-      const at = bar.getBoundingClientRect();
-      const room = element.getBoundingClientRect();
-      const natural = at.left - by;
-      const left = Math.max(room.left + 4, Math.min(natural, room.right - 4 - at.width));
-      const next = Math.round(left - natural);
-      if (nudged.bar === bar && next === by) return;
+  /** Where the picked field's bar must move to stay inside the canvas, read now; the move, to write after. */
+  function barNudge(): (() => void) | null {
+    const bar = selected === null ? null : cards.get(selected)?.bar?.element;
+    if (!bar?.isConnected) return null;
+    const by = nudged.bar === bar ? nudged.by : 0;
+    const at = bar.getBoundingClientRect();
+    const room = element.getBoundingClientRect();
+    const natural = at.left - by;
+    const next = Math.round(Math.max(room.left + 4, Math.min(natural, room.right - 4 - at.width)) - natural);
+    if (nudged.bar === bar && next === by) return null;
+    return () => {
       nudged = { bar, by: next };
       bar.style.setProperty('--fd-bar-nudge', `${next}px`);
-    });
+    };
   }
-  const resized = doc.defaultView?.ResizeObserver ? new doc.defaultView.ResizeObserver(() => placeBar()) : null;
+  const resized = doc.defaultView?.ResizeObserver ? new doc.defaultView.ResizeObserver(() => nextFrame(null)) : null;
   resized?.observe(element);
   const drag: CanvasDrag = {
     press: (source, event, tile) => (mode === 'advanced' ? advanced : simpleDrag).press(source, event, tile),
@@ -669,8 +670,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       titleCard.classList.toggle('fd-canvas-selected', selected === null);
       header.update(page, selected, form);
       guides.update(state, mode === 'advanced');
-      placeWidths(state);
-      placeBar();
+      nextFrame(state);
       multi.update(state, mode === 'advanced');
       ruleMarks(element, page, designer);
     },
