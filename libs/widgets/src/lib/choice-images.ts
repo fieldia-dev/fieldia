@@ -1,5 +1,6 @@
 import type { Option } from '@fieldia/core';
 import { clearSelection, describeState, maker, rightToLeft, wordsFor } from './kind-parts';
+import { shownOptions } from './shuffle';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -9,17 +10,19 @@ import type { WidgetFactory } from './widgets';
  * the ends, and left is forward on a right-to-left page — with "Clear
  * selection" when it need not be answered. Several answers, when the field
  * takes several, are checkboxes, each its own stop. "Other" is not offered:
- * an answer of one's own has no picture.
+ * an answer of one's own has no picture. `options.shuffle` shows the cards
+ * in an order of the form's own.
  */
 
 /** A frame with a hill and a sun: the tile of an option without a picture. */
 const BLANK = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>';
 
-export const imageChoiceWidget: WidgetFactory = ({ form, name, field, id, document, labels, locale }) => {
+export const imageChoiceWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale }) => {
   const words = wordsFor(labels, locale);
   const make = maker(document);
   const multiple = field.type === 'selection' && field.multiple === true;
-  const options: Option[] = field.type === 'selection' ? field.options : [];
+  const written: Option[] = field.type === 'selection' ? field.options : [];
+  const options = shownOptions(written, form, name, node);
   const group = make('div', { id, class: 'fd-image-choices', role: multiple ? 'group' : 'radiogroup' });
   const cards = options.map((option) => {
     const picture = option.image ? make('img', { src: option.image, alt: '', loading: 'lazy', draggable: 'false' }) : make('span', { class: 'fd-image-card-blank' });
@@ -42,8 +45,8 @@ export const imageChoiceWidget: WidgetFactory = ({ form, name, field, id, docume
     const on = new Set(now);
     if (on.has(option.value)) on.delete(option.value);
     else on.add(option.value);
-    // In the options' order, as checkboxes keep them.
-    form.setValue(name, options.filter((o) => on.has(o.value)).map((o) => o.value));
+    // In the options' own order, as checkboxes keep them, however they are shown.
+    form.setValue(name, written.filter((o) => on.has(o.value)).map((o) => o.value));
   }
 
   let readonly = false;

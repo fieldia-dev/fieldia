@@ -32,6 +32,7 @@ import { rankingWidget } from './ranking';
 import { addressWidget } from './address';
 import { cardsWidget } from './cards';
 import { clearSelection } from './kind-parts';
+import { shownOptions } from './shuffle';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -270,8 +271,8 @@ function options(field: Field) {
   return field.type === 'selection' ? field.options : [];
 }
 
-const selectWidget: WidgetFactory = ({ form, name, field, id, document }) => {
-  const choices = options(field);
+const selectWidget: WidgetFactory = ({ form, name, field, node, id, document }) => {
+  const choices = shownOptions(options(field), form, name, node);
   const select = make(document, 'select', { id, class: 'fd-input fd-select' }, make(document, 'option', { value: '' }));
   choices.forEach((option, i) => select.append(make(document, 'option', { value: String(i) }, option.label)));
   select.addEventListener('change', () => form.setValue(name, select.value === '' ? null : choices[Number(select.value)].value));
@@ -288,8 +289,9 @@ const selectWidget: WidgetFactory = ({ form, name, field, id, document }) => {
 };
 
 function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
-  return ({ form, name, field, id, document, labels, locale }) => {
-    const choices = options(field);
+  return ({ form, name, field, node, id, document, labels, locale }) => {
+    // Shown shuffled when the page asks; "Other" comes after them all the same.
+    const choices = shownOptions(options(field), form, name, node);
     const words = labels ?? WIDGET_LABELS[locale ?? 'en'];
     const group = make(document, 'div', { id, class: `fd-choices fd-choices-${kind}`, role: kind === 'radio' ? 'radiogroup' : 'group' });
     const inputs = choices.map((option, i) => {
@@ -319,7 +321,9 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
         const chosen = inputs.findIndex((input) => input.checked);
         form.setValue(name, chosen !== -1 ? choices[chosen].value : own);
       } else {
-        form.setValue(name, [...choices.filter((_, i) => inputs[i].checked).map((option) => option.value), ...(own !== null ? [own] : [])]);
+        // In the options' own order, however they are shown.
+        const ticked = new Set(choices.filter((_, i) => inputs[i].checked));
+        form.setValue(name, [...options(field).filter((option) => ticked.has(option)).map((option) => option.value), ...(own !== null ? [own] : [])]);
       }
     }
     group.addEventListener('change', (event) => {

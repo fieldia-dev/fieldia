@@ -235,7 +235,10 @@
             "type": "field",
             "id": "q-priorities",
             "field": "priorities",
-            "widget": "ranking"
+            "widget": "ranking",
+            "options": {
+              "shuffle": true
+            }
           },
           {
             "type": "field",

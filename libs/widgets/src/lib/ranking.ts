@@ -1,5 +1,6 @@
 import type { Option } from '@fieldia/core';
 import { announcer, describeState, fillIn, maker, wordsFor } from './kind-parts';
+import { shownOptions } from './shuffle';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -9,7 +10,8 @@ import type { WidgetFactory } from './widgets';
  * cursor staying with it. Each move is said politely to screen readers. The
  * answer is the options' values in order, kept once something has moved:
  * until then the question is not answered. An order set from outside shows
- * as it is, the options it leaves out after it.
+ * as it is, the options it leaves out after it. `options.shuffle` starts the
+ * lines in an order of the form's own, so none is first for being written first.
  */
 
 interface Item {
@@ -23,10 +25,10 @@ interface Item {
 /** How far the pointer goes before a press becomes a drag. */
 const SLOP = 4;
 
-export const rankingWidget: WidgetFactory = ({ form, name, field, id, document, labels, locale }) => {
+export const rankingWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale }) => {
   const words = wordsFor(labels, locale);
   const make = maker(document);
-  const options: Option[] = field.type === 'selection' ? field.options : [];
+  const options: Option[] = shownOptions(field.type === 'selection' ? field.options : [], form, name, node);
   const list = make('ol', { class: 'fd-rank-list' });
   const voice = announcer(make);
   const element = make('div', { id, class: 'fd-ranking', role: 'group' }, list, voice.element);
