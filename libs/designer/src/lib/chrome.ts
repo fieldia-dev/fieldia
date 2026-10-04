@@ -106,6 +106,11 @@ export function designerBar(
   // Where the bar breaks when it has less room than its parts: the ways to look at the page go under the rest.
   const lineBreak = el('span', { class: 'fd-bar-break', 'aria-hidden': 'true' });
   const element = el('div', { class: 'fd-designer-bar' }, title, el('span', { class: 'fd-designer-status-box', role: 'status' }, status), el('span', { class: 'fd-spacer' }), find, undo, redo, lineBreak, ...(options.extra ?? []), checks.element, publish);
+  // What sticks under the bar while the page scrolls (the toolbox, the panel) stops below it, as tall as it is now.
+  const room = () => root.style.setProperty('--fd-bar-room', `${Math.ceil(element.getBoundingClientRect().height) + 12}px`);
+  const view = root.ownerDocument.defaultView;
+  const sized = view && 'ResizeObserver' in view ? new view.ResizeObserver(room) : null;
+  sized?.observe(element);
   const issues = el('div', { class: 'fd-alert fd-tone-danger fd-designer-issues', role: 'alert', hidden: '' });
 
   // On the document: clicking an area that cannot take focus leaves focus on
@@ -149,6 +154,7 @@ export function designerBar(
     },
     destroy() {
       doc.removeEventListener('keydown', onKey);
+      sized?.disconnect();
       checks.destroy();
     },
   };

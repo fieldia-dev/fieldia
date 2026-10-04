@@ -201,7 +201,7 @@ export const DESIGNER_CSS = /* css */ `
 /* ---- the screen editor: toolbox, canvas, panel ---- */
 .fd-screen-body { display: grid; grid-template-columns: 228px minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
 .fd-toolbox, .fd-properties, .fd-rail {
-  position: sticky; top: 76px; display: grid; gap: 6px; align-content: start; max-height: calc(100vh - 96px); overflow: auto;
+  position: sticky; top: var(--fd-bar-room, 76px); display: grid; gap: 6px; align-content: start; max-height: calc(100vh - var(--fd-bar-room, 76px) - 20px); overflow: auto;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 12px;
 }
 .fd-panel-title { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fd-muted); margin-block-end: 2px; }

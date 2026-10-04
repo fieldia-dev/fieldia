@@ -71,7 +71,7 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 /* An arrangement picked: softly tinted, with the room round it, as the mockup marks a plain group. */
 .fd-canvas .fd-canvas-arrangement.fd-canvas-selected { background: color-mix(in srgb, var(--fd-accent) 4%, transparent); border-radius: 6px; box-shadow: 0 0 0 8px color-mix(in srgb, var(--fd-accent) 4%, transparent); }
 /* The bar at the top of the canvas as it scrolls, under the designer's own bar as the rails are, taking no room. */
-.fd-multi-dock { position: sticky; top: 76px; z-index: 40; height: 0; display: flex; justify-content: center; align-items: flex-start; }
+.fd-multi-dock { position: sticky; top: var(--fd-bar-room, 76px); z-index: 40; height: 0; display: flex; justify-content: center; align-items: flex-start; }
 .fd-multi {
   display: flex; align-items: center; gap: 4px; margin-block-start: -12px; padding: 5px 6px 5px 12px; max-width: calc(100% - 24px); overflow-x: auto;
   background: var(--fd-text); color: var(--fd-surface); border-radius: 10px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25); font-size: 13px; white-space: nowrap;

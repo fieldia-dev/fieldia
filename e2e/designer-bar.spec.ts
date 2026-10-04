@@ -50,3 +50,18 @@ test('at a phone’s width: the views three to a row, none alone, and a question
   expect(words.width).toBeGreaterThan(own.width - 80);
   await screen(page, 'designer-survey-phone-card', { viewport: true });
 });
+
+test('the rail and the panel stop under the bar as the page scrolls, however tall the bar is', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 700 });
+  await page.goto('/screen/?start=layout');
+  await expect(page.locator('.fd-designer')).toBeVisible();
+  // Mid-page: at the very end, a section that ends pushes what sticks in it up with it, as sticking does.
+  await page.mouse.wheel(0, 500);
+  await page.waitForTimeout(300);
+  const bar = (await page.locator('.fd-designer-bar').boundingBox())!;
+  for (const part of ['.fd-rail', '.fd-properties']) {
+    const box = (await page.locator(part).first().boundingBox())!;
+    expect(box.y, `${part} under the bar`).toBeGreaterThanOrEqual(bar.y + bar.height);
+  }
+  await screen(page, 'designer-bar-scrolled', { viewport: true });
+});
