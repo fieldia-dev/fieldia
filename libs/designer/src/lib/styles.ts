@@ -614,7 +614,7 @@ export const DESIGNER_CSS = /* css */ `
   .fd-tools { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
 }
 @media (prefers-reduced-motion: reduce) { .fd-properties.fd-flash { animation: none; } .fd-tool-caret { transition: none; } }
-${DESIGNER_KINDS_CSS}`;
+`;
 
 const STYLE_ID = 'fieldia-designer-styles';
 
@@ -622,6 +622,6 @@ export function installDesignerStyles(document: Document): void {
   if (document.getElementById(STYLE_ID)) return;
   const style = document.createElement('style');
   style.id = STYLE_ID;
-  style.textContent = DESIGNER_CSS;
+  style.textContent = DESIGNER_CSS + DESIGNER_KINDS_CSS;
   (document.head ?? document.documentElement).append(style);
 }

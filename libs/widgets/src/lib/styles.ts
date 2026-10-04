@@ -650,7 +650,7 @@ export const FIELDIA_CSS = /* css */ `
 .fd-form-dialog-body:not(:has(.fd-sheet-layout)) { background: var(--fd-surface); padding: 16px 20px 20px; }
 .fd-form-dialog-foot { padding: 12px 16px; border-block-start: 1px solid var(--fd-border); background: var(--fd-surface); margin: 0; }
 @media (prefers-reduced-motion: reduce) { .fd-form *, .fd-form *::before, .fd-form *::after { transition: none !important; } }
-${KINDS_CSS}`;
+`;
 
 const STYLE_ID = 'fieldia-styles';
 
@@ -659,6 +659,6 @@ export function installStyles(document: Document): void {
   if (document.getElementById(STYLE_ID)) return;
   const style = document.createElement('style');
   style.id = STYLE_ID;
-  style.textContent = FIELDIA_CSS;
+  style.textContent = FIELDIA_CSS + KINDS_CSS;
   (document.head ?? document.documentElement).append(style);
 }
