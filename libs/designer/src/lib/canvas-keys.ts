@@ -54,7 +54,7 @@ export interface CanvasKeys {
   say(words: string): void;
 }
 
-const KEYS: [string, string][] = [
+export const KEYS: [string, string][] = [
   ['Alt+↑ / Alt+↓', 'Move it before or after the part next to it'],
   ['Alt+← / Alt+→', 'Put it beside the part before or after it'],
   ['Alt+Shift+← / →', 'Make it a column narrower or wider'],

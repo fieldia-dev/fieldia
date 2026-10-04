@@ -12,6 +12,8 @@ import { kindById } from './kinds';
 import { kindPreview } from './kind-previews';
 import { openMenu, type MenuItem } from './menu';
 import { lookSheet } from './panel-look-sheet';
+import { clipboardKeys } from './clipboard-keys';
+import { shortcutKeys } from './shortcuts-sheet';
 import { rail as sideRail } from './rail';
 import { inlineSettings } from './inline-settings';
 import { cardRules } from './rules-card';
@@ -110,7 +112,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     titleLabel: 'Form title',
     placeholder: 'Untitled form',
     extra: [trial.toggle],
-    find: () => [...start.items(), ...findItems(), ...trial.items(), ...words.items(), ...ruleList.items(), ...json.items()],
+    find: () => [...start.items(), ...findItems(), ...trial.items(), ...words.items(), ...ruleList.items(), ...json.items(), ...shortcuts.items()],
     // A check about a question's words or options: its card is open by now, the cursor goes there.
     goTo(id, part) {
       const card = root.querySelector(`.fd-q[data-node="${id}"]`);
@@ -183,6 +185,8 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   root.append(bar.element, bar.issues, body, trial.element, json.element);
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
   const ruleList = rulesOverview({ el, doc, designer, root, body, modes: trial.toggle });
+  const clip = clipboardKeys({ root, designer, active: () => !trial.trying && !json.open });
+  const shortcuts = shortcutKeys({ el, root, survey: true, active: () => !trial.trying && !json.open });
   // The form's look: from the bar, in a sheet at the side; the cards wear it.
   const look = lookSheet({ el, designer, root, bar: bar.element, wearer: editor });
 
@@ -676,6 +680,9 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       stopPuttingDown();
       bar.destroy();
       drag.destroy();
+      side.destroy();
+      clip.destroy();
+      shortcuts.destroy();
       doc.removeEventListener('keydown', onKey);
       for (const view of cardViews.values()) view.destroy();
       trial.destroy();

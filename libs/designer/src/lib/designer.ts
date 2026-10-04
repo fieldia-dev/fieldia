@@ -38,6 +38,9 @@ import { translationCommands } from './translations';
 import { pageJsonCommands, type PageJsonResult } from './page-json';
 import { rulesCommands, type AnswerRulePatch } from './rules-commands';
 import { keepWhatRulesRead } from './rules-reads';
+import * as clipboard from './clipboard-ops';
+import * as moves from './outline-moves';
+import { outlineRows } from './outline-rows';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -361,6 +364,29 @@ export interface Designer extends HeaderCommands, ListCommands {
   replacePage(page: Page): boolean;
   /** The app's own assistant, when the app gave the designer one. */
   assistant(): DesignerAssistant | null;
+  // outline lane
+  /** Pick these parts at once, in this order, the last leading; any not on the page, or named twice, is left out. */
+  pickMany(ids: string[]): void;
+  /**
+   * Move parts in reading order into a group, a tab, tabs or a survey's page,
+   * before the part now at `index` there (the parts moved counted where they
+   * are), as one edit; they stay picked. Returns them, in reading order.
+   */
+  moveParts(ids: string[], parentId: string, index: number): string[] | false;
+  /** Why parts cannot be moved into `parentId`, such as “A tab holds parts, not other tabs”; null when they can. */
+  moveRefusal(ids: string[], parentId: string): string | null;
+  /** Where a move would put them, in the words the drag chip says: “into “Home address”, before “City””. */
+  describeMove(ids: string[], parentId: string, index: number): string;
+  /** The parts, with their fields' definitions, as JSON for the clipboard; false when none is a part of the page. */
+  copyParts(ids: string[]): string | false;
+  /**
+   * Paste the parts a copy holds, as one edit: after the part picked, into the
+   * group, tab or page picked, or at the end. Ids are new; a field whose name
+   * is taken takes a free one, and what its rules read follows it. Returns
+   * the parts pasted, picked, and how many rules were left off for reading a
+   * field the page has not got.
+   */
+  pasteParts(text: string): { ids: string[]; dropped: number } | false;
 }
 
 /** One of the app's lists of choices, by the name its data source answers to, and the words a person picks it by. */
@@ -1241,6 +1267,35 @@ export function createDesigner(options: {
       return true;
     },
     assistant: () => options.assistant ?? null,
+    // outline lane
+    pickMany(ids) {
+      const there = new Set([...allIds(page), ...outlineRows(page).map((row) => row.id)]);
+      picked = [...new Set(ids)].filter((id) => there.has(id));
+      selected = picked[picked.length - 1] ?? null;
+      notify();
+    },
+    moveParts(ids, parentId, index) {
+      const lead = selected;
+      const moved = layoutEdit((draft) => moves.moveParts(draft, ids, parentId, index));
+      // The part that led the pick still leads it.
+      if (moved && lead && moved.includes(lead)) {
+        selected = lead;
+        notify();
+      }
+      return moved;
+    },
+    moveRefusal: (ids, parentId) => moves.moveRefusal(page, ids, parentId),
+    describeMove: (ids, parentId, index) => moves.describeMove(page, ids, parentId, index),
+    copyParts: (ids) => clipboard.copyParts(page, ids) ?? false,
+    pasteParts(text) {
+      let pasted: { ids: string[]; dropped: number } | null = null;
+      if (!apply((draft) => void (pasted = clipboard.pasteParts(draft, text, pickedNow(), { model }))) || !pasted) return false;
+      const done: { ids: string[]; dropped: number } = pasted;
+      picked = [...done.ids];
+      selected = picked[picked.length - 1] ?? null;
+      notify();
+      return done;
+    },
   };
   return designer;
 }

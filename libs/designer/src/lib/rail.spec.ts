@@ -30,6 +30,30 @@ describe('the rail: Add, Outline and Data', () => {
     expect(shown(host.querySelector('.fd-outline'))).toBe(true);
   });
 
+  it('is a row of tabs a keyboard knows: the one open takes Tab, the arrows open the next', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountSurveyEditor(host, { designer: createDesigner({ page: blankPage('survey', 'Feedback') }) });
+    const tabIndexes = () => (['add', 'outline', 'data'] as const).map((name) => tab(host, name).tabIndex);
+    expect(tabIndexes()).toEqual([0, -1, -1]);
+    expect(tab(host, 'outline').getAttribute('aria-controls')).toBe(host.querySelector('.fd-outline')?.id);
+    tab(host, 'add').focus();
+    const press = (key: string) => document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+    press('ArrowRight');
+    expect(document.activeElement).toBe(tab(host, 'outline'));
+    expect(tab(host, 'outline').getAttribute('aria-selected')).toBe('true');
+    expect(shown(host.querySelector('.fd-outline'))).toBe(true);
+    expect(tabIndexes()).toEqual([-1, 0, -1]);
+    press('End');
+    expect(document.activeElement).toBe(tab(host, 'data'));
+    press('ArrowRight');
+    expect(document.activeElement).toBe(tab(host, 'add'));
+    press('ArrowLeft');
+    expect(document.activeElement).toBe(tab(host, 'data'));
+    press('Home');
+    expect(document.activeElement).toBe(tab(host, 'add'));
+  });
+
   it('outlines a survey: its pages and their questions, marking what shows only for some answers; a pick opens it', () => {
     const host = document.createElement('div');
     document.body.append(host);
@@ -47,7 +71,7 @@ describe('the rail: Add, Outline and Data', () => {
     expect(host.querySelector(`.fd-outline [data-pick="${coming}"] .fd-outline-when`)).toBeNull();
     pick(host, 'Why not?');
     expect(designer.getState().selected).toBe(why);
-    expect(host.querySelector(`.fd-outline [data-pick="${why}"]`)?.getAttribute('aria-current')).toBe('true');
+    expect(host.querySelector(`.fd-outline [data-pick="${why}"]`)?.getAttribute('aria-selected')).toBe('true');
     // Outline still on show, following what is picked.
     expect(tab(host, 'outline').getAttribute('aria-selected')).toBe('true');
   });
@@ -116,6 +140,26 @@ describe('the rail on a record’s screen', () => {
     expect(email().value).toBe('hello@blue.example');
     (host.querySelector('.fd-data [data-sample="none"]') as HTMLButtonElement).click();
     expect(email().value).toBe('');
+  });
+
+  it('picks several from the outline in Advanced, and one at a time in Simple', () => {
+    const { host, designer, email } = sheet();
+    designer.addModelField('credit_limit', { parent: 'section-1' });
+    tab(host, 'outline').click();
+    const click = (id: string, shiftKey = false) => (host.querySelector(`.fd-outline [data-pick="${id}"]`) as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey }));
+    const credit = designer.getState().selected as string;
+    (host.querySelector('.fd-mode-button[data-mode="simple"]') as HTMLButtonElement).click();
+    click(email);
+    click(credit, true);
+    expect(designer.getState().picked).toEqual([credit]);
+    (host.querySelector('.fd-mode-button[data-mode="advanced"]') as HTMLButtonElement).click();
+    click(email);
+    click(credit, true);
+    expect(designer.getState().picked).toEqual([email, credit]);
+    // The canvas's bar for several picked shows them too.
+    expect((host.querySelector('.fd-multi-count') as HTMLElement).textContent).toBe('2 picked');
+    // The mode is kept in this browser: back to Simple for the tests after.
+    (host.querySelector('.fd-mode-button[data-mode="simple"]') as HTMLButtonElement).click();
   });
 
   it('outlines a list by its columns, a pick picking the column', () => {

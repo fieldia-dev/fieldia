@@ -87,14 +87,14 @@ export function columnsValue(wide: number, medium?: number, narrow?: number): Co
 }
 
 /** A row's columns, one per part (four at most); the narrower widths never more than that. */
-function setRowColumns(section: SectionNode, count: number): void {
+export function setRowColumns(section: SectionNode, count: number): void {
   const wide = Math.max(1, Math.min(4, count));
   const given = section.columns;
   section.columns = typeof given === 'object' ? columnsValue(wide, given.medium && Math.min(given.medium, wide), given.narrow && Math.min(given.narrow, wide)) : wide as ColumnCount;
 }
 
 /** Take a part out of where it is; a row it leaves closes up. */
-function detach(page: Page, id: string): void {
+export function detach(page: Page, id: string): void {
   const at = locate(page, id);
   if (!at) return;
   const wasRow = isRow(page, at.parent);
@@ -374,7 +374,7 @@ export function ungroup(page: Page, id: string): string[] {
 }
 
 /** What a copy's id starts with. */
-const prefixOf = (node: Part): string => (node.type === 'field' ? 'q' : isWrapper(node) ? 'side' : node.type === 'text' && node.style === 'heading' ? 'heading' : node.type);
+export const prefixOf = (node: Part): string => (node.type === 'field' ? 'q' : isWrapper(node) ? 'side' : node.type === 'text' && node.style === 'heading' ? 'heading' : node.type);
 
 /** A copy made new: ids of its own, and fields of its own, as a copied question has. */
 function renew(page: Page, node: Part, name: (prefix: string) => string): Part {
