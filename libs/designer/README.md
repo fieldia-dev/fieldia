@@ -37,4 +37,80 @@ import { ScreenEditor, SurveyEditor } from '@fieldia/designer/react';
 In Vue they are `SurveyEditor` and `ScreenEditor` too; in Angular,
 `<fieldia-survey-editor [designer]>` and `<fieldia-screen-editor [designer]>`.
 
+## What an app adds
+
+### Kinds of its own
+
+An app adds kinds of field beside Fieldia's: each is the field a new one starts
+as, the widget that draws it, and — if it likes — an icon, a toolbox group,
+settings of its own and how a closed survey card reads. It shows in the toolbox
+(under "Your kinds" unless it names a group), in "Shown as" wherever it fits,
+with its settings on the picked field and on the panel's Content tab, and the
+app's widget draws it on the canvas, on the cards and in Try it. A field made as
+one is known again by its widget, so a kind whose id is one of Fieldia's, or
+whose widget another kind uses, is refused when the designer is made.
+
+```ts
+import type { AppKind } from '@fieldia/designer';
+
+const iban: AppKind = {
+  id: 'iban',
+  label: 'IBAN',
+  icon: '<path d="M3 9.5L12 4l9 5.5M5 10v7M19 10v7M3 20h18"/>', // SVG on a 24-unit grid
+  field: (label) => ({ type: 'char', label }),
+  // widget: 'iban' — its id unless it says; fits(field) — where "Shown as" offers it
+  settings: ({ document, set }) => {
+    const country = document.createElement('select');
+    country.setAttribute('aria-label', 'Country');
+    country.append(new Option('Any country', ''), new Option('Germany', 'DE'), new Option('Egypt', 'EG'));
+    country.addEventListener('change', () => set({ country: country.value || null })); // kept on node.options
+    return { element: country, refresh: (_page, node) => (country.value = String(node.options?.['country'] ?? '')) };
+  },
+};
+
+const designer = createDesigner({ page, kinds: [iban] });
+// The app's widget, registered as the viewer takes them: under `type.widget`.
+mountSurveyEditor(host, { designer, widgets: { 'char.iban': ibanWidget } });
+mountViewer(form, { page: designer.getPage(), widgets: { 'char.iban': ibanWidget } });
+```
+
+### Templates
+
+A blank survey or screen offers "Start from a template": a few of Fieldia's
+(a survey: feedback, event registration, a job application; a screen: a
+contact, an order request) and the app's own after them. Picking one puts it in
+place as one edit, keeping the page's id and where its answers go; Undo brings
+the blank page back. A template is a whole page, as the viewer takes it.
+
+```ts
+const designer = createDesigner({
+  page: blankPage('screen', 'Supplier'),
+  templates: [{ id: 'site-check', title: 'Site check', description: 'What an inspector notes on a visit.', page: siteCheckPage }],
+});
+// Or for one editor: mountScreenEditor(host, { designer, templates: [...] }).
+designer.replacePage(siteCheckPage); // the same, from code: one edit, refused in words if it is not a page
+```
+
+### The app's own assistant
+
+Fieldia ships no AI. An app that has an assistant hands it over: a box to
+describe the form then sits in a blank page's empty state, and "Ask the
+assistant…" is in Find anything once the page has parts. Its answer is checked
+as any page is (`checkPage`, `validatePage`), put in place as one edit, and
+what changed is said with Undo beside it; a wait can be cancelled, and an answer
+after that is let go. Without an assistant, nothing about one shows.
+
+```ts
+const assistant: DesignerAssistant = {
+  name: 'Acme assistant',               // shown beside its box
+  note: 'Uses your workspace’s model.', // a line under it
+  async describe({ prompt, page, signal }) {
+    const reply = await fetch('/api/forms/describe', { method: 'POST', body: JSON.stringify({ prompt, page }), signal });
+    if (!reply.ok) throw new Error('The form service is busy, try again in a minute'); // said in the editor
+    return reply.json(); // a whole page: a new one, or `page` changed
+  },
+};
+createDesigner({ page, assistant }); // or mountSurveyEditor(host, { designer, assistant })
+```
+
 MIT licensed.

@@ -2,6 +2,8 @@ import type { Field, Page } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor } from '@fieldia/designer';
 import type { Skin } from '@fieldia/viewer';
 import { APP_LISTS, sampleDataSource } from '../shared/sample-data';
+import { APP_KINDS, APP_WIDGETS } from '../shared/app-kinds';
+import { demoAssistant } from '../shared/assistant';
 import layoutPage from '../../examples/pages/layout.page.json';
 
 /**
@@ -10,6 +12,7 @@ import layoutPage from '../../examples/pages/layout.page.json';
  * with the customer's model behind it, its fields first in the toolbox, and
  * `?start=list` the customers' list, on the same model, and `?start=layout`
  * the "New employee" page: groups side by side, arrangements, tabs and blocks.
+ * `?assistant-delay=` sets how long the demo assistant takes, in ms.
  */
 const customer: Record<string, Field> = {
   name: { type: 'char', label: 'Name', required: true },
@@ -61,16 +64,19 @@ const start = params.get('start');
 const model = start === 'sheet' || start === 'list' ? customer : undefined;
 const first =
   start === 'blank' ? blankPage('screen', 'New screen') : start === 'sheet' ? blankPage('sheet', 'Customer') : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : siteVisit();
-const designer = createDesigner({ page: first, store, model, lists: APP_LISTS });
+// The app's own kind, an IBAN, and the widget that draws it.
+const designer = createDesigner({ page: first, store, model, lists: APP_LISTS, kinds: APP_KINDS });
 // The app's lists' choices, for Try it.
 const dataSource = sampleDataSource();
 const skin = (params.get('skin') as Skin) ?? 'outlined';
+// A stand-in for the app's own assistant.
+const assistant = demoAssistant({ delay: Number(params.get('assistant-delay') ?? 1200) });
 const app = document.getElementById('app') as HTMLElement;
-const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource }), reopen };
+const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource, widgets: APP_WIDGETS, assistant }), reopen };
 /** Close the editor and open the page again from the store, as an app does the next day. */
 async function reopen() {
   demo.handle.destroy();
-  demo.designer = await createDesigner.open(demo.designer.getPage().id, store, { model, lists: APP_LISTS });
-  demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource });
+  demo.designer = await createDesigner.open(demo.designer.getPage().id, store, { model, lists: APP_LISTS, kinds: APP_KINDS });
+  demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource, widgets: APP_WIDGETS, assistant });
 }
 Object.assign(window, { fieldiaDesigner: demo });

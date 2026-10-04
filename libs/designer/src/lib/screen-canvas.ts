@@ -1,6 +1,6 @@
 import { createForm, type FieldNode, type Form, type LayoutNode, type Page, type SectionNode, type TabsNode } from '@fieldia/core';
 import { applyLook, labelPlace, planSection, type Place } from '@fieldia/viewer';
-import { createWidget, type Widget } from '@fieldia/widgets';
+import { createWidget, type Widget, type WidgetFactory } from '@fieldia/widgets';
 import { advancedDrag } from './canvas-advanced';
 import { blockViews } from './canvas-blocks';
 import { canvasDrag, type CanvasDrag } from './canvas-drag';
@@ -50,6 +50,8 @@ export interface ScreenCanvasOptions {
   openAdvanced?(): void;
   /** Something from the toolbox was let go over a section, at a place among its fields. */
   dropTool(spec: string, section: string, index: number): void;
+  /** The app's own widgets, by `type` or `type.widget`. */
+  widgets?: Record<string, WidgetFactory>;
 }
 
 export interface ScreenCanvas {
@@ -243,7 +245,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     card.painted = key;
     card.widget?.destroy?.();
     const f = form();
-    const widget = createWidget({ form: f, name: node.field, field: def, node, id: `fd-canvas-${node.id}`, document: doc });
+    const widget = createWidget({ form: f, name: node.field, field: def, node, id: `fd-canvas-${node.id}`, document: doc }, options.widgets);
     widget.update({ value: f.getState().values[node.field], values: f.getState().values, readonly: false, required: def.required === true, invalid: false });
     card.widget = widget;
     card.widgetBox.replaceChildren(widget.element);

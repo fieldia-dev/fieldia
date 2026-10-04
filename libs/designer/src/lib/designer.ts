@@ -22,7 +22,10 @@ import { findHeaderPart, headerCommands, type HeaderCommands } from './header-co
 import { listCommands, type ListCommands } from './list-commands';
 import { kindCommands, type OptionDetails } from './kind-commands';
 import { fixCheck, pageChecks, type PageCheck } from './page-checks';
-import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, orList, storedAs, type LineColumn, type QuestionKind } from './kinds';
+import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, orList, registerKinds, storedAs, type LineColumn, type QuestionKind } from './kinds';
+import type { AppKind } from './app-kinds';
+import { replaceWith, templatesFor, type PageTemplate } from './templates';
+import type { DesignerAssistant } from './assistant';
 import * as ops from './layout-ops';
 import type { BlockKind, Drop, NewPart } from './layout-ops';
 import * as settings from './layout-settings';
@@ -51,6 +54,9 @@ import { keepWhatRulesRead } from './rules-reads';
 
 export { columnKind, kindFits, kindOfField, kindsFor, QUESTION_KINDS, SCREEN_KINDS, storedAs } from './kinds';
 export type { LineColumn, QuestionKind } from './kinds';
+export type { AppKind, AppKindContext, AppKindPreviewContext, AppKindSettings } from './app-kinds';
+export { isBlank, SCREEN_TEMPLATES, SURVEY_TEMPLATES, type PageTemplate } from './templates';
+export { askAssistant, type AssistantResult, type AssistantRun, type DesignerAssistant } from './assistant';
 export type { HeaderCommands, HeaderPartKind, HeaderPartPatch } from './header-commands';
 export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-commands';
 export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-checks';
@@ -346,6 +352,15 @@ export interface Designer extends HeaderCommands, ListCommands {
   /** One answer rule changed: a value sets what it asks, `null` takes that away. Typing in one box is one undo step. */
   updateAnswerRule(id: string, index: number, patch: AnswerRulePatch): boolean;
   removeAnswerRule(id: string, index: number): boolean;
+  // extend lane
+  /** The app's own kinds, as kinds, in the order the app gave them. */
+  appKinds(): QuestionKind[];
+  /** The templates this page can start from: Fieldia's for a survey or a screen, then the app's made the same way. */
+  templates(): PageTemplate[];
+  /** A whole page in place of this one, as one edit — a template, or what an assistant made — keeping this page's id and where its answers go. Refused, saying why, for one that is not a page, or is for the other editor. */
+  replacePage(page: Page): boolean;
+  /** The app's own assistant, when the app gave the designer one. */
+  assistant(): DesignerAssistant | null;
 }
 
 /** One of the app's lists of choices, by the name its data source answers to, and the words a person picks it by. */
@@ -357,10 +372,27 @@ export interface AppList {
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
-const kindOf = kindById;
-
-export function createDesigner(options: { page: Page; store?: PageStore; versions?: PublishedVersion[]; model?: Record<string, Field>; lists?: AppList[] }): Designer {
+export function createDesigner(options: {
+  page: Page;
+  store?: PageStore;
+  versions?: PublishedVersion[];
+  model?: Record<string, Field>;
+  lists?: AppList[];
+  /** The app's own kinds of field, offered after Fieldia's. One whose id or widget is taken is refused. */
+  kinds?: readonly AppKind[];
+  /** The app's own templates, offered after Fieldia's to a blank page made the same way. */
+  templates?: readonly PageTemplate[];
+  /** The app's own assistant, which makes a page from what a person describes. Without one, nothing about it shows. */
+  assistant?: DesignerAssistant;
+}): Designer {
   const store = options.store;
+  const appKinds = registerKinds(options.kinds ?? []);
+  /** A kind this designer offers: Fieldia's, or one of this app's. */
+  const kindOf = (id: string): QuestionKind => {
+    const kind = appKinds.find((k) => k.id === id) ?? kindById(id);
+    if (kind.app && !appKinds.includes(kind)) throw new Error(`Unknown question kind "${id}"`);
+    return kind;
+  };
   const model = clone(options.model ?? {});
   /** A field the backend already has: its definition is the model's, not the designer's. */
   const fromModel = (name: string) => Object.prototype.hasOwnProperty.call(model, name);
@@ -561,10 +593,10 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       const found = findNode(page, id);
       if (!found || found.node.type !== 'field') return [];
       const name = found.node.field;
-      const offered = kindsFor(page.fields[name], { fromModel: fromModel(name), survey: page.data.kind === 'responses' });
+      const offered = kindsFor(page.fields[name], { fromModel: fromModel(name), survey: page.data.kind === 'responses', app: appKinds });
       // The kind it is shown as now is always one, even where the page would not offer it to add (a photo on a form).
       const now = kindOfField(page.fields[name], found.node);
-      return now && !offered.some((k) => k.id === now) ? [kindById(now), ...offered] : offered;
+      return now && !offered.some((k) => k.id === now) ? [kindOf(now), ...offered] : offered;
     },
     getState: state,
     subscribe(listener) {
@@ -685,7 +717,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
         if (fromModel(node.field)) {
           // What the backend stores stays as it is: only the editor changes.
           if (!kindFits(kind, old)) {
-            const fitting = kindsFor(old, { fromModel: true, survey: draft.data.kind === 'responses' }).map((k) => k.label);
+            const fitting = kindsFor(old, { fromModel: true, survey: draft.data.kind === 'responses', app: appKinds }).map((k) => k.label);
             throw new Refusal(`${old.label} is stored as ${storedAs(old)} in the model, so it can only be shown as ${orList(fitting)}`);
           }
           if (kind.widget) node.widget = kind.widget;
@@ -1198,14 +1230,25 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     setWidths: (widths) => apply((draft) => settings.setWidths(draft, widths)),
     // rules lane
     ...rulesCommands({ apply, getPage: () => page, fromModel }),
+    // extend lane
+    appKinds: () => [...appKinds],
+    templates: () => templatesFor(page, options.templates),
+    replacePage(next) {
+      if (!apply((draft) => replaceWith(draft, next))) return false;
+      selected = null;
+      picked = [];
+      notify();
+      return true;
+    },
+    assistant: () => options.assistant ?? null,
   };
   return designer;
 }
 
 /** Open a page from a store: its latest draft, or else its latest version. */
-createDesigner.open = async (id: string, store: PageStore, options: { model?: Record<string, Field>; lists?: AppList[] } = {}): Promise<Designer> => {
+createDesigner.open = async (id: string, store: PageStore, options: { model?: Record<string, Field>; lists?: AppList[]; kinds?: readonly AppKind[] } = {}): Promise<Designer> => {
   const { draft, versions } = await store.load(id);
   const page = draft ?? versions[versions.length - 1]?.page;
   if (!page) throw new Error(`The store has no page "${id}"`);
-  return createDesigner({ page, store, versions, model: options.model, lists: options.lists });
+  return createDesigner({ page, store, versions, model: options.model, lists: options.lists, kinds: options.kinds });
 };

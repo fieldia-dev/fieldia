@@ -1,4 +1,5 @@
 import type { Field, FieldNode, Option } from '@fieldia/core';
+import { checkAppKinds, widgetOf, type AppKind } from './app-kinds';
 
 /**
  * The kinds of field the designer makes, and which of them suit a field that
@@ -15,6 +16,8 @@ export interface QuestionKind {
   widget?: string;
   /** Where the screen editor's palette lists it; a kind for records is refused in a survey. */
   group?: 'records' | 'more';
+  /** An app's own kind, as the app gave it. */
+  app?: AppKind;
 }
 
 const firstOption = (): Option[] => [{ value: 'option_1', label: 'Option 1' }];
@@ -74,8 +77,15 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
   { id: 'image', label: 'Image', group: 'more', field: (label) => ({ type: 'image', label }) },
 ];
 
-/** The kind a field was made as, from its type and widget; null for one no kind makes. */
+/** The kind a field was made as, from its type and widget — an app's kind by the widget that draws it; null for one no kind makes. */
 export function kindOfField(field: Field, node: FieldNode): string | null {
+  if (node.widget) {
+    for (const kind of APP_KINDS.values()) if (kind.widget === node.widget && kind.field(field.label).type === field.type) return kind.id;
+  }
+  return builtInKindOf(field, node);
+}
+
+function builtInKindOf(field: Field, node: FieldNode): string | null {
   switch (field.type) {
     case 'char':
       return node.widget === 'email' ? 'email' : node.widget === 'phone' ? 'phone' : node.widget === 'url' ? 'website' : node.widget === 'tags' ? 'keywords' : 'short-answer';
@@ -150,16 +160,35 @@ export function columnKind(field: Field): LineColumn['kind'] {
 
 const ALL_KINDS = (): readonly QuestionKind[] => [...QUESTION_KINDS, ...SCREEN_KINDS];
 
-/** A kind by its id. */
+/**
+ * The apps' kinds, by id: every one registered stays known, so a field made
+ * as one is known again on any page, and named in the words of a change.
+ * Which are offered is each designer's own.
+ */
+const APP_KINDS = new Map<string, QuestionKind>();
+
+/** An app's kinds added to those the designer knows, as kinds. Throws, saying why, for one that cannot be told apart from the rest. */
+export function registerKinds(kinds: readonly AppKind[]): QuestionKind[] {
+  checkAppKinds(kinds, ALL_KINDS(), [...APP_KINDS.values()]);
+  const made = kinds.map((app): QuestionKind => ({ id: app.id, label: app.label, field: (label) => app.field(label), widget: widgetOf(app), app }));
+  for (const kind of made) APP_KINDS.set(kind.id, kind);
+  return made;
+}
+
+/** An app's kind's icon, by its id: SVG markup, or nothing. */
+export const appKindIcon = (id: string): string | undefined => APP_KINDS.get(id)?.app?.icon;
+
+/** A kind by its id: Fieldia's, or an app's. */
 export function kindById(id: string): QuestionKind {
-  const kind = ALL_KINDS().find((k) => k.id === id);
+  const kind = ALL_KINDS().find((k) => k.id === id) ?? APP_KINDS.get(id);
   if (!kind) throw new Error(`Unknown question kind "${id}"`);
   return kind;
 }
 
-/** Whether a kind shows a field without changing what it holds: same type, one answer or many alike; a plain number for whole numbers too. */
+/** Whether a kind shows a field without changing what it holds: same type, one answer or many alike; a plain number for whole numbers too. An app's kind fits where it says. */
 export function kindFits(kind: QuestionKind, field: Field): boolean {
   const made = kind.field(field.label);
+  if (kind.app) return kind.app.fits ? kind.app.fits(field) : made.type === field.type;
   // Pictures to choose from, one or several.
   if (kind.id === 'image-choice') return field.type === 'selection';
   if (made.type === 'selection' && field.type === 'selection') return !!made.multiple === !!field.multiple;
@@ -169,10 +198,11 @@ export function kindFits(kind: QuestionKind, field: Field): boolean {
 
 /**
  * The kinds a field can be shown as: for a field from the model, those that
- * fit what it holds; otherwise all of them. A survey offers no kinds for records.
+ * fit what it holds; otherwise all of them. A survey offers no kinds for
+ * records. The app's own kinds (`app`) come after Fieldia's.
  */
-export function kindsFor(field: Field, options: { fromModel: boolean; survey: boolean }): QuestionKind[] {
-  const offered = options.survey ? QUESTION_KINDS : ALL_KINDS();
+export function kindsFor(field: Field, options: { fromModel: boolean; survey: boolean; app?: readonly QuestionKind[] }): QuestionKind[] {
+  const offered = [...(options.survey ? QUESTION_KINDS : ALL_KINDS()), ...(options.app ?? [])];
   return options.fromModel ? offered.filter((k) => kindFits(k, field)) : [...offered];
 }
 

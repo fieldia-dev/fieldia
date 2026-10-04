@@ -1,5 +1,6 @@
 import type { FieldNode } from '@fieldia/core';
 import { blockIcon } from './canvas-icons';
+import { APP_GROUP } from './app-kinds';
 import type { ElementFactory } from './chrome';
 import type { ModelField, QuestionKind } from './designer';
 import { designerIcon } from './icons';
@@ -40,6 +41,23 @@ export const TOOLBOX_GROUPS: readonly [string, readonly string[]][] = [
   ['Records', ['link', 'links', 'lines']],
   ['More', ['rich-text', 'image', 'file', 'signature', 'address', 'repeating']],
 ];
+
+/**
+ * The groups for these kinds: Fieldia's, then the app's own — each of its
+ * kinds under the group it names, "Your kinds" unless it names one; a group
+ * Fieldia has takes it at its end.
+ */
+export function toolboxGroups(kinds: readonly QuestionKind[]): [string, string[]][] {
+  const groups: [string, string[]][] = TOOLBOX_GROUPS.map(([title, ids]) => [title, [...ids]]);
+  for (const kind of kinds) {
+    if (!kind.app) continue;
+    const title = kind.app.group?.trim() || APP_GROUP;
+    const group = groups.find(([name]) => name === title);
+    if (group) group[1].push(kind.id);
+    else groups.push([title, [kind.id]]);
+  }
+  return groups;
+}
 
 export function toolbox(options: ToolboxOptions): ToolboxHandle {
   const { el, doc } = options;
@@ -86,7 +104,7 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
 
   const fromModel = group('model', 'From the model');
   fromModel.element.classList.add('fd-tool-group-model');
-  const kindGroups = TOOLBOX_GROUPS.map(([title, ids]) => {
+  const kindGroups = toolboxGroups(options.kinds).map(([title, ids]) => {
     const g = group(title, title);
     for (const id of ids) {
       const kind = offered.get(id);

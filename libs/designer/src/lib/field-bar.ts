@@ -5,7 +5,7 @@ import { designerIcon } from './icons';
 import { kindById, kindOfField, storedAs } from './kinds';
 import { openMenu, type MenuItem } from './menu';
 import { findField } from './page-tree';
-import { TOOLBOX_GROUPS } from './toolbox';
+import { toolboxGroups } from './toolbox';
 
 /**
  * The bar on the field being edited: what changes most, one press away — how
@@ -66,7 +66,7 @@ export function fieldBar(options: FieldBarOptions): FieldBar {
     // Grouped as the toolbox groups them, when there is more than one group's worth.
     const items: MenuItem[] = designer.isFromModel(id)
       ? fitting.map((k) => ({ id: k.id, label: k.label, icon: k.id, checked: k.id === current }))
-      : TOOLBOX_GROUPS.flatMap(([title, ids]) =>
+      : toolboxGroups(fitting).flatMap(([title, ids]) =>
           ids.filter((k) => offered.has(k)).map((k, i) => ({ id: k, label: kindById(k).label, icon: k, checked: k === current, ...(i === 0 ? { heading: title } : {}) }))
         );
     openMenu({ el, anchor: kind, title: `Show ${found.node.label ?? page.fields[found.node.field].label} as`, items, note: kindsReason(designer, page, id), onPick: (k) => designer.changeKind(id, k) });

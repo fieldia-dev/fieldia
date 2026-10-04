@@ -1,7 +1,10 @@
+import { appKindIcon } from './kinds';
+
 /**
  * The designer's icons: one for each kind of field, as the toolbox shows
  * them, and the few its bars use. Line drawings on a 24-unit grid, drawn in
- * the text's colour, so they follow the skin and the theme.
+ * the text's colour, so they follow the skin and the theme. An app's kind
+ * brings its own.
  */
 
 const SHAPES: Record<string, string> = {
@@ -75,7 +78,7 @@ export function designerIcon(doc: Document, name: string): SVGSVGElement {
   svg.setAttribute('class', 'fd-dicon');
   svg.setAttribute('aria-hidden', 'true');
   svg.setAttribute('focusable', 'false');
-  // Constant drawings from the table above, never text from a page.
-  svg.innerHTML = SHAPES[name] ?? SHAPES['short-answer'];
+  // Constant drawings from the table above, or the app's own code — never text from a page.
+  svg.innerHTML = SHAPES[name] ?? appKindIcon(name) ?? SHAPES['short-answer'];
   return svg;
 }
