@@ -4,14 +4,12 @@ import { installStyles } from '@fieldia/widgets';
 import { designerBar, elementFactory, putDownOnClickOutside } from './chrome';
 import { QUESTION_KINDS, SCREEN_KINDS, type Designer, type DesignerState, type Where } from './designer';
 import { findHeaderPart } from './header-commands';
-import { headerPartProperties, statusbarProperties } from './header-properties';
 import { listCanvas } from './list-canvas';
 import { canBeColumn } from './list-commands';
-import { columnProperties, listActionProperties, listProperties } from './list-properties';
 import type { FindItem } from './find-anything';
 import { allSections, findField, findTab, sectionLabel } from './page-tree';
 import { screenCanvas } from './screen-canvas';
-import { fieldProperties, pageProperties, sectionProperties, tabProperties, tabsProperties, type PropertiesView } from './screen-properties';
+import { screenPanel } from './panel-screen';
 import { rail } from './rail';
 import { installDesignerStyles } from './styles';
 import { toolbox } from './toolbox';
@@ -102,8 +100,8 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       render(designer.getState());
     },
   });
-  const properties = el('aside', { class: 'fd-properties', 'aria-label': 'Properties' });
-  const body = el('div', { class: 'fd-screen-body' }, side.element, el('div', { class: 'fd-canvas-scroll' }, canvas.element, list.element), properties);
+  const panel = screenPanel({ el, doc, designer });
+  const body = el('div', { class: 'fd-screen-body' }, side.element, el('div', { class: 'fd-canvas-scroll' }, canvas.element, list.element), panel.element);
   root.append(bar.element, bar.issues, body, trial.element);
 
   // ---- adding ------------------------------------------------------------------
@@ -180,63 +178,9 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   }
 
   // ---- the panel -------------------------------------------------------------------
-  let panelKey = '';
-  let panel: PropertiesView | null = null;
-
-  function renderPanel(state: DesignerState) {
-    const { selected, page } = state;
-    const part = selected !== null ? findHeaderPart(page, selected) : null;
-    const layout = page.layout;
-    const kind =
-      layout.type === 'list'
-        ? selected?.startsWith('column:') && layout.columns.includes(selected.slice('column:'.length))
-          ? 'column'
-          : selected && layout.actions?.some((a) => a.id === selected)
-            ? 'action'
-            : 'list'
-        : part
-        ? 'part'
-        : selected === '#statusbar' && page.layout.type === 'sheet' && page.layout.statusbar
-          ? 'statusbar'
-          : selected !== null && findField(page, selected)
-        ? 'field'
-        : selected !== null && allSections(page).some((s) => s.id === selected)
-          ? 'section'
-          : selected !== null && findTab(page, selected)
-            ? 'tab'
-            : selected !== null && topOf(page).some((n) => n.id === selected && n.type === 'tabs')
-              ? 'tabs'
-              : 'page';
-    const key = kind === 'page' || kind === 'list' ? kind : `${kind}:${selected}`;
-    if (key !== panelKey) {
-      panelKey = key;
-      const id = selected as string;
-      const partTitle = { button: 'Button', stat: 'Counter', badge: 'Badge' } as const;
-      const panels: Record<typeof kind, [string, () => PropertiesView]> = {
-        part: [part ? partTitle[part.kind] : '', () => headerPartProperties(el, designer, id)],
-        statusbar: ['Status steps', () => statusbarProperties(el, designer)],
-        field: ['Field', () => fieldProperties(el, designer, id)],
-        section: ['Section', () => sectionProperties(el, designer, id)],
-        tab: ['Tab', () => tabProperties(el, designer, id)],
-        tabs: ['Tabs', () => tabsProperties(el, designer, id)],
-        page: ['Screen', () => pageProperties(el, designer)],
-        list: ['List', () => listProperties(el, designer)],
-        column: ['Column', () => columnProperties(el, designer, id.slice('column:'.length))],
-        action: ['Button', () => listActionProperties(el, designer, id)],
-      };
-      const [title, build] = panels[kind];
-      panel = build();
-      properties.replaceChildren(el('div', { class: 'fd-panel-title' }, title), panel.element);
-    }
-    panel?.update(page);
-  }
-
-  /** The rest of a field, in the panel: brought forward, and pointed out. */
+  /** The rest of a field, in the panel: brought forward on its tab, and pointed out. */
   function openPanel(part: 'field' | 'when' | 'filters') {
-    panel?.focus?.(part);
-    properties.classList.remove('fd-flash');
-    void properties.offsetWidth;
-    properties.classList.add('fd-flash');
+    panel.open(part);
   }
 
   // ---- the keyboard ----------------------------------------------------------------
@@ -314,7 +258,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       kinds: !listing,
     });
     side.update(state);
-    renderPanel(state);
+    panel.update(state);
   }
 
   host.append(root);

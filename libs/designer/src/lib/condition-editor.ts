@@ -16,7 +16,7 @@ export function choicesOf(field: Field | undefined): { key: string; label: strin
  * them. A condition written by hand is shown as it is, with Replace. The
  * same, for when a field is required or read-only (`kind`).
  */
-export function conditionEditor(el: ElementFactory, designer: Designer, targetId: string, what: 'page' | 'question', kind: 'shows' | 'required' | 'readonly' = 'shows') {
+export function conditionEditor(el: ElementFactory, designer: Designer, targetId: string, what: 'page' | 'question' | 'group', kind: 'shows' | 'required' | 'readonly' = 'shows') {
   const lead = kind === 'shows' ? `Show this ${what}` : kind === 'required' ? 'Required' : 'Read-only';
   const match = el('select', { class: 'fd-input fd-select fd-when-match', 'aria-label': 'Match' }, el('option', { value: 'all' }, 'all of these'), el('option', { value: 'any' }, 'any of these'));
   const matchRow = el('div', { class: 'fd-when-match-row', hidden: '' }, el('span', {}, `${lead} when`), match, el('span', {}, 'hold'));
@@ -112,7 +112,7 @@ export function conditionEditor(el: ElementFactory, designer: Designer, targetId
       caption.hidden = kind === 'shows' || rules.length !== 1;
       match.value = condition && condition !== 'custom' ? condition.join : 'all';
       add.hidden = !rules.length;
-      element.hidden = what === 'question' && !rules.length && condition !== 'custom';
+      element.hidden = what !== 'page' && !rules.length && condition !== 'custom';
     },
   };
 }

@@ -1,6 +1,6 @@
 import type { Field, FieldNode, Page, SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner } from './designer';
-import { button, choose, field, mount, press, tile, type } from './test-editor';
+import { button, choose, field, mount, openTab, press, tile, type } from './test-editor';
 
 const sectionsOf = (page: Page) => (page.layout as { children: SectionNode[] }).children;
 const fieldsOf = (page: Page, section: number) => sectionsOf(page)[section].children as FieldNode[];
@@ -82,15 +82,16 @@ describe('screen editor — the panel', () => {
     const { designer, ids } = visitReport();
     const { host } = mount(designer);
     card(host, ids['next']).click();
-    expect(host.querySelector('.fd-properties .fd-panel-title')?.textContent).toBe('Field');
+    expect(host.querySelector('.fd-properties .fd-panel-title')?.textContent).toBe('Dropdown');
     type(field(host, 'Label'), 'Next steps');
     expect(defOf(designer.getPage(), fieldsOf(designer.getPage(), 1)[0]).label).toBe('Next steps');
     // The canvas follows the panel.
     expect((card(host, ids['next']).querySelector('[data-inline="label"]') as HTMLInputElement).value).toBe('Next steps');
     choose(field(host, 'Shown as'), 'multiple-choice');
     expect(fieldsOf(designer.getPage(), 1)[0].widget).toBe('radio');
-    field(host, 'Required')?.click();
     type(field(host, 'Help text'), 'What happens next');
+    openTab(host, 'Rules');
+    field(host, 'Required')?.click();
     expect(defOf(designer.getPage(), fieldsOf(designer.getPage(), 1)[0])).toMatchObject({ required: true, help: 'What happens next' });
   });
 
@@ -110,6 +111,7 @@ describe('screen editor — the panel', () => {
     const { designer, ids, sections } = visitReport();
     const { host } = mount(designer);
     designer.select(ids['customer']);
+    openTab(host, 'Layout');
     const width = field(host, 'Width') as HTMLSelectElement;
     expect([...width.options].map((o) => o.textContent)).toEqual(['1 column', '2 columns (full width)']);
     choose(width, '2');
@@ -151,10 +153,12 @@ describe('screen editor — the panel', () => {
     const { host } = mount(designer);
     designer.select(sections[1]);
     type(field(host.querySelector('.fd-properties') as Element, 'Section title'), 'Next steps');
+    openTab(host, 'Layout');
     choose(field(host, 'Columns'), '3');
     expect(sectionsOf(designer.getPage())[1]).toMatchObject({ title: 'Next steps', columns: 3 });
     const shown = host.querySelector(`[data-node="${sections[1]}"]`) as HTMLElement;
     expect((shown.querySelector('.fd-grid') as HTMLElement).style.getPropertyValue('--fd-columns')).toBe('3');
+    openTab(host, 'Content');
     button(host.querySelector('.fd-properties') as Element, 'Delete section')?.click();
     expect(sectionsOf(designer.getPage()).map((s) => s.id)).not.toContain(sections[1]);
     expect(host.querySelector(`[data-node="${sections[1]}"]`)).toBeNull();

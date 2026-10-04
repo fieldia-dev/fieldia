@@ -29,6 +29,13 @@ export function field(scope: Element, name: string): (HTMLInputElement & HTMLSel
   return [...scope.querySelectorAll<HTMLInputElement & HTMLSelectElement>('input, select, textarea')].find((f) => shown(f) && f.getAttribute('aria-label') === name);
 }
 
+/** Choose a tab of the panel, by its name, as a person clicks it. */
+export function openTab(scope: Element, name: string): void {
+  const tab = [...scope.querySelectorAll<HTMLButtonElement>('.fd-properties [role="tab"]')].find((t) => t.textContent === name);
+  if (!tab) throw new Error(`The panel has no tab ${name}`);
+  tab.click();
+}
+
 /** A toolbox tile, by what it adds. */
 export function tile(scope: Element, spec: string): HTMLButtonElement {
   return scope.querySelector(`.fd-toolbox [data-tool="${spec}"]`) as HTMLButtonElement;

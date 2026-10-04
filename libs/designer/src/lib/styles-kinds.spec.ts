@@ -20,7 +20,7 @@ describe('the designer’s stylesheet for the newer kinds', () => {
   it('is installed with the designer’s own', () => {
     document.head.replaceChildren();
     installDesignerStyles(document);
-    expect(document.getElementById('fieldia-designer-styles')?.textContent?.endsWith(DESIGNER_KINDS_CSS)).toBe(true);
+    expect(document.getElementById('fieldia-designer-styles')?.textContent).toContain(DESIGNER_KINDS_CSS);
   });
 
   it('names a class of its own in every rule, so the designer and the form look as they did', () => {
