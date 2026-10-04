@@ -652,6 +652,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       stopPuttingDown();
       bar.destroy();
       drag.destroy();
+      side.destroy();
       doc.removeEventListener('keydown', onKey);
       for (const view of cardViews.values()) view.destroy();
       trial.destroy();

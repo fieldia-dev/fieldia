@@ -2,6 +2,7 @@ import { blockIcon } from './canvas-icons';
 import type { ElementFactory } from './chrome';
 import type { Designer, DesignerState } from './designer';
 import { designerIcon } from './icons';
+import { outlineDrag } from './outline-drag';
 import { treeKey, typeAhead } from './outline-keys';
 import { rangeOf } from './outline-picks';
 import { ancestorsOf, outlineRows, shownRows, type OutlineRow } from './outline-rows';
@@ -30,12 +31,15 @@ export interface OutlineViewOptions {
   several(): boolean;
   /** Say words in the editor's polite live region. */
   say(words: string): void;
+  /** Where an element is on screen; the browser's own by default. */
+  rectOf?(element: Element): DOMRect;
 }
 
 export interface OutlineView {
   element: HTMLElement;
   /** Draw the page as it is now; `shown` false while another tab of the rail is on show. */
   update(state: DesignerState, shown: boolean): void;
+  destroy(): void;
 }
 
 /** How long letters typed one after another go to one name. */
@@ -45,7 +49,7 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
   const { el, doc, designer } = options;
   const tree = el('div', { class: 'fd-outline-tree', role: 'tree', 'aria-label': 'The page’s parts', 'aria-multiselectable': 'true' });
   const empty = el('p', { class: 'fd-properties-hint', hidden: '' }, 'Nothing on the page yet.');
-  const help = el('p', { class: 'fd-outline-help' }, options.survey ? 'Pages and their questions. Pick one to open it.' : 'The whole page as a tree. Pick a part to open it.');
+  const help = el('p', { class: 'fd-outline-help' }, options.survey ? 'Pages and their questions. Pick one to open it; drag a row to move it.' : 'The whole page as a tree. Pick a part to open it; drag a row to move it, into a group by its middle.');
   const element = el('nav', { class: 'fd-outline', 'aria-label': 'Outline', hidden: '' }, tree, empty, help);
 
   /** Rows folded by the person, by id: kept while the page changes. */
@@ -188,6 +192,18 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
     draw(designer.getState());
   }
 
+  // Rows dragged to another place: outline-drag.ts.
+  const drag = outlineDrag({
+    tree,
+    designer,
+    rows: () => shown,
+    viewOf: (id) => views.get(id),
+    folded: () => folded,
+    rtl,
+    say: options.say,
+    rectOf: options.rectOf ?? ((e) => e.getBoundingClientRect()),
+  });
+
   tree.addEventListener('click', (event) => {
     const target = event.target as Element;
     const view = target.closest<HTMLElement>('[role="treeitem"]');
@@ -256,5 +272,6 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
       revealDue = false;
       if (view) scrollToRow(view);
     },
+    destroy: () => drag.destroy(),
   };
 }

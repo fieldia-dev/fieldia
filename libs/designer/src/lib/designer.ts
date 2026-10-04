@@ -31,6 +31,7 @@ import { allIds, containers, findContainer, findNode, findTab, firstSection, nex
 import { Refusal } from './refusal';
 import { translationCommands } from './translations';
 import { pageJsonCommands, type PageJsonResult } from './page-json';
+import * as moves from './outline-moves';
 import { outlineRows } from './outline-rows';
 
 /**
@@ -335,6 +336,16 @@ export interface Designer extends HeaderCommands, ListCommands {
   // outline lane
   /** Pick these parts at once, in this order, the last leading; any not on the page, or named twice, is left out. */
   pickMany(ids: string[]): void;
+  /**
+   * Move parts in reading order into a group, a tab, tabs or a survey's page,
+   * before the part now at `index` there (the parts moved counted where they
+   * are), as one edit; they stay picked. Returns them, in reading order.
+   */
+  moveParts(ids: string[], parentId: string, index: number): string[] | false;
+  /** Why parts cannot be moved into `parentId`, such as “A tab holds parts, not other tabs”; null when they can. */
+  moveRefusal(ids: string[], parentId: string): string | null;
+  /** Where a move would put them, in the words the drag chip says: “into “Home address”, before “City””. */
+  describeMove(ids: string[], parentId: string, index: number): string;
 }
 
 /** One of the app's lists of choices, by the name its data source answers to, and the words a person picks it by. */
@@ -1187,6 +1198,18 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       selected = picked[picked.length - 1] ?? null;
       notify();
     },
+    moveParts(ids, parentId, index) {
+      const lead = selected;
+      const moved = layoutEdit((draft) => moves.moveParts(draft, ids, parentId, index));
+      // The part that led the pick still leads it.
+      if (moved && lead && moved.includes(lead)) {
+        selected = lead;
+        notify();
+      }
+      return moved;
+    },
+    moveRefusal: (ids, parentId) => moves.moveRefusal(page, ids, parentId),
+    describeMove: (ids, parentId, index) => moves.describeMove(page, ids, parentId, index),
   };
   return designer;
 }

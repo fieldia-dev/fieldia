@@ -31,6 +31,7 @@ export interface RailOptions {
 export interface Rail {
   element: HTMLElement;
   update(state: DesignerState): void;
+  destroy(): void;
 }
 
 type Pane = 'add' | 'outline' | 'data';
@@ -118,5 +119,5 @@ export function rail(options: RailOptions): Rail {
     if (pane === 'data') drawData(state);
   }
 
-  return { element, update: draw };
+  return { element, update: draw, destroy: () => tree.destroy() };
 }

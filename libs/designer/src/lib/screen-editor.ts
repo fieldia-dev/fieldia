@@ -314,6 +314,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       doc.removeEventListener('keydown', onKey);
       stopPuttingDown();
       canvas.destroy();
+      side.destroy();
       list.destroy();
       trial.destroy();
       words.destroy();
