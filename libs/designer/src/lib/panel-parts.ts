@@ -6,6 +6,7 @@ import { across, andList, isSection, locate, nameOf, spanOf } from './layout-tre
 import { onTab, segmented, setting } from './panel-controls';
 import { blockContent } from './panel-block';
 import { aroundWords, widthSetting } from './panel-layout';
+import { severalRequired } from './panel-several-required';
 import type { PropertiesView } from './screen-properties';
 
 /**
@@ -93,6 +94,8 @@ export function severalProperties(el: ElementFactory, designer: Designer, ids: r
     act('Make tabs', () => designer.wrap([...ids], 'tabs'))
   );
   const apart = el('p', { class: 'fd-properties-hint', hidden: '' }, 'These sit in different places. Pick parts of one group to group them.');
+  // gap lane: fields picked together, required together.
+  const required = severalRequired(el, designer, ids);
   const element = el(
     'div',
     { class: 'fd-props' },
@@ -100,7 +103,8 @@ export function severalProperties(el: ElementFactory, designer: Designer, ids: r
     widthRow,
     labelsRow,
     onTab(el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, 'Together'), together, apart), 'layout', 'Group these'),
-    onTab(el('div', { class: 'fd-props-actions' }, act('Duplicate', () => designer.duplicate([...ids])), act('Delete', () => designer.remove([...ids]), true)), 'layout', 'Duplicate or delete')
+    onTab(el('div', { class: 'fd-props-actions' }, act('Duplicate', () => designer.duplicate([...ids])), act('Delete', () => designer.remove([...ids]), true)), 'layout', 'Duplicate or delete'),
+    ...required.rows
   );
   return {
     element,
@@ -108,6 +112,7 @@ export function severalProperties(el: ElementFactory, designer: Designer, ids: r
       const spots = ids.map((id) => locate(page, id));
       if (spots.some((at) => !at)) return;
       const parts = spots.map((at) => at!);
+      required.update(page);
       names.textContent = andList(parts.map((at) => `“${nameOf(page, at.node)}”`));
 
       const cols = parts.every((at) => SPANNED.has(at.node.type)) ? Math.min(...parts.map((at) => across(page, at.parent))) : 0;

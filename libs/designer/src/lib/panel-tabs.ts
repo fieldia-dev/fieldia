@@ -52,8 +52,10 @@ export function tabsFor(kind: PartKind, mode: 'simple' | 'advanced' = 'advanced'
     case 'field':
       return ['content', 'layout', 'rules', 'data'];
     case 'arrangement':
-    case 'several':
       return ['layout'];
+    case 'several':
+      // gap lane: fields picked together are made required together.
+      return ['layout', 'rules'];
     case 'tabs':
     case 'block':
       return ['content', 'layout'];

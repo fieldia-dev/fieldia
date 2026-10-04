@@ -332,7 +332,7 @@ export interface Designer extends HeaderCommands, ListCommands {
   /** The language the page's own words are written in, by tag, as one edit: not one it keeps a translation into. */
   setPageLanguage(tag: string): boolean;
   // panel lane
-  /** Several parts' width, or where their labels sit, as one edit; none changes when one cannot. */
+  /** Several parts' width, where their labels sit, or whether they are required, as one edit; none changes when one cannot. */
   setEach(ids: string[], change: EachChange): boolean;
   // json lane
   /** The page as JSON: two spaces deep, its keys in the order the page keeps them. */
@@ -1238,7 +1238,7 @@ export function createDesigner(options: {
     // translations lane
     ...translationCommands({ apply, getPage: () => page }),
     // panel lane
-    setEach: (ids, change) => apply((draft) => several.setEach(draft, ids, change)),
+    setEach: (ids, change) => apply((draft) => several.setEach(draft, ids, change, fromModel)),
     // json lane
     ...pageJsonCommands({ getPage: () => page, apply }),
     lists: () => clone(options.lists ?? []),

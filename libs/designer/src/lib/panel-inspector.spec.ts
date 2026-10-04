@@ -146,7 +146,8 @@ describe('the panel — tabs', () => {
     designer.pick(ids['customer']);
     designer.pick(ids['date'], { add: true });
     expect(head(host)).toEqual(['Several', '2 parts picked']);
-    expect(tabs(host)).toEqual(['Layout']);
+    // Two fields: their layout, and whether they are required.
+    expect(tabs(host)).toEqual(['Layout', 'Rules']);
   });
 
   it('puts no setting on a tab that does not apply, and shows no empty tab', () => {
