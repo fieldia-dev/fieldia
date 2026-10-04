@@ -124,23 +124,55 @@ test('asks in the page before a language with translations goes, and Undo brings
   expect(problems).toEqual([]);
 });
 
-test('on a phone, the grid scrolls inside its own box, never the page', async ({ page }) => {
+test('on a phone, each language is a whole column beside the English, swiped one at a time inside the grid’s box', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const problems = await openTranslations(page, '/screen/');
   await addLanguage(page, 'Arabic');
   await addLanguage(page, 'French');
   await cell(page, 'Customer').fill('العميل');
   await cell(page, 'Customer', 'French').fill('Client');
+  await page.locator('.fd-words-bar').click({ position: { x: 4, y: 4 } });
   const box = view(page).locator('.fd-words-scroll').first();
+  const held = view(page).locator('.fd-words-grid thead th').first();
+  const heads = view(page).locator('.fd-words-grid thead th:not(:first-child)');
+  /** Where a language's header and its name sit, and how much of the name its header shows. */
+  const header = (n: number) =>
+    heads.nth(n).evaluate((th) => {
+      const name = th.querySelector('.fd-words-lang') as HTMLElement;
+      const r = th.getBoundingClientRect();
+      const words = name.getBoundingClientRect();
+      return { x: r.x, width: r.width, name: name.textContent, nameX: words.x, nameRight: words.right, clipped: name.scrollWidth > name.clientWidth };
+    });
+
+  // The sheet scrolls sideways inside its own box; the page never does.
   const sizes = await box.evaluate((b) => ({ scroll: b.scrollWidth, client: b.clientWidth }));
   expect(sizes.scroll).toBeGreaterThan(sizes.client);
   await expectNoSidewaysScroll(page);
-  await box.evaluate((b) => (b.scrollLeft = b.scrollWidth));
-  // The page's own words stay in sight as the languages scroll by.
-  const first = await view(page).locator('.fd-words-grid tbody th').first().boundingBox();
-  const scroller = await box.boundingBox();
-  expect(Math.abs(first!.x - scroller!.x)).toBeLessThan(3);
+
+  // Typing in French brought French into view; back to the first language.
+  await box.evaluate((b) => (b.scrollLeft = 0));
+  // Every language column as wide as the next, never narrower than its name, progress and × need.
+  const [arabic, french] = [await header(0), await header(1)];
+  expect([arabic.name, french.name]).toEqual(['Arabic', 'French']);
+  expect(arabic.width).toBeGreaterThanOrEqual(160);
+  expect(Math.abs(arabic.width - french.width)).toBeLessThan(1);
+  expect([arabic.clipped, french.clipped]).toEqual([false, false]);
+  // Arabic, whole, beside the English held at the start.
+  const start = (await held.boundingBox())!;
+  expect(Math.abs(arabic.x - (start.x + start.width))).toBeLessThan(2);
+  expect(arabic.nameX).toBeGreaterThan(start.x + start.width);
   await screen(page, 'translations-phone', { viewport: true });
+
+  // Swiped on: French, whole, in Arabic's place; the English stays.
+  await box.evaluate((b) => (b.scrollLeft = b.scrollWidth));
+  const after = await header(1);
+  const stays = (await held.boundingBox())!;
+  const scroller = (await box.boundingBox())!;
+  expect(Math.abs(stays.x - scroller.x)).toBeLessThan(2);
+  expect(Math.abs(after.x - (stays.x + stays.width))).toBeLessThan(2);
+  expect(after.nameRight).toBeLessThan(scroller.x + scroller.width);
+  await screen(page, 'translations-phone-swiped', { viewport: true });
+  await expectNoSidewaysScroll(page);
   expect(await doubleLines(page)).toEqual([]);
   expect(problems).toEqual([]);
 });

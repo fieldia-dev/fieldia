@@ -33,7 +33,7 @@ export const DESIGNER_TRANSLATIONS_CSS = /* css */ `
 
 /* The grid: its own box, scrolling both ways, never the page. */
 .fd-words-scroll {
-  overflow: auto; max-height: max(320px, calc(100vh - 260px)); overscroll-behavior: contain;
+  container: fd-words / inline-size; overflow: auto; max-height: max(320px, calc(100vh - 260px)); overscroll-behavior: contain;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius);
 }
 .fd-words-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 14px; }
@@ -75,6 +75,15 @@ export const DESIGNER_TRANSLATIONS_CSS = /* css */ `
 @container (max-width: 620px) {
   .fd-words-table tbody th, .fd-words-table thead th:first-child { min-width: 120px; max-width: 150px; }
   .fd-words-table thead th, .fd-words-cell { min-width: 170px; }
+}
+/* On a phone, each language is the whole width beside the English held at the start, and a swipe moves one whole language. */
+@container (max-width: 480px) {
+  .fd-words-scroll { scroll-snap-type: x mandatory; scroll-padding-inline-start: 120px; }
+}
+@container fd-words (max-width: 480px) {
+  .fd-words-table tbody th, .fd-words-table thead th:first-child { width: 120px; min-width: 120px; max-width: 120px; }
+  .fd-words-grid thead th + th { min-width: max(170px, calc(100cqw - 121px)); scroll-snap-align: start; }
+  .fd-words-grid .fd-words-cell { min-width: max(170px, calc(100cqw - 121px)); }
 }
 
 /* Try it in a language: the page's languages, beside English and العربية. */
