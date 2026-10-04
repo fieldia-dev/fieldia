@@ -28,13 +28,14 @@ export const KINDS_CSS = /* css */ `
 .fd-slider-track { display: contents; }
 .fd-slider-input { width: 100%; min-width: 0; height: 26px; margin: 0; accent-color: var(--fd-accent); cursor: pointer; }
 .fd-slider-input:disabled { cursor: default; }
-.fd-slider-value { min-width: 2.5em; text-align: end; font-variant-numeric: tabular-nums; font-weight: 600; }
+.fd-slider-value { min-width: 2.5em; text-align: start; font-variant-numeric: tabular-nums; font-weight: 600; }
 .fd-slider-ends { grid-column: 1; display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; color: var(--fd-muted); font-variant-numeric: tabular-nums; }
-.fd-slider-empty .fd-slider-input { opacity: 0.5; }
+/* Grey, not the accent: half filled in colour would read as an answer. */
+.fd-slider-empty .fd-slider-input { filter: grayscale(1); opacity: 0.55; }
 .fd-slider-empty .fd-slider-value { color: var(--fd-muted); font-weight: 400; }
 .fd-slider .fd-choice-clear { grid-column: 1 / -1; }
 /* Pictures to choose from: cards of a picture over its words, a ring or a box before the words, the card picked edged in the accent. */
-.fd-image-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 12px; width: 100%; min-width: 0; }
+.fd-image-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 130px), 1fr)); gap: 12px; width: 100%; min-width: 0; }
 .fd-image-card {
   position: relative; display: grid; grid-template-rows: auto 1fr; padding: 0; margin: 0; overflow: hidden; cursor: pointer;
   font: inherit; color: var(--fd-text); text-align: start; background: var(--fd-surface);
