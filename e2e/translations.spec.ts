@@ -80,9 +80,30 @@ test('translates a survey into Arabic: typed right to left, filtered, pasted as 
   await screen(page, 'translations-stale', { viewport: true });
   await gone.getByRole('button', { name: 'Remove the translations of “Email”' }).click();
   await expect(gone).toBeHidden();
-
   expect(await doubleLines(page)).toEqual([]);
   await expectNoSidewaysScroll(page);
+
+  // Tried in Arabic: the form in its Arabic words, right to left.
+  await page.getByRole('button', { name: 'Try it', exact: true }).click();
+  await expect(view(page)).toBeHidden();
+  const tried = page.locator('.fd-try-frame form.fd-form');
+  await expect(tried).toHaveAttribute('dir', 'ltr');
+  await page.getByRole('combobox', { name: 'Words in' }).selectOption({ label: 'Arabic' });
+  await expect(tried).toHaveAttribute('dir', 'rtl');
+  await expect(tried).toHaveAttribute('lang', 'ar');
+  await expect(page.locator('.fd-try').getByRole('button', { name: 'العربية' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(tried.getByText('رأيك في المنتج')).toBeVisible();
+  await expect(tried.getByText('شكرًا لمشاركتك، يقرأ فريق المنتج كل إجابة.')).toBeVisible();
+  await expect(tried.locator('[data-node="q-name"] .fd-label')).toHaveText(/^اسمك/);
+  // Right to left: the label starts at the right of the form.
+  const formBox = (await tried.boundingBox())!;
+  const labelBox = (await tried.locator('[data-node="q-name"] .fd-label').boundingBox())!;
+  expect(formBox.x + formBox.width - (labelBox.x + labelBox.width)).toBeLessThan(40);
+  await screen(page, 'translations-try-arabic', { viewport: true });
+  // Back to the words as written.
+  await page.getByRole('combobox', { name: 'Words in' }).selectOption({ label: 'English, as written' });
+  await expect(tried).toHaveAttribute('dir', 'ltr');
+  await expect(tried.getByText('Product feedback')).toBeVisible();
   expect(problems).toEqual([]);
 });
 

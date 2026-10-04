@@ -76,5 +76,9 @@ export const DESIGNER_TRANSLATIONS_CSS = /* css */ `
   .fd-words-table tbody th, .fd-words-table thead th:first-child { min-width: 120px; max-width: 150px; }
   .fd-words-table thead th, .fd-words-cell { min-width: 170px; }
 }
+
+/* Try it in a language: the page's languages, beside English and العربية. */
+.fd-try-language { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fd-muted); }
+.fd-try-language .fd-input { width: auto; min-height: 30px; padding-block: 2px; font-size: 13px; color: var(--fd-text); }
 @media (prefers-reduced-motion: reduce) { .fd-words-meter > span { transition: none; } }
 `;

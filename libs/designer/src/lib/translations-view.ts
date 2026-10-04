@@ -234,7 +234,19 @@ export function translationsView(options: TranslationsViewOptions): Translations
     },
     items() {
       const addOne = { label: 'Add a language', hint: 'Translations', run: () => (show(true), addInput.focus()) };
-      if (!open) return [{ label: 'Translations', hint: 'the page’s words in other languages', run: () => show(true) }, addOne];
+      // Try it in each language the page keeps: Try it, then the language picked there.
+      const tries = languagesOf(designer.getPage()).map((tag) => ({
+        label: `Try it in ${languageName(tag)}`,
+        hint: 'Try it',
+        run() {
+          modeButton('try')?.click();
+          const picker = root.querySelector<HTMLSelectElement>('.fd-try-language select');
+          if (!picker) return;
+          picker.value = tag;
+          picker.dispatchEvent(new Event('change', { bubbles: true }));
+        },
+      }));
+      if (!open) return [{ label: 'Translations', hint: 'the page’s words in other languages', run: () => show(true) }, addOne, ...tries];
       return [
         { label: 'Back to designing', hint: 'Design', run: () => show(false) },
         addOne,
@@ -242,6 +254,7 @@ export function translationsView(options: TranslationsViewOptions): Translations
         { label: 'Copy as CSV', hint: 'Translations', run: () => copy.click() },
         { label: 'Paste CSV', hint: 'Translations', run: () => paste.click() },
         ...languagesOf(designer.getPage()).map((tag) => ({ label: `Remove ${languageName(tag)}`, hint: 'Translations', run: () => askRemove(tag) })),
+        ...tries,
       ];
     },
     destroy() {

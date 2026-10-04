@@ -100,6 +100,18 @@ describe('opening the Translations view', () => {
     expect((host.querySelector('.fd-words') as HTMLElement).hidden).toBe(false);
   });
 
+  it('tries the page in a language it keeps, from Find anything', () => {
+    const designer = createDesigner({ page: { ...start(), translations: { es: { 'Your name': 'Tu nombre' } } } });
+    const { host } = mount(designer);
+    press('k', { metaKey: true }, document.body);
+    const find = document.querySelector('.fd-find-input') as HTMLInputElement;
+    type(find, 'try spanish');
+    press('Enter', {}, find);
+    const tried = host.querySelector('.fd-try-frame form.fd-form') as HTMLElement;
+    expect(tried.getAttribute('lang')).toBe('es');
+    expect(tried.querySelector('[data-node="n"] .fd-label')?.textContent).toBe('Tu nombre');
+  });
+
   it('is in the survey designer too', () => {
     const designer = createDesigner({ page: { ...start(), data: { kind: 'responses' }, layout: { type: 'wizard', id: 'w', children: [{ type: 'step', id: 'one', label: 'About you', children: [{ type: 'field', id: 'n', field: 'name' }] }] } } });
     const host = document.createElement('div');
