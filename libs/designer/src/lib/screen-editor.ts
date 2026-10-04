@@ -16,6 +16,7 @@ import { rail } from './rail';
 import { installDesignerStyles } from './styles';
 import { toolbox } from './toolbox';
 import { tryIt } from './try-it';
+import { jsonView } from './json-view';
 
 /**
  * The screen editor: an app screen built where it is seen. On the left, the
@@ -54,7 +55,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     titleLabel: 'Screen title',
     placeholder: 'Untitled screen',
     extra: [trial.toggle],
-    find: () => [...findItems(), ...trial.items()],
+    find: () => [...findItems(), ...trial.items(), ...json.items()],
     // A check about a field's words or options: it is open on the canvas by now, the cursor goes there.
     goTo(id, part) {
       if (part === 'label') return canvas.focus(id, 'label', true);
@@ -104,7 +105,8 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   });
   const properties = el('aside', { class: 'fd-properties', 'aria-label': 'Properties' });
   const body = el('div', { class: 'fd-screen-body' }, side.element, el('div', { class: 'fd-canvas-scroll' }, canvas.element, list.element), properties);
-  root.append(bar.element, bar.issues, body, trial.element);
+  const json = jsonView({ el, doc, designer, trial, body });
+  root.append(bar.element, bar.issues, body, trial.element, json.element);
 
   // ---- adding ------------------------------------------------------------------
   /** Where something picked in the toolbox goes: after the field picked, into the section picked or a picked tab's first, or the last on show. */
@@ -244,7 +246,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const onKey = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement;
     if (target !== doc.body && !root.contains(target)) return;
-    if (trial.trying || event.defaultPrevented) return;
+    if (trial.trying || json.open || event.defaultPrevented) return;
     const selected = designer.getState().selected;
     const typing = target.closest('input, textarea, select, [contenteditable]');
     const layout = designer.getPage().layout;
@@ -331,6 +333,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       canvas.destroy();
       list.destroy();
       trial.destroy();
+      json.destroy();
       root.remove();
     },
   };

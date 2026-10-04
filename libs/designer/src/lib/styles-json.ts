@@ -1,0 +1,55 @@
+/**
+ * The JSON view's look, and Try it's drawer of data and problems: the box the
+ * page is typed in, its line numbers and marked lines, the problems under it.
+ */
+export const DESIGNER_JSON_CSS = /* css */ `
+.fd-json { display: grid; gap: 12px; min-width: 0; }
+.fd-json[hidden] { display: none; }
+.fd-json-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 10px 14px; }
+.fd-json-title { display: grid; gap: 2px; flex: 1 1 260px; min-width: 0; }
+.fd-json-heading { margin: 0; font-size: 15px; font-weight: 650; line-height: 1.35; }
+.fd-json-state { margin: 0; font-size: 13px; line-height: 1.4; color: var(--fd-muted); }
+.fd-json-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Leaving with changes not applied: asked here, never in a browser dialog. */
+.fd-json-leave { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 14px; border-radius: var(--fd-radius); background: var(--fd-warning-soft); color: var(--fd-text); }
+.fd-json-leave[hidden] { display: none; }
+.fd-json-leave-text { margin: 0; flex: 1 1 240px; font-weight: 600; }
+/* The box: numbers and text in one scroll of their own; long lines scroll inside the text. Its line is 20px and its top 12px, as json-code.ts counts. */
+.fd-json-code {
+  position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start;
+  max-height: min(64vh, 720px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius);
+  font: 13px/20px ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+.fd-json-code:focus-within { border-color: var(--fd-accent); }
+.fd-json-gutter {
+  margin: 0; padding: 12px 10px 24px 12px; min-width: 3ch; box-sizing: border-box; min-height: 100%;
+  font: inherit; text-align: end; color: var(--fd-muted); background: var(--fd-page); border-inline-end: 1px solid var(--fd-border);
+  user-select: none; -webkit-user-select: none;
+}
+.fd-json-input {
+  display: block; box-sizing: border-box; width: 100%; min-width: 0; margin: 0; padding: 12px 14px 24px; border: 0; border-radius: 0;
+  font: inherit; color: var(--fd-text); background: transparent; resize: none; outline: none; box-shadow: none;
+  white-space: pre; overflow-x: auto; overflow-y: hidden; tab-size: 2; caret-color: var(--fd-accent);
+  height: calc(var(--fd-json-lines, 1) * 20px + 36px);
+}
+.fd-designer .fd-json-input:focus, .fd-designer .fd-json-input:focus-visible { outline: none; box-shadow: none; }
+.fd-json-marks { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.fd-json-mark { position: absolute; inset-inline: 0; height: 20px; background: color-mix(in srgb, var(--fd-error) 12%, transparent); border-inline-start: 3px solid var(--fd-error); }
+.fd-json-mark[data-severity="should"] { background: color-mix(in srgb, var(--fd-warning) 12%, transparent); border-inline-start-color: var(--fd-warning); }
+.fd-json-hint { margin: 0; font-size: 12.5px; color: var(--fd-muted); }
+.fd-json-problems { list-style: none; margin: 0; padding: 0; display: grid; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); }
+.fd-json-problems:empty { display: none; }
+.fd-json-problem { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 12px; font-size: 13.5px; line-height: 1.45; }
+.fd-json-problem + .fd-json-problem { border-block-start: 1px solid var(--fd-border); }
+.fd-json-at {
+  all: unset; box-sizing: border-box; cursor: pointer; white-space: nowrap; padding: 1px 7px; border-radius: 5px;
+  font: 12.5px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--fd-accent); background: var(--fd-accent-soft);
+}
+.fd-json-at:hover { text-decoration: underline; }
+.fd-json-at:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
+.fd-json-severity { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; border-radius: 4px; padding: 1px 6px; color: var(--fd-error); background: var(--fd-error-soft); }
+.fd-json-problem[data-severity="should"] .fd-json-severity { color: var(--fd-warning); background: var(--fd-warning-soft); }
+.fd-json-message { flex: 1 1 240px; min-width: 0; overflow-wrap: anywhere; }
+.fd-json-fix { min-height: 28px; padding: 2px 6px; font-size: 13px; font-weight: 600; }
+`;

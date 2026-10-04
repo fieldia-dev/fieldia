@@ -117,6 +117,11 @@ export function pageChecks(page: Page): PageCheck[] {
     if (!condition || condition === 'custom') continue;
     condition.rules.forEach((rule, index) => {
       const tested = page.fields[rule.field];
+      // Only a page written by hand can name a field it does not have: the rule cannot be read at all.
+      if (!tested) {
+        found.push({ at: target.id, severity: 'must', text: `“${target.name}” has a rule on “${rule.field}”, which is not a field of this page.`, fix: { label: 'Remove that rule', action: { kind: 'drop-rule', id: target.id, rule: index } } });
+        return;
+      }
       if (rule.op !== 'is' || tested?.type !== 'selection' || typeof rule.value !== 'string' || tested.options.some((o) => o.value === rule.value)) return;
       const never = condition.join === 'all';
       found.push({
