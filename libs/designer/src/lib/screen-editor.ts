@@ -14,6 +14,7 @@ import { allSections, findField, findTab, sectionLabel } from './page-tree';
 import { screenCanvas } from './screen-canvas';
 import { screenPanel } from './panel-screen';
 import { clipboardKeys } from './clipboard-keys';
+import { shortcutKeys } from './shortcuts-sheet';
 import { rail } from './rail';
 import { installDesignerStyles } from './styles';
 import { toolbox } from './toolbox';
@@ -72,7 +73,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     titleLabel: 'Screen title',
     placeholder: 'Untitled screen',
     extra: [modes.element, trial.toggle],
-    find: () => [...findItems(), ...trial.items(), ...words.items(), ...panel.findItems(), ...json.items()],
+    find: () => [...findItems(), ...trial.items(), ...words.items(), ...panel.findItems(), ...json.items(), ...shortcuts.items()],
     // A check about a field's words or options: it is open on the canvas by now, the cursor goes there.
     goTo(id, part) {
       if (part === 'label') return canvas.focus(id, 'label', true);
@@ -129,6 +130,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   root.append(bar.element, bar.issues, body, trial.element, json.element);
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
   const clip = clipboardKeys({ root, designer, active: () => !trial.trying && !json.open });
+  const shortcuts = shortcutKeys({ el, root, survey: false, active: () => !trial.trying && !json.open });
 
   // ---- adding ------------------------------------------------------------------
   /** Where something picked in the toolbox goes: after the field picked, into the section picked or a picked tab's first, or the last on show. */
@@ -318,6 +320,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       canvas.destroy();
       side.destroy();
       clip.destroy();
+      shortcuts.destroy();
       list.destroy();
       trial.destroy();
       words.destroy();

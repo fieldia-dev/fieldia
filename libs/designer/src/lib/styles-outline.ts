@@ -60,5 +60,29 @@ export const DESIGNER_OUTLINE_CSS = /* css */ `
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.22); opacity: 0; pointer-events: none; transition: opacity 160ms, transform 160ms;
 }
 .fd-clipboard-said.fd-clipboard-shown { opacity: 1; transform: translate(-50%, 0); }
+/* The sheet of shortcuts: every key, in groups, with a box to find one. */
+.fd-keys-backdrop { z-index: 80; place-items: start center; padding-block-start: 8vh; }
+.fd-keys {
+  width: min(640px, 100%); max-height: min(80vh, 720px); box-sizing: border-box; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; overflow: hidden;
+  background: var(--fd-surface); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: 12px; box-shadow: 0 24px 64px rgba(15, 20, 25, 0.3);
+}
+.fd-keys-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 14px 4px 18px; }
+.fd-keys-title { margin: 0; font-size: 16px; font-weight: 650; }
+.fd-keys-close { all: unset; box-sizing: border-box; width: 32px; height: 32px; border-radius: 7px; display: grid; place-items: center; cursor: pointer; color: var(--fd-muted); }
+.fd-keys-close:hover { background: var(--fd-page); color: var(--fd-text); }
+.fd-keys-close:focus-visible { outline: 2px solid var(--fd-focus); }
+.fd-keys-close .fd-dicon { transform: rotate(45deg); }
+.fd-keys .fd-keys-find { margin: 6px 18px 10px; font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--fd-border); border-radius: 8px; background: var(--fd-surface); color: inherit; min-width: 0; }
+.fd-keys .fd-keys-find:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: -1px; }
+.fd-keys-groups { overflow: auto; padding: 0 18px 16px; display: grid; gap: 18px; align-content: start; }
+.fd-keys-group h3 { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fd-muted); }
+.fd-keys-when { margin: 2px 0 6px; font-size: 12px; color: var(--fd-muted); }
+.fd-keys-group dl { margin: 0; display: grid; }
+.fd-keys-row { display: grid; grid-template-columns: minmax(0, 15em) minmax(0, 1fr); gap: 4px 14px; align-items: baseline; padding: 7px 0; border-block-start: 1px solid var(--fd-border); }
+.fd-keys-row dt, .fd-keys-row dd { margin: 0; font-size: 13.5px; line-height: 1.5; }
+.fd-keys-row dt { color: var(--fd-muted); }
+.fd-keys kbd { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--fd-text); padding: 1px 6px; border: 1px solid var(--fd-border); border-block-end-width: 2px; border-radius: 5px; background: var(--fd-page); white-space: nowrap; }
+.fd-keys-none { margin: 0; padding: 4px 18px 18px; color: var(--fd-muted); }
+@media (max-width: 520px) { .fd-keys-row { grid-template-columns: minmax(0, 1fr); } .fd-keys-backdrop { padding-block-start: 16px; } }
 @media (prefers-reduced-motion: reduce) { .fd-outline-row .fd-outline-twist .fd-dicon, .fd-clipboard-said { transition: none; } }
 `;

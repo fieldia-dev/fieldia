@@ -57,7 +57,9 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
     el('kbd', {}, '⇧'),
     '-click picks several; ',
     el('kbd', {}, 'Alt'),
-    ' with an arrow moves what is picked.'
+    ' with an arrow moves what is picked; ',
+    el('kbd', {}, '?'),
+    ' lists every key.'
   );
   const element = el('nav', { class: 'fd-outline', 'aria-label': 'Outline', hidden: '' }, tree, empty, help);
 

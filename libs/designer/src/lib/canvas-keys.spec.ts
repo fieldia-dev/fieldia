@@ -101,7 +101,8 @@ describe('the keys on the Advanced canvas', () => {
     const list = host.querySelector('.fd-canvas-keys') as HTMLElement;
     expect(list.hidden).toBe(false);
     expect([...list.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Alt+↑ / Alt+↓', 'Alt+← / Alt+→', 'Alt+Shift+← / →', 'Shift-click', '⌘G / ⌘⇧G', '⌘D', 'Delete', 'Escape']);
+    // “?” opens the sheet of every key, the canvas's among them (shortcuts-sheet.ts).
     press('?', { shiftKey: true }, document.body);
-    expect(list.hidden).toBe(true);
+    expect(document.querySelector('.fd-keys[role="dialog"]')?.textContent).toContain('Put it beside the part before or after it');
   });
 });
