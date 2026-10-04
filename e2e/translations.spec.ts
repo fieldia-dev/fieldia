@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { doubleLines, watch } from './designer-support';
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import { doubleLines, publish, watch } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -22,6 +22,28 @@ async function openTranslations(page: Page, path = '/designer/?start=survey') {
   return problems;
 }
 
+/** The rows of the held column of words whose line under them is not on the screen, by where it should be. */
+async function missingRowLines(page: Page): Promise<number[]> {
+  const bounds = await view(page)
+    .locator('.fd-words-grid tbody th')
+    .evaluateAll((cells) => cells.map((th) => ({ x: Math.round(th.getBoundingClientRect().left + 8), y: th.getBoundingClientRect().bottom })).filter((b) => b.y < innerHeight - 2));
+  const shot = (await page.screenshot()).toString('base64');
+  return page.evaluate(
+    async ({ shot, bounds }) => {
+      const picture = new Image();
+      picture.src = `data:image/png;base64,${shot}`;
+      await picture.decode();
+      const canvas = document.createElement('canvas');
+      [canvas.width, canvas.height] = [picture.width, picture.height];
+      const pixels = canvas.getContext('2d')!;
+      pixels.drawImage(picture, 0, 0);
+      const drawn = (x: number, y: number) => pixels.getImageData(x, y, 1, 1).data[0] < 235;
+      return bounds.filter((b) => ![-2, -1, 0, 1].some((d) => drawn(b.x, Math.round(b.y) + d))).map((b) => Math.round(b.y));
+    },
+    { shot, bounds }
+  );
+}
+
 async function addLanguage(page: Page, name: string) {
   await page.getByRole('combobox', { name: 'Add a language' }).fill(name);
   await page.getByRole('combobox', { name: 'Add a language' }).press('Enter');
@@ -31,7 +53,9 @@ test('translates a survey into Arabic: typed right to left, filtered, pasted as 
   const problems = await openTranslations(page);
   await expect(page.locator('.fd-survey-body')).toBeHidden();
   await expect(rowWords(page).first()).toHaveText('Product feedback');
-  await expect(view(page).locator('.fd-words-note')).toHaveText(/^\d+ words, written in English\. Add a language to translate them into it\.$/);
+  await expect(view(page).locator('.fd-words-note > span').first()).toHaveText(/^\d+ words, written in $/);
+  await expect(page.getByRole('combobox', { name: 'The page’s own language' })).toHaveValue('en');
+  await expect(view(page).locator('.fd-words-note > span').last()).toHaveText('. Add a language to translate them into it.');
   await screen(page, 'translations-empty', { viewport: true });
 
   // Arabic, by its name: a column whose cells run right to left.
@@ -95,6 +119,10 @@ test('translates a survey into Arabic: typed right to left, filtered, pasted as 
   await expect(tried.getByText('رأيك في المنتج')).toBeVisible();
   await expect(tried.getByText('شكرًا لمشاركتك، يقرأ فريق المنتج كل إجابة.')).toBeVisible();
   await expect(tried.locator('[data-node="q-name"] .fd-label')).toHaveText(/^اسمك/);
+  // A help left in English among the Arabic: its full stop stays at its end, and it lines up with the rest.
+  const reply = await sentence(tried.locator('[data-node="q-email"] .fd-help'));
+  expect(reply.lastX).toBeGreaterThan(reply.firstX);
+  expect(Math.abs(reply.rightGap)).toBeLessThan(2);
   // Right to left: the label starts at the right of the form.
   const formBox = (await tried.boundingBox())!;
   const labelBox = (await tried.locator('[data-node="q-name"] .fd-label').boundingBox())!;
@@ -104,6 +132,27 @@ test('translates a survey into Arabic: typed right to left, filtered, pasted as 
   await page.getByRole('combobox', { name: 'Words in' }).selectOption({ label: 'English, as written' });
   await expect(tried).toHaveAttribute('dir', 'ltr');
   await expect(tried.getByText('Product feedback')).toBeVisible();
+  expect(problems).toEqual([]);
+});
+
+test('says which language the page is written in, refusing one it is translated into, and Publish says so', async ({ page }) => {
+  const problems = await openTranslations(page);
+  await publish(page, 1);
+  const own = page.getByRole('combobox', { name: 'The page’s own language' });
+  await expect(own).toHaveValue('en');
+  await own.selectOption({ label: 'French' });
+  await expect(view(page).locator('.fd-words-grid thead th').first()).toHaveAttribute('aria-label', 'French, the page’s own words');
+  await addLanguage(page, 'Arabic');
+  await own.selectOption({ label: 'Arabic' });
+  await expect(page.locator('.fd-designer-issues')).toHaveText('The page keeps a translation into Arabic: remove Arabic first to write the page in it');
+  await expect(own).toHaveValue('fr');
+  // Every line between the rows is drawn under the held column of words too, as the screen shows it.
+  expect(await missingRowLines(page)).toEqual([]);
+  await screen(page, 'translations-own-language', { viewport: true });
+  await page.getByRole('button', { name: 'Publish', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Publish version 2?' });
+  await expect(dialog.locator('.fd-publish-changes li')).toHaveText(['The page is now written in French', 'Added Arabic']);
+  await screen(page, 'translations-publish-words', { viewport: true });
   expect(problems).toEqual([]);
 });
 
@@ -124,24 +173,115 @@ test('asks in the page before a language with translations goes, and Undo brings
   expect(problems).toEqual([]);
 });
 
-test('on a phone, the grid scrolls inside its own box, never the page', async ({ page }) => {
+test('on a phone, each language is a whole column beside the English, swiped one at a time inside the grid’s box', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const problems = await openTranslations(page, '/screen/');
   await addLanguage(page, 'Arabic');
   await addLanguage(page, 'French');
   await cell(page, 'Customer').fill('العميل');
   await cell(page, 'Customer', 'French').fill('Client');
+  await page.locator('.fd-words-bar').click({ position: { x: 4, y: 4 } });
   const box = view(page).locator('.fd-words-scroll').first();
+  const held = view(page).locator('.fd-words-grid thead th').first();
+  const heads = view(page).locator('.fd-words-grid thead th:not(:first-child)');
+  /** Where a language's header and its name sit, and how much of the name its header shows. */
+  const header = (n: number) =>
+    heads.nth(n).evaluate((th) => {
+      const name = th.querySelector('.fd-words-lang') as HTMLElement;
+      const r = th.getBoundingClientRect();
+      const words = name.getBoundingClientRect();
+      return { x: r.x, width: r.width, name: name.textContent, nameX: words.x, nameRight: words.right, clipped: name.scrollWidth > name.clientWidth };
+    });
+
+  // The sheet scrolls sideways inside its own box; the page never does.
   const sizes = await box.evaluate((b) => ({ scroll: b.scrollWidth, client: b.clientWidth }));
   expect(sizes.scroll).toBeGreaterThan(sizes.client);
   await expectNoSidewaysScroll(page);
-  await box.evaluate((b) => (b.scrollLeft = b.scrollWidth));
-  // The page's own words stay in sight as the languages scroll by.
-  const first = await view(page).locator('.fd-words-grid tbody th').first().boundingBox();
-  const scroller = await box.boundingBox();
-  expect(Math.abs(first!.x - scroller!.x)).toBeLessThan(3);
+
+  // Typing in French brought French into view; back to the first language.
+  await box.evaluate((b) => (b.scrollLeft = 0));
+  // Every language column as wide as the next, never narrower than its name, progress and × need.
+  const [arabic, french] = [await header(0), await header(1)];
+  expect([arabic.name, french.name]).toEqual(['Arabic', 'French']);
+  expect(arabic.width).toBeGreaterThanOrEqual(160);
+  expect(Math.abs(arabic.width - french.width)).toBeLessThan(1);
+  expect([arabic.clipped, french.clipped]).toEqual([false, false]);
+  // Arabic, whole, beside the English held at the start.
+  const start = (await held.boundingBox())!;
+  expect(Math.abs(arabic.x - (start.x + start.width))).toBeLessThan(2);
+  expect(arabic.nameX).toBeGreaterThan(start.x + start.width);
   await screen(page, 'translations-phone', { viewport: true });
+
+  // Swiped on: French, whole, in Arabic's place; the English stays.
+  await box.evaluate((b) => (b.scrollLeft = b.scrollWidth));
+  const after = await header(1);
+  const stays = (await held.boundingBox())!;
+  const scroller = (await box.boundingBox())!;
+  expect(Math.abs(stays.x - scroller.x)).toBeLessThan(2);
+  expect(Math.abs(after.x - (stays.x + stays.width))).toBeLessThan(2);
+  expect(after.nameRight).toBeLessThan(scroller.x + scroller.width);
+  await screen(page, 'translations-phone-swiped', { viewport: true });
+  await expectNoSidewaysScroll(page);
   expect(await doubleLines(page)).toEqual([]);
+  expect(problems).toEqual([]);
+});
+
+/**
+ * Where a block's words sit: the first and the last letter, and the words'
+ * ends against the block's own, for its sentence's order and its alignment.
+ */
+function sentence(locator: Locator) {
+  return locator.evaluate((block) => {
+    const text = [...block.childNodes].find((n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim()) as Text;
+    const words = text.textContent ?? '';
+    const letter = (at: number) => {
+      const range = document.createRange();
+      range.setStart(text, at);
+      range.setEnd(text, at + 1);
+      return range.getBoundingClientRect();
+    };
+    const all = document.createRange();
+    all.selectNodeContents(text);
+    const [box, inside] = [block.getBoundingClientRect(), all.getBoundingClientRect()];
+    const style = getComputedStyle(block);
+    return {
+      firstX: letter(words.search(/\S/)).x,
+      lastX: letter(words.trimEnd().length - 1).x,
+      rightGap: box.right - parseFloat(style.paddingRight) - inside.right,
+      leftGap: inside.left - box.left - parseFloat(style.paddingLeft),
+    };
+  });
+}
+
+test('words left in English on a right-to-left page keep their own order, and still line up on the right', async ({ page }) => {
+  const problems = watch(page);
+  // A page with no Arabic of its own, shown in Arabic: every word of it left as written.
+  await page.goto('/plain/?page=survey&skin=outlined&locale=ar');
+  await expect(page.locator('.fd-form').first()).toHaveAttribute('dir', 'rtl');
+  const help = page.locator('[data-node="q-email"] .fd-help');
+  await expect(help).toHaveText('Only if you want a reply.');
+  const english = await sentence(help);
+  // “Only … reply.”: the full stop after the words, on their right, not before them.
+  expect(english.lastX).toBeGreaterThan(english.firstX);
+  expect(Math.abs(english.rightGap)).toBeLessThan(2);
+  const label = await sentence(page.locator('[data-node="q-email"] .fd-label'));
+  expect(Math.abs(label.rightGap)).toBeLessThan(2);
+  await screen(page, 'bidi-english-in-arabic', { viewport: true });
+
+  // A page in Arabic: its sentences end on the left, as Arabic does, lined up on the right.
+  await page.goto('/plain/?page=rules&skin=outlined&locale=ar');
+  const description = page.locator('.fd-page-description');
+  await expect(description).toHaveText(/يمكنك تغييره\.$/);
+  const arabic = await sentence(description);
+  expect(arabic.lastX).toBeLessThan(arabic.firstX);
+  expect(Math.abs(arabic.rightGap)).toBeLessThan(2);
+  await screen(page, 'bidi-arabic', { viewport: true });
+
+  // An English page keeps its words on the left.
+  await page.goto('/plain/?page=survey&skin=outlined');
+  const left = await sentence(page.locator('[data-node="q-email"] .fd-help'));
+  expect(left.lastX).toBeGreaterThan(left.firstX);
+  expect(Math.abs(left.leftGap)).toBeLessThan(2);
   expect(problems).toEqual([]);
 });
 

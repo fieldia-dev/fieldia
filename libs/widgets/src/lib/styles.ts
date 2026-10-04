@@ -117,6 +117,14 @@ const SKINS_CSS = /* css */ `
 .fd-form[data-fd-skin="outlined"] .fd-field.fd-required > .fd-label::after { content: ""; }
 .fd-form[data-fd-skin="outlined"] .fd-field.fd-required > .fd-label::before { content: "* "; color: var(--fd-error); }
 .fd-help { color: var(--fd-muted); font-size: 12.5px; }
+/*
+ * A page's words run the way they are written — a sentence left in English on
+ * an Arabic page keeps its full stop at its end — and line up with the form.
+ * Titles with an icon keep their words apart instead, in a <bdi>.
+ */
+.fd-page-title, .fd-page-description, .fd-section-description, .fd-label, .fd-help, .fd-text-heading, .fd-text-paragraph, .fd-text-note, .fd-choice > span {
+  unicode-bidi: plaintext; text-align: match-parent; text-align: -webkit-match-parent;
+}
 .fd-error { color: var(--fd-error); font-size: 12.5px; }
 .fd-warning {
   color: var(--fd-warning); background: var(--fd-warning-soft); font-size: 12.5px;
