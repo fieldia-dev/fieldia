@@ -5,6 +5,7 @@ import { holderName as placeName, layoutChanges, lookChanges, placements } from 
 import { isWrapper } from './layout-tree';
 import { containers, type Container } from './page-tree';
 import { translationChanges } from './translations';
+import { ruleChanges } from './rules-changes';
 
 /**
  * Before a page is published: what people would trip over, each with a fix
@@ -270,6 +271,7 @@ export function pageChanges(before: Page | null, after: Page): string[] {
   }
 
   out.push(...headerChanges(before, after), ...listChanges(before, after));
+  out.push(...ruleChanges(before, after));
   out.push(...translationChanges(before, after));
   // Something changed that has no words of its own here: say so rather than nothing.
   return out.length ? out : ['Other changes to the page’s settings'];

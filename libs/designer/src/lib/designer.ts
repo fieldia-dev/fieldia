@@ -1,6 +1,7 @@
 import {
   validatePage,
   wideColumns,
+  type AnswerRule,
   type ColumnCount,
   type ColumnsByWidth,
   type Field,
@@ -10,6 +11,7 @@ import {
   type Option,
   type Page,
   type SectionNode,
+  type SetWhen,
   type SheetNode,
   type StepNode,
   type TabsNode,
@@ -29,6 +31,8 @@ import type { EachChange } from './layout-several';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
 import { translationCommands } from './translations';
+import { rulesCommands, type AnswerRulePatch } from './rules-commands';
+import { keepWhatRulesRead } from './rules-reads';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -51,6 +55,7 @@ export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-c
 export type { BlockKind, Drop, NewPart } from './layout-ops';
 export type { LookPatch, SectionLook } from './layout-settings';
 export type { EachChange } from './layout-several';
+export type { AnswerRulePatch } from './rules-commands';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
 export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
@@ -312,6 +317,16 @@ export interface Designer extends HeaderCommands, ListCommands {
   // panel lane
   /** Several parts' width, or where their labels sit, as one edit; none changes when one cannot. */
   setEach(ids: string[], change: EachChange): boolean;
+  // rules lane
+  /** A field's value worked out from others, such as `price * qty`; `null` makes it a field to fill in again. Typing a formula is one undo step. */
+  setCompute(id: string, expression: string | null): boolean;
+  /** Values set when a condition starts to hold, in order; `null` or none takes them away. Typing in one box is one undo step. */
+  setSetWhen(id: string, items: SetWhen[] | null): boolean;
+  /** A rule the answer must keep, after the others: one that fits what the field holds. */
+  addAnswerRule(id: string, rule: AnswerRule): boolean;
+  /** One answer rule changed: a value sets what it asks, `null` takes that away. Typing in one box is one undo step. */
+  updateAnswerRule(id: string, index: number, patch: AnswerRulePatch): boolean;
+  removeAnswerRule(id: string, index: number): boolean;
 }
 
 
@@ -393,6 +408,8 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       notify();
       return false;
     }
+    // rules lane: a field a rule still reads keeps its definition, so the rule can be seen and put right.
+    keepWhatRulesRead(page, draft);
     const checked = validatePage(draft);
     if (!checked.ok) {
       issues = checked.issues.map((issue) => `${issue.path}: ${issue.message}`);
@@ -1126,6 +1143,8 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     ...translationCommands({ apply, getPage: () => page }),
     // panel lane
     setEach: (ids, change) => apply((draft) => several.setEach(draft, ids, change)),
+    // rules lane
+    ...rulesCommands({ apply, getPage: () => page, fromModel }),
   };
   return designer;
 }
