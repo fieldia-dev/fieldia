@@ -297,6 +297,17 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
   const published = () => versions[versions.length - 1]?.page ?? null;
   /** The picks: an editor that sets only `selected` picks that one alone. */
   const pickedNow = () => (selected === null ? [] : picked.includes(selected) ? picked : [selected]);
+  /** What was picked as each page was left, to pick again when undo or redo comes back to it. */
+  const pickedWhenLeft = new WeakMap<Page, { picked: string[]; selected: string | null }>();
+  const leave = (left: Page) => pickedWhenLeft.set(left, { picked: pickedNow(), selected });
+  /** Back at a page: what is picked stays while any of it is on the page; when none is, what was picked as it was left. */
+  function arrive() {
+    const ids = allIds(page);
+    const now = pickedNow();
+    const back = now.some((id) => ids.has(id)) ? { picked: now, selected } : (pickedWhenLeft.get(page) ?? { picked: [], selected: null });
+    picked = back.picked.filter((id) => ids.has(id));
+    selected = back.selected !== null && picked.includes(back.selected) ? back.selected : (picked[picked.length - 1] ?? null);
+  }
   const state = (): DesignerState => ({
     page,
     selected,
@@ -348,6 +359,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     if (!(merge && merge === mergeKey)) past = [...past, page];
     mergeKey = merge;
     future = [];
+    leave(page);
     page = checked.page;
     issues = [];
     notify();
@@ -1034,7 +1046,9 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       if (!previous) return;
       past = past.slice(0, -1);
       future = [page, ...future];
+      leave(page);
       page = previous;
+      arrive();
       mergeKey = null;
       issues = [];
       notify();
@@ -1046,7 +1060,9 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       if (!next) return;
       future = future.slice(1);
       past = [...past, page];
+      leave(page);
       page = next;
+      arrive();
       mergeKey = null;
       issues = [];
       notify();
