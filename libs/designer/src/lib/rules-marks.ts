@@ -68,8 +68,12 @@ export function ruleMarks(container: HTMLElement, page: Page, designer: Designer
       const into = place.into ? part.querySelector<HTMLElement>(place.into) : part;
       if (!into) continue;
       let holder = [...into.children].find((c) => c.classList.contains('fd-rule-marks')) as HTMLElement | undefined;
+      // A part that is a button itself (a field or a question not picked) holds no other button (ARIA): its marks
+      // are words, said with it, and its rules its description; Enter picks it, and its panel opens the rules.
+      const inButton = part.getAttribute('role') === 'button';
       if (!own.length) {
         holder?.remove();
+        if (inButton) part.removeAttribute('aria-describedby');
         continue;
       }
       const key = JSON.stringify(own);
@@ -79,17 +83,17 @@ export function ruleMarks(container: HTMLElement, page: Page, designer: Designer
         into.append(holder);
       }
       holder.dataset['marks'] = key;
+      const tipIds: string[] = [];
       holder.replaceChildren(
         ...own.map((mark) => {
           const tipId = `fd-rule-tip-${++tips}`;
+          tipIds.push(tipId);
           const icon = mark.kind === 'worked-out' ? el('span', { class: 'fd-rule-mark-fx', 'aria-hidden': 'true' }, 'ƒx') : designerIcon(doc, mark.kind === 'sometimes' ? 'when' : 'check');
-          const button = el(
-            'button',
-            { type: 'button', class: 'fd-rule-mark', 'data-mark': mark.kind, 'aria-label': `${NAMES[mark.kind]}: open the rules`, 'aria-describedby': tipId },
-            icon,
-            el('span', { class: 'fd-rule-mark-words' }, mark.words),
-            el('span', { class: 'fd-rule-tip', role: 'tooltip', id: tipId }, mark.sentences.join('\n'))
-          );
+          const words = el('span', { class: 'fd-rule-mark-words' }, mark.words);
+          const tip = el('span', { class: 'fd-rule-tip', role: 'tooltip', id: tipId }, mark.sentences.join('\n'));
+          const button = inButton
+            ? el('span', { class: 'fd-rule-mark', 'data-mark': mark.kind }, icon, words, tip)
+            : el('button', { type: 'button', class: 'fd-rule-mark', 'data-mark': mark.kind, 'aria-label': `${NAMES[mark.kind]}: open the rules`, 'aria-describedby': tipId }, icon, words, tip);
           button.addEventListener('click', (event) => {
             event.stopPropagation();
             openRules(root, designer, { part: id, kind: mark.rule });
@@ -97,6 +101,7 @@ export function ruleMarks(container: HTMLElement, page: Page, designer: Designer
           return button;
         })
       );
+      if (inButton) part.setAttribute('aria-describedby', tipIds.join(' '));
     }
   }
 }

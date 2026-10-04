@@ -37,11 +37,15 @@ describe('marks on the screen editor’s canvas', () => {
     expect(marks('f-price')).toEqual([]);
     const [total] = marks('f-total');
     expect(total.querySelector('.fd-rule-mark-words')?.textContent).toBe('worked out');
-    const tip = document.getElementById(total.getAttribute('aria-describedby') as string);
-    expect(tip?.getAttribute('role')).toBe('tooltip');
-    expect(tip?.textContent).toBe('Worked out from Price × Quantity');
+    // A field not picked is a button itself, and a button holds no other: its marks are words, its rules its description.
+    const card = (id: string) => total.ownerDocument.querySelector(`.fd-canvas-field[data-node="${id}"]`) as HTMLElement;
+    expect([card('f-total').getAttribute('role'), total.tagName]).toEqual(['button', 'SPAN']);
+    const said = (id: string) => (card(id).getAttribute('aria-describedby') ?? '').split(' ').map((tip) => document.getElementById(tip));
+    expect(said('f-total').map((tip) => tip?.getAttribute('role'))).toEqual(['tooltip']);
+    expect(said('f-total').map((tip) => tip?.textContent)).toEqual(['Worked out from Price × Quantity']);
     expect(marks('f-email')[1].querySelector('.fd-rule-mark-words')?.textContent).toBe('1 rule');
-    expect(document.getElementById(marks('f-email')[0].getAttribute('aria-describedby') as string)?.textContent).toBe('Shows when VIP is Yes');
+    expect(said('f-email')[0]?.textContent).toBe('Shows when VIP is Yes');
+    expect(card('f-email').querySelector('button')).toBeNull();
   });
 
   it('opens a part’s rules when its mark is clicked', () => {

@@ -123,15 +123,17 @@ export const DESIGNER_RULES_CSS = /* css */ `
 
 /* ---- marks on the canvas: a part with a rule says so; pointed at, its sentence ---- */
 .fd-rule-marks { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-.fd-canvas-field > .fd-rule-marks { position: absolute; inset-block-start: 4px; inset-inline-end: 6px; z-index: 2; }
-.fd-canvas-section > .fd-rule-marks { position: absolute; inset-block-start: 4px; inset-inline-end: 8px; z-index: 2; }
+.fd-canvas-field > .fd-rule-marks { position: absolute; inset-block-start: 0; inset-inline-end: 6px; z-index: 2; }
+.fd-canvas-section > .fd-rule-marks { position: absolute; inset-block-start: 0; inset-inline-end: 8px; z-index: 2; }
 .fd-step-head-row > .fd-rule-marks { flex: none; }
+/* A small chip, in a button 24px tall: a target a finger can hit (WCAG 2.5.8), the chip drawn inside it by ::before. */
 .fd-rule-mark {
-  all: unset; box-sizing: border-box; cursor: pointer; position: relative; display: inline-flex; align-items: center; gap: 3px;
-  font-size: 10.5px; font-weight: 600; line-height: 1.6; padding: 0 6px; border-radius: 4px; color: var(--fd-muted); background: var(--fd-page);
+  all: unset; box-sizing: border-box; cursor: pointer; position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: 3px; min-height: 24px;
+  font-size: 10.5px; font-weight: 600; line-height: 1.6; padding: 0 6px; border-radius: 4px; color: var(--fd-muted); --fd-mark-ground: var(--fd-page);
 }
-.fd-rule-mark[data-mark="sometimes"] { color: var(--fd-warning); background: var(--fd-warning-soft); }
-.fd-rule-mark[data-mark="worked-out"] { color: var(--fd-accent); background: var(--fd-accent-soft); }
+.fd-rule-mark::before { content: ""; position: absolute; inset-inline: 0; inset-block: calc(50% - 0.8em); z-index: -1; border-radius: 4px; background: var(--fd-mark-ground); }
+.fd-rule-mark[data-mark="sometimes"] { color: var(--fd-warning); --fd-mark-ground: var(--fd-warning-soft); }
+.fd-rule-mark[data-mark="worked-out"] { color: var(--fd-accent); --fd-mark-ground: var(--fd-accent-soft); }
 .fd-rule-mark > .fd-dicon { width: 11px; height: 11px; flex: none; }
 .fd-rule-mark-fx { font: italic 700 10.5px/1 Georgia, "Times New Roman", serif; }
 .fd-rule-mark:hover { filter: brightness(0.96); }
