@@ -132,6 +132,13 @@ describe('the choices’ Shuffle and points', () => {
     expect((field() as Extract<Field, { type: 'selection' }>).options[1]).not.toHaveProperty('score');
   });
 
+  it('takes points for each column of a matrix once the page is a quiz', () => {
+    const { box, card, field } = open('matrix', (designer, id) => designer.setMatrixItems(id, 'columns', ['Poor', 'Great']));
+    (card().querySelector('.fd-kind-give-points') as HTMLButtonElement).click();
+    type(box('Points for Great'), '3');
+    expect((field() as Extract<Field, { type: 'matrix' }>).columns.map((c) => c.score)).toEqual([0, 3]);
+  });
+
   it('offers no points for a ranking, and nothing at all for a signature', () => {
     const ranking = open('ranking');
     expect(ranking.box('Shuffle option order')).not.toBeNull();

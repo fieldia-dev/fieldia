@@ -76,8 +76,10 @@ export function kindCommands({ apply, fromModel }: KindCommandsDeps) {
       return apply(
         (draft) => {
           const { field } = question(draft, id, (label) => `The options of ${label} come from the model`);
-          if (field.type !== 'selection') throw new Refusal('Only a question with options has pictures and points');
-          const option = field.options[index];
+          // A matrix's columns are its options: each may be worth points, as a choice's options are.
+          if (field.type === 'matrix' && details.image !== undefined) throw new Refusal('A matrix’s columns have no pictures');
+          if (field.type !== 'selection' && field.type !== 'matrix') throw new Refusal('Only a question with options has pictures and points');
+          const option = (field.type === 'matrix' ? field.columns : field.options)[index];
           if (!option) throw new Refusal(`There is no option ${index + 1}`);
           if (details.image !== undefined) {
             if (details.image === null || !details.image.trim()) delete option.image;

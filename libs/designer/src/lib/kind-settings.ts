@@ -23,11 +23,11 @@ type Part = Omit<KindSettings, 'elements'> & { element: HTMLElement };
 
 /** Kinds whose options may be shown in an order of each form's own. */
 const SHUFFLED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choice', 'ranking']);
-/** Kinds whose options may be worth points. */
-const SCORED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choice']);
+/** Kinds whose options may be worth points: a matrix's options are its columns. */
+const SCORED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choice', 'matrix']);
 const PART_WORDS: Record<(typeof ADDRESS_PARTS)[number], string> = { street: 'Street', city: 'City', postcode: 'Postcode', country: 'Country' };
 
-const optionsOf = (field: Field) => (field.type === 'selection' ? field.options : []);
+const optionsOf = (field: Field) => (field.type === 'selection' ? field.options : field.type === 'matrix' ? field.columns : []);
 const numberOrNull = (text: string) => (text.trim() === '' || !Number.isFinite(Number(text)) ? null : Number(text));
 
 export function kindSettings(el: ElementFactory, designer: Designer, id: string, kind: string | null): KindSettings | null {

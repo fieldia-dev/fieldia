@@ -71,6 +71,17 @@ describe('a matrix’s rows and columns', () => {
     expect(designer.getState().issues).toEqual(['Only a matrix has rows and columns']);
   });
 
+  it('gives a column points, kept when the columns are renamed, and never a picture', () => {
+    const designer = survey();
+    const id = designer.addQuestion('matrix') as string;
+    designer.setMatrixItems(id, 'columns', ['Poor', 'Good']);
+    expect(designer.setOptionDetails(id, 1, { score: 2 })).toBe(true);
+    designer.setMatrixItems(id, 'columns', ['Poor', 'Very good']);
+    expect((fieldOf(designer.getPage(), id) as Extract<Field, { type: 'matrix' }>).columns).toEqual([{ value: 'column_1', label: 'Poor' }, { value: 'column_2', label: 'Very good', score: 2 }]);
+    expect(designer.setOptionDetails(id, 0, { image: 'x.png' })).toBe(false);
+    expect(designer.getState().issues).toEqual(['A matrix’s columns have no pictures']);
+  });
+
   it('keeps an item moved, renamed in place or put between others, with its points', () => {
     const old = [{ value: 'a', label: 'A', score: 1 }, { value: 'b', label: 'B' }, { value: 'c', label: 'C' }];
     expect(relabel(old, ['C', 'A'], 'x')).toEqual([{ value: 'c', label: 'C' }, { value: 'a', label: 'A', score: 1 }]);
