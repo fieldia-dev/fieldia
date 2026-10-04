@@ -118,7 +118,8 @@ export function rulesOverview(options: RulesOverviewOptions): RulesOverview {
   function render() {
     const page = designer.getPage();
     const rules = pageRules(page);
-    note.textContent = rules.length === 1 ? '1 rule on this page.' : `${rules.length} rules on this page.`;
+    // English words keep their order in a page right to left, on the page's side.
+    note.replaceChildren(el('span', { dir: 'ltr' }, rules.length === 1 ? '1 rule on this page.' : `${rules.length} rules on this page.`));
     const words = filter.value.toLowerCase().split(/\s+/).filter(Boolean);
     const titleOf = new Map(GROUPS.map((g) => [g.key, g.title]));
     const kept = rules.filter((rule) => {

@@ -192,7 +192,7 @@ test.describe('survey designer', () => {
     await expect.poll(labels).toEqual([['Your name', 'How was it?'], ['Email']]);
   });
 
-  test('refuses to delete a question a later page depends on, and says why', async ({ page }) => {
+  test('deletes a question a later page depends on, and Checks name the rule left behind, with its fix', async ({ page }) => {
     const step1 = page.locator('.fd-design-step').nth(0);
     await step1.getByRole('button', { name: 'Add question' }).click();
     await page.keyboard.type('Coming?');
@@ -201,8 +201,14 @@ test.describe('survey designer', () => {
     await page.locator('.fd-design-step').nth(1).getByLabel('Show this page').selectOption({ label: 'Coming?' });
     await page.locator('.fd-q').first().click();
     await picked(page).getByRole('button', { name: 'Delete' }).click();
-    await expect(page.locator('.fd-designer-issues')).toContainText('which is not a field of this page');
-    await expect(page.locator('.fd-q')).toHaveCount(1);
+    await expect(page.locator('.fd-q')).toHaveCount(0);
+    await expect(page.locator('.fd-designer-issues')).toBeHidden();
+    // The page's rule still reads it: a check says so, and stops publishing until it is put right.
+    await page.locator('.fd-designer-bar [data-checks]').click();
+    const left = page.getByRole('dialog', { name: 'Checks before publishing' }).locator('.fd-check').filter({ hasText: 'reads Coming?, which is no longer on the page.' });
+    await expect(left).toHaveAttribute('data-severity', 'must');
+    await left.getByRole('button', { name: 'Remove the rule' }).click();
+    await expect(page.locator('.fd-design-step').nth(1).getByLabel('Show this page')).toHaveValue('');
   });
 });
 

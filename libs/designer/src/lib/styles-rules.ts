@@ -35,6 +35,9 @@ export const DESIGNER_RULES_CSS = /* css */ `
 .fd-answer-rule-pattern { display: grid; gap: 8px; }
 .fd-answer-rule-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; }
 .fd-answer-rule-body .fd-input { width: 100%; box-sizing: border-box; min-width: 0; }
+/* Stops sending or only warns: framed, as wide as the rule, the same in the panel and in a survey's card. */
+.fd-answer-rule-body .fd-seg { width: 100%; box-sizing: border-box; border: 1px solid var(--fd-border); grid-auto-columns: minmax(0, 1fr); }
+.fd-answer-rule-body .fd-seg > .fd-seg-button { min-width: 0; min-height: 28px; font-size: 13px; font-weight: 600; display: grid; place-items: center; padding: 4px 6px; }
 .fd-answer-rule-body .fd-when { width: 100%; }
 .fd-answer-rule-body .fd-when .fd-select { min-width: 0; flex: 1 1 120px; }
 .fd-answer-rule-body .fd-q-when { justify-self: start; padding-inline: 0; min-height: 26px; }
@@ -62,7 +65,7 @@ export const DESIGNER_RULES_CSS = /* css */ `
   all: unset; box-sizing: border-box; cursor: pointer; font: 12px/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--fd-text);
   padding: 5px 8px; border-radius: 999px; background: var(--fd-page);
 }
-.fd-formula-function::after { content: "( )"; color: var(--fd-muted); margin-inline-start: 1px; }
+.fd-formula-function::after { content: "()"; color: var(--fd-muted); }
 .fd-formula-function:hover { background: var(--fd-accent-soft); color: var(--fd-accent); }
 .fd-formula-function:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
 .fd-formula-result { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--fd-text); padding: 6px 9px; border-radius: 6px; background: var(--fd-success-soft, var(--fd-page)); overflow-wrap: anywhere; }
@@ -89,6 +92,10 @@ export const DESIGNER_RULES_CSS = /* css */ `
 .fd-rules-filter-icon { position: absolute; inset-inline-start: 10px; inset-block-start: 50%; transform: translateY(-50%); display: inline-flex; color: var(--fd-muted); pointer-events: none; }
 .fd-rules-filter-icon > .fd-dicon { width: 14px; height: 14px; }
 .fd-rules-view .fd-rules-filter-box { width: 100%; box-sizing: border-box; padding-inline-start: 32px; }
+/* The view's words are English: in a page right to left they keep their own order, where the page puts them. */
+.fd-rules-empty, .fd-rules-view .fd-rules-filter-box, .fd-rules-view .fd-rules-filter-box::placeholder { unicode-bidi: plaintext; }
+/* Their own order, and the page's side: the end of an English line is where a line right to left starts. */
+.fd-rules-view .fd-rules-filter-box:dir(rtl), .fd-rules-view .fd-rules-filter-box:dir(rtl)::placeholder { text-align: end; }
 .fd-rules-groups { display: grid; gap: 12px; min-width: 0; }
 .fd-rules-group { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 12px 6px 6px; min-width: 0; display: grid; gap: 6px; }
 .fd-rules-group-title { margin: 0; padding-inline: 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--fd-muted); }
