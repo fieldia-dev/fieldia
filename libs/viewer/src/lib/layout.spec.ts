@@ -123,6 +123,24 @@ describe('arrangements: parts side by side or one under another, with nothing dr
     expect(gridOf(at(host, 'loose')).style.getPropertyValue('--fd-columns')).toBe('2');
   });
 
+  it('stacks parts in one cell on its grid’s column when it has no columns of its own', () => {
+    const host = mount(page([{ type: 'section', id: 'two', columns: 2, children: [field('a'), { type: 'section', id: 'stack', style: 'plain', children: [field('b'), field('c')] }] }]));
+    expect(at(host, 'stack').getAttribute('data-place')).toBe('tracks');
+  });
+
+  it('lays an arrangement inside an arrangement on the columns the outer one covers, even with none of its own', () => {
+    const host = mount(
+      page([
+        {
+          type: 'section', id: 'four', columns: 4,
+          children: [{ type: 'section', id: 'outer', style: 'plain', colspan: 3, children: [{ type: 'section', id: 'inner', style: 'plain', colspan: 2, children: [field('a'), field('b')] }] }],
+        },
+      ])
+    );
+    expect(at(host, 'outer').getAttribute('data-place')).toBe('tracks');
+    expect(at(host, 'inner').getAttribute('data-place')).toBe('tracks');
+  });
+
   it('is a group with a name once it has a title, whatever its style', () => {
     const host = mount(page([{ type: 'section', id: 'titled', title: 'Titled', style: 'plain', children: [] }]));
     const titled = at(host, 'titled');
@@ -153,6 +171,23 @@ describe('how a group looks', () => {
     expect(onPage('nested-card')).toBe(false);
     // Only a card is boxed by sitting on the page.
     expect(onPage('job')).toBe(false);
+  });
+
+  it('marks no card in an arrangement or a line that is itself inside a box', () => {
+    const host = mount(
+      page([
+        {
+          type: 'section', id: 'box', title: 'A box', columns: 2,
+          children: [
+            { type: 'section', id: 'arr', style: 'plain', columns: 2, children: [{ type: 'section', id: 'deep-card', title: 'Deep', children: [] }] },
+            { type: 'section', id: 'inner-line', title: 'Line', style: 'line', children: [{ type: 'section', id: 'under-line', title: 'Under a line', children: [] }] },
+          ],
+        },
+      ])
+    );
+    expect(at(host, 'box').hasAttribute('data-on-page')).toBe(true);
+    expect(at(host, 'deep-card').hasAttribute('data-on-page')).toBe(false);
+    expect(at(host, 'under-line').hasAttribute('data-on-page')).toBe(false);
   });
 
   it('marks no card in a record sheet or a wizard’s step: the sheet and the step are the box', () => {
@@ -188,6 +223,18 @@ describe('where labels sit', () => {
   it('keeps the label of a table above it: there is no room beside a table', () => {
     const host = mount(page([{ type: 'section', id: 's', labels: 'beside', children: [field('rate')] }]));
     expect(at(host, 'rate').getAttribute('data-labels')).toBe('above');
+  });
+
+  it('still hides a table’s label when asked: only beside has no room', () => {
+    const host = mount(page([{ type: 'section', id: 's', labels: 'hidden', children: [field('rate')] }]));
+    expect(at(host, 'rate').getAttribute('data-labels')).toBe('hidden');
+  });
+
+  it('carries where labels sit into tabs, from the group round them and from the page', () => {
+    const tabs = (id: string, inner: string): LayoutNode => ({ type: 'tabs', id, children: [{ type: 'tab', id: `${id}-tab`, label: 'One', children: [field(inner)] }] });
+    const host = mount(page([{ type: 'section', id: 's', labels: 'beside', children: [tabs('in-group', 'a')] }, tabs('on-page', 'b')], { look: { labels: 'hidden' } }));
+    expect(at(host, 'a').getAttribute('data-labels')).toBe('beside');
+    expect(at(host, 'b').getAttribute('data-labels')).toBe('hidden');
   });
 
   it('hides a label from sight, keeps it as the box’s name, and shows it in the empty box instead', () => {

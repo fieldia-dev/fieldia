@@ -16,6 +16,10 @@ describe('the accent’s shades', () => {
     // Just under 3:1 with white, as #f08c00 is: ink.
     expect(contrast('#f08c00', '#ffffff')).toBeLessThan(3);
     expect(accentShades('#f08c00').accentText).toBe('#111418');
+    // Between 3:1 and 4:1, as #3b82f6 is: still white, as a button's words are read.
+    expect(contrast('#3b82f6', '#ffffff')).toBeGreaterThan(3);
+    expect(contrast('#3b82f6', '#ffffff')).toBeLessThan(4);
+    expect(accentShades('#3b82f6').accentText).toBe('#ffffff');
   });
 
   it('lightens a dark accent for a dark page until it reads on it, and leaves a light one alone', () => {
