@@ -1,5 +1,6 @@
 /**
- * Expression parser for modifiers, ported from the React form engine.
+ * Expression parser, ported from the React form engine and grown arithmetic
+ * and functions.
  *
  * Recursive descent parser that converts tokens into an Abstract Syntax Tree (AST).
  * Implements Python-like operator precedence:
@@ -7,15 +8,19 @@
  *   2. AND
  *   3. NOT
  *   4. Comparison operators (==, !=, <, >, <=, >=, in, not in)
- *   5. Values/Identifiers (highest precedence)
+ *   5. + and -
+ *   6. *, / and %
+ *   7. A minus sign before a value
+ *   8. Values, identifiers and function calls (highest precedence)
  */
 
 import { CONSTANTS, type Token } from './tokenizer';
+import { FUNCTIONS, takesInWords } from './functions';
 
 /**
  * AST Node Types
  */
-export type ASTNode = BinaryOpNode | UnaryOpNode | LiteralNode | IdentifierNode;
+export type ASTNode = BinaryOpNode | UnaryOpNode | LiteralNode | IdentifierNode | CallNode;
 
 export interface BinaryOpNode {
   type: 'BinaryOp';
@@ -38,6 +43,13 @@ export interface LiteralNode {
 export interface IdentifierNode {
   type: 'Identifier';
   name: string;
+}
+
+/** A function called with its values: `round(price * qty, 2)`. */
+export interface CallNode {
+  type: 'Call';
+  name: string;
+  args: ASTNode[];
 }
 
 /**
@@ -135,12 +147,12 @@ export class ExpressionParser {
    * comp_op: '==' | '!=' | '<>' | '<' | '>' | '<=' | '>=' | 'in' | 'not in'
    */
   private parseComparison(): ASTNode {
-    const left = this.parseValue();
+    const left = this.parseSum();
 
     const compOperators = ['==', '!=', '<>', '<', '>', '<=', '>=', 'in', 'not in'];
     if (this.matchOperator(...compOperators)) {
       const operator = this.previous().value;
-      const right = this.parseValue();
+      const right = this.parseSum();
       return {
         type: 'BinaryOp',
         operator: operator.toLowerCase(),
@@ -154,8 +166,67 @@ export class ExpressionParser {
   }
 
   /**
+   * Adding and taking away, left to right
+   * sum: product (('+' | '-') product)*
+   */
+  private parseSum(): ASTNode {
+    let left = this.parseProduct();
+    while (this.match('ARITHMETIC', '+', '-')) {
+      const operator = this.previous().value;
+      left = { type: 'BinaryOp', operator, left, right: this.parseProduct() };
+    }
+    return left;
+  }
+
+  /**
+   * Multiplying, dividing and the remainder, left to right
+   * product: unary (('*' | '/' | '%') unary)*
+   */
+  private parseProduct(): ASTNode {
+    let left = this.parseUnary();
+    while (this.match('ARITHMETIC', '*', '/', '%')) {
+      const operator = this.previous().value;
+      left = { type: 'BinaryOp', operator, left, right: this.parseUnary() };
+    }
+    return left;
+  }
+
+  /**
+   * A minus sign before a value: -5, -price, -(a + b)
+   * unary: '-' unary | value
+   */
+  private parseUnary(): ASTNode {
+    if (this.match('ARITHMETIC', '-')) {
+      return { type: 'UnaryOp', operator: '-', operand: this.parseUnary() };
+    }
+    return this.parseValue();
+  }
+
+  /**
+   * A function's name, then its values in parentheses, separated by commas.
+   * call: name '(' (or_expr (',' or_expr)*)? ')'
+   */
+  private parseCall(name: string): ASTNode {
+    const fn = FUNCTIONS.get(name);
+    if (!fn) throw new Error(`no function "${name}": the functions are ${[...FUNCTIONS.keys()].join(', ')}`);
+    this.advance(); // (
+    const args: ASTNode[] = [];
+    if (!this.match('PAREN', ')')) {
+      do {
+        args.push(this.parseOr());
+      } while (this.match('COMMA'));
+      this.consume('PAREN', ')', `Expected "," or ")" after a value of ${name}(…)`);
+    }
+    const [least, most] = fn.takes;
+    if (args.length < least || args.length > most) throw new Error(takesInWords(name, fn.takes));
+    const problem = fn.check?.(args);
+    if (problem) throw new Error(problem);
+    return { type: 'Call', name, args };
+  }
+
+  /**
    * Parse value expressions (highest precedence)
-   * value: '(' or_expr ')' | literal | identifier
+   * value: '(' or_expr ')' | literal | call | identifier
    */
   private parseValue(): ASTNode {
     // Parenthesized expression
@@ -192,9 +263,11 @@ export class ExpressionParser {
       return { type: 'Literal', value };
     }
 
-    // Identifier
+    // A function call, or an identifier
     if (this.check('IDENTIFIER')) {
       const token = this.advance();
+      const next = this.peek();
+      if (next?.type === 'PAREN' && next.value === '(') return this.parseCall(token.value);
       return { type: 'Identifier', name: token.value };
     }
 

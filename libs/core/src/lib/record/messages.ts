@@ -32,6 +32,17 @@ export interface Messages {
   file: string;
   fileSize: string;
   fileType: string;
+  /**
+   * Answer rules, besides the messages above they share (maxLength, pattern,
+   * min, max): a shortest length, an ending, how many may be ticked, a day
+   * in the past or the future.
+   */
+  minLength: string;
+  endsWith: string;
+  atLeast: string;
+  atMost: string;
+  datePast: string;
+  dateFuture: string;
   /** Joins the last two items of a list: "PDF or image". */
   or: string;
 }
@@ -66,6 +77,12 @@ export const MESSAGES: Record<Locale, Messages> = {
     file: '{label} must be a file',
     fileSize: '{label} is larger than {size}',
     fileType: '{label} must be {aTypes} file',
+    minLength: '{label} must be at least {min} characters',
+    endsWith: '{label} must end with {ending}',
+    atLeast: 'Choose at least {min} for {label}',
+    atMost: 'Choose at most {max} for {label}',
+    datePast: '{label} must be in the past',
+    dateFuture: '{label} must be in the future',
     or: 'or',
   },
   ar: {
@@ -95,6 +112,12 @@ export const MESSAGES: Record<Locale, Messages> = {
     file: 'يجب أن يكون {label} ملفًا',
     fileSize: 'حجم {label} أكبر من {size}',
     fileType: 'يجب أن يكون {label} ملف {types}',
+    minLength: 'يجب ألا يقل {label} عن {min} حرفًا',
+    endsWith: 'يجب أن ينتهي {label} بـ {ending}',
+    atLeast: 'اختر {min} على الأقل في {label}',
+    atMost: 'اختر {max} على الأكثر في {label}',
+    datePast: 'يجب أن يكون {label} في الماضي',
+    dateFuture: 'يجب أن يكون {label} في المستقبل',
     or: 'أو',
   },
   de: {
@@ -124,6 +147,12 @@ export const MESSAGES: Record<Locale, Messages> = {
     file: '{label} muss eine Datei sein',
     fileSize: '{label} ist größer als {size}',
     fileType: '{label} muss eine {types}-Datei sein',
+    minLength: '{label} muss mindestens {min} Zeichen haben',
+    endsWith: '{label} muss auf {ending} enden',
+    atLeast: 'Wählen Sie bei {label} mindestens {min} aus',
+    atMost: 'Wählen Sie bei {label} höchstens {max} aus',
+    datePast: '{label} muss in der Vergangenheit liegen',
+    dateFuture: '{label} muss in der Zukunft liegen',
     or: 'oder',
   },
   fr: {
@@ -153,6 +182,12 @@ export const MESSAGES: Record<Locale, Messages> = {
     file: '{label} doit être un fichier',
     fileSize: '{label} dépasse {size}',
     fileType: '{label} doit être un fichier {types}',
+    minLength: '{label} doit comporter au moins {min} caractères',
+    endsWith: '{label} doit se terminer par {ending}',
+    atLeast: 'Choisissez au moins {min} pour {label}',
+    atMost: 'Choisissez au plus {max} pour {label}',
+    datePast: '{label} doit être dans le passé',
+    dateFuture: '{label} doit être dans le futur',
     or: 'ou',
   },
 };

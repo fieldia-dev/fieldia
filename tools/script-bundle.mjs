@@ -67,8 +67,9 @@ const code = readFileSync(OUT, 'utf8');
 if (/ZodError|\$ZodType/.test(code)) throw new Error('the script bundle carries zod: something imports the format schemas');
 // 190 until 0.9; lists, their search bar and their groups take it to 192 with the stylesheets minified.
 // Blocks and a matrix took it to 200; the seven question kinds (signature, slider, tags, pictures,
-// ranking, address, repeating group) and shuffled options to 226.
-const BUDGET_KB = 230;
+// ranking, address, repeating group) and shuffled options add 26; values worked out from others,
+// values set by a condition and answer rules add 13.
+const BUDGET_KB = 245;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
 console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(statSync(OUT).size / 1024)} KB)`);

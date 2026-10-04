@@ -2,6 +2,8 @@ import type { Field, Fields, FilterItem, LineField, LineKinds } from './field';
 import type { FieldNode, LayoutNode, ListNode, RootLayout, SheetNode, TabsNode } from './layout';
 import type { Page } from './page';
 import { compileModifier } from '../expression/modifier';
+import { compileExpression } from '../expression/expression';
+import { dependencyOrder } from '../expression/order';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -12,6 +14,23 @@ export interface PageIssue {
 export type PageValidation = { ok: true; page: Page } | { ok: false; issues: PageIssue[] };
 
 const has = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
+
+/** The kinds of field an expression can give a value to: the rest hold records, lines or files. */
+const EXPRESSIBLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'boolean', 'date', 'datetime', 'selection', 'json']);
+const EXPRESSIBLE_WORDS = 'text, numbers, yes or no, dates, choices and json can';
+
+/** Where an expression's names are looked up: the page's fields, or the fields of one one2many's lines. */
+interface Scope {
+  fields: Record<string, Field | LineField>;
+  /** The one2many whose lines these are; none for the page's own fields. */
+  lines?: string;
+}
+
+/** Names quoted and joined as a person lists them: "a", "b" and "c". */
+const listed = (names: string[]) => {
+  const quoted = names.map((name) => `"${name}"`);
+  return quoted.length < 2 ? quoted.join('') : `${quoted.slice(0, -1).join(', ')} and ${quoted[quoted.length - 1]}`;
+};
 
 /** The second pass of every check: ids unique, every name defined, every condition readable. */
 export class ReferenceCheck {
@@ -43,8 +62,8 @@ export class ReferenceCheck {
     return undefined;
   }
 
-  /** Every modifier on `owner` must read, and read only fields of this page. */
-  private checkModifiers(owner: object, path: string, keys: readonly string[] = ['invisible']) {
+  /** Every modifier on `owner` must read, and read only fields of this page (or of its line). */
+  private checkModifiers(owner: object, path: string, keys: readonly string[] = ['invisible'], scope: Scope = { fields: this.page.fields }) {
     for (const key of keys) {
       const value = (owner as Record<string, unknown>)[key];
       if (typeof value !== 'string') continue;
@@ -55,19 +74,75 @@ export class ReferenceCheck {
         this.report(`${path}.${key}`, `cannot read "${value}": ${(error as Error).message}`);
         continue;
       }
-      for (const name of fields) {
-        if (!has(this.page.fields, name)) {
-          this.report(`${path}.${key}`, `"${value}" reads "${name}", which is not a field of this page`);
-        }
-      }
+      this.checkReads(value, fields, `${path}.${key}`, scope);
     }
   }
 
-  private checkFields(fields: Fields | Record<string, LineField>, base: string) {
+  /** Each name an expression reads must be a field where it is worked out. */
+  private checkReads(source: string, fields: readonly string[], path: string, scope: Scope) {
+    for (const name of fields) {
+      if (has(scope.fields, name)) continue;
+      const where = scope.lines === undefined ? 'of this page' : `of the lines of "${scope.lines}"`;
+      this.report(path, `"${source}" reads "${name}", which is not a field ${where}`);
+    }
+  }
+
+  /**
+   * An expression for a value must read, read only fields where it is worked
+   * out, and add up only line fields that exist. Returns the fields it reads,
+   * or null when it cannot be read.
+   */
+  private checkExpression(source: string, path: string, scope: Scope): readonly string[] | null {
+    let compiled: ReturnType<typeof compileExpression>;
+    try {
+      compiled = compileExpression(source);
+    } catch (error) {
+      this.report(path, `cannot read "${source}": ${(error as Error).message}`);
+      return null;
+    }
+    this.checkReads(source, compiled.fields, path, scope);
+    for (const sum of compiled.sums) {
+      if (!has(scope.fields, sum.lines)) continue;
+      const lines = scope.fields[sum.lines];
+      if (lines.type !== 'one2many') this.report(path, `sum adds up the lines of a one2many; "${sum.lines}" is a ${lines.type}`);
+      else if (!has(lines.fields, sum.field)) this.report(path, `"${sum.field}" is not a field of the lines of "${sum.lines}"`);
+    }
+    return compiled.fields;
+  }
+
+  /**
+   * Worked-out values and values set by a condition, among one set of fields:
+   * each expression checked, and no two values worked out from each other.
+   */
+  private checkWorkedOut(fields: Record<string, Field | LineField>, base: string, scope: Scope) {
+    const reads = new Map<string, readonly string[]>();
     for (const [name, def] of Object.entries(fields)) {
       const path = `${base}.${name}`;
-      // Values set when a condition starts to hold: the condition reads like any other.
-      def.setWhen?.forEach((item, i) => this.checkModifiers(item, `${path}.setWhen[${i}]`, ['when']));
+      if ((def.compute !== undefined || def.setWhen) && !EXPRESSIBLE.has(def.type)) {
+        if (def.compute !== undefined) this.report(`${path}.compute`, `a ${def.type} cannot be worked out; ${EXPRESSIBLE_WORDS}`);
+        if (def.setWhen) this.report(`${path}.setWhen`, `a ${def.type} cannot be set by a condition; ${EXPRESSIBLE_WORDS}`);
+        continue;
+      }
+      if (def.compute !== undefined) {
+        const read = this.checkExpression(def.compute, `${path}.compute`, scope);
+        if (read) reads.set(name, read);
+      }
+      def.setWhen?.forEach((item, i) => {
+        this.checkModifiers(item, `${path}.setWhen[${i}]`, ['when'], scope);
+        this.checkExpression(item.value, `${path}.setWhen[${i}].value`, scope);
+      });
+    }
+    for (const cycle of dependencyOrder(reads).cycles) {
+      const names = cycle.slice(0, -1);
+      const message = names.length === 1 ? `"${names[0]}" is worked out from itself` : `${listed(names)} are worked out from each other: ${cycle.join(' → ')}`;
+      this.report(`${base}.${cycle[0]}.compute`, message);
+    }
+  }
+
+  private checkFields(fields: Fields | Record<string, LineField>, base: string, lines?: string) {
+    this.checkWorkedOut(fields, base, { fields, lines });
+    for (const [name, def] of Object.entries(fields)) {
+      const path = `${base}.${name}`;
       if (def.type === 'monetary' && def.currencyField !== undefined) {
         const currency = this.need(def.currencyField, `${path}.currencyField`, fields);
         if (currency && !['many2one', 'selection', 'char'].includes(currency.type)) {
@@ -99,7 +174,7 @@ export class ReferenceCheck {
         });
       }
       if (def.type === 'one2many') {
-        this.checkFields(def.fields, `${path}.fields`);
+        this.checkFields(def.fields, `${path}.fields`, name);
         if (def.lineKinds) this.checkLineKinds(name, def.lineKinds, def.fields, `${path}.lineKinds`);
         if (def.sequenceField !== undefined) {
           const sequence = def.fields[def.sequenceField];

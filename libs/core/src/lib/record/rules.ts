@@ -1,0 +1,93 @@
+import type { Field } from '../format/field';
+import type { AnswerRule } from '../format/layout';
+import type { ExpressionEnv } from '../expression/functions';
+import { localDay } from '../expression/functions';
+import { compileModifier, type CompiledModifier } from '../expression/modifier';
+import { isNumber } from '../expression/operations';
+import { fill, type Messages } from './messages';
+import { isEmpty, type Value } from './values';
+
+/**
+ * Answer rules: what a field node's `validate` asks of an answer, besides its
+ * field's own rules. An empty answer passes every rule (`required` decides
+ * whether one is needed), a rule applies only while its `when` holds, and an
+ * ask that does not fit the answer — a length of a number — is not broken.
+ */
+
+/** A rule read once: its condition parsed, its pattern made whole. */
+export interface CompiledRule {
+  readonly rule: AnswerRule;
+  readonly when: CompiledModifier;
+  readonly pattern: RegExp | null;
+}
+
+export function compileRules(rules: readonly AnswerRule[] | undefined): CompiledRule[] {
+  return (rules ?? []).map((rule) => ({
+    rule,
+    when: compileModifier(rule.when ?? true),
+    // A pattern is about the whole answer, not a part of it.
+    pattern: rule.pattern === undefined ? null : new RegExp(`^(?:${rule.pattern})$`),
+  }));
+}
+
+/** What a rule is checked with: the record as expressions read it, the clock, and the words to say. */
+export interface RuleContext {
+  context: Record<string, unknown>;
+  env: ExpressionEnv;
+  now: Date;
+  messages: Messages;
+}
+
+/** The first broken error rule's message and the first broken warning rule's, for one answer. */
+export function checkRules(
+  field: Field,
+  label: string,
+  value: Value | undefined,
+  rules: readonly CompiledRule[],
+  at: RuleContext
+): { error?: string; warning?: string } {
+  const found: { error?: string; warning?: string } = {};
+  if (!rules.length || isEmpty(field, value)) return found;
+  for (const compiled of rules) {
+    const level = compiled.rule.level ?? 'error';
+    if (found[level] !== undefined || !compiled.when.evaluate(at.context, at.env)) continue;
+    const broken = brokenAsk(compiled, field, value as Value, at.now);
+    if (broken) found[level] = compiled.rule.message ?? fill(at.messages[broken.say], { label, ...broken.values });
+  }
+  return found;
+}
+
+type Broken = { say: keyof Messages; values?: Record<string, string | number> };
+
+/** The first thing a rule asks that the answer does not keep, in the order a rule lists them. */
+function brokenAsk({ rule, pattern }: CompiledRule, field: Field, value: Value, now: Date): Broken | undefined {
+  const text = typeof value === 'string' ? value : null;
+  if (text !== null && rule.minLength !== undefined && text.length < rule.minLength) return { say: 'minLength', values: { min: rule.minLength } };
+  if (text !== null && rule.maxLength !== undefined && text.length > rule.maxLength) return { say: 'maxLength', values: { max: rule.maxLength } };
+  if (pattern && (text !== null || isNumber(value)) && !pattern.test(String(value))) return { say: 'pattern' };
+  if (text !== null && rule.endsWith !== undefined && !text.trim().toLowerCase().endsWith(rule.endsWith.toLowerCase())) {
+    return { say: 'endsWith', values: { ending: rule.endsWith } };
+  }
+  if (isNumber(value) && rule.min !== undefined && value < rule.min) return { say: 'min', values: { min: rule.min } };
+  if (isNumber(value) && rule.max !== undefined && value > rule.max) return { say: 'max', values: { max: rule.max } };
+  const count = Array.isArray(value) ? value.length : null;
+  if (count !== null && rule.atLeast !== undefined && count < rule.atLeast) return { say: 'atLeast', values: { min: rule.atLeast } };
+  if (count !== null && rule.atMost !== undefined && count > rule.atMost) return { say: 'atMost', values: { max: rule.atMost } };
+  if (text !== null && rule.date !== undefined) {
+    const side = whenIs(field, text, now);
+    if (rule.date === 'past' && side >= 0) return { say: 'datePast' };
+    if (rule.date === 'future' && side <= 0) return { say: 'dateFuture' };
+  }
+  return undefined;
+}
+
+/**
+ * Whether an answer is before (-1) or after (1) now, or is now (0): a day
+ * against today, a date and time against the clock itself. A date and time
+ * that cannot be read is neither (NaN): the field's own rules name it.
+ */
+function whenIs(field: Field, text: string, now: Date): number {
+  if (field.type === 'datetime') return Math.sign(Date.parse(text) - now.getTime());
+  const today = localDay(now);
+  return text < today ? -1 : text > today ? 1 : 0;
+}

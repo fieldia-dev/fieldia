@@ -1,9 +1,10 @@
-import { createMemoryDataSource, type Line, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, localizePage, type Line, type Page, type Values } from '@fieldia/core';
 import customer from '../../examples/pages/customer.page.json';
 import fields from '../../examples/pages/fields.page.json';
 import kinds from '../../examples/pages/kinds.page.json';
 import customers from '../../examples/pages/customers.page.json';
 import order from '../../examples/pages/order.page.json';
+import rules from '../../examples/pages/rules.page.json';
 import signup from '../../examples/pages/signup.page.json';
 import survey from '../../examples/pages/survey.page.json';
 import { customPage } from './custom-page';
@@ -17,15 +18,19 @@ export const pages: Record<string, Page> = {
   fields: fields as Page,
   kinds: kinds as Page,
   order: order as Page,
+  rules: rules as Page,
   custom: customPage,
 };
 
 /**
  * The page the query string names, with the page-wide choices it may also make:
- * `maxWidth` (narrow, medium, wide, full) and `actions` (top, bottom).
+ * `maxWidth` (narrow, medium, wide, full) and `actions` (top, bottom). With a
+ * `locale`, a page that keeps translations shows its words in that language.
  */
 export function pageFromQuery(params: URLSearchParams): Page {
-  const page = pages[params.get('page') ?? 'signup'] ?? pages['signup'];
+  const named = pages[params.get('page') ?? 'signup'] ?? pages['signup'];
+  const locale = params.get('locale');
+  const page = locale ? localizePage(named, locale) : named;
   const maxWidth = params.get('maxWidth');
   const actions = params.get('actions');
   return {
