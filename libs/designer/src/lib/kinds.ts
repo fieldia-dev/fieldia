@@ -33,6 +33,7 @@ export const QUESTION_KINDS: readonly QuestionKind[] = [
   { id: 'date', label: 'Date', field: (label) => ({ type: 'date', label }) },
   { id: 'date-time', label: 'Date and time', field: (label) => ({ type: 'datetime', label }) },
   { id: 'yes-no', label: 'Yes or no', field: (label) => ({ type: 'boolean', label }), widget: 'toggle' },
+  { id: 'tick', label: 'Tick box', field: (label) => ({ type: 'boolean', label }), widget: 'tick' },
   { id: 'email', label: 'Email', field: (label) => ({ type: 'char', label, pattern: '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$' }), widget: 'email' },
   { id: 'phone', label: 'Phone', field: (label) => ({ type: 'char', label }), widget: 'phone' },
   { id: 'file', label: 'File upload', field: (label) => ({ type: 'binary', label, maxSize: 10 * 1024 * 1024 }) },
@@ -97,7 +98,7 @@ export function kindOfField(field: Field, node: FieldNode): string | null {
     case 'datetime':
       return 'date-time';
     case 'boolean':
-      return 'yes-no';
+      return node.widget === 'tick' ? 'tick' : 'yes-no';
     case 'binary':
       return node.widget === 'signature' ? 'signature' : 'file';
     case 'image':

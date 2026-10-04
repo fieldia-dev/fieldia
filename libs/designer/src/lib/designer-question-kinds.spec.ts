@@ -4,9 +4,9 @@ import { kindById } from './kinds';
 import { TOOLBOX_GROUPS } from './toolbox';
 import { ICON_NAMES } from './icons';
 
-/** The question kinds a survey asks with: signature, slider, tags, image choice, ranking, matrix, address and a repeating group. */
+/** The question kinds a survey asks with: signature, slider, tags, image choice, ranking, matrix, address, a repeating group and a tick box. */
 
-const NEW_KINDS = ['signature', 'slider', 'tags', 'image-choice', 'ranking', 'matrix', 'address', 'repeating'];
+const NEW_KINDS = ['signature', 'slider', 'tags', 'image-choice', 'ranking', 'matrix', 'address', 'repeating', 'tick'];
 const questions = (page: Page) => (page.layout as WizardNode).children.flatMap((s) => s.children as FieldNode[]);
 const fieldOf = (page: Page, id: string) => page.fields[(questions(page).find((n) => n.id === id) as FieldNode).field];
 const nodeOf = (page: Page, id: string) => questions(page).find((n) => n.id === id) as FieldNode;
@@ -43,6 +43,7 @@ describe('the new kinds of question', () => {
     expect((ranking.field as Extract<Field, { type: 'selection' }>).options.length).toBeGreaterThanOrEqual(2);
     expect(added('matrix').field).toMatchObject({ type: 'matrix', rows: [{ label: 'Row 1' }, { label: 'Row 2' }], columns: [{ label: 'Column 1' }, { label: 'Column 2' }] });
     expect(added('address')).toMatchObject({ field: { type: 'json' }, node: { widget: 'address' } });
+    expect(added('tick')).toMatchObject({ field: { type: 'boolean' }, node: { widget: 'tick' } });
     const group = added('repeating');
     expect(group).toMatchObject({ field: { type: 'one2many' }, node: { widget: 'cards' } });
     expect(Object.values((group.field as Extract<Field, { type: 'one2many' }>).fields).map((f) => f.label)).toEqual(['Name']);

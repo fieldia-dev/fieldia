@@ -56,6 +56,7 @@ describe('closed cards of the newer kinds', () => {
     ['image-choice', '.fd-image-choices'],
     ['ranking', '.fd-ranking'],
     ['matrix', '.fd-matrix'],
+    ['tick', '.fd-tick'],
   ])('shows a %s as its real answer box, not to be used here', (kind, selector) => {
     const { answer } = closed(kind);
     expect(answer.querySelector('.fd-q-preview')).toBeNull();

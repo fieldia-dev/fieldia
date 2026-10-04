@@ -24,6 +24,7 @@ const SHAPES: Record<string, string> = {
   checkboxes: '<rect x="3.5" y="4" width="7" height="7" rx="1.5"/><path d="M5.3 7.5l1.4 1.4 2.4-2.6"/><rect x="3.5" y="13" width="7" height="7" rx="1.5"/><path d="M14 7.5h6.5M14 16.5h6.5"/>',
   status: '<path d="M2 7h6l3 5-3 5H2l3-5zM12 7h6l3 5-3 5h-6l3-5z"/>',
   'yes-no': '<rect x="2" y="7" width="20" height="10" rx="5"/><circle cx="16" cy="12" r="3" fill="currentColor"/>',
+  tick: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 3 3 5-6"/>',
   link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   links: '<path d="M2 11V4h7l9 9-7 7z"/><path d="M12 4h2.5l7 7-6.5 6.5"/><circle cx="6" cy="8" r="1"/>',
   lines: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14.5h18M9 9v11"/>',

@@ -34,7 +34,7 @@ export interface ToolboxHandle {
 export const TOOLBOX_GROUPS: readonly [string, readonly string[]][] = [
   ['Text', ['short-answer', 'paragraph', 'email', 'phone', 'website', 'keywords']],
   ['Numbers and dates', ['number', 'amount', 'rating', 'scale', 'slider', 'progress', 'date', 'date-time']],
-  ['Choices', ['dropdown', 'multiple-choice', 'checkboxes', 'image-choice', 'tags', 'ranking', 'matrix', 'status', 'yes-no']],
+  ['Choices', ['dropdown', 'multiple-choice', 'checkboxes', 'image-choice', 'tags', 'ranking', 'matrix', 'status', 'yes-no', 'tick']],
   ['Records', ['link', 'links', 'lines']],
   ['More', ['rich-text', 'image', 'file', 'signature', 'address', 'repeating']],
 ];
