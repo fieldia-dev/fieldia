@@ -367,3 +367,9 @@ export const VIEWER_LABELS: Record<Locale, ViewerLabels> = {
 
 /** English, kept under its old name. */
 export const DEFAULT_LABELS: ViewerLabels = VIEWER_LABELS.en;
+
+/** The language of the viewer's own words for a language tag: its own, its base language's (`ar` for `ar-EG`), or English. */
+export function ownLocale(tag = 'en'): Locale {
+  const base = tag.split('-')[0] as Locale;
+  return VIEWER_LABELS[base] ? base : 'en';
+}

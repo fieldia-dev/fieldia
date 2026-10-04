@@ -1,6 +1,8 @@
 import {
   createForm,
   checkPage,
+  isRightToLeft,
+  localizePage,
   translatePage,
   wideColumns,
   type ButtonNode,
@@ -33,7 +35,7 @@ import { labelPlace, planSection, type Place } from './place';
 
 export type Skin = 'underline' | 'outlined';
 
-import { VIEWER_LABELS, type ViewerLabels } from './labels';
+import { ownLocale, VIEWER_LABELS, type ViewerLabels } from './labels';
 export { VIEWER_LABELS, DEFAULT_LABELS, type ViewerLabels } from './labels';
 
 /** Fill a slot with the app's own content. Return a function to clean up. */
@@ -47,8 +49,14 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
   /** Widgets that replace or add to the built-in ones, by `type` or `type.widget`. */
   widgets?: Record<string, WidgetFactory>;
   slots?: Record<string, SlotRenderer>;
-  /** The page's language: viewer labels, validation messages and widget words. Arabic runs right to left. */
-  locale?: Locale;
+  /**
+   * The page's language, as a language tag (`ar`, `es`, `pt-BR`): the page's
+   * own words in it when the page keeps them, and the viewer's labels,
+   * validation messages and widget words in it when Fieldia has them (English,
+   * Arabic, German, French; English otherwise). A language written right to
+   * left runs right to left. The language the page is written in unless said.
+   */
+  locale?: Locale | (string & {});
   /** Labels that win over the language's defaults. */
   labels?: Partial<ViewerLabels>;
   dir?: 'ltr' | 'rtl';
@@ -121,15 +129,18 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   if (!checked.ok) {
     throw new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);
   }
-  const page = options.translate ? translatePage(checked.page, options.translate) : checked.page;
-  const locale = options.locale ?? 'en';
+  // The page's own words in its language first; the app's translator over what is left.
+  const tag = options.locale ?? checked.page.language;
+  const localized = tag ? localizePage(checked.page, tag) : checked.page;
+  const page = options.translate ? translatePage(localized, options.translate) : localized;
+  const locale = ownLocale(tag);
   const preferences = options.preferences ?? browserPreferences();
   const dialogs = pageDialogs(options);
   const ownsForm = !options.form;
   const form = options.form ?? createForm({ ...options, page, messages: options.messages ?? MESSAGES[locale] });
   const labels: ViewerLabels = { ...VIEWER_LABELS[locale], ...options.labels };
   const widgetLabels = WIDGET_LABELS[locale];
-  const dir = options.dir ?? (locale === 'ar' ? 'rtl' : undefined);
+  const dir = options.dir ?? (tag && isRightToLeft(tag) ? 'rtl' : undefined);
   const prefix = `fd${++mounts}`;
   const updaters: Updater[] = [];
   const cleanups: (() => void)[] = [];
@@ -152,7 +163,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     return icon ? [icon, text] : [text];
   }
 
-  const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': options.skin ?? 'underline', dir, lang: options.locale, 'data-max-width': page.maxWidth });
+  const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': options.skin ?? 'underline', dir, lang: tag, 'data-max-width': page.maxWidth });
   applyLook(root, page.look);
   const confirm = options.confirm ?? dialogConfirm;
 
