@@ -28,8 +28,27 @@ export interface SettingRow {
   tab: PanelTab;
   name: string;
   element: HTMLElement;
-  /** The choices it offers, when it is a choice of a few. */
-  choices: { value: string; words: string; button: HTMLButtonElement }[];
+  /** The choices it offers, when it is a choice of a few, and the name of the group each is in. */
+  choices: { value: string; words: string; group?: string; button: HTMLButtonElement }[];
+}
+
+/** The settings on show in part of the panel, all on one tab. */
+export function settingRows(scope: HTMLElement, tab: PanelTab): SettingRow[] {
+  return [...scope.querySelectorAll<HTMLElement>('[data-setting]')]
+    .filter((row) => shownWithin(row, scope))
+    .map((row) => ({
+      tab,
+      name: row.dataset['setting'] as string,
+      element: row,
+      choices: [...row.querySelectorAll<HTMLButtonElement>('[data-choice]')]
+        .filter((button) => shownWithin(button, row))
+        .map((button) => ({
+          value: button.dataset['choice'] as string,
+          words: button.textContent?.trim() || button.getAttribute('aria-label') || '',
+          group: button.closest('[role="group"]')?.getAttribute('aria-label') ?? undefined,
+          button,
+        })),
+    }));
 }
 
 export interface InspectorShell {
@@ -123,21 +142,7 @@ export function inspectorShell(el: ElementFactory, doc: Document): InspectorShel
     },
     current: () => tab,
     choose,
-    rows() {
-      return shown.flatMap((at) => {
-        const panel = panelOf.get(at) as HTMLElement;
-        return [...panel.querySelectorAll<HTMLElement>('[data-setting]')]
-          .filter((row) => shownWithin(row, panel))
-          .map((row) => ({
-            tab: at,
-            name: row.dataset['setting'] as string,
-            element: row,
-            choices: [...row.querySelectorAll<HTMLButtonElement>('[data-choice]')]
-              .filter((button) => shownWithin(button, row))
-              .map((button) => ({ value: button.dataset['choice'] as string, words: button.textContent?.trim() || button.getAttribute('aria-label') || '', button })),
-          }));
-      });
-    },
+    rows: () => shown.flatMap((at) => settingRows(panelOf.get(at) as HTMLElement, at)),
     go(row, choice) {
       choose(row.tab);
       const target =

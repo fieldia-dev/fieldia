@@ -29,7 +29,7 @@ export function openFind(el: ElementFactory, root: HTMLElement, items: FindItem[
     'aria-autocomplete': 'list',
     autocomplete: 'off',
     spellcheck: 'false',
-    placeholder: 'Find a field, a kind, an action…',
+    placeholder: 'Find a field, a kind, a setting, an action…',
   }) as HTMLInputElement;
   const list = el('div', { class: 'fd-find-list', role: 'listbox', id: `${id}-list`, 'aria-label': 'Found' });
   const none = el('p', { class: 'fd-find-none', hidden: '' }, 'Nothing by that name.');
@@ -89,4 +89,33 @@ export function openFind(el: ElementFactory, root: HTMLElement, items: FindItem[
   // Focused now, not a frame later: what is typed straight after ⌘K lands in the box.
   input.focus();
   return { close };
+}
+
+/** A setting of the panel, as Find anything lists it. */
+export interface SettingEntry {
+  name: string;
+  /** Where it is, in words: its tab, or the page's look. */
+  tab: string;
+  /** Its choices, when it is a choice of a few; `group` names the choices' own group where a setting has several. */
+  choices: { value: string; words: string; group?: string }[];
+}
+
+/**
+ * The panel's settings as things to find: each by its name, and each of its
+ * choices as "Labels: beside" — by the choices' own group where a setting
+ * has several, as Columns has one for each size of screen.
+ */
+export function settingItems<T extends SettingEntry>(entries: readonly T[], open: (entry: T, choice?: string) => void, kind = 'setting'): FindItem[] {
+  return entries.flatMap((entry) => {
+    const hint = `${kind} · ${entry.tab}`;
+    const groups = new Set(entry.choices.map((c) => c.group));
+    return [
+      { label: entry.name, hint, run: () => open(entry) },
+      ...entry.choices.map((choice) => ({
+        label: `${groups.size > 1 && choice.group ? choice.group : entry.name}: ${choice.words.toLowerCase()}`,
+        hint,
+        run: () => open(entry, choice.value),
+      })),
+    ];
+  });
 }

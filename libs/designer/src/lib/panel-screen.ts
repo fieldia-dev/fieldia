@@ -1,5 +1,6 @@
 import type { Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
+import { settingItems, type FindItem } from './find-anything';
 import type { Designer, DesignerState } from './designer';
 import { findHeaderPart } from './header-commands';
 import { headerPartProperties, statusbarProperties } from './header-properties';
@@ -8,12 +9,12 @@ import { locate, nameOf, seenAs } from './layout-tree';
 import { columnProperties, listActionProperties, listProperties } from './list-properties';
 import { fieldProperties } from './panel-field';
 import { arrangementProperties, groupProperties } from './panel-group';
-import { inspectorShell, type InspectorHead } from './panel-inspector';
-import { wearLook } from './panel-look';
+import { inspectorShell, settingRows, type InspectorHead, type SettingRow } from './panel-inspector';
+import { pageLookSettings, wearLook } from './panel-look';
 import { pageProperties } from './panel-page';
 import { blockProperties, severalProperties } from './panel-parts';
 import { settingSearch } from './panel-search';
-import { partKindOf, type PanelTab, type PartKind } from './panel-tabs';
+import { partKindOf, TAB_NAMES, type PanelTab, type PartKind } from './panel-tabs';
 import { tabProperties, tabsProperties, type PropertiesView } from './screen-properties';
 
 /**
@@ -28,6 +29,8 @@ export interface ScreenPanel {
   update(state: DesignerState): void;
   /** Bring part of what is picked forward, on its tab: its settings, when it shows, a list's filters. */
   open(part: 'field' | 'when' | 'filters'): void;
+  /** For Find anything: the settings of what is picked, and the page's look. */
+  findItems(): FindItem[];
 }
 
 /** The tab each part the canvas asks for is on. */
@@ -131,6 +134,16 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
     }
   }
 
+  /** Go to a setting on show, by its tab and name: a choice made first, unless it is made already. */
+  function go(tab: PanelTab, name: string, choice?: string) {
+    const find = () => shell.rows().find((row: SettingRow) => row.tab === tab && row.name === name);
+    const button = choice === undefined ? undefined : find()?.choices.find((c) => c.value === choice)?.button;
+    if (button && button.getAttribute('aria-pressed') !== 'true') button.click();
+    // Made, the choice may have drawn the panel again: the setting is looked for afresh.
+    const row = find();
+    if (row) shell.go(row, choice);
+  }
+
   return {
     element: shell.element,
     update(state) {
@@ -147,6 +160,30 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
       search.refresh();
       // The canvas wears the page's look as it is set.
       if (wearer) wearLook(wearer, page.look);
+    },
+    findItems() {
+      const page = designer.getPage();
+      const own = shell.rows();
+      const items = settingItems(
+        own.map((row) => ({ ...row, tab: TAB_NAMES[row.tab], row })),
+        ({ row }, choice) => go(row.tab, row.name, choice)
+      );
+      // The page's look, from wherever: what is picked is put down to show it.
+      if (partKindOf(page, designer.getState().picked) === 'page' || page.layout.type === 'list') return items;
+      const look = pageLookSettings(el, designer);
+      look.update(page);
+      const names = new Set(own.map((row) => row.name));
+      const rows = settingRows(el('div', {}, ...look.rows), 'look');
+      return [
+        ...items,
+        ...settingItems(
+          rows.map((row) => ({ ...row, name: names.has(row.name) ? `The page’s ${row.name.toLowerCase()}` : row.name, tab: 'the page’s look', own: row.name })),
+          ({ own: name }, choice) => {
+            designer.select(null);
+            go('look', name, choice);
+          }
+        ),
+      ];
     },
     open(part) {
       shell.choose(PART_TAB[part]);

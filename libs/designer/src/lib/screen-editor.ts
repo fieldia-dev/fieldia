@@ -52,7 +52,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     titleLabel: 'Screen title',
     placeholder: 'Untitled screen',
     extra: [trial.toggle],
-    find: () => [...findItems(), ...trial.items()],
+    find: () => [...findItems(), ...trial.items(), ...panel.findItems()],
     // A check about a field's words or options: it is open on the canvas by now, the cursor goes there.
     goTo(id, part) {
       if (part === 'label') return canvas.focus(id, 'label', true);
