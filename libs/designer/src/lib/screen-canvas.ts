@@ -517,6 +517,25 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   // Advanced's guides: the columns of the grid the picked part sits on.
   const guides = canvasGuides({ root: body, designer });
   const widths = widthMarks({ canvas: element, root: body, designer, rtl: () => doc.defaultView?.getComputedStyle(element).direction === 'rtl' });
+  /**
+   * The width handle goes where the part picked is, so it is measured: in the
+   * next frame, once the whole editor has written this change, the page is
+   * laid out once — measured now, it would be laid out here and again after.
+   */
+  let widthsFor: DesignerState | null = null;
+  let gone = false;
+  function placeWidths(state: DesignerState) {
+    const view = doc.defaultView;
+    if (!view?.requestAnimationFrame) return widths.update(state, mode === 'advanced');
+    const asked = widthsFor !== null;
+    widthsFor = state;
+    if (asked) return;
+    view.requestAnimationFrame(() => {
+      const latest = widthsFor;
+      widthsFor = null;
+      if (latest && !gone) widths.update(latest, mode === 'advanced');
+    });
+  }
   const drag: CanvasDrag = {
     press: (source, event, tile) => (mode === 'advanced' ? advanced : simpleDrag).press(source, event, tile),
     destroy() {
@@ -585,7 +604,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       titleCard.classList.toggle('fd-canvas-selected', selected === null);
       header.update(page, selected, form);
       guides.update(state, mode === 'advanced');
-      widths.update(state, mode === 'advanced');
+      placeWidths(state);
       multi.update(state, mode === 'advanced');
       ruleMarks(element, page, designer);
     },
@@ -598,6 +617,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       input?.select();
     },
     destroy() {
+      gone = true;
       drag.destroy();
       widths.destroy();
       header.destroy();

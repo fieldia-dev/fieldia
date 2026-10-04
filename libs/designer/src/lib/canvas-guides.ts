@@ -19,6 +19,9 @@ export function canvasGuides(options: { root: HTMLElement; designer: Designer })
 
   /** How many columns a grid has now: as the browser lays it out, or as the page says where there is no layout. */
   function columns(grid: HTMLElement): number {
+    // The columns the canvas gives the grid, which lays it out with as many: read without laying the page out.
+    const given = Number(grid.style.getPropertyValue('--fd-cols'));
+    if (Number.isInteger(given) && given >= 1) return given;
     // Laid out, the browser gives each column's width; anything else is no layout to count.
     const tracks = (doc.defaultView?.getComputedStyle(grid).gridTemplateColumns ?? '').split(' ').filter(Boolean);
     if (tracks.length && tracks.every((t) => /^[\d.]+px$/.test(t))) return tracks.length;
@@ -45,7 +48,7 @@ export function canvasGuides(options: { root: HTMLElement; designer: Designer })
       for (const old of root.querySelectorAll('.fd-guides')) old.remove();
       const id = state.selected;
       if (!advanced || !id || !locate(state.page, id)) return;
-      const part = [...root.querySelectorAll<HTMLElement>('[data-node]')].find((e) => e.dataset['node'] === id && e.getAttribute('role') !== 'tab');
+      const part = root.querySelector<HTMLElement>(`[data-node="${id.replace(/["\\]/g, '\\$&')}"]:not([role="tab"])`);
       if (!part) return;
       const around = part.parentElement?.closest<HTMLElement>('[data-container]');
       const own = [...part.querySelectorAll<HTMLElement>('[data-container]')].find((g) => g.parentElement?.closest('[data-node]') === part);

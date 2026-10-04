@@ -99,3 +99,34 @@ describe('a big screen, edited', () => {
     expect(card(ids[1]).querySelector('.fd-help')?.textContent).toBe('About Visit date');
   });
 });
+
+describe('the width handle of the part picked, in Advanced', () => {
+  const real = window.requestAnimationFrame;
+  afterEach(() => {
+    window.requestAnimationFrame = real;
+  });
+
+  it('is put in place in the next frame, once the rest of the page is written, so the page is laid out once', () => {
+    const frames: FrameRequestCallback[] = [];
+    window.requestAnimationFrame = (callback) => frames.push(callback);
+    const { designer, ids } = setup();
+    canvas.setMode('advanced');
+    designer.select(ids[0]);
+    frames.splice(0).forEach((frame) => frame(0));
+    // The handle on its edge, or the gutter to the part beside it.
+    const marks = () => [...canvas.element.querySelectorAll<HTMLElement>('.fd-width-handle, .fd-gutter')].filter((m) => !m.hidden).length;
+    designer.select(null);
+    frames.splice(0).forEach((frame) => frame(0));
+    expect(marks()).toBe(0);
+    designer.select(ids[1]);
+    designer.select(ids[2]);
+    expect(marks()).toBe(0);
+    expect(frames).toHaveLength(1);
+    frames.splice(0).forEach((frame) => frame(0));
+    expect(marks()).toBe(1);
+    canvas.setMode('simple');
+    designer.select(ids[0]);
+    frames.splice(0).forEach((frame) => frame(0));
+    expect(marks()).toBe(0);
+  });
+});
