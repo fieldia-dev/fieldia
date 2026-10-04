@@ -16,6 +16,7 @@ import { inlineSettings } from './inline-settings';
 import { installDesignerStyles } from './styles';
 import { toolbox, TOOLBOX_GROUPS } from './toolbox';
 import { tryIt } from './try-it';
+import { translationsView } from './translations-view';
 
 /**
  * The survey editor, the Google Forms way: on a tinted page, a card heading
@@ -91,7 +92,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     titleLabel: 'Form title',
     placeholder: 'Untitled form',
     extra: [trial.toggle],
-    find: () => [...findItems(), ...trial.items()],
+    find: () => [...findItems(), ...trial.items(), ...words.items()],
     // A check about a question's words or options: its card is open by now, the cursor goes there.
     goTo(id, part) {
       const card = root.querySelector(`.fd-q[data-node="${id}"]`);
@@ -159,6 +160,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   });
   const body = el('div', { class: 'fd-designer-body fd-survey-body' }, side.element, editor);
   root.append(bar.element, bar.issues, body, trial.element);
+  const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
 
   // ---- find anything -----------------------------------------------------------
   /** A kind to add, a question or a page to go to, a page to add. */
@@ -645,6 +647,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       doc.removeEventListener('keydown', onKey);
       for (const view of cardViews.values()) view.destroy();
       trial.destroy();
+      words.destroy();
       root.remove();
     },
   };

@@ -5,6 +5,7 @@ import type { Designer } from './designer';
 import type { FindItem } from './find-anything';
 import { designerIcon } from './icons';
 import { sampleRows } from './samples';
+import { tryLanguage } from './try-language';
 
 /**
  * Try it: the page working as people will use it, in place of the editor —
@@ -69,6 +70,7 @@ export function tryIt(options: TryItOptions): TryIt {
     ),
     frame
   );
+  const language = tryLanguage({ el, designer, bar: element.querySelector('.fd-try-bar') as HTMLElement, redraw: () => draw() });
 
   let trying = false;
   let width: Width = 'desktop';
@@ -94,8 +96,7 @@ export function tryIt(options: TryItOptions): TryIt {
       page,
       dataSource,
       skin: options.skin,
-      dir: direction,
-      ...(direction === 'rtl' ? { locale: 'ar' as const } : {}),
+      ...language.viewerOptions(direction),
     });
   }
   /** "Score: 3 of 5": the points of the questions that were asked, out of the most they could earn. */

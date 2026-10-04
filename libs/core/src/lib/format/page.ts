@@ -45,6 +45,8 @@ export interface Page {
   /** Where Save and Discard sit: at the top of the page, or at its foot. A wizard keeps its own. */
   actionsPosition?: 'top' | 'bottom';
   look?: PageLook;
+  /** The language the page's own words are written in, by language tag. English unless said. */
+  language?: string;
   /**
    * The page's words in other languages, by language tag (`ar`, `fr`,
    * `pt-BR`): each a map from the words as written to their translation.
@@ -80,6 +82,7 @@ export const PageSchema = z
         scheme: z.enum(['light', 'dark', 'auto']).optional(),
       })
       .optional(),
+    language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/).optional(),
     translations: z.record(z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/), z.record(z.string(), z.string())).optional(),
   })
   .meta({

@@ -26,6 +26,7 @@ import * as settings from './layout-settings';
 import type { LookPatch, SectionLook } from './layout-settings';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
+import { translationCommands } from './translations';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -294,6 +295,17 @@ export interface Designer extends HeaderCommands, ListCommands {
   revertTo(version: number): boolean;
   /** Resolves once every draft save started so far has finished. */
   settled(): Promise<void>;
+  // translations lane
+  /** A language to translate the page into, by tag (`ar`, `pt-BR`). Not the page's own language. */
+  addLanguage(tag: string): boolean;
+  /** A language taken out, with every word translated into it. */
+  removeLanguage(tag: string): boolean;
+  /** One word's translation; empty or `null` takes it away. Typing in one word is one undo step. */
+  setTranslation(tag: string, source: string, text: string | null): boolean;
+  /** Many translations at once, by language then by word, as one edit; languages the page has not got are added. Returns how many were filled. */
+  fillTranslations(words: Record<string, Record<string, string>>): number | false;
+  /** Let go of words' translations in every language, as one edit: for words no longer on the page. */
+  forgetWords(sources: string[]): boolean;
 }
 
 
@@ -1104,6 +1116,8 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     async settled() {
       await saving;
     },
+    // translations lane
+    ...translationCommands({ apply, getPage: () => page }),
   };
   return designer;
 }

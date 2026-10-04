@@ -1,5 +1,6 @@
-import type { Locale, PageLook, RecordId, RelatedRecord, Values } from '@fieldia/core';
+import type { PageLook, RecordId, RelatedRecord, Values } from '@fieldia/core';
 import { WIDGET_LABELS } from '@fieldia/widgets';
+import { ownLocale } from './labels';
 import { applyLook } from './look';
 import { mountViewer, VIEWER_LABELS, type Skin, type ViewerHandle, type ViewerOptions } from './viewer';
 
@@ -45,7 +46,7 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
   const doc = options.container?.ownerDocument ?? document;
   const container = options.container ?? doc.body;
   const opener = doc.activeElement instanceof doc.defaultView!.HTMLElement ? (doc.activeElement as HTMLElement) : null;
-  const labels = { ...VIEWER_LABELS[options.locale ?? 'en'], ...options.labels };
+  const labels = { ...VIEWER_LABELS[ownLocale(options.locale)], ...options.labels };
   const id = `fd-dialog-${++dialogs}`;
   const make = <K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, text?: string) => {
     const element = doc.createElement(tag);
@@ -174,7 +175,8 @@ export interface SearchDialogOptions {
   title: string;
   /** Finds records for what is typed: the field's own search, filter and all. */
   search(query: string, limit: number): Promise<RelatedRecord[]>;
-  locale?: Locale;
+  /** A language tag; the dialog's words are in it when Fieldia has them, English otherwise. */
+  locale?: string;
   skin?: Skin;
   dir?: 'ltr' | 'rtl';
   /** Where the dialog goes: the document's body by default. */
@@ -192,8 +194,9 @@ export function openSearchDialog(options: SearchDialogOptions): Promise<RelatedR
   const doc = options.container?.ownerDocument ?? document;
   const container = options.container ?? doc.body;
   const opener = doc.activeElement instanceof doc.defaultView!.HTMLElement ? (doc.activeElement as HTMLElement) : null;
-  const labels = VIEWER_LABELS[options.locale ?? 'en'];
-  const words = WIDGET_LABELS[options.locale ?? 'en'];
+  const locale = ownLocale(options.locale);
+  const labels = VIEWER_LABELS[locale];
+  const words = WIDGET_LABELS[locale];
   const id = `fd-dialog-${++dialogs}`;
   const make = <K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, text?: string) => {
     const element = doc.createElement(tag);
