@@ -11,7 +11,10 @@
  * Written with logical properties (inline/block, start/end), so a right-to-left
  * form mirrors without a second stylesheet.
  */
-export const FIELDIA_CSS = /* css */ `
+import { LAYOUT_CSS } from './layout-styles';
+
+/** The skins and the parts' chrome. One literal, so the script bundle can minify it as CSS. */
+const SKINS_CSS = /* css */ `
 /* .fd-theme carries the same tokens for things outside a form, such as a dialog over the page. */
 .fd-form, .fd-theme {
   --fd-font: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", sans-serif;
@@ -92,13 +95,19 @@ export const FIELDIA_CSS = /* css */ `
 .fd-section-title .fd-icon { color: var(--fd-muted); }
 
 /* ---- fields ---------------------------------------------------------------- */
+/* A grid of parts. --fd-cols is how many columns it has at the width it has now: the
+   rules for narrower widths change only that, and each part spans its --fd-span of them, never more. */
 .fd-grid {
+  --fd-cols: var(--fd-columns, 1);
+  /* A group that spans columns does not hand its width down to the parts inside it. */
+  --fd-span: 1;
   display: grid;
-  grid-template-columns: repeat(var(--fd-columns, 1), minmax(0, 1fr));
+  grid-template-columns: repeat(var(--fd-cols), minmax(0, 1fr));
   gap: var(--fd-gap-y) var(--fd-gap-x);
   align-items: start;
 }
-.fd-field { display: grid; gap: 4px; min-width: 0; grid-column: span min(var(--fd-span, 1), var(--fd-columns, 1)); }
+.fd-grid > * { grid-column: span min(var(--fd-span, 1), var(--fd-cols)); }
+.fd-field { display: grid; gap: 4px; min-width: 0; }
 .fd-label { font-weight: var(--fd-label-weight); color: var(--fd-text); }
 /* The ✓ of a field filled in right, by its label. */
 .fd-valid-mark { color: var(--fd-success); width: 1em; height: 1em; margin-inline-start: 6px; vertical-align: -0.15em; stroke-width: 2.4; }
@@ -112,37 +121,34 @@ export const FIELDIA_CSS = /* css */ `
   padding: 3px 8px; border-radius: var(--fd-control-radius); justify-self: start;
 }
 
-/* underline: label beside the value, the way a Flectra sheet reads */
-.fd-form[data-fd-skin="underline"] .fd-field {
+/* underline: label beside the value, the way a Flectra sheet reads. A field whose page or group
+   says where its label goes (data-labels) is laid out by those rules instead, in either skin. */
+.fd-form[data-fd-skin="underline"] .fd-field:where(:not([data-labels])) {
   /* One label width for every field, so a field spanning two columns lines up with its neighbours. */
   grid-template-columns: var(--fd-label-width, 11em) minmax(0, 1fr);
   column-gap: 12px;
   align-items: baseline;
 }
-.fd-form[data-fd-skin="underline"] .fd-field > .fd-label { grid-column: 1; }
+.fd-form[data-fd-skin="underline"] .fd-field:where(:not([data-labels])) > .fd-label { grid-column: 1; }
 /* A table of lines needs the full width: its label sits above it. */
 .fd-form[data-fd-skin="underline"] .fd-field[data-type="one2many"] { grid-template-columns: minmax(0, 1fr); }
 .fd-form[data-fd-skin="underline"] .fd-field[data-type="one2many"] > * { grid-column: 1 !important; }
-.fd-form[data-fd-skin="underline"] .fd-field > :not(.fd-label) { grid-column: 2; }
+.fd-form[data-fd-skin="underline"] .fd-field:where(:not([data-labels])) > :not(.fd-label) { grid-column: 2; }
 /* A label beside every value needs room twice over: the underline skin stacks its columns sooner. */
 @container (max-width: 760px) {
-  .fd-form[data-fd-skin="underline"] .fd-grid { grid-template-columns: minmax(0, 1fr); }
-  .fd-form[data-fd-skin="underline"] .fd-field { grid-column: auto; }
+  .fd-form[data-fd-skin="underline"] .fd-grid { --fd-cols: 1; }
   /* A section that says how many columns it keeps here keeps them, in either skin. */
-  .fd-form .fd-grid[data-columns-medium] { grid-template-columns: repeat(var(--fd-columns-medium), minmax(0, 1fr)); }
-  .fd-form .fd-grid[data-columns-medium] > .fd-field { grid-column: span min(var(--fd-span, 1), var(--fd-columns-medium)); }
+  .fd-form .fd-grid[data-columns-medium] { --fd-cols: var(--fd-columns-medium); }
   /* Kept side by side here, the underline skin's fields have no room for a label beside: it goes above. */
-  .fd-form[data-fd-skin="underline"] .fd-grid[data-columns-medium]:not([data-columns-medium="1"]) .fd-field { grid-template-columns: minmax(0, 1fr); }
-  .fd-form[data-fd-skin="underline"] .fd-grid[data-columns-medium]:not([data-columns-medium="1"]) .fd-field > * { grid-column: 1 !important; }
+  .fd-form[data-fd-skin="underline"] .fd-grid[data-columns-medium]:not([data-columns-medium="1"]) .fd-field:where(:not([data-labels])) { grid-template-columns: minmax(0, 1fr); }
+  .fd-form[data-fd-skin="underline"] .fd-grid[data-columns-medium]:not([data-columns-medium="1"]) .fd-field:where(:not([data-labels])) > * { grid-column: 1 !important; }
 }
 @container (max-width: 520px) {
-  .fd-grid { grid-template-columns: minmax(0, 1fr); }
-  .fd-field { grid-column: auto; }
-  .fd-form[data-fd-skin="underline"] .fd-field { grid-template-columns: minmax(0, 1fr); }
-  .fd-form[data-fd-skin="underline"] .fd-field > * { grid-column: 1 !important; }
+  .fd-grid { --fd-cols: 1; }
+  .fd-form[data-fd-skin="underline"] .fd-field:where(:not([data-labels])) { grid-template-columns: minmax(0, 1fr); }
+  .fd-form[data-fd-skin="underline"] .fd-field:where(:not([data-labels])) > * { grid-column: 1 !important; }
   /* The narrow count, or one column when only the medium one was given. */
-  .fd-form .fd-grid[data-columns-medium], .fd-form .fd-grid[data-columns-narrow] { grid-template-columns: repeat(var(--fd-columns-narrow, 1), minmax(0, 1fr)); }
-  .fd-form .fd-grid[data-columns-medium] > .fd-field, .fd-form .fd-grid[data-columns-narrow] > .fd-field { grid-column: span min(var(--fd-span, 1), var(--fd-columns-narrow, 1)); }
+  .fd-form .fd-grid[data-columns-medium], .fd-form .fd-grid[data-columns-narrow] { --fd-cols: var(--fd-columns-narrow, 1); }
 }
 
 /* ---- inputs ---------------------------------------------------------------- */
@@ -156,7 +162,7 @@ export const FIELDIA_CSS = /* css */ `
   border-width: var(--fd-input-border);
   border-radius: var(--fd-control-radius);
   padding: var(--fd-pad-y) var(--fd-pad-x);
-  min-height: 30px;
+  min-height: var(--fd-control-height, 30px);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .fd-input::placeholder { color: var(--fd-muted); opacity: 0.8; }
@@ -324,7 +330,7 @@ export const FIELDIA_CSS = /* css */ `
 .fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; min-height: 96px; }
 
 /* ---- sections, tabs ---------------------------------------------------- */
-.fd-sections { display: grid; gap: 24px; }
+.fd-sections { display: grid; gap: var(--fd-gap-block, 24px); }
 .fd-section { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 14px; }
 .fd-section-title { font-size: 15px; font-weight: 650; padding: 0; margin: 0; float: inline-start; width: 100%; }
 .fd-section-title + * { clear: both; }
@@ -344,8 +350,9 @@ export const FIELDIA_CSS = /* css */ `
 }
 .fd-section-folded .fd-section-chevron { transform: rotate(-45deg); margin-block-start: 0; }
 [dir="rtl"] .fd-section-folded .fd-section-chevron { transform: rotate(135deg); }
-.fd-form[data-fd-skin="outlined"] .fd-sections > .fd-section {
-  background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 20px 24px;
+/* A card on the page's own ground is a box of its own: on the page, or in an arrangement, a line or tabs there (data-on-page). */
+.fd-form[data-fd-skin="outlined"] :is(.fd-sections > .fd-section:not([data-style]), .fd-section[data-style="card"][data-on-page]) {
+  background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: var(--fd-group-pad, 20px 24px);
 }
 .fd-tablist { display: flex; gap: 2px; border-block-end: 1px solid var(--fd-border); overflow-x: auto; }
 .fd-tab {
@@ -358,7 +365,7 @@ export const FIELDIA_CSS = /* css */ `
 /* ---- buttons ---------------------------------------------------------- */
 .fd-button {
   font: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; justify-content: center;
-  min-height: 32px; padding: 4px 14px; border-radius: var(--fd-control-radius);
+  min-height: var(--fd-control-height, 32px); padding: 4px 14px; border-radius: var(--fd-control-radius);
   border: 1px solid var(--fd-border); background: var(--fd-surface); color: var(--fd-text);
 }
 .fd-button:hover { border-color: var(--fd-accent); color: var(--fd-accent); }
@@ -575,7 +582,7 @@ export const FIELDIA_CSS = /* css */ `
 .fd-matrix-table tbody th { text-align: start; font-weight: 500; }
 .fd-matrix-table input { accent-color: var(--fd-accent); width: 16px; height: 16px; margin: 0; }
 .fd-divider { grid-column: 1 / -1; width: 100%; border: 0; border-top: 1px solid var(--fd-border); margin: 4px 0; }
-.fd-block { min-width: 0; grid-column: span min(var(--fd-span, 1), var(--fd-columns, 1)); }
+.fd-block { min-width: 0; }
 .fd-spacer { min-height: 24px; }
 .fd-image { display: block; max-width: 100%; height: auto; border-radius: var(--fd-radius); }
 .fd-text-paragraph { margin: 0; }
@@ -649,6 +656,9 @@ export const FIELDIA_CSS = /* css */ `
 .fd-form-dialog-foot { padding: 12px 16px; border-block-start: 1px solid var(--fd-border); background: var(--fd-surface); margin: 0; }
 @media (prefers-reduced-motion: reduce) { .fd-form *, .fd-form *::before, .fd-form *::after { transition: none !important; } }
 `;
+
+/** Fieldia's whole stylesheet: the skins, then the layout over them. */
+export const FIELDIA_CSS = SKINS_CSS + LAYOUT_CSS;
 
 const STYLE_ID = 'fieldia-styles';
 

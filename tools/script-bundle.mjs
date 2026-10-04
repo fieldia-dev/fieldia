@@ -25,7 +25,7 @@ const { version } = JSON.parse(readFileSync(join(WORKSPACE, 'libs/viewer/package
 const minifiedStyles = {
   name: 'minified-styles',
   setup(builder) {
-    builder.onLoad({ filter: /libs\/(widgets|viewer)\/src\/lib\/(styles|list-styles)\.ts$/ }, async ({ path }) => {
+    builder.onLoad({ filter: /libs\/(widgets|viewer)\/src\/lib\/([a-z-]+-)?styles\.ts$/ }, async ({ path }) => {
       const source = readFileSync(path, 'utf8');
       const literal = /(= (?:\/\* css \*\/ )?`)([^`]*)(`;)/;
       const found = literal.exec(source);
@@ -65,8 +65,9 @@ for (const name of ['mountViewer', 'createMemoryDataSource', 'createForm', 'chec
 // Light enough for a page with no build step: no validation library, and under budget.
 const code = readFileSync(OUT, 'utf8');
 if (/ZodError|\$ZodType/.test(code)) throw new Error('the script bundle carries zod: something imports the format schemas');
-// 190 until 0.9; lists, their search bar and their groups take it to 192 with the stylesheets minified.
-const BUDGET_KB = 200;
+// 190 until 0.9; lists, their search bar and their groups take it to 192 with the stylesheets minified;
+// the format's additions to 200; groups side by side, arrangements, group styles, labels and the page's look to 207.
+const BUDGET_KB = 210;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
 console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(statSync(OUT).size / 1024)} KB)`);
