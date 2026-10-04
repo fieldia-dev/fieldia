@@ -80,6 +80,15 @@ describe('the JSON view', () => {
     expect(box().value).toContain('"Why not?"');
   });
 
+  it('says at once that the text changed, before the checks catch up', () => {
+    const { button, box, named } = setup();
+    button('json').click();
+    box().value = box().value.replace('"Coming?"', '"Attending?"');
+    box().dispatchEvent(new Event('input', { bubbles: true }));
+    expect(view?.element.querySelector('.fd-json-state')?.textContent).toMatch(/^Changed here, not applied yet/);
+    expect(named('Apply')).toBeDefined();
+  });
+
   it('marks a mistake on its line and lists it; Apply waits until it is put right', () => {
     const { designer, button, box, type, named, rows } = setup();
     button('json').click();

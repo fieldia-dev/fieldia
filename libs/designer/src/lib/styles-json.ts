@@ -17,7 +17,7 @@ export const DESIGNER_JSON_CSS = /* css */ `
 /* The box: numbers and text in one scroll of their own; long lines scroll inside the text. Its line is 20px and its top 12px, as json-code.ts counts. */
 .fd-json-code {
   position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start;
-  max-height: min(64vh, 720px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+  max-height: min(56vh, 640px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius);
   font: 13px/20px ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
@@ -88,9 +88,10 @@ export const DESIGNER_JSON_CSS = /* css */ `
 .fd-try-none { margin: 0; color: var(--fd-muted); font-size: 13.5px; }
 .fd-try-none[hidden] { display: none; }
 /* A choice's options written here, or taken from one of the app's lists: which list, and what it changes with. */
-.fd-q-source { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-block-end: 6px; font-size: 13px; color: var(--fd-muted); }
+.fd-q-source { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-block-end: 8px; }
 .fd-q-source[hidden] { display: none; }
-.fd-q-source-pick { display: inline-flex; align-items: center; gap: 6px; color: var(--fd-text); cursor: pointer; }
+.fd-q-source-words { flex-basis: 100%; font-size: 13px; font-weight: 600; }
+.fd-q-source-pick { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; cursor: pointer; }
 .fd-q-list { display: grid; gap: 10px; }
 .fd-q-list[hidden] { display: none; }
 .fd-q-list-name { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }

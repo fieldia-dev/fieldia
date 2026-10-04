@@ -5,8 +5,9 @@ import type { ElementFactory } from './chrome';
 /**
  * Under the page being tried, a drawer with what the form holds as it is
  * filled: the answers as JSON, and the problems they have now — each by its
- * question, a click going to it — with the warnings beside them. What a
- * person tries stays in Try it; the drawer only shows it.
+ * question, a click going to it — with the warnings beside them. It opens on
+ * a tab and stays put out of the way otherwise; only an open tab is drawn.
+ * What a person tries stays in Try it; the drawer only shows it.
  */
 
 type Tab = 'data' | 'problems';
@@ -40,7 +41,7 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
   const doc = frame.ownerDocument;
   const form = viewer.form;
   const page = form.page;
-  const mine = kept.get(frame) ?? { tab: 'data', folded: false };
+  const mine = kept.get(frame) ?? { tab: 'data', folded: true };
   kept.set(frame, mine);
   frame.parentElement?.querySelector(':scope > .fd-try-drawer')?.remove();
   // A list holds no answers of its own to show.
@@ -71,7 +72,7 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
 
   function show() {
     for (const name of ['data', 'problems'] as const) {
-      tabs[name].setAttribute('aria-selected', String(name === mine.tab));
+      tabs[name].setAttribute('aria-selected', String(name === mine.tab && !mine.folded));
       tabs[name].tabIndex = name === mine.tab ? 0 : -1;
       panels[name].hidden = name !== mine.tab;
     }
@@ -93,7 +94,8 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
   }
 
   function draw(state: FormState) {
-    data.textContent = JSON.stringify(state.values, null, 2);
+    const open = (tab: Tab) => !mine.folded && mine.tab === tab;
+    data.textContent = open('data') ? JSON.stringify(state.values, null, 2) : '';
     const rows: { name: string; message: string; warning: boolean }[] = [];
     for (const name of shownFields(page)) {
       const problem = form.problem(name);
@@ -106,7 +108,7 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
     count.hidden = !problems;
     none.hidden = rows.length > 0;
     list.replaceChildren(
-      ...rows.map((row) => {
+      ...rows.filter(() => open('problems')).map((row) => {
         const button = el('button', { type: 'button', class: 'fd-try-problem', 'data-field': row.name, 'data-warning': row.warning ? '' : undefined }, el('strong', {}, labelOf(row.name)), el('span', {}, row.message));
         button.addEventListener('click', () => goTo(row.name));
         return el('li', {}, button);
@@ -116,9 +118,11 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
 
   for (const name of ['data', 'problems'] as const) {
     tabs[name].addEventListener('click', () => {
+      // The open tab, pressed again, folds the drawer.
+      mine.folded = mine.tab === name && !mine.folded;
       mine.tab = name;
-      mine.folded = false;
       show();
+      draw(form.getState());
     });
   }
   // Arrows move between the two tabs, as a tab list's do.
@@ -127,22 +131,26 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
     if (key !== 'ArrowLeft' && key !== 'ArrowRight') return;
     event.preventDefault();
     mine.tab = mine.tab === 'data' ? 'problems' : 'data';
+    mine.folded = false;
     show();
+    draw(form.getState());
     tabs[mine.tab].focus();
   });
   fold.addEventListener('click', () => {
     mine.folded = !mine.folded;
     show();
+    draw(form.getState());
   });
   copy.addEventListener('click', async () => {
     try {
-      await (doc.defaultView?.navigator as Navigator).clipboard.writeText(data.textContent ?? '');
+      await (doc.defaultView?.navigator as Navigator).clipboard.writeText(JSON.stringify(form.getState().values, null, 2));
       said.textContent = 'Copied.';
     } catch {
       // No clipboard to write to: the data selected, for the person to copy.
       mine.tab = 'data';
       mine.folded = false;
       show();
+      draw(form.getState());
       doc.getSelection()?.selectAllChildren(data);
       said.textContent = 'Selected: copy it with the keyboard.';
     }

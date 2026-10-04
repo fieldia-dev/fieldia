@@ -39,13 +39,20 @@ function setup() {
 }
 
 describe('Try it’s drawer of data and problems', () => {
-  it('sits under the page tried, showing the answers as JSON as they are typed', () => {
+  it('sits under the page tried, folded until a tab is opened, showing the answers as JSON as they are typed', () => {
     const { drawer, tab, data, fill } = setup();
     expect(drawer().previousElementSibling?.classList.contains('fd-try-frame')).toBe(true);
+    // Folded, it draws nothing, so the page tried is all there is to find.
+    expect((drawer().querySelector('.fd-try-panels') as HTMLElement).hidden).toBe(true);
+    expect(drawer().querySelector('.fd-try-data')?.textContent).toBe('');
+    tab('Data').click();
     expect(tab('Data').getAttribute('aria-selected')).toBe('true');
     expect(Object.values(data())).toEqual([null, null, null]);
     fill('Name', 'Mona');
     expect(Object.values(data())).toContain('Mona');
+    // The open tab pressed again folds it.
+    tab('Data').click();
+    expect((drawer().querySelector('.fd-try-panels') as HTMLElement).hidden).toBe(true);
   });
 
   it('lists the problems the answers have now, by question, and a click goes to the question', () => {
@@ -90,7 +97,8 @@ describe('Try it’s drawer of data and problems', () => {
   });
 
   it('copies the data, or selects it for the person to copy', async () => {
-    const { drawer, data } = setup();
+    const { drawer, data, tab } = setup();
+    tab('Data').click();
     const writeText = jest.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
     const copy = [...drawer().querySelectorAll('button')].find((b) => b.textContent === 'Copy data') as HTMLButtonElement;

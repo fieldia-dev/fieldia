@@ -38,7 +38,7 @@ function mount(widget?: string, extra: Record<string, unknown> = {}, values: Val
   form.subscribe(refresh);
   refresh();
   const el = shown.element;
-  const note = () => [...el.querySelectorAll('p, button.fd-button-link')].filter((n) => !(n as HTMLElement).hidden).map((n) => n.textContent);
+  const note = () => [...el.querySelectorAll('[role=status], button.fd-button-link')].filter((n) => !(n as HTMLElement).hidden).map((n) => n.textContent);
   return { form, widget: shown, el, asked, note, settle: () => form.settled() };
 }
 

@@ -12,13 +12,15 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
   const { form, name, document: doc } = context;
   const words = context.labels ?? WIDGET_LABELS[context.locale ?? 'en'];
   const box = doc.createElement('div');
-  const note = doc.createElement('p');
+  const note = doc.createElement('div');
   const retry = doc.createElement('button');
   retry.type = 'button';
   retry.className = 'fd-button fd-button-link';
   retry.textContent = words.choicesFailed;
   retry.onclick = () => form.loadChoices(name);
   note.setAttribute('role', 'status');
+  // Spaced as a field's own parts are.
+  box.style.cssText = 'display:grid;gap:4px';
   /** Every choice the list has given, to name a value it no longer offers. */
   const named = new Map<unknown, string>();
   let inner: Widget;

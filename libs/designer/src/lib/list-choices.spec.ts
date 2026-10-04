@@ -121,6 +121,17 @@ describe('choices from the app’s lists, in the designer', () => {
     expect(field(city).optionsFrom).toEqual({ list: 'towns' });
   });
 
+  it('keeps each editor’s pick its own when the canvas and the panel both show the options', () => {
+    const { designer, city, node } = setup({ lists: LISTS });
+    const first = optionsEditor(elementFactory(document), designer, city);
+    const second = optionsEditor(elementFactory(document), designer, city);
+    document.body.replaceChildren(first.element, second.element);
+    designer.setOptionsFrom(city, { list: 'cities' });
+    for (const editor of [first, second]) editor.update(designer.getPage().fields[node(city).field], node(city));
+    const picked = (root: Element) => (root.querySelector('input[value="list"]') as HTMLInputElement).checked;
+    expect([picked(first.element), picked(second.element)]).toEqual([true, true]);
+  });
+
   it('shows no such choice for a field the model owns', () => {
     const { designer, node } = setup({ model: true });
     const region = designer.addModelField('region') as string;

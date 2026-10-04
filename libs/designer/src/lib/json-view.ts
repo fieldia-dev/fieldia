@@ -101,6 +101,7 @@ export function jsonView({ el, doc, designer, trial, body }: JsonViewOptions): J
   function draw() {
     code.refresh();
     code.mark(rows);
+    drawState();
     list.replaceChildren(
       ...rows.map((row) => {
         const at = el('button', { type: 'button', class: 'fd-json-at', 'aria-label': `Go to line ${row.line}, column ${row.column}` }, `Line ${row.line}`);
@@ -114,6 +115,10 @@ export function jsonView({ el, doc, designer, trial, body }: JsonViewOptions): J
         return item;
       })
     );
+  }
+
+  /** Apply, and the line saying what there is to apply: kept current as each key is typed, the checks catching up once typing rests. */
+  function drawState() {
     const changed = dirty();
     // Apply shows only when there is something it can do; otherwise the line says why not.
     applyButton.hidden = !changed || errors > 0;
@@ -228,6 +233,7 @@ export function jsonView({ el, doc, designer, trial, body }: JsonViewOptions): J
 
   input.addEventListener('input', () => {
     said = null;
+    drawState();
     if (timer !== null) clearTimeout(timer);
     timer = setTimeout(check, REST);
   });

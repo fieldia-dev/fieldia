@@ -319,15 +319,18 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
   };
 }
 
+let sources = 0;
+
 /** A choice's options as one of the app's lists: whether they are, which list, and the fields it changes with. */
 function listSource(el: ElementFactory, designer: Designer, nodeId: string) {
-  const name = `fd-q-source-${nodeId}`;
+  // A name of its own: the canvas and the panel may both show this question's options.
+  const name = `fd-q-source-${++sources}`;
   const written = el('input', { type: 'radio', name, value: 'written' });
   const listed = el('input', { type: 'radio', name, value: 'list' });
   const element = el(
     'div',
     { class: 'fd-q-source', role: 'radiogroup', 'aria-label': 'Choices' },
-    el('span', { class: 'fd-q-source-words', 'aria-hidden': 'true' }, 'Choices:'),
+    el('span', { class: 'fd-q-source-words', 'aria-hidden': 'true' }, 'Choices'),
     el('label', { class: 'fd-q-source-pick' }, written, 'Written here'),
     el('label', { class: 'fd-q-source-pick' }, listed, 'From the app’s list')
   );
