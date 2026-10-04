@@ -296,7 +296,8 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-section::before { content: ""; position: absolute; inset-block: 0; inset-inline-start: -12px; width: 3px; border-radius: 2px; background: transparent; pointer-events: none; }
 .fd-canvas-section:hover::before { background: var(--fd-border-strong); }
 .fd-canvas-section.fd-canvas-selected::before { background: var(--fd-accent); }
-.fd-canvas-section-title { all: unset; cursor: pointer; }
+/* At least 24px tall, a target a finger can hit (WCAG 2.5.8), however small the title's words. */
+.fd-canvas-section-title { all: unset; cursor: pointer; display: inline-block; min-height: 24px; }
 .fd-canvas-section-title:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
 .fd-canvas-untitled { color: var(--fd-muted); font-weight: 500; font-style: italic; font-size: 13px; }
 .fd-canvas-section-title-input { font: inherit; color: inherit; border: 0; border-bottom: 1px dashed var(--fd-border-strong); background: none; padding: 0 0 1px; min-width: 12em; outline: none; }
@@ -595,7 +596,8 @@ export const DESIGNER_CSS = /* css */ `
 }
 @media (prefers-reduced-motion: reduce) { .fd-line::after, .fd-q-rail, .fd-survey-canvas .fd-q-grip { transition: none; } }
 .fd-props > .fd-prop > .fd-button { justify-self: start; }
-.fd-list-search-fields { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+/* Rows 24px apart at least, so each small box has room round it (WCAG 2.5.8). */
+.fd-list-search-fields { display: flex; flex-wrap: wrap; gap: 8px 14px; }
 .fd-list-filters { display: grid; gap: 8px; }
 .fd-list-filter { margin: 0; display: grid; gap: 6px; padding: 8px; border: 1px solid var(--fd-border); border-radius: 6px; min-width: 0; }
 .fd-list-filter-condition { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 6px; }
