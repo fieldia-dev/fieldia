@@ -94,6 +94,7 @@ describe('typeAhead', () => {
   it('nothing for letters no row starts with', () => {
     expect(typeAhead(rows, 0, 'zz')).toBe(-1);
     expect(typeAhead(rows, 0, '')).toBe(-1);
+    expect(typeAhead([], 0, 'a')).toBe(-1);
   });
 });
 
