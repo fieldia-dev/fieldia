@@ -19,11 +19,11 @@ function picked(...ids: string[]) {
 }
 
 describe('the panel — several picked', () => {
-  it('says how many, and keeps to their layout', () => {
+  it('says how many, and keeps to their layout and, for fields, whether they are required', () => {
     const { panel } = picked('f-email', 'f-mobile', 'f-birthday');
     expect(panel.querySelector('.fd-panel-title')?.textContent).toBe('Several');
     expect(panel.querySelector('.fd-insp-name')?.textContent).toBe('3 parts picked');
-    expect([...panel.querySelectorAll('[role="tab"]')].map((t) => t.textContent)).toEqual(['Layout']);
+    expect([...panel.querySelectorAll('[role="tab"]')].map((t) => t.textContent)).toEqual(['Layout', 'Rules']);
   });
 
   it('sets the width of every part picked, as one undo step', () => {

@@ -51,6 +51,8 @@ const SHAPES: Record<string, string> = {
   required: '<path d="M12 4v16M5.1 8l13.8 8M18.9 8L5.1 16"/>',
   width: '<path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/>',
   when: '<path d="M3 3l18 18M10.6 6.1A9.9 9.9 0 0 1 12 6c5 0 9 6 9 6a16 16 0 0 1-3.2 3.7M6.2 7.6A16 16 0 0 0 3 12s4 6 9 6a9 9 0 0 0 3.9-.9"/>',
+  // The Rules view: a branching mark, as answers lead one way or another.
+  rules: '<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 4-3 5-6 5s-6 .5-6 2"/>',
   duplicate: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
   delete: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
   more: '<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>',

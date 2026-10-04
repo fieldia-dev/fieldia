@@ -21,10 +21,11 @@ export type LabelPlace = 'above' | 'beside' | 'hidden';
 
 /**
  * A rule an answer must keep, besides its field's own: a length, a pattern, an
- * ending, a range, how many may be ticked, a date in the past or the future.
- * Each rule may hold only `when` a condition does, say what to show when it is
- * broken, and be a `warning` that is shown without stopping the form. An
- * empty answer passes every rule; `required` decides whether one is needed.
+ * ending, a range, how many may be ticked, a date in the past or the future,
+ * or an expression across fields that must hold. Each rule may hold only
+ * `when` a condition does, say what to show when it is broken, and be a
+ * `warning` that is shown without stopping the form. An empty answer passes
+ * every rule; `required` decides whether one is needed.
  */
 export interface AnswerRule {
   minLength?: number;
@@ -38,6 +39,12 @@ export interface AnswerRule {
   atLeast?: number;
   atMost?: number;
   date?: 'past' | 'future';
+  /**
+   * An expression the answers must keep together, such as `end_date >=
+   * start_date` or `paid <= total`: broken when it is false. Checked once
+   * every field it reads is filled in.
+   */
+  holds?: string;
   when?: Modifier;
   message?: string;
   level?: 'error' | 'warning';
@@ -368,13 +375,14 @@ export const AnswerRuleSchema = z
     atLeast: z.int().min(0).optional(),
     atMost: z.int().min(1).optional(),
     date: z.enum(['past', 'future']).optional(),
+    holds: z.string().min(1).optional(),
     when: ModifierSchema.optional(),
     message: z.string().optional(),
     level: z.enum(['error', 'warning']).optional(),
   })
   .refine(
-    (r) => ['minLength', 'maxLength', 'pattern', 'endsWith', 'min', 'max', 'atLeast', 'atMost', 'date'].some((k) => r[k as keyof typeof r] !== undefined),
-    { message: 'an answer rule asks for something: a length, a pattern, an ending, a range, a count or a date' }
+    (r) => ['minLength', 'maxLength', 'pattern', 'endsWith', 'min', 'max', 'atLeast', 'atMost', 'date', 'holds'].some((k) => r[k as keyof typeof r] !== undefined),
+    { message: 'an answer rule asks for something: a length, a pattern, an ending, a range, a count, a date or an expression that holds' }
   )
   .meta({ id: 'AnswerRule' });
 

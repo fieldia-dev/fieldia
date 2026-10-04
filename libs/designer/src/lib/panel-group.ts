@@ -7,12 +7,14 @@ import { allSections, findNode } from './page-tree';
 import { onTab, setting } from './panel-controls';
 import { columnsSetting, labelsSetting, widthSetting } from './panel-layout';
 import { groupStyleSetting } from './panel-look';
+import { foldSetting } from './panel-fold';
 import { movers, type PropertiesView } from './screen-properties';
 
 /**
- * A group's settings, on the panel's tabs: its title, its place among the
- * others and taking it away (Content); its columns (Layout); and when it
- * shows (Rules). An arrangement — parts side by side — has only its layout.
+ * A group's settings, on the panel's tabs: its title, whether it folds by
+ * it, its place among the others and taking it away (Content); its columns
+ * (Layout); and when it shows (Rules). An arrangement — parts side by side —
+ * has only its layout.
  */
 
 export function groupProperties(el: ElementFactory, designer: Designer, id: string): PropertiesView {
@@ -23,6 +25,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
   const labels = labelsSetting(el, designer, id, 'group');
   const width = widthSetting(el, designer, id);
   const style = groupStyleSetting(el, designer, id);
+  const fold = foldSetting(el, designer, id);
   const moves = movers(el, designer, id, ['Move up', 'Move down']);
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, 'Delete section');
   remove.addEventListener('click', () => designer.removeNode(id));
@@ -35,6 +38,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
     'div',
     { class: 'fd-props' },
     setting(el, 'content', 'Title', title),
+    ...fold.rows,
     onTab(el('div', { class: 'fd-props-actions' }, ...moves.buttons, remove), 'content', 'Move or delete'),
     ...columns.rows,
     ...labels.rows,
@@ -48,7 +52,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
       const section = nodeOf(page, id);
       if (!isSection(section)) return;
       if (!focused(title)) title.value = section.title ?? '';
-      for (const part of [columns, labels, width, style]) part.update(page);
+      for (const part of [columns, labels, width, style, fold]) part.update(page);
       moves.update(page);
       // A page keeps one thing at its top, and a tab its last section.
       const holder = findNode(page, id)?.parent;

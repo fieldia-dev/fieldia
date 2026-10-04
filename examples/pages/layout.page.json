@@ -179,7 +179,8 @@
                     "id": "f-end-date",
                     "field": "end_date",
                     "invisible": "contract != 'fixed'",
-                    "required": "contract == 'fixed'"
+                    "required": "contract == 'fixed'",
+                    "validate": [{ "holds": "end_date >= start_date", "message": "Contract ends must not be before Start date" }]
                   },
                   { "type": "field", "id": "f-salary", "field": "salary" }
                 ]
@@ -292,6 +293,7 @@
       "Fixed term": "محدد المدة",
       "Contractor": "متعاقد",
       "Contract ends": "نهاية العقد",
+      "Contract ends must not be before Start date": "يجب ألا تكون نهاية العقد قبل تاريخ البدء",
       "Monthly salary": "الراتب الشهري",
       "Documents": "المستندات",
       "ID or passport": "البطاقة أو جواز السفر",

@@ -11,14 +11,16 @@ import { isEmpty, type Value } from './values';
  * Answer rules: what a field node's `validate` asks of an answer, besides its
  * field's own rules. An empty answer passes every rule (`required` decides
  * whether one is needed), a rule applies only while its `when` holds, and an
- * ask that does not fit the answer — a length of a number — is not broken.
+ * ask that does not fit the answer — a length of a number — is not broken. A
+ * rule across fields (`holds`) waits until every field it reads is filled in.
  */
 
-/** A rule read once: its condition parsed, its pattern made whole. */
+/** A rule read once: its condition and its rule across fields parsed, its pattern made whole. */
 export interface CompiledRule {
   readonly rule: AnswerRule;
   readonly when: CompiledModifier;
   readonly pattern: RegExp | null;
+  readonly holds: CompiledModifier | null;
 }
 
 export function compileRules(rules: readonly AnswerRule[] | undefined): CompiledRule[] {
@@ -27,6 +29,7 @@ export function compileRules(rules: readonly AnswerRule[] | undefined): Compiled
     when: compileModifier(rule.when ?? true),
     // A pattern is about the whole answer, not a part of it.
     pattern: rule.pattern === undefined ? null : new RegExp(`^(?:${rule.pattern})$`),
+    holds: rule.holds === undefined ? null : compileModifier(rule.holds),
   }));
 }
 
@@ -51,7 +54,7 @@ export function checkRules(
   for (const compiled of rules) {
     const level = compiled.rule.level ?? 'error';
     if (found[level] !== undefined || !compiled.when.evaluate(at.context, at.env)) continue;
-    const broken = brokenAsk(compiled, field, value as Value, at.now);
+    const broken = brokenAsk(compiled, field, value as Value, at.now) ?? brokenAcross(compiled, at);
     if (broken) found[level] = compiled.rule.message ?? fill(at.messages[broken.say], { label, ...broken.values });
   }
   return found;
@@ -79,6 +82,15 @@ function brokenAsk({ rule, pattern }: CompiledRule, field: Field, value: Value, 
     if (rule.date === 'future' && side <= 0) return { say: 'dateFuture' };
   }
   return undefined;
+}
+
+/** Nothing to compare with yet: an empty value, as expressions read it. */
+const blank = (value: unknown) => value === null || value === undefined || (typeof value === 'string' && !value.trim()) || (Array.isArray(value) && !value.length);
+
+/** A rule across fields, once every field it reads is filled in: broken when it does not hold. */
+function brokenAcross({ holds }: CompiledRule, at: RuleContext): Broken | undefined {
+  if (!holds || holds.fields.some((name) => blank(at.context[name]))) return undefined;
+  return holds.evaluate(at.context, at.env) ? undefined : { say: 'holds' };
 }
 
 /**

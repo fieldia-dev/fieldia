@@ -181,7 +181,10 @@ export function wouldCircle(page: Page, own: string, source: string): string | n
 
 // ---- in words ------------------------------------------------------------------------------------
 
-const SIGNS: Record<string, string> = { '*': '×', '/': '÷', '-': '−', '==': 'is', '!=': 'is not', '<>': 'is not' };
+const SIGNS: Record<string, string> = { '*': '×', '/': '÷', '-': '−', '>=': '≥', '<=': '≤', '==': 'is', '!=': 'is not', '<>': 'is not' };
+
+/** A label that holds a sign of its own, "Price - net", is quoted, so it reads as one name and not as a sum. */
+const nameWords = (label: string) => (/[-+*/%<>=!(),'"×÷−≥≤]/.test(label) ? `“${label}”` : label);
 
 /** A literal as written, as its value: `'bulk'` is bulk, `-5` is −5; null for anything else. */
 export function literalOf(source: string): { value: string | number | boolean | null } | null {
@@ -204,35 +207,54 @@ export function valueInWords(field: Field | undefined, value: unknown): string {
   return String(value);
 }
 
-/**
- * A formula in words: its fields by their labels, × and ÷ for * and /, "is"
- * and "is not" for == and !=, and a choice compared with a value by the
- * value's label: `state == 'done'` reads "Status is Done".
- */
-export function formulaInWords(page: Page, source: string): string {
+/** A piece of a formula in words, with the space before it and what it was written as; `field` names the field it stands for. */
+export interface WordPiece {
+  text: string;
+  was: string;
+  space: boolean;
+  field?: string;
+}
+
+/** A formula in words, piece by piece: what `formulaInWords` joins, and the box draws with each field marked. */
+export function formulaPieces(page: Page, source: string): WordPiece[] {
   const tokens = formulaTokens(source);
-  if (!Array.isArray(tokens)) return source;
-  let out = '';
-  tokens.forEach((token, i) => {
-    let words = token.text;
-    if (token.kind === 'name' && !calls(tokens, i)) words = labelOf(page, token.text.split('.')[0]);
-    else if (token.kind === 'sign') words = SIGNS[token.text] ?? token.text;
-    else if (token.kind === 'word' && CONSTANTS.has(token.text)) words = valueInWords(undefined, literalOf(token.text)?.value);
+  if (!Array.isArray(tokens)) return [{ text: source, was: source, space: false }];
+  return tokens.map((token, i) => {
+    let text = token.text;
+    let field: string | undefined;
+    if (token.kind === 'name' && !calls(tokens, i)) {
+      field = token.text.split('.')[0];
+      text = nameWords(labelOf(page, field));
+    } else if (token.kind === 'sign') text = SIGNS[token.text] ?? token.text;
+    else if (token.kind === 'word' && CONSTANTS.has(token.text)) text = valueInWords(undefined, literalOf(token.text)?.value);
     else if (token.kind === 'text') {
       // Compared with a choice: the choice's label.
       const compared = tokens[i - 1]?.kind === 'sign' && tokens[i - 2]?.kind === 'name' ? page.fields[tokens[i - 2].text] : undefined;
-      words = compared?.type === 'selection' ? valueInWords(compared, token.text.slice(1, -1)) : `“${token.text.slice(1, -1)}”`;
+      text = compared?.type === 'selection' ? valueInWords(compared, token.text.slice(1, -1)) : `“${token.text.slice(1, -1)}”`;
     }
     const tight = token.kind === 'close' || token.kind === 'comma' || i === 0 || tokens[i - 1].kind === 'open' || (token.kind === 'open' && tokens[i - 1]?.kind === 'name');
-    out += (tight ? '' : ' ') + words;
+    return { text, was: token.text, space: !tight, ...(field ? { field } : {}) };
   });
-  return out;
+}
+
+/**
+ * A formula in words: its fields by their labels, × and ÷ for * and /, ≥
+ * and ≤ for >= and <=, "is" and "is not" for == and !=, and a choice
+ * compared with a value by the value's label: `state == 'done'` reads
+ * "Status is Done". A label with a sign in it is quoted.
+ */
+export function formulaInWords(page: Page, source: string): string {
+  return formulaPieces(page, source)
+    .map((piece) => (piece.space ? ' ' : '') + piece.text)
+    .join('');
 }
 
 // ---- on made-up values ---------------------------------------------------------------------------
 
 const AMOUNTS = [120, 80, 45, 15.5];
 const COUNTS = [3, 5, 2, 4];
+/** Days apart, so a rule comparing two dates can be seen to hold or not. */
+const DAYS = ['2026-03-14', '2026-03-01', '2026-04-02'];
 
 /** A made-up value for a field, the n-th of its kind in the formula. */
 function sampleOf(name: string, field: Field, n: number): unknown {
@@ -247,9 +269,9 @@ function sampleOf(name: string, field: Field, n: number): unknown {
     case 'selection':
       return field.multiple ? [field.options[0]?.value] : field.options[0]?.value;
     case 'date':
-      return '2026-03-14';
+      return DAYS[n % DAYS.length];
     case 'datetime':
-      return '2026-03-14 09:30:00';
+      return `${DAYS[n % DAYS.length]} 09:30:00`;
     case 'char':
     case 'text':
     case 'html':
@@ -261,14 +283,8 @@ function sampleOf(name: string, field: Field, n: number): unknown {
 
 const shown = (field: Field | undefined, value: unknown) => (typeof value === 'string' && field?.type !== 'selection' && !/^\d{4}-/.test(value) ? `“${value}”` : valueInWords(field, value));
 
-/**
- * The formula worked out on made-up values, the way the form works it out
- * (a whole number rounded, text as text): "With Price 120 and Quantity 3:
- * 360". Empty when the formula does not read.
- */
-export function sampleResult(page: Page, own: string, source: string): string {
-  if (formulaProblem(page, source) || wouldCircle(page, own, source)) return '';
-  const reads = fieldsReadBy(source).filter((name) => name !== own && page.fields[name]);
+/** Made-up values for the fields a formula reads, the n-th of a kind taking the n-th sample; a worked-out field is left to be worked out. */
+function samplesFor(page: Page, reads: string[]): Record<string, unknown> {
   const counts = new Map<string, number>();
   const values: Record<string, unknown> = {};
   for (const name of reads) {
@@ -278,26 +294,56 @@ export function sampleResult(page: Page, own: string, source: string): string {
     counts.set(group, n + 1);
     if (field.compute === undefined) values[name] = sampleOf(name, field, n);
   }
+  return values;
+}
+
+/** The values as a form settles them on these fields, worked-out ones worked out; null when they cannot be. */
+function settled(fields: Page['fields'], values: Record<string, unknown>): Record<string, unknown> | null {
+  const trial: Page = { fieldia: '0.1', id: 'sample', data: { kind: 'responses' }, fields, layout: { type: 'sections', id: 'root', children: [] } };
+  try {
+    return createForm({ page: trial, values: values as never }).getState().values;
+  } catch {
+    return null;
+  }
+}
+
+const andWords = (words: string[]) => (words.length < 2 ? words.join('') : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`);
+
+/** "Price 120 and Quantity 3": each field read, by its label, with its value. */
+const givenWords = (page: Page, reads: string[], values: Record<string, unknown>) => andWords(reads.map((name) => `${labelOf(page, name)} ${shown(page.fields[name], values[name])}`));
+
+/**
+ * The formula worked out on made-up values, the way the form works it out
+ * (a whole number rounded, text as text): "With Price 120 and Quantity 3:
+ * 360". Empty when the formula does not read.
+ */
+export function sampleResult(page: Page, own: string, source: string): string {
+  if (formulaProblem(page, source) || wouldCircle(page, own, source)) return '';
+  const reads = fieldsReadBy(source).filter((name) => name !== own && page.fields[name]);
   const target = page.fields[own];
   if (!target) return '';
-  const trial: Page = {
-    fieldia: '0.1',
-    id: 'sample',
-    data: { kind: 'responses' },
-    fields: { ...page.fields, [own]: { ...target, compute: source } as Field },
-    layout: { type: 'sections', id: 'root', children: [] },
-  };
-  let result: unknown;
-  let worked: Record<string, unknown> = {};
-  try {
-    worked = createForm({ page: trial, values: values as never }).getState().values;
-    result = worked[own];
-  } catch {
-    return '';
-  }
+  const worked = settled({ ...page.fields, [own]: { ...target, compute: source } as Field }, samplesFor(page, reads));
+  if (!worked) return '';
+  const result = worked[own];
   const said = result === null || result === undefined || (typeof result === 'number' && !Number.isFinite(result)) ? 'nothing — it cannot be worked out' : shown(target, result);
   if (!reads.length) return `Always ${said}`;
-  const given = reads.map((name) => `${labelOf(page, name)} ${shown(page.fields[name], worked[name] ?? values[name])}`);
-  const joined = given.length < 2 ? given[0] : `${given.slice(0, -1).join(', ')} and ${given[given.length - 1]}`;
-  return `With ${joined}: ${said}`;
+  return `With ${givenWords(page, reads, worked)}: ${said}`;
+}
+
+/**
+ * Whether a rule across fields holds on made-up values, as the form checks
+ * it: "With Contract ends 2026-03-14 and Start date 2026-03-01: holds".
+ * Empty when the formula does not read.
+ */
+export function sampleHolds(page: Page, source: string): string {
+  if (formulaProblem(page, source)) return '';
+  const reads = fieldsReadBy(source).filter((name) => page.fields[name]);
+  const worked = settled(page.fields, samplesFor(page, reads));
+  if (!worked) return '';
+  const holds = compileModifier(source).evaluate(worked);
+  if (!reads.length) return holds ? 'Always holds' : 'Never holds';
+  // The form waits for every field a rule reads: one with no made-up value is said so.
+  const waits = reads.filter((name) => worked[name] === null || worked[name] === undefined);
+  if (waits.length) return `Checked once ${andWords(waits.map((name) => labelOf(page, name)))} ${waits.length === 1 ? 'is' : 'are'} filled in`;
+  return `With ${givenWords(page, reads, worked)}: ${holds ? 'holds' : 'does not hold'}`;
 }

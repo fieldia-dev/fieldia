@@ -71,7 +71,9 @@ export const DESIGNER_RULES_CSS = /* css */ `
 .fd-formula-result { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--fd-text); padding: 6px 9px; border-radius: 6px; background: var(--fd-success-soft, var(--fd-page)); overflow-wrap: anywhere; }
 .fd-formula-result[hidden], .fd-formula-problem[hidden], .fd-formula-reads[hidden] { display: none; }
 .fd-formula-result { display: grid; gap: 2px; }
-.fd-formula-reads { color: var(--fd-muted); }
+/* The formula in words, above its box: each field one name, as it reads. */
+.fd-formula-reads { margin: 0 0 4px; font-size: 12.5px; line-height: 1.45; color: var(--fd-muted); overflow-wrap: anywhere; }
+.fd-formula-name { color: var(--fd-text); font-weight: 600; }
 .fd-formula-problem { margin: 0; display: grid; gap: 4px; font-size: 12px; line-height: 1.45; color: var(--fd-error); }
 .fd-formula-copy { font: 12px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--fd-text); white-space: pre-wrap; overflow-wrap: anywhere; }
 .fd-formula-copy[hidden] { display: none; }

@@ -59,7 +59,7 @@ let views = 0;
 export function rulesOverview(options: RulesOverviewOptions): RulesOverview {
   const { el, doc, designer, root, body, modes } = options;
   const id = `fd-rules-${++views}`;
-  const toggle = el('button', { type: 'button', class: 'fd-mode-button', 'data-mode': 'rules', 'aria-pressed': 'false' }, designerIcon(doc, 'when'), 'Rules');
+  const toggle = el('button', { type: 'button', class: 'fd-mode-button', 'data-mode': 'rules', 'aria-pressed': 'false' }, designerIcon(doc, 'rules'), 'Rules');
   modes.append(toggle);
 
   const note = el('p', { class: 'fd-rules-note' });
@@ -188,7 +188,7 @@ export function rulesOverview(options: RulesOverviewOptions): RulesOverview {
       const each = pageRules(page)
         .filter((rule) => rule.part)
         .map((rule) => ({ label: `Rule: ${rule.name} — ${rule.sentence}`, hint: titleOf.get(groupOf(page, rule)) ?? 'Rules', run: () => go(rule) }));
-      if (!open) return [{ label: 'Rules', hint: 'every rule on the page, in words', run: () => show(true) }, ...each];
+      if (!open) return [{ label: 'Rules', hint: 'every rule on the page, in words', icon: 'rules', run: () => show(true) }, ...each];
       return [{ label: 'Back to designing', hint: 'Design', run: () => show(false) }, { label: 'Filter the rules', hint: 'Rules', run: () => filter.focus() }, ...each];
     },
     destroy() {

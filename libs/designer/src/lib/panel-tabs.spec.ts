@@ -16,7 +16,7 @@ describe('which tabs apply', () => {
       ['tabs', ['Content', 'Layout']],
       ['tab', ['Content']],
       ['block', ['Content', 'Layout']],
-      ['several', ['Layout']],
+      ['several', ['Layout', 'Rules']],
       ['header', ['Content']],
       ['statusbar', ['Content']],
       ['list', ['Content']],

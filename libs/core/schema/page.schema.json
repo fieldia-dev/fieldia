@@ -2804,6 +2804,10 @@
             "future"
           ]
         },
+        "holds": {
+          "type": "string",
+          "minLength": 1
+        },
         "when": {
           "$ref": "#/$defs/Modifier"
         },

@@ -172,7 +172,7 @@ describe('answer rules', () => {
     expect(designer.addAnswerRule(id('qty'), { minLength: 2 })).toBe(false);
     expect(designer.getState().issues).toEqual(['“Quantity” holds a whole number: a length does not fit it']);
     expect(designer.addAnswerRule(id('name'), { message: 'Hm' })).toBe(false);
-    expect(designer.getState().issues).toEqual(['A rule asks for something: a length, an ending, a pattern, a range, how many are ticked or a date']);
+    expect(designer.getState().issues).toEqual(['A rule asks for something: a length, an ending, a pattern, a range, how many are ticked, a date or a rule across fields']);
     expect(designer.addAnswerRule(id('name'), { pattern: '([a-z' })).toBe(false);
     expect(designer.getState().issues).toEqual(['The pattern “([a-z” cannot be read']);
     expect(designer.addAnswerRule(id('topics'), { atLeast: 1, atMost: 2 })).toBe(true);

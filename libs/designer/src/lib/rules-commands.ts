@@ -49,6 +49,7 @@ const ASK_WORDS: Record<Ask, string> = {
   atLeast: 'how many are ticked',
   atMost: 'how many are ticked',
   date: 'a date in the past or the future',
+  holds: 'a rule across fields',
 };
 
 function fieldNode(draft: Page, id: string): FieldNode {
@@ -103,7 +104,7 @@ export function ruleRefusal(draft: Page, node: FieldNode, rule: AnswerRule): str
   const field = draft.fields[node.field];
   const label = labelOf(draft, node);
   const asks = ruleAsks(rule);
-  if (!asks.length) return 'A rule asks for something: a length, an ending, a pattern, a range, how many are ticked or a date';
+  if (!asks.length) return 'A rule asks for something: a length, an ending, a pattern, a range, how many are ticked, a date or a rule across fields';
   const misfit = asksNotFitting(field, rule);
   if (misfit.length) return `“${label}” holds ${storedAs(field)}: ${ASK_WORDS[misfit[0]]} does not fit it`;
   if (rule.pattern !== undefined) {
@@ -121,6 +122,10 @@ export function ruleRefusal(draft: Page, node: FieldNode, rule: AnswerRule): str
   if (rule.minLength !== undefined && rule.maxLength !== undefined && rule.minLength > rule.maxLength) return `The shortest, ${rule.minLength}, is longer than the longest, ${rule.maxLength}`;
   if (rule.min !== undefined && rule.max !== undefined && rule.min > rule.max) return `The smallest, ${rule.min}, is more than the largest, ${rule.max}`;
   if (rule.atLeast !== undefined && rule.atMost !== undefined && rule.atLeast > rule.atMost) return `At least ${rule.atLeast} is more than at most ${rule.atMost}`;
+  if (rule.holds !== undefined) {
+    const problem = formulaProblem(draft, rule.holds);
+    if (problem) return `Must hold: ${problemWords(problem)}`;
+  }
   if (typeof rule.when === 'string') {
     const problem = formulaProblem(draft, rule.when);
     if (problem) return `Only when: ${problemWords(problem)}`;

@@ -1,5 +1,6 @@
 import type { Page, PageLook, SectionNode, TabsNode } from '@fieldia/core';
 import { andList, isSection, isWrapper, listOf, nameOf, rowsOf, seenAs, spanOf, type Holder, type Part } from './layout-tree';
+import { FOLD_WORDS, foldOf } from './group-fold';
 
 /**
  * What changed in a page's layout, in the words a person would use for what
@@ -233,6 +234,7 @@ export function layoutChanges(before: Page, after: Page): LayoutChanges {
       const sameParts = old.children.map((c) => c.id).join() === node.children.map((c) => c.id).join();
       if (JSON.stringify(old.columns) !== JSON.stringify(node.columns) && (!isWrapper(node) || sameParts)) lines.push(`${name}: ${columnsWords(node.columns)}`);
       if ((old.style ?? 'card') !== (node.style ?? 'card')) lines.push(`${name}: drawn ${STYLES[node.style ?? 'card']}`);
+      if (foldOf(old) !== foldOf(node)) lines.push(`${name}: ${FOLD_WORDS[foldOf(node)]}`);
       if (old.labels !== node.labels) lines.push(`${name}: labels ${node.labels ? LABELS[node.labels] : 'where the page puts them'}`);
       if (old.labelWidth !== node.labelWidth) lines.push(`${name}: labels ${node.labelWidth ? `${node.labelWidth} px wide` : 'as wide as the page has them'}`);
     }
