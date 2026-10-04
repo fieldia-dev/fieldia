@@ -4,13 +4,13 @@ import { fieldsReadBy } from './rules-formula';
 
 /**
  * Which fields the page's rules read: its conditions (when a part shows, is
- * required or read-only), its values worked out and set, and when its answer
- * rules hold. A field a rule still reads keeps its definition when it is
- * taken off the page, so the rule can be seen and put right — a check names
- * it — and goes once nothing reads it.
+ * required or read-only), its values worked out and set, when its answer
+ * rules hold, and its rules across fields. A field a rule still reads keeps
+ * its definition when it is taken off the page, so the rule can be seen and
+ * put right — a check names it — and goes once nothing reads it.
  */
 
-const CONDITIONS = ['invisible', 'required', 'readonly', 'when'];
+const CONDITIONS = ['invisible', 'required', 'readonly', 'when', 'holds'];
 
 /** The fields every rule on the page reads. */
 export function fieldsRulesRead(page: Page): Set<string> {

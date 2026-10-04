@@ -117,17 +117,18 @@ describe('an answer rule as a sentence', () => {
 describe('the rules that fit a field', () => {
   it('offers lengths, endings and patterns for text, a range for numbers, ticks for several, the past or future for dates', () => {
     const ids = (field: Field) => kindsFitting(field).map((k) => k.id);
-    expect(ids(fields['name'])).toEqual(['length', 'ending', 'pattern']);
-    expect(ids(fields['notes'])).toEqual(['length', 'ending', 'pattern']);
-    expect(ids(fields['age'])).toEqual(['range']);
+    expect(ids(fields['name'])).toEqual(['length', 'ending', 'pattern', 'across']);
+    expect(ids(fields['notes'])).toEqual(['length', 'ending', 'pattern', 'across']);
+    expect(ids(fields['age'])).toEqual(['range', 'across']);
     expect(ids(fields['topics'])).toEqual(['count']);
-    expect(ids(fields['born'])).toEqual(['past', 'future']);
+    expect(ids(fields['born'])).toEqual(['past', 'future', 'across']);
     expect(ids(fields['state'])).toEqual([]);
     expect(ids(fields['vip'])).toEqual([]);
   });
 
-  it('starts each kind with a rule that reads', () => {
-    for (const kind of answerRuleKinds()) expect(say(kind.start)).not.toBe('');
+  it('starts each kind with a rule that reads; a rule across fields starts empty, kept once its formula reads', () => {
+    for (const kind of answerRuleKinds()) if (kind.start) expect(say(kind.start)).not.toBe('');
+    expect(answerRuleKinds().filter((kind) => !kind.start).map((kind) => kind.id)).toEqual(['across']);
   });
 });
 

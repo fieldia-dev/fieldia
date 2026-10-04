@@ -43,6 +43,8 @@ export interface Messages {
   atMost: string;
   datePast: string;
   dateFuture: string;
+  /** A rule across fields that does not hold, when it says nothing of its own. */
+  holds: string;
   /** Joins the last two items of a list: "PDF or image". */
   or: string;
 }
@@ -83,6 +85,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     atMost: 'Choose at most {max} for {label}',
     datePast: '{label} must be in the past',
     dateFuture: '{label} must be in the future',
+    holds: '{label} does not agree with the other answers',
     or: 'or',
   },
   ar: {
@@ -118,6 +121,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     atMost: 'اختر {max} على الأكثر في {label}',
     datePast: 'يجب أن يكون {label} في الماضي',
     dateFuture: 'يجب أن يكون {label} في المستقبل',
+    holds: 'لا يتفق {label} مع الإجابات الأخرى',
     or: 'أو',
   },
   de: {
@@ -153,6 +157,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     atMost: 'Wählen Sie bei {label} höchstens {max} aus',
     datePast: '{label} muss in der Vergangenheit liegen',
     dateFuture: '{label} muss in der Zukunft liegen',
+    holds: '{label} passt nicht zu den anderen Antworten',
     or: 'oder',
   },
   fr: {
@@ -188,6 +193,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     atMost: 'Choisissez au plus {max} pour {label}',
     datePast: '{label} doit être dans le passé',
     dateFuture: '{label} doit être dans le futur',
+    holds: '{label} ne concorde pas avec les autres réponses',
     or: 'ou',
   },
 };

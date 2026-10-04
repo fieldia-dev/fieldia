@@ -118,7 +118,7 @@ export const DEMOS = [
     howTo: [
       'Narrow the window: Personal details keeps its three columns on a tablet and goes to one on a phone, its fields always on the same columns as the photo.',
       'Open the Pay tab: the bank’s labels sit beside their boxes, and go above them once a box gets narrow.',
-      'Choose a fixed-term contract on the Job tab: Contract ends takes its place on the columns.',
+      'Choose a fixed-term contract on the Job tab: Contract ends takes its place on the columns. Give it a day before the start date: it is refused.',
       'Add &locale=ar&dir=rtl to the address for the page in Arabic, right to left, or &scheme=dark for its dark scheme.',
     ],
   },

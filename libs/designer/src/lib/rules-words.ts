@@ -14,7 +14,7 @@ import { fieldsReadBy, formulaInWords, literalOf, valueInWords } from './rules-f
 // ---- answer rules -------------------------------------------------------------------------------
 
 /** What a rule can ask of an answer, in the order a rule is checked. */
-export const ASKS = ['minLength', 'maxLength', 'pattern', 'endsWith', 'min', 'max', 'atLeast', 'atMost', 'date'] as const;
+export const ASKS = ['minLength', 'maxLength', 'pattern', 'endsWith', 'min', 'max', 'atLeast', 'atMost', 'date', 'holds'] as const;
 export type Ask = (typeof ASKS)[number];
 
 /** What a rule asks for, in order: nothing when it only has a message, a level or a condition. */
@@ -24,6 +24,8 @@ export function ruleAsks(rule: AnswerRule): Ask[] {
 
 const TEXT = ['char', 'text', 'html'];
 const NUMBER = ['integer', 'float', 'monetary'];
+/** What a rule across fields is put on: text, a number or a date, compared with other answers. */
+const ACROSS = [...TEXT, ...NUMBER, 'date', 'datetime'];
 
 /** The kinds of field each ask makes sense for: a length of text, a range of a number, a count of choices ticked. */
 const FITS: Record<Ask, (field: Field) => boolean> = {
@@ -36,6 +38,7 @@ const FITS: Record<Ask, (field: Field) => boolean> = {
   atLeast: (f) => (f.type === 'selection' && f.multiple === true) || f.type === 'many2many',
   atMost: (f) => (f.type === 'selection' && f.multiple === true) || f.type === 'many2many',
   date: (f) => f.type === 'date' || f.type === 'datetime',
+  holds: (f) => ACROSS.includes(f.type),
 };
 
 /** The asks of a rule its field cannot be checked by: a length of a number. */
@@ -43,11 +46,11 @@ export function asksNotFitting(field: Field, rule: AnswerRule): Ask[] {
   return ruleAsks(rule).filter((ask) => !FITS[ask](field));
 }
 
-/** A kind of rule as "Add a rule" offers it, and the rule it starts as. */
+/** A kind of rule as "Add a rule" offers it, and the rule it starts as; none for one begun empty and kept once it reads. */
 export interface AnswerRuleKind {
-  id: 'length' | 'ending' | 'pattern' | 'range' | 'count' | 'past' | 'future';
+  id: 'length' | 'ending' | 'pattern' | 'range' | 'count' | 'past' | 'future' | 'across';
   label: string;
-  start: AnswerRule;
+  start: AnswerRule | null;
   fits(field: Field): boolean;
 }
 
@@ -59,6 +62,7 @@ const KINDS: AnswerRuleKind[] = [
   { id: 'count', label: 'How many are ticked', start: { atLeast: 1 }, fits: FITS.atLeast },
   { id: 'past', label: 'A date in the past', start: { date: 'past' }, fits: FITS.date },
   { id: 'future', label: 'A date in the future', start: { date: 'future' }, fits: FITS.date },
+  { id: 'across', label: 'A rule across fields', start: null, fits: FITS.holds },
 ];
 
 export const answerRuleKinds = (): readonly AnswerRuleKind[] => KINDS;
@@ -78,8 +82,8 @@ export const NAMED_PATTERNS: { pattern: string; words: string }[] = [
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
 const lower = (words: string) => words.charAt(0).toLowerCase() + words.slice(1);
 
-/** Each ask of a rule in words, as it reads alone: "At least 2 letters", "Ends with .com". */
-function askWords(rule: AnswerRule): { say: string; must: string }[] {
+/** Each ask of a rule in words, as it reads alone: "At least 2 letters", "Ends with .com", "Must hold: Paid ≤ Total". */
+function askWords(page: Page, rule: AnswerRule): { say: string; must: string }[] {
   const out: { say: string; must: string }[] = [];
   const { minLength: shortest, maxLength: longest, min, max, atLeast, atMost } = rule;
   if (shortest !== undefined && longest !== undefined) {
@@ -101,6 +105,10 @@ function askWords(rule: AnswerRule): { say: string; must: string }[] {
   if (rule.date !== undefined) {
     const say = rule.date === 'past' ? 'A date in the past' : 'A date in the future';
     out.push({ say, must: `Must be ${lower(say)}` });
+  }
+  if (rule.holds !== undefined) {
+    const say = `Must hold: ${rule.holds.trim() ? formulaInWords(page, rule.holds) : '…'}`;
+    out.push({ say, must: say });
   }
   return out;
 }
@@ -124,7 +132,7 @@ function notesOf(page: Page, rule: AnswerRule): string[] {
 
 /** An answer rule as it reads in a list: "Ends with @acme.com — only warns, only when VIP is Yes". */
 export function answerRuleSentence(page: Page, rule: AnswerRule): string {
-  const asks = askWords(rule);
+  const asks = askWords(page, rule);
   if (!asks.length) return 'Asks for nothing yet';
   const said = [asks[0].say, ...asks.slice(1).map((a) => lower(a.say))].join(', ');
   const notes = notesOf(page, rule);
@@ -133,7 +141,7 @@ export function answerRuleSentence(page: Page, rule: AnswerRule): string {
 
 /** What an answer rule makes the answer be, for the words before publishing: "Must end with @acme.com (only warns)". */
 export function answerRuleMust(page: Page, rule: AnswerRule): string {
-  const asks = askWords(rule);
+  const asks = askWords(page, rule);
   if (!asks.length) return 'Asks for nothing';
   const said = [asks[0].must, ...asks.slice(1).map((a) => lower(a.must))].join(', ');
   const notes = notesOf(page, rule);
@@ -231,7 +239,7 @@ export function pageRules(page: Page): RuleEntry[] {
       const readonly = holds(page, 'Read-only', node.readonly);
       if (readonly) out.push({ kind: 'readonly', part: node.id, field: node.field, name, sentence: readonly, reads: reads(node.readonly) });
       ofField(node.field, node.id, name);
-      node.validate?.forEach((rule, index) => out.push({ kind: 'answer', part: node.id, field: node.field, index, name, sentence: answerRuleSentence(page, rule), reads: reads(rule.when) }));
+      node.validate?.forEach((rule, index) => out.push({ kind: 'answer', part: node.id, field: node.field, index, name, sentence: answerRuleSentence(page, rule), reads: [...new Set([...reads(rule.when), ...reads(rule.holds)])] }));
     } else if (node.type === 'section') {
       // Every field inside a group is read-only while its rule holds.
       const readonly = holds(page, 'Read-only', node.readonly);

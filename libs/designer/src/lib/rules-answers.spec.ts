@@ -38,7 +38,7 @@ describe('answer rules in the Rules tab', () => {
     const { panel, node, sentences, menuItems, pickItem } = screen('email');
     expect(panel().querySelector('[data-setting="Answer rules"]')).not.toBeNull();
     (button(panel(), 'Add a rule') as HTMLButtonElement).click();
-    expect(menuItems()).toEqual(['A length', 'An ending', 'A pattern']);
+    expect(menuItems()).toEqual(['A length', 'An ending', 'A pattern', 'A rule across fields']);
     pickItem('An ending');
     expect(node().validate).toEqual([{ endsWith: '.com' }]);
     const ending = field(panel(), 'Ends with') as HTMLInputElement;
@@ -71,7 +71,7 @@ describe('answer rules in the Rules tab', () => {
   it('offers a range for a number, and ticks for several choices', () => {
     const age = screen('age');
     (button(age.panel(), 'Add a rule') as HTMLButtonElement).click();
-    expect(age.menuItems()).toEqual(['A range']);
+    expect(age.menuItems()).toEqual(['A range', 'A rule across fields']);
     age.pickItem('A range');
     type(field(age.panel(), 'At least'), '18');
     type(field(age.panel(), 'At most'), '');

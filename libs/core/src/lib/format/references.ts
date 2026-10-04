@@ -329,10 +329,10 @@ export class ReferenceCheck {
 
   private checkFieldNode(node: FieldNode, path: string) {
     const def = this.need(node.field, `${path}.field`);
-    // Answer rules: each condition reads, each pattern is a regular expression.
+    // Answer rules: each condition and rule across fields reads, each pattern is a regular expression.
     node.validate?.forEach((rule, i) => {
       const at = `${path}.validate[${i}]`;
-      this.checkModifiers(rule, at, ['when']);
+      this.checkModifiers(rule, at, ['when', 'holds']);
       if (rule.pattern === undefined) return;
       try {
         new RegExp(rule.pattern);

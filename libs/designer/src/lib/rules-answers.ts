@@ -7,6 +7,8 @@ import { openMenu } from './menu';
 import { allSections, findNode } from './page-tree';
 import { segmented } from './panel-controls';
 import { ruleRefusal, type AnswerRulePatch } from './rules-commands';
+import { formulaBox } from './rules-formula-box';
+import { formulaProblem, sampleHolds } from './rules-formula';
 import { answerRuleSentence, kindsFitting, NAMED_PATTERNS, ruleAsks } from './rules-words';
 
 /**
@@ -17,7 +19,8 @@ import { answerRuleSentence, kindsFitting, NAMED_PATTERNS, ruleAsks } from './ru
  * kinds that fit what the field holds; a rule removed leaves Undo at hand.
  * What is typed is checked here first, and kept only when it reads, so a
  * half-typed rule says what is wrong under it and the page keeps the last
- * good one.
+ * good one. A rule across fields begins as an empty formula, kept on the
+ * page once what is typed reads.
  */
 
 export interface AnswerRulesEditor {
@@ -28,7 +31,7 @@ export interface AnswerRulesEditor {
 }
 
 /** The groups of asks a rule's settings show, in order. */
-type Group = 'length' | 'pattern' | 'ending' | 'range' | 'count' | 'date';
+type Group = 'length' | 'pattern' | 'ending' | 'range' | 'count' | 'date' | 'across';
 
 function groupsOf(rule: AnswerRule): Group[] {
   const asks = new Set(ruleAsks(rule));
@@ -39,6 +42,7 @@ function groupsOf(rule: AnswerRule): Group[] {
   if (asks.has('min') || asks.has('max')) groups.push('range');
   if (asks.has('atLeast') || asks.has('atMost')) groups.push('count');
   if (asks.has('date')) groups.push('date');
+  if (asks.has('holds')) groups.push('across');
   return groups;
 }
 
@@ -64,6 +68,8 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
   let removedAt: Page | null = null;
   /** The rule to open once it is drawn: one just added. */
   let openNext: number | null = null;
+  /** A rule across fields begun with Add a rule, not kept until its formula reads. */
+  let drafting = false;
 
   const node = (): FieldNode | null => {
     const found = findNode(page, id)?.node;
@@ -84,6 +90,13 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
         const kind = kinds.find((k) => k.id === kindId);
         if (!kind) return;
         openNext = node()?.validate?.length ?? 0;
+        if (!kind.start) {
+          drafting = true;
+          draw();
+          views[openNext]?.focusFirst();
+          openNext = null;
+          return;
+        }
         if (!designer.addAnswerRule(id, kind.start)) openNext = null;
         else views[openNext ?? 0]?.focusFirst();
         openNext = null;
@@ -114,7 +127,7 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
     const element = el('li', { class: 'fd-answer-rule', 'data-index': String(index) }, el('div', { class: 'fd-answer-rule-head' }, say, remove), body);
     let current = rule;
 
-    /** Change the rule: kept when it reads, else what is wrong said under it. */
+    /** Change the rule: kept when it reads, else what is wrong said under it. One begun and not yet kept is added. */
     const change = (patch: AnswerRulePatch) => {
       const own = node();
       if (!own) return;
@@ -123,7 +136,13 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
       const wrong = ruleRefusal(page, own, next);
       problem.textContent = wrong ?? '';
       problem.hidden = !wrong;
-      if (!wrong) designer.updateAnswerRule(id, index, patch);
+      if (wrong) return;
+      if (index < (own.validate?.length ?? 0)) designer.updateAnswerRule(id, index, patch);
+      else {
+        // Kept now: drawn from the page from here on, so it is no longer drafted.
+        drafting = false;
+        if (!designer.addAnswerRule(id, next)) drafting = true;
+      }
     };
     const box = (label: string, attrs: Record<string, string>, read: (input: HTMLInputElement) => AnswerRulePatch) => {
       const input = el('input', { class: 'fd-input', 'aria-label': label, ...attrs }) as HTMLInputElement;
@@ -162,6 +181,14 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
       if (looks.value) change({ pattern: looks.value });
       else pattern.input.focus();
     });
+    // A rule across fields: a formula, the page's fields suggested by their labels, tried on made-up values.
+    const holds = formulaBox(el, {
+      label: 'Must hold',
+      placeholder: 'Ends >= Starts — type a field’s name, or @',
+      check: (on, source) => formulaProblem(on, source),
+      commit: (source) => source && change({ holds: source }),
+      said: (on, source) => sampleHolds(on, source),
+    });
     const when = segmented(el, 'Allowed dates', [{ value: 'past', words: 'In the past' }, { value: 'future', words: 'In the future' }], (value) => value && change({ date: value }));
     const groups: Record<Group, HTMLElement> = {
       length: pair(shortest, longest, ['minLength', 'maxLength']),
@@ -170,6 +197,7 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
       range: pair(atLeast, atMost, ['min', 'max']),
       count: pair(tickLeast, tickMost, ['atLeast', 'atMost']),
       date: el('div', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, 'Allowed'), when.element),
+      across: el('div', { class: 'fd-answer-rule-field fd-answer-rule-across' }, el('span', { class: 'fd-answer-rule-word' }, 'Must hold'), holds.element, holds.problem, holds.result),
     };
     const shown = groupsOf(rule);
     // When it is broken: the form will not send, or only says so.
@@ -200,6 +228,13 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
 
     say.addEventListener('click', () => open(say.getAttribute('aria-expanded') !== 'true'));
     remove.addEventListener('click', () => {
+      if (index >= (node()?.validate?.length ?? 0)) {
+        // Begun and never kept: it goes, and the page is as it was.
+        drafting = false;
+        draw();
+        add.focus();
+        return;
+      }
       const words = answerRuleSentence(page, current);
       if (!designer.removeAnswerRule(id, index)) return;
       removedAt = designer.getPage();
@@ -226,8 +261,9 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
     function update(next: AnswerRule) {
       current = next;
       const sentence = answerRuleSentence(page, next);
+      const kept = index < (node()?.validate?.length ?? 0);
       say.textContent = sentence;
-      remove.setAttribute('aria-label', `Remove the rule “${sentence}”`);
+      remove.setAttribute('aria-label', kept ? `Remove the rule “${sentence}”` : 'Remove this new rule');
       remove.title = 'Remove the rule';
       const set = (input: HTMLInputElement, value: unknown) => {
         if (!focused(input)) input.value = value === undefined || value === null ? '' : String(value);
@@ -246,6 +282,7 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
       when.set(next.date);
       level.set(next.level === 'warning' ? 'warning' : 'error');
       set(message.input, next.message);
+      holds.update(page, next.holds ?? '');
       const own = node();
       const others = allSections(page).flatMap((s) => s.children.filter((n): n is FieldNode => n.type === 'field' && n.id !== id && choicesOf(page.fields[n.field]) !== null));
       only.update(page, others, next.when);
@@ -265,40 +302,45 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
     };
   }
 
+  /** The rules as the page has them now, and one begun after them. */
+  function draw() {
+    const own = node();
+    if (!own) return;
+    const def = page.fields[own.field];
+    const rules: AnswerRule[] = [...(own.validate ?? []), ...(drafting ? [{ holds: '' }] : [])];
+    const fits = def ? kindsFitting(def).length > 0 : false;
+    element.hidden = !fits && !rules.length;
+    add.hidden = !fits || drafting;
+    // A rule whose asks changed is drawn again; the rest are patched, so the box being typed in keeps its cursor.
+    views = rules.map((rule, i) => {
+      const was = views[i];
+      const key = groupsOf(rule).join(',');
+      if (was && was.key === key) {
+        was.update(rule);
+        return was;
+      }
+      const view = ruleView(i, rule);
+      if (was) view.open(was.element.classList.contains('fd-answer-rule-open'));
+      return view;
+    });
+    // Moved only where out of place: a box taken out of the page loses its cursor.
+    views.forEach((view, i) => {
+      if (list.children[i] !== view.element) list.insertBefore(view.element, list.children[i] ?? null);
+    });
+    while (list.children.length > views.length) list.lastElementChild?.remove();
+    list.hidden = !rules.length;
+    if (removedAt && page !== removedAt) {
+      removedAt = null;
+      status.hidden = true;
+    }
+    if (openNext !== null) views[openNext]?.open(true);
+  }
+
   return {
     element,
     update(next) {
       page = next;
-      const own = node();
-      if (!own) return;
-      const def = page.fields[own.field];
-      const rules = own.validate ?? [];
-      const fits = def ? kindsFitting(def).length > 0 : false;
-      element.hidden = !fits && !rules.length;
-      add.hidden = !fits;
-      // A rule whose asks changed is drawn again; the rest are patched, so the box being typed in keeps its cursor.
-      views = rules.map((rule, i) => {
-        const was = views[i];
-        const key = groupsOf(rule).join(',');
-        if (was && was.key === key) {
-          was.update(rule);
-          return was;
-        }
-        const view = ruleView(i, rule);
-        if (was) view.open(was.element.classList.contains('fd-answer-rule-open'));
-        return view;
-      });
-      // Moved only where out of place: a box taken out of the page loses its cursor.
-      views.forEach((view, i) => {
-        if (list.children[i] !== view.element) list.insertBefore(view.element, list.children[i] ?? null);
-      });
-      while (list.children.length > views.length) list.lastElementChild?.remove();
-      list.hidden = !rules.length;
-      if (removedAt && page !== removedAt) {
-        removedAt = null;
-        status.hidden = true;
-      }
-      if (openNext !== null) views[openNext]?.open(true);
+      draw();
     },
     focus() {
       const first = list.querySelector<HTMLElement>('.fd-answer-rule-say');
