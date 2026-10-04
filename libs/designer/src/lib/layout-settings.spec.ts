@@ -130,3 +130,34 @@ describe('how a group looks, where labels sit, and the page’s look', () => {
     expect(d.getPage().look?.accent).toBe('#1677ff');
   });
 });
+
+describe('the edges of what a setting takes', () => {
+  it('as many columns on a tablet as on a desktop, on a phone as on a tablet', () => {
+    const d = employeeDesigner();
+    expect(d.setColumns('personal', { wide: 3, medium: 3, narrow: 3 })).toBe(true);
+    expect(d.setColumns('personal', { wide: 3, medium: 2, narrow: 2 })).toBe(true);
+    expectValid(d.getPage());
+  });
+
+  it('labels 60 to 320 px wide, no narrower and no wider', () => {
+    const d = employeeDesigner();
+    expect([60, 320].map((labelWidth) => d.setSectionLook('bank', { labelWidth }))).toEqual([true, true]);
+    expect([59, 321].map((labelWidth) => d.setSectionLook('bank', { labelWidth }))).toEqual([false, false]);
+    expect([60, 320].map((labelWidth) => d.setLook({ labelWidth }))).toEqual([true, true]);
+    expect([59, 321].map((labelWidth) => d.setLook({ labelWidth }))).toEqual([false, false]);
+  });
+
+  it('any colour written #rrggbb', () => {
+    const d = employeeDesigner();
+    expect(d.setLook({ accent: '#000000' })).toBe(true);
+    expect(d.setLook({ accent: '#A0b9F0' })).toBe(true);
+  });
+
+  it('leaves alone what already fits when a group’s columns narrow', () => {
+    const d = employeeDesigner();
+    d.setColumns('role', 1);
+    expect(nodeOf(d.getPage(), 'f-job_title')).not.toHaveProperty('colspan');
+    d.setColumns('address', { wide: 1 });
+    expect(nodeOf(d.getPage(), 'f-city')).not.toHaveProperty('colspan');
+  });
+});

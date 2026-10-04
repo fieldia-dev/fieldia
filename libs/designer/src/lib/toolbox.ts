@@ -1,4 +1,5 @@
 import type { FieldNode } from '@fieldia/core';
+import { blockIcon } from './canvas-icons';
 import type { ElementFactory } from './chrome';
 import type { ModelField, QuestionKind } from './designer';
 import { designerIcon } from './icons';
@@ -10,7 +11,8 @@ import { kindOfField, storedAs } from './kinds';
  * come first when there is a model. A tile clicked is added; a tile pressed
  * is handed to the canvas, which carries it if the pointer moves.
  *
- * A tile names what it adds: `kind:<id>`, `model:<field name>` or `layout:section` / `layout:tabs`.
+ * A tile names what it adds: `kind:<id>`, `model:<field name>` or `layout:section` / `layout:tabs`;
+ * in Advanced, the layout tiles are `block:<kind>` — groups, tabs and the blocks between fields.
  */
 
 export interface ToolboxOptions {
@@ -26,8 +28,8 @@ export interface ToolboxOptions {
 
 export interface ToolboxHandle {
   element: HTMLElement;
-  /** The model's fields still to place, whether tabs can be added, and whether new fields can be — a list shows only what the model has. */
-  update(state: { modelFields: ModelField[]; tabs: boolean; kinds?: boolean }): void;
+  /** The model's fields still to place, whether tabs can be added, whether new fields can be — a list shows only what the model has — and whether it is Advanced. */
+  update(state: { modelFields: ModelField[]; tabs: boolean; kinds?: boolean; advanced?: boolean }): void;
 }
 
 /** The kinds in the order and groups the toolbox shows them. */
@@ -45,14 +47,16 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
   const folded = new Set<string>();
   let query = '';
   let kindsOn = true;
+  let advancedOn = false;
 
   const find = el('input', { type: 'search', class: 'fd-input fd-tool-find', placeholder: 'Find a field or a kind', 'aria-label': 'Find a field or a kind' });
   const none = el('p', { class: 'fd-tool-none', hidden: '' }, 'Nothing by that name.');
   const groupsBox = el('div', { class: 'fd-tool-groups' });
   const element = el('aside', { class: 'fd-toolbox', 'aria-label': 'Add a field' }, find, groupsBox, none);
 
-  function tile(spec: string, icon: string, name: string, title: string, extra = ''): HTMLButtonElement {
-    const button = el('button', { type: 'button', class: `fd-tool ${extra}`.trim(), 'data-tool': spec, title }, designerIcon(doc, icon), el('span', { class: 'fd-tool-name' }, name));
+  function tile(spec: string, icon: string | SVGSVGElement, name: string, title: string, extra = ''): HTMLButtonElement {
+    const picture = typeof icon === 'string' ? designerIcon(doc, icon) : icon;
+    const button = el('button', { type: 'button', class: `fd-tool ${extra}`.trim(), 'data-tool': spec, title }, picture, el('span', { class: 'fd-tool-name' }, name));
     button.addEventListener('click', () => options.onPick(spec));
     button.addEventListener('pointerdown', (event) => {
       if ((event as PointerEvent).button === 0) options.onPress?.(spec, event as PointerEvent, button);
@@ -93,6 +97,20 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
   const layout = group('layout', 'Layout');
   const tabsTile = tile('layout:tabs', 'tabs', 'Tabs', 'Tabs: pages of sections on a record sheet');
   layout.tiles.append(tile('layout:section', 'section', 'Section', 'Section: a titled group of fields'), tabsTile);
+  // Advanced's layout tiles: dropped beside, under, into or between parts like any field.
+  const blocks: [string, string, string][] = [
+    ['group', 'Group', 'A titled group, with its own columns'],
+    ['side', 'Side by side', 'Two groups next to each other'],
+    ['tabs', 'Tabs', 'Pages of groups, one shown at a time'],
+    ['heading', 'Heading', 'A title between parts'],
+    ['text', 'Text', 'A paragraph or a note'],
+    ['divider', 'Divider', 'A line across'],
+    ['spacer', 'Spacer', 'Room, or an empty cell'],
+    ['image', 'Image', 'A picture or a logo'],
+    ['button', 'Button', 'Send, or another action'],
+  ];
+  const blockTiles = blocks.map(([kind, name, tip]) => tile(`block:${kind}`, blockIcon(doc, kind), name, `${name}: ${tip}`));
+  layout.tiles.append(...blockTiles);
   groupsBox.append(fromModel.element, ...kindGroups.map((g) => g.element), ...(options.layout ? [layout.element] : []));
 
   /** What the search and the folding leave on show. */
@@ -105,7 +123,9 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
       let shown = 0;
       for (const t of g.tiles.children as HTMLCollectionOf<HTMLElement>) {
         const name = t.querySelector('.fd-tool-name')?.textContent?.toLowerCase() ?? '';
-        const unavailable = (g !== fromModel && !kindsOn) || (t === tabsTile && tabsTile.dataset['allowed'] !== 'true');
+        const block = blockTiles.includes(t as HTMLButtonElement);
+        const simpleOnly = g === layout && !block;
+        const unavailable = (g !== fromModel && !kindsOn) || (t === tabsTile && tabsTile.dataset['allowed'] !== 'true') || (block && !advancedOn) || (simpleOnly && advancedOn);
         t.hidden = unavailable || (!!query && !name.includes(query));
         if (!t.hidden) shown++;
       }
@@ -122,8 +142,9 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
 
   return {
     element,
-    update({ modelFields, tabs, kinds = true }) {
+    update({ modelFields, tabs, kinds = true, advanced = false }) {
       kindsOn = kinds;
+      advancedOn = advanced;
       const key = modelFields.map((m) => `${m.name}:${m.field.label}:${m.field.type}`).join('|');
       if (fromModel.element.dataset['key'] !== key) {
         fromModel.element.dataset['key'] = key;

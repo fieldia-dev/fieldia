@@ -1,4 +1,4 @@
-import type { ColumnCount, ColumnsByWidth, LabelPlace, Page, PageLook, SectionNode } from '@fieldia/core';
+import type { ButtonNode, ColumnCount, ColumnsByWidth, LabelPlace, Page, PageLook, SectionNode, TextNode } from '@fieldia/core';
 import { columnsValue, setSpan, SPANNED } from './layout-ops';
 import { across, isSection, locate, nodeOf, spanOf } from './layout-tree';
 import { Refusal } from './refusal';
@@ -95,4 +95,39 @@ export function setLook(page: Page, change: LookPatch): void {
   patch(look, change);
   if (Object.keys(look).length) page.look = look as PageLook;
   else delete page.look;
+}
+
+/** A block's own words and look: words and how they read, a button's label and look, a picture's address and description. */
+export interface BlockPatch {
+  text?: string;
+  style?: string;
+  label?: string;
+  src?: string;
+  alt?: string;
+}
+
+export function updateBlock(page: Page, id: string, patch: BlockPatch): void {
+  const node = locate(page, id)?.node;
+  if (!node) throw new Refusal(`There is no part “${id}”`);
+  if (node.type === 'text') {
+    if (patch.label !== undefined || patch.src !== undefined || patch.alt !== undefined) throw new Refusal('Words have text, not a label');
+    if (patch.text !== undefined) node.text = patch.text;
+    if (patch.style !== undefined) node.style = patch.style as TextNode['style'];
+  } else if (node.type === 'button') {
+    if (patch.text !== undefined || patch.src !== undefined || patch.alt !== undefined) throw new Refusal('A button has a label, not text');
+    if (patch.label !== undefined) node.label = patch.label;
+    if (patch.style !== undefined) node.style = patch.style as ButtonNode['style'];
+  } else if (node.type === 'image') {
+    if (patch.text !== undefined || patch.label !== undefined) throw new Refusal('A picture has an address and a description');
+    if (patch.src !== undefined) {
+      if (!patch.src.trim()) throw new Refusal('A picture needs its address');
+      node.src = patch.src.trim();
+    }
+    if (patch.alt !== undefined) node.alt = patch.alt;
+  } else throw new Refusal('Only words, a button or a picture are changed here');
+}
+
+/** Several widths as one edit, such as two parts trading width across the gutter between them; refused whole if any one is. */
+export function setWidths(page: Page, widths: { id: string; span: number }[]): void {
+  for (const { id, span } of widths) setColspan(page, id, span);
 }

@@ -111,3 +111,22 @@ describe('the toolbox', () => {
     expect(tiles('Layout')).toEqual(['layout:section', 'layout:tabs']);
   });
 });
+
+describe('the toolbox in Advanced', () => {
+  it('offers groups, side by side, tabs and the blocks between fields, each with a picture of its own', () => {
+    const { box, tiles, tile, picked, pressed } = make();
+    box.update({ modelFields: [], tabs: true, advanced: true });
+    expect(tiles('Layout')).toEqual(['block:group', 'block:side', 'block:tabs', 'block:heading', 'block:text', 'block:divider', 'block:spacer', 'block:image', 'block:button']);
+    expect(tile('block:side').textContent).toBe('Side by side');
+    expect(tile('block:divider').querySelector('svg')?.innerHTML).not.toBe(tile('block:spacer').querySelector('svg')?.innerHTML);
+    tile('block:heading').click();
+    tile('block:image').dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 0 }));
+    expect([picked, pressed]).toEqual([['block:heading'], ['block:image']]);
+  });
+
+  it('in Simple, a section and tabs, as before', () => {
+    const { box, tiles } = make();
+    box.update({ modelFields: [], tabs: true, advanced: false });
+    expect(tiles('Layout')).toEqual(['layout:section', 'layout:tabs']);
+  });
+});

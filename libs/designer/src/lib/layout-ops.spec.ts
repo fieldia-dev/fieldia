@@ -532,3 +532,33 @@ describe('a block added where a tile is clicked', () => {
     expect(d.getState().issues).toEqual(['There is no part “nothing”']);
   });
 });
+
+describe('a part put at a place in a list, as it is', () => {
+  it('goes before the part at that place, counted without itself, keeping its width where it fits', () => {
+    const d = employeeDesigner();
+    expect(d.describeDrop({ how: 'at', container: 'who', index: 1 }, 'f-mobile')).toBe('before “Last name”');
+    expect(d.describeDrop({ how: 'at', container: 'emergency', index: 3 })).toBe('at the end of “Emergency contact”');
+    d.place('f-mobile', { how: 'at', container: 'who', index: 1 });
+    expect(where(d.getPage(), 'f-mobile')?.kids).toEqual(['f-first_name', 'f-mobile', 'f-last_name', 'f-email', 'f-birthday', 'f-nationality']);
+    d.place('f-street', { how: 'at', container: 'emergency', index: 0 });
+    expect(where(d.getPage(), 'f-street')?.kids[0]).toBe('f-street');
+    expect(nodeOf(d.getPage(), 'f-street')?.['colspan']).toBeUndefined();
+    expectValid(d.getPage());
+  });
+
+  it('out of an arrangement, which folds away when one is left', () => {
+    const d = employeeDesigner();
+    d.place('f-nationality', { how: 'beside', target: 'f-first_name', after: true });
+    const shared = where(d.getPage(), 'f-nationality')?.parent as string;
+    d.place('f-nationality', { how: 'at', container: 'who', index: 0 });
+    expect(where(d.getPage(), 'f-nationality')?.kids.slice(0, 2)).toEqual(['f-nationality', 'f-first_name']);
+    expect(nodeOf(d.getPage(), shared)).toBeUndefined();
+  });
+
+  it('refused into itself, onto tabs, or where nothing holds parts', () => {
+    const d = employeeDesigner();
+    expect(d.dropRefusal({ how: 'at', container: 'who', index: 0 }, 'personal')).toBe('A part cannot go inside itself');
+    expect(d.dropRefusal({ how: 'at', container: 'job-tabs', index: 0 }, 'f-mobile')).toBe('Put it in one of the tabs');
+    expect(d.dropRefusal({ how: 'at', container: 'f-email', index: 0 }, 'f-mobile')).toBe('“Work email” holds no parts');
+  });
+});

@@ -247,10 +247,10 @@ export function layoutChanges(before: Page, after: Page): LayoutChanges {
   return { lines, said, placed, before: was, after: now };
 }
 
-/** A group, tab, step or the page, by name. */
+/** A group, tab, step or the page, by name; one whose name is empty yet as untitled. */
 export function holderName(page: Page, holder: { id: string; label?: string; title?: string }): string {
-  if (holder.id === page.layout.id) return page.title ?? 'the page';
-  return holder.label ?? holder.title ?? 'Untitled section';
+  if (holder.id === page.layout.id) return page.title || 'the page';
+  return holder.label || holder.title || 'Untitled section';
 }
 
 const LOOK: { key: keyof PageLook; words: string; none: string; value?: Record<string, string> }[] = [

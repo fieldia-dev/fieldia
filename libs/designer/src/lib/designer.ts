@@ -24,7 +24,7 @@ import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, or
 import * as ops from './layout-ops';
 import type { BlockKind, Drop, NewPart } from './layout-ops';
 import * as settings from './layout-settings';
-import type { LookPatch, SectionLook } from './layout-settings';
+import type { BlockPatch, LookPatch, SectionLook } from './layout-settings';
 import * as several from './layout-several';
 import type { EachChange } from './layout-several';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
@@ -51,7 +51,7 @@ export type { HeaderCommands, HeaderPartKind, HeaderPartPatch } from './header-c
 export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-commands';
 export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-checks';
 export type { BlockKind, Drop, NewPart } from './layout-ops';
-export type { LookPatch, SectionLook } from './layout-settings';
+export type { BlockPatch, LookPatch, SectionLook } from './layout-settings';
 export type { EachChange } from './layout-several';
 export type { JsonProblem, PageJsonResult } from './page-json';
 
@@ -326,6 +326,11 @@ export interface Designer extends HeaderCommands, ListCommands {
   lists(): AppList[];
   /** A choice's options taken from one of the app's lists, changing with other fields; `null` for options written here. */
   setOptionsFrom(id: string, from: OptionsFrom | null): boolean;
+  // canvas lane
+  /** A block's words and look, a button's label, a picture's address and description; a run of typing in one is one undo step. */
+  updateBlock(id: string, patch: BlockPatch): boolean;
+  /** Several parts' widths as one edit: two trading width across the gutter between them. */
+  setWidths(widths: { id: string; span: number }[]): boolean;
 }
 
 /** One of the app's lists of choices, by the name its data source answers to, and the words a person picks it by. */
@@ -1168,6 +1173,9 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
         naming ? `list-name:${id}` : null
       );
     },
+    // canvas lane
+    updateBlock: (id, patch) => apply((draft) => settings.updateBlock(draft, id, patch), `block:${id}:${Object.keys(patch).join(',')}`),
+    setWidths: (widths) => apply((draft) => settings.setWidths(draft, widths)),
   };
   return designer;
 }

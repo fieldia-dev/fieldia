@@ -367,3 +367,71 @@ describe('dragging on the canvas', () => {
     expect(dropped).toEqual([]);
   });
 });
+
+describe('groups inside groups', () => {
+  it('lands in the innermost group under the pointer, at a place among its own parts', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const rects = new Map<Element, DOMRect>();
+    const place = (element: Element, left: number, top: number, width: number, height: number) =>
+      rects.set(element, { left, top, width, height, right: left + width, bottom: top + height, x: left, y: top, toJSON: () => ({}) } as DOMRect);
+    const section = (id: string, parent: Element, box: [number, number, number, number]) => {
+      const element = document.createElement('fieldset');
+      element.dataset['dropSection'] = id;
+      const grid = document.createElement('div');
+      grid.dataset['dropGrid'] = '';
+      element.append(grid);
+      parent.append(element);
+      place(element, ...box);
+      return grid;
+    };
+    const card = (id: string, grid: Element, box: [number, number, number, number]) => {
+      const element = document.createElement('div');
+      element.className = 'fd-field fd-canvas-field';
+      element.dataset['node'] = id;
+      grid.append(element);
+      place(element, ...box);
+      return element;
+    };
+    const outer = section('outer', host, [0, 0, 800, 400]);
+    card('a', outer, [10, 10, 380, 60]);
+    const inner = section('inner', outer, [10, 100, 780, 200]);
+    // A block among the inner group's parts counts as a place too.
+    const words = document.createElement('p');
+    words.dataset['node'] = 'words';
+    inner.append(words);
+    place(words, 20, 110, 360, 40);
+    card('b', inner, [400, 110, 380, 40]);
+    const moving = card('c', outer, [10, 320, 380, 60]);
+    const dropped: [DragSource, string, number][] = [];
+    const drag = canvasDrag({ canvas: host, parts: '[data-node]', drop: (source, to, index) => void dropped.push([source, to, index]), rectOf: (e) => rects.get(e) ?? e.getBoundingClientRect() });
+    const pointer = (type: string, target: EventTarget, x: number, y: number) =>
+      target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0 }) as unknown as PointerEvent);
+    pointer('pointerdown', moving, 50, 350);
+    pointer('pointermove', document, 60, 340);
+    // Over the second half of "b", in the inner group: after it, the third of its parts.
+    pointer('pointermove', document, 700, 130);
+    pointer('pointerup', document, 700, 130);
+    expect(dropped).toEqual([[{ node: 'c' }, 'inner', 2]]);
+    drag.destroy();
+  });
+});
+
+describe('switched off', () => {
+  it('carries nothing while Advanced carries instead', () => {
+    const { host, card, pointer, dropped, drag: always } = canvas();
+    always.destroy();
+    let on = false;
+    const drag = canvasDrag({ canvas: host, enabled: () => on, drop: (source, to, index) => void dropped.push([source, to, index]) });
+    pointer('pointerdown', card('customer'), 50, 60);
+    pointer('pointermove', document, 60, 470);
+    pointer('pointerup', document, 60, 470);
+    expect(dropped).toEqual([]);
+    drag.press({ tool: 'kind:date' }, new MouseEvent('pointerdown', { button: 0 }) as unknown as PointerEvent, card('date'));
+    pointer('pointermove', document, 60, 470);
+    pointer('pointerup', document, 60, 470);
+    expect(dropped).toEqual([]);
+    on = true;
+    drag.destroy();
+  });
+});

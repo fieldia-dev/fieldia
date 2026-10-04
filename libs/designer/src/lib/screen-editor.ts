@@ -1,12 +1,15 @@
 import type { DataSource, FieldNode, LayoutNode, Page, TabsNode } from '@fieldia/core';
 import type { Skin } from '@fieldia/viewer';
 import { installStyles } from '@fieldia/widgets';
+import { modeSwitch, readMode, writeMode, type DesignerMode } from './canvas-mode';
 import { designerBar, elementFactory, putDownOnClickOutside } from './chrome';
 import { QUESTION_KINDS, SCREEN_KINDS, type Designer, type DesignerState, type Where } from './designer';
 import { findHeaderPart } from './header-commands';
 import { listCanvas } from './list-canvas';
 import { canBeColumn } from './list-commands';
 import type { FindItem } from './find-anything';
+import { locate } from './layout-tree';
+import type { BlockKind } from './layout-ops';
 import { allSections, findField, findTab, sectionLabel } from './page-tree';
 import { screenCanvas } from './screen-canvas';
 import { screenPanel } from './panel-screen';
@@ -52,10 +55,22 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
 
   const root = el('div', { class: 'fd-form fd-designer fd-screen-designer', 'data-fd-skin': skin });
   const trial = tryIt({ el, doc, designer, skin, dataSource: options.dataSource, onChange: (trying) => (body.hidden = trying) });
+  // Simple or Advanced: the person's preference, kept in this browser, never in the page.
+  let mode: DesignerMode = readMode(doc.defaultView);
+  const modes = modeSwitch(el, mode, (next) => setMode(next));
+  root.dataset['mode'] = mode;
+  function setMode(next: DesignerMode) {
+    mode = next;
+    writeMode(doc.defaultView, next);
+    root.dataset['mode'] = next;
+    modes.set(next);
+    canvas.setMode(next);
+    render(designer.getState());
+  }
   const bar = designerBar(root, designer, {
     titleLabel: 'Screen title',
     placeholder: 'Untitled screen',
-    extra: [trial.toggle],
+    extra: [modes.element, trial.toggle],
     find: () => [...findItems(), ...trial.items(), ...words.items(), ...panel.findItems(), ...json.items()],
     // A check about a field's words or options: it is open on the canvas by now, the cursor goes there.
     goTo(id, part) {
@@ -69,6 +84,8 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const canvas = screenCanvas({
     designer,
     doc,
+    skin,
+    openAdvanced: () => setMode('advanced'),
     more: (part) => openPanel(part),
     dropTool: (spec, section, index) => add(spec, { parent: section, index }),
   });
@@ -138,6 +155,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       // A new field comes with its name selected, to be typed over where it stands.
       if (created) canvas.focus(created, 'label', true);
     } else if (kind === 'model') designer.addModelField(name, where ?? target(page));
+    else if (kind === 'block') designer.addBlock(name as BlockKind, where ?? blockWhere(page));
     else if (spec === 'layout:section') {
       const selected = designer.getState().selected;
       const tab = selected ? findTab(page, selected) : null;
@@ -150,6 +168,15 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       const tabs = created ? (topOf(designer.getPage()).find((n) => n.id === created) as TabsNode) : null;
       if (tabs) designer.select(tabs.children[0].id);
     }
+  }
+
+  /** Where a block clicked in the toolbox goes: right after what is picked, into a picked tab, or where a field would. */
+  function blockWhere(page: Page): Where {
+    const selected = designer.getState().selected;
+    const at = selected ? locate(page, selected) : null;
+    if (at?.node.type === 'tab') return { parent: at.node.id };
+    if (at) return { after: at.node.id };
+    return target(page);
   }
 
   // ---- find anything -----------------------------------------------------------
@@ -205,6 +232,11 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       designer.select(null);
       return;
     }
+    // On the Advanced canvas: moves, widths and what is picked, from the keyboard.
+    if (mode === 'advanced' && !typing && layout.type !== 'list' && canvas.keys.handle(event)) {
+      event.preventDefault();
+      return;
+    }
     // A list's column moves along the row, and goes with Delete; so does a button for the rows chosen.
     if (!typing && selected && layout.type === 'list') {
       const column = selected.startsWith('column:') ? selected.slice('column:'.length) : null;
@@ -245,7 +277,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const stopPuttingDown = putDownOnClickOutside(
     root,
     designer,
-    '.fd-canvas-field, .fd-canvas-section-title, .fd-canvas-tabs-head, .fd-canvas-part, .fd-canvas-statusbar, .fd-canvas-title, .fd-field-bar, .fd-list-table th, .fd-list-table td, .fd-canvas-search, .fd-list-selection',
+    '.fd-canvas-field, .fd-canvas-section-title, .fd-canvas-tabs-head, .fd-canvas-part, .fd-canvas-statusbar, .fd-canvas-title, .fd-field-bar, .fd-list-table th, .fd-list-table td, .fd-canvas-search, .fd-list-selection, .fd-canvas-body [data-node]:not(.fd-canvas-section), .fd-screen-designer[data-mode="advanced"] .fd-canvas-section, .fd-multi, .fd-width-handle, .fd-gutter, .fd-simple-lock',
     () => !trial.trying
   );
 
@@ -262,12 +294,14 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       modelFields: listing ? designer.modelFields().filter((m) => canBeColumn(m.field)) : designer.modelFields(),
       tabs: state.page.layout.type === 'sheet' && !topOf(state.page).some((n) => n.type === 'tabs'),
       kinds: !listing,
+      advanced: mode === 'advanced',
     });
     side.update(state);
     panel.update(state);
   }
 
   host.append(root);
+  canvas.setMode(mode);
   const leave = designer.subscribe(render);
   render(designer.getState());
 
