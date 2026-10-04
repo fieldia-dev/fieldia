@@ -369,14 +369,21 @@ describe('a refused save', () => {
     const { host, form } = refusing(() => saveRefused({ kind: 'rule', message: 'A blocked customer cannot be given credit.' }));
     await form.settled();
     type(input(host, 'f-phone'), '+20 2 1111 2222');
+    button(host, 'Save').focus();
     button(host, 'Save').click();
     await form.settled();
     await flush();
     const notice = document.querySelector('[role=alertdialog]') as HTMLElement;
     expect(notice.textContent).toContain('A blocked customer cannot be given credit.');
     expect(statusText(host)).toBe('Not saved');
-    button(notice, 'OK').click();
+    // Modal: Tab stays on its one button, and Escape closes it, focus going back to Save.
+    const ok = button(notice, 'OK');
+    expect(document.activeElement).toBe(ok);
+    ok.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(ok);
+    ok.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(document.querySelector('[role=alertdialog]')).toBeNull();
+    expect(document.activeElement).toBe(button(host, 'Save'));
   });
 
   it('shows a network failure in a banner with Retry, and Retry saves again', async () => {

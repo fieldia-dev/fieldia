@@ -36,6 +36,7 @@ import { labelPlace, planSection, type Place } from './place';
 export type Skin = 'underline' | 'outlined';
 
 import { ownLocale, VIEWER_LABELS, type ViewerLabels } from './labels';
+import { keepTabIn } from './focus-trap';
 export { VIEWER_LABELS, DEFAULT_LABELS, type ViewerLabels } from './labels';
 
 /** Fill a slot with the app's own content. Return a function to clean up. */
@@ -932,14 +933,18 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const ok = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.ok);
       const dialog = el('div', { class: 'fd-dialog', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': text.id }, text, el('div', { class: 'fd-actions fd-actions-end' }, ...(withCancel ? [cancel, ok] : [ok])));
       const backdrop = el('div', { class: 'fd-dialog-backdrop' }, dialog);
+      const opener = root.ownerDocument.activeElement as HTMLElement | null;
       const close = (answer: boolean) => {
         backdrop.remove();
+        // Back to what had focus when it asked: Save, or the field being left.
+        opener?.focus?.();
         resolve(answer);
       };
       cancel.addEventListener('click', () => close(false));
       ok.addEventListener('click', () => close(true));
       backdrop.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') close(false);
+        else keepTabIn(dialog, event);
       });
       root.append(backdrop);
       ok.focus();

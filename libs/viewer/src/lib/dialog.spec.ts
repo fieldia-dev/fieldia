@@ -215,6 +215,20 @@ describe('a searchable list in a dialog', () => {
     expect(document.activeElement).toBe(opener);
   });
 
+  // A modal dialog (WCAG 2.4.3): Tab goes round inside it, both ways, never out to the page under it.
+  it('keeps Tab inside, both ways round', async () => {
+    void openSearchDialog({ title: 'Country', search });
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    const buttons = [...(dialog() as HTMLElement).querySelectorAll('button')];
+    const [first, last] = [buttons[0], buttons[buttons.length - 1]];
+    last.focus();
+    last.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(first);
+    first.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(last);
+    (dialog() as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  });
+
   it('picks with a click, and Escape closes it picking nothing', async () => {
     const clicked = openSearchDialog({ title: 'Country', search });
     await new Promise((resolve) => setTimeout(resolve, 250));
