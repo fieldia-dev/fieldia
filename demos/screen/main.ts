@@ -2,6 +2,7 @@ import type { Field, Page } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor } from '@fieldia/designer';
 import type { Skin } from '@fieldia/viewer';
 import { APP_LISTS, sampleDataSource } from '../shared/sample-data';
+import { APP_KINDS, APP_WIDGETS } from '../shared/app-kinds';
 import layoutPage from '../../examples/pages/layout.page.json';
 
 /**
@@ -61,16 +62,17 @@ const start = params.get('start');
 const model = start === 'sheet' || start === 'list' ? customer : undefined;
 const first =
   start === 'blank' ? blankPage('screen', 'New screen') : start === 'sheet' ? blankPage('sheet', 'Customer') : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : siteVisit();
-const designer = createDesigner({ page: first, store, model, lists: APP_LISTS });
+// The app's own kind, an IBAN, and the widget that draws it.
+const designer = createDesigner({ page: first, store, model, lists: APP_LISTS, kinds: APP_KINDS });
 // The app's lists' choices, for Try it.
 const dataSource = sampleDataSource();
 const skin = (params.get('skin') as Skin) ?? 'outlined';
 const app = document.getElementById('app') as HTMLElement;
-const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource }), reopen };
+const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource, widgets: APP_WIDGETS }), reopen };
 /** Close the editor and open the page again from the store, as an app does the next day. */
 async function reopen() {
   demo.handle.destroy();
-  demo.designer = await createDesigner.open(demo.designer.getPage().id, store, { model, lists: APP_LISTS });
-  demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource });
+  demo.designer = await createDesigner.open(demo.designer.getPage().id, store, { model, lists: APP_LISTS, kinds: APP_KINDS });
+  demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource, widgets: APP_WIDGETS });
 }
 Object.assign(window, { fieldiaDesigner: demo });
