@@ -1,9 +1,8 @@
-import { pageWords } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import type { FindItem } from './find-anything';
 import { designerIcon } from './icons';
-import { COMMON_LANGUAGES, languageName, languagesOf, languageTag, pageLanguage } from './translations';
+import { COMMON_LANGUAGES, languageName, languagesOf, languageTag, pageLanguage, wordsOf } from './translations';
 import { readTranslationsCsv, translationsCsv } from './translations-csv';
 import { wordsGrid } from './translations-grid';
 
@@ -166,7 +165,7 @@ export function translationsView(options: TranslationsViewOptions): Translations
     const page = designer.getPage();
     const text = translationsCsv(page);
     const languages = languagesOf(page).length;
-    const copied = `Copied ${plural(pageWords(page).length, 'word', 'words')}${languages ? ` in ${plural(languages, 'language', 'languages')}` : ''} as CSV.`;
+    const copied = `Copied ${plural(wordsOf(page).length, 'word', 'words')}${languages ? ` in ${plural(languages, 'language', 'languages')}` : ''} as CSV.`;
     const clipboard = doc.defaultView?.navigator.clipboard;
     if (!clipboard) return showCsv('copy', text);
     clipboard.writeText(text).then(
@@ -223,7 +222,7 @@ export function translationsView(options: TranslationsViewOptions): Translations
 
   function render() {
     const page = designer.getPage();
-    const words = pageWords(page).length;
+    const words = wordsOf(page).length;
     const languages = languagesOf(page).length;
     const language = pageLanguage(page);
     count.textContent = `${plural(words, 'word', 'words')}, written in `;

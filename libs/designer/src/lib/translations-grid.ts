@@ -1,7 +1,7 @@
-import { isRightToLeft, pageWords, type Page } from '@fieldia/core';
+import { isRightToLeft, type Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
-import { languageName, languagesOf, pageLanguage, staleWords, translationProgress } from './translations';
+import { languageName, languagesOf, pageLanguage, staleWords, translationProgress, wordsOf } from './translations';
 
 /**
  * The grid of the Translations view: a row per word on the page, in reading
@@ -121,7 +121,7 @@ export function wordsGrid(options: WordsGridOptions): WordsGrid {
     head.replaceChildren(el('tr', {}, first, ...columns));
   }
 
-  function drawRows(page: Page, words: string[], languages: string[]) {
+  function drawRows(page: Page, words: readonly string[], languages: string[]) {
     const own = pageLanguage(page);
     const live = new Set<string>();
     rows.replaceChildren(
@@ -208,7 +208,7 @@ export function wordsGrid(options: WordsGridOptions): WordsGrid {
     element,
     stale,
     update(page) {
-      const words = pageWords(page);
+      const words = wordsOf(page);
       const languages = languagesOf(page);
       const next = JSON.stringify([pageLanguage(page), words, languages]);
       if (next !== shape) {
@@ -220,13 +220,15 @@ export function wordsGrid(options: WordsGridOptions): WordsGrid {
       for (const [key, cell] of cells) {
         const [tag, word] = key.split('\n');
         const text = page.translations?.[tag]?.[word] ?? '';
-        if (cell.ownerDocument.activeElement !== cell || text !== (sent.get(cell) ?? text)) cell.value = text;
-        cell.toggleAttribute('data-empty', !text);
+        // Written only when it changes: a grid of every word is brought up to date at each key typed in it.
+        if ((cell.ownerDocument.activeElement !== cell || text !== (sent.get(cell) ?? text)) && cell.value !== text) cell.value = text;
+        if (cell.hasAttribute('data-empty') !== !text) cell.toggleAttribute('data-empty', !text);
       }
       for (const [tag, { th, bar, count }] of progress) {
         const { done, total } = translationProgress(page, tag);
-        th.setAttribute('aria-label', `${languageName(tag)}, ${done} of ${total} translated`);
-        count.textContent = `${done} of ${total}`;
+        const said = `${languageName(tag)}, ${done} of ${total} translated`;
+        if (th.getAttribute('aria-label') !== said) th.setAttribute('aria-label', said);
+        if (count.textContent !== `${done} of ${total}`) count.textContent = `${done} of ${total}`;
         bar.style.width = `${total ? (done / total) * 100 : 0}%`;
       }
       drawStale(page);
