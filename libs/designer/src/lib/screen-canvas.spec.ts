@@ -64,8 +64,16 @@ describe('the screen canvas — drawn as the viewer draws it', () => {
     const { card, date, step, designer } = visit();
     for (const id of [date, step]) {
       const grip = card(id).querySelector('[data-grip]') as HTMLElement;
-      expect(grip.getAttribute('aria-label')).toBe('Drag to move');
+      // For the pointer: the keys move a field too, so it is no control of its own, inside the field's button.
+      expect(grip.getAttribute('title')).toBe('Drag to move · Alt+↑ or ↓ moves it too');
+      expect([grip.tagName, grip.getAttribute('aria-hidden')]).toEqual(['SPAN', 'true']);
     }
+    // A field not picked is a button in the Tab order (WCAG 2.1.1); Enter picks it, the cursor in its label.
+    expect([card(date).getAttribute('role'), card(date).getAttribute('tabindex')]).toEqual(['button', '0']);
+    card(date).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(designer.getState().selected).toBe(date);
+    expect(document.activeElement).toBe(card(date).querySelector('[data-inline="label"]'));
+    designer.select(null);
     designer.select(date);
     expect(card(date).querySelector('.fd-card-grip[data-grip]')).not.toBeNull();
   });

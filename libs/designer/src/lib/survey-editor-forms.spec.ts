@@ -70,7 +70,15 @@ describe('survey editor — the Google Forms way', () => {
     const { host, designer } = mount();
     const q = designer.addQuestion('short-answer') as string;
     designer.select(null);
-    expect(host.querySelector(`.fd-q[data-node="${q}"] [data-grip]`)?.getAttribute('aria-label')).toBe('Drag to move');
+    const card = host.querySelector(`.fd-q[data-node="${q}"]`) as HTMLElement;
+    // For the pointer: the keys move a question too, so it is no control of its own, inside the card's button.
+    const grip = card.querySelector('[data-grip]') as HTMLElement;
+    expect([grip.tagName, grip.getAttribute('aria-hidden')]).toEqual(['SPAN', 'true']);
+    // The card is a button in the Tab order (WCAG 2.1.1); Enter opens it, the cursor in its words.
+    expect([card.getAttribute('role'), card.getAttribute('tabindex')]).toEqual(['button', '0']);
+    card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(designer.getState().selected).toBe(q);
+    expect(document.activeElement?.classList.contains('fd-q-label')).toBe(true);
   });
 
   it('shows a dropdown not picked as its numbered options', () => {
