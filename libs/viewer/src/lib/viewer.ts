@@ -157,10 +157,15 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     return node;
   }
 
-  /** Words with the icon a page names before them, when there is such an icon. */
+  /**
+   * Words with the icon a page names before them, when there is such an icon.
+   * The words sit in a <bdi>: left as written on a page of the other direction,
+   * they still run their own way, the icon still before them.
+   */
   function withIcon(name: string | undefined, text: string): (Node | string)[] {
     const icon = drawIcon(doc, name, options.icons);
-    return icon ? [icon, text] : [text];
+    const words = el('bdi', {}, text);
+    return icon ? [icon, words] : [words];
   }
 
   const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': options.skin ?? 'underline', dir, lang: tag, 'data-max-width': page.maxWidth });

@@ -97,6 +97,27 @@ describe('a page shown in a language', () => {
   });
 });
 
+describe('words left as written on a right-to-left page', () => {
+  it('keeps a title’s words apart from its icon and the form’s direction, so they run the way they are written', () => {
+    const titled: Page = {
+      ...page,
+      layout: {
+        type: 'sections',
+        id: 'root',
+        children: [
+          { type: 'section', id: 's', title: 'Why not?', icon: 'user', children: [{ type: 'field', id: 'n', field: 'name' }] },
+          { type: 'button', id: 'b', label: 'Send it.', action: 'send' },
+        ],
+      },
+    };
+    const host = mount({ locale: 'ar' }, titled);
+    const title = host.querySelector('.fd-section-title') as HTMLElement;
+    expect(title.querySelector('bdi')?.textContent).toBe('Why not?');
+    expect(title.firstElementChild?.matches('svg')).toBe(true);
+    expect(host.querySelector('[data-node="b"] bdi')?.textContent).toBe('Send it.');
+  });
+});
+
 describe('a dialog in a language Fieldia has no words for', () => {
   it('speaks English, rather than nothing', async () => {
     const found = openSearchDialog({ title: 'Buscar', search: async () => [], locale: 'es' });

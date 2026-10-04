@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { doubleLines, watch } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
@@ -95,6 +95,10 @@ test('translates a survey into Arabic: typed right to left, filtered, pasted as 
   await expect(tried.getByText('رأيك في المنتج')).toBeVisible();
   await expect(tried.getByText('شكرًا لمشاركتك، يقرأ فريق المنتج كل إجابة.')).toBeVisible();
   await expect(tried.locator('[data-node="q-name"] .fd-label')).toHaveText(/^اسمك/);
+  // A help left in English among the Arabic: its full stop stays at its end, and it lines up with the rest.
+  const reply = await sentence(tried.locator('[data-node="q-email"] .fd-help'));
+  expect(reply.lastX).toBeGreaterThan(reply.firstX);
+  expect(Math.abs(reply.rightGap)).toBeLessThan(2);
   // Right to left: the label starts at the right of the form.
   const formBox = (await tried.boundingBox())!;
   const labelBox = (await tried.locator('[data-node="q-name"] .fd-label').boundingBox())!;
@@ -174,6 +178,65 @@ test('on a phone, each language is a whole column beside the English, swiped one
   await screen(page, 'translations-phone-swiped', { viewport: true });
   await expectNoSidewaysScroll(page);
   expect(await doubleLines(page)).toEqual([]);
+  expect(problems).toEqual([]);
+});
+
+/**
+ * Where a block's words sit: the first and the last letter, and the words'
+ * ends against the block's own, for its sentence's order and its alignment.
+ */
+function sentence(locator: Locator) {
+  return locator.evaluate((block) => {
+    const text = [...block.childNodes].find((n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim()) as Text;
+    const words = text.textContent ?? '';
+    const letter = (at: number) => {
+      const range = document.createRange();
+      range.setStart(text, at);
+      range.setEnd(text, at + 1);
+      return range.getBoundingClientRect();
+    };
+    const all = document.createRange();
+    all.selectNodeContents(text);
+    const [box, inside] = [block.getBoundingClientRect(), all.getBoundingClientRect()];
+    const style = getComputedStyle(block);
+    return {
+      firstX: letter(words.search(/\S/)).x,
+      lastX: letter(words.trimEnd().length - 1).x,
+      rightGap: box.right - parseFloat(style.paddingRight) - inside.right,
+      leftGap: inside.left - box.left - parseFloat(style.paddingLeft),
+    };
+  });
+}
+
+test('words left in English on a right-to-left page keep their own order, and still line up on the right', async ({ page }) => {
+  const problems = watch(page);
+  // A page with no Arabic of its own, shown in Arabic: every word of it left as written.
+  await page.goto('/plain/?page=survey&skin=outlined&locale=ar');
+  await expect(page.locator('.fd-form').first()).toHaveAttribute('dir', 'rtl');
+  const help = page.locator('[data-node="q-email"] .fd-help');
+  await expect(help).toHaveText('Only if you want a reply.');
+  const english = await sentence(help);
+  // “Only … reply.”: the full stop after the words, on their right, not before them.
+  expect(english.lastX).toBeGreaterThan(english.firstX);
+  expect(Math.abs(english.rightGap)).toBeLessThan(2);
+  const label = await sentence(page.locator('[data-node="q-email"] .fd-label'));
+  expect(Math.abs(label.rightGap)).toBeLessThan(2);
+  await screen(page, 'bidi-english-in-arabic', { viewport: true });
+
+  // A page in Arabic: its sentences end on the left, as Arabic does, lined up on the right.
+  await page.goto('/plain/?page=rules&skin=outlined&locale=ar');
+  const description = page.locator('.fd-page-description');
+  await expect(description).toHaveText(/يمكنك تغييره\.$/);
+  const arabic = await sentence(description);
+  expect(arabic.lastX).toBeLessThan(arabic.firstX);
+  expect(Math.abs(arabic.rightGap)).toBeLessThan(2);
+  await screen(page, 'bidi-arabic', { viewport: true });
+
+  // An English page keeps its words on the left.
+  await page.goto('/plain/?page=survey&skin=outlined');
+  const left = await sentence(page.locator('[data-node="q-email"] .fd-help'));
+  expect(left.lastX).toBeGreaterThan(left.firstX);
+  expect(Math.abs(left.leftGap)).toBeLessThan(2);
   expect(problems).toEqual([]);
 });
 
