@@ -587,6 +587,9 @@ export const DESIGNER_CSS = /* css */ `
 .fd-rail-button > .fd-dicon { width: 22px; height: 22px; }
 @container (max-width: 620px) {
   .fd-survey-canvas { padding-inline: 10px; }
+  /* A question's words the width of its card, its kind under them. */
+  .fd-survey-canvas .fd-q-head { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .fd-survey-canvas .fd-q-kind { min-width: 0; justify-self: start; }
   .fd-q-rail { position: sticky; bottom: 12px; inset-inline-start: auto; justify-self: center; display: flex; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) { .fd-line::after, .fd-q-rail, .fd-survey-canvas .fd-q-grip { transition: none; } }

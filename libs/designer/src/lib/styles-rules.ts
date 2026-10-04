@@ -112,10 +112,12 @@ export const DESIGNER_RULES_CSS = /* css */ `
 .fd-rules-branches { margin: 0 10px 4px; }
 .fd-rules-empty { margin: 0; padding: 28px 16px; text-align: center; color: var(--fd-muted); font-size: 14px; background: var(--fd-surface); border: 1px dashed var(--fd-border-strong); border-radius: var(--fd-radius); }
 .fd-rules-empty[hidden] { display: none; }
-/* A phone's width: a rule's part over its sentence; Design, Try it and the views two by two, the whole width of the bar. */
+/* A phone's width: a rule's part over its sentence; the views three to a row (Simple or Advanced two), the whole
+   width of the bar, so none is left alone on a line. */
 @container (max-width: 560px) {
   .fd-rules-item { grid-template-columns: minmax(0, 1fr); }
-  .fd-designer-bar .fd-mode { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); flex: 1 1 100%; box-sizing: border-box; }
+  .fd-designer-bar .fd-mode { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); flex: 1 1 100%; box-sizing: border-box; }
+  .fd-designer-bar .fd-mode-switch { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fd-designer-bar .fd-mode-button { justify-content: center; min-width: 0; }
 }
 

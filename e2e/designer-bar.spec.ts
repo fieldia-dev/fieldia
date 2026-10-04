@@ -32,3 +32,21 @@ for (const [name, path] of [['screen editor', '/screen/'], ['survey designer', '
     }
   });
 }
+
+test('at a phone’s width: the views three to a row, none alone, and a question’s words the width of its card', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/designer/?start=survey');
+  const tops = await page.locator('.fd-designer-bar .fd-mode:not(.fd-mode-switch) [data-mode]').evaluateAll((all) => all.map((b) => Math.round(b.getBoundingClientRect().top)));
+  const rows = new Map<number, number>();
+  for (const top of tops) rows.set(top, (rows.get(top) ?? 0) + 1);
+  expect([...rows.values()].every((n) => n >= 2), `views per row: ${[...rows.values()]}`).toBe(true);
+  await page.locator('.fd-q').nth(1).click();
+  const card = page.locator('.fd-q-selected');
+  const words = (await card.locator('.fd-q-head > :first-child').boundingBox())!;
+  const kind = (await card.locator('.fd-q-kind').boundingBox())!;
+  const own = (await card.boundingBox())!;
+  // The words over the kind, each the card's width less its room.
+  expect(kind.y).toBeGreaterThanOrEqual(words.y + words.height - 1);
+  expect(words.width).toBeGreaterThan(own.width - 80);
+  await screen(page, 'designer-survey-phone-card', { viewport: true });
+});
