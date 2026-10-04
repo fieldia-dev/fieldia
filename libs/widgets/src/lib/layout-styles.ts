@@ -61,15 +61,18 @@ fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
 .fd-form .fd-field[data-labels="hidden"] > .fd-label {
   position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
 }
-/* After: a tick box, then its words on the same line, as a sentence; its help and messages under the words. The
-   padding sets it level with the boxes beside it in a row. */
+/* After: a tick box, then its words on the same line, as a sentence; its help and messages under the words. They
+   drop to sit level with the boxes beside them in a row, by margins: the field's own padding is left to whoever
+   draws round it (a designer's canvas rings a part there). */
 .fd-form .fd-field[data-labels="after"] {
   grid-template-columns: auto minmax(0, 1fr); column-gap: 9px; align-items: start;
-  padding-block-start: max(0px, calc((var(--fd-control-height, 30px) - 1.45em) / 2));
+  --fd-tick-drop: max(0px, calc((var(--fd-control-height, 30px) - 1.45em) / 2));
 }
-.fd-form .fd-field[data-labels="after"] > .fd-tick { grid-column: 1; grid-row: 1; width: 17px; height: 17px; margin-block-start: calc((1.45em - 17px) / 2); }
-.fd-form .fd-field[data-labels="after"] > :not(.fd-tick) { grid-column: 2; }
-.fd-form .fd-field[data-labels="after"] > .fd-label { grid-row: 1; font-weight: inherit; line-height: 1.45; cursor: pointer; }
+/* The box, or what holds it (a designer's canvas wraps each answer box). */
+.fd-form .fd-field[data-labels="after"] > :is(.fd-tick, :has(> .fd-tick)) { grid-column: 1; grid-row: 1; display: flex; margin-block-start: calc(var(--fd-tick-drop) + (1.45em - 17px) / 2); }
+.fd-form .fd-field[data-labels="after"] .fd-tick { width: 17px; height: 17px; }
+.fd-form .fd-field[data-labels="after"] > :not(.fd-tick, :has(> .fd-tick)) { grid-column: 2; }
+.fd-form .fd-field[data-labels="after"] > .fd-label { grid-row: 1; margin-block-start: var(--fd-tick-drop); font-weight: inherit; line-height: 1.45; cursor: pointer; }
 /* A field or a cell that measures itself is drawn over its neighbours while it is worked in: its lists and calendars open over them. */
 .fd-form .fd-field[data-labels="beside"]:focus-within, .fd-grid > .fd-section[data-place="shared"]:focus-within { z-index: 3; }
 
