@@ -1,6 +1,6 @@
 import type { Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
-import { formulaInWords, problemWords, type FormulaProblem } from './rules-formula';
+import { formulaPieces, problemWords, type FormulaProblem } from './rules-formula';
 
 /**
  * A box to type a formula in, the way a person writes one: typing a field's
@@ -9,6 +9,12 @@ import { formulaInWords, problemWords, type FormulaProblem } from './rules-formu
  * it. What is wrong shows under the box, the place it is about marked in a
  * copy of the formula. A formula that reads is handed on as it is typed; one
  * that does not is kept here, so the page keeps the last one that read.
+ *
+ * The box holds the formula as the page stores it, its fields by their
+ * names, and a line above it reads it in words, its fields by their labels:
+ * "Reads: Price × Quantity". Words are never turned back into a formula, so
+ * two fields with one label, or a label with a sign in it, cannot change
+ * what the page stores.
  */
 
 export interface FormulaBoxOptions {
@@ -24,19 +30,13 @@ export interface FormulaBoxOptions {
   said?(page: Page, source: string): string;
 }
 
-/** The formula in words, when its names are not the words people know the fields by: "Reads: Price × Quantity". */
-function readsLine(page: Page, source: string): string {
-  const words = formulaInWords(page, source);
-  return words.replace(/\s+/g, '') === source.replace(/\s+/g, '').replace(/\*/g, '×').replace(/\//g, '÷').replace(/-/g, '−') ? '' : `Reads: ${words}`;
-}
-
 export interface FormulaBox {
   /** The box and its list of suggestions. */
   element: HTMLElement;
   input: HTMLInputElement;
   /** What is wrong, under the box. */
   problem: HTMLElement;
-  /** The result, under the box. */
+  /** The result on made-up values, under the box. */
   result: HTMLElement;
   /** The page as it is now, and the formula it holds: shown unless the box is being typed in. */
   update(page: Page, source: string): void;
@@ -71,15 +71,17 @@ export function formulaBox(el: ElementFactory, options: FormulaBoxOptions): Form
     autocomplete: 'off',
     spellcheck: 'false',
     placeholder: options.placeholder ?? '',
+    'aria-describedby': `${id}-words`,
   }) as HTMLInputElement;
   const list = el('div', { class: 'fd-formula-suggest', role: 'listbox', id: `${id}-list`, 'aria-label': 'Fields', hidden: '' });
-  const element = el('div', { class: 'fd-formula' }, input, list);
+  // The formula in words, above the box it is about.
+  const reads = el('p', { class: 'fd-formula-reads', id: `${id}-words`, hidden: '' });
+  const element = el('div', { class: 'fd-formula' }, reads, input, list);
   const words = el('span', { class: 'fd-formula-problem-words' });
   const copy = el('code', { class: 'fd-formula-copy' });
   const problem = el('p', { class: 'fd-formula-problem', role: 'alert', hidden: '' }, words, copy);
-  const reads = el('span', { class: 'fd-formula-reads' });
   const outcome = el('span', { class: 'fd-formula-outcome' });
-  const result = el('p', { class: 'fd-formula-result', role: 'status', hidden: '' }, reads, outcome);
+  const result = el('p', { class: 'fd-formula-result', role: 'status', hidden: '' }, outcome);
 
   let page: Page | null = null;
   let found: { name: string; label: string }[] = [];
@@ -170,9 +172,15 @@ export function formulaBox(el: ElementFactory, options: FormulaBoxOptions): Form
 
   /** What the formula reads as, and gives: shown only where there is something to say. */
   function say(on: Page, source: string) {
-    reads.textContent = source && options.said ? readsLine(on, source) : '';
-    outcome.textContent = source && options.said ? options.said(on, source) : '';
+    // In words only when the words are not the formula as it is written: `120` reads as itself.
+    const pieces = source ? formulaPieces(on, source) : [];
+    reads.replaceChildren(
+      ...(pieces.some((piece) => piece.text !== piece.was)
+        ? ['Reads: ', ...pieces.flatMap((piece) => [...(piece.space ? [' '] : []), piece.field ? el('span', { class: 'fd-formula-name' }, piece.text) : piece.text])]
+        : [])
+    );
     reads.hidden = !reads.textContent;
+    outcome.textContent = source && options.said ? options.said(on, source) : '';
     result.hidden = !outcome.textContent;
   }
 

@@ -207,9 +207,10 @@ export function valueInWords(field: Field | undefined, value: unknown): string {
   return String(value);
 }
 
-/** A piece of a formula in words, with the space before it; `field` names the field it stands for. */
+/** A piece of a formula in words, with the space before it and what it was written as; `field` names the field it stands for. */
 export interface WordPiece {
   text: string;
+  was: string;
   space: boolean;
   field?: string;
 }
@@ -217,7 +218,7 @@ export interface WordPiece {
 /** A formula in words, piece by piece: what `formulaInWords` joins, and the box draws with each field marked. */
 export function formulaPieces(page: Page, source: string): WordPiece[] {
   const tokens = formulaTokens(source);
-  if (!Array.isArray(tokens)) return [{ text: source, space: false }];
+  if (!Array.isArray(tokens)) return [{ text: source, was: source, space: false }];
   return tokens.map((token, i) => {
     let text = token.text;
     let field: string | undefined;
@@ -232,7 +233,7 @@ export function formulaPieces(page: Page, source: string): WordPiece[] {
       text = compared?.type === 'selection' ? valueInWords(compared, token.text.slice(1, -1)) : `“${token.text.slice(1, -1)}”`;
     }
     const tight = token.kind === 'close' || token.kind === 'comma' || i === 0 || tokens[i - 1].kind === 'open' || (token.kind === 'open' && tokens[i - 1]?.kind === 'name');
-    return { text, space: !tight, ...(field ? { field } : {}) };
+    return { text, was: token.text, space: !tight, ...(field ? { field } : {}) };
   });
 }
 
