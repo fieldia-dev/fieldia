@@ -9,6 +9,7 @@ import { kindOfField, QUESTION_KINDS, type Designer, type DesignerState, type Wh
 import type { FindItem } from './find-anything';
 import { designerIcon } from './icons';
 import { kindById } from './kinds';
+import { kindPreview } from './kind-previews';
 import { openMenu, type MenuItem } from './menu';
 import { rail as sideRail } from './rail';
 import { inlineSettings } from './inline-settings';
@@ -269,7 +270,8 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   /**
    * How a question's answer reads before anyone answers it: a text question as
    * a dotted line saying what goes there, a dropdown as its numbered options,
-   * anything else as its real answer box. Null for the real box.
+   * the newer kinds as `kindPreview` draws them, anything else as its real
+   * answer box. Null for the real box.
    */
   function preview(page: Page, node: FieldNode): HTMLElement | null {
     const def = page.fields[node.field];
@@ -277,7 +279,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     if (kind === 'date' || kind === 'date-time') return el('div', { class: 'fd-q-preview fd-q-preview-short fd-q-preview-date' }, PREVIEW_WORDS[kind], designerIcon(doc, 'date'));
     if (kind && PREVIEW_WORDS[kind]) return el('div', { class: `fd-q-preview fd-q-preview-${kind === 'paragraph' ? 'long' : 'short'}` }, PREVIEW_WORDS[kind]);
     if (kind === 'dropdown' && def.type === 'selection') return el('ol', { class: 'fd-q-preview fd-q-preview-list' }, ...def.options.map((o, i) => el('li', {}, `${i + 1}. ${o.label}`)));
-    return null;
+    return kindPreview(el, page, node, kind);
   }
   /** Paints a question's answer into a box: the preview where there is one, else the real answer box. */
   function answerBox(box: HTMLElement, id: string) {
@@ -470,10 +472,11 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
         }
         required.setAttribute('aria-checked', String(def.required === true));
         choices.update(def, node);
-        answer.hidden = !choices.element.hidden;
+        // Settings that stand in for the answer, as a matrix's rows and columns do, take its place.
+        const standsIn = settings.update(page, node);
+        answer.hidden = !choices.element.hidden || standsIn;
         if (!answer.hidden) painter.paint(page, node);
         when.update(page, questionsBefore(page, node.id), node.invisible);
-        settings.update(page, node);
       },
       destroy: () => painter.destroy(),
     };

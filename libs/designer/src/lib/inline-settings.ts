@@ -3,12 +3,14 @@ import type { ElementFactory } from './chrome';
 import { columnsEditor } from './columns-editor';
 import type { Designer } from './designer';
 import { kindOfField } from './kinds';
+import { kindSettings } from './kind-settings';
 
 /**
  * What a kind of field has beyond its words, set in the picked field itself,
  * where it is seen: a rating's levels, where a scale starts and ends, an
- * amount's currency, what a link points to, a table's columns. A field of
- * the model keeps the model's, so it has none here. The panel has the same.
+ * amount's currency, what a link points to, a table's columns — and the
+ * newer kinds' own, from `kind-settings`. A field of the model keeps the
+ * model's, so it has none here. The panel has the same.
  */
 
 export interface InlineSettings {
@@ -136,7 +138,13 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
       element.replaceChildren(columns.element);
       standsIn = true;
       refresh = (page, node) => columns.update(page.fields[node.field]);
-    } else element.replaceChildren();
+    } else {
+      // The newer kinds, and the choices' Shuffle and points.
+      const more = kindSettings(el, designer, id, kind);
+      element.replaceChildren(...(more?.elements ?? []));
+      standsIn = more?.standsIn ?? false;
+      if (more) refresh = more.refresh;
+    }
   }
 
   return {

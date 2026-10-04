@@ -191,7 +191,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
           cell.widget.update({
             value: line.values[cell.name],
             values: line.values,
-            readonly: readonly || cell.def.readonly === true,
+            // A value worked out from the line's others is shown, never typed.
+            readonly: readonly || cell.def.readonly === true || cell.def.compute !== undefined,
             required: cell.def.required === true,
             invalid: !!message,
           });

@@ -24,6 +24,15 @@ import { withCalendar } from './calendar';
 import { propertiesWidget } from './properties';
 import { htmlWidget, jsonWidget } from './extras';
 import { matrixWidget } from './matrix';
+import { signatureWidget } from './signature';
+import { sliderWidget } from './slider';
+import { choiceTagsWidget } from './choice-tags';
+import { imageChoiceWidget } from './choice-images';
+import { rankingWidget } from './ranking';
+import { addressWidget } from './address';
+import { cardsWidget } from './cards';
+import { clearSelection } from './kind-parts';
+import { shownOptions } from './shuffle';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -262,8 +271,8 @@ function options(field: Field) {
   return field.type === 'selection' ? field.options : [];
 }
 
-const selectWidget: WidgetFactory = ({ form, name, field, id, document }) => {
-  const choices = options(field);
+const selectWidget: WidgetFactory = ({ form, name, field, node, id, document }) => {
+  const choices = shownOptions(options(field), form, name, node);
   const select = make(document, 'select', { id, class: 'fd-input fd-select' }, make(document, 'option', { value: '' }));
   choices.forEach((option, i) => select.append(make(document, 'option', { value: String(i) }, option.label)));
   select.addEventListener('change', () => form.setValue(name, select.value === '' ? null : choices[Number(select.value)].value));
@@ -279,29 +288,10 @@ const selectWidget: WidgetFactory = ({ form, name, field, id, document }) => {
   };
 };
 
-/**
- * "Clear selection", as Google Forms has it: under a single choice that need not be answered, once something is
- * picked — a radio, once picked, cannot be unpicked.
- */
-function clearSelection(document: Document, words: WidgetLabels, clear: () => void) {
-  const button = make(document, 'button', { type: 'button', class: 'fd-choice-clear', hidden: '' }, words.clearSelection);
-  button.addEventListener('click', clear);
-  let open = false;
-  return {
-    button,
-    /** Whether the answer may be left out: not required, and not read-only. */
-    allow(state: WidgetState) {
-      open = !state.required && !state.readonly;
-    },
-    show(picked: boolean) {
-      button.hidden = !(open && picked);
-    },
-  };
-}
-
 function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
-  return ({ form, name, field, id, document, labels, locale }) => {
-    const choices = options(field);
+  return ({ form, name, field, node, id, document, labels, locale }) => {
+    // Shown shuffled when the page asks; "Other" comes after them all the same.
+    const choices = shownOptions(options(field), form, name, node);
     const words = labels ?? WIDGET_LABELS[locale ?? 'en'];
     const group = make(document, 'div', { id, class: `fd-choices fd-choices-${kind}`, role: kind === 'radio' ? 'radiogroup' : 'group' });
     const inputs = choices.map((option, i) => {
@@ -331,7 +321,9 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
         const chosen = inputs.findIndex((input) => input.checked);
         form.setValue(name, chosen !== -1 ? choices[chosen].value : own);
       } else {
-        form.setValue(name, [...choices.filter((_, i) => inputs[i].checked).map((option) => option.value), ...(own !== null ? [own] : [])]);
+        // In the options' own order, however they are shown.
+        const ticked = new Set(choices.filter((_, i) => inputs[i].checked));
+        form.setValue(name, [...options(field).filter((option) => ticked.has(option)).map((option) => option.value), ...(own !== null ? [own] : [])]);
       }
     }
     group.addEventListener('change', (event) => {
@@ -522,6 +514,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   monetary: numberWidget,
   'integer.rating': pointsWidget('rating'),
   'integer.scale': pointsWidget('scale'),
+  'integer.slider': sliderWidget,
+  'float.slider': sliderWidget,
   'integer.progressbar': progressbarWidget,
   'integer.label': labelWidget,
   'float.label': labelWidget,
@@ -533,6 +527,9 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   selection: selectWidget,
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),
+  'selection.tags': choiceTagsWidget,
+  'selection.image-choice': imageChoiceWidget,
+  'selection.ranking': rankingWidget,
   'selection.statusbar': statusbarWidget,
   date: dateWidget,
   datetime: dateTimeWidget,
@@ -543,10 +540,13 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'many2many.checkboxes': linkCheckboxesWidget,
   reference: referenceWidget,
   one2many: linesWidget,
+  'one2many.cards': cardsWidget,
   binary: binaryWidget,
+  'binary.signature': signatureWidget,
   image: imageWidget,
   html: htmlWidget,
   json: jsonWidget,
+  'json.address': addressWidget,
   properties: propertiesWidget,
   matrix: matrixWidget,
 };

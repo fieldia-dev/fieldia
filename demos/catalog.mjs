@@ -83,6 +83,19 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'kinds',
+    name: 'Office move',
+    category: 'fields',
+    query: 'page=kinds&skin=outlined',
+    blurb: 'The newer kinds of question in one survey: sliders, a tag box, an address, choices with pictures, a ranking, a group that repeats, a quiz question with points, and a signature.',
+    howTo: [
+      'Drag a slider, or move it with the arrow keys: its value shows beside it.',
+      'Pick a desk by its picture, then put what matters most in order by dragging, or with Alt and the arrow keys.',
+      'Add a person who moves with you: each one is a small card of its own.',
+      'Sign with the mouse or a finger, or type your name instead.',
+    ],
+  },
+  {
     id: 'signup',
     name: 'Workshop sign-up',
     category: 'forms',
@@ -97,6 +110,19 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'layout',
+    name: 'New employee',
+    category: 'forms',
+    query: 'page=layout&skin=outlined',
+    blurb: 'A form laid out on columns: a photo beside a block of fields, two groups side by side, tabs with a framed group whose labels sit beside their boxes, and the page’s own accent, room and corners.',
+    howTo: [
+      'Narrow the window: Personal details keeps its three columns on a tablet and goes to one on a phone, its fields always on the same columns as the photo.',
+      'Open the Pay tab: the bank’s labels sit beside their boxes, and go above them once a box gets narrow.',
+      'Choose a fixed-term contract on the Job tab: Contract ends takes its place on the columns.',
+      'Add &locale=ar&dir=rtl to the address for the page in Arabic, right to left, or &scheme=dark for its dark scheme.',
+    ],
+  },
+  {
     id: 'survey',
     name: 'Product survey',
     category: 'forms',
@@ -107,6 +133,19 @@ export const DEMOS = [
       'Click a step in the list to go back to it.',
       'Press Skip on the optional step: its answers are left out.',
       'Send the answers on the last step.',
+    ],
+  },
+  {
+    id: 'rules',
+    name: 'Totals and answer rules',
+    category: 'forms',
+    query: 'page=rules&skin=outlined',
+    blurb: 'An order whose subtotals, total and amount to pay work themselves out as you type, a discount that sets itself past a threshold, and answer rules: one that only warns, and ones that stop the form.',
+    howTo: [
+      'Change a quantity or a price: the line’s subtotal, the total and the amount to pay follow.',
+      'Add a line that takes the total past EGP 1,000: the discount sets itself to 10%. Change it if you like: it stays as you set it.',
+      'Type an email outside @niletraders.example and leave the field: a warning shows under it, and the form still sends.',
+      'Type a postcode of four digits, tick one delivery day, and send: the form stops, saying what is wrong under each.',
     ],
   },
   {

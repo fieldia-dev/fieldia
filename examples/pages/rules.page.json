@@ -1,0 +1,134 @@
+{
+  "fieldia": "0.1",
+  "id": "supplies-order",
+  "title": "Office supplies order",
+  "description": "Totals work themselves out as you type. An order over EGP 1,000 gets 10% off, which you may still change.",
+  "data": { "kind": "responses" },
+  "fields": {
+    "lines": {
+      "type": "one2many",
+      "label": "Items",
+      "relation": "order.line",
+      "fields": {
+        "item": { "type": "char", "label": "Item" },
+        "qty": { "type": "integer", "label": "Quantity", "min": 1 },
+        "price": { "type": "monetary", "label": "Unit price", "currency": "EGP", "digits": [12, 2], "min": 0 },
+        "subtotal": { "type": "monetary", "label": "Subtotal", "currency": "EGP", "digits": [12, 2], "compute": "qty * price" }
+      },
+      "default": [{ "key": "first", "values": { "item": "A4 paper, box of 5", "qty": 2, "price": 240 } }]
+    },
+    "total": { "type": "monetary", "label": "Total", "currency": "EGP", "digits": [12, 2], "compute": "sum(lines, 'subtotal')" },
+    "discount": {
+      "type": "integer",
+      "label": "Discount (%)",
+      "help": "10% once the total passes EGP 1,000. You may change it.",
+      "min": 0,
+      "max": 50,
+      "default": 0,
+      "setWhen": [
+        { "when": "total > 1000", "value": "10" },
+        { "when": "total <= 1000", "value": "0" }
+      ]
+    },
+    "to_pay": { "type": "monetary", "label": "To pay", "currency": "EGP", "digits": [12, 2], "compute": "total - total * discount / 100" },
+    "email": { "type": "char", "label": "Work email", "required": true, "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$" },
+    "postcode": { "type": "char", "label": "Postcode", "required": true },
+    "days": {
+      "type": "selection",
+      "label": "Delivery days",
+      "help": "Tick at least two days.",
+      "required": true,
+      "multiple": true,
+      "options": [
+        { "value": "sun", "label": "Sunday" },
+        { "value": "mon", "label": "Monday" },
+        { "value": "tue", "label": "Tuesday" },
+        { "value": "wed", "label": "Wednesday" },
+        { "value": "thu", "label": "Thursday" }
+      ]
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "order",
+    "children": [
+      {
+        "type": "section",
+        "id": "items",
+        "title": "Your order",
+        "children": [
+          { "type": "field", "id": "f-lines", "field": "lines" },
+          {
+            "type": "section",
+            "id": "sums",
+            "style": "plain",
+            "columns": 3,
+            "children": [
+              { "type": "field", "id": "f-total", "field": "total" },
+              { "type": "field", "id": "f-discount", "field": "discount" },
+              { "type": "field", "id": "f-to-pay", "field": "to_pay" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "delivery",
+        "title": "Delivery",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-email",
+            "field": "email",
+            "widget": "email",
+            "placeholder": "sara@niletraders.example",
+            "validate": [
+              {
+                "endsWith": "@niletraders.example",
+                "level": "warning",
+                "message": "Use your @niletraders.example address if you can: those orders are approved the same day."
+              }
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-postcode",
+            "field": "postcode",
+            "placeholder": "11511",
+            "validate": [{ "pattern": "\\d{5}", "message": "A postcode has five digits, such as 11511." }]
+          },
+          { "type": "field", "id": "f-days", "field": "days", "colspan": 2, "validate": [{ "atLeast": 2 }] }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Office supplies order": "طلب مستلزمات مكتبية",
+      "Totals work themselves out as you type. An order over EGP 1,000 gets 10% off, which you may still change.": "تُحسب المجاميع وأنت تكتب. يحصل الطلب الذي يتجاوز 1,000 جنيه على خصم 10%، ويمكنك تغييره.",
+      "Your order": "طلبك",
+      "Items": "الأصناف",
+      "Item": "الصنف",
+      "Quantity": "الكمية",
+      "Unit price": "سعر الوحدة",
+      "Subtotal": "المجموع الفرعي",
+      "Total": "الإجمالي",
+      "Discount (%)": "الخصم (%)",
+      "10% once the total passes EGP 1,000. You may change it.": "‏10% بمجرد أن يتجاوز الإجمالي 1,000 جنيه. يمكنك تغييره.",
+      "To pay": "المطلوب دفعه",
+      "Delivery": "التوصيل",
+      "Work email": "بريد العمل",
+      "Use your @niletraders.example address if you can: those orders are approved the same day.": "استخدم عنوانك على niletraders.example إن أمكن: تُعتمد هذه الطلبات في اليوم نفسه.",
+      "Postcode": "الرمز البريدي",
+      "A postcode has five digits, such as 11511.": "الرمز البريدي خمسة أرقام، مثل 11511.",
+      "Delivery days": "أيام التوصيل",
+      "Tick at least two days.": "اختر يومين على الأقل.",
+      "Sunday": "الأحد",
+      "Monday": "الاثنين",
+      "Tuesday": "الثلاثاء",
+      "Wednesday": "الأربعاء",
+      "Thursday": "الخميس"
+    }
+  }
+}

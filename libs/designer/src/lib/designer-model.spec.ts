@@ -98,15 +98,15 @@ describe('fields the backend already has', () => {
     expect(designer.getPage().fields['credit_limit']).toEqual(model['credit_limit']);
   });
 
-  it('offers a whole number every number editor, a decimal only Number, and a choice the choice editors', () => {
+  it('offers a whole number every number editor, a decimal only Number or a slider, and a choice the choice editors', () => {
     const designer = customer();
     const visits = designer.addModelField('visits') as string;
     const score = designer.addModelField('score') as string;
     const terms = designer.addModelField('payment_terms') as string;
-    expect(designer.kindsFor(visits).map((k) => k.id)).toEqual(['rating', 'scale', 'number', 'progress']);
-    expect(designer.kindsFor(score).map((k) => k.id)).toEqual(['number']);
+    expect(designer.kindsFor(visits).map((k) => k.id)).toEqual(['rating', 'scale', 'number', 'slider', 'progress']);
+    expect(designer.kindsFor(score).map((k) => k.id)).toEqual(['number', 'slider']);
     // One answer stays one answer: checkboxes would make it many.
-    expect(designer.kindsFor(terms).map((k) => k.id)).toEqual(['multiple-choice', 'dropdown', 'status']);
+    expect(designer.kindsFor(terms).map((k) => k.id)).toEqual(['multiple-choice', 'dropdown', 'image-choice', 'status']);
     expect(designer.changeKind(terms, 'status')).toBe(true);
     expect(designer.getPage().fields['payment_terms']).toEqual(model['payment_terms']);
     expect(nodeOf(designer.getPage(), terms).widget).toBe('statusbar');

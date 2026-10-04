@@ -96,10 +96,11 @@ export function watch(page: Page): string[] {
 /**
  * Lines drawn twice: an element's border, outline or ring within 10px of an
  * ancestor's, inside it, on two sides or more — a box in a box that reads as
- * a double border. Returns each as "child in parent".
+ * a double border. Returns each as "child in parent". `scope` picks what is
+ * looked at: the designer and its overlays unless said, `.fd-form *` for a form.
  */
-export function doubleLines(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
+export function doubleLines(page: Page, scope = '.fd-designer *, .fd-find, .fd-checks, .fd-menu, .fd-publish-dialog'): Promise<string[]> {
+  return page.evaluate((scope) => {
     const shown = (e: Element) => {
       const r = e.getBoundingClientRect();
       const s = getComputedStyle(e);
@@ -121,7 +122,7 @@ export function doubleLines(page: Page): Promise<string[]> {
     };
     const name = (e: Element) => `${e.tagName.toLowerCase()}${typeof e.className === 'string' && e.className.trim() ? '.' + e.className.trim().split(/\s+/).slice(0, 2).join('.') : ''}`;
     const found: string[] = [];
-    for (const e of document.querySelectorAll('.fd-designer *, .fd-find, .fd-checks, .fd-menu, .fd-publish-dialog')) {
+    for (const e of document.querySelectorAll(scope)) {
       if (!shown(e) || e.closest('svg')) continue;
       const own = lines(e);
       // Only a box drawn all round counts as a box in a box.
@@ -145,7 +146,7 @@ export function doubleLines(page: Page): Promise<string[]> {
       }
     }
     return [...new Set(found)];
-  });
+  }, scope);
 }
 
 /**

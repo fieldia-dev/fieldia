@@ -1,3 +1,5 @@
+import { DESIGNER_KINDS_CSS } from './styles-kinds';
+
 /** The designer's own chrome, on top of Fieldia's form stylesheet and tokens. */
 export const DESIGNER_CSS = /* css */ `
 .fd-designer { display: grid; gap: 14px; }
@@ -170,6 +172,8 @@ export const DESIGNER_CSS = /* css */ `
 .fd-try-frame { margin-inline: auto; width: 100%; max-width: 1100px; box-sizing: border-box; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 20px; transition: max-width 0.3s ease; }
 .fd-try-frame[data-width="tablet"] { max-width: 768px; }
 .fd-try-frame[data-width="phone"] { max-width: 390px; padding: 14px; }
+/* A quiz sent in Try it: its score, under the thanks. */
+.fd-try-score { margin: 0; font-size: 17px; font-weight: 650; color: var(--fd-accent); font-variant-numeric: tabular-nums; }
 @media (prefers-reduced-motion: reduce) { .fd-try-frame { transition: none; } }
 
 /* ---- the screen editor: toolbox, canvas, panel ---- */
@@ -618,6 +622,6 @@ export function installDesignerStyles(document: Document): void {
   if (document.getElementById(STYLE_ID)) return;
   const style = document.createElement('style');
   style.id = STYLE_ID;
-  style.textContent = DESIGNER_CSS;
+  style.textContent = DESIGNER_CSS + DESIGNER_KINDS_CSS;
   (document.head ?? document.documentElement).append(style);
 }

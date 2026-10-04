@@ -137,6 +137,11 @@ export function lineKind(field: Extract<Field, { type: 'one2many' }>, values: Va
   return null;
 }
 
+/** Whether two values are the same, as they would be saved: a missing value is an empty one. */
+export function sameValue(a: Value | undefined, b: Value | undefined): boolean {
+  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+}
+
 /** A deep copy of plain JSON. */
 export function structuredCopy<T>(value: T): T {
   return value === undefined ? value : (JSON.parse(JSON.stringify(value)) as T);

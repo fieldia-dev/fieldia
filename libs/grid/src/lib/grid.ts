@@ -420,7 +420,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
 
   let readonly = false;
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
-  const firstEditable = () => columns.find((c) => EDITABLE.has(def.fields[c].type) && !def.fields[c].readonly);
+  /** A line field no one types in: read-only, or worked out from the line's others. */
+  const locked = (sub: LineField) => sub.readonly === true || sub.compute !== undefined;
+  const firstEditable = () => columns.find((c) => EDITABLE.has(def.fields[c].type) && !locked(def.fields[c]));
   /** The line field a cell edits: its column's, or a section's or note's text. */
   const editedField = (line: Line, column: string) => (kindOf(line) && kinds ? kinds.text : column);
   /** The message for a cell, if the form found its value wrong. */
@@ -527,7 +529,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       editable: (p) => {
         if (readonly || p.node.rowPinned) return false;
         if (kindOf(p.data)) return spans(p.api);
-        return sub.type !== 'boolean' && EDITABLE.has(sub.type) && !sub.readonly;
+        return sub.type !== 'boolean' && EDITABLE.has(sub.type) && !locked(sub);
       },
       cellEditor: FieldiaCellEditor,
       cellEditorParams: { cell, subfield: column },

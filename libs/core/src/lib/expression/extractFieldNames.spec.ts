@@ -211,3 +211,11 @@ describe('extractFieldNamesFromModifiers', () => {
     expect(fields).toContain('amount');
   });
 });
+
+describe('extractFieldNames with arithmetic and functions', () => {
+  it('reads the fields of a sum, and not the functions called', () => {
+    expect(extractFieldNames('round(price * qty, 2) > limit')).toEqual(['price', 'qty', 'limit']);
+    expect(extractFieldNames("sum(lines, 'subtotal') > 1000")).toEqual(['lines']);
+    expect(extractFieldNames('today() > due')).toEqual(['due']);
+  });
+});

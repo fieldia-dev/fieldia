@@ -62,6 +62,26 @@ export interface WidgetLabels {
   removeFile: string;
   dropHere: string;
   invalidJson: string;
+  /** A signature: the pad, the words on it while it is blank, the box to type a name in instead, and wiping it. */
+  signaturePad: string;
+  signHere: string;
+  typeSignature: string;
+  clearDrawing: string;
+  /** A slider not slid yet, as a screen reader reads it. */
+  notAnswered: string;
+  /** A ranking's buttons for a line (`{label}`), and where it went, said aloud: `{n}` of `{total}`, counted from 1. */
+  moveUp: string;
+  moveDown: string;
+  movedTo: string;
+  /** An address's parts. */
+  addressStreet: string;
+  addressCity: string;
+  addressPostcode: string;
+  addressCountry: string;
+  /** A repeating group: a card's title (`{n}` counts from 1), the button that adds one, and a card gone, said aloud. */
+  entry: string;
+  addAnother: string;
+  removed: string;
 }
 
 export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
@@ -114,6 +134,21 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     removeFile: 'Remove',
     dropHere: 'or drop it here',
     invalidJson: 'Not valid JSON',
+    signaturePad: 'Signature pad: draw your signature',
+    signHere: 'Sign here',
+    typeSignature: 'Or type your name',
+    clearDrawing: 'Clear',
+    notAnswered: 'Not answered',
+    moveUp: 'Move {label} up',
+    moveDown: 'Move {label} down',
+    movedTo: '{label} moved to place {n} of {total}',
+    addressStreet: 'Street address',
+    addressCity: 'City',
+    addressPostcode: 'Postcode',
+    addressCountry: 'Country',
+    entry: 'Entry {n}',
+    addAnother: 'Add another',
+    removed: '{name} removed',
   },
   ar: {
     search: 'بحث…',
@@ -164,6 +199,21 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     removeFile: 'إزالة',
     dropHere: 'أو أفلته هنا',
     invalidJson: 'ليس JSON صالحًا',
+    signaturePad: 'لوحة التوقيع: ارسم توقيعك',
+    signHere: 'وقّع هنا',
+    typeSignature: 'أو اكتب اسمك',
+    clearDrawing: 'مسح',
+    notAnswered: 'لم تتم الإجابة',
+    moveUp: 'نقل {label} لأعلى',
+    moveDown: 'نقل {label} لأسفل',
+    movedTo: 'أصبح {label} في المرتبة {n} من {total}',
+    addressStreet: 'عنوان الشارع',
+    addressCity: 'المدينة',
+    addressPostcode: 'الرمز البريدي',
+    addressCountry: 'الدولة',
+    entry: 'الإدخال {n}',
+    addAnother: 'إضافة المزيد',
+    removed: 'أُزيل {name}',
   },
   de: {
     search: 'Suchen…',
@@ -214,6 +264,21 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     removeFile: 'Entfernen',
     dropHere: 'oder hier ablegen',
     invalidJson: 'Kein gültiges JSON',
+    signaturePad: 'Unterschriftenfeld: Unterschrift zeichnen',
+    signHere: 'Hier unterschreiben',
+    typeSignature: 'Oder Namen eingeben',
+    clearDrawing: 'Löschen',
+    notAnswered: 'Nicht beantwortet',
+    moveUp: '{label} nach oben verschieben',
+    moveDown: '{label} nach unten verschieben',
+    movedTo: '{label} ist jetzt auf Platz {n} von {total}',
+    addressStreet: 'Straße und Hausnummer',
+    addressCity: 'Ort',
+    addressPostcode: 'Postleitzahl',
+    addressCountry: 'Land',
+    entry: 'Eintrag {n}',
+    addAnother: 'Weitere hinzufügen',
+    removed: '{name} entfernt',
   },
   fr: {
     search: 'Rechercher…',
@@ -264,5 +329,20 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     removeFile: 'Retirer',
     dropHere: 'ou déposez-le ici',
     invalidJson: 'JSON invalide',
+    signaturePad: 'Zone de signature : dessinez votre signature',
+    signHere: 'Signez ici',
+    typeSignature: 'Ou tapez votre nom',
+    clearDrawing: 'Effacer',
+    notAnswered: 'Pas de réponse',
+    moveUp: 'Monter {label}',
+    moveDown: 'Descendre {label}',
+    movedTo: '{label} est maintenant en position {n} sur {total}',
+    addressStreet: 'Adresse',
+    addressCity: 'Ville',
+    addressPostcode: 'Code postal',
+    addressCountry: 'Pays',
+    entry: 'Entrée {n}',
+    addAnother: 'En ajouter un autre',
+    removed: '{name} retiré',
   },
 };

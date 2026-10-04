@@ -17,6 +17,7 @@ import {
 import { conditionToHide, conditionToHold, type Condition } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { listCommands, type ListCommands } from './list-commands';
+import { kindCommands, type OptionDetails } from './kind-commands';
 import { fixCheck, pageChecks, type PageCheck } from './page-checks';
 import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, orList, storedAs, type LineColumn, type QuestionKind } from './kinds';
 import * as ops from './layout-ops';
@@ -273,6 +274,14 @@ export interface Designer extends HeaderCommands, ListCommands {
   addBlock(kind: BlockKind, where?: Where): string | false;
   /** A table of lines' columns, in order. */
   setLineColumns(id: string, columns: LineColumn[]): boolean;
+  /** An option's picture and points for a quiz; `null` or empty takes either away. */
+  setOptionDetails(id: string, index: number, details: OptionDetails): boolean;
+  /** A matrix's rows or columns, by their words, in order. */
+  setMatrixItems(id: string, which: 'rows' | 'columns', labels: string[]): boolean;
+  /** Which parts an address asks for: street, city, postcode, country. */
+  setAddressParts(id: string, parts: string[]): boolean;
+  /** Whether pictures to choose from take one answer or several. */
+  setSeveral(id: string, on: boolean): boolean;
   undo(): void;
   redo(): void;
   /** Publish the draft as the next version. Returns its number. */
@@ -452,9 +461,12 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     model,
   });
 
+  const kinds = kindCommands({ apply, fromModel });
+
   const designer: Designer = {
     ...header,
     ...list,
+    ...kinds,
     getPage: () => page,
     modelFields() {
       const shown = shownFields(page);
@@ -591,7 +603,9 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
           }
           while (used.has(value)) value = `${value}_${i + 1}`;
           used.add(value);
-          return { value, label };
+          // An option kept keeps its picture and points.
+          const kept = old.find((o) => o.value === value);
+          return { ...(kept?.image !== undefined ? { image: kept.image } : {}), ...(kept?.score !== undefined ? { score: kept.score } : {}), value, label };
         });
         },
         // Typing in one option list is one undo step, like typing in a label.
