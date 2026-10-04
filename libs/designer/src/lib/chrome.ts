@@ -103,7 +103,9 @@ export function designerBar(
   const keys = mac ? '⌘K' : 'Ctrl K';
   const find = el('button', { type: 'button', class: 'fd-button fd-find-button', 'aria-label': 'Find anything', title: `Find anything · ${keys} or /` }, designerIcon(doc, 'search'), el('kbd', { class: 'fd-find-keys', 'aria-hidden': 'true' }, keys));
   find.addEventListener('click', () => openFind(el, root, findItems()));
-  const element = el('div', { class: 'fd-designer-bar' }, title, el('span', { class: 'fd-designer-status-box', role: 'status' }, status), el('span', { class: 'fd-spacer' }), find, undo, redo, ...(options.extra ?? []), checks.element, publish);
+  // Where the bar breaks when it has less room than its parts: the ways to look at the page go under the rest.
+  const lineBreak = el('span', { class: 'fd-bar-break', 'aria-hidden': 'true' });
+  const element = el('div', { class: 'fd-designer-bar' }, title, el('span', { class: 'fd-designer-status-box', role: 'status' }, status), el('span', { class: 'fd-spacer' }), find, undo, redo, lineBreak, ...(options.extra ?? []), checks.element, publish);
   const issues = el('div', { class: 'fd-alert fd-tone-danger fd-designer-issues', role: 'alert', hidden: '' });
 
   // On the document: clicking an area that cannot take focus leaves focus on

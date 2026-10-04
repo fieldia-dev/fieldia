@@ -166,8 +166,16 @@ export const DESIGNER_CSS = /* css */ `
 .fd-mode-button[aria-pressed="true"] { background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 1px 2px rgba(15, 20, 25, 0.12); }
 .fd-mode-button[data-mode="try"][aria-pressed="true"] { background: var(--fd-success); color: #ffffff; }
 .fd-mode-button:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
-/* On a narrow bar the ways to look at the page share one row: their words alone, each on one line. */
+/* The bar takes two rows by design: the page and what to do with it on top, the ways to look at it (Simple or
+   Advanced, Design to Translations, Look) on a row of their own beneath — never one button left alone on a
+   line, in any font or language. */
 .fd-designer-bar { container-type: inline-size; }
+.fd-bar-break { display: none; }
+@container (min-width: 521px) {
+  .fd-bar-break { display: block; flex-basis: 100%; height: 0; order: 1; }
+  .fd-designer-bar > :is(.fd-mode, .fd-look-button) { order: 2; }
+}
+/* On a narrow bar the ways to look at the page share one row: their words alone, each on one line. */
 @container (max-width: 520px) {
   .fd-mode { display: flex; width: 100%; }
   .fd-mode-button { flex: 1 1 auto; justify-content: center; padding-inline: 6px; white-space: nowrap; }
