@@ -89,12 +89,27 @@ export function employeePage(): Page {
   };
 }
 
+/** Every page a watched designer shows, that does not validate: none, after each test. */
+const invalid: string[] = [];
+afterEach(() => expect(invalid.splice(0)).toEqual([]));
+
+/** Validate every page the designer shows, after every edit, undo and redo. */
+export function watched(designer: Designer): Designer {
+  let seen = 0;
+  designer.subscribe((state) => {
+    seen++;
+    const checked = validatePage(state.page);
+    if (!checked.ok) invalid.push(...checked.issues.map((i) => `after change ${seen}: ${i.path}: ${i.message}`));
+  });
+  return designer;
+}
+
 /** A designer on the employee page; the model, when given, holds Work email and a field not on the page yet. */
 export function employeeDesigner(options: { model?: boolean } = {}): Designer {
   const model: Record<string, Field> | undefined = options.model
     ? { email: { type: 'char', label: 'Work email', required: true }, employee_no: { type: 'char', label: 'Employee number' } }
     : undefined;
-  return createDesigner({ page: employeePage(), model });
+  return watched(createDesigner({ page: employeePage(), model }));
 }
 
 type Holder = { id: string; type: string; children?: (LayoutNode | { id: string; type: string })[] };

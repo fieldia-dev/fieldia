@@ -1,6 +1,6 @@
 import type { Page } from '@fieldia/core';
 import { blankPage, createDesigner } from './designer';
-import { employeeDesigner, expectValid, nodeOf, spot, where } from './test-layout';
+import { employeeDesigner, expectValid, nodeOf, spot, watched, where } from './test-layout';
 
 /**
  * Laying a page out as the approved mockup does (c-model.html, and the browser
@@ -214,7 +214,7 @@ describe('a drop between rows, and into a group', () => {
   });
 
   it('into an empty tab, and into the page', () => {
-    const d = createDesigner({ page: blankPage('screen', 'Visit') });
+    const d = watched(createDesigner({ page: blankPage('screen', 'Visit') }));
     const tabs = d.place({ block: 'tabs' }, { how: 'into', container: 'section-1' }) as string;
     const first = (nodeOf(d.getPage(), tabs)?.['children'] as { id: string }[])[0].id;
     expect(d.describeDrop({ how: 'into', container: first })).toBe('into “First”');
@@ -268,7 +268,7 @@ describe('what a drop may not do', () => {
     const id = d.place({ field: 'employee_no' }, { how: 'beside', target: 'f-ec_phone', after: true }) as string;
     expect(d.getPage().fields['employee_no']).toEqual({ type: 'char', label: 'Employee number' });
     expect(d.isFromModel(id)).toBe(true);
-    const survey = createDesigner({ page: blankPage('survey', 'S') });
+    const survey = watched(createDesigner({ page: blankPage('survey', 'S') }));
     expect(survey.place({ kind: 'link' }, { how: 'into', container: 'step-1' })).toBe(false);
     expect(survey.getState().issues[0]).toMatch(/A survey has no records/);
   });
@@ -305,7 +305,7 @@ describe('new parts from the toolbox', () => {
   });
 
   it('a field of a kind, its own field named like the store names them', () => {
-    const d = createDesigner({ page: blankPage('screen', 'Visit') });
+    const d = watched(createDesigner({ page: blankPage('screen', 'Visit') }));
     const id = d.place({ kind: 'dropdown' }, { how: 'into', container: 'section-1' }) as string;
     expect(id).toBe('q-1');
     expect(d.getPage().fields['q_1']).toMatchObject({ type: 'selection', label: 'Untitled question' });
@@ -490,7 +490,7 @@ describe('duplicate and remove several', () => {
   });
 
   it('keeps a page with something on it, and says what it cannot find', () => {
-    const d = createDesigner({ page: blankPage('screen', 'Visit') });
+    const d = watched(createDesigner({ page: blankPage('screen', 'Visit') }));
     expect(d.remove(['section-1'])).toBe(false);
     expect(d.getState().issues).toEqual(['A page needs at least one step or section']);
     expect(d.remove(['nothing'])).toBe(false);

@@ -122,6 +122,13 @@ export function rowsOf(page: Page, holder: Holder, skip?: string): { items: Part
 
 // ---- names --------------------------------------------------------------------------------------------
 
+/** Long words cut short, at the end of a word where there is one near. */
+function shortened(text: string): string {
+  const cut = text.slice(0, 33);
+  const end = cut.lastIndexOf(' ');
+  return end > 16 ? cut.slice(0, end) : text.slice(0, 32);
+}
+
 /** A part's name as a person reads it. */
 export function nameOf(page: Page, node: Part | Holder | null): string {
   if (!node) return '';
@@ -140,7 +147,7 @@ export function nameOf(page: Page, node: Part | Holder | null): string {
     case 'tab':
       return part.label;
     case 'text':
-      return part.text.length > 34 ? `${part.text.slice(0, 32)}…` : part.text;
+      return part.text.length > 34 ? `${shortened(part.text)}…` : part.text;
     case 'button':
       return part.label;
     case 'image':
