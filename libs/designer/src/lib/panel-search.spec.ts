@@ -57,7 +57,8 @@ describe('the search box over the settings', () => {
     search('s');
     expect(groups()).toEqual([
       ['Content', 'Shown as'],
-      ['Layout', 'Section'],
+      // In a tab's group, the best first: a name with an s anywhere in it last.
+      ['Layout', 'Section', 'Labels'],
       ['Data', 'Stored as'],
       ['Rules', 'When it shows'],
     ]);
@@ -82,9 +83,17 @@ describe('the search box over the settings', () => {
     search('s');
     const active = () => panel.querySelector(`#${box.getAttribute('aria-activedescendant')}`)?.querySelector('.fd-insp-found-name')?.textContent;
     expect(active()).toBe('Shown as');
+    // Down the list as it is drawn, tab by tab.
+    const drawn: (string | null | undefined)[] = [active()];
+    for (let i = 0; i < 4; i++) {
+      press('ArrowDown', {}, box);
+      drawn.push(active());
+    }
+    expect(drawn).toEqual([...panel.querySelectorAll('.fd-insp-found-name')].map((n) => n.textContent));
+    press('ArrowDown', {}, box);
+    expect(active()).toBe('Shown as');
     press('ArrowDown', {}, box);
     press('ArrowDown', {}, box);
-    expect(active()).toBe('Stored as');
     press('ArrowUp', {}, box);
     expect(active()).toBe('Section');
     press('Enter', {}, box);

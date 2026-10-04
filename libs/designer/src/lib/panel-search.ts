@@ -75,16 +75,17 @@ export function settingSearch(el: ElementFactory, doc: Document, shell: Inspecto
     const query = box.value;
     const searching = query.trim() !== '';
     const rows = shell.rows();
-    found = searching ? rankSettings(rows.map((row, order) => ({ ...row, order, words: row.choices.map((c) => c.words).join(' ') })), query) : [];
+    const ranked = searching ? rankSettings(rows.map((row, order) => ({ ...row, order, words: row.choices.map((c) => c.words).join(' ') })), query) : [];
+    // Grouped by tab, the tab of the best first; the arrows go down the list as it is drawn.
+    const tabs: PanelTab[] = [];
+    for (const row of ranked) if (!tabs.includes(row.tab)) tabs.push(row.tab);
+    found = tabs.flatMap((tab) => ranked.filter((row) => row.tab === tab));
     at = Math.min(at, Math.max(0, found.length - 1));
     shell.setTabsHidden(searching);
     list.hidden = !found.length;
     none.hidden = !searching || found.length > 0;
     none.textContent = `No setting called “${query.trim()}”.`;
     box.setAttribute('aria-expanded', String(found.length > 0));
-    // Grouped by tab, the tab of the best first.
-    const tabs: PanelTab[] = [];
-    for (const row of found) if (!tabs.includes(row.tab)) tabs.push(row.tab);
     list.replaceChildren(
       ...tabs.map((tab) =>
         el(
