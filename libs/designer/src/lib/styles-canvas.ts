@@ -52,9 +52,10 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 }
 .fd-width-handle::after { content: ""; position: absolute; inset: 9px 3px; border-inline: 1px solid var(--fd-accent); }
 /* The gutter between two parts of a row: a slim line in the gap, dragged or moved with the arrow keys to trade columns. */
-.fd-gutter { position: absolute; z-index: 9; width: 12px; cursor: col-resize; touch-action: none; border-radius: 6px; }
-.fd-gutter::before { content: ""; position: absolute; inset-block: 6px; inset-inline-start: 5px; width: 2px; border-radius: 2px; background: color-mix(in srgb, var(--fd-accent) 55%, transparent); }
-.fd-gutter:hover::before, .fd-gutter:focus-visible::before { inset-inline-start: 4px; width: 4px; background: var(--fd-accent); }
+/* 24px wide, a target a finger can hit (WCAG 2.5.8); the line drawn down its middle. */
+.fd-gutter { position: absolute; z-index: 9; width: 24px; cursor: col-resize; touch-action: none; border-radius: 6px; }
+.fd-gutter::before { content: ""; position: absolute; inset-block: 6px; inset-inline-start: 11px; width: 2px; border-radius: 2px; background: color-mix(in srgb, var(--fd-accent) 55%, transparent); }
+.fd-gutter:hover::before, .fd-gutter:focus-visible::before { inset-inline-start: 10px; width: 4px; background: var(--fd-accent); }
 .fd-gutter:focus-visible { outline: none; }
 .fd-width-handle[hidden], .fd-gutter[hidden] { display: none; }
 /* How many columns, while the edge or the gutter is dragged. */
