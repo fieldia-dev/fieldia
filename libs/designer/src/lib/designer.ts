@@ -20,7 +20,9 @@ import { listCommands, type ListCommands } from './list-commands';
 import { fixCheck, pageChecks, type PageCheck } from './page-checks';
 import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, orList, storedAs, type LineColumn, type QuestionKind } from './kinds';
 import * as ops from './layout-ops';
-import type { BlockKind, Drop, LookPatch, NewPart, SectionLook } from './layout-ops';
+import type { BlockKind, Drop, NewPart } from './layout-ops';
+import * as settings from './layout-settings';
+import type { LookPatch, SectionLook } from './layout-settings';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
 
@@ -42,7 +44,8 @@ export type { LineColumn, QuestionKind } from './kinds';
 export type { HeaderCommands, HeaderPartKind, HeaderPartPatch } from './header-commands';
 export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-commands';
 export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-checks';
-export type { BlockKind, Drop, LookPatch, NewPart, SectionLook } from './layout-ops';
+export type { BlockKind, Drop, NewPart } from './layout-ops';
+export type { LookPatch, SectionLook } from './layout-settings';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
 export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
@@ -867,8 +870,8 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       });
     },
 
-    setColumns: (sectionId, columns) => apply((draft) => ops.setColumns(draft, sectionId, columns)),
-    setColspan: (nodeId, span) => apply((draft) => ops.setColspan(draft, nodeId, span)),
+    setColumns: (sectionId, columns) => apply((draft) => settings.setColumns(draft, sectionId, columns)),
+    setColspan: (nodeId, span) => apply((draft) => settings.setColspan(draft, nodeId, span)),
 
     arrangeSection(sectionId, items) {
       return apply((draft) => {
@@ -997,9 +1000,9 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       selected = off ? (picked[picked.length - 1] ?? null) : id;
       notify();
     },
-    setSectionLook: (id, look) => apply((draft) => ops.setSectionLook(draft, id, look), `section-look:${id}:${Object.keys(look).join(',')}`),
-    setFieldLabels: (id, place) => apply((draft) => ops.setFieldLabels(draft, id, place)),
-    setLook: (patch) => apply((draft) => ops.setLook(draft, patch), `look:${Object.keys(patch).join(',')}`),
+    setSectionLook: (id, look) => apply((draft) => settings.setSectionLook(draft, id, look), `section-look:${id}:${Object.keys(look).join(',')}`),
+    setFieldLabels: (id, place) => apply((draft) => settings.setFieldLabels(draft, id, place)),
+    setLook: (patch) => apply((draft) => settings.setLook(draft, patch), `look:${Object.keys(patch).join(',')}`),
     addBlock: (kind, where) => layoutEdit((draft) => ops.addBlock(draft, kind, where)),
 
     setLineColumns(id, columns) {

@@ -1,5 +1,6 @@
-import { wideColumns, type ColumnCount, type ColumnsByWidth, type Field, type LabelPlace, type LayoutNode, type Page, type PageLook, type SectionNode, type TabNode, type TabsNode } from '@fieldia/core';
+import type { ColumnCount, ColumnsByWidth, Field, LayoutNode, Page, SectionNode, TabsNode } from '@fieldia/core';
 import { kindById, type QuestionKind } from './kinds';
+import { across, colsOf, contains, isRow, isSection, isWrapper, listOf, locate, nameOf, nodeOf, rowsOf, seenAs, spanOf, type Holder, type Part, type Spot } from './layout-tree';
 import { allIds, containers, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
 
@@ -10,12 +11,8 @@ import { Refusal } from './refusal';
  * widths, never positions, so each drop is worked out as which list a part
  * goes in, where, and how wide.
  *
- * Two words carry it. An *arrangement* is a section with no title in the
- * plain style: it is there only to hold parts side by side, or one under
- * another. In a section with columns, an arrangement lays its parts on the
- * columns it covers there, so they line up with everything above and below —
- * unless it is one column wide with columns of its own, when the parts share
- * that one cell. After every drop the page is tidied: an arrangement left
+ * Parts go side by side, or one under another, in arrangements (see
+ * layout-tree.ts). After every drop the page is tidied: an arrangement left
  * holding one part or none folds away, and so does a column in a column.
  */
 
@@ -38,167 +35,9 @@ export interface Where {
   index?: number;
 }
 
-/** How a group looks; `null` takes a setting back. */
-export interface SectionLook {
-  style?: NonNullable<SectionNode['style']> | null;
-  labels?: LabelPlace | null;
-  labelWidth?: number | null;
-}
-
-/** A change to the page's look; `null` takes a setting back. */
-export type LookPatch = { [K in keyof PageLook]?: PageLook[K] | null };
-
 /** What the store lends a layout edit: the backend's model, to put its fields on the page as it has them. */
 export interface LayoutContext {
   model: Record<string, Field>;
-}
-
-/** Anything in a list of parts; a tab sits in its tabs' list. */
-type Part = LayoutNode | TabNode;
-/** Anything with a list of parts: a section, a tab, tabs, a step, or the page's own layout. */
-type Holder = { id: string; type: string; children: Part[] };
-interface Spot {
-  node: Part;
-  parent: Holder;
-  list: Part[];
-  index: number;
-}
-
-// ---- reading the page --------------------------------------------------------------------------------
-
-const listOf = (node: { type: string } | undefined): Part[] | null => {
-  const children = (node as { children?: unknown } | undefined)?.children;
-  return Array.isArray(children) ? (children as Part[]) : null;
-};
-
-/** A part inside a holder, the list it is in, and its place there, however deep. */
-function find(holder: Holder, id: string): Spot | null {
-  const list = listOf(holder) ?? [];
-  for (let index = 0; index < list.length; index++) {
-    const node = list[index];
-    if (node.id === id) return { node, parent: holder, list, index };
-    const deeper = find(node as Holder, id);
-    if (deeper) return deeper;
-  }
-  return null;
-}
-
-/** A part, the list it is in, and its place there, wherever it sits on the page. */
-export const locate = (page: Page, id: string): Spot | null => find(page.layout as Holder, id);
-
-/** The part, or the page's own layout, by id. */
-function nodeOf(page: Page, id: string): Part | Holder | null {
-  return page.layout.id === id ? (page.layout as Holder) : (locate(page, id)?.node ?? null);
-}
-
-/** Whether `inner` is `outer` or sits somewhere inside it. */
-function contains(page: Page, outer: string, inner: string): boolean {
-  const node = nodeOf(page, outer);
-  return outer === inner || (!!node && !!find(node as Holder, inner));
-}
-
-const isSection = (node: unknown): node is SectionNode => (node as { type?: string } | null)?.type === 'section';
-
-/** An arrangement: a section with no title in the plain style, there only to hold parts side by side or one under another. */
-export const isWrapper = (node: unknown): node is SectionNode => isSection(node) && node.style === 'plain' && !node.title;
-
-const spanOf = (node: Part): number => (node as { colspan?: number }).colspan ?? 1;
-
-/** The columns a section has: its own, or — an arrangement in a grid — the ones it covers there. */
-export function colsOf(page: Page, section: SectionNode): number {
-  if (onTracks(page, section)) return Math.min(spanOf(section), colsOf(page, locate(page, section.id)?.parent as SectionNode));
-  return wideColumns(section.columns);
-}
-
-/** How many places a list has across: a section's columns, or one for the page, a step and a tab. */
-const across = (page: Page, holder: Holder | Part): number => (isSection(holder) ? colsOf(page, holder) : 1);
-
-/** Whether a part sits in a grid with columns (not on the page, in a tab or in one column). */
-function inGrid(page: Page, node: Part): boolean {
-  const parent = locate(page, node.id)?.parent;
-  return isSection(parent) && colsOf(page, parent) > 1;
-}
-
-/** One column wide with columns of its own: parts sharing one cell, side by side. */
-const sharesOneCell = (section: SectionNode) => spanOf(section) === 1 && wideColumns(section.columns) > 1;
-
-/** An arrangement in a section with columns lays its parts on the columns it covers there. */
-function onTracks(page: Page, section: SectionNode): boolean {
-  if (!isWrapper(section) || sharesOneCell(section)) return false;
-  const parent = locate(page, section.id)?.parent;
-  return isSection(parent) && parent.columns !== undefined && colsOf(page, parent) > 1;
-}
-
-/** A row of parts on the page or in a tab: an arrangement with as many columns as parts. */
-function isRow(page: Page, node: Part | Holder | null): node is SectionNode {
-  if (!isWrapper(node) || inGrid(page, node) || onTracks(page, node)) return false;
-  const cols = colsOf(page, node);
-  return cols >= 2 && node.children.length === cols;
-}
-
-/**
- * The rows a list's parts fall into, in reading order as the grid places them:
- * a part too wide for what is left of a row starts the next. A divider is a
- * line across the whole row.
- */
-function rowsOf(page: Page, holder: Holder, skip?: string): { items: Part[]; used: number }[] {
-  const cols = across(page, holder);
-  const rows: { items: Part[]; used: number }[] = [];
-  let row: Part[] = [];
-  let used = 0;
-  for (const part of holder.children) {
-    if (part.id === skip) continue;
-    const span = part.type === 'divider' ? cols : Math.min(spanOf(part), cols);
-    if (used + span > cols && row.length) {
-      rows.push({ items: row, used });
-      row = [];
-      used = 0;
-    }
-    row.push(part);
-    used += span;
-  }
-  if (row.length) rows.push({ items: row, used });
-  return rows;
-}
-
-// ---- names --------------------------------------------------------------------------------------------
-
-/** A part's name as a person reads it. */
-export function nameOf(page: Page, node: Part | Holder | null): string {
-  if (!node) return '';
-  if (node.id === page.layout.id) return page.title || 'Page';
-  const part = node as Part;
-  switch (part.type) {
-    case 'field':
-      return part.label ?? page.fields[part.field]?.label ?? part.field;
-    case 'section': {
-      if (part.title) return part.title;
-      const cols = colsOf(page, part);
-      return cols > 1 ? (part.children.length > cols ? `${cols} columns` : 'Side by side') : 'Column';
-    }
-    case 'tabs':
-      return 'Tabs';
-    case 'tab':
-      return part.label;
-    case 'text':
-      return part.text.length > 34 ? `${part.text.slice(0, 32)}…` : part.text;
-    case 'button':
-      return part.label;
-    case 'image':
-      return part.alt || 'Image';
-    case 'slot':
-      return part.name;
-    default:
-      return part.type === 'divider' ? 'Divider' : 'Spacer';
-  }
-}
-
-const andList = (words: string[]) => (words.length <= 2 ? words.join(' and ') : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`);
-
-/** A part as people see it: an arrangement is named by what it holds. */
-export function seenAs(page: Page, node: Part | Holder): string {
-  if (!isWrapper(node)) return `“${nameOf(page, node)}”`;
-  return andList(node.children.map((c) => `“${nameOf(page, c)}”`));
 }
 
 /** What a drop means, in the words the drag chip says. */
@@ -227,7 +66,7 @@ export function describeDrop(page: Page, drop: Drop, moving?: string): string {
 
 // ---- changing the page --------------------------------------------------------------------------------
 
-const SPANNED = new Set(['field', 'button', 'text', 'section', 'tabs', 'spacer', 'image']);
+export const SPANNED = new Set(['field', 'button', 'text', 'section', 'tabs', 'spacer', 'image']);
 
 /** Set how many columns a part spans; one is the default, and a part that spans nothing (a divider) is left as it is. */
 export function setSpan(node: Part, span: number): void {
@@ -580,87 +419,6 @@ export function remove(page: Page, ids: string[]): void {
   tidy(page);
   if (!root.children.length) throw new Refusal('A page needs at least one step or section');
   prune(page);
-}
-
-// ---- columns, widths and looks ------------------------------------------------------------------------
-
-const COUNTS: readonly number[] = [1, 2, 3, 4];
-
-/** A part wider than a section's columns is narrowed to them. */
-function narrowTo(section: SectionNode, wide: number): void {
-  for (const child of section.children) if (SPANNED.has(child.type) && spanOf(child) > wide) (child as { colspan?: number }).colspan = wide;
-}
-
-/** A group's columns: one count, or a count for a desktop, a tablet and a phone (a plain number when only a desktop's is given). */
-export function setColumns(page: Page, id: string, columns: ColumnCount | ColumnsByWidth): void {
-  const section = nodeOf(page, id);
-  if (!isSection(section)) throw new Refusal(`There is no section "${id}"`);
-  const { wide, medium, narrow } = typeof columns === 'object' ? columns : { wide: columns, medium: undefined, narrow: undefined };
-  if ([wide, medium, narrow].some((n) => n !== undefined && !COUNTS.includes(n))) throw new Refusal('A group has one to four columns');
-  if (typeof columns === 'number') {
-    // Columns given per width keep their narrower counts, never more than the wide one.
-    const given = section.columns;
-    section.columns =
-      typeof given === 'object'
-        ? { wide, ...(given.medium ? { medium: Math.min(given.medium, wide) as ColumnCount } : {}), ...(given.narrow ? { narrow: Math.min(given.narrow, wide) as ColumnCount } : {}) }
-        : wide;
-  } else {
-    if ((medium ?? 0) > wide || (narrow ?? 0) > wide) throw new Refusal('A tablet or a phone shows no more columns than a desktop');
-    if ((narrow ?? 0) > (medium ?? 4)) throw new Refusal('A phone shows no more columns than a tablet');
-    section.columns = columnsValue(wide, medium, narrow);
-  }
-  narrowTo(section, wide);
-}
-
-const NOUNS: Record<string, string> = { field: 'A field', section: 'A group', tabs: 'Tabs', text: 'Words', button: 'A button', spacer: 'A spacer', image: 'An image' };
-
-/** How many columns a part spans, no more than where it sits has. */
-export function setColspan(page: Page, id: string, span: number): void {
-  const at = locate(page, id);
-  if (!at) throw new Refusal(`There is no part “${id}”`);
-  if (at.node.type === 'tab') throw new Refusal('A tab is as wide as its tabs');
-  if (!SPANNED.has(at.node.type)) throw new Refusal(`A ${at.node.type} runs across the whole row`);
-  const cols = across(page, at.parent);
-  if (span > cols) throw new Refusal(`${NOUNS[at.node.type]} cannot be wider than its section's ${cols} columns`);
-  setSpan(at.node, span);
-}
-
-const LABEL_WIDTH = 'Labels set beside are 60 to 320 px wide';
-const labelWidthOk = (width: number | null | undefined) => width === null || width === undefined || (Number.isInteger(width) && width >= 60 && width <= 320);
-
-/** Set or take back each setting given: `null` takes it back, and so does a card, which a group is unless it says otherwise. */
-function patch(target: Record<string, unknown>, settings: Record<string, unknown>, defaults: Record<string, unknown> = {}): void {
-  for (const [key, value] of Object.entries(settings)) {
-    if (value === undefined) continue;
-    if (value === null || defaults[key] === value) delete target[key];
-    else target[key] = value;
-  }
-}
-
-/** How a group looks, and where its fields' labels sit. */
-export function setSectionLook(page: Page, id: string, look: SectionLook): void {
-  const section = nodeOf(page, id);
-  if (!isSection(section)) throw new Refusal(`There is no group “${id}”`);
-  if (!labelWidthOk(look.labelWidth)) throw new Refusal(LABEL_WIDTH);
-  patch(section as unknown as Record<string, unknown>, { style: look.style, labels: look.labels, labelWidth: look.labelWidth }, { style: 'card' });
-}
-
-/** Where one field's label sits; `null` for where its group or the page puts labels. */
-export function setFieldLabels(page: Page, id: string, place: LabelPlace | null): void {
-  const at = locate(page, id);
-  if (at?.node.type !== 'field') throw new Refusal(`There is no field “${id}”`);
-  if (place) at.node.labels = place;
-  else delete at.node.labels;
-}
-
-/** The page's look: its colour, font, spacing, corners, labels and scheme. */
-export function setLook(page: Page, change: LookPatch): void {
-  if (change.accent && !/^#[0-9a-fA-F]{6}$/.test(change.accent)) throw new Refusal('A colour is written #rrggbb, such as #1f7a4d');
-  if (!labelWidthOk(change.labelWidth)) throw new Refusal(LABEL_WIDTH);
-  const look: Record<string, unknown> = { ...page.look };
-  patch(look, change);
-  if (Object.keys(look).length) page.look = look as PageLook;
-  else delete page.look;
 }
 
 /** Put a new part after a part, or in a group or a tab at a place (or its end), or at the end of the last container. */
