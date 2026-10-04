@@ -118,6 +118,26 @@ describe('the rail on a record’s screen', () => {
     expect(email().value).toBe('');
   });
 
+  it('picks several from the outline in Advanced, and one at a time in Simple', () => {
+    const { host, designer, email } = sheet();
+    designer.addModelField('credit_limit', { parent: 'section-1' });
+    tab(host, 'outline').click();
+    const click = (id: string, shiftKey = false) => (host.querySelector(`.fd-outline [data-pick="${id}"]`) as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey }));
+    const credit = designer.getState().selected as string;
+    (host.querySelector('.fd-mode-button[data-mode="simple"]') as HTMLButtonElement).click();
+    click(email);
+    click(credit, true);
+    expect(designer.getState().picked).toEqual([credit]);
+    (host.querySelector('.fd-mode-button[data-mode="advanced"]') as HTMLButtonElement).click();
+    click(email);
+    click(credit, true);
+    expect(designer.getState().picked).toEqual([email, credit]);
+    // The canvas's bar for several picked shows them too.
+    expect((host.querySelector('.fd-multi-count') as HTMLElement).textContent).toBe('2 picked');
+    // The mode is kept in this browser: back to Simple for the tests after.
+    (host.querySelector('.fd-mode-button[data-mode="simple"]') as HTMLButtonElement).click();
+  });
+
   it('outlines a list by its columns, a pick picking the column', () => {
     const host = document.createElement('div');
     document.body.append(host);

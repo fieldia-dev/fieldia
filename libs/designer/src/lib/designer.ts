@@ -31,6 +31,7 @@ import { allIds, containers, findContainer, findNode, findTab, firstSection, nex
 import { Refusal } from './refusal';
 import { translationCommands } from './translations';
 import { pageJsonCommands, type PageJsonResult } from './page-json';
+import { outlineRows } from './outline-rows';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -331,6 +332,9 @@ export interface Designer extends HeaderCommands, ListCommands {
   updateBlock(id: string, patch: BlockPatch): boolean;
   /** Several parts' widths as one edit: two trading width across the gutter between them. */
   setWidths(widths: { id: string; span: number }[]): boolean;
+  // outline lane
+  /** Pick these parts at once, in this order, the last leading; any not on the page, or named twice, is left out. */
+  pickMany(ids: string[]): void;
 }
 
 /** One of the app's lists of choices, by the name its data source answers to, and the words a person picks it by. */
@@ -1176,6 +1180,13 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     // canvas lane
     updateBlock: (id, patch) => apply((draft) => settings.updateBlock(draft, id, patch), `block:${id}:${Object.keys(patch).join(',')}`),
     setWidths: (widths) => apply((draft) => settings.setWidths(draft, widths)),
+    // outline lane
+    pickMany(ids) {
+      const there = new Set([...allIds(page), ...outlineRows(page).map((row) => row.id)]);
+      picked = [...new Set(ids)].filter((id) => there.has(id));
+      selected = picked[picked.length - 1] ?? null;
+      notify();
+    },
   };
   return designer;
 }

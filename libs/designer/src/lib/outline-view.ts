@@ -3,16 +3,19 @@ import type { ElementFactory } from './chrome';
 import type { Designer, DesignerState } from './designer';
 import { designerIcon } from './icons';
 import { treeKey, typeAhead } from './outline-keys';
-import { outlineRows, shownRows, type OutlineRow } from './outline-rows';
+import { rangeOf } from './outline-picks';
+import { ancestorsOf, outlineRows, shownRows, type OutlineRow } from './outline-rows';
 
 /**
  * The outline: the page as a tree, drawn as the approved mockup draws it —
  * a row for every part, an arrow to fold what holds parts, its icon, its
  * name and, for a field, its kind — and answering the keys a tree does
  * (outline-keys.ts). One row takes Tab; the arrows go from row to row,
- * picking each and showing it on the page. What is folded stays folded
- * while the page changes, and the rows are kept by id, so the row the
- * keyboard is on keeps its focus.
+ * picking each and showing it on the page. Shift picks a range, ⌘ or Ctrl
+ * one more (outline-picks.ts). What is folded stays folded while the page
+ * changes, and the rows are kept by id, so the row the keyboard is on keeps
+ * its focus. A part picked anywhere else opens the rows round it and comes
+ * into view here, as FormEngine reveals a part in its tree.
  */
 
 export interface OutlineViewOptions {
@@ -54,6 +57,12 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
   let active: string | null = null;
   /** The part picked last time round: a new pick, from anywhere, becomes the row to Tab to. */
   let lead: string | null = null;
+  /** Where a range picked with Shift begins: the row picked on its own, or added, last. */
+  let anchor: string | null = null;
+  /** What was picked last time round, and whether the part leading it is still to be brought into view. */
+  let pickedBefore = '';
+  let revealDue = false;
+  let wasShown = false;
   let typed = '';
   let typedAt = 0;
 
@@ -132,8 +141,45 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
   }
 
   function pickRow(id: string, reveal: boolean) {
+    anchor = id;
     designer.pick(id);
     if (reveal) options.reveal(id);
+  }
+
+  /** Every row from where the pick began to this one; one alone where several cannot be picked. */
+  function pickRange(id: string) {
+    if (!options.several()) return pickRow(id, true);
+    designer.pickMany(rangeOf(shown, anchor, id));
+    options.reveal(id);
+  }
+
+  /** One more row picked, or let go; one alone where several cannot be picked. */
+  function pickToggle(id: string) {
+    if (!options.several()) return pickRow(id, true);
+    anchor = id;
+    designer.pick(id, { add: true });
+  }
+
+  /** The nearest box round the outline that scrolls (the rail, on a wide screen): never the window, so the canvas stays put. */
+  function scrollToRow(view: HTMLElement) {
+    let box = element.parentElement;
+    while (box && !(/(auto|scroll)/.test(doc.defaultView?.getComputedStyle(box).overflowY ?? '') && box.scrollHeight > box.clientHeight)) box = box.parentElement;
+    if (!box) return;
+    const outer = box.getBoundingClientRect();
+    const inner = view.getBoundingClientRect();
+    if (inner.top < outer.top) box.scrollTop -= outer.top - inner.top;
+    else if (inner.bottom > outer.bottom) box.scrollTop += inner.bottom - outer.bottom;
+  }
+
+  /** A new pick, from anywhere: the rows round what is picked open, and the part leading it is to come into view. */
+  function follow(state: DesignerState) {
+    const now = JSON.stringify(state.picked);
+    if (now === pickedBefore) return;
+    pickedBefore = now;
+    if (state.picked.length <= 1) anchor = state.selected;
+    const rows = outlineRows(state.page);
+    for (const id of state.picked) for (const up of ancestorsOf(rows, id)) folded.delete(up);
+    revealDue = true;
   }
 
   function setFolded(id: string, fold: boolean) {
@@ -153,7 +199,9 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
       return;
     }
     focusRow(id);
-    pickRow(id, true);
+    if (event.shiftKey) pickRange(id);
+    else if (event.metaKey || event.ctrlKey) pickToggle(id);
+    else pickRow(id, true);
   });
 
   tree.addEventListener('focusin', (event) => {
@@ -189,15 +237,24 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
     if ('fold' in step) return setFolded(step.fold, true);
     if ('unfold' in step) return setFolded(step.unfold, false);
     const id = shown[at].id;
-    if ('pick' in step) return pickRow(id, step.reveal);
-    focusRow(shown[step.to].id);
-    pickRow(shown[step.to].id, true);
+    if ('pick' in step) return step.pick === 'toggle' ? pickToggle(id) : pickRow(id, step.reveal);
+    const to = shown[step.to].id;
+    focusRow(to);
+    if (step.extend) pickRange(to);
+    else pickRow(to, true);
   });
 
   return {
     element,
     update(state, visible) {
-      if (visible) draw(state);
+      follow(state);
+      if (visible && !wasShown) revealDue = true;
+      wasShown = visible;
+      if (!visible) return;
+      draw(state);
+      const view = revealDue && state.selected ? views.get(state.selected) : undefined;
+      revealDue = false;
+      if (view) scrollToRow(view);
     },
   };
 }

@@ -90,4 +90,7 @@ export const OUTLINE_KEYS: [string, string][] = [
   ['A letter', 'Go to the next row whose name starts with it'],
   ['Enter', 'Pick it and show it on the page'],
   ['Space', 'Pick it (⌘ or Ctrl adds it to what is picked)'],
+  ['Shift+↑ / ↓', 'Pick the rows on the way too'],
+  ['Shift-click', 'Pick every row from the one picked to this one'],
+  ['⌘-click', 'Pick one more row, or let it go (Ctrl-click on Windows)'],
 ];

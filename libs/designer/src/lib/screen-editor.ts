@@ -111,6 +111,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     designer,
     tools,
     survey: false,
+    several: () => mode === 'advanced',
     reveal(id) {
       const column = id.startsWith('column:') ? `.fd-list-table th[data-node="${id.slice('column:'.length)}"]` : null;
       root.querySelector(column ?? `[data-node="${id}"], [data-part="${id}"]`)?.scrollIntoView?.({ block: 'nearest' });

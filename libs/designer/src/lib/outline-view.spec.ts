@@ -161,3 +161,89 @@ describe('the outline as a tree', () => {
     expect(row('q-1').getAttribute('aria-level')).toBe('2');
   });
 });
+
+describe('several picked in the outline', () => {
+  const click = (id: string, more: MouseEventInit = {}) => row(id).dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ...more }));
+  const picked = () => designer.getState().picked;
+
+  it('Shift-click picks every row from the one picked to the one clicked', () => {
+    mount();
+    click('f-first_name');
+    click('f-mobile', { shiftKey: true });
+    expect(picked()).toEqual(['f-first_name', 'f-last_name', 'f-email', 'f-mobile']);
+    expect(designer.getState().selected).toBe('f-mobile');
+    // From the same start, up the other way.
+    click('f-photo', { shiftKey: true });
+    expect(picked()).toEqual(['f-first_name', 'who', 'f-photo']);
+    expect(rows().filter((r) => r.getAttribute('aria-selected') === 'true').map((r) => r.dataset['pick'])).toEqual(['f-photo', 'who', 'f-first_name']);
+  });
+
+  it('⌘- or Ctrl-click adds a row, or lets it go, and a range starts from it', () => {
+    mount();
+    click('f-city');
+    click('f-country', { metaKey: true });
+    click('f-street', { ctrlKey: true });
+    expect(picked()).toEqual(['f-city', 'f-country', 'f-street']);
+    click('f-country', { metaKey: true });
+    expect(picked()).toEqual(['f-city', 'f-street']);
+    click('f-postcode', { shiftKey: true });
+    expect(picked()).toEqual(['f-country', 'f-postcode']);
+  });
+
+  it('Shift with ↑ or ↓ takes the pick along', () => {
+    mount();
+    click('f-email');
+    key('ArrowDown', { shiftKey: true });
+    key('ArrowDown', { shiftKey: true });
+    expect(picked()).toEqual(['f-email', 'f-mobile', 'f-birthday']);
+    expect(focused()).toBe('f-birthday');
+    key('ArrowUp', { shiftKey: true });
+    expect(picked()).toEqual(['f-email', 'f-mobile']);
+    key('ArrowDown');
+    expect(picked()).toEqual(['f-birthday']);
+  });
+
+  it('picks one at a time where several cannot be picked: Simple on a screen', () => {
+    mount(employeeDesigner(), { several: false });
+    click('f-city');
+    click('f-country', { shiftKey: true });
+    expect(picked()).toEqual(['f-country']);
+    click('f-street', { metaKey: true });
+    expect(picked()).toEqual(['f-street']);
+    key('ArrowDown', { shiftKey: true });
+    expect(picked()).toEqual(['f-city']);
+  });
+
+  it('shows what is picked on the canvas, kept in step both ways', () => {
+    mount();
+    designer.pick('f-city');
+    designer.pick('f-iban', { add: true });
+    expect(rows().filter((r) => r.getAttribute('aria-selected') === 'true').map((r) => r.dataset['pick'])).toEqual(['f-city', 'f-iban']);
+  });
+
+  it('a part picked on the canvas opens the rows round it, and comes into view in the outline', () => {
+    mount();
+    row('tab-pay').focus();
+    key('ArrowLeft');
+    row('personal').focus();
+    key('ArrowLeft');
+    expect(row('f-iban')).toBeNull();
+    // The rail scrolls; its rows are 28px apart.
+    const rail = document.createElement('div');
+    rail.style.overflowY = 'auto';
+    document.body.append(rail);
+    rail.append(view.element);
+    Object.defineProperty(rail, 'clientHeight', { value: 200, configurable: true });
+    Object.defineProperty(rail, 'scrollHeight', { value: 2000, configurable: true });
+    rail.getBoundingClientRect = () => ({ top: 0, bottom: 200, left: 0, right: 228, width: 228, height: 200 }) as DOMRect;
+    designer.select('f-iban');
+    expect(row('tab-pay').getAttribute('aria-expanded')).toBe('true');
+    expect(row('f-iban')).not.toBeNull();
+    row('f-iban').getBoundingClientRect = () => ({ top: 900, bottom: 928, left: 0, right: 228, width: 228, height: 28 }) as DOMRect;
+    designer.select('f-bank_name');
+    designer.select('f-iban');
+    expect(rail.scrollTop).toBe(728);
+    // What the person folded and did not pick stays folded.
+    expect(row('personal').getAttribute('aria-expanded')).toBe('false');
+  });
+});
