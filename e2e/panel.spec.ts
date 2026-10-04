@@ -157,7 +157,8 @@ test.describe('the panel', () => {
     });
     await expect(panel(page).locator('.fd-panel-title')).toHaveText('Several');
     await expect(panel(page).locator('.fd-insp-name')).toHaveText('2 parts picked');
-    await expect(panel(page).getByRole('tab')).toHaveText(['Layout']);
+    // Two fields: their layout, and whether they are required.
+    await expect(panel(page).getByRole('tab')).toHaveText(['Layout', 'Rules']);
     await check(page, 'several');
     await choice(page, 'Width', 'All 2 columns').click();
     await expect.poll(async () => (await layout(page))[0]).toEqual(['Customer:2', 'Visit date:2', 'Notes:2']);

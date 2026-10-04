@@ -45,12 +45,13 @@ export function openFind(el: ElementFactory, root: HTMLElement, items: FindItem[
     const words = input.value.toLowerCase().split(/\s+/).filter(Boolean);
     found = items.filter((item) => words.every((word) => item.label.toLowerCase().includes(word)));
     at = Math.min(at, Math.max(0, found.length - 1));
+    const iconed = found.some((item) => item.icon);
     list.replaceChildren(
       ...found.map((item, i) => {
         const option = el(
           'div',
           { class: 'fd-find-option', role: 'option', id: `${id}-${i}`, 'aria-selected': String(i === at) },
-          ...(item.icon ? [designerIcon(doc, item.icon)] : []),
+          ...(item.icon ? [designerIcon(doc, item.icon)] : iconed ? [el('span', { class: 'fd-find-icon-room', 'aria-hidden': 'true' })] : []),
           el('span', { class: 'fd-find-label' }, item.label),
           ...(item.hint ? [el('span', { class: 'fd-find-hint' }, item.hint)] : [])
         );

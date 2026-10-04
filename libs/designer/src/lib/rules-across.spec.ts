@@ -170,8 +170,11 @@ describe('a rule across fields, in the panel', () => {
     const across = panel().querySelector('.fd-answer-rule-across') as HTMLElement;
     expect(across.querySelector('.fd-formula-outcome')?.textContent).toBe('With Contract ends 2026-03-14 and Start date 2026-03-01: holds');
     expect(across.querySelector('.fd-formula-reads')?.textContent).toBe('Reads: Contract ends ≥ Start date');
+    expect(across.querySelector('.fd-formula-result')?.hasAttribute('data-fails')).toBe(false);
     type(field(panel(), 'Must hold'), 'end < start');
     expect(across.querySelector('.fd-formula-outcome')?.textContent).toBe('With Contract ends 2026-03-14 and Start date 2026-03-01: does not hold');
+    // Not said as a success.
+    expect(across.querySelector('.fd-formula-result')?.hasAttribute('data-fails')).toBe(true);
   });
 
   it('takes a message, stops sending or only warns, as other rules do', () => {

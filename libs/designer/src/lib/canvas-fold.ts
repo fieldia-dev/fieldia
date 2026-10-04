@@ -4,9 +4,10 @@ import { foldOf } from './group-fold';
 import { designerIcon } from './icons';
 
 /**
- * The small mark by a group's title on the canvas when the group folds by
- * it: an arrow pointing down while it starts open, along the line while it
- * starts folded. The canvas draws the group open, so it can be edited.
+ * The small mark before a group's title on the canvas when the group folds
+ * by it, where the form draws its arrow: pointing down while it starts open,
+ * along the line while it starts folded. The canvas draws the group open, so
+ * it can be edited.
  */
 export interface FoldMark {
   element: HTMLElement;

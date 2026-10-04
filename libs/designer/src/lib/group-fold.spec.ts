@@ -86,6 +86,8 @@ describe('a folding group, in the panel and on the canvas', () => {
     expect(pressed()).toEqual(['Starts folded']);
     expect(mark(titled)?.hidden).toBe(false);
     expect(mark(titled)?.getAttribute('aria-label')).toBe('Folds, starting folded');
+    // Before the title, where the form draws its arrow.
+    expect(mark(titled)?.parentElement?.firstElementChild).toBe(mark(titled));
     press('Starts open');
     expect(mark(titled)?.getAttribute('aria-label')).toBe('Folds, starting open');
     press('No');

@@ -187,7 +187,11 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
       placeholder: 'Ends >= Starts — type a field’s name, or @',
       check: (on, source) => formulaProblem(on, source),
       commit: (source) => source && change({ holds: source }),
-      said: (on, source) => sampleHolds(on, source),
+      said: (on, source) => {
+        const words = sampleHolds(on, source);
+        holds.result.toggleAttribute('data-fails', words.endsWith('does not hold') || words === 'Never holds');
+        return words;
+      },
     });
     const when = segmented(el, 'Allowed dates', [{ value: 'past', words: 'In the past' }, { value: 'future', words: 'In the future' }], (value) => value && change({ date: value }));
     const groups: Record<Group, HTMLElement> = {

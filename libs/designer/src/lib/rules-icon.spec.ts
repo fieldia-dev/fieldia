@@ -28,9 +28,10 @@ describe('the Rules view’s icon', () => {
     (host.querySelector('.fd-find-button') as HTMLButtonElement).click();
     const option = [...document.querySelectorAll('.fd-find-option')].find((o) => o.querySelector('.fd-find-label')?.textContent === 'Rules') as HTMLElement;
     expect(option.querySelector('svg')?.innerHTML).toBe(drawing('rules'));
-    // Only what has an icon of its own draws one.
+    // Only what has an icon of its own draws one; the rest keep its room, so the words line up.
     const other = [...document.querySelectorAll('.fd-find-option')].find((o) => o !== option) as HTMLElement;
     expect(other.querySelector('svg')).toBeNull();
+    expect(other.firstElementChild?.className).toBe('fd-find-icon-room');
   });
 
   it('is the survey editor’s too', () => {

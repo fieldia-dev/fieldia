@@ -180,10 +180,11 @@ export function dropEcho(options: DropEchoOptions): DropEcho {
     if (zone) inCanvas(zone, marks.zone);
     marks.name.textContent = detail.name ?? 'Part';
     marks.where.textContent = detail.words ?? '';
-    // The chip under the line's start, kept inside the canvas.
+    // The chip under the line's start — its right end, right to left — kept inside the canvas.
     const c = rectOf(canvas);
     const width = rectOf(marks.chip).width;
-    marks.chip.style.left = `${Math.max(0, Math.min(bar.left - c.left, c.width - width))}px`;
+    const start = options.rtl() ? bar.left + bar.width - width : bar.left;
+    marks.chip.style.left = `${Math.max(0, Math.min(start - c.left, c.width - width))}px`;
     marks.chip.style.top = `${bar.top - c.top + bar.height + 8}px`;
   }
 

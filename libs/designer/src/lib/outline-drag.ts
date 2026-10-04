@@ -101,7 +101,8 @@ export function outlineDrag(options: OutlineDragOptions): { destroy(): void } {
   function follow(current: Drag, x: number, y: number) {
     const chip = current.chip as HTMLElement;
     const line = current.line as HTMLElement;
-    chip.style.left = `${x + 14}px`;
+    // Right to left, the chip goes to the pointer's left, so it stays in the window.
+    chip.style.left = options.rtl() ? `${Math.max(4, x - 14 - rectOf(chip).width)}px` : `${x + 14}px`;
     chip.style.top = `${y + 12}px`;
     for (const washed of tree.querySelectorAll('.fd-outline-into')) washed.classList.remove('fd-outline-into');
     const rows = options.rows();

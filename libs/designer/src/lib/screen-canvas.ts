@@ -280,7 +280,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       titleInput.select();
     });
     const fold = foldMark(el, doc);
-    const legend = el('legend', { class: 'fd-section-title' }, title, titleInput, fold.element);
+    const legend = el('legend', { class: 'fd-section-title' }, fold.element, title, titleInput);
     const description = el('p', { class: 'fd-section-description', hidden: '' });
     const grid = el('div', { class: 'fd-grid', 'data-drop-grid': '', 'data-container': id });
     const empty = el('p', { class: 'fd-canvas-empty' }, 'Drop a field here, or pick one in the toolbox.');

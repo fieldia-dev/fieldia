@@ -21,8 +21,8 @@ export const DESIGNER_GAP_CSS = /* css */ `
 /* The look the page wears when it is none of them: said, not pressed. */
 .fd-look-own { cursor: default; border-style: dashed; color: var(--fd-text); font-weight: 600; text-align: center; }
 .fd-look-own[hidden] { display: none; }
-/* A group that folds by its title: an arrow by the title, along the line while it starts folded. */
-.fd-canvas-fold { display: inline-flex; vertical-align: -2px; margin-inline-start: 6px; color: var(--fd-muted); }
+/* A group that folds by its title: an arrow before the title, as the form draws it; along the line while it starts folded. */
+.fd-canvas-fold { display: inline-flex; vertical-align: -2px; margin-inline-end: 6px; color: var(--fd-muted); }
 .fd-canvas-fold[hidden] { display: none; }
 .fd-canvas-fold .fd-dicon { width: 15px; height: 15px; }
 .fd-canvas-fold[data-fold="folded"] .fd-dicon { transform: rotate(-90deg); }
@@ -30,4 +30,8 @@ export const DESIGNER_GAP_CSS = /* css */ `
 /* Find anything: an icon before what has one of its own, as the bar shows it. */
 .fd-find-option > .fd-dicon { width: 16px; height: 16px; margin-inline-end: -4px; color: var(--fd-muted); }
 .fd-find-option[aria-selected="true"] > .fd-dicon { color: var(--fd-accent); }
+/* Where some of what is found has an icon, the rest keep its room, so the words line up. */
+.fd-find-icon-room { flex: none; width: 16px; margin-inline-end: -4px; }
+/* A rule across fields that does not hold on the made-up values: said, not as a success. */
+.fd-formula-result[data-fails] { background: var(--fd-warning-soft, var(--fd-page)); }
 `;
