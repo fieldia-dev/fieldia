@@ -32,6 +32,7 @@ import { pageDialogs } from './related';
 import { listView } from './list';
 import { applyLook } from './look';
 import { labelPlace, planSection, type Place } from './place';
+import { setHidden, setText } from './dom';
 
 export type Skin = 'underline' | 'outlined';
 
@@ -225,17 +226,17 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
 
     const update = (state: FormState) => {
       const shown = form.node(node.id);
-      wrapper.hidden = shown.invisible;
+      setHidden(wrapper, shown.invisible);
       wrapper.classList.toggle('fd-required', shown.required);
       const message = state.errors[node.field];
-      error.hidden = !message;
-      error.textContent = message ?? '';
+      setHidden(error, !message);
+      setText(error, message ?? '');
       const now = state.warnings[node.field] ?? '';
       if (!typing || !now) advice = now;
       // An error shown says enough: the rule's warning gives way to it.
       const warned = [message ? '' : advice, state.warning && state.warningField === node.field ? state.warning : ''].filter(Boolean).join(' ');
-      warning.hidden = !warned;
-      warning.textContent = warned;
+      setHidden(warning, !warned);
+      setText(warning, warned);
       if (mark) {
         const value = state.values[node.field];
         const filled = value !== null && value !== undefined && value !== '' && !(Array.isArray(value) && !value.length);
@@ -257,9 +258,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   }
 
   function hideWhen(element: HTMLElement, id: string) {
-    updaters.push(() => {
-      element.hidden = form.node(id).invisible;
-    });
+    updaters.push(() => setHidden(element, form.node(id).invisible));
   }
 
   function buttonItem(node: ButtonNode): HTMLElement {
@@ -505,8 +504,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       : state.status === 'error' && problem ? (problem.kind === 'fields' ? checkText(state) : problem.kind === 'other' ? problem.message : notDone())
       : state.status === 'error' ? state.error ?? ''
       : '';
-    statusText.textContent = text;
-    retry.hidden = !(state.status === 'error' && problem?.kind === 'other');
+    setText(statusText, text);
+    setHidden(retry, !(state.status === 'error' && problem?.kind === 'other'));
     statusText.classList.toggle('fd-status-error', state.status === 'error');
     statusText.classList.toggle('fd-status-saved', state.status === 'saved');
     // A toast shows while there is something to say, and lets "Saved" go after a moment.
@@ -547,7 +546,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   discardDraft.addEventListener('click', () => form.discardDraft());
   draft.append(draftText, restore, discardDraft);
   updaters.push((state) => {
-    draft.hidden = !state.draft;
+    setHidden(draft, !state.draft);
     if (state.draft) draftText.textContent = fill(labels.draftFound, { time: new Date(state.draft.savedAt).toLocaleString() });
   });
 
@@ -608,10 +607,10 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       actions.insertBefore(discard, action);
       updaters.push((state) => {
         const dirty = state.dirty.length > 0 && state.status !== 'saving' && !locked;
-        action.hidden = !dirty;
-        discard.hidden = !dirty;
+        setHidden(action, !dirty);
+        setHidden(discard, !dirty);
       });
-    } else updaters.push(() => (action.hidden = locked));
+    } else updaters.push(() => setHidden(action, locked));
     if (editSwitch) actions.prepend(editSwitch);
     if (options.showActions === false) return el('div', {}, box);
     if (page.actionsPosition === 'top') {

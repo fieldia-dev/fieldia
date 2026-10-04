@@ -26,11 +26,32 @@ export const wordsFor = (labels: WidgetLabels | undefined, locale: Locale | unde
 export const fillIn = (template: string, values: Record<string, string | number>) =>
   template.replace(/\{(\w+)\}/g, (match, key: string) => (key in values ? String(values[key]) : match));
 
+/**
+ * An attribute set, or taken away with null, only when that changes it.
+ * Every field is brought up to date at each change of a form; writing what is
+ * there already still has the browser look at the page anew, which on a big
+ * page is most of the time a key takes.
+ */
+export function setAttr(element: Element, name: string, value: string | null): void {
+  if (element.getAttribute(name) === value) return;
+  if (value === null) element.removeAttribute(name);
+  else element.setAttribute(name, value);
+}
+
+/** Shown or hidden, written only when that changes. */
+export function setHidden(element: HTMLElement, hidden: boolean): void {
+  if (element.hidden !== hidden) element.hidden = hidden;
+}
+
+/** Words written only when they change: written again, they would be new words to lay out. */
+export function setText(element: Node, text: string): void {
+  if (element.textContent !== text) element.textContent = text;
+}
+
 /** Whether the answer is wrong, and the help and error that describe it, on the element assistive technology reads. */
 export function describeState(element: HTMLElement, state: { invalid: boolean; describedBy?: string }) {
-  element.setAttribute('aria-invalid', String(state.invalid));
-  if (state.describedBy) element.setAttribute('aria-describedby', state.describedBy);
-  else element.removeAttribute('aria-describedby');
+  setAttr(element, 'aria-invalid', String(state.invalid));
+  setAttr(element, 'aria-describedby', state.describedBy || null);
 }
 
 /** Words said to screen readers when something moves or goes, without taking the focus. */
@@ -64,7 +85,7 @@ export function clearSelection(document: Document, words: WidgetLabels, clear: (
       open = !state.required && !state.readonly;
     },
     show(picked: boolean) {
-      button.hidden = !(open && picked);
+      setHidden(button, !(open && picked));
     },
   };
 }

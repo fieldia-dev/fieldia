@@ -1,5 +1,6 @@
 import type { FieldNode, Form, ReferenceValue, RelatedRecord } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
+import { setAttr, setHidden } from './kind-parts';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
 /**
@@ -215,11 +216,11 @@ function combobox(options: {
     input,
     setText(text) {
       shown = text;
-      if (!editing) input.value = text;
+      if (!editing && input.value !== text) input.value = text;
     },
     setReadonly(next) {
       readonly = next;
-      input.readOnly = next;
+      if (input.readOnly !== next) input.readOnly = next;
       if (next) close();
     },
     close,
@@ -288,14 +289,14 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
       readonly = state.readonly;
       box.setText(record?.label ?? '');
       box.setReadonly(state.readonly);
-      clear.hidden = !record || state.readonly;
+      setHidden(clear, !record || state.readonly);
       if (open) {
-        open.hidden = !record;
-        if (record) open.setAttribute('aria-label', fill(labels.openNamed, { name: record.label }));
+        setHidden(open, !record);
+        if (record) setAttr(open, 'aria-label', fill(labels.openNamed, { name: record.label }));
       }
-      box.input.setAttribute('aria-invalid', String(state.invalid));
-      box.input.setAttribute('aria-required', String(state.required));
-      if (state.describedBy) box.input.setAttribute('aria-describedby', state.describedBy);
+      setAttr(box.input, 'aria-invalid', String(state.invalid));
+      setAttr(box.input, 'aria-required', String(state.required));
+      if (state.describedBy) setAttr(box.input, 'aria-describedby', state.describedBy);
     },
   } satisfies Widget;
 };
