@@ -13,6 +13,7 @@ import { build, transform } from 'esbuild';
 import { readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { runInNewContext } from 'node:vm';
+import { gzipSync } from 'node:zlib';
 
 const WORKSPACE = resolve(new URL('..', import.meta.url).pathname);
 const OUT = join(WORKSPACE, 'dist/libs/viewer/bundle/fieldia.js');
@@ -69,8 +70,13 @@ if (/ZodError|\$ZodType/.test(code)) throw new Error('the script bundle carries 
 // the format's additions to 200. The seven question kinds (signature, slider, tags, pictures, ranking,
 // address, repeating group) and shuffled options add 26; values worked out from others, values set by a
 // condition and answer rules add 13; groups side by side, arrangements, group styles, labels and the
-// page's look add 7.
-const BUDGET_KB = 250;
+// page's look add 7. The page's translations, choices from the app's lists, the tick box and dialogs in
+// the page's look add 2.5 more, to 252.
+const BUDGET_KB = 260;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
+// What a visitor downloads: the bundle gzipped, as servers send it.
+const GZIP_BUDGET_KB = 80;
+const gzipped = gzipSync(code, { level: 9 }).length;
+if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
-console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(statSync(OUT).size / 1024)} KB)`);
+console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(statSync(OUT).size / 1024)} KB, ${Math.round(gzipped / 1024)} KB gzipped)`);
