@@ -6,6 +6,7 @@ import { blockViews } from './canvas-blocks';
 import { canvasDrag, type CanvasDrag } from './canvas-drag';
 import { canvasHeader } from './canvas-header';
 import { lockWords, type DesignerMode } from './canvas-mode';
+import { widthMarks } from './canvas-width';
 import { elementFactory, optionsEditor, type OptionsEditor } from './chrome';
 import type { Designer, DesignerState } from './designer';
 import { fieldBar, type FieldBar } from './field-bar';
@@ -460,6 +461,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     placed: (id, source) => 'tool' in source && source.tool.startsWith('kind:') && focusIn(id, 'label', true),
   });
   advanced.setEnabled(false);
+  // Advanced's width handle and gutter, on the part picked.
+  const widths = widthMarks({ canvas: element, root: body, designer, rtl: () => doc.defaultView?.getComputedStyle(element).direction === 'rtl' });
   const drag: CanvasDrag = {
     press: (source, event, tile) => (mode === 'advanced' ? advanced : simpleDrag).press(source, event, tile),
     destroy() {
@@ -521,6 +524,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       }
       titleCard.classList.toggle('fd-canvas-selected', selected === null);
       header.update(page, selected, form);
+      widths.update(state, mode === 'advanced');
     },
     visibleSections: () => [...visible],
     focus: (id, part, selectAll = false) => focusIn(id, part, selectAll),
@@ -532,6 +536,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     },
     destroy() {
       drag.destroy();
+      widths.destroy();
       header.destroy();
       for (const card of cards.values()) dropCard(card);
       cards.clear();

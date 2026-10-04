@@ -200,3 +200,62 @@ test('Simple keeps today’s drag: no drop line, no chip of words', async ({ pag
   await page.mouse.up();
   expect((await where(page, 'f-nationality'))?.parent).toBe('who');
 });
+
+// ---- widths ---------------------------------------------------------------------------
+
+/** The page being built, read as JSON, for a part's width. */
+const spanOf = (page: Page, id: string) =>
+  page.evaluate((id) => {
+    const text = JSON.stringify((window as unknown as { fieldiaDesigner: { designer: { getPage(): unknown } } }).fieldiaDesigner.designer.getPage());
+    const at = text.indexOf(`"id":"${id}"`);
+    const own = text.slice(at, text.indexOf('}', at));
+    return Number(/"colspan":(\d)/.exec(own)?.[1] ?? 1);
+  }, id);
+
+test('the width handle on a picked part’s end edge snaps to the columns, saying how many', async ({ page }) => {
+  await openAdvanced(page);
+  await part(page, 'f-contract').scrollIntoViewIfNeeded();
+  await part(page, 'f-contract').click({ position: { x: 30, y: 10 } });
+  const handle = page.locator('.fd-width-handle');
+  await expect(handle).toBeVisible();
+  const h = (await handle.boundingBox())!;
+  const contract = (await part(page, 'f-contract').boundingBox())!;
+  // On the end edge of the part, halfway down it.
+  expect(Math.abs(h.x + h.width / 2 - (contract.x + contract.width))).toBeLessThanOrEqual(10);
+  await page.mouse.move(h.x + 4, h.y + 15);
+  await page.mouse.down();
+  const steps = [h.x - 60, h.x - 120, h.x - 180, contract.x + contract.width / 2 - 10];
+  for (const x of steps) await page.mouse.move(x, h.y + 15);
+  await expect(page.locator('.fd-width-chip')).toHaveText('1 of 2 columns');
+  await screen(page, 'advanced-06-width-handle', { viewport: true });
+  await page.mouse.up();
+  expect(await spanOf(page, 'f-contract')).toBe(1);
+  await page.keyboard.press('Control+z');
+  expect(await spanOf(page, 'f-contract')).toBe(2);
+});
+
+test('the gutter between two parts of a row trades columns, by the pointer and the keys, one undo each', async ({ page }) => {
+  await openAdvanced(page);
+  await part(page, 'f-photo').click({ position: { x: 20, y: 10 } });
+  const gutter = page.locator('.fd-gutter');
+  await expect(gutter).toBeVisible();
+  await expect(gutter).toHaveAttribute('aria-label', 'Width between “Photo” and “2 columns”');
+  const g = (await gutter.boundingBox())!;
+  const photo = (await part(page, 'f-photo').boundingBox())!;
+  const column = photo.width;
+  await page.mouse.move(g.x + 6, g.y + 30);
+  await page.mouse.down();
+  for (let i = 1; i <= 4; i++) await page.mouse.move(g.x + 6 + (column * i) / 4, g.y + 30);
+  await expect(page.locator('.fd-width-chip')).toHaveText('2 and 1 of 3 columns');
+  await screen(page, 'advanced-07-gutter', { viewport: true });
+  await page.mouse.up();
+  expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who')]).toEqual([2, 1]);
+  await page.keyboard.press('Control+z');
+  expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who')]).toEqual([1, 2]);
+  await gutter.focus();
+  await page.keyboard.press('ArrowRight');
+  expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who')]).toEqual([2, 1]);
+  await expect(gutter).toBeFocused();
+  await page.keyboard.press('ArrowLeft');
+  expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who')]).toEqual([1, 2]);
+});

@@ -43,4 +43,23 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 .fd-drop-chip.fd-drop-refused .fd-drop-where { color: var(--fd-error); }
 /* What is carried stays where it is, dimmed, until it is let go. */
 .fd-drag-carried { opacity: 0.35; }
+
+/* ---- Advanced: widths ---- */
+/* A picked part's width handle on its end edge: dragged, it snaps to the columns. */
+.fd-width-handle {
+  position: absolute; z-index: 9; width: 8px; height: 30px; border-radius: 4px; background: var(--fd-surface);
+  box-shadow: 0 0 0 1.5px var(--fd-accent), 0 1px 3px rgba(15, 23, 42, 0.2); cursor: ew-resize; touch-action: none;
+}
+.fd-width-handle::after { content: ""; position: absolute; inset: 9px 3px; border-inline: 1px solid var(--fd-accent); }
+/* The gutter between two parts of a row: a slim line in the gap, dragged or moved with the arrow keys to trade columns. */
+.fd-gutter { position: absolute; z-index: 9; width: 12px; cursor: col-resize; touch-action: none; border-radius: 6px; }
+.fd-gutter::before { content: ""; position: absolute; inset-block: 6px; inset-inline-start: 5px; width: 2px; border-radius: 2px; background: color-mix(in srgb, var(--fd-accent) 55%, transparent); }
+.fd-gutter:hover::before, .fd-gutter:focus-visible::before { inset-inline-start: 4px; width: 4px; background: var(--fd-accent); }
+.fd-gutter:focus-visible { outline: none; }
+.fd-width-handle[hidden], .fd-gutter[hidden] { display: none; }
+/* How many columns, while the edge or the gutter is dragged. */
+.fd-width-chip {
+  position: absolute; z-index: 32; pointer-events: none; background: var(--fd-text); color: var(--fd-surface);
+  font-size: 12px; font-weight: 600; line-height: 1; padding: 6px 8px; border-radius: 6px; white-space: nowrap;
+}
 `;
