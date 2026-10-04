@@ -101,7 +101,19 @@ export const DESIGNER_PANEL_CSS = /* css */ `
 .fd-properties .fd-insp-styles > .fd-seg-button[aria-pressed="true"] { border-color: var(--fd-accent); color: var(--fd-accent); box-shadow: inset 0 0 0 1px var(--fd-accent); }
 .fd-insp-style-picture { display: block; line-height: 0; }
 .fd-insp-style-picture svg { width: 40px; height: 27px; }
+/* The survey designer's Look: the same settings, in a sheet at the side of the cards. */
+.fd-properties.fd-look-sheet {
+  position: fixed; z-index: 50; inset-block-start: var(--fd-sheet-top, 84px); inset-inline-end: 16px; width: min(320px, calc(100vw - 32px));
+  max-height: calc(100vh - var(--fd-sheet-top, 84px) - 16px);
+  display: flex; flex-direction: column; padding: 0; gap: 0; overflow: hidden; box-shadow: 0 18px 44px rgba(15, 20, 25, 0.18);
+  animation: fd-menu-in 120ms cubic-bezier(0, 0, 0.2, 1);
+}
+.fd-look-sheet-head { flex: none; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding-block: 12px 8px; padding-inline: 14px 10px; border-block-end: 1px solid var(--fd-border); }
+.fd-look-sheet-body { flex: 1 1 auto; min-height: 0; overflow: auto; }
+/* The survey's cards wearing the page's look: the page tinted with its accent, in either scheme; the editor's own room round them. */
+.fd-survey-canvas.fd-look-worn { container-type: normal; }
+.fd-survey-canvas.fd-look-worn[data-scheme] { background: color-mix(in srgb, var(--fd-accent) 8%, var(--fd-page)); }
 /* The canvas wearing the page's look keeps the editor's own frame round it. */
 .fd-canvas.fd-look-worn[data-scheme] { border: 1px solid var(--fd-border); }
-@media (prefers-reduced-motion: reduce) { .fd-set-found { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .fd-set-found, .fd-properties.fd-look-sheet { animation: none; } }
 `;
