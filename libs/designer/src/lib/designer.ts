@@ -26,6 +26,7 @@ import * as settings from './layout-settings';
 import type { LookPatch, SectionLook } from './layout-settings';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
+import { pageJsonCommands, type PageJsonResult } from './page-json';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -47,6 +48,7 @@ export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-com
 export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-checks';
 export type { BlockKind, Drop, NewPart } from './layout-ops';
 export type { LookPatch, SectionLook } from './layout-settings';
+export type { JsonProblem, PageJsonResult } from './page-json';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
 export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
@@ -294,6 +296,11 @@ export interface Designer extends HeaderCommands, ListCommands {
   revertTo(version: number): boolean;
   /** Resolves once every draft save started so far has finished. */
   settled(): Promise<void>;
+  // json lane
+  /** The page as JSON: two spaces deep, its keys in the order the page keeps them. */
+  pageJson(): string;
+  /** A whole page written as JSON, as one edit; refused with each problem's line and column, the page kept as it was. */
+  setPageJson(text: string): PageJsonResult;
 }
 
 
@@ -1104,6 +1111,8 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     async settled() {
       await saving;
     },
+    // json lane
+    ...pageJsonCommands({ getPage: () => page, apply }),
   };
   return designer;
 }
