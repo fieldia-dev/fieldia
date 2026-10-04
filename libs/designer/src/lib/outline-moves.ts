@@ -1,6 +1,6 @@
 import type { Page, SectionNode } from '@fieldia/core';
 import { detach, setRowColumns, setSpan, tidy } from './layout-ops';
-import { across, contains, isRow, listOf, locate, nameOf, nodeOf, spanOf, type Holder, type Part } from './layout-tree';
+import { across, contains, isRow, listOf, locate, nameOf, nodeOf, spanOf, type Holder, type Part, type Spot } from './layout-tree';
 import { Refusal } from './refusal';
 
 /**
@@ -15,16 +15,19 @@ import { Refusal } from './refusal';
  * goes along with it.
  */
 
-/** The parts to move, by id, in reading order: none inside another of them. */
-function movingSpots(page: Page, ids: string[]) {
-  const spots = [...new Set(ids)].map((id) => {
-    const at = locate(page, id);
-    if (!at) throw new Refusal(`There is no part “${id}”`);
-    return at;
-  });
+/** The parts named that are on the page, in reading order: none inside another of them, none twice. */
+export function partsInOrder(page: Page, ids: string[]): Spot[] {
+  const spots = [...new Set(ids)].map((id) => locate(page, id)).filter((s): s is Spot => !!s);
   const outer = spots.filter((s) => !spots.some((o) => o !== s && contains(page, o.node.id, s.node.id)));
   const order = new Map([...allParts(page.layout as Holder)].map((id, i) => [id, i]));
   return outer.sort((a, b) => (order.get(a.node.id) ?? 0) - (order.get(b.node.id) ?? 0));
+}
+
+/** The parts to move, in reading order; a refusal naming one not on the page. */
+function movingSpots(page: Page, ids: string[]): Spot[] {
+  const missing = ids.find((id) => !locate(page, id));
+  if (missing !== undefined) throw new Refusal(`There is no part “${missing}”`);
+  return partsInOrder(page, ids);
 }
 
 /** Every part's id, in reading order. */
@@ -46,27 +49,40 @@ export function moveRefusal(page: Page, ids: string[], parentId: string): string
   }
 }
 
+/** A part going into a list: one on the page, from the list it is in; or a new one, from nowhere. */
+interface Coming {
+  node: Part;
+  from: Holder | null;
+}
+
 function check(page: Page, ids: string[], parentId: string) {
   if (!ids.length) throw new Refusal('Pick a part to move');
   const spots = movingSpots(page, ids);
+  refuse(page, spots.map((s) => ({ node: s.node, from: s.parent })), parentId);
+  return spots;
+}
+
+/** What the parts go into, or a refusal saying why they cannot. */
+function refuse(page: Page, coming: Coming[], parentId: string): Holder {
   const parent = nodeOf(page, parentId);
   if (!parent) throw new Refusal(`There is no part “${parentId}”`);
   const wizard = page.layout.type === 'wizard';
-  for (const { node, parent: from } of spots) {
+  for (const { node, from } of coming) {
     // A survey's page sits in the page's own list, as a part does.
     const step = (node as { type: string }).type === 'step';
     if (node.type === 'tab') {
       if (parent.type === 'tab') throw new Refusal('A tab holds parts, not other tabs');
-      if (parent.id !== from.id) throw new Refusal('A tab moves only among its tabs');
+      if (from && parent.id !== from.id) throw new Refusal('A tab moves only among its tabs');
+      if (!from && parent.type !== 'tabs') throw new Refusal('A tab goes among tabs: pick a tab to paste it after');
     } else if (parent.type === 'tabs') throw new Refusal('Put it in one of the tabs');
     if (wizard && step && parent.id !== page.layout.id) throw new Refusal('A page holds questions, not other pages');
     if (wizard && !step && parent.id === page.layout.id) throw new Refusal('A question goes on a page');
-    if (contains(page, node.id, parentId)) throw new Refusal('A part cannot go inside itself');
+    if (from && contains(page, node.id, parentId)) throw new Refusal('A part cannot go inside itself');
   }
   if (!listOf(parent)) throw new Refusal(`“${nameOf(page, parent)}” holds no parts`);
-  const coming = spots.filter((s) => s.parent.id !== parentId).length;
-  if (isRow(page, parent) && parent.children.length + coming > 4) throw new Refusal('A row holds four');
-  return spots;
+  const joining = coming.filter((c) => c.from?.id !== parentId).length;
+  if (isRow(page, parent) && (parent as Holder).children.length + joining > 4) throw new Refusal('A row holds four');
+  return parent as Holder;
 }
 
 /** The first part at or after `index` that is not moving: what the moved parts go before; null for the end. */
@@ -74,22 +90,33 @@ function anchorOf(list: readonly Part[], index: number, moving: ReadonlySet<stri
   return list.slice(Math.max(0, index)).find((p) => !moving.has(p.id)) ?? null;
 }
 
+/** Put the parts in `parent` before `anchor` (or at its end), those on the page leaving where they are first; then tidy. */
+function put(page: Page, coming: Coming[], parent: Holder, anchor: Part | null): string[] {
+  // A row of parts on the page: each part one column of it, and the row as many columns as it has parts.
+  const row = isRow(page, parent);
+  for (const { node, from } of coming) if (from) detach(page, node.id);
+  const cols = across(page, parent);
+  for (const { node } of coming) setSpan(node, row ? 1 : Math.min(spanOf(node), cols));
+  const at = anchor ? parent.children.indexOf(anchor) : parent.children.length;
+  parent.children.splice(at, 0, ...coming.map((c) => c.node));
+  if (row) setRowColumns(parent as SectionNode, parent.children.length);
+  tidy(page);
+  return coming.map((c) => c.node.id);
+}
+
 /** Move the parts into `parentId` before the part now at `index` (or at its end). Returns them, in reading order. */
 export function moveParts(page: Page, ids: string[], parentId: string, index: number): string[] {
   const spots = check(page, ids, parentId);
   const parent = nodeOf(page, parentId) as Holder;
-  const moving = new Set(spots.map((s) => s.node.id));
-  const anchor = anchorOf(parent.children, index, moving);
-  // A row of parts on the page: each part one column of it, and the row as many columns as it has parts.
-  const row = isRow(page, parent);
-  for (const { node } of spots) detach(page, node.id);
-  const cols = across(page, parent);
-  for (const { node } of spots) setSpan(node, row ? 1 : Math.min(spanOf(node), cols));
-  const at = anchor ? parent.children.indexOf(anchor) : parent.children.length;
-  parent.children.splice(at, 0, ...spots.map((s) => s.node));
-  if (row) setRowColumns(parent as SectionNode, parent.children.length);
-  tidy(page);
-  return spots.map((s) => s.node.id);
+  const anchor = anchorOf(parent.children, index, new Set(spots.map((s) => s.node.id)));
+  return put(page, spots.map((s) => ({ node: s.node, from: s.parent })), parent, anchor);
+}
+
+/** New parts (pasted) into `parentId`, before the part at `index` (or at its end), as a move puts them. Returns them. */
+export function putNewParts(page: Page, nodes: Part[], parentId: string, index: number): string[] {
+  const coming = nodes.map((node) => ({ node, from: null }));
+  const parent = refuse(page, coming, parentId);
+  return put(page, coming, parent, anchorOf(parent.children, index, new Set()));
 }
 
 /** Where the parts would go, in the words the drag chip says: “into “Home address”, before “City””. */

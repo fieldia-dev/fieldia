@@ -12,6 +12,7 @@ import { kindById } from './kinds';
 import { kindPreview } from './kind-previews';
 import { openMenu, type MenuItem } from './menu';
 import { lookSheet } from './panel-look-sheet';
+import { clipboardKeys } from './clipboard-keys';
 import { rail as sideRail } from './rail';
 import { inlineSettings } from './inline-settings';
 import { installDesignerStyles } from './styles';
@@ -166,6 +167,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const json = jsonView({ el, doc, designer, trial, body });
   root.append(bar.element, bar.issues, body, trial.element, json.element);
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
+  const clip = clipboardKeys({ root, designer, active: () => !trial.trying && !json.open });
   // The form's look: from the bar, in a sheet at the side; the cards wear it.
   const look = lookSheet({ el, designer, root, bar: bar.element, wearer: editor });
 
@@ -653,6 +655,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       bar.destroy();
       drag.destroy();
       side.destroy();
+      clip.destroy();
       doc.removeEventListener('keydown', onKey);
       for (const view of cardViews.values()) view.destroy();
       trial.destroy();

@@ -53,5 +53,12 @@ export const DESIGNER_OUTLINE_CSS = /* css */ `
 .fd-outline-chip-where { flex-basis: 100%; font-weight: 500; font-size: 11.5px; color: var(--fd-muted); }
 .fd-outline-chip.fd-outline-refused { border-color: var(--fd-error); }
 .fd-outline-chip.fd-outline-refused .fd-outline-chip-where { color: var(--fd-error); }
-@media (prefers-reduced-motion: reduce) { .fd-outline-row .fd-outline-twist .fd-dicon { transition: none; } }
+/* What a copy, a cut or a paste did: a line at the foot of the window a moment, then gone. */
+.fd-clipboard-said {
+  position: fixed; z-index: 85; bottom: 20px; left: 50%; transform: translate(-50%, 8px); max-width: min(460px, calc(100vw - 32px)); box-sizing: border-box;
+  padding: 8px 14px; border-radius: 8px; background: var(--fd-text); color: var(--fd-surface); font-size: 13px; line-height: 1.4;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.22); opacity: 0; pointer-events: none; transition: opacity 160ms, transform 160ms;
+}
+.fd-clipboard-said.fd-clipboard-shown { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .fd-outline-row .fd-outline-twist .fd-dicon, .fd-clipboard-said { transition: none; } }
 `;

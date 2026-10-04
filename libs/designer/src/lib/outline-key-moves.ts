@@ -1,5 +1,6 @@
 import type { Page } from '@fieldia/core';
-import { contains, isWrapper, listOf, locate, nameOf, type Holder, type Spot } from './layout-tree';
+import { isWrapper, listOf, locate, nameOf, type Holder } from './layout-tree';
+import { partsInOrder } from './outline-moves';
 
 /**
  * Moving the rows picked in the outline from the keyboard, in reading order:
@@ -20,9 +21,8 @@ export type KeyPlace = { parent: string; index: number } | { said: string };
 /** Where Alt and an arrow would take the parts; null when the key is not one of these. */
 export function outlineKeyMove(page: Page, ids: string[], key: { key: string; altKey: boolean }, rtl: boolean): KeyPlace | null {
   if (!key.altKey || !ids.length || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key.key)) return null;
-  const spots = ids.map((id) => locate(page, id)).filter((s): s is Spot => !!s);
   // A part picked inside another part picked goes with it.
-  const outer = spots.filter((s) => !spots.some((o) => o !== s && contains(page, o.node.id, s.node.id)));
+  const outer = partsInOrder(page, ids);
   if (!outer.length) return null;
   if (outer.some((s) => s.list !== outer[0].list)) return { said: 'Pick parts in the same group to move them together' };
   const { parent, list } = outer[0];

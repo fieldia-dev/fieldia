@@ -31,6 +31,7 @@ import { allIds, containers, findContainer, findNode, findTab, firstSection, nex
 import { Refusal } from './refusal';
 import { translationCommands } from './translations';
 import { pageJsonCommands, type PageJsonResult } from './page-json';
+import * as clipboard from './clipboard-ops';
 import * as moves from './outline-moves';
 import { outlineRows } from './outline-rows';
 
@@ -346,6 +347,16 @@ export interface Designer extends HeaderCommands, ListCommands {
   moveRefusal(ids: string[], parentId: string): string | null;
   /** Where a move would put them, in the words the drag chip says: “into “Home address”, before “City””. */
   describeMove(ids: string[], parentId: string, index: number): string;
+  /** The parts, with their fields' definitions, as JSON for the clipboard; false when none is a part of the page. */
+  copyParts(ids: string[]): string | false;
+  /**
+   * Paste the parts a copy holds, as one edit: after the part picked, into the
+   * group, tab or page picked, or at the end. Ids are new; a field whose name
+   * is taken takes a free one, and what its rules read follows it. Returns
+   * the parts pasted, picked, and how many rules were left off for reading a
+   * field the page has not got.
+   */
+  pasteParts(text: string): { ids: string[]; dropped: number } | false;
 }
 
 /** One of the app's lists of choices, by the name its data source answers to, and the words a person picks it by. */
@@ -1210,6 +1221,16 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     },
     moveRefusal: (ids, parentId) => moves.moveRefusal(page, ids, parentId),
     describeMove: (ids, parentId, index) => moves.describeMove(page, ids, parentId, index),
+    copyParts: (ids) => clipboard.copyParts(page, ids) ?? false,
+    pasteParts(text) {
+      let pasted: { ids: string[]; dropped: number } | null = null;
+      if (!apply((draft) => void (pasted = clipboard.pasteParts(draft, text, pickedNow(), { model }))) || !pasted) return false;
+      const done: { ids: string[]; dropped: number } = pasted;
+      picked = [...done.ids];
+      selected = picked[picked.length - 1] ?? null;
+      notify();
+      return done;
+    },
   };
   return designer;
 }

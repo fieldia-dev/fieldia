@@ -13,6 +13,7 @@ import type { BlockKind } from './layout-ops';
 import { allSections, findField, findTab, sectionLabel } from './page-tree';
 import { screenCanvas } from './screen-canvas';
 import { screenPanel } from './panel-screen';
+import { clipboardKeys } from './clipboard-keys';
 import { rail } from './rail';
 import { installDesignerStyles } from './styles';
 import { toolbox } from './toolbox';
@@ -127,6 +128,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const json = jsonView({ el, doc, designer, trial, body });
   root.append(bar.element, bar.issues, body, trial.element, json.element);
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
+  const clip = clipboardKeys({ root, designer, active: () => !trial.trying && !json.open });
 
   // ---- adding ------------------------------------------------------------------
   /** Where something picked in the toolbox goes: after the field picked, into the section picked or a picked tab's first, or the last on show. */
@@ -315,6 +317,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       stopPuttingDown();
       canvas.destroy();
       side.destroy();
+      clip.destroy();
       list.destroy();
       trial.destroy();
       words.destroy();

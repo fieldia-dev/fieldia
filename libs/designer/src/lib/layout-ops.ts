@@ -374,7 +374,7 @@ export function ungroup(page: Page, id: string): string[] {
 }
 
 /** What a copy's id starts with. */
-const prefixOf = (node: Part): string => (node.type === 'field' ? 'q' : isWrapper(node) ? 'side' : node.type === 'text' && node.style === 'heading' ? 'heading' : node.type);
+export const prefixOf = (node: Part): string => (node.type === 'field' ? 'q' : isWrapper(node) ? 'side' : node.type === 'text' && node.style === 'heading' ? 'heading' : node.type);
 
 /** A copy made new: ids of its own, and fields of its own, as a copied question has. */
 function renew(page: Page, node: Part, name: (prefix: string) => string): Part {
