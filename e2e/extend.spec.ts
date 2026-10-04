@@ -112,7 +112,7 @@ test.describe('templates for a blank page', () => {
     await page.goto('/designer/');
     const offer = page.getByRole('region', { name: 'Start from a template' });
     await expect(offer).toBeVisible();
-    await expect(offer.getByRole('button', { name: 'Feedback' })).toHaveAccessibleDescription('How it went, and what to do better, in two minutes.');
+    await expect(offer.getByRole('button', { name: 'Feedback', exact: true })).toHaveAccessibleDescription('How it went, and what to do better, in two minutes.');
     await screen(page, 'extend-templates-survey-blank', { viewport: true });
     expect(await doubleLines(page)).toEqual([]);
 
@@ -172,5 +172,111 @@ test.describe('templates for a blank page', () => {
     await expect(page.locator('.fd-canvas-field')).toHaveCount(7);
     await screen(page, 'extend-templates-screen-picked', { viewport: true });
     expect(await doubleLines(page)).toEqual([]);
+  });
+});
+
+test.describe('the app’s assistant (the demo’s stand-in)', () => {
+  let problems: string[] = [];
+  test.beforeEach(({ page }) => {
+    problems = watch(page);
+  });
+  test.afterEach(() => expect(problems).toEqual([]));
+
+  test('describe a survey, see what changed, Undo', async ({ page }) => {
+    await page.goto('/designer/?assistant-delay=1500');
+    const box = page.locator('.fd-start form.fd-assist');
+    await expect(box.locator('.fd-assist-name')).toHaveText('Demo assistant');
+    await expect(box.locator('.fd-assist-note')).toContainText('Fieldia ships no AI of its own');
+    await box.getByLabel('Describe the form you need').fill('A booking form: contact details, a date and a rating');
+    await box.getByRole('button', { name: 'Build it' }).click();
+    await expect(box.getByRole('status').filter({ hasText: 'Building your form…' })).toBeVisible();
+    await expect(box.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    await screen(page, 'extend-assistant-busy', { viewport: true });
+
+    const notice = page.locator('.fd-start-done');
+    await expect(notice.locator('.fd-start-done-words')).toHaveText('The assistant built the form:');
+    await expect(notice).toBeFocused();
+    await expect(notice.locator('li')).toContainText(['Added “Full name”', 'Added “Email”', 'Added “Phone”', 'Added “Which date suits you?”', 'Added “How would you rate it?”']);
+    await expect(page.locator('.fd-survey-head-title')).toHaveValue('Booking form');
+    await expect(page.locator('.fd-q')).toHaveCount(5);
+    await screen(page, 'extend-assistant-built', { viewport: true });
+    expect(await doubleLines(page)).toEqual([]);
+
+    await notice.getByRole('button', { name: 'Undo' }).click();
+    await expect(page.locator('.fd-q')).toHaveCount(0);
+    await expect(page.getByRole('region', { name: 'Start from a template' })).toBeVisible();
+  });
+
+  test('cancel a slow answer: nothing changes, then or later', async ({ page }) => {
+    await page.goto('/designer/?assistant-delay=1500');
+    const box = page.locator('.fd-start form.fd-assist');
+    await box.getByLabel('Describe the form you need').fill('Contact details');
+    await box.getByRole('button', { name: 'Build it' }).click();
+    await expect(box.locator('.fd-assist-busy')).toBeVisible();
+    await box.getByRole('button', { name: 'Cancel' }).click();
+    await expect(box.locator('.fd-assist-said')).toHaveText('Cancelled. Nothing was changed.');
+    await expect(box.getByLabel('Describe the form you need')).toBeFocused();
+    await expect(box.getByLabel('Describe the form you need')).toHaveValue('Contact details');
+    // Long after the answer would have come.
+    await page.waitForTimeout(1800);
+    await expect(page.locator('.fd-q')).toHaveCount(0);
+    await expect(page.locator('.fd-start-done')).toBeHidden();
+    await screen(page, 'extend-assistant-cancelled', { viewport: true });
+  });
+
+  test('on a screen with parts: Ask the assistant… from Find anything, what changed, Undo', async ({ page }) => {
+    await page.goto('/screen/?assistant-delay=300');
+    await page.keyboard.press('Control+k');
+    await page.keyboard.type('ask the assistant');
+    await expect(page.locator('.fd-find-option[aria-selected="true"] .fd-find-label')).toHaveText('Ask the assistant…');
+    await page.keyboard.press('Enter');
+    const dialog = page.getByRole('dialog', { name: 'Ask the assistant' });
+    await expect(dialog.getByLabel('What should change?')).toBeFocused();
+    await page.keyboard.type('Make the customer required');
+    await screen(page, 'extend-assistant-dialog', { viewport: true });
+    expect(await doubleLines(page)).toEqual([]);
+    await page.keyboard.press('Control+Enter');
+    await expect(dialog).toBeHidden();
+    const notice = page.locator('.fd-start-done');
+    await expect(notice.locator('.fd-start-done-words')).toHaveText('The assistant changed the form:');
+    await expect(notice.locator('li')).toHaveText(['“Customer” is now required']);
+    await screen(page, 'extend-assistant-changed', { viewport: true });
+    await notice.getByRole('button', { name: 'Undo' }).click();
+    await expect(notice).toBeHidden();
+    await expect(page.locator('.fd-canvas-field.fd-required')).toHaveCount(0);
+  });
+
+  test('a cancelled ask from Find anything closes with Escape, and the answer is let go', async ({ page }) => {
+    await page.goto('/screen/?assistant-delay=1200');
+    await page.keyboard.press('Control+k');
+    await page.keyboard.type('ask the assistant');
+    await page.keyboard.press('Enter');
+    const dialog = page.getByRole('dialog', { name: 'Ask the assistant' });
+    await page.keyboard.type('Make the customer required');
+    await dialog.getByRole('button', { name: 'Ask' }).click();
+    await expect(dialog.getByText('Changing your form…')).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await page.waitForTimeout(1500);
+    await expect(page.locator('.fd-start-done')).toBeHidden();
+    expect(await page.evaluate(() => (window as any).fieldiaDesigner.designer.getState().canUndo)).toBe(false);
+  });
+
+  test('describe a survey at a phone’s width, right to left', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/designer/?assistant-delay=200');
+    await rightToLeft(page);
+    const box = page.locator('.fd-start form.fd-assist');
+    await box.scrollIntoViewIfNeeded();
+    await box.getByLabel('Describe the form you need').fill('A refund request: contact, IBAN and a note');
+    await expectNoSidewaysScroll(page);
+    expect(await doubleLines(page)).toEqual([]);
+    await screen(page, 'extend-assistant-phone-rtl', { viewport: true });
+    await box.getByRole('button', { name: 'Build it' }).click();
+    const notice = page.locator('.fd-start-done');
+    await expect(notice.locator('li')).toContainText(['Added “Bank account (IBAN)”']);
+    await expectNoSidewaysScroll(page);
+    await screen(page, 'extend-assistant-phone-rtl-built', { viewport: true });
   });
 });

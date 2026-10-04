@@ -3,6 +3,7 @@ import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor } f
 import type { Skin } from '@fieldia/viewer';
 import { APP_LISTS, sampleDataSource } from '../shared/sample-data';
 import { APP_KINDS, APP_WIDGETS } from '../shared/app-kinds';
+import { demoAssistant } from '../shared/assistant';
 import layoutPage from '../../examples/pages/layout.page.json';
 
 /**
@@ -11,6 +12,7 @@ import layoutPage from '../../examples/pages/layout.page.json';
  * with the customer's model behind it, its fields first in the toolbox, and
  * `?start=list` the customers' list, on the same model, and `?start=layout`
  * the "New employee" page: groups side by side, arrangements, tabs and blocks.
+ * `?assistant-delay=` sets how long the demo assistant takes, in ms.
  */
 const customer: Record<string, Field> = {
   name: { type: 'char', label: 'Name', required: true },
@@ -67,12 +69,14 @@ const designer = createDesigner({ page: first, store, model, lists: APP_LISTS, k
 // The app's lists' choices, for Try it.
 const dataSource = sampleDataSource();
 const skin = (params.get('skin') as Skin) ?? 'outlined';
+// A stand-in for the app's own assistant.
+const assistant = demoAssistant({ delay: Number(params.get('assistant-delay') ?? 1200) });
 const app = document.getElementById('app') as HTMLElement;
-const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource, widgets: APP_WIDGETS }), reopen };
+const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource, widgets: APP_WIDGETS, assistant }), reopen };
 /** Close the editor and open the page again from the store, as an app does the next day. */
 async function reopen() {
   demo.handle.destroy();
   demo.designer = await createDesigner.open(demo.designer.getPage().id, store, { model, lists: APP_LISTS, kinds: APP_KINDS });
-  demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource, widgets: APP_WIDGETS });
+  demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource, widgets: APP_WIDGETS, assistant });
 }
 Object.assign(window, { fieldiaDesigner: demo });
