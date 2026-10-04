@@ -1,0 +1,129 @@
+import type { Field, FieldNode, Line, LineField } from '@fieldia/core';
+import { announcer, describeState, fillIn, maker, wordsFor } from './kind-parts';
+import { lineForm } from './lines';
+import { createWidget, type Widget, type WidgetFactory } from './widgets';
+
+/**
+ * A repeating group on a one2many (`one2many.cards`): each line a small card
+ * of the lines' fields, one under another, its title numbered ("Guest 2",
+ * from `options.itemLabel`, or "Entry 2"). "Add another" (`options.addLabel`)
+ * adds a card and puts the cursor in its first field; × takes one away, the
+ * cursor going to the card that took its place, and the removal is said
+ * aloud. `options.min` cards at least — a new form starts with them — and
+ * `options.max` at most.
+ */
+
+interface Card {
+  element: HTMLElement;
+  title: HTMLElement;
+  remove: HTMLButtonElement;
+  fields: { name: string; def: LineField; widget: Widget; error: HTMLElement }[];
+}
+
+const count = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined);
+
+export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, document, labels, locale, dialogs }) => {
+  const words = wordsFor(labels, locale);
+  const make = maker(document);
+  const def = field as Extract<Field, { type: 'one2many' }>;
+  const options = node.options ?? {};
+  const min = count(options['min']) ?? 0;
+  const max = count(options['max']) ?? Infinity;
+  const itemLabel = typeof options['itemLabel'] === 'string' && options['itemLabel'].trim() ? options['itemLabel'].trim() : null;
+  const titleOf = (n: number) => (itemLabel ? `${itemLabel} ${n}` : fillIn(words.entry, { n }));
+  // The fields that keep the lines' order or say what a line is are not asked for.
+  const names = (node.columns ?? Object.keys(def.fields)).filter((f) => def.fields[f] && f !== def.sequenceField && f !== def.lineKinds?.field);
+
+  const list = make('div', { class: 'fd-cards-list' });
+  const addButton = make('button', { type: 'button', class: 'fd-button fd-cards-add' }, typeof options['addLabel'] === 'string' && options['addLabel'] ? options['addLabel'] : words.addAnother);
+  const voice = announcer(make);
+  const element = make('div', { id, class: 'fd-cards', role: 'group' }, list, addButton, voice.element);
+
+  const cards = new Map<string, Card>();
+  const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
+  let readonly = false;
+  /** Where the cursor goes once the cards are drawn again. */
+  let focusNext: (() => void) | null = null;
+
+  // A new form starts with the cards it needs at least.
+  for (let have = lines().length; have < min; have++) form.addLine(name);
+
+  addButton.addEventListener('click', () => {
+    if (readonly || lines().length >= max) return;
+    const key = form.addLine(name);
+    focusNext = () => cards.get(key)?.fields[0]?.widget.focus();
+    settle();
+  });
+
+  function makeCard(line: Line): Card {
+    const titleId = `${id}-${line.key}-title`;
+    const title = make('span', { id: titleId, class: 'fd-card-title' });
+    const remove = make('button', { type: 'button', class: 'fd-card-remove' }, '×');
+    const body = make('div', { class: 'fd-card-fields' });
+    const cardElement = make('div', { class: 'fd-card', role: 'group', 'aria-labelledby': titleId, 'data-line': line.key }, make('div', { class: 'fd-card-head' }, title, remove), body);
+    const fields = names.map((column) => {
+      const sub = def.fields[column];
+      const cellId = `${id}-${line.key}-${column}`;
+      const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column };
+      const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs });
+      const label = make('label', { class: 'fd-card-label', for: cellId }, sub.label);
+      if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) label.addEventListener('click', () => widget.focus());
+      const error = make('div', { class: 'fd-cell-error', hidden: '' });
+      body.append(make('div', { class: 'fd-card-field' }, label, widget.element, error));
+      return { name: column, def: sub, widget, error };
+    });
+    remove.addEventListener('click', () => {
+      const all = lines();
+      const at = all.findIndex((l) => l.key === line.key);
+      if (readonly || at === -1 || all.length <= min) return;
+      const gone = title.textContent ?? '';
+      form.removeLine(name, line.key);
+      voice.say(fillIn(words.removed, { name: gone }));
+      // The card that took its place, else the one before, else "Add another".
+      const after = lines();
+      const next = after[Math.min(at, after.length - 1)];
+      focusNext = () => (next ? cards.get(next.key)?.fields[0]?.widget.focus() : addButton.focus());
+      settle();
+    });
+    return { element: cardElement, title, remove, fields };
+  }
+
+  function settle() {
+    const run = focusNext;
+    focusNext = null;
+    run?.();
+  }
+
+  return {
+    element,
+    focus: () => ([...cards.values()].find((card) => card.element === list.firstElementChild)?.fields[0]?.widget ?? addButton).focus(),
+    update(state) {
+      readonly = state.readonly;
+      const current = (state.value as Line[] | null) ?? [];
+      const errors = form.getState().errors;
+      const keep = new Set(current.map((l) => l.key));
+      for (const [key, card] of cards) {
+        if (keep.has(key)) continue;
+        card.element.remove();
+        for (const f of card.fields) f.widget.destroy?.();
+        cards.delete(key);
+      }
+      current.forEach((line, index) => {
+        let card = cards.get(line.key);
+        if (!card) cards.set(line.key, (card = makeCard(line)));
+        if (list.children[index] !== card.element) list.insertBefore(card.element, list.children[index] ?? null);
+        card.title.textContent = titleOf(index + 1);
+        card.remove.setAttribute('aria-label', fillIn(words.remove, { name: card.title.textContent }));
+        card.remove.hidden = readonly || current.length <= min;
+        for (const f of card.fields) {
+          const message = errors[`${name}.${line.key}.${f.name}`];
+          f.error.hidden = !message;
+          f.error.textContent = message ?? '';
+          f.widget.update({ value: line.values[f.name], values: line.values, readonly: readonly || f.def.readonly === true, required: f.def.required === true, invalid: !!message });
+        }
+      });
+      addButton.hidden = readonly || current.length >= max;
+      describeState(element, state);
+    },
+  };
+};

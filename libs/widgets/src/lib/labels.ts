@@ -78,6 +78,10 @@ export interface WidgetLabels {
   addressCity: string;
   addressPostcode: string;
   addressCountry: string;
+  /** A repeating group: a card's title (`{n}` counts from 1), the button that adds one, and a card gone, said aloud. */
+  entry: string;
+  addAnother: string;
+  removed: string;
 }
 
 export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
@@ -142,6 +146,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addressCity: 'City',
     addressPostcode: 'Postcode',
     addressCountry: 'Country',
+    entry: 'Entry {n}',
+    addAnother: 'Add another',
+    removed: '{name} removed',
   },
   ar: {
     search: 'بحث…',
@@ -204,6 +211,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addressCity: 'المدينة',
     addressPostcode: 'الرمز البريدي',
     addressCountry: 'الدولة',
+    entry: 'الإدخال {n}',
+    addAnother: 'إضافة المزيد',
+    removed: 'أُزيل {name}',
   },
   de: {
     search: 'Suchen…',
@@ -266,6 +276,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addressCity: 'Ort',
     addressPostcode: 'Postleitzahl',
     addressCountry: 'Land',
+    entry: 'Eintrag {n}',
+    addAnother: 'Weitere hinzufügen',
+    removed: '{name} entfernt',
   },
   fr: {
     search: 'Rechercher…',
@@ -328,5 +341,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addressCity: 'Ville',
     addressPostcode: 'Code postal',
     addressCountry: 'Pays',
+    entry: 'Entrée {n}',
+    addAnother: 'En ajouter un autre',
+    removed: '{name} retiré',
   },
 };

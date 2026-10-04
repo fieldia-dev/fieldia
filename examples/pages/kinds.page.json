@@ -142,6 +142,26 @@
     "badge_address": {
       "type": "json",
       "label": "Where should we post your new badge?"
+    },
+    "movers": {
+      "type": "one2many",
+      "label": "Who in your team moves with you?",
+      "relation": "mover",
+      "fields": {
+        "name": {
+          "type": "char",
+          "label": "Name",
+          "required": true
+        },
+        "role": {
+          "type": "char",
+          "label": "Role"
+        },
+        "desk": {
+          "type": "boolean",
+          "label": "Needs a desk"
+        }
+      }
     }
   },
   "layout": {
@@ -216,6 +236,17 @@
             "id": "q-priorities",
             "field": "priorities",
             "widget": "ranking"
+          },
+          {
+            "type": "field",
+            "id": "q-movers",
+            "field": "movers",
+            "widget": "cards",
+            "options": {
+              "max": 4,
+              "itemLabel": "Person",
+              "addLabel": "Add a person"
+            }
           }
         ]
       },

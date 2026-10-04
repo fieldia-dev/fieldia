@@ -30,6 +30,7 @@ import { choiceTagsWidget } from './choice-tags';
 import { imageChoiceWidget } from './choice-images';
 import { rankingWidget } from './ranking';
 import { addressWidget } from './address';
+import { cardsWidget } from './cards';
 import { clearSelection } from './kind-parts';
 
 /**
@@ -535,6 +536,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'many2many.checkboxes': linkCheckboxesWidget,
   reference: referenceWidget,
   one2many: linesWidget,
+  'one2many.cards': cardsWidget,
   binary: binaryWidget,
   'binary.signature': signatureWidget,
   image: imageWidget,
