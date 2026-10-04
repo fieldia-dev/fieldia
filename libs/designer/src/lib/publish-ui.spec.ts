@@ -58,6 +58,26 @@ describe('checks in the bar', () => {
     expect(checksButton(host).getAttribute('aria-label')).toBe('Checks: all clear');
   });
 
+  // A dialog takes focus, so it is read; with nothing to fix it has no button, so it takes focus itself.
+  it('all clear: the list takes focus, Escape gives it back, and it closes when focus leaves it', () => {
+    const { host } = ready();
+    const opener = checksButton(host);
+    opener.focus();
+    opener.click();
+    const list = document.querySelector('.fd-checks') as HTMLElement;
+    expect(document.activeElement).toBe(list);
+    list.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(document.querySelector('.fd-checks')).toBeNull();
+    expect(document.activeElement).toBe(opener);
+    opener.click();
+    const again = document.querySelector('.fd-checks') as HTMLElement;
+    const elsewhere = host.querySelector('.fd-designer-title') as HTMLElement;
+    elsewhere.focus();
+    again.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: elsewhere }));
+    expect(document.querySelector('.fd-checks')).toBeNull();
+    expect(opener.getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('takes the cursor to the words a check is about', () => {
     const { host, designer } = ready();
     const fresh = designer.addQuestion('short-answer') as string;

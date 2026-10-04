@@ -68,6 +68,21 @@ describe('a menu of choices', () => {
     expect(picked).toEqual([]);
   });
 
+  // ARIA's menu must hold items; with none, the note is what there is to read.
+  it('with nothing to pick, is a note in a small dialog that takes focus, and Escape gives it back', () => {
+    const anchor = document.createElement('button');
+    document.body.append(anchor);
+    openMenu({ el: elementFactory(document), anchor, title: 'Versions', actions: true, items: [], note: 'Nothing published yet.', onPick: () => undefined });
+    const popup = document.querySelector('.fd-menu') as HTMLElement;
+    expect(popup.getAttribute('role')).toBe('dialog');
+    expect(popup.getAttribute('aria-label')).toBe('Versions');
+    expect(document.getElementById(popup.getAttribute('aria-describedby') ?? '')?.textContent).toBe('Nothing published yet.');
+    expect(document.activeElement).toBe(popup);
+    key('Escape');
+    expect(document.querySelector('.fd-menu')).toBeNull();
+    expect(document.activeElement).toBe(anchor);
+  });
+
   it('closes when the pointer goes down elsewhere, and only one is open at a time', () => {
     const { anchor } = setup();
     document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));

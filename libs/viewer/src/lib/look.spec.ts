@@ -4,27 +4,36 @@ import { mountViewer, type ViewerHandle } from './viewer';
 
 /** The page's look: an accent, a font, room, corners, labels and a colour scheme, as the form's own tokens. */
 
+/** 12% of a colour on another, as the stylesheet mixes an accent's softer shade. */
+const soft = (hex: string, on: string) => {
+  const c = (h: string) => [1, 3, 5].map((at) => parseInt(h.slice(at, at + 2), 16));
+  return `#${c(hex).map((v, i) => Math.round(v * 0.12 + c(on)[i] * 0.88).toString(16).padStart(2, '0')).join('')}`;
+};
+
 describe('the accent’s shades', () => {
-  it('keeps the colour as given, and writes on it in white unless white reads poorly there', () => {
-    const blue = accentShades('#1677ff');
-    expect(blue.accent).toBe('#1677ff');
-    expect(blue.accentText).toBe('#ffffff');
-    expect(accentShades('#1f7a4d').accentText).toBe('#ffffff');
-    const yellow = accentShades('#ffd60a');
-    expect(yellow.accentText).toBe('#111418');
-    expect(contrast(yellow.accent, yellow.accentText)).toBeGreaterThanOrEqual(4.5);
-    // Just under 3:1 with white, as #f08c00 is: ink.
-    expect(contrast('#f08c00', '#ffffff')).toBeLessThan(3);
-    expect(accentShades('#f08c00').accentText).toBe('#111418');
-    // Between 3:1 and 4:1, as #3b82f6 is: still white, as a button's words are read.
-    expect(contrast('#3b82f6', '#ffffff')).toBeGreaterThan(3);
-    expect(contrast('#3b82f6', '#ffffff')).toBeLessThan(4);
-    expect(accentShades('#3b82f6').accentText).toBe('#ffffff');
+  it('keeps an accent that already reads, and writes on it in white', () => {
+    const green = accentShades('#1f7a4d');
+    expect(green.accent).toBe('#1f7a4d');
+    expect(green.accentText).toBe('#ffffff');
+  });
+
+  // WCAG 1.4.3: the accent is words (a tab, a link) on the page, and has words on it (a button).
+  it('darkens an accent for a light page until words read in it and on it, at 4.5:1', () => {
+    for (const given of ['#1677ff', '#3b82f6', '#0e7c86', '#f08c00', '#ffd60a', '#9ad0ff']) {
+      const { accent, accentText } = accentShades(given);
+      expect(contrast(accent, '#ffffff')).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(accent, '#f2f3f5')).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(accent, soft(accent, '#ffffff'))).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(accent, accentText)).toBeGreaterThanOrEqual(4.5);
+    }
+    // No darker than it has to be: the outlined skin's blue moves only a little.
+    expect(accentShades('#1677ff').accent).toBe('#1365d9');
   });
 
   it('lightens a dark accent for a dark page until it reads on it, and leaves a light one alone', () => {
     const navy = accentShades('#002855');
     expect(contrast(navy.dark, '#1f2329')).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(navy.dark, soft(navy.dark, '#1f2329'))).toBeGreaterThanOrEqual(4.5);
     expect(navy.dark).not.toBe('#002855');
     expect(contrast(navy.dark, navy.darkText)).toBeGreaterThanOrEqual(4.5);
     const pale = accentShades('#9ad0ff');

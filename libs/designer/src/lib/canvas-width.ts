@@ -134,7 +134,8 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
     const n = boxOf(next);
     const edge = rtl ? (r.left + n.right) / 2 : (r.right + n.left) / 2;
     const top = Math.min(r.top, n.top);
-    place(gutter, { left: edge - 6, top, height: Math.max(r.bottom, n.bottom) - top });
+    // Centred on the edge, half its 24px each side.
+    place(gutter, { left: edge - 12, top, height: Math.max(r.bottom, n.bottom) - top });
     const page = designer.getPage();
     const [a, b] = [spanNow(id, cols), spanNow(next.dataset['node'] as string, cols)];
     gutter.setAttribute('aria-label', `Width between “${nameOf(page, locate(page, id)?.node ?? null)}” and “${nameOf(page, locate(page, next.dataset['node'] as string)?.node ?? null)}”`);
@@ -174,7 +175,7 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
       else if (next) {
         const n = boxOf(next);
         const top = Math.min(now.top, n.top);
-        place(gutter, { left: (rtl ? (now.left + n.right) / 2 : (now.right + n.left) / 2) - 6, top, height: Math.max(now.bottom, n.bottom) - top });
+        place(gutter, { left: (rtl ? (now.left + n.right) / 2 : (now.right + n.left) / 2) - 12, top, height: Math.max(now.bottom, n.bottom) - top });
       }
     };
     const up = () => {

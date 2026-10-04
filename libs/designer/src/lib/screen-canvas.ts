@@ -146,15 +146,16 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     card.element.remove();
   }
 
-  /** Six dots beside a field, shown when it is pointed at or picked: what it is carried by. */
-  const gripOf = () => el('button', { type: 'button', class: 'fd-card-grip', 'data-grip': '', 'aria-label': 'Drag to move', title: 'Drag to move · Alt+↑ or ↓ moves it too', tabindex: '-1' }, designerIcon(doc, 'grip'));
+  /** Six dots beside a field, shown when it is pointed at or picked: what it is carried by. For the pointer only — the keys move it too — so no control of its own. */
+  const gripOf = () => el('span', { class: 'fd-card-grip', 'data-grip': '', 'aria-hidden': 'true', title: 'Drag to move · Alt+↑ or ↓ moves it too' }, designerIcon(doc, 'grip'));
 
   function buildCard(id: string, editing: boolean, ownChoice: boolean): Card {
     const widgetBox = el('div', { class: 'fd-canvas-widget', inert: '' });
     if (!editing) {
       const label = el('label', { class: 'fd-label' });
       const help = el('div', { class: 'fd-help' });
-      const element = el('div', { class: 'fd-field fd-canvas-field', 'data-node': id }, gripOf(), label, widgetBox, help);
+      // Reached by Tab and picked by Enter or Space, as a click picks it (WCAG 2.1.1).
+      const element = el('div', { class: 'fd-field fd-canvas-field', 'data-node': id, role: 'button', tabindex: '0' }, gripOf(), label, widgetBox, help);
       return { element, editing, widgetBox, widget: null, painted: '', label, help, bar: null, options: null, settings: null, drawn: null };
     }
     const bar = fieldBar({ el, doc, designer, id, more: options.more });
@@ -486,6 +487,16 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       return;
     }
     if (target === element || target === body) designer.select(null);
+  });
+
+  // A field not picked, focused: Enter or Space picks it, the cursor going to its label as a click on its words does.
+  element.addEventListener('keydown', (event) => {
+    const card = event.target as HTMLElement;
+    if ((event.key !== 'Enter' && event.key !== ' ') || !card.matches('.fd-canvas-field[data-node]:not(.fd-editing)')) return;
+    event.preventDefault();
+    const id = card.dataset['node'] as string;
+    designer.select(id);
+    focusIn(id, 'label', false);
   });
 
   function focusIn(id: string, part: 'label' | 'help', selectAll: boolean) {

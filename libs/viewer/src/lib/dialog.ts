@@ -1,6 +1,7 @@
 import type { PageLook, RecordId, RelatedRecord, Values } from '@fieldia/core';
 import { WIDGET_LABELS } from '@fieldia/widgets';
 import { ownLocale } from './labels';
+import { keepTabIn } from './focus-trap';
 import { applyLook } from './look';
 import { mountViewer, VIEWER_LABELS, type Skin, type ViewerHandle, type ViewerOptions } from './viewer';
 
@@ -39,8 +40,6 @@ export interface FormDialogResult {
 }
 
 let dialogs = 0;
-
-const FOCUSABLE = 'button, [href], input, select, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])';
 
 export function openFormDialog(options: FormDialogOptions): Promise<FormDialogResult> {
   const doc = options.container?.ownerDocument ?? document;
@@ -84,10 +83,6 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
   let done = false;
   if (options.recompute) recalculate(handle.form, options.page.fields, options.recompute, () => done);
 
-  const focusables = () =>
-    [...box.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
-      (element) => !element.closest('[hidden], [inert]') && !(element as HTMLButtonElement).disabled
-    );
   // Into the dialog: its first field, once the record is in, or the dialog itself meanwhile.
   const firstField = () => body.querySelector<HTMLElement>('input:not([type="hidden"]), select, textarea, [contenteditable="true"]');
   (firstField() ?? box).focus();
@@ -130,19 +125,7 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
       if (event.key === 'Escape') {
         event.preventDefault();
         close(false);
-      } else if (event.key === 'Tab') {
-        const all = focusables();
-        if (!all.length) return;
-        const first = all[0];
-        const last = all[all.length - 1];
-        if (event.shiftKey && doc.activeElement === first) {
-          event.preventDefault();
-          last.focus();
-        } else if (!event.shiftKey && doc.activeElement === last) {
-          event.preventDefault();
-          first.focus();
-        }
-      }
+      } else keepTabIn(box, event);
     });
   });
 }
@@ -284,7 +267,7 @@ export function openSearchDialog(options: SearchDialogOptions): Promise<RelatedR
       if (event.key === 'Escape') {
         event.preventDefault();
         close(null);
-      }
+      } else keepTabIn(box, event);
     });
     look();
   });

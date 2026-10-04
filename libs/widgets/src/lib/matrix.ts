@@ -57,7 +57,7 @@ export const matrixWidget: WidgetFactory = ({ form, name, field, id, document })
         input.disabled = state.readonly;
       }
       table.setAttribute('aria-invalid', String(state.invalid));
-      table.setAttribute('aria-required', String(state.required));
+      // A table cannot be marked required in ARIA; the question's label says it.
       if (state.describedBy) table.setAttribute('aria-describedby', state.describedBy);
       else table.removeAttribute('aria-describedby');
     },

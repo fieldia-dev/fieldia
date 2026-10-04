@@ -37,12 +37,16 @@ export interface MenuOptions {
 }
 
 let open: { close(focus?: boolean): void } | null = null;
+/** Ids for menus' notes, unique on the page. */
+let notes = 0;
 
 export function openMenu(options: MenuOptions): { element: HTMLElement; close(): void } {
   open?.close(false);
   const { el, anchor } = options;
   const doc = anchor.ownerDocument;
-  const menu = el('div', { class: options.roomy ? 'fd-menu fd-menu-roomy' : 'fd-menu', role: 'menu', 'aria-label': options.title });
+  // A menu holds items. With none — no versions yet — its note is all there is: a small dialog that takes focus, so it is read.
+  const empty = options.items.length === 0;
+  const menu = el('div', { class: options.roomy ? 'fd-menu fd-menu-roomy' : 'fd-menu', role: empty ? 'dialog' : 'menu', 'aria-label': options.title, tabindex: empty ? '-1' : undefined });
   if (options.title) menu.append(el('div', { class: 'fd-menu-title', 'aria-hidden': 'true' }, options.title));
   const buttons: HTMLButtonElement[] = [];
   for (const item of options.items) {
@@ -62,7 +66,11 @@ export function openMenu(options: MenuOptions): { element: HTMLElement; close():
     buttons.push(button);
     menu.append(button);
   }
-  if (options.note) menu.append(el('p', { class: 'fd-menu-note' }, options.note));
+  if (options.note) {
+    const note = el('p', { class: 'fd-menu-note', id: `fd-menu-note-${++notes}` }, options.note);
+    menu.append(note);
+    if (empty) menu.setAttribute('aria-describedby', note.id);
+  }
 
   const onKey = (event: KeyboardEvent) => {
     const at = buttons.indexOf(doc.activeElement as HTMLButtonElement);
@@ -107,6 +115,7 @@ export function openMenu(options: MenuOptions): { element: HTMLElement; close():
   Object.assign(menu.style, { left: `${left}px`, top: `${top}px` });
   // The current choice takes the keyboard first; in a menu of things to do, the first of them.
   (options.actions ? buttons[0] : buttons.find((b) => b.getAttribute('aria-checked') === 'true') ?? buttons[0])?.focus();
+  if (empty) menu.focus();
   open = { close };
   return { element: menu, close: () => close(false) };
 }

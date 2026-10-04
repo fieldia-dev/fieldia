@@ -68,7 +68,8 @@ export function shortcutKeys(options: ShortcutKeysOptions): ShortcutKeys {
       { class: 'fd-keys', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': `${id}-title` },
       el('div', { class: 'fd-keys-head' }, el('h2', { class: 'fd-keys-title', id: `${id}-title` }, 'Keyboard shortcuts'), shut),
       find,
-      el('div', { class: 'fd-keys-groups' }, ...groups),
+      // A region the keyboard can scroll (WCAG 2.1.1): the keys are words to read, with nothing in them to focus.
+      el('div', { class: 'fd-keys-groups', role: 'region', 'aria-label': 'The keys', tabindex: '0' }, ...groups),
       none
     );
     const backdrop = el('div', { class: 'fd-dialog-backdrop fd-keys-backdrop' }, dialog);

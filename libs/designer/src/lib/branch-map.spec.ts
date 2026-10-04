@@ -73,7 +73,12 @@ describe('the branch map', () => {
     const { designer, yes } = branching();
     handle = mountSurveyEditor(host, { designer });
     const map = host.querySelector('.fd-branch-map svg') as SVGElement;
-    expect(map.getAttribute('role')).toBe('img');
+    // A group of buttons, not a picture: an image's insides are hidden from a screen reader, and these are picked.
+    expect(map.getAttribute('role')).toBe('group');
+    expect(map.getAttribute('aria-label')).toMatch(/^The survey’s 5 pages/);
+    expect([...map.querySelectorAll('[data-pick]')].every((page) => page.getAttribute('role') === 'button' && page.getAttribute('tabindex') === '0')).toBe(true);
+    // The answers drawn on the branches are said by each page's button, once.
+    expect([...map.querySelectorAll('.fd-branch-label')].every((label) => label.getAttribute('aria-hidden') === 'true')).toBe(true);
     expect([...map.querySelectorAll('[data-pick] .fd-branch-title')].map((t) => t.textContent)).toEqual(['About you', 'Using it', 'Your experience', 'What stops you', 'Last thing']);
     // The answer on the branch; the whole rule on hover and for a screen reader.
     expect([...map.querySelectorAll('.fd-branch-when')].map((t) => t.textContent)).toEqual(['Yes', 'No']);

@@ -357,6 +357,8 @@ describe('a refused save', () => {
     expect(error.getAttribute('role')).toBeNull();
     expect(statusText(host)).toBe('Not saved. Check: Email');
     expect(announced(host)).toBe('Not saved. Check: Email');
+    // Said once, by the announcer: the status beside Save shows it, and keeps quiet.
+    expect(host.querySelector('.fd-status')?.getAttribute('aria-live')).toBe('off');
     // Nothing to retry: the fields have to change first.
     expect(button(host.querySelector('.fd-status-box') as HTMLElement, 'Retry')).toBeUndefined();
     expect(host.querySelector('.fd-announce')?.getAttribute('aria-live')).toBe('assertive');
@@ -367,14 +369,23 @@ describe('a refused save', () => {
     const { host, form } = refusing(() => saveRefused({ kind: 'rule', message: 'A blocked customer cannot be given credit.' }));
     await form.settled();
     type(input(host, 'f-phone'), '+20 2 1111 2222');
+    button(host, 'Save').focus();
     button(host, 'Save').click();
+    // Hidden while it saves, Save lets go of focus, as a browser does: the notice still brings it back there.
+    (document.activeElement as HTMLElement).blur();
     await form.settled();
     await flush();
     const notice = document.querySelector('[role=alertdialog]') as HTMLElement;
     expect(notice.textContent).toContain('A blocked customer cannot be given credit.');
     expect(statusText(host)).toBe('Not saved');
-    button(notice, 'OK').click();
+    // Modal: Tab stays on its one button, and Escape closes it, focus going back to Save.
+    const ok = button(notice, 'OK');
+    expect(document.activeElement).toBe(ok);
+    ok.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(ok);
+    ok.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(document.querySelector('[role=alertdialog]')).toBeNull();
+    expect(document.activeElement).toBe(button(host, 'Save'));
   });
 
   it('shows a network failure in a banner with Retry, and Retry saves again', async () => {
@@ -410,6 +421,8 @@ describe('a refused save', () => {
     await form.settled();
     await flush();
     expect(statusText(host)).toBe('Saved');
+    // How a save goes is said politely by the status itself.
+    expect(host.querySelector('.fd-status')?.getAttribute('aria-live')).toBe('polite');
     expect(button(host.querySelector('.fd-status-box') as HTMLElement, 'Retry')).toBeUndefined();
   });
 

@@ -536,6 +536,19 @@ describe('every widget', () => {
     expect(input.getAttribute('aria-required')).toBe('true');
   });
 
+  // ARIA lets a radio group be required, not a group of checkboxes: there the label's mark says it.
+  it('marks a group required only where ARIA allows it', () => {
+    const options = [{ value: 'a', label: 'A' }];
+    const ticks = setup({ type: 'selection', multiple: true, options }, { widget: 'checkboxes' });
+    ticks.refresh({ invalid: true, required: true });
+    const group = q<HTMLElement>(ticks.el, '[role="group"]');
+    expect(group.hasAttribute('aria-required')).toBe(false);
+    expect(group.getAttribute('aria-invalid')).toBe('true');
+    const radios = setup({ type: 'selection', options }, { widget: 'radio' });
+    radios.refresh({ required: true });
+    expect(q<HTMLElement>(radios.el, '[role="radiogroup"]').getAttribute('aria-required')).toBe('true');
+  });
+
   it('can be replaced by the app, per type or per type and widget', () => {
     const custom: WidgetFactory = ({ form, name }) => {
       const element = document.createElement('button');

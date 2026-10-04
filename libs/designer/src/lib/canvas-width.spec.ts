@@ -148,7 +148,8 @@ describe('the width handle', () => {
     current = marks;
     show('f-start_date');
     expect([handle().hidden, gutter().hidden]).toEqual([true, false]);
-    expect([gutter().style.left, gutter().style.top, gutter().style.height]).toEqual(['104px', '80px', '60px']);
+    // 24px wide, centred on the edge: a target a finger can hit (WCAG 2.5.8).
+    expect([gutter().style.left, gutter().style.top, gutter().style.height]).toEqual(['98px', '80px', '60px']);
   });
 });
 
@@ -263,7 +264,8 @@ describe('the gutter between two parts of a row', () => {
     ring('f-start_date');
     show('f-start_date');
     expect(gutter().hidden).toBe(false);
-    expect([gutter().style.left, gutter().style.top, gutter().style.height]).toEqual(['104px', '80px', '60px']);
+    // 24px wide, centred on the edge: a target a finger can hit (WCAG 2.5.8).
+    expect([gutter().style.left, gutter().style.top, gutter().style.height]).toEqual(['98px', '80px', '60px']);
   });
 
   it('a part counts in the row up to 4px off its top', () => {
@@ -289,7 +291,7 @@ describe('the gutter between two parts of a row', () => {
     const { marks, gutter, show } = setup(true);
     current = marks;
     show('f-start_date');
-    expect(gutter().style.left).toBe('224px');
+    expect(gutter().style.left).toBe('218px');
   });
 
   it('only between two parts of one row: none after the last of a row', () => {

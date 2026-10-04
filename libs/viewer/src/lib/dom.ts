@@ -14,3 +14,10 @@ export function setHidden(element: HTMLElement, hidden: boolean): void {
 export function setText(element: Node, text: string): void {
   if (element.textContent !== text) element.textContent = text;
 }
+
+/** An attribute, written only when it changes; `null` takes it away. */
+export function setAttr(element: Element, name: string, value: string | null): void {
+  if (element.getAttribute(name) === value) return;
+  if (value === null) element.removeAttribute(name);
+  else element.setAttribute(name, value);
+}

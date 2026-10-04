@@ -108,7 +108,13 @@ export function designerBar(
   const lineBreak = el('span', { class: 'fd-bar-break', 'aria-hidden': 'true' });
   const element = el('div', { class: 'fd-designer-bar' }, title, el('span', { class: 'fd-designer-status-box', role: 'status' }, status), el('span', { class: 'fd-spacer' }), find, undo, redo, lineBreak, ...(options.extra ?? []), checks.element, publish);
   // What sticks under the bar while the page scrolls (the toolbox, the panel) stops below it, as tall as it is now.
-  const room = () => root.style.setProperty('--fd-bar-room', `${Math.ceil(element.getBoundingClientRect().height) + 12}px`);
+  // And what takes focus is scrolled to below it, never under it (WCAG 2.4.11): the page's scroller keeps that room at its top.
+  const scroller = doc.documentElement;
+  const room = () => {
+    const height = Math.ceil(element.getBoundingClientRect().height);
+    root.style.setProperty('--fd-bar-room', `${height + 12}px`);
+    scroller.style.scrollPaddingTop = `${height + 8}px`;
+  };
   const view = root.ownerDocument.defaultView;
   const sized = view && 'ResizeObserver' in view ? new view.ResizeObserver(room) : null;
   sized?.observe(element);
@@ -156,6 +162,7 @@ export function designerBar(
     destroy() {
       doc.removeEventListener('keydown', onKey);
       sized?.disconnect();
+      scroller.style.removeProperty('scroll-padding-top');
       checks.destroy();
     },
   };

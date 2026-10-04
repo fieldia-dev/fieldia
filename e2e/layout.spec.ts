@@ -190,14 +190,15 @@ test('layout: the page’s look — its accent, room, corners and font — on ev
   await page.setViewportSize({ width: 1280, height: 900 });
   await open(page, 'plain', LAYOUT);
   const form = page.locator('.fd-form');
-  await expect(form).toHaveCSS('--fd-accent', '#1677ff');
+  // The page's #1677ff, a shade darker so words in it read at 4.5:1 (WCAG AA).
+  await expect(form).toHaveCSS('--fd-accent', '#1365d9');
   // A band of the accent under the title; boxes as tall as the room asks; soft corners.
-  await expect(page.locator('.fd-page-head')).toHaveCSS('border-bottom-color', 'rgb(22, 119, 255)');
+  await expect(page.locator('.fd-page-head')).toHaveCSS('border-bottom-color', 'rgb(19, 101, 217)');
   await expect(node(page, 'f-first-name').locator('input')).toHaveCSS('min-height', '36px');
   await expect(node(page, 'personal')).toHaveCSS('border-top-left-radius', '10px');
   await expect(node(page, 'f-first-name').locator('input')).toHaveCSS('border-top-left-radius', '6px');
   await page.getByRole('tab', { name: 'Job' }).click();
-  await expect(page.getByRole('tab', { name: 'Job' })).toHaveCSS('color', 'rgb(22, 119, 255)');
+  await expect(page.getByRole('tab', { name: 'Job' })).toHaveCSS('color', 'rgb(19, 101, 217)');
 });
 
 test('layout: each font, room and corners the look can name reaches the boxes, and no font is fetched', async ({ page }) => {

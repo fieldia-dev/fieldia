@@ -342,8 +342,10 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     const answer = el('div', { class: 'fd-q-answer', inert: '' });
     const note = el('span', { class: 'fd-q-when-note' }, 'Shown only for some answers');
     // Forms' six dots, across the top when pointed at: what it is carried by.
-    const grip = el('button', { type: 'button', class: 'fd-q-grip', 'data-grip': '', 'aria-label': 'Drag to move', title: 'Drag to move · Ctrl+Shift+K or J moves it too', tabindex: '-1' }, designerIcon(doc, 'grip'));
-    const element = el('div', { class: 'fd-q fd-q-closed', 'data-node': id }, grip, title, help, answer);
+    // For the pointer only — the keys move it too — so no control of its own.
+    const grip = el('span', { class: 'fd-q-grip', 'data-grip': '', 'aria-hidden': 'true', title: 'Drag to move · Ctrl+Shift+K or J moves it too' }, designerIcon(doc, 'grip'));
+    // Reached by Tab and opened by Enter or Space, as a click opens it (WCAG 2.1.1).
+    const element = el('div', { class: 'fd-q fd-q-closed', 'data-node': id, role: 'button', tabindex: '0' }, grip, title, help, answer);
     const painter = answerBox(answer, id);
     element.addEventListener('click', (event) => {
       if (designer.getState().selected === id) return;
@@ -358,6 +360,11 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     });
     /** What the card was drawn from: a question an edit left alone is the same objects, and its card stays as it is. */
     let drawn: { node: FieldNode; def: Field } | null = null;
+    element.addEventListener('keydown', (event) => {
+      if (event.target !== element || (event.key !== 'Enter' && event.key !== ' ')) return;
+      event.preventDefault();
+      text.click();
+    });
     return {
       element,
       open: false,

@@ -32,11 +32,12 @@ import { pageDialogs } from './related';
 import { listView } from './list';
 import { applyLook } from './look';
 import { labelPlace, planSection, type Place } from './place';
-import { setHidden, setText } from './dom';
+import { setAttr, setHidden, setText } from './dom';
 
 export type Skin = 'underline' | 'outlined';
 
 import { ownLocale, VIEWER_LABELS, type ViewerLabels } from './labels';
+import { keepTabIn } from './focus-trap';
 export { VIEWER_LABELS, DEFAULT_LABELS, type ViewerLabels } from './labels';
 
 /** Fill a slot with the app's own content. Return a function to clean up. */
@@ -504,6 +505,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       : state.status === 'error' && problem ? (problem.kind === 'fields' ? checkText(state) : problem.kind === 'other' ? problem.message : notDone())
       : state.status === 'error' ? state.error ?? ''
       : '';
+    // A problem is said once, at once, by the announcer (or the banner, or a dialog): the status shows it and keeps quiet.
+    setAttr(statusText, 'aria-live', state.status === 'error' && problem ? 'off' : 'polite');
     setText(statusText, text);
     setHidden(retry, !(state.status === 'error' && problem?.kind === 'other'));
     statusText.classList.toggle('fd-status-error', state.status === 'error');
@@ -929,14 +932,21 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const ok = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.ok);
       const dialog = el('div', { class: 'fd-dialog', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': text.id }, text, el('div', { class: 'fd-actions fd-actions-end' }, ...(withCancel ? [cancel, ok] : [ok])));
       const backdrop = el('div', { class: 'fd-dialog-backdrop' }, dialog);
+      const doc = root.ownerDocument;
+      const opener = doc.activeElement as HTMLElement | null;
       const close = (answer: boolean) => {
         backdrop.remove();
+        // Back to what had focus when it asked; or, when that let go of it — Save hides while it saves — to Save, shown again.
+        const shown = (e: HTMLElement | null) => !!e && e !== doc.body && e.isConnected && !e.closest('[hidden]');
+        const back = shown(opener) ? opener : root.querySelector<HTMLElement>('button[type="submit"]:not([hidden])');
+        back?.focus();
         resolve(answer);
       };
       cancel.addEventListener('click', () => close(false));
       ok.addEventListener('click', () => close(true));
       backdrop.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') close(false);
+        else keepTabIn(dialog, event);
       });
       root.append(backdrop);
       ok.focus();
