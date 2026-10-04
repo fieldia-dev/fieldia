@@ -1,4 +1,4 @@
-import { createForm, type DataSource, type FieldNode, type Form, type Page, type StepNode, type WizardNode } from '@fieldia/core';
+import { createForm, type DataSource, type Field, type FieldNode, type Form, type Page, type StepNode, type WizardNode } from '@fieldia/core';
 import type { Skin } from '@fieldia/viewer';
 import { createWidget, installStyles, type Widget, type WidgetFactory } from '@fieldia/widgets';
 import { branchMap, drawBranchMap } from './branch-map';
@@ -214,8 +214,6 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   }
 
   // ---- adding ------------------------------------------------------------------
-  /** The question just added, whose words take the cursor once it is drawn. */
-  let focusLabelOf: string | null = null;
   /** Where a question picked in the toolbox goes: after the one picked, or at the end of the page picked, or of the last page. */
   function target(): Where {
     const page = designer.getPage();
@@ -249,8 +247,11 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   function add(kind: string, where: Where) {
     const created = designer.addQuestion(kind, where);
     if (!created) return;
-    focusLabelOf = created;
-    render(designer.getState());
+    // Drawn open by now: its words take the cursor, every word selected, so typing replaces them.
+    const label = cardViews.get(created)?.element.querySelector<HTMLInputElement>('.fd-q-label');
+    label?.focus();
+    label?.select();
+    placeRail();
   }
   const drag = canvasDrag({
     canvas: editor,
@@ -355,11 +356,15 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
         words?.setSelectionRange(words.value.length, words.value.length);
       }
     });
+    /** What the card was drawn from: a question an edit left alone is the same objects, and its card stays as it is. */
+    let drawn: { node: FieldNode; def: Field } | null = null;
     return {
       element,
       open: false,
       update(page, node) {
         const def = page.fields[node.field];
+        if (drawn?.node === node && drawn.def === def) return;
+        drawn = { node, def };
         text.textContent = def.label;
         element.classList.toggle('fd-required', def.required === true);
         help.textContent = def.help ?? '';
@@ -545,8 +550,9 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       element: section,
       cards,
       update(page, step, index, total) {
-        number.textContent = `Page ${index + 1} of ${total}`;
-        if (!focused(name)) name.value = step.label;
+        const numbered = `Page ${index + 1} of ${total}`;
+        if (number.textContent !== numbered) number.textContent = numbered;
+        if (!focused(name) && name.value !== step.label) name.value = step.label;
         removeStep.hidden = total === 1;
         section.classList.toggle('fd-step-selected', designer.getState().selected === id);
         // Only questions on earlier pages can decide whether this one shows.
@@ -645,13 +651,6 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       });
       while (view.cards.children.length > fields.length) view.cards.lastElementChild?.remove();
     });
-    if (focusLabelOf) {
-      const label = cardViews.get(focusLabelOf)?.element.querySelector('.fd-q-label') as HTMLInputElement | undefined;
-      // Select the placeholder text, so typing replaces it rather than adding to it.
-      label?.focus();
-      label?.select();
-      focusLabelOf = null;
-    }
     ruleMarks(pages, page, designer);
     placeRail();
   }

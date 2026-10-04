@@ -139,7 +139,8 @@ export function pageChecks(page: Page): PageCheck[] {
 
   // Two reading the same on one page: a survey's page, or the whole screen.
   const seen = new Map<string, string>();
-  const pageOf = (p: Placed) => (survey ? (containers(page).find((c) => (c as Holder).type === 'step' && c.children.some((n) => n === p.node || containsNode(n, p.node)))?.id ?? '') : '');
+  const stepOf = survey ? stepsHolding(page) : null;
+  const pageOf = (p: Placed) => stepOf?.get(p.node) ?? '';
   for (const p of placed) {
     const label = labelOf(p).trim();
     if (!label || UNTITLED.test(label)) continue;
@@ -168,10 +169,17 @@ export interface CheckFixer extends RuleFixer {
   select(id: string | null): void;
 }
 
-/** Whether a part holds another, at any depth. */
-function containsNode(holder: unknown, node: FieldNode): boolean {
-  const children = (holder as { children?: unknown[] }).children;
-  return !!children?.some((child) => child === node || containsNode(child, node));
+/** The survey's page each part is on, at any depth: found in one walk, not one for each question. */
+function stepsHolding(page: Page): Map<unknown, string> {
+  const on = new Map<unknown, string>();
+  const walk = (holder: unknown, step: string) => {
+    for (const child of (holder as { children?: unknown[] }).children ?? []) {
+      if (!on.has(child)) on.set(child, step);
+      walk(child, step);
+    }
+  };
+  for (const c of containers(page)) if ((c as Holder).type === 'step') walk(c, c.id);
+  return on;
 }
 
 /** Do what a check's fix says. Going to an element only picks it: the editor puts the cursor where the fix says. */
