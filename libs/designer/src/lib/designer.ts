@@ -22,6 +22,7 @@ import { kindCommands, type OptionDetails } from './kind-commands';
 import { fixCheck, pageChecks, type PageCheck } from './page-checks';
 import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, orList, registerKinds, storedAs, type LineColumn, type QuestionKind } from './kinds';
 import type { AppKind } from './app-kinds';
+import { replaceWith, templatesFor, type PageTemplate } from './templates';
 import * as ops from './layout-ops';
 import type { BlockKind, Drop, NewPart } from './layout-ops';
 import * as settings from './layout-settings';
@@ -49,6 +50,7 @@ import { pageJsonCommands, type PageJsonResult } from './page-json';
 export { columnKind, kindFits, kindOfField, kindsFor, QUESTION_KINDS, SCREEN_KINDS, storedAs } from './kinds';
 export type { LineColumn, QuestionKind } from './kinds';
 export type { AppKind, AppKindContext, AppKindPreviewContext, AppKindSettings } from './app-kinds';
+export { isBlank, SCREEN_TEMPLATES, SURVEY_TEMPLATES, type PageTemplate } from './templates';
 export type { HeaderCommands, HeaderPartKind, HeaderPartPatch } from './header-commands';
 export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-commands';
 export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-checks';
@@ -336,6 +338,10 @@ export interface Designer extends HeaderCommands, ListCommands {
   // extend lane
   /** The app's own kinds, as kinds, in the order the app gave them. */
   appKinds(): QuestionKind[];
+  /** The templates this page can start from: Fieldia's for a survey or a screen, then the app's made the same way. */
+  templates(): PageTemplate[];
+  /** A whole page in place of this one, as one edit — a template, or what an assistant made — keeping this page's id and where its answers go. Refused, saying why, for one that is not a page, or is for the other editor. */
+  replacePage(page: Page): boolean;
 }
 
 /** One of the app's lists of choices, by the name its data source answers to, and the words a person picks it by. */
@@ -355,6 +361,8 @@ export function createDesigner(options: {
   lists?: AppList[];
   /** The app's own kinds of field, offered after Fieldia's. One whose id or widget is taken is refused. */
   kinds?: readonly AppKind[];
+  /** The app's own templates, offered after Fieldia's to a blank page made the same way. */
+  templates?: readonly PageTemplate[];
 }): Designer {
   const store = options.store;
   const appKinds = registerKinds(options.kinds ?? []);
@@ -1196,6 +1204,14 @@ export function createDesigner(options: {
     setWidths: (widths) => apply((draft) => settings.setWidths(draft, widths)),
     // extend lane
     appKinds: () => [...appKinds],
+    templates: () => templatesFor(page, options.templates),
+    replacePage(next) {
+      if (!apply((draft) => replaceWith(draft, next))) return false;
+      selected = null;
+      picked = [];
+      notify();
+      return true;
+    },
   };
   return designer;
 }

@@ -19,6 +19,8 @@ import { toolbox } from './toolbox';
 import { tryIt } from './try-it';
 import { translationsView } from './translations-view';
 import { jsonView } from './json-view';
+import type { PageTemplate } from './templates';
+import { startHere } from './templates-start';
 
 /**
  * The screen editor: an app screen built where it is seen. On the left, the
@@ -37,6 +39,8 @@ export interface ScreenEditorOptions {
   dataSource?: DataSource;
   /** The app's own widgets, by `type` or `type.widget`: its kinds are drawn with them on the canvas and in Try it. */
   widgets?: Record<string, WidgetFactory>;
+  /** The app's own templates for a blank screen, after the designer's. */
+  templates?: readonly PageTemplate[];
 }
 
 export interface ScreenEditorHandle {
@@ -75,7 +79,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     titleLabel: 'Screen title',
     placeholder: 'Untitled screen',
     extra: [modes.element, trial.toggle],
-    find: () => [...findItems(), ...trial.items(), ...words.items(), ...panel.findItems(), ...json.items()],
+    find: () => [...start.items(), ...findItems(), ...trial.items(), ...words.items(), ...panel.findItems(), ...json.items()],
     // A check about a field's words or options: it is open on the canvas by now, the cursor goes there.
     goTo(id, part) {
       if (part === 'label') return canvas.focus(id, 'label', true);
@@ -127,7 +131,9 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     },
   });
   const panel = screenPanel({ el, doc, designer, wearer: canvas.element });
-  const body = el('div', { class: 'fd-screen-body' }, side.element, el('div', { class: 'fd-canvas-scroll' }, canvas.element, list.element), panel.element);
+  // A blank screen: templates to start from.
+  const start = startHere({ el, doc, designer, survey: false, templates: options.templates, blankFocus: () => root.querySelector('.fd-tool-find') });
+  const body = el('div', { class: 'fd-screen-body' }, side.element, el('div', { class: 'fd-canvas-scroll' }, start.element, canvas.element, list.element), panel.element);
   const json = jsonView({ el, doc, designer, trial, body });
   root.append(bar.element, bar.issues, body, trial.element, json.element);
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
@@ -289,6 +295,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   // ---- render -----------------------------------------------------------------------
   function render(state: DesignerState) {
     bar.update(state);
+    start.update(state);
     const listing = state.page.layout.type === 'list';
     canvas.element.hidden = listing;
     list.element.hidden = !listing;

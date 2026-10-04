@@ -93,3 +93,84 @@ test.describe('an app’s own kind of field', () => {
     await screen(page, 'extend-iban-phone', { viewport: true });
   });
 });
+
+/** The designer's page right to left, as for an Arabic reader. */
+const rightToLeft = (page: Page) =>
+  page.evaluate(() => {
+    document.documentElement.dir = 'rtl';
+    document.documentElement.lang = 'ar';
+  });
+
+test.describe('templates for a blank page', () => {
+  let problems: string[] = [];
+  test.beforeEach(({ page }) => {
+    problems = watch(page);
+  });
+  test.afterEach(() => expect(problems).toEqual([]));
+
+  test('a blank survey: pick one, Undo from the keyboard, pick another', async ({ page }) => {
+    await page.goto('/designer/');
+    const offer = page.getByRole('region', { name: 'Start from a template' });
+    await expect(offer).toBeVisible();
+    await expect(offer.getByRole('button', { name: 'Feedback' })).toHaveAccessibleDescription('How it went, and what to do better, in two minutes.');
+    await screen(page, 'extend-templates-survey-blank', { viewport: true });
+    expect(await doubleLines(page)).toEqual([]);
+
+    await offer.getByRole('button', { name: 'Event registration' }).click();
+    await expect(offer).toBeHidden();
+    const notice = page.getByRole('status').filter({ hasText: 'Started from the template “Event registration”.' });
+    await expect(notice).toBeFocused();
+    await expect(page.locator('.fd-q')).toHaveCount(7);
+    await screen(page, 'extend-templates-survey-picked', { viewport: true });
+    expect(await doubleLines(page)).toEqual([]);
+
+    // Undo from the keyboard: the offer is back, the first template focused; Tab on to another.
+    await page.keyboard.press('Tab');
+    await expect(notice.getByRole('button', { name: 'Undo' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(offer).toBeVisible();
+    await expect(offer.getByRole('button', { name: 'Feedback' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Tab');
+    await expect(offer.getByRole('button', { name: 'Job application' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.fd-q-text', { hasText: 'Your CV' })).toBeVisible();
+    await expect(page.locator('.fd-q-text', { hasText: 'Which sessions will you join?' })).toHaveCount(0);
+  });
+
+  test('a blank survey at a phone’s width, right to left', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/designer/');
+    await rightToLeft(page);
+    const offer = page.getByRole('region', { name: 'Start from a template' });
+    await offer.scrollIntoViewIfNeeded();
+    await expectNoSidewaysScroll(page);
+    expect(await doubleLines(page)).toEqual([]);
+    await screen(page, 'extend-templates-survey-phone-rtl', { viewport: true });
+    await offer.getByRole('button', { name: 'Feedback' }).click();
+    const notice = page.getByRole('status').filter({ hasText: 'Started from the template “Feedback”.' });
+    await expect(notice).toBeVisible();
+    // In view, below the editor's bar rather than under it.
+    const [bar, box] = await Promise.all([page.locator('.fd-designer-bar').boundingBox(), notice.boundingBox()]);
+    expect(box!.y).toBeGreaterThanOrEqual(bar!.y + bar!.height);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(844);
+    await expectNoSidewaysScroll(page);
+    await screen(page, 'extend-templates-survey-phone-rtl-picked', { viewport: true });
+  });
+
+  test('a blank screen: Start blank puts the offer away; a template fills the canvas', async ({ page }) => {
+    await page.goto('/screen/?start=blank');
+    const offer = page.getByRole('region', { name: 'Start from a template' });
+    await expect(offer.locator('.fd-start-card')).toHaveCount(2);
+    await screen(page, 'extend-templates-screen-blank', { viewport: true });
+    expect(await doubleLines(page)).toEqual([]);
+    await offer.getByRole('button', { name: 'Start blank' }).click();
+    await expect(offer).toBeHidden();
+    await expect(page.locator('.fd-tool-find')).toBeFocused();
+    await page.reload();
+    await page.getByRole('region', { name: 'Start from a template' }).getByRole('button', { name: 'Order request' }).click();
+    await expect(page.locator('.fd-canvas-field')).toHaveCount(7);
+    await screen(page, 'extend-templates-screen-picked', { viewport: true });
+    expect(await doubleLines(page)).toEqual([]);
+  });
+});

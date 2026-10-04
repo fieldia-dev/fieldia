@@ -19,6 +19,8 @@ import { toolbox, toolboxGroups } from './toolbox';
 import { tryIt } from './try-it';
 import { translationsView } from './translations-view';
 import { jsonView } from './json-view';
+import type { PageTemplate } from './templates';
+import { startHere } from './templates-start';
 
 /**
  * The survey editor, the Google Forms way: on a tinted page, a card heading
@@ -45,6 +47,8 @@ export interface SurveyEditorOptions {
   dataSource?: DataSource;
   /** The app's own widgets, by `type` or `type.widget`: its kinds are drawn with them on the cards and in Try it. */
   widgets?: Record<string, WidgetFactory>;
+  /** The app's own templates for a blank survey, after the designer's. */
+  templates?: readonly PageTemplate[];
 }
 
 export interface SurveyEditorHandle {
@@ -100,7 +104,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     titleLabel: 'Form title',
     placeholder: 'Untitled form',
     extra: [trial.toggle],
-    find: () => [...findItems(), ...trial.items(), ...words.items(), ...json.items()],
+    find: () => [...start.items(), ...findItems(), ...trial.items(), ...words.items(), ...json.items()],
     // A check about a question's words or options: its card is open by now, the cursor goes there.
     goTo(id, part) {
       const card = root.querySelector(`.fd-q[data-node="${id}"]`);
@@ -149,7 +153,9 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     );
   }
 
-  const column = el('div', { class: 'fd-survey-column' }, head, map, pages, addPage, rail);
+  // A blank survey: templates to start from.
+  const start = startHere({ el, doc, designer, survey: true, templates: options.templates, blankFocus: () => root.querySelector('.fd-add-question') });
+  const column = el('div', { class: 'fd-survey-column' }, head, start.element, map, pages, addPage, rail);
   const editor = el('div', { class: 'fd-designer-editor fd-survey-canvas' }, column);
   const tools = toolbox({
     el,
@@ -588,6 +594,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     const page = state.page;
     const steps = stepsOf(page);
     bar.update(state);
+    start.update(state);
     tools.update({ modelFields: [], tabs: false });
     side.update(state);
     if (!focused(headTitle)) headTitle.value = page.title ?? '';
