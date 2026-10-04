@@ -78,6 +78,10 @@ describe('a menu of choices', () => {
     expect(popup.getAttribute('aria-label')).toBe('Versions');
     expect(document.getElementById(popup.getAttribute('aria-describedby') ?? '')?.textContent).toBe('Nothing published yet.');
     expect(document.activeElement).toBe(popup);
+    // Nothing to move through: the arrows and Enter are left to the page (Alt+↓ still moves the part picked).
+    const arrow = new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true, cancelable: true });
+    popup.dispatchEvent(arrow);
+    expect(arrow.defaultPrevented).toBe(false);
     key('Escape');
     expect(document.querySelector('.fd-menu')).toBeNull();
     expect(document.activeElement).toBe(anchor);

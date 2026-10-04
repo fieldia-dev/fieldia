@@ -74,6 +74,8 @@ export function openMenu(options: MenuOptions): { element: HTMLElement; close():
 
   const onKey = (event: KeyboardEvent) => {
     const at = buttons.indexOf(doc.activeElement as HTMLButtonElement);
+    // With nothing to pick, only Escape and Tab are the menu's: the rest go on to the page.
+    if (!buttons.length && event.key !== 'Escape' && event.key !== 'Tab') return;
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       const next = (at + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length;
