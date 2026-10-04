@@ -217,7 +217,8 @@ export interface Designer extends HeaderCommands, ListCommands {
   setOptions(id: string, labels: string[]): boolean;
   changeKind(id: string, kind: string): boolean;
   moveNode(id: string, delta: number): boolean;
-  placeNode(id: string, parent: string, index: number): boolean;
+  /** Put a part in a step or section, at a place among its parts; with `pick`, it is picked too, as one change. */
+  placeNode(id: string, parent: string, index: number, options?: { pick?: boolean }): boolean;
   duplicateNode(id: string): string | false;
   removeNode(id: string): boolean;
   /** A step for a survey, a section for a screen or a sheet, or a section in a tab (`parent`). Returns its id. */
@@ -795,7 +796,12 @@ export function createDesigner(options: {
       });
     },
 
-    placeNode(id, parentId, index) {
+    placeNode(id, parentId, index, options = {}) {
+      const pick = () => {
+        if (!options.pick) return;
+        selected = id;
+        picked = [id];
+      };
       return apply((draft) => {
         const found = findNode(draft, id);
         if (!found) throw new Refusal(`There is no element "${id}"`);
@@ -809,7 +815,7 @@ export function createDesigner(options: {
           if (columns === 1) delete found.node.colspan;
           else found.node.colspan = columns;
         }
-      });
+      }, null, pick);
     },
 
     duplicateNode(id) {

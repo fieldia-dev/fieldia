@@ -258,7 +258,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     cards: '.fd-q[data-node]',
     drop: (source, step, index) => {
       if ('tool' in source) add(source.tool.slice(source.tool.indexOf(':') + 1), { parent: step, index });
-      else if (designer.placeNode(source.node, step, index)) designer.select(source.node);
+      else designer.placeNode(source.node, step, index, { pick: true });
     },
   });
 

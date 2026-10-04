@@ -500,7 +500,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     enabled: () => mode === 'simple',
     drop: (source, section, index) => {
       if ('node' in source) {
-        if (designer.placeNode(source.node, section, index)) designer.select(source.node);
+        designer.placeNode(source.node, section, index, { pick: true });
       } else options.dropTool(source.tool, section, index);
     },
   });

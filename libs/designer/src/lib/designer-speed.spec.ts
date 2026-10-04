@@ -190,3 +190,25 @@ describe('the checks of a page the designer has checked already', () => {
     expect(designer.checks()[0]).toMatchObject({ severity: 'must', text: expect.stringMatching(/^fields\.f2/) });
   });
 });
+
+describe('a field put in another section and picked', () => {
+  it('is one change for its listeners', () => {
+    const designer = createDesigner({ page: screen(3) });
+    const other = designer.addContainer('Second') as string;
+    designer.select(null);
+    const seen: (string | null)[] = [];
+    designer.subscribe((state) => seen.push(state.selected));
+    expect(designer.placeNode('n2', other, 0, { pick: true })).toBe(true);
+    expect(seen).toEqual(['n2']);
+    expect(designer.getState().picked).toEqual(['n2']);
+    expect((designer.getPage().layout as { children: SectionNode[] }).children[1].children.map((n) => n.id)).toEqual(['n2']);
+  });
+
+  it('picks nothing when it cannot go there, and is not picked without asking', () => {
+    const designer = createDesigner({ page: screen(3) });
+    expect(designer.placeNode('n2', 'nowhere', 0, { pick: true })).toBe(false);
+    expect(designer.getState().selected).toBeNull();
+    designer.placeNode('n1', 'section-1', 2);
+    expect(designer.getState().selected).toBeNull();
+  });
+});
