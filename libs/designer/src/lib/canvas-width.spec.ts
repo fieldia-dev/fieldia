@@ -35,10 +35,19 @@ describe('tradeAt: where the gutter between two parts lands', () => {
     expect(tradeAt({ ...grid, start: 0, total: 3, x: -40, rtl: false })).toBe(1);
     expect(tradeAt({ ...grid, start: 360, total: 3, x: 130, rtl: true })).toBe(2);
   });
+
+  it('turns over half way across the gap after a column', () => {
+    expect(tradeAt({ ...grid, start: 0, total: 3, x: 165, rtl: false })).toBe(1);
+    expect(tradeAt({ ...grid, start: 0, total: 3, x: 170, rtl: false })).toBe(2);
+  });
 });
 
-/** Role's first rows laid out by hand: three columns of 100, gaps of 20 — Job title | Department | Manager, then Start date | Contract (two wide). */
-function setup(rtl = false) {
+/**
+ * Role's first rows laid out by hand: three columns of 100, gaps of 20 — Job
+ * title | Department | Manager, then Start date | Contract (two wide). The
+ * grid's columns are given, or — `'read'` — read off its style.
+ */
+function setup(rtl = false, columns: { cols: number; gap: number } | 'read' = { cols: 3, gap: 20 }) {
   const designer = watched(createDesigner({ page: employeePage() }));
   const rects = new Map<Element, DOMRect>();
   const place = (element: Element, left: number, top: number, width: number, height: number) =>
@@ -67,7 +76,7 @@ function setup(rtl = false) {
   cell('f-manager', x(240) - (rtl ? 100 : 0), 0, 100);
   cell('f-start_date', x(0) - (rtl ? 100 : 0), 80, 100);
   cell('f-contract', x(120) - (rtl ? 220 : 0), 80, 220);
-  const marks = widthMarks({ canvas, root, designer, rtl: () => rtl, rectOf: (e) => rects.get(e) ?? e.getBoundingClientRect(), columnsOf: () => ({ cols: 3, gap: 20 }) });
+  const marks = widthMarks({ canvas, root, designer, rtl: () => rtl, rectOf: (e) => rects.get(e) ?? e.getBoundingClientRect(), ...(columns === 'read' ? {} : { columnsOf: () => columns }) });
   const pointer = (type: string, target: EventTarget, px: number, py: number) =>
     target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: px, clientY: py, button: 0 }) as unknown as PointerEvent);
   const handle = () => canvas.querySelector('.fd-width-handle') as HTMLElement;
@@ -85,7 +94,9 @@ function setup(rtl = false) {
     const r = rects.get(element) as DOMRect;
     place(element, r.left - 8, r.top - 6, r.width + 16, r.height + 12);
   };
-  return { designer, marks, pointer, handle, gutter, chip, show, ring };
+  /** Move a part's box. */
+  const move = (id: string, left: number, top: number, width: number, height: number) => place(grid.querySelector(`[data-node="${id}"]`) as HTMLElement, left, top, width, height);
+  return { designer, marks, pointer, handle, gutter, chip, show, ring, move, grid, canvas };
 }
 
 let current: WidthMarks | null = null;
@@ -141,6 +152,76 @@ describe('the width handle', () => {
   });
 });
 
+describe('the width marks, as they start and where they show', () => {
+  it('start hidden, the gutter a vertical separator the keys reach', () => {
+    const { marks, handle, gutter } = setup();
+    current = marks;
+    expect([handle().hidden, gutter().hidden, handle().title]).toEqual([true, true, 'Drag to widen or narrow']);
+    expect([gutter().tabIndex, gutter().getAttribute('role'), gutter().getAttribute('aria-orientation'), gutter().getAttribute('aria-valuemin')]).toEqual([0, 'separator', 'vertical', '1']);
+  });
+
+  it('none with several picked', () => {
+    const { marks, handle, gutter, designer } = setup();
+    current = marks;
+    designer.pick('f-start_date');
+    designer.pick('f-contract', { add: true });
+    marks.update(designer.getState(), true);
+    expect([handle().hidden, gutter().hidden]).toEqual([true, true]);
+  });
+
+  it('on a grid of two columns; none on a grid of one', () => {
+    const two = setup(false, { cols: 2, gap: 20 });
+    current = two.marks;
+    two.show('f-contract');
+    expect(two.handle().hidden).toBe(false);
+    current.destroy();
+    document.body.replaceChildren();
+    const one = setup(false, { cols: 1, gap: 0 });
+    current = one.marks;
+    one.show('f-contract');
+    expect(one.handle().hidden).toBe(true);
+  });
+
+  it('reads the grid’s columns and gap off its style by default', () => {
+    const { marks, handle, pointer, chip, show, grid } = setup(false, 'read');
+    current = marks;
+    show('f-contract');
+    expect(handle().hidden).toBe(true);
+    grid.style.gridTemplateColumns = '100px 100px 100px';
+    grid.style.columnGap = '20px';
+    show('f-contract');
+    expect(handle().hidden).toBe(false);
+    // From Contract's start at 120, 165 across: under two columns of 100 and a gap of 20 — without the gap, nearer one.
+    pointer('pointerdown', handle(), 340, 110);
+    pointer('pointermove', document, 285, 110);
+    expect(chip()?.textContent).toBe('2 of 3 columns');
+    pointer('pointerup', document, 285, 110);
+  });
+
+  it('starts a drag only with the main button, and takes the press for itself', () => {
+    const { marks, handle, pointer, chip, show, canvas } = setup();
+    current = marks;
+    show('f-contract');
+    const heard: string[] = [];
+    canvas.addEventListener('pointerdown', () => heard.push('canvas'));
+    handle().dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 340, clientY: 110, button: 2 }));
+    expect(chip()).toBeNull();
+    const press = new MouseEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 340, clientY: 110, button: 0 });
+    handle().dispatchEvent(press);
+    expect([press.defaultPrevented, chip() !== null]).toEqual([true, true]);
+    expect(heard).toEqual(['canvas']);
+    pointer('pointerup', document, 340, 110);
+  });
+
+  it('on a ringed field, the handle sits on its own edge', () => {
+    const { marks, handle, show, ring } = setup();
+    current = marks;
+    ring('f-contract');
+    show('f-contract');
+    expect([handle().style.left, handle().style.top]).toEqual(['336px', '95px']);
+  });
+});
+
 describe('the gutter between two parts of a row', () => {
   it('trades columns between them, one edit, with the pointer', () => {
     const { marks, gutter, pointer, chip, show, designer } = setup();
@@ -183,6 +264,32 @@ describe('the gutter between two parts of a row', () => {
     show('f-start_date');
     expect(gutter().hidden).toBe(false);
     expect([gutter().style.left, gutter().style.top, gutter().style.height]).toEqual(['104px', '80px', '60px']);
+  });
+
+  it('a part counts in the row up to 4px off its top', () => {
+    const { marks, gutter, show, move } = setup();
+    current = marks;
+    move('f-contract', 120, 84, 220, 60);
+    show('f-start_date');
+    expect(gutter().hidden).toBe(false);
+    move('f-contract', 120, 85, 220, 60);
+    show('f-start_date');
+    expect(gutter().hidden).toBe(true);
+  });
+
+  it('runs from the higher top to the lower bottom of the two', () => {
+    const { marks, gutter, show, move } = setup();
+    current = marks;
+    move('f-contract', 120, 78, 220, 70);
+    show('f-start_date');
+    expect([gutter().style.top, gutter().style.height]).toEqual(['78px', '70px']);
+  });
+
+  it('right to left, midway between the part’s left edge and the next one’s right', () => {
+    const { marks, gutter, show } = setup(true);
+    current = marks;
+    show('f-start_date');
+    expect(gutter().style.left).toBe('224px');
   });
 
   it('only between two parts of one row: none after the last of a row', () => {
