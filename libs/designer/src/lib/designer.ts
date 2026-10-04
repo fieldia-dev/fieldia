@@ -23,7 +23,7 @@ import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, or
 import * as ops from './layout-ops';
 import type { BlockKind, Drop, NewPart } from './layout-ops';
 import * as settings from './layout-settings';
-import type { LookPatch, SectionLook } from './layout-settings';
+import type { BlockPatch, LookPatch, SectionLook } from './layout-settings';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
 
@@ -46,7 +46,7 @@ export type { HeaderCommands, HeaderPartKind, HeaderPartPatch } from './header-c
 export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-commands';
 export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-checks';
 export type { BlockKind, Drop, NewPart } from './layout-ops';
-export type { LookPatch, SectionLook } from './layout-settings';
+export type { BlockPatch, LookPatch, SectionLook } from './layout-settings';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
 export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
@@ -294,6 +294,11 @@ export interface Designer extends HeaderCommands, ListCommands {
   revertTo(version: number): boolean;
   /** Resolves once every draft save started so far has finished. */
   settled(): Promise<void>;
+  // canvas lane
+  /** A block's words and look, a button's label, a picture's address and description; a run of typing in one is one undo step. */
+  updateBlock(id: string, patch: BlockPatch): boolean;
+  /** Several parts' widths as one edit: two trading width across the gutter between them. */
+  setWidths(widths: { id: string; span: number }[]): boolean;
 }
 
 
@@ -1104,6 +1109,9 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     async settled() {
       await saving;
     },
+    // canvas lane
+    updateBlock: (id, patch) => apply((draft) => settings.updateBlock(draft, id, patch), `block:${id}:${Object.keys(patch).join(',')}`),
+    setWidths: (widths) => apply((draft) => settings.setWidths(draft, widths)),
   };
   return designer;
 }

@@ -1,3 +1,4 @@
+import { DESIGNER_CANVAS_CSS } from './styles-canvas';
 import { DESIGNER_KINDS_CSS } from './styles-kinds';
 
 /** The designer's own chrome, on top of Fieldia's form stylesheet and tokens. */
@@ -622,6 +623,6 @@ export function installDesignerStyles(document: Document): void {
   if (document.getElementById(STYLE_ID)) return;
   const style = document.createElement('style');
   style.id = STYLE_ID;
-  style.textContent = DESIGNER_CSS + DESIGNER_KINDS_CSS;
+  style.textContent = DESIGNER_CSS + DESIGNER_CANVAS_CSS + DESIGNER_KINDS_CSS;
   (document.head ?? document.documentElement).append(style);
 }

@@ -1,12 +1,14 @@
-import type { Field } from '@fieldia/core';
+import type { Field, Page } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor } from '@fieldia/designer';
 import type { Skin } from '@fieldia/viewer';
+import layoutPage from '../../examples/pages/layout.page.json';
 
 /**
  * The screen editor on its own page, opened on a small site-visit screen.
  * `?start=blank` opens an empty one, `?start=sheet` an empty customer sheet
  * with the customer's model behind it, its fields first in the toolbox, and
- * `?start=list` the customers' list, on the same model.
+ * `?start=list` the customers' list, on the same model, and `?start=layout`
+ * the "New employee" page: groups side by side, arrangements, tabs and blocks.
  */
 const customer: Record<string, Field> = {
   name: { type: 'char', label: 'Name', required: true },
@@ -56,7 +58,8 @@ const params = new URLSearchParams(location.search);
 const store = createMemoryPageStore();
 const start = params.get('start');
 const model = start === 'sheet' || start === 'list' ? customer : undefined;
-const first = start === 'blank' ? blankPage('screen', 'New screen') : start === 'sheet' ? blankPage('sheet', 'Customer') : start === 'list' ? customers() : siteVisit();
+const first =
+  start === 'blank' ? blankPage('screen', 'New screen') : start === 'sheet' ? blankPage('sheet', 'Customer') : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : siteVisit();
 const designer = createDesigner({ page: first, store, model });
 const skin = (params.get('skin') as Skin) ?? 'outlined';
 const app = document.getElementById('app') as HTMLElement;

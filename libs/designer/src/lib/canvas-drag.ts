@@ -46,6 +46,8 @@ export interface CanvasDragOptions {
   canvas: HTMLElement;
   /** What can be carried, when not the screen's fields: a survey's questions, say. */
   cards?: string;
+  /** What counts as a place in a section, when more than what can be carried: the screen's blocks and groups between its fields. */
+  parts?: string;
   drop(source: DragSource, sectionId: string, index: number): void;
   /** Where an element is on screen; the browser's own by default. */
   rectOf?: (element: Element) => DOMRect;
@@ -122,10 +124,13 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
   const sections = () => [...canvas.querySelectorAll<HTMLElement>('[data-drop-section]')].filter((s) => !s.closest('[hidden]'));
   const flowOf = (section: HTMLElement | null) => section?.dataset['dropFlow'] ?? 'grid';
   const cardSelector = options.cards ?? '.fd-canvas-field[data-node]';
-  const cardsIn = (section: HTMLElement) => [...section.querySelectorAll<HTMLElement>(cardSelector)];
+  const partSelector = options.parts ?? cardSelector;
+  /** A section's own parts, in order: not those of a group inside it, which has places of its own. */
+  const cardsIn = (section: HTMLElement) => [...section.querySelectorAll<HTMLElement>(partSelector)].filter((part) => part.parentElement?.closest('[data-drop-section]') === section);
   /** A section and the gap under it, where it can still be dropped last. */
   const reach = (r: Rect): Rect => ({ left: r.left, top: r.top, right: r.right, bottom: r.bottom + REACH });
-  const sectionAt = (x: number, y: number) => sections().find((s) => inside(flowOf(s) === 'row' ? reach(rectOf(s)) : rectOf(s), x, y)) ?? null;
+  /** The innermost section under the pointer: a group inside a group takes what is dropped on it. */
+  const sectionAt = (x: number, y: number) => sections().filter((s) => inside(flowOf(s) === 'row' ? reach(rectOf(s)) : rectOf(s), x, y)).pop() ?? null;
   const closedTabAt = (x: number, y: number) =>
     [...canvas.querySelectorAll<HTMLElement>('.fd-tab')].find((t) => t.getAttribute('aria-selected') !== 'true' && inside(rectOf(t), x, y)) ?? null;
 
@@ -190,7 +195,7 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
     } else if (others.length) {
       if (others[others.length - 1].nextElementSibling !== slot) others[others.length - 1].after(slot);
     } else {
-      const grid = section.querySelector('[data-drop-grid]') ?? section;
+      const grid = [...section.querySelectorAll('[data-drop-grid]')].find((g) => g.closest('[data-drop-section]') === section) ?? section;
       if (slot.parentElement !== grid) grid.append(slot);
     }
   }

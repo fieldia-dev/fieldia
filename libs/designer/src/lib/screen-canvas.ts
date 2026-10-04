@@ -1,5 +1,7 @@
-import { createForm, wideColumns, type FieldNode, type Form, type LayoutNode, type Page, type SectionNode, type TabsNode } from '@fieldia/core';
+import { createForm, type FieldNode, type Form, type LayoutNode, type Page, type SectionNode, type TabsNode } from '@fieldia/core';
+import { applyLook, labelPlace, planSection, type Place } from '@fieldia/viewer';
 import { createWidget, type Widget } from '@fieldia/widgets';
+import { blockViews } from './canvas-blocks';
 import { canvasDrag, type CanvasDrag } from './canvas-drag';
 import { canvasHeader } from './canvas-header';
 import { elementFactory, optionsEditor, type OptionsEditor } from './chrome';
@@ -7,6 +9,7 @@ import type { Designer, DesignerState } from './designer';
 import { fieldBar, type FieldBar } from './field-bar';
 import { designerIcon } from './icons';
 import { inlineSettings, type InlineSettings } from './inline-settings';
+import { locate } from './layout-tree';
 import { tabHolds } from './page-tree';
 import { sampleRows } from './samples';
 
@@ -18,6 +21,12 @@ import { sampleRows } from './samples';
  * become a list to type, and a bar on its edge does the rest. Nothing around
  * it moves, so what is seen is what people will get.
  *
+ * Groups inside groups, arrangements laying parts on their grid's columns,
+ * each group's style, where labels sit, tabs anywhere and the blocks between
+ * fields are drawn with the viewer's own elements and placed by its own rules
+ * (`planSection`, `labelPlace`), and the canvas wears the page's look as the
+ * form does — so the canvas and the form agree to the pixel.
+ *
  * Everything is keyed by id and patched in place, so the box being typed in
  * stays the same box, focused, while the page changes around it.
  */
@@ -25,6 +34,8 @@ import { sampleRows } from './samples';
 export interface ScreenCanvasOptions {
   designer: Designer;
   doc: Document;
+  /** The skin the form is drawn in: the canvas wears its tokens, as the form does. */
+  skin?: string;
   /** Open the panel at a part of the field picked: its settings, or when it shows. */
   more(part: 'field' | 'when'): void;
   /** Something from the toolbox was let go over a section, at a place among its fields. */
@@ -48,9 +59,8 @@ export interface ScreenCanvas {
   destroy(): void;
 }
 
-/** What sits at the top of a screen or a sheet: sections, and a sheet's tabs. */
+/** What sits at the top of a screen or a sheet: sections, a sheet's tabs, and fields and blocks of their own. */
 const topOf = (page: Page) => (page.layout as { children: LayoutNode[] }).children;
-const fieldsOf = (section: SectionNode) => section.children.filter((n): n is FieldNode => n.type === 'field');
 
 export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   const { designer, doc } = options;
@@ -59,10 +69,15 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   titleCard.addEventListener('click', () => designer.select(null));
   const body = el('div', { class: 'fd-canvas-body' });
   const header = canvasHeader({ el, doc, designer });
-  const element = el('div', { class: 'fd-canvas' }, header.top, header.card, titleCard, body);
+  // A form of its own, in the form's skin: its look and its widths are the page's, not the designer's.
+  const element = el('div', { class: 'fd-canvas fd-form', 'data-fd-skin': options.skin ?? 'outlined' }, header.top, header.card, titleCard, body);
+  const blocks = blockViews({ el, doc, designer });
   let page = designer.getPage();
   let selected: string | null = null;
+  let picked: string[] = [];
   let visible: string[] = [];
+  /** Every part drawn this time round, by id. */
+  let drawnIds = new Set<string>();
 
   // The widgets are drawn from a form of the page, made again only when the page, or the record filling it, changes.
   let sample: number | null = null;
@@ -146,7 +161,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     input.size = Math.max(4, input.value.length + 1);
   }
 
-  function drawCard(node: FieldNode, section: SectionNode, place: { index: number; underTabs: boolean }): HTMLElement {
+  function drawCard(node: FieldNode, labels: Place['labels'], place: { index: number; underTabs: boolean; columns: number }): HTMLElement {
     const def = page.fields[node.field];
     const editing = selected === node.id;
     const ownChoice = def.type === 'selection' && !designer.isFromModel(node.id);
@@ -158,6 +173,10 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     if (!card) cards.set(node.id, (card = buildCard(node.id, editing, ownChoice)));
     const element = card.element;
     element.dataset['type'] = def.type;
+    const labelsAt = labelPlace(node, def.type, labels);
+    if (labelsAt) element.dataset['labels'] = labelsAt;
+    else delete element.dataset['labels'];
+    element.classList.toggle('fd-canvas-picked', picked.includes(node.id) && picked.length > 1);
     if (node.colspan) element.style.setProperty('--fd-span', String(node.colspan));
     else element.style.removeProperty('--fd-span');
     element.classList.toggle('fd-required', def.required === true || node.required === true);
@@ -173,7 +192,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       }
       if (doc.activeElement !== help) help.value = helpText;
       // Right under the tabs, the bar goes below the field, so it does not cover the tabs' names.
-      element.classList.toggle('fd-bar-below', place.underTabs && place.index < wideColumns(section.columns));
+      element.classList.toggle('fd-bar-below', place.underTabs && place.index < place.columns);
       card.bar?.update(page);
       card.options?.update(def, node);
       // A table's columns, typed in, stand in for the table itself.
@@ -203,16 +222,18 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
 
   // ---- sections ----------------------------------------------------------------
   interface SectionView {
-    element: HTMLFieldSetElement;
+    element: HTMLElement;
     legend: HTMLElement;
     title: HTMLButtonElement;
     titleInput: HTMLInputElement;
+    description: HTMLElement;
     grid: HTMLElement;
     empty: HTMLElement;
   }
   const sections = new Map<string, SectionView>();
 
-  function makeSection(id: string): SectionView {
+  /** A group is a fieldset, named by its title; an arrangement is no group to name, and a fieldset cannot lay parts on the columns round it. */
+  function makeSection(id: string, tag: 'fieldset' | 'div'): SectionView {
     const title = el('button', { type: 'button', class: 'fd-canvas-section-title' });
     const titleInput = el('input', { class: 'fd-canvas-section-title-input', 'aria-label': 'Section title', placeholder: 'Untitled section', autocomplete: 'off' });
     titleInput.addEventListener('input', () => designer.renameContainer(id, titleInput.value));
@@ -225,29 +246,81 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       titleInput.select();
     });
     const legend = el('legend', { class: 'fd-section-title' }, title, titleInput);
-    const grid = el('div', { class: 'fd-grid', 'data-drop-grid': '' });
+    const description = el('p', { class: 'fd-section-description', hidden: '' });
+    const grid = el('div', { class: 'fd-grid', 'data-drop-grid': '', 'data-container': id });
     const empty = el('p', { class: 'fd-canvas-empty' }, 'Drop a field here, or pick one in the toolbox.');
-    const element = el('fieldset', { class: 'fd-section fd-canvas-section', 'data-node': id, 'data-drop-section': id }, legend, grid, empty);
-    return { element, legend, title, titleInput, grid, empty };
+    const element = el(tag, { class: 'fd-section fd-canvas-section', 'data-node': id, 'data-drop-section': id }, legend, description, grid, empty);
+    return { element, legend, title, titleInput, description, grid, empty };
   }
 
-  function drawSection(section: SectionNode, underTabs: boolean): HTMLElement {
+  /** Where a part's colspan is, for the grid it sits in. */
+  function span(element: HTMLElement, colspan: number | undefined) {
+    if (colspan) element.style.setProperty('--fd-span', String(colspan));
+    else element.style.removeProperty('--fd-span');
+  }
+
+  function drawSection(section: SectionNode, place: Place, underTabs: boolean): HTMLElement {
+    const plan = planSection(section, place);
+    const tag = plan.arrangement ? 'div' : 'fieldset';
     let view = sections.get(section.id);
-    if (!view) sections.set(section.id, (view = makeSection(section.id)));
+    if (view && view.element.tagName.toLowerCase() !== tag) {
+      view.element.remove();
+      view = undefined;
+    }
+    if (!view) sections.set(section.id, (view = makeSection(section.id, tag)));
     visible.push(section.id);
-    const picked = selected === section.id;
-    view.element.classList.toggle('fd-canvas-selected', picked);
+    const element = view.element;
+    element.dataset['style'] = plan.style;
+    if (plan.at) element.dataset['place'] = plan.at;
+    else delete element.dataset['place'];
+    element.toggleAttribute('data-on-page', plan.style === 'card' && place.onPage);
+    element.classList.toggle('fd-canvas-arrangement', plan.arrangement);
+    span(element, section.colspan);
+    if (section.labelWidth) element.style.setProperty('--fd-label-width', `${section.labelWidth}px`);
+    else element.style.removeProperty('--fd-label-width');
+    const isPicked = selected === section.id;
+    element.classList.toggle('fd-canvas-selected', isPicked);
+    element.classList.toggle('fd-canvas-picked', picked.includes(section.id) && picked.length > 1);
+    // An arrangement has no title to show or type: it only holds parts.
+    view.legend.hidden = plan.arrangement;
     view.title.textContent = section.title || 'Untitled section';
     view.title.classList.toggle('fd-canvas-untitled', !section.title);
-    view.title.hidden = picked;
-    view.titleInput.hidden = !picked;
+    view.title.hidden = isPicked;
+    view.titleInput.hidden = !isPicked;
     if (doc.activeElement !== view.titleInput) view.titleInput.value = section.title ?? '';
-    view.grid.style.setProperty('--fd-columns', String(wideColumns(section.columns)));
-    const fields = fieldsOf(section);
-    const elements = fields.map((node, index) => drawCard(node, section, { index, underTabs: underTabs && !section.title }));
-    arrange(view.grid, elements);
-    view.empty.hidden = fields.length > 0;
-    return view.element;
+    view.description.hidden = !section.description;
+    view.description.textContent = section.description ?? '';
+    // On its grid's tracks it has no columns of its own; else its own, and those it keeps on smaller screens.
+    const grid = view.grid;
+    const columns = plan.at === 'tracks' ? null : section.columns;
+    if (columns === null) grid.style.removeProperty('--fd-columns');
+    else grid.style.setProperty('--fd-columns', String(typeof columns === 'object' ? columns.wide : (columns ?? 1)));
+    for (const width of ['medium', 'narrow'] as const) {
+      const count = typeof columns === 'object' && columns !== null ? columns[width] : undefined;
+      if (count === undefined) {
+        grid.removeAttribute(`data-columns-${width}`);
+        grid.style.removeProperty(`--fd-columns-${width}`);
+      } else {
+        grid.setAttribute(`data-columns-${width}`, String(count));
+        grid.style.setProperty(`--fd-columns-${width}`, String(count));
+      }
+    }
+    const inner = section.children.map((child, index) => drawItem(child, plan.inner, { index, underTabs: underTabs && !section.title, columns: plan.inner.columns }));
+    arrange(grid, inner);
+    view.empty.hidden = section.children.length > 0;
+    return element;
+  }
+
+  /** Any part where it sits: a field, a group or an arrangement, tabs, or a block between fields. */
+  function drawItem(node: LayoutNode, place: Place, at: { index: number; underTabs: boolean; columns: number }): HTMLElement {
+    drawnIds.add(node.id);
+    if (node.type === 'field') return drawCard(node, place.labels, at);
+    if (node.type === 'section') return drawSection(node, place, at.underTabs);
+    if (node.type === 'tabs') return drawTabs(node, place);
+    const element = blocks.draw(node, selected === node.id);
+    element.classList.toggle('fd-canvas-selected', selected === node.id);
+    element.classList.toggle('fd-canvas-picked', picked.includes(node.id) && picked.length > 1);
+    return element;
   }
 
   // ---- tabs --------------------------------------------------------------------
@@ -255,6 +328,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     element: HTMLElement;
     list: HTMLElement;
     panel: HTMLElement;
+    grid: HTMLElement;
     add: HTMLButtonElement;
     active: string | null;
   }
@@ -263,11 +337,13 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   function makeTabs(id: string): TabsView {
     const list = el('div', { class: 'fd-tablist', role: 'tablist' });
     const add = el('button', { type: 'button', class: 'fd-canvas-add-tab', 'aria-label': 'Add a tab', title: 'Add a tab' }, '+');
-    const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel' });
+    const grid = el('div', { class: 'fd-grid', 'data-drop-grid': '' });
+    grid.style.setProperty('--fd-columns', '1');
+    const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel' }, grid);
     const element = el('div', { class: 'fd-tabs fd-canvas-tabs', 'data-node': id }, el('div', { class: 'fd-canvas-tabs-head' }, list, add), panel);
-    const view: TabsView = { element, list, panel, add, active: null };
+    const view: TabsView = { element, list, panel, grid, add, active: null };
     add.addEventListener('click', () => {
-      const tabs = topOf(designer.getPage()).find((n) => n.id === id) as TabsNode | undefined;
+      const tabs = locate(designer.getPage(), id)?.node as TabsNode | undefined;
       const created = tabs && designer.addTab(id, `Tab ${tabs.children.length + 1}`);
       if (!created) return;
       view.active = created;
@@ -276,7 +352,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     return view;
   }
 
-  function drawTabs(node: TabsNode): HTMLElement {
+  function drawTabs(node: TabsNode, place: Place): HTMLElement {
     let view = tabsViews.get(node.id);
     if (!view) tabsViews.set(node.id, (view = makeTabs(node.id)));
     const holding = node.children.find((tab) => tabHolds(tab, selected));
@@ -284,6 +360,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     if (!node.children.some((tab) => tab.id === view?.active)) view.active = node.children[0]?.id ?? null;
     const shown = view;
     shown.element.classList.toggle('fd-canvas-selected', selected === node.id);
+    shown.element.classList.toggle('fd-canvas-picked', picked.includes(node.id) && picked.length > 1);
+    span(shown.element, node.colspan);
     const buttons = node.children.map((tab) => {
       const button = el('button', { type: 'button', role: 'tab', class: 'fd-tab fd-canvas-tab', 'data-node': tab.id, 'aria-selected': String(tab.id === shown.active) }, tab.label || 'Untitled tab');
       button.classList.toggle('fd-canvas-selected', selected === tab.id);
@@ -295,8 +373,13 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     });
     shown.list.replaceChildren(...buttons);
     const open = node.children.find((tab) => tab.id === shown.active);
-    const inTab = (open?.children ?? []).filter((n): n is SectionNode => n.type === 'section');
-    arrange(shown.panel, inTab.map((section, i) => drawSection(section, i === 0)));
+    // The open tab's parts sit where the tabs do: on the page, or in the box round them.
+    if (open) {
+      shown.panel.dataset['dropSection'] = open.id;
+      shown.grid.dataset['container'] = open.id;
+    }
+    const inner: Place = { columns: 1, onPage: place.onPage, labels: place.labels };
+    arrange(shown.grid, (open?.children ?? []).map((child, i) => drawItem(child, inner, { index: i, underTabs: i === 0, columns: 1 })));
     return shown.element;
   }
 
@@ -323,9 +406,11 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       if (part) focusIn(id, part, false);
       return;
     }
-    const section = target.closest<HTMLElement>('[data-drop-section]');
-    if (section) {
-      if (selected !== section.dataset['dropSection']) designer.select(section.dataset['dropSection'] as string);
+    // A block, a group, an arrangement or tabs: the nearest part round what was clicked.
+    const part = target.closest<HTMLElement>('[data-node]');
+    if (part && body.contains(part) && part.getAttribute('role') !== 'tab') {
+      const id = part.dataset['node'] as string;
+      if (selected !== id) designer.select(id);
       return;
     }
     if (target === element || target === body) designer.select(null);
@@ -342,6 +427,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
 
   const drag = canvasDrag({
     canvas: element,
+    parts: '[data-node]:not([role="tab"])',
     drop: (source, section, index) => {
       if ('node' in source) {
         if (designer.placeNode(source.node, section, index)) designer.select(source.node);
@@ -358,24 +444,37 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     update(state) {
       page = state.page;
       selected = state.selected;
+      picked = state.picked;
       visible = [];
-      const top = topOf(page).flatMap((node) => (node.type === 'section' ? [drawSection(node, false)] : node.type === 'tabs' ? [drawTabs(node)] : []));
-      arrange(body, top);
+      drawnIds = new Set();
+      // The page's look, worn as the form wears it: an attribute or token for each setting, none left from before.
+      for (const name of ['font', 'density', 'corners', 'scheme', 'accent']) element.removeAttribute(`data-${name}`);
+      for (const token of ['--fd-label-width', '--fd-look-accent', '--fd-look-accent-text', '--fd-look-accent-dark', '--fd-look-accent-dark-text']) element.style.removeProperty(token);
+      applyLook(element, page.look);
+      // The page's own parts sit as the form puts them: one column, on the page — in a sheet, in its card.
+      const root = page.layout;
+      const sheet = root.type === 'sheet';
+      body.dataset['node'] = root.id;
+      body.dataset['container'] = root.id;
+      body.classList.toggle('fd-sections', !sheet);
+      const top: Place = { columns: 1, onPage: !sheet, labels: page.look?.labels };
+      arrange(body, topOf(page).map((node, index) => drawItem(node, top, { index, underTabs: false, columns: 1 })));
       // Gone from the page, or in a tab not on show: their views go.
-      const shownFields = new Set(visible.flatMap((id) => [...(sections.get(id)?.grid.children ?? [])].map((c) => (c as HTMLElement).dataset['node'])));
       for (const [id, card] of cards) {
-        if (shownFields.has(id)) continue;
+        if (drawnIds.has(id)) continue;
         dropCard(card);
         cards.delete(id);
       }
-      const live = new Set(topOf(page).map((n) => n.id));
-      for (const [id] of tabsViews) if (!live.has(id)) tabsViews.delete(id);
+      for (const [id, view] of tabsViews) if (!drawnIds.has(id)) {
+        view.element.remove();
+        tabsViews.delete(id);
+      }
       for (const [id, view] of sections) {
         if (visible.includes(id)) continue;
         view.element.remove();
         sections.delete(id);
       }
-      const root = page.layout;
+      blocks.keep(drawnIds);
       titleCard.hidden = root.type !== 'sheet' || !root.title;
       if (root.type === 'sheet' && root.title) {
         // A made-up record names itself in the title; else the field's name stands in, as a placeholder does.
