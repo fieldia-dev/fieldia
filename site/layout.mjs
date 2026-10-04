@@ -64,7 +64,7 @@ ${
 }
 <footer class="foot">
   <p>Fieldia is MIT licensed. Its sister project is <a href="https://grafloria.com">Grafloria</a>, the diagram and dashboard engine.</p>
-  <p><a href="https://github.com/fieldia-dev/fieldia">Source on GitHub</a> · <a href="https://www.npmjs.com/org/fieldia">npm</a></p>
+  <p><a href="https://github.com/fieldia-dev/fieldia">Source on GitHub</a> · <a href="https://www.npmjs.com/org/fieldia">npm</a> · <a href="/accessibility/"${path === '/accessibility/' ? ' aria-current="page"' : ''}>Accessibility</a></p>
 </footer>
 </body>
 </html>
