@@ -14,6 +14,15 @@ describe('ranking the settings found', () => {
     expect(rankSettings(rows('Placeholder', 'Help text'), 'hold').map((r) => r.name)).toEqual(['Placeholder']);
   });
 
+  it('puts a word of the name that starts so before letters in the middle of one, and those before a choice', () => {
+    expect(rankSettings(rows('Bandwidth', 'Label width'), 'width').map((r) => r.name)).toEqual(['Label width', 'Bandwidth']);
+    const list = [
+      { name: 'Labels', order: 0, words: 'above beside' },
+      { name: 'Inside', order: 1, words: '' },
+    ];
+    expect(rankSettings(list, 'side').map((r) => r.name)).toEqual(['Inside', 'Labels']);
+  });
+
   it('keeps the panel’s order between names that match as well', () => {
     expect(rankSettings(rows('Section', 'Shown as', 'Stored as'), 's').map((r) => r.name)).toEqual(['Section', 'Shown as', 'Stored as']);
   });

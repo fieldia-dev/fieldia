@@ -126,6 +126,11 @@ describe('the Layout tab — parts side by side', () => {
 });
 
 describe('the Layout tab — tabs and blocks', () => {
+  it('gives a divider no Layout tab: it runs across the whole row', () => {
+    const { panel } = picked('div-1');
+    expect([...panel.querySelectorAll('[role="tab"]')].map((t) => t.textContent)).toEqual(['Content']);
+  });
+
   it('gives tabs and a block on the page the full width, and says so', () => {
     for (const id of ['job-tabs', 'send']) {
       const { hint } = picked(id);

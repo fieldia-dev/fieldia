@@ -1,5 +1,7 @@
 import type { Field, FieldNode, Page, SectionNode } from '@fieldia/core';
+import { elementFactory } from './chrome';
 import { blankPage, createDesigner } from './designer';
+import { inspectorShell } from './panel-inspector';
 import { button, field, mount, press } from './test-editor';
 
 /**
@@ -158,6 +160,24 @@ describe('the panel — tabs', () => {
         expect(p.querySelector('[data-setting]')).not.toBeNull();
       }
     }
+  });
+});
+
+describe('the panel — its tabs and what goes on them', () => {
+  it('shows a row on its tab, and none for a tab that does not apply to what is picked', () => {
+    const el = elementFactory(document);
+    const shell = inspectorShell(el, document);
+    document.body.append(shell.element);
+    const row = (tab: string, name: string) => el('div', { 'data-tab': tab, 'data-setting': name }, el('input', { 'aria-label': name }));
+    // A tab has only Content: a row for its look is shown nowhere.
+    shell.show('tab', { element: el('div', {}, row('content', 'Label'), row('look', 'Style')), update: () => undefined });
+    expect([...shell.element.querySelectorAll('[role="tab"]')].map((t) => t.textContent)).toEqual(['Content']);
+    expect(shell.element.querySelector('[data-setting="Style"]')).toBeNull();
+    expect(shell.rows().map((r) => r.name)).toEqual(['Label']);
+    // A part with Content and Layout, but nothing for its Layout: no Layout tab.
+    shell.show('block', { element: el('div', {}, row('content', 'Words')), update: () => undefined });
+    expect([...shell.element.querySelectorAll('[role="tab"]')].map((t) => t.textContent)).toEqual(['Content']);
+    document.body.replaceChildren();
   });
 });
 

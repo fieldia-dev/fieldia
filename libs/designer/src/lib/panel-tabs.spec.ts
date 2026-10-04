@@ -100,6 +100,16 @@ describe('the tabs', () => {
     expect(chosen[chosen.length - 1]).toBe('content');
   });
 
+  it('goes along the tabs the other way right to left, as the reader sees them', () => {
+    const { tabs, buttons, chosen } = strip();
+    tabs.element.style.direction = 'rtl';
+    buttons()[0].focus();
+    key(buttons()[0], 'ArrowLeft');
+    expect(chosen).toEqual(['layout']);
+    key(buttons()[1], 'ArrowRight');
+    expect(chosen).toEqual(['layout', 'content']);
+  });
+
   it('chooses a tab by a click, and draws the one chosen', () => {
     const { tabs, buttons, chosen } = strip();
     buttons()[2].click();
