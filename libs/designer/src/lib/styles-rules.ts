@@ -75,6 +75,43 @@ export const DESIGNER_RULES_CSS = /* css */ `
 .fd-formula-copy mark { background: var(--fd-error-soft); color: var(--fd-error); border-block-end: 2px solid var(--fd-error); border-radius: 2px; padding: 0 1px; }
 .fd-worked-out { justify-items: stretch; }
 
+/* ---- the rules overview: every rule as a sentence, by what it does ---- */
+.fd-rules-view { display: grid; gap: 12px; min-width: 0; align-content: start; }
+.fd-rules-view[hidden] { display: none; }
+.fd-rules-bar {
+  display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
+  background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 10px 14px;
+}
+.fd-rules-heading { flex: 1 1 220px; min-width: 0; display: grid; gap: 2px; }
+.fd-rules-title { margin: 0; font-size: 16px; font-weight: 650; }
+.fd-rules-note { margin: 0; font-size: 13px; color: var(--fd-muted); }
+.fd-rules-filter { position: relative; flex: 0 1 320px; min-width: 0; display: block; }
+.fd-rules-filter-icon { position: absolute; inset-inline-start: 10px; inset-block-start: 50%; transform: translateY(-50%); display: inline-flex; color: var(--fd-muted); pointer-events: none; }
+.fd-rules-filter-icon > .fd-dicon { width: 14px; height: 14px; }
+.fd-rules-view .fd-rules-filter-box { width: 100%; box-sizing: border-box; padding-inline-start: 32px; }
+.fd-rules-groups { display: grid; gap: 12px; min-width: 0; }
+.fd-rules-group { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 12px 6px 6px; min-width: 0; display: grid; gap: 6px; }
+.fd-rules-group-title { margin: 0; padding-inline: 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--fd-muted); }
+.fd-rules-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.fd-rules-item {
+  all: unset; box-sizing: border-box; cursor: pointer; width: 100%; display: grid; grid-template-columns: minmax(90px, 200px) minmax(0, 1fr); gap: 4px 16px;
+  align-items: baseline; padding: 8px 10px; border-radius: 6px; font-size: 14px; line-height: 1.45; text-align: start;
+}
+.fd-rules-item:hover { background: var(--fd-page); }
+.fd-rules-item:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: -2px; }
+.fd-rules-item[aria-disabled="true"] { cursor: default; color: var(--fd-muted); }
+.fd-rules-item-name { font-weight: 600; color: var(--fd-text); overflow-wrap: anywhere; text-align: start; }
+.fd-rules-item-say { color: var(--fd-text); overflow-wrap: anywhere; text-align: start; }
+.fd-rules-branches { margin: 0 10px 4px; }
+.fd-rules-empty { margin: 0; padding: 28px 16px; text-align: center; color: var(--fd-muted); font-size: 14px; background: var(--fd-surface); border: 1px dashed var(--fd-border-strong); border-radius: var(--fd-radius); }
+.fd-rules-empty[hidden] { display: none; }
+/* A phone's width: a rule's part over its sentence; Design, Try it and the views two by two, the whole width of the bar. */
+@container (max-width: 560px) {
+  .fd-rules-item { grid-template-columns: minmax(0, 1fr); }
+  .fd-designer-bar .fd-mode { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); flex: 1 1 100%; box-sizing: border-box; }
+  .fd-designer-bar .fd-mode-button { justify-content: center; min-width: 0; }
+}
+
 /* ---- a survey question's rules, in its open card ---- */
 .fd-q-rules { margin-block-start: 10px; display: grid; gap: 6px; }
 .fd-q-rules[hidden] { display: none; }

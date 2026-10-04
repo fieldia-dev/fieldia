@@ -19,6 +19,7 @@ import { installDesignerStyles } from './styles';
 import { toolbox, TOOLBOX_GROUPS } from './toolbox';
 import { tryIt } from './try-it';
 import { translationsView } from './translations-view';
+import { rulesOverview } from './rules-overview';
 
 /**
  * The survey editor, the Google Forms way: on a tinted page, a card heading
@@ -94,7 +95,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     titleLabel: 'Form title',
     placeholder: 'Untitled form',
     extra: [trial.toggle],
-    find: () => [...findItems(), ...trial.items(), ...words.items()],
+    find: () => [...findItems(), ...trial.items(), ...words.items(), ...ruleList.items()],
     // A check about a question's words or options: its card is open by now, the cursor goes there.
     goTo(id, part) {
       const card = root.querySelector(`.fd-q[data-node="${id}"]`);
@@ -163,6 +164,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const body = el('div', { class: 'fd-designer-body fd-survey-body' }, side.element, editor);
   root.append(bar.element, bar.issues, body, trial.element);
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
+  const ruleList = rulesOverview({ el, doc, designer, root, body, modes: trial.toggle });
   // The form's look: from the bar, in a sheet at the side; the cards wear it.
   const look = lookSheet({ el, designer, root, bar: bar.element, wearer: editor });
 
@@ -658,6 +660,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       for (const view of cardViews.values()) view.destroy();
       trial.destroy();
       words.destroy();
+      ruleList.destroy();
       root.remove();
     },
   };
