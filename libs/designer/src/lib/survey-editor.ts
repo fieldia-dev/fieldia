@@ -15,6 +15,7 @@ import { lookSheet } from './panel-look-sheet';
 import { rail as sideRail } from './rail';
 import { inlineSettings } from './inline-settings';
 import { cardRules } from './rules-card';
+import { ruleMarks } from './rules-marks';
 import { installDesignerStyles } from './styles';
 import { toolbox, TOOLBOX_GROUPS } from './toolbox';
 import { tryIt } from './try-it';
@@ -629,6 +630,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       label?.select();
       focusLabelOf = null;
     }
+    ruleMarks(pages, page, designer);
     placeRail();
   }
 

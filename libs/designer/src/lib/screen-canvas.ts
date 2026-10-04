@@ -7,6 +7,7 @@ import type { Designer, DesignerState } from './designer';
 import { fieldBar, type FieldBar } from './field-bar';
 import { designerIcon } from './icons';
 import { inlineSettings, type InlineSettings } from './inline-settings';
+import { ruleMarks } from './rules-marks';
 import { tabHolds } from './page-tree';
 import { sampleRows } from './samples';
 
@@ -385,6 +386,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       }
       titleCard.classList.toggle('fd-canvas-selected', selected === null);
       header.update(page, selected, form);
+      ruleMarks(element, page, designer);
     },
     visibleSections: () => [...visible],
     focus: (id, part, selectAll = false) => focusIn(id, part, selectAll),

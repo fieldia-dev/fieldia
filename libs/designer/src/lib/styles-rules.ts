@@ -112,6 +112,32 @@ export const DESIGNER_RULES_CSS = /* css */ `
   .fd-designer-bar .fd-mode-button { justify-content: center; min-width: 0; }
 }
 
+/* ---- marks on the canvas: a part with a rule says so; pointed at, its sentence ---- */
+.fd-rule-marks { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.fd-canvas-field > .fd-rule-marks { position: absolute; inset-block-start: 4px; inset-inline-end: 6px; z-index: 2; }
+.fd-canvas-section > .fd-rule-marks { position: absolute; inset-block-start: 4px; inset-inline-end: 8px; z-index: 2; }
+.fd-step-head-row > .fd-rule-marks { flex: none; }
+.fd-rule-mark {
+  all: unset; box-sizing: border-box; cursor: pointer; position: relative; display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10.5px; font-weight: 600; line-height: 1.6; padding: 0 6px; border-radius: 4px; color: var(--fd-muted); background: var(--fd-page);
+}
+.fd-rule-mark[data-mark="sometimes"] { color: var(--fd-warning); background: var(--fd-warning-soft); }
+.fd-rule-mark[data-mark="worked-out"] { color: var(--fd-accent); background: var(--fd-accent-soft); }
+.fd-rule-mark > .fd-dicon { width: 11px; height: 11px; flex: none; }
+.fd-rule-mark-fx { font: italic 700 10.5px/1 Georgia, "Times New Roman", serif; }
+.fd-rule-mark:hover { filter: brightness(0.96); }
+.fd-rule-mark:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
+.fd-rule-tip {
+  display: none; position: absolute; inset-block-start: calc(100% + 6px); inset-inline-end: 0; z-index: 50; width: max-content; max-width: 260px;
+  white-space: pre-line; text-align: start; padding: 6px 9px; border-radius: 6px; background: var(--fd-text); color: var(--fd-surface);
+  font-size: 12px; font-weight: 500; line-height: 1.45; box-shadow: 0 8px 20px rgba(15, 20, 25, 0.2); pointer-events: none;
+}
+.fd-rule-mark:hover > .fd-rule-tip, .fd-rule-mark:focus-visible > .fd-rule-tip { display: block; }
+.fd-q-title .fd-rule-tip, .fd-step-head-row .fd-rule-tip { inset-inline-end: auto; inset-inline-start: 0; }
+/* The marks stand in for the canvas's own "only sometimes" and the card's "Shown only for some answers". */
+.fd-canvas-field.fd-hidden-sometimes:has(> .fd-rule-marks)::after { content: none; }
+.fd-q-title:has(.fd-rule-mark[data-mark="sometimes"]) > .fd-q-when-note { display: none; }
+
 /* ---- a survey question's rules, in its open card ---- */
 .fd-q-rules { margin-block-start: 10px; display: grid; gap: 6px; }
 .fd-q-rules[hidden] { display: none; }
