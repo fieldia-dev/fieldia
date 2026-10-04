@@ -273,6 +273,13 @@ test('layout: the dark scheme, with the page’s accent made to read on it', asy
   await expect(node(page, 'personal')).toHaveCSS('background-color', 'rgb(31, 35, 41)');
   await expect(page.locator('.fd-page-title')).toHaveCSS('color', 'rgb(232, 234, 237)');
   await expect(node(page, 'f-first-name').locator('input')).toHaveCSS('background-color', 'rgb(31, 35, 41)');
+  // The page's own accent, lightened to read on the dark page — not the dark scheme's default blue.
+  const lightened = await form.evaluate((f) => getComputedStyle(f).getPropertyValue('--fd-look-accent-dark').trim());
+  expect(lightened).toMatch(/^#[0-9a-f]{6}$/);
+  expect(lightened).not.toBe('#1677ff');
+  const rgb = `rgb(${[1, 3, 5].map((at) => parseInt(lightened.slice(at, at + 2), 16)).join(', ')})`;
+  await expect(page.locator('.fd-page-head')).toHaveCSS('border-bottom-color', rgb);
+  await expect(page.getByRole('button', { name: 'Submit' })).toHaveCSS('background-color', rgb);
   await onTheColumns(page, 'dark');
   expect(await doubleLines(page, '.fd-form *')).toEqual([]);
   await screen(page, 'layout-dark');
@@ -345,6 +352,11 @@ test('built: parts sharing one cell sit side by side, and one under the other on
   expect(Math.abs((await box('number')).x - (await box('code')).x)).toBeLessThanOrEqual(1);
   await onTheColumnsAtLeast(page, 3);
   await screen(page, 'built-shared-narrow');
+  // A phone: a group that gives a plain count of columns goes to one, the shared cell full width under Field name.
+  await page.setViewportSize({ width: 390, height: 900 });
+  await expect.poll(async () => (await box('phone')).y > (await box('name')).y + 10).toBe(true);
+  expect(Math.abs((await box('phone')).width - (await box('name')).width)).toBeLessThanOrEqual(1);
+  await onTheColumnsAtLeast(page, 3);
   expect(problems).toEqual([]);
 });
 
@@ -437,6 +449,29 @@ test('built: each style of group in the underline skin, with no box drawn in a b
   expect(legend.y + legend.height).toBeGreaterThan(frame.y + 1);
   expect(await doubleLines(page, '.fd-form *')).toEqual([]);
   await screen(page, 'built-styles-underline');
+  // The underline skin's own way at a medium width: a group that names no count for it goes to one column.
+  await page.setViewportSize({ width: 700, height: 900 });
+  await expect.poll(async () => (await node(page, 'b').boundingBox())!.y > (await node(page, 'a').boundingBox())!.y + 10).toBe(true);
+  expect(problems).toEqual([]);
+});
+
+test('built: a card inside a box is a group of its own, unboxed, painting the ground it stands on', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const problems = await mountBuilt(page, [
+    {
+      type: 'section', id: 'outer', title: 'A box', columns: 2,
+      children: [field('a'), { type: 'section', id: 'inner', title: 'A card inside', children: [field('b')] }, { type: 'section', id: 'lined', title: 'A line inside', style: 'line', children: [field('c')] }],
+    },
+    { type: 'section', id: 'on-page-line', title: 'A line on the page', style: 'line', children: [field('d')] },
+  ]);
+  await expect(node(page, 'outer')).toHaveCSS('border-top-style', 'solid');
+  await expect(node(page, 'inner')).toHaveCSS('border-top-style', 'none');
+  // Inside the box, a group paints the box's surface, so nothing of the grid round it shows through; on the page, nothing.
+  await expect(node(page, 'inner')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(node(page, 'lined')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(node(page, 'on-page-line')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  expect(await doubleLines(page, '.fd-form *')).toEqual([]);
+  await screen(page, 'built-card-in-box');
   expect(problems).toEqual([]);
 });
 
