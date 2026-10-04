@@ -1,3 +1,4 @@
+import type { Page } from '@fieldia/core';
 import { elementFactory } from './chrome';
 import { blankPage, createDesigner } from './designer';
 import { tryIt, type TryIt } from './try-it';
@@ -106,5 +107,49 @@ describe('try it', () => {
     expect(viewer()).not.toBeNull();
     handle?.destroy();
     expect(viewer()).toBeNull();
+  });
+
+  it('says the score once a quiz is sent, out of the most its questions could earn, and nothing for a page without points', async () => {
+    const quiz = (score: boolean): Page => ({
+      fieldia: '0.1',
+      id: 'quiz',
+      title: 'Quiz',
+      data: { kind: 'responses' },
+      fields: {
+        capital: { type: 'selection', label: 'Capital of Egypt?', options: [{ value: 'cairo', label: 'Cairo', ...(score ? { score: 2 } : {}) }, { value: 'giza', label: 'Giza', ...(score ? { score: 0 } : {}) }] },
+        hidden: { type: 'selection', label: 'Never shown', options: [{ value: 'a', label: 'A', ...(score ? { score: 5 } : {}) }] },
+      },
+      layout: {
+        type: 'wizard',
+        id: 'steps',
+        children: [
+          {
+            type: 'step',
+            id: 'step-1',
+            label: 'Page 1',
+            children: [
+              { type: 'field', id: 'q-capital', field: 'capital', widget: 'radio' },
+              // Not shown, so not asked: its points are not among the most there were to earn.
+              { type: 'field', id: 'q-hidden', field: 'hidden', widget: 'radio', invisible: 'True' },
+            ],
+          },
+        ],
+      },
+    });
+    const sent = async (page: Page) => {
+      handle?.destroy();
+      handle = tryIt({ el: elementFactory(document), doc: document, designer: createDesigner({ page }), skin: 'outlined', onChange: () => undefined });
+      document.body.replaceChildren(handle.toggle, handle.element);
+      (handle.toggle.querySelector('button[data-mode="try"]') as HTMLButtonElement).click();
+      const frame = handle.element.querySelector('.fd-try-frame') as HTMLElement;
+      (frame.querySelector('input[type=radio]') as HTMLInputElement).click();
+      frame.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      for (let i = 0; i < 20 && (frame.querySelector('.fd-done') as HTMLElement | null)?.hidden !== false; i++) await new Promise((r) => setTimeout(r, 0));
+      return frame;
+    };
+    const frame = await sent(quiz(true));
+    expect((frame.querySelector('.fd-done') as HTMLElement).hidden).toBe(false);
+    expect(frame.querySelector('.fd-try-score')?.textContent).toBe('Score: 2 of 2');
+    expect((await sent(quiz(false))).querySelector('.fd-try-score')).toBeNull();
   });
 });

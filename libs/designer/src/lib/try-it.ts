@@ -1,4 +1,4 @@
-import { createMemoryDataSource, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, scoreOf, type Page, type Values } from '@fieldia/core';
 import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
@@ -10,7 +10,7 @@ import { sampleRows } from './samples';
  * Try it: the page working as people will use it, in place of the editor —
  * at a desktop's, a tablet's or a phone's width, left to right or right to
  * left in Arabic. Nothing typed here is kept: each time it is tried, the page
- * is drawn afresh from the draft.
+ * is drawn afresh from the draft. A quiz, once sent, says its score.
  */
 
 export interface TryItOptions {
@@ -82,13 +82,31 @@ export function tryIt(options: TryItOptions): TryIt {
     if (!trying) return;
     frame.dataset['width'] = width;
     const page = designer.getPage();
+    const dataSource = createMemoryDataSource({ records: madeUp(page) });
+    // Sent: the answers' score, under the viewer's thanks, when the page gives points.
+    const send = dataSource.submit.bind(dataSource);
+    dataSource.submit = async (request) => {
+      const result = await send(request);
+      showScore(page, request.values);
+      return result;
+    };
     viewer = mountViewer(frame, {
       page,
-      dataSource: createMemoryDataSource({ records: madeUp(page) }),
+      dataSource,
       skin: options.skin,
       dir: direction,
       ...(direction === 'rtl' ? { locale: 'ar' as const } : {}),
     });
+  }
+  /** "Score: 3 of 5": the points of the questions that were asked, out of the most they could earn. */
+  function showScore(page: Page, values: Values) {
+    const asked = Object.fromEntries(Object.entries(page.fields).filter(([name]) => name in values));
+    const result = scoreOf({ ...page, fields: asked }, values);
+    const done = frame.querySelector('.fd-done');
+    done?.querySelector('.fd-try-score')?.remove();
+    if (!result || !done) return;
+    const words = direction === 'rtl' ? `النتيجة: ${result.score} من ${result.max}` : `Score: ${result.score} of ${result.max}`;
+    done.insertBefore(el('p', { class: 'fd-try-score', role: 'status' }, words), done.querySelector('button'));
   }
   function show() {
     design.setAttribute('aria-pressed', String(!trying));

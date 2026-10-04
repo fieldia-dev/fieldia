@@ -170,6 +170,8 @@ export const DESIGNER_CSS = /* css */ `
 .fd-try-frame { margin-inline: auto; width: 100%; max-width: 1100px; box-sizing: border-box; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: 20px; transition: max-width 0.3s ease; }
 .fd-try-frame[data-width="tablet"] { max-width: 768px; }
 .fd-try-frame[data-width="phone"] { max-width: 390px; padding: 14px; }
+/* A quiz sent in Try it: its score, under the thanks. */
+.fd-try-score { margin: 0; font-size: 17px; font-weight: 650; color: var(--fd-accent); font-variant-numeric: tabular-nums; }
 @media (prefers-reduced-motion: reduce) { .fd-try-frame { transition: none; } }
 
 /* ---- the screen editor: toolbox, canvas, panel ---- */
