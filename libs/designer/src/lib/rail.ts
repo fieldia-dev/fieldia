@@ -3,6 +3,7 @@ import type { Designer, DesignerState } from './designer';
 import { storedAs } from './kinds';
 import { outlineView } from './outline-view';
 import type { ToolboxHandle } from './toolbox';
+import { setAttr, setHidden } from './writes';
 
 /**
  * The editor's left side, in three tabs: Add — the toolbox; Outline — the
@@ -132,10 +133,10 @@ export function rail(options: RailOptions): Rail {
 
   function draw(state: DesignerState) {
     for (const t of tabs) {
-      t.setAttribute('aria-selected', String(t.dataset['rail'] === pane));
-      t.tabIndex = t.dataset['rail'] === pane ? 0 : -1;
+      setAttr(t, 'aria-selected', String(t.dataset['rail'] === pane));
+      setAttr(t, 'tabindex', t.dataset['rail'] === pane ? '0' : '-1');
     }
-    for (const [name, p] of Object.entries(panes)) p.hidden = name !== pane;
+    for (const [name, p] of Object.entries(panes)) setHidden(p, name !== pane);
     tree.update(state, pane === 'outline');
     if (pane === 'data') drawData(state);
   }

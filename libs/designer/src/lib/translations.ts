@@ -79,8 +79,17 @@ export const pageLanguage = (page: Page): string => page.language ?? 'en';
 /** The languages the page keeps translations in, in the order they were added. */
 export const languagesOf = (page: Page): string[] => Object.keys(page.translations ?? {});
 
+/** Each language's name, found once: a list of languages sorted by name asks for each many times. */
+const names = new Map<string, string>();
+
 /** A language's name in English: `ar` is Arabic. The browser's names, or the common ones', or the tag itself. */
 export function languageName(tag: string): string {
+  let name = names.get(tag);
+  if (name === undefined) names.set(tag, (name = nameOf(tag)));
+  return name;
+}
+
+function nameOf(tag: string): string {
   try {
     const name = new Intl.DisplayNames(['en'], { type: 'language' }).of(tag);
     if (name && name !== tag) return name;
@@ -109,16 +118,37 @@ export function languageTag(typed: string): string | null {
   return named ?? canonicalTag(text);
 }
 
+/** The words last worked out, and the page they are of. */
+let words: { page: Page; words: readonly string[] } | null = null;
+
+/**
+ * The page's words (`pageWords`), worked out once for a page, and kept for the
+ * next while only its translations change — as they do at each key typed into
+ * the translations' grid: a page's words are never its translations.
+ */
+export function wordsOf(page: Page): readonly string[] {
+  if (!words || !sameButTranslations(words.page, page)) words = { page, words: Object.freeze(pageWords(page)) };
+  else words = { page, words: words.words };
+  return words.words;
+}
+
+function sameButTranslations(a: Page, b: Page): boolean {
+  if (a === b) return true;
+  const keys = Object.keys(a).filter((key) => key !== 'translations');
+  const others = Object.keys(b).filter((key) => key !== 'translations');
+  return keys.length === others.length && keys.every((key, i) => key === others[i] && a[key as keyof Page] === b[key as keyof Page]);
+}
+
 /** How many of the page's words a language has, of all of them. */
 export function translationProgress(page: Page, tag: string): { done: number; total: number } {
-  const words = pageWords(page);
+  const words = wordsOf(page);
   const kept = page.translations?.[tag] ?? {};
   return { done: words.filter((word) => kept[word]).length, total: words.length };
 }
 
 /** Words some language translates that the page no longer shows, in the order they are kept. */
 export function staleWords(page: Page): string[] {
-  const shown = new Set(pageWords(page));
+  const shown = new Set(wordsOf(page));
   return [...new Set(Object.values(page.translations ?? {}).flatMap((words) => Object.keys(words)))].filter((word) => !shown.has(word));
 }
 

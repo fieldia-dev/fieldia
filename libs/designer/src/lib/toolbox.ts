@@ -5,6 +5,7 @@ import type { ElementFactory } from './chrome';
 import type { ModelField, QuestionKind } from './designer';
 import { designerIcon } from './icons';
 import { kindOfField, storedAs } from './kinds';
+import { setAttr, setData, setHidden } from './writes';
 
 /**
  * The toolbox: every kind of field as an icon and a short name, in groups
@@ -136,7 +137,7 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
     let any = false;
     for (const g of [fromModel, ...kindGroups, layout]) {
       const shut = folded.has(g.key) && !query;
-      g.heading.setAttribute('aria-expanded', String(!shut));
+      setAttr(g.heading, 'aria-expanded', String(!shut));
       g.element.classList.toggle('fd-tool-shut', shut);
       let shown = 0;
       for (const t of g.tiles.children as HTMLCollectionOf<HTMLElement>) {
@@ -144,14 +145,14 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
         const block = blockTiles.includes(t as HTMLButtonElement);
         const simpleOnly = g === layout && !block;
         const unavailable = (g !== fromModel && !kindsOn) || (t === tabsTile && tabsTile.dataset['allowed'] !== 'true') || (block && !advancedOn) || (simpleOnly && advancedOn);
-        t.hidden = unavailable || (!!query && !name.includes(query));
+        setHidden(t, unavailable || (!!query && !name.includes(query)));
         if (!t.hidden) shown++;
       }
-      g.tiles.hidden = shut;
-      g.element.hidden = shown === 0;
+      setHidden(g.tiles, shut);
+      setHidden(g.element, shown === 0);
       if (shown) any = true;
     }
-    none.hidden = any;
+    setHidden(none, any);
   }
   find.addEventListener('input', () => {
     query = find.value.trim().toLowerCase();
@@ -176,7 +177,7 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
         fromModel.count.textContent = String(modelFields.length);
         fromModel.count.hidden = modelFields.length === 0;
       }
-      tabsTile.dataset['allowed'] = String(tabs);
+      setData(tabsTile, 'allowed', String(tabs));
       show();
     },
   };

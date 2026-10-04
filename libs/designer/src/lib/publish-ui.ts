@@ -16,6 +16,9 @@ import { pageChanges, type PageCheck } from './page-checks';
 export type GoTo = (id: string, part: 'label' | 'options') => void;
 
 const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+/** A box words are typed in; and how long a pause in typing is. */
+const TYPED = 'input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="file"]), textarea, [contenteditable="true"]';
+const TYPING_PAUSE = 350;
 const SEVERITY = { must: 'Must fix', should: 'Should fix' } as const;
 
 function runFix(designer: Designer, check: PageCheck, goTo: GoTo) {
@@ -86,15 +89,28 @@ export function checksButton(el: ElementFactory, doc: Document, designer: Design
   }
   element.addEventListener('click', () => (open ? open() : show()));
 
+  function recount() {
+    waiting = undefined;
+    const checks = designer.checks();
+    count.textContent = checks.length ? String(checks.length) : '✓';
+    element.setAttribute('aria-label', checks.length ? `Checks: ${checks.length} to look at` : 'Checks: all clear');
+    element.dataset['state'] = checks.some((c) => c.severity === 'must') ? 'must' : checks.length ? 'should' : 'clear';
+  }
+  /** A count put off while someone types. */
+  let waiting: ReturnType<typeof setTimeout> | undefined;
+
   return {
     element,
     update() {
-      const checks = designer.checks();
-      count.textContent = checks.length ? String(checks.length) : '✓';
-      element.setAttribute('aria-label', checks.length ? `Checks: ${checks.length} to look at` : 'Checks: all clear');
-      element.dataset['state'] = checks.some((c) => c.severity === 'must') ? 'must' : checks.length ? 'should' : 'clear';
+      clearTimeout(waiting);
+      // While someone types, the count waits for a pause: checking the whole page at each key would slow typing on a big one.
+      if (doc.activeElement?.matches(TYPED)) waiting = setTimeout(recount, TYPING_PAUSE);
+      else recount();
     },
-    destroy: () => open?.(),
+    destroy() {
+      clearTimeout(waiting);
+      open?.();
+    },
   };
 }
 

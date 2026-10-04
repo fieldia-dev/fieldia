@@ -9,6 +9,7 @@ import { designerIcon } from './icons';
 import { kindOfField } from './kinds';
 import { isBlank, type PageTemplate } from './templates';
 import { doneNotice, type DoneNotice } from './templates-notice';
+import { setHidden } from './writes';
 
 /**
  * The empty state: above a blank survey or screen, "Start from a template" —
@@ -156,7 +157,7 @@ export function startHere(options: StartOptions): StartHere {
   function update(state: DesignerState) {
     notice.update(state);
     const visible = showing(state.page);
-    panel.hidden = !visible;
+    setHidden(panel, !visible);
     if (visible) draw(offered());
   }
   return {

@@ -1,6 +1,7 @@
 import type { Designer, DesignerState } from './designer';
 import { SPANNED } from './layout-ops';
 import { locate, nameOf, spanOf } from './layout-tree';
+import { setHidden } from './writes';
 
 /**
  * Widths on the Advanced canvas, dragged where they are seen. A picked part's
@@ -50,7 +51,10 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
     options.columnsOf ??
     ((grid: HTMLElement) => {
       const style = doc.defaultView?.getComputedStyle(grid);
-      return { cols: (style?.gridTemplateColumns ?? '').split(' ').filter(Boolean).length || 1, gap: parseFloat(style?.columnGap ?? '') || 0 };
+      // The columns the canvas gives the grid, which lays it out with as many; else as the browser laid it out.
+      const given = Number(grid.style.getPropertyValue('--fd-cols'));
+      const cols = Number.isInteger(given) && given >= 1 ? given : (style?.gridTemplateColumns ?? '').split(' ').filter(Boolean).length || 1;
+      return { cols, gap: parseFloat(style?.columnGap ?? '') || 0 };
     });
 
   const handle = doc.createElement('div');
@@ -87,7 +91,7 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
     const [x, y] = [parseFloat(style?.paddingLeft ?? '') || 0, parseFloat(style?.paddingTop ?? '') || 0];
     return { left: r.left + x, right: r.right - x, top: r.top + y, bottom: r.bottom - y, width: r.width - 2 * x, height: r.height - 2 * y };
   };
-  const partEl = (id: string) => [...root.querySelectorAll<HTMLElement>('[data-node]')].find((e) => e.dataset['node'] === id && e.getAttribute('role') !== 'tab') ?? null;
+  const partEl = (id: string) => root.querySelector<HTMLElement>(`[data-node="${id.replace(/["\\]/g, '\\$&')}"]:not([role="tab"])`);
   const spanned = (id: string) => {
     const node = locate(designer.getPage(), id)?.node;
     return !!node && SPANNED.has(node.type);
@@ -102,8 +106,8 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
     last = { state, advanced };
     // Worked out first, shown once: hiding the gutter while it has the keys would lose them.
     const shown = placeMarks(state, advanced);
-    handle.hidden = shown !== 'handle';
-    gutter.hidden = shown !== 'gutter';
+    setHidden(handle, shown !== 'handle');
+    setHidden(gutter, shown !== 'gutter');
   }
 
   /** Put the handle or the gutter where it goes, and say which one shows. */

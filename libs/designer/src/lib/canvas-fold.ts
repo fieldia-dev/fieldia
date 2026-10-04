@@ -2,6 +2,7 @@ import type { SectionNode } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { foldOf } from './group-fold';
 import { designerIcon } from './icons';
+import { setAttr, setData, setHidden } from './writes';
 
 /**
  * The small mark before a group's title on the canvas when the group folds
@@ -18,13 +19,14 @@ export function foldMark(el: ElementFactory, doc: Document): FoldMark {
   const element = el('span', { class: 'fd-canvas-fold', role: 'img', hidden: '' }, designerIcon(doc, 'chevron'));
   return {
     element,
+    // Written only where it changed: a big page's every redraw would otherwise touch each group's mark.
     update(section) {
       const fold = foldOf(section);
-      element.hidden = fold === 'no' || !section.title;
-      element.dataset['fold'] = fold;
+      setHidden(element, fold === 'no' || !section.title);
+      setData(element, 'fold', fold);
       const words = fold === 'folded' ? 'Folds, starting folded' : 'Folds, starting open';
-      element.setAttribute('aria-label', words);
-      element.title = words;
+      setAttr(element, 'aria-label', words);
+      setAttr(element, 'title', words);
     },
   };
 }

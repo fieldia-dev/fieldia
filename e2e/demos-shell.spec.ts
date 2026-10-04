@@ -27,7 +27,9 @@ test('every page the demos serve has a card of its own, so a visitor can find it
   expect(Object.keys(pages).length).toBeGreaterThan(10);
   // A card with no page in its address shows the sign-up, as the demos do.
   const shown = new Set(DEMOS.map((demo) => new URLSearchParams(demo.query ?? '').get('page') ?? 'signup'));
-  const unnamed = Object.keys(pages).filter((name) => !shown.has(name));
+  // The 500-field page is for timing (e2e/perf.spec.ts), not for a visitor: it has no card on purpose.
+  const forTiming = new Set(['big']);
+  const unnamed = Object.keys(pages).filter((name) => !shown.has(name) && !forTiming.has(name));
   expect(unnamed).toEqual([]);
 });
 

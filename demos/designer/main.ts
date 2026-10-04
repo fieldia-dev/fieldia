@@ -3,16 +3,21 @@ import { APP_LISTS, pages, sampleDataSource } from '../shared/sample-data';
 import type { Skin } from '@fieldia/viewer';
 import { APP_KINDS, APP_WIDGETS } from '../shared/app-kinds';
 import { demoAssistant } from '../shared/assistant';
+import { bigSurvey } from '../shared/big-page';
+import { timeFirstPaint } from '../shared/timing';
 
 /**
  * The survey editor on its own page. `?start=survey` opens the example survey
- * to edit; `?assistant-delay=` sets how long the demo assistant takes, in ms.
+ * to edit, `?start=big` a survey of 500 questions, for timing;
+ * `?assistant-delay=` sets how long the demo assistant takes, in ms.
  */
 const params = new URLSearchParams(location.search);
 const store = createMemoryPageStore();
-const start = params.get('start') === 'survey' ? pages['survey'] : blankPage('survey', 'Event feedback');
+const start = params.get('start') === 'survey' ? pages['survey'] : params.get('start') === 'big' ? bigSurvey() : blankPage('survey', 'Event feedback');
 // The app's own kind, an IBAN, and the widget that draws it; and a stand-in for the app's own assistant.
 const assistant = demoAssistant({ delay: Number(params.get('assistant-delay') ?? 1200) });
+const opened = timeFirstPaint('designer');
 const designer = createDesigner({ page: start, store, lists: APP_LISTS, kinds: APP_KINDS, assistant });
 const handle = mountSurveyEditor(document.getElementById('app') as HTMLElement, { designer, skin: (params.get('skin') as Skin) ?? 'outlined', dataSource: sampleDataSource(), widgets: APP_WIDGETS });
+opened();
 Object.assign(window, { fieldiaDesigner: { designer, store, handle } });

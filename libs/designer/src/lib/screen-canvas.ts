@@ -1,4 +1,4 @@
-import { createForm, type FieldNode, type Form, type LayoutNode, type Page, type SectionNode, type TabsNode } from '@fieldia/core';
+import { createForm, type Field, type FieldNode, type Form, type LayoutNode, type Page, type SectionNode, type TabsNode } from '@fieldia/core';
 import { applyLook, labelPlace, planSection, type Place } from '@fieldia/viewer';
 import { createWidget, type Widget, type WidgetFactory } from '@fieldia/widgets';
 import { advancedDrag } from './canvas-advanced';
@@ -21,6 +21,7 @@ import { ruleMarks } from './rules-marks';
 import { tabHolds } from './page-tree';
 import { sampleRows } from './samples';
 import { foldMark, type FoldMark } from './canvas-fold';
+import { setAttr, setData, setHidden, setText } from './writes';
 
 /**
  * The screen editor's canvas: the page drawn the way the viewer draws it —
@@ -108,6 +109,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   /** The size shown: the one chosen, in Advanced; a desktop, in Simple. */
   const shownSize = (): ScreenSize => (mode === 'advanced' ? size : 'desktop');
   let visible: string[] = [];
+  /** The look the canvas wears now. */
+  let worn: { look: Page['look'] } | null = null;
   /** Every part drawn this time round, by id. */
   let drawnIds = new Set<string>();
 
@@ -133,6 +136,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     bar: FieldBar | null;
     options: OptionsEditor | null;
     settings: InlineSettings | null;
+    /** What a card not being edited was drawn from: while all of it is the same, the card stays as it is. */
+    drawn: { node: FieldNode; def: Field; labels: Place['labels']; picked: boolean; sample: number | null } | null;
   }
   const cards = new Map<string, Card>();
 
@@ -150,7 +155,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       const label = el('label', { class: 'fd-label' });
       const help = el('div', { class: 'fd-help' });
       const element = el('div', { class: 'fd-field fd-canvas-field', 'data-node': id }, gripOf(), label, widgetBox, help);
-      return { element, editing, widgetBox, widget: null, painted: '', label, help, bar: null, options: null, settings: null };
+      return { element, editing, widgetBox, widget: null, painted: '', label, help, bar: null, options: null, settings: null, drawn: null };
     }
     const bar = fieldBar({ el, doc, designer, id, more: options.more });
     const label = el('input', { class: 'fd-canvas-label-input', 'data-inline': 'label', 'aria-label': 'Label', autocomplete: 'off' });
@@ -185,7 +190,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       settings.element,
       help
     );
-    return { element, editing, widgetBox, widget: null, painted: '', label, help, bar, options: choices, settings };
+    return { element, editing, widgetBox, widget: null, painted: '', label, help, bar, options: choices, settings, drawn: null };
   }
 
   /** As wide as its words, so the required mark stays beside them. */
@@ -196,7 +201,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   function drawCard(node: FieldNode, labels: Place['labels'], place: { index: number; underTabs: boolean; columns: number }): HTMLElement {
     const def = page.fields[node.field];
     const editing = selected === node.id;
-    const ownChoice = def.type === 'selection' && !designer.isFromModel(node.id);
+    // Only the card being edited types its options in place: asked of it alone, as asking walks the page.
+    const ownChoice = editing && def.type === 'selection' && !designer.isFromModel(node.id);
     let card = cards.get(node.id);
     if (card && (card.editing !== editing || (editing && !!card.options !== ownChoice))) {
       dropCard(card);
@@ -204,11 +210,16 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     }
     if (!card) cards.set(node.id, (card = buildCard(node.id, editing, ownChoice)));
     const element = card.element;
+    // A card not being edited, drawn from the same field, picked or not as before, for the same record: as it is.
+    const isPicked = picked.includes(node.id) && picked.length > 1;
+    const was = card.drawn;
+    if (!editing && was?.node === node && was.def === def && was.labels === labels && was.picked === isPicked && was.sample === sample) return element;
+    card.drawn = editing ? null : { node, def, labels, picked: isPicked, sample };
     element.dataset['type'] = def.type;
     const labelsAt = labelPlace(node, def.type, labels);
     if (labelsAt) element.dataset['labels'] = labelsAt;
     else delete element.dataset['labels'];
-    element.classList.toggle('fd-canvas-picked', picked.includes(node.id) && picked.length > 1);
+    element.classList.toggle('fd-canvas-picked', isPicked);
     if (node.colspan) element.style.setProperty('--fd-span', String(node.colspan));
     else element.style.removeProperty('--fd-span');
     element.classList.toggle('fd-required', def.required === true || node.required === true);
@@ -309,10 +320,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     if (!view) sections.set(section.id, (view = makeSection(section.id, tag)));
     visible.push(section.id);
     const element = view.element;
-    element.dataset['style'] = plan.style;
-    if (plan.at) element.dataset['place'] = plan.at;
-    else delete element.dataset['place'];
-    element.toggleAttribute('data-on-page', plan.style === 'card' && place.onPage);
+    setData(element, 'style', plan.style);
+    setData(element, 'place', plan.at || undefined);
+    setAttr(element, 'data-on-page', plan.style === 'card' && place.onPage ? '' : null);
     element.classList.toggle('fd-canvas-arrangement', plan.arrangement);
     span(element, section.colspan);
     if (section.labelWidth) element.style.setProperty('--fd-label-width', `${section.labelWidth}px`);
@@ -321,15 +331,15 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     element.classList.toggle('fd-canvas-selected', isPicked);
     element.classList.toggle('fd-canvas-picked', picked.includes(section.id) && picked.length > 1);
     // An arrangement has no title to show or type: it only holds parts.
-    view.legend.hidden = plan.arrangement;
-    view.title.textContent = section.title || 'Untitled section';
+    setHidden(view.legend, plan.arrangement);
+    setText(view.title, section.title || 'Untitled section');
     view.title.classList.toggle('fd-canvas-untitled', !section.title);
-    view.title.hidden = isPicked;
-    view.titleInput.hidden = !isPicked;
-    if (doc.activeElement !== view.titleInput) view.titleInput.value = section.title ?? '';
+    setHidden(view.title, isPicked);
+    setHidden(view.titleInput, !isPicked);
+    if (doc.activeElement !== view.titleInput && view.titleInput.value !== (section.title ?? '')) view.titleInput.value = section.title ?? '';
     view.fold.update(section);
-    view.description.hidden = !section.description;
-    view.description.textContent = section.description ?? '';
+    setHidden(view.description, !section.description);
+    setText(view.description, section.description ?? '');
     // On its grid's tracks it has no columns of its own; else its own, and those it keeps on smaller screens.
     const grid = view.grid;
     const columns = plan.at === 'tracks' ? null : section.columns;
@@ -350,9 +360,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     }
     const inner = section.children.map((child, index) => drawItem(child, plan.inner, { index, underTabs: underTabs && !section.title, columns: plan.inner.columns }));
     arrange(grid, inner);
-    view.empty.hidden = section.children.length > 0;
+    setHidden(view.empty, section.children.length > 0);
     const locked = mode === 'simple' && plan.arrangement && isPicked;
-    view.lock.hidden = !locked;
+    setHidden(view.lock, !locked);
     if (locked) (view.lock.firstElementChild as HTMLElement).textContent = lockWords(page, section);
     return element;
   }
@@ -494,7 +504,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     enabled: () => mode === 'simple',
     drop: (source, section, index) => {
       if ('node' in source) {
-        if (designer.placeNode(source.node, section, index)) designer.select(source.node);
+        designer.placeNode(source.node, section, index, { pick: true });
       } else options.dropTool(source.tool, section, index);
     },
   });
@@ -511,6 +521,25 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   // Advanced's guides: the columns of the grid the picked part sits on.
   const guides = canvasGuides({ root: body, designer });
   const widths = widthMarks({ canvas: element, root: body, designer, rtl: () => doc.defaultView?.getComputedStyle(element).direction === 'rtl' });
+  /**
+   * The width handle goes where the part picked is, so it is measured: in the
+   * next frame, once the whole editor has written this change, the page is
+   * laid out once — measured now, it would be laid out here and again after.
+   */
+  let widthsFor: DesignerState | null = null;
+  let gone = false;
+  function placeWidths(state: DesignerState) {
+    const view = doc.defaultView;
+    if (!view?.requestAnimationFrame) return widths.update(state, mode === 'advanced');
+    const asked = widthsFor !== null;
+    widthsFor = state;
+    if (asked) return;
+    view.requestAnimationFrame(() => {
+      const latest = widthsFor;
+      widthsFor = null;
+      if (latest && !gone) widths.update(latest, mode === 'advanced');
+    });
+  }
   const drag: CanvasDrag = {
     press: (source, event, tile) => (mode === 'advanced' ? advanced : simpleDrag).press(source, event, tile),
     destroy() {
@@ -532,21 +561,24 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       advanced.setEnabled(next === 'advanced');
     },
     update(state) {
-      element.dataset['size'] = shownSize();
+      setData(element, 'size', shownSize());
       page = state.page;
       selected = state.selected;
       picked = state.picked;
       visible = [];
       drawnIds = new Set();
-      // The page's look, worn as the form wears it: an attribute or token for each setting, none left from before.
-      for (const name of ['font', 'density', 'corners', 'scheme', 'accent']) element.removeAttribute(`data-${name}`);
-      for (const token of ['--fd-label-width', '--fd-look-accent', '--fd-look-accent-text', '--fd-look-accent-dark', '--fd-look-accent-dark-text']) element.style.removeProperty(token);
-      applyLook(element, page.look);
+      // The page's look, worn as the form wears it: an attribute or token for each setting, none left from before — when it changed.
+      if (worn === null || worn.look !== page.look) {
+        worn = { look: page.look };
+        for (const name of ['font', 'density', 'corners', 'scheme', 'accent']) element.removeAttribute(`data-${name}`);
+        for (const token of ['--fd-label-width', '--fd-look-accent', '--fd-look-accent-text', '--fd-look-accent-dark', '--fd-look-accent-dark-text']) element.style.removeProperty(token);
+        applyLook(element, page.look);
+      }
       // The page's own parts sit as the form puts them: one column, on the page — in a sheet, in its card.
       const root = page.layout;
       const sheet = root.type === 'sheet';
-      body.dataset['node'] = root.id;
-      body.dataset['container'] = root.id;
+      setData(body, 'node', root.id);
+      setData(body, 'container', root.id);
       body.classList.toggle('fd-sections', !sheet);
       const top: Place = { columns: 1, onPage: !sheet, labels: page.look?.labels };
       arrange(body, topOf(page).map((node, index) => drawItem(node, top, { index, underTabs: false, columns: 1 })));
@@ -566,7 +598,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
         sections.delete(id);
       }
       blocks.keep(drawnIds);
-      titleCard.hidden = root.type !== 'sheet' || !root.title;
+      setHidden(titleCard, root.type !== 'sheet' || !root.title);
       if (root.type === 'sheet' && root.title) {
         // A made-up record names itself in the title; else the field's name stands in, as a placeholder does.
         const value = sample === null ? null : form().getState().values[root.title.field];
@@ -576,7 +608,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       titleCard.classList.toggle('fd-canvas-selected', selected === null);
       header.update(page, selected, form);
       guides.update(state, mode === 'advanced');
-      widths.update(state, mode === 'advanced');
+      placeWidths(state);
       multi.update(state, mode === 'advanced');
       ruleMarks(element, page, designer);
     },
@@ -589,6 +621,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       input?.select();
     },
     destroy() {
+      gone = true;
       drag.destroy();
       widths.destroy();
       header.destroy();

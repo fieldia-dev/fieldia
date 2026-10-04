@@ -1,0 +1,7224 @@
+{
+  "fieldia": "0.1",
+  "id": "supplier-file",
+  "title": "Supplier qualification file",
+  "description": "Every section a buyer checks before a supplier is approved: 500 fields, for timing Fieldia at size.",
+  "data": {
+    "kind": "responses"
+  },
+  "fields": {
+    "s01_name": {
+      "type": "char",
+      "label": "Company name",
+      "required": true
+    },
+    "s01_code": {
+      "type": "char",
+      "label": "Company code"
+    },
+    "s01_phone": {
+      "type": "char",
+      "label": "Company phone"
+    },
+    "s01_email": {
+      "type": "char",
+      "label": "Company email"
+    },
+    "s01_website": {
+      "type": "char",
+      "label": "Company website"
+    },
+    "s01_start": {
+      "type": "date",
+      "label": "Company start date"
+    },
+    "s01_review": {
+      "type": "date",
+      "label": "Company review date"
+    },
+    "supplier_type": {
+      "type": "selection",
+      "label": "Supplier type",
+      "default": "local",
+      "options": [
+        {
+          "value": "local",
+          "label": "Local"
+        },
+        {
+          "value": "foreign",
+          "label": "Foreign"
+        }
+      ]
+    },
+    "s01_priority": {
+      "type": "selection",
+      "label": "Company priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s01_headcount": {
+      "type": "integer",
+      "label": "Company headcount",
+      "min": 0
+    },
+    "s01_budget": {
+      "type": "monetary",
+      "label": "Company budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s01_total": {
+      "type": "monetary",
+      "label": "Company total cost",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ],
+      "compute": "s01_headcount * s01_budget"
+    },
+    "s01_approved": {
+      "type": "boolean",
+      "label": "Company approved"
+    },
+    "s01_notes": {
+      "type": "text",
+      "label": "Company notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s01_manager": {
+      "type": "many2one",
+      "label": "Company account manager",
+      "relation": "employee"
+    },
+    "s01_categories": {
+      "type": "selection",
+      "label": "Company categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s01_rating": {
+      "type": "integer",
+      "label": "Company rating",
+      "min": 1,
+      "max": 5
+    },
+    "s01_deadline": {
+      "type": "datetime",
+      "label": "Company deadline"
+    },
+    "s01_address": {
+      "type": "char",
+      "label": "Company address"
+    },
+    "s01_reference": {
+      "type": "char",
+      "label": "Company reference"
+    },
+    "s02_name": {
+      "type": "char",
+      "label": "Head office name",
+      "required": true
+    },
+    "s02_code": {
+      "type": "char",
+      "label": "Head office code"
+    },
+    "s02_phone": {
+      "type": "char",
+      "label": "Head office phone"
+    },
+    "s02_email": {
+      "type": "char",
+      "label": "Head office email"
+    },
+    "s02_website": {
+      "type": "char",
+      "label": "Head office website"
+    },
+    "s02_start": {
+      "type": "date",
+      "label": "Head office start date"
+    },
+    "s02_review": {
+      "type": "date",
+      "label": "Head office review date"
+    },
+    "s02_status": {
+      "type": "selection",
+      "label": "Head office status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s02_priority": {
+      "type": "selection",
+      "label": "Head office priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s02_headcount": {
+      "type": "integer",
+      "label": "Head office headcount",
+      "min": 0
+    },
+    "s02_budget": {
+      "type": "monetary",
+      "label": "Head office budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s02_total": {
+      "type": "monetary",
+      "label": "Head office total cost",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ],
+      "compute": "s02_headcount * s02_budget"
+    },
+    "s02_approved": {
+      "type": "boolean",
+      "label": "Head office approved"
+    },
+    "s02_notes": {
+      "type": "text",
+      "label": "Head office notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s02_contact": {
+      "type": "char",
+      "label": "Head office contact"
+    },
+    "s02_categories": {
+      "type": "selection",
+      "label": "Head office categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s02_rating": {
+      "type": "integer",
+      "label": "Head office rating",
+      "min": 1,
+      "max": 5
+    },
+    "s02_deadline": {
+      "type": "datetime",
+      "label": "Head office deadline"
+    },
+    "s02_address": {
+      "type": "char",
+      "label": "Head office address"
+    },
+    "s02_reference": {
+      "type": "char",
+      "label": "Head office reference"
+    },
+    "s03_name": {
+      "type": "char",
+      "label": "Branch name",
+      "required": true
+    },
+    "s03_code": {
+      "type": "char",
+      "label": "Branch code"
+    },
+    "s03_phone": {
+      "type": "char",
+      "label": "Branch phone"
+    },
+    "s03_email": {
+      "type": "char",
+      "label": "Branch email"
+    },
+    "s03_website": {
+      "type": "char",
+      "label": "Branch website"
+    },
+    "s03_start": {
+      "type": "date",
+      "label": "Branch start date"
+    },
+    "s03_review": {
+      "type": "date",
+      "label": "Branch review date"
+    },
+    "s03_status": {
+      "type": "selection",
+      "label": "Branch status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s03_priority": {
+      "type": "selection",
+      "label": "Branch priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s03_headcount": {
+      "type": "integer",
+      "label": "Branch headcount",
+      "min": 0
+    },
+    "s03_budget": {
+      "type": "monetary",
+      "label": "Branch budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s03_total": {
+      "type": "monetary",
+      "label": "Branch total cost",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ],
+      "compute": "s03_headcount * s03_budget"
+    },
+    "s03_approved": {
+      "type": "boolean",
+      "label": "Branch approved"
+    },
+    "s03_notes": {
+      "type": "text",
+      "label": "Branch notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s03_contact": {
+      "type": "char",
+      "label": "Branch contact"
+    },
+    "s03_categories": {
+      "type": "selection",
+      "label": "Branch categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s03_rating": {
+      "type": "integer",
+      "label": "Branch rating",
+      "min": 1,
+      "max": 5
+    },
+    "s03_deadline": {
+      "type": "datetime",
+      "label": "Branch deadline"
+    },
+    "s03_address": {
+      "type": "char",
+      "label": "Branch address"
+    },
+    "s03_reference": {
+      "type": "char",
+      "label": "Branch reference"
+    },
+    "s04_name": {
+      "type": "char",
+      "label": "Warehouse name",
+      "required": true
+    },
+    "s04_code": {
+      "type": "char",
+      "label": "Warehouse code"
+    },
+    "s04_phone": {
+      "type": "char",
+      "label": "Warehouse phone"
+    },
+    "s04_email": {
+      "type": "char",
+      "label": "Warehouse email"
+    },
+    "s04_website": {
+      "type": "char",
+      "label": "Warehouse website"
+    },
+    "s04_start": {
+      "type": "date",
+      "label": "Warehouse start date"
+    },
+    "s04_review": {
+      "type": "date",
+      "label": "Warehouse review date"
+    },
+    "s04_status": {
+      "type": "selection",
+      "label": "Warehouse status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s04_priority": {
+      "type": "selection",
+      "label": "Warehouse priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s04_headcount": {
+      "type": "integer",
+      "label": "Warehouse headcount",
+      "min": 0
+    },
+    "s04_budget": {
+      "type": "monetary",
+      "label": "Warehouse budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s04_total": {
+      "type": "monetary",
+      "label": "Warehouse total cost",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ],
+      "compute": "s04_headcount * s04_budget"
+    },
+    "s04_approved": {
+      "type": "boolean",
+      "label": "Warehouse approved"
+    },
+    "s04_notes": {
+      "type": "text",
+      "label": "Warehouse notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s04_contact": {
+      "type": "char",
+      "label": "Warehouse contact"
+    },
+    "s04_categories": {
+      "type": "selection",
+      "label": "Warehouse categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s04_rating": {
+      "type": "integer",
+      "label": "Warehouse rating",
+      "min": 1,
+      "max": 5
+    },
+    "s04_deadline": {
+      "type": "datetime",
+      "label": "Warehouse deadline"
+    },
+    "s04_address": {
+      "type": "char",
+      "label": "Warehouse address"
+    },
+    "s04_reference": {
+      "type": "char",
+      "label": "Warehouse reference"
+    },
+    "s05_name": {
+      "type": "char",
+      "label": "Purchasing name",
+      "required": true
+    },
+    "s05_code": {
+      "type": "char",
+      "label": "Purchasing code"
+    },
+    "s05_phone": {
+      "type": "char",
+      "label": "Purchasing phone"
+    },
+    "s05_email": {
+      "type": "char",
+      "label": "Purchasing email"
+    },
+    "s05_website": {
+      "type": "char",
+      "label": "Purchasing website"
+    },
+    "s05_start": {
+      "type": "date",
+      "label": "Purchasing start date"
+    },
+    "s05_review": {
+      "type": "date",
+      "label": "Purchasing review date"
+    },
+    "s05_status": {
+      "type": "selection",
+      "label": "Purchasing status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s05_priority": {
+      "type": "selection",
+      "label": "Purchasing priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s05_headcount": {
+      "type": "integer",
+      "label": "Purchasing headcount",
+      "min": 0
+    },
+    "s05_budget": {
+      "type": "monetary",
+      "label": "Purchasing budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s05_total": {
+      "type": "monetary",
+      "label": "Purchasing total cost",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ],
+      "compute": "s05_headcount * s05_budget"
+    },
+    "s05_approved": {
+      "type": "boolean",
+      "label": "Purchasing approved"
+    },
+    "s05_notes": {
+      "type": "text",
+      "label": "Purchasing notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s05_contact": {
+      "type": "char",
+      "label": "Purchasing contact"
+    },
+    "s05_categories": {
+      "type": "selection",
+      "label": "Purchasing categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s05_rating": {
+      "type": "integer",
+      "label": "Purchasing rating",
+      "min": 1,
+      "max": 5
+    },
+    "s05_deadline": {
+      "type": "datetime",
+      "label": "Purchasing deadline"
+    },
+    "s05_address": {
+      "type": "char",
+      "label": "Purchasing address"
+    },
+    "s05_items": {
+      "type": "one2many",
+      "label": "Purchasing items",
+      "relation": "supplier.line",
+      "fields": {
+        "item": {
+          "type": "char",
+          "label": "Item"
+        },
+        "qty": {
+          "type": "integer",
+          "label": "Quantity",
+          "min": 0
+        },
+        "price": {
+          "type": "monetary",
+          "label": "Unit price",
+          "currency": "EGP",
+          "digits": [
+            12,
+            2
+          ]
+        },
+        "subtotal": {
+          "type": "monetary",
+          "label": "Subtotal",
+          "currency": "EGP",
+          "digits": [
+            12,
+            2
+          ],
+          "compute": "qty * price"
+        }
+      }
+    },
+    "s06_name": {
+      "type": "char",
+      "label": "Sales name",
+      "required": true
+    },
+    "s06_code": {
+      "type": "char",
+      "label": "Sales code"
+    },
+    "s06_phone": {
+      "type": "char",
+      "label": "Sales phone"
+    },
+    "s06_email": {
+      "type": "char",
+      "label": "Sales email"
+    },
+    "s06_website": {
+      "type": "char",
+      "label": "Sales website"
+    },
+    "s06_start": {
+      "type": "date",
+      "label": "Sales start date"
+    },
+    "s06_review": {
+      "type": "date",
+      "label": "Sales review date"
+    },
+    "s06_status": {
+      "type": "selection",
+      "label": "Sales status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s06_priority": {
+      "type": "selection",
+      "label": "Sales priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s06_headcount": {
+      "type": "integer",
+      "label": "Sales headcount",
+      "min": 0
+    },
+    "s06_budget": {
+      "type": "monetary",
+      "label": "Sales budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s06_total": {
+      "type": "monetary",
+      "label": "Sales total cost",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ],
+      "compute": "s06_headcount * s06_budget"
+    },
+    "s06_approved": {
+      "type": "boolean",
+      "label": "Sales approved"
+    },
+    "s06_notes": {
+      "type": "text",
+      "label": "Sales notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s06_manager": {
+      "type": "many2one",
+      "label": "Sales account manager",
+      "relation": "employee"
+    },
+    "s06_categories": {
+      "type": "selection",
+      "label": "Sales categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s06_rating": {
+      "type": "integer",
+      "label": "Sales rating",
+      "min": 1,
+      "max": 5
+    },
+    "s06_deadline": {
+      "type": "datetime",
+      "label": "Sales deadline"
+    },
+    "s06_address": {
+      "type": "char",
+      "label": "Sales address"
+    },
+    "s06_reference": {
+      "type": "char",
+      "label": "Sales reference"
+    },
+    "s07_name": {
+      "type": "char",
+      "label": "Finance name",
+      "required": true
+    },
+    "s07_code": {
+      "type": "char",
+      "label": "Finance code"
+    },
+    "s07_phone": {
+      "type": "char",
+      "label": "Finance phone"
+    },
+    "s07_email": {
+      "type": "char",
+      "label": "Finance email"
+    },
+    "s07_website": {
+      "type": "char",
+      "label": "Finance website"
+    },
+    "s07_start": {
+      "type": "date",
+      "label": "Finance start date"
+    },
+    "s07_review": {
+      "type": "date",
+      "label": "Finance review date"
+    },
+    "s07_status": {
+      "type": "selection",
+      "label": "Finance status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s07_priority": {
+      "type": "selection",
+      "label": "Finance priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s07_headcount": {
+      "type": "integer",
+      "label": "Finance headcount",
+      "min": 0
+    },
+    "s07_budget": {
+      "type": "monetary",
+      "label": "Finance budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s07_total": {
+      "type": "monetary",
+      "label": "Finance total cost",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ],
+      "compute": "s07_headcount * s07_budget"
+    },
+    "s07_approved": {
+      "type": "boolean",
+      "label": "Finance approved"
+    },
+    "s07_notes": {
+      "type": "text",
+      "label": "Finance notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s07_contact": {
+      "type": "char",
+      "label": "Finance contact"
+    },
+    "s07_categories": {
+      "type": "selection",
+      "label": "Finance categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s07_rating": {
+      "type": "integer",
+      "label": "Finance rating",
+      "min": 1,
+      "max": 5
+    },
+    "s07_deadline": {
+      "type": "datetime",
+      "label": "Finance deadline"
+    },
+    "s07_address": {
+      "type": "char",
+      "label": "Finance address"
+    },
+    "s07_reference": {
+      "type": "char",
+      "label": "Finance reference"
+    },
+    "s08_name": {
+      "type": "char",
+      "label": "Bank account name",
+      "required": true
+    },
+    "s08_code": {
+      "type": "char",
+      "label": "Bank account code"
+    },
+    "s08_phone": {
+      "type": "char",
+      "label": "Bank account phone"
+    },
+    "s08_email": {
+      "type": "char",
+      "label": "Bank account email"
+    },
+    "s08_website": {
+      "type": "char",
+      "label": "Bank account website"
+    },
+    "s08_start": {
+      "type": "date",
+      "label": "Bank account start date"
+    },
+    "s08_review": {
+      "type": "date",
+      "label": "Bank account review date"
+    },
+    "s08_status": {
+      "type": "selection",
+      "label": "Bank account status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s08_priority": {
+      "type": "selection",
+      "label": "Bank account priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s08_headcount": {
+      "type": "integer",
+      "label": "Bank account headcount",
+      "min": 0
+    },
+    "s08_budget": {
+      "type": "monetary",
+      "label": "Bank account budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s08_total": {
+      "type": "monetary",
+      "label": "Bank account total cost",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ],
+      "compute": "s08_headcount * s08_budget"
+    },
+    "s08_approved": {
+      "type": "boolean",
+      "label": "Bank account approved"
+    },
+    "s08_notes": {
+      "type": "text",
+      "label": "Bank account notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s08_contact": {
+      "type": "char",
+      "label": "Bank account contact"
+    },
+    "s08_categories": {
+      "type": "selection",
+      "label": "Bank account categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s08_rating": {
+      "type": "integer",
+      "label": "Bank account rating",
+      "min": 1,
+      "max": 5
+    },
+    "s08_deadline": {
+      "type": "datetime",
+      "label": "Bank account deadline"
+    },
+    "s08_address": {
+      "type": "char",
+      "label": "Bank account address"
+    },
+    "s08_reference": {
+      "type": "char",
+      "label": "Bank account reference"
+    },
+    "s09_name": {
+      "type": "char",
+      "label": "Tax name",
+      "required": true
+    },
+    "s09_code": {
+      "type": "char",
+      "label": "Tax code"
+    },
+    "s09_phone": {
+      "type": "char",
+      "label": "Tax phone"
+    },
+    "s09_email": {
+      "type": "char",
+      "label": "Tax email"
+    },
+    "s09_website": {
+      "type": "char",
+      "label": "Tax website"
+    },
+    "s09_start": {
+      "type": "date",
+      "label": "Tax start date"
+    },
+    "s09_review": {
+      "type": "date",
+      "label": "Tax review date"
+    },
+    "s09_status": {
+      "type": "selection",
+      "label": "Tax status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s09_priority": {
+      "type": "selection",
+      "label": "Tax priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s09_headcount": {
+      "type": "integer",
+      "label": "Tax headcount",
+      "min": 0
+    },
+    "s09_budget": {
+      "type": "monetary",
+      "label": "Tax budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s09_total": {
+      "type": "monetary",
+      "label": "Tax total cost",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ],
+      "compute": "s09_headcount * s09_budget"
+    },
+    "s09_approved": {
+      "type": "boolean",
+      "label": "Tax approved"
+    },
+    "s09_notes": {
+      "type": "text",
+      "label": "Tax notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s09_contact": {
+      "type": "char",
+      "label": "Tax contact"
+    },
+    "s09_categories": {
+      "type": "selection",
+      "label": "Tax categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s09_rating": {
+      "type": "integer",
+      "label": "Tax rating",
+      "min": 1,
+      "max": 5
+    },
+    "s09_deadline": {
+      "type": "datetime",
+      "label": "Tax deadline"
+    },
+    "s09_address": {
+      "type": "char",
+      "label": "Tax address"
+    },
+    "s09_reference": {
+      "type": "char",
+      "label": "Tax reference"
+    },
+    "s10_name": {
+      "type": "char",
+      "label": "Insurance name",
+      "required": true
+    },
+    "s10_code": {
+      "type": "char",
+      "label": "Insurance code"
+    },
+    "s10_phone": {
+      "type": "char",
+      "label": "Insurance phone"
+    },
+    "s10_email": {
+      "type": "char",
+      "label": "Insurance email"
+    },
+    "s10_website": {
+      "type": "char",
+      "label": "Insurance website"
+    },
+    "s10_start": {
+      "type": "date",
+      "label": "Insurance start date"
+    },
+    "s10_review": {
+      "type": "date",
+      "label": "Insurance review date"
+    },
+    "s10_status": {
+      "type": "selection",
+      "label": "Insurance status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s10_priority": {
+      "type": "selection",
+      "label": "Insurance priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s10_headcount": {
+      "type": "integer",
+      "label": "Insurance headcount",
+      "min": 0
+    },
+    "s10_budget": {
+      "type": "monetary",
+      "label": "Insurance budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s10_total": {
+      "type": "monetary",
+      "label": "Insurance total cost",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ],
+      "compute": "s10_headcount * s10_budget"
+    },
+    "s10_approved": {
+      "type": "boolean",
+      "label": "Insurance approved"
+    },
+    "s10_notes": {
+      "type": "text",
+      "label": "Insurance notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s10_contact": {
+      "type": "char",
+      "label": "Insurance contact"
+    },
+    "s10_categories": {
+      "type": "selection",
+      "label": "Insurance categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s10_rating": {
+      "type": "integer",
+      "label": "Insurance rating",
+      "min": 1,
+      "max": 5
+    },
+    "s10_deadline": {
+      "type": "datetime",
+      "label": "Insurance deadline"
+    },
+    "s10_address": {
+      "type": "char",
+      "label": "Insurance address"
+    },
+    "s10_reference": {
+      "type": "char",
+      "label": "Insurance reference"
+    },
+    "s11_name": {
+      "type": "char",
+      "label": "Quality name",
+      "required": true
+    },
+    "s11_code": {
+      "type": "char",
+      "label": "Quality code"
+    },
+    "s11_phone": {
+      "type": "char",
+      "label": "Quality phone"
+    },
+    "s11_email": {
+      "type": "char",
+      "label": "Quality email"
+    },
+    "s11_website": {
+      "type": "char",
+      "label": "Quality website"
+    },
+    "s11_start": {
+      "type": "date",
+      "label": "Quality start date"
+    },
+    "s11_review": {
+      "type": "date",
+      "label": "Quality review date"
+    },
+    "s11_status": {
+      "type": "selection",
+      "label": "Quality status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s11_priority": {
+      "type": "selection",
+      "label": "Quality priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s11_headcount": {
+      "type": "integer",
+      "label": "Quality headcount",
+      "min": 0
+    },
+    "s11_budget": {
+      "type": "monetary",
+      "label": "Quality budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s11_share": {
+      "type": "float",
+      "label": "Quality share (%)",
+      "min": 0,
+      "max": 100
+    },
+    "s11_approved": {
+      "type": "boolean",
+      "label": "Quality approved"
+    },
+    "s11_notes": {
+      "type": "text",
+      "label": "Quality notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s11_manager": {
+      "type": "many2one",
+      "label": "Quality account manager",
+      "relation": "employee"
+    },
+    "s11_categories": {
+      "type": "selection",
+      "label": "Quality categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s11_rating": {
+      "type": "integer",
+      "label": "Quality rating",
+      "min": 1,
+      "max": 5
+    },
+    "s11_deadline": {
+      "type": "datetime",
+      "label": "Quality deadline"
+    },
+    "s11_address": {
+      "type": "char",
+      "label": "Quality address"
+    },
+    "s11_reference": {
+      "type": "char",
+      "label": "Quality reference"
+    },
+    "s12_name": {
+      "type": "char",
+      "label": "Safety name",
+      "required": true
+    },
+    "s12_code": {
+      "type": "char",
+      "label": "Safety code"
+    },
+    "s12_phone": {
+      "type": "char",
+      "label": "Safety phone"
+    },
+    "s12_email": {
+      "type": "char",
+      "label": "Safety email"
+    },
+    "s12_website": {
+      "type": "char",
+      "label": "Safety website"
+    },
+    "s12_start": {
+      "type": "date",
+      "label": "Safety start date"
+    },
+    "s12_review": {
+      "type": "date",
+      "label": "Safety review date"
+    },
+    "s12_status": {
+      "type": "selection",
+      "label": "Safety status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s12_priority": {
+      "type": "selection",
+      "label": "Safety priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s12_headcount": {
+      "type": "integer",
+      "label": "Safety headcount",
+      "min": 0
+    },
+    "s12_budget": {
+      "type": "monetary",
+      "label": "Safety budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s12_share": {
+      "type": "float",
+      "label": "Safety share (%)",
+      "min": 0,
+      "max": 100
+    },
+    "s12_approved": {
+      "type": "boolean",
+      "label": "Safety approved"
+    },
+    "s12_notes": {
+      "type": "text",
+      "label": "Safety notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s12_contact": {
+      "type": "char",
+      "label": "Safety contact"
+    },
+    "s12_categories": {
+      "type": "selection",
+      "label": "Safety categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s12_rating": {
+      "type": "integer",
+      "label": "Safety rating",
+      "min": 1,
+      "max": 5
+    },
+    "s12_deadline": {
+      "type": "datetime",
+      "label": "Safety deadline"
+    },
+    "s12_address": {
+      "type": "char",
+      "label": "Safety address"
+    },
+    "s12_reference": {
+      "type": "char",
+      "label": "Safety reference"
+    },
+    "s13_name": {
+      "type": "char",
+      "label": "Environment name",
+      "required": true
+    },
+    "s13_code": {
+      "type": "char",
+      "label": "Environment code"
+    },
+    "s13_phone": {
+      "type": "char",
+      "label": "Environment phone"
+    },
+    "s13_email": {
+      "type": "char",
+      "label": "Environment email"
+    },
+    "s13_website": {
+      "type": "char",
+      "label": "Environment website"
+    },
+    "s13_start": {
+      "type": "date",
+      "label": "Environment start date"
+    },
+    "s13_review": {
+      "type": "date",
+      "label": "Environment review date"
+    },
+    "s13_status": {
+      "type": "selection",
+      "label": "Environment status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s13_priority": {
+      "type": "selection",
+      "label": "Environment priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s13_headcount": {
+      "type": "integer",
+      "label": "Environment headcount",
+      "min": 0
+    },
+    "s13_budget": {
+      "type": "monetary",
+      "label": "Environment budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s13_share": {
+      "type": "float",
+      "label": "Environment share (%)",
+      "min": 0,
+      "max": 100
+    },
+    "s13_approved": {
+      "type": "boolean",
+      "label": "Environment approved"
+    },
+    "s13_notes": {
+      "type": "text",
+      "label": "Environment notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s13_contact": {
+      "type": "char",
+      "label": "Environment contact"
+    },
+    "s13_categories": {
+      "type": "selection",
+      "label": "Environment categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s13_rating": {
+      "type": "integer",
+      "label": "Environment rating",
+      "min": 1,
+      "max": 5
+    },
+    "s13_deadline": {
+      "type": "datetime",
+      "label": "Environment deadline"
+    },
+    "s13_address": {
+      "type": "char",
+      "label": "Environment address"
+    },
+    "s13_reference": {
+      "type": "char",
+      "label": "Environment reference"
+    },
+    "s14_name": {
+      "type": "char",
+      "label": "Logistics name",
+      "required": true
+    },
+    "s14_code": {
+      "type": "char",
+      "label": "Logistics code"
+    },
+    "s14_phone": {
+      "type": "char",
+      "label": "Logistics phone"
+    },
+    "s14_email": {
+      "type": "char",
+      "label": "Logistics email"
+    },
+    "s14_website": {
+      "type": "char",
+      "label": "Logistics website"
+    },
+    "s14_start": {
+      "type": "date",
+      "label": "Logistics start date"
+    },
+    "s14_review": {
+      "type": "date",
+      "label": "Logistics review date"
+    },
+    "s14_status": {
+      "type": "selection",
+      "label": "Logistics status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s14_priority": {
+      "type": "selection",
+      "label": "Logistics priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s14_headcount": {
+      "type": "integer",
+      "label": "Logistics headcount",
+      "min": 0
+    },
+    "s14_budget": {
+      "type": "monetary",
+      "label": "Logistics budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s14_share": {
+      "type": "float",
+      "label": "Logistics share (%)",
+      "min": 0,
+      "max": 100
+    },
+    "s14_approved": {
+      "type": "boolean",
+      "label": "Logistics approved"
+    },
+    "s14_notes": {
+      "type": "text",
+      "label": "Logistics notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s14_contact": {
+      "type": "char",
+      "label": "Logistics contact"
+    },
+    "s14_categories": {
+      "type": "selection",
+      "label": "Logistics categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s14_rating": {
+      "type": "integer",
+      "label": "Logistics rating",
+      "min": 1,
+      "max": 5
+    },
+    "s14_deadline": {
+      "type": "datetime",
+      "label": "Logistics deadline"
+    },
+    "s14_address": {
+      "type": "char",
+      "label": "Logistics address"
+    },
+    "s14_reference": {
+      "type": "char",
+      "label": "Logistics reference"
+    },
+    "s15_name": {
+      "type": "char",
+      "label": "Fleet name",
+      "required": true
+    },
+    "s15_code": {
+      "type": "char",
+      "label": "Fleet code"
+    },
+    "s15_phone": {
+      "type": "char",
+      "label": "Fleet phone"
+    },
+    "s15_email": {
+      "type": "char",
+      "label": "Fleet email"
+    },
+    "s15_website": {
+      "type": "char",
+      "label": "Fleet website"
+    },
+    "s15_start": {
+      "type": "date",
+      "label": "Fleet start date"
+    },
+    "s15_review": {
+      "type": "date",
+      "label": "Fleet review date"
+    },
+    "s15_status": {
+      "type": "selection",
+      "label": "Fleet status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s15_priority": {
+      "type": "selection",
+      "label": "Fleet priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s15_headcount": {
+      "type": "integer",
+      "label": "Fleet headcount",
+      "min": 0
+    },
+    "s15_budget": {
+      "type": "monetary",
+      "label": "Fleet budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s15_share": {
+      "type": "float",
+      "label": "Fleet share (%)",
+      "min": 0,
+      "max": 100
+    },
+    "s15_approved": {
+      "type": "boolean",
+      "label": "Fleet approved"
+    },
+    "s15_notes": {
+      "type": "text",
+      "label": "Fleet notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s15_contact": {
+      "type": "char",
+      "label": "Fleet contact"
+    },
+    "s15_categories": {
+      "type": "selection",
+      "label": "Fleet categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s15_rating": {
+      "type": "integer",
+      "label": "Fleet rating",
+      "min": 1,
+      "max": 5
+    },
+    "s15_deadline": {
+      "type": "datetime",
+      "label": "Fleet deadline"
+    },
+    "s15_address": {
+      "type": "char",
+      "label": "Fleet address"
+    },
+    "s15_reference": {
+      "type": "char",
+      "label": "Fleet reference"
+    },
+    "s16_name": {
+      "type": "char",
+      "label": "Production name",
+      "required": true
+    },
+    "s16_code": {
+      "type": "char",
+      "label": "Production code"
+    },
+    "s16_phone": {
+      "type": "char",
+      "label": "Production phone"
+    },
+    "s16_email": {
+      "type": "char",
+      "label": "Production email"
+    },
+    "s16_website": {
+      "type": "char",
+      "label": "Production website"
+    },
+    "s16_start": {
+      "type": "date",
+      "label": "Production start date"
+    },
+    "s16_review": {
+      "type": "date",
+      "label": "Production review date"
+    },
+    "s16_status": {
+      "type": "selection",
+      "label": "Production status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s16_priority": {
+      "type": "selection",
+      "label": "Production priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s16_headcount": {
+      "type": "integer",
+      "label": "Production headcount",
+      "min": 0
+    },
+    "s16_budget": {
+      "type": "monetary",
+      "label": "Production budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s16_share": {
+      "type": "float",
+      "label": "Production share (%)",
+      "min": 0,
+      "max": 100
+    },
+    "s16_approved": {
+      "type": "boolean",
+      "label": "Production approved"
+    },
+    "s16_notes": {
+      "type": "text",
+      "label": "Production notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s16_manager": {
+      "type": "many2one",
+      "label": "Production account manager",
+      "relation": "employee"
+    },
+    "s16_categories": {
+      "type": "selection",
+      "label": "Production categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s16_rating": {
+      "type": "integer",
+      "label": "Production rating",
+      "min": 1,
+      "max": 5
+    },
+    "s16_deadline": {
+      "type": "datetime",
+      "label": "Production deadline"
+    },
+    "s16_address": {
+      "type": "char",
+      "label": "Production address"
+    },
+    "s16_reference": {
+      "type": "char",
+      "label": "Production reference"
+    },
+    "s17_name": {
+      "type": "char",
+      "label": "Maintenance name",
+      "required": true
+    },
+    "s17_code": {
+      "type": "char",
+      "label": "Maintenance code"
+    },
+    "s17_phone": {
+      "type": "char",
+      "label": "Maintenance phone"
+    },
+    "s17_email": {
+      "type": "char",
+      "label": "Maintenance email"
+    },
+    "s17_website": {
+      "type": "char",
+      "label": "Maintenance website"
+    },
+    "s17_start": {
+      "type": "date",
+      "label": "Maintenance start date"
+    },
+    "s17_review": {
+      "type": "date",
+      "label": "Maintenance review date"
+    },
+    "s17_status": {
+      "type": "selection",
+      "label": "Maintenance status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s17_priority": {
+      "type": "selection",
+      "label": "Maintenance priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s17_headcount": {
+      "type": "integer",
+      "label": "Maintenance headcount",
+      "min": 0
+    },
+    "s17_budget": {
+      "type": "monetary",
+      "label": "Maintenance budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s17_share": {
+      "type": "float",
+      "label": "Maintenance share (%)",
+      "min": 0,
+      "max": 100
+    },
+    "s17_approved": {
+      "type": "boolean",
+      "label": "Maintenance approved"
+    },
+    "s17_notes": {
+      "type": "text",
+      "label": "Maintenance notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s17_contact": {
+      "type": "char",
+      "label": "Maintenance contact"
+    },
+    "s17_categories": {
+      "type": "selection",
+      "label": "Maintenance categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s17_rating": {
+      "type": "integer",
+      "label": "Maintenance rating",
+      "min": 1,
+      "max": 5
+    },
+    "s17_deadline": {
+      "type": "datetime",
+      "label": "Maintenance deadline"
+    },
+    "s17_address": {
+      "type": "char",
+      "label": "Maintenance address"
+    },
+    "s17_reference": {
+      "type": "char",
+      "label": "Maintenance reference"
+    },
+    "s18_name": {
+      "type": "char",
+      "label": "Contracts name",
+      "required": true
+    },
+    "s18_code": {
+      "type": "char",
+      "label": "Contracts code"
+    },
+    "s18_phone": {
+      "type": "char",
+      "label": "Contracts phone"
+    },
+    "s18_email": {
+      "type": "char",
+      "label": "Contracts email"
+    },
+    "s18_website": {
+      "type": "char",
+      "label": "Contracts website"
+    },
+    "s18_start": {
+      "type": "date",
+      "label": "Contracts start date"
+    },
+    "s18_review": {
+      "type": "date",
+      "label": "Contracts review date"
+    },
+    "s18_status": {
+      "type": "selection",
+      "label": "Contracts status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s18_priority": {
+      "type": "selection",
+      "label": "Contracts priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s18_headcount": {
+      "type": "integer",
+      "label": "Contracts headcount",
+      "min": 0
+    },
+    "s18_budget": {
+      "type": "monetary",
+      "label": "Contracts budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s18_share": {
+      "type": "float",
+      "label": "Contracts share (%)",
+      "min": 0,
+      "max": 100
+    },
+    "s18_approved": {
+      "type": "boolean",
+      "label": "Contracts approved"
+    },
+    "s18_notes": {
+      "type": "text",
+      "label": "Contracts notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s18_contact": {
+      "type": "char",
+      "label": "Contracts contact"
+    },
+    "s18_categories": {
+      "type": "selection",
+      "label": "Contracts categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s18_rating": {
+      "type": "integer",
+      "label": "Contracts rating",
+      "min": 1,
+      "max": 5
+    },
+    "s18_deadline": {
+      "type": "datetime",
+      "label": "Contracts deadline"
+    },
+    "s18_address": {
+      "type": "char",
+      "label": "Contracts address"
+    },
+    "s18_items": {
+      "type": "one2many",
+      "label": "Contracts items",
+      "relation": "supplier.line",
+      "fields": {
+        "item": {
+          "type": "char",
+          "label": "Item"
+        },
+        "qty": {
+          "type": "integer",
+          "label": "Quantity",
+          "min": 0
+        },
+        "price": {
+          "type": "monetary",
+          "label": "Unit price",
+          "currency": "EGP",
+          "digits": [
+            12,
+            2
+          ]
+        },
+        "subtotal": {
+          "type": "monetary",
+          "label": "Subtotal",
+          "currency": "EGP",
+          "digits": [
+            12,
+            2
+          ],
+          "compute": "qty * price"
+        }
+      }
+    },
+    "s19_name": {
+      "type": "char",
+      "label": "Legal name",
+      "required": true
+    },
+    "s19_code": {
+      "type": "char",
+      "label": "Legal code"
+    },
+    "s19_phone": {
+      "type": "char",
+      "label": "Legal phone"
+    },
+    "s19_email": {
+      "type": "char",
+      "label": "Legal email"
+    },
+    "s19_website": {
+      "type": "char",
+      "label": "Legal website"
+    },
+    "s19_start": {
+      "type": "date",
+      "label": "Legal start date"
+    },
+    "s19_review": {
+      "type": "date",
+      "label": "Legal review date"
+    },
+    "s19_status": {
+      "type": "selection",
+      "label": "Legal status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s19_priority": {
+      "type": "selection",
+      "label": "Legal priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s19_headcount": {
+      "type": "integer",
+      "label": "Legal headcount",
+      "min": 0
+    },
+    "s19_budget": {
+      "type": "monetary",
+      "label": "Legal budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s19_share": {
+      "type": "float",
+      "label": "Legal share (%)",
+      "min": 0,
+      "max": 100
+    },
+    "s19_approved": {
+      "type": "boolean",
+      "label": "Legal approved"
+    },
+    "s19_notes": {
+      "type": "text",
+      "label": "Legal notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s19_contact": {
+      "type": "char",
+      "label": "Legal contact"
+    },
+    "s19_categories": {
+      "type": "selection",
+      "label": "Legal categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s19_rating": {
+      "type": "integer",
+      "label": "Legal rating",
+      "min": 1,
+      "max": 5
+    },
+    "s19_deadline": {
+      "type": "datetime",
+      "label": "Legal deadline"
+    },
+    "s19_address": {
+      "type": "char",
+      "label": "Legal address"
+    },
+    "s19_reference": {
+      "type": "char",
+      "label": "Legal reference"
+    },
+    "s20_name": {
+      "type": "char",
+      "label": "IT name",
+      "required": true
+    },
+    "s20_code": {
+      "type": "char",
+      "label": "IT code"
+    },
+    "s20_phone": {
+      "type": "char",
+      "label": "IT phone"
+    },
+    "s20_email": {
+      "type": "char",
+      "label": "IT email"
+    },
+    "s20_website": {
+      "type": "char",
+      "label": "IT website"
+    },
+    "s20_start": {
+      "type": "date",
+      "label": "IT start date"
+    },
+    "s20_review": {
+      "type": "date",
+      "label": "IT review date"
+    },
+    "s20_status": {
+      "type": "selection",
+      "label": "IT status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s20_priority": {
+      "type": "selection",
+      "label": "IT priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s20_headcount": {
+      "type": "integer",
+      "label": "IT headcount",
+      "min": 0
+    },
+    "s20_budget": {
+      "type": "monetary",
+      "label": "IT budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s20_share": {
+      "type": "float",
+      "label": "IT share (%)",
+      "min": 0,
+      "max": 100
+    },
+    "s20_approved": {
+      "type": "boolean",
+      "label": "IT approved"
+    },
+    "s20_notes": {
+      "type": "text",
+      "label": "IT notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s20_contact": {
+      "type": "char",
+      "label": "IT contact"
+    },
+    "s20_categories": {
+      "type": "selection",
+      "label": "IT categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s20_rating": {
+      "type": "integer",
+      "label": "IT rating",
+      "min": 1,
+      "max": 5
+    },
+    "s20_deadline": {
+      "type": "datetime",
+      "label": "IT deadline"
+    },
+    "s20_address": {
+      "type": "char",
+      "label": "IT address"
+    },
+    "s20_reference": {
+      "type": "char",
+      "label": "IT reference"
+    },
+    "s21_name": {
+      "type": "char",
+      "label": "Data protection name",
+      "required": true
+    },
+    "s21_code": {
+      "type": "char",
+      "label": "Data protection code"
+    },
+    "s21_phone": {
+      "type": "char",
+      "label": "Data protection phone"
+    },
+    "s21_email": {
+      "type": "char",
+      "label": "Data protection email"
+    },
+    "s21_website": {
+      "type": "char",
+      "label": "Data protection website"
+    },
+    "s21_start": {
+      "type": "date",
+      "label": "Data protection start date"
+    },
+    "s21_review": {
+      "type": "date",
+      "label": "Data protection review date"
+    },
+    "s21_status": {
+      "type": "selection",
+      "label": "Data protection status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s21_priority": {
+      "type": "selection",
+      "label": "Data protection priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s21_headcount": {
+      "type": "integer",
+      "label": "Data protection headcount",
+      "min": 0
+    },
+    "s21_budget": {
+      "type": "monetary",
+      "label": "Data protection budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s21_share": {
+      "type": "float",
+      "label": "Data protection share (%)",
+      "min": 0,
+      "max": 100
+    },
+    "s21_approved": {
+      "type": "boolean",
+      "label": "Data protection approved"
+    },
+    "s21_notes": {
+      "type": "text",
+      "label": "Data protection notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s21_manager": {
+      "type": "many2one",
+      "label": "Data protection account manager",
+      "relation": "employee"
+    },
+    "s21_categories": {
+      "type": "selection",
+      "label": "Data protection categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s21_rating": {
+      "type": "integer",
+      "label": "Data protection rating",
+      "min": 1,
+      "max": 5
+    },
+    "s21_deadline": {
+      "type": "datetime",
+      "label": "Data protection deadline"
+    },
+    "s21_address": {
+      "type": "char",
+      "label": "Data protection address"
+    },
+    "s21_reference": {
+      "type": "char",
+      "label": "Data protection reference"
+    },
+    "s22_name": {
+      "type": "char",
+      "label": "Human resources name",
+      "required": true
+    },
+    "s22_code": {
+      "type": "char",
+      "label": "Human resources code"
+    },
+    "s22_phone": {
+      "type": "char",
+      "label": "Human resources phone"
+    },
+    "s22_email": {
+      "type": "char",
+      "label": "Human resources email"
+    },
+    "s22_website": {
+      "type": "char",
+      "label": "Human resources website"
+    },
+    "s22_start": {
+      "type": "date",
+      "label": "Human resources start date"
+    },
+    "s22_review": {
+      "type": "date",
+      "label": "Human resources review date"
+    },
+    "s22_status": {
+      "type": "selection",
+      "label": "Human resources status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s22_priority": {
+      "type": "selection",
+      "label": "Human resources priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s22_headcount": {
+      "type": "integer",
+      "label": "Human resources headcount",
+      "min": 0
+    },
+    "s22_budget": {
+      "type": "monetary",
+      "label": "Human resources budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s22_share": {
+      "type": "float",
+      "label": "Human resources share (%)",
+      "min": 0,
+      "max": 100
+    },
+    "s22_approved": {
+      "type": "boolean",
+      "label": "Human resources approved"
+    },
+    "s22_notes": {
+      "type": "text",
+      "label": "Human resources notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s22_contact": {
+      "type": "char",
+      "label": "Human resources contact"
+    },
+    "s22_categories": {
+      "type": "selection",
+      "label": "Human resources categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s22_rating": {
+      "type": "integer",
+      "label": "Human resources rating",
+      "min": 1,
+      "max": 5
+    },
+    "s22_deadline": {
+      "type": "datetime",
+      "label": "Human resources deadline"
+    },
+    "s22_address": {
+      "type": "char",
+      "label": "Human resources address"
+    },
+    "s22_reference": {
+      "type": "char",
+      "label": "Human resources reference"
+    },
+    "s23_name": {
+      "type": "char",
+      "label": "Training name",
+      "required": true
+    },
+    "s23_code": {
+      "type": "char",
+      "label": "Training code"
+    },
+    "s23_phone": {
+      "type": "char",
+      "label": "Training phone"
+    },
+    "s23_email": {
+      "type": "char",
+      "label": "Training email"
+    },
+    "s23_website": {
+      "type": "char",
+      "label": "Training website"
+    },
+    "s23_start": {
+      "type": "date",
+      "label": "Training start date"
+    },
+    "s23_review": {
+      "type": "date",
+      "label": "Training review date"
+    },
+    "s23_status": {
+      "type": "selection",
+      "label": "Training status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s23_priority": {
+      "type": "selection",
+      "label": "Training priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s23_headcount": {
+      "type": "integer",
+      "label": "Training headcount",
+      "min": 0
+    },
+    "s23_budget": {
+      "type": "monetary",
+      "label": "Training budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s23_share": {
+      "type": "float",
+      "label": "Training share (%)",
+      "min": 0,
+      "max": 100
+    },
+    "s23_approved": {
+      "type": "boolean",
+      "label": "Training approved"
+    },
+    "s23_notes": {
+      "type": "text",
+      "label": "Training notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s23_contact": {
+      "type": "char",
+      "label": "Training contact"
+    },
+    "s23_categories": {
+      "type": "selection",
+      "label": "Training categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s23_rating": {
+      "type": "integer",
+      "label": "Training rating",
+      "min": 1,
+      "max": 5
+    },
+    "s23_deadline": {
+      "type": "datetime",
+      "label": "Training deadline"
+    },
+    "s23_address": {
+      "type": "char",
+      "label": "Training address"
+    },
+    "s23_reference": {
+      "type": "char",
+      "label": "Training reference"
+    },
+    "s24_name": {
+      "type": "char",
+      "label": "Support name",
+      "required": true
+    },
+    "s24_code": {
+      "type": "char",
+      "label": "Support code"
+    },
+    "s24_phone": {
+      "type": "char",
+      "label": "Support phone"
+    },
+    "s24_email": {
+      "type": "char",
+      "label": "Support email"
+    },
+    "s24_website": {
+      "type": "char",
+      "label": "Support website"
+    },
+    "s24_start": {
+      "type": "date",
+      "label": "Support start date"
+    },
+    "s24_review": {
+      "type": "date",
+      "label": "Support review date"
+    },
+    "s24_status": {
+      "type": "selection",
+      "label": "Support status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s24_priority": {
+      "type": "selection",
+      "label": "Support priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s24_headcount": {
+      "type": "integer",
+      "label": "Support headcount",
+      "min": 0
+    },
+    "s24_budget": {
+      "type": "monetary",
+      "label": "Support budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s24_share": {
+      "type": "float",
+      "label": "Support share (%)",
+      "min": 0,
+      "max": 100
+    },
+    "s24_approved": {
+      "type": "boolean",
+      "label": "Support approved"
+    },
+    "s24_notes": {
+      "type": "text",
+      "label": "Support notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s24_contact": {
+      "type": "char",
+      "label": "Support contact"
+    },
+    "s24_categories": {
+      "type": "selection",
+      "label": "Support categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s24_rating": {
+      "type": "integer",
+      "label": "Support rating",
+      "min": 1,
+      "max": 5
+    },
+    "s24_deadline": {
+      "type": "datetime",
+      "label": "Support deadline"
+    },
+    "s24_address": {
+      "type": "char",
+      "label": "Support address"
+    },
+    "s24_reference": {
+      "type": "char",
+      "label": "Support reference"
+    },
+    "s25_name": {
+      "type": "char",
+      "label": "Sign-off name",
+      "required": true
+    },
+    "s25_code": {
+      "type": "char",
+      "label": "Sign-off code"
+    },
+    "s25_phone": {
+      "type": "char",
+      "label": "Sign-off phone"
+    },
+    "s25_email": {
+      "type": "char",
+      "label": "Sign-off email"
+    },
+    "s25_website": {
+      "type": "char",
+      "label": "Sign-off website"
+    },
+    "s25_start": {
+      "type": "date",
+      "label": "Sign-off start date"
+    },
+    "s25_review": {
+      "type": "date",
+      "label": "Sign-off review date"
+    },
+    "s25_status": {
+      "type": "selection",
+      "label": "Sign-off status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "active",
+          "label": "Active"
+        },
+        {
+          "value": "hold",
+          "label": "On hold"
+        },
+        {
+          "value": "closed",
+          "label": "Closed"
+        }
+      ]
+    },
+    "s25_priority": {
+      "type": "selection",
+      "label": "Sign-off priority",
+      "options": [
+        {
+          "value": "low",
+          "label": "Low"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "high",
+          "label": "High"
+        }
+      ]
+    },
+    "s25_headcount": {
+      "type": "integer",
+      "label": "Sign-off headcount",
+      "min": 0
+    },
+    "s25_budget": {
+      "type": "monetary",
+      "label": "Sign-off budget",
+      "currency": "EGP",
+      "digits": [
+        12,
+        2
+      ]
+    },
+    "s25_share": {
+      "type": "float",
+      "label": "Sign-off share (%)",
+      "min": 0,
+      "max": 100
+    },
+    "s25_approved": {
+      "type": "boolean",
+      "label": "Sign-off approved"
+    },
+    "s25_notes": {
+      "type": "text",
+      "label": "Sign-off notes",
+      "help": "Anything a reviewer should know."
+    },
+    "s25_contact": {
+      "type": "char",
+      "label": "Sign-off contact"
+    },
+    "s25_categories": {
+      "type": "selection",
+      "label": "Sign-off categories",
+      "multiple": true,
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        },
+        {
+          "value": "works",
+          "label": "Works"
+        },
+        {
+          "value": "consulting",
+          "label": "Consulting"
+        }
+      ]
+    },
+    "s25_rating": {
+      "type": "integer",
+      "label": "Sign-off rating",
+      "min": 1,
+      "max": 5
+    },
+    "s25_deadline": {
+      "type": "datetime",
+      "label": "Sign-off deadline"
+    },
+    "s25_address": {
+      "type": "char",
+      "label": "Sign-off address"
+    },
+    "s25_reference": {
+      "type": "char",
+      "label": "Sign-off reference"
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "supplier",
+    "children": [
+      {
+        "type": "section",
+        "id": "section-01",
+        "title": "Company",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s01-name",
+            "field": "s01_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-code",
+            "field": "s01_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-phone",
+            "field": "s01_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-email",
+            "field": "s01_email",
+            "widget": "email",
+            "validate": [
+              {
+                "endsWith": ".example",
+                "level": "warning",
+                "message": "Use the company’s own address if you can."
+              }
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-s01-website",
+            "field": "s01_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-start",
+            "field": "s01_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-review",
+            "field": "s01_review"
+          },
+          {
+            "type": "field",
+            "id": "f-supplier-type",
+            "field": "supplier_type",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-priority",
+            "field": "s01_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-headcount",
+            "field": "s01_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-budget",
+            "field": "s01_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-total",
+            "field": "s01_total"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-approved",
+            "field": "s01_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-notes",
+            "field": "s01_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s01-manager",
+            "field": "s01_manager"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-categories",
+            "field": "s01_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-rating",
+            "field": "s01_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-deadline",
+            "field": "s01_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-address",
+            "field": "s01_address"
+          },
+          {
+            "type": "field",
+            "id": "f-s01-reference",
+            "field": "s01_reference",
+            "invisible": "not s01_name"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-02",
+        "title": "Head office",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s02-name",
+            "field": "s02_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-code",
+            "field": "s02_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-phone",
+            "field": "s02_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-email",
+            "field": "s02_email",
+            "widget": "email",
+            "validate": [
+              {
+                "endsWith": ".example",
+                "level": "warning",
+                "message": "Use the company’s own address if you can."
+              }
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-s02-website",
+            "field": "s02_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-start",
+            "field": "s02_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-review",
+            "field": "s02_review"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-status",
+            "field": "s02_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-priority",
+            "field": "s02_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-headcount",
+            "field": "s02_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-budget",
+            "field": "s02_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-total",
+            "field": "s02_total"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-approved",
+            "field": "s02_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-notes",
+            "field": "s02_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s02-contact",
+            "field": "s02_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-categories",
+            "field": "s02_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-rating",
+            "field": "s02_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-deadline",
+            "field": "s02_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-address",
+            "field": "s02_address",
+            "invisible": "supplier_type != 'foreign'"
+          },
+          {
+            "type": "field",
+            "id": "f-s02-reference",
+            "field": "s02_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-03",
+        "title": "Branch",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s03-name",
+            "field": "s03_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-code",
+            "field": "s03_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-phone",
+            "field": "s03_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-email",
+            "field": "s03_email",
+            "widget": "email",
+            "validate": [
+              {
+                "endsWith": ".example",
+                "level": "warning",
+                "message": "Use the company’s own address if you can."
+              }
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-s03-website",
+            "field": "s03_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-start",
+            "field": "s03_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-review",
+            "field": "s03_review"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-status",
+            "field": "s03_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-priority",
+            "field": "s03_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-headcount",
+            "field": "s03_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-budget",
+            "field": "s03_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-total",
+            "field": "s03_total"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-approved",
+            "field": "s03_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-notes",
+            "field": "s03_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s03-contact",
+            "field": "s03_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-categories",
+            "field": "s03_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-rating",
+            "field": "s03_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-deadline",
+            "field": "s03_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-address",
+            "field": "s03_address",
+            "invisible": "supplier_type != 'foreign'"
+          },
+          {
+            "type": "field",
+            "id": "f-s03-reference",
+            "field": "s03_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-04",
+        "title": "Warehouse",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s04-name",
+            "field": "s04_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-code",
+            "field": "s04_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-phone",
+            "field": "s04_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-email",
+            "field": "s04_email",
+            "widget": "email",
+            "validate": [
+              {
+                "endsWith": ".example",
+                "level": "warning",
+                "message": "Use the company’s own address if you can."
+              }
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-s04-website",
+            "field": "s04_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-start",
+            "field": "s04_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-review",
+            "field": "s04_review"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-status",
+            "field": "s04_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-priority",
+            "field": "s04_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-headcount",
+            "field": "s04_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-budget",
+            "field": "s04_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-total",
+            "field": "s04_total"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-approved",
+            "field": "s04_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-notes",
+            "field": "s04_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s04-contact",
+            "field": "s04_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-categories",
+            "field": "s04_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-rating",
+            "field": "s04_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-deadline",
+            "field": "s04_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-address",
+            "field": "s04_address",
+            "invisible": "supplier_type != 'foreign'"
+          },
+          {
+            "type": "field",
+            "id": "f-s04-reference",
+            "field": "s04_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-05",
+        "title": "Purchasing",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s05-name",
+            "field": "s05_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-code",
+            "field": "s05_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-phone",
+            "field": "s05_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-email",
+            "field": "s05_email",
+            "widget": "email",
+            "validate": [
+              {
+                "endsWith": ".example",
+                "level": "warning",
+                "message": "Use the company’s own address if you can."
+              }
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-s05-website",
+            "field": "s05_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-start",
+            "field": "s05_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-review",
+            "field": "s05_review"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-status",
+            "field": "s05_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-priority",
+            "field": "s05_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-headcount",
+            "field": "s05_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-budget",
+            "field": "s05_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-total",
+            "field": "s05_total"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-approved",
+            "field": "s05_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-notes",
+            "field": "s05_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s05-contact",
+            "field": "s05_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-categories",
+            "field": "s05_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-rating",
+            "field": "s05_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-deadline",
+            "field": "s05_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-address",
+            "field": "s05_address",
+            "invisible": "supplier_type != 'foreign'"
+          },
+          {
+            "type": "field",
+            "id": "f-s05-items",
+            "field": "s05_items",
+            "colspan": 2
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-06",
+        "title": "Sales",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s06-name",
+            "field": "s06_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-code",
+            "field": "s06_code",
+            "validate": [
+              {
+                "pattern": "[A-Z]{2}-\\d{4}",
+                "message": "A code is two letters and four digits, such as AB-1234."
+              }
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-s06-phone",
+            "field": "s06_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-email",
+            "field": "s06_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-website",
+            "field": "s06_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-start",
+            "field": "s06_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-review",
+            "field": "s06_review",
+            "invisible": "not s06_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-status",
+            "field": "s06_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-priority",
+            "field": "s06_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-headcount",
+            "field": "s06_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-budget",
+            "field": "s06_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-total",
+            "field": "s06_total"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-approved",
+            "field": "s06_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-notes",
+            "field": "s06_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s06-manager",
+            "field": "s06_manager"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-categories",
+            "field": "s06_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-rating",
+            "field": "s06_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-deadline",
+            "field": "s06_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-address",
+            "field": "s06_address",
+            "invisible": "supplier_type != 'foreign'"
+          },
+          {
+            "type": "field",
+            "id": "f-s06-reference",
+            "field": "s06_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-07",
+        "title": "Finance",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s07-name",
+            "field": "s07_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-code",
+            "field": "s07_code",
+            "validate": [
+              {
+                "pattern": "[A-Z]{2}-\\d{4}",
+                "message": "A code is two letters and four digits, such as AB-1234."
+              }
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-s07-phone",
+            "field": "s07_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-email",
+            "field": "s07_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-website",
+            "field": "s07_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-start",
+            "field": "s07_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-review",
+            "field": "s07_review",
+            "invisible": "not s07_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-status",
+            "field": "s07_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-priority",
+            "field": "s07_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-headcount",
+            "field": "s07_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-budget",
+            "field": "s07_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-total",
+            "field": "s07_total"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-approved",
+            "field": "s07_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-notes",
+            "field": "s07_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s07-contact",
+            "field": "s07_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-categories",
+            "field": "s07_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-rating",
+            "field": "s07_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-deadline",
+            "field": "s07_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-address",
+            "field": "s07_address",
+            "invisible": "supplier_type != 'foreign'"
+          },
+          {
+            "type": "field",
+            "id": "f-s07-reference",
+            "field": "s07_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-08",
+        "title": "Bank account",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s08-name",
+            "field": "s08_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-code",
+            "field": "s08_code",
+            "validate": [
+              {
+                "pattern": "[A-Z]{2}-\\d{4}",
+                "message": "A code is two letters and four digits, such as AB-1234."
+              }
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-s08-phone",
+            "field": "s08_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-email",
+            "field": "s08_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-website",
+            "field": "s08_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-start",
+            "field": "s08_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-review",
+            "field": "s08_review",
+            "invisible": "not s08_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-status",
+            "field": "s08_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-priority",
+            "field": "s08_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-headcount",
+            "field": "s08_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-budget",
+            "field": "s08_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-total",
+            "field": "s08_total"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-approved",
+            "field": "s08_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-notes",
+            "field": "s08_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s08-contact",
+            "field": "s08_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-categories",
+            "field": "s08_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-rating",
+            "field": "s08_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-deadline",
+            "field": "s08_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-address",
+            "field": "s08_address",
+            "invisible": "supplier_type != 'foreign'"
+          },
+          {
+            "type": "field",
+            "id": "f-s08-reference",
+            "field": "s08_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-09",
+        "title": "Tax",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s09-name",
+            "field": "s09_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-code",
+            "field": "s09_code",
+            "validate": [
+              {
+                "pattern": "[A-Z]{2}-\\d{4}",
+                "message": "A code is two letters and four digits, such as AB-1234."
+              }
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-s09-phone",
+            "field": "s09_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-email",
+            "field": "s09_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-website",
+            "field": "s09_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-start",
+            "field": "s09_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-review",
+            "field": "s09_review",
+            "invisible": "not s09_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-status",
+            "field": "s09_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-priority",
+            "field": "s09_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-headcount",
+            "field": "s09_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-budget",
+            "field": "s09_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-total",
+            "field": "s09_total"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-approved",
+            "field": "s09_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-notes",
+            "field": "s09_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s09-contact",
+            "field": "s09_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-categories",
+            "field": "s09_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-rating",
+            "field": "s09_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-deadline",
+            "field": "s09_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-address",
+            "field": "s09_address",
+            "invisible": "supplier_type != 'foreign'"
+          },
+          {
+            "type": "field",
+            "id": "f-s09-reference",
+            "field": "s09_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-10",
+        "title": "Insurance",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s10-name",
+            "field": "s10_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-code",
+            "field": "s10_code",
+            "validate": [
+              {
+                "pattern": "[A-Z]{2}-\\d{4}",
+                "message": "A code is two letters and four digits, such as AB-1234."
+              }
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-s10-phone",
+            "field": "s10_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-email",
+            "field": "s10_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-website",
+            "field": "s10_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-start",
+            "field": "s10_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-review",
+            "field": "s10_review",
+            "invisible": "not s10_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-status",
+            "field": "s10_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-priority",
+            "field": "s10_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-headcount",
+            "field": "s10_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-budget",
+            "field": "s10_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-total",
+            "field": "s10_total"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-approved",
+            "field": "s10_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-notes",
+            "field": "s10_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s10-contact",
+            "field": "s10_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-categories",
+            "field": "s10_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-rating",
+            "field": "s10_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-deadline",
+            "field": "s10_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-address",
+            "field": "s10_address",
+            "invisible": "supplier_type != 'foreign'"
+          },
+          {
+            "type": "field",
+            "id": "f-s10-reference",
+            "field": "s10_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-11",
+        "title": "Quality",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s11-name",
+            "field": "s11_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-code",
+            "field": "s11_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-phone",
+            "field": "s11_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-email",
+            "field": "s11_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-website",
+            "field": "s11_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-start",
+            "field": "s11_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-review",
+            "field": "s11_review",
+            "invisible": "not s11_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-status",
+            "field": "s11_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-priority",
+            "field": "s11_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-headcount",
+            "field": "s11_headcount",
+            "validate": [
+              {
+                "max": 10000,
+                "message": "No more than 10,000 people."
+              }
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-s11-budget",
+            "field": "s11_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-share",
+            "field": "s11_share"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-approved",
+            "field": "s11_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-notes",
+            "field": "s11_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s11-manager",
+            "field": "s11_manager"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-categories",
+            "field": "s11_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-rating",
+            "field": "s11_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-deadline",
+            "field": "s11_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-address",
+            "field": "s11_address",
+            "invisible": "supplier_type != 'foreign'"
+          },
+          {
+            "type": "field",
+            "id": "f-s11-reference",
+            "field": "s11_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-12",
+        "title": "Safety",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s12-name",
+            "field": "s12_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-code",
+            "field": "s12_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-phone",
+            "field": "s12_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-email",
+            "field": "s12_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-website",
+            "field": "s12_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-start",
+            "field": "s12_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-review",
+            "field": "s12_review",
+            "invisible": "not s12_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-status",
+            "field": "s12_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-priority",
+            "field": "s12_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-headcount",
+            "field": "s12_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-budget",
+            "field": "s12_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-share",
+            "field": "s12_share"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-approved",
+            "field": "s12_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-notes",
+            "field": "s12_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s12-contact",
+            "field": "s12_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-categories",
+            "field": "s12_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-rating",
+            "field": "s12_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-deadline",
+            "field": "s12_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-address",
+            "field": "s12_address"
+          },
+          {
+            "type": "field",
+            "id": "f-s12-reference",
+            "field": "s12_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-13",
+        "title": "Environment",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s13-name",
+            "field": "s13_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-code",
+            "field": "s13_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-phone",
+            "field": "s13_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-email",
+            "field": "s13_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-website",
+            "field": "s13_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-start",
+            "field": "s13_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-review",
+            "field": "s13_review",
+            "invisible": "not s13_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-status",
+            "field": "s13_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-priority",
+            "field": "s13_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-headcount",
+            "field": "s13_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-budget",
+            "field": "s13_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-share",
+            "field": "s13_share"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-approved",
+            "field": "s13_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-notes",
+            "field": "s13_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s13-contact",
+            "field": "s13_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-categories",
+            "field": "s13_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-rating",
+            "field": "s13_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-deadline",
+            "field": "s13_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-address",
+            "field": "s13_address"
+          },
+          {
+            "type": "field",
+            "id": "f-s13-reference",
+            "field": "s13_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-14",
+        "title": "Logistics",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s14-name",
+            "field": "s14_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-code",
+            "field": "s14_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-phone",
+            "field": "s14_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-email",
+            "field": "s14_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-website",
+            "field": "s14_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-start",
+            "field": "s14_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-review",
+            "field": "s14_review",
+            "invisible": "not s14_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-status",
+            "field": "s14_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-priority",
+            "field": "s14_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-headcount",
+            "field": "s14_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-budget",
+            "field": "s14_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-share",
+            "field": "s14_share"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-approved",
+            "field": "s14_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-notes",
+            "field": "s14_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s14-contact",
+            "field": "s14_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-categories",
+            "field": "s14_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-rating",
+            "field": "s14_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-deadline",
+            "field": "s14_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-address",
+            "field": "s14_address"
+          },
+          {
+            "type": "field",
+            "id": "f-s14-reference",
+            "field": "s14_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-15",
+        "title": "Fleet",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s15-name",
+            "field": "s15_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-code",
+            "field": "s15_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-phone",
+            "field": "s15_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-email",
+            "field": "s15_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-website",
+            "field": "s15_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-start",
+            "field": "s15_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-review",
+            "field": "s15_review",
+            "invisible": "not s15_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-status",
+            "field": "s15_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-priority",
+            "field": "s15_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-headcount",
+            "field": "s15_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-budget",
+            "field": "s15_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-share",
+            "field": "s15_share"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-approved",
+            "field": "s15_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-notes",
+            "field": "s15_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s15-contact",
+            "field": "s15_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-categories",
+            "field": "s15_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-rating",
+            "field": "s15_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-deadline",
+            "field": "s15_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-address",
+            "field": "s15_address"
+          },
+          {
+            "type": "field",
+            "id": "f-s15-reference",
+            "field": "s15_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-16",
+        "title": "Production",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s16-name",
+            "field": "s16_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-code",
+            "field": "s16_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-phone",
+            "field": "s16_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-email",
+            "field": "s16_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-website",
+            "field": "s16_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-start",
+            "field": "s16_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-review",
+            "field": "s16_review",
+            "invisible": "not s16_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-status",
+            "field": "s16_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-priority",
+            "field": "s16_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-headcount",
+            "field": "s16_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-budget",
+            "field": "s16_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-share",
+            "field": "s16_share"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-approved",
+            "field": "s16_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-notes",
+            "field": "s16_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s16-manager",
+            "field": "s16_manager"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-categories",
+            "field": "s16_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-rating",
+            "field": "s16_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-deadline",
+            "field": "s16_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-address",
+            "field": "s16_address"
+          },
+          {
+            "type": "field",
+            "id": "f-s16-reference",
+            "field": "s16_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-17",
+        "title": "Maintenance",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s17-name",
+            "field": "s17_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-code",
+            "field": "s17_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-phone",
+            "field": "s17_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-email",
+            "field": "s17_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-website",
+            "field": "s17_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-start",
+            "field": "s17_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-review",
+            "field": "s17_review",
+            "invisible": "not s17_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-status",
+            "field": "s17_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-priority",
+            "field": "s17_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-headcount",
+            "field": "s17_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-budget",
+            "field": "s17_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-share",
+            "field": "s17_share"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-approved",
+            "field": "s17_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-notes",
+            "field": "s17_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s17-contact",
+            "field": "s17_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-categories",
+            "field": "s17_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-rating",
+            "field": "s17_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-deadline",
+            "field": "s17_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-address",
+            "field": "s17_address"
+          },
+          {
+            "type": "field",
+            "id": "f-s17-reference",
+            "field": "s17_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-18",
+        "title": "Contracts",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s18-name",
+            "field": "s18_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-code",
+            "field": "s18_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-phone",
+            "field": "s18_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-email",
+            "field": "s18_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-website",
+            "field": "s18_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-start",
+            "field": "s18_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-review",
+            "field": "s18_review",
+            "invisible": "not s18_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-status",
+            "field": "s18_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-priority",
+            "field": "s18_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-headcount",
+            "field": "s18_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-budget",
+            "field": "s18_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-share",
+            "field": "s18_share"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-approved",
+            "field": "s18_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-notes",
+            "field": "s18_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s18-contact",
+            "field": "s18_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-categories",
+            "field": "s18_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-rating",
+            "field": "s18_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-deadline",
+            "field": "s18_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-address",
+            "field": "s18_address"
+          },
+          {
+            "type": "field",
+            "id": "f-s18-items",
+            "field": "s18_items",
+            "colspan": 3
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-19",
+        "title": "Legal",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s19-name",
+            "field": "s19_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-code",
+            "field": "s19_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-phone",
+            "field": "s19_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-email",
+            "field": "s19_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-website",
+            "field": "s19_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-start",
+            "field": "s19_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-review",
+            "field": "s19_review",
+            "invisible": "not s19_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-status",
+            "field": "s19_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-priority",
+            "field": "s19_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-headcount",
+            "field": "s19_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-budget",
+            "field": "s19_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-share",
+            "field": "s19_share"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-approved",
+            "field": "s19_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-notes",
+            "field": "s19_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s19-contact",
+            "field": "s19_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-categories",
+            "field": "s19_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-rating",
+            "field": "s19_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-deadline",
+            "field": "s19_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-address",
+            "field": "s19_address"
+          },
+          {
+            "type": "field",
+            "id": "f-s19-reference",
+            "field": "s19_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-20",
+        "title": "IT",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s20-name",
+            "field": "s20_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-code",
+            "field": "s20_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-phone",
+            "field": "s20_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-email",
+            "field": "s20_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-website",
+            "field": "s20_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-start",
+            "field": "s20_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-review",
+            "field": "s20_review",
+            "invisible": "not s20_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-status",
+            "field": "s20_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-priority",
+            "field": "s20_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-headcount",
+            "field": "s20_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-budget",
+            "field": "s20_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-share",
+            "field": "s20_share"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-approved",
+            "field": "s20_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-notes",
+            "field": "s20_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s20-contact",
+            "field": "s20_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-categories",
+            "field": "s20_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-rating",
+            "field": "s20_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-deadline",
+            "field": "s20_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-address",
+            "field": "s20_address"
+          },
+          {
+            "type": "field",
+            "id": "f-s20-reference",
+            "field": "s20_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-21",
+        "title": "Data protection",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s21-name",
+            "field": "s21_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-code",
+            "field": "s21_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-phone",
+            "field": "s21_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-email",
+            "field": "s21_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-website",
+            "field": "s21_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-start",
+            "field": "s21_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-review",
+            "field": "s21_review",
+            "invisible": "not s21_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-status",
+            "field": "s21_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-priority",
+            "field": "s21_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-headcount",
+            "field": "s21_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-budget",
+            "field": "s21_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-share",
+            "field": "s21_share"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-approved",
+            "field": "s21_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-notes",
+            "field": "s21_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s21-manager",
+            "field": "s21_manager"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-categories",
+            "field": "s21_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-rating",
+            "field": "s21_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-deadline",
+            "field": "s21_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-address",
+            "field": "s21_address"
+          },
+          {
+            "type": "field",
+            "id": "f-s21-reference",
+            "field": "s21_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-22",
+        "title": "Human resources",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s22-name",
+            "field": "s22_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-code",
+            "field": "s22_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-phone",
+            "field": "s22_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-email",
+            "field": "s22_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-website",
+            "field": "s22_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-start",
+            "field": "s22_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-review",
+            "field": "s22_review",
+            "invisible": "not s22_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-status",
+            "field": "s22_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-priority",
+            "field": "s22_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-headcount",
+            "field": "s22_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-budget",
+            "field": "s22_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-share",
+            "field": "s22_share"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-approved",
+            "field": "s22_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-notes",
+            "field": "s22_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s22-contact",
+            "field": "s22_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-categories",
+            "field": "s22_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-rating",
+            "field": "s22_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-deadline",
+            "field": "s22_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-address",
+            "field": "s22_address"
+          },
+          {
+            "type": "field",
+            "id": "f-s22-reference",
+            "field": "s22_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-23",
+        "title": "Training",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s23-name",
+            "field": "s23_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-code",
+            "field": "s23_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-phone",
+            "field": "s23_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-email",
+            "field": "s23_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-website",
+            "field": "s23_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-start",
+            "field": "s23_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-review",
+            "field": "s23_review",
+            "invisible": "not s23_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-status",
+            "field": "s23_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-priority",
+            "field": "s23_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-headcount",
+            "field": "s23_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-budget",
+            "field": "s23_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-share",
+            "field": "s23_share"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-approved",
+            "field": "s23_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-notes",
+            "field": "s23_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s23-contact",
+            "field": "s23_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-categories",
+            "field": "s23_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-rating",
+            "field": "s23_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-deadline",
+            "field": "s23_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-address",
+            "field": "s23_address"
+          },
+          {
+            "type": "field",
+            "id": "f-s23-reference",
+            "field": "s23_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-24",
+        "title": "Support",
+        "columns": 3,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s24-name",
+            "field": "s24_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-code",
+            "field": "s24_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-phone",
+            "field": "s24_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-email",
+            "field": "s24_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-website",
+            "field": "s24_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-start",
+            "field": "s24_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-review",
+            "field": "s24_review",
+            "invisible": "not s24_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-status",
+            "field": "s24_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-priority",
+            "field": "s24_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-headcount",
+            "field": "s24_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-budget",
+            "field": "s24_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-share",
+            "field": "s24_share"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-approved",
+            "field": "s24_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-notes",
+            "field": "s24_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s24-contact",
+            "field": "s24_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-categories",
+            "field": "s24_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-rating",
+            "field": "s24_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-deadline",
+            "field": "s24_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-address",
+            "field": "s24_address"
+          },
+          {
+            "type": "field",
+            "id": "f-s24-reference",
+            "field": "s24_reference"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "section-25",
+        "title": "Sign-off",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-s25-name",
+            "field": "s25_name"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-code",
+            "field": "s25_code"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-phone",
+            "field": "s25_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-email",
+            "field": "s25_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-website",
+            "field": "s25_website",
+            "widget": "url"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-start",
+            "field": "s25_start"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-review",
+            "field": "s25_review",
+            "invisible": "not s25_approved"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-status",
+            "field": "s25_status"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-priority",
+            "field": "s25_priority",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-headcount",
+            "field": "s25_headcount"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-budget",
+            "field": "s25_budget"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-share",
+            "field": "s25_share"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-approved",
+            "field": "s25_approved",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-notes",
+            "field": "s25_notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-s25-contact",
+            "field": "s25_contact"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-categories",
+            "field": "s25_categories"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-rating",
+            "field": "s25_rating",
+            "widget": "rating"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-deadline",
+            "field": "s25_deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-address",
+            "field": "s25_address"
+          },
+          {
+            "type": "field",
+            "id": "f-s25-reference",
+            "field": "s25_reference"
+          }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Company name": "الاسم (الشركة)",
+      "Company code": "الرمز (الشركة)",
+      "Company phone": "الهاتف (الشركة)",
+      "Company email": "البريد الإلكتروني (الشركة)",
+      "Use the company’s own address if you can.": "استخدم عنوان بريد الشركة نفسها إن أمكن.",
+      "Company website": "الموقع الإلكتروني (الشركة)",
+      "Company start date": "تاريخ البدء (الشركة)",
+      "Company review date": "تاريخ المراجعة (الشركة)",
+      "Supplier type": "نوع المورد",
+      "Local": "محلي",
+      "Foreign": "أجنبي",
+      "Company priority": "الأولوية (الشركة)",
+      "Low": "منخفضة",
+      "Medium": "متوسطة",
+      "High": "عالية",
+      "Company headcount": "عدد الموظفين (الشركة)",
+      "Company budget": "الميزانية (الشركة)",
+      "Company total cost": "التكلفة الإجمالية (الشركة)",
+      "Company approved": "معتمد (الشركة)",
+      "Company notes": "ملاحظات (الشركة)",
+      "Anything a reviewer should know.": "أي شيء يجب أن يعرفه المراجع.",
+      "Company account manager": "مدير الحساب (الشركة)",
+      "Company categories": "الفئات (الشركة)",
+      "Goods": "سلع",
+      "Services": "خدمات",
+      "Works": "أعمال",
+      "Consulting": "استشارات",
+      "Company rating": "التقييم (الشركة)",
+      "Company deadline": "الموعد النهائي (الشركة)",
+      "Company address": "العنوان (الشركة)",
+      "Company reference": "المرجع (الشركة)",
+      "Company": "الشركة",
+      "Head office name": "الاسم (المكتب الرئيسي)",
+      "Head office code": "الرمز (المكتب الرئيسي)",
+      "Head office phone": "الهاتف (المكتب الرئيسي)",
+      "Head office email": "البريد الإلكتروني (المكتب الرئيسي)",
+      "Head office website": "الموقع الإلكتروني (المكتب الرئيسي)",
+      "Head office start date": "تاريخ البدء (المكتب الرئيسي)",
+      "Head office review date": "تاريخ المراجعة (المكتب الرئيسي)",
+      "Head office status": "الحالة (المكتب الرئيسي)",
+      "Draft": "مسودة",
+      "Active": "نشط",
+      "On hold": "معلّق",
+      "Closed": "مغلق",
+      "Head office priority": "الأولوية (المكتب الرئيسي)",
+      "Head office headcount": "عدد الموظفين (المكتب الرئيسي)",
+      "Head office budget": "الميزانية (المكتب الرئيسي)",
+      "Head office total cost": "التكلفة الإجمالية (المكتب الرئيسي)",
+      "Head office approved": "معتمد (المكتب الرئيسي)",
+      "Head office notes": "ملاحظات (المكتب الرئيسي)",
+      "Head office contact": "جهة الاتصال (المكتب الرئيسي)",
+      "Head office categories": "الفئات (المكتب الرئيسي)",
+      "Head office rating": "التقييم (المكتب الرئيسي)",
+      "Head office deadline": "الموعد النهائي (المكتب الرئيسي)",
+      "Head office address": "العنوان (المكتب الرئيسي)",
+      "Head office reference": "المرجع (المكتب الرئيسي)",
+      "Head office": "المكتب الرئيسي",
+      "Branch name": "الاسم (الفرع)",
+      "Branch code": "الرمز (الفرع)",
+      "Branch phone": "الهاتف (الفرع)",
+      "Branch email": "البريد الإلكتروني (الفرع)",
+      "Branch website": "الموقع الإلكتروني (الفرع)",
+      "Branch start date": "تاريخ البدء (الفرع)",
+      "Branch review date": "تاريخ المراجعة (الفرع)",
+      "Branch status": "الحالة (الفرع)",
+      "Branch priority": "الأولوية (الفرع)",
+      "Branch headcount": "عدد الموظفين (الفرع)",
+      "Branch budget": "الميزانية (الفرع)",
+      "Branch total cost": "التكلفة الإجمالية (الفرع)",
+      "Branch approved": "معتمد (الفرع)",
+      "Branch notes": "ملاحظات (الفرع)",
+      "Branch contact": "جهة الاتصال (الفرع)",
+      "Branch categories": "الفئات (الفرع)",
+      "Branch rating": "التقييم (الفرع)",
+      "Branch deadline": "الموعد النهائي (الفرع)",
+      "Branch address": "العنوان (الفرع)",
+      "Branch reference": "المرجع (الفرع)",
+      "Branch": "الفرع",
+      "Warehouse name": "الاسم (المستودع)",
+      "Warehouse code": "الرمز (المستودع)",
+      "Warehouse phone": "الهاتف (المستودع)",
+      "Warehouse email": "البريد الإلكتروني (المستودع)",
+      "Warehouse website": "الموقع الإلكتروني (المستودع)",
+      "Warehouse start date": "تاريخ البدء (المستودع)",
+      "Warehouse review date": "تاريخ المراجعة (المستودع)",
+      "Warehouse status": "الحالة (المستودع)",
+      "Warehouse priority": "الأولوية (المستودع)",
+      "Warehouse headcount": "عدد الموظفين (المستودع)",
+      "Warehouse budget": "الميزانية (المستودع)",
+      "Warehouse total cost": "التكلفة الإجمالية (المستودع)",
+      "Warehouse approved": "معتمد (المستودع)",
+      "Warehouse notes": "ملاحظات (المستودع)",
+      "Warehouse contact": "جهة الاتصال (المستودع)",
+      "Warehouse categories": "الفئات (المستودع)",
+      "Warehouse rating": "التقييم (المستودع)",
+      "Warehouse deadline": "الموعد النهائي (المستودع)",
+      "Warehouse address": "العنوان (المستودع)",
+      "Warehouse reference": "المرجع (المستودع)",
+      "Warehouse": "المستودع",
+      "Purchasing name": "الاسم (المشتريات)",
+      "Purchasing code": "الرمز (المشتريات)",
+      "Purchasing phone": "الهاتف (المشتريات)",
+      "Purchasing email": "البريد الإلكتروني (المشتريات)",
+      "Purchasing website": "الموقع الإلكتروني (المشتريات)",
+      "Purchasing start date": "تاريخ البدء (المشتريات)",
+      "Purchasing review date": "تاريخ المراجعة (المشتريات)",
+      "Purchasing status": "الحالة (المشتريات)",
+      "Purchasing priority": "الأولوية (المشتريات)",
+      "Purchasing headcount": "عدد الموظفين (المشتريات)",
+      "Purchasing budget": "الميزانية (المشتريات)",
+      "Purchasing total cost": "التكلفة الإجمالية (المشتريات)",
+      "Purchasing approved": "معتمد (المشتريات)",
+      "Purchasing notes": "ملاحظات (المشتريات)",
+      "Purchasing contact": "جهة الاتصال (المشتريات)",
+      "Purchasing categories": "الفئات (المشتريات)",
+      "Purchasing rating": "التقييم (المشتريات)",
+      "Purchasing deadline": "الموعد النهائي (المشتريات)",
+      "Purchasing address": "العنوان (المشتريات)",
+      "Purchasing items": "الأصناف (المشتريات)",
+      "Item": "الصنف",
+      "Quantity": "الكمية",
+      "Unit price": "سعر الوحدة",
+      "Subtotal": "المجموع الفرعي",
+      "Purchasing": "المشتريات",
+      "Sales name": "الاسم (المبيعات)",
+      "Sales code": "الرمز (المبيعات)",
+      "A code is two letters and four digits, such as AB-1234.": "الرمز حرفان وأربعة أرقام، مثل AB-1234.",
+      "Sales phone": "الهاتف (المبيعات)",
+      "Sales email": "البريد الإلكتروني (المبيعات)",
+      "Sales website": "الموقع الإلكتروني (المبيعات)",
+      "Sales start date": "تاريخ البدء (المبيعات)",
+      "Sales review date": "تاريخ المراجعة (المبيعات)",
+      "Sales status": "الحالة (المبيعات)",
+      "Sales priority": "الأولوية (المبيعات)",
+      "Sales headcount": "عدد الموظفين (المبيعات)",
+      "Sales budget": "الميزانية (المبيعات)",
+      "Sales total cost": "التكلفة الإجمالية (المبيعات)",
+      "Sales approved": "معتمد (المبيعات)",
+      "Sales notes": "ملاحظات (المبيعات)",
+      "Sales account manager": "مدير الحساب (المبيعات)",
+      "Sales categories": "الفئات (المبيعات)",
+      "Sales rating": "التقييم (المبيعات)",
+      "Sales deadline": "الموعد النهائي (المبيعات)",
+      "Sales address": "العنوان (المبيعات)",
+      "Sales reference": "المرجع (المبيعات)",
+      "Sales": "المبيعات",
+      "Finance name": "الاسم (المالية)",
+      "Finance code": "الرمز (المالية)",
+      "Finance phone": "الهاتف (المالية)",
+      "Finance email": "البريد الإلكتروني (المالية)",
+      "Finance website": "الموقع الإلكتروني (المالية)",
+      "Finance start date": "تاريخ البدء (المالية)",
+      "Finance review date": "تاريخ المراجعة (المالية)",
+      "Finance status": "الحالة (المالية)",
+      "Finance priority": "الأولوية (المالية)",
+      "Finance headcount": "عدد الموظفين (المالية)",
+      "Finance budget": "الميزانية (المالية)",
+      "Finance total cost": "التكلفة الإجمالية (المالية)",
+      "Finance approved": "معتمد (المالية)",
+      "Finance notes": "ملاحظات (المالية)",
+      "Finance contact": "جهة الاتصال (المالية)",
+      "Finance categories": "الفئات (المالية)",
+      "Finance rating": "التقييم (المالية)",
+      "Finance deadline": "الموعد النهائي (المالية)",
+      "Finance address": "العنوان (المالية)",
+      "Finance reference": "المرجع (المالية)",
+      "Finance": "المالية",
+      "Bank account name": "الاسم (الحساب البنكي)",
+      "Bank account code": "الرمز (الحساب البنكي)",
+      "Bank account phone": "الهاتف (الحساب البنكي)",
+      "Bank account email": "البريد الإلكتروني (الحساب البنكي)",
+      "Bank account website": "الموقع الإلكتروني (الحساب البنكي)",
+      "Bank account start date": "تاريخ البدء (الحساب البنكي)",
+      "Bank account review date": "تاريخ المراجعة (الحساب البنكي)",
+      "Bank account status": "الحالة (الحساب البنكي)",
+      "Bank account priority": "الأولوية (الحساب البنكي)",
+      "Bank account headcount": "عدد الموظفين (الحساب البنكي)",
+      "Bank account budget": "الميزانية (الحساب البنكي)",
+      "Bank account total cost": "التكلفة الإجمالية (الحساب البنكي)",
+      "Bank account approved": "معتمد (الحساب البنكي)",
+      "Bank account notes": "ملاحظات (الحساب البنكي)",
+      "Bank account contact": "جهة الاتصال (الحساب البنكي)",
+      "Bank account categories": "الفئات (الحساب البنكي)",
+      "Bank account rating": "التقييم (الحساب البنكي)",
+      "Bank account deadline": "الموعد النهائي (الحساب البنكي)",
+      "Bank account address": "العنوان (الحساب البنكي)",
+      "Bank account reference": "المرجع (الحساب البنكي)",
+      "Bank account": "الحساب البنكي",
+      "Tax name": "الاسم (الضرائب)",
+      "Tax code": "الرمز (الضرائب)",
+      "Tax phone": "الهاتف (الضرائب)",
+      "Tax email": "البريد الإلكتروني (الضرائب)",
+      "Tax website": "الموقع الإلكتروني (الضرائب)",
+      "Tax start date": "تاريخ البدء (الضرائب)",
+      "Tax review date": "تاريخ المراجعة (الضرائب)",
+      "Tax status": "الحالة (الضرائب)",
+      "Tax priority": "الأولوية (الضرائب)",
+      "Tax headcount": "عدد الموظفين (الضرائب)",
+      "Tax budget": "الميزانية (الضرائب)",
+      "Tax total cost": "التكلفة الإجمالية (الضرائب)",
+      "Tax approved": "معتمد (الضرائب)",
+      "Tax notes": "ملاحظات (الضرائب)",
+      "Tax contact": "جهة الاتصال (الضرائب)",
+      "Tax categories": "الفئات (الضرائب)",
+      "Tax rating": "التقييم (الضرائب)",
+      "Tax deadline": "الموعد النهائي (الضرائب)",
+      "Tax address": "العنوان (الضرائب)",
+      "Tax reference": "المرجع (الضرائب)",
+      "Tax": "الضرائب",
+      "Insurance name": "الاسم (التأمين)",
+      "Insurance code": "الرمز (التأمين)",
+      "Insurance phone": "الهاتف (التأمين)",
+      "Insurance email": "البريد الإلكتروني (التأمين)",
+      "Insurance website": "الموقع الإلكتروني (التأمين)",
+      "Insurance start date": "تاريخ البدء (التأمين)",
+      "Insurance review date": "تاريخ المراجعة (التأمين)",
+      "Insurance status": "الحالة (التأمين)",
+      "Insurance priority": "الأولوية (التأمين)",
+      "Insurance headcount": "عدد الموظفين (التأمين)",
+      "Insurance budget": "الميزانية (التأمين)",
+      "Insurance total cost": "التكلفة الإجمالية (التأمين)",
+      "Insurance approved": "معتمد (التأمين)",
+      "Insurance notes": "ملاحظات (التأمين)",
+      "Insurance contact": "جهة الاتصال (التأمين)",
+      "Insurance categories": "الفئات (التأمين)",
+      "Insurance rating": "التقييم (التأمين)",
+      "Insurance deadline": "الموعد النهائي (التأمين)",
+      "Insurance address": "العنوان (التأمين)",
+      "Insurance reference": "المرجع (التأمين)",
+      "Insurance": "التأمين",
+      "Quality name": "الاسم (الجودة)",
+      "Quality code": "الرمز (الجودة)",
+      "Quality phone": "الهاتف (الجودة)",
+      "Quality email": "البريد الإلكتروني (الجودة)",
+      "Quality website": "الموقع الإلكتروني (الجودة)",
+      "Quality start date": "تاريخ البدء (الجودة)",
+      "Quality review date": "تاريخ المراجعة (الجودة)",
+      "Quality status": "الحالة (الجودة)",
+      "Quality priority": "الأولوية (الجودة)",
+      "Quality headcount": "عدد الموظفين (الجودة)",
+      "No more than 10,000 people.": "لا يزيد على 10,000 شخص.",
+      "Quality budget": "الميزانية (الجودة)",
+      "Quality share (%)": "النسبة (%) (الجودة)",
+      "Quality approved": "معتمد (الجودة)",
+      "Quality notes": "ملاحظات (الجودة)",
+      "Quality account manager": "مدير الحساب (الجودة)",
+      "Quality categories": "الفئات (الجودة)",
+      "Quality rating": "التقييم (الجودة)",
+      "Quality deadline": "الموعد النهائي (الجودة)",
+      "Quality address": "العنوان (الجودة)",
+      "Quality reference": "المرجع (الجودة)",
+      "Quality": "الجودة",
+      "Safety name": "الاسم (السلامة)",
+      "Safety code": "الرمز (السلامة)",
+      "Safety phone": "الهاتف (السلامة)",
+      "Safety email": "البريد الإلكتروني (السلامة)",
+      "Safety website": "الموقع الإلكتروني (السلامة)",
+      "Safety start date": "تاريخ البدء (السلامة)",
+      "Safety review date": "تاريخ المراجعة (السلامة)",
+      "Safety status": "الحالة (السلامة)",
+      "Safety priority": "الأولوية (السلامة)",
+      "Safety headcount": "عدد الموظفين (السلامة)",
+      "Safety budget": "الميزانية (السلامة)",
+      "Safety share (%)": "النسبة (%) (السلامة)",
+      "Safety approved": "معتمد (السلامة)",
+      "Safety notes": "ملاحظات (السلامة)",
+      "Safety contact": "جهة الاتصال (السلامة)",
+      "Safety categories": "الفئات (السلامة)",
+      "Safety rating": "التقييم (السلامة)",
+      "Safety deadline": "الموعد النهائي (السلامة)",
+      "Safety address": "العنوان (السلامة)",
+      "Safety reference": "المرجع (السلامة)",
+      "Safety": "السلامة",
+      "Environment name": "الاسم (البيئة)",
+      "Environment code": "الرمز (البيئة)",
+      "Environment phone": "الهاتف (البيئة)",
+      "Environment email": "البريد الإلكتروني (البيئة)",
+      "Environment website": "الموقع الإلكتروني (البيئة)",
+      "Environment start date": "تاريخ البدء (البيئة)",
+      "Environment review date": "تاريخ المراجعة (البيئة)",
+      "Environment status": "الحالة (البيئة)",
+      "Environment priority": "الأولوية (البيئة)",
+      "Environment headcount": "عدد الموظفين (البيئة)",
+      "Environment budget": "الميزانية (البيئة)",
+      "Environment share (%)": "النسبة (%) (البيئة)",
+      "Environment approved": "معتمد (البيئة)",
+      "Environment notes": "ملاحظات (البيئة)",
+      "Environment contact": "جهة الاتصال (البيئة)",
+      "Environment categories": "الفئات (البيئة)",
+      "Environment rating": "التقييم (البيئة)",
+      "Environment deadline": "الموعد النهائي (البيئة)",
+      "Environment address": "العنوان (البيئة)",
+      "Environment reference": "المرجع (البيئة)",
+      "Environment": "البيئة",
+      "Logistics name": "الاسم (الخدمات اللوجستية)",
+      "Logistics code": "الرمز (الخدمات اللوجستية)",
+      "Logistics phone": "الهاتف (الخدمات اللوجستية)",
+      "Logistics email": "البريد الإلكتروني (الخدمات اللوجستية)",
+      "Logistics website": "الموقع الإلكتروني (الخدمات اللوجستية)",
+      "Logistics start date": "تاريخ البدء (الخدمات اللوجستية)",
+      "Logistics review date": "تاريخ المراجعة (الخدمات اللوجستية)",
+      "Logistics status": "الحالة (الخدمات اللوجستية)",
+      "Logistics priority": "الأولوية (الخدمات اللوجستية)",
+      "Logistics headcount": "عدد الموظفين (الخدمات اللوجستية)",
+      "Logistics budget": "الميزانية (الخدمات اللوجستية)",
+      "Logistics share (%)": "النسبة (%) (الخدمات اللوجستية)",
+      "Logistics approved": "معتمد (الخدمات اللوجستية)",
+      "Logistics notes": "ملاحظات (الخدمات اللوجستية)",
+      "Logistics contact": "جهة الاتصال (الخدمات اللوجستية)",
+      "Logistics categories": "الفئات (الخدمات اللوجستية)",
+      "Logistics rating": "التقييم (الخدمات اللوجستية)",
+      "Logistics deadline": "الموعد النهائي (الخدمات اللوجستية)",
+      "Logistics address": "العنوان (الخدمات اللوجستية)",
+      "Logistics reference": "المرجع (الخدمات اللوجستية)",
+      "Logistics": "الخدمات اللوجستية",
+      "Fleet name": "الاسم (الأسطول)",
+      "Fleet code": "الرمز (الأسطول)",
+      "Fleet phone": "الهاتف (الأسطول)",
+      "Fleet email": "البريد الإلكتروني (الأسطول)",
+      "Fleet website": "الموقع الإلكتروني (الأسطول)",
+      "Fleet start date": "تاريخ البدء (الأسطول)",
+      "Fleet review date": "تاريخ المراجعة (الأسطول)",
+      "Fleet status": "الحالة (الأسطول)",
+      "Fleet priority": "الأولوية (الأسطول)",
+      "Fleet headcount": "عدد الموظفين (الأسطول)",
+      "Fleet budget": "الميزانية (الأسطول)",
+      "Fleet share (%)": "النسبة (%) (الأسطول)",
+      "Fleet approved": "معتمد (الأسطول)",
+      "Fleet notes": "ملاحظات (الأسطول)",
+      "Fleet contact": "جهة الاتصال (الأسطول)",
+      "Fleet categories": "الفئات (الأسطول)",
+      "Fleet rating": "التقييم (الأسطول)",
+      "Fleet deadline": "الموعد النهائي (الأسطول)",
+      "Fleet address": "العنوان (الأسطول)",
+      "Fleet reference": "المرجع (الأسطول)",
+      "Fleet": "الأسطول",
+      "Production name": "الاسم (الإنتاج)",
+      "Production code": "الرمز (الإنتاج)",
+      "Production phone": "الهاتف (الإنتاج)",
+      "Production email": "البريد الإلكتروني (الإنتاج)",
+      "Production website": "الموقع الإلكتروني (الإنتاج)",
+      "Production start date": "تاريخ البدء (الإنتاج)",
+      "Production review date": "تاريخ المراجعة (الإنتاج)",
+      "Production status": "الحالة (الإنتاج)",
+      "Production priority": "الأولوية (الإنتاج)",
+      "Production headcount": "عدد الموظفين (الإنتاج)",
+      "Production budget": "الميزانية (الإنتاج)",
+      "Production share (%)": "النسبة (%) (الإنتاج)",
+      "Production approved": "معتمد (الإنتاج)",
+      "Production notes": "ملاحظات (الإنتاج)",
+      "Production account manager": "مدير الحساب (الإنتاج)",
+      "Production categories": "الفئات (الإنتاج)",
+      "Production rating": "التقييم (الإنتاج)",
+      "Production deadline": "الموعد النهائي (الإنتاج)",
+      "Production address": "العنوان (الإنتاج)",
+      "Production reference": "المرجع (الإنتاج)",
+      "Production": "الإنتاج",
+      "Maintenance name": "الاسم (الصيانة)",
+      "Maintenance code": "الرمز (الصيانة)",
+      "Maintenance phone": "الهاتف (الصيانة)",
+      "Maintenance email": "البريد الإلكتروني (الصيانة)",
+      "Maintenance website": "الموقع الإلكتروني (الصيانة)",
+      "Maintenance start date": "تاريخ البدء (الصيانة)",
+      "Maintenance review date": "تاريخ المراجعة (الصيانة)",
+      "Maintenance status": "الحالة (الصيانة)",
+      "Maintenance priority": "الأولوية (الصيانة)",
+      "Maintenance headcount": "عدد الموظفين (الصيانة)",
+      "Maintenance budget": "الميزانية (الصيانة)",
+      "Maintenance share (%)": "النسبة (%) (الصيانة)",
+      "Maintenance approved": "معتمد (الصيانة)",
+      "Maintenance notes": "ملاحظات (الصيانة)",
+      "Maintenance contact": "جهة الاتصال (الصيانة)",
+      "Maintenance categories": "الفئات (الصيانة)",
+      "Maintenance rating": "التقييم (الصيانة)",
+      "Maintenance deadline": "الموعد النهائي (الصيانة)",
+      "Maintenance address": "العنوان (الصيانة)",
+      "Maintenance reference": "المرجع (الصيانة)",
+      "Maintenance": "الصيانة",
+      "Contracts name": "الاسم (العقود)",
+      "Contracts code": "الرمز (العقود)",
+      "Contracts phone": "الهاتف (العقود)",
+      "Contracts email": "البريد الإلكتروني (العقود)",
+      "Contracts website": "الموقع الإلكتروني (العقود)",
+      "Contracts start date": "تاريخ البدء (العقود)",
+      "Contracts review date": "تاريخ المراجعة (العقود)",
+      "Contracts status": "الحالة (العقود)",
+      "Contracts priority": "الأولوية (العقود)",
+      "Contracts headcount": "عدد الموظفين (العقود)",
+      "Contracts budget": "الميزانية (العقود)",
+      "Contracts share (%)": "النسبة (%) (العقود)",
+      "Contracts approved": "معتمد (العقود)",
+      "Contracts notes": "ملاحظات (العقود)",
+      "Contracts contact": "جهة الاتصال (العقود)",
+      "Contracts categories": "الفئات (العقود)",
+      "Contracts rating": "التقييم (العقود)",
+      "Contracts deadline": "الموعد النهائي (العقود)",
+      "Contracts address": "العنوان (العقود)",
+      "Contracts items": "الأصناف (العقود)",
+      "Contracts": "العقود",
+      "Legal name": "الاسم (الشؤون القانونية)",
+      "Legal code": "الرمز (الشؤون القانونية)",
+      "Legal phone": "الهاتف (الشؤون القانونية)",
+      "Legal email": "البريد الإلكتروني (الشؤون القانونية)",
+      "Legal website": "الموقع الإلكتروني (الشؤون القانونية)",
+      "Legal start date": "تاريخ البدء (الشؤون القانونية)",
+      "Legal review date": "تاريخ المراجعة (الشؤون القانونية)",
+      "Legal status": "الحالة (الشؤون القانونية)",
+      "Legal priority": "الأولوية (الشؤون القانونية)",
+      "Legal headcount": "عدد الموظفين (الشؤون القانونية)",
+      "Legal budget": "الميزانية (الشؤون القانونية)",
+      "Legal share (%)": "النسبة (%) (الشؤون القانونية)",
+      "Legal approved": "معتمد (الشؤون القانونية)",
+      "Legal notes": "ملاحظات (الشؤون القانونية)",
+      "Legal contact": "جهة الاتصال (الشؤون القانونية)",
+      "Legal categories": "الفئات (الشؤون القانونية)",
+      "Legal rating": "التقييم (الشؤون القانونية)",
+      "Legal deadline": "الموعد النهائي (الشؤون القانونية)",
+      "Legal address": "العنوان (الشؤون القانونية)",
+      "Legal reference": "المرجع (الشؤون القانونية)",
+      "Legal": "الشؤون القانونية",
+      "IT name": "الاسم (تقنية المعلومات)",
+      "IT code": "الرمز (تقنية المعلومات)",
+      "IT phone": "الهاتف (تقنية المعلومات)",
+      "IT email": "البريد الإلكتروني (تقنية المعلومات)",
+      "IT website": "الموقع الإلكتروني (تقنية المعلومات)",
+      "IT start date": "تاريخ البدء (تقنية المعلومات)",
+      "IT review date": "تاريخ المراجعة (تقنية المعلومات)",
+      "IT status": "الحالة (تقنية المعلومات)",
+      "IT priority": "الأولوية (تقنية المعلومات)",
+      "IT headcount": "عدد الموظفين (تقنية المعلومات)",
+      "IT budget": "الميزانية (تقنية المعلومات)",
+      "IT share (%)": "النسبة (%) (تقنية المعلومات)",
+      "IT approved": "معتمد (تقنية المعلومات)",
+      "IT notes": "ملاحظات (تقنية المعلومات)",
+      "IT contact": "جهة الاتصال (تقنية المعلومات)",
+      "IT categories": "الفئات (تقنية المعلومات)",
+      "IT rating": "التقييم (تقنية المعلومات)",
+      "IT deadline": "الموعد النهائي (تقنية المعلومات)",
+      "IT address": "العنوان (تقنية المعلومات)",
+      "IT reference": "المرجع (تقنية المعلومات)",
+      "IT": "تقنية المعلومات",
+      "Data protection name": "الاسم (حماية البيانات)",
+      "Data protection code": "الرمز (حماية البيانات)",
+      "Data protection phone": "الهاتف (حماية البيانات)",
+      "Data protection email": "البريد الإلكتروني (حماية البيانات)",
+      "Data protection website": "الموقع الإلكتروني (حماية البيانات)",
+      "Data protection start date": "تاريخ البدء (حماية البيانات)",
+      "Data protection review date": "تاريخ المراجعة (حماية البيانات)",
+      "Data protection status": "الحالة (حماية البيانات)",
+      "Data protection priority": "الأولوية (حماية البيانات)",
+      "Data protection headcount": "عدد الموظفين (حماية البيانات)",
+      "Data protection budget": "الميزانية (حماية البيانات)",
+      "Data protection share (%)": "النسبة (%) (حماية البيانات)",
+      "Data protection approved": "معتمد (حماية البيانات)",
+      "Data protection notes": "ملاحظات (حماية البيانات)",
+      "Data protection account manager": "مدير الحساب (حماية البيانات)",
+      "Data protection categories": "الفئات (حماية البيانات)",
+      "Data protection rating": "التقييم (حماية البيانات)",
+      "Data protection deadline": "الموعد النهائي (حماية البيانات)",
+      "Data protection address": "العنوان (حماية البيانات)",
+      "Data protection reference": "المرجع (حماية البيانات)",
+      "Data protection": "حماية البيانات",
+      "Human resources name": "الاسم (الموارد البشرية)",
+      "Human resources code": "الرمز (الموارد البشرية)",
+      "Human resources phone": "الهاتف (الموارد البشرية)",
+      "Human resources email": "البريد الإلكتروني (الموارد البشرية)",
+      "Human resources website": "الموقع الإلكتروني (الموارد البشرية)",
+      "Human resources start date": "تاريخ البدء (الموارد البشرية)",
+      "Human resources review date": "تاريخ المراجعة (الموارد البشرية)",
+      "Human resources status": "الحالة (الموارد البشرية)",
+      "Human resources priority": "الأولوية (الموارد البشرية)",
+      "Human resources headcount": "عدد الموظفين (الموارد البشرية)",
+      "Human resources budget": "الميزانية (الموارد البشرية)",
+      "Human resources share (%)": "النسبة (%) (الموارد البشرية)",
+      "Human resources approved": "معتمد (الموارد البشرية)",
+      "Human resources notes": "ملاحظات (الموارد البشرية)",
+      "Human resources contact": "جهة الاتصال (الموارد البشرية)",
+      "Human resources categories": "الفئات (الموارد البشرية)",
+      "Human resources rating": "التقييم (الموارد البشرية)",
+      "Human resources deadline": "الموعد النهائي (الموارد البشرية)",
+      "Human resources address": "العنوان (الموارد البشرية)",
+      "Human resources reference": "المرجع (الموارد البشرية)",
+      "Human resources": "الموارد البشرية",
+      "Training name": "الاسم (التدريب)",
+      "Training code": "الرمز (التدريب)",
+      "Training phone": "الهاتف (التدريب)",
+      "Training email": "البريد الإلكتروني (التدريب)",
+      "Training website": "الموقع الإلكتروني (التدريب)",
+      "Training start date": "تاريخ البدء (التدريب)",
+      "Training review date": "تاريخ المراجعة (التدريب)",
+      "Training status": "الحالة (التدريب)",
+      "Training priority": "الأولوية (التدريب)",
+      "Training headcount": "عدد الموظفين (التدريب)",
+      "Training budget": "الميزانية (التدريب)",
+      "Training share (%)": "النسبة (%) (التدريب)",
+      "Training approved": "معتمد (التدريب)",
+      "Training notes": "ملاحظات (التدريب)",
+      "Training contact": "جهة الاتصال (التدريب)",
+      "Training categories": "الفئات (التدريب)",
+      "Training rating": "التقييم (التدريب)",
+      "Training deadline": "الموعد النهائي (التدريب)",
+      "Training address": "العنوان (التدريب)",
+      "Training reference": "المرجع (التدريب)",
+      "Training": "التدريب",
+      "Support name": "الاسم (الدعم)",
+      "Support code": "الرمز (الدعم)",
+      "Support phone": "الهاتف (الدعم)",
+      "Support email": "البريد الإلكتروني (الدعم)",
+      "Support website": "الموقع الإلكتروني (الدعم)",
+      "Support start date": "تاريخ البدء (الدعم)",
+      "Support review date": "تاريخ المراجعة (الدعم)",
+      "Support status": "الحالة (الدعم)",
+      "Support priority": "الأولوية (الدعم)",
+      "Support headcount": "عدد الموظفين (الدعم)",
+      "Support budget": "الميزانية (الدعم)",
+      "Support share (%)": "النسبة (%) (الدعم)",
+      "Support approved": "معتمد (الدعم)",
+      "Support notes": "ملاحظات (الدعم)",
+      "Support contact": "جهة الاتصال (الدعم)",
+      "Support categories": "الفئات (الدعم)",
+      "Support rating": "التقييم (الدعم)",
+      "Support deadline": "الموعد النهائي (الدعم)",
+      "Support address": "العنوان (الدعم)",
+      "Support reference": "المرجع (الدعم)",
+      "Support": "الدعم",
+      "Sign-off name": "الاسم (الاعتماد)",
+      "Sign-off code": "الرمز (الاعتماد)",
+      "Sign-off phone": "الهاتف (الاعتماد)",
+      "Sign-off email": "البريد الإلكتروني (الاعتماد)",
+      "Sign-off website": "الموقع الإلكتروني (الاعتماد)",
+      "Sign-off start date": "تاريخ البدء (الاعتماد)",
+      "Sign-off review date": "تاريخ المراجعة (الاعتماد)",
+      "Sign-off status": "الحالة (الاعتماد)",
+      "Sign-off priority": "الأولوية (الاعتماد)",
+      "Sign-off headcount": "عدد الموظفين (الاعتماد)",
+      "Sign-off budget": "الميزانية (الاعتماد)",
+      "Sign-off share (%)": "النسبة (%) (الاعتماد)",
+      "Sign-off approved": "معتمد (الاعتماد)",
+      "Sign-off notes": "ملاحظات (الاعتماد)",
+      "Sign-off contact": "جهة الاتصال (الاعتماد)",
+      "Sign-off categories": "الفئات (الاعتماد)",
+      "Sign-off rating": "التقييم (الاعتماد)",
+      "Sign-off deadline": "الموعد النهائي (الاعتماد)",
+      "Sign-off address": "العنوان (الاعتماد)",
+      "Sign-off reference": "المرجع (الاعتماد)",
+      "Sign-off": "الاعتماد",
+      "Supplier qualification file": "ملف تأهيل المورد",
+      "Every section a buyer checks before a supplier is approved: 500 fields, for timing Fieldia at size.": "كل قسم يراجعه المشتري قبل اعتماد المورد: 500 حقل، لقياس سرعة Fieldia في الصفحات الكبيرة."
+    }
+  }
+}

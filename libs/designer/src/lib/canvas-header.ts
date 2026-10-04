@@ -4,6 +4,7 @@ import type { ElementFactory } from './chrome';
 import type { Designer, HeaderPartKind } from './designer';
 import { designerIcon } from './icons';
 import { openMenu } from './menu';
+import { setHidden } from './writes';
 
 /**
  * A record's header on the canvas, drawn the way the viewer draws it: the
@@ -200,7 +201,8 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     focus,
     update(page, selected, form) {
       const root = page.layout;
-      top.hidden = card.hidden = root.type !== 'sheet';
+      setHidden(top, root.type !== 'sheet');
+      setHidden(card, root.type !== 'sheet');
       if (root.type !== 'sheet') return;
       const live = new Set<string>();
       const row = (kind: HeaderPartKind, parts: (ButtonNode | StatButton | Badge)[] | undefined) =>

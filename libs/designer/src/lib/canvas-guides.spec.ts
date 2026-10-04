@@ -55,6 +55,21 @@ describe('the guides', () => {
     expect(shown()).toEqual(['personal:3:123', 'who:2:12']);
   });
 
+  it('count the columns the canvas gives a grid, without laying the page out to measure them', () => {
+    const { designer, guides, shown } = setup();
+    const personal = document.querySelector<HTMLElement>('[data-container="personal"]') as HTMLElement;
+    personal.style.setProperty('--fd-cols', '2');
+    const measured = jest.spyOn(window, 'getComputedStyle');
+    try {
+      designer.select('f-photo');
+      guides.update(designer.getState(), true);
+      expect(shown()).toEqual(['personal:2:12']);
+      expect(measured).not.toHaveBeenCalled();
+    } finally {
+      measured.mockRestore();
+    }
+  });
+
   it('none where there is one column, none in Simple, none with nothing picked', () => {
     const { designer, guides, shown } = setup();
     designer.select('f-ec_name');

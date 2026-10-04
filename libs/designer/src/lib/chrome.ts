@@ -5,6 +5,7 @@ import { kindOfField } from './kinds';
 import { listSource } from './list-source';
 import { designerIcon } from './icons';
 import { checksButton, openPublishDialog, statusWords, versionsMenu, type GoTo } from './publish-ui';
+import { setHidden, setText } from './writes';
 
 /** The parts both editors share: the bar with undo and publish, and the list of options. */
 
@@ -143,14 +144,14 @@ export function designerBar(
     element,
     issues,
     update(state) {
-      if (doc.activeElement !== title) title.value = state.page.title ?? '';
-      undo.hidden = !state.canUndo;
-      redo.hidden = !state.canRedo;
-      publish.hidden = !state.unpublished;
-      status.textContent = statusWords(state);
+      if (doc.activeElement !== title && title.value !== (state.page.title ?? '')) title.value = state.page.title ?? '';
+      setHidden(undo, !state.canUndo);
+      setHidden(redo, !state.canRedo);
+      setHidden(publish, !state.unpublished);
+      setText(status, statusWords(state));
       checks.update();
-      issues.hidden = state.issues.length === 0;
-      issues.textContent = state.issues.join('\n');
+      setHidden(issues, state.issues.length === 0);
+      setText(issues, state.issues.join('\n'));
     },
     destroy() {
       doc.removeEventListener('keydown', onKey);

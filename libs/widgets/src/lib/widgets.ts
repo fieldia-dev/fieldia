@@ -31,7 +31,7 @@ import { imageChoiceWidget } from './choice-images';
 import { rankingWidget } from './ranking';
 import { addressWidget } from './address';
 import { cardsWidget } from './cards';
-import { clearSelection } from './kind-parts';
+import { clearSelection, setAttr, setText } from './kind-parts';
 import { shownOptions } from './shuffle';
 import { listChoices } from './choices-from';
 
@@ -133,10 +133,9 @@ function make<K extends keyof HTMLElementTagNameMap>(
 }
 
 function describe(element: HTMLElement, state: WidgetState) {
-  element.setAttribute('aria-invalid', String(state.invalid));
-  element.setAttribute('aria-required', String(state.required));
-  if (state.describedBy) element.setAttribute('aria-describedby', state.describedBy);
-  else element.removeAttribute('aria-describedby');
+  setAttr(element, 'aria-invalid', String(state.invalid));
+  setAttr(element, 'aria-required', String(state.required));
+  setAttr(element, 'aria-describedby', state.describedBy || null);
 }
 
 const textOf = (value: Value | undefined) => (value === null || value === undefined ? '' : String(value));
@@ -153,7 +152,7 @@ function textWidget(inputType: string): WidgetFactory {
       update(state) {
         const text = textOf(state.value);
         if (input.value !== text) input.value = text;
-        input.readOnly = state.readonly;
+        if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
         describe(input, state);
       },
     };
@@ -171,7 +170,7 @@ const textareaWidget: WidgetFactory = ({ form, name, field, node, id, document }
     update(state) {
       const text = textOf(state.value);
       if (area.value !== text) area.value = text;
-      area.readOnly = state.readonly;
+      if (area.readOnly !== state.readonly) area.readOnly = state.readonly;
       describe(area, state);
     },
   };
@@ -239,15 +238,14 @@ const numberWidget: WidgetFactory = (context) => {
         const text = shown(state.value);
         if (input.value !== text) input.value = text;
       }
-      input.readOnly = state.readonly;
+      if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
       describe(input, state);
       if (picker && currencyField) {
         picker.update({ value: state.values[currencyField], values: state.values, readonly: state.readonly, required: false, invalid: false });
       }
       if (currency && field.type === 'monetary') {
         const holder = field.currencyField ? state.values[field.currencyField] : null;
-        currency.textContent =
-          holder && typeof holder === 'object' && 'label' in holder ? (holder as RelatedRecord).label : (typeof holder === 'string' ? holder : field.currency ?? '');
+        setText(currency, holder && typeof holder === 'object' && 'label' in holder ? (holder as RelatedRecord).label : (typeof holder === 'string' ? holder : field.currency ?? ''));
       }
     },
   };
@@ -264,7 +262,7 @@ function checkboxWidget(look: 'box' | 'switch' | 'tick' = 'box'): WidgetFactory 
       focus: () => box.focus(),
       update(state) {
         box.checked = state.value === true;
-        box.disabled = state.readonly;
+        if (box.disabled !== state.readonly) box.disabled = state.readonly;
         describe(box, state);
       },
     };
@@ -286,7 +284,7 @@ const selectWidget: WidgetFactory = ({ form, name, field, node, id, document }) 
     update(state) {
       const index = choices.findIndex((option) => option.value === state.value);
       select.value = index === -1 ? '' : String(index);
-      select.disabled = state.readonly;
+      if (select.disabled !== state.readonly) select.disabled = state.readonly;
       describe(select, state);
     },
   };
@@ -351,7 +349,7 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
         const chosen = Array.isArray(state.value) ? state.value : [state.value];
         inputs.forEach((input, i) => {
           input.checked = chosen.includes(choices[i].value as never);
-          input.disabled = state.readonly;
+          if (input.disabled !== state.readonly) input.disabled = state.readonly;
         });
         if (otherChoice && otherBox) {
           // A value not among the options is an answer of its own: "Other", with its words.
@@ -360,7 +358,7 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
           const waiting = otherChoice.checked && !otherBox.value.trim() && (kind === 'checkbox' || chosen.every((v) => v === null || v === undefined));
           otherChoice.checked = own !== undefined || waiting;
           if (own !== undefined && document.activeElement !== otherBox) otherBox.value = own as string;
-          otherChoice.disabled = otherBox.disabled = state.readonly;
+          if (otherChoice.disabled !== state.readonly) otherChoice.disabled = otherBox.disabled = state.readonly;
         }
         clear?.allow(state);
         clear?.show(picked());
@@ -412,10 +410,11 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
         const value = typeof state.value === 'number' ? state.value : null;
         points.forEach((point, i) => {
           const n = min + i;
-          point.setAttribute('aria-checked', String(n === value));
+          setAttr(point, 'aria-checked', String(n === value));
           point.classList.toggle('fd-on', style === 'rating' ? value !== null && n <= value : n === value);
-          point.tabIndex = n === value || (value === null && i === 0) ? 0 : -1;
-          point.disabled = state.readonly;
+          const tab = n === value || (value === null && i === 0) ? 0 : -1;
+          if (point.tabIndex !== tab) point.tabIndex = tab;
+          if (point.disabled !== state.readonly) point.disabled = state.readonly;
         });
         clear.allow(state);
         clear.show(value !== null);
@@ -435,7 +434,7 @@ const dateWidget: WidgetFactory = (context) => {
     update(state) {
       const text = textOf(state.value);
       if (input.value !== text) input.value = text;
-      input.readOnly = state.readonly;
+      if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
       describe(input, state);
     },
   };
@@ -464,7 +463,7 @@ const dateTimeWidget: WidgetFactory = (context) => {
     update(state) {
       const text = local(state.value);
       if (input.value !== text) input.value = text;
-      input.readOnly = state.readonly;
+      if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
       describe(input, state);
     },
   };

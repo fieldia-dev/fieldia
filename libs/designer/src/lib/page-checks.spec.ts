@@ -115,6 +115,17 @@ describe('checks before publishing', () => {
     expect(pageChecks(designer.getPage()).map((c) => [c.severity, c.text, c.at, c.fix?.label])).toEqual([['should', 'Two questions read “Role”: people may not tell them apart.', again, 'Rename the second']]);
   });
 
+  it('lets two questions read the same on two pages of a survey, and finds them on one', () => {
+    const { designer } = survey();
+    designer.addContainer('Page 2');
+    const later = designer.addQuestion('short-answer') as string;
+    designer.updateQuestion(later, { label: 'Role' });
+    expect(pageChecks(designer.getPage())).toEqual([]);
+    const again = designer.addQuestion('short-answer') as string;
+    designer.updateQuestion(again, { label: 'role' });
+    expect(pageChecks(designer.getPage()).map((c) => [c.text, c.at])).toEqual([['Two questions read “role”: people may not tell them apart.', again]]);
+  });
+
   it('lists what stops people before what only looks wrong', () => {
     const { designer, role, why, field } = survey();
     designer.addContainer('Page 2');

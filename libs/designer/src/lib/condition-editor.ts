@@ -2,6 +2,7 @@ import type { Field, FieldNode, Page } from '@fieldia/core';
 import { iconButton, type ElementFactory } from './chrome';
 import { readCondition, readHolds, type Condition, type ConditionRule } from './conditions';
 import type { Designer } from './designer';
+import { setHidden, setText } from './writes';
 
 /** The answers a condition can test: a choice of one, or yes or no. */
 export function choicesOf(field: Field | undefined): { key: string; label: string; value: ConditionRule['value'] }[] | null {
@@ -38,6 +39,9 @@ export function conditionEditor(
   const element = el('div', { class: 'fd-when', role: 'group', 'aria-label': custom?.label ?? (kind === 'shows' ? `When this ${what} shows` : `When it is ${lead.toLowerCase()}`) }, caption, matchRow, rows, add, customBox);
   let available: FieldNode[] = [];
   let page: Page | null = null;
+  /** What each row's lists were drawn from: the questions it offers, and the field its answers are of. Drawn again only when one changes. */
+  const drawn = new WeakMap<Element, { offered: unknown[]; first: boolean; answersOf: Field | undefined }>();
+  const same = (a: unknown[], b: unknown[]) => a.length === b.length && a.every((item, i) => item === b[i]);
 
   /** The rules as the selects show them now. */
   function read(): Condition {
@@ -94,33 +98,42 @@ export function conditionEditor(
       const held = kind === 'shows' ? readCondition(invisible) : readHolds(invisible);
       // Always required is the Required box's, not a rule's.
       const condition = held === 'always' ? null : held;
-      customBox.hidden = condition !== 'custom';
-      if (condition === 'custom') customText.textContent = String(invisible);
+      setHidden(customBox, condition !== 'custom');
+      if (condition === 'custom') setText(customText, String(invisible));
       const rules = condition && condition !== 'custom' ? condition.rules : [];
       // A page shows "Always" in its first row; a question shows nothing until it has a rule.
       const shown = what === 'page' && condition !== 'custom' ? Math.max(rules.length, 1) : rules.length;
       while (rows.children.length > shown) rows.lastElementChild?.remove();
       while (rows.children.length < shown) rows.append(row(rows.children.length));
+      // The questions offered, and what they are: the same objects while an edit leaves them alone.
+      const offered = available.flatMap((n) => [n, current.fields[n.field]]);
       [...rows.children].forEach((r, i) => {
         const [field, answer] = [...r.querySelectorAll('select')] as HTMLSelectElement[];
         const rule = rules[i];
-        const options = available.map((n) => el('option', { value: n.field }, current.fields[n.field].label));
-        field.replaceChildren(...(i === 0 ? [el('option', { value: '' }, 'Always')] : []), ...options);
+        const answersOf = rule ? current.fields[rule.field] : undefined;
+        const was = drawn.get(r);
+        if (!was || !same(was.offered, offered) || was.first !== (i === 0)) {
+          const options = available.map((n) => el('option', { value: n.field }, current.fields[n.field].label));
+          field.replaceChildren(...(i === 0 ? [el('option', { value: '' }, 'Always')] : []), ...options);
+        }
         field.value = rule?.field ?? '';
-        const choices = rule ? choicesOf(current.fields[rule.field]) ?? [] : [];
-        answer.replaceChildren(
-          ...choices.map((c) => el('option', { value: `is:${c.key}` }, `is ${c.label}`)),
-          ...choices.map((c) => el('option', { value: `not:${c.key}` }, `is not ${c.label}`))
-        );
-        answer.hidden = !rule;
+        if (!was || was.answersOf !== answersOf) {
+          const choices = rule ? choicesOf(answersOf) ?? [] : [];
+          answer.replaceChildren(
+            ...choices.map((c) => el('option', { value: `is:${c.key}` }, `is ${c.label}`)),
+            ...choices.map((c) => el('option', { value: `not:${c.key}` }, `is not ${c.label}`))
+          );
+        }
+        drawn.set(r, { offered, first: i === 0, answersOf });
+        setHidden(answer, !rule);
         if (rule) answer.value = `${rule.op === 'is' ? 'is' : 'not'}:${String(rule.value)}`;
-        (r.querySelector('button') as HTMLButtonElement).hidden = rules.length < 2;
+        setHidden(r.querySelector('button') as HTMLButtonElement, rules.length < 2);
       });
-      matchRow.hidden = rules.length < 2;
-      caption.hidden = kind === 'shows' || rules.length !== 1;
+      setHidden(matchRow, rules.length < 2);
+      setHidden(caption, kind === 'shows' || rules.length !== 1);
       match.value = condition && condition !== 'custom' ? condition.join : 'all';
-      add.hidden = !rules.length;
-      element.hidden = what !== 'page' && !rules.length && condition !== 'custom';
+      setHidden(add, !rules.length);
+      setHidden(element, what !== 'page' && !rules.length && condition !== 'custom');
     },
   };
 }
