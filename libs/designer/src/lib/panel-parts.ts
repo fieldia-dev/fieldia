@@ -1,7 +1,9 @@
+import type { LabelPlace } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
-import { andList, locate, nameOf } from './layout-tree';
-import { onTab } from './panel-controls';
+import { SPANNED } from './layout-ops';
+import { across, andList, isSection, locate, nameOf, spanOf } from './layout-tree';
+import { onTab, segmented, setting } from './panel-controls';
 import { widthSetting } from './panel-layout';
 import type { PropertiesView } from './screen-properties';
 
@@ -39,9 +41,40 @@ export function blockProperties(el: ElementFactory, designer: Designer, id: stri
   };
 }
 
-/** Several parts picked: what they are, and what can be done with them all at once. */
+/** The one value they all have, or none when they differ. */
+const shared = <T>(values: T[]): T | null => (values.length && values.every((v) => v === values[0]) ? values[0] : null);
+
+/**
+ * Several parts picked: what they are; how wide each is and where their
+ * labels sit, set on them all as one undo step, offered only when it applies
+ * to every one of them; and grouping them, side by side or as tabs.
+ */
 export function severalProperties(el: ElementFactory, designer: Designer, ids: readonly string[]): PropertiesView {
   const names = el('p', { class: 'fd-properties-hint' });
+
+  // ---- how wide each is: no wider than the narrowest place among them ----
+  let drawn = 0;
+  let width: ReturnType<typeof segmented<number>> | null = null;
+  const widthBox = el('div', { class: 'fd-insp-width' });
+  const widthHint = el('p', { class: 'fd-properties-hint fd-set-hint' });
+  const widthRow = setting(el, 'layout', 'Width', widthBox, { hint: widthHint });
+
+  // ---- where their labels sit ----
+  const AROUND = 'around';
+  const labels = segmented<string>(
+    el,
+    'Labels',
+    [
+      { value: AROUND, words: 'As round them', title: 'As the group or the page round each says' },
+      { value: 'above', words: 'Above' },
+      { value: 'beside', words: 'Beside' },
+      { value: 'hidden', words: 'In box', title: 'Inside the box, as its placeholder; still read out by screen readers' },
+    ],
+    (value) => designer.setEach([...ids], { labels: value === AROUND || value === null ? null : (value as LabelPlace) })
+  );
+  const labelsRow = setting(el, 'layout', 'Labels', labels.element);
+
+  // ---- together ----
   const act = (words: string, run: () => void, danger = false) => {
     const button = el('button', { type: 'button', class: `fd-button${danger ? ' fd-button-danger' : ''}` }, words);
     button.addEventListener('click', run);
@@ -54,21 +87,43 @@ export function severalProperties(el: ElementFactory, designer: Designer, ids: r
     act('Side by side', () => designer.wrap([...ids], 'side')),
     act('Make tabs', () => designer.wrap([...ids], 'tabs'))
   );
-  const apart = el('p', { class: 'fd-properties-hint', hidden: '' }, 'These sit in different places. Pick parts from one group to group them.');
+  const apart = el('p', { class: 'fd-properties-hint', hidden: '' }, 'These sit in different places. Pick parts of one group to group them.');
   const element = el(
     'div',
     { class: 'fd-props' },
-    onTab(el('div', { class: 'fd-prop' }, names), 'layout', 'Picked'),
-    onTab(el('div', { class: 'fd-prop' }, together, apart), 'layout', 'Group these'),
+    onTab(el('div', { class: 'fd-prop' }, names), 'layout'),
+    widthRow,
+    labelsRow,
+    onTab(el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, 'Together'), together, apart), 'layout', 'Group these'),
     onTab(el('div', { class: 'fd-props-actions' }, act('Duplicate', () => designer.duplicate([...ids])), act('Delete', () => designer.remove([...ids]), true)), 'layout', 'Duplicate or delete')
   );
   return {
     element,
     update(page) {
-      names.textContent = andList(ids.map((id) => `“${nameOf(page, locate(page, id)?.node ?? null)}”`));
+      const spots = ids.map((id) => locate(page, id));
+      if (spots.some((at) => !at)) return;
+      const parts = spots.map((at) => at!);
+      names.textContent = andList(parts.map((at) => `“${nameOf(page, at.node)}”`));
+
+      const cols = parts.every((at) => SPANNED.has(at.node.type)) ? Math.min(...parts.map((at) => across(page, at.parent))) : 0;
+      if (cols !== drawn) {
+        drawn = cols;
+        width =
+          cols > 1
+            ? segmented(el, 'Width', Array.from({ length: cols }, (_, i) => ({ value: i + 1, words: i + 1 === cols ? `All ${cols}` : String(i + 1), label: i + 1 === cols ? `All ${cols} columns` : `${i + 1} column${i ? 's' : ''}` })), (n) => {
+                if (n !== null) designer.setEach([...ids], { span: n });
+              })
+            : null;
+        widthBox.replaceChildren(...(width ? [width.element] : []));
+      }
+      width?.set(shared(parts.map((at) => Math.min(spanOf(at.node), cols))));
+      widthHint.textContent = cols > 1 ? `Each of the ${parts.length} picked, in the columns where it sits.` : 'A width needs every part picked in a group with columns.';
+
+      labelsRow.hidden = !parts.every((at) => at.node.type === 'field' || isSection(at.node));
+      labels.set(shared(parts.map((at) => (at.node as { labels?: string }).labels ?? AROUND)));
+
       // Only parts side by side in one list can be grouped where they are.
-      const parents = new Set(ids.map((id) => locate(page, id)?.parent.id));
-      const same = parents.size === 1 && ids.every((id) => locate(page, id)?.node.type !== 'tab');
+      const same = new Set(parts.map((at) => at.parent.id)).size === 1 && parts.every((at) => at.node.type !== 'tab');
       together.hidden = !same;
       apart.hidden = same;
     },
