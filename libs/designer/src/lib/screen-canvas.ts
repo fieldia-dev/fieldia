@@ -9,6 +9,7 @@ import { canvasKeys, type CanvasKeys } from './canvas-keys';
 import { lockWords, type DesignerMode } from './canvas-mode';
 import { columnsAt, readSize, sizeSwitch, writeSize, type ScreenSize } from './canvas-size';
 import { multiBar } from './canvas-multi';
+import { canvasGuides } from './canvas-guides';
 import { widthMarks } from './canvas-width';
 import { elementFactory, optionsEditor, type OptionsEditor } from './chrome';
 import type { Designer, DesignerState } from './designer';
@@ -491,6 +492,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   });
   advanced.setEnabled(false);
   // Advanced's width handle and gutter, on the part picked.
+  // Advanced's guides: the columns of the grid the picked part sits on.
+  const guides = canvasGuides({ root: body, designer });
   const widths = widthMarks({ canvas: element, root: body, designer, rtl: () => doc.defaultView?.getComputedStyle(element).direction === 'rtl' });
   const drag: CanvasDrag = {
     press: (source, event, tile) => (mode === 'advanced' ? advanced : simpleDrag).press(source, event, tile),
@@ -556,6 +559,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       }
       titleCard.classList.toggle('fd-canvas-selected', selected === null);
       header.update(page, selected, form);
+      guides.update(state, mode === 'advanced');
       widths.update(state, mode === 'advanced');
       multi.update(state, mode === 'advanced');
     },
