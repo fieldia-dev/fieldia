@@ -252,7 +252,7 @@ export const DESIGNER_CSS = /* css */ `
 }
 .fd-tool-heading:hover { color: var(--fd-text); }
 .fd-tool-heading:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 1px; border-radius: 3px; }
-.fd-tool-count { font-weight: 600; opacity: 0.75; }
+.fd-tool-count { font-weight: 600; }
 .fd-tool-caret { width: 0; height: 0; flex: none; border-inline: 3.5px solid transparent; border-top: 4px solid currentColor; transition: transform 0.12s ease; }
 .fd-tool-shut .fd-tool-caret { transform: rotate(-90deg); }
 [dir="rtl"] .fd-tool-shut .fd-tool-caret { transform: rotate(90deg); }
