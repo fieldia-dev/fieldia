@@ -52,6 +52,9 @@ describe('repeating group', () => {
     add(el).click();
     expect(shown(el)).toHaveLength(2);
     expect(add(el).hidden).toBe(true);
+    // Not even a click that reaches it some other way.
+    add(el).click();
+    expect(shown(el)).toHaveLength(2);
   });
 
   it('removes a card down to the least it needs, saying so, numbering the rest again and keeping the cursor nearby', () => {
@@ -70,7 +73,10 @@ describe('repeating group', () => {
     // The last one left: back to the card before it.
     expect(document.activeElement).toBe(shown(el)[0].querySelector('input'));
     // At the least it needs, a card cannot go.
-    expect((shown(el)[0].querySelector('.fd-card-remove') as HTMLElement).hidden).toBe(true);
+    const last = shown(el)[0].querySelector('.fd-card-remove') as HTMLButtonElement;
+    expect(last.hidden).toBe(true);
+    last.click();
+    expect(shown(el)).toHaveLength(1);
   });
 
   it('goes to "Add another" when the last card goes', () => {
@@ -93,6 +99,8 @@ describe('repeating group', () => {
     const { el, refresh } = cards({ min: 1 });
     refresh({ readonly: true });
     expect(add(el).hidden).toBe(true);
+    add(el).click();
+    expect(shown(el)).toHaveLength(1);
     expect((shown(el)[0].querySelector('.fd-card-remove') as HTMLElement).hidden).toBe(true);
     expect((shown(el)[0].querySelector('input') as HTMLInputElement).readOnly).toBe(true);
   });

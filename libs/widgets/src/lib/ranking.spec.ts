@@ -57,9 +57,12 @@ describe('ranking', () => {
     expect(value()).toEqual(['light', 'near', 'quiet', 'storage']);
     press(button(el, 'Move Quiet up'), 'ArrowUp');
     expect(value()).toEqual(['light', 'near', 'quiet', 'storage']);
-    // Past either end there is nowhere to go.
+    // Past either end there is nowhere to go, and nothing is said.
+    const before = said(el);
     press(button(el, 'Move Daylight up'), 'ArrowUp', { altKey: true });
+    press(button(el, 'Move Storage up'), 'ArrowDown', { altKey: true });
     expect(value()).toEqual(['light', 'near', 'quiet', 'storage']);
+    expect(said(el)).toBe(before);
   });
 
   it('shows an order set from outside, the options it leaves out after it, and drops what is not an option', () => {
@@ -80,8 +83,13 @@ describe('ranking', () => {
     const first = items(el)[0];
     const pointer = (target: Element, type: string, y: number) => target.dispatchEvent(new MouseEvent(type, { clientX: 10, clientY: y, button: 0, bubbles: true, cancelable: true }));
     pointer(first, 'pointerdown', 20);
+    // A hand's wobble is not a drag.
+    pointer(first, 'pointermove', 22);
+    expect(first.classList.contains('fd-rank-lifted')).toBe(false);
     pointer(first, 'pointermove', 50);
     expect(first.classList.contains('fd-rank-lifted')).toBe(true);
+    // Past the top of the second line, not its middle: still first.
+    expect(order(el)[0]).toBe('Daylight');
     // Past the middle of the second line (60) and of the third (100), not of the fourth (140).
     pointer(first, 'pointermove', 110);
     expect(order(el)).toEqual(['Quiet', 'Near a window', 'Daylight', 'Storage']);
@@ -99,6 +107,7 @@ describe('ranking', () => {
     first.dispatchEvent(new MouseEvent('pointerup', { clientY: 5, button: 0, bubbles: true }));
     expect(value()).toEqual([]);
     button(el, 'Move Daylight down').dispatchEvent(new MouseEvent('pointerdown', { clientY: 5, button: 0, bubbles: true }));
+    first.dispatchEvent(new MouseEvent('pointermove', { clientY: 200, button: 0, bubbles: true }));
     expect(first.classList.contains('fd-rank-lifted')).toBe(false);
   });
 
@@ -107,9 +116,12 @@ describe('ranking', () => {
     refresh({ readonly: true, invalid: true });
     expect(el.querySelectorAll('.fd-rank-item button:not([hidden])')).toHaveLength(0);
     press(items(el)[0], 'ArrowDown', { altKey: true });
-    items(el)[0].dispatchEvent(new MouseEvent('pointerdown', { clientY: 5, button: 0, bubbles: true }));
-    items(el)[0].dispatchEvent(new MouseEvent('pointermove', { clientY: 200, button: 0, bubbles: true }));
-    items(el)[0].dispatchEvent(new MouseEvent('pointerup', { clientY: 200, button: 0, bubbles: true }));
+    // The same line all the way: once a drag moves it, the first line is another.
+    const first = items(el)[0];
+    first.dispatchEvent(new MouseEvent('pointerdown', { clientY: 5, button: 0, bubbles: true }));
+    first.dispatchEvent(new MouseEvent('pointermove', { clientY: 200, button: 0, bubbles: true }));
+    first.dispatchEvent(new MouseEvent('pointerup', { clientY: 200, button: 0, bubbles: true }));
+    expect(order(el)[0]).toBe('Daylight');
     expect(value()).toEqual([]);
     expect(el.getAttribute('aria-invalid')).toBe('true');
   });

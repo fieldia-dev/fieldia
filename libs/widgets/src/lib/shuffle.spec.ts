@@ -104,4 +104,30 @@ describe('shuffled options', () => {
     expect(shown).toEqual(shownOptions(OPTIONS, form, 'x', { options: { shuffle: true } }).map((o) => o.label));
     expect(shown).not.toEqual(WRITTEN);
   });
+
+  it('gives each question of a form its own order', () => {
+    seeded(0.25);
+    const form = formWith({});
+    const draw2 = (name: string) => shownOptions(OPTIONS, form, name, { options: { shuffle: true } }).map((o) => o.label);
+    expect(draw2('x')).not.toEqual(draw2('y'));
+  });
+
+  it('lets any option come first: two options are shown either way round across forms', () => {
+    let n = 0;
+    jest.spyOn(Math, 'random').mockImplementation(() => (n++ % 89) / 89);
+    const two = OPTIONS.slice(0, 2);
+    const firsts = new Set(Array.from({ length: 40 }, () => shownOptions(two, {}, 'x', { options: { shuffle: true } })[0].label));
+    expect([...firsts].sort()).toEqual(['Apple', 'Banana']);
+  });
+
+  it('keeps several pictures in the options’ own order, however they are shown', () => {
+    seeded(0.25);
+    const form = formWith({ multiple: true });
+    const cards = [...draw(form, 'image-choice').querySelectorAll<HTMLButtonElement>('.fd-image-card')];
+    const written = (card: HTMLButtonElement) => WRITTEN.indexOf(card.textContent ?? '');
+    const [early, late] = [...cards.entries()].flatMap(([i, a]) => cards.slice(i + 1).filter((b) => written(a) > written(b)).map((b) => [a, b]))[0];
+    early.click();
+    late.click();
+    expect(form.getState().values['x']).toEqual([late, early].map((card) => OPTIONS[written(card)].value));
+  });
 });

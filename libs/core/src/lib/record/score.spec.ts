@@ -56,6 +56,11 @@ describe('scoreOf', () => {
     expect(scoreOf(quiz, { capital: 'Alexandria' })).toEqual({ score: 0, max: 2 });
   });
 
+  it('earns at most nothing from a question whose every option costs points', () => {
+    const traps = page({ trap: { type: 'selection', label: 'Pick one', options: [{ value: 'a', label: 'A', score: -1 }, { value: 'b', label: 'B', score: -2 }] } });
+    expect(scoreOf(traps, { trap: 'a' })).toEqual({ score: -1, max: 0 });
+  });
+
   it('adds every option chosen of several, out of all the options worth something', () => {
     const quiz = page({ rivers });
     expect(scoreOf(quiz, { rivers: ['nile', 'congo'] })).toEqual({ score: 2.5, max: 2.5 });
