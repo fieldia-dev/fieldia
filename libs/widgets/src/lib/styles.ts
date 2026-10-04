@@ -17,11 +17,12 @@ import { LAYOUT_CSS } from './layout-styles';
 
 /** The skins and the parts' chrome. One literal, so the script bundle can minify it as CSS. */
 const SKINS_CSS = /* css */ `
-/* .fd-theme carries the same tokens for things outside a form, such as a dialog over the page. */
-.fd-form, .fd-theme {
+/* .fd-theme carries the same tokens for things outside a form, such as a dialog over the page. One inside a form
+   with no skin of its own (the conversation beside a record) wears the form's skin and scheme instead. */
+.fd-form, .fd-theme:is([data-fd-skin], :not(.fd-form *)) {
   --fd-font: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", sans-serif;
   --fd-text: #212529;
-  --fd-muted: #6b7280;
+  --fd-muted: #636976;
   --fd-page: #f2f3f5;
   --fd-surface: #ffffff;
   --fd-border: #cfd4da;
@@ -54,17 +55,18 @@ const SKINS_CSS = /* css */ `
   color: var(--fd-text);
   -webkit-text-size-adjust: 100%;
 }
+/* Ant Design's blue and red, a shade darker: words in them read at 4.5:1 (WCAG AA) on white, the page and their soft shades. */
 .fd-form[data-fd-skin="outlined"], .fd-theme[data-fd-skin="outlined"] {
   --fd-text: rgba(0, 0, 0, 0.88);
   --fd-muted: rgba(0, 0, 0, 0.55);
   --fd-page: #f5f5f5;
   --fd-border: #d9d9d9;
   --fd-border-strong: #bfbfbf;
-  --fd-accent: #1677ff;
+  --fd-accent: #1365d9;
   --fd-accent-soft: #e6f4ff;
-  --fd-focus: #1677ff;
+  --fd-focus: #1365d9;
   --fd-focus-ring: 0 0 0 2px rgba(5, 145, 255, 0.12);
-  --fd-error: #ff4d4f;
+  --fd-error: #c63c3d;
   --fd-error-soft: #fff2f0;
   --fd-radius: 8px;
   --fd-control-radius: 6px;
@@ -550,7 +552,9 @@ const SKINS_CSS = /* css */ `
 .fd-progressbar[data-tone="warning"] .fd-progressbar-fill { background: #d97706; }
 .fd-progressbar[data-tone="danger"] .fd-progressbar-fill { background: var(--fd-error); }
 .fd-progressbar[data-tone="info"] .fd-progressbar-fill { background: var(--fd-info); }
-.fd-progressbar-text { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 600; color: var(--fd-text); }
+/* The share in words, on a chip of the surface: it reads the same over the fill and the track, in either scheme. Centred by its left edge, so it is centred right to left too. */
+.fd-progressbar-text { position: absolute; inset-block: 2px; left: 50%; translate: -50% 0; display: grid; place-items: center; padding-inline: 7px; border-radius: 999px; background: var(--fd-surface); font-size: 12px; line-height: 1; font-weight: 600; color: var(--fd-text); }
+.fd-progressbar-text:empty { display: none; }
 .fd-progressbar-edit { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .fd-progressbar-edit > .fd-progressbar { flex: 1 1 auto; }
 .fd-progressbar-edit > .fd-input { flex: 0 0 96px; }

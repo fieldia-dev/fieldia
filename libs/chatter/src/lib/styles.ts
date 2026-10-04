@@ -15,7 +15,8 @@ export const CHATTER_STYLES = `
 .fd-message-note { background: var(--fd-warning-soft); }
 .fd-message-event { color: var(--fd-muted); font-size: 13px; }
 .fd-avatar-image, .fd-avatar-initials { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
-.fd-avatar-initials { display: grid; place-items: center; background: var(--fd-accent-soft); color: var(--fd-accent); font-weight: 650; font-size: 13px; }
+/* The soft shade laid on the surface, not on whatever is behind (a note's tint): the initials read the same everywhere. */
+.fd-avatar-initials { display: grid; place-items: center; background: linear-gradient(var(--fd-accent-soft), var(--fd-accent-soft)), var(--fd-surface); color: var(--fd-accent); font-weight: 650; font-size: 13px; }
 .fd-message-content { display: grid; gap: 4px; min-width: 0; }
 .fd-message-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
 .fd-message-author { font-weight: 650; }
@@ -63,7 +64,8 @@ a.fd-attachment-file:hover { border-color: var(--fd-accent); }
 .fd-activities { display: grid; gap: 8px; }
 .fd-activity-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .fd-activity { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 2px 10px; align-items: start; padding: 8px 10px; border: 1px solid var(--fd-border); border-radius: var(--fd-radius); background: var(--fd-surface); }
-.fd-activity-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: #fff; background: var(--fd-success); }
+/* The glyph in the surface's colour: white on a light page, dark on the dark scheme's lighter circles. */
+.fd-activity-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: var(--fd-surface); background: var(--fd-success); }
 .fd-activity[data-when="overdue"] .fd-activity-icon { background: var(--fd-error); }
 .fd-activity[data-when="today"] .fd-activity-icon { background: #d97706; }
 .fd-activity-icon .fd-icon { width: 16px; height: 16px; }
@@ -71,7 +73,7 @@ a.fd-attachment-file:hover { border-color: var(--fd-accent); }
 .fd-activity-summary { font-weight: 600; }
 .fd-activity-meta { color: var(--fd-muted); font-size: 12.5px; }
 .fd-activity[data-when="overdue"] .fd-activity-due { color: var(--fd-error); font-weight: 600; }
-.fd-activity[data-when="today"] .fd-activity-due { color: #b45309; font-weight: 600; }
+.fd-activity[data-when="today"] .fd-activity-due { color: var(--fd-warning); font-weight: 600; }
 /* Under the summary, where a narrow side panel has room for them. */
 .fd-activity-actions { grid-column: 2; display: flex; gap: 2px 12px; flex-wrap: wrap; }
 .fd-activity-actions .fd-button-link { padding: 0; min-height: 0; font-size: 13px; }

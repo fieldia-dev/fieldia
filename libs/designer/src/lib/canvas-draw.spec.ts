@@ -72,7 +72,8 @@ describe('the canvas draws the layout as the viewer does', () => {
     const element = canvas.element;
     expect(element.classList.contains('fd-form')).toBe(true);
     expect(element.dataset).toMatchObject({ fdSkin: 'outlined', font: 'system', density: 'comfortable', corners: 'soft' });
-    expect(element.style.getPropertyValue('--fd-look-accent')).toBe('#1677ff');
+    // The page's #1677ff, a shade darker so words in it read at 4.5:1 (WCAG AA).
+    expect(element.style.getPropertyValue('--fd-look-accent')).toBe('#1365d9');
     expect(element.style.getPropertyValue('--fd-label-width')).toBe('140px');
   });
 

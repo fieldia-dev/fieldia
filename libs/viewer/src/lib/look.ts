@@ -12,10 +12,10 @@ import type { PageLook } from '@fieldia/core';
 const INK = '#111418';
 /** The dark scheme's surface, which the dark page's accent has to read on. */
 const DARK_SURFACE = '#1f2329';
-/** WCAG's contrast for normal text. */
+/** The darkest ground of a light page (the underline skin's), which the light page's accent has to read on. */
+const LIGHT_GROUND = '#f2f3f5';
+/** WCAG's contrast for normal text (1.4.3, AA): the accent is words on the page, and has words on it. */
 const READABLE = 4.5;
-/** WCAG's floor for large words and for controls: a button's white words below it read poorly. */
-const LEGIBLE = 3;
 
 const channels = (hex: string) => [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16));
 const toHex = (rgb: number[]) => `#${rgb.map((c) => Math.round(c).toString(16).padStart(2, '0')).join('')}`;
@@ -36,15 +36,21 @@ export function contrast(a: string, b: string): number {
 }
 
 /** White on a colour, as buttons are usually written; ink where white would read poorly. */
-const textOn = (hex: string) => (contrast(hex, '#ffffff') >= LEGIBLE ? '#ffffff' : INK);
+const textOn = (hex: string) => (contrast(hex, '#ffffff') >= READABLE ? '#ffffff' : INK);
 /** On a dark page the accent is light: whichever of ink or white reads better on it. */
 const textOnDark = (hex: string) => (contrast(hex, INK) >= contrast(hex, '#ffffff') ? INK : '#ffffff');
 
 /** A colour taken towards white by `amount` (0 to 1). */
 const lighten = (hex: string, amount: number) => toHex(channels(hex).map((c) => c + (255 - c) * amount));
+/** A colour taken towards black by `amount` (0 to 1). */
+const darken = (hex: string, amount: number) => toHex(channels(hex).map((c) => c * (1 - amount)));
+/** The accent's softer shade on a surface, as the stylesheet mixes it: 12% of the accent. */
+const softOn = (hex: string, surface: string) => toHex(channels(hex).map((c, i) => c * 0.12 + channels(surface)[i] * 0.88));
+/** Reads as words on a surface, on the lightest ground there, and on its own softer shade (a picked tab, a chip). */
+const readsOn = (hex: string, grounds: string[]) => [...grounds, softOn(hex, grounds[0])].every((ground) => contrast(hex, ground) >= READABLE);
 
 export interface AccentShades {
-  /** The accent as the page gives it. */
+  /** The accent on a light page: as the page gives it, or darkened, when it has to be, until it reads there. */
   accent: string;
   /** What is written on it: a primary button's words. */
   accentText: string;
@@ -53,11 +59,18 @@ export interface AccentShades {
   darkText: string;
 }
 
-/** The accent, and what goes with it in either scheme. The softer and hover shades are mixed from these by the stylesheet. */
+/**
+ * The accent, and what goes with it in either scheme. Each is moved, in small
+ * steps and only as far as it has to be, until words in it and on it read at
+ * 4.5:1 — darker on a light page, lighter on a dark one. The softer and hover
+ * shades are mixed from these by the stylesheet.
+ */
 export function accentShades(hex: string): AccentShades {
-  const accent = hex.toLowerCase();
-  let dark = accent;
-  for (let step = 1; step <= 20 && contrast(dark, DARK_SURFACE) < READABLE; step++) dark = lighten(accent, step / 20);
+  const given = hex.toLowerCase();
+  let accent = given;
+  for (let step = 1; step <= 40 && !readsOn(accent, ['#ffffff', LIGHT_GROUND]); step++) accent = darken(given, step / 40);
+  let dark = given;
+  for (let step = 1; step <= 40 && !readsOn(dark, [DARK_SURFACE]); step++) dark = lighten(given, step / 40);
   return { accent, accentText: textOn(accent), dark, darkText: textOnDark(dark) };
 }
 
