@@ -54,3 +54,15 @@ export function typeInto(input: HTMLInputElement, text: string) {
   input.value = text;
   input.dispatchEvent(new Event('input', { bubbles: true }));
 }
+
+/** The rules of `css` that name no class of its own: none that `base` does not use already. */
+export function foreignRules(css: string, base: string): string[] {
+  const taken = new Set(base.match(/\.fd-[\w-]+/g) ?? []);
+  return css
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('}')
+    .map((rule) => rule.split('{').slice(-2)[0]?.trim() ?? '')
+    .filter((selector) => selector && !selector.startsWith('@'))
+    .flatMap((selector) => selector.split(',').map((one) => one.trim()))
+    .filter((one) => !(one.match(/\.fd-[\w-]+/g) ?? []).some((name) => !taken.has(name)));
+}

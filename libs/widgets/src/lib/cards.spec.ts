@@ -11,9 +11,9 @@ const GUESTS = {
   sequenceField: 'seq',
 };
 const cards = (options: FieldNode['options'] = {}) => mountKind(GUESTS, { widget: 'cards', options });
-const shown = (el: Element) => [...el.querySelectorAll<HTMLElement>('.fd-card')];
-const titles = (el: Element) => shown(el).map((c) => c.querySelector('.fd-card-title')?.textContent);
-const add = (el: Element) => el.querySelector('.fd-cards-add') as HTMLButtonElement;
+const shown = (el: Element) => [...el.querySelectorAll<HTMLElement>('.fd-repeat-card')];
+const titles = (el: Element) => shown(el).map((c) => c.querySelector('.fd-repeat-title')?.textContent);
+const add = (el: Element) => el.querySelector('.fd-repeat-add') as HTMLButtonElement;
 const lines = (value: unknown) => value as Line[];
 const said = (el: Element) => el.querySelector('[aria-live=polite]')?.textContent;
 
@@ -25,7 +25,7 @@ describe('repeating group', () => {
     expect(titles(el)).toEqual(['Person 1', 'Person 2']);
     const card = shown(el)[0];
     expect(card.getAttribute('role')).toBe('group');
-    expect(card.getAttribute('aria-labelledby')).toBe(card.querySelector('.fd-card-title')?.id);
+    expect(card.getAttribute('aria-labelledby')).toBe(card.querySelector('.fd-repeat-title')?.id);
     // The field that keeps the order is not asked for.
     expect([...card.querySelectorAll('label')].map((l) => l.textContent)).toEqual(['Name', 'Team']);
     const input = card.querySelector('input') as HTMLInputElement;
@@ -69,11 +69,11 @@ describe('repeating group', () => {
     expect(said(el)).toBe('Person 2 removed');
     // The card that took its place.
     expect(document.activeElement).toBe(shown(el)[1].querySelector('input'));
-    (shown(el)[1].querySelector('.fd-card-remove') as HTMLButtonElement).click();
+    (shown(el)[1].querySelector('.fd-repeat-remove') as HTMLButtonElement).click();
     // The last one left: back to the card before it.
     expect(document.activeElement).toBe(shown(el)[0].querySelector('input'));
     // At the least it needs, a card cannot go.
-    const last = shown(el)[0].querySelector('.fd-card-remove') as HTMLButtonElement;
+    const last = shown(el)[0].querySelector('.fd-repeat-remove') as HTMLButtonElement;
     expect(last.hidden).toBe(true);
     last.click();
     expect(shown(el)).toHaveLength(1);
@@ -82,7 +82,7 @@ describe('repeating group', () => {
   it('goes to "Add another" when the last card goes', () => {
     const { el } = cards();
     add(el).click();
-    (shown(el)[0].querySelector('.fd-card-remove') as HTMLButtonElement).click();
+    (shown(el)[0].querySelector('.fd-repeat-remove') as HTMLButtonElement).click();
     expect(shown(el)).toHaveLength(0);
     expect(document.activeElement).toBe(add(el));
   });
@@ -101,7 +101,7 @@ describe('repeating group', () => {
     expect(add(el).hidden).toBe(true);
     add(el).click();
     expect(shown(el)).toHaveLength(1);
-    expect((shown(el)[0].querySelector('.fd-card-remove') as HTMLElement).hidden).toBe(true);
+    expect((shown(el)[0].querySelector('.fd-repeat-remove') as HTMLElement).hidden).toBe(true);
     expect((shown(el)[0].querySelector('input') as HTMLInputElement).readOnly).toBe(true);
   });
 });

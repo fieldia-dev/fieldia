@@ -34,10 +34,10 @@ export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, docume
   // The fields that keep the lines' order or say what a line is are not asked for.
   const names = (node.columns ?? Object.keys(def.fields)).filter((f) => def.fields[f] && f !== def.sequenceField && f !== def.lineKinds?.field);
 
-  const list = make('div', { class: 'fd-cards-list' });
-  const addButton = make('button', { type: 'button', class: 'fd-button fd-cards-add' }, typeof options['addLabel'] === 'string' && options['addLabel'] ? options['addLabel'] : words.addAnother);
+  const list = make('div', { class: 'fd-repeat-list' });
+  const addButton = make('button', { type: 'button', class: 'fd-button fd-repeat-add' }, typeof options['addLabel'] === 'string' && options['addLabel'] ? options['addLabel'] : words.addAnother);
   const voice = announcer(make);
-  const element = make('div', { id, class: 'fd-cards', role: 'group' }, list, addButton, voice.element);
+  const element = make('div', { id, class: 'fd-repeat', role: 'group' }, list, addButton, voice.element);
 
   const cards = new Map<string, Card>();
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
@@ -57,19 +57,19 @@ export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, docume
 
   function makeCard(line: Line): Card {
     const titleId = `${id}-${line.key}-title`;
-    const title = make('span', { id: titleId, class: 'fd-card-title' });
-    const remove = make('button', { type: 'button', class: 'fd-card-remove' }, '×');
-    const body = make('div', { class: 'fd-card-fields' });
-    const cardElement = make('div', { class: 'fd-card', role: 'group', 'aria-labelledby': titleId, 'data-line': line.key }, make('div', { class: 'fd-card-head' }, title, remove), body);
+    const title = make('span', { id: titleId, class: 'fd-repeat-title' });
+    const remove = make('button', { type: 'button', class: 'fd-repeat-remove' }, '×');
+    const body = make('div', { class: 'fd-repeat-fields' });
+    const cardElement = make('div', { class: 'fd-repeat-card', role: 'group', 'aria-labelledby': titleId, 'data-line': line.key }, make('div', { class: 'fd-repeat-head' }, title, remove), body);
     const fields = names.map((column) => {
       const sub = def.fields[column];
       const cellId = `${id}-${line.key}-${column}`;
       const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column };
       const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs });
-      const label = make('label', { class: 'fd-card-label', for: cellId }, sub.label);
+      const label = make('label', { class: 'fd-repeat-label', for: cellId }, sub.label);
       if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) label.addEventListener('click', () => widget.focus());
       const error = make('div', { class: 'fd-cell-error', hidden: '' });
-      body.append(make('div', { class: 'fd-card-field' }, label, widget.element, error));
+      body.append(make('div', { class: 'fd-repeat-field' }, label, widget.element, error));
       return { name: column, def: sub, widget, error };
     });
     remove.addEventListener('click', () => {

@@ -1,5 +1,6 @@
-import { installStyles } from './styles';
+import { FIELDIA_CSS, installStyles } from './styles';
 import { KINDS_CSS } from './styles-kinds';
+import { foreignRules } from './test-kinds';
 
 describe('the question kinds’ stylesheet', () => {
   it('is installed with the rest, every rule scoped to Fieldia’s own parts', () => {
@@ -16,4 +17,10 @@ describe('the question kinds’ stylesheet', () => {
   it('can sit in a template literal once minified: nothing in it ends or opens one', () => {
     expect(KINDS_CSS).not.toMatch(/[`\\]|\$\{/);
   });
+
+  it('restyles nothing of the rest of Fieldia: every rule names a class of the kinds’ own', () => {
+    // A rule on a class the stylesheet already styles — the sheet's .fd-card, say — would change that part everywhere.
+    expect(foreignRules(KINDS_CSS, FIELDIA_CSS)).toEqual([]);
+  });
 });
+

@@ -162,7 +162,7 @@ test.describe('the new kinds in the viewer', () => {
     await page.keyboard.press('Tab');
     await page.keyboard.type('Designer');
     for (let i = 0; i < 3; i++) await add.click();
-    await expect(group.locator('.fd-card')).toHaveCount(4);
+    await expect(group.locator('.fd-repeat-card')).toHaveCount(4);
     await expect(add).toBeHidden();
     await screen(page, 'kinds-cards', { viewport: true });
     await group.getByRole('button', { name: 'Remove Person 2' }).click();
@@ -198,7 +198,7 @@ test.describe('the new kinds in the viewer', () => {
 for (const variant of VARIANTS) {
   test(`${variant}: the office move page renders every new kind`, async ({ page }) => {
     const { problems } = await open(page, variant, 'page=kinds&skin=outlined');
-    for (const selector of ['.fd-signature', '.fd-slider', '.fd-choice-tags', '.fd-image-choices', '.fd-ranking', '.fd-address', '.fd-cards']) await expect(page.locator(selector).first()).toBeVisible();
+    for (const selector of ['.fd-signature', '.fd-slider', '.fd-choice-tags', '.fd-image-choices', '.fd-ranking', '.fd-address', '.fd-repeat']) await expect(page.locator(selector).first()).toBeVisible();
     await expectNoSidewaysScroll(page);
     expect(problems).toEqual([]);
   });

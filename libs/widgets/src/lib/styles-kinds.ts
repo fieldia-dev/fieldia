@@ -93,19 +93,19 @@ export const KINDS_CSS = /* css */ `
 .fd-address-label { font-size: 12.5px; color: var(--fd-muted); }
 @container (max-width: 420px) { .fd-address { grid-template-columns: minmax(0, 1fr); } }
 /* A repeating group: each line a card of its fields under its numbered title, × at its end; "Add another" under the cards. */
-.fd-cards { display: grid; gap: 10px; justify-items: start; width: 100%; min-width: 0; }
-.fd-cards-list { display: grid; gap: 10px; width: 100%; min-width: 0; }
-.fd-cards-list:empty { display: none; }
-.fd-card {
+.fd-repeat { display: grid; gap: 10px; justify-items: start; width: 100%; min-width: 0; }
+.fd-repeat-list { display: grid; gap: 10px; width: 100%; min-width: 0; }
+.fd-repeat-list:empty { display: none; }
+.fd-repeat-card {
   display: grid; gap: 8px; min-width: 0; padding: 10px 14px 14px;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: max(var(--fd-radius), 6px);
 }
-.fd-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; }
-.fd-card-title { font-weight: 600; font-size: 13.5px; }
-.fd-card-remove { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 18px; line-height: 1; padding: 4px 8px; border-radius: 4px; }
-.fd-card-remove:hover { color: var(--fd-error); background: var(--fd-error-soft); }
-.fd-card-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px 14px; }
-.fd-card-field { display: grid; gap: 3px; min-width: 0; align-content: start; }
-.fd-card-label { font-size: 12.5px; color: var(--fd-muted); }
-.fd-cards-add { border-style: dashed; }
+.fd-repeat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; }
+.fd-repeat-title { font-weight: 600; font-size: 13.5px; }
+.fd-repeat-remove { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 18px; line-height: 1; padding: 4px 8px; border-radius: 4px; }
+.fd-repeat-remove:hover { color: var(--fd-error); background: var(--fd-error-soft); }
+.fd-repeat-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px 14px; }
+.fd-repeat-field { display: grid; gap: 3px; min-width: 0; align-content: start; }
+.fd-repeat-label { font-size: 12.5px; color: var(--fd-muted); }
+.fd-repeat-add { border-style: dashed; }
 `;
