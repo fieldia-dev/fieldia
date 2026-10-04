@@ -1,16 +1,14 @@
-import type { FieldNode, LayoutNode, Page, SectionNode, TabsNode } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer, DesignerState } from './designer';
-import { designerIcon } from './icons';
-import { kindById, kindOfField, storedAs } from './kinds';
-import { columnId } from './list-commands';
+import { storedAs } from './kinds';
+import { outlineView } from './outline-view';
 import type { ToolboxHandle } from './toolbox';
 
 /**
  * The editor's left side, in three tabs: Add — the toolbox; Outline — the
- * page as a tree, each part picked from it, marked when it shows only for
- * some answers; and Data — where the page's records live, the model's fields
- * on the page or not, and a made-up record to fill the canvas with.
+ * page as a tree to pick from and move parts about in (outline-view.ts);
+ * and Data — where the page's records live, the model's fields on the page
+ * or not, and a made-up record to fill the canvas with.
  */
 
 export interface RailOptions {
@@ -22,6 +20,8 @@ export interface RailOptions {
   survey: boolean;
   /** Bring a part picked in the outline into view on the canvas. */
   reveal(id: string): void;
+  /** Whether several parts may be picked at once in the outline: always, unless said. */
+  several?(): boolean;
   /** Add a field of the model to the page, or as a column. */
   addModelField?(name: string): void;
   /** Fill the canvas with the made-up record at `index`, or with nothing. */
@@ -35,66 +35,14 @@ export interface Rail {
 
 type Pane = 'add' | 'outline' | 'data';
 
-interface Row {
-  id: string;
-  label: string;
-  kind: string;
-  level: number;
-  icon?: string;
-  /** Shown only for some answers or records. */
-  ruled?: boolean;
-}
-
-const nameOf = (page: Page, node: FieldNode) => (node as FieldNode & { label?: string }).label ?? page.fields[node.field]?.label ?? node.field;
-const ruled = (invisible: unknown) => invisible !== undefined && invisible !== null && invisible !== false && invisible !== '';
-
-function fieldRow(page: Page, node: FieldNode, level: number): Row {
-  const kind = kindOfField(page.fields[node.field], node);
-  return { id: node.id, label: nameOf(page, node), kind: kind ? kindById(kind).label : 'Custom', level, icon: kind ?? 'short-answer', ruled: ruled(node.invisible) };
-}
-
-/** The page as rows of a tree, in reading order. */
-export function outlineRows(page: Page): Row[] {
-  const root = page.layout;
-  const rows: Row[] = [];
-  if (root.type === 'wizard') {
-    for (const step of root.children) {
-      rows.push({ id: step.id, label: step.label, kind: 'page', level: 0, ruled: ruled(step.invisible) });
-      for (const node of step.children) if (node.type === 'field') rows.push(fieldRow(page, node, 1));
-    }
-    return rows;
-  }
-  if (root.type === 'list') return root.columns.map((name) => ({ id: columnId(name), label: page.fields[name]?.label ?? name, kind: 'column', level: 0 }));
-  if (root.type === 'sheet') {
-    if (root.statusbar) rows.push({ id: '#statusbar', label: 'Status steps', kind: page.fields[root.statusbar.field]?.label ?? '', level: 0, icon: 'status' });
-    for (const [parts, kind] of [[root.buttons, 'button'], [root.statButtons, 'counter'], [root.badges, 'badge']] as const) for (const part of parts ?? []) rows.push({ id: part.id, label: part.label, kind, level: 0, ruled: ruled(part.invisible) });
-  }
-  const walk = (nodes: LayoutNode[], level: number) => {
-    for (const node of nodes) {
-      if (node.type === 'section') {
-        const section = node as SectionNode;
-        rows.push({ id: section.id, label: section.title || 'Untitled section', kind: 'section', level, icon: 'section', ruled: ruled(section.invisible) });
-        for (const child of section.children) if (child.type === 'field') rows.push(fieldRow(page, child, level + 1));
-        walk(section.children.filter((c) => c.type !== 'field'), level + 1);
-      } else if (node.type === 'tabs') {
-        const tabs = node as TabsNode;
-        rows.push({ id: tabs.id, label: 'Tabs', kind: `${tabs.children.length} tab${tabs.children.length === 1 ? '' : 's'}`, level, icon: 'tabs' });
-        for (const tab of tabs.children) {
-          rows.push({ id: tab.id, label: tab.label, kind: 'tab', level: level + 1, ruled: ruled(tab.invisible) });
-          walk(tab.children, level + 2);
-        }
-      }
-    }
-  };
-  walk((root as { children: LayoutNode[] }).children ?? [], 0);
-  return rows;
-}
-
 export function rail(options: RailOptions): Rail {
   const { el, doc, designer } = options;
   let pane: Pane = 'add';
   let sample: number | null = null;
-  const outline = el('nav', { class: 'fd-outline', 'aria-label': 'Outline', hidden: '' });
+  // Said aloud, politely: what a move in the outline did. Outside the panes, so it is heard whichever is on show.
+  const said = el('div', { class: 'fd-outline-said', role: 'status', 'aria-live': 'polite' });
+  const tree = outlineView({ el, doc, designer, survey: options.survey, reveal: options.reveal, several: () => options.several?.() ?? true, say: (words) => (said.textContent = words) });
+  const outline = tree.element;
   const data = el('div', { class: 'fd-data', hidden: '' });
   const panes: Record<Pane, HTMLElement> = { add: options.tools.element, outline, data };
   const tabs = (['add', 'outline', 'data'] as const).map((name) => {
@@ -105,36 +53,9 @@ export function rail(options: RailOptions): Rail {
     });
     return button;
   });
-  const element = el('aside', { class: 'fd-rail', 'aria-label': 'Add, outline and data' }, el('div', { class: 'fd-rail-tabs', role: 'tablist', 'aria-label': 'Beside the page' }, ...tabs), options.tools.element, outline, data);
+  const element = el('aside', { class: 'fd-rail', 'aria-label': 'Add, outline and data' }, el('div', { class: 'fd-rail-tabs', role: 'tablist', 'aria-label': 'Beside the page' }, ...tabs), options.tools.element, outline, data, said);
   // The toolbox is its own aside; inside the rail it is a pane.
   options.tools.element.classList.add('fd-rail-pane');
-
-  function drawOutline(state: DesignerState) {
-    const rows = outlineRows(state.page);
-    const list = el(
-      'ul',
-      { class: 'fd-outline-tree' },
-      ...rows.map((row) => {
-        const button = el(
-          'button',
-          { type: 'button', 'data-pick': row.id, 'data-level': String(row.level), 'aria-current': String(state.selected === row.id), style: `--fd-level: ${row.level}` },
-          ...(row.icon ? [designerIcon(doc, row.icon)] : []),
-          el('span', { class: 'fd-outline-label' }, row.label),
-          ...(row.ruled ? [el('span', { class: 'fd-outline-when', title: options.survey ? 'Shown only for some answers' : 'Shown only for some records' }, designerIcon(doc, 'when'))] : []),
-          el('span', { class: 'fd-outline-kind' }, row.kind)
-        );
-        button.addEventListener('click', () => {
-          designer.select(row.id);
-          options.reveal(row.id);
-        });
-        return el('li', {}, button);
-      })
-    );
-    outline.replaceChildren(
-      el('p', { class: 'fd-properties-hint' }, options.survey ? 'Pages and their questions. Pick one to open it.' : 'The whole page as a tree. Pick a part to open it.'),
-      rows.length ? list : el('p', { class: 'fd-properties-hint' }, 'Nothing on the page yet.')
-    );
-  }
 
   function drawData(state: DesignerState) {
     const page = state.page;
@@ -193,7 +114,7 @@ export function rail(options: RailOptions): Rail {
   function draw(state: DesignerState) {
     for (const t of tabs) t.setAttribute('aria-selected', String(t.dataset['rail'] === pane));
     for (const [name, p] of Object.entries(panes)) p.hidden = name !== pane;
-    if (pane === 'outline') drawOutline(state);
+    tree.update(state, pane === 'outline');
     if (pane === 'data') drawData(state);
   }
 

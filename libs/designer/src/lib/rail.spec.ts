@@ -47,7 +47,7 @@ describe('the rail: Add, Outline and Data', () => {
     expect(host.querySelector(`.fd-outline [data-pick="${coming}"] .fd-outline-when`)).toBeNull();
     pick(host, 'Why not?');
     expect(designer.getState().selected).toBe(why);
-    expect(host.querySelector(`.fd-outline [data-pick="${why}"]`)?.getAttribute('aria-current')).toBe('true');
+    expect(host.querySelector(`.fd-outline [data-pick="${why}"]`)?.getAttribute('aria-selected')).toBe('true');
     // Outline still on show, following what is picked.
     expect(tab(host, 'outline').getAttribute('aria-selected')).toBe('true');
   });
