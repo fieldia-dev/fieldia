@@ -151,3 +151,66 @@ export function expectValid(page: Page): void {
   const checked = validatePage(page);
   expect(checked.ok ? [] : checked.issues.map((i) => `${i.path}: ${i.message}`)).toEqual([]);
 }
+
+/**
+ * The employee page drawn on a canvas by hand, with the boxes a browser would
+ * give it, for the tests of what a drop means and of dragging:
+ *
+ *  root ── personal (0,0 → 900,400): photo (20,60 → 290,180)
+ *                                     who (310,60 → 880,380): first | last  (row 1, 70–130)
+ *                                                             email | mobile (row 2, 150–210)
+ *                                                             birthday | nationality (row 3, 230–290)
+ *       ── emergency (0,440 → 900,700): ec_name, ec_relation, ec_phone, one under another
+ *       ── an empty group, “New group” (0,740 → 900,840)
+ */
+export function fakeCanvas(page: Page = employeePage()) {
+  const rects = new Map<Element, DOMRect>();
+  const place = (element: Element, left: number, top: number, right: number, bottom: number) =>
+    rects.set(element, { left, top, right, bottom, width: right - left, height: bottom - top, x: left, y: top, toJSON: () => ({}) } as DOMRect);
+  const part = (id: string, parent: HTMLElement, box: [number, number, number, number], className = '') => {
+    const element = document.createElement('div');
+    element.dataset['node'] = id;
+    if (className) element.className = className;
+    parent.append(element);
+    place(element, ...box);
+    return element;
+  };
+  const content = (id: string, owner: HTMLElement, box: [number, number, number, number]) => {
+    const element = document.createElement('div');
+    element.dataset['container'] = id;
+    owner.append(element);
+    place(element, ...box);
+    return element;
+  };
+  const root = document.createElement('div');
+  root.dataset['container'] = page.layout.id;
+  document.body.append(root);
+  place(root, 0, 0, 900, 900);
+  const personal = part('personal', root, [0, 0, 900, 400]);
+  const grid = content('personal', personal, [20, 50, 880, 390]);
+  part('f-photo', grid, [20, 60, 290, 180], 'fd-canvas-field');
+  const who = part('who', grid, [310, 60, 880, 380]);
+  const inner = content('who', who, [310, 60, 880, 380]);
+  ['first_name', 'last_name', 'email', 'mobile', 'birthday', 'nationality'].forEach((name, i) => {
+    const left = i % 2 ? 600 : 310;
+    const top = 70 + Math.floor(i / 2) * 80;
+    part(`f-${name}`, inner, [left, top, left + 280, top + 60], 'fd-canvas-field');
+  });
+  const emergency = part('emergency', root, [0, 440, 900, 700]);
+  const list = content('emergency', emergency, [20, 480, 880, 690]);
+  ['ec_name', 'ec_relation', 'ec_phone'].forEach((name, i) => part(`f-${name}`, list, [20, 480 + i * 70, 880, 540 + i * 70], 'fd-canvas-field'));
+  // An empty group, as one fresh from the toolbox.
+  if (!JSON.stringify(page.layout).includes('"empty"')) (page.layout as { children: unknown[] }).children.push({ type: 'section', id: 'empty', title: 'New group', columns: 2, children: [] });
+  const empty = part('empty', root, [0, 740, 900, 840]);
+  content('empty', empty, [20, 780, 880, 830]);
+  const rectOf = (e: Element) => rects.get(e) ?? e.getBoundingClientRect();
+  /** The deepest element at a point, as elementFromPoint gives it. */
+  const under = (x: number, y: number): Element | null =>
+    [...rects.keys()]
+      .filter((e) => {
+        const r = rects.get(e) as DOMRect;
+        return e.isConnected && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+      })
+      .sort((a, b) => (a.contains(b) ? 1 : b.contains(a) ? -1 : 0))[0] ?? null;
+  return { root, page, rectOf, under, place };
+}

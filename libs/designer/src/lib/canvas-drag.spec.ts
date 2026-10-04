@@ -416,3 +416,22 @@ describe('groups inside groups', () => {
     drag.destroy();
   });
 });
+
+describe('switched off', () => {
+  it('carries nothing while Advanced carries instead', () => {
+    const { host, card, pointer, dropped, drag: always } = canvas();
+    always.destroy();
+    let on = false;
+    const drag = canvasDrag({ canvas: host, enabled: () => on, drop: (source, to, index) => void dropped.push([source, to, index]) });
+    pointer('pointerdown', card('customer'), 50, 60);
+    pointer('pointermove', document, 60, 470);
+    pointer('pointerup', document, 60, 470);
+    expect(dropped).toEqual([]);
+    drag.press({ tool: 'kind:date' }, new MouseEvent('pointerdown', { button: 0 }) as unknown as PointerEvent, card('date'));
+    pointer('pointermove', document, 60, 470);
+    pointer('pointerup', document, 60, 470);
+    expect(dropped).toEqual([]);
+    on = true;
+    drag.destroy();
+  });
+});

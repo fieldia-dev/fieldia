@@ -49,6 +49,8 @@ export interface CanvasDragOptions {
   /** What counts as a place in a section, when more than what can be carried: the screen's blocks and groups between its fields. */
   parts?: string;
   drop(source: DragSource, sectionId: string, index: number): void;
+  /** Whether it carries anything now: off while the Advanced canvas carries instead. On by default. */
+  enabled?(): boolean;
   /** Where an element is on screen; the browser's own by default. */
   rectOf?: (element: Element) => DOMRect;
 }
@@ -139,8 +141,10 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
   }
 
   /** A press on a field: anywhere on one not being edited, or on the grip of the one being edited. */
+  const on = () => options.enabled?.() ?? true;
+
   function onDown(event: PointerEvent) {
-    if (event.button !== 0 || drag) return;
+    if (!on() || event.button !== 0 || drag) return;
     const target = event.target as Element;
     const card = target.closest?.<HTMLElement>(cardSelector);
     if (!card || !canvas.contains(card)) return;
@@ -335,7 +339,7 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
 
   return {
     press(source, event, element) {
-      if (event.button !== 0 || drag) return;
+      if (!on() || event.button !== 0 || drag) return;
       begin(source, element, event.clientX, event.clientY);
     },
     destroy() {

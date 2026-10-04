@@ -1,6 +1,7 @@
 import { createForm, type FieldNode, type Form, type LayoutNode, type Page, type SectionNode, type TabsNode } from '@fieldia/core';
 import { applyLook, labelPlace, planSection, type Place } from '@fieldia/viewer';
 import { createWidget, type Widget } from '@fieldia/widgets';
+import { advancedDrag } from './canvas-advanced';
 import { blockViews } from './canvas-blocks';
 import { canvasDrag, type CanvasDrag } from './canvas-drag';
 import { canvasHeader } from './canvas-header';
@@ -439,15 +440,33 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     else input.setSelectionRange(input.value.length, input.value.length);
   }
 
-  const drag = canvasDrag({
+  // Simple carries fields among fields, as before; Advanced drops any part beside, under, into or between others.
+  const simpleDrag = canvasDrag({
     canvas: element,
     parts: '[data-node]:not([role="tab"])',
+    enabled: () => mode === 'simple',
     drop: (source, section, index) => {
       if ('node' in source) {
         if (designer.placeNode(source.node, section, index)) designer.select(source.node);
       } else options.dropTool(source.tool, section, index);
     },
   });
+  const advanced = advancedDrag({
+    canvas: element,
+    root: body,
+    designer,
+    rtl: () => doc.defaultView?.getComputedStyle(element).direction === 'rtl',
+    // A new field comes with its name selected, to be typed over where it stands.
+    placed: (id, source) => 'tool' in source && source.tool.startsWith('kind:') && focusIn(id, 'label', true),
+  });
+  advanced.setEnabled(false);
+  const drag: CanvasDrag = {
+    press: (source, event, tile) => (mode === 'advanced' ? advanced : simpleDrag).press(source, event, tile),
+    destroy() {
+      simpleDrag.destroy();
+      advanced.destroy();
+    },
+  };
 
   return {
     element,
@@ -457,6 +476,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     },
     setMode(next) {
       mode = next;
+      advanced.setEnabled(next === 'advanced');
     },
     update(state) {
       page = state.page;

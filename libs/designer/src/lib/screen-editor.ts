@@ -10,6 +10,8 @@ import { listCanvas } from './list-canvas';
 import { canBeColumn } from './list-commands';
 import { columnProperties, listActionProperties, listProperties } from './list-properties';
 import type { FindItem } from './find-anything';
+import { locate } from './layout-tree';
+import type { BlockKind } from './layout-ops';
 import { allSections, findField, findTab, sectionLabel } from './page-tree';
 import { screenCanvas } from './screen-canvas';
 import { fieldProperties, pageProperties, sectionProperties, tabProperties, tabsProperties, type PropertiesView } from './screen-properties';
@@ -149,6 +151,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       // A new field comes with its name selected, to be typed over where it stands.
       if (created) canvas.focus(created, 'label', true);
     } else if (kind === 'model') designer.addModelField(name, where ?? target(page));
+    else if (kind === 'block') designer.addBlock(name as BlockKind, where ?? blockWhere(page));
     else if (spec === 'layout:section') {
       const selected = designer.getState().selected;
       const tab = selected ? findTab(page, selected) : null;
@@ -161,6 +164,15 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       const tabs = created ? (topOf(designer.getPage()).find((n) => n.id === created) as TabsNode) : null;
       if (tabs) designer.select(tabs.children[0].id);
     }
+  }
+
+  /** Where a block clicked in the toolbox goes: right after what is picked, into a picked tab, or where a field would. */
+  function blockWhere(page: Page): Where {
+    const selected = designer.getState().selected;
+    const at = selected ? locate(page, selected) : null;
+    if (at?.node.type === 'tab') return { parent: at.node.id };
+    if (at) return { after: at.node.id };
+    return target(page);
   }
 
   // ---- find anything -----------------------------------------------------------
@@ -327,6 +339,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       modelFields: listing ? designer.modelFields().filter((m) => canBeColumn(m.field)) : designer.modelFields(),
       tabs: state.page.layout.type === 'sheet' && !topOf(state.page).some((n) => n.type === 'tabs'),
       kinds: !listing,
+      advanced: mode === 'advanced',
     });
     side.update(state);
     renderPanel(state);
