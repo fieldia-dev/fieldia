@@ -13,6 +13,7 @@ test.describe('screen designer · record sheet', () => {
     page.on('console', (message) => message.type() === 'error' && problems.push(message.text()));
     await page.goto('/screen/?start=sheet');
     await expect(page.locator('.fd-canvas-title')).toHaveText('Name');
+    await panel(page).getByRole('tab', { name: 'Layout' }).click();
     await expect(page.getByRole('combobox', { name: 'Layout' })).toHaveValue('sheet');
 
     // Two fields in a row: the cursor goes to each new label.
@@ -20,6 +21,7 @@ test.describe('screen designer · record sheet', () => {
     await addField(page, 'phone', 'Phone');
     // A link to another record, pointed at its model.
     await addField(page, 'link', 'Company');
+    await panel(page).getByRole('tab', { name: 'Data' }).click();
     await panel(page).getByRole('textbox', { name: 'Links to' }).fill('company');
 
     await tile(page, 'layout:tabs').click();
@@ -32,6 +34,8 @@ test.describe('screen designer · record sheet', () => {
     await addField(page, 'paragraph', 'Internal notes');
     // A table of lines, the grid where the app has it, with a column of its own.
     await addField(page, 'lines', 'Order lines');
+    // The panel kept the tab the last field was left on: its columns are on Content.
+    await panel(page).getByRole('tab', { name: 'Content' }).click();
     await panel(page).getByRole('button', { name: 'Add column' }).click();
     await panel(page).getByRole('textbox', { name: 'Column 3' }).fill('Unit price');
     await panel(page).getByRole('combobox', { name: 'Kind of column 3' }).selectOption('number');
@@ -217,6 +221,7 @@ test.describe('screen designer · rules', () => {
     await tile(page, 'model:state').click();
     await addField(page, 'paragraph', 'Reason for the block');
     const panel = page.locator('.fd-properties');
+    await panel.getByRole('tab', { name: 'Rules' }).click();
     await panel.getByRole('button', { name: 'Required only when…' }).click();
     await panel.getByLabel('When the answer is').selectOption({ label: 'is Blocked' });
     await expect(panel.getByLabel('Required when', { exact: true })).toHaveValue('state');
