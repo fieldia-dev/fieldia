@@ -32,6 +32,37 @@
         3,
         1
       ]
+    },
+    "rooms": {
+      "type": "selection",
+      "label": "Which rooms will you use?",
+      "multiple": true,
+      "options": [
+        {
+          "value": "kitchen",
+          "label": "Kitchen"
+        },
+        {
+          "value": "quiet",
+          "label": "Quiet room"
+        },
+        {
+          "value": "meeting",
+          "label": "Meeting rooms"
+        },
+        {
+          "value": "gym",
+          "label": "Gym"
+        },
+        {
+          "value": "library",
+          "label": "Library"
+        },
+        {
+          "value": "roof",
+          "label": "Roof garden"
+        }
+      ]
     }
   },
   "layout": {
@@ -62,6 +93,12 @@
             "options": {
               "step": 0.5
             }
+          },
+          {
+            "type": "field",
+            "id": "q-rooms",
+            "field": "rooms",
+            "widget": "tags"
           }
         ]
       },

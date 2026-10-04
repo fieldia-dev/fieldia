@@ -26,6 +26,7 @@ import { htmlWidget, jsonWidget } from './extras';
 import { matrixWidget } from './matrix';
 import { signatureWidget } from './signature';
 import { sliderWidget } from './slider';
+import { choiceTagsWidget } from './choice-tags';
 import { clearSelection } from './kind-parts';
 
 /**
@@ -518,6 +519,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   selection: selectWidget,
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),
+  'selection.tags': choiceTagsWidget,
   'selection.statusbar': statusbarWidget,
   date: dateWidget,
   datetime: dateTimeWidget,

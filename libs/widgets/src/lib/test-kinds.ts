@@ -1,6 +1,8 @@
 import { createForm, type Field, type FieldNode, type Locale, type Page, type Value } from '@fieldia/core';
 import { WIDGET_LABELS } from './labels';
-import { createWidget } from './widgets';
+import { createWidget, type WidgetState } from './widgets';
+
+type Shown = Partial<Pick<WidgetState, 'readonly' | 'required' | 'invalid' | 'describedBy'>>;
 
 /**
  * One question on a page of its own, its widget mounted in the document and
@@ -31,8 +33,8 @@ export function mountKind(field: Record<string, unknown>, node: Partial<FieldNod
   if (options.dir) host.setAttribute('dir', options.dir);
   host.append(widget.element);
   document.body.replaceChildren(host);
-  let shown: Partial<{ readonly: boolean; required: boolean; invalid: boolean }> = {};
-  const refresh = (extra: Partial<{ readonly: boolean; required: boolean; invalid: boolean }> = shown) => {
+  let shown: Shown = {};
+  const refresh = (extra: Shown = shown) => {
     shown = extra;
     widget.update({ value: form.getState().values['x'], values: form.getState().values, readonly: false, required: false, invalid: false, ...extra });
   };
