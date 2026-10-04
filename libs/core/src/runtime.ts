@@ -5,7 +5,7 @@
  */
 export type { JsonValue } from './lib/format/json';
 export { FIELD_NAME, FIELD_TYPES, type FieldType } from './lib/format/names';
-export type { Field, Fields, LineField, LineKinds, Option, PropertyDefinition, FilterCondition, FilterItem } from './lib/format/field';
+export type { Field, Fields, LineField, LineKinds, Option, PropertyDefinition, FilterCondition, FilterItem, SetWhen } from './lib/format/field';
 export type {
   Modifier,
   Tone,
@@ -32,13 +32,18 @@ export type {
   RootLayout,
   ListNode,
   ListFilter,
+  LabelPlace,
+  AnswerRule,
+  DividerNode,
+  SpacerNode,
+  ImageNode,
 } from './lib/format/layout';
 export { wideColumns } from './lib/format/columns';
 export { FORMAT_VERSION } from './lib/format/version';
-export type { Page, PageData } from './lib/format/page';
+export type { Page, PageData, PageLook } from './lib/format/page';
 export { checkPage } from './lib/format/check-page';
 export type { PageIssue, PageValidation } from './lib/format/references';
-export { translatePage } from './lib/format/translate';
+export { translatePage, localizePage } from './lib/format/translate';
 export { compileModifier, type CompiledModifier } from './lib/expression/modifier';
 export { evaluateModifier, isModifierValid } from './lib/expression/evaluateModifier';
 export {

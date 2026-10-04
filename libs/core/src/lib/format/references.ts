@@ -66,6 +66,8 @@ export class ReferenceCheck {
   private checkFields(fields: Fields | Record<string, LineField>, base: string) {
     for (const [name, def] of Object.entries(fields)) {
       const path = `${base}.${name}`;
+      // Values set when a condition starts to hold: the condition reads like any other.
+      def.setWhen?.forEach((item, i) => this.checkModifiers(item, `${path}.setWhen[${i}]`, ['when']));
       if (def.type === 'monetary' && def.currencyField !== undefined) {
         const currency = this.need(def.currencyField, `${path}.currencyField`, fields);
         if (currency && !['many2one', 'selection', 'char'].includes(currency.type)) {
@@ -251,6 +253,17 @@ export class ReferenceCheck {
 
   private checkFieldNode(node: FieldNode, path: string) {
     const def = this.need(node.field, `${path}.field`);
+    // Answer rules: each condition reads, each pattern is a regular expression.
+    node.validate?.forEach((rule, i) => {
+      const at = `${path}.validate[${i}]`;
+      this.checkModifiers(rule, at, ['when']);
+      if (rule.pattern === undefined) return;
+      try {
+        new RegExp(rule.pattern);
+      } catch {
+        this.report(`${at}.pattern`, `"${rule.pattern}" is not a regular expression`);
+      }
+    });
     if (def && node.totals) {
       if (def.type !== 'one2many') {
         this.report(`${path}.totals`, `totals only apply to one2many fields; "${node.field}" is a ${def.type}`);

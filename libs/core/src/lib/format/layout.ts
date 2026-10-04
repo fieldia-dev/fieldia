@@ -16,6 +16,33 @@ export type Modifier = boolean | string;
 
 export type Tone = 'info' | 'success' | 'warning' | 'danger' | 'muted';
 
+/** Where a field's label sits: above its box, beside it, or inside it as the placeholder (still read out by screen readers). */
+export type LabelPlace = 'above' | 'beside' | 'hidden';
+
+/**
+ * A rule an answer must keep, besides its field's own: a length, a pattern, an
+ * ending, a range, how many may be ticked, a date in the past or the future.
+ * Each rule may hold only `when` a condition does, say what to show when it is
+ * broken, and be a `warning` that is shown without stopping the form. An
+ * empty answer passes every rule; `required` decides whether one is needed.
+ */
+export interface AnswerRule {
+  minLength?: number;
+  maxLength?: number;
+  /** A regular expression the whole answer matches. */
+  pattern?: string;
+  endsWith?: string;
+  min?: number;
+  max?: number;
+  /** For several choices: at least, at most this many. */
+  atLeast?: number;
+  atMost?: number;
+  date?: 'past' | 'future';
+  when?: Modifier;
+  message?: string;
+  level?: 'error' | 'warning';
+}
+
 export interface FieldNode {
   type: 'field';
   id: string;
@@ -40,6 +67,10 @@ export interface FieldNode {
   optionalColumns?: { [column: string]: 'show' | 'hide' };
   /** For one2many shown as a grid: edit one cell at a time (the default), or a whole line at once. */
   editMode?: 'cell' | 'row';
+  /** Where the label sits, when not where its group or the page puts labels. */
+  labels?: LabelPlace;
+  /** Rules the answer must keep. */
+  validate?: AnswerRule[];
   invisible?: Modifier;
   readonly?: Modifier;
   required?: Modifier;
@@ -56,6 +87,8 @@ export interface ButtonNode {
   /** Ask before running the action. */
   confirm?: string;
   icon?: string;
+  /** Grid columns it spans inside a section. */
+  colspan?: number;
   invisible?: Modifier;
 }
 
@@ -64,6 +97,35 @@ export interface TextNode {
   id: string;
   text: string;
   style?: 'heading' | 'paragraph' | 'note';
+  /** Grid columns it spans inside a section. */
+  colspan?: number;
+  invisible?: Modifier;
+}
+
+/** A line across the whole row, between parts. */
+export interface DividerNode {
+  type: 'divider';
+  id: string;
+  invisible?: Modifier;
+}
+
+/** Empty room: in a section with columns, an empty cell. */
+export interface SpacerNode {
+  type: 'spacer';
+  id: string;
+  colspan?: number;
+  invisible?: Modifier;
+}
+
+/** A picture between parts, such as a logo. */
+export interface ImageNode {
+  type: 'image';
+  id: string;
+  /** An address or a data: URI. */
+  src: string;
+  /** What it shows, for people who cannot see it. */
+  alt: string;
+  colspan?: number;
   invisible?: Modifier;
 }
 
@@ -89,6 +151,12 @@ export interface ColumnsByWidth {
 
 export { wideColumns } from './columns';
 
+/**
+ * A group of parts, with columns of its own. A section without a title in the
+ * plain style is an arrangement — parts side by side or one under another —
+ * and when it sits in a section with columns it lays its parts on the columns
+ * it covers there, so they line up with everything above and below.
+ */
 export interface SectionNode {
   type: 'section';
   id: string;
@@ -101,6 +169,14 @@ export interface SectionNode {
   collapsible?: boolean;
   /** A collapsible section that starts folded. */
   collapsed?: boolean;
+  /** Grid columns it spans inside the section around it: groups side by side. */
+  colspan?: number;
+  /** A card (the default), plain (nothing drawn), a line under the title, or a frame with the title on it. */
+  style?: 'card' | 'plain' | 'line' | 'framed';
+  /** Where the labels of the fields inside sit, unless a field says otherwise. */
+  labels?: LabelPlace;
+  /** How wide labels set beside their boxes are, in pixels. */
+  labelWidth?: number;
   invisible?: Modifier;
   /** Every field inside is read-only while this holds. */
   readonly?: Modifier;
@@ -119,6 +195,8 @@ export interface TabNode {
 export interface TabsNode {
   type: 'tabs';
   id: string;
+  /** Grid columns it spans inside a section. */
+  colspan?: number;
   invisible?: Modifier;
   children: TabNode[];
 }
@@ -258,7 +336,7 @@ export interface ListNode {
 }
 
 /** Anything that can sit inside a section, tab, step or sheet. */
-export type LayoutNode = FieldNode | ButtonNode | TextNode | SlotNode | SectionNode | TabsNode;
+export type LayoutNode = FieldNode | ButtonNode | TextNode | SlotNode | SectionNode | TabsNode | DividerNode | SpacerNode | ImageNode;
 
 /** What a page's `layout` can be: the four page layouts. */
 export type RootLayout = SheetNode | SectionsNode | TabsNode | WizardNode | ListNode;
@@ -276,6 +354,29 @@ const fieldName = z.string().regex(FIELD_NAME);
 const tone = z.enum(['info', 'success', 'warning', 'danger', 'muted']);
 const columnCount = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]);
 const invisible = ModifierSchema.optional();
+const span = z.int().min(1).max(4).optional();
+const labelPlace = z.enum(['above', 'beside', 'hidden']);
+
+export const AnswerRuleSchema = z
+  .strictObject({
+    minLength: z.int().min(0).optional(),
+    maxLength: z.int().min(1).optional(),
+    pattern: z.string().min(1).optional(),
+    endsWith: z.string().min(1).optional(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    atLeast: z.int().min(0).optional(),
+    atMost: z.int().min(1).optional(),
+    date: z.enum(['past', 'future']).optional(),
+    when: ModifierSchema.optional(),
+    message: z.string().optional(),
+    level: z.enum(['error', 'warning']).optional(),
+  })
+  .refine(
+    (r) => ['minLength', 'maxLength', 'pattern', 'endsWith', 'min', 'max', 'atLeast', 'atMost', 'date'].some((k) => r[k as keyof typeof r] !== undefined),
+    { message: 'an answer rule asks for something: a length, a pattern, an ending, a range, a count or a date' }
+  )
+  .meta({ id: 'AnswerRule' });
 
 export const FieldNodeSchema = z.strictObject({
   type: z.literal('field'),
@@ -291,6 +392,8 @@ export const FieldNodeSchema = z.strictObject({
   totals: z.array(fieldName).min(1).optional(),
   optionalColumns: z.record(fieldName, z.enum(['show', 'hide'])).optional(),
   editMode: z.enum(['cell', 'row']).optional(),
+  labels: labelPlace.optional(),
+  validate: z.array(AnswerRuleSchema).min(1).optional(),
   invisible,
   readonly: ModifierSchema.optional(),
   required: ModifierSchema.optional(),
@@ -305,6 +408,7 @@ export const ButtonNodeSchema = z.strictObject({
   style: z.enum(['primary', 'secondary', 'danger', 'link']).optional(),
   confirm: z.string().optional(),
   icon: z.string().optional(),
+  colspan: span,
   invisible,
 });
 
@@ -313,8 +417,15 @@ export const TextNodeSchema = z.strictObject({
   id,
   text: z.string(),
   style: z.enum(['heading', 'paragraph', 'note']).optional(),
+  colspan: span,
   invisible,
 });
+
+export const DividerNodeSchema = z.strictObject({ type: z.literal('divider'), id, invisible });
+
+export const SpacerNodeSchema = z.strictObject({ type: z.literal('spacer'), id, colspan: span, invisible });
+
+export const ImageNodeSchema = z.strictObject({ type: z.literal('image'), id, src: z.string().min(1), alt: z.string(), colspan: span, invisible });
 
 export const SlotNodeSchema = z.strictObject({ type: z.literal('slot'), id, name: z.string().min(1), invisible });
 
@@ -327,6 +438,10 @@ export const SectionNodeSchema = z.strictObject({
   columns: z.union([columnCount, z.strictObject({ wide: columnCount, medium: columnCount.optional(), narrow: columnCount.optional() })]).optional(),
   collapsible: z.boolean().optional(),
   collapsed: z.boolean().optional(),
+  colspan: span,
+  style: z.enum(['card', 'plain', 'line', 'framed']).optional(),
+  labels: labelPlace.optional(),
+  labelWidth: z.int().min(60).max(320).optional(),
   invisible,
   readonly: ModifierSchema.optional(),
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
@@ -348,6 +463,7 @@ export const TabNodeSchema = z.strictObject({
 export const TabsNodeSchema = z.strictObject({
   type: z.literal('tabs'),
   id,
+  colspan: span,
   invisible,
   children: z.array(TabNodeSchema).min(1),
 }).meta({ id: 'TabsNode' });
@@ -360,6 +476,9 @@ export const LayoutNodeSchema = z
     SlotNodeSchema,
     SectionNodeSchema,
     TabsNodeSchema,
+    DividerNodeSchema,
+    SpacerNodeSchema,
+    ImageNodeSchema,
   ])
   .meta({ id: 'LayoutNode' });
 

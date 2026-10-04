@@ -78,10 +78,14 @@ export function initialValues(fields: Record<string, AnyField>): Values {
 }
 
 /** Nothing worth keeping: no value, blank text, or an empty list. Numbers and booleans never are. */
-export function isEmpty(_field: AnyField, value: Value | undefined): boolean {
+export function isEmpty(field: AnyField, value: Value | undefined): boolean {
   if (value === null || value === undefined) return true;
   if (typeof value === 'string') return value.trim() === '';
   if (Array.isArray(value)) return value.length === 0;
+  // A matrix with no row answered is not answered at all.
+  if (field.type === 'matrix' && typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).every((a) => a === null || a === undefined || (Array.isArray(a) && !a.length));
+  }
   return false;
 }
 

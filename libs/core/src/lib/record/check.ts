@@ -19,6 +19,7 @@ export function checkValue(
   const label = field.label || 'This field';
   const say = (key: keyof Messages, values: Record<string, string | number> = {}) => fill(messages[key], { label, ...values });
   if (isEmpty(field, value)) return required ? say('required') : undefined;
+  if (field.type === 'matrix') return checkMatrix(field, value, required, say);
 
   switch (field.type) {
     case 'char':
@@ -82,6 +83,31 @@ export function checkValue(
     default:
       return undefined;
   }
+}
+
+/** A matrix: an answer per row, each from the columns; every row answered when required. */
+function checkMatrix(
+  field: Extract<Field, { type: 'matrix' }>,
+  value: Value | undefined,
+  required: boolean,
+  say: (key: keyof Messages, values?: Record<string, string | number>) => string
+): string | undefined {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return say('matrix');
+  const rows = new Set(field.rows.map((r) => String(r.value)));
+  const columns = new Set(field.columns.map((c) => c.value as unknown));
+  const listing = say('choice', { options: field.columns.map((c) => c.label).join(', ') });
+  for (const [row, answer] of Object.entries(value as Record<string, unknown>)) {
+    if (!rows.has(row)) return say('matrixRow', { rows: field.rows.map((r) => r.label).join(', ') });
+    const picked = field.multiple && Array.isArray(answer) ? answer : [answer];
+    if (!field.multiple && Array.isArray(answer)) return listing;
+    if (picked.some((a) => a !== null && a !== undefined && !columns.has(a))) return listing;
+  }
+  const answered = (row: string) => {
+    const a = (value as Record<string, unknown>)[row];
+    return a !== null && a !== undefined && !(Array.isArray(a) && !a.length);
+  };
+  if (required && field.rows.some((r) => !answered(String(r.value)))) return say('matrixRows');
+  return undefined;
 }
 
 function decimals(value: number): number {

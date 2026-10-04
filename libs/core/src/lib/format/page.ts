@@ -12,6 +12,25 @@ export { FORMAT_VERSION } from './version';
  */
 export type PageData = { kind: 'record'; model: string } | { kind: 'responses' };
 
+/**
+ * How the page looks: these become the form's own tokens, so every widget
+ * follows them and a dark scheme keeps working.
+ */
+export interface PageLook {
+  /** The accent: buttons, focus, the picked tab, a band under the title. `#rrggbb`. */
+  accent?: string;
+  font?: 'system' | 'serif' | 'rounded';
+  /** Room between and inside parts: compact for long office forms, roomy for a short public form. */
+  density?: 'compact' | 'comfortable' | 'roomy';
+  corners?: 'square' | 'soft' | 'round';
+  /** Where labels sit across the page, unless a section or a field says otherwise. */
+  labels?: 'above' | 'beside' | 'hidden';
+  /** How wide labels set beside their boxes are, in pixels. */
+  labelWidth?: number;
+  /** Light, dark, or as the reader's system has it. */
+  scheme?: 'light' | 'dark' | 'auto';
+}
+
 export interface Page {
   /** The format version, so a reader can refuse what it does not understand. */
   fieldia: typeof FORMAT_VERSION;
@@ -25,6 +44,13 @@ export interface Page {
   maxWidth?: 'narrow' | 'medium' | 'wide' | 'full';
   /** Where Save and Discard sit: at the top of the page, or at its foot. A wizard keeps its own. */
   actionsPosition?: 'top' | 'bottom';
+  look?: PageLook;
+  /**
+   * The page's words in other languages, by language tag (`ar`, `fr`,
+   * `pt-BR`): each a map from the words as written to their translation.
+   * Words with no translation show as written. See `localizePage`.
+   */
+  translations?: { [locale: string]: { [text: string]: string } };
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -43,6 +69,18 @@ export const PageSchema = z
     layout: RootLayoutSchema,
     maxWidth: z.enum(['narrow', 'medium', 'wide', 'full']).optional(),
     actionsPosition: z.enum(['top', 'bottom']).optional(),
+    look: z
+      .strictObject({
+        accent: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+        font: z.enum(['system', 'serif', 'rounded']).optional(),
+        density: z.enum(['compact', 'comfortable', 'roomy']).optional(),
+        corners: z.enum(['square', 'soft', 'round']).optional(),
+        labels: z.enum(['above', 'beside', 'hidden']).optional(),
+        labelWidth: z.int().min(60).max(320).optional(),
+        scheme: z.enum(['light', 'dark', 'auto']).optional(),
+      })
+      .optional(),
+    translations: z.record(z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/), z.record(z.string(), z.string())).optional(),
   })
   .meta({
     title: 'Fieldia page',

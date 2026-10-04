@@ -1,7 +1,7 @@
 import type { Page } from './page';
 
 /** Keys whose text a person reads: titles, labels, help, prompts, messages and a wizard's buttons. */
-const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'placeholder', 'message', 'text', 'confirm', 'nextLabel', 'backLabel', 'finishLabel']);
+const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'placeholder', 'message', 'text', 'confirm', 'nextLabel', 'backLabel', 'finishLabel', 'alt']);
 
 /**
  * Parts that hold names or data, never words to translate: which line fields
@@ -30,4 +30,15 @@ export function translatePage(page: Page, translate: (text: string) => string): 
     return out;
   };
   return walk(page, null) as Page;
+}
+
+/**
+ * The page in one of the languages it keeps in `translations`: every word a
+ * person reads that has a translation there, translated; the rest as written.
+ * A language the page does not keep gives the page as it is.
+ */
+export function localizePage(page: Page, locale: string): Page {
+  const words = page.translations?.[locale] ?? page.translations?.[locale.split('-')[0]];
+  if (!words) return page;
+  return translatePage(page, (text) => words[text] ?? text);
 }

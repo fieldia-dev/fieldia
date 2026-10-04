@@ -22,6 +22,7 @@ export const FIELD_TYPES = [
   'reference',
   'properties',
   'json',
+  'matrix',
 ] as const;
 
 export type FieldType = (typeof FIELD_TYPES)[number];

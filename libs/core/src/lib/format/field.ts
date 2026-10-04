@@ -18,6 +18,10 @@ export const OptionSchema = z
   .object({
     value: z.union([z.string(), z.number()]),
     label: z.string(),
+    /** A picture to choose by: an address or a data: URI. Shown by an image-choice widget. */
+    image: z.string().min(1).optional(),
+    /** Points this choice is worth, for a quiz or a score. */
+    score: z.number().optional(),
   })
   .strict()
   .meta({ id: 'Option' });
@@ -70,12 +74,24 @@ export const FilterAllSchema = z.strictObject({
 
 export const FilterItemSchema = z.union([FilterConditionSchema, FilterAnySchema, FilterAllSchema]).meta({ id: 'FilterItem' });
 
+/** A value set when a condition starts to hold: `when` is a condition, `value` an expression. People may still change it. */
+export const SetWhenSchema = z
+  .object({ when: z.string().min(1), value: z.string().min(1) })
+  .strict()
+  .meta({ id: 'SetWhen' });
+
+export type SetWhen = z.infer<typeof SetWhenSchema>;
+
 const common = {
   label: z.string(),
   help: z.string().optional(),
   required: z.boolean().optional(),
   readonly: z.boolean().optional(),
   default: JsonValueSchema.optional(),
+  /** An expression for a value worked out from other fields, such as `price * qty`. The field shows it and cannot be edited. */
+  compute: z.string().min(1).optional(),
+  /** Values to set when a condition starts to hold, in order. */
+  setWhen: z.array(SetWhenSchema).min(1).optional(),
 };
 
 const size = z.int().positive().optional();
@@ -162,6 +178,21 @@ const Properties = z
   })
   .strict();
 const Json = z.object({ type: z.literal('json'), ...common }).strict();
+/**
+ * A matrix question: one answer per row, chosen from the columns — a Likert
+ * grid. The value is an object of row value to column value, or to a list of
+ * column values when several may be chosen in a row.
+ */
+const Matrix = z
+  .object({
+    type: z.literal('matrix'),
+    ...common,
+    rows: z.array(OptionSchema).min(1),
+    columns: z.array(OptionSchema).min(1),
+    /** Several columns may be chosen in a row. */
+    multiple: z.boolean().optional(),
+  })
+  .strict();
 
 /** A field of a one2many's lines. Lines cannot hold lines of their own. */
 export const LineFieldSchema = z
@@ -214,7 +245,7 @@ const One2many = z
 export const FieldSchema = z
   .discriminatedUnion('type', [
     Char, Text, Html, Integer, Float, Monetary, BooleanField, DateField, DateTime,
-    Selection, Binary, Image, Many2one, Many2many, One2many, Reference, Properties, Json,
+    Selection, Binary, Image, Many2one, Many2many, One2many, Reference, Properties, Json, Matrix,
   ])
   .meta({ id: 'Field' });
 

@@ -21,6 +21,10 @@ export interface Messages {
   choice: string;
   /** A choice of a field with an "Other" answer. */
   choiceOrOther: string;
+  /** A matrix: the value is not an answer per row; a row it does not have; rows left unanswered. */
+  matrix: string;
+  matrixRow: string;
+  matrixRows: string;
   choices: string;
   record: string;
   records: string;
@@ -52,6 +56,9 @@ export const MESSAGES: Record<Locale, Messages> = {
     datetimeInvalid: 'Invalid date and time (check the values)',
     choice: 'Must be one of: {options}',
     choiceOrOther: 'Must be one of: {options}, or an answer of its own',
+    matrix: '{label} takes an answer for each row',
+    matrixRow: 'Rows are: {rows}',
+    matrixRows: 'Answer every row of {label}',
     choices: '{label} must be a list of choices',
     record: '{label} must be a record',
     records: '{label} must be a list of records',
@@ -78,6 +85,9 @@ export const MESSAGES: Record<Locale, Messages> = {
     datetimeInvalid: 'التاريخ والوقت غير صحيحين',
     choice: 'يجب أن تكون القيمة واحدة من: {options}',
     choiceOrOther: 'يجب أن تكون القيمة واحدة من: {options}، أو إجابة أخرى',
+    matrix: 'يأخذ {label} إجابة لكل صف',
+    matrixRow: 'الصفوف هي: {rows}',
+    matrixRows: 'أجب عن كل صفوف {label}',
     choices: 'يجب أن يكون {label} قائمة اختيارات',
     record: 'يجب أن يكون {label} سجلًا',
     records: 'يجب أن يكون {label} قائمة سجلات',
@@ -104,6 +114,9 @@ export const MESSAGES: Record<Locale, Messages> = {
     datetimeInvalid: 'Ungültiges Datum oder ungültige Uhrzeit',
     choice: 'Muss eines davon sein: {options}',
     choiceOrOther: 'Muss eines davon sein: {options} – oder eine eigene Antwort',
+    matrix: '{label} braucht eine Antwort je Zeile',
+    matrixRow: 'Die Zeilen sind: {rows}',
+    matrixRows: 'Beantworten Sie jede Zeile von {label}',
     choices: '{label} muss eine Liste von Optionen sein',
     record: '{label} muss ein Datensatz sein',
     records: '{label} muss eine Liste von Datensätzen sein',
@@ -130,6 +143,9 @@ export const MESSAGES: Record<Locale, Messages> = {
     datetimeInvalid: 'Date ou heure invalide',
     choice: 'Doit être parmi : {options}',
     choiceOrOther: 'Doit être parmi : {options}, ou une réponse libre',
+    matrix: '{label} attend une réponse par ligne',
+    matrixRow: 'Les lignes sont : {rows}',
+    matrixRows: 'Répondez à chaque ligne de {label}',
     choices: '{label} doit être une liste de choix',
     record: '{label} doit être un enregistrement',
     records: "{label} doit être une liste d'enregistrements",
