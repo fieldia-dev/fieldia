@@ -18,6 +18,8 @@ export interface QuestionKind {
 }
 
 const firstOption = (): Option[] => [{ value: 'option_1', label: 'Option 1' }];
+/** "Row 1", "Row 2"…, with the values a new option has. */
+const numbered = (value: string, label: string, count: number): Option[] => Array.from({ length: count }, (_, i) => ({ value: `${value}_${i + 1}`, label: `${label} ${i + 1}` }));
 
 export const QUESTION_KINDS: readonly QuestionKind[] = [
   { id: 'short-answer', label: 'Short answer', field: (label) => ({ type: 'char', label }) },
@@ -34,6 +36,14 @@ export const QUESTION_KINDS: readonly QuestionKind[] = [
   { id: 'email', label: 'Email', field: (label) => ({ type: 'char', label, pattern: '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$' }), widget: 'email' },
   { id: 'phone', label: 'Phone', field: (label) => ({ type: 'char', label }), widget: 'phone' },
   { id: 'file', label: 'File upload', field: (label) => ({ type: 'binary', label, maxSize: 10 * 1024 * 1024 }) },
+  { id: 'signature', label: 'Signature', field: (label) => ({ type: 'binary', label }), widget: 'signature' },
+  { id: 'slider', label: 'Slider', field: (label) => ({ type: 'integer', label, min: 0, max: 10 }), widget: 'slider' },
+  { id: 'tags', label: 'Tags', field: (label) => ({ type: 'selection', label, options: firstOption(), multiple: true }), widget: 'tags' },
+  { id: 'image-choice', label: 'Image choice', field: (label) => ({ type: 'selection', label, options: firstOption() }), widget: 'image-choice' },
+  { id: 'ranking', label: 'Ranking', field: (label) => ({ type: 'selection', label, options: numbered('option', 'Option', 3), multiple: true }), widget: 'ranking' },
+  { id: 'matrix', label: 'Matrix', field: (label) => ({ type: 'matrix', label, rows: numbered('row', 'Row', 2), columns: numbered('column', 'Column', 2) }) },
+  { id: 'address', label: 'Address', field: (label) => ({ type: 'json', label }), widget: 'address' },
+  { id: 'repeating', label: 'Repeating group', field: (label) => ({ type: 'one2many', label, relation: 'entry', fields: { name: { type: 'char', label: 'Name' } } }), widget: 'cards' },
 ];
 
 /** Kinds for app screens only: links to other records, a table of lines, and the fields a business record has. */
@@ -73,11 +83,13 @@ export function kindOfField(field: Field, node: FieldNode): string | null {
     case 'html':
       return 'rich-text';
     case 'selection':
+      if (node.widget === 'image-choice') return 'image-choice';
+      if (field.multiple && (node.widget === 'tags' || node.widget === 'ranking')) return node.widget;
       return field.multiple ? 'checkboxes' : node.widget === 'radio' ? 'multiple-choice' : node.widget === 'statusbar' ? 'status' : 'dropdown';
     case 'integer':
-      return node.widget === 'rating' ? 'rating' : node.widget === 'scale' ? 'scale' : node.widget === 'progressbar' ? 'progress' : 'number';
+      return node.widget === 'rating' ? 'rating' : node.widget === 'scale' ? 'scale' : node.widget === 'progressbar' ? 'progress' : node.widget === 'slider' ? 'slider' : 'number';
     case 'float':
-      return 'number';
+      return node.widget === 'slider' ? 'slider' : 'number';
     case 'monetary':
       return 'amount';
     case 'date':
@@ -87,7 +99,7 @@ export function kindOfField(field: Field, node: FieldNode): string | null {
     case 'boolean':
       return 'yes-no';
     case 'binary':
-      return 'file';
+      return node.widget === 'signature' ? 'signature' : 'file';
     case 'image':
       return 'image';
     case 'many2one':
@@ -95,7 +107,11 @@ export function kindOfField(field: Field, node: FieldNode): string | null {
     case 'many2many':
       return 'links';
     case 'one2many':
-      return 'lines';
+      return node.widget === 'cards' ? 'repeating' : 'lines';
+    case 'matrix':
+      return 'matrix';
+    case 'json':
+      return node.widget === 'address' ? 'address' : null;
     default:
       return null;
   }
@@ -143,8 +159,10 @@ export function kindById(id: string): QuestionKind {
 /** Whether a kind shows a field without changing what it holds: same type, one answer or many alike; a plain number for whole numbers too. */
 export function kindFits(kind: QuestionKind, field: Field): boolean {
   const made = kind.field(field.label);
+  // Pictures to choose from, one or several.
+  if (kind.id === 'image-choice') return field.type === 'selection';
   if (made.type === 'selection' && field.type === 'selection') return !!made.multiple === !!field.multiple;
-  if (kind.id === 'number') return field.type === 'integer' || field.type === 'float';
+  if (kind.id === 'number' || kind.id === 'slider') return field.type === 'integer' || field.type === 'float';
   return made.type === field.type;
 }
 
@@ -190,6 +208,10 @@ export function storedAs(field: Field): string {
       return 'links to records';
     case 'one2many':
       return 'lines';
+    case 'matrix':
+      return 'answers in rows';
+    case 'json':
+      return 'structured data';
     default:
       return 'its own kind of data';
   }

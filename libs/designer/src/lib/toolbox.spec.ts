@@ -46,7 +46,7 @@ describe('the toolbox', () => {
     expect(groups()).toEqual(['Text', 'Numbers and dates', 'Choices', 'More']);
     expect(tiles()).not.toContain('kind:link');
     expect(tiles()).not.toContain('kind:amount');
-    expect(tiles('More')).toEqual(['kind:file']);
+    expect(tiles('More')).toEqual(['kind:file', 'kind:signature', 'kind:address', 'kind:repeating']);
   });
 
   it('lists the model’s fields first, with how many, each with the icon of its kind', () => {
