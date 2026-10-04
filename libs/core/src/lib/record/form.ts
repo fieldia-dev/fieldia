@@ -3,7 +3,11 @@ import type { JsonValue } from '../format/json';
 import type { ButtonNode, LayoutNode, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
+import type { ExpressionEnv } from '../expression/functions';
+import { localDay } from '../expression/functions';
 import { checkValue } from './check';
+import { compileComputed } from './compute';
+import { expressionEnv } from './env';
 import { MESSAGES, type Messages } from './messages';
 import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
@@ -86,6 +90,8 @@ export interface FormOptions {
   scheduler?: Scheduler;
   /** Validation messages in the page's language. English by default. */
   messages?: Messages;
+  /** The clock, for `today()` and for dates that must be past or future. The computer's own when left out. */
+  now?: () => Date;
 }
 
 export interface Form {
@@ -167,8 +173,10 @@ export function createForm(options: FormOptions): Form {
   const index = indexLayout(page.layout);
   const steps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
   const draftKey = () => `fieldia:draft:${page.id}:${state.recordId ?? 'new'}`;
+  const today = () => localDay(options.now?.() ?? new Date());
+  const computed = compileComputed(page, today);
 
-  let baseline: Values = { ...initialValues(page.fields), ...structuredCopy(options.values ?? {}) };
+  let baseline: Values = computed.apply({ ...initialValues(page.fields), ...structuredCopy(options.values ?? {}) });
   let state: FormState = {
     status: options.recordId != null ? 'idle' : 'ready',
     recordId: options.recordId ?? null,
@@ -191,7 +199,7 @@ export function createForm(options: FormOptions): Form {
   let autosaveTimer: unknown = null;
   const pending = new Set<Promise<unknown>>();
   const listeners = new Set<(state: FormState) => void>();
-  let contextCache: { values: Values; context: Record<string, unknown> } | null = null;
+  let contextCache: { values: Values; context: Record<string, unknown>; env: ExpressionEnv } | null = null;
 
   function set(patch: Partial<FormState>) {
     state = { ...state, ...patch };
@@ -205,12 +213,16 @@ export function createForm(options: FormOptions): Form {
     return promise;
   }
 
-  function context(): Record<string, unknown> {
+  /** The values as expressions read them, and what else they read: the lines' rows, today. */
+  function reading(): { context: Record<string, unknown>; env: ExpressionEnv } {
     if (contextCache?.values !== state.values) {
-      contextCache = { values: state.values as Values, context: expressionContext(state.values as Values, page.fields) };
+      const values = state.values as Values;
+      contextCache = { values, context: expressionContext(values, page.fields), env: expressionEnv(values, page.fields, today) };
     }
-    return contextCache.context;
+    return contextCache;
   }
+
+  const context = () => reading().context;
 
   function fieldDef(name: string): Field {
     const def = page.fields[name];
@@ -225,21 +237,21 @@ export function createForm(options: FormOptions): Form {
   function nodeState(id: string): NodeState {
     const node = index.get(id);
     if (!node) throw new Error(`The page has no element "${id}"`);
-    const ctx = context();
-    let invisible = node.invisible.evaluate(ctx);
+    const { context: ctx, env } = reading();
+    let invisible = node.invisible.evaluate(ctx, env);
     for (let parent = node.parent; !invisible && parent; parent = index.get(parent)?.parent ?? null) {
-      invisible = index.get(parent)?.invisible.evaluate(ctx) ?? false;
+      invisible = index.get(parent)?.invisible.evaluate(ctx, env) ?? false;
     }
     // A section read-only right now makes everything inside it read-only too.
-    let readonly = node.readonly.evaluate(ctx);
+    let readonly = node.readonly.evaluate(ctx, env);
     for (let parent = node.parent; !readonly && parent; parent = index.get(parent)?.parent ?? null) {
-      readonly = index.get(parent)?.readonly.evaluate(ctx) ?? false;
+      readonly = index.get(parent)?.readonly.evaluate(ctx, env) ?? false;
     }
     const def = node.field ? page.fields[node.field] : undefined;
     return {
       invisible,
-      readonly: readonly || def?.readonly === true,
-      required: node.required.evaluate(ctx) || def?.required === true,
+      readonly: readonly || (def !== undefined && lockedField(def)),
+      required: node.required.evaluate(ctx, env) || def?.required === true,
     };
   }
 
@@ -283,7 +295,8 @@ export function createForm(options: FormOptions): Form {
     return errors;
   }
 
-  function writeValues(values: Values, extra: Partial<FormState> = {}) {
+  function writeValues(written: Values, extra: Partial<FormState> = {}) {
+    const values = computed.apply(written);
     const errors = Object.keys(state.errors).length ? revalidateShown(values) : state.errors;
     set({ values, dirty: dirtyFields(values), errors, ...extra });
   }
@@ -423,7 +436,7 @@ export function createForm(options: FormOptions): Form {
         values: structuredCopy(state.values as Values),
       });
       forgetDraft();
-      const values = result.values ? { ...(state.values as Values), ...result.values } : (state.values as Values);
+      const values = result.values ? computed.apply({ ...(state.values as Values), ...result.values }) : (state.values as Values);
       baseline = structuredCopy(values);
       set({ status: 'saved', recordId: result.id, values, dirty: [] });
       return true;
@@ -500,7 +513,7 @@ export function createForm(options: FormOptions): Form {
     set({ status: 'loading', error: null });
     try {
       const loaded = await source.load({ model: page.data.model, id: state.recordId, fields: page.fields });
-      baseline = { ...initialValues(page.fields), ...loaded };
+      baseline = computed.apply({ ...initialValues(page.fields), ...loaded });
       set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {} });
       offerDraft();
     } catch (error) {
@@ -527,7 +540,7 @@ export function createForm(options: FormOptions): Form {
 
     node: nodeState,
 
-    fieldReadonly: (name) => fieldDef(name).readonly === true,
+    fieldReadonly: (name) => lockedField(fieldDef(name)),
 
     problem(name) {
       const def = fieldDef(name);
@@ -622,13 +635,13 @@ export function createForm(options: FormOptions): Form {
       const lines = (state.values[field] as Line[] | null) ?? [];
       const line = lines.find((l) => l.key === key);
       if (!line) throw new Error(`"${field}" has no line "${key}"`);
-      const merged = { ...line.values, ...values };
+      const merged = computed.line(field, { ...line.values, ...values });
       const source = options.dataSource;
       if (!source?.onchange || page.data.kind !== 'record') return merged;
       const changed = lines.map((l) => (l.key === key ? { ...l, values: merged } : l));
       const result = await source.onchange({ model: page.data.model, id: state.recordId, changed: field, values: structuredCopy({ ...(state.values as Values), [field]: changed }) });
       const after = ((result.values?.[field] as Line[] | undefined) ?? []).find((l) => l.key === key);
-      return after ? { ...merged, ...after.values } : merged;
+      return after ? computed.line(field, { ...merged, ...after.values }) : merged;
     },
 
     async searchLine(field, key, subfield, query, limit = 8) {
@@ -751,6 +764,11 @@ export function createForm(options: FormOptions): Form {
 
   if (state.recordId == null) offerDraft();
   return form;
+}
+
+/** A field no one types in: read-only by its definition, or worked out from others. */
+function lockedField(def: Field): boolean {
+  return def.readonly === true || def.compute !== undefined;
 }
 
 function lineOps(before: Line[], now: Line[]): LineOp[] {
