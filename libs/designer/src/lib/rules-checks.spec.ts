@@ -157,6 +157,17 @@ describe('the cases a mutation pass found unguarded', () => {
     expect(nodeOf(designer.getPage(), 'f-name')).not.toHaveProperty('readonly');
   });
 
+  it('leaves alone a rule on a yes-or-no answer, or on text', () => {
+    const designer = screen((page, nodes) => {
+      page.fields['vip'] = { type: 'boolean', label: 'VIP' };
+      nodes.push({ type: 'field', id: 'f-vip', field: 'vip' });
+      nodes[3].required = 'vip == True';
+      // Written by hand: a text compared with words, no choices to look among.
+      nodes[0].readonly = "name == 'x'";
+    });
+    expect(pageChecks(designer.getPage())).toEqual([]);
+  });
+
   it('leaves alone a rule that a choice gone only makes always hold', () => {
     const designer = screen();
     designer.setRule('f-name', 'required', { join: 'all', rules: [{ field: 'state', op: 'is not', value: 'closed' }] });

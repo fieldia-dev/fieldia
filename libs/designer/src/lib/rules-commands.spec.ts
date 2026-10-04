@@ -303,13 +303,16 @@ describe('the cases a mutation pass found unguarded', () => {
       ['flag', "'yes'", '“Flag” holds yes or no, not “yes”'],
       ['born', "'soon'", '“Born” holds a date, not “soon”'],
       ['name', 'True', '“Name” holds text, not Yes'],
+      ['notes', 'True', '“Notes” holds long text, not Yes'],
+      ['rich', 'False', '“Rich” holds rich text, not No'],
+      ['at', "'soon'", '“At” holds a date and time, not “soon”'],
       ['one', "'b'", '“One” offers A, not “b”'],
     ];
     for (const [field, value, words] of refused) {
       expect(designer.setSetWhen(id(field), [{ when: 'qty > 1', value }])).toBe(false);
       expect(designer.getState().issues).toEqual([words]);
     }
-    const taken: [string, string][] = [['born', "'2026-01-02'"], ['at', "'2026-01-02 10:00'"], ['name', '5'], ['pick', "'my own'"], ['qty', 'qty * 2'], ['flag', 'True']];
+    const taken: [string, string][] = [['qty', '3'], ['price', '9.5'], ['cost', '-2'], ['born', "'2026-01-02'"], ['at', "'2026-01-02 10:00'"], ['name', '5'], ['pick', "'my own'"], ['qty', 'qty * 2'], ['flag', 'True']];
     for (const [field, value] of taken) expect([field, designer.setSetWhen(id(field), [{ when: 'price > 1', value }])]).toEqual([field, true]);
   });
 
@@ -331,6 +334,11 @@ describe('the cases a mutation pass found unguarded', () => {
     designer.setSetWhen(id('kind'), [{ when: 'qty > 1', value: "'a'" }, { when: 'qty > 5', value: "'b'" }]);
     designer.setSetWhen(id('kind'), [{ when: 'qty > 1', value: "'ab'" }, { when: 'qty > 5', value: "'b'" }]);
     designer.setSetWhen(id('kind'), [{ when: 'qty > 1', value: "'abc'" }, { when: 'qty > 5', value: "'b'" }]);
+    designer.undo();
+    expect(designer.getPage().fields['kind'].setWhen).toEqual([{ when: 'qty > 1', value: "'a'" }, { when: 'qty > 5', value: "'b'" }]);
+    // And in a When box.
+    designer.setSetWhen(id('kind'), [{ when: 'qty > 1', value: "'a'" }, { when: 'qty > 50', value: "'b'" }]);
+    designer.setSetWhen(id('kind'), [{ when: 'qty > 1', value: "'a'" }, { when: 'qty > 500', value: "'b'" }]);
     designer.undo();
     expect(designer.getPage().fields['kind'].setWhen).toEqual([{ when: 'qty > 1', value: "'a'" }, { when: 'qty > 5', value: "'b'" }]);
   });

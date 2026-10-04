@@ -193,7 +193,8 @@ describe('every rule of other kinds of page', () => {
       id: 'sheet',
       buttons: [{ type: 'button', id: 'b-confirm', label: 'Confirm', action: 'confirm', invisible: "state != 'draft'" }],
       badges: [{ id: 'badge-vip', label: 'VIP', invisible: 'vip != True' }],
-      children: [{ type: 'section', id: 's1', title: 'Order', readonly: 'vip == True', children: [{ type: 'field', id: 'n', field: 'name', invisible: true }] }],
+      // A field always required, as the model has it, has no rule to list.
+      children: [{ type: 'section', id: 's1', title: 'Order', readonly: 'vip == True', children: [{ type: 'field', id: 'n', field: 'name', invisible: true }, { type: 'field', id: 'v', field: 'vip', required: true }] }],
     });
     expect(pageRules(sheet).map((r) => `${r.kind} · ${r.part} · ${r.name} · ${r.sentence}`)).toEqual([
       'shows · b-confirm · Confirm · Shows when Status is Draft',
