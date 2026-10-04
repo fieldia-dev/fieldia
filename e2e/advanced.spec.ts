@@ -281,3 +281,44 @@ test('several picked: Shift adds, the bar puts them side by side, and Ungroup ta
   expect((await where(page, 'h-send'))?.parent).toBe('new-employee');
   await expect(bar.locator('.fd-multi-count')).toHaveText('2 picked');
 });
+
+// ---- the keyboard ---------------------------------------------------------------------
+
+/** Pick a field by its box to type in, not by its words: the keys then go to the canvas, not to a box. */
+async function pickByBox(page: Page, id: string) {
+  await box(page, id);
+  const b = (await part(page, id).locator('input, select, textarea').first().boundingBox())!;
+  await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+}
+
+test('keyboard moves, each said aloud in the words of a drop', async ({ page }) => {
+  await openAdvanced(page);
+  await pickByBox(page, 'f-email');
+  const said = page.locator('.fd-canvas-said');
+  await expect(said).toHaveAttribute('aria-live', 'polite');
+  await page.keyboard.press('Alt+ArrowUp');
+  await expect(said).toHaveText('Work email: before “Last name”');
+  expect((await where(page, 'f-email'))?.kids.slice(0, 3)).toEqual(['f-first-name', 'f-email', 'f-last-name']);
+  await page.keyboard.press('Alt+ArrowRight');
+  await expect(said).toHaveText('Work email: beside “Last name”');
+  await page.keyboard.press('Alt+Shift+ArrowRight');
+  await expect(said).toHaveText('Work email: 2 columns wide');
+  await page.keyboard.press('Alt+Shift+ArrowRight');
+  await expect(said).toHaveText("A field cannot be wider than its section's 2 columns");
+  await page.keyboard.press('Escape');
+  await expect.poll(() => page.evaluate(() => (window as unknown as { fieldiaDesigner: { designer: { getState(): { picked: string[] } } } }).fieldiaDesigner.designer.getState().picked)).toEqual([]);
+  // The keys, listed in the canvas's help.
+  await page.getByRole('button', { name: 'Keys for moving parts' }).click();
+  await expect(page.locator('.fd-canvas-keys')).toBeVisible();
+  await screen(page, 'advanced-10-keys', { viewport: true });
+  await expect(page.locator('.fd-canvas-keys dt').first()).toHaveText('Alt+↑ / Alt+↓');
+});
+
+test('right to left, Alt+← puts a part beside the one after it', async ({ page }) => {
+  await openAdvanced(page);
+  await page.evaluate(() => (document.documentElement.dir = 'rtl'));
+  await pickByBox(page, 'f-email');
+  await page.keyboard.press('Alt+ArrowLeft');
+  await expect(page.locator('.fd-canvas-said')).toHaveText('Work email: beside “Mobile”');
+  expect((await where(page, 'f-email'))?.kids).toEqual(['f-mobile', 'f-email']);
+});

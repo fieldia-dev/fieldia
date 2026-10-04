@@ -85,4 +85,25 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 .fd-multi-down > svg { rotate: 45deg; }
 .fd-multi-why { opacity: 0.75; font-size: 12px; padding-inline: 6px; }
 .fd-multi-why[hidden] { display: none; }
+
+/* ---- Advanced: the keyboard ---- */
+/* What a key just did, said to a screen reader and not shown. */
+.fd-canvas-said { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* The keys, behind a small "?" in the canvas's corner; Advanced only. */
+.fd-canvas-help { position: absolute; z-index: 35; inset-block-start: 6px; inset-inline-end: 8px; }
+.fd-canvas:not([data-mode="advanced"]) > .fd-canvas-help { display: none; }
+.fd-canvas-help-button {
+  all: unset; box-sizing: border-box; display: grid; place-items: center; width: 22px; height: 22px; margin-inline-start: auto; border-radius: 50%;
+  border: 1px solid var(--fd-border); color: var(--fd-muted); font-size: 12px; font-weight: 700; cursor: pointer; background: var(--fd-surface);
+}
+.fd-canvas-help-button:hover, .fd-canvas-help-button[aria-expanded="true"] { color: var(--fd-text); border-color: var(--fd-border-strong); }
+.fd-canvas-help-button:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+.fd-canvas-keys {
+  position: absolute; inset-inline-end: 0; inset-block-start: 28px; width: max-content; max-width: min(420px, 80vw); margin: 0; padding: 10px 12px;
+  display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: 8px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.16); font-size: 12.5px;
+}
+.fd-canvas-keys[hidden] { display: none; }
+.fd-canvas-keys dt { font-weight: 650; white-space: nowrap; }
+.fd-canvas-keys dd { margin: 0; color: var(--fd-muted); }
 `;

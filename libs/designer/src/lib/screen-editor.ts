@@ -282,6 +282,11 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       designer.select(null);
       return;
     }
+    // On the Advanced canvas: moves, widths and what is picked, from the keyboard.
+    if (mode === 'advanced' && !typing && layout.type !== 'list' && canvas.keys.handle(event)) {
+      event.preventDefault();
+      return;
+    }
     // A list's column moves along the row, and goes with Delete; so does a button for the rows chosen.
     if (!typing && selected && layout.type === 'list') {
       const column = selected.startsWith('column:') ? selected.slice('column:'.length) : null;

@@ -16,11 +16,12 @@ import { Refusal } from './refusal';
  * holding one part or none folds away, and so does a column in a column.
  */
 
-/** Where a dragged part lands. */
+/** Where a dragged part lands; `at` puts it at a place in a list as it is, as a key moving it along its list does. */
 export type Drop =
   | { how: 'into'; container: string }
   | { how: 'beside' | 'under'; target: string; after: boolean; whole?: boolean }
-  | { how: 'row'; container: string; index: number };
+  | { how: 'row'; container: string; index: number }
+  | { how: 'at'; container: string; index: number };
 
 /** What the toolbox adds besides fields: groups, tabs, and the blocks between fields. */
 export type BlockKind = 'group' | 'side' | 'tabs' | 'heading' | 'text' | 'divider' | 'spacer' | 'image' | 'button';
@@ -46,9 +47,10 @@ export function describeDrop(page: Page, drop: Drop, moving?: string): string {
     const box = nodeOf(page, drop.container);
     return box?.id === page.layout.id ? 'into the page' : `into “${nameOf(page, box)}”`;
   }
-  if (drop.how === 'row') {
+  if (drop.how === 'row' || drop.how === 'at') {
     const box = nodeOf(page, drop.container);
     const next = (listOf(box ?? undefined) ?? []).filter((c) => c.id !== moving)[drop.index];
+    if (drop.how === 'at') return next ? `before “${nameOf(page, next)}”` : `at the end of “${nameOf(page, box)}”`;
     return next ? `new full-width row above “${nameOf(page, next)}”` : `new full-width row at the end of “${nameOf(page, box)}”`;
   }
   const target = nodeOf(page, drop.target);
@@ -144,9 +146,10 @@ export function placeAt(page: Page, node: Part, drop: Drop): void {
     const box = nodeOf(page, drop.container) as Holder;
     setSpan(node, Math.min(spanOf(node), across(page, box)));
     box.children.push(node);
-  } else if (drop.how === 'row') {
+  } else if (drop.how === 'row' || drop.how === 'at') {
     const box = nodeOf(page, drop.container) as Holder;
-    setSpan(node, across(page, box));
+    // A new row is as wide as its grid; a part put at a place keeps its width, no wider than there.
+    setSpan(node, drop.how === 'row' ? across(page, box) : Math.min(spanOf(node), across(page, box)));
     box.children.splice(Math.min(drop.index, box.children.length), 0, node);
   } else {
     const at = locate(page, drop.target) as Spot;
@@ -201,7 +204,7 @@ export function dropRefusal(page: Page, drop: Drop, moving?: string): string | n
   const moved = moving ? locate(page, moving) : null;
   if (moving && !moved) return `There is no part “${moving}”`;
   if (moved?.node.type === 'tab') return 'A tab moves only among its tabs';
-  if (drop.how === 'into' || drop.how === 'row') {
+  if (drop.how === 'into' || drop.how === 'row' || drop.how === 'at') {
     const box = nodeOf(page, drop.container);
     if (!box) return `There is no part “${drop.container}”`;
     if (box.type === 'tabs') return 'Put it in one of the tabs';

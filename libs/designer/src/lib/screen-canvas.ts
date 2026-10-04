@@ -5,6 +5,7 @@ import { advancedDrag } from './canvas-advanced';
 import { blockViews } from './canvas-blocks';
 import { canvasDrag, type CanvasDrag } from './canvas-drag';
 import { canvasHeader } from './canvas-header';
+import { canvasKeys, type CanvasKeys } from './canvas-keys';
 import { lockWords, type DesignerMode } from './canvas-mode';
 import { multiBar } from './canvas-multi';
 import { widthMarks } from './canvas-width';
@@ -51,6 +52,8 @@ export interface ScreenCanvasOptions {
 export interface ScreenCanvas {
   element: HTMLElement;
   drag: CanvasDrag;
+  /** Advanced's keys: moves said aloud, and the help that lists them. */
+  keys: CanvasKeys;
   update(state: DesignerState): void;
   /** The sections on show, in order: at the top, and in the open tab of each set of tabs. */
   visibleSections(): string[];
@@ -79,8 +82,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   const header = canvasHeader({ el, doc, designer });
   // Several picked, in Advanced: a bar at the top of the canvas, taking no room.
   const multi = multiBar({ el, doc, designer });
+  const keys = canvasKeys({ el, designer, rtl: () => doc.defaultView?.getComputedStyle(element).direction === 'rtl' });
   // A form of its own, in the form's skin: its look and its widths are the page's, not the designer's.
-  const element = el('div', { class: 'fd-canvas fd-form', 'data-fd-skin': options.skin ?? 'outlined' }, multi.element, header.top, header.card, titleCard, body);
+  const element = el('div', { class: 'fd-canvas fd-form', 'data-fd-skin': options.skin ?? 'outlined' }, multi.element, header.top, header.card, titleCard, body, keys.help, keys.said);
   const blocks = blockViews({ el, doc, designer });
   let page = designer.getPage();
   let selected: string | null = null;
@@ -484,11 +488,13 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   return {
     element,
     drag,
+    keys,
     setSample(index) {
       sample = index;
     },
     setMode(next) {
       mode = next;
+      element.dataset['mode'] = next;
       advanced.setEnabled(next === 'advanced');
     },
     update(state) {
