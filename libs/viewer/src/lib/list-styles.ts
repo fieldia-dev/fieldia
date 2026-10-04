@@ -8,11 +8,12 @@ export const LIST_STYLES = `
 .fd-search-field:focus-within { border-color: var(--fd-focus); box-shadow: var(--fd-focus-ring); }
 .fd-search-field > .fd-icon, .fd-search-field > svg { width: 16px; height: 16px; color: var(--fd-muted); flex: none; }
 .fd-facets { display: contents; }
-.fd-facet { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; padding-block: 2px; padding-inline: 6px 2px; border-radius: 3px; background: var(--fd-accent-soft); color: var(--fd-accent); font-size: 13px; line-height: 18px; }
+.fd-facet { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; min-height: 24px; padding-block: 0; padding-inline: 6px 0; border-radius: 3px; background: var(--fd-accent-soft); color: var(--fd-accent); font-size: 13px; line-height: 18px; }
 .fd-facet svg { width: 13px; height: 13px; flex: none; }
 .fd-facet[data-kind="groupBy"] { background: var(--fd-success-soft); color: var(--fd-success); }
 .fd-facet-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fd-facet-remove { all: unset; cursor: pointer; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 2px; font-size: 15px; line-height: 1; opacity: 0.7; }
+/* 24px each way: a target a finger can hit (WCAG 2.5.8). */
+.fd-facet-remove { all: unset; cursor: pointer; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 2px; font-size: 15px; line-height: 1; opacity: 0.7; }
 .fd-facet-remove:hover, .fd-facet-remove:focus-visible { opacity: 1; background: var(--fd-surface); }
 .fd-search-input { flex: 1 1 140px; min-width: 100px; border: none; outline: none; background: none; font: inherit; font-size: 14px; color: var(--fd-text); padding: 5px 4px; }
 .fd-form .fd-search-input:focus-visible { outline: none; }

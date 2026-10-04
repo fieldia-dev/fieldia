@@ -248,17 +248,18 @@ const SKINS_CSS = /* css */ `
 
 /* ---- pickers: many2one, many2many, reference ------------------------------ */
 .fd-combo { position: relative; display: flex; align-items: center; min-width: 0; }
-.fd-combo-input { padding-inline-end: 28px; }
+.fd-combo-input { padding-inline-end: 30px; }
+/* Its buttons are 24px each way at least: a target a finger or a shaking hand can hit (WCAG 2.5.8). */
 .fd-combo-clear {
-  position: absolute; inset-inline-end: 4px; border: none; background: none; cursor: pointer; color: var(--fd-muted);
-  font-size: 16px; line-height: 1; padding: 2px 6px; border-radius: 4px;
+  position: absolute; inset-inline-end: 3px; border: none; background: none; cursor: pointer; color: var(--fd-muted);
+  font-size: 16px; line-height: 1; padding: 0 4px; border-radius: 4px; min-width: 24px; min-height: 24px; display: inline-grid; place-items: center;
 }
 .fd-combo-clear:hover { color: var(--fd-text); background: var(--fd-page); }
 /* A link that can be opened has its open button beside the clear button. */
-.fd-combo:has(> .fd-combo-open:not([hidden])) .fd-combo-input { padding-inline-end: 52px; }
+.fd-combo:has(> .fd-combo-open:not([hidden])) .fd-combo-input { padding-inline-end: 56px; }
 .fd-combo-open {
-  position: absolute; inset-inline-end: 28px; border: none; background: none; cursor: pointer; color: var(--fd-accent);
-  font-size: 14px; line-height: 1; padding: 2px 6px; border-radius: 4px;
+  position: absolute; inset-inline-end: 29px; border: none; background: none; cursor: pointer; color: var(--fd-accent);
+  font-size: 14px; line-height: 1; padding: 0 4px; border-radius: 4px; min-width: 24px; min-height: 24px; display: inline-grid; place-items: center;
 }
 .fd-combo-open:hover { background: var(--fd-page); }
 .fd-listbox {
