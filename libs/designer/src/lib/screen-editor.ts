@@ -100,7 +100,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       render(designer.getState());
     },
   });
-  const panel = screenPanel({ el, doc, designer });
+  const panel = screenPanel({ el, doc, designer, wearer: canvas.element });
   const body = el('div', { class: 'fd-screen-body' }, side.element, el('div', { class: 'fd-canvas-scroll' }, canvas.element, list.element), panel.element);
   root.append(bar.element, bar.issues, body, trial.element);
 

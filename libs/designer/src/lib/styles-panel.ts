@@ -78,5 +78,30 @@ export const DESIGNER_PANEL_CSS = /* css */ `
 .fd-insp-slider { flex: 1; min-width: 0; margin: 0; accent-color: var(--fd-accent); }
 .fd-properties .fd-insp-number { width: 64px; flex: none; min-height: 30px; padding-block: 3px; font-variant-numeric: tabular-nums; }
 .fd-insp-unit { font-size: 12px; color: var(--fd-muted); }
+/* The accent: round swatches, then any colour, and the skin's own back. */
+.fd-properties .fd-insp-swatches { width: auto; display: flex; flex-wrap: wrap; gap: 8px; padding: 2px; border: 0; background: none; }
+.fd-properties .fd-insp-swatches > .fd-seg-button {
+  width: 26px; height: 26px; min-height: 0; padding: 0; border-radius: 50%; box-sizing: border-box;
+  background: var(--fd-swatch); border: 2px solid var(--fd-surface); box-shadow: 0 0 0 1px var(--fd-border);
+}
+.fd-properties .fd-insp-swatches > .fd-seg-button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--fd-text); }
+.fd-insp-any { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+.fd-insp-any-colour { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--fd-muted); cursor: pointer; }
+.fd-insp-colour { width: 26px; height: 20px; padding: 0; border: 1px solid var(--fd-border); border-radius: 5px; background: none; cursor: pointer; flex: none; }
+.fd-insp-colour::-webkit-color-swatch-wrapper { padding: 2px; }
+.fd-insp-colour::-webkit-color-swatch { border: 0; border-radius: 3px; }
+.fd-insp-colour::-moz-color-swatch { border: 0; border-radius: 3px; }
+.fd-properties .fd-insp-reset { padding: 0; min-height: 0; font-size: 12.5px; }
+/* A group's style: a small drawing over each word. */
+.fd-properties .fd-insp-styles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 0; border: 0; background: none; }
+.fd-properties .fd-insp-styles > .fd-seg-button {
+  display: grid; justify-items: center; gap: 3px; min-height: 0; padding: 6px 2px 5px; border: 1px solid var(--fd-border); border-radius: 8px;
+  background: var(--fd-surface); box-shadow: none; font-size: 11.5px; font-weight: 600; color: var(--fd-muted);
+}
+.fd-properties .fd-insp-styles > .fd-seg-button[aria-pressed="true"] { border-color: var(--fd-accent); color: var(--fd-accent); box-shadow: inset 0 0 0 1px var(--fd-accent); }
+.fd-insp-style-picture { display: block; line-height: 0; }
+.fd-insp-style-picture svg { width: 40px; height: 27px; }
+/* The canvas wearing the page's look keeps the editor's own frame round it. */
+.fd-canvas.fd-look-worn[data-scheme] { border: 1px solid var(--fd-border); }
 @media (prefers-reduced-motion: reduce) { .fd-set-found { animation: none; } }
 `;

@@ -9,6 +9,7 @@ import { columnProperties, listActionProperties, listProperties } from './list-p
 import { fieldProperties } from './panel-field';
 import { arrangementProperties, groupProperties } from './panel-group';
 import { inspectorShell, type InspectorHead } from './panel-inspector';
+import { wearLook } from './panel-look';
 import { pageProperties } from './panel-page';
 import { blockProperties, severalProperties } from './panel-parts';
 import { settingSearch } from './panel-search';
@@ -91,8 +92,8 @@ export function headOf(page: Page, kind: PartKind, picked: readonly string[], fr
   }
 }
 
-export function screenPanel(options: { el: ElementFactory; doc: Document; designer: Designer }): ScreenPanel {
-  const { el, doc, designer } = options;
+export function screenPanel(options: { el: ElementFactory; doc: Document; designer: Designer; wearer?: HTMLElement }): ScreenPanel {
+  const { el, doc, designer, wearer } = options;
   const shell = inspectorShell(el, doc);
   const search = settingSearch(el, doc, shell);
   let key = '';
@@ -144,6 +145,8 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
       view?.update(page);
       shell.head(headOf(page, kind, picked, (id) => designer.isFromModel(id)));
       search.refresh();
+      // The canvas wears the page's look as it is set.
+      if (wearer) wearLook(wearer, page.look);
     },
     open(part) {
       shell.choose(PART_TAB[part]);

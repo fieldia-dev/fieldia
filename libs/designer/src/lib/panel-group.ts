@@ -6,6 +6,7 @@ import { contains, isSection, nodeOf } from './layout-tree';
 import { allSections, findNode } from './page-tree';
 import { onTab, setting } from './panel-controls';
 import { columnsSetting, labelsSetting, widthSetting } from './panel-layout';
+import { groupStyleSetting } from './panel-look';
 import { movers, type PropertiesView } from './screen-properties';
 
 /**
@@ -21,6 +22,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
   const columns = columnsSetting(el, designer, id);
   const labels = labelsSetting(el, designer, id, 'group');
   const width = widthSetting(el, designer, id);
+  const style = groupStyleSetting(el, designer, id);
   const moves = movers(el, designer, id, ['Move up', 'Move down']);
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, 'Delete section');
   remove.addEventListener('click', () => designer.removeNode(id));
@@ -37,6 +39,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
     ...columns.rows,
     ...labels.rows,
     ...width.rows,
+    ...style.rows,
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, 'When it shows'), when.element, showWhen, noRules), 'rules', 'When it shows')
   );
   return {
@@ -45,7 +48,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
       const section = nodeOf(page, id);
       if (!isSection(section)) return;
       if (!focused(title)) title.value = section.title ?? '';
-      for (const part of [columns, labels, width]) part.update(page);
+      for (const part of [columns, labels, width, style]) part.update(page);
       moves.update(page);
       // A page keeps one thing at its top, and a tab its last section.
       const holder = findNode(page, id)?.parent;

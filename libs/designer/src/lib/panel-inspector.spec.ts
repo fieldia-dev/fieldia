@@ -87,14 +87,14 @@ describe('the panel — tabs', () => {
     expect(shown(host).textContent).toContain('Its currency comes from the model.');
   });
 
-  it('gives a section Content, Layout and Rules, and the page Content and Layout', () => {
+  it('gives a group Content, Layout, Look and Rules, and the page Content, Layout and Look', () => {
     const { designer, sections } = visitReport();
     const { host } = mount(designer);
     expect(head(host)).toEqual(['Screen', 'Visit report']);
-    expect(tabs(host)).toEqual(['Content', 'Layout']);
+    expect(tabs(host)).toEqual(['Content', 'Layout', 'Look']);
     designer.select(sections[1]);
     expect(head(host)).toEqual(['Group', 'Follow-up']);
-    expect(tabs(host)).toContain('Rules');
+    expect(tabs(host)).toEqual(['Content', 'Layout', 'Look', 'Rules']);
   });
 
   it('keeps the tab when another part of the same kind is picked; a part of another kind keeps its own', () => {
