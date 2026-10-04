@@ -145,15 +145,30 @@ test.describe('a choice from the app’s list, in the screen editor', () => {
     await (await cardOf(page, 'Next step')).click();
     const panel = page.locator('.fd-properties');
     await panel.getByLabel('From the app’s list').check();
-    await expect(panel.getByLabel('List name')).toHaveValue('next_step');
-    await panel.getByLabel('List name').fill('next_steps');
+    // The demo's app names its lists: the first is taken, and another is picked by its words.
+    await expect(panel.getByLabel('List', { exact: true })).toHaveValue('countries');
+    await panel.getByLabel('List', { exact: true }).selectOption({ label: 'Cities of the country' });
     await panel.getByRole('group', { name: 'Changes with' }).getByLabel('Customer').check();
     const field = await page.evaluate(() => (window as unknown as { fieldiaDesigner: { designer: { getPage(): { fields: Record<string, unknown> } } } }).fieldiaDesigner.designer.getPage().fields['q_4']);
-    expect(field).toMatchObject({ optionsFrom: { list: 'next_steps', dependsOn: ['q_1'] } });
+    expect(field).toMatchObject({ optionsFrom: { list: 'cities', dependsOn: ['q_1'] } });
     await screen(page, 'json-list-choice', { viewport: true });
     expect(await doubleLines(page, '.fd-properties *')).toEqual([]);
     await panel.getByLabel('Written here').check();
     await expect(panel.getByLabel('Option 1', { exact: true })).toHaveValue('Send a quote');
+    expect(problems).toEqual([]);
+  });
+
+  test('Try it takes the list’s choices from the app’s own data source', async ({ page }) => {
+    const problems = watch(page);
+    await page.goto('/screen/');
+    await (await cardOf(page, 'Next step')).click();
+    await page.locator('.fd-properties').getByLabel('From the app’s list').check();
+    await page.locator('.fd-mode [data-mode="try"]').click();
+    const choice = page.locator('.fd-try-frame').getByLabel('Next step');
+    // The demo's lists answer after a moment, as a server's do.
+    await expect(choice.locator('option')).toHaveText(['', 'Egypt', 'Jordan', 'Saudi Arabia', 'United Arab Emirates']);
+    await choice.selectOption({ label: 'Jordan' });
+    await screen(page, 'json-list-try', { viewport: true });
     expect(problems).toEqual([]);
   });
 });

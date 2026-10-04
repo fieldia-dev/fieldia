@@ -1,4 +1,4 @@
-import type { FieldNode, LayoutNode, Page, TabsNode } from '@fieldia/core';
+import type { DataSource, FieldNode, LayoutNode, Page, TabsNode } from '@fieldia/core';
 import type { Skin } from '@fieldia/viewer';
 import { installStyles } from '@fieldia/widgets';
 import { designerBar, elementFactory, putDownOnClickOutside } from './chrome';
@@ -30,6 +30,8 @@ import { jsonView } from './json-view';
 export interface ScreenEditorOptions {
   designer: Designer;
   skin?: Skin;
+  /** The app's own data source: Try it takes the choices of the app's lists from it, and saves nothing through it. */
+  dataSource?: DataSource;
 }
 
 export interface ScreenEditorHandle {
@@ -49,7 +51,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const skin = options.skin ?? 'outlined';
 
   const root = el('div', { class: 'fd-form fd-designer fd-screen-designer', 'data-fd-skin': skin });
-  const trial = tryIt({ el, doc, designer, skin, onChange: (trying) => (body.hidden = trying) });
+  const trial = tryIt({ el, doc, designer, skin, dataSource: options.dataSource, onChange: (trying) => (body.hidden = trying) });
   const bar = designerBar(root, designer, {
     titleLabel: 'Screen title',
     placeholder: 'Untitled screen',

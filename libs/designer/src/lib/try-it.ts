@@ -1,4 +1,4 @@
-import { createMemoryDataSource, scoreOf, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, scoreOf, type DataSource, type Page, type Values } from '@fieldia/core';
 import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
@@ -22,6 +22,8 @@ export interface TryItOptions {
   skin: Skin;
   /** Trying began or ended: the editor hides or shows itself. */
   onChange(trying: boolean): void;
+  /** The app's own data source: the choices of the app's lists come from it. Nothing is read or saved through it besides. */
+  dataSource?: DataSource;
 }
 
 export interface TryIt {
@@ -86,6 +88,8 @@ export function tryIt(options: TryItOptions): TryIt {
     frame.dataset['width'] = width;
     const page = designer.getPage();
     const dataSource = createMemoryDataSource({ records: madeUp(page) });
+    const app = options.dataSource;
+    if (app?.options) dataSource.options = app.options.bind(app);
     // Sent: the answers' score, under the viewer's thanks, when the page gives points.
     const send = dataSource.submit.bind(dataSource);
     dataSource.submit = async (request) => {

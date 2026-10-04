@@ -142,6 +142,11 @@ const appLists = {
   countries: () => later(Object.entries(DELIVERY).map(([value, { label }]) => ({ value, label }))),
   cities: (values: Values) => later(Object.entries(DELIVERY[values['country'] as string]?.cities ?? {}).map(([value, label]) => ({ value, label }))),
 };
+/** The app's lists as a designer offers them: the name the data source answers to, and the words a person picks it by. */
+export const APP_LISTS = [
+  { name: 'countries', label: 'Countries delivered to' },
+  { name: 'cities', label: 'Cities of the country' },
+];
 const CURRENCIES: Record<number, string> = { 1: 'EGP', 2: 'JOD', 3: 'SAR' };
 
 /** A customer to edit, and the records its relations point to. Sample data. */

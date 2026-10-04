@@ -1,4 +1,4 @@
-import { createForm, type FieldNode, type Form, type Page, type StepNode, type WizardNode } from '@fieldia/core';
+import { createForm, type DataSource, type FieldNode, type Form, type Page, type StepNode, type WizardNode } from '@fieldia/core';
 import type { Skin } from '@fieldia/viewer';
 import { createWidget, installStyles, type Widget } from '@fieldia/widgets';
 import { branchMap, drawBranchMap } from './branch-map';
@@ -41,6 +41,8 @@ import { jsonView } from './json-view';
 export interface SurveyEditorOptions {
   designer: Designer;
   skin?: Skin;
+  /** The app's own data source: Try it takes the choices of the app's lists from it, and saves nothing through it. */
+  dataSource?: DataSource;
 }
 
 export interface SurveyEditorHandle {
@@ -89,7 +91,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
 
   const skin = options.skin ?? 'outlined';
   const root = el('div', { class: 'fd-form fd-designer fd-survey-designer', 'data-fd-skin': skin });
-  const trial = tryIt({ el, doc, designer, skin, onChange: (trying) => (body.hidden = trying) });
+  const trial = tryIt({ el, doc, designer, skin, dataSource: options.dataSource, onChange: (trying) => (body.hidden = trying) });
   const bar = designerBar(root, designer, {
     titleLabel: 'Form title',
     placeholder: 'Untitled form',

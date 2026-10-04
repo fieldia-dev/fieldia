@@ -1,6 +1,7 @@
 import type { Field } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor } from '@fieldia/designer';
 import type { Skin } from '@fieldia/viewer';
+import { APP_LISTS, sampleDataSource } from '../shared/sample-data';
 
 /**
  * The screen editor on its own page, opened on a small site-visit screen.
@@ -57,14 +58,16 @@ const store = createMemoryPageStore();
 const start = params.get('start');
 const model = start === 'sheet' || start === 'list' ? customer : undefined;
 const first = start === 'blank' ? blankPage('screen', 'New screen') : start === 'sheet' ? blankPage('sheet', 'Customer') : start === 'list' ? customers() : siteVisit();
-const designer = createDesigner({ page: first, store, model });
+const designer = createDesigner({ page: first, store, model, lists: APP_LISTS });
+// The app's lists' choices, for Try it.
+const dataSource = sampleDataSource();
 const skin = (params.get('skin') as Skin) ?? 'outlined';
 const app = document.getElementById('app') as HTMLElement;
-const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin }), reopen };
+const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource }), reopen };
 /** Close the editor and open the page again from the store, as an app does the next day. */
 async function reopen() {
   demo.handle.destroy();
-  demo.designer = await createDesigner.open(demo.designer.getPage().id, store, { model });
-  demo.handle = mountScreenEditor(app, { designer: demo.designer, skin });
+  demo.designer = await createDesigner.open(demo.designer.getPage().id, store, { model, lists: APP_LISTS });
+  demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource });
 }
 Object.assign(window, { fieldiaDesigner: demo });

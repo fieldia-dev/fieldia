@@ -1,4 +1,4 @@
-import type { Page } from '@fieldia/core';
+import { createMemoryDataSource, type Page } from '@fieldia/core';
 import { elementFactory } from './chrome';
 import { blankPage, createDesigner } from './designer';
 import { tryIt, type TryIt } from './try-it';
@@ -24,6 +24,21 @@ function setup() {
 }
 
 describe('try it', () => {
+  it('takes the choices of the app’s lists from the app’s own data source, and nothing else', async () => {
+    const designer = createDesigner({ page: blankPage('screen', 'Delivery'), lists: [{ name: 'countries', label: 'Countries' }] });
+    const id = designer.addQuestion('dropdown') as string;
+    designer.setOptionsFrom(id, { list: 'countries' });
+    const app = createMemoryDataSource({ lists: { countries: async () => [{ value: 'eg', label: 'Egypt' }, { value: 'jo', label: 'Jordan' }] } });
+    const saved = jest.spyOn(app, 'submit');
+    handle = tryIt({ el: elementFactory(document), doc: document, designer, skin: 'outlined', onChange: () => undefined, dataSource: app });
+    document.body.append(handle.toggle, handle.element);
+    (handle.toggle.querySelector('button[data-mode="try"]') as HTMLButtonElement).click();
+    const choices = () => [...(handle?.element.querySelectorAll('.fd-try-frame select option') ?? [])].map((o) => o.textContent).filter(Boolean);
+    for (let i = 0; i < 5 && !choices().length; i++) await new Promise((r) => setTimeout(r, 0));
+    expect(choices()).toEqual(['Egypt', 'Jordan']);
+    expect(saved).not.toHaveBeenCalled();
+  });
+
   it('fills a list with made-up records, so its filters, order and pages can be tried', async () => {
     const designer = createDesigner({
       page: blankPage('list', 'Customers'),
