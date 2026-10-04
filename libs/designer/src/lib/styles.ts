@@ -297,8 +297,9 @@ export const DESIGNER_CSS = /* css */ `
 .fd-canvas-section::before { content: ""; position: absolute; inset-block: 0; inset-inline-start: -12px; width: 3px; border-radius: 2px; background: transparent; pointer-events: none; }
 .fd-canvas-section:hover::before { background: var(--fd-border-strong); }
 .fd-canvas-section.fd-canvas-selected::before { background: var(--fd-accent); }
-/* At least 24px tall, a target a finger can hit (WCAG 2.5.8), however small the title's words. */
-.fd-canvas-section-title { all: unset; cursor: pointer; display: inline-block; min-height: 24px; }
+/* At least 24px tall, a target a finger can hit (WCAG 2.5.8), however small the title's words — the extra
+   height taken back by its margins, so the canvas lays out exactly as the form does. */
+.fd-canvas-section-title { all: unset; cursor: pointer; display: inline-block; min-height: 24px; margin-block: min(0px, calc((1lh - 24px) / 2)); }
 .fd-canvas-section-title:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
 .fd-canvas-untitled { color: var(--fd-muted); font-weight: 500; font-style: italic; font-size: 13px; }
 .fd-canvas-section-title-input { font: inherit; color: inherit; border: 0; border-bottom: 1px dashed var(--fd-border-strong); background: none; padding: 0 0 1px; min-width: 12em; outline: none; }
