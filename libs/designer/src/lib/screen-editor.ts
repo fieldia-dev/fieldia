@@ -1,6 +1,7 @@
 import type { FieldNode, LayoutNode, Page, TabsNode } from '@fieldia/core';
 import type { Skin } from '@fieldia/viewer';
 import { installStyles } from '@fieldia/widgets';
+import { modeSwitch, readMode, writeMode, type DesignerMode } from './canvas-mode';
 import { designerBar, elementFactory, putDownOnClickOutside } from './chrome';
 import { QUESTION_KINDS, SCREEN_KINDS, type Designer, type DesignerState, type Where } from './designer';
 import { findHeaderPart } from './header-commands';
@@ -50,10 +51,22 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
 
   const root = el('div', { class: 'fd-form fd-designer fd-screen-designer', 'data-fd-skin': skin });
   const trial = tryIt({ el, doc, designer, skin, onChange: (trying) => (body.hidden = trying) });
+  // Simple or Advanced: the person's preference, kept in this browser, never in the page.
+  let mode: DesignerMode = readMode(doc.defaultView);
+  const modes = modeSwitch(el, mode, (next) => setMode(next));
+  root.dataset['mode'] = mode;
+  function setMode(next: DesignerMode) {
+    mode = next;
+    writeMode(doc.defaultView, next);
+    root.dataset['mode'] = next;
+    modes.set(next);
+    canvas.setMode(next);
+    render(designer.getState());
+  }
   const bar = designerBar(root, designer, {
     titleLabel: 'Screen title',
     placeholder: 'Untitled screen',
-    extra: [trial.toggle],
+    extra: [modes.element, trial.toggle],
     find: () => [...findItems(), ...trial.items()],
     // A check about a field's words or options: it is open on the canvas by now, the cursor goes there.
     goTo(id, part) {
@@ -67,6 +80,8 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const canvas = screenCanvas({
     designer,
     doc,
+    skin,
+    openAdvanced: () => setMode('advanced'),
     more: (part) => openPanel(part),
     dropTool: (spec, section, index) => add(spec, { parent: section, index }),
   });
@@ -318,6 +333,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   }
 
   host.append(root);
+  canvas.setMode(mode);
   const leave = designer.subscribe(render);
   render(designer.getState());
 

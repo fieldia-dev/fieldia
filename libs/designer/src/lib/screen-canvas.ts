@@ -4,6 +4,7 @@ import { createWidget, type Widget } from '@fieldia/widgets';
 import { blockViews } from './canvas-blocks';
 import { canvasDrag, type CanvasDrag } from './canvas-drag';
 import { canvasHeader } from './canvas-header';
+import { lockWords, type DesignerMode } from './canvas-mode';
 import { elementFactory, optionsEditor, type OptionsEditor } from './chrome';
 import type { Designer, DesignerState } from './designer';
 import { fieldBar, type FieldBar } from './field-bar';
@@ -38,6 +39,8 @@ export interface ScreenCanvasOptions {
   skin?: string;
   /** Open the panel at a part of the field picked: its settings, or when it shows. */
   more(part: 'field' | 'when'): void;
+  /** Simple mode's note on an arrangement was asked to open Advanced. */
+  openAdvanced?(): void;
   /** Something from the toolbox was let go over a section, at a place among its fields. */
   dropTool(spec: string, section: string, index: number): void;
 }
@@ -56,6 +59,8 @@ export interface ScreenCanvas {
   focusPart(id: string): void;
   /** Fill the page with the made-up record at `index`, or with nothing: drawn at the next update. */
   setSample(index: number | null): void;
+  /** Simple or Advanced: drawn at the next update. */
+  setMode(mode: DesignerMode): void;
   destroy(): void;
 }
 
@@ -75,6 +80,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   let page = designer.getPage();
   let selected: string | null = null;
   let picked: string[] = [];
+  let mode: DesignerMode = 'simple';
   let visible: string[] = [];
   /** Every part drawn this time round, by id. */
   let drawnIds = new Set<string>();
@@ -229,6 +235,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     description: HTMLElement;
     grid: HTMLElement;
     empty: HTMLElement;
+    lock: HTMLElement;
   }
   const sections = new Map<string, SectionView>();
 
@@ -249,8 +256,12 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     const description = el('p', { class: 'fd-section-description', hidden: '' });
     const grid = el('div', { class: 'fd-grid', 'data-drop-grid': '', 'data-container': id });
     const empty = el('p', { class: 'fd-canvas-empty' }, 'Drop a field here, or pick one in the toolbox.');
-    const element = el(tag, { class: 'fd-section fd-canvas-section', 'data-node': id, 'data-drop-section': id }, legend, description, grid, empty);
-    return { element, legend, title, titleInput, description, grid, empty };
+    // Simple mode's word on an arrangement it keeps as Advanced laid it out.
+    const advanced = el('button', { type: 'button', class: 'fd-button' }, 'Open in Advanced');
+    advanced.addEventListener('click', () => options.openAdvanced?.());
+    const lock = el('div', { class: 'fd-simple-lock', hidden: '' }, el('span', { class: 'fd-simple-lock-how' }), el('span', {}, 'Simple mode keeps it as it is. Edit what is inside by picking it.'), advanced);
+    const element = el(tag, { class: 'fd-section fd-canvas-section', 'data-node': id, 'data-drop-section': id }, legend, description, grid, empty, lock);
+    return { element, legend, title, titleInput, description, grid, empty, lock };
   }
 
   /** Where a part's colspan is, for the grid it sits in. */
@@ -308,6 +319,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     const inner = section.children.map((child, index) => drawItem(child, plan.inner, { index, underTabs: underTabs && !section.title, columns: plan.inner.columns }));
     arrange(grid, inner);
     view.empty.hidden = section.children.length > 0;
+    const locked = mode === 'simple' && plan.arrangement && isPicked;
+    view.lock.hidden = !locked;
+    if (locked) (view.lock.firstElementChild as HTMLElement).textContent = lockWords(page, section);
     return element;
   }
 
@@ -440,6 +454,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     drag,
     setSample(index) {
       sample = index;
+    },
+    setMode(next) {
+      mode = next;
     },
     update(state) {
       page = state.page;

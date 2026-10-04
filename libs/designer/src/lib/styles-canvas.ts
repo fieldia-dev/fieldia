@@ -13,4 +13,14 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 .fd-canvas-body.fd-sections { gap: var(--fd-gap-block, 24px); }
 /* A field's widget sits in the field as the form puts it, nothing drawn round it to take room. */
 .fd-canvas-widget:not([hidden]) { display: contents; }
+
+/* ---- Simple and Advanced ---- */
+/* Simple keeps an arrangement as Advanced laid it out, and says so on its top edge, where it is seen as it is picked. */
+.fd-simple-lock {
+  position: absolute; z-index: 8; inset-inline-end: 0; inset-block-start: 0; translate: 0 -50%; width: max-content; max-width: min(420px, 100%);
+  display: grid; gap: 8px; padding: 10px 12px; border: 1px dashed var(--fd-border-strong); border-radius: 8px;
+  background: var(--fd-surface); color: var(--fd-muted); font-size: 13px; line-height: 1.45; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+}
+.fd-simple-lock[hidden] { display: none; }
+.fd-simple-lock > .fd-button { justify-self: start; }
 `;
