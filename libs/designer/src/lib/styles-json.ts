@@ -87,4 +87,18 @@ export const DESIGNER_JSON_CSS = /* css */ `
 .fd-try-problem[data-warning] span { color: var(--fd-warning); }
 .fd-try-none { margin: 0; color: var(--fd-muted); font-size: 13.5px; }
 .fd-try-none[hidden] { display: none; }
+/* A choice's options written here, or taken from one of the app's lists: which list, and what it changes with. */
+.fd-q-source { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin-block-end: 6px; font-size: 13px; color: var(--fd-muted); }
+.fd-q-source[hidden] { display: none; }
+.fd-q-source-pick { display: inline-flex; align-items: center; gap: 6px; color: var(--fd-text); cursor: pointer; }
+.fd-q-list { display: grid; gap: 10px; }
+.fd-q-list[hidden] { display: none; }
+.fd-q-list-name { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
+.fd-q-list-name > [hidden] { display: none; }
+.fd-q-depends { display: grid; gap: 4px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.fd-q-depends > legend { padding: 0; margin-block-end: 4px; font-size: 13px; font-weight: 600; }
+.fd-q-depends-boxes { display: flex; flex-wrap: wrap; gap: 4px 14px; max-height: 120px; overflow: auto; }
+.fd-q-depends-pick { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; cursor: pointer; }
+.fd-q-list-note { margin: 0; font-size: 12.5px; color: var(--fd-muted); }
+.fd-q-list-note[hidden] { display: none; }
 `;
