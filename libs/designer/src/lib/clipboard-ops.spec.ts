@@ -143,6 +143,14 @@ describe('pasteParts', () => {
     expect(d.getPage()).toBe(before);
   });
 
+  it('a list of records takes columns, not parts', () => {
+    const from = employeeDesigner();
+    const text = from.copyParts(['f-city']) as string;
+    const list = createDesigner({ page: blankPage('list', 'Customers') });
+    expect(list.pasteParts(text)).toBe(false);
+    expect(list.getState().issues).toEqual(['A list takes columns, not parts: paste them on a screen or a survey']);
+  });
+
   it('a tab is pasted among tabs, after the tab picked', () => {
     const d = employeeDesigner();
     const text = d.copyParts(['tab-pay']) as string;

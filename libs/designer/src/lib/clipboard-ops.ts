@@ -98,6 +98,7 @@ function freeName(name: string, taken: (name: string) => boolean): string {
 export function pasteParts(page: Page, text: string, picked: string[], context: { model: Record<string, Field> }): { ids: string[]; dropped: number } {
   const copied = readParts(text);
   if (!copied) throw new Refusal('There are no Fieldia parts to paste: copy parts in a Fieldia designer first');
+  if (page.layout.type === 'list') throw new Refusal('A list takes columns, not parts: paste them on a screen or a survey');
   const pages = copied.parts.filter((p) => (p.type as string) === 'step').length;
   if (pages && pages !== copied.parts.length) throw new Refusal('Paste pages or questions, not both at once');
   if (pages && page.layout.type !== 'wizard') throw new Refusal('A survey’s pages go in a survey');
