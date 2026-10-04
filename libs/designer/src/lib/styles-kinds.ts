@@ -28,4 +28,14 @@ export const DESIGNER_KINDS_CSS = /* css */ `
   .fd-kind-picture-name { grid-column: 2 / -1; }
   .fd-kind-picture-address { grid-column: 2; }
 }
+/* Closed cards of the newer kinds: a line to sign on, an address's lines, tags to pick, a card to repeat. */
+.fd-q-preview.fd-q-preview-signature { width: min(70%, 360px); padding-block-start: 38px; font-size: 12.5px; border-block-end-style: solid; }
+.fd-q-preview-lines { display: grid; gap: 2px; width: min(80%, 520px); }
+.fd-q-preview-part { color: var(--fd-muted); font-size: 14px; padding-block: 8px 6px; border-block-end: 1px dotted color-mix(in srgb, var(--fd-text) 38%, transparent); }
+.fd-q-preview-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.fd-q-preview-tag { padding: 2px 10px; border-radius: 999px; border: 1px solid var(--fd-border); font-size: 13px; color: var(--fd-text); }
+.fd-q-preview-cards { display: grid; gap: 8px; justify-items: start; width: min(80%, 520px); }
+.fd-q-preview-card { display: grid; gap: 2px; width: 100%; box-sizing: border-box; padding: 8px 12px 10px; border: 1px solid var(--fd-border); border-radius: 6px; }
+.fd-q-preview-card-title { font-size: 13px; font-weight: 600; color: var(--fd-text); }
+.fd-q-preview-add { font-size: 13px; color: var(--fd-accent); }
 `;
