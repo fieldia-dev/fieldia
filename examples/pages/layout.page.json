@@ -1,0 +1,312 @@
+{
+  "fieldia": "0.1",
+  "id": "new-employee",
+  "title": "New employee",
+  "description": "Everything HR needs from you before your first day.",
+  "data": { "kind": "responses" },
+  "maxWidth": "medium",
+  "look": { "accent": "#1677ff", "font": "system", "density": "comfortable", "corners": "soft", "labels": "above", "labelWidth": 140 },
+  "fields": {
+    "photo": { "type": "image", "label": "Photo", "help": "A clear photo of your face." },
+    "first_name": { "type": "char", "label": "First name", "required": true },
+    "last_name": { "type": "char", "label": "Last name", "required": true },
+    "email": { "type": "char", "label": "Work email", "required": true, "help": "The address IT gave you." },
+    "mobile": { "type": "char", "label": "Mobile" },
+    "birthday": { "type": "date", "label": "Date of birth" },
+    "nationality": {
+      "type": "selection",
+      "label": "Nationality",
+      "options": [
+        { "value": "eg", "label": "Egyptian" },
+        { "value": "ae", "label": "Emirati" },
+        { "value": "sa", "label": "Saudi" },
+        { "value": "other", "label": "Other" }
+      ]
+    },
+    "street": { "type": "char", "label": "Street and number" },
+    "city": { "type": "char", "label": "City" },
+    "postcode": { "type": "char", "label": "Postcode" },
+    "country": {
+      "type": "selection",
+      "label": "Country",
+      "options": [
+        { "value": "eg", "label": "Egypt" },
+        { "value": "ae", "label": "United Arab Emirates" },
+        { "value": "sa", "label": "Saudi Arabia" }
+      ]
+    },
+    "ec_name": { "type": "char", "label": "Name", "required": true },
+    "ec_relation": {
+      "type": "selection",
+      "label": "Relation",
+      "options": [
+        { "value": "partner", "label": "Partner" },
+        { "value": "parent", "label": "Parent" },
+        { "value": "friend", "label": "Friend" }
+      ]
+    },
+    "ec_phone": { "type": "char", "label": "Phone", "required": true },
+    "job_title": { "type": "char", "label": "Job title", "required": true },
+    "department": {
+      "type": "selection",
+      "label": "Department",
+      "options": [
+        { "value": "sales", "label": "Sales" },
+        { "value": "finance", "label": "Finance" },
+        { "value": "operations", "label": "Operations" },
+        { "value": "people", "label": "People" }
+      ]
+    },
+    "manager": {
+      "type": "selection",
+      "label": "Manager",
+      "options": [
+        { "value": "mona", "label": "Mona Adel" },
+        { "value": "karim", "label": "Karim Fawzy" },
+        { "value": "salma", "label": "Salma Nabil" }
+      ]
+    },
+    "start_date": { "type": "date", "label": "Start date", "required": true },
+    "contract": {
+      "type": "selection",
+      "label": "Contract",
+      "options": [
+        { "value": "permanent", "label": "Permanent" },
+        { "value": "fixed", "label": "Fixed term" },
+        { "value": "contractor", "label": "Contractor" }
+      ]
+    },
+    "end_date": { "type": "date", "label": "Contract ends" },
+    "salary": { "type": "monetary", "label": "Monthly salary", "currency": "EGP", "min": 0 },
+    "id_doc": { "type": "binary", "label": "ID or passport", "required": true },
+    "contract_doc": { "type": "binary", "label": "Signed contract" },
+    "certificates": { "type": "binary", "label": "Certificates", "help": "PDF or images, up to 10 MB each." },
+    "bank_name": { "type": "char", "label": "Bank" },
+    "pay_currency": {
+      "type": "selection",
+      "label": "Paid in",
+      "options": [
+        { "value": "EGP", "label": "EGP" },
+        { "value": "USD", "label": "USD" },
+        { "value": "AED", "label": "AED" }
+      ]
+    },
+    "iban": { "type": "char", "label": "IBAN" },
+    "confirm": { "type": "boolean", "label": "I confirm these details are correct", "required": true }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "new-employee",
+    "children": [
+      {
+        "type": "section",
+        "id": "personal",
+        "title": "Personal details",
+        "description": "As written on your ID.",
+        "columns": { "wide": 3, "medium": 3, "narrow": 1 },
+        "children": [
+          { "type": "field", "id": "f-photo", "field": "photo" },
+          {
+            "type": "section",
+            "id": "who",
+            "style": "plain",
+            "colspan": 2,
+            "columns": 2,
+            "children": [
+              { "type": "field", "id": "f-first-name", "field": "first_name" },
+              { "type": "field", "id": "f-last-name", "field": "last_name" },
+              { "type": "field", "id": "f-email", "field": "email", "widget": "email" },
+              { "type": "field", "id": "f-mobile", "field": "mobile", "widget": "phone" },
+              { "type": "field", "id": "f-birthday", "field": "birthday" },
+              { "type": "field", "id": "f-nationality", "field": "nationality" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "side-by-side",
+        "style": "plain",
+        "columns": { "wide": 2, "medium": 1 },
+        "children": [
+          {
+            "type": "section",
+            "id": "address",
+            "title": "Home address",
+            "columns": { "wide": 2, "medium": 2, "narrow": 1 },
+            "children": [
+              { "type": "field", "id": "f-street", "field": "street", "colspan": 2 },
+              { "type": "field", "id": "f-city", "field": "city" },
+              { "type": "field", "id": "f-postcode", "field": "postcode" },
+              { "type": "field", "id": "f-country", "field": "country", "colspan": 2 }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "emergency",
+            "title": "Emergency contact",
+            "children": [
+              { "type": "field", "id": "f-ec-name", "field": "ec_name" },
+              { "type": "field", "id": "f-ec-relation", "field": "ec_relation", "widget": "radio" },
+              { "type": "field", "id": "f-ec-phone", "field": "ec_phone", "widget": "phone" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "tabs",
+        "id": "job-tabs",
+        "children": [
+          {
+            "type": "tab",
+            "id": "tab-job",
+            "label": "Job",
+            "children": [
+              {
+                "type": "section",
+                "id": "role",
+                "title": "Role",
+                "style": "line",
+                "columns": { "wide": 3, "medium": 2, "narrow": 1 },
+                "children": [
+                  { "type": "field", "id": "f-job-title", "field": "job_title" },
+                  { "type": "field", "id": "f-department", "field": "department" },
+                  { "type": "field", "id": "f-manager", "field": "manager" },
+                  { "type": "field", "id": "f-start-date", "field": "start_date" },
+                  { "type": "field", "id": "f-contract", "field": "contract", "widget": "radio", "colspan": 2 },
+                  {
+                    "type": "field",
+                    "id": "f-end-date",
+                    "field": "end_date",
+                    "invisible": "contract != 'fixed'",
+                    "required": "contract == 'fixed'"
+                  },
+                  { "type": "field", "id": "f-salary", "field": "salary" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-docs",
+            "label": "Documents",
+            "children": [
+              {
+                "type": "section",
+                "id": "docs",
+                "style": "plain",
+                "columns": { "wide": 3, "medium": 1 },
+                "children": [
+                  { "type": "field", "id": "f-id-doc", "field": "id_doc" },
+                  { "type": "field", "id": "f-contract-doc", "field": "contract_doc" },
+                  { "type": "field", "id": "f-certificates", "field": "certificates" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-pay",
+            "label": "Pay",
+            "children": [
+              {
+                "type": "section",
+                "id": "bank",
+                "title": "Bank account",
+                "style": "framed",
+                "collapsible": true,
+                "labels": "beside",
+                "labelWidth": 120,
+                "columns": { "wide": 2, "medium": 2, "narrow": 1 },
+                "children": [
+                  { "type": "field", "id": "f-bank-name", "field": "bank_name" },
+                  { "type": "field", "id": "f-pay-currency", "field": "pay_currency" },
+                  { "type": "field", "id": "f-iban", "field": "iban", "colspan": 2, "placeholder": "EG38 0019 0005 0000 0000 2631 8000 2" }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      { "type": "divider", "id": "div-send" },
+      { "type": "text", "id": "h-send", "text": "Before you send", "style": "heading" },
+      {
+        "type": "text",
+        "id": "t-note",
+        "text": "HR goes through every detail with you on your first day. Nothing here is shared outside the company.",
+        "style": "note"
+      },
+      { "type": "field", "id": "f-confirm", "field": "confirm" },
+      { "type": "button", "id": "b-later", "label": "Save and finish later", "action": "finish_later", "style": "secondary" }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "New employee": "موظف جديد",
+      "Everything HR needs from you before your first day.": "كل ما تحتاجه الموارد البشرية منك قبل يومك الأول.",
+      "Personal details": "البيانات الشخصية",
+      "As written on your ID.": "كما هي مكتوبة في بطاقتك.",
+      "Photo": "الصورة",
+      "A clear photo of your face.": "صورة واضحة لوجهك.",
+      "First name": "الاسم الأول",
+      "Last name": "اسم العائلة",
+      "Work email": "بريد العمل",
+      "The address IT gave you.": "العنوان الذي أعطاك إياه قسم تقنية المعلومات.",
+      "Mobile": "الجوال",
+      "Date of birth": "تاريخ الميلاد",
+      "Nationality": "الجنسية",
+      "Egyptian": "مصري",
+      "Emirati": "إماراتي",
+      "Saudi": "سعودي",
+      "Other": "أخرى",
+      "Home address": "عنوان السكن",
+      "Street and number": "الشارع والرقم",
+      "City": "المدينة",
+      "Postcode": "الرمز البريدي",
+      "Country": "الدولة",
+      "Egypt": "مصر",
+      "United Arab Emirates": "الإمارات العربية المتحدة",
+      "Saudi Arabia": "السعودية",
+      "Emergency contact": "جهة اتصال للطوارئ",
+      "Name": "الاسم",
+      "Relation": "صلة القرابة",
+      "Partner": "الزوج أو الزوجة",
+      "Parent": "أحد الوالدين",
+      "Friend": "صديق",
+      "Phone": "الهاتف",
+      "Job": "الوظيفة",
+      "Role": "الدور",
+      "Job title": "المسمى الوظيفي",
+      "Department": "القسم",
+      "Sales": "المبيعات",
+      "Finance": "المالية",
+      "Operations": "العمليات",
+      "People": "شؤون الموظفين",
+      "Manager": "المدير",
+      "Mona Adel": "منى عادل",
+      "Karim Fawzy": "كريم فوزي",
+      "Salma Nabil": "سلمى نبيل",
+      "Start date": "تاريخ البدء",
+      "Contract": "العقد",
+      "Permanent": "دائم",
+      "Fixed term": "محدد المدة",
+      "Contractor": "متعاقد",
+      "Contract ends": "نهاية العقد",
+      "Monthly salary": "الراتب الشهري",
+      "Documents": "المستندات",
+      "ID or passport": "البطاقة أو جواز السفر",
+      "Signed contract": "العقد الموقع",
+      "Certificates": "الشهادات",
+      "PDF or images, up to 10 MB each.": "ملفات PDF أو صور، حتى 10 ميجابايت لكل ملف.",
+      "Pay": "الراتب",
+      "Bank account": "الحساب البنكي",
+      "Bank": "البنك",
+      "Paid in": "عملة الصرف",
+      "IBAN": "رقم الآيبان",
+      "Before you send": "قبل الإرسال",
+      "HR goes through every detail with you on your first day. Nothing here is shared outside the company.": "تراجع الموارد البشرية معك كل التفاصيل في يومك الأول. لا يُشارك شيء من هنا خارج الشركة.",
+      "I confirm these details are correct": "أؤكد أن هذه البيانات صحيحة",
+      "Save and finish later": "احفظ وأكمل لاحقًا"
+    }
+  }
+}

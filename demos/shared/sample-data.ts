@@ -1,6 +1,7 @@
-import { createMemoryDataSource, type Line, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, localizePage, type Line, type Page, type Values } from '@fieldia/core';
 import customer from '../../examples/pages/customer.page.json';
 import fields from '../../examples/pages/fields.page.json';
+import layout from '../../examples/pages/layout.page.json';
 import customers from '../../examples/pages/customers.page.json';
 import order from '../../examples/pages/order.page.json';
 import signup from '../../examples/pages/signup.page.json';
@@ -15,22 +16,29 @@ export const pages: Record<string, Page> = {
   customers: customers as Page,
   fields: fields as Page,
   order: order as Page,
+  layout: layout as Page,
   custom: customPage,
 };
 
 /**
  * The page the query string names, with the page-wide choices it may also make:
- * `maxWidth` (narrow, medium, wide, full) and `actions` (top, bottom).
+ * `maxWidth` (narrow, medium, wide, full), `actions` (top, bottom) and `scheme`
+ * (light, dark, auto). With `locale`, a page that keeps its own words in that
+ * language shows them.
  */
 export function pageFromQuery(params: URLSearchParams): Page {
   const page = pages[params.get('page') ?? 'signup'] ?? pages['signup'];
   const maxWidth = params.get('maxWidth');
   const actions = params.get('actions');
-  return {
+  const scheme = params.get('scheme') as NonNullable<Page['look']>['scheme'] | null;
+  const locale = params.get('locale');
+  const chosen: Page = {
     ...page,
     ...(maxWidth ? { maxWidth: maxWidth as Page['maxWidth'] } : {}),
     ...(actions ? { actionsPosition: actions as Page['actionsPosition'] } : {}),
+    ...(scheme ? { look: { ...page.look, scheme } } : {}),
   };
+  return locale ? localizePage(chosen, locale) : chosen;
 }
 
 /** The record a record's page opens: `record=…`, or the first one. A list shows many, and opens none. */
