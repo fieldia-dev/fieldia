@@ -30,6 +30,30 @@ describe('the rail: Add, Outline and Data', () => {
     expect(shown(host.querySelector('.fd-outline'))).toBe(true);
   });
 
+  it('is a row of tabs a keyboard knows: the one open takes Tab, the arrows open the next', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountSurveyEditor(host, { designer: createDesigner({ page: blankPage('survey', 'Feedback') }) });
+    const tabIndexes = () => (['add', 'outline', 'data'] as const).map((name) => tab(host, name).tabIndex);
+    expect(tabIndexes()).toEqual([0, -1, -1]);
+    expect(tab(host, 'outline').getAttribute('aria-controls')).toBe(host.querySelector('.fd-outline')?.id);
+    tab(host, 'add').focus();
+    const press = (key: string) => document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+    press('ArrowRight');
+    expect(document.activeElement).toBe(tab(host, 'outline'));
+    expect(tab(host, 'outline').getAttribute('aria-selected')).toBe('true');
+    expect(shown(host.querySelector('.fd-outline'))).toBe(true);
+    expect(tabIndexes()).toEqual([-1, 0, -1]);
+    press('End');
+    expect(document.activeElement).toBe(tab(host, 'data'));
+    press('ArrowRight');
+    expect(document.activeElement).toBe(tab(host, 'add'));
+    press('ArrowLeft');
+    expect(document.activeElement).toBe(tab(host, 'data'));
+    press('Home');
+    expect(document.activeElement).toBe(tab(host, 'add'));
+  });
+
   it('outlines a survey: its pages and their questions, marking what shows only for some answers; a pick opens it', () => {
     const host = document.createElement('div');
     document.body.append(host);

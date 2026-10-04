@@ -1,6 +1,6 @@
 import type { Page } from '@fieldia/core';
-import { isWrapper, listOf, locate, nameOf, type Holder } from './layout-tree';
-import { partsInOrder } from './outline-moves';
+import { isWrapper, listOf, locate, type Holder } from './layout-tree';
+import { partsInOrder, quoted } from './outline-moves';
 
 /**
  * Moving the rows picked in the outline from the keyboard, in reading order:
@@ -34,7 +34,7 @@ export function outlineKeyMove(page: Page, ids: string[], key: { key: string; al
   const them = one ? 'it' : 'them';
   const root = page.layout as Holder;
   const wizard = root.type === 'wizard';
-  const name = (holder: Holder) => `“${nameOf(page, holder)}”`;
+  const name = (holder: Holder) => quoted(page, holder);
   const holderOf = (holder: Holder) => locate(page, holder.id);
 
   if (key.key === 'ArrowUp' || key.key === 'ArrowDown') {

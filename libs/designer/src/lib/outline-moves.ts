@@ -15,6 +15,12 @@ import { Refusal } from './refusal';
  * goes along with it.
  */
 
+/** A part's name as a person reads it — a survey's page by its title — in quotes. */
+export function quoted(page: Page, part: Part | Holder): string {
+  const step = (part as { type: string }).type === 'step';
+  return `“${step ? (part as { label?: string }).label || 'Untitled page' : nameOf(page, part)}”`;
+}
+
 /** The parts named that are on the page, in reading order: none inside another of them, none twice. */
 export function partsInOrder(page: Page, ids: string[]): Spot[] {
   const spots = [...new Set(ids)].map((id) => locate(page, id)).filter((s): s is Spot => !!s);
@@ -79,7 +85,7 @@ function refuse(page: Page, coming: Coming[], parentId: string): Holder {
     if (wizard && !step && parent.id === page.layout.id) throw new Refusal('A question goes on a page');
     if (from && contains(page, node.id, parentId)) throw new Refusal('A part cannot go inside itself');
   }
-  if (!listOf(parent)) throw new Refusal(`“${nameOf(page, parent)}” holds no parts`);
+  if (!listOf(parent)) throw new Refusal(`${quoted(page, parent)} holds no parts`);
   const joining = coming.filter((c) => c.from?.id !== parentId).length;
   if (isRow(page, parent) && (parent as Holder).children.length + joining > 4) throw new Refusal('A row holds four');
   return parent as Holder;
@@ -127,7 +133,7 @@ export function describeMove(page: Page, ids: string[], parentId: string, index:
   const parent = nodeOf(page, parentId) as Holder;
   const moving = new Set(spots.map((s) => s.node.id));
   const anchor = anchorOf(parent.children, index, moving);
-  const name = (part: Part) => `“${nameOf(page, part)}”`;
+  const name = (part: Part) => quoted(page, part);
   if (spots.every((s) => s.parent.id === parentId)) {
     const rest = parent.children.filter((p) => !moving.has(p.id));
     const at = anchor ? rest.indexOf(anchor) : rest.length;

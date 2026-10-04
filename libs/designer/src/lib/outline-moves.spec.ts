@@ -134,4 +134,12 @@ describe('describeMove', () => {
     expect(d.describeMove(['f-city'], 'root', 0)).toBe('onto the page, before “Personal details”');
     expect(d.describeMove(['f-city'], 'job-tabs', 0)).toBe('Put it in one of the tabs');
   });
+
+  it('names a survey’s page by its title', () => {
+    const d = createDesigner({ page: blankPage('survey', 'Feedback') });
+    const q = d.addQuestion('short-answer') as string;
+    const two = d.addContainer('Page 2') as string;
+    expect(d.describeMove([q], two, 0)).toBe('into “Page 2”, at the end');
+    expect(d.describeMove([two], 'steps', 0)).toBe('before “Page 1”');
+  });
 });

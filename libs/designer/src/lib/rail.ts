@@ -36,6 +36,8 @@ export interface Rail {
 
 type Pane = 'add' | 'outline' | 'data';
 
+let count = 0;
+
 export function rail(options: RailOptions): Rail {
   const { el, doc, designer } = options;
   let pane: Pane = 'add';
@@ -46,15 +48,31 @@ export function rail(options: RailOptions): Rail {
   const outline = tree.element;
   const data = el('div', { class: 'fd-data', hidden: '' });
   const panes: Record<Pane, HTMLElement> = { add: options.tools.element, outline, data };
+  const id = `fd-rail-${++count}`;
+  for (const [name, p] of Object.entries(panes)) p.id ||= `${id}-${name}`;
   const tabs = (['add', 'outline', 'data'] as const).map((name) => {
-    const button = el('button', { type: 'button', role: 'tab', class: 'fd-rail-tab', 'data-rail': name, 'aria-selected': String(name === pane) }, { add: 'Add', outline: 'Outline', data: 'Data' }[name]);
-    button.addEventListener('click', () => {
-      pane = name;
-      draw(designer.getState());
-    });
+    const button = el('button', { type: 'button', role: 'tab', class: 'fd-rail-tab', 'data-rail': name, 'aria-selected': String(name === pane), 'aria-controls': panes[name].id, tabindex: name === pane ? '0' : '-1' }, { add: 'Add', outline: 'Outline', data: 'Data' }[name]);
+    button.addEventListener('click', () => open(name));
     return button;
   });
-  const element = el('aside', { class: 'fd-rail', 'aria-label': 'Add, outline and data' }, el('div', { class: 'fd-rail-tabs', role: 'tablist', 'aria-label': 'Beside the page' }, ...tabs), options.tools.element, outline, data, said);
+  function open(name: Pane) {
+    pane = name;
+    draw(designer.getState());
+  }
+  // A row of tabs as a keyboard knows one: the tab open takes Tab; the arrows (mirrored right to left), Home and End open another.
+  const tablist = el('div', { class: 'fd-rail-tabs', role: 'tablist', 'aria-label': 'Beside the page' }, ...tabs);
+  tablist.addEventListener('keydown', (event) => {
+    const at = tabs.indexOf(event.target as HTMLButtonElement);
+    if (at === -1) return;
+    const rtl = doc.defaultView?.getComputedStyle(tablist).direction === 'rtl';
+    const step = { ArrowRight: rtl ? -1 : 1, ArrowLeft: rtl ? 1 : -1 }[event.key];
+    const to = step !== undefined ? (at + step + tabs.length) % tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : -1;
+    if (to === -1) return;
+    event.preventDefault();
+    open(tabs[to].dataset['rail'] as Pane);
+    tabs[to].focus();
+  });
+  const element = el('aside', { class: 'fd-rail', 'aria-label': 'Add, outline and data' }, tablist, options.tools.element, outline, data, said);
   // The toolbox is its own aside; inside the rail it is a pane.
   options.tools.element.classList.add('fd-rail-pane');
 
@@ -113,7 +131,10 @@ export function rail(options: RailOptions): Rail {
   }
 
   function draw(state: DesignerState) {
-    for (const t of tabs) t.setAttribute('aria-selected', String(t.dataset['rail'] === pane));
+    for (const t of tabs) {
+      t.setAttribute('aria-selected', String(t.dataset['rail'] === pane));
+      t.tabIndex = t.dataset['rail'] === pane ? 0 : -1;
+    }
     for (const [name, p] of Object.entries(panes)) p.hidden = name !== pane;
     tree.update(state, pane === 'outline');
     if (pane === 'data') drawData(state);
