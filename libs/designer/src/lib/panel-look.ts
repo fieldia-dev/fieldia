@@ -146,10 +146,17 @@ const WORN_TOKENS = ['--fd-label-width', '--fd-look-accent', '--fd-look-accent-t
  * off too. It wears the skin of the editor round it.
  */
 export function wearLook(element: HTMLElement, look: PageLook | undefined): void {
-  element.classList.add('fd-form', 'fd-look-worn');
-  const skin = element.parentElement?.closest('[data-fd-skin]')?.getAttribute('data-fd-skin');
-  if (skin) element.setAttribute('data-fd-skin', skin);
+  const skin = element.parentElement?.closest('[data-fd-skin]')?.getAttribute('data-fd-skin') ?? null;
+  // The same look and skin as last time: worn already. Taken off and put on again, the whole part would be styled anew.
+  const was = worn.get(element);
+  if (was && was.look === look && was.skin === skin) return;
+  worn.set(element, { look, skin });
+  if (!element.classList.contains('fd-form') || !element.classList.contains('fd-look-worn')) element.classList.add('fd-form', 'fd-look-worn');
+  if (skin && element.getAttribute('data-fd-skin') !== skin) element.setAttribute('data-fd-skin', skin);
   for (const name of WORN) element.removeAttribute(name);
   for (const token of WORN_TOKENS) element.style.removeProperty(token);
   applyLook(element, look);
 }
+
+/** The look and skin each part wears now. */
+const worn = new WeakMap<HTMLElement, { look: PageLook | undefined; skin: string | null }>();

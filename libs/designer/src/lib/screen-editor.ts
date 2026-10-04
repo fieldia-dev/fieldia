@@ -25,6 +25,7 @@ import { rulesOverview } from './rules-overview';
 import type { DesignerAssistant } from './assistant';
 import type { PageTemplate } from './templates';
 import { startHere } from './templates-start';
+import { setHidden } from './writes';
 
 /**
  * The screen editor: an app screen built where it is seen. On the left, the
@@ -309,8 +310,8 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     bar.update(state);
     start.update(state);
     const listing = state.page.layout.type === 'list';
-    canvas.element.hidden = listing;
-    list.element.hidden = !listing;
+    setHidden(canvas.element, listing);
+    setHidden(list.element, !listing);
     if (listing) list.update(state);
     else canvas.update(state);
     tools.update({

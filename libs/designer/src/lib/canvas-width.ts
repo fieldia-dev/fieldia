@@ -1,6 +1,7 @@
 import type { Designer, DesignerState } from './designer';
 import { SPANNED } from './layout-ops';
 import { locate, nameOf, spanOf } from './layout-tree';
+import { setHidden } from './writes';
 
 /**
  * Widths on the Advanced canvas, dragged where they are seen. A picked part's
@@ -102,8 +103,8 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
     last = { state, advanced };
     // Worked out first, shown once: hiding the gutter while it has the keys would lose them.
     const shown = placeMarks(state, advanced);
-    handle.hidden = shown !== 'handle';
-    gutter.hidden = shown !== 'gutter';
+    setHidden(handle, shown !== 'handle');
+    setHidden(gutter, shown !== 'gutter');
   }
 
   /** Put the handle or the gutter where it goes, and say which one shows. */

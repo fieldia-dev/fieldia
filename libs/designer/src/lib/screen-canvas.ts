@@ -20,6 +20,7 @@ import { locate } from './layout-tree';
 import { ruleMarks } from './rules-marks';
 import { tabHolds } from './page-tree';
 import { sampleRows } from './samples';
+import { setAttr, setData, setHidden, setText } from './writes';
 
 /**
  * The screen editor's canvas: the page drawn the way the viewer draws it —
@@ -107,6 +108,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   /** The size shown: the one chosen, in Advanced; a desktop, in Simple. */
   const shownSize = (): ScreenSize => (mode === 'advanced' ? size : 'desktop');
   let visible: string[] = [];
+  /** The look the canvas wears now. */
+  let worn: { look: Page['look'] } | null = null;
   /** Every part drawn this time round, by id. */
   let drawnIds = new Set<string>();
 
@@ -314,10 +317,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     if (!view) sections.set(section.id, (view = makeSection(section.id, tag)));
     visible.push(section.id);
     const element = view.element;
-    element.dataset['style'] = plan.style;
-    if (plan.at) element.dataset['place'] = plan.at;
-    else delete element.dataset['place'];
-    element.toggleAttribute('data-on-page', plan.style === 'card' && place.onPage);
+    setData(element, 'style', plan.style);
+    setData(element, 'place', plan.at || undefined);
+    setAttr(element, 'data-on-page', plan.style === 'card' && place.onPage ? '' : null);
     element.classList.toggle('fd-canvas-arrangement', plan.arrangement);
     span(element, section.colspan);
     if (section.labelWidth) element.style.setProperty('--fd-label-width', `${section.labelWidth}px`);
@@ -326,14 +328,14 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     element.classList.toggle('fd-canvas-selected', isPicked);
     element.classList.toggle('fd-canvas-picked', picked.includes(section.id) && picked.length > 1);
     // An arrangement has no title to show or type: it only holds parts.
-    view.legend.hidden = plan.arrangement;
-    view.title.textContent = section.title || 'Untitled section';
+    setHidden(view.legend, plan.arrangement);
+    setText(view.title, section.title || 'Untitled section');
     view.title.classList.toggle('fd-canvas-untitled', !section.title);
-    view.title.hidden = isPicked;
-    view.titleInput.hidden = !isPicked;
-    if (doc.activeElement !== view.titleInput) view.titleInput.value = section.title ?? '';
-    view.description.hidden = !section.description;
-    view.description.textContent = section.description ?? '';
+    setHidden(view.title, isPicked);
+    setHidden(view.titleInput, !isPicked);
+    if (doc.activeElement !== view.titleInput && view.titleInput.value !== (section.title ?? '')) view.titleInput.value = section.title ?? '';
+    setHidden(view.description, !section.description);
+    setText(view.description, section.description ?? '');
     // On its grid's tracks it has no columns of its own; else its own, and those it keeps on smaller screens.
     const grid = view.grid;
     const columns = plan.at === 'tracks' ? null : section.columns;
@@ -354,9 +356,9 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     }
     const inner = section.children.map((child, index) => drawItem(child, plan.inner, { index, underTabs: underTabs && !section.title, columns: plan.inner.columns }));
     arrange(grid, inner);
-    view.empty.hidden = section.children.length > 0;
+    setHidden(view.empty, section.children.length > 0);
     const locked = mode === 'simple' && plan.arrangement && isPicked;
-    view.lock.hidden = !locked;
+    setHidden(view.lock, !locked);
     if (locked) (view.lock.firstElementChild as HTMLElement).textContent = lockWords(page, section);
     return element;
   }
@@ -536,21 +538,24 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       advanced.setEnabled(next === 'advanced');
     },
     update(state) {
-      element.dataset['size'] = shownSize();
+      setData(element, 'size', shownSize());
       page = state.page;
       selected = state.selected;
       picked = state.picked;
       visible = [];
       drawnIds = new Set();
-      // The page's look, worn as the form wears it: an attribute or token for each setting, none left from before.
-      for (const name of ['font', 'density', 'corners', 'scheme', 'accent']) element.removeAttribute(`data-${name}`);
-      for (const token of ['--fd-label-width', '--fd-look-accent', '--fd-look-accent-text', '--fd-look-accent-dark', '--fd-look-accent-dark-text']) element.style.removeProperty(token);
-      applyLook(element, page.look);
+      // The page's look, worn as the form wears it: an attribute or token for each setting, none left from before — when it changed.
+      if (worn === null || worn.look !== page.look) {
+        worn = { look: page.look };
+        for (const name of ['font', 'density', 'corners', 'scheme', 'accent']) element.removeAttribute(`data-${name}`);
+        for (const token of ['--fd-label-width', '--fd-look-accent', '--fd-look-accent-text', '--fd-look-accent-dark', '--fd-look-accent-dark-text']) element.style.removeProperty(token);
+        applyLook(element, page.look);
+      }
       // The page's own parts sit as the form puts them: one column, on the page — in a sheet, in its card.
       const root = page.layout;
       const sheet = root.type === 'sheet';
-      body.dataset['node'] = root.id;
-      body.dataset['container'] = root.id;
+      setData(body, 'node', root.id);
+      setData(body, 'container', root.id);
       body.classList.toggle('fd-sections', !sheet);
       const top: Place = { columns: 1, onPage: !sheet, labels: page.look?.labels };
       arrange(body, topOf(page).map((node, index) => drawItem(node, top, { index, underTabs: false, columns: 1 })));
@@ -570,7 +575,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
         sections.delete(id);
       }
       blocks.keep(drawnIds);
-      titleCard.hidden = root.type !== 'sheet' || !root.title;
+      setHidden(titleCard, root.type !== 'sheet' || !root.title);
       if (root.type === 'sheet' && root.title) {
         // A made-up record names itself in the title; else the field's name stands in, as a placeholder does.
         const value = sample === null ? null : form().getState().values[root.title.field];

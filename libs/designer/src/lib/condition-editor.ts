@@ -2,6 +2,7 @@ import type { Field, FieldNode, Page } from '@fieldia/core';
 import { iconButton, type ElementFactory } from './chrome';
 import { readCondition, readHolds, type Condition, type ConditionRule } from './conditions';
 import type { Designer } from './designer';
+import { setHidden, setText } from './writes';
 
 /** The answers a condition can test: a choice of one, or yes or no. */
 export function choicesOf(field: Field | undefined): { key: string; label: string; value: ConditionRule['value'] }[] | null {
@@ -97,8 +98,8 @@ export function conditionEditor(
       const held = kind === 'shows' ? readCondition(invisible) : readHolds(invisible);
       // Always required is the Required box's, not a rule's.
       const condition = held === 'always' ? null : held;
-      customBox.hidden = condition !== 'custom';
-      if (condition === 'custom') customText.textContent = String(invisible);
+      setHidden(customBox, condition !== 'custom');
+      if (condition === 'custom') setText(customText, String(invisible));
       const rules = condition && condition !== 'custom' ? condition.rules : [];
       // A page shows "Always" in its first row; a question shows nothing until it has a rule.
       const shown = what === 'page' && condition !== 'custom' ? Math.max(rules.length, 1) : rules.length;
@@ -124,15 +125,15 @@ export function conditionEditor(
           );
         }
         drawn.set(r, { offered, first: i === 0, answersOf });
-        answer.hidden = !rule;
+        setHidden(answer, !rule);
         if (rule) answer.value = `${rule.op === 'is' ? 'is' : 'not'}:${String(rule.value)}`;
-        (r.querySelector('button') as HTMLButtonElement).hidden = rules.length < 2;
+        setHidden(r.querySelector('button') as HTMLButtonElement, rules.length < 2);
       });
-      matchRow.hidden = rules.length < 2;
-      caption.hidden = kind === 'shows' || rules.length !== 1;
+      setHidden(matchRow, rules.length < 2);
+      setHidden(caption, kind === 'shows' || rules.length !== 1);
       match.value = condition && condition !== 'custom' ? condition.join : 'all';
-      add.hidden = !rules.length;
-      element.hidden = what !== 'page' && !rules.length && condition !== 'custom';
+      setHidden(add, !rules.length);
+      setHidden(element, what !== 'page' && !rules.length && condition !== 'custom');
     },
   };
 }

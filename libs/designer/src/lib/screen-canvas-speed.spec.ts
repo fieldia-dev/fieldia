@@ -33,7 +33,31 @@ function setup() {
   return { designer, ids, card, words };
 }
 
+/** What was written to `root` while `act` ran, as the elements written to. */
+function written(root: Element, act: () => void): Element[] {
+  const watch = new MutationObserver(() => undefined);
+  watch.observe(root, { subtree: true, attributes: true, childList: true, characterData: true });
+  act();
+  const records = watch.takeRecords();
+  watch.disconnect();
+  return records.map((r) => (r.target.nodeType === Node.TEXT_NODE ? (r.target.parentElement as Element) : (r.target as Element)));
+}
+
 describe('a big screen, edited', () => {
+  it('writes to nothing but the field typed in, its sections and the others left as they were', () => {
+    const { designer, ids, card } = setup();
+    designer.addContainer('Second');
+    designer.setLook({ font: 'serif', accent: '#225588' });
+    designer.select(ids[0]);
+    expect(canvas.element.getAttribute('data-font')).toBe('serif');
+    const parts = written(canvas.element, () => designer.updateQuestion(ids[0], { label: 'Client' }));
+    expect(parts.filter((part) => !card(ids[0]).contains(part)).map((p) => p.outerHTML.slice(0, 90))).toEqual([]);
+    designer.setLook({ font: null });
+    expect(canvas.element.hasAttribute('data-font')).toBe(false);
+    expect(canvas.element.getAttribute('data-accent')).not.toBeNull();
+  });
+
+
   it('leaves the cards of fields it did not touch as they were drawn', () => {
     const { designer, ids, card, words } = setup();
     const [customer, date, notes] = ids;

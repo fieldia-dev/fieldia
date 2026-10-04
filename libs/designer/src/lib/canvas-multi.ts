@@ -3,6 +3,7 @@ import type { Designer, DesignerState } from './designer';
 import { blockIcon } from './canvas-icons';
 import { designerIcon } from './icons';
 import { locate } from './layout-tree';
+import { setHidden, setText } from './writes';
 
 /**
  * The bar for several picked, on the Advanced canvas: how many, and what can
@@ -51,15 +52,15 @@ export function multiBar(options: { el: ElementFactory; doc: Document; designer:
       const several = advanced && state.picked.length > 1;
       const one = advanced && state.picked.length === 1 ? spots[0]?.node : null;
       const ungroupable = !!one && (one.type === 'section' || one.type === 'tabs');
-      bar.hidden = !several && !ungroupable;
+      setHidden(bar, !several && !ungroupable);
       // Parts that sit together, in one list (not tabs among their tabs), can be put in a group of their own.
       const together = several && spots.every((s) => s && s.list === spots[0]?.list) && spots[0]?.parent.type !== 'tabs';
-      count.hidden = !several;
-      count.textContent = `${state.picked.length} picked`;
-      for (const b of [group, side, tabs]) b.hidden = !together;
-      why.hidden = !several || together;
-      for (const b of [copy, remove, down]) b.hidden = !several;
-      ungroup.hidden = several || !ungroupable;
+      setHidden(count, !several);
+      setText(count, `${state.picked.length} picked`);
+      for (const b of [group, side, tabs]) setHidden(b, !together);
+      setHidden(why, !several || together);
+      for (const b of [copy, remove, down]) setHidden(b, !several);
+      setHidden(ungroup, several || !ungroupable);
     },
   };
 }
