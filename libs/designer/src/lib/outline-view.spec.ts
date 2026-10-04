@@ -107,6 +107,14 @@ describe('the outline as a tree', () => {
     expect(row('f-city').textContent).toContain('Town');
   });
 
+  it('draws again only the rows that changed, so a long page stays quick to type in', () => {
+    mount();
+    const street = row('f-street').querySelector('.fd-outline-label');
+    designer.updateQuestion('f-city', { label: 'Town' });
+    expect(row('f-street').querySelector('.fd-outline-label')).toBe(street);
+    expect(row('f-city').querySelector('.fd-outline-label')?.textContent).toBe('Town');
+  });
+
   it('a click on the arrow folds the row without picking it', () => {
     mount();
     (row('who').querySelector('[data-twist]') as HTMLElement).click();

@@ -66,6 +66,8 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
   /** Rows folded by the person, by id: kept while the page changes. */
   const folded = new Set<string>();
   const views = new Map<string, HTMLElement>();
+  /** What each row shows, as it was last drawn. */
+  const contents = new WeakMap<HTMLElement, string>();
   let all: OutlineRow[] = [];
   let shown: OutlineRow[] = [];
   /** The row that takes Tab, and that the keys move from. */
@@ -109,6 +111,10 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
     if (open) view.setAttribute('aria-expanded', String(!folded.has(row.id)));
     else view.removeAttribute('aria-expanded');
     view.tabIndex = row.id === active ? 0 : -1;
+    // What it shows is drawn again only when it changed: typing in a label redraws one row, not the page's.
+    const drawnAs = JSON.stringify(row);
+    if (contents.get(view) === drawnAs) return view;
+    contents.set(view, drawnAs);
     const icon = row.block ? blockIcon(doc, row.icon) : designerIcon(doc, row.icon);
     // A field and a block say their kind after their name; what holds parts says it in its badge.
     const kind = row.holds || row.label === row.kind || row.movable === false ? null : el('span', { class: 'fd-outline-kind' }, ` · ${row.kind}`);
@@ -135,7 +141,11 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
     // The row the keyboard was on went: the row now in its place, else the one picked, else the first.
     if (indexOf(active) === -1) active = (inTree && was !== -1 ? shown[Math.min(was, shown.length - 1)]?.id : undefined) ?? shown.find((r) => r.id === state.selected)?.id ?? shown[0]?.id ?? null;
     const siblings = new Map<string | null, string[]>();
-    for (const row of all) siblings.set(row.parent, [...(siblings.get(row.parent) ?? []), row.id]);
+    for (const row of all) {
+      const own = siblings.get(row.parent);
+      if (own) own.push(row.id);
+      else siblings.set(row.parent, [row.id]);
+    }
     const drawn = shown.map((row) => {
       const own = siblings.get(row.parent) ?? [row.id];
       return drawRow(row, state, own.length, own.indexOf(row.id) + 1);
@@ -144,7 +154,8 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
       if (tree.children[index] !== view) tree.insertBefore(view, tree.children[index] ?? null);
     });
     while (tree.children.length > drawn.length) tree.lastElementChild?.remove();
-    for (const id of [...views.keys()]) if (!shown.some((r) => r.id === id)) views.delete(id);
+    const onShow = new Set(shown.map((r) => r.id));
+    for (const id of [...views.keys()]) if (!onShow.has(id)) views.delete(id);
     tree.hidden = !shown.length;
     empty.hidden = shown.length > 0;
     // The row the keyboard was on went (taken off, or folded away): the keyboard goes to the row now taking Tab.
