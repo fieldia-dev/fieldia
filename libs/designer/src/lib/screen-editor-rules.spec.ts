@@ -1,6 +1,6 @@
 import type { Field, FieldNode, SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner } from './designer';
-import { button, choose, field, mount } from './test-editor';
+import { button, choose, field, mount, openTab } from './test-editor';
 
 /** Required when, and read-only when, from the field's panel. */
 
@@ -17,6 +17,7 @@ function sheet() {
   const node = (name: string) => ((designer.getPage().layout as unknown as { children: SectionNode[] }).children[0].children as FieldNode[]).find((n) => n.field === name) as FieldNode;
   designer.select(node('reason').id);
   const { host } = mount(designer);
+  openTab(host, 'Rules');
   const panel = () => host.querySelector('.fd-properties') as HTMLElement;
   return { designer, node, panel };
 }
@@ -46,6 +47,7 @@ describe('screen editor — required when, read-only when', () => {
     const node = () => ((designer.getPage().layout as unknown as { children: SectionNode[] }).children[0].children as FieldNode[]).find((n) => n.id === why) as FieldNode;
     designer.select(why);
     const { host } = mount(designer);
+    openTab(host, 'Rules');
     const panel = host.querySelector('.fd-properties') as HTMLElement;
     (button(panel, 'Required only when…') as HTMLButtonElement).click();
     expect(node().required).toMatch(/== True$/);

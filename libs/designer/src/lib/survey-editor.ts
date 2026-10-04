@@ -11,6 +11,7 @@ import { designerIcon } from './icons';
 import { kindById } from './kinds';
 import { kindPreview } from './kind-previews';
 import { openMenu, type MenuItem } from './menu';
+import { lookSheet } from './panel-look-sheet';
 import { rail as sideRail } from './rail';
 import { inlineSettings } from './inline-settings';
 import { installDesignerStyles } from './styles';
@@ -161,6 +162,8 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const body = el('div', { class: 'fd-designer-body fd-survey-body' }, side.element, editor);
   root.append(bar.element, bar.issues, body, trial.element);
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
+  // The form's look: from the bar, in a sheet at the side; the cards wear it.
+  const look = lookSheet({ el, designer, root, bar: bar.element, wearer: editor });
 
   // ---- find anything -----------------------------------------------------------
   /** A kind to add, a question or a page to go to, a page to add. */
@@ -640,6 +643,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     element: root,
     destroy() {
       leave();
+      look.destroy();
       watcher?.disconnect();
       stopPuttingDown();
       bar.destroy();

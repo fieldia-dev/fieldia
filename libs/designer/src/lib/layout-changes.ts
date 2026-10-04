@@ -240,6 +240,8 @@ export function layoutChanges(before: Page, after: Page): LayoutChanges {
       lines.push(`${name}: ${plural(spanOf(node), 'column')} wide`);
     }
     if (node.type === 'field' && old.type === 'field' && old.labels !== node.labels) lines.push(`${name}: its label ${node.labels ? LABEL[node.labels] : 'where its group puts it'}`);
+    // The words in its empty box, which the panel sets.
+    if (node.type === 'field' && old.type === 'field' && (old.placeholder ?? '') !== (node.placeholder ?? '')) lines.push(`${name}: its placeholder changed`);
   }
 
   return { lines, said, placed, before: was, after: now };

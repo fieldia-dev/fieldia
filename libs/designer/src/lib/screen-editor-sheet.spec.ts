@@ -1,6 +1,6 @@
 import type { Field, FieldNode, Page, SectionNode, SheetNode, TabsNode } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore } from './designer';
-import { button, choose, field, mount, press, tile, type } from './test-editor';
+import { button, choose, field, mount, press, tile, type, openTab } from './test-editor';
 
 const sheet = (designer: ReturnType<typeof createDesigner>) => designer.getPage().layout as SheetNode;
 const strip = (host: Element) => [...host.querySelectorAll('.fd-canvas-tabs [role="tab"]')].map((tab) => `${tab.textContent}${tab.getAttribute('aria-selected') === 'true' ? ' *' : ''}`);
@@ -28,9 +28,11 @@ describe('screen editor — a record sheet', () => {
     expect(title.hidden).toBe(true);
     expect(field(host, 'Title field')).toBeUndefined();
     expect(tile(host, 'layout:tabs').hidden).toBe(true);
+    openTab(host, 'Layout');
     choose(field(host, 'Layout'), 'sheet');
     expect(designer.getPage().layout.type).toBe('sheet');
     expect(tile(host, 'layout:tabs').hidden).toBe(false);
+    openTab(host, 'Content');
     choose(field(host, 'Title field'), company);
     expect(sheet(designer).title?.placeholder).toBe('Company');
     expect(title.hidden).toBe(false);
@@ -84,6 +86,7 @@ describe('screen editor — a record sheet', () => {
     tile(host, 'layout:tabs').click();
     button(host, 'Add a tab')?.click();
     designer.select(email);
+    openTab(host, 'Layout');
     const sections = [...(field(host, 'Section') as HTMLSelectElement).options].map((o) => o.textContent);
     expect(sections).toEqual(['Untitled section', 'Tab 1 › Untitled section', 'Tab 2 › Untitled section']);
     const target = (field(host, 'Section') as HTMLSelectElement).options[1].value;

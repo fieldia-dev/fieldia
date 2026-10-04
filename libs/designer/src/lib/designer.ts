@@ -24,6 +24,8 @@ import * as ops from './layout-ops';
 import type { BlockKind, Drop, NewPart } from './layout-ops';
 import * as settings from './layout-settings';
 import type { LookPatch, SectionLook } from './layout-settings';
+import * as several from './layout-several';
+import type { EachChange } from './layout-several';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
 import { translationCommands } from './translations';
@@ -48,6 +50,7 @@ export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-com
 export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-checks';
 export type { BlockKind, Drop, NewPart } from './layout-ops';
 export type { LookPatch, SectionLook } from './layout-settings';
+export type { EachChange } from './layout-several';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
 export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
@@ -306,6 +309,9 @@ export interface Designer extends HeaderCommands, ListCommands {
   fillTranslations(words: Record<string, Record<string, string>>): number | false;
   /** Let go of words' translations in every language, as one edit: for words no longer on the page. */
   forgetWords(sources: string[]): boolean;
+  // panel lane
+  /** Several parts' width, or where their labels sit, as one edit; none changes when one cannot. */
+  setEach(ids: string[], change: EachChange): boolean;
 }
 
 
@@ -1118,6 +1124,8 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     },
     // translations lane
     ...translationCommands({ apply, getPage: () => page }),
+    // panel lane
+    setEach: (ids, change) => apply((draft) => several.setEach(draft, ids, change)),
   };
   return designer;
 }
