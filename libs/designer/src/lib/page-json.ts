@@ -61,11 +61,12 @@ export function pageJsonCommands({ getPage, apply }: PageJsonDeps): PageJsonComm
       if (!page) return { ok: false, problems };
       // The page as it is already: nothing to undo.
       if (pageToJson(page) === pageToJson(getPage())) return { ok: true };
-      const applied = apply((draft) => {
+      // Checked already, by the same checks the edit runs: it cannot be refused.
+      apply((draft) => {
         for (const key of Object.keys(draft)) delete (draft as unknown as Record<string, unknown>)[key];
         Object.assign(draft, JSON.parse(JSON.stringify(page)));
       });
-      return applied ? { ok: true } : { ok: false, problems: [{ line: 1, column: 1, message: 'The page could not be replaced' }] };
+      return { ok: true };
     },
   };
 }

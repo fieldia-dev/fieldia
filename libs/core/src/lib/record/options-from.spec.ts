@@ -160,6 +160,32 @@ describe('choices from the app’s lists, in a form', () => {
     expect(form.getState().choices['country']).toEqual({ options: COUNTRIES });
   });
 
+  it('keeps the choices it had when loading them again fails', async () => {
+    const { source, asked } = lists();
+    const form = createForm({ page: page(), dataSource: source });
+    form.loadChoices('city');
+    asked[0].answer(CITIES['eg']);
+    await form.settled();
+    form.setValue('country', 'jo');
+    asked[1].fail('The server is away');
+    await form.settled();
+    expect(form.getState().choices['city']).toEqual({ options: CITIES['eg'], error: 'The server is away' });
+  });
+
+  it('loads again when any one of the fields it changes with changes', async () => {
+    const { source, asked } = lists();
+    const form = createForm({
+      page: page({ region: { type: 'char', label: 'Region' }, town: { type: 'selection', label: 'Town', options: [], optionsFrom: { list: 'towns', dependsOn: ['country', 'region'] } } }),
+      dataSource: source,
+    });
+    form.loadChoices('town');
+    form.setValue('region', 'north');
+    expect(asked.map((a) => [a.list, a.values['region']])).toEqual([
+      ['towns', null],
+      ['towns', 'north'],
+    ]);
+  });
+
   it('says so when the data source has no lists', async () => {
     const form = createForm({ page: page(), dataSource: {} });
     form.loadChoices('country');
@@ -182,6 +208,8 @@ describe('choices from the app’s lists, in a form', () => {
     expect(form.validate()).toBe(true);
     form.setValue('country', 'fr');
     expect(form.problem('country')).toBe('Must be one of: Egypt, Jordan');
+    expect(form.validate()).toBe(false);
+    expect(form.getState().errors['country']).toBe('Must be one of: Egypt, Jordan');
   });
 
   it('keeps a value the list no longer offers: the person decides', async () => {

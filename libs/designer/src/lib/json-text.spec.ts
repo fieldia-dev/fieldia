@@ -50,8 +50,21 @@ describe('reading JSON text', () => {
     expect(offsetOf(text, { line: 2, column: 99 })).toBe(6);
     expect(offsetOf(text, { line: 3, column: 1 })).toBe(7);
     expect(offsetOf(text, { line: 9, column: 1 })).toBe(text.length);
+    // The last line has no line break after it: a column past its end is its end.
+    expect(offsetOf(text, { line: 4, column: 9 })).toBe(text.length);
     expect(placeAt(text, 4)).toEqual({ line: 2, column: 2 });
     expect(placeAt(text, 8)).toEqual({ line: 4, column: 1 });
+  });
+
+  it('says each mistake a number, a word or an escape can hold', () => {
+    expect(problem('{ "a": -01 }')).toEqual({ line: 1, column: 8, message: 'A number cannot start with extra zeros' });
+    expect(problem('{ "a": truex }').message).toMatch(/^This is not a value JSON knows/);
+    expect(problem('{ "a": nul }').message).toMatch(/^This is not a value JSON knows/);
+    expect(problem('{ "a": "\\uZZZZ" }')).toEqual({ line: 1, column: 9, message: '"\\u" is not something JSON knows: write \\\\ for a backslash' });
+    expect(problem('{ "a": "one\rtwo" }')).toEqual({ line: 1, column: 12, message: 'A line break cannot sit inside text: write \\n' });
+    expect(problem('{ "a": "tab\there" }')).toEqual({ line: 1, column: 12, message: 'A control character cannot sit inside text' });
+    expect(problem('{ true: 1 }')).toEqual({ line: 1, column: 3, message: 'A key goes in double quotes, such as "true"' });
+    expect(read('{ "a": "\\u0041\\u00e9" }').value).toEqual({ a: 'Aé' });
   });
 
   it('counts columns from 1 and lines after \\r\\n too', () => {
@@ -98,6 +111,12 @@ describe('the place of a path in the text', () => {
     expect(at('translations.ar.Hello. World[0]')).toEqual({ line: 15, column: 29 });
   });
 
+  it('takes the longest key that fits, when a shorter one would fit too', () => {
+    const text = '{\n  "x": {\n    "a": { "b": 1 },\n    "a.b": 2\n  }\n}';
+    expect(placeOf(text, read(text).tree, 'x.a.b')).toEqual({ line: 4, column: 5 });
+    expect(placeOf(text, read(text).tree, 'x.a')).toEqual({ line: 3, column: 5 });
+  });
+
   it('stops at the deepest part there is, when the rest is missing', () => {
     // A page with no id: the page itself.
     expect(at('id')).toEqual({ line: 1, column: 1 });
@@ -112,6 +131,8 @@ describe('the place of a path in the text', () => {
     expect(pathTo(page, (v) => (v as { id?: unknown }).id === 'q2')).toBe('layout.children[0].children[1]');
     expect(pathTo(page, (v) => (v as { id?: unknown }).id === 's1')).toBe('layout.children[0]');
     expect(pathTo(page, (v) => (v as { id?: unknown }).id === 'none')).toBeNull();
+    // The page itself is never the part: only what is in it.
+    expect(pathTo({ id: 'x', parts: [{ id: 'x' }] }, (v) => (v as { id?: unknown }).id === 'x')).toBe('parts[0]');
     expect(at(pathTo(page, (v) => (v as { id?: unknown }).id === 'q2') as string)).toEqual({ line: 11, column: 9 });
   });
 });

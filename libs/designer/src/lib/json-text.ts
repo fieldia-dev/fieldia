@@ -158,7 +158,7 @@ export function readJson(text: string): JsonRead {
       if (text[i] !== '"') {
         WORD.lastIndex = i;
         const word = WORD.exec(text);
-        if (word && !['true', 'false', 'null'].includes(word[0])) fail(`A key goes in double quotes, such as "${word[0]}"`);
+        if (word) fail(`A key goes in double quotes, such as "${word[0]}"`);
         unexpected('a closing } is missing');
       }
       const key = string();
@@ -213,7 +213,8 @@ export function readJson(text: string): JsonRead {
 export function placeOf(text: string, tree: Spot, path: string): Place {
   let spot = tree;
   let at = tree.at;
-  let rest = path === '(page)' ? '' : path;
+  // "(page)", the page itself, names no key: the page's own place.
+  let rest = path;
   while (rest) {
     const item = /^\[(\d+)\]/.exec(rest);
     if (item) {

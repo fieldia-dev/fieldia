@@ -51,7 +51,8 @@ export function listChoices(factory: WidgetFactory, context: WidgetContext): Wid
       note.className = choices?.loading ? 'fd-help' : 'fd-warning';
       note.textContent = choices?.loading ? words.loadingChoices : lost.length ? fill(words.notOffered, { name: lost.map((v) => named.get(v) ?? String(v)).join(', ') }) : '';
       note.hidden = !note.textContent;
-      retry.hidden = !choices?.error || !!choices.loading;
+      // Loading again sets the failure aside, and the button with it.
+      retry.hidden = !choices?.error;
     },
   };
 }

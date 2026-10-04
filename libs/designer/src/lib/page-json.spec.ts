@@ -85,6 +85,22 @@ describe('the page as JSON', () => {
     expect(designer.getPage()).toBe(page);
   });
 
+  it('lists two problems on one line in the order they sit on it', () => {
+    const { designer } = setup();
+    const draft = JSON.parse(designer.pageJson());
+    const node = draft.layout.children[0].children[0];
+    node.field = 'nope';
+    node.invisible = "colour == 'red'";
+    // Each part of the layout on a line of its own, as compact JSON has it.
+    const text = JSON.stringify(draft, null, 2).replace(JSON.stringify(node, null, 2).replace(/\n/g, '\n' + ' '.repeat(10)), JSON.stringify(node));
+    const problems = failed(designer.setPageJson(text));
+    expect(problems.map((p) => [p.line, p.path])).toEqual([
+      [problems[0].line, 'layout.children[0].children[0].field'],
+      [problems[0].line, 'layout.children[0].children[0].invisible'],
+    ]);
+    expect(problems[0].column).toBeLessThan(problems[1].column);
+  });
+
   it('says where a key the format does not know sits, and a page missing what it needs', () => {
     const designer = createDesigner({ page: blankPage('screen', 'Site visit') });
     const draft = JSON.parse(designer.pageJson());

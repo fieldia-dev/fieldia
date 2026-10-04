@@ -118,6 +118,64 @@ describe('choices from the app’s list', () => {
     expect(el.querySelectorAll('select')).toHaveLength(1);
   });
 
+  it('say loading in the help’s quiet words, and a value no longer offered as a warning', async () => {
+    const { form, el, asked, settle } = mount('radio', {}, { country: 'eg', city: 'cai' });
+    const note = () => el.querySelector('[role=status]') as HTMLElement;
+    expect(note().className).toBe('fd-help');
+    asked[0].answer(CITIES['jo']);
+    await settle();
+    expect([note().className, note().textContent]).toEqual(['fd-warning', 'cai: no longer offered']);
+    form.setValue('country', 'jo');
+    expect(note().className).toBe('fd-help');
+  });
+
+  it('take a value of the person’s own for an answer, where the choice has "Other"', async () => {
+    const { form, el, asked, note, settle } = mount('radio', { other: true }, { country: 'eg' });
+    asked[0].answer(CITIES['eg']);
+    await settle();
+    form.setValue('city', 'Siwa');
+    expect(note()).toEqual([]);
+    expect((el.querySelector('.fd-other-input') as HTMLInputElement).value).toBe('Siwa');
+  });
+
+  it('load once for a field shown twice', async () => {
+    const { form, asked } = mount(undefined, {}, { country: 'eg' });
+    const again = createWidget({ form, name: 'city', field: form.page.fields['city'], node: { type: 'field', id: 'n2', field: 'city' }, id: 'fd-y', document });
+    expect(again.element).toBeDefined();
+    expect(asked).toHaveLength(1);
+  });
+
+  it('hand the focus and the clean-up to the widget inside, the one drawn last', async () => {
+    const destroyed: string[] = [];
+    const page = {
+      fieldia: '0.1',
+      id: 't',
+      data: { kind: 'responses' },
+      fields: { city: { type: 'selection', label: 'City', options: [], optionsFrom: { list: 'cities' } } as Field },
+      layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n', field: 'city' }] },
+    } as Page;
+    const asked: ((options: Option[]) => void)[] = [];
+    const form = createForm({ page, dataSource: { options: () => new Promise<Option[]>((resolve) => asked.push(resolve)) } });
+    let drawn = 0;
+    const own = () => {
+      const input = document.createElement('input');
+      const name = `drawn ${++drawn}`;
+      input.name = name;
+      return { element: input, focus: () => input.focus(), update: () => undefined, destroy: () => destroyed.push(name) };
+    };
+    const widget = createWidget({ form, name: 'city', field: page.fields['city'], node: (page.layout as { children: FieldNode[] }).children[0], id: 'fd-x', document }, { selection: own });
+    document.body.replaceChildren(widget.element);
+    const update = () => widget.update({ value: null, values: {}, readonly: false, required: false, invalid: false });
+    form.subscribe(update);
+    asked[0](CITIES['eg']);
+    await form.settled();
+    expect(destroyed).toEqual(['drawn 1']);
+    widget.focus();
+    expect((document.activeElement as HTMLInputElement).name).toBe('drawn 2');
+    widget.destroy?.();
+    expect(destroyed).toEqual(['drawn 1', 'drawn 2']);
+  });
+
   it.each([
     ['dropdown', undefined, {}],
     ['checkboxes', undefined, { multiple: true }],

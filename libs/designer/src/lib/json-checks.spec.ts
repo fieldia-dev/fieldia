@@ -78,6 +78,34 @@ describe('checking the page as JSON', () => {
     expect(rows.map((r) => [r.severity, r.message, r.line, r.fix])).toEqual([['should', 'A question has no words yet: people would read “Untitled question”.', lineOf(text, '"label": "Untitled question"'), undefined]]);
   });
 
+  it('puts a question’s missing words where they are written: on the question when it has its own', () => {
+    const designer = createDesigner({ page: blankPage('survey', 'Event feedback') });
+    const id = designer.addQuestion('short-answer') as string;
+    designer.updateQuestion(id, { label: 'Name' });
+    const page = JSON.parse(designer.pageJson()) as Page;
+    const node = (page.layout as WizardNode).children[0].children[0] as FieldNode & { label?: string };
+    node.label = 'Untitled question';
+    const text = pageToJson(page);
+    const [row] = checkJson(text).rows;
+    expect([row.message, row.line]).toEqual(['A question has no words yet: people would read “Untitled question”.', lineOf(text, '"label": "Untitled question"')]);
+    expect(lineOf(text, '"label": "Untitled question"')).toBeGreaterThan(lineOf(text, '"layout"'));
+  });
+
+  it('lists every row in the order it sits in the text, the page’s errors and the checks alike', () => {
+    const designer = createDesigner({ page: blankPage('survey', 'Event feedback') });
+    designer.addQuestion('short-answer');
+    const page = JSON.parse(designer.pageJson()) as Page;
+    (page.layout as WizardNode).children[0].invisible = "ghost == 'x'";
+    const text = pageToJson(page);
+    const rows = checkJson(text).rows;
+    // The rule on a field the page lacks: one row, the format's words with the check's fix.
+    expect(rows.map((r) => [r.severity, r.fix?.label])).toEqual([
+      ['should', undefined],
+      ['error', 'Remove that rule'],
+    ]);
+    expect(rows.map((r) => r.line)).toEqual([...rows.map((r) => r.line)].sort((a, b) => a - b));
+  });
+
   it('keeps going when a page is too broken to look over', () => {
     const rows = checkJson('{ "fieldia": "0.1", "layout": 3 }').rows;
     expect(rows.length).toBeGreaterThan(0);
