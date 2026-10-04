@@ -1,0 +1,29 @@
+{
+  "fieldia": "0.1",
+  "id": "office-move",
+  "title": "Office move",
+  "description": "We move to the new building on 2 March. Tell us what you need there.",
+  "data": { "kind": "responses" },
+  "fields": {
+    "name": { "type": "char", "label": "Your name", "required": true },
+    "signature": { "type": "binary", "label": "Your signature", "help": "Draw it, or type your name." }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "move",
+    "children": [
+      {
+        "type": "section",
+        "id": "s-you",
+        "title": "About you",
+        "children": [{ "type": "field", "id": "q-name", "field": "name" }]
+      },
+      {
+        "type": "section",
+        "id": "s-sign",
+        "title": "Sign it off",
+        "children": [{ "type": "field", "id": "q-signature", "field": "signature", "widget": "signature" }]
+      }
+    ]
+  }
+}

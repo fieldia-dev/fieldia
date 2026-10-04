@@ -1,6 +1,7 @@
 import { createMemoryDataSource, type Line, type Page, type Values } from '@fieldia/core';
 import customer from '../../examples/pages/customer.page.json';
 import fields from '../../examples/pages/fields.page.json';
+import kinds from '../../examples/pages/kinds.page.json';
 import customers from '../../examples/pages/customers.page.json';
 import order from '../../examples/pages/order.page.json';
 import signup from '../../examples/pages/signup.page.json';
@@ -14,6 +15,7 @@ export const pages: Record<string, Page> = {
   customer: customer as Page,
   customers: customers as Page,
   fields: fields as Page,
+  kinds: kinds as Page,
   order: order as Page,
   custom: customPage,
 };

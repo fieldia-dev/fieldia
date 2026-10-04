@@ -1,3 +1,5 @@
+import { KINDS_CSS } from './styles-kinds';
+
 /**
  * Fieldia's stylesheet: two skins and the layout chrome, all scoped to the
  * form's own root (`.fd-form[data-fd-skin=…]`), so two forms on one page can
@@ -648,7 +650,7 @@ export const FIELDIA_CSS = /* css */ `
 .fd-form-dialog-body:not(:has(.fd-sheet-layout)) { background: var(--fd-surface); padding: 16px 20px 20px; }
 .fd-form-dialog-foot { padding: 12px 16px; border-block-start: 1px solid var(--fd-border); background: var(--fd-surface); margin: 0; }
 @media (prefers-reduced-motion: reduce) { .fd-form *, .fd-form *::before, .fd-form *::after { transition: none !important; } }
-`;
+${KINDS_CSS}`;
 
 const STYLE_ID = 'fieldia-styles';
 

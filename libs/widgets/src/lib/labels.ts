@@ -62,6 +62,11 @@ export interface WidgetLabels {
   removeFile: string;
   dropHere: string;
   invalidJson: string;
+  /** A signature: the pad, the words on it while it is blank, the box to type a name in instead, and wiping it. */
+  signaturePad: string;
+  signHere: string;
+  typeSignature: string;
+  clearDrawing: string;
 }
 
 export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
@@ -114,6 +119,10 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     removeFile: 'Remove',
     dropHere: 'or drop it here',
     invalidJson: 'Not valid JSON',
+    signaturePad: 'Signature pad: draw your signature',
+    signHere: 'Sign here',
+    typeSignature: 'Or type your name',
+    clearDrawing: 'Clear',
   },
   ar: {
     search: 'بحث…',
@@ -164,6 +173,10 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     removeFile: 'إزالة',
     dropHere: 'أو أفلته هنا',
     invalidJson: 'ليس JSON صالحًا',
+    signaturePad: 'لوحة التوقيع: ارسم توقيعك',
+    signHere: 'وقّع هنا',
+    typeSignature: 'أو اكتب اسمك',
+    clearDrawing: 'مسح',
   },
   de: {
     search: 'Suchen…',
@@ -214,6 +227,10 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     removeFile: 'Entfernen',
     dropHere: 'oder hier ablegen',
     invalidJson: 'Kein gültiges JSON',
+    signaturePad: 'Unterschriftenfeld: Unterschrift zeichnen',
+    signHere: 'Hier unterschreiben',
+    typeSignature: 'Oder Namen eingeben',
+    clearDrawing: 'Löschen',
   },
   fr: {
     search: 'Rechercher…',
@@ -264,5 +281,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     removeFile: 'Retirer',
     dropHere: 'ou déposez-le ici',
     invalidJson: 'JSON invalide',
+    signaturePad: 'Zone de signature : dessinez votre signature',
+    signHere: 'Signez ici',
+    typeSignature: 'Ou tapez votre nom',
+    clearDrawing: 'Effacer',
   },
 };

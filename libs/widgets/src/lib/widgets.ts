@@ -24,6 +24,7 @@ import { withCalendar } from './calendar';
 import { propertiesWidget } from './properties';
 import { htmlWidget, jsonWidget } from './extras';
 import { matrixWidget } from './matrix';
+import { signatureWidget } from './signature';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -544,6 +545,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   reference: referenceWidget,
   one2many: linesWidget,
   binary: binaryWidget,
+  'binary.signature': signatureWidget,
   image: imageWidget,
   html: htmlWidget,
   json: jsonWidget,
