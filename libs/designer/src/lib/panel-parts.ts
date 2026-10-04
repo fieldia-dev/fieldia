@@ -4,6 +4,7 @@ import type { Designer } from './designer';
 import { SPANNED } from './layout-ops';
 import { across, andList, isSection, locate, nameOf, spanOf } from './layout-tree';
 import { onTab, segmented, setting } from './panel-controls';
+import { blockContent } from './panel-block';
 import { aroundWords, widthSetting } from './panel-layout';
 import type { PropertiesView } from './screen-properties';
 
@@ -29,13 +30,16 @@ export function blockProperties(el: ElementFactory, designer: Designer, id: stri
   remove.addEventListener('click', () => designer.remove([id]));
   // A divider runs across the whole row: it has no width to set.
   const width = locate(designer.getPage(), id)?.node.type === 'divider' ? null : widthSetting(el, designer, id);
-  const element = el('div', { class: 'fd-props' }, about, onTab(el('div', { class: 'fd-props-actions' }, duplicate, remove), 'content', 'Duplicate or delete'), ...(width?.rows ?? []));
+  // Its own settings: a picture's address and description, how words read, a button's words.
+  const own = blockContent(el, designer, id);
+  const element = el('div', { class: 'fd-props' }, about, ...(own?.rows ?? []), onTab(el('div', { class: 'fd-props-actions' }, duplicate, remove), 'content', 'Duplicate or delete'), ...(width?.rows ?? []));
   return {
     element,
     update(page) {
       const node = locate(page, id)?.node;
       if (!node) return;
       width?.update(page);
+      own?.update(page);
       about.textContent = node.type === 'text' && node.style === 'heading' ? 'A heading between the fields.' : (ABOUT[node.type] ?? '');
     },
   };
