@@ -82,6 +82,18 @@ describe('the app’s assistant', () => {
     expect(designer.getState().canUndo).toBe(false);
   });
 
+  it('refuses a form that breaks the format, though its outline is fine, said here and not in the bar', async () => {
+    const designer = createDesigner({ page: blankPage('survey', 'S') });
+    const app = later();
+    const run = askAssistant(designer, app.assistant, 'Anything');
+    const odd = JSON.parse(JSON.stringify(SURVEY_TEMPLATES[0].page)) as Page;
+    (odd.fields['email'] as unknown as { size: string }).size = 'big';
+    app.answer(odd);
+    const result = await run.done;
+    expect(result.status === 'refused' && result.problem).toMatch(/^The assistant’s form cannot be used: This is not a page the designer can open: fields\.email\.size/);
+    expect(designer.getState().issues).toEqual([]);
+  });
+
   it('refuses an answer that is not a page at all', async () => {
     const designer = createDesigner({ page: blankPage('survey', 'S') });
     const app = later();

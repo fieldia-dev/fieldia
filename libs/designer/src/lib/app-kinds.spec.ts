@@ -81,6 +81,9 @@ describe('an app adds its own kinds', () => {
     expect(page.fields['account']).toEqual({ type: 'char', label: 'Account' });
     expect(designer.changeKind(visits, 'iban')).toBe(false);
     expect(designer.getState().issues[0]).toContain('can only be shown as');
+    // The refusal names the app's kinds that would do, with Fieldia's.
+    expect(designer.changeKind(account, 'number')).toBe(false);
+    expect(designer.getState().issues[0]).toMatch(/can only be shown as .*Short answer.* or IBAN$/);
   });
 
   it('fits only where the app says, when it says', () => {

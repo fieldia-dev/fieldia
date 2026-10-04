@@ -58,6 +58,10 @@ describe('the templates a blank page starts from', () => {
     // A sheet has its title field from the start, and a list its columns: neither is started from a template.
     expect(isBlank(blankPage('sheet', 'S'))).toBe(false);
     expect(isBlank(blankPage('list', 'S'))).toBe(false);
+    // Not even a sheet emptied of every field: a template would make it sections.
+    expect(isBlank({ ...blankPage('sheet', 'S'), fields: {}, layout: { type: 'sheet', id: 'sheet', children: [{ type: 'section', id: 'section-1', children: [] }] } })).toBe(false);
+    // Nor a page that keeps fields it has not placed yet: a template would lose them.
+    expect(isBlank({ ...blankPage('screen', 'S'), fields: { kept: { type: 'char', label: 'Kept' } } })).toBe(false);
   });
 });
 
@@ -95,6 +99,21 @@ describe('starting from a template', () => {
     expect(screen.replacePage(SURVEY_TEMPLATES[0].page)).toBe(false);
     expect(screen.getState().issues).toEqual(['A screen is made of sections: this is a survey’s pages of questions']);
     expect(isBlank(screen.getPage())).toBe(true);
+  });
+
+  it('takes nothing of the old page but its id and where its answers go', () => {
+    const designer = createDesigner({ page: { ...blankPage('survey', 'S'), description: 'An old description' } });
+    const { description: _gone, ...bare } = SURVEY_TEMPLATES[0].page;
+    expect(designer.replacePage(bare as Page)).toBe(true);
+    expect(designer.getPage().description).toBeUndefined();
+  });
+
+  it('refuses a page that breaks the format, though its outline is fine, saying where', () => {
+    const designer = createDesigner({ page: blankPage('screen', 'S') });
+    const odd = JSON.parse(JSON.stringify(SCREEN_TEMPLATES[0].page)) as Page;
+    (odd.fields['name'] as unknown as { size: string }).size = 'big';
+    expect(designer.replacePage(odd)).toBe(false);
+    expect(designer.getState().issues[0]).toMatch(/^This is not a page the designer can open: fields\.name\.size/);
   });
 
   it('refuses what is not a page, saying what is wrong with it', () => {

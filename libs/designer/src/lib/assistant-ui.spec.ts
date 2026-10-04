@@ -144,6 +144,40 @@ describe('the assistant in a blank page’s empty state', () => {
     expect(shown(notice(root))).toBe(false);
   });
 
+  it('answers a new ask made straight after a cancel', async () => {
+    const app = later();
+    const { root, designer } = survey(app.assistant);
+    const form = box(root);
+    type(prompt(form), 'A feedback form');
+    button(form, 'Build it')?.click();
+    button(form, 'Cancel')?.click();
+    button(form, 'Build it')?.click();
+    await settle();
+    expect(form.getAttribute('aria-busy')).toBe('true');
+    app.answer(SURVEY_TEMPLATES[0].page);
+    await settle();
+    expect(fieldLabels(designer)).toContain('How was it overall?');
+    expect(shown(notice(root))).toBe(true);
+  });
+
+  it('stays on show while it works, though a question is added meanwhile', async () => {
+    const app = later();
+    const { root, designer } = survey(app.assistant);
+    const form = box(root);
+    type(prompt(form), 'A feedback form');
+    button(form, 'Build it')?.click();
+    designer.addQuestion('short-answer');
+    expect(shown(form)).toBe(true);
+    expect(button(form, 'Cancel')).toBeDefined();
+    app.answer(SURVEY_TEMPLATES[0].page);
+    await settle();
+    // Its form, in place of the page it was asked about, with what was added meanwhile: Undo brings that back.
+    expect(fieldLabels(designer)).toContain('How was it overall?');
+    expect(fieldLabels(designer)).not.toContain('Untitled question');
+    expect(shown(notice(root))).toBe(true);
+    expect(shown(root.querySelector('.fd-start'))).toBe(false);
+  });
+
   it('says in words why it could not, keeping the words to try again', async () => {
     const app = later();
     const { root, designer } = survey(app.assistant);
