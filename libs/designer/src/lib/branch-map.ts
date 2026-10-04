@@ -78,7 +78,8 @@ export function drawBranchMap(doc: Document, map: BranchMap, picked: string | nu
   const below = PAD + H + BAND + H / 2;
   const left = (column: number) => PAD + column * (W + GAP);
 
-  const svg = make('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img', class: 'fd-branch-svg', 'aria-label': `The survey’s ${n} pages, and the answers each page off the line is for` });
+  // A group, not an image: its pages are buttons, and an image's insides are hidden from a screen reader.
+  const svg = make('svg', { viewBox: `0 0 ${width} ${height}`, role: 'group', class: 'fd-branch-svg', 'aria-label': `The survey’s ${n} pages, and the answers each page off the line is for` });
   // As wide as the card, never wider than drawn; past a quarter smaller it scrolls instead.
   svg.setAttribute('style', `width: 100%; max-width: ${width}px; min-width: ${Math.round(width * 0.75)}px`);
   const defs = make('defs');
@@ -105,7 +106,8 @@ export function drawBranchMap(doc: Document, map: BranchMap, picked: string | nu
       make('path', { d: `M${x + W} ${below} C ${back} ${below}, ${back} ${below}, ${back} ${line}`, class: 'fd-branch-edge fd-branch-off' })
     );
     // The words in full on hover, the drawing kept short.
-    const label = make('g', { class: 'fd-branch-label' });
+    // Said by the page's own button ("…, only when …"), so hidden here to be heard once.
+    const label = make('g', { class: 'fd-branch-label', 'aria-hidden': 'true' });
     label.append(make('title', {}, `Only when ${node.when ?? ''}`), make('text', { x: x - GAP / 2 + 6, y: PAD + H + BAND - 9, class: 'fd-branch-when' }, short(node.answer ?? '', 22)));
     svg.append(label);
     // The line runs on past it; with nothing on it yet there, drawn all the same.
