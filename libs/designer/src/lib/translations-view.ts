@@ -48,7 +48,12 @@ export function translationsView(options: TranslationsViewOptions): Translations
   modes.setAttribute('aria-label', 'Design, try or translate the page');
 
   // ---- the bar --------------------------------------------------------------
-  const note = el('p', { class: 'fd-words-note' });
+  // How many words, and the language they are written in: a picker, to say another.
+  const count = el('span');
+  const own = el('select', { class: 'fd-words-own-language', 'aria-label': 'The page’s own language' });
+  const after = el('span');
+  const note = el('p', { class: 'fd-words-note' }, count, own, after);
+  own.addEventListener('change', () => designer.setPageLanguage(own.value));
   const onlySwitch = el('button', { type: 'button', class: 'fd-switch', role: 'switch', 'aria-checked': 'false', 'aria-labelledby': `${id}-only` });
   const only = el('div', { class: 'fd-words-filter' }, onlySwitch, el('span', { id: `${id}-only` }, 'Only words not translated'));
   const addInput = el('input', { class: 'fd-input', list: `${id}-languages`, 'aria-label': 'Add a language', placeholder: 'Arabic, es, pt-BR…', autocomplete: 'off', spellcheck: 'false' });
@@ -216,7 +221,13 @@ export function translationsView(options: TranslationsViewOptions): Translations
     const page = designer.getPage();
     const words = pageWords(page).length;
     const languages = languagesOf(page).length;
-    note.textContent = `${plural(words, 'word', 'words')}, written in ${languageName(pageLanguage(page))}.${languages ? '' : ' Add a language to translate them into it.'}`;
+    const language = pageLanguage(page);
+    count.textContent = `${plural(words, 'word', 'words')}, written in `;
+    // The common languages by name, and the page's own when it is not one of them.
+    const offered = [...new Set([language, ...Object.keys(COMMON_LANGUAGES)])].sort((a, b) => languageName(a).localeCompare(languageName(b)));
+    if ([...own.options].map((o) => o.value).join() !== offered.join()) own.replaceChildren(...offered.map((tag) => el('option', { value: tag }, languageName(tag))));
+    own.value = language;
+    after.textContent = `.${languages ? '' : ' Add a language to translate them into it.'}`;
     only.hidden = !languages;
     grid.update(page);
   }

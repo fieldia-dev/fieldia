@@ -306,6 +306,8 @@ export interface Designer extends HeaderCommands, ListCommands {
   fillTranslations(words: Record<string, Record<string, string>>): number | false;
   /** Let go of words' translations in every language, as one edit: for words no longer on the page. */
   forgetWords(sources: string[]): boolean;
+  /** The language the page's own words are written in, by tag, as one edit: not one it keeps a translation into. */
+  setPageLanguage(tag: string): boolean;
 }
 
 

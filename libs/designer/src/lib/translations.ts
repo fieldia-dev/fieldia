@@ -25,6 +25,8 @@ export interface TranslationCommands {
   fillTranslations(words: Record<string, Record<string, string>>): number | false;
   /** Let go of words' translations in every language, as one edit: for words no longer on the page. */
   forgetWords(sources: string[]): boolean;
+  /** The language the page's own words are written in, by tag: not one it keeps a translation into. */
+  setPageLanguage(tag: string): boolean;
 }
 
 export interface TranslationCommandsDeps {
@@ -124,6 +126,7 @@ export function staleWords(page: Page): string[] {
 export function translationChanges(before: Page, after: Page): string[] {
   const [was, now] = [before.translations ?? {}, after.translations ?? {}];
   const out: string[] = [];
+  if (pageLanguage(before) !== pageLanguage(after)) out.push(`The page is now written in ${languageName(pageLanguage(after))}`);
   for (const tag of Object.keys(now)) if (!(tag in was)) out.push(`Added ${languageName(tag)}`);
   for (const tag of Object.keys(was)) if (!(tag in now)) out.push(`Removed ${languageName(tag)}`);
   const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
@@ -141,10 +144,15 @@ export function translationChanges(before: Page, after: Page): string[] {
 }
 
 export function translationCommands({ apply, getPage }: TranslationCommandsDeps): TranslationCommands {
-  /** The tag, written as tags are, for a language the page may be translated into. */
-  function newLanguage(draft: Page, typed: string): string {
+  /** The tag, written as tags are, or a refusal saying what a tag is. */
+  function tagOf(typed: string): string {
     const tag = canonicalTag(typed.trim());
     if (!tag) throw new Refusal(`“${typed.trim()}” is not a language tag, such as ar, es or pt-BR`);
+    return tag;
+  }
+  /** The tag, written as tags are, for a language the page may be translated into. */
+  function newLanguage(draft: Page, typed: string): string {
+    const tag = tagOf(typed);
     const own = pageLanguage(draft);
     if (tag === own) throw new Refusal(`The page is written in ${languageName(own)}: its words are the ${languageName(own)} already`);
     return tag;
@@ -207,6 +215,18 @@ export function translationCommands({ apply, getPage }: TranslationCommandsDeps)
         if (!filled) throw new Refusal('None of these words is on the page');
       });
       return ok ? filled : false;
+    },
+
+    setPageLanguage(typed) {
+      // Written in it already: no undo step for it.
+      if (canonicalTag(typed.trim()) === pageLanguage(getPage())) return true;
+      return apply((draft) => {
+        const tag = tagOf(typed);
+        if (draft.translations?.[tag]) throw new Refusal(`The page keeps a translation into ${languageName(tag)}: remove ${languageName(tag)} first to write the page in it`);
+        // English is what a page is written in unless it says.
+        if (tag === 'en') delete draft.language;
+        else draft.language = tag;
+      });
     },
 
     forgetWords: (sources) =>

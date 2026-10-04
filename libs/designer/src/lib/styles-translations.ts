@@ -14,6 +14,13 @@ export const DESIGNER_TRANSLATIONS_CSS = /* css */ `
 .fd-words-heading { flex: 1 1 220px; min-width: 0; display: grid; gap: 2px; }
 .fd-words-title { margin: 0; font-size: 16px; font-weight: 650; }
 .fd-words-note { margin: 0; font-size: 13px; color: var(--fd-muted); }
+/* The page's own language, picked in the words that name it. */
+.fd-words-own-language {
+  font: inherit; color: var(--fd-text); background: transparent; cursor: pointer; field-sizing: content;
+  border: 0; border-block-end: 1px dashed var(--fd-border-strong); border-radius: 0; padding: 0 2px; margin: 0;
+}
+.fd-words-own-language:hover { border-block-end-color: var(--fd-accent); }
+.fd-words-own-language:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
 .fd-words-filter { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; }
 .fd-words-add { display: flex; gap: 6px; align-items: center; flex: 0 1 300px; min-width: 0; margin: 0; }
 .fd-words-add .fd-input { flex: 1 1 150px; min-width: 0; }

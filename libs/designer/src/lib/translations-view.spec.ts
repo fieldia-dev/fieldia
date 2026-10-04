@@ -1,7 +1,7 @@
 import type { Page } from '@fieldia/core';
 import { createDesigner } from './designer';
 import { mountSurveyEditor } from './survey-editor';
-import { button, mount, press, type } from './test-editor';
+import { button, choose, mount, press, type } from './test-editor';
 
 /**
  * The Translations view, in place of the editor: a grid of the page's words,
@@ -42,6 +42,9 @@ const rows = (view: HTMLElement) =>
   [...view.querySelectorAll<HTMLTableRowElement>('.fd-words-grid tbody tr')].filter((tr) => !tr.hidden).map((tr) => [tr.querySelector('th')?.textContent, ...[...tr.querySelectorAll('textarea')].map((t) => t.value)]);
 const cell = (view: HTMLElement, word: string, tag: string) =>
   [...view.querySelectorAll<HTMLTextAreaElement>('.fd-words-grid textarea')].find((t) => t.dataset['word'] === word && t.dataset['lang'] === tag) as HTMLTextAreaElement;
+/** The note under the title, its picker read as the language picked. */
+const note = (view: HTMLElement) =>
+  [...(view.querySelector('.fd-words-note')?.childNodes ?? [])].map((n) => (n instanceof HTMLSelectElement ? n.selectedOptions[0]?.textContent : n.textContent)).join('');
 const heads = (view: HTMLElement) => [...view.querySelectorAll('.fd-words-grid thead th')].map((th) => th.getAttribute('aria-label') ?? th.textContent);
 function addLanguage(view: HTMLElement, typed: string) {
   type(view.querySelector('.fd-words-add input') as HTMLInputElement, typed);
@@ -129,7 +132,30 @@ describe('the grid', () => {
     const { view } = open();
     expect(rows(view()).map((r) => r[0])).toEqual(['Sign up', 'About you', 'Your name', 'As on your ID', 'Your role', 'Developer', 'Manager']);
     expect(heads(view())).toEqual(['English, the page’s own words']);
-    expect(view().querySelector('.fd-words-note')?.textContent).toBe('7 words, written in English. Add a language to translate them into it.');
+    expect(note(view())).toBe('7 words, written in English. Add a language to translate them into it.');
+  });
+
+  it('lets the person say which language the page is written in, as one undo step', () => {
+    const { view, designer } = open();
+    const own = view().querySelector('.fd-words-note select') as HTMLSelectElement;
+    expect(own.getAttribute('aria-label')).toBe('The page’s own language');
+    expect(own.value).toBe('en');
+    choose(own, 'fr');
+    expect(designer.getPage().language).toBe('fr');
+    expect(heads(view())).toEqual(['French, the page’s own words']);
+    expect(note(view())).toBe('7 words, written in French. Add a language to translate them into it.');
+    designer.undo();
+    expect(own.value).toBe('en');
+  });
+
+  it('says why the page cannot be written in a language it keeps a translation into', () => {
+    const { view, designer, host } = open();
+    addLanguage(view(), 'ar');
+    const own = view().querySelector('.fd-words-note select') as HTMLSelectElement;
+    choose(own, 'ar');
+    expect(host.querySelector('.fd-designer-issues')?.textContent).toBe('The page keeps a translation into Arabic: remove Arabic first to write the page in it');
+    expect(own.value).toBe('en');
+    expect(designer.getPage().language).toBeUndefined();
   });
 
   it('adds a language by its name or tag, as a column right to left for a language written so', () => {

@@ -86,6 +86,49 @@ describe('languages', () => {
   });
 });
 
+describe('the page’s own language', () => {
+  it('is set as one undo step, written the way tags are written', () => {
+    const d = designerWith();
+    expect(d.setPageLanguage('FR-ca')).toBe(true);
+    expect(d.getPage().language).toBe('fr-CA');
+    expect(validatePage(d.getPage()).ok).toBe(true);
+    d.undo();
+    expect(d.getPage()).not.toHaveProperty('language');
+  });
+
+  it('goes back to saying nothing for English, the language a page is in unless it says', () => {
+    const d = designerWith({ ...start(), language: 'fr' });
+    expect(d.setPageLanguage('en')).toBe(true);
+    expect(d.getPage()).not.toHaveProperty('language');
+  });
+
+  it('makes no undo step for the language it is written in already', () => {
+    const d = designerWith();
+    d.setPageLanguage('fr');
+    expect(d.setPageLanguage('fr')).toBe(true);
+    d.undo();
+    expect(d.getPage()).not.toHaveProperty('language');
+  });
+
+  it('refuses what is not a language tag, and a language the page keeps a translation into', () => {
+    const d = designerWith();
+    expect(d.setPageLanguage('French please')).toBe(false);
+    expect(issue(d)).toEqual(['“French please” is not a language tag, such as ar, es or pt-BR']);
+    d.addLanguage('ar');
+    expect(d.setPageLanguage('ar')).toBe(false);
+    expect(issue(d)).toEqual(['The page keeps a translation into Arabic: remove Arabic first to write the page in it']);
+    expect(d.getPage()).not.toHaveProperty('language');
+  });
+
+  it('is a language the page cannot be translated into, and English then can be', () => {
+    const d = designerWith();
+    d.setPageLanguage('fr');
+    expect(d.addLanguage('fr')).toBe(false);
+    expect(issue(d)).toEqual(['The page is written in French: its words are the French already']);
+    expect(d.addLanguage('en')).toBe(true);
+  });
+});
+
 describe('a word translated', () => {
   it('keeps the translation by the words it translates', () => {
     const d = designerWith();
@@ -228,6 +271,10 @@ describe('what Publish says about translations', () => {
     d.setTranslation('ar', 'Developer', 'مطور');
     expect(pageChanges(middle, d.getPage())).toEqual(['Removed Spanish', 'Arabic: 1 word translated', 'Arabic: 1 translation changed', 'Arabic: 1 translation taken out']);
     expect(translationChanges(middle, middle)).toEqual([]);
+    const english = d.getPage();
+    d.setPageLanguage('fr');
+    expect(pageChanges(english, d.getPage())).toEqual(['The page is now written in French']);
+    expect(translationChanges(d.getPage(), english)).toEqual(['The page is now written in English']);
   });
 });
 

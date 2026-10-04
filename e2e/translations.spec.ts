@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { doubleLines, watch } from './designer-support';
+import { doubleLines, publish, watch } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -31,7 +31,9 @@ test('translates a survey into Arabic: typed right to left, filtered, pasted as 
   const problems = await openTranslations(page);
   await expect(page.locator('.fd-survey-body')).toBeHidden();
   await expect(rowWords(page).first()).toHaveText('Product feedback');
-  await expect(view(page).locator('.fd-words-note')).toHaveText(/^\d+ words, written in English\. Add a language to translate them into it\.$/);
+  await expect(view(page).locator('.fd-words-note > span').first()).toHaveText(/^\d+ words, written in $/);
+  await expect(page.getByRole('combobox', { name: 'The page’s own language' })).toHaveValue('en');
+  await expect(view(page).locator('.fd-words-note > span').last()).toHaveText('. Add a language to translate them into it.');
   await screen(page, 'translations-empty', { viewport: true });
 
   // Arabic, by its name: a column whose cells run right to left.
@@ -108,6 +110,25 @@ test('translates a survey into Arabic: typed right to left, filtered, pasted as 
   await page.getByRole('combobox', { name: 'Words in' }).selectOption({ label: 'English, as written' });
   await expect(tried).toHaveAttribute('dir', 'ltr');
   await expect(tried.getByText('Product feedback')).toBeVisible();
+  expect(problems).toEqual([]);
+});
+
+test('says which language the page is written in, refusing one it is translated into, and Publish says so', async ({ page }) => {
+  const problems = await openTranslations(page);
+  await publish(page, 1);
+  const own = page.getByRole('combobox', { name: 'The page’s own language' });
+  await expect(own).toHaveValue('en');
+  await own.selectOption({ label: 'French' });
+  await expect(view(page).locator('.fd-words-grid thead th').first()).toHaveAttribute('aria-label', 'French, the page’s own words');
+  await addLanguage(page, 'Arabic');
+  await own.selectOption({ label: 'Arabic' });
+  await expect(page.locator('.fd-designer-issues')).toHaveText('The page keeps a translation into Arabic: remove Arabic first to write the page in it');
+  await expect(own).toHaveValue('fr');
+  await screen(page, 'translations-own-language', { viewport: true });
+  await page.getByRole('button', { name: 'Publish', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Publish version 2?' });
+  await expect(dialog.locator('.fd-publish-changes li')).toHaveText(['The page is now written in French', 'Added Arabic']);
+  await screen(page, 'translations-publish-words', { viewport: true });
   expect(problems).toEqual([]);
 });
 
