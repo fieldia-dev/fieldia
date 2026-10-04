@@ -22,7 +22,8 @@ function views(host: HTMLElement) {
   };
   const go = (name: Shown) => (host.querySelector(`.fd-mode [data-mode="${name}"]`) as HTMLButtonElement).click();
   const showing = () => (Object.keys(parts) as Shown[]).filter((name) => !parts[name]().hidden);
-  const pressed = () => [...host.querySelectorAll('.fd-mode [data-mode]')].filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.getAttribute('data-mode'));
+  // The ways to look at the page; Simple or Advanced is a switch of its own.
+  const pressed = () => [...host.querySelectorAll('.fd-mode:not(.fd-mode-switch) [data-mode]')].filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.getAttribute('data-mode'));
   return { go, showing, pressed };
 }
 
