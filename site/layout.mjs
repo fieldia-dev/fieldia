@@ -13,10 +13,10 @@ export const DOCS = [
 
 const escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-/** A code block. `text` is written as is and escaped here, so samples read naturally in the source. */
+/** A code block. `text` is written as is and escaped here, so samples read naturally in the source. In the Tab order, so a long line scrolls by keyboard. */
 export function code(lang, text) {
   const body = text.replace(/^\n/, '').replace(/\n\s*$/, '');
-  return `<pre class="code" data-lang="${lang}"><code>${escape(body)}</code></pre>`;
+  return `<pre class="code" data-lang="${lang}" tabindex="0"><code>${escape(body)}</code></pre>`;
 }
 
 /** Inline code. */

@@ -10,8 +10,8 @@ import { node, screen } from './support';
  * on the states a person reaches — errors after a failed send, a dialog
  * open, a list's search open — and on the designers: every view, dialog and
  * sheet, a part picked with each tab of the panel, and the empty state, in
- * Simple and Advanced, at a desktop's width and a phone's. Every page must
- * come back with nothing found.
+ * Simple and Advanced, at a desktop's width and a phone's; and fieldia.dev's
+ * own pages. Every page must come back with nothing found.
  */
 
 interface Demo {
@@ -245,6 +245,22 @@ test.describe('axe on the designers', () => {
         expect(await axeFindings(page, `blank ${name} · ${size}`)).toEqual([]);
       });
     }
+  }
+});
+
+// ---- fieldia.dev ---------------------------------------------------------------------
+
+/** The site, served on its own port: its docs, the galleries, and the accessibility statement. */
+const SITE = `http://127.0.0.1:${process.env['FIELDIA_SITE_PORT'] ?? 4322}`;
+const SITE_PAGES = ['/', '/start/', '/pages/', '/fields/', '/data/', '/behaviour/', '/lists/', '/chatter/', '/look/', '/demos/', '/designer/', '/accessibility/'];
+
+test.describe('axe on fieldia.dev', () => {
+  for (const path of SITE_PAGES) {
+    test(path, async ({ page }) => {
+      await page.goto(SITE + path);
+      await expect(page.locator('h1').first()).toBeVisible();
+      expect(await axeFindings(page, `fieldia.dev${path}`)).toEqual([]);
+    });
   }
 });
 
