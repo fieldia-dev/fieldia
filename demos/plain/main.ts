@@ -7,6 +7,7 @@ import { clicked, greeting, shout } from '../shared/custom-page';
 import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
 import { openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { timeFirstPaint } from '../shared/timing';
 
 /**
  * Fieldia with no framework at all: one script, one call. The page, skin and
@@ -42,6 +43,7 @@ const shoutWidget: WidgetFactory = ({ form, name: field, id, document }) => {
   };
 };
 
+const opened = timeFirstPaint('viewer');
 const handle = mountViewer(document.getElementById('app') as HTMLElement, {
   page,
   dataSource,
@@ -78,5 +80,6 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
     },
   },
 });
+opened();
 
 Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter } });

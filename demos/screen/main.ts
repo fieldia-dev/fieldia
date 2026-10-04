@@ -1,9 +1,10 @@
 import type { Field, Page } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor } from '@fieldia/designer';
 import type { Skin } from '@fieldia/viewer';
-import { APP_LISTS, sampleDataSource } from '../shared/sample-data';
+import { APP_LISTS, pages, sampleDataSource } from '../shared/sample-data';
 import { APP_KINDS, APP_WIDGETS } from '../shared/app-kinds';
 import { demoAssistant } from '../shared/assistant';
+import { timeFirstPaint } from '../shared/timing';
 import layoutPage from '../../examples/pages/layout.page.json';
 
 /**
@@ -11,7 +12,8 @@ import layoutPage from '../../examples/pages/layout.page.json';
  * `?start=blank` opens an empty one, `?start=sheet` an empty customer sheet
  * with the customer's model behind it, its fields first in the toolbox, and
  * `?start=list` the customers' list, on the same model, and `?start=layout`
- * the "New employee" page: groups side by side, arrangements, tabs and blocks.
+ * the "New employee" page: groups side by side, arrangements, tabs and blocks,
+ * and `?start=big` a supplier's file of 500 fields, for timing.
  * `?assistant-delay=` sets how long the demo assistant takes, in ms.
  */
 const customer: Record<string, Field> = {
@@ -63,8 +65,9 @@ const store = createMemoryPageStore();
 const start = params.get('start');
 const model = start === 'sheet' || start === 'list' ? customer : undefined;
 const first =
-  start === 'blank' ? blankPage('screen', 'New screen') : start === 'sheet' ? blankPage('sheet', 'Customer') : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : siteVisit();
+  start === 'blank' ? blankPage('screen', 'New screen') : start === 'sheet' ? blankPage('sheet', 'Customer') : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : start === 'big' ? pages['big'] : siteVisit();
 // The app's own kind, an IBAN, and the widget that draws it.
+const opened = timeFirstPaint('screen');
 const designer = createDesigner({ page: first, store, model, lists: APP_LISTS, kinds: APP_KINDS });
 // The app's lists' choices, for Try it.
 const dataSource = sampleDataSource();
@@ -73,6 +76,7 @@ const skin = (params.get('skin') as Skin) ?? 'outlined';
 const assistant = demoAssistant({ delay: Number(params.get('assistant-delay') ?? 1200) });
 const app = document.getElementById('app') as HTMLElement;
 const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource, widgets: APP_WIDGETS, assistant }), reopen };
+opened();
 /** Close the editor and open the page again from the store, as an app does the next day. */
 async function reopen() {
   demo.handle.destroy();

@@ -9,6 +9,7 @@ import order from '../../examples/pages/order.page.json';
 import rules from '../../examples/pages/rules.page.json';
 import signup from '../../examples/pages/signup.page.json';
 import survey from '../../examples/pages/survey.page.json';
+import big from '../../examples/pages/big.page.json';
 import { customPage } from './custom-page';
 
 /** The example pages every demo can show, by name. */
@@ -24,6 +25,8 @@ export const pages: Record<string, Page> = {
   layout: layout as Page,
   lists: lists as Page,
   custom: customPage,
+  // 500 fields, for timing: e2e/perf.spec.ts opens it; no card in the gallery (see e2e/demos-shell.spec.ts).
+  big: big as Page,
 };
 
 /**
