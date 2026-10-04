@@ -133,6 +133,9 @@ function labelsAround(page: Page, id: string): { place?: LabelPlace; width?: num
   return { place: place ?? page.look?.labels, width: width ?? page.look?.labelWidth, group };
 }
 
+/** What “as round it” is, in words: as its group says, or as the page does. */
+export const aroundWords = (page: Page, id: string): string => (labelsAround(page, id).group ? 'As group' : 'As page');
+
 const PLACES: Choice<string>[] = [
   { value: 'above', words: 'Above', title: 'Above their boxes' },
   { value: 'beside', words: 'Beside', title: 'Beside their boxes' },
@@ -148,7 +151,7 @@ export function labelsSetting(el: ElementFactory, designer: Designer, id: string
     if (what === 'field') designer.setFieldLabels(id, chosen);
     else designer.setSectionLook(id, { labels: chosen });
   });
-  const aroundWords = place.element.querySelector('[data-choice="around"] .fd-seg-words') as HTMLElement;
+  const notSet = place.element.querySelector('[data-choice="around"] .fd-seg-words') as HTMLElement;
   const rows = [setting(el, 'layout', 'Labels', place.element, what === 'field' ? { words: 'Label', hint: 'In box: the label is the empty box’s placeholder, still read out by screen readers.' } : { words: 'Labels inside' })];
   if (what === 'field') {
     return {
@@ -156,7 +159,7 @@ export function labelsSetting(el: ElementFactory, designer: Designer, id: string
       update(page) {
         const node = locate(page, id)?.node as { labels?: LabelPlace } | undefined;
         if (!node) return;
-        aroundWords.textContent = labelsAround(page, id).group ? 'As group' : 'As page';
+        notSet.textContent = aroundWords(page, id);
         place.set(node.labels ?? AROUND);
       },
     };
@@ -177,7 +180,7 @@ export function labelsSetting(el: ElementFactory, designer: Designer, id: string
       const section = nodeOf(page, id);
       if (!isSection(section)) return;
       const around = labelsAround(page, id);
-      aroundWords.textContent = around.group ? 'As group' : 'As page';
+      notSet.textContent = around.group ? 'As group' : 'As page';
       place.set(section.labels ?? AROUND);
       widthRow.hidden = (section.labels ?? around.place) !== 'beside';
       const value = String(section.labelWidth ?? around.width ?? 140);

@@ -46,12 +46,18 @@ describe('the panel — several picked', () => {
 
   it('sets where the labels of fields and groups sit', () => {
     const { words, pressed, press, value } = picked('f-email', 'address');
-    expect(words('Labels')).toEqual(['As round them', 'Above', 'Beside', 'In box']);
-    expect(pressed('Labels')).toBe('As round them');
+    // A field in a group, a group on the page: what each takes when none is set differs.
+    expect(words('Labels')).toEqual(['Not set', 'Above', 'Beside', 'In box']);
+    expect(pressed('Labels')).toBe('Not set');
     press('Labels', 'Beside');
     expect([value('f-email', 'labels'), value('address', 'labels')]).toEqual(['beside', 'beside']);
-    press('Labels', 'As round them');
+    press('Labels', 'Not set');
     expect([value('f-email', 'labels'), value('address', 'labels')]).toEqual([undefined, undefined]);
+  });
+
+  it('says “As group” when every one of them sits in a group', () => {
+    const { words } = picked('f-email', 'f-mobile');
+    expect(words('Labels')[0]).toBe('As group');
   });
 
   it('offers only what applies to them all, and says why when nothing does', () => {
@@ -59,6 +65,17 @@ describe('the panel — several picked', () => {
     expect(group('Labels')).toBeNull();
     expect(group('Width')).toBeNull();
     expect(shown().querySelector('[data-setting="Width"] .fd-set-hint')?.textContent).toBe('A width needs every part picked in a group with columns.');
+  });
+
+  it('offers no width when one of them runs across the whole row, even in a group with columns', () => {
+    const designer = employeeDesigner();
+    const line = designer.addBlock('divider', { parent: 'address' }) as string;
+    const { host } = mount(designer);
+    designer.pick('f-city');
+    designer.pick(line, { add: true });
+    const shown = host.querySelector('.fd-properties [role="tabpanel"]:not([hidden])') as HTMLElement;
+    expect([...shown.querySelectorAll('[role="group"][aria-label="Width"]')].filter((g) => !g.closest('[hidden]'))).toEqual([]);
+    expect(shown.querySelector('[data-setting="Width"] .fd-set-hint')?.textContent).toBe('A width needs every part picked in a group with columns.');
   });
 
   it('groups them, or puts them side by side, when they sit together', () => {

@@ -50,6 +50,8 @@ export const DESIGNER_PANEL_CSS = /* css */ `
 .fd-properties .fd-props-actions { border-block-start: 0; padding-block-start: 0; gap: 6px; }
 .fd-properties .fd-q-required { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; font-size: 13px; cursor: pointer; }
 .fd-properties .fd-q-required > input { width: 16px; height: 16px; margin: 0; accent-color: var(--fd-accent); }
+/* "Only when…", "Show only when…": links in line with the words above them. */
+.fd-properties .fd-q-when, .fd-properties .fd-when-add { padding-inline: 0; min-height: 26px; }
 .fd-insp-area { resize: vertical; min-height: 56px; font: inherit; }
 .fd-insp-code {
   font: 12.5px/1.4 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--fd-text); overflow-wrap: anywhere;
@@ -64,8 +66,10 @@ export const DESIGNER_PANEL_CSS = /* css */ `
 @keyframes fd-set-found { from { box-shadow: 0 0 0 4px var(--fd-accent-soft); background: var(--fd-accent-soft); } to { box-shadow: 0 0 0 4px transparent; background: transparent; } }
 
 /* A choice of a few, side by side, as wide as the panel. */
-.fd-properties .fd-insp-seg { width: 100%; box-sizing: border-box; border: 1px solid var(--fd-border); grid-auto-columns: minmax(max-content, 1fr); }
-.fd-properties .fd-insp-seg > .fd-seg-button { min-height: 28px; font-size: 13px; font-weight: 600; display: grid; place-items: center; padding: 4px 6px; white-space: nowrap; }
+.fd-properties .fd-insp-seg { width: 100%; box-sizing: border-box; border: 1px solid var(--fd-border); grid-auto-columns: minmax(0, auto); }
+.fd-properties .fd-insp-seg > .fd-seg-button { min-width: 0; min-height: 28px; font-size: 13px; font-weight: 600; display: grid; place-items: center; padding: 4px 6px; }
+/* Too many words for the room: cut short, never pushed out of the panel. */
+.fd-properties .fd-insp-seg .fd-seg-words { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fd-properties .fd-insp-seg > .fd-seg-button[hidden] { display: none; }
 /* Columns on each size of screen: its name, then its counts, a row each. */
 .fd-insp-screens { display: grid; gap: 5px; }

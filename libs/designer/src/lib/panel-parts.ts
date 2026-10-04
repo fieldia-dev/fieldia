@@ -4,7 +4,7 @@ import type { Designer } from './designer';
 import { SPANNED } from './layout-ops';
 import { across, andList, isSection, locate, nameOf, spanOf } from './layout-tree';
 import { onTab, segmented, setting } from './panel-controls';
-import { widthSetting } from './panel-layout';
+import { aroundWords, widthSetting } from './panel-layout';
 import type { PropertiesView } from './screen-properties';
 
 /**
@@ -65,7 +65,7 @@ export function severalProperties(el: ElementFactory, designer: Designer, ids: r
     el,
     'Labels',
     [
-      { value: AROUND, words: 'As round them', title: 'As the group or the page round each says' },
+      { value: AROUND, words: 'Not set', title: 'As the group or the page round each says' },
       { value: 'above', words: 'Above' },
       { value: 'beside', words: 'Beside' },
       { value: 'hidden', words: 'In box', title: 'Inside the box, as its placeholder; still read out by screen readers' },
@@ -73,6 +73,7 @@ export function severalProperties(el: ElementFactory, designer: Designer, ids: r
     (value) => designer.setEach([...ids], { labels: value === AROUND || value === null ? null : (value as LabelPlace) })
   );
   const labelsRow = setting(el, 'layout', 'Labels', labels.element);
+  const notSet = labels.element.querySelector(`[data-choice="${AROUND}"] .fd-seg-words`) as HTMLElement;
 
   // ---- together ----
   const act = (words: string, run: () => void, danger = false) => {
@@ -120,6 +121,9 @@ export function severalProperties(el: ElementFactory, designer: Designer, ids: r
       widthHint.textContent = cols > 1 ? `Each of the ${parts.length} picked, in the columns where it sits.` : 'A width needs every part picked in a group with columns.';
 
       labelsRow.hidden = !parts.every((at) => at.node.type === 'field' || isSection(at.node));
+      // Where labels sit when none is set: as their groups say, or the page, alike for them all; or not set.
+      const around = new Set(parts.map((at) => aroundWords(page, at.node.id)));
+      notSet.textContent = around.size === 1 ? [...around][0] : 'Not set';
       labels.set(shared(parts.map((at) => (at.node as { labels?: string }).labels ?? AROUND)));
 
       // Only parts side by side in one list can be grouped where they are.
