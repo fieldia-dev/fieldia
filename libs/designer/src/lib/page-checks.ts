@@ -1,6 +1,8 @@
-import { validatePage, type Field, type FieldNode, type LayoutNode, type Page } from '@fieldia/core';
+import { validatePage, type Field, type FieldNode, type Page } from '@fieldia/core';
 import { readCondition, type Condition } from './conditions';
 import { kindById, kindOfField } from './kinds';
+import { holderName as placeName, layoutChanges, lookChanges, placements } from './layout-changes';
+import { isWrapper } from './layout-tree';
 import { containers, type Container } from './page-tree';
 
 /**
@@ -40,16 +42,19 @@ function andList(words: string[]): string {
   return words.length < 2 ? (words[0] ?? '') : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
 }
 
-/** Each field on the page, with what holds it, in reading order. */
+/** Each field on the page, with the group that holds it (an arrangement is no group), in reading order. */
 function placedFields(page: Page): Placed[] {
+  const named = placements(page).holder;
   return containers(page).flatMap((holder) =>
-    holder.children.filter((n): n is FieldNode => n.type === 'field' && !!page.fields[n.field]).map((node) => ({ node, field: page.fields[node.field], holder: holder as Holder }))
+    holder.children
+      .filter((n): n is FieldNode => n.type === 'field' && !!page.fields[n.field])
+      .map((node) => ({ node, field: page.fields[node.field], holder: (named.get(node.id) ?? holder) as Holder }))
   );
 }
 
-/** The steps, sections and tabs a person sees as parts of the page — not the page itself. */
+/** The steps, sections and tabs a person sees as parts of the page — not the page itself, nor an arrangement. */
 function parts(page: Page): Holder[] {
-  return containers(page).filter((c) => c.id !== page.layout.id) as Holder[];
+  return containers(page).filter((c) => c.id !== page.layout.id && !isWrapper(c)) as Holder[];
 }
 
 const labelOf = (placed: { node: FieldNode; field: Field }) => (placed.node as FieldNode & { label?: string }).label ?? placed.field.label;
@@ -203,13 +208,16 @@ export function pageChanges(before: Page | null, after: Page): string[] {
   const answers = survey ? 'answers' : 'records';
   if ((before.title ?? '') !== (after.title ?? '')) out.push(`Title: “${before.title ?? ''}” → “${after.title ?? ''}”`);
   if ((before.description ?? '') !== (after.description ?? '')) out.push('The description changed');
+  out.push(...lookChanges(before, after));
+  const layout = layoutChanges(before, after);
+  const at = (id: string) => (layout.placed.has(id) ? ` ${layout.placed.get(id)}` : '');
 
   // Pages, sections and tabs.
   const wasParts = new Map(parts(before).map((h) => [h.id, h]));
   const nowParts = new Map(parts(after).map((h) => [h.id, h]));
   const kindOf = (h: Holder) => (h.type === 'step' ? 'page' : h.type === 'tab' ? 'tab' : 'section');
-  for (const [id, h] of nowParts) if (!wasParts.has(id)) out.push(`Added the ${kindOf(h)} “${holderName(h)}”`);
-  for (const [id, h] of wasParts) if (!nowParts.has(id)) out.push(`Removed the ${kindOf(h)} “${holderName(h)}”`);
+  for (const [id, h] of nowParts) if (!wasParts.has(id) && !layout.said.has(id)) out.push(`Added the ${kindOf(h)} “${holderName(h)}”${at(id)}`);
+  for (const [id, h] of wasParts) if (!nowParts.has(id) && !layout.said.has(id)) out.push(`Removed the ${kindOf(h)} “${holderName(h)}”`);
   for (const [id, h] of nowParts) {
     const was = wasParts.get(id);
     if (!was) continue;
@@ -222,7 +230,7 @@ export function pageChanges(before: Page | null, after: Page): string[] {
   const wasFields = new Map(placedFields(before).map((p) => [p.node.id, p]));
   const nowFields = placedFields(after);
   const nowIds = new Set(nowFields.map((p) => p.node.id));
-  for (const p of nowFields) if (!wasFields.has(p.node.id)) out.push(`Added “${labelOf(p)}”`);
+  for (const p of nowFields) if (!wasFields.has(p.node.id)) out.push(`Added “${labelOf(p)}”${at(p.node.id)}`);
   for (const [id, p] of wasFields) if (!nowIds.has(id)) out.push(`Removed “${labelOf(p)}”`);
   for (const p of nowFields) {
     const was = wasFields.get(p.node.id);
@@ -247,17 +255,16 @@ export function pageChanges(before: Page | null, after: Page): string[] {
     if (was.field.type === 'binary' && p.field.type === 'binary' && JSON.stringify([was.field.accept, was.field.maxSize]) !== JSON.stringify([p.field.accept, p.field.maxSize])) out.push(`“${name}”: the files it takes changed`);
     const shows = whenItShows(name, was.node.invisible, p.node.invisible, answers);
     if (shows) out.push(shows);
-    if (was.holder.id !== p.holder.id) out.push(`Moved “${name}” to “${holderName(p.holder)}”`);
+    if (was.holder.id !== p.holder.id && !layout.said.has(p.node.id)) out.push(`Moved “${name}” to “${placeName(after, p.holder)}”`);
   }
-  // In the same place, but in another order.
+  out.push(...layout.lines);
+  // In the same group, but in another order, and not put beside another.
   const nowHolder = new Map(nowFields.map((p) => [p.node.id, p.holder.id]));
-  for (const h of containers(after)) {
-    const was = containers(before).find((c) => c.id === h.id);
-    if (!was) continue;
+  for (const [id, order] of layout.after.order) {
     // The fields that were here and still are, in each version's order.
-    const stayed = (nodes: LayoutNode[]) => nodes.filter((n) => wasFields.get(n.id)?.holder.id === h.id && nowHolder.get(n.id) === h.id).map((n) => n.id);
-    if (stayed(was.children).join() === stayed(h.children).join()) continue;
-    const where = h.id === after.layout.id ? after.title ?? 'the page' : holderName(h as Holder);
+    const stayed = (ids: string[]) => ids.filter((n) => wasFields.get(n)?.holder.id === id && nowHolder.get(n) === id && !layout.said.has(n));
+    if (stayed(layout.before.order.get(id) ?? []).join() === stayed(order).join()) continue;
+    const where = placeName(after, layout.after.node.get(id) as Holder);
     out.push(survey ? `Reordered the questions on “${where}”` : `Reordered the fields in “${where}”`);
   }
 

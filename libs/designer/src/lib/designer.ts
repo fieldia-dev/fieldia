@@ -1,8 +1,11 @@
 import {
   validatePage,
   wideColumns,
+  type ColumnCount,
+  type ColumnsByWidth,
   type Field,
   type FieldNode,
+  type LabelPlace,
   type LayoutNode,
   type Option,
   type Page,
@@ -17,6 +20,10 @@ import { listCommands, type ListCommands } from './list-commands';
 import { kindCommands, type OptionDetails } from './kind-commands';
 import { fixCheck, pageChecks, type PageCheck } from './page-checks';
 import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, orList, storedAs, type LineColumn, type QuestionKind } from './kinds';
+import * as ops from './layout-ops';
+import type { BlockKind, Drop, NewPart } from './layout-ops';
+import * as settings from './layout-settings';
+import type { LookPatch, SectionLook } from './layout-settings';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
 
@@ -38,6 +45,8 @@ export type { LineColumn, QuestionKind } from './kinds';
 export type { HeaderCommands, HeaderPartKind, HeaderPartPatch } from './header-commands';
 export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-commands';
 export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-checks';
+export type { BlockKind, Drop, NewPart } from './layout-ops';
+export type { LookPatch, SectionLook } from './layout-settings';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
 export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
@@ -136,6 +145,8 @@ export interface DesignerState {
   page: Page;
   /** The element being edited. */
   selected: string | null;
+  /** Every part picked, in the order picked: `selected` is the one picked last. */
+  picked: string[];
   canUndo: boolean;
   canRedo: boolean;
   /** Why the last edit was refused. Empty when it was applied. */
@@ -215,7 +226,9 @@ export interface Designer extends HeaderCommands, ListCommands {
    * model always requires cannot be.
    */
   setRule(id: string, which: 'required' | 'readonly', condition: Condition | { field: string; equals: string | number | boolean } | null): boolean;
-  setColumns(sectionId: string, columns: 1 | 2 | 3 | 4): boolean;
+  /** A group's columns: one count, or a count for a desktop (`wide`), a tablet (`medium`) and a phone (`narrow`). */
+  setColumns(sectionId: string, columns: ColumnCount | ColumnsByWidth): boolean;
+  /** How many columns a field, a group, tabs, words, a button, a spacer or an image spans. */
   setColspan(nodeId: string, span: number): boolean;
   /** Put a section's fields in this order with these widths, as one edit (a canvas drag). */
   arrangeSection(sectionId: string, items: { id: string; colspan: number }[]): boolean;
@@ -232,6 +245,33 @@ export interface Designer extends HeaderCommands, ListCommands {
   setWidgetOptions(id: string, patch: Record<string, string | number | boolean | null>): boolean;
   /** Which kinds of file a file upload takes (media types, such as image/*), and the largest, in bytes. */
   setFileRules(id: string, rules: { accept?: string[]; maxSize?: number | null }): boolean;
+  /**
+   * Drop a part where it goes, as one edit: a part on the page, by its id, or
+   * a new one from the toolbox. Returns its id, and picks it.
+   */
+  place(part: string | NewPart, drop: Drop): string | false;
+  /** What a drop would do, in the words the drag chip says: "beside “First name”". `moving` is the part dragged, when it is on the page. */
+  describeDrop(drop: Drop, moving?: string): string;
+  /** Why a drop cannot be made, such as "A row holds four"; null when it can. */
+  dropRefusal(drop: Drop, moving?: string): string | null;
+  /** Parts that sit together, in a new group, side by side, or a tab each. Returns what holds them, and picks it. */
+  wrap(ids: string[], kind: 'group' | 'side' | 'tabs'): string | false;
+  /** A group's parts, or every tab's, where it was; they are picked. */
+  ungroup(id: string): boolean;
+  /** A copy of each part right after it; the copies are picked. */
+  duplicate(ids: string[]): string[] | false;
+  /** Take several parts off the page, as one edit. */
+  remove(ids: string[]): boolean;
+  /** Pick a part; with `add`, pick it as well as those picked, or let it go if it was. */
+  pick(id: string, options?: { add?: boolean }): void;
+  /** How a group looks, and where its fields' labels sit and how wide; `null` takes a setting back. */
+  setSectionLook(id: string, look: SectionLook): boolean;
+  /** Where one field's label sits; `null` for where its group or the page puts labels. */
+  setFieldLabels(id: string, place: LabelPlace | null): boolean;
+  /** The page's look: colour, font, spacing, corners, labels, scheme; `null` takes a setting back. */
+  setLook(patch: LookPatch): boolean;
+  /** A block after `after`, or in `parent` at `index`, or at the end of the last container. Returns its id, and picks it. */
+  addBlock(kind: BlockKind, where?: Where): string | false;
   /** A table of lines' columns, in order. */
   setLineColumns(id: string, columns: LineColumn[]): boolean;
   /** An option's picture and points for a quiz; `null` or empty takes either away. */
@@ -268,6 +308,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
   const fromModel = (name: string) => Object.prototype.hasOwnProperty.call(model, name);
   let page = clone(options.page);
   let selected: string | null = null;
+  let picked: string[] = [];
   let issues: string[] = [];
   let past: Page[] = [];
   let future: Page[] = [];
@@ -279,9 +320,23 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
   let saveRunning = false;
 
   const published = () => versions[versions.length - 1]?.page ?? null;
+  /** The picks: an editor that sets only `selected` picks that one alone. */
+  const pickedNow = () => (selected === null ? [] : picked.includes(selected) ? picked : [selected]);
+  /** What was picked as each page was left, to pick again when undo or redo comes back to it. */
+  const pickedWhenLeft = new WeakMap<Page, { picked: string[]; selected: string | null }>();
+  const leave = (left: Page) => pickedWhenLeft.set(left, { picked: pickedNow(), selected });
+  /** Back at a page: what is picked stays while any of it is on the page; when none is, what was picked as it was left. */
+  function arrive() {
+    const ids = allIds(page);
+    const now = pickedNow();
+    const back = now.some((id) => ids.has(id)) ? { picked: now, selected } : (pickedWhenLeft.get(page) ?? { picked: [], selected: null });
+    picked = back.picked.filter((id) => ids.has(id));
+    selected = back.selected !== null && picked.includes(back.selected) ? back.selected : (picked[picked.length - 1] ?? null);
+  }
   const state = (): DesignerState => ({
     page,
     selected,
+    picked: pickedNow(),
     canUndo: past.length > 0,
     canRedo: future.length > 0,
     issues,
@@ -329,6 +384,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     if (!(merge && merge === mergeKey)) past = [...past, page];
     mergeKey = merge;
     future = [];
+    leave(page);
     page = checked.page;
     issues = [];
     notify();
@@ -360,6 +416,24 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     if (!(types as string[]).includes(field.type)) throw new Refusal(refusal);
     if (fromModel(name)) throw new Refusal(owned(field.label));
     return field as Extract<Field, { type: T }>;
+  }
+
+  /** A layout edit, one undo step: what it made or moved is picked after. */
+  function layoutEdit<T extends string | string[]>(edit: (draft: Page) => T): T | false {
+    let made = null as T | null;
+    if (!apply((draft) => void (made = edit(draft))) || made === null) return false;
+    picked = ([] as string[]).concat(made);
+    selected = picked[0] ?? null;
+    notify();
+    return made;
+  }
+
+  /** Picks of parts no longer on the page are let go; the one picked last of the rest leads. */
+  function forgetGone() {
+    const ids = allIds(page);
+    picked = pickedNow().filter((id) => ids.has(id));
+    if (selected !== null && !ids.has(selected)) selected = picked[picked.length - 1] ?? null;
+    notify();
   }
 
   function fieldNode(draft: Page, id: string): FieldNode {
@@ -436,6 +510,7 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     },
     select(id) {
       selected = id;
+      picked = id === null ? [] : [id];
       notify();
     },
 
@@ -809,34 +884,8 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       });
     },
 
-    setColumns(sectionId, columns) {
-      return apply((draft) => {
-        const section = findContainer(draft, sectionId) as SectionNode | null;
-        if (!section || !('columns' in section || section.type === 'section')) throw new Refusal(`There is no section "${sectionId}"`);
-        // Columns given per width keep their narrower counts, never more than the wide one.
-        const given = section.columns;
-        section.columns =
-          typeof given === 'object'
-            ? {
-                wide: columns,
-                ...(given.medium ? { medium: Math.min(given.medium, columns) as typeof columns } : {}),
-                ...(given.narrow ? { narrow: Math.min(given.narrow, columns) as typeof columns } : {}),
-              }
-            : columns;
-        for (const child of section.children) if (child.type === 'field' && (child.colspan ?? 1) > columns) child.colspan = columns;
-      });
-    },
-
-    setColspan(nodeId, span) {
-      return apply((draft) => {
-        const found = findNode(draft, nodeId);
-        if (!found || found.node.type !== 'field') throw new Refusal(`There is no question "${nodeId}"`);
-        const columns = wideColumns((found.parent as SectionNode).columns);
-        if (span > columns) throw new Refusal(`A field cannot be wider than its section's ${columns} columns`);
-        if (span <= 1) delete found.node.colspan;
-        else found.node.colspan = span;
-      });
-    },
+    setColumns: (sectionId, columns) => apply((draft) => settings.setColumns(draft, sectionId, columns)),
+    setColspan: (nodeId, span) => apply((draft) => settings.setColspan(draft, nodeId, span)),
 
     arrangeSection(sectionId, items) {
       return apply((draft) => {
@@ -947,6 +996,29 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       });
     },
 
+    place: (part, drop) => layoutEdit((draft) => ops.place(draft, part, drop, { model })),
+    describeDrop: (drop, moving) => ops.describeDrop(page, drop, moving),
+    dropRefusal: (drop, moving) => ops.dropRefusal(page, drop, moving),
+    wrap: (ids, kind) => layoutEdit((draft) => ops.wrap(draft, ids, kind)),
+    ungroup: (id) => layoutEdit((draft) => ops.ungroup(draft, id)) !== false,
+    duplicate: (ids) => layoutEdit((draft) => ops.duplicate(draft, ids)),
+    remove(ids) {
+      const ok = apply((draft) => ops.remove(draft, ids));
+      if (ok) forgetGone();
+      return ok;
+    },
+    pick(id, options = {}) {
+      const now = pickedNow();
+      const off = !!options.add && now.includes(id);
+      picked = !options.add ? [id] : off ? now.filter((p) => p !== id) : [...now, id];
+      selected = off ? (picked[picked.length - 1] ?? null) : id;
+      notify();
+    },
+    setSectionLook: (id, look) => apply((draft) => settings.setSectionLook(draft, id, look), `section-look:${id}:${Object.keys(look).join(',')}`),
+    setFieldLabels: (id, place) => apply((draft) => settings.setFieldLabels(draft, id, place)),
+    setLook: (patch) => apply((draft) => settings.setLook(draft, patch), `look:${Object.keys(patch).join(',')}`),
+    addBlock: (kind, where) => layoutEdit((draft) => ops.addBlock(draft, kind, where)),
+
     setLineColumns(id, columns) {
       return apply(
         (draft) => {
@@ -982,7 +1054,9 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       if (!previous) return;
       past = past.slice(0, -1);
       future = [page, ...future];
+      leave(page);
       page = previous;
+      arrive();
       mergeKey = null;
       issues = [];
       notify();
@@ -994,7 +1068,9 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       if (!next) return;
       future = future.slice(1);
       past = [...past, page];
+      leave(page);
       page = next;
+      arrive();
       mergeKey = null;
       issues = [];
       notify();
