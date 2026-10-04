@@ -64,6 +64,13 @@ function misaligned(page: Page): Promise<{ checked: number; off: string[] }> {
   });
 }
 
+/** Every part on its grid's columns, and at least `least` of them looked at. */
+async function onTheColumnsAtLeast(page: Page, least: number) {
+  const { checked, off } = await misaligned(page);
+  expect(checked, 'parts looked at').toBeGreaterThanOrEqual(least);
+  expect(off, "parts off their grid's columns").toEqual([]);
+}
+
 async function onTheColumns(page: Page, what: string) {
   const { checked, off } = await misaligned(page);
   expect(checked, `${what}: parts looked at`).toBeGreaterThan(8);
@@ -290,4 +297,169 @@ test('layout: the columns check itself catches a part off its columns', async ({
   await page.addStyleTag({ content: '.fd-form .fd-section[data-place="tracks"] > .fd-grid { grid-template-columns: 1fr 1fr !important; column-gap: 48px !important; }' });
   const { off } = await misaligned(page);
   expect(off.length).toBeGreaterThan(0);
+});
+
+// ---- pages built for one check each, mounted with the script bundle -----------------------
+
+/**
+ * Mount a page made for one check on the script tag's demo: the `Fieldia`
+ * global, its stylesheet minified, as a page with no build step gets it. In
+ * the outlined skin unless the check names another.
+ */
+async function mountBuilt(page: Page, children: unknown[], extra: Record<string, unknown> = {}, options: Record<string, unknown> = {}) {
+  const problems: string[] = [];
+  page.on('pageerror', (error) => problems.push(error.message));
+  page.on('console', (message) => message.type() === 'error' && problems.push(message.text()));
+  await page.goto('/script/');
+  await expect(page.locator('.fd-form').first()).toBeVisible();
+  const fields = Object.fromEntries(['a', 'b', 'c', 'd', 'e', 'code', 'number', 'name'].map((name) => [name, { type: 'char', label: `Field ${name}` }]));
+  const built = { fieldia: '0.1', id: 'built', data: { kind: 'responses' }, fields, layout: { type: 'sections', id: 'root', children }, ...extra };
+  await page.evaluate(([p, o]) => {
+    const fieldia = (window as unknown as { Fieldia: { mountViewer: (e: Element, o: object) => unknown; createMemoryDataSource: () => unknown } }).Fieldia;
+    const app = document.getElementById('app') as HTMLElement;
+    app.replaceChildren();
+    fieldia.mountViewer(app, { page: p, dataSource: fieldia.createMemoryDataSource(), skin: 'outlined', ...o });
+  }, [built, options] as const);
+  await expect(page.locator('.fd-form')).toHaveCount(1);
+  return problems;
+}
+const field = (id: string, extra: Record<string, unknown> = {}) => ({ type: 'field', id, field: id, ...extra });
+
+test('built: parts sharing one cell sit side by side, and one under the other once the cell is narrow', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const problems = await mountBuilt(page, [
+    {
+      type: 'section', id: 's', title: 'Contact', columns: 2,
+      children: [field('name'), { type: 'section', id: 'phone', style: 'plain', columns: 2, children: [field('code'), field('number')] }, field('a'), field('b')],
+    },
+  ]);
+  const box = async (id: string) => (await node(page, id).boundingBox())!;
+  expect((await box('number')).x).toBeGreaterThan((await box('code')).x + (await box('code')).width);
+  expect(Math.abs((await box('number')).y - (await box('code')).y)).toBeLessThanOrEqual(1);
+  // The cell they share is on the group's columns; they are inside it.
+  await onTheColumnsAtLeast(page, 3);
+  await screen(page, 'built-shared-wide');
+  // 600px: the group keeps two columns, each now under 330px: one under the other.
+  await page.setViewportSize({ width: 600, height: 900 });
+  await expect.poll(async () => (await box('number')).y > (await box('code')).y + (await box('code')).height).toBe(true);
+  expect(Math.abs((await box('number')).x - (await box('code')).x)).toBeLessThanOrEqual(1);
+  await onTheColumnsAtLeast(page, 3);
+  await screen(page, 'built-shared-narrow');
+  expect(problems).toEqual([]);
+});
+
+test('built: an arrangement inside an arrangement still lays its parts on the outer grid’s columns', async ({ page }) => {
+  for (const skin of ['outlined', 'underline']) {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await mountBuilt(
+      page,
+      [
+        {
+          type: 'section', id: 'outer', title: 'Four columns', columns: { wide: 4, medium: 2, narrow: 1 },
+          children: [
+            field('a'),
+            { type: 'section', id: 'three', style: 'plain', colspan: 3, children: [field('b'), { type: 'section', id: 'two', style: 'plain', colspan: 2, children: [field('c'), field('d')] }, field('e', { colspan: 3 })] },
+          ],
+        },
+      ],
+      {},
+      { skin }
+    );
+    const left = async (id: string) => (await node(page, id).boundingBox())!.x;
+    expect(await left('b')).toBeLessThan(await left('c'));
+    expect(await left('c')).toBeLessThan(await left('d'));
+    await onTheColumnsAtLeast(page, 6);
+    await screen(page, `built-nested-${skin}`);
+    // Two columns: the three-wide arrangement covers both, its parts fill them in turn; one column: one under another.
+    for (const width of [700, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await onTheColumnsAtLeast(page, 6);
+      await expectNoSidewaysScroll(page);
+    }
+  }
+});
+
+test('built: tabs, words and buttons take the columns they are given, never more than there are', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const problems = await mountBuilt(page, [
+    {
+      type: 'section', id: 's', title: 'Widths', columns: { wide: 3, medium: 2, narrow: 1 },
+      children: [
+        { type: 'text', id: 'heading', text: 'Across all three', style: 'heading', colspan: 3 },
+        { type: 'tabs', id: 'tabs', colspan: 2, children: [{ type: 'tab', id: 'tab', label: 'Details', children: [field('a')] }] },
+        { type: 'text', id: 'aside', text: 'A note beside the tabs, in the third column.', style: 'note' },
+        { type: 'button', id: 'go', label: 'Go', action: 'go', colspan: 1 },
+        field('b', { colspan: 4 }),
+      ],
+    },
+  ]);
+  const box = async (id: string) => (await node(page, id).boundingBox())!;
+  const grid = (await page.locator('[data-node="s"] > .fd-grid').boundingBox())!;
+  expect(Math.round((await box('heading')).width)).toBe(Math.round(grid.width));
+  expect((await box('aside')).x).toBeGreaterThan((await box('tabs')).x + (await box('tabs')).width);
+  expect(Math.abs((await box('aside')).y - (await box('tabs')).y)).toBeLessThanOrEqual(1);
+  // A button stays as wide as its words, at the start of its column.
+  expect((await box('go')).width).toBeLessThan(120);
+  // A field asking for four of three columns takes the three, and makes no column of its own.
+  expect(Math.round((await box('b')).width)).toBe(Math.round(grid.width));
+  await onTheColumnsAtLeast(page, 5);
+  await screen(page, 'built-widths');
+  for (const width of [700, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    const narrowGrid = (await page.locator('[data-node="s"] > .fd-grid').boundingBox())!;
+    expect(Math.round((await box('b')).width), `${width}px`).toBe(Math.round(narrowGrid.width));
+    await onTheColumnsAtLeast(page, 5);
+    await expectNoSidewaysScroll(page);
+  }
+  expect(problems).toEqual([]);
+});
+
+test('built: each style of group in the underline skin, with no box drawn in a box', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const problems = await mountBuilt(
+    page,
+    [
+      { type: 'section', id: 'card', title: 'A card', columns: 2, children: [field('a'), field('b')] },
+      { type: 'section', id: 'line', title: 'A line', style: 'line', children: [field('c')] },
+      { type: 'section', id: 'plain', title: 'Plain', style: 'plain', children: [field('d')] },
+      { type: 'section', id: 'framed', title: 'A frame', style: 'framed', children: [field('e')] },
+    ],
+    {},
+    { skin: 'underline' }
+  );
+  const title = (id: string) => node(page, id).locator('> legend');
+  await expect(title('line')).toHaveCSS('border-bottom-style', 'solid');
+  await expect(title('plain')).toHaveCSS('border-bottom-style', 'none');
+  await expect(node(page, 'framed')).toHaveCSS('border-top-style', 'solid');
+  const frame = (await node(page, 'framed').boundingBox())!;
+  const legend = (await title('framed').boundingBox())!;
+  expect(legend.y).toBeLessThan(frame.y + 1);
+  expect(legend.y + legend.height).toBeGreaterThan(frame.y + 1);
+  expect(await doubleLines(page, '.fd-form *')).toEqual([]);
+  await screen(page, 'built-styles-underline');
+  expect(problems).toEqual([]);
+});
+
+test('built: labels beside, as the page asks, hold in the underline skin on a phone, and go above in a narrow box', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await mountBuilt(page, [{ type: 'section', id: 's', title: 'Beside', columns: 2, children: [field('a'), field('b')] }, { type: 'section', id: 'pair', columns: { wide: 2, narrow: 2 }, children: [field('c'), field('d')] }], { look: { labels: 'beside', labelWidth: 110 } }, { skin: 'underline' });
+  expect(await labelAgainstBox(page, 'a')).toBe('beside');
+  expect(Math.round((await node(page, 'a').locator('.fd-label').boundingBox())!.width)).toBe(110);
+  // Two columns kept on a phone: each box too narrow for a label beside it.
+  expect(await labelAgainstBox(page, 'c')).toBe('above');
+  await expectNoSidewaysScroll(page);
+  await screen(page, 'built-beside-phone');
+});
+
+test('built: a label kept out of sight names its box, and the empty box shows it', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await mountBuilt(page, [{ type: 'section', id: 's', title: 'Hidden', labels: 'hidden', columns: 2, children: [field('a'), field('b', { placeholder: 'Its own words' })] }]);
+  const a = page.getByRole('textbox', { name: 'Field a' });
+  await expect(a).toBeVisible();
+  await expect(a).toHaveAttribute('placeholder', 'Field a');
+  await expect(page.getByRole('textbox', { name: 'Field b' })).toHaveAttribute('placeholder', 'Its own words');
+  expect((await node(page, 'a').locator('.fd-label').boundingBox())!.width).toBeLessThanOrEqual(1);
+  await a.fill('typed');
+  await expect(a).toHaveValue('typed');
+  await screen(page, 'built-hidden-labels');
 });
