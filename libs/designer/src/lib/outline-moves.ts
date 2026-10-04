@@ -106,7 +106,9 @@ export function describeMove(page: Page, ids: string[], parentId: string, index:
     const at = anchor ? rest.indexOf(anchor) : rest.length;
     const after = [...rest.slice(0, at), ...spots.map((s) => s.node), ...rest.slice(at)];
     if (after.every((p, i) => p === parent.children[i])) return spots.length === 1 ? 'where it is' : 'where they are';
-    return anchor ? `before ${name(anchor)}` : `after ${name(rest[rest.length - 1])}`;
+    // Down the list, they go after the part they pass; up it, before the part they pass.
+    const was = parent.children.slice(0, parent.children.indexOf(spots[0].node)).filter((p) => !moving.has(p.id)).length;
+    return anchor && at <= was ? `before ${name(anchor)}` : `after ${name(rest[at - 1])}`;
   }
   const into = parentId === page.layout.id ? 'onto the page' : `into ${name(parent as Part)}`;
   return anchor ? `${into}, before ${name(anchor)}` : `${into}, at the end`;

@@ -3,6 +3,7 @@ import type { ElementFactory } from './chrome';
 import type { Designer, DesignerState } from './designer';
 import { designerIcon } from './icons';
 import { outlineDrag } from './outline-drag';
+import { outlineKeyMove } from './outline-key-moves';
 import { treeKey, typeAhead } from './outline-keys';
 import { rangeOf } from './outline-picks';
 import { ancestorsOf, outlineRows, shownRows, type OutlineRow } from './outline-rows';
@@ -49,7 +50,15 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
   const { el, doc, designer } = options;
   const tree = el('div', { class: 'fd-outline-tree', role: 'tree', 'aria-label': 'The page’s parts', 'aria-multiselectable': 'true' });
   const empty = el('p', { class: 'fd-properties-hint', hidden: '' }, 'Nothing on the page yet.');
-  const help = el('p', { class: 'fd-outline-help' }, options.survey ? 'Pages and their questions. Pick one to open it; drag a row to move it.' : 'The whole page as a tree. Pick a part to open it; drag a row to move it, into a group by its middle.');
+  const help = el(
+    'p',
+    { class: 'fd-outline-help' },
+    options.survey ? 'Pages and their questions. Drag a row to move it. ' : 'Drag a row to move it, into a group by its middle. ',
+    el('kbd', {}, '⇧'),
+    '-click picks several; ',
+    el('kbd', {}, 'Alt'),
+    ' with an arrow moves what is picked.'
+  );
   const element = el('nav', { class: 'fd-outline', 'aria-label': 'Outline', hidden: '' }, tree, empty, help);
 
   /** Rows folded by the person, by id: kept while the page changes. */
@@ -113,13 +122,15 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
   }
 
   function draw(state: DesignerState) {
+    const was = indexOf(active);
     all = outlineRows(state.page);
     for (const id of [...folded]) if (!all.some((r) => r.id === id && opens(r))) folded.delete(id);
     shown = shownRows(all, folded);
     const inTree = tree.contains(doc.activeElement);
     if (state.selected !== lead && indexOf(state.selected) !== -1) active = state.selected;
     lead = state.selected;
-    if (indexOf(active) === -1) active = shown.find((r) => r.id === state.selected)?.id ?? shown[0]?.id ?? null;
+    // The row the keyboard was on went: the row now in its place, else the one picked, else the first.
+    if (indexOf(active) === -1) active = (inTree && was !== -1 ? shown[Math.min(was, shown.length - 1)]?.id : undefined) ?? shown.find((r) => r.id === state.selected)?.id ?? shown[0]?.id ?? null;
     const siblings = new Map<string | null, string[]>();
     for (const row of all) siblings.set(row.parent, [...(siblings.get(row.parent) ?? []), row.id]);
     const drawn = shown.map((row) => {
@@ -162,6 +173,33 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
     if (!options.several()) return pickRow(id, true);
     anchor = id;
     designer.pick(id, { add: true });
+  }
+
+  /** The parts picked that are the page's own (not a sheet's header part, nor a list's column). */
+  const movablePicks = () => {
+    const movable = new Set(all.filter((r) => r.movable).map((r) => r.id));
+    return designer.getState().picked.filter((id) => movable.has(id));
+  };
+  const named = (ids: string[]) => (ids.length === 1 ? (all.find((r) => r.id === ids[0])?.label ?? 'It') : `${ids.length} parts`);
+
+  /** Alt and an arrow move the rows picked; Delete takes them off the page. Each said aloud. Whether the key was one of these. */
+  function moveByKey(event: KeyboardEvent): boolean {
+    const ids = movablePicks();
+    if (!ids.length) return false;
+    if ((event.key === 'Delete' || event.key === 'Backspace') && !event.altKey && !event.ctrlKey && !event.metaKey) {
+      options.say(designer.remove(ids) ? `Took ${ids.length === 1 ? named(ids) : ids.length} off the page` : (designer.getState().issues[0] ?? 'Not taken off'));
+      return true;
+    }
+    const place = outlineKeyMove(designer.getPage(), ids, event, rtl());
+    if (!place) return false;
+    if ('said' in place) {
+      options.say(place.said);
+      return true;
+    }
+    const refused = designer.moveRefusal(ids, place.parent);
+    const words = refused ?? designer.describeMove(ids, place.parent, place.index);
+    options.say(refused ?? (designer.moveParts(ids, place.parent, place.index) ? `${named(ids)}: ${words}` : (designer.getState().issues[0] ?? 'Not moved')));
+    return true;
   }
 
   /** The nearest box round the outline that scrolls (the rail, on a wide screen): never the window, so the canvas stays put. */
@@ -232,6 +270,11 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
     const view = (event.target as Element).closest<HTMLElement>('[role="treeitem"]');
     if (!view) return;
     const at = indexOf(view.dataset['pick'] as string);
+    if (moveByKey(event)) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     const step = treeKey(shown, at, event, rtl(), folded);
     if (!step) {
       // Letters go to the row whose name starts with them.

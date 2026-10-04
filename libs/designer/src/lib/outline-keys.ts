@@ -93,4 +93,7 @@ export const OUTLINE_KEYS: [string, string][] = [
   ['Shift+↑ / ↓', 'Pick the rows on the way too'],
   ['Shift-click', 'Pick every row from the one picked to this one'],
   ['⌘-click', 'Pick one more row, or let it go (Ctrl-click on Windows)'],
+  ['Alt+↑ / Alt+↓', 'Move what is picked before the row above it or after the row below'],
+  ['Alt+← / Alt+→', 'Take what is picked out of its group, or put it in the group before it'],
+  ['Delete', 'Take what is picked off the page'],
 ];

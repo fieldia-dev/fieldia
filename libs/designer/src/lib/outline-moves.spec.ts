@@ -127,7 +127,8 @@ describe('describeMove', () => {
     const d = employeeDesigner();
     expect(d.describeMove(['f-email'], 'address', 1)).toBe('into “Home address”, before “City”');
     expect(d.describeMove(['f-email'], 'address', 4)).toBe('into “Home address”, at the end');
-    expect(d.describeMove(['f-city'], 'address', 3)).toBe('before “Country”');
+    expect(d.describeMove(['f-city'], 'address', 3)).toBe('after “Postcode”');
+    expect(d.describeMove(['f-country'], 'address', 1)).toBe('before “City”');
     expect(d.describeMove(['f-city'], 'address', 4)).toBe('after “Country”');
     expect(d.describeMove(['f-city'], 'address', 1)).toBe('where it is');
     expect(d.describeMove(['f-city'], 'root', 0)).toBe('onto the page, before “Personal details”');

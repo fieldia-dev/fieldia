@@ -99,7 +99,7 @@ describe('typeAhead', () => {
 
 describe('the outline’s keys, for the sheet of shortcuts', () => {
   it('names each key and what it does', () => {
-    expect(OUTLINE_KEYS.map(([keys]) => keys)).toEqual(expect.arrayContaining(['↑ / ↓', '← / →', 'Home / End', 'Enter', 'A letter', 'Shift+↑ / ↓', 'Shift-click', '⌘-click']));
+    expect(OUTLINE_KEYS.map(([keys]) => keys)).toEqual(expect.arrayContaining(['↑ / ↓', '← / →', 'Home / End', 'Enter', 'A letter', 'Shift+↑ / ↓', 'Shift-click', '⌘-click', 'Alt+↑ / Alt+↓', 'Alt+← / Alt+→', 'Delete']));
     for (const [, what] of OUTLINE_KEYS) expect(what).toMatch(/^[A-Z]/);
   });
 });

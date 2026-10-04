@@ -14,10 +14,13 @@ let view: OutlineView;
 let designer: Designer;
 let revealed: string[];
 
+let said: string[];
+
 function mount(d: Designer = employeeDesigner(), options: { several?: boolean } = {}) {
   designer = d;
   revealed = [];
-  view = outlineView({ el: elementFactory(document), doc: document, designer, survey: false, reveal: (id) => revealed.push(id), several: () => options.several ?? true, say: () => undefined });
+  said = [];
+  view = outlineView({ el: elementFactory(document), doc: document, designer, survey: false, reveal: (id) => revealed.push(id), several: () => options.several ?? true, say: (words) => said.push(words) });
   document.body.append(view.element);
   view.update(designer.getState(), true);
   designer.subscribe((state) => view.update(state, true));
@@ -245,5 +248,64 @@ describe('several picked in the outline', () => {
     expect(rail.scrollTop).toBe(728);
     // What the person folded and did not pick stays folded.
     expect(row('personal').getAttribute('aria-expanded')).toBe('false');
+  });
+});
+
+describe('moving rows from the keyboard', () => {
+  const kids = (id: string) => [...view.element.querySelectorAll<HTMLElement>(`[role="treeitem"]`)].filter((r) => r.getAttribute('aria-level') === String(Number(row(id).getAttribute('aria-level')) + 1)).map((r) => r.dataset['pick']);
+
+  it('Alt+↑ and Alt+↓ move the rows picked, each move said aloud; the row keeps the keyboard', () => {
+    mount();
+    row('f-city').click();
+    key('ArrowUp', { altKey: true });
+    expect(ids().slice(ids().indexOf('f-city') - 1, ids().indexOf('f-city') + 2)).toEqual(['address', 'f-city', 'f-street']);
+    expect(said).toEqual(['City: before “Street and number”']);
+    expect(focused()).toBe('f-city');
+    key('ArrowDown', { altKey: true });
+    expect(said[1]).toBe('City: after “Street and number”');
+    expect(designer.getState().picked).toEqual(['f-city']);
+  });
+
+  it('Alt+← takes them out of their group, Alt+→ puts them in the group before', () => {
+    mount();
+    row('f-ec_name').click();
+    key('ArrowLeft', { altKey: true });
+    expect(said).toEqual(['Name: into “Side by side”, at the end']);
+    expect(row('f-ec_name').getAttribute('aria-level')).toBe('2');
+    key('ArrowRight', { altKey: true });
+    expect(said[1]).toBe('Name: into “Emergency contact”, at the end');
+    expect(kids('emergency')).toContain('f-ec_name');
+  });
+
+  it('says why when they cannot move, and moves nothing', () => {
+    mount();
+    const before = designer.getPage();
+    row('f-street').click();
+    key('ArrowUp', { altKey: true });
+    expect(said).toEqual(['It is at the top of “Home address”: Alt+← takes it out']);
+    row('tab-job').click();
+    key('ArrowLeft', { altKey: true });
+    expect(said[1]).toBe('A tab moves only among its tabs');
+    expect(designer.getPage()).toBe(before);
+  });
+
+  it('moves several picked together', () => {
+    mount();
+    row('f-city').click();
+    key('ArrowDown', { shiftKey: true });
+    key('ArrowUp', { altKey: true });
+    expect(said).toEqual(['2 parts: before “Street and number”']);
+  });
+
+  it('Delete takes every row picked off the page', () => {
+    mount();
+    row('f-city').click();
+    key('ArrowDown', { shiftKey: true });
+    key('Delete');
+    expect(row('f-city')).toBeNull();
+    expect(row('f-postcode')).toBeNull();
+    expect(said).toEqual(['Took 2 off the page']);
+    // The keyboard stays in the outline.
+    expect(focused()).toBeTruthy();
   });
 });
