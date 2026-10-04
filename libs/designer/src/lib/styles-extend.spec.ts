@@ -4,7 +4,7 @@ import { DESIGNER_EXTEND_CSS } from './styles-extend';
 
 /** The designer's part for what an app adds: installed with the rest, and restyling nothing that was there before it. */
 
-/** The rules of `css` that name no class of its own: none that `base` does not use already. */
+/** The rules of `css` that name no class of its own: none that `base` does not use already. A keyframe's steps restyle nothing, so they are no rule here. */
 function foreignRules(css: string, base: string): string[] {
   const taken = new Set(base.match(/\.fd-[\w-]+/g) ?? []);
   return css
@@ -13,6 +13,7 @@ function foreignRules(css: string, base: string): string[] {
     .map((rule) => rule.split('{').slice(-2)[0]?.trim() ?? '')
     .filter((selector) => selector && !selector.startsWith('@'))
     .flatMap((selector) => selector.split(',').map((one) => one.trim()))
+    .filter((one) => !/^(from|to|[\d.]+%)$/.test(one))
     .filter((one) => !(one.match(/\.fd-[\w-]+/g) ?? []).some((name) => !taken.has(name)));
 }
 
@@ -25,6 +26,10 @@ describe('the designer’s stylesheet for what an app adds', () => {
 
   it('names a class of its own in every rule, so the designer and the form look as they did', () => {
     expect(foreignRules(DESIGNER_EXTEND_CSS, DESIGNER_CSS + FIELDIA_CSS)).toEqual([]);
+  });
+
+  it('still finds a rule that restyles what was there', () => {
+    expect(foreignRules('.fd-input { color: red; } @keyframes fd-x { to { opacity: 0; } } .fd-new-thing .fd-input { color: blue; }', '.fd-input')).toEqual(['.fd-input']);
   });
 
   it('can sit in a template literal once minified', () => {

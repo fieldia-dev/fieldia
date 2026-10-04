@@ -19,6 +19,7 @@ import { toolbox } from './toolbox';
 import { tryIt } from './try-it';
 import { translationsView } from './translations-view';
 import { jsonView } from './json-view';
+import type { DesignerAssistant } from './assistant';
 import type { PageTemplate } from './templates';
 import { startHere } from './templates-start';
 
@@ -41,6 +42,8 @@ export interface ScreenEditorOptions {
   widgets?: Record<string, WidgetFactory>;
   /** The app's own templates for a blank screen, after the designer's. */
   templates?: readonly PageTemplate[];
+  /** The app's own assistant, in place of the designer's. Without one, nothing about it shows. */
+  assistant?: DesignerAssistant;
 }
 
 export interface ScreenEditorHandle {
@@ -132,7 +135,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   });
   const panel = screenPanel({ el, doc, designer, wearer: canvas.element });
   // A blank screen: templates to start from.
-  const start = startHere({ el, doc, designer, survey: false, templates: options.templates, blankFocus: () => root.querySelector('.fd-tool-find') });
+  const start = startHere({ el, doc, designer, root, survey: false, templates: options.templates, assistant: options.assistant ?? designer.assistant(), blankFocus: () => root.querySelector('.fd-tool-find') });
   const body = el('div', { class: 'fd-screen-body' }, side.element, el('div', { class: 'fd-canvas-scroll' }, start.element, canvas.element, list.element), panel.element);
   const json = jsonView({ el, doc, designer, trial, body });
   root.append(bar.element, bar.issues, body, trial.element, json.element);

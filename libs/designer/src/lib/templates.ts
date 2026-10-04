@@ -1,4 +1,4 @@
-import { checkPage, type Field, type FieldNode, type JsonValue, type Page } from '@fieldia/core';
+import { checkPage, validatePage, type Field, type FieldNode, type JsonValue, type Page } from '@fieldia/core';
 import { kindById } from './kinds';
 import { Refusal } from './refusal';
 
@@ -171,12 +171,22 @@ export function isBlank(page: Page): boolean {
  * for what is not a page the designer can open.
  */
 export function replaceWith(draft: Page, next: unknown): void {
-  const checked = checkPage(next);
-  if (!checked.ok) throw new Refusal(`This is not a page the designer can open: ${checked.issues.map((i) => `${i.path}: ${i.message}`).join('; ')}`);
-  const survey = draft.layout.type === 'wizard';
-  if (survey && checked.page.layout.type !== 'wizard') throw new Refusal('A survey is made of pages of questions: this is a screen of sections');
-  if (!survey && checked.page.layout.type === 'wizard') throw new Refusal('A screen is made of sections: this is a survey’s pages of questions');
+  const problem = pageProblem(draft, next);
+  if (problem) throw new Refusal(problem);
+  const checked = checkPage(next) as { ok: true; page: Page };
   const { id, data } = draft;
   for (const key of Object.keys(draft)) delete (draft as unknown as Record<string, unknown>)[key];
   Object.assign(draft, JSON.parse(JSON.stringify(checked.page)), { id, data });
+}
+
+/** Why `next` cannot take the place of `page`, in words, or null when it can: it must be a page, made the way `page` is. */
+export function pageProblem(page: Page, next: unknown): string | null {
+  const checked = checkPage(next);
+  if (!checked.ok) return `This is not a page the designer can open: ${checked.issues.map((i) => `${i.path}: ${i.message}`).join('; ')}`;
+  const full = validatePage(next);
+  if (!full.ok) return `This is not a page the designer can open: ${full.issues.map((i) => `${i.path}: ${i.message}`).join('; ')}`;
+  const survey = page.layout.type === 'wizard';
+  if (survey && checked.page.layout.type !== 'wizard') return 'A survey is made of pages of questions: this is a screen of sections';
+  if (!survey && checked.page.layout.type === 'wizard') return 'A screen is made of sections: this is a survey’s pages of questions';
+  return null;
 }

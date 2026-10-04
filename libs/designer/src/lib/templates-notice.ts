@@ -40,9 +40,10 @@ export function doneNotice(el: ElementFactory, designer: Designer, afterUndo: ()
   return {
     element,
     show(text, changes = []) {
-      words.textContent = text;
+      // Each in its own direction: English words keep their order on a page right to left.
+      words.replaceChildren(el('bdi', {}, text));
       const listed = changes.slice(0, LISTED);
-      list.replaceChildren(...listed.map((c) => el('li', {}, c)), ...(changes.length > LISTED ? [el('li', { class: 'fd-start-done-more' }, `and ${changes.length - LISTED} more`)] : []));
+      list.replaceChildren(...listed.map((c) => el('li', {}, el('bdi', {}, c))), ...(changes.length > LISTED ? [el('li', { class: 'fd-start-done-more' }, el('bdi', {}, `and ${changes.length - LISTED} more`))] : []));
       list.hidden = !changes.length;
       about = designer.getPage();
       element.hidden = false;

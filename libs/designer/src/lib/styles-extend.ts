@@ -30,7 +30,7 @@ export const DESIGNER_EXTEND_CSS = /* css */ `
 .fd-start-preview { display: grid; gap: 5px; margin-block-start: 8px; padding-block-start: 10px; border-block-start: 1px dashed var(--fd-border); }
 .fd-start-preview-row { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 12.5px; line-height: 1.3; }
 .fd-start-preview-row > .fd-dicon { flex: none; width: 14px; height: 14px; color: var(--fd-muted); }
-.fd-start-preview-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fd-start-preview-label { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fd-start-preview-more { font-size: 12px; color: var(--fd-muted); padding-inline-start: 21px; }
 .fd-start-foot { display: flex; flex-wrap: wrap; gap: 8px; }
 
@@ -46,5 +46,22 @@ export const DESIGNER_EXTEND_CSS = /* css */ `
 .fd-start-done-changes { margin: 0; padding-inline-start: 18px; display: grid; gap: 2px; font-size: 13px; line-height: 1.45; }
 .fd-start-done-more { list-style: none; margin-inline-start: -18px; color: var(--fd-muted); }
 .fd-start-done-actions { flex: none; display: flex; align-items: center; gap: 4px; }
-@media (prefers-reduced-motion: reduce) { .fd-start-card { transition: none; } }
+
+/* ---- the app's assistant: a box to describe the form ---------------------- */
+.fd-assist { display: grid; gap: 8px; min-width: 0; }
+.fd-start .fd-assist { padding-block-start: 16px; border-block-start: 1px solid var(--fd-border); }
+.fd-assist-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.fd-assist-label { font-size: 14px; font-weight: 600; line-height: 1.35; color: var(--fd-text); }
+.fd-assist-name { font-size: 11.5px; font-weight: 600; line-height: 1.6; padding: 0 8px; border-radius: 999px; background: var(--fd-page); color: var(--fd-muted); }
+.fd-assist .fd-assist-prompt { width: 100%; box-sizing: border-box; min-height: 76px; resize: vertical; font: inherit; line-height: 1.45; }
+.fd-assist-note { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--fd-muted); }
+.fd-assist-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 36px; }
+.fd-assist-busy { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--fd-text); }
+.fd-assist-spinner { width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--fd-accent) 25%, transparent); border-block-start-color: var(--fd-accent); animation: fd-assist-spin 800ms linear infinite; }
+@keyframes fd-assist-spin { to { transform: rotate(360deg); } }
+.fd-assist-said { margin: 0; font-size: 13px; color: var(--fd-muted); }
+.fd-assist-said:empty { display: none; }
+.fd-assist-problem { margin: 0; font-size: 13px; line-height: 1.45; color: var(--fd-error); }
+.fd-assist-dialog-body { padding: 16px 18px 18px; }
+@media (prefers-reduced-motion: reduce) { .fd-start-card { transition: none; } .fd-assist-spinner { animation-duration: 2400ms; } }
 `;

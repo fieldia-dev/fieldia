@@ -23,6 +23,7 @@ import { fixCheck, pageChecks, type PageCheck } from './page-checks';
 import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, orList, registerKinds, storedAs, type LineColumn, type QuestionKind } from './kinds';
 import type { AppKind } from './app-kinds';
 import { replaceWith, templatesFor, type PageTemplate } from './templates';
+import type { DesignerAssistant } from './assistant';
 import * as ops from './layout-ops';
 import type { BlockKind, Drop, NewPart } from './layout-ops';
 import * as settings from './layout-settings';
@@ -51,6 +52,7 @@ export { columnKind, kindFits, kindOfField, kindsFor, QUESTION_KINDS, SCREEN_KIN
 export type { LineColumn, QuestionKind } from './kinds';
 export type { AppKind, AppKindContext, AppKindPreviewContext, AppKindSettings } from './app-kinds';
 export { isBlank, SCREEN_TEMPLATES, SURVEY_TEMPLATES, type PageTemplate } from './templates';
+export { askAssistant, type AssistantResult, type AssistantRun, type DesignerAssistant } from './assistant';
 export type { HeaderCommands, HeaderPartKind, HeaderPartPatch } from './header-commands';
 export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-commands';
 export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-checks';
@@ -342,6 +344,8 @@ export interface Designer extends HeaderCommands, ListCommands {
   templates(): PageTemplate[];
   /** A whole page in place of this one, as one edit — a template, or what an assistant made — keeping this page's id and where its answers go. Refused, saying why, for one that is not a page, or is for the other editor. */
   replacePage(page: Page): boolean;
+  /** The app's own assistant, when the app gave the designer one. */
+  assistant(): DesignerAssistant | null;
 }
 
 /** One of the app's lists of choices, by the name its data source answers to, and the words a person picks it by. */
@@ -363,6 +367,8 @@ export function createDesigner(options: {
   kinds?: readonly AppKind[];
   /** The app's own templates, offered after Fieldia's to a blank page made the same way. */
   templates?: readonly PageTemplate[];
+  /** The app's own assistant, which makes a page from what a person describes. Without one, nothing about it shows. */
+  assistant?: DesignerAssistant;
 }): Designer {
   const store = options.store;
   const appKinds = registerKinds(options.kinds ?? []);
@@ -1212,6 +1218,7 @@ export function createDesigner(options: {
       notify();
       return true;
     },
+    assistant: () => options.assistant ?? null,
   };
   return designer;
 }

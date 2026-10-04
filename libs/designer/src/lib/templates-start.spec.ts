@@ -55,6 +55,7 @@ describe('a blank survey', () => {
     expect(heading?.textContent).toBe('Start from a template');
     expect(cards(root).map((c) => c.querySelector('.fd-start-card-title')?.textContent)).toEqual(['Feedback', 'Event registration', 'Job application']);
     const feedback = card(root, 'Feedback');
+    expect(document.getElementById(feedback.getAttribute('aria-labelledby') ?? '')?.textContent).toBe('Feedback');
     expect(document.getElementById(feedback.getAttribute('aria-describedby') ?? '')?.textContent).toBe('How it went, and what to do better, in two minutes.');
     // Its first questions, each with its kind's picture, and how many more.
     const preview = feedback.querySelector('.fd-start-preview') as HTMLElement;

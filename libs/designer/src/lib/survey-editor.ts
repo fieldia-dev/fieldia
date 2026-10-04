@@ -19,6 +19,7 @@ import { toolbox, toolboxGroups } from './toolbox';
 import { tryIt } from './try-it';
 import { translationsView } from './translations-view';
 import { jsonView } from './json-view';
+import type { DesignerAssistant } from './assistant';
 import type { PageTemplate } from './templates';
 import { startHere } from './templates-start';
 
@@ -49,6 +50,8 @@ export interface SurveyEditorOptions {
   widgets?: Record<string, WidgetFactory>;
   /** The app's own templates for a blank survey, after the designer's. */
   templates?: readonly PageTemplate[];
+  /** The app's own assistant, in place of the designer's. Without one, nothing about it shows. */
+  assistant?: DesignerAssistant;
 }
 
 export interface SurveyEditorHandle {
@@ -154,7 +157,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   }
 
   // A blank survey: templates to start from.
-  const start = startHere({ el, doc, designer, survey: true, templates: options.templates, blankFocus: () => root.querySelector('.fd-add-question') });
+  const start = startHere({ el, doc, designer, root, survey: true, templates: options.templates, assistant: options.assistant ?? designer.assistant(), blankFocus: () => root.querySelector('.fd-add-question') });
   const column = el('div', { class: 'fd-survey-column' }, head, start.element, map, pages, addPage, rail);
   const editor = el('div', { class: 'fd-designer-editor fd-survey-canvas' }, column);
   const tools = toolbox({
