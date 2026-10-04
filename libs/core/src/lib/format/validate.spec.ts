@@ -278,9 +278,11 @@ describe('validatePage — sheet and layout parts', () => {
     expect(text).toMatch(/layout\.title\.above\[0\]\.field: no field "ghost_field"/);
   });
 
-  it('rejects columns per width outside one to four, or without the wide count', () => {
+  it('rejects columns per width outside one to twelve, or without the wide count', () => {
     const page = example('signup');
-    page['layout'].children[0].columns = { wide: 5 };
+    page['layout'].children[0].columns = { wide: 12, medium: 12, narrow: 1 };
+    expect(messages(page)).toEqual([]);
+    page['layout'].children[0].columns = { wide: 13 };
     expect(messages(page).join('\n')).toMatch(/layout\.children\[0\]\.columns/);
     page['layout'].children[0].columns = { medium: 2 };
     expect(messages(page).join('\n')).toMatch(/layout\.children\[0\]\.columns/);

@@ -61,7 +61,7 @@ ${code(
 <table>
   <thead><tr><th>Layout</th><th>For</th></tr></thead>
   <tbody>
-    <tr><td>${c('sections')}</td><td>A form in titled sections, each with 1 to 4 columns. Sign-ups, settings, simple records.</td></tr>
+    <tr><td>${c('sections')}</td><td>A form in titled sections, each with 1 to 4 even columns, or rows each divided in twelfths. Sign-ups, settings, simple records.</td></tr>
     <tr><td>${c('sheet')}</td><td>A business record: a title (with an optional photo and fields over and under it), a statusbar, buttons, stat buttons, badges, a ribbon, alerts, then sections and tabs, and an optional side panel. See <a href="#sheet">the parts of a sheet</a>.</td></tr>
     <tr><td>${c('tabs')}</td><td>Tabs at the top level, each holding sections and fields.</td></tr>
     <tr><td>${c('wizard')}</td><td>Steps, one at a time, with a progress bar. A step whose condition is false is skipped — that is how a survey branches. Steps can be clicked, skipped when optional, and its buttons named — see <a href="#wizard">wizards</a>.</td></tr>

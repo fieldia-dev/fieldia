@@ -144,7 +144,8 @@ export interface SlotNode {
   invisible?: Modifier;
 }
 
-export type ColumnCount = 1 | 2 | 3 | 4;
+/** A group's columns: one to four for an even grid, or twelve for rows each divided its own way (twelfths). */
+export type ColumnCount = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
 /**
  * Columns at each width of the form: `wide` above 760px, `medium` up to 760px,
@@ -176,7 +177,7 @@ export interface SectionNode {
   collapsible?: boolean;
   /** A collapsible section that starts folded. */
   collapsed?: boolean;
-  /** Grid columns it spans inside the section around it: groups side by side. */
+  /** Grid columns it spans inside the section around it, one to twelve: groups side by side. */
   colspan?: number;
   /** A card (the default), plain (nothing drawn), a line under the title, or a frame with the title on it. */
   style?: 'card' | 'plain' | 'line' | 'framed';
@@ -184,6 +185,12 @@ export interface SectionNode {
   labels?: LabelPlace;
   /** How wide labels set beside their boxes are, in pixels. */
   labelWidth?: number;
+  /**
+   * In a group of twelfths, how the designer keeps its rows as parts come and
+   * go: each row full, its parts sharing the width (the default), or with gaps
+   * where a part leaves or is narrowed. A form draws the widths given either way.
+   */
+  rows?: 'full' | 'gaps';
   invisible?: Modifier;
   /** Every field inside is read-only while this holds. */
   readonly?: Modifier;
@@ -359,9 +366,9 @@ export const ModifierSchema = z.union([z.boolean(), z.string().min(1)]).meta({ i
 const id = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/);
 const fieldName = z.string().regex(FIELD_NAME);
 const tone = z.enum(['info', 'success', 'warning', 'danger', 'muted']);
-const columnCount = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]);
+const columnCount = z.int().min(1).max(12) as unknown as z.ZodType<ColumnCount>;
 const invisible = ModifierSchema.optional();
-const span = z.int().min(1).max(4).optional();
+const span = z.int().min(1).max(12).optional();
 const labelPlace = z.enum(['above', 'beside', 'hidden']);
 
 export const AnswerRuleSchema = z
@@ -395,7 +402,7 @@ export const FieldNodeSchema = z.strictObject({
   options: z.record(z.string(), JsonValueSchema).optional(),
   placeholder: z.string().optional(),
   help: z.string().optional(),
-  colspan: z.int().min(1).max(4).optional(),
+  colspan: span,
   columns: z.array(fieldName).min(1).optional(),
   totals: z.array(fieldName).min(1).optional(),
   optionalColumns: z.record(fieldName, z.enum(['show', 'hide'])).optional(),
@@ -450,6 +457,7 @@ export const SectionNodeSchema = z.strictObject({
   style: z.enum(['card', 'plain', 'line', 'framed']).optional(),
   labels: labelPlace.optional(),
   labelWidth: z.int().min(60).max(320).optional(),
+  rows: z.enum(['full', 'gaps']).optional(),
   invisible,
   readonly: ModifierSchema.optional(),
   get children(): z.ZodArray<typeof LayoutNodeSchema> {

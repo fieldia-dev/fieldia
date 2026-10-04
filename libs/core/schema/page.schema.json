@@ -2296,7 +2296,7 @@
                   "colspan": {
                     "type": "integer",
                     "minimum": 1,
-                    "maximum": 4
+                    "maximum": 12
                   },
                   "columns": {
                     "minItems": 1,
@@ -2410,7 +2410,7 @@
                   "colspan": {
                     "type": "integer",
                     "minimum": 1,
-                    "maximum": 4
+                    "maximum": 12
                   },
                   "columns": {
                     "minItems": 1,
@@ -2567,7 +2567,7 @@
               "colspan": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": 4
+                "maximum": 12
               },
               "invisible": {
                 "$ref": "#/$defs/Modifier"
@@ -2877,7 +2877,7 @@
             "colspan": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 4
+              "maximum": 12
             },
             "columns": {
               "minItems": 1,
@@ -2993,7 +2993,7 @@
             "colspan": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 4
+              "maximum": 12
             },
             "invisible": {
               "$ref": "#/$defs/Modifier"
@@ -3032,7 +3032,7 @@
             "colspan": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 4
+              "maximum": 12
             },
             "invisible": {
               "$ref": "#/$defs/Modifier"
@@ -3112,7 +3112,7 @@
             "colspan": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 4
+              "maximum": 12
             },
             "invisible": {
               "$ref": "#/$defs/Modifier"
@@ -3145,7 +3145,7 @@
             "colspan": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 4
+              "maximum": 12
             },
             "invisible": {
               "$ref": "#/$defs/Modifier"
@@ -3185,87 +3185,27 @@
         "columns": {
           "anyOf": [
             {
-              "anyOf": [
-                {
-                  "type": "number",
-                  "const": 1
-                },
-                {
-                  "type": "number",
-                  "const": 2
-                },
-                {
-                  "type": "number",
-                  "const": 3
-                },
-                {
-                  "type": "number",
-                  "const": 4
-                }
-              ]
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
             },
             {
               "type": "object",
               "properties": {
                 "wide": {
-                  "anyOf": [
-                    {
-                      "type": "number",
-                      "const": 1
-                    },
-                    {
-                      "type": "number",
-                      "const": 2
-                    },
-                    {
-                      "type": "number",
-                      "const": 3
-                    },
-                    {
-                      "type": "number",
-                      "const": 4
-                    }
-                  ]
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 12
                 },
                 "medium": {
-                  "anyOf": [
-                    {
-                      "type": "number",
-                      "const": 1
-                    },
-                    {
-                      "type": "number",
-                      "const": 2
-                    },
-                    {
-                      "type": "number",
-                      "const": 3
-                    },
-                    {
-                      "type": "number",
-                      "const": 4
-                    }
-                  ]
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 12
                 },
                 "narrow": {
-                  "anyOf": [
-                    {
-                      "type": "number",
-                      "const": 1
-                    },
-                    {
-                      "type": "number",
-                      "const": 2
-                    },
-                    {
-                      "type": "number",
-                      "const": 3
-                    },
-                    {
-                      "type": "number",
-                      "const": 4
-                    }
-                  ]
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 12
                 }
               },
               "required": [
@@ -3284,7 +3224,7 @@
         "colspan": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 4
+          "maximum": 12
         },
         "style": {
           "type": "string",
@@ -3307,6 +3247,13 @@
           "type": "integer",
           "minimum": 60,
           "maximum": 320
+        },
+        "rows": {
+          "type": "string",
+          "enum": [
+            "full",
+            "gaps"
+          ]
         },
         "invisible": {
           "$ref": "#/$defs/Modifier"
@@ -3342,7 +3289,7 @@
         "colspan": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 4
+          "maximum": 12
         },
         "invisible": {
           "$ref": "#/$defs/Modifier"
@@ -3644,7 +3591,7 @@
               "colspan": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": 4
+                "maximum": 12
               },
               "invisible": {
                 "$ref": "#/$defs/Modifier"

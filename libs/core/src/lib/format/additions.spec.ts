@@ -41,9 +41,29 @@ describe('groups side by side, and how a group looks', () => {
     expect(runtime(page)).toEqual([]);
   });
 
-  it('refuses a style or a label place it does not know, and a width beyond four columns', () => {
-    const bad = base(sections({ type: 'section', id: 's', style: 'shadow', labels: 'left', colspan: 5, children: [] }));
+  it('refuses a style or a label place it does not know, and a width beyond twelve columns', () => {
+    const bad = base(sections({ type: 'section', id: 's', style: 'shadow', labels: 'left', colspan: 13, children: [] }));
     expect(problems(bad)).toEqual(expect.arrayContaining([expect.stringMatching(/style/), expect.stringMatching(/labels/), expect.stringMatching(/colspan/)]));
+  });
+
+  it('takes a group in twelfths: each row divided its own way, kept full or with gaps as the designer is told', () => {
+    const twelfths = (rows?: unknown) =>
+      base(
+        sections({
+          type: 'section', id: 's', title: 'Visit', columns: { wide: 12, medium: 12, narrow: 1 }, ...(rows === undefined ? {} : { rows }),
+          children: [
+            { type: 'field', id: 'a', field: 'name', colspan: 7 },
+            { type: 'text', id: 't', text: 'Hello', colspan: 5 },
+            { type: 'section', id: 'pair', style: 'plain', colspan: 6, columns: 6, children: [] },
+            { type: 'button', id: 'b', label: 'Go', action: 'go', colspan: 6 },
+          ],
+        })
+      );
+    for (const rows of [undefined, 'full', 'gaps']) {
+      expect(problems(twelfths(rows))).toEqual([]);
+      expect(runtime(twelfths(rows))).toEqual([]);
+    }
+    expect(problems(twelfths('loose'))).toEqual([expect.stringMatching(/rows/)]);
   });
 
   it('gives tabs, words and buttons a width too', () => {
