@@ -78,3 +78,18 @@ describe('the new kinds of question', () => {
     expect(storedAs(kindById('address').field('Where'))).toBe('structured data');
   });
 });
+
+describe('the kinds a field can be shown as', () => {
+  it('always include the kind it is shown as now, even one the page would not offer to add', () => {
+    // A form of answers with a photo: Image is not a kind a survey adds, but this field is one.
+    const blank = blankPage('survey', 'New employee');
+    const wizard = blank.layout as WizardNode;
+    const page = {
+      ...blank,
+      fields: { ...blank.fields, photo: { type: 'image', label: 'Photo' } },
+      layout: { ...wizard, children: [{ ...wizard.children[0], children: [{ type: 'field', id: 'photo-node', field: 'photo' }] }] },
+    } as Page;
+    const designer = createDesigner({ page });
+    expect(designer.kindsFor('photo-node').map((k) => k.id)).toContain('image');
+  });
+});

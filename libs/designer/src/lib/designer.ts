@@ -544,7 +544,10 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
       const found = findNode(page, id);
       if (!found || found.node.type !== 'field') return [];
       const name = found.node.field;
-      return kindsFor(page.fields[name], { fromModel: fromModel(name), survey: page.data.kind === 'responses' });
+      const offered = kindsFor(page.fields[name], { fromModel: fromModel(name), survey: page.data.kind === 'responses' });
+      // The kind it is shown as now is always one, even where the page would not offer it to add (a photo on a form).
+      const now = kindOfField(page.fields[name], found.node);
+      return now && !offered.some((k) => k.id === now) ? [kindById(now), ...offered] : offered;
     },
     getState: state,
     subscribe(listener) {
