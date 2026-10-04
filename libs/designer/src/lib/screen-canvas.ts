@@ -20,6 +20,7 @@ import { locate } from './layout-tree';
 import { ruleMarks } from './rules-marks';
 import { tabHolds } from './page-tree';
 import { sampleRows } from './samples';
+import { foldMark, type FoldMark } from './canvas-fold';
 
 /**
  * The screen editor's canvas: the page drawn the way the viewer draws it —
@@ -261,6 +262,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     grid: HTMLElement;
     empty: HTMLElement;
     lock: HTMLElement;
+    fold: FoldMark;
   }
   const sections = new Map<string, SectionView>();
 
@@ -277,7 +279,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       titleInput.focus();
       titleInput.select();
     });
-    const legend = el('legend', { class: 'fd-section-title' }, title, titleInput);
+    const fold = foldMark(el, doc);
+    const legend = el('legend', { class: 'fd-section-title' }, title, titleInput, fold.element);
     const description = el('p', { class: 'fd-section-description', hidden: '' });
     const grid = el('div', { class: 'fd-grid', 'data-drop-grid': '', 'data-container': id });
     const empty = el('p', { class: 'fd-canvas-empty' }, 'Drop a field here, or pick one in the toolbox.');
@@ -286,7 +289,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     advanced.addEventListener('click', () => options.openAdvanced?.());
     const lock = el('div', { class: 'fd-simple-lock', hidden: '' }, el('span', { class: 'fd-simple-lock-how' }), el('span', {}, 'Simple mode keeps it as it is. Edit what is inside by picking it.'), advanced);
     const element = el(tag, { class: 'fd-section fd-canvas-section', 'data-node': id, 'data-drop-section': id }, legend, description, grid, empty, lock);
-    return { element, legend, title, titleInput, description, grid, empty, lock };
+    return { element, legend, title, titleInput, description, grid, empty, lock, fold };
   }
 
   /** Where a part's colspan is, for the grid it sits in. */
@@ -324,6 +327,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     view.title.hidden = isPicked;
     view.titleInput.hidden = !isPicked;
     if (doc.activeElement !== view.titleInput) view.titleInput.value = section.title ?? '';
+    view.fold.update(section);
     view.description.hidden = !section.description;
     view.description.textContent = section.description ?? '';
     // On its grid's tracks it has no columns of its own; else its own, and those it keeps on smaller screens.

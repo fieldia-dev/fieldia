@@ -42,6 +42,7 @@ import * as clipboard from './clipboard-ops';
 import * as moves from './outline-moves';
 import { outlineRows } from './outline-rows';
 import { LOOK_PRESETS } from './look-presets';
+import { setFold, type Fold } from './group-fold';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -67,6 +68,7 @@ export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-c
 export type { BlockKind, Drop, NewPart } from './layout-ops';
 export type { BlockPatch, LookPatch, SectionLook } from './layout-settings';
 export type { EachChange } from './layout-several';
+export type { Fold } from './group-fold';
 export type { JsonProblem, PageJsonResult } from './page-json';
 export type { AnswerRulePatch } from './rules-commands';
 
@@ -391,6 +393,8 @@ export interface Designer extends HeaderCommands, ListCommands {
   // gap lane
   /** A look to start from, by its id: its accent, font, spacing, corners and colours, as one undo step; where labels sit is kept. */
   setLookPreset(id: string): boolean;
+  /** Whether a group folds by its title, and how it starts; refused for a group with no title. */
+  setFold(id: string, fold: Fold): boolean;
 }
 
 /** One of the app's lists of choices, by the name its data source answers to, and the words a person picks it by. */
@@ -958,6 +962,8 @@ export function createDesigner(options: {
         (draft) => {
           const container = findContainer(draft, id) as (StepNode | SectionNode) | null;
           if (!container) throw new Refusal(`There is no step or section "${id}"`);
+          // gap lane: a group that folds does so by its title.
+          if ((container as SectionNode).collapsible && !label.trim()) throw new Refusal(`“${(container as SectionNode).title}” folds by its title: set Folds to No to take the title away`);
           if ('label' in container) container.label = label;
           else (container as SectionNode).title = label;
         },
@@ -1308,6 +1314,7 @@ export function createDesigner(options: {
         settings.setLook(draft, preset.look);
       });
     },
+    setFold: (id, fold) => apply((draft) => setFold(draft, id, fold)),
   };
   return designer;
 }

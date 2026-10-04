@@ -1,6 +1,6 @@
 /**
  * The designer's styles for what closes the gap with other form builders:
- * looks to start from on the Look tab.
+ * looks to start from on the Look tab, and the mark of a group that folds.
  */
 export const DESIGNER_GAP_CSS = /* css */ `
 /* Looks to start from: a tile each, its words in its font and accent on its scheme's surface. */
@@ -20,4 +20,10 @@ export const DESIGNER_GAP_CSS = /* css */ `
 /* The look the page wears when it is none of them: said, not pressed. */
 .fd-look-own { cursor: default; border-style: dashed; color: var(--fd-text); font-weight: 600; text-align: center; }
 .fd-look-own[hidden] { display: none; }
+/* A group that folds by its title: an arrow by the title, along the line while it starts folded. */
+.fd-canvas-fold { display: inline-flex; vertical-align: -2px; margin-inline-start: 6px; color: var(--fd-muted); }
+.fd-canvas-fold[hidden] { display: none; }
+.fd-canvas-fold .fd-dicon { width: 15px; height: 15px; }
+.fd-canvas-fold[data-fold="folded"] .fd-dicon { transform: rotate(-90deg); }
+.fd-canvas-fold[data-fold="folded"]:dir(rtl) .fd-dicon { transform: rotate(90deg); }
 `;
