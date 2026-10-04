@@ -110,6 +110,19 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'rules',
+    name: 'Totals and answer rules',
+    category: 'forms',
+    query: 'page=rules&skin=outlined',
+    blurb: 'An order whose subtotals, total and amount to pay work themselves out as you type, a discount that sets itself past a threshold, and answer rules: one that only warns, and ones that stop the form.',
+    howTo: [
+      'Change a quantity or a price: the line’s subtotal, the total and the amount to pay follow.',
+      'Add a line that takes the total past EGP 1,000: the discount sets itself to 10%. Change it if you like: it stays as you set it.',
+      'Type an email outside @niletraders.example and leave the field: a warning shows under it, and the form still sends.',
+      'Type a postcode of four digits, tick one delivery day, and send: the form stops, saying what is wrong under each.',
+    ],
+  },
+  {
     id: 'custom',
     name: 'Your own parts',
     category: 'fields',

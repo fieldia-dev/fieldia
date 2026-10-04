@@ -73,8 +73,8 @@ test('the gallery shows every demo with its thumbnail, featured first, and each 
   const cards = page.locator('a.demo-card');
   const hrefs = [...new Set(await cards.evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).getAttribute('href') as string)))];
   // Every demo of the catalog, once each, and the four featured again at the top.
-  expect(hrefs.length).toBe(14);
-  await expect(cards).toHaveCount(18);
+  expect(hrefs.length).toBe(15);
+  await expect(cards).toHaveCount(19);
   for (const image of await page.locator('.demo-thumb img').all()) {
     await image.scrollIntoViewIfNeeded();
     await expect.poll(() => image.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(600);
