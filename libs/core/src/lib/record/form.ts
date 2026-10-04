@@ -7,6 +7,7 @@ import type { ExpressionEnv } from '../expression/functions';
 import { localDay } from '../expression/functions';
 import { checkValue } from './check';
 import { compileComputed } from './compute';
+import { compileSetWhen } from './set-when';
 import { expressionEnv } from './env';
 import { MESSAGES, type Messages } from './messages';
 import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
@@ -175,8 +176,11 @@ export function createForm(options: FormOptions): Form {
   const draftKey = () => `fieldia:draft:${page.id}:${state.recordId ?? 'new'}`;
   const today = () => localDay(options.now?.() ?? new Date());
   const computed = compileComputed(page, today);
+  const setWhen = compileSetWhen(page, today);
 
   let baseline: Values = computed.apply({ ...initialValues(page.fields), ...structuredCopy(options.values ?? {}) });
+  /** The setWhen conditions holding for the values as they last settled: one starts to hold only against these. */
+  let holding = setWhen.holding(baseline);
   let state: FormState = {
     status: options.recordId != null ? 'idle' : 'ready',
     recordId: options.recordId ?? null,
@@ -295,8 +299,32 @@ export function createForm(options: FormOptions): Form {
     return errors;
   }
 
-  function writeValues(written: Values, extra: Partial<FormState> = {}) {
-    const values = computed.apply(written);
+  /**
+   * Values as they settle after a change: worked out, then set where a
+   * condition started to hold, then worked out again from what was set — a
+   * few rounds at most, so rules that set each other cannot run forever.
+   */
+  function settle(written: Values): Values {
+    let values = computed.apply(written);
+    for (let round = 0; round < 8; round++) {
+      const result = setWhen.apply(values, holding);
+      holding = result.holding;
+      if (result.values === values) break;
+      values = computed.apply(result.values);
+    }
+    return values;
+  }
+
+  /** Values to start again from, as loaded or restored: conditions holding in them hold already, and set nothing. */
+  function startFrom(values: Values): Values {
+    const worked = computed.apply(values);
+    holding = setWhen.holding(worked);
+    return worked;
+  }
+
+  /** Write values someone or something changed. `fresh` values are a starting point instead (a restored draft). */
+  function writeValues(written: Values, extra: Partial<FormState> = {}, fresh = false) {
+    const values = fresh ? startFrom(written) : settle(written);
     const errors = Object.keys(state.errors).length ? revalidateShown(values) : state.errors;
     set({ values, dirty: dirtyFields(values), errors, ...extra });
   }
@@ -344,7 +372,7 @@ export function createForm(options: FormOptions): Form {
       drafts.store.removeItem(draftKey());
       return;
     }
-    if (drafts.restore === 'auto') writeValues({ ...state.values, ...draft.values }, { draft: null });
+    if (drafts.restore === 'auto') writeValues({ ...state.values, ...draft.values }, { draft: null }, true);
     else set({ draft: { savedAt: draft.savedAt } });
   }
 
@@ -436,7 +464,7 @@ export function createForm(options: FormOptions): Form {
         values: structuredCopy(state.values as Values),
       });
       forgetDraft();
-      const values = result.values ? computed.apply({ ...(state.values as Values), ...result.values }) : (state.values as Values);
+      const values = startFrom(result.values ? { ...(state.values as Values), ...result.values } : (state.values as Values));
       baseline = structuredCopy(values);
       set({ status: 'saved', recordId: result.id, values, dirty: [] });
       return true;
@@ -513,7 +541,7 @@ export function createForm(options: FormOptions): Form {
     set({ status: 'loading', error: null });
     try {
       const loaded = await source.load({ model: page.data.model, id: state.recordId, fields: page.fields });
-      baseline = computed.apply({ ...initialValues(page.fields), ...loaded });
+      baseline = startFrom({ ...initialValues(page.fields), ...loaded });
       set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {} });
       offerDraft();
     } catch (error) {
@@ -561,6 +589,7 @@ export function createForm(options: FormOptions): Form {
     reset() {
       forgetDraft();
       serverErrors = {};
+      holding = setWhen.holding(baseline);
       set({ values: structuredCopy(baseline), dirty: [], errors: {}, warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null });
     },
 
@@ -743,7 +772,7 @@ export function createForm(options: FormOptions): Form {
       const raw = options.drafts?.store.getItem(draftKey());
       if (!raw) return;
       const draft = JSON.parse(raw) as { values: Values };
-      writeValues({ ...(state.values as Values), ...draft.values }, { draft: null });
+      writeValues({ ...(state.values as Values), ...draft.values }, { draft: null }, true);
     },
 
     discardDraft() {

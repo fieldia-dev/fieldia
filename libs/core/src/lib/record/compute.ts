@@ -4,7 +4,7 @@ import { compileExpression, type CompiledExpression, type ExpressionEnv } from '
 import { isNumber, roundTo, truthy } from '../expression/operations';
 import { dependencyOrder } from '../expression/order';
 import { expressionEnv } from './env';
-import { expressionContext, lineKind, type Line, type Value, type Values } from './values';
+import { expressionContext, lineKind, sameValue, type Line, type Value, type Values } from './values';
 
 /**
  * Values worked out from others: a field's `compute`. A page's own fields are
@@ -29,9 +29,6 @@ function steps(fields: Record<string, Field | LineField>): Step[] {
   const { order } = dependencyOrder(new Map([...compiled].map(([name, expression]) => [name, expression.fields])));
   return order.map((name) => [name, compiled.get(name) as CompiledExpression, fields[name]]);
 }
-
-/** Whether two values are the same, as they would be saved. */
-const same = (a: Value | undefined, b: Value | undefined) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
 /**
  * A worked-out value as its field holds it: a whole number rounded, a number
@@ -78,7 +75,7 @@ export function compileComputed(page: Page, today: () => string): Computed {
     const context = expressionContext(values, fields);
     for (const [name, expression, def] of list) {
       const value = fitTo(def, expression.evaluate(context, env));
-      if (same(value, next[name])) continue;
+      if (sameValue(value, next[name])) continue;
       next = { ...next, [name]: value };
       // What comes after reads this value as it is now.
       Object.assign(context, expressionContext({ [name]: value }, fields));
