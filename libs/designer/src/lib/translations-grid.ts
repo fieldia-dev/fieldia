@@ -51,7 +51,8 @@ export function wordsGrid(options: WordsGridOptions): WordsGrid {
   const head = el('thead');
   const rows = el('tbody');
   const none = el('p', { class: 'fd-words-none', hidden: '' }, 'Every word is translated in every language.');
-  const element = el('div', { class: 'fd-words-scroll' }, el('table', { class: 'fd-words-table fd-words-grid' }, head, rows), none);
+  // A region the keyboard can scroll (WCAG 2.1.1): wide grids scroll sideways, and a grid of the page's words alone has nothing to focus.
+  const element = el('div', { class: 'fd-words-scroll', role: 'region', 'aria-label': 'Words and their translations', tabindex: '0' }, el('table', { class: 'fd-words-table fd-words-grid' }, head, rows), none);
 
   const staleHead = el('thead');
   const staleRows = el('tbody');
@@ -67,7 +68,7 @@ export function wordsGrid(options: WordsGridOptions): WordsGrid {
       el('p', { class: 'fd-words-stale-note' }, 'Translations kept for words the page no longer shows.'),
       removeAll
     ),
-    el('div', { class: 'fd-words-scroll' }, el('table', { class: 'fd-words-table fd-words-stale-grid' }, staleHead, staleRows))
+    el('div', { class: 'fd-words-scroll', role: 'region', 'aria-label': 'Translations no longer on the page', tabindex: '0' }, el('table', { class: 'fd-words-table fd-words-stale-grid' }, staleHead, staleRows))
   );
 
   /** Cells by language and word, kept from one drawing to the next so the one typed in keeps its focus. */
