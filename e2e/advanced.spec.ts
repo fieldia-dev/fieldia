@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { doubleLines } from './designer-support';
+import { cardOf, doubleLines } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -161,6 +161,38 @@ test('beside a field in a full row: the two share its cell', async ({ page }) =>
   expect(words).toBe('beside “First name”');
   expect(await where(page, 'f-nationality')).toMatchObject({ style: 'plain', kids: ['f-first-name', 'f-nationality'] });
   await expect(part(page, 'f-nationality')).toBeVisible();
+});
+
+test('beside a field in a named group’s full row: the group takes one more column, as the site visit is dragged', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await page.goto('/screen/');
+  await page.getByRole('group', { name: 'Editing mode' }).getByRole('button', { name: 'Advanced' }).click();
+  await expect(page.locator('.fd-screen-designer')).toHaveAttribute('data-mode', 'advanced');
+  const at = async (label: string) => (await (await cardOf(page, label)).boundingBox())!;
+  const notes = await (await cardOf(page, 'Notes')).getAttribute('data-node');
+  const date = await at('Visit date');
+  // Notes, the whole width under the two, put on Visit date's far side.
+  const { words, refused } = await dropAt(page, centre(await at('Notes')), { x: date.x + date.width - 12, y: date.y + date.height / 2 }, { shot: 'advanced-third-column-drag' });
+  expect([words, refused]).toEqual(['a third column of “Visit”, beside “Visit date”', false]);
+  expect(await where(page, notes as string)).toMatchObject({ title: 'Visit', columns: 3 });
+  // One row of three, on the group's three columns, the guides numbering them.
+  const tops = await Promise.all(['Customer', 'Visit date', 'Notes'].map(async (label) => Math.round((await at(label)).y)));
+  expect(new Set(tops).size, `tops ${tops}`).toBe(1);
+  const { checked, off } = await misalignedOnCanvas(page);
+  expect(checked).toBeGreaterThan(2);
+  expect(off).toEqual([]);
+  await screen(page, 'advanced-third-column', { viewport: true });
+  // A field from the toolbox beside Notes: a fourth; then the group holds four, and a fifth shares a cell.
+  // The toolbox scrolls into view first: Notes is measured after it.
+  const number = await tileAt(page, 'kind:number');
+  const third = await at('Notes');
+  expect((await dropAt(page, number, { x: third.x + third.width - 12, y: third.y + third.height / 2 }, { shot: 'advanced-fourth-column-drag' })).words).toBe('a fourth column of “Visit”, beside “Notes”');
+  expect(await where(page, notes as string)).toMatchObject({ columns: 4 });
+  const day = await tileAt(page, 'kind:date');
+  const last = await at('Notes');
+  expect((await dropAt(page, day, { x: last.x + last.width - 12, y: last.y + last.height / 2 }, { release: false })).words).toBe('beside “Notes”');
+  await page.keyboard.press('Escape');
+  await page.mouse.up();
 });
 
 test('under a field in a grid: its cell becomes a column of two', async ({ page }) => {

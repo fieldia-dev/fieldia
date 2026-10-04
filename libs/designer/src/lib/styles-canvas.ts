@@ -54,6 +54,8 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 /* The gutter between two parts of a row: a slim line in the gap, dragged or moved with the arrow keys to trade columns. */
 /* 24px wide, a target a finger can hit (WCAG 2.5.8); the line drawn down its middle. */
 .fd-gutter { position: absolute; z-index: 9; width: 24px; cursor: col-resize; touch-action: none; border-radius: 6px; }
+/* While a part is carried, what floats over the parts lets the pointer through: a drop at a picked part's edge goes beside it, not onto its handle. */
+.fd-canvas.fd-dragging :is(.fd-width-handle, .fd-gutter, .fd-field-bar) { pointer-events: none; }
 .fd-gutter::before { content: ""; position: absolute; inset-block: 6px; inset-inline-start: 11px; width: 2px; border-radius: 2px; background: color-mix(in srgb, var(--fd-accent) 55%, transparent); }
 .fd-gutter:hover::before, .fd-gutter:focus-visible::before { inset-inline-start: 10px; width: 4px; background: var(--fd-accent); }
 .fd-gutter:focus-visible { outline: none; }
