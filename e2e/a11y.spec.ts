@@ -1,13 +1,17 @@
 import { expect, test, type Page } from '@playwright/test';
 import { DEMOS } from '../demos/catalog.mjs';
 import { ALLOWED, axeFindings } from './a11y-support';
+import { inAdvanced } from './designer-support';
 import { node, screen } from './support';
 
 /**
  * The accessibility sweep: axe, against WCAG 2.2 A and AA, on every demo of
  * the gallery in both skins, in the dark scheme and right to left in Arabic;
  * on the states a person reaches — errors after a failed send, a dialog
- * open, a list's search open. Every page must come back with nothing found.
+ * open, a list's search open — and on the designers: every view, dialog and
+ * sheet, a part picked with each tab of the panel, and the empty state, in
+ * Simple and Advanced, at a desktop's width and a phone's. Every page must
+ * come back with nothing found.
  */
 
 interface Demo {
@@ -122,6 +126,125 @@ test.describe('axe on what a person reaches', () => {
       findings.push(...(await axeFindings(page, `search menu ${look}`)));
       expect(findings).toEqual([]);
     });
+  }
+});
+
+// ---- the designers ----------------------------------------------------------------
+
+const DESKTOP = { width: 1440, height: 900 };
+const PHONE = { width: 390, height: 844 };
+const bar = (page: Page, name: string) => page.locator('.fd-designer-bar').getByRole('button', { name, exact: true });
+
+interface Run {
+  name: string;
+  url: string;
+  /** How a part is picked on its canvas. */
+  part: string;
+  survey?: boolean;
+  /** What to add first, for a page that starts empty. */
+  prepare?: (page: Page) => Promise<void>;
+}
+const RUNS: Run[] = [
+  { name: 'survey designer', url: '/designer/?start=survey', part: '.fd-q-closed', survey: true },
+  { name: 'screen editor', url: '/screen/', part: '.fd-canvas-field' },
+  {
+    name: 'record sheet',
+    url: '/screen/?start=sheet',
+    part: '.fd-canvas-field',
+    // A blank sheet: a field of the model, status steps and a button over the card, as a person adds them.
+    prepare: async (page) => {
+      await page.locator('.fd-toolbox [data-tool="model:email"]').click();
+      await page.getByRole('button', { name: 'Add status steps' }).click();
+      await page.getByRole('button', { name: 'Add a button' }).click();
+      await page.keyboard.press('Escape');
+    },
+  },
+  { name: 'list', url: '/screen/?start=list', part: '.fd-list-table th[data-node]' },
+  { name: 'laid-out page', url: '/screen/?start=layout', part: '.fd-canvas-field' },
+];
+
+/**
+ * axe on each place a person goes in a designer: the rail's tabs, a part
+ * picked with each tab of its panel, the views, and each dialog and sheet.
+ * At the top of the page each time: what scrolls under the sticky bar is not
+ * covered for a person, who scrolls it out.
+ */
+async function walk(page: Page, run: Run, tag: string): Promise<string[]> {
+  const found: string[] = [];
+  const look = async (state: string, shot = false) => {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(150);
+    if (shot) await screen(page, `a11y-${tag}-${state}`.replace(/\W+/g, '-'), { viewport: true });
+    found.push(...(await axeFindings(page, `${tag} · ${state}`)));
+  };
+  await page.goto(run.url);
+  await expect(page.locator('.fd-designer-bar')).toBeVisible();
+  await run.prepare?.(page);
+  await look('start', true);
+  const rail = page.locator('.fd-rail');
+  for (const name of ['Outline', 'Data']) {
+    const tab = rail.getByRole('tab', { name, exact: true });
+    if (!(await tab.isVisible())) continue;
+    await tab.click();
+    await look(`rail ${name}`);
+  }
+  await rail.getByRole('tab', { name: 'Add', exact: true }).click();
+  await page.locator(run.part).first().click();
+  await look('picked', true);
+  const panelTabs = page.locator('.fd-properties [role="tab"]');
+  for (const name of await panelTabs.allTextContents()) {
+    await page.locator('.fd-properties').getByRole('tab', { name, exact: true }).click();
+    await look(`picked, ${name} tab`);
+  }
+  for (const view of ['Try it', 'JSON', 'Translations', 'Rules']) {
+    await bar(page, view).click();
+    await page.waitForTimeout(250);
+    await look(`${view} view`, true);
+    await bar(page, 'Design').click();
+  }
+  const dialogs: [string, () => Promise<unknown>][] = [
+    ['find anything', () => page.keyboard.press('ControlOrMeta+k')],
+    ['checks', () => page.locator('.fd-checks-button').click()],
+    ['publish', () => bar(page, 'Publish').click()],
+    ['shortcuts', () => page.keyboard.type('?')],
+    ['versions', () => page.locator('.fd-designer-status').click()],
+    ...(run.survey ? ([['look', () => bar(page, 'Look').click()]] as [string, () => Promise<unknown>][]) : []),
+  ];
+  for (const [name, open] of dialogs) {
+    await page.locator('body').click({ position: { x: 2, y: 2 } });
+    await open();
+    await page.waitForTimeout(200);
+    await look(name, true);
+    await page.keyboard.press('Escape');
+  }
+  return found;
+}
+
+test.describe('axe on the designers', () => {
+  for (const run of RUNS) {
+    for (const mode of run.survey ? ['the one mode'] : ['Simple', 'Advanced']) {
+      for (const [size, viewport] of [['desktop', DESKTOP], ['phone', PHONE]] as const) {
+        const tag = `${run.name} · ${mode} · ${size}`;
+        test(tag, async ({ page }) => {
+          test.setTimeout(300_000);
+          await page.setViewportSize(viewport);
+          if (mode === 'Advanced') await inAdvanced(page);
+          expect(await walk(page, run, tag)).toEqual([]);
+        });
+      }
+    }
+  }
+
+  for (const [name, url] of [['survey', '/designer/'], ['screen', '/screen/?start=blank']]) {
+    for (const [size, viewport] of [['desktop', DESKTOP], ['phone', PHONE]] as const) {
+      test(`a blank ${name}: templates to start from · ${size}`, async ({ page }) => {
+        await page.setViewportSize(viewport);
+        await page.goto(url);
+        await expect(page.locator('.fd-designer-bar')).toBeVisible();
+        await screen(page, `a11y-blank-${name}-${size}`, { viewport: true });
+        expect(await axeFindings(page, `blank ${name} · ${size}`)).toEqual([]);
+      });
+    }
   }
 });
 
