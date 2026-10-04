@@ -29,6 +29,7 @@ import { sliderWidget } from './slider';
 import { choiceTagsWidget } from './choice-tags';
 import { imageChoiceWidget } from './choice-images';
 import { rankingWidget } from './ranking';
+import { addressWidget } from './address';
 import { clearSelection } from './kind-parts';
 
 /**
@@ -539,6 +540,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   image: imageWidget,
   html: htmlWidget,
   json: jsonWidget,
+  'json.address': addressWidget,
   properties: propertiesWidget,
   matrix: matrixWidget,
 };

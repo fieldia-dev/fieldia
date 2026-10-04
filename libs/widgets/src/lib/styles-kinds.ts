@@ -85,4 +85,10 @@ export const KINDS_CSS = /* css */ `
 }
 .fd-rank-move:hover:not(:disabled) { background: var(--fd-page); border-color: var(--fd-border); color: var(--fd-text); }
 .fd-rank-move:disabled { opacity: 0.3; cursor: default; }
+/* An address: its parts in two columns, the street across both, each named above its box; one column when narrow. */
+.fd-address { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; width: 100%; max-width: 560px; min-width: 0; }
+.fd-address-part { display: grid; gap: 3px; min-width: 0; align-content: start; }
+.fd-address-street { grid-column: 1 / -1; }
+.fd-address-label { font-size: 12.5px; color: var(--fd-muted); }
+@container (max-width: 420px) { .fd-address { grid-template-columns: minmax(0, 1fr); } }
 `;

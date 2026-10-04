@@ -73,6 +73,11 @@ export interface WidgetLabels {
   moveUp: string;
   moveDown: string;
   movedTo: string;
+  /** An address's parts. */
+  addressStreet: string;
+  addressCity: string;
+  addressPostcode: string;
+  addressCountry: string;
 }
 
 export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
@@ -133,6 +138,10 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     moveUp: 'Move {label} up',
     moveDown: 'Move {label} down',
     movedTo: '{label} moved to place {n} of {total}',
+    addressStreet: 'Street address',
+    addressCity: 'City',
+    addressPostcode: 'Postcode',
+    addressCountry: 'Country',
   },
   ar: {
     search: 'بحث…',
@@ -191,6 +200,10 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     moveUp: 'نقل {label} لأعلى',
     moveDown: 'نقل {label} لأسفل',
     movedTo: 'أصبح {label} في المرتبة {n} من {total}',
+    addressStreet: 'عنوان الشارع',
+    addressCity: 'المدينة',
+    addressPostcode: 'الرمز البريدي',
+    addressCountry: 'الدولة',
   },
   de: {
     search: 'Suchen…',
@@ -249,6 +262,10 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     moveUp: '{label} nach oben verschieben',
     moveDown: '{label} nach unten verschieben',
     movedTo: '{label} ist jetzt auf Platz {n} von {total}',
+    addressStreet: 'Straße und Hausnummer',
+    addressCity: 'Ort',
+    addressPostcode: 'Postleitzahl',
+    addressCountry: 'Land',
   },
   fr: {
     search: 'Rechercher…',
@@ -307,5 +324,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     moveUp: 'Monter {label}',
     moveDown: 'Descendre {label}',
     movedTo: '{label} est maintenant en position {n} sur {total}',
+    addressStreet: 'Adresse',
+    addressCity: 'Ville',
+    addressPostcode: 'Code postal',
+    addressCountry: 'Pays',
   },
 };

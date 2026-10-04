@@ -138,6 +138,10 @@
           "label": "Two screens"
         }
       ]
+    },
+    "badge_address": {
+      "type": "json",
+      "label": "Where should we post your new badge?"
     }
   },
   "layout": {
@@ -174,6 +178,19 @@
             "id": "q-rooms",
             "field": "rooms",
             "widget": "tags"
+          },
+          {
+            "type": "field",
+            "id": "q-address",
+            "field": "badge_address",
+            "widget": "address",
+            "options": {
+              "parts": [
+                "street",
+                "city",
+                "postcode"
+              ]
+            }
           }
         ]
       },
