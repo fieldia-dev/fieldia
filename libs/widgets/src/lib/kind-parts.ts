@@ -1,5 +1,6 @@
 import type { Locale } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
+import type { WidgetState } from './widgets';
 
 /**
  * Small parts the question kinds share: making elements, their words, saying
@@ -47,3 +48,23 @@ export function announcer(make: Make) {
 
 /** Whether the element sits in a right-to-left page, where left is forward. */
 export const rightToLeft = (element: Element) => element.closest('[dir]')?.getAttribute('dir') === 'rtl';
+
+/**
+ * "Clear selection", as Google Forms has it: under a single choice that need not be answered, once something is
+ * picked — a radio, once picked, cannot be unpicked; nor can a slider, once slid.
+ */
+export function clearSelection(document: Document, words: WidgetLabels, clear: () => void) {
+  const button = maker(document)('button', { type: 'button', class: 'fd-choice-clear', hidden: '' }, words.clearSelection);
+  button.addEventListener('click', clear);
+  let open = false;
+  return {
+    button,
+    /** Whether the answer may be left out: not required, and not read-only. */
+    allow(state: WidgetState) {
+      open = !state.required && !state.readonly;
+    },
+    show(picked: boolean) {
+      button.hidden = !(open && picked);
+    },
+  };
+}

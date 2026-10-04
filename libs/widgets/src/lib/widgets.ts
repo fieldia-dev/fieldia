@@ -25,6 +25,8 @@ import { propertiesWidget } from './properties';
 import { htmlWidget, jsonWidget } from './extras';
 import { matrixWidget } from './matrix';
 import { signatureWidget } from './signature';
+import { sliderWidget } from './slider';
+import { clearSelection } from './kind-parts';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -280,26 +282,6 @@ const selectWidget: WidgetFactory = ({ form, name, field, id, document }) => {
   };
 };
 
-/**
- * "Clear selection", as Google Forms has it: under a single choice that need not be answered, once something is
- * picked — a radio, once picked, cannot be unpicked.
- */
-function clearSelection(document: Document, words: WidgetLabels, clear: () => void) {
-  const button = make(document, 'button', { type: 'button', class: 'fd-choice-clear', hidden: '' }, words.clearSelection);
-  button.addEventListener('click', clear);
-  let open = false;
-  return {
-    button,
-    /** Whether the answer may be left out: not required, and not read-only. */
-    allow(state: WidgetState) {
-      open = !state.required && !state.readonly;
-    },
-    show(picked: boolean) {
-      button.hidden = !(open && picked);
-    },
-  };
-}
-
 function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
   return ({ form, name, field, id, document, labels, locale }) => {
     const choices = options(field);
@@ -523,6 +505,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   monetary: numberWidget,
   'integer.rating': pointsWidget('rating'),
   'integer.scale': pointsWidget('scale'),
+  'integer.slider': sliderWidget,
+  'float.slider': sliderWidget,
   'integer.progressbar': progressbarWidget,
   'integer.label': labelWidget,
   'float.label': labelWidget,

@@ -3,10 +3,36 @@
   "id": "office-move",
   "title": "Office move",
   "description": "We move to the new building on 2 March. Tell us what you need there.",
-  "data": { "kind": "responses" },
+  "data": {
+    "kind": "responses"
+  },
   "fields": {
-    "name": { "type": "char", "label": "Your name", "required": true },
-    "signature": { "type": "binary", "label": "Your signature", "help": "Draw it, or type your name." }
+    "name": {
+      "type": "char",
+      "label": "Your name",
+      "required": true
+    },
+    "signature": {
+      "type": "binary",
+      "label": "Your signature",
+      "help": "Draw it, or type your name."
+    },
+    "office_days": {
+      "type": "integer",
+      "label": "How many days a week will you come in?",
+      "min": 0,
+      "max": 5
+    },
+    "commute": {
+      "type": "float",
+      "label": "How long is your trip to the new building, in hours?",
+      "min": 0,
+      "max": 3,
+      "digits": [
+        3,
+        1
+      ]
+    }
   },
   "layout": {
     "type": "sections",
@@ -16,13 +42,41 @@
         "type": "section",
         "id": "s-you",
         "title": "About you",
-        "children": [{ "type": "field", "id": "q-name", "field": "name" }]
+        "children": [
+          {
+            "type": "field",
+            "id": "q-name",
+            "field": "name"
+          },
+          {
+            "type": "field",
+            "id": "q-days",
+            "field": "office_days",
+            "widget": "slider"
+          },
+          {
+            "type": "field",
+            "id": "q-commute",
+            "field": "commute",
+            "widget": "slider",
+            "options": {
+              "step": 0.5
+            }
+          }
+        ]
       },
       {
         "type": "section",
         "id": "s-sign",
         "title": "Sign it off",
-        "children": [{ "type": "field", "id": "q-signature", "field": "signature", "widget": "signature" }]
+        "children": [
+          {
+            "type": "field",
+            "id": "q-signature",
+            "field": "signature",
+            "widget": "signature"
+          }
+        ]
       }
     ]
   }

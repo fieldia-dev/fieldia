@@ -67,6 +67,8 @@ export interface WidgetLabels {
   signHere: string;
   typeSignature: string;
   clearDrawing: string;
+  /** A slider not slid yet, as a screen reader reads it. */
+  notAnswered: string;
 }
 
 export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
@@ -123,6 +125,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     signHere: 'Sign here',
     typeSignature: 'Or type your name',
     clearDrawing: 'Clear',
+    notAnswered: 'Not answered',
   },
   ar: {
     search: 'بحث…',
@@ -177,6 +180,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     signHere: 'وقّع هنا',
     typeSignature: 'أو اكتب اسمك',
     clearDrawing: 'مسح',
+    notAnswered: 'لم تتم الإجابة',
   },
   de: {
     search: 'Suchen…',
@@ -231,6 +235,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     signHere: 'Hier unterschreiben',
     typeSignature: 'Oder Namen eingeben',
     clearDrawing: 'Löschen',
+    notAnswered: 'Nicht beantwortet',
   },
   fr: {
     search: 'Rechercher…',
@@ -285,5 +290,6 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     signHere: 'Signez ici',
     typeSignature: 'Ou tapez votre nom',
     clearDrawing: 'Effacer',
+    notAnswered: 'Pas de réponse',
   },
 };

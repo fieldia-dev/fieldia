@@ -23,4 +23,14 @@ export const KINDS_CSS = /* css */ `
 }
 .fd-signature-tools { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; width: 100%; }
 .fd-signature-typed { flex: 1 1 200px; min-width: 0; }
+/* A slider: the value beside the track and its ends under it; dimmed until it is slid. */
+.fd-slider { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 14px; row-gap: 0; align-items: center; width: 100%; max-width: 440px; min-width: 0; }
+.fd-slider-track { display: contents; }
+.fd-slider-input { width: 100%; min-width: 0; height: 26px; margin: 0; accent-color: var(--fd-accent); cursor: pointer; }
+.fd-slider-input:disabled { cursor: default; }
+.fd-slider-value { min-width: 2.5em; text-align: end; font-variant-numeric: tabular-nums; font-weight: 600; }
+.fd-slider-ends { grid-column: 1; display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; color: var(--fd-muted); font-variant-numeric: tabular-nums; }
+.fd-slider-empty .fd-slider-input { opacity: 0.5; }
+.fd-slider-empty .fd-slider-value { color: var(--fd-muted); font-weight: 400; }
+.fd-slider .fd-choice-clear { grid-column: 1 / -1; }
 `;
