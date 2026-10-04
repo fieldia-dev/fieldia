@@ -178,19 +178,32 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const help = helpText ? el('div', { class: 'fd-help', id: `${id}-help` }, helpText) : null;
     // Not an alert of its own: a refused save is announced once, naming every field to look at.
     const error = el('div', { class: 'fd-error', id: `${id}-error`, hidden: '' });
-    // A warning from the data source's onchange, beside the field whose change brought it.
-    const warning = el('div', { class: 'fd-warning', role: 'status', hidden: '' });
+    // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
+    const warning = el('div', { class: 'fd-warning', id: `${id}-warning`, role: 'status', hidden: '' });
     wrapper.append(label, widget.element, ...(help ? [help] : []), error, warning);
     if (widget.destroy) cleanups.push(() => widget.destroy?.());
+    // An answer rule's warning waits until the person leaves the field: no advice
+    // mid-word. One already shown stays while they put it right, and goes once they have.
+    let typing = false;
+    let advice = '';
+    wrapper.addEventListener('focusin', () => (typing = true));
+    wrapper.addEventListener('focusout', (event) => {
+      if (wrapper.contains(event.relatedTarget as Node | null)) return;
+      typing = false;
+      update(form.getState());
+    });
 
-    updaters.push((state) => {
+    const update = (state: FormState) => {
       const shown = form.node(node.id);
       wrapper.hidden = shown.invisible;
       wrapper.classList.toggle('fd-required', shown.required);
       const message = state.errors[node.field];
       error.hidden = !message;
       error.textContent = message ?? '';
-      const warned = state.warning && state.warningField === node.field ? state.warning : '';
+      const now = state.warnings[node.field] ?? '';
+      if (!typing || !now) advice = now;
+      // An error shown says enough: the rule's warning gives way to it.
+      const warned = [message ? '' : advice, state.warning && state.warningField === node.field ? state.warning : ''].filter(Boolean).join(' ');
       warning.hidden = !warned;
       warning.textContent = warned;
       if (mark) {
@@ -206,9 +219,10 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         readonly: shown.readonly || locked,
         required: shown.required,
         invalid: !!message,
-        describedBy: [help?.id, message ? error.id : undefined].filter(Boolean).join(' ') || undefined,
+        describedBy: [help?.id, message ? error.id : undefined, warned ? warning.id : undefined].filter(Boolean).join(' ') || undefined,
       });
-    });
+    };
+    updaters.push(update);
     return wrapper;
   }
 
