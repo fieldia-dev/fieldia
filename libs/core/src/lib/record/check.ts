@@ -53,6 +53,8 @@ export function checkValue(
     case 'datetime':
       return checkDateTime(value, say);
     case 'selection': {
+      // The app's list, not loaded: nothing to say a choice is not one of it.
+      if (field.optionsFrom) return undefined;
       const allowed = new Set(field.options.map((o) => o.value));
       const listing = say(field.other ? 'choiceOrOther' : 'choice', { options: field.options.map((o) => o.label).join(', ') });
       // An answer of one's own, where there is an "Other": words, never blank.

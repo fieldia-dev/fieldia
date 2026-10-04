@@ -82,6 +82,10 @@ export interface WidgetLabels {
   entry: string;
   addAnother: string;
   removed: string;
+  /** Choices from the app's list: while they load, a button to load them again, and a value the list no longer has (`{name}`). */
+  loadingChoices: string;
+  choicesFailed: string;
+  notOffered: string;
 }
 
 export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
@@ -149,6 +153,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     entry: 'Entry {n}',
     addAnother: 'Add another',
     removed: '{name} removed',
+    loadingChoices: 'Loading choices…',
+    choicesFailed: 'Load the choices again',
+    notOffered: '{name}: no longer offered',
   },
   ar: {
     search: 'بحث…',
@@ -214,6 +221,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     entry: 'الإدخال {n}',
     addAnother: 'إضافة المزيد',
     removed: 'أُزيل {name}',
+    loadingChoices: 'تحميل الخيارات…',
+    choicesFailed: 'أعد تحميل الخيارات',
+    notOffered: '{name}: لم يعد متاحًا',
   },
   de: {
     search: 'Suchen…',
@@ -279,6 +289,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     entry: 'Eintrag {n}',
     addAnother: 'Weitere hinzufügen',
     removed: '{name} entfernt',
+    loadingChoices: 'Auswahl lädt…',
+    choicesFailed: 'Auswahl neu laden',
+    notOffered: '{name}: nicht mehr angeboten',
   },
   fr: {
     search: 'Rechercher…',
@@ -344,5 +357,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     entry: 'Entrée {n}',
     addAnother: 'En ajouter un autre',
     removed: '{name} retiré',
+    loadingChoices: 'Chargement des choix…',
+    choicesFailed: 'Recharger les choix',
+    notOffered: '{name} : plus proposé',
   },
 };

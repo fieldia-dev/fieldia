@@ -1,4 +1,4 @@
-import type { FilterCondition, Fields } from '../format/field';
+import type { FilterCondition, Fields, Option } from '../format/field';
 import type { JsonValue } from '../format/json';
 import type { RecordId, RelatedRecord, Values } from './values';
 
@@ -24,6 +24,15 @@ export interface DataSource {
   list?(request: ListRequest): Promise<ListResult>;
   /** How many records fall under each value of a field, for a list's Group By. */
   groups?(request: GroupRequest): Promise<Group[]>;
+  /** The choices of one of the app's lists, for a selection with `optionsFrom`. */
+  options?(request: OptionsRequest): Promise<Option[]>;
+}
+
+export interface OptionsRequest {
+  /** The list's name, from the field's `optionsFrom.list`. */
+  list: string;
+  /** Every value of the form, for a list that changes with another field (`dependsOn`). */
+  values: Values;
 }
 
 export interface CreateRequest {

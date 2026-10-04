@@ -1,4 +1,4 @@
-import type { Field, Fields } from '../format/field';
+import type { Field, Fields, Option } from '../format/field';
 import type { JsonValue } from '../format/json';
 import type {
   DataSource,
@@ -11,6 +11,7 @@ import type {
   LoadRequest,
   OnchangeRequest,
   OnchangeResult,
+  OptionsRequest,
   SaveRequest,
   SaveResult,
   SearchRequest,
@@ -31,6 +32,8 @@ export interface MemoryDataSourceOptions {
   warnings?: Record<string, Record<string, (values: Values) => string | null>>;
   /** Which value names a record in search results, per model. Defaults to `name`. */
   labelField?: Record<string, string>;
+  /** The app's lists of choices, by name: the choices, or a function of the form's values giving them. */
+  lists?: Record<string, Option[] | ((values: Values) => Option[] | Promise<Option[]>)>;
   /** Answer after this long, so a demo shows its loading states. */
   delayMs?: number;
   scheduler?: Scheduler;
@@ -193,6 +196,14 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       await pause();
       responses.push(structuredCopy(request));
       return { id: responses.length };
+    },
+
+    async options(request: OptionsRequest): Promise<Option[]> {
+      calls.push({ method: 'options', request });
+      await pause();
+      const list = options.lists?.[request.list];
+      if (!list) throw new Error(`No list "${request.list}"`);
+      return structuredCopy(typeof list === 'function' ? await list(request.values) : list);
     },
   };
 }

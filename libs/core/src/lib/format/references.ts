@@ -163,6 +163,7 @@ export class ReferenceCheck {
           walk(item, `${path}.filter[${i}]`);
         });
       }
+      if (def.type === 'selection') def.optionsFrom?.dependsOn?.forEach((other, i) => this.need(other, `${path}.optionsFrom.dependsOn[${i}]`, fields));
       if (def.type === 'properties' && def.definitions) {
         const seen = new Set<string>();
         def.definitions.forEach((property, i) => {
