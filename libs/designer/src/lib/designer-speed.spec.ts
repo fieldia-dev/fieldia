@@ -1,4 +1,4 @@
-import type { FieldNode, Page, SectionNode } from '@fieldia/core';
+import { validatePage, type FieldNode, type Page, type SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner } from './designer';
 
 /**
@@ -78,5 +78,45 @@ describe('an edit on a big page', () => {
     designer.updateQuestion('n1', { label: 'First' });
     expect(designer.checks()[0]).not.toBe(checks[0]);
     expect(designer.checks()).toEqual(checks);
+  });
+});
+
+describe('an edit checked at the cost of what it changed', () => {
+  it('refuses a field made wrong with the same words a whole check gives', () => {
+    const designer = createDesigner({ page: screen(3) });
+    const choice = designer.addQuestion('dropdown') as string;
+    const before = designer.getPage();
+    const name = nodes(before).find((n) => n.id === choice)?.field as string;
+    const wrong = JSON.parse(JSON.stringify(before)) as Page;
+    (wrong.fields[name] as { options: unknown[] }).options = [];
+    const whole = validatePage(wrong);
+    expect(whole.ok).toBe(false);
+    expect(designer.setOptions(choice, [])).toBe(false);
+    expect(designer.getPage()).toBe(before);
+    expect(designer.getState().issues).toEqual(whole.ok ? [] : whole.issues.map((i) => `${i.path}: ${i.message}`));
+  });
+
+  it('refuses a field pointing at one the page has not got, as before', () => {
+    const designer = createDesigner({ page: screen(2) });
+    expect(designer.setCompute('n1', 'f2 * nowhere')).toBe(false);
+    expect(designer.getState().issues.join('\n')).toMatch(/nowhere/);
+  });
+
+  it('still refuses every edit of a page that was wrong from the start, saying what is wrong with it', () => {
+    const page = screen(2);
+    (page.fields['f2'] as { label: unknown }).label = 7;
+    const designer = createDesigner({ page });
+    expect(designer.updateQuestion('n1', { label: 'First' })).toBe(false);
+    expect(designer.getState().issues.join('\n')).toMatch(/^fields\.f2\.label/);
+  });
+
+  it('takes a label typed into a page of 500 fields, keeping the page as a whole check would', () => {
+    const designer = createDesigner({ page: screen(500) });
+    designer.updateQuestion('n1', { label: 'First' });
+    for (const words of ['Fi', 'Fir', 'Firs', 'First name']) expect(designer.updateQuestion('n250', { label: words })).toBe(true);
+    const page = designer.getPage();
+    expect(page.fields['f250']).toEqual({ type: 'char', label: 'First name' });
+    const whole = validatePage(page);
+    expect(whole.ok && whole.page).toEqual(page);
   });
 });

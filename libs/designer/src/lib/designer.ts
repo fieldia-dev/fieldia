@@ -41,7 +41,7 @@ import { keepWhatRulesRead } from './rules-reads';
 import * as clipboard from './clipboard-ops';
 import * as moves from './outline-moves';
 import { outlineRows } from './outline-rows';
-import { keepUnchanged } from './keep-unchanged';
+import { editChecker } from './validate-edit';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -490,6 +490,9 @@ export function createDesigner(options: {
     })();
   }
 
+  /** An edit's page checked as validatePage would, at the cost of what it changed. */
+  const checkEdit = editChecker();
+
   /** Apply an edit to a copy, validate it, and keep it — or refuse it, saying why. */
   function apply(edit: (draft: Page) => void, merge: string | null = null): boolean {
     const draft = clone(page);
@@ -503,7 +506,7 @@ export function createDesigner(options: {
     }
     // rules lane: a field a rule still reads keeps its definition, so the rule can be seen and put right.
     keepWhatRulesRead(page, draft);
-    const checked = validatePage(draft);
+    const checked = checkEdit(page, draft);
     if (!checked.ok) {
       issues = checked.issues.map((issue) => `${issue.path}: ${issue.message}`);
       notify();
@@ -514,7 +517,7 @@ export function createDesigner(options: {
     future = [];
     leave(page);
     // What the edit left alone stays the same objects, so the views can skip it.
-    page = keepUnchanged(page, checked.page);
+    page = checked.page;
     issues = [];
     notify();
     saveDraft();

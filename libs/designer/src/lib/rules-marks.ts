@@ -54,12 +54,15 @@ function marksOf(page: Page): Map<string, Mark[]> {
 }
 
 let tips = 0;
+/** Each page's marks, worked out once for it: a page an edit made is a new page. */
+const marksFor = new WeakMap<Page, Map<string, Mark[]>>();
 
 /** Draw the marks of every part with a rule in `container`, and take away those of parts that have none now. */
 export function ruleMarks(container: HTMLElement, page: Page, designer: Designer): void {
   const doc = container.ownerDocument;
   const el = elementFactory(doc);
-  const marks = marksOf(page);
+  let marks = marksFor.get(page);
+  if (!marks) marksFor.set(page, (marks = marksOf(page)));
   const root = (container.closest('.fd-designer') as HTMLElement | null) ?? container;
   for (const place of PLACES) {
     for (const part of container.querySelectorAll<HTMLElement>(place.parts)) {
@@ -67,7 +70,7 @@ export function ruleMarks(container: HTMLElement, page: Page, designer: Designer
       const own = marks.get(id) ?? [];
       const into = place.into ? part.querySelector<HTMLElement>(place.into) : part;
       if (!into) continue;
-      let holder = [...into.children].find((c) => c.classList.contains('fd-rule-marks')) as HTMLElement | undefined;
+      let holder = into.querySelector<HTMLElement>(':scope > .fd-rule-marks') ?? undefined;
       if (!own.length) {
         holder?.remove();
         continue;
