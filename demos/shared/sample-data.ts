@@ -3,6 +3,7 @@ import customer from '../../examples/pages/customer.page.json';
 import fields from '../../examples/pages/fields.page.json';
 import kinds from '../../examples/pages/kinds.page.json';
 import layout from '../../examples/pages/layout.page.json';
+import lists from '../../examples/pages/lists.page.json';
 import customers from '../../examples/pages/customers.page.json';
 import order from '../../examples/pages/order.page.json';
 import rules from '../../examples/pages/rules.page.json';
@@ -21,6 +22,7 @@ export const pages: Record<string, Page> = {
   order: order as Page,
   rules: rules as Page,
   layout: layout as Page,
+  lists: lists as Page,
   custom: customPage,
 };
 
@@ -127,11 +129,27 @@ export function recalculateOrder(values: Values): Values {
 }
 
 const COUNTRIES: Record<number, string> = { 1: 'Egypt', 2: 'Jordan', 3: 'Saudi Arabia' };
+
+/** The app's own lists of choices, as a server keeps them: the countries delivered to, and each one's cities. */
+const DELIVERY: Record<string, { label: string; cities: Record<string, string> }> = {
+  eg: { label: 'Egypt', cities: { cairo: 'Cairo', giza: 'Giza', alexandria: 'Alexandria', luxor: 'Luxor' } },
+  jo: { label: 'Jordan', cities: { amman: 'Amman', irbid: 'Irbid', aqaba: 'Aqaba' } },
+  sa: { label: 'Saudi Arabia', cities: { riyadh: 'Riyadh', jeddah: 'Jeddah', dammam: 'Dammam' } },
+  ae: { label: 'United Arab Emirates', cities: { dubai: 'Dubai', 'abu-dhabi': 'Abu Dhabi', sharjah: 'Sharjah' } },
+};
+/** A list answers after a moment, as one from a server does, so its loading shows. */
+const LIST_DELAY_MS = 600;
+const later = <T>(value: T) => new Promise<T>((resolve) => setTimeout(() => resolve(value), LIST_DELAY_MS));
+const appLists = {
+  countries: () => later(Object.entries(DELIVERY).map(([value, { label }]) => ({ value, label }))),
+  cities: (values: Values) => later(Object.entries(DELIVERY[values['country'] as string]?.cities ?? {}).map(([value, label]) => ({ value, label }))),
+};
 const CURRENCIES: Record<number, string> = { 1: 'EGP', 2: 'JOD', 3: 'SAR' };
 
 /** A customer to edit, and the records its relations point to. Sample data. */
 export function sampleDataSource() {
   return createMemoryDataSource({
+    lists: appLists,
     records: {
       partner: {
         1: {
