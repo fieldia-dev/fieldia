@@ -505,6 +505,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       : state.status === 'error' && problem ? (problem.kind === 'fields' ? checkText(state) : problem.kind === 'other' ? problem.message : notDone())
       : state.status === 'error' ? state.error ?? ''
       : '';
+    // A problem is said once, at once, by the announcer (or the banner, or a dialog): the status shows it and keeps quiet.
+    statusText.setAttribute('aria-live', state.status === 'error' && problem ? 'off' : 'polite');
     statusText.textContent = text;
     retry.hidden = !(state.status === 'error' && problem?.kind === 'other');
     statusText.classList.toggle('fd-status-error', state.status === 'error');

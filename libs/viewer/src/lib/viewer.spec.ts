@@ -357,6 +357,8 @@ describe('a refused save', () => {
     expect(error.getAttribute('role')).toBeNull();
     expect(statusText(host)).toBe('Not saved. Check: Email');
     expect(announced(host)).toBe('Not saved. Check: Email');
+    // Said once, by the announcer: the status beside Save shows it, and keeps quiet.
+    expect(host.querySelector('.fd-status')?.getAttribute('aria-live')).toBe('off');
     // Nothing to retry: the fields have to change first.
     expect(button(host.querySelector('.fd-status-box') as HTMLElement, 'Retry')).toBeUndefined();
     expect(host.querySelector('.fd-announce')?.getAttribute('aria-live')).toBe('assertive');
@@ -410,6 +412,8 @@ describe('a refused save', () => {
     await form.settled();
     await flush();
     expect(statusText(host)).toBe('Saved');
+    // How a save goes is said politely by the status itself.
+    expect(host.querySelector('.fd-status')?.getAttribute('aria-live')).toBe('polite');
     expect(button(host.querySelector('.fd-status-box') as HTMLElement, 'Retry')).toBeUndefined();
   });
 
