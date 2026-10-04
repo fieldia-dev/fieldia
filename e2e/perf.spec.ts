@@ -1,6 +1,6 @@
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { loadavg } from 'node:os';
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 /**
  * How quick Fieldia stays on a page of 500 fields (examples/pages/big.page.json,
@@ -18,12 +18,16 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
  *
  * Each action is timed 7 times and the median held to its budget. Timings
  * are noisy where other work shares the machine: FIELDIA_PERF_SLACK
- * multiplies every budget — 3 on CI unless set, 1 on a person's machine.
- * Each run's numbers and the load average go to test-results/perf/.
+ * multiplies every budget — 3 on CI unless set, 1 on a person's machine —
+ * and CI times each action 5 times (FIELDIA_PERF_RUNS), to keep its run
+ * short. Each run's numbers and the load average go to
+ * test-results/perf/results.jsonl, marked with FIELDIA_PERF_LABEL.
  */
 
-const RUNS = 7;
+/** How many times each action is timed: 7 at most, the fields the drags and picks are scripted for. */
+const RUNS = Math.min(7, Number(process.env['FIELDIA_PERF_RUNS'] ?? (process.env['CI'] ? 5 : 7)));
 const SLACK = Number(process.env['FIELDIA_PERF_SLACK'] ?? (process.env['CI'] ? 3 : 1));
+const LABEL = process.env['FIELDIA_PERF_LABEL'] ?? 'this build';
 
 /** Milliseconds, before the slack. */
 const BUDGET = {
@@ -99,7 +103,7 @@ function harness() {
   };
 }
 
-const results: { scenario: string; action: string; budget: number; median: number; runs: number[]; longest: number; load: number; at: string }[] = [];
+const results: { build: string; scenario: string; action: string; budget: number; median: number; runs: number[]; longest: number; load: number; at: string }[] = [];
 const median = (values: number[]) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 const round = (n: number) => Math.round(n * 10) / 10;
 
@@ -119,7 +123,7 @@ async function timeIt(page: Page, scenario: string, action: string, budget: numb
 /** Note a timing, and hold its median to the budget, softly: the other timings are still taken. */
 function record(scenario: string, action: string, budget: number, runs: Timing[]) {
   const work = runs.map((r) => round(r.work));
-  const row = { scenario, action, budget, median: median(work), runs: work, longest: round(Math.max(...runs.map((r) => r.longest))), load: round(loadavg()[0]), at: new Date().toISOString() };
+  const row = { build: LABEL, scenario, action, budget, median: median(work), runs: work, longest: round(Math.max(...runs.map((r) => r.longest))), load: round(loadavg()[0]), at: new Date().toISOString() };
   results.push(row);
   mkdirSync('test-results/perf', { recursive: true });
   appendFileSync('test-results/perf/results.jsonl', `${JSON.stringify(row)}\n`);
@@ -234,7 +238,7 @@ for (const editor of EDITORS) {
     await label().click();
     await page.keyboard.press('End');
     await timeIt(page, scenario, 'type in a label', BUDGET.designerKey, 'input', () => page.keyboard.type('x'));
-    await expect(label()).toHaveValue(/x{7}/);
+    await expect(label()).toHaveValue(new RegExp(`x{${RUNS}}`));
 
     // Add a field from the toolbox, after the one picked; then take each back.
     const tile = page.locator('.fd-toolbox [data-tool="kind:short-answer"]');
@@ -286,7 +290,7 @@ for (const editor of EDITORS) {
       }
       await page.mouse.up();
     });
-    for (const id of moved) {
+    for (const id of moved.slice(0, RUNS)) {
       // Advanced may put it beside a field, in a row of its own inside the section.
       if (editor.advanced) expect.soft(await sectionOf(id), `${id} is moved`).not.toBe(from);
       else expect.soft(await sectionOf(id), `${id} is moved`).toBe(to);
@@ -322,7 +326,7 @@ for (const editor of EDITORS) {
     await cell.click();
     await page.keyboard.press('End');
     await timeIt(page, scenario, 'type a translation', BUDGET.designerKey, 'input', () => page.keyboard.type('x'));
-    await expect(cell).toHaveValue(/x{7}/);
+    await expect(cell).toHaveValue(new RegExp(`x{${RUNS}}`));
     await back();
 
     // The outline: opened, and a row moved down by the keyboard.
