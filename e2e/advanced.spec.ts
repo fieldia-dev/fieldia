@@ -230,7 +230,7 @@ test('the width handle on a picked part’s end edge snaps to the columns, sayin
   await screen(page, 'advanced-06-width-handle', { viewport: true });
   await page.mouse.up();
   expect(await spanOf(page, 'f-contract')).toBe(1);
-  await page.keyboard.press('Control+z');
+  await page.getByRole('button', { name: 'Undo' }).click();
   expect(await spanOf(page, 'f-contract')).toBe(2);
 });
 
@@ -250,7 +250,7 @@ test('the gutter between two parts of a row trades columns, by the pointer and t
   await screen(page, 'advanced-07-gutter', { viewport: true });
   await page.mouse.up();
   expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who')]).toEqual([2, 1]);
-  await page.keyboard.press('Control+z');
+  await page.getByRole('button', { name: 'Undo' }).click();
   expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who')]).toEqual([1, 2]);
   await gutter.focus();
   await page.keyboard.press('ArrowRight');
