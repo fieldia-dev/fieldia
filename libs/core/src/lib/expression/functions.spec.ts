@@ -15,6 +15,8 @@ describe('round(x, digits = 0)', () => {
     expect(value('round(1.005, 2)')).toBe(1.01);
     expect(value('round(2.675, 2)')).toBe(2.68);
     expect(value('round(1234.5, -2)')).toBe(1200);
+    // Digits that are not whole are cut to whole ones.
+    expect(value('round(1.26, 1.9)')).toBe(1.3);
     expect(value('round(qty * price, 2)', { qty: 3, price: 0.333 })).toBe(1);
   });
 
@@ -70,8 +72,8 @@ describe('len(x)', () => {
 
 describe('today()', () => {
   it('is the day the form is filled in, as YYYY-MM-DD, from the clock it is given', () => {
-    expect(value('today()', {}, { today: () => '2026-10-04' })).toBe('2026-10-04');
-    expect(value("due < today()", { due: '2026-10-01' }, { today: () => '2026-10-04' })).toBe(true);
+    expect(value('today()', {}, { today: () => '2031-02-03' })).toBe('2031-02-03');
+    expect(value("due < today()", { due: '2031-02-01' }, { today: () => '2031-02-03' })).toBe(true);
   });
 
   it('reads the computer’s clock when given none', () => {
@@ -98,6 +100,11 @@ describe('sum(lines, field) and count(lines)', () => {
     expect(value('count(lines)', { lines: [] }, { lines: () => [] })).toBe(0);
     expect(value('sum(xs)', { xs: null })).toBe(0);
     expect(value('count(xs)', {})).toBe(0);
+  });
+
+  it('add up the lines inside other functions too', () => {
+    expect(value("round(sum(lines, 'subtotal') / 3, 2)", {}, env)).toBe(116.83);
+    expect(value("if(count(lines) > 3, 'many', 'few')", {}, env)).toBe('many');
   });
 
   it('add up and count a plain list too', () => {
@@ -127,7 +134,7 @@ describe('functions are checked when the expression is read', () => {
     ['foo(1)', /no function "foo"/],
     ['round()', /round takes 1 or 2 values/],
     ['round(1, 2, 3)', /round takes 1 or 2 values/],
-    ['abs(1, 2)', /abs takes 1 value/],
+    ['abs(1, 2)', /abs takes 1 value$/],
     ['min()', /min takes 1 or more values/],
     ['today(1)', /today takes no values/],
     ['if(a, b)', /if takes 3 values/],

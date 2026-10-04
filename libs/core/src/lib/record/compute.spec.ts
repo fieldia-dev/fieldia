@@ -91,11 +91,13 @@ describe('compute — values worked out from others', () => {
         words: { type: 'char', label: 'Words', compute: 'a * 2' },
         big: { type: 'boolean', label: 'Big', compute: 'a > 5' },
         day: { type: 'date', label: 'Day', compute: 'a' },
+        tags: { type: 'many2many', label: 'Tags', relation: 'tag' },
+        tagged: { type: 'boolean', label: 'Tagged', compute: 'tags' },
         any: { type: 'json', label: 'Any', compute: '[1, 2]' },
       }),
     });
     form.setValue('a', 10);
-    expect(form.getState().values).toMatchObject({ whole: 3, cents: 3.33, loose: 2.5, words: '20', big: true, day: null, any: [1, 2] });
+    expect(form.getState().values).toMatchObject({ whole: 3, cents: 3.33, loose: 2.5, words: '20', big: true, day: null, any: [1, 2], tagged: false });
     form.setValue('a', null);
     expect(form.getState().values).toMatchObject({ whole: null, cents: null, loose: null, words: null, big: false, day: null });
   });
@@ -111,9 +113,9 @@ describe('compute — values worked out from others', () => {
   it('works out today’s date from the clock the form is given', () => {
     const form = createForm({
       page: page({ due: { type: 'date', label: 'Due', compute: 'today()' } }),
-      now: () => new Date(2026, 9, 4, 23, 30),
+      now: () => new Date(2031, 1, 3, 23, 30),
     });
-    expect(form.getState().values['due']).toBe('2026-10-04');
+    expect(form.getState().values['due']).toBe('2031-02-03');
   });
 });
 
@@ -137,6 +139,13 @@ describe('compute — inside lines, and sums over them', () => {
     form.addLine('lines', { qty: 2, price: 5 });
     expect(lines(form)[0].values['subtotal']).toBeNull();
     expect(form.getState().values).toMatchObject({ total: 10, count: 1 });
+  });
+
+  it('works out nothing in a section or a note, even what needs no values', () => {
+    const form = createForm({ page: page({ lines: { ...orderFields.lines, fields: { ...lineFields, mark: { type: 'char', label: 'Mark', compute: "'item'" } } } }) });
+    form.addLine('lines', { kind: 'note', name: 'Fragile' });
+    form.addLine('lines', { qty: 1 });
+    expect(lines(form).map((l) => l.values['mark'])).toEqual([null, 'item']);
   });
 
   it('lets a condition add up the lines too', () => {

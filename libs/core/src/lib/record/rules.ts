@@ -89,6 +89,5 @@ function brokenAsk({ rule, pattern }: CompiledRule, field: Field, value: Value, 
 function whenIs(field: Field, text: string, now: Date): number {
   if (field.type === 'datetime') return Math.sign(Date.parse(text) - now.getTime());
   const today = localDay(now);
-  const day = text.slice(0, 10);
-  return day < today ? -1 : day > today ? 1 : 0;
+  return text < today ? -1 : text > today ? 1 : 0;
 }

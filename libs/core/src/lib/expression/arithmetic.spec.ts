@@ -47,6 +47,9 @@ describe('arithmetic: + - * / % with the usual precedence', () => {
     expect(value("'No. ' + 7")).toBe('No. 7');
     expect(value("7 + 'th'")).toBe('7th');
     expect(value("'Dear ' + name", { name: null })).toBe('Dear ');
+    // Only text and numbers join: not yes or no, not a list.
+    expect(value("'a' + flag", { flag: true })).toBeNull();
+    expect(value("tags + 'a'", { tags: [1] })).toBeNull();
   });
 
   it('gives null, never an error, for what cannot be worked out', () => {
@@ -65,6 +68,8 @@ describe('arithmetic: + - * / % with the usual precedence', () => {
     expect(value('qty * price > 1000', { qty: 3, price: 400 })).toBe(true);
     expect(value('qty * price > 1000', { qty: 2, price: 400 })).toBe(false);
     expect(value('a + 1 in [2, 3]', { a: 1 })).toBe(true);
+    expect(value('a == 1 + 1', { a: 2 })).toBe(true);
+    expect(value('total > limit - 100', { total: 950, limit: 1000 })).toBe(true);
     expect(value('a + 1 == 2 and b - 1 == 0', { a: 1, b: 1 })).toBe(true);
     expect(value('not a + 1 == 2', { a: 1 })).toBe(false);
   });
@@ -106,6 +111,10 @@ describe('compileExpression', () => {
     expect(compileExpression("sum(lines, 'subtotal')").fields).toEqual(['lines']);
     expect(compileExpression('today()').fields).toEqual([]);
     expect(compileExpression('if(a > 1, b, -c)').fields).toEqual(['a', 'b', 'c']);
+  });
+
+  it('gives null, not undefined, for a field the values do not have', () => {
+    expect(compileExpression('nope').evaluate({})).toBeNull();
   });
 
   it('keeps the source it was read from', () => {

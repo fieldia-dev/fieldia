@@ -50,9 +50,9 @@ const page = (rules: Rules, extra: { required?: string[]; invisible?: Record<str
     },
   }) as Page;
 
-/** A form on these rules, with the clock at 4 October 2026, 12:00. */
+/** A form on these rules, with the clock at 3 February 2031, 12:00: not today, so a clock ignored cannot pass. */
 const formWith = (rules: Rules, extra: Parameters<typeof page>[1] = {}, options: Partial<FormOptions> = {}) =>
-  createForm({ page: page(rules, extra), now: () => new Date(2026, 9, 4, 12, 0), dataSource: createMemoryDataSource(), ...options });
+  createForm({ page: page(rules, extra), now: () => new Date(2031, 1, 3, 12, 0), dataSource: createMemoryDataSource(), ...options });
 
 /** The error the field would show after a check, or undefined. */
 function errorFor(rules: Rules, field: string, value: unknown, extra: Parameters<typeof page>[1] = {}) {
@@ -83,6 +83,9 @@ describe('answer rules — what each asks', () => {
     expect(errorFor(rules, 'postcode', 'x12345')).toBe('Postcode is not in the expected format');
     expect(errorFor(rules, 'postcode', '12345')).toBeUndefined();
     expect(errorFor({ postcode: [{ pattern: 'a|b' }] }, 'postcode', 'b')).toBeUndefined();
+    // A number is matched as it is written.
+    expect(errorFor({ age: [{ pattern: '\\d{2}' }] }, 'age', 7)).toBe('Age is not in the expected format');
+    expect(errorFor({ age: [{ pattern: '\\d{2}' }] }, 'age', 42)).toBeUndefined();
   });
 
   it('asks for an ending, whatever the case', () => {
@@ -106,16 +109,16 @@ describe('answer rules — what each asks', () => {
   });
 
   it('asks for a day in the past or the future, today being neither', () => {
-    expect(errorFor({ born: [{ date: 'past' }] }, 'born', '2026-10-04')).toBe('Born must be in the past');
-    expect(errorFor({ born: [{ date: 'past' }] }, 'born', '2026-10-03')).toBeUndefined();
-    expect(errorFor({ visit: [{ date: 'future' }] }, 'visit', '2026-10-04')).toBe('Visit must be in the future');
-    expect(errorFor({ visit: [{ date: 'future' }] }, 'visit', '2026-10-05')).toBeUndefined();
+    expect(errorFor({ born: [{ date: 'past' }] }, 'born', '2031-02-03')).toBe('Born must be in the past');
+    expect(errorFor({ born: [{ date: 'past' }] }, 'born', '2031-02-02')).toBeUndefined();
+    expect(errorFor({ visit: [{ date: 'future' }] }, 'visit', '2031-02-03')).toBe('Visit must be in the future');
+    expect(errorFor({ visit: [{ date: 'future' }] }, 'visit', '2031-02-04')).toBeUndefined();
   });
 
   it('compares a date and time with the clock itself', () => {
-    expect(errorFor({ meeting: [{ date: 'future' }] }, 'meeting', '2026-10-04T11:00')).toBe('Meeting must be in the future');
-    expect(errorFor({ meeting: [{ date: 'future' }] }, 'meeting', '2026-10-04T13:00')).toBeUndefined();
-    expect(errorFor({ meeting: [{ date: 'past' }] }, 'meeting', '2026-10-04T11:00')).toBeUndefined();
+    expect(errorFor({ meeting: [{ date: 'future' }] }, 'meeting', '2031-02-03T11:00')).toBe('Meeting must be in the future');
+    expect(errorFor({ meeting: [{ date: 'future' }] }, 'meeting', '2031-02-03T13:00')).toBeUndefined();
+    expect(errorFor({ meeting: [{ date: 'past' }] }, 'meeting', '2031-02-03T11:00')).toBeUndefined();
   });
 
   it('says what the rule says, when it says something, and names the field as its node labels it', () => {
@@ -166,6 +169,23 @@ describe('answer rules — errors block, warnings do not', () => {
     expect(source.responses).toHaveLength(1);
     form.setValue('email', 'sara@acme.com');
     expect(form.getState().warnings).toEqual({});
+  });
+
+  it('warns about the values the form starts with', () => {
+    const form = formWith(rules, {}, { values: { email: 'sara@gmail.com' } });
+    expect(form.getState().warnings).toEqual({ email: 'Use your work address if you can' });
+  });
+
+  it('takes the warning of the first place a field is shown', () => {
+    const p = page({});
+    const children = (p.layout as { children: object[] }).children;
+    children.push(
+      { type: 'field', id: 'twice-1', field: 'email', validate: [{ endsWith: '@a.com', level: 'warning', message: 'first' }] },
+      { type: 'field', id: 'twice-2', field: 'email', validate: [{ endsWith: '@b.com', level: 'warning', message: 'second' }] }
+    );
+    const form = createForm({ page: p });
+    form.setValue('email', 'sara@c.com');
+    expect(form.getState().warnings).toEqual({ email: 'first' });
   });
 
   it('warns only about fields people can see', () => {

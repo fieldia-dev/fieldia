@@ -75,6 +75,11 @@ describe('worked-out values, checked as the page is read', () => {
     expect(issues({ name: { type: 'char', label: 'Name' }, total: num('Total', { compute: "sum(name, 'x')" }) })).toEqual([
       'fields.total.compute: sum adds up the lines of a one2many; "name" is a char',
     ]);
+    // Each sum is checked, after one that names no field at all.
+    expect(issues({ lines: lines({ subtotal: num('Subtotal') }), total: num('Total', { compute: "sum(nope, 'x') + sum(lines, 'subtotl')" }) })).toEqual([
+      'fields.total.compute: "sum(nope, \'x\') + sum(lines, \'subtotl\')" reads "nope", which is not a field of this page',
+      'fields.total.compute: "subtotl" is not a field of the lines of "lines"',
+    ]);
   });
 
   it('names the fields that are worked out from each other', () => {

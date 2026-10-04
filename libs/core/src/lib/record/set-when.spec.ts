@@ -138,6 +138,27 @@ describe('setWhen — a value set as a condition starts to hold', () => {
     expect(lines().map((l) => l.values['pallet'])).toEqual([true, false]);
   });
 
+  it('sets nothing in a section or a note', () => {
+    const form = createForm({
+      page: page({
+        lines: {
+          type: 'one2many',
+          label: 'Lines',
+          relation: 'line',
+          lineKinds: { field: 'kind', text: 'name' },
+          fields: {
+            kind: { type: 'char', label: 'Kind' },
+            name: { type: 'char', label: 'Name' },
+            qty: { type: 'integer', label: 'Qty', setWhen: [{ when: 'not qty', value: '1' }] },
+          },
+        },
+      }),
+    });
+    form.addLine('lines', { kind: 'section', name: 'Chairs' });
+    form.addLine('lines', {});
+    expect((values(form)['lines'] as Line[]).map((l) => l.values['qty'])).toEqual([null, 1]);
+  });
+
   it('starts again from the values as they are after a reset', () => {
     const form = createForm({ page: page(discountFields), values: { total: 2000 } });
     form.setValue('total', 10);
