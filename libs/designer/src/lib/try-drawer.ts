@@ -14,6 +14,7 @@ type Tab = 'data' | 'problems';
 
 /** Which tab is open and whether the drawer is folded, kept while the same Try it draws the page again. */
 const kept = new WeakMap<HTMLElement, { tab: Tab; folded: boolean }>();
+let drawers = 0;
 
 /** The step a field is asked on, for a survey of several pages. */
 function stepOf(page: Page, field: string): string | null {
@@ -47,7 +48,8 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
   // A list holds no answers of its own to show.
   if (page.layout.type === 'list') return null;
 
-  const id = `${frame.id || 'fd-try'}-drawer`;
+  // Ids of its own: two editors on one page may each be tried.
+  const id = `fd-try-drawer-${++drawers}`;
   // Two buttons that each open their part of the drawer, the open one folding it: no tabs, so the page tried keeps the only tabs here.
   const tab = (name: Tab, words: string) => el('button', { type: 'button', class: 'fd-try-tab', id: `${id}-${name}`, 'aria-controls': `${id}-${name}-panel` }, words);
   const tabs: Record<Tab, HTMLButtonElement> = { data: tab('data', 'Data'), problems: tab('problems', 'Problems') };
