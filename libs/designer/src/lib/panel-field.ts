@@ -1,4 +1,5 @@
 import type { FieldNode } from '@fieldia/core';
+import { appKindPanel } from './app-kinds-ui';
 import { optionsEditor, type ElementFactory } from './chrome';
 import { columnsEditor } from './columns-editor';
 import { choicesOf, conditionEditor } from './condition-editor';
@@ -34,6 +35,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const kind = el('select', { class: 'fd-input fd-select', 'aria-label': 'Shown as' });
   kind.addEventListener('change', () => designer.changeKind(id, kind.value));
   const kindNote = el('p', { class: 'fd-properties-hint fd-kind-note' });
+  const appSettings = appKindPanel(el, designer, id);
   const options = optionsEditor(el, designer, id);
   const optionsRow = setting(el, 'content', 'Options', options.element);
   const lineColumns = columnsEditor(el, designer, id);
@@ -97,6 +99,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     setting(el, 'content', 'Help text', help),
     placeholderRow,
     setting(el, 'content', 'Shown as', kind, { hint: kindNote }),
+    appSettings.element,
     optionsRow,
     onTab(lineColumns.element, 'content', 'Columns'),
     onTab(el('div', { class: 'fd-props-actions' }, duplicate, remove), 'content', 'Duplicate or delete'),
@@ -133,6 +136,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       kind.value = current ?? '';
       kind.disabled = current === null || offered.length < 2;
       kindNote.textContent = kindsReason(designer, page, id);
+      appSettings.update(page, found.node);
       options.update(def, found.node);
       options.element.hidden ||= fromModel;
       optionsRow.hidden = options.element.hidden;

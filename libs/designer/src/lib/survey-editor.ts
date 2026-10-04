@@ -1,6 +1,6 @@
 import { createForm, type DataSource, type FieldNode, type Form, type Page, type StepNode, type WizardNode } from '@fieldia/core';
 import type { Skin } from '@fieldia/viewer';
-import { createWidget, installStyles, type Widget } from '@fieldia/widgets';
+import { createWidget, installStyles, type Widget, type WidgetFactory } from '@fieldia/widgets';
 import { branchMap, drawBranchMap } from './branch-map';
 import { canvasDrag } from './canvas-drag';
 import { designerBar, elementFactory, iconButton as makeIconButton, optionsEditor, putDownOnClickOutside, type ElementFactory, type OptionsEditor } from './chrome';
@@ -15,7 +15,7 @@ import { lookSheet } from './panel-look-sheet';
 import { rail as sideRail } from './rail';
 import { inlineSettings } from './inline-settings';
 import { installDesignerStyles } from './styles';
-import { toolbox, TOOLBOX_GROUPS } from './toolbox';
+import { toolbox, toolboxGroups } from './toolbox';
 import { tryIt } from './try-it';
 import { translationsView } from './translations-view';
 import { jsonView } from './json-view';
@@ -43,6 +43,8 @@ export interface SurveyEditorOptions {
   skin?: Skin;
   /** The app's own data source: Try it takes the choices of the app's lists from it, and saves nothing through it. */
   dataSource?: DataSource;
+  /** The app's own widgets, by `type` or `type.widget`: its kinds are drawn with them on the cards and in Try it. */
+  widgets?: Record<string, WidgetFactory>;
 }
 
 export interface SurveyEditorHandle {
@@ -91,7 +93,9 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
 
   const skin = options.skin ?? 'outlined';
   const root = el('div', { class: 'fd-form fd-designer fd-survey-designer', 'data-fd-skin': skin });
-  const trial = tryIt({ el, doc, designer, skin, dataSource: options.dataSource, onChange: (trying) => (body.hidden = trying) });
+  const trial = tryIt({ el, doc, designer, skin, dataSource: options.dataSource, widgets: options.widgets, onChange: (trying) => (body.hidden = trying) });
+  /** Fieldia's kinds a survey asks, then the app's own. */
+  const kinds = [...QUESTION_KINDS, ...designer.appKinds()];
   const bar = designerBar(root, designer, {
     titleLabel: 'Form title',
     placeholder: 'Untitled form',
@@ -150,7 +154,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const tools = toolbox({
     el,
     doc,
-    kinds: QUESTION_KINDS,
+    kinds,
     onPick: (spec) => add(spec.slice(spec.indexOf(':') + 1), target()),
     onPress: (spec, event, tile) => drag.press({ tool: spec }, event, tile),
   });
@@ -181,7 +185,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       box?.setSelectionRange(box.value.length, box.value.length);
     };
     return [
-      ...QUESTION_KINDS.map((kind) => ({ label: `Add a question: ${kind.label}`, hint: 'new question', run: () => add(kind.id, target()) })),
+      ...kinds.map((kind) => ({ label: `Add a question: ${kind.label}`, hint: 'new question', run: () => add(kind.id, target()) })),
       ...steps.flatMap((step) =>
         step.children
           .filter((n): n is FieldNode => n.type === 'field')
@@ -263,7 +267,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
         painted = key;
         widget?.destroy?.();
         const form = formFor(page);
-        widget = createWidget({ form, name: node.field, field: def, node, id: `fd-design-${id}`, document: doc });
+        widget = createWidget({ form, name: node.field, field: def, node, id: `fd-design-${id}`, document: doc }, options.widgets);
         widget.update({ value: form.getState().values[node.field], values: form.getState().values, readonly: false, required: def.required === true, invalid: false });
         box.replaceChildren(widget.element);
       },
@@ -366,7 +370,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       const current = kindOfField(page.fields[node.field], node);
       const offered = new Set(designer.kindsFor(id).map((k) => k.id));
       // Google Forms' menu: a row for each kind, its icon first, the groups between lines.
-      const items: MenuItem[] = TOOLBOX_GROUPS.flatMap(([, ids]) => ids.filter((k) => offered.has(k)).map((k, i) => ({ id: k, label: kindById(k).label, icon: k, checked: k === current, ...(i === 0 ? { divider: true } : {}) })));
+      const items: MenuItem[] = toolboxGroups(designer.kindsFor(id)).flatMap(([, ids]) => ids.filter((k) => offered.has(k)).map((k, i) => ({ id: k, label: kindById(k).label, icon: k, checked: k === current, ...(i === 0 ? { divider: true } : {}) })));
       openMenu({ el, anchor: kind, title: 'Kind of question', items, roomy: true, onPick: (k) => designer.changeKind(id, k) });
     });
     const help = el('input', { class: 'fd-q-help', 'aria-label': 'Description', placeholder: 'Description', autocomplete: 'off' }) as HTMLInputElement;

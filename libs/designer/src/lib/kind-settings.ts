@@ -1,4 +1,5 @@
 import type { Field, FieldNode, Page } from '@fieldia/core';
+import { appKindSettings } from './app-kinds-ui';
 import { iconButton, type ElementFactory } from './chrome';
 import { columnsEditor } from './columns-editor';
 import type { Designer } from './designer';
@@ -309,6 +310,8 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
   if (kind === 'repeating') parts.push(repeating());
   if (kind && SHUFFLED.has(kind)) parts.push(shuffle());
   if (kind && SCORED.has(kind)) parts.push(points());
+  const app = appKindSettings(el, designer, id, kind);
+  if (app) parts.push(app);
   if (!parts.length) return null;
   return {
     elements: parts.map((p) => p.element),

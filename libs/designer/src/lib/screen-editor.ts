@@ -1,6 +1,6 @@
 import type { DataSource, FieldNode, LayoutNode, Page, TabsNode } from '@fieldia/core';
 import type { Skin } from '@fieldia/viewer';
-import { installStyles } from '@fieldia/widgets';
+import { installStyles, type WidgetFactory } from '@fieldia/widgets';
 import { modeSwitch, readMode, writeMode, type DesignerMode } from './canvas-mode';
 import { designerBar, elementFactory, putDownOnClickOutside } from './chrome';
 import { QUESTION_KINDS, SCREEN_KINDS, type Designer, type DesignerState, type Where } from './designer';
@@ -35,6 +35,8 @@ export interface ScreenEditorOptions {
   skin?: Skin;
   /** The app's own data source: Try it takes the choices of the app's lists from it, and saves nothing through it. */
   dataSource?: DataSource;
+  /** The app's own widgets, by `type` or `type.widget`: its kinds are drawn with them on the canvas and in Try it. */
+  widgets?: Record<string, WidgetFactory>;
 }
 
 export interface ScreenEditorHandle {
@@ -54,7 +56,9 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const skin = options.skin ?? 'outlined';
 
   const root = el('div', { class: 'fd-form fd-designer fd-screen-designer', 'data-fd-skin': skin });
-  const trial = tryIt({ el, doc, designer, skin, dataSource: options.dataSource, onChange: (trying) => (body.hidden = trying) });
+  const trial = tryIt({ el, doc, designer, skin, dataSource: options.dataSource, widgets: options.widgets, onChange: (trying) => (body.hidden = trying) });
+  /** Every kind of field, then the app's own. */
+  const kinds = [...QUESTION_KINDS, ...SCREEN_KINDS, ...designer.appKinds()];
   // Simple or Advanced: the person's preference, kept in this browser, never in the page.
   let mode: DesignerMode = readMode(doc.defaultView);
   const modes = modeSwitch(el, mode, (next) => setMode(next));
@@ -88,6 +92,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     openAdvanced: () => setMode('advanced'),
     more: (part) => openPanel(part),
     dropTool: (spec, section, index) => add(spec, { parent: section, index }),
+    widgets: options.widgets,
   });
   const list = listCanvas({
     el,
@@ -100,7 +105,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const tools = toolbox({
     el,
     doc,
-    kinds: [...QUESTION_KINDS, ...SCREEN_KINDS],
+    kinds,
     layout: true,
     onPick: (spec) => add(spec, null),
     onPress: (spec, event, tile) => (isList() ? list.drag : canvas.drag).press({ tool: spec }, event, tile),
@@ -195,7 +200,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     const fields = allSections(page).flatMap((section) => section.children.filter((n): n is FieldNode => n.type === 'field').map((node) => ({ node, section })));
     return [
       ...designer.modelFields().map(({ name, field }) => ({ label: `Add “${field.label}”`, hint: 'from the model', run: () => add(`model:${name}`, null) })),
-      ...[...QUESTION_KINDS, ...SCREEN_KINDS].map((kind) => ({ label: `Add a field: ${kind.label}`, hint: 'new field', run: () => add(`kind:${kind.id}`, null) })),
+      ...kinds.map((kind) => ({ label: `Add a field: ${kind.label}`, hint: 'new field', run: () => add(`kind:${kind.id}`, null) })),
       ...fields.map(({ node, section }) => ({
         label: `Go to “${(node as FieldNode & { label?: string }).label ?? page.fields[node.field]?.label ?? node.id}”`,
         hint: sectionLabel(page, section),

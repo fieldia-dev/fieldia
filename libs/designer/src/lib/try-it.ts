@@ -1,5 +1,6 @@
 import { createMemoryDataSource, scoreOf, type DataSource, type Page, type Values } from '@fieldia/core';
 import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
+import type { WidgetFactory } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import type { FindItem } from './find-anything';
@@ -24,6 +25,8 @@ export interface TryItOptions {
   onChange(trying: boolean): void;
   /** The app's own data source: the choices of the app's lists come from it. Nothing is read or saved through it besides. */
   dataSource?: DataSource;
+  /** The app's own widgets, by `type` or `type.widget`, as the viewer takes them. */
+  widgets?: Record<string, WidgetFactory>;
 }
 
 export interface TryIt {
@@ -101,6 +104,7 @@ export function tryIt(options: TryItOptions): TryIt {
       page,
       dataSource,
       skin: options.skin,
+      widgets: options.widgets,
       ...language.viewerOptions(direction),
     });
     tryDrawer(el, frame, viewer);

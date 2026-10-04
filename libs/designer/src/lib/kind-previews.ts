@@ -1,4 +1,5 @@
 import type { FieldNode, Page } from '@fieldia/core';
+import { appKindPreview } from './app-kinds-ui';
 import type { ElementFactory } from './chrome';
 import { ADDRESS_PARTS } from './kind-commands';
 
@@ -39,6 +40,6 @@ export function kindPreview(el: ElementFactory, page: Page, node: FieldNode, kin
       );
     }
     default:
-      return null;
+      return appKindPreview(el, page, node, kind);
   }
 }
