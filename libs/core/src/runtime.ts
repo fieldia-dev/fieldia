@@ -43,7 +43,7 @@ export { FORMAT_VERSION } from './lib/format/version';
 export type { Page, PageData, PageLook } from './lib/format/page';
 export { checkPage } from './lib/format/check-page';
 export type { PageIssue, PageValidation } from './lib/format/references';
-export { translatePage, localizePage } from './lib/format/translate';
+export { translatePage, localizePage, pageWords, isRightToLeft } from './lib/format/translate';
 export { compileModifier, type CompiledModifier } from './lib/expression/modifier';
 export { evaluateModifier, isModifierValid } from './lib/expression/evaluateModifier';
 export {
