@@ -42,7 +42,7 @@ export const DESIGNER_TRANSLATIONS_CSS = /* css */ `
 .fd-words-table tbody tr:last-child > * { border-block-end: 0; }
 .fd-words-table thead th { position: sticky; top: 0; z-index: 2; min-width: 200px; padding: 8px 10px; background: var(--fd-page); font-size: 13px; font-weight: 600; }
 /* The page's own words stay in sight as the languages scroll by. */
-.fd-words-table tbody th, .fd-words-table thead th:first-child { position: sticky; inset-inline-start: 0; }
+.fd-words-table tbody th, .fd-words-table thead th:first-child { position: sticky; inset-inline-start: 0; box-shadow: 1px 0 0 var(--fd-border); }
 .fd-words-table thead th:first-child { z-index: 3; width: 34%; }
 .fd-words-table tbody th { z-index: 1; min-width: 180px; max-width: 320px; padding: 8px 10px; background: var(--fd-surface); font-weight: 400; line-height: 1.45; overflow-wrap: anywhere; }
 .fd-words-head { display: flex; align-items: center; gap: 6px; min-height: 24px; }
