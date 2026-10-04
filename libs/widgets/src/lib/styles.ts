@@ -660,7 +660,7 @@ const SKINS_CSS = /* css */ `
 `;
 
 /** Fieldia's whole stylesheet: the skins, then the layout over them. */
-export const FIELDIA_CSS = SKINS_CSS + LAYOUT_CSS;
+export const FIELDIA_CSS = SKINS_CSS + LAYOUT_CSS + KINDS_CSS;
 
 const STYLE_ID = 'fieldia-styles';
 
@@ -669,6 +669,6 @@ export function installStyles(document: Document): void {
   if (document.getElementById(STYLE_ID)) return;
   const style = document.createElement('style');
   style.id = STYLE_ID;
-  style.textContent = FIELDIA_CSS + KINDS_CSS;
+  style.textContent = FIELDIA_CSS;
   (document.head ?? document.documentElement).append(style);
 }

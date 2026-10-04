@@ -20,7 +20,9 @@ describe('the question kinds’ stylesheet', () => {
 
   it('restyles nothing of the rest of Fieldia: every rule names a class of the kinds’ own', () => {
     // A rule on a class the stylesheet already styles — the sheet's .fd-card, say — would change that part everywhere.
-    expect(foreignRules(KINDS_CSS, FIELDIA_CSS)).toEqual([]);
+    // The rest of Fieldia: the whole stylesheet without the kinds' own part, which it ends with.
+    expect(foreignRules(KINDS_CSS, FIELDIA_CSS.slice(0, FIELDIA_CSS.length - KINDS_CSS.length))).toEqual([]);
+    expect(FIELDIA_CSS.endsWith(KINDS_CSS)).toBe(true);
   });
 });
 
