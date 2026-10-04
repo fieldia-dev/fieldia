@@ -143,7 +143,9 @@ test.describe('screen designer', () => {
 
   test('moves the field picked with Alt and an arrow, and takes it away with Delete', async ({ page }) => {
     await (await cardOf(page, 'Customer')).click();
-    await page.locator('.fd-designer-status').click();
+    // Out of its words, the field still picked: a click in its own corner, clear of the label being typed in.
+    const picked = (await page.locator('.fd-canvas-field.fd-editing').boundingBox())!;
+    await page.mouse.click(picked.x + picked.width - 4, picked.y + picked.height - 4);
     await page.keyboard.press('Alt+ArrowDown');
     await expect.poll(async () => (await layout(page))[0]).toEqual(['Visit date:1', 'Customer:1', 'Notes:2']);
     await page.keyboard.press('Delete');
