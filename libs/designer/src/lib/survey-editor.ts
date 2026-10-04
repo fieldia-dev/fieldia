@@ -470,10 +470,11 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
         }
         required.setAttribute('aria-checked', String(def.required === true));
         choices.update(def, node);
-        answer.hidden = !choices.element.hidden;
+        // Settings that stand in for the answer, as a matrix's rows and columns do, take its place.
+        const standsIn = settings.update(page, node);
+        answer.hidden = !choices.element.hidden || standsIn;
         if (!answer.hidden) painter.paint(page, node);
         when.update(page, questionsBefore(page, node.id), node.invisible);
-        settings.update(page, node);
       },
       destroy: () => painter.destroy(),
     };

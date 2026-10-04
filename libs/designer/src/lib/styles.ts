@@ -1,3 +1,5 @@
+import { DESIGNER_KINDS_CSS } from './styles-kinds';
+
 /** The designer's own chrome, on top of Fieldia's form stylesheet and tokens. */
 export const DESIGNER_CSS = /* css */ `
 .fd-designer { display: grid; gap: 14px; }
@@ -612,7 +614,7 @@ export const DESIGNER_CSS = /* css */ `
   .fd-tools { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
 }
 @media (prefers-reduced-motion: reduce) { .fd-properties.fd-flash { animation: none; } .fd-tool-caret { transition: none; } }
-`;
+${DESIGNER_KINDS_CSS}`;
 
 const STYLE_ID = 'fieldia-designer-styles';
 
