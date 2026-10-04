@@ -96,6 +96,11 @@ describe('dropSpot', () => {
     const survey = outlineRows(d.getPage());
     // Between two questions only a question's depth fits: the page's own list would take it, but is not there to take.
     expect(dropSpot(survey, 'steps', 2, 0.1, 1, new Set(), (parent) => parent === 'steps')).toMatchObject({ parent: 'step-1', level: 1 });
+    // Under a page's last question, a page or a question fits; a question's own depth does not, though a question would take it.
+    const q = d.addQuestion('short-answer') as string;
+    d.addContainer('Page 2');
+    const two = outlineRows(d.getPage());
+    expect(dropSpot(two, 'steps', two.findIndex((r) => r.id === q), 0.9, 1, new Set(), (parent) => parent === q)).toMatchObject({ parent: 'step-1', level: 1 });
   });
 
   it('below every row, at the end of the page', () => {

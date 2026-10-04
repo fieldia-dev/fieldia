@@ -32,6 +32,7 @@ describe('outlineKeyMove', () => {
     expect(outlineKeyMove(page, ['div-1'], alt('ArrowRight'), false)).toEqual({ parent: 'tab-pay', index: 1 });
     expect(outlineKeyMove(page, ['emergency'], alt('ArrowRight'), false)).toEqual({ parent: 'address', index: 4 });
     expect(outlineKeyMove(page, ['personal'], alt('ArrowLeft'), false)).toEqual({ said: 'It is on the page itself, in no group' });
+    expect(outlineKeyMove(page, ['f-photo'], alt('ArrowLeft'), false)).toEqual({ parent: 'root', index: 1 });
   });
 
   it('out of a tab, they go after its tabs', () => {
