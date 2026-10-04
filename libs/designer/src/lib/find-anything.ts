@@ -60,8 +60,9 @@ export function openFind(el: ElementFactory, root: HTMLElement, items: FindItem[
     if (refocus) opener?.focus?.();
   }
   function run(item: FindItem) {
-    // Closed first: what it runs may put the cursor somewhere else.
-    close(false);
+    // Closed first, focus back where it was: what it runs may put the cursor somewhere else,
+    // and a dialog it opens gives focus back there when it closes.
+    close();
     item.run();
   }
   input.addEventListener('input', () => {

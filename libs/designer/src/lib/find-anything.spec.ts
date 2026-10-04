@@ -48,6 +48,20 @@ describe('find anything', () => {
     expect(box()).not.toBeNull();
   });
 
+  // So a dialog it opens (the shortcuts, the assistant) gives focus back to where it was, not to the page.
+  it('gives focus back to what opened it before running what was found', () => {
+    const { host } = survey();
+    const opener = host.querySelector('.fd-designer-bar .fd-find-button') as HTMLButtonElement;
+    opener.focus();
+    opener.click();
+    find('keyboard shortcuts');
+    key('Enter', {}, box() as HTMLInputElement);
+    const sheet = document.querySelector('[role="dialog"][aria-labelledby]') as HTMLElement;
+    expect(sheet?.textContent).toContain('Keyboard shortcuts');
+    key('Escape', {}, document.activeElement as HTMLElement);
+    expect(document.activeElement).toBe(opener);
+  });
+
   it('opens with / when not typing, and leaves / to a box being typed in', () => {
     const { host, designer, name } = survey();
     key('/', {}, document.body);
