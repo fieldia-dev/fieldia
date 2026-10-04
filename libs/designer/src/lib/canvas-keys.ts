@@ -89,6 +89,8 @@ export function canvasKeys(options: { el: ElementFactory; designer: Designer; rt
       return true;
     }
     if (!state.picked.length) return false;
+    // Only the layout's parts are the canvas's to move: a header's buttons, a list's columns have keys of their own.
+    if (!state.picked.every((id) => locate(state.page, id))) return false;
     if (mod && key === 'g') {
       if (event.shiftKey) designer.ungroup(state.selected as string);
       else designer.wrap(state.picked, 'group');
