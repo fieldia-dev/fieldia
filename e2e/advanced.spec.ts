@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { screen } from './support';
+import { doubleLines } from './designer-support';
+import { expectNoSidewaysScroll, screen } from './support';
 
 /**
  * The screen designer's Advanced canvas, used as a person uses it: the page
@@ -321,4 +322,101 @@ test('right to left, Alt+← puts a part beside the one after it', async ({ page
   await page.keyboard.press('Alt+ArrowLeft');
   await expect(page.locator('.fd-canvas-said')).toHaveText('Work email: beside “Mobile”');
   expect((await where(page, 'f-email'))?.kids).toEqual(['f-mobile', 'f-email']);
+});
+
+// ---- the layout gates, on the canvas --------------------------------------------------
+
+/**
+ * Every part on the canvas whose edges miss the columns of the grid it sits
+ * on — through arrangements on its tracks — measured by its own box (a field
+ * reaches into the gap round it for its ring). Parts sharing one cell are
+ * exempt; the cell they share is not. Says how many it looked at.
+ */
+function misalignedOnCanvas(page: Page): Promise<{ checked: number; off: string[] }> {
+  return page.evaluate(() => {
+    const off: string[] = [];
+    let checked = 0;
+    const onTracks = (grid: Element | null) => !!grid?.parentElement?.matches('.fd-section[data-place="tracks"]');
+    for (const part of document.querySelectorAll<HTMLElement>('.fd-canvas-body .fd-grid > [data-node]')) {
+      const r = part.getBoundingClientRect();
+      if (!r.width || part.closest('[hidden]')) continue;
+      const s = getComputedStyle(part);
+      const inset = part.classList.contains('fd-canvas-field') ? parseFloat(s.paddingLeft) : 0;
+      const box = { left: r.left + inset, right: r.right - inset };
+      const shared = part.parentElement?.closest('.fd-section[data-place="shared"]');
+      if (shared && shared !== part) continue;
+      let grid: Element | null = part.parentElement;
+      while (onTracks(grid)) grid = grid?.parentElement?.parentElement?.closest('.fd-grid') ?? null;
+      if (!grid) continue;
+      const style = getComputedStyle(grid);
+      const tracks = style.gridTemplateColumns.split(' ').map(parseFloat);
+      const gap = parseFloat(style.columnGap) || 0;
+      const g = grid.getBoundingClientRect();
+      const rtl = style.direction === 'rtl';
+      const lefts: number[] = [];
+      const rights: number[] = [];
+      let x = rtl ? g.right : g.left;
+      for (const width of tracks) {
+        const left = rtl ? x - width : x;
+        lefts.push(left);
+        rights.push(left + width);
+        x += rtl ? -(width + gap) : width + gap;
+      }
+      const near = (value: number, list: number[]) => list.some((edge) => Math.abs(edge - value) <= 1.5);
+      checked++;
+      const startsOn = rtl ? near(box.right, rights) : near(box.left, lefts);
+      const endsOn = part.matches('.fd-button') || (rtl ? near(box.left, lefts) : near(box.right, rights));
+      if (!startsOn || !endsOn) off.push(`${part.dataset['node']} in ${grid.parentElement?.getAttribute('data-node')}`);
+    }
+    return { checked, off };
+  });
+}
+
+async function gates(page: Page, what: string) {
+  const { checked, off } = await misalignedOnCanvas(page);
+  expect(checked, `${what}: parts looked at`).toBeGreaterThan(8);
+  expect(off, `${what}: parts off their grid's columns`).toEqual([]);
+  expect(await doubleLines(page, '.fd-canvas *'), `${what}: a box drawn in a box`).toEqual([]);
+}
+
+for (const width of [1280, 390]) {
+  test(`at ${width}px, every part on the canvas sits on its grid's columns, with no box drawn in a box`, async ({ page }) => {
+    await openAdvanced(page, width);
+    await gates(page, `Advanced at ${width}px`);
+    await expectNoSidewaysScroll(page);
+    await screen(page, `advanced-11-gates-${width}`);
+  });
+}
+
+test('after a run of drops, still every part on its columns, and no box in a box', async ({ page }) => {
+  await openAdvanced(page);
+  const first = await box(page, 'f-first-name');
+  await dropAt(page, centre(await box(page, 'f-nationality')), { x: first.x + first.width - 12, y: first.y + first.height / 2 });
+  const last = await box(page, 'f-last-name');
+  await dropAt(page, centre(await box(page, 'f-mobile')), { x: last.x + last.width / 2, y: last.y + last.height * 0.72 });
+  const email = await box(page, 'f-email');
+  const birthday = await box(page, 'f-birthday');
+  await dropAt(page, await tileAt(page, 'kind:paragraph'), { x: email.x + email.width / 2, y: (email.y + email.height + birthday.y) / 2 });
+  await page.keyboard.press('Escape');
+  const emergency = await box(page, 'emergency');
+  await dropAt(page, await tileAt(page, 'kind:email'), { x: emergency.x + emergency.width - 4, y: emergency.y + emergency.height / 2 });
+  await page.keyboard.press('Escape');
+  await page.mouse.click(5, 5);
+  await gates(page, 'after four drops');
+  await screen(page, 'advanced-12-after-drops');
+});
+
+test('Simple and Advanced draw the page alike, and switching changes nothing in it', async ({ page }) => {
+  await openAdvanced(page);
+  const advanced = await boxes(page, '.fd-canvas-body');
+  const built = await page.evaluate(() => JSON.stringify((window as unknown as { fieldiaDesigner: { designer: { getPage(): unknown } } }).fieldiaDesigner.designer.getPage()));
+  await page.getByRole('group', { name: 'Editing mode' }).getByRole('button', { name: 'Simple' }).click();
+  await expect(page.locator('.fd-screen-designer')).toHaveAttribute('data-mode', 'simple');
+  expect(await boxes(page, '.fd-canvas-body')).toEqual(advanced);
+  expect(await page.evaluate(() => JSON.stringify((window as unknown as { fieldiaDesigner: { designer: { getPage(): unknown } } }).fieldiaDesigner.designer.getPage()))).toBe(built);
+  // Advanced's marks are gone: no help, no handle.
+  await expect(page.getByRole('button', { name: 'Keys for moving parts' })).toBeHidden();
+  await page.reload();
+  // The mode is the person's, kept in this browser.
+  await expect(page.locator('.fd-screen-designer')).toHaveAttribute('data-mode', 'simple');
 });

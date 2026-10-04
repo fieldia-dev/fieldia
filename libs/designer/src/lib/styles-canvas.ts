@@ -94,9 +94,10 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 .fd-canvas:not([data-mode="advanced"]) > .fd-canvas-help { display: none; }
 .fd-canvas-help-button {
   all: unset; box-sizing: border-box; display: grid; place-items: center; width: 22px; height: 22px; margin-inline-start: auto; border-radius: 50%;
-  border: 1px solid var(--fd-border); color: var(--fd-muted); font-size: 12px; font-weight: 700; cursor: pointer; background: var(--fd-surface);
+  color: var(--fd-muted); font-size: 12px; font-weight: 700; cursor: pointer; background: var(--fd-page);
 }
-.fd-canvas-help-button:hover, .fd-canvas-help-button[aria-expanded="true"] { color: var(--fd-text); border-color: var(--fd-border-strong); }
+/* Filled, not ringed: a ring so near the canvas's own border would read as a box in a box. */
+.fd-canvas-help-button:hover, .fd-canvas-help-button[aria-expanded="true"] { color: var(--fd-text); background: color-mix(in srgb, var(--fd-text) 10%, var(--fd-page)); }
 .fd-canvas-help-button:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
 .fd-canvas-keys {
   position: absolute; inset-inline-end: 0; inset-block-start: 28px; width: max-content; max-width: min(420px, 80vw); margin: 0; padding: 10px 12px;
