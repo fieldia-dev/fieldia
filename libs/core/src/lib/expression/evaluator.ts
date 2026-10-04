@@ -1,12 +1,17 @@
 /**
- * AST evaluator for modifiers, ported from the React form engine.
+ * AST evaluator for expressions, ported from the React form engine.
  *
  * Python semantics where the React version used JavaScript's: an empty list
  * or string is false, and an empty value is never smaller or larger than
- * anything — modifiers come from backends that think in Python.
+ * anything — modifiers come from backends that think in Python. Arithmetic
+ * and functions give null for what they cannot work out, never an error.
  */
 
-import type { ASTNode, BinaryOpNode, UnaryOpNode } from './parser';
+import type { ASTNode, BinaryOpNode, CallNode, UnaryOpNode } from './parser';
+import { FUNCTIONS, type ExpressionEnv } from './functions';
+import { arithmetic, negate, truthy } from './operations';
+
+export { truthy } from './operations';
 
 /**
  * Evaluate an AST node against a context object
@@ -20,13 +25,16 @@ import type { ASTNode, BinaryOpNode, UnaryOpNode } from './parser';
  * const context = { state: 'draft', amount: 100 };
  * evaluate(ast, context); // Returns boolean result
  */
-export function evaluate(ast: ASTNode, context: Record<string, unknown>): unknown {
+export function evaluate(ast: ASTNode, context: Record<string, unknown>, env: ExpressionEnv = {}): unknown {
   switch (ast.type) {
     case 'BinaryOp':
-      return evaluateBinaryOp(ast, context);
+      return evaluateBinaryOp(ast, context, env);
 
     case 'UnaryOp':
-      return evaluateUnaryOp(ast, context);
+      return evaluateUnaryOp(ast, context, env);
+
+    case 'Call':
+      return evaluateCall(ast, context, env);
 
     case 'Literal':
       return ast.value;
@@ -42,9 +50,9 @@ export function evaluate(ast: ASTNode, context: Record<string, unknown>): unknow
 /**
  * Evaluate binary operations
  */
-function evaluateBinaryOp(node: BinaryOpNode, context: Record<string, unknown>): unknown {
-  const left = normalize(evaluate(node.left, context));
-  const right = normalize(evaluate(node.right, context));
+function evaluateBinaryOp(node: BinaryOpNode, context: Record<string, unknown>, env: ExpressionEnv): unknown {
+  const left = normalize(evaluate(node.left, context, env));
+  const right = normalize(evaluate(node.right, context, env));
   const operator = node.operator.toLowerCase();
   const ordered = left !== null && right !== null;
 
@@ -76,6 +84,14 @@ function evaluateBinaryOp(node: BinaryOpNode, context: Record<string, unknown>):
     case 'not in':
       return Array.isArray(right) && !right.includes(left);
 
+    // Arithmetic, and + joining text
+    case '+':
+    case '-':
+    case '*':
+    case '/':
+    case '%':
+      return arithmetic(operator, left, right);
+
     // Logical operators (use truthiness)
     case 'and':
       return truthy(left) && truthy(right);
@@ -91,17 +107,27 @@ function evaluateBinaryOp(node: BinaryOpNode, context: Record<string, unknown>):
 /**
  * Evaluate unary operations
  */
-function evaluateUnaryOp(node: UnaryOpNode, context: Record<string, unknown>): unknown {
-  const operand = evaluate(node.operand, context);
+function evaluateUnaryOp(node: UnaryOpNode, context: Record<string, unknown>, env: ExpressionEnv): unknown {
+  const operand = evaluate(node.operand, context, env);
   const operator = node.operator.toLowerCase();
 
   switch (operator) {
     case 'not':
       return !truthy(operand);
 
+    case '-':
+      return negate(operand);
+
     default:
       throw new Error(`Unknown unary operator: ${node.operator}`);
   }
+}
+
+/** A function called with its values, each read only when the function asks for it. */
+function evaluateCall(node: CallNode, context: Record<string, unknown>, env: ExpressionEnv): unknown {
+  const fn = FUNCTIONS.get(node.name);
+  if (!fn) throw new Error(`Unknown function: ${node.name}`);
+  return fn.call({ args: node.args, value: (arg) => evaluate(arg, context, env), env });
 }
 
 /** What `<` and `>` order: numbers with numbers, strings with strings. */
@@ -110,13 +136,6 @@ type Comparable = number | string;
 /** A missing value compares like None. */
 function normalize(value: unknown): unknown {
   return value === undefined ? null : value;
-}
-
-/** Python's truth test: empty lists, strings and objects, 0 and None are false. */
-export function truthy(value: unknown): boolean {
-  if (Array.isArray(value)) return value.length > 0;
-  if (value !== null && typeof value === 'object') return Object.keys(value).length > 0;
-  return Boolean(value);
 }
 
 /**

@@ -35,10 +35,16 @@ export function extractFieldNames(expression: string | boolean | undefined): str
     // Keywords that look like identifiers but aren't field names
     const keywords = new Set(['null', 'true', 'false', 'True', 'False', 'None']);
 
-    tokens.forEach(token => {
+    tokens.forEach((token, i) => {
       if (token.type === 'IDENTIFIER') {
         // Skip literal keywords
         if (keywords.has(token.value)) {
+          return;
+        }
+
+        // A name followed by "(" is a function called, not a field: round(x)
+        const next = tokens[i + 1];
+        if (next?.type === 'PAREN' && next.value === '(') {
           return;
         }
 
