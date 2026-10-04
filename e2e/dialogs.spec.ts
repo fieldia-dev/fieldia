@@ -136,3 +136,35 @@ for (const variant of VARIANTS) {
     });
   });
 }
+
+test('a dialog wears the look of the page that opened it: the dark scheme on its box, its page and its buttons', async ({ page }) => {
+  await open(page, 'plain', 'page=fields&skin=outlined&scheme=dark');
+  const client = node(page, 'f-client').getByRole('combobox');
+  await client.fill('Hilton Cairo');
+  await node(page, 'f-client').getByRole('option', { name: 'Create and edit…' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Client' });
+  await expect(dialog.locator('[data-node="#title"] input')).toHaveValue('Hilton Cairo');
+  const colours = () =>
+    dialog.evaluate((el) => {
+      const input = el.querySelector('input.fd-input') as HTMLElement;
+      const primary = el.querySelector('.fd-form-dialog-foot .fd-button-primary') as HTMLElement | null;
+      return {
+        scheme: getComputedStyle(el).colorScheme,
+        ground: getComputedStyle(el).backgroundColor,
+        text: getComputedStyle(input).color,
+        primary: primary ? getComputedStyle(primary).backgroundColor : null,
+      };
+    });
+  // The dark tokens: ground #16191e, words #e8eaed, the dark accent #5aa2ff.
+  expect(await colours()).toEqual({ scheme: 'dark', ground: 'rgb(22, 25, 30)', text: 'rgb(232, 234, 237)', primary: 'rgb(90, 162, 255)' });
+  await screen(page, 'dialog-dark-create', { viewport: true });
+  await dialog.getByRole('button', { name: 'Discard' }).click();
+  await expect(dialog).toBeHidden();
+  await client.fill('');
+  await client.click();
+  await node(page, 'f-client').getByRole('option', { name: 'Search more…' }).click();
+  await expect(dialog.getByRole('searchbox')).toBeFocused();
+  await expect(dialog.getByRole('option')).toHaveCount(12);
+  expect(await colours()).toEqual({ scheme: 'dark', ground: 'rgb(22, 25, 30)', text: 'rgb(232, 234, 237)', primary: null });
+  await screen(page, 'dialog-dark-search', { viewport: true });
+});

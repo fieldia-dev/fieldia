@@ -1,5 +1,6 @@
-import type { Locale, RecordId, RelatedRecord, Values } from '@fieldia/core';
+import type { Locale, PageLook, RecordId, RelatedRecord, Values } from '@fieldia/core';
 import { WIDGET_LABELS } from '@fieldia/widgets';
+import { applyLook } from './look';
 import { mountViewer, VIEWER_LABELS, type Skin, type ViewerHandle, type ViewerOptions } from './viewer';
 
 /**
@@ -25,6 +26,8 @@ export interface FormDialogOptions extends ViewerOptions {
   recompute?: (values: Values) => Promise<Values>;
   /** Where the dialog goes: the document's body by default. */
   container?: HTMLElement;
+  /** The look of the page that opened it, worn by the dialog and the page in it, unless that page has a look of its own. */
+  look?: PageLook;
 }
 
 export interface FormDialogResult {
@@ -66,6 +69,9 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
     tabindex: '-1',
   });
   if (options.dir) box.setAttribute('dir', options.dir);
+  // One look for the box and the page in it: the page's own, else the opener's.
+  const look = options.page.look ?? options.look;
+  applyLook(box, look);
   box.append(make('div', { class: 'fd-form-dialog-head' }), body, make('div', { class: 'fd-actions fd-actions-end fd-form-dialog-foot' }));
   box.firstElementChild?.append(title, closeButton);
   box.lastElementChild?.append(discard, saveClose);
@@ -73,7 +79,7 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
   backdrop.append(box);
   container.append(backdrop);
 
-  const handle = mountViewer(body, { ...options, showActions: false });
+  const handle = mountViewer(body, { ...options, page: look && !options.page.look ? { ...options.page, look } : options.page, showActions: false });
   let done = false;
   if (options.recompute) recalculate(handle.form, options.page.fields, options.recompute, () => done);
 
@@ -173,6 +179,8 @@ export interface SearchDialogOptions {
   dir?: 'ltr' | 'rtl';
   /** Where the dialog goes: the document's body by default. */
   container?: HTMLElement;
+  /** The look of the page that opened it: its accent, scheme, font, room and corners. */
+  look?: PageLook;
 }
 
 /**
@@ -206,6 +214,7 @@ export function openSearchDialog(options: SearchDialogOptions): Promise<RelatedR
     'aria-labelledby': title.id,
   });
   if (options.dir) box.setAttribute('dir', options.dir);
+  applyLook(box, options.look);
   const head = make('div', { class: 'fd-form-dialog-head' });
   head.append(title, closeButton);
   const body = make('div', { class: 'fd-form-dialog-body fd-search-body' });

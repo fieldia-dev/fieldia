@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMemoryDataSource, type Page, type Values } from '@fieldia/core';
 import { openFormDialog, openSearchDialog } from './dialog';
+import { pageDialogs } from './related';
 
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', 'examples', 'pages');
 const page = (name: string): Page => JSON.parse(readFileSync(join(EXAMPLES, `${name}.page.json`), 'utf8'));
@@ -223,5 +224,48 @@ describe('a searchable list in a dialog', () => {
     await new Promise((resolve) => setTimeout(resolve, 250));
     (dialog() as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(await escaped).toBeNull();
+  });
+});
+
+describe('a dialog in the look of the page that opened it', () => {
+  const look = { accent: '#1f7a4d', scheme: 'dark', corners: 'round', density: 'compact', font: 'serif' } as const;
+  const worn = (element: Element) => Object.fromEntries(['scheme', 'corners', 'density', 'font'].map((name) => [name, element.getAttribute(`data-${name}`)]));
+
+  it('wears its accent, scheme, corners, room and font, and so does the page inside it', async () => {
+    void openFormDialog({ page: page('customer'), dataSource: customerSource(), recordId: 1, title: 'Nile Traders', look });
+    await flush();
+    const box = dialog() as HTMLElement;
+    expect(worn(box)).toEqual({ scheme: 'dark', corners: 'round', density: 'compact', font: 'serif' });
+    expect(box.hasAttribute('data-accent')).toBe(true);
+    expect(box.style.getPropertyValue('--fd-look-accent')).toBe('#1f7a4d');
+    expect(worn(box.querySelector('.fd-form') as HTMLElement)).toEqual(worn(box));
+  });
+
+  it('gives way to a look the page inside has of its own, the box and the page alike', async () => {
+    const own: Page = { ...page('customer'), look: { scheme: 'light', accent: '#aa3300' } };
+    void openFormDialog({ page: own, dataSource: customerSource(), recordId: 1, title: 'Nile Traders', look });
+    await flush();
+    const box = dialog() as HTMLElement;
+    expect(box.getAttribute('data-scheme')).toBe('light');
+    expect(box.style.getPropertyValue('--fd-look-accent')).toBe('#aa3300');
+    expect((box.querySelector('.fd-form') as HTMLElement).getAttribute('data-scheme')).toBe('light');
+  });
+
+  it('wears it in a list to search in too', async () => {
+    void openSearchDialog({ title: 'Country', search: async () => [], look });
+    await flush();
+    expect(worn(dialog() as HTMLElement)).toEqual({ scheme: 'dark', corners: 'round', density: 'compact', font: 'serif' });
+  });
+
+  it('is handed the look by the page whose field opens it', async () => {
+    const opening: Page = { ...page('customer'), look };
+    const dialogs = pageDialogs({ page: opening, dataSource: customerSource(), relatedPages: { partner: page('customer') } });
+    void dialogs.openRecord('partner', { title: 'Nile Traders', recordId: 1 });
+    await flush();
+    expect((dialog() as HTMLElement).getAttribute('data-scheme')).toBe('dark');
+    document.body.replaceChildren();
+    void dialogs.searchMore({ title: 'Country', search: async () => [] } as never);
+    await flush();
+    expect((dialog() as HTMLElement).getAttribute('data-scheme')).toBe('dark');
   });
 });

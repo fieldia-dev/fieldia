@@ -51,6 +51,7 @@ export function pageDialogs(options: ViewerOptions): WidgetDialogs {
     preferences: options.preferences,
     relatedPages: options.relatedPages,
     translate: options.translate,
+    look: options.page.look,
   };
   return {
     canOpen: (model) => pageFor(model) !== null,
@@ -71,7 +72,7 @@ export function pageDialogs(options: ViewerOptions): WidgetDialogs {
       const name = nameField ? result.values[nameField] : null;
       return { id: result.recordId, label: typeof name === 'string' && name ? name : request.name ?? request.title };
     },
-    searchMore: (request) => openSearchDialog({ title: request.title, search: request.search, locale: options.locale, skin: options.skin, dir: options.dir }),
+    searchMore: (request) => openSearchDialog({ title: request.title, search: request.search, locale: options.locale, skin: options.skin, dir: options.dir, look: options.page.look }),
     async editValues(request) {
       const result = await openFormDialog({
         ...shared,

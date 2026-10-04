@@ -78,21 +78,24 @@ fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
 /* A note: words set apart in a soft panel, a shade off whatever it stands on — a card, the page, or the dark. */
 .fd-form .fd-text-note { background: color-mix(in srgb, var(--fd-text) 6%, transparent); color: var(--fd-text); border-radius: var(--fd-control-radius, 6px); padding: 10px 12px; }
 
-/* ---- the page's look ---- */
-.fd-form[data-font="serif"] { --fd-font: "Source Serif 4", Georgia, serif; }
-.fd-form[data-font="rounded"] { --fd-font: Nunito, "Varela Round", system-ui; }
+/* ---- the page's look: worn by the form, and by a dialog it opens (its box and the page in it) ---- */
+:is(.fd-form, .fd-form-dialog)[data-font="serif"] { --fd-font: "Source Serif 4", Georgia, serif; }
+:is(.fd-form, .fd-form-dialog)[data-font="rounded"] { --fd-font: Nunito, "Varela Round", system-ui; }
 /* Room between and inside parts: gaps, the height of a box, a group's padding, the space between groups. */
-.fd-form[data-density="compact"] { --fd-gap-y: 10px; --fd-gap-x: 16px; --fd-control-height: 30px; --fd-gap-block: 16px; --fd-group-pad: 14px 16px; }
-.fd-form[data-density="comfortable"] { --fd-gap-y: 16px; --fd-gap-x: 20px; --fd-control-height: 36px; --fd-gap-block: 22px; --fd-group-pad: 18px 22px; }
-.fd-form[data-density="roomy"] { --fd-gap-y: 22px; --fd-gap-x: 28px; --fd-control-height: 42px; --fd-gap-block: 30px; --fd-group-pad: 24px 30px; }
-.fd-form[data-corners="square"] { --fd-radius: 0px; --fd-control-radius: 0px; }
-.fd-form[data-corners="soft"] { --fd-radius: 10px; --fd-control-radius: 6px; }
-.fd-form[data-corners="round"] { --fd-radius: 16px; --fd-control-radius: 12px; }
+:is(.fd-form, .fd-form-dialog)[data-density="compact"] { --fd-gap-y: 10px; --fd-gap-x: 16px; --fd-control-height: 30px; --fd-gap-block: 16px; --fd-group-pad: 14px 16px; }
+:is(.fd-form, .fd-form-dialog)[data-density="comfortable"] { --fd-gap-y: 16px; --fd-gap-x: 20px; --fd-control-height: 36px; --fd-gap-block: 22px; --fd-group-pad: 18px 22px; }
+:is(.fd-form, .fd-form-dialog)[data-density="roomy"] { --fd-gap-y: 22px; --fd-gap-x: 28px; --fd-control-height: 42px; --fd-gap-block: 30px; --fd-group-pad: 24px 30px; }
+:is(.fd-form, .fd-form-dialog)[data-corners="square"] { --fd-radius: 0px; --fd-control-radius: 0px; }
+:is(.fd-form, .fd-form-dialog)[data-corners="soft"] { --fd-radius: 10px; --fd-control-radius: 6px; }
+:is(.fd-form, .fd-form-dialog)[data-corners="round"] { --fd-radius: 16px; --fd-control-radius: 12px; }
 
 /* Light or dark: a page that names its scheme paints its own ground, so it reads the same on any page round it. */
 .fd-form[data-scheme] { color-scheme: light; background: var(--fd-page); color: var(--fd-text); border-radius: var(--fd-radius); --fd-ground: var(--fd-page); }
 .fd-form[data-scheme] > .fd-content:not(:has(> .fd-sheet-page)) { padding: 20px; }
-.fd-form[data-scheme="dark"] {
+/* A page in a dialog paints no ground of its own and adds no room: the dialog is its ground. */
+.fd-form-dialog-body > .fd-form[data-scheme] { background: none; border-radius: 0; }
+.fd-form-dialog-body > .fd-form[data-scheme] > .fd-content:not(:has(> .fd-sheet-page)) { padding: 0; }
+:is(.fd-form, .fd-form-dialog)[data-scheme="dark"] {
   color-scheme: dark;
   --fd-text: #e8eaed;
   --fd-muted: #a3a9b2;
@@ -115,7 +118,7 @@ fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
 }
 /* Auto follows the reader's system: the same dark tokens, when it is dark. */
 @media (prefers-color-scheme: dark) {
-  .fd-form[data-scheme="auto"] {
+  :is(.fd-form, .fd-form-dialog)[data-scheme="auto"] {
     color-scheme: dark;
     --fd-text: #e8eaed;
     --fd-muted: #a3a9b2;
@@ -139,7 +142,7 @@ fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
 }
 
 /* The page's accent, and the softer and hover shades mixed from it on whatever surface the scheme has. */
-.fd-form[data-accent] {
+:is(.fd-form, .fd-form-dialog)[data-accent] {
   --fd-accent: var(--fd-look-accent);
   --fd-accent-text: var(--fd-look-accent-text);
   --fd-focus: var(--fd-look-accent);
@@ -147,20 +150,20 @@ fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
   --fd-accent-hover: color-mix(in srgb, var(--fd-accent) 84%, var(--fd-text));
 }
 /* On a dark page, the accent the viewer lightened, when it had to be, so it still reads there. */
-.fd-form[data-scheme="dark"][data-accent] {
+:is(.fd-form, .fd-form-dialog)[data-scheme="dark"][data-accent] {
   --fd-accent: var(--fd-look-accent-dark);
   --fd-accent-text: var(--fd-look-accent-dark-text);
   --fd-focus: var(--fd-look-accent-dark);
 }
 @media (prefers-color-scheme: dark) {
-  .fd-form[data-scheme="auto"][data-accent] {
+  :is(.fd-form, .fd-form-dialog)[data-scheme="auto"][data-accent] {
     --fd-accent: var(--fd-look-accent-dark);
     --fd-accent-text: var(--fd-look-accent-dark-text);
     --fd-focus: var(--fd-look-accent-dark);
   }
 }
-.fd-form[data-fd-skin="outlined"][data-accent] { --fd-focus-ring: 0 0 0 2px color-mix(in srgb, var(--fd-accent) 22%, transparent); }
-.fd-form[data-accent] .fd-button-primary:hover { filter: none; background: var(--fd-accent-hover); border-color: var(--fd-accent-hover); }
+:is(.fd-form, .fd-form-dialog)[data-fd-skin="outlined"][data-accent] { --fd-focus-ring: 0 0 0 2px color-mix(in srgb, var(--fd-accent) 22%, transparent); }
+:is(.fd-form, .fd-form-dialog)[data-accent] .fd-button-primary:hover { filter: none; background: var(--fd-accent-hover); border-color: var(--fd-accent-hover); }
 /* A band of the accent under the page's title. */
 .fd-form[data-accent] .fd-page-head { border-block-end: 3px solid var(--fd-accent); padding-block-end: 14px; }
 `;
