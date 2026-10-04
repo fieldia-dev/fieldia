@@ -54,6 +54,23 @@ describe('words for a drop', () => {
     expect(words((d) => d.place('address', { how: 'into', container: 'tab-pay' }))).toEqual(['Moved “Home address” to “Pay”']);
   });
 
+  it('a part put before another says beside it too', () => {
+    expect(words((d) => d.place('f-nationality', { how: 'beside', target: 'f-first_name', after: false }))).toEqual(['Put “Nationality” beside “First name”']);
+  });
+
+  it('a part moved from the end of its group to the start: only it moved', () => {
+    expect(words((d) => d.place('f-salary', { how: 'row', container: 'role', index: 0 }))).toEqual(['“Monthly salary”: 3 columns wide', 'Reordered the fields in “Role”']);
+    expect(words((d) => d.place('f-job_title', { how: 'row', container: 'role', index: 6 }))).toEqual(['“Job title”: 3 columns wide', 'Reordered the fields in “Role”']);
+  });
+
+  it('two parts moved in one version: the rest kept their order, so only they moved', () => {
+    const moves = (d: ReturnType<typeof employeeDesigner>) => {
+      d.place('f-salary', { how: 'row', container: 'role', index: 0 });
+      d.place('f-job_title', { how: 'row', container: 'role', index: 7 });
+    };
+    expect(words(moves)).toEqual(['“Monthly salary”: 3 columns wide', '“Job title”: 3 columns wide', 'Reordered the fields in “Role”']);
+  });
+
   it('a part moved away from the one whose cell it shared: only its own move', () => {
     const d = employeeDesigner();
     d.place('f-nationality', { how: 'beside', target: 'f-first_name', after: true });
@@ -129,6 +146,16 @@ describe('words for a layout’s settings', () => {
       'Labels set beside: 140 px wide → 120 px wide',
       'The colours: as the skin has them → as the reader’s system has them',
     ]);
+  });
+});
+
+describe('words for a page written by hand', () => {
+  it('a group whose columns are taken back has one', () => {
+    const before = employeePage();
+    const after: Page = JSON.parse(JSON.stringify(before));
+    delete (spot(after, 'emergency')?.node as { columns?: number }).columns;
+    Object.assign(spot(after, 'address')?.node ?? {}, { columns: 3 });
+    expect(pageChanges(before, after)).toEqual(['“Home address”: 3 columns', '“Emergency contact”: 1 column']);
   });
 });
 
