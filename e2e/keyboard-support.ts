@@ -86,7 +86,8 @@ export function readStop(page: Page, bar: string | null): Promise<Stop | null> {
       order: all.indexOf(at),
       ringed,
       covered,
-      code: !!at.closest('.cm-editor'),
+      // The JSON view's box and a CodeMirror editor keep Tab for indenting.
+      code: !!at.closest('.cm-editor, .fd-json textarea'),
     };
   }, bar);
 }
