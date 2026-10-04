@@ -493,8 +493,12 @@ export function createDesigner(options: {
   /** An edit's page checked as validatePage would, at the cost of what it changed. */
   const checkEdit = editChecker();
 
-  /** Apply an edit to a copy, validate it, and keep it — or refuse it, saying why. */
-  function apply(edit: (draft: Page) => void, merge: string | null = null): boolean {
+  /**
+   * Apply an edit to a copy, validate it, and keep it — or refuse it, saying
+   * why. `after` runs once it is kept, before anyone is told: what the edit
+   * picks is told with it, as one change, so a view draws it once.
+   */
+  function apply(edit: (draft: Page) => void, merge: string | null = null, after?: () => void): boolean {
     const draft = clone(page);
     try {
       edit(draft);
@@ -519,6 +523,7 @@ export function createDesigner(options: {
     // What the edit left alone stays the same objects, so the views can skip it.
     page = checked.page;
     issues = [];
+    after?.();
     notify();
     saveDraft();
     return true;
@@ -550,14 +555,19 @@ export function createDesigner(options: {
     return field as Extract<Field, { type: T }>;
   }
 
-  /** A layout edit, one undo step: what it made or moved is picked after. */
-  function layoutEdit<T extends string | string[]>(edit: (draft: Page) => T): T | false {
+  /** A layout edit, one undo step: what it made or moved is picked after, `lead` leading when it is among them. */
+  function layoutEdit<T extends string | string[]>(edit: (draft: Page) => T, lead: string | null = null): T | false {
     let made = null as T | null;
-    if (!apply((draft) => void (made = edit(draft))) || made === null) return false;
-    picked = ([] as string[]).concat(made);
-    selected = picked[0] ?? null;
-    notify();
-    return made;
+    const ok = apply(
+      (draft) => void (made = edit(draft)),
+      null,
+      () => {
+        if (made === null) return;
+        picked = ([] as string[]).concat(made);
+        selected = lead !== null && picked.includes(lead) ? lead : (picked[0] ?? null);
+      }
+    );
+    return ok && made !== null ? made : false;
   }
 
   /** Picks of parts no longer on the page are let go; the one picked last of the rest leads. */
@@ -565,7 +575,6 @@ export function createDesigner(options: {
     const ids = allIds(page);
     picked = pickedNow().filter((id) => ids.has(id));
     if (selected !== null && !ids.has(selected)) selected = picked[picked.length - 1] ?? null;
-    notify();
   }
 
   function fieldNode(draft: Page, id: string): FieldNode {
@@ -617,11 +626,8 @@ export function createDesigner(options: {
         const ids = allIds(draft);
         created = nextName((id) => ids.has(id), 'q', '-');
         placeAfter(draft, { type: 'field', id: created, field: name }, where);
-      });
-      if (!ok) return false;
-      selected = created;
-      notify();
-      return created;
+      }, null, () => (selected = created));
+      return ok ? created : false;
     },
 
     isFromModel(id) {
@@ -661,11 +667,8 @@ export function createDesigner(options: {
         const node: FieldNode = { type: 'field', id, field, ...(kind.widget ? { widget: kind.widget } : {}) };
         created = id;
         placeAfter(draft, node, where);
-      });
-      if (!ok) return false;
-      selected = created;
-      notify();
-      return created;
+      }, null, () => (selected = created));
+      return ok ? created : false;
     },
 
     updateQuestion(id, patch) {
@@ -845,11 +848,9 @@ export function createDesigner(options: {
         // Drop the fields nothing shows any more.
         const shown = shownFields(draft);
         for (const name of Object.keys(draft.fields)) if (!shown.has(name)) delete draft.fields[name];
+      }, null, () => {
+        if (selected === id) selected = null;
       });
-      if (ok && selected === id) {
-        selected = null;
-        notify();
-      }
       return ok;
     },
 
@@ -1137,11 +1138,7 @@ export function createDesigner(options: {
     wrap: (ids, kind) => layoutEdit((draft) => ops.wrap(draft, ids, kind)),
     ungroup: (id) => layoutEdit((draft) => ops.ungroup(draft, id)) !== false,
     duplicate: (ids) => layoutEdit((draft) => ops.duplicate(draft, ids)),
-    remove(ids) {
-      const ok = apply((draft) => ops.remove(draft, ids));
-      if (ok) forgetGone();
-      return ok;
-    },
+    remove: (ids) => apply((draft) => ops.remove(draft, ids), null, forgetGone),
     pick(id, options = {}) {
       const now = pickedNow();
       const off = !!options.add && now.includes(id);
@@ -1222,7 +1219,7 @@ export function createDesigner(options: {
     },
 
     checks() {
-      if (checksOf?.page !== page) checksOf = { page, checks: pageChecks(page) };
+      if (checksOf?.page !== page) checksOf = { page, checks: pageChecks(page, { valid: checkEdit.passed(page) }) };
       return [...checksOf.checks];
     },
     fixCheck: (check) => fixCheck(designer, check),
@@ -1277,11 +1274,10 @@ export function createDesigner(options: {
     appKinds: () => [...appKinds],
     templates: () => templatesFor(page, options.templates),
     replacePage(next) {
-      if (!apply((draft) => replaceWith(draft, next))) return false;
-      selected = null;
-      picked = [];
-      notify();
-      return true;
+      return apply((draft) => replaceWith(draft, next), null, () => {
+        selected = null;
+        picked = [];
+      });
     },
     assistant: () => options.assistant ?? null,
     // outline lane
@@ -1291,27 +1287,20 @@ export function createDesigner(options: {
       selected = picked[picked.length - 1] ?? null;
       notify();
     },
-    moveParts(ids, parentId, index) {
-      const lead = selected;
-      const moved = layoutEdit((draft) => moves.moveParts(draft, ids, parentId, index));
-      // The part that led the pick still leads it.
-      if (moved && lead && moved.includes(lead)) {
-        selected = lead;
-        notify();
-      }
-      return moved;
-    },
+    // The part that led the pick still leads it.
+    moveParts: (ids, parentId, index) => layoutEdit((draft) => moves.moveParts(draft, ids, parentId, index), selected),
     moveRefusal: (ids, parentId) => moves.moveRefusal(page, ids, parentId),
     describeMove: (ids, parentId, index) => moves.describeMove(page, ids, parentId, index),
     copyParts: (ids) => clipboard.copyParts(page, ids) ?? false,
     pasteParts(text) {
       let pasted: { ids: string[]; dropped: number } | null = null;
-      if (!apply((draft) => void (pasted = clipboard.pasteParts(draft, text, pickedNow(), { model }))) || !pasted) return false;
-      const done: { ids: string[]; dropped: number } = pasted;
-      picked = [...done.ids];
-      selected = picked[picked.length - 1] ?? null;
-      notify();
-      return done;
+      const pick = () => {
+        if (!pasted) return;
+        picked = [...(pasted as { ids: string[] }).ids];
+        selected = picked[picked.length - 1] ?? null;
+      };
+      if (!apply((draft) => void (pasted = clipboard.pasteParts(draft, text, pickedNow(), { model })), null, pick) || !pasted) return false;
+      return pasted;
     },
   };
   return designer;

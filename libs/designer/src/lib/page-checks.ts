@@ -71,12 +71,17 @@ function withRules(page: Page): { id: string; name: string; invisible: unknown }
   ];
 }
 
-export function pageChecks(page: Page): PageCheck[] {
+/**
+ * What people would trip over on the page. `valid` says the page is known to
+ * pass `validatePage`, as each page the designer keeps is: it is not checked
+ * against the format again, which on a big page is most of the time it takes.
+ */
+export function pageChecks(page: Page, options: { valid?: boolean } = {}): PageCheck[] {
   const found: PageCheck[] = [];
-  const checked = validatePage(page);
+  const checked = options.valid ? null : validatePage(page);
   const rules = ruleChecks(page);
   // A page written by hand can be wrong in ways the designer would never let it be; what the rules' checks say in words is not said again.
-  if (!checked.ok) for (const issue of checked.issues) if (!rules.covers(issue.path)) found.push({ at: null, severity: 'must', text: issue.path ? `${issue.path}: ${issue.message}` : issue.message });
+  if (checked && !checked.ok) for (const issue of checked.issues) if (!rules.covers(issue.path)) found.push({ at: null, severity: 'must', text: issue.path ? `${issue.path}: ${issue.message}` : issue.message });
   found.push(...rules.checks);
   const survey = page.data.kind === 'responses';
   const noun = survey ? 'question' : 'field';

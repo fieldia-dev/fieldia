@@ -1,5 +1,5 @@
 import { validatePage, type FieldNode, type Page, type SectionNode } from '@fieldia/core';
-import { blankPage, createDesigner } from './designer';
+import { blankPage, createDesigner, pageChecks } from './designer';
 
 /**
  * What keeps the designer quick on a big page, without changing what it does:
@@ -110,6 +110,25 @@ describe('an edit checked at the cost of what it changed', () => {
     expect(designer.getState().issues.join('\n')).toMatch(/^fields\.f2\.label/);
   });
 
+  it('takes a translation, a title and a look typed, keeping the page as a whole check would', () => {
+    const designer = createDesigner({ page: screen(20) });
+    expect(designer.addLanguage('ar')).toBe(true);
+    for (const words of ['ح', 'حق', 'حقل']) expect(designer.setTranslation('ar', 'Field 1', words)).toBe(true);
+    expect(designer.setPageInfo({ title: 'Big one' })).toBe(true);
+    expect(designer.setLook({ accent: '#123456' })).toBe(true);
+    const page = designer.getPage();
+    expect(page.translations).toEqual({ ar: { 'Field 1': 'حقل' } });
+    const whole = validatePage(page);
+    expect(whole.ok && whole.page).toEqual(page);
+  });
+
+  it('refuses a look made wrong, as a whole check does', () => {
+    const designer = createDesigner({ page: screen(2) });
+    designer.setLook({ accent: '#123456' });
+    expect(designer.setLook({ accent: 'red' })).toBe(false);
+    expect(designer.getPage().look).toEqual({ accent: '#123456' });
+  });
+
   it('takes a label typed into a page of 500 fields, keeping the page as a whole check would', () => {
     const designer = createDesigner({ page: screen(500) });
     designer.updateQuestion('n1', { label: 'First' });
@@ -118,5 +137,56 @@ describe('an edit checked at the cost of what it changed', () => {
     expect(page.fields['f250']).toEqual({ type: 'char', label: 'First name' });
     const whole = validatePage(page);
     expect(whole.ok && whole.page).toEqual(page);
+  });
+});
+
+describe('an edit that picks what it made', () => {
+  it('tells its listeners once, with the page and what is picked together', () => {
+    const designer = createDesigner({ page: screen(4) });
+    const seen: { page: Page; selected: string | null; picked: string[] }[] = [];
+    designer.subscribe((state) => seen.push({ page: state.page, selected: state.selected, picked: state.picked }));
+    const made = designer.addQuestion('short-answer', { after: 'n2' }) as string;
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toEqual({ page: designer.getPage(), selected: made, picked: [made] });
+    seen.length = 0;
+    const group = designer.wrap(['n1', 'n2'], 'group') as string;
+    expect(seen.map((s) => s.picked)).toEqual([[group]]);
+    seen.length = 0;
+    designer.pick('n3');
+    seen.length = 0;
+    expect(designer.removeNode('n3')).toBe(true);
+    expect(seen.map((s) => s.selected)).toEqual([null]);
+    seen.length = 0;
+    designer.pickMany(['n4', made]);
+    expect(designer.remove(['n4'])).toBe(true);
+    expect(seen.slice(1).map((s) => [s.picked, s.selected])).toEqual([[[made], made]]);
+  });
+
+  it('still picks nothing new when the edit is refused', () => {
+    const designer = createDesigner({ page: screen(2) });
+    designer.select('n1');
+    const seen: (string | null)[] = [];
+    designer.subscribe((state) => seen.push(state.selected));
+    expect(designer.addQuestion('short-answer', { after: 'nowhere' })).toBe(false);
+    expect(seen).toEqual(['n1']);
+    expect(designer.getState().issues).toEqual(['There is no element "nowhere"']);
+  });
+});
+
+describe('the checks of a page the designer has checked already', () => {
+  it('are the checks a whole check finds', () => {
+    const designer = createDesigner({ page: screen(3) });
+    designer.addQuestion('dropdown');
+    designer.addContainer('Empty');
+    expect(designer.checks()).toEqual(pageChecks(designer.getPage()));
+    expect(designer.checks().length).toBeGreaterThan(1);
+  });
+
+  it('still say what is wrong with a page that was wrong from the start', () => {
+    const page = screen(2);
+    (page.fields['f2'] as { colour?: string }).colour = 'red';
+    const designer = createDesigner({ page });
+    expect(designer.checks()).toEqual(pageChecks(page));
+    expect(designer.checks()[0]).toMatchObject({ severity: 'must', text: expect.stringMatching(/^fields\.f2/) });
   });
 });
