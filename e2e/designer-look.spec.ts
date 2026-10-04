@@ -90,3 +90,67 @@ test('the double-line check catches a box hugging its card, and leaves a floatin
   await page.locator('#probe').evaluate((box) => ((box as HTMLElement).style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.14)'));
   expect(await doubleLines(page)).toEqual([]);
 });
+
+/**
+ * The bar over a picked field covers nothing a person reads or clicks next:
+ * not its group's name above a first row, nor the label of the field below,
+ * nor its own label, nor the canvas's screen sizes; and it stays inside the
+ * canvas. Each is looked at point by point: the topmost thing there must be
+ * the name, the label or the button itself.
+ */
+async function covered(page: Page, what: string): Promise<string[]> {
+  return page.locator(what).evaluateAll((all) =>
+    all.flatMap((target) => {
+      const r = target.getBoundingClientRect();
+      if (!r.width || !r.height) return [];
+      for (let y = r.top + 2; y < r.bottom - 1; y += 3) {
+        for (let x = r.left + 2; x < r.right - 1; x += 4) {
+          const top = document.elementFromPoint(x, y);
+          if (top && top !== target && !target.contains(top) && top.closest('.fd-field-bar')) return [`${target.textContent?.trim() || target.getAttribute('aria-label')} under the bar`];
+        }
+      }
+      return [];
+    })
+  );
+}
+
+for (const mode of ['simple', 'advanced'] as const) {
+  for (const [size, viewport] of [['desktop', { width: 1280, height: 900 }], ['phone', { width: 390, height: 844 }]] as const) {
+    test(`a picked field’s bar leaves its group’s name and the next label clear · ${mode} · ${size}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      if (mode === 'advanced') {
+        await page.addInitScript(() => {
+          try {
+            localStorage.setItem('fieldia.designer.mode', 'advanced');
+          } catch {
+            // A browser that keeps nothing opens Simple.
+          }
+        });
+      }
+      await page.goto('/screen/');
+      const names = '.fd-canvas-section:not(.fd-canvas-arrangement) > legend .fd-canvas-section-title';
+      const labels = '.fd-canvas-field:not(.fd-editing) > .fd-label, .fd-canvas-field.fd-editing [data-inline="label"]';
+      // Each field of the first group in turn: the first row, then the rows below it.
+      const fields = page.locator('.fd-canvas-section').first().locator('.fd-canvas-field');
+      const count = await fields.count();
+      expect(count).toBeGreaterThan(2);
+      for (let i = 0; i < count; i++) {
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await fields.nth(i).click({ position: { x: 6, y: 6 } });
+        await expect(fields.nth(i)).toHaveClass(/fd-editing/);
+        await page.waitForTimeout(120);
+        expect([...(await covered(page, names)), ...(await covered(page, labels)), ...(await covered(page, '.fd-canvas-sizes button'))], `field ${i + 1} picked`).toEqual([]);
+        // All of the bar inside the canvas, however narrow the field is.
+        const bar = (await page.locator('.fd-canvas-field.fd-editing > .fd-field-bar').boundingBox())!;
+        const canvas = await page.locator('.fd-canvas-field.fd-editing').evaluate((card) => {
+          const r = card.closest('.fd-canvas.fd-form')!.getBoundingClientRect();
+          return { x: r.left, width: r.width };
+        });
+        expect(bar.x, `field ${i + 1}: the bar's start`).toBeGreaterThanOrEqual(canvas.x);
+        expect(bar.x + bar.width, `field ${i + 1}: the bar's end`).toBeLessThanOrEqual(canvas.x + canvas.width);
+      }
+      await fields.first().click({ position: { x: 6, y: 6 } });
+      await screen(page, `look-bar-over-name-${mode}-${size}`, { viewport: true });
+    });
+  }
+}

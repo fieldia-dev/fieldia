@@ -249,6 +249,30 @@ describe('the screen canvas — sections, tabs and the title', () => {
     expect(field(fourth).classList.contains('fd-bar-below')).toBe(false);
   });
 
+  it('lifts the bar over a group’s name from a field in its first row, so the name stays readable and can be picked', () => {
+    const { designer } = setup();
+    const field = (id: string) => canvas.element.querySelector(`.fd-canvas-field[data-node="${id}"]`) as HTMLElement;
+    const over = (id: string) => [field(id).classList.contains('fd-bar-over-name'), field(id).classList.contains('fd-bar-below')];
+    designer.setColumns('section-1', 2);
+    const first = designer.addQuestion('short-answer', { parent: 'section-1' }) as string;
+    expect(over(first)).toEqual([true, false]);
+    const second = designer.addQuestion('date', { parent: 'section-1' }) as string;
+    expect(over(second)).toEqual([true, false]);
+    // The second row has the first above it, not the name: the bar sits just above the field, over the gap.
+    const third = designer.addQuestion('date', { parent: 'section-1' }) as string;
+    expect(over(third)).toEqual([false, false]);
+  });
+
+  it('keeps the bar under a field in the first group of a tab, so neither the tabs’ names nor the group’s are covered', () => {
+    const { designer } = setup(blankPage('sheet', 'Customer'));
+    designer.addTabs();
+    const tabSection = (designer.getPage().layout as unknown as { children: { type: string; children: { children: { id: string }[] }[] }[] }).children.find((n) => n.type === 'tabs')!.children[0].children[0].id;
+    designer.renameContainer(tabSection, 'Contact');
+    const first = designer.addQuestion('amount', { parent: tabSection }) as string;
+    const card = canvas.element.querySelector(`.fd-canvas-field[data-node="${first}"]`) as HTMLElement;
+    expect([card.classList.contains('fd-bar-over-name'), card.classList.contains('fd-bar-below')]).toEqual([false, true]);
+  });
+
   it('shows a sheet’s title big over everything, and picks the page from it', () => {
     const { designer } = setup(blankPage('sheet', 'Customer'));
     const title = canvas.element.querySelector('.fd-canvas-title') as HTMLElement;

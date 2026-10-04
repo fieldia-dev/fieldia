@@ -123,7 +123,8 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 }
 
 /* ---- Advanced: the stage — the size of screen shown, and the keys ---- */
-.fd-canvas-stage { display: flex; align-items: center; gap: 8px; }
+/* Room under the screen sizes for the bar of a field picked in the first group's first row, lifted over the group's name. */
+.fd-canvas-stage { display: flex; align-items: center; gap: 8px; margin-block-end: 16px; }
 .fd-canvas:not([data-mode="advanced"]) > .fd-canvas-stage { display: none; }
 .fd-canvas-sizes { display: inline-flex; padding: 2px; border-radius: 9px; background: var(--fd-page); border: 1px solid var(--fd-border); }
 .fd-canvas-size {

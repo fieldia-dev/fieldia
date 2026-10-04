@@ -140,6 +140,12 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     drawn: { node: FieldNode; def: Field; labels: Place['labels']; picked: boolean; sample: number | null } | null;
   }
   const cards = new Map<string, Card>();
+  /** Where a part sits in its grid: its place in it, the grid's columns, and the names right above the grid's first row. */
+  interface Where {
+    index: number;
+    columns: number;
+    under: 'tabs' | 'name' | null;
+  }
 
   function dropCard(card: Card) {
     card.widget?.destroy?.();
@@ -199,7 +205,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     input.size = Math.max(4, input.value.length + 1);
   }
 
-  function drawCard(node: FieldNode, labels: Place['labels'], place: { index: number; underTabs: boolean; columns: number }): HTMLElement {
+  function drawCard(node: FieldNode, labels: Place['labels'], place: Where): HTMLElement {
     const def = page.fields[node.field];
     const editing = selected === node.id;
     // Only the card being edited types its options in place: asked of it alone, as asking walks the page.
@@ -235,8 +241,10 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
         sizeToWords(label);
       }
       if (doc.activeElement !== help) help.value = helpText;
-      // Right under the tabs, the bar goes below the field, so it does not cover the tabs' names.
-      element.classList.toggle('fd-bar-below', place.underTabs && place.index < place.columns);
+      // In a first row the bar leaves the names above readable: it goes below the field under tabs, over the name under a group's.
+      const firstRow = place.index < place.columns;
+      element.classList.toggle('fd-bar-below', place.under === 'tabs' && firstRow);
+      element.classList.toggle('fd-bar-over-name', place.under === 'name' && firstRow);
       card.bar?.update(page);
       card.options?.update(def, node);
       // A table's columns, typed in, stand in for the table itself.
@@ -277,6 +285,17 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     fold: FoldMark;
   }
   const sections = new Map<string, SectionView>();
+  // How far a group's name and words stand above its first row, measured as they change size: a bar lifted over the name clears it in any font.
+  const nameRoom = doc.defaultView?.ResizeObserver
+    ? new doc.defaultView.ResizeObserver((entries) => {
+        for (const section of new Set(entries.map((entry) => entry.target.parentElement))) {
+          const grid = section?.querySelector(':scope > .fd-grid');
+          const legend = section?.querySelector(':scope > legend');
+          if (!section || !grid || !legend) continue;
+          (section as HTMLElement).style.setProperty('--fd-name-room', `${Math.round(grid.getBoundingClientRect().top - legend.getBoundingClientRect().top)}px`);
+        }
+      })
+    : null;
 
   /** A group is a fieldset, named by its title; an arrangement is no group to name, and a fieldset cannot lay parts on the columns round it. */
   function makeSection(id: string, tag: 'fieldset' | 'div'): SectionView {
@@ -301,6 +320,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     advanced.addEventListener('click', () => options.openAdvanced?.());
     const lock = el('div', { class: 'fd-simple-lock', hidden: '' }, el('span', { class: 'fd-simple-lock-how' }), el('span', {}, 'Simple mode keeps it as it is. Edit what is inside by picking it.'), advanced);
     const element = el(tag, { class: 'fd-section fd-canvas-section', 'data-node': id, 'data-drop-section': id }, legend, description, grid, empty, lock);
+    nameRoom?.observe(legend);
+    nameRoom?.observe(description);
     return { element, legend, title, titleInput, description, grid, empty, lock, fold };
   }
 
@@ -310,7 +331,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     else element.style.removeProperty('--fd-span');
   }
 
-  function drawSection(section: SectionNode, place: Place, underTabs: boolean): HTMLElement {
+  function drawSection(section: SectionNode, place: Place, under: Where['under']): HTMLElement {
     const plan = planSection(section, place);
     const tag = plan.arrangement ? 'div' : 'fieldset';
     let view = sections.get(section.id);
@@ -359,7 +380,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
         grid.style.setProperty(`--fd-columns-${width}`, String(count));
       }
     }
-    const inner = section.children.map((child, index) => drawItem(child, plan.inner, { index, underTabs: underTabs && !section.title, columns: plan.inner.columns }));
+    const inner = section.children.map((child, index) => drawItem(child, plan.inner, { index, under: under === 'tabs' || plan.arrangement ? under : 'name', columns: plan.inner.columns }));
     arrange(grid, inner);
     setHidden(view.empty, section.children.length > 0);
     const locked = mode === 'simple' && plan.arrangement && isPicked;
@@ -369,10 +390,10 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   }
 
   /** Any part where it sits: a field, a group or an arrangement, tabs, or a block between fields. */
-  function drawItem(node: LayoutNode, place: Place, at: { index: number; underTabs: boolean; columns: number }): HTMLElement {
+  function drawItem(node: LayoutNode, place: Place, at: Where): HTMLElement {
     drawnIds.add(node.id);
     if (node.type === 'field') return drawCard(node, place.labels, at);
-    if (node.type === 'section') return drawSection(node, place, at.underTabs);
+    if (node.type === 'section') return drawSection(node, place, at.index < at.columns ? at.under : null);
     if (node.type === 'tabs') return drawTabs(node, place);
     const element = blocks.draw(node, selected === node.id);
     element.classList.toggle('fd-canvas-selected', selected === node.id);
@@ -436,7 +457,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       shown.grid.dataset['container'] = open.id;
     }
     const inner: Place = { columns: 1, onPage: place.onPage, labels: place.labels };
-    arrange(shown.grid, (open?.children ?? []).map((child, i) => drawItem(child, inner, { index: i, underTabs: i === 0, columns: 1 })));
+    arrange(shown.grid, (open?.children ?? []).map((child, i) => drawItem(child, inner, { index: i, under: i === 0 ? 'tabs' : null, columns: 1 })));
     return shown.element;
   }
 
@@ -551,6 +572,35 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       if (latest && !gone) widths.update(latest, mode === 'advanced');
     });
   }
+  /**
+   * The picked field's bar lines up with the field's far edge, as wide as its
+   * tools are: over a narrow field near the canvas's edge, as a phone's first
+   * column is, it is nudged back inside the canvas. Read once a frame, for that
+   * one field, and written only when it moves.
+   */
+  let barAsked = false;
+  let nudged = { bar: null as HTMLElement | null, by: 0 };
+  function placeBar() {
+    const view = doc.defaultView;
+    if (!view?.requestAnimationFrame || barAsked) return;
+    barAsked = true;
+    view.requestAnimationFrame(() => {
+      barAsked = false;
+      const bar = selected === null ? null : cards.get(selected)?.bar?.element;
+      if (gone || !bar?.isConnected) return;
+      const by = nudged.bar === bar ? nudged.by : 0;
+      const at = bar.getBoundingClientRect();
+      const room = element.getBoundingClientRect();
+      const natural = at.left - by;
+      const left = Math.max(room.left + 4, Math.min(natural, room.right - 4 - at.width));
+      const next = Math.round(left - natural);
+      if (nudged.bar === bar && next === by) return;
+      nudged = { bar, by: next };
+      bar.style.setProperty('--fd-bar-nudge', `${next}px`);
+    });
+  }
+  const resized = doc.defaultView?.ResizeObserver ? new doc.defaultView.ResizeObserver(() => placeBar()) : null;
+  resized?.observe(element);
   const drag: CanvasDrag = {
     press: (source, event, tile) => (mode === 'advanced' ? advanced : simpleDrag).press(source, event, tile),
     destroy() {
@@ -592,7 +642,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       setData(body, 'container', root.id);
       body.classList.toggle('fd-sections', !sheet);
       const top: Place = { columns: 1, onPage: !sheet, labels: page.look?.labels };
-      arrange(body, topOf(page).map((node, index) => drawItem(node, top, { index, underTabs: false, columns: 1 })));
+      arrange(body, topOf(page).map((node, index) => drawItem(node, top, { index, under: null, columns: 1 })));
       // Gone from the page, or in a tab not on show: their views go.
       for (const [id, card] of cards) {
         if (drawnIds.has(id)) continue;
@@ -620,6 +670,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       header.update(page, selected, form);
       guides.update(state, mode === 'advanced');
       placeWidths(state);
+      placeBar();
       multi.update(state, mode === 'advanced');
       ruleMarks(element, page, designer);
     },
@@ -636,6 +687,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       drag.destroy();
       widths.destroy();
       header.destroy();
+      nameRoom?.disconnect();
+      resized?.disconnect();
       for (const card of cards.values()) dropCard(card);
       cards.clear();
       sections.clear();
