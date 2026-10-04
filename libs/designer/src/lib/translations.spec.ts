@@ -109,6 +109,15 @@ describe('a word translated', () => {
     expect(kept(d)).toBeUndefined();
   });
 
+  it('makes no undo step for an edit that changes nothing', () => {
+    const d = designerWith();
+    d.addLanguage('ar');
+    d.setTranslation('ar', 'Your name', 'اسمك');
+    expect(d.setTranslation('ar', 'About you', '')).toBe(true);
+    d.undo();
+    expect(kept(d)).toEqual({ ar: {} });
+  });
+
   it('takes a translation away when it is emptied', () => {
     const d = designerWith();
     d.addLanguage('ar');
@@ -197,6 +206,10 @@ describe('how far each language has got', () => {
     d.fillTranslations({ ar: { 'Your name': 'اسمك', 'About you': 'عنك' } });
     expect(translationProgress(d.getPage(), 'ar')).toEqual({ done: 2, total: 7 });
     expect(translationProgress(d.getPage(), 'es')).toEqual({ done: 0, total: 7 });
+  });
+
+  it('does not count an empty translation a page brings with it', () => {
+    expect(translationProgress({ ...start(), translations: { ar: { 'Your name': '', 'Sign up': 'التسجيل' } } }, 'ar')).toEqual({ done: 1, total: 7 });
   });
 });
 

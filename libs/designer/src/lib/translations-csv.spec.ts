@@ -56,6 +56,10 @@ describe('toCsv', () => {
     const rows = [['a', 'b,c', '"q"'], ['line\r\nbreak', '', '\t'], ['', '', 'x']];
     expect(parseCsv(toCsv(rows))).toEqual(rows);
   });
+
+  it('quotes tabs and semicolons, so a first row full of them is not read as split by them', () => {
+    for (const rows of [[['a\tb\tc', 'd'], ['e', 'f']], [['a;b;c', 'd'], ['e', 'f']]]) expect(parseCsv(toCsv(rows))).toEqual(rows);
+  });
 });
 
 const page: Page = {

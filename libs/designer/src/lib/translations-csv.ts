@@ -63,7 +63,8 @@ export function parseCsv(input: string): string[][] {
       at++;
     } else if (char === '\n' || char === '\r') {
       endRow();
-      at += char === '\r' && text[at + 1] === '\n' ? 2 : 1;
+      // A Windows line end leaves a blank line between its two halves, and blank lines are skipped.
+      at++;
     } else {
       field += char;
       at++;

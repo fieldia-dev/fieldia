@@ -88,6 +88,16 @@ describe('pageWords', () => {
     ]);
   });
 
+  it('puts a field’s help before its choices, whichever its definition lists first', () => {
+    const page: Page = {
+      ...survey,
+      fields: { ...survey.fields, days: { type: 'selection', label: 'Delivery days', options: [{ value: 'sun', label: 'Sunday' }], help: 'Pick the days you are in' } },
+    };
+    const words = pageWords(page);
+    expect(words.indexOf('Pick the days you are in')).toBe(words.indexOf('Delivery days') + 1);
+    expect(words.indexOf('Sunday')).toBe(words.indexOf('Pick the days you are in') + 1);
+  });
+
   it('lists a word once, however often the page uses it', () => {
     const twice: Page = { ...survey, fields: { ...survey.fields, unused: { type: 'char', label: 'Your name' } } };
     expect(pageWords(twice).filter((w) => w === 'Your name')).toHaveLength(1);
@@ -128,6 +138,21 @@ describe('a widget’s own words', () => {
     expect(node.options).toEqual({ style: 'scale', startLabel: '«Not at all»', endLabel: '«Very»' });
   });
 
+  it('reads only the words ending in Label among a widget’s settings, however deep', () => {
+    const page: Page = {
+      ...survey,
+      layout: {
+        type: 'sections',
+        id: 'root',
+        children: [{ type: 'field', id: 'n', field: 'name', options: { title: 'compact', text: 'name', parts: [{ label: 'street', itemLabel: 'Address' }], addLabel: 'Add another' } }],
+      },
+    };
+    const node = (translatePage(page, (t) => `«${t}»`).layout as { children: { options?: Record<string, unknown> }[] }).children[0];
+    expect(node.options).toEqual({ title: 'compact', text: 'name', parts: [{ label: 'street', itemLabel: '«Address»' }], addLabel: '«Add another»' });
+    expect(pageWords(page)).not.toContain('compact');
+    expect(pageWords(page)).toContain('Address');
+  });
+
   it('shows a scale’s ends in the language the page keeps', () => {
     const page: Page = { ...survey, translations: { ar: { 'Not at all': 'إطلاقًا', Very: 'جدًا' } } };
     const node = (localizePage(page, 'ar').layout as { children: { children: { options?: Record<string, unknown> }[] }[] }).children[0].children[3];
@@ -136,6 +161,12 @@ describe('a widget’s own words', () => {
 });
 
 describe('the language a page is written in', () => {
+  it('shows a regional language in its base language’s words when it keeps no words of its own', () => {
+    const page: Page = { ...survey, translations: { ar: { 'Sign up': 'التسجيل' } } };
+    expect(localizePage(page, 'ar-EG').title).toBe('التسجيل');
+    expect(localizePage({ ...page, translations: { ...page.translations, 'ar-EG': { 'Sign up': 'سجّل' } } }, 'ar-EG').title).toBe('سجّل');
+  });
+
   it('may say the language its own words are in, as a language tag', () => {
     expect(validatePage({ ...survey, language: 'ar' }).ok).toBe(true);
     expect(validatePage({ ...survey, language: 'pt-BR' }).ok).toBe(true);
@@ -146,11 +177,13 @@ describe('the language a page is written in', () => {
 describe('isRightToLeft', () => {
   it('knows the languages written right to left, by their first part', () => {
     for (const tag of ['ar', 'ar-EG', 'he', 'iw', 'fa', 'fa-IR', 'ur', 'ps', 'sd', 'yi', 'dv', 'ckb', 'ug', 'ks', 'syr', 'AR']) expect({ tag, rtl: isRightToLeft(tag) }).toEqual({ tag, rtl: true });
-    for (const tag of ['en', 'fr', 'de-AT', 'es-419', 'ku', 'tr', 'zh-Hant', 'hi', 'ja', 'arn', 'hea', '']) expect({ tag, rtl: isRightToLeft(tag) }).toEqual({ tag, rtl: false });
+    for (const tag of ['en', 'fr', 'de-AT', 'es-419', 'ku', 'tr', 'zh-Hant', 'hi', 'ja', 'arn', 'hea', 'mar', 'ckbx', '']) expect({ tag, rtl: isRightToLeft(tag) }).toEqual({ tag, rtl: false });
   });
 
   it('follows the script a tag names over its language', () => {
     for (const tag of ['az-Arab', 'pa-Arab', 'uz-Arab-AF', 'ku-Arab', 'jrb-Hebr', 'ms-arab']) expect({ tag, rtl: isRightToLeft(tag) }).toEqual({ tag, rtl: true });
     for (const tag of ['sd-Deva', 'ks-Deva', 'ar-Latn', 'pa-Guru']) expect({ tag, rtl: isRightToLeft(tag) }).toEqual({ tag, rtl: false });
+    // A variant of four digits names no script.
+    expect(isRightToLeft('ar-1994')).toBe(true);
   });
 });
