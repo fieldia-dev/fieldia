@@ -1,6 +1,7 @@
 import { DESIGNER_KINDS_CSS } from './styles-kinds';
 import { DESIGNER_TRANSLATIONS_CSS } from './styles-translations';
 import { DESIGNER_PANEL_CSS } from './styles-panel';
+import { DESIGNER_JSON_CSS } from './styles-json';
 
 /** The designer's own chrome, on top of Fieldia's form stylesheet and tokens. */
 export const DESIGNER_CSS = /* css */ `
@@ -624,6 +625,6 @@ export function installDesignerStyles(document: Document): void {
   if (document.getElementById(STYLE_ID)) return;
   const style = document.createElement('style');
   style.id = STYLE_ID;
-  style.textContent = DESIGNER_CSS + DESIGNER_KINDS_CSS + DESIGNER_TRANSLATIONS_CSS + DESIGNER_PANEL_CSS;
+  style.textContent = DESIGNER_CSS + DESIGNER_KINDS_CSS + DESIGNER_TRANSLATIONS_CSS + DESIGNER_PANEL_CSS + DESIGNER_JSON_CSS;
   (document.head ?? document.documentElement).append(style);
 }

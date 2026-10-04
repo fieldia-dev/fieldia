@@ -6,6 +6,7 @@ import type { FindItem } from './find-anything';
 import { designerIcon } from './icons';
 import { sampleRows } from './samples';
 import { tryLanguage } from './try-language';
+import { tryDrawer } from './try-drawer';
 
 /**
  * Try it: the page working as people will use it, in place of the editor —
@@ -98,6 +99,7 @@ export function tryIt(options: TryItOptions): TryIt {
       skin: options.skin,
       ...language.viewerOptions(direction),
     });
+    tryDrawer(el, frame, viewer);
   }
   /** "Score: 3 of 5": the points of the questions that were asked, out of the most they could earn. */
   function showScore(page: Page, values: Values) {

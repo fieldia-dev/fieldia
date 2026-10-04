@@ -8,6 +8,7 @@ import {
   type LabelPlace,
   type LayoutNode,
   type Option,
+  type OptionsFrom,
   type Page,
   type SectionNode,
   type SheetNode,
@@ -29,6 +30,7 @@ import type { EachChange } from './layout-several';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
 import { translationCommands } from './translations';
+import { pageJsonCommands, type PageJsonResult } from './page-json';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -51,6 +53,7 @@ export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-c
 export type { BlockKind, Drop, NewPart } from './layout-ops';
 export type { LookPatch, SectionLook } from './layout-settings';
 export type { EachChange } from './layout-several';
+export type { JsonProblem, PageJsonResult } from './page-json';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
 export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
@@ -312,6 +315,21 @@ export interface Designer extends HeaderCommands, ListCommands {
   // panel lane
   /** Several parts' width, or where their labels sit, as one edit; none changes when one cannot. */
   setEach(ids: string[], change: EachChange): boolean;
+  // json lane
+  /** The page as JSON: two spaces deep, its keys in the order the page keeps them. */
+  pageJson(): string;
+  /** A whole page written as JSON, as one edit; refused with each problem's line and column, the page kept as it was. */
+  setPageJson(text: string): PageJsonResult;
+  /** The app's lists of choices a choice may take its options from, as the app named them. */
+  lists(): AppList[];
+  /** A choice's options taken from one of the app's lists, changing with other fields; `null` for options written here. */
+  setOptionsFrom(id: string, from: OptionsFrom | null): boolean;
+}
+
+/** One of the app's lists of choices, by the name its data source answers to, and the words a person picks it by. */
+export interface AppList {
+  name: string;
+  label: string;
 }
 
 
@@ -319,7 +337,7 @@ const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
 const kindOf = kindById;
 
-export function createDesigner(options: { page: Page; store?: PageStore; versions?: PublishedVersion[]; model?: Record<string, Field> }): Designer {
+export function createDesigner(options: { page: Page; store?: PageStore; versions?: PublishedVersion[]; model?: Record<string, Field>; lists?: AppList[] }): Designer {
   const store = options.store;
   const model = clone(options.model ?? {});
   /** A field the backend already has: its definition is the model's, not the designer's. */
@@ -1126,14 +1144,36 @@ export function createDesigner(options: { page: Page; store?: PageStore; version
     ...translationCommands({ apply, getPage: () => page }),
     // panel lane
     setEach: (ids, change) => apply((draft) => several.setEach(draft, ids, change)),
+    // json lane
+    ...pageJsonCommands({ getPage: () => page, apply }),
+    lists: () => clone(options.lists ?? []),
+    setOptionsFrom(id, from) {
+      const found = findNode(page, id);
+      const was = found?.node.type === 'field' ? (page.fields[found.node.field] as { optionsFrom?: OptionsFrom } | undefined)?.optionsFrom : undefined;
+      // Typing a list's name is one step, as typing a label is.
+      const naming = !!from && !!was && JSON.stringify(was.dependsOn ?? []) === JSON.stringify(from.dependsOn ?? []);
+      return apply(
+        (draft) => {
+          const field = fieldOfType(draft, id, ['selection'], 'Only a choice takes its options from a list', (label) => `The choices of ${label} come from the model`);
+          if (!from) {
+            delete field.optionsFrom;
+            // Written again: one option to start from, when there were none.
+            if (!field.options.length) field.options = [{ value: 'option_1', label: 'Option 1' }];
+            return;
+          }
+          field.optionsFrom = { list: from.list, ...(from.dependsOn?.length ? { dependsOn: [...from.dependsOn] } : {}) };
+        },
+        naming ? `list-name:${id}` : null
+      );
+    },
   };
   return designer;
 }
 
 /** Open a page from a store: its latest draft, or else its latest version. */
-createDesigner.open = async (id: string, store: PageStore, options: { model?: Record<string, Field> } = {}): Promise<Designer> => {
+createDesigner.open = async (id: string, store: PageStore, options: { model?: Record<string, Field>; lists?: AppList[] } = {}): Promise<Designer> => {
   const { draft, versions } = await store.load(id);
   const page = draft ?? versions[versions.length - 1]?.page;
   if (!page) throw new Error(`The store has no page "${id}"`);
-  return createDesigner({ page, store, versions, model: options.model });
+  return createDesigner({ page, store, versions, model: options.model, lists: options.lists });
 };

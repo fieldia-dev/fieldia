@@ -2,6 +2,7 @@ import type { Field, FieldNode } from '@fieldia/core';
 import type { Designer, DesignerState } from './designer';
 import { openFind, type FindItem } from './find-anything';
 import { kindOfField } from './kinds';
+import { listSource } from './list-source';
 import { designerIcon } from './icons';
 import { checksButton, openPublishDialog, statusWords, versionsMenu, type GoTo } from './publish-ui';
 
@@ -173,7 +174,8 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
   const removeOther = iconButton(el, 'Remove “Other”', '×', () => designer.setOther(nodeId, false));
   const otherRow = el('div', { class: 'fd-q-option fd-q-option-other', hidden: '' }, el('span', { class: 'fd-q-bullet', 'aria-hidden': 'true' }), el('span', { class: 'fd-q-other-words' }, 'Other…'), removeOther);
   const addRow = el('div', { class: 'fd-q-add-row' }, add, or, addOther);
-  const element = el('div', { class: 'fd-q-option-box' }, list, otherRow, addRow);
+  const source = listSource(el, designer, nodeId);
+  const element = el('div', { class: 'fd-q-option-box' }, source.element, list, otherRow, addRow, source.list);
   const inputs = () => [...list.querySelectorAll<HTMLInputElement>('input')];
   const labels = () => inputs().map((i) => i.value);
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
@@ -226,6 +228,10 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
       otherRow.hidden = !hasOther;
       or.hidden = addOther.hidden = !takesOther || hasOther;
       element.style.setProperty('--fd-next-number', `"${choices.length + 1}."`);
+      // Choices from the app's list: its name and what it changes with, in place of the options written here.
+      const listed = source.update(field, node);
+      list.hidden = addRow.hidden = listed;
+      if (listed) otherRow.hidden = true;
       while (list.children.length > choices.length) list.lastElementChild?.remove();
       while (list.children.length < choices.length) {
         const index = list.children.length;

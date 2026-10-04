@@ -5,7 +5,7 @@
  */
 export type { JsonValue } from './lib/format/json';
 export { FIELD_NAME, FIELD_TYPES, type FieldType } from './lib/format/names';
-export type { Field, Fields, LineField, LineKinds, Option, PropertyDefinition, FilterCondition, FilterItem, SetWhen } from './lib/format/field';
+export type { Field, Fields, LineField, LineKinds, Option, OptionsFrom, PropertyDefinition, FilterCondition, FilterItem, SetWhen } from './lib/format/field';
 export type {
   Modifier,
   Tone,
@@ -84,6 +84,7 @@ export type {
   ListResult,
   GroupRequest,
   Group,
+  OptionsRequest,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
@@ -97,6 +98,7 @@ export {
   type FormState,
   type FormStatus,
   type NodeState,
+  type Choices,
   type DraftStore,
   type ActionRequest,
 } from './lib/record/form';

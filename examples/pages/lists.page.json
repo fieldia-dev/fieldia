@@ -1,0 +1,44 @@
+{
+  "fieldia": "0.1",
+  "id": "delivery-address",
+  "title": "Delivery address",
+  "description": "The countries and their cities come from the app’s own lists: pick a country, and its cities load.",
+  "data": { "kind": "responses" },
+  "fields": {
+    "country": {
+      "type": "selection",
+      "label": "Country",
+      "required": true,
+      "options": [],
+      "optionsFrom": { "list": "countries" }
+    },
+    "city": {
+      "type": "selection",
+      "label": "City",
+      "required": true,
+      "help": "Only the cities we deliver to in the country chosen.",
+      "options": [],
+      "optionsFrom": { "list": "cities", "dependsOn": ["country"] }
+    },
+    "street": { "type": "char", "label": "Street and number", "required": true },
+    "notes": { "type": "text", "label": "For the driver" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "root",
+    "children": [
+      {
+        "type": "section",
+        "id": "where",
+        "title": "Where to deliver",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-country", "field": "country" },
+          { "type": "field", "id": "f-city", "field": "city", "widget": "radio" },
+          { "type": "field", "id": "f-street", "field": "street", "colspan": 2 },
+          { "type": "field", "id": "f-notes", "field": "notes", "colspan": 2 }
+        ]
+      }
+    ]
+  }
+}

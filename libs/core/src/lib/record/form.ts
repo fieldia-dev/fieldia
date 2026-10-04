@@ -1,4 +1,4 @@
-import type { Field, FilterItem, LineField } from '../format/field';
+import type { Field, FilterItem, LineField, Option, OptionsFrom } from '../format/field';
 import type { JsonValue } from '../format/json';
 import type { ButtonNode, FieldNode, LayoutNode, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
@@ -56,6 +56,17 @@ export interface FormState {
   readonly skipped: readonly string[];
   /** Why the last save was refused, until the next one starts or the form is reset. */
   readonly saveProblem: SaveProblem | null;
+  /** The choices loaded from the app's lists, by field: those of a selection with `optionsFrom`, once asked for. */
+  readonly choices: Readonly<Record<string, Choices>>;
+}
+
+/** A field's choices from one of the app's lists, as they load. */
+export interface Choices {
+  /** The choices last loaded: null until the first load ends well. */
+  readonly options: Option[] | null;
+  readonly loading?: boolean;
+  /** Why the last load failed. */
+  readonly error?: string;
 }
 
 /** What a layout element looks like right now. */
@@ -126,6 +137,12 @@ export interface Form {
    * written: the record, its changes and its autosave stay as they are.
    */
   previewLine(field: string, key: string, values: Values): Promise<Values>;
+  /**
+   * Load, or load again, the choices of a selection whose options come from
+   * the app's list (`optionsFrom`). Once loaded, they load again by themselves
+   * when a field they change with changes; the latest answer wins.
+   */
+  loadChoices(field: string): void;
   /** Records a many2one, many2many or reference may point to. A reference needs `options.model`. */
   search(field: string, query: string, limit?: number, options?: { model?: string }): Promise<RelatedRecord[]>;
   /** The same, for a relation inside a one2many line, filtered by that line's values. */
@@ -209,6 +226,7 @@ export function createForm(options: FormOptions): Form {
     step: steps[0] ?? null,
     skipped: [],
     saveProblem: null,
+    choices: {},
   };
   /** Field errors a refused save brought, each kept until its field changes from the value it was refused with. */
   let serverErrors: Record<string, { message: string; value: string }> = {};
@@ -220,9 +238,42 @@ export function createForm(options: FormOptions): Form {
   const listeners = new Set<(state: FormState) => void>();
   let contextCache: { values: Values; context: Record<string, unknown>; env: ExpressionEnv } | null = null;
 
+  /** The latest load of each field's choices: an answer to an older one is let go. */
+  const choiceLoads: Record<string, number> = {};
+
   function set(patch: Partial<FormState>) {
+    const was = state.values;
     state = { ...state, ...patch };
     for (const listener of [...listeners]) listener(state);
+    // Choices that change with a value that just changed are asked for again.
+    if (state.values !== was) {
+      for (const name in state.choices) if (fromList(name).dependsOn?.some((other) => was[other] !== state.values[other])) loadChoices(name);
+    }
+  }
+
+  const fromList = (name: string) => (page.fields[name] as Extract<Field, { type: 'selection' }>).optionsFrom as OptionsFrom;
+
+  function loadChoices(name: string) {
+    const { list } = fromList(name);
+    const load = (choiceLoads[name] = (choiceLoads[name] ?? 0) + 1);
+    const put = (choices: Choices) => load === choiceLoads[name] && set({ choices: { ...state.choices, [name]: choices } });
+    // What was shown stays while the next ones load, so the list does not flash empty.
+    const shown = state.choices[name]?.options ?? null;
+    put({ options: shown, loading: true });
+    const source = options.dataSource;
+    void track(
+      (source?.options ? source.options({ list, values: structuredCopy(state.values as Values) }) : Promise.reject(new Error(`No list "${list}"`))).then(
+        (loaded) => put({ options: loaded }),
+        (error) => put({ options: shown, error: (error as Error).message ?? String(error) })
+      )
+    );
+  }
+
+  /** A field as its value is checked: a list's choices are those loaded, and until they are, any choice may be one. */
+  function checked(name: string): Field {
+    const def = page.fields[name];
+    const loaded = state.choices[name]?.options;
+    return def.type === 'selection' && def.optionsFrom && loaded ? { ...def, options: loaded, optionsFrom: undefined } : def;
   }
 
   function track<T>(promise: Promise<T>): Promise<T> {
@@ -304,7 +355,7 @@ export function createForm(options: FormOptions): Form {
   /** A field node's error now: its field's own rules first, then its answer rules. */
   function nodeError(node: IndexedNode): string | undefined {
     const name = node.field as string;
-    return checkValue(page.fields[name], state.values[name], nodeState(node.id).required, messages) ?? ruleCheck(node).error;
+    return checkValue(checked(name), state.values[name], nodeState(node.id).required, messages) ?? ruleCheck(node).error;
   }
 
   /** Warnings for the visible fields of the page, without publishing them. */
@@ -621,12 +672,14 @@ export function createForm(options: FormOptions): Form {
 
     fieldReadonly: (name) => lockedField(fieldDef(name)),
 
+    loadChoices,
+
     problem(name) {
-      const def = fieldDef(name);
+      fieldDef(name);
       // Only a field someone can see is asked anything, and required wherever it is shown so.
       const shown = visibleFieldNodes().filter((node) => node.field === name);
       if (!shown.length) return null;
-      const own = checkValue(def, state.values[name], shown.some((node) => nodeState(node.id).required), messages);
+      const own = checkValue(checked(name), state.values[name], shown.some((node) => nodeState(node.id).required), messages);
       return own ?? shown.map((node) => ruleCheck(node).error).find((error) => error !== undefined) ?? null;
     },
 

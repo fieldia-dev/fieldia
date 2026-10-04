@@ -33,6 +33,7 @@ import { addressWidget } from './address';
 import { cardsWidget } from './cards';
 import { clearSelection } from './kind-parts';
 import { shownOptions } from './shuffle';
+import { listChoices } from './choices-from';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -111,7 +112,8 @@ export function createWidget(context: WidgetContext, registry: Record<string, Wi
   ].filter((key): key is string => key !== null);
   for (const key of keys) {
     const factory = registry[key] ?? builtInWidgets[key];
-    if (factory) return factory(context);
+    // Choices from the app's list: the same widget, drawn again as they load.
+    if (factory) return field.type === 'selection' && field.optionsFrom ? listChoices(factory, context) : factory(context);
   }
   return pendingWidget(context);
 }

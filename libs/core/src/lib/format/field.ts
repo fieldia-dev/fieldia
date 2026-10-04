@@ -124,21 +124,47 @@ const Monetary = z
 const BooleanField = z.object({ type: z.literal('boolean'), ...common }).strict();
 const DateField = z.object({ type: z.literal('date'), ...common }).strict();
 const DateTime = z.object({ type: z.literal('datetime'), ...common }).strict();
-const Selection = z
+/**
+ * Choices the app gives rather than the page: its list by name, loaded through
+ * the data source's `options` when the form shows the field, and again when a
+ * field named in `dependsOn` changes — a city list that follows the country.
+ */
+export const OptionsFromSchema = z
   .object({
-    type: z.literal('selection'),
-    ...common,
-    options: z.array(OptionSchema).min(1),
-    /** Several options may be chosen; the value becomes a list. */
-    multiple: z.boolean().optional(),
-    /**
-     * An "Other" choice after the options, with a box to type an answer of
-     * one's own: the value is then what was typed — one such answer at most,
-     * among the chosen when several may be.
-     */
-    other: z.boolean().optional(),
+    list: z.string().min(1),
+    /** The fields the choices change with: the list is asked again when one does. */
+    dependsOn: z.array(z.string().regex(FIELD_NAME)).min(1).optional(),
   })
-  .strict();
+  .strict()
+  .meta({ id: 'OptionsFrom' });
+
+export type OptionsFrom = z.infer<typeof OptionsFromSchema>;
+
+const selection = {
+  type: z.literal('selection'),
+  ...common,
+  /** The choices; may be empty when they come from the app's list (`optionsFrom`). */
+  options: z.array(OptionSchema),
+  /** Several options may be chosen; the value becomes a list. */
+  multiple: z.boolean().optional(),
+  /**
+   * An "Other" choice after the options, with a box to type an answer of
+   * one's own: the value is then what was typed — one such answer at most,
+   * among the chosen when several may be.
+   */
+  other: z.boolean().optional(),
+};
+const Selection = z
+  .object({ ...selection, optionsFrom: OptionsFromSchema.optional() })
+  .strict()
+  .refine((field) => field.options.length > 0 || field.optionsFrom !== undefined, {
+    message: 'a choice needs its options, or a list of the app’s to take them from',
+    path: ['options'],
+  })
+  // The same rule for tools that read only the JSON Schema.
+  .meta({ anyOf: [{ properties: { options: { minItems: 1 } } }, { required: ['optionsFrom'] }] });
+/** A choice in a table's lines: its options written in the page, as a list loads only for the page's own fields. */
+const LineSelection = z.object({ ...selection, options: z.array(OptionSchema).min(1), optionsFrom: z.never({ error: 'choices from the app’s lists are for the page’s own fields, not a table’s lines' }).optional() }).strict();
 const Binary = z
   .object({
     type: z.literal('binary'),
@@ -198,7 +224,7 @@ const Matrix = z
 export const LineFieldSchema = z
   .discriminatedUnion('type', [
     Char, Text, Html, Integer, Float, Monetary, BooleanField, DateField, DateTime,
-    Selection, Binary, Image, Many2one, Many2many, Reference, Properties, Json,
+    LineSelection, Binary, Image, Many2one, Many2many, Reference, Properties, Json,
   ])
   .meta({ id: 'LineField' });
 

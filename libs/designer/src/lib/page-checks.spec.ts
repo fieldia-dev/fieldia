@@ -96,6 +96,17 @@ describe('checks before publishing', () => {
     expect(node.invisible).toBe(`${field(coming)} != False`);
   });
 
+  it('stops a rule on a field the page does not have, as a page written by hand can hold, and drops that rule', () => {
+    const { designer, coming, why, field } = survey();
+    designer.setCondition(why, { field: field(coming), equals: false });
+    const page = JSON.parse(JSON.stringify(designer.getPage())) as Page;
+    const node = (page.layout as WizardNode).children[0].children.find((n) => n.id === why) as FieldNode;
+    node.invisible = `${node.invisible} or colour != 'red'`;
+    const found = pageChecks(page).filter((c) => c.at === why);
+    expect(found.map((c) => [c.severity, c.text, c.fix?.label])).toEqual([['must', '“Why not?” has a rule on “colour”, which is not a field of this page.', 'Remove that rule']]);
+    expect(found[0].fix?.action).toEqual({ kind: 'drop-rule', id: why, rule: 1 });
+  });
+
   it('finds two questions asking the same thing', () => {
     const { designer } = survey();
     const again = designer.addQuestion('short-answer') as string;
