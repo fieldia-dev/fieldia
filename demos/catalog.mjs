@@ -83,6 +83,19 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'kinds',
+    name: 'Office move',
+    category: 'fields',
+    query: 'page=kinds&skin=outlined',
+    blurb: 'The newer kinds of question in one survey: sliders, a tag box, an address, choices with pictures, a ranking, a group that repeats, a quiz question with points, and a signature.',
+    howTo: [
+      'Drag a slider, or move it with the arrow keys: its value shows beside it.',
+      'Pick a desk by its picture, then put what matters most in order by dragging, or with Alt and the arrow keys.',
+      'Add a person who moves with you: each one is a small card of its own.',
+      'Sign with the mouse or a finger, or type your name instead.',
+    ],
+  },
+  {
     id: 'signup',
     name: 'Workshop sign-up',
     category: 'forms',
