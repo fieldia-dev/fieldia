@@ -6,7 +6,9 @@ import { across, locate, nodeOf } from './layout-tree';
  * the grid the picked part sits on — and of a picked group's own grid — as
  * tinted bands under the parts, each numbered, so a part dropped or widened is
  * seen to land on them. The bands are laid out by the grid's own column count
- * and gap at the width it has now, so they are its columns, not a copy.
+ * and gap at the width it has now, so they are its columns, not a copy. A
+ * group in twelfths (and an arrangement on its columns) has more than four:
+ * they are drawn fainter, and not numbered.
  */
 
 export interface CanvasGuides {
@@ -33,11 +35,11 @@ export function canvasGuides(options: { root: HTMLElement; designer: Designer })
     const count = columns(grid);
     if (count < 2) return;
     const bands = doc.createElement('div');
-    bands.className = 'fd-guides';
+    bands.className = count > 4 ? 'fd-guides fd-guides-fine' : 'fd-guides';
     bands.setAttribute('aria-hidden', 'true');
     for (let n = 1; n <= count; n++) {
       const band = doc.createElement('i');
-      band.setAttribute('data-n', String(n));
+      if (count <= 4) band.setAttribute('data-n', String(n));
       bands.append(band);
     }
     grid.prepend(bands);

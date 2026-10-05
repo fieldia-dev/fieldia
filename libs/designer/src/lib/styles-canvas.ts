@@ -119,6 +119,8 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
   grid-template-columns: repeat(var(--fd-cols, 1), minmax(0, 1fr)); column-gap: var(--fd-gap-x);
 }
 .fd-guides > i { position: relative; border-radius: 4px; background: color-mix(in srgb, var(--fd-accent) 7%, transparent); }
+/* Twelfths: twelve thin tracks, fainter, with no numbers. */
+.fd-guides-fine > i { border-radius: 2px; background: color-mix(in srgb, var(--fd-accent) 4.5%, transparent); }
 .fd-guides > i::after {
   content: attr(data-n); position: absolute; inset-block-start: -15px; inset-inline-start: 50%; translate: -50% 0;
   font: 600 10px/1 system-ui, sans-serif; font-style: normal; color: color-mix(in srgb, var(--fd-accent) 70%, var(--fd-muted));

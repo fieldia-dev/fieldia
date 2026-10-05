@@ -1,6 +1,8 @@
+import { wideColumns, type SectionNode } from '@fieldia/core';
 import type { Designer, DesignerState } from './designer';
 import { SPANNED } from './layout-ops';
-import { locate, nameOf, spanOf } from './layout-tree';
+import { isWrapper, locate, nameOf, rowsOf, spanOf, type Part } from './layout-tree';
+import { inTwelfths, keepsFull, laidInTwelfths, percent, toTwelfths, TWELVE, twelfthsAhead } from './layout-twelfths';
 import { setHidden } from './writes';
 
 /**
@@ -10,6 +12,13 @@ import { setHidden } from './writes';
  * and lets go as one edit. Where another part follows in the same row, the
  * edge between them is a gutter instead: dragged, or moved with the arrow
  * keys, it trades columns between the two, together keeping what they had.
+ *
+ * In a group (see layout-twelfths.ts) widths are twelfths of the row, said as
+ * percentages — "58% · 42%" — and a group of one to four columns is shown in
+ * twelfths as the drag starts, and divided so in the edit it lets go as. A
+ * group that keeps its rows full has no room at a row's end, so no handle:
+ * the last part of a row has the gutter before it. One that allows gaps has
+ * the handle, widening a part into the room its row has left.
  */
 
 /** The columns a part starting at `start` covers when its edge is dragged to `x`: the nearest, one at least, the grid's at most. */
@@ -43,6 +52,12 @@ export interface WidthMarks {
 
 const columnsWords = (n: number) => `${n} column${n === 1 ? '' : 's'}`;
 
+/** A part's width in twelfths of its group's row, as it is or as dividing the group in twelfths makes it. */
+function twelfthsOf(group: SectionNode, part: Part): number {
+  const cols = wideColumns(group.columns);
+  return (Math.min(spanOf(part), cols) * TWELVE) / cols;
+}
+
 export function widthMarks(options: WidthMarksOptions): WidthMarks {
   const { canvas, root, designer } = options;
   const doc = canvas.ownerDocument;
@@ -70,8 +85,11 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
   gutter.setAttribute('aria-valuemin', '1');
   canvas.append(handle, gutter);
 
-  /** What the marks are on now: the part, the grid, and the part after it in its row, if any. */
-  let on: { id: string; element: HTMLElement; grid: HTMLElement; cols: number; gap: number; next: HTMLElement | null } | null = null;
+  /**
+   * What the marks are on now: the part (the first of two, at a gutter), its grid, the part after it in the row if any —
+   * and, in a group, the group, whose widths the marks count in twelfths.
+   */
+  let on: { id: string; element: HTMLElement; grid: HTMLElement; cols: number; gap: number; next: HTMLElement | null; group: SectionNode | null; percents: boolean } | null = null;
   let last: { state: DesignerState; advanced: boolean } | null = null;
   /** A drag going on places its own mark: the parts it moves in passing must not swap the handle for a gutter. */
   let dragging = false;
@@ -92,14 +110,26 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
     return { left: r.left + x, right: r.right - x, top: r.top + y, bottom: r.bottom - y, width: r.width - 2 * x, height: r.height - 2 * y };
   };
   const partEl = (id: string) => root.querySelector<HTMLElement>(`[data-node="${id.replace(/["\\]/g, '\\$&')}"]:not([role="tab"])`);
-  const spanned = (id: string) => {
-    const node = locate(designer.getPage(), id)?.node;
-    return !!node && SPANNED.has(node.type);
+  const nodeAt = (id: string) => locate(designer.getPage(), id)?.node;
+  const spanned = (id: string) => SPANNED.has(nodeAt(id)?.type ?? '');
+  /** The part's own width, as the model has it, no more than the grid has now — in a group, in twelfths. */
+  const widthNow = (id: string) => {
+    const node = nodeAt(id);
+    if (!node || !on) return 1;
+    return on.group ? twelfthsOf(on.group, node) : Math.min(spanOf(node), on.cols);
   };
-  /** The part's own width, as the model has it, no more than the grid has now. */
-  const spanNow = (id: string, cols: number) => {
-    const node = locate(designer.getPage(), id)?.node;
-    return node ? Math.min(spanOf(node), cols) : 1;
+  /** The part in the same row beside an element, after it or before it. */
+  const besideIn = (element: HTMLElement, after: boolean) => {
+    const step = (e: Element | null) => (after ? e?.nextElementSibling : e?.previousElementSibling) as HTMLElement | null;
+    let other = step(element);
+    while (other && !other.dataset['node']) other = step(other);
+    return other && Math.abs(boxOf(other).top - boxOf(element).top) <= 4 && spanned(other.dataset['node'] as string) ? other : null;
+  };
+  /** Widths in words: percentages of the row in twelfths, else columns. */
+  const words = (a: number, b?: number) => {
+    const units = on?.group ? TWELVE : (on?.cols ?? 1);
+    if (on?.percents) return b === undefined ? `${percent(a, units)}% of the row` : `${percent(a, units)}% · ${percent(b, units)}%`;
+    return b === undefined ? `${a} of ${columnsWords(units)}` : `${a} and ${b} of ${columnsWords(units)}`;
   };
 
   function update(state: DesignerState, advanced: boolean) {
@@ -120,12 +150,19 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
     if (!element || !grid) return null;
     const { cols, gap } = columnsOf(grid);
     if (cols < 2) return null;
-    const r = boxOf(element);
-    // The part after it in its row: the next part on the same line.
-    let next = element.nextElementSibling as HTMLElement | null;
-    while (next && !next.dataset['node']) next = next.nextElementSibling as HTMLElement | null;
-    if (next && (Math.abs(boxOf(next).top - r.top) > 4 || !spanned(next.dataset['node'] as string))) next = null;
-    on = { id, element, grid, cols, gap, next };
+    const page = designer.getPage();
+    const parent = locate(page, id)?.parent;
+    const group = twelfthsAhead(parent) ? parent : null;
+    let first = element;
+    let next = besideIn(element, true);
+    // A row kept full has no room at its end: its last part has the gutter before it.
+    if (!next && group && keepsFull(group)) {
+      next = element;
+      first = besideIn(element, false) as HTMLElement;
+      if (!first) return null;
+    }
+    on = { id: first.dataset['node'] as string, element: first, grid, cols, gap, next, group, percents: !!group || laidInTwelfths(page, parent) };
+    const r = boxOf(first);
     const rtl = options.rtl();
     if (!next) {
       place(handle, { left: (rtl ? r.left : r.right) - 4, top: r.top + r.height / 2 - 15 });
@@ -136,38 +173,82 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
     const top = Math.min(r.top, n.top);
     // Centred on the edge, half its 24px each side.
     place(gutter, { left: edge - 12, top, height: Math.max(r.bottom, n.bottom) - top });
-    const page = designer.getPage();
-    const [a, b] = [spanNow(id, cols), spanNow(next.dataset['node'] as string, cols)];
-    gutter.setAttribute('aria-label', `Width between “${nameOf(page, locate(page, id)?.node ?? null)}” and “${nameOf(page, locate(page, next.dataset['node'] as string)?.node ?? null)}”`);
+    const nextId = next.dataset['node'] as string;
+    const [a, b] = [widthNow(on.id), widthNow(nextId)];
+    gutter.setAttribute('aria-label', `Width between “${nameOf(page, nodeAt(on.id) ?? null)}” and “${nameOf(page, nodeAt(nextId) ?? null)}”`);
     gutter.setAttribute('aria-valuenow', String(a));
     gutter.setAttribute('aria-valuemax', String(a + b - 1));
+    if (on.percents) gutter.setAttribute('aria-valuetext', words(a, b));
+    else gutter.removeAttribute('aria-valuetext');
     return 'gutter';
   }
 
-  /** A drag of the handle or the gutter: the parts follow the pointer, a chip says the columns, and it is one edit when let go. */
+  /**
+   * A group of one to four columns shown in twelfths while its widths are dragged, as dividing it makes it — every part,
+   * and the parts an arrangement lays on its columns, as wide as they are now — and put back as it was after.
+   */
+  function shownInTwelfths(grid: HTMLElement, group: SectionNode): () => void {
+    const undo: (() => void)[] = [];
+    const set = (element: HTMLElement, name: string, value: string) => {
+      const was = element.style.getPropertyValue(name);
+      element.style.setProperty(name, value);
+      undo.push(() => (was ? element.style.setProperty(name, was) : element.style.removeProperty(name)));
+    };
+    const copy = JSON.parse(JSON.stringify(group)) as SectionNode;
+    toTwelfths(copy);
+    set(grid, '--fd-cols', String(TWELVE));
+    const walk = (list: Part[]) => {
+      for (const part of list) {
+        const element = partEl(part.id);
+        if (element && SPANNED.has(part.type)) set(element, '--fd-span', String(spanOf(part)));
+        if (isWrapper(part)) walk(part.children);
+      }
+    };
+    walk(copy.children);
+    return () => undo.reverse().forEach((put) => put());
+  }
+
+  /** The room a part's row has left, in twelfths of its group. */
+  function roomBeside(group: SectionNode, id: string): number {
+    const page = designer.getPage();
+    const row = rowsOf(page, group).find((r) => r.items.some((p) => p.id === id));
+    return TWELVE - (row?.items ?? []).reduce((n, p) => n + (p.type === 'divider' ? TWELVE : twelfthsOf(group, p)), 0);
+  }
+
+  /** Set widths as one edit: in a group, in twelfths, dividing it so if it is not yet. */
+  function commit(widths: { id: string; span: number }[]) {
+    if (on?.group) designer.setWidths(widths, { twelfths: true });
+    else if (widths.length === 1) designer.setColspan(widths[0].id, widths[0].span);
+    else designer.setWidths(widths);
+  }
+
+  /** A drag of the handle or the gutter: the parts follow the pointer, a chip says the widths, and it is one edit when let go. */
   function drag(event: PointerEvent, kind: 'span' | 'trade') {
     if (!on || event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
-    const { id, element, grid, cols, gap, next } = on;
+    const { id, element, grid, gap, next, group } = on;
     const rtl = options.rtl();
     const r = boxOf(element);
-    const colW = (rectOf(grid).width - gap * (cols - 1)) / cols;
+    // In a group, the twelve columns a row divides in, wherever its own columns fall.
+    const units = group ? TWELVE : on.cols;
+    const colW = (rectOf(grid).width - gap * (units - 1)) / units;
     const start = rtl ? r.right : r.left;
     const nextId = next?.dataset['node'] as string;
-    const was = spanNow(id, cols);
-    const total = kind === 'trade' ? was + spanNow(nextId, cols) : cols;
+    const was = widthNow(id);
+    const total = kind === 'trade' ? was + widthNow(nextId) : group ? was + roomBeside(group, id) : units;
     let span = was;
     const chip = doc.createElement('div');
     chip.className = 'fd-width-chip';
     canvas.append(chip);
+    const putBack = group && !inTwelfths(group) ? shownInTwelfths(grid, group) : null;
     const before = [element.style.getPropertyValue('--fd-span'), next?.style.getPropertyValue('--fd-span') ?? ''];
     dragging = true;
     const move = (e: PointerEvent) => {
-      span = kind === 'span' ? spanAt({ start, x: e.clientX, colW, gap, cols, rtl }) : tradeAt({ start, x: e.clientX, colW, gap, total, rtl });
+      span = kind === 'span' ? spanAt({ start, x: e.clientX, colW, gap, cols: total, rtl }) : tradeAt({ start, x: e.clientX, colW, gap, total, rtl });
       element.style.setProperty('--fd-span', String(span));
       if (kind === 'trade') next?.style.setProperty('--fd-span', String(total - span));
-      chip.textContent = kind === 'span' ? `${span} of ${columnsWords(cols)}` : `${span} and ${total - span} of ${columnsWords(cols)}`;
+      chip.textContent = kind === 'span' ? words(span) : words(span, total - span);
       place(chip, { left: e.clientX + 14, top: e.clientY - 30 });
       // The handle or the gutter stays on the edge it moves.
       const now = boxOf(element);
@@ -188,9 +269,9 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
       next?.style.setProperty('--fd-span', before[1]);
       if (!before[0]) element.style.removeProperty('--fd-span');
       if (next && !before[1]) next.style.removeProperty('--fd-span');
+      putBack?.();
       if (span === was) return;
-      if (kind === 'span') designer.setColspan(id, span);
-      else designer.setWidths([{ id, span }, { id: nextId, span: total - span }]);
+      commit(kind === 'span' ? [{ id, span }] : [{ id, span }, { id: nextId, span: total - span }]);
     };
     doc.addEventListener('pointermove', move);
     doc.addEventListener('pointerup', up);
@@ -199,16 +280,16 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
 
   const onHandle = (event: PointerEvent) => drag(event, 'span');
   const onGutter = (event: PointerEvent) => drag(event, 'trade');
-  /** The gutter by the keyboard: a column at a time towards the arrow, mirrored right to left. */
+  /** The gutter by the keyboard: a column — in a group, a twelfth — at a time towards the arrow, mirrored right to left. */
   const onKey = (event: KeyboardEvent) => {
     if (!on?.next || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
     event.preventDefault();
     const forward = (event.key === 'ArrowRight') !== options.rtl();
     const nextId = on.next.dataset['node'] as string;
-    const a = spanNow(on.id, on.cols);
-    const total = a + spanNow(nextId, on.cols);
+    const a = widthNow(on.id);
+    const total = a + widthNow(nextId);
     const span = Math.max(1, Math.min(total - 1, a + (forward ? 1 : -1)));
-    if (span !== a) designer.setWidths([{ id: on.id, span }, { id: nextId, span: total - span }]);
+    if (span !== a) commit([{ id: on.id, span }, { id: nextId, span: total - span }]);
   };
   handle.addEventListener('pointerdown', onHandle);
   gutter.addEventListener('pointerdown', onGutter);

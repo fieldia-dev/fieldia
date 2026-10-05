@@ -35,7 +35,18 @@ describe('findDrop', () => {
     const bottom = at(450, 396);
     expect(bottom?.drop).toEqual({ how: 'under', target: 'personal', after: true, whole: true });
     expect(bottom?.zone).toMatchObject({ left: 0, top: 0, width: 900, height: 400 });
-    expect(at(895, 600)?.drop).toEqual({ how: 'beside', target: 'emergency', after: true, whole: true });
+    expect(at(898, 600)?.drop).toEqual({ how: 'beside', target: 'emergency', after: true, whole: true });
+  });
+
+  it('a group’s padding is its rows’: past a row’s last part, the end of that row; before its first, the start', () => {
+    const { at } = canvas();
+    // Personal details’ border is at 900; its padding runs from 880. Its one row: the photo, then the fields.
+    expect(at(892, 100)?.drop).toEqual({ how: 'beside', target: 'who', after: true, whole: false });
+    expect(at(892, 100)?.line).toEqual({ left: 883, top: 60, width: 4, height: 320 });
+    expect(at(896, 100)?.drop).toEqual({ how: 'beside', target: 'personal', after: true, whole: true });
+    expect(at(8, 100)?.drop).toEqual({ how: 'beside', target: 'f-photo', after: false, whole: false });
+    // Right to left, the padding at the left is after the row's last part.
+    expect(canvas(true).at(8, 100)?.drop).toEqual({ how: 'beside', target: 'f-photo', after: true, whole: false });
   });
 
   it('between two rows of a grid, or above its first: a new row there', () => {
@@ -112,7 +123,7 @@ describe('findDrop', () => {
     expect(mark?.line).toEqual({ left: 20, top: 383, width: 860, height: 4 });
   });
 
-  it('a boundary counts 8px into a row, 16px past the first or last, and a group’s edge 10px in', () => {
+  it('a boundary counts 8px into a row, 16px past the first or last, and a group’s edge 4px in', () => {
     const { at } = canvas();
     // Between rows 1 (70–130) and 2 (150–210) of the arrangement.
     expect(at(450, 122)?.drop).toEqual({ how: 'row', container: 'who', index: 2 });
@@ -127,9 +138,9 @@ describe('findDrop', () => {
     // Past its last row (290).
     expect(at(450, 306)?.drop).toEqual({ how: 'row', container: 'who', index: 6 });
     expect(at(450, 307)?.drop).toEqual({ how: 'under', target: 'f-birthday', after: true, whole: false });
-    // Personal details ends at 400: its edge is the last 10px, the edge itself too.
-    expect(at(450, 389)?.drop).toEqual({ how: 'row', container: 'personal', index: 2 });
-    expect(at(450, 390)?.drop).toEqual({ how: 'under', target: 'personal', after: true, whole: true });
+    // Personal details ends at 400: its edge is the last 4px, the edge itself too; above them, its padding is its last row's.
+    expect(at(450, 395)?.drop).toEqual({ how: 'row', container: 'personal', index: 2 });
+    expect(at(450, 396)?.drop).toEqual({ how: 'under', target: 'personal', after: true, whole: true });
     expect(at(450, 400)?.drop).toEqual({ how: 'under', target: 'personal', after: true, whole: true });
   });
 
