@@ -1,4 +1,4 @@
-import { FIELDIA_CSS, FORM_WIDTHS } from './styles';
+import { FIELDIA_CSS, FORM_WIDTHS, SHARED_CELL_NARROW } from './styles';
 
 /**
  * The widths at which a form's groups take their medium and narrow columns
@@ -19,5 +19,10 @@ describe('the form’s widths', () => {
   it('no other width gives a grid its medium or narrow columns', () => {
     const widths = [...FIELDIA_CSS.matchAll(/@container \(max-width: (\d+)px\) \{([\s\S]*?)\n\}/g)].filter(([, , rules]) => /--fd-columns-(medium|narrow)/.test(rules)).map(([, width]) => Number(width));
     expect([...new Set(widths)].sort()).toEqual([FORM_WIDTHS.narrow, FORM_WIDTHS.medium].sort());
+  });
+
+  it('parts sharing one cell go one under the other where the cell is SHARED_CELL_NARROW wide or less', () => {
+    const rules = FIELDIA_CSS.split(`@container (max-width: ${SHARED_CELL_NARROW}px) {`).slice(1).map((after) => after.slice(0, after.indexOf('\n}')));
+    expect(rules.some((r) => r.includes('.fd-section[data-place="shared"] > .fd-grid { --fd-cols: 1; }'))).toBe(true);
   });
 });
