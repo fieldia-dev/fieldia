@@ -22,7 +22,6 @@ export type ScreenSize = 'desktop' | 'tablet' | 'phone';
 const KEY = 'fieldia.designer.size';
 const WIDTH_KEY = 'fieldia.designer.width';
 const SIZES: readonly ScreenSize[] = ['desktop', 'tablet', 'phone'];
-export const SIZE_WORDS: Record<ScreenSize, string> = { desktop: 'Desktop', tablet: 'Tablet', phone: 'Phone' };
 
 /** The narrowest the canvas is dragged to: a small phone's screen. */
 export const MIN_WIDTH = 320;
