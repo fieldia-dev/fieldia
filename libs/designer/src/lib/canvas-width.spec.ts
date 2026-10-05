@@ -378,6 +378,24 @@ describe('widths in a group: twelfths of its rows', () => {
     expect(gutter().getAttribute('aria-label')).toBe('Width between “Department” and “Manager”');
   });
 
+  it('an arrangement dragged narrower lays its own parts on its new columns while it is dragged, as letting go will', () => {
+    const { marks, gutter, pointer, show, designer, grid } = setup(false, undefined, 'full');
+    current = marks;
+    const side = designer.wrap(['f-job_title', 'f-department'], 'side') as string;
+    const box = document.createElement('div');
+    box.dataset['node'] = side;
+    const cells = ['f-job_title', 'f-department'].map((id) => grid.querySelector(`[data-node="${id}"]`) as HTMLElement);
+    box.append(...cells);
+    grid.prepend(box);
+    show(side);
+    expect(gutter().getAttribute('aria-valuetext')).toBe('67% · 33%');
+    pointer('pointerdown', gutter(), 230, 30);
+    pointer('pointermove', document, 170, 30);
+    expect(cells.map((c) => c.style.getPropertyValue('--fd-span'))).toEqual(['3', '3']);
+    pointer('pointerup', document, 170, 30);
+    expect([span(designer, side), span(designer, 'f-job_title'), span(designer, 'f-department'), span(designer, 'f-manager')]).toEqual([6, 3, 3, 6]);
+  });
+
   it('a row that allows gaps: the handle, into the room the row has, said as a share of it', () => {
     const { marks, handle, gutter, pointer, chip, show, designer } = setup(false, undefined, 'gaps');
     current = marks;

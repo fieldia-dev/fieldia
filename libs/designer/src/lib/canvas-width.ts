@@ -1,8 +1,8 @@
 import { wideColumns, type SectionNode } from '@fieldia/core';
 import type { Designer, DesignerState } from './designer';
 import { SPANNED } from './layout-ops';
-import { isWrapper, locate, nameOf, rowsOf, spanOf, type Part } from './layout-tree';
-import { inTwelfths, keepsFull, laidInTwelfths, percent, toTwelfths, TWELVE, twelfthsAhead } from './layout-twelfths';
+import { find, isWrapper, locate, nameOf, rowsOf, spanOf, type Holder, type Part } from './layout-tree';
+import { inTwelfths, keepsFull, laidInTwelfths, percent, resize, toTwelfths, TWELVE, twelfthsAhead } from './layout-twelfths';
 import { setHidden } from './writes';
 
 /**
@@ -190,39 +190,61 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
   }
 
   /**
-   * A group of one to four columns shown in twelfths while its widths are dragged, as dividing it makes it — every part,
-   * and the parts an arrangement lays on its columns, as wide as they are now — and put back as it was after.
+   * What a drag shows before it lets go, and puts back after. A group of one to four columns is shown in twelfths, as
+   * dividing it makes it — every part, and the parts an arrangement lays on its columns, as wide as they are now, the
+   * guides twelve fine tracks — and a part dragged wider or narrower that is an arrangement lays its own parts on its
+   * new columns, as letting go will.
    */
-  function shownInTwelfths(grid: HTMLElement, group: SectionNode): () => void {
-    const undo: (() => void)[] = [];
+  function preview(grid: HTMLElement, group: SectionNode | null) {
+    const kept = new Map<HTMLElement, Map<string, string>>();
     const set = (element: HTMLElement, name: string, value: string) => {
-      const was = element.style.getPropertyValue(name);
+      const own = kept.get(element) ?? new Map<string, string>();
+      kept.set(element, own);
+      if (!own.has(name)) own.set(name, element.style.getPropertyValue(name));
       element.style.setProperty(name, value);
-      undo.push(() => (was ? element.style.setProperty(name, was) : element.style.removeProperty(name)));
     };
-    const copy = JSON.parse(JSON.stringify(group)) as SectionNode;
-    toTwelfths(copy);
-    set(grid, '--fd-cols', String(TWELVE));
-    // The guides under it, twelve fine tracks for now.
-    const guides = grid.querySelector<HTMLElement>(':scope > .fd-guides');
-    if (guides) {
-      const [was, kind] = [[...guides.children], guides.className];
-      guides.className = 'fd-guides fd-guides-fine';
-      guides.replaceChildren(...Array.from({ length: TWELVE }, () => doc.createElement('i')));
-      undo.push(() => {
-        guides.className = kind;
-        guides.replaceChildren(...was);
-      });
-    }
-    const walk = (list: Part[]) => {
+    const lay = (list: Part[]) => {
       for (const part of list) {
         const element = partEl(part.id);
         if (element && SPANNED.has(part.type)) set(element, '--fd-span', String(spanOf(part)));
-        if (isWrapper(part)) walk(part.children);
+        if (isWrapper(part)) lay(part.children);
       }
     };
-    walk(copy.children);
-    return () => undo.reverse().forEach((put) => put());
+    const copy = group && (JSON.parse(JSON.stringify(group)) as SectionNode);
+    const guides = grid.querySelector<HTMLElement>(':scope > .fd-guides');
+    const shown = guides && { children: [...guides.children], kind: guides.className };
+    if (copy && group && !inTwelfths(group)) {
+      toTwelfths(copy);
+      set(grid, '--fd-cols', String(TWELVE));
+      lay(copy.children);
+      if (guides) {
+        guides.className = 'fd-guides fd-guides-fine';
+        guides.replaceChildren(...Array.from({ length: TWELVE }, () => doc.createElement('i')));
+      }
+    }
+    return {
+      /** A part shown `span` wide. */
+      width(id: string, element: HTMLElement, span: number) {
+        set(element, '--fd-span', String(span));
+        const part = copy && find(copy as Holder, id)?.node;
+        if (!isWrapper(part)) return;
+        const moved = JSON.parse(JSON.stringify(part)) as SectionNode;
+        resize(moved, span);
+        lay(moved.children);
+      },
+      restore() {
+        for (const [element, names] of kept) {
+          for (const [name, was] of names) {
+            if (was) element.style.setProperty(name, was);
+            else element.style.removeProperty(name);
+          }
+        }
+        if (guides && shown) {
+          guides.className = shown.kind;
+          guides.replaceChildren(...shown.children);
+        }
+      },
+    };
   }
 
   /** The room a part's row has left, in twelfths of its group. */
@@ -258,13 +280,12 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
     const chip = doc.createElement('div');
     chip.className = 'fd-width-chip';
     canvas.append(chip);
-    const putBack = group && !inTwelfths(group) ? shownInTwelfths(grid, group) : null;
-    const before = [element.style.getPropertyValue('--fd-span'), next?.style.getPropertyValue('--fd-span') ?? ''];
+    const shown = preview(grid, group);
     dragging = true;
     const move = (e: PointerEvent) => {
       span = kind === 'span' ? spanAt({ start, x: e.clientX, colW, gap, cols: total, rtl }) : tradeAt({ start, x: e.clientX, colW, gap, total, rtl });
-      element.style.setProperty('--fd-span', String(span));
-      if (kind === 'trade') next?.style.setProperty('--fd-span', String(total - span));
+      shown.width(id, element, span);
+      if (kind === 'trade' && next) shown.width(nextId, next, total - span);
       chip.textContent = kind === 'span' ? words(span) : words(span, total - span);
       place(chip, { left: e.clientX + 14, top: e.clientY - 30 });
       // The handle or the gutter stays on the edge it moves.
@@ -282,11 +303,7 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
       dragging = false;
       chip.remove();
       // Back as it was until the page says otherwise: an edit that is refused, or none, leaves it so.
-      element.style.setProperty('--fd-span', before[0]);
-      next?.style.setProperty('--fd-span', before[1]);
-      if (!before[0]) element.style.removeProperty('--fd-span');
-      if (next && !before[1]) next.style.removeProperty('--fd-span');
-      putBack?.();
+      shown.restore();
       if (span === was) return;
       commit(kind === 'span' ? [{ id, span }] : [{ id, span }, { id: nextId, span: total - span }]);
     };
