@@ -118,8 +118,83 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
     };
   }
 
+  /** A whole number, 1 or more, saved once typed and left; anything else takes it away. */
+  const countBox = (label: string, key: string) => {
+    const input = el('input', { type: 'number', class: 'fd-inline-input fd-inline-number', 'aria-label': label, min: '0', step: '1', inputmode: 'numeric', placeholder: 'Any' }) as HTMLInputElement;
+    input.addEventListener('change', () => {
+      const n = Number(input.value);
+      widget({ [key]: input.value.trim() !== '' && Number.isInteger(n) && n > 0 ? n : null });
+    });
+    return input;
+  };
+
+  /**
+   * A table's least and most lines, its button's words, the sentence it says
+   * while empty, asking before a line goes; and each column added up under
+   * the table, or one people may hide, shown or hidden to start with.
+   */
+  function table(): StructurePart {
+    const least = countBox('At least', 'min');
+    const most = countBox('At most', 'max');
+    const button = textBox('Button words', 'Add a line');
+    button.addEventListener('input', () => widget({ addLabel: button.value }));
+    const empty = textBox('When empty', 'No lines yet');
+    empty.addEventListener('input', () => widget({ emptyLabel: empty.value }));
+    const ask = toggle('Ask before removing a line', (on) => widget({ confirmDelete: on || null }));
+    const list = el('ul', { class: 'fd-kind-items fd-line-columns' });
+    let drawn = '';
+    let totals: string[] = [];
+    let optional: Record<string, 'show' | 'hide'> = {};
+    return {
+      element: el(
+        'div',
+        { class: 'fd-kind-block' },
+        row(word('At least', least), word('At most', most), el('span', {}, 'lines')),
+        row(word('Button words', button), word('When empty', empty)),
+        ask.element,
+        el('span', { class: 'fd-prop-name' }, 'Each column'),
+        list
+      ),
+      refresh(page, node) {
+        const def = page.fields[node.field];
+        if (def.type !== 'one2many') return;
+        totals = node.totals ?? [];
+        optional = node.optionalColumns ?? {};
+        const columns = Object.entries(def.fields).filter(([name]) => name !== def.sequenceField && name !== def.lineKinds?.field);
+        const key = JSON.stringify(columns.map(([name, f]) => [name, f.label, f.type]));
+        if (key !== drawn) {
+          drawn = key;
+          list.replaceChildren(
+            ...columns.map(([name, f]) => {
+              const adds = el('button', { type: 'button', class: 'fd-inline-chip', 'aria-pressed': 'false', 'aria-label': `Add up ${f.label}`, 'data-column': name }, 'Add up') as HTMLButtonElement;
+              adds.hidden = !['integer', 'float', 'monetary'].includes(f.type);
+              adds.addEventListener('click', () => designer.setLineTable(id, { totals: totals.includes(name) ? totals.filter((t) => t !== name) : [...totals, name] }));
+              const shown = select(`${f.label}: shown`, [['', 'Always shown'], ['show', 'People can hide it'], ['hide', 'Hidden to start']]);
+              shown.dataset['column'] = name;
+              shown.addEventListener('change', () => {
+                const next = { ...optional };
+                if (shown.value) next[name] = shown.value as 'show' | 'hide';
+                else delete next[name];
+                designer.setLineTable(id, { optionalColumns: next });
+              });
+              return el('li', { class: 'fd-kind-item-row' }, el('span', { class: 'fd-kind-points-name' }, f.label), adds, shown);
+            })
+          );
+        }
+        for (const chip of list.querySelectorAll<HTMLButtonElement>('button[data-column]')) chip.setAttribute('aria-pressed', String(totals.includes(chip.dataset['column'] ?? '')));
+        for (const shown of list.querySelectorAll<HTMLSelectElement>('select')) shown.value = optional[shown.dataset['column'] ?? ''] ?? '';
+        show(least, option(node, 'min'));
+        show(most, option(node, 'max'));
+        show(button, option(node, 'addLabel'));
+        show(empty, option(node, 'emptyLabel'));
+        ask.button.setAttribute('aria-checked', String(option(node, 'confirmDelete') === true));
+      },
+    };
+  }
+
   const parts: StructurePart[] = [];
   if (kind === 'signature') parts.push(signature());
+  if (kind === 'lines') parts.push(table());
   if (kind === 'address') parts.push(address());
   return parts;
 }

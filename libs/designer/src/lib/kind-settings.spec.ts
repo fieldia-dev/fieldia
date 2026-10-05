@@ -139,12 +139,15 @@ describe('the choices’ Shuffle and points', () => {
     expect((field() as Extract<Field, { type: 'matrix' }>).columns.map((c) => c.score)).toEqual([0, 3]);
   });
 
-  it('offers no points for a ranking, and nothing at all for a signature', () => {
+  it('offers no points for a ranking, nor Shuffle or points for a signature', () => {
     const ranking = open('ranking');
     expect(ranking.box('Shuffle option order')).not.toBeNull();
     expect(ranking.box('Points for Option 1')).toBeNull();
     handle?.destroy();
+    // A signature has its pen and words (kind-settings-structures), and nothing of a choice's.
     const signature = open('signature');
-    expect(settings(signature.card()).hidden).toBe(true);
+    expect(signature.box('Shuffle option order')).toBeNull();
+    expect(signature.card().querySelector('.fd-kind-give-points')).toBeNull();
+    expect(settings(signature.card()).hidden).toBe(false);
   });
 });

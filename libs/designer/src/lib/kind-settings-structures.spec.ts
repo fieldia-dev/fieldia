@@ -1,6 +1,8 @@
 import type { FieldNode, WizardNode } from '@fieldia/core';
+import type { SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner, type Designer } from './designer';
 import { mountSurveyEditor, type SurveyEditorHandle } from './survey-editor';
+import { mount as mountScreen } from './test-editor';
 
 /**
  * The structures' settings in the picked question, and the same in the side
@@ -94,5 +96,61 @@ describe('an address’s settings', () => {
     // No country asked for: none to start on.
     designer.setAddressParts(id, ['street', 'city']);
     expect(box('Starts on').closest('label')?.hidden).toBe(true);
+  });
+});
+
+/** A kind for app screens, picked on the screen editor's canvas: its card, and the side panel. */
+function openScreen(kind: string, before?: (designer: Designer, id: string) => void) {
+  const designer = createDesigner({ page: blankPage('screen', 'Visit') });
+  const id = designer.addQuestion(kind, { parent: 'section-1' }) as string;
+  before?.(designer, id);
+  const { host } = mountScreen(designer, { mode: 'simple' });
+  designer.select(id);
+  const card = () => host.querySelector('.fd-canvas-field.fd-editing') as HTMLElement;
+  const panel = () => host.querySelector('.fd-properties') as HTMLElement;
+  const box = (name: string, scope = card()) => scope.querySelector(`[aria-label="${name}"]`) as HTMLInputElement & HTMLSelectElement;
+  const node = () => ((designer.getPage().layout as unknown as { children: SectionNode[] }).children[0].children as FieldNode[]).find((n) => n.id === id) as FieldNode;
+  const field = () => designer.getPage().fields[node().field];
+  return { designer, id, host, card, panel, box, node, field };
+}
+const change = (input: HTMLInputElement, value: string) => {
+  input.value = value;
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+};
+
+describe('a table of lines’ settings', () => {
+  it('sets its least and most lines, its button’s words, its empty sentence and asking before a line goes', () => {
+    const { box, node, card } = openScreen('lines');
+    change(box('At least'), '1');
+    change(box('At most'), '6');
+    type(box('Button words'), 'Add a milestone');
+    type(box('When empty'), 'No milestones yet');
+    box('Ask before removing a line').click();
+    expect(node().options).toEqual({ min: 1, max: 6, addLabel: 'Add a milestone', emptyLabel: 'No milestones yet', confirmDelete: true });
+    // The card shows the table as it will be used.
+    expect(card().querySelector('.fd-lines-add')?.textContent).toBe('+ Add a milestone');
+    change(box('At least'), '');
+    expect(node().options?.['min']).toBeUndefined();
+  });
+
+  it('adds up a column of numbers, and lets people hide a column, shown or hidden to start', () => {
+    const { box, node, card, panel } = openScreen('lines');
+    const addUp = (name: string, scope = card()) => scope.querySelector(`[aria-label="Add up ${name}"]`) as HTMLButtonElement;
+    expect(addUp('Description').hidden).toBe(true);
+    addUp('Quantity').click();
+    expect(node().totals).toEqual(['quantity']);
+    expect(addUp('Quantity').getAttribute('aria-pressed')).toBe('true');
+    // The side panel has the same, and says the same.
+    expect(addUp('Quantity', panel()).getAttribute('aria-pressed')).toBe('true');
+    choose(box('Description: shown'), 'hide');
+    expect(node().optionalColumns).toEqual({ name: 'hide' });
+    choose(box('Quantity: shown', panel()), 'show');
+    expect(node().optionalColumns).toEqual({ name: 'hide', quantity: 'show' });
+    expect(box('Quantity: shown').value).toBe('show');
+    addUp('Quantity').click();
+    choose(box('Description: shown'), '');
+    choose(box('Quantity: shown'), '');
+    expect(node()).not.toHaveProperty('totals');
+    expect(node()).not.toHaveProperty('optionalColumns');
   });
 });
