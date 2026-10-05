@@ -1,0 +1,27 @@
+import type { DesignerWords } from '../../designer-words';
+
+export const tryIt: DesignerWords['tryIt'] = {
+  design: 'تصميم',
+  tryIt: 'تجربة',
+  modes: 'تصميم الصفحة أو تجربتها',
+  tryThePage: 'تجربة الصفحة',
+  width: 'العرض',
+  sizes: { desktop: 'سطح المكتب', tablet: 'جهاز لوحي', phone: 'هاتف' },
+  note: 'تعمل الصفحة هنا كما سيستخدمها الناس. لا يُحفظ شيء مما يُكتب هنا.',
+  language: 'اللغة',
+  wordsIn: 'النص بلغة',
+  backToDesigning: 'العودة إلى التصميم',
+  asPeopleWillUseIt: 'كما سيستخدمها الناس',
+  atPhoneWidth: 'التجربة بعرض الهاتف',
+  inArabic: 'التجربة بالعربية، من اليمين إلى اليسار',
+  drawer: 'البيانات والمشكلات',
+  data: 'البيانات',
+  problems: 'المشكلات',
+  copyData: 'نسخ البيانات',
+  answersAsJson: 'الإجابات بصيغة JSON',
+  nothingInTheWay: 'لا شيء يمنع إرسال هذا.',
+  show: 'إظهار',
+  hide: 'إخفاء',
+  copied: 'تم النسخ.',
+  selected: 'تم التحديد: انسخه بلوحة المفاتيح.',
+};

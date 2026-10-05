@@ -2,6 +2,8 @@ import type { Page } from '@fieldia/core';
 import { conditionToHide, conditionToHold, type Condition } from './conditions';
 import { placeOf, pathTo, readJson, type Spot } from './json-text';
 import { fixCheck, pageChecks, type CheckFixer, type PageCheck } from './page-checks';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 import { readPage, type JsonProblem } from './page-json';
 
 /**
@@ -60,19 +62,19 @@ function checkPath(value: unknown, check: PageCheck): string {
   return typeof node?.field === 'string' ? `fields.${node.field}.${action.part}` : path;
 }
 
-export function checkJson(text: string): JsonCheck {
-  const read = readPage(text);
+export function checkJson(text: string, words: DesignerWords = en): JsonCheck {
+  const read = readPage(text, words);
   const rows: JsonRow[] = read.problems.map((problem) => ({ ...problem, severity: 'error' }));
   const errors = rows.length;
   if (!read.tree) return { rows, errors };
   let checks: PageCheck[] = [];
   try {
-    checks = pageChecks(read.value as Page);
+    checks = pageChecks(read.value as Page, { words });
   } catch {
     // A page too broken to look over: its errors say enough.
   }
   // The checks say the format's problems again, as words with a path: those are on their lines already.
-  const said = new Set(read.problems.map((problem) => `${problem.path}: ${problem.message}`));
+  const said = new Set(read.problems.map((problem) => words.checks.invalid(problem.path ?? '', problem.message)));
   for (const check of checks) {
     if (check.at === null && said.has(check.text)) continue;
     const path = checkPath(read.value, check);

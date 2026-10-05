@@ -1,3 +1,6 @@
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
+
 /**
  * JSON as a person types it: read with the place of every key and value
  * kept, so a problem found in the page can be shown on its own line; and a
@@ -33,7 +36,6 @@ class Mistake extends Error {
 const NUMBER = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/y;
 const WORD = /[A-Za-z_$][\w$]*/y;
 const ESCAPES: Record<string, string> = { '"': '"', '\\': '\\', '/': '/', b: '\b', f: '\f', n: '\n', r: '\r', t: '\t' };
-const ANY_VALUE = 'This is not a value JSON knows: text in double quotes, a number, true, false, null, [ … ] or { … }';
 
 /** The line and column of an offset in the text. */
 export function placeAt(text: string, offset: number): Place {
@@ -58,7 +60,8 @@ export function offsetOf(text: string, place: Place): number {
   return Math.min(at + place.column - 1, end === -1 ? text.length : end);
 }
 
-export function readJson(text: string): JsonRead {
+export function readJson(text: string, words: DesignerWords = en): JsonRead {
+  const m = words.json.mistakes;
   let i = 0;
   const space = () => {
     while (i < text.length && ' \t\n\r'.includes(text[i])) i++;
@@ -68,24 +71,24 @@ export function readJson(text: string): JsonRead {
   }
   /** What is found where a value or a key should be, said as a person would. */
   function unexpected(wanted: string): never {
-    if (i >= text.length) fail(`The text ends too soon: ${wanted}`);
-    if (text.startsWith('//', i) || text.startsWith('/*', i)) fail('JSON has no comments');
-    if (text[i] === "'") fail('Text goes in double quotes');
-    return fail(ANY_VALUE);
+    if (i >= text.length) fail(m.endsTooSoon(wanted));
+    if (text.startsWith('//', i) || text.startsWith('/*', i)) fail(m.noComments);
+    if (text[i] === "'") fail(m.doubleQuotes);
+    return fail(m.anyValue);
   }
 
   function string(): string {
     const open = i++;
     let out = '';
     for (;;) {
-      if (i >= text.length) fail('This text has no closing double quote', open);
+      if (i >= text.length) fail(m.noClosingQuote, open);
       const c = text[i];
       if (c === '"') {
         i++;
         return out;
       }
-      if (c === '\n' || c === '\r') fail('A line break cannot sit inside text: write \\n');
-      if (c < ' ') fail('A control character cannot sit inside text');
+      if (c === '\n' || c === '\r') fail(m.lineBreak);
+      if (c < ' ') fail(m.controlCharacter);
       if (c !== '\\') {
         out += c;
         i++;
@@ -98,7 +101,7 @@ export function readJson(text: string): JsonRead {
       } else if (e !== undefined && e in ESCAPES) {
         out += ESCAPES[e];
         i += 2;
-      } else fail(`"\\${e ?? ''}" is not something JSON knows: write \\\\ for a backslash`);
+      } else fail(m.escape(e ?? ''));
     }
   }
 
@@ -119,10 +122,10 @@ export function readJson(text: string): JsonRead {
     const number = NUMBER.exec(text);
     if (number) {
       i += number[0].length;
-      if (/^-?0$/.test(number[0]) && /\d/.test(text[i] ?? '')) fail('A number cannot start with extra zeros', at);
+      if (/^-?0$/.test(number[0]) && /\d/.test(text[i] ?? '')) fail(m.extraZeros, at);
       return [Number(number[0]), { at }];
     }
-    return unexpected('a value is missing');
+    return unexpected(m.valueMissing);
   }
 
   /** After an item: a comma and the next, or the end. Says what is missing in between. */
@@ -131,17 +134,17 @@ export function readJson(text: string): JsonRead {
     if (text[i] === ',') {
       const comma = i++;
       space();
-      if (text[i] === close) fail('Nothing follows this comma: take it away', comma);
+      if (text[i] === close) fail(m.nothingAfterComma, comma);
       return true;
     }
     if (text[i] === close) {
       i++;
       return false;
     }
-    if (i >= text.length) fail(`The text ends too soon: a closing ${close} is missing`);
+    if (i >= text.length) fail(m.endsTooSoon(m.closingMissing(close)));
     // On to the next key straight away: only the comma between them is missing.
-    if (close === '}' && text[i] === '"') fail('A comma is missing before this');
-    return fail(`A comma or a closing ${close} is missing here`);
+    if (close === '}' && text[i] === '"') fail(m.commaMissing);
+    return fail(m.commaOrClosing(close));
   }
 
   function object(): [unknown, Spot] {
@@ -158,12 +161,12 @@ export function readJson(text: string): JsonRead {
       if (text[i] !== '"') {
         WORD.lastIndex = i;
         const word = WORD.exec(text);
-        if (word) fail(`A key goes in double quotes, such as "${word[0]}"`);
-        unexpected('a closing } is missing');
+        if (word) fail(m.keyQuotes(word[0]));
+        unexpected(m.closingMissing('}'));
       }
       const key = string();
       space();
-      if (text[i] !== ':') fail('A colon is missing after the key');
+      if (text[i] !== ':') fail(m.colonMissing);
       i++;
       const [item, itemSpot] = value();
       // As JSON.parse: a key named __proto__ is a key, never the object's prototype.
@@ -183,7 +186,7 @@ export function readJson(text: string): JsonRead {
     }
     do {
       space();
-      if (i >= text.length) fail('The text ends too soon: a closing ] is missing');
+      if (i >= text.length) fail(m.endsTooSoon(m.closingMissing(']')));
       const [item, itemSpot] = value();
       out.push(item);
       spot.items?.push(itemSpot);
@@ -193,10 +196,10 @@ export function readJson(text: string): JsonRead {
 
   try {
     space();
-    if (i >= text.length) fail('The box is empty: a page is a JSON object, { … }');
+    if (i >= text.length) fail(m.empty);
     const [read, tree] = value();
     space();
-    if (i < text.length) fail('There is more after the end: one { … } is the whole page');
+    if (i < text.length) fail(m.moreAfterEnd);
     return { ok: true, value: read, tree };
   } catch (error) {
     if (!(error instanceof Mistake)) throw error;

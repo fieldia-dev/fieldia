@@ -1,5 +1,7 @@
 import { validatePage, type Page } from '@fieldia/core';
+import type { DesignerWords } from './designer-words';
 import { placeOf, readJson, type Place, type Spot } from './json-text';
+import { en } from './locales/en';
 
 /**
  * The whole page as JSON, read and written as one edit: what a person who
@@ -31,8 +33,8 @@ export function pageToJson(page: Page): string {
 }
 
 /** Read text as a page: first as JSON, then by the format's every check. */
-export function readPage(text: string): ReadPage {
-  const read = readJson(text);
+export function readPage(text: string, words: DesignerWords = en): ReadPage {
+  const read = readJson(text, words);
   if (!read.ok) return { value: undefined, tree: null, page: null, problems: [read.problem] };
   const checked = validatePage(read.value);
   if (checked.ok) return { value: read.value, tree: read.tree, page: checked.page, problems: [] };

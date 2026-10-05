@@ -24,6 +24,8 @@ export const LATIN_KEPT = [
   ...['Ctrl', 'Shift', 'Alt', 'Enter', 'Esc', 'Tab', 'Home', 'End', 'Delete', 'Backspace', 'K', 'J', 'Z', 'Y', 'D', 'C', 'V', 'X', 'A', 'G'],
   // Formats and currencies.
   ...['JSON', 'CSV', 'PDF', 'USD', 'EGP', 'IBAN', 'URL', 'https'],
+  // JSON's own words, as they are typed in it.
+  ...['true', 'false', 'null'],
   // Fieldia's own name, as its look's.
   'Fieldia',
   // Names in code, in examples.
@@ -31,7 +33,7 @@ export const LATIN_KEPT = [
 ];
 
 /** Code an example writes as it is typed: a formula's function and the fields it reads, as in round(price * qty, 2). */
-const CODE = /\b[a-z_]+\([^)]*\)|#\w+|https?:\/\/\S*|mailto:\S*/g;
+const CODE = /\b[a-z_]+\([^)]*\)|#\w+|https?:\/\/\S*|mailto:\S*|\\[a-z]/g;
 
 /** Latin letters left in Arabic words, besides those kept on purpose and code. */
 export function latinIn(text: string): string[] {

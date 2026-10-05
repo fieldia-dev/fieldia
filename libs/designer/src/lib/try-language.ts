@@ -28,8 +28,9 @@ export interface TryLanguage {
 const directionOf = (tag: string): 'ltr' | 'rtl' => (isRightToLeft(tag) ? 'rtl' : 'ltr');
 
 export function tryLanguage({ el, designer, bar, redraw }: TryLanguageOptions): TryLanguage {
+  const words = designer.words;
   const select = el('select', { class: 'fd-input' });
-  const element = el('label', { class: 'fd-try-language', hidden: '' }, el('span', { class: 'fd-try-language-words' }, 'Words in'), select);
+  const element = el('label', { class: 'fd-try-language', hidden: '' }, el('span', { class: 'fd-try-language-words' }, words.tryIt.wordsIn), select);
   const button = (direction: 'ltr' | 'rtl') => bar.querySelector<HTMLButtonElement>(`button[data-try="${direction}"]`);
   bar.insertBefore(element, button('rtl')?.parentElement ?? null);
   let picked: string | null = null;
@@ -42,7 +43,7 @@ export function tryLanguage({ el, designer, bar, redraw }: TryLanguageOptions): 
     const languages = languagesOf(page);
     if (picked && !languages.includes(picked)) picked = null;
     element.hidden = !languages.length;
-    select.replaceChildren(el('option', { value: '' }, `${languageName(pageLanguage(page))}, as written`), ...languages.map((tag) => el('option', { value: tag }, languageName(tag))));
+    select.replaceChildren(el('option', { value: '' }, words.rulesUi.asWritten(languageName(pageLanguage(page), words))), ...languages.map((tag) => el('option', { value: tag }, languageName(tag, words))));
     select.value = picked ?? '';
   }
 
