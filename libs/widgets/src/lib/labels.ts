@@ -113,6 +113,8 @@ export interface WidgetLabels {
   /** A repeating group: a card's title (`{n}` counts from 1), the button that adds one, and a card gone, said aloud. */
   entry: string;
   addAnother: string;
+  /** A repeating group's card copied right after it: `{name}` is its title. */
+  copy: string;
   removed: string;
   /** Choices from the app's list: while they load, a button to load them again, and a value the list no longer has (`{name}`). */
   loadingChoices: string;
@@ -219,6 +221,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addressCountry: 'Country',
     entry: 'Entry {n}',
     addAnother: 'Add another',
+    copy: 'Copy {name}',
     removed: '{name} removed',
     loadingChoices: 'Loading choices…',
     choicesFailed: 'Load the choices again',
@@ -317,6 +320,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addressCountry: 'الدولة',
     entry: 'الإدخال {n}',
     addAnother: 'إضافة المزيد',
+    copy: 'نسخ {name}',
     removed: 'أُزيل {name}',
     loadingChoices: 'تحميل الخيارات…',
     choicesFailed: 'أعد تحميل الخيارات',
@@ -415,6 +419,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addressCountry: 'Land',
     entry: 'Eintrag {n}',
     addAnother: 'Weitere hinzufügen',
+    copy: '{name} kopieren',
     removed: '{name} entfernt',
     loadingChoices: 'Auswahl lädt…',
     choicesFailed: 'Auswahl neu laden',
@@ -513,6 +518,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addressCountry: 'Pays',
     entry: 'Entrée {n}',
     addAnother: 'En ajouter un autre',
+    copy: 'Copier {name}',
     removed: '{name} retiré',
     loadingChoices: 'Chargement des choix…',
     choicesFailed: 'Recharger les choix',

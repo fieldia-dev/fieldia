@@ -102,10 +102,12 @@ export const KINDS_CSS = /* css */ `
   display: grid; gap: 8px; min-width: 0; padding: 10px 14px 14px;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: max(var(--fd-radius), 6px);
 }
-.fd-repeat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; }
-.fd-repeat-title { font-weight: 600; font-size: 13.5px; }
-.fd-repeat-remove { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 18px; line-height: 1; padding: 4px 8px; border-radius: 4px; }
+.fd-repeat-head { display: flex; align-items: center; gap: 2px; min-height: 28px; }
+.fd-repeat-title { font-weight: 600; font-size: 13.5px; margin-inline-end: auto; }
+.fd-repeat-remove, .fd-repeat-tool { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 18px; line-height: 1; padding: 4px 8px; border-radius: 4px; }
 .fd-repeat-remove:hover { color: var(--fd-error); background: var(--fd-error-soft); }
+.fd-repeat-tool { font-size: 15px; }
+.fd-repeat-tool:hover { color: var(--fd-accent); background: var(--fd-accent-soft); }
 .fd-repeat-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px 14px; }
 .fd-repeat-field { display: grid; gap: 3px; min-width: 0; align-content: start; }
 .fd-repeat-label { font-size: 12.5px; color: var(--fd-muted); }

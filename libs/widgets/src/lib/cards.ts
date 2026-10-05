@@ -1,5 +1,6 @@
 import type { Field, FieldNode, Line, LineField } from '@fieldia/core';
 import { announcer, describeState, fillIn, maker, wordsFor } from './kind-parts';
+import { moveLineTo } from './line-moves';
 import { lineForm } from './lines';
 import { createWidget, type Widget, type WidgetFactory } from './widgets';
 
@@ -10,13 +11,17 @@ import { createWidget, type Widget, type WidgetFactory } from './widgets';
  * adds a card and puts the cursor in its first field; × takes one away, the
  * cursor going to the card that took its place, and the removal is said
  * aloud. `options.min` cards at least — a new form starts with them — and
- * `options.max` at most.
+ * `options.max` at most. ↑ and ↓ — or Alt+↑/↓ inside a card — move a card,
+ * where it went said aloud; Copy puts a copy of a card, its answers too,
+ * right after it.
  */
 
 interface Card {
   element: HTMLElement;
   title: HTMLElement;
   remove: HTMLButtonElement;
+  /** Up, down and Copy, by their label in `words`. */
+  tools: [HTMLButtonElement, 'moveUp' | 'moveDown' | 'copy'][];
   fields: { name: string; def: LineField; widget: Widget; error: HTMLElement }[];
 }
 
@@ -59,8 +64,20 @@ export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, docume
     const titleId = `${id}-${line.key}-title`;
     const title = make('span', { id: titleId, class: 'fd-repeat-title' });
     const remove = make('button', { type: 'button', class: 'fd-repeat-remove' }, '×');
+    const tool = (text: string, word: 'moveUp' | 'moveDown' | 'copy', act: () => void): [HTMLButtonElement, typeof word] => {
+      const button = make('button', { type: 'button', class: 'fd-repeat-tool' }, text);
+      button.addEventListener('click', act);
+      return [button, word];
+    };
+    const at = () => lines().findIndex((l) => l.key === line.key);
+    const tools = [tool('↑', 'moveUp', () => move(line.key, at() - 1)), tool('↓', 'moveDown', () => move(line.key, at() + 1)), tool('⧉', 'copy', () => copy(line.key))];
     const body = make('div', { class: 'fd-repeat-fields' });
-    const cardElement = make('div', { class: 'fd-repeat-card', role: 'group', 'aria-labelledby': titleId, 'data-line': line.key }, make('div', { class: 'fd-repeat-head' }, title, remove), body);
+    const cardElement = make('div', { class: 'fd-repeat-card', role: 'group', 'aria-labelledby': titleId, 'data-line': line.key }, make('div', { class: 'fd-repeat-head' }, title, ...tools.map(([b]) => b), remove), body);
+    cardElement.addEventListener('keydown', (event) => {
+      if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
+      event.preventDefault();
+      move(line.key, at() + (event.key === 'ArrowUp' ? -1 : 1));
+    });
     const fields = names.map((column) => {
       const sub = def.fields[column];
       const cellId = `${id}-${line.key}-${column}`;
@@ -85,7 +102,33 @@ export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, docume
       focusNext = () => (next ? cards.get(next.key)?.fields[0]?.widget.focus() : addButton.focus());
       settle();
     });
-    return { element: cardElement, title, remove, fields };
+    return { element: cardElement, title, remove, tools, fields };
+  }
+
+  /** A card to another place, the focus kept on what had it, and where it went said aloud. */
+  function move(key: string, to: number) {
+    const from = lines().findIndex((l) => l.key === key);
+    if (readonly || to < 0 || to >= lines().length || to === from) return;
+    const focused = document.activeElement as HTMLElement | null;
+    const gone = cards.get(key)?.title.textContent ?? '';
+    moveLineTo(form, name, def, key, to);
+    // A way up or down that is no more hands the focus to the other.
+    const card = cards.get(key);
+    const next = focused && !focused.hidden ? focused : card?.tools.find(([b]) => !b.hidden)?.[0];
+    if (next && next !== document.activeElement) next.focus();
+    voice.say(fillIn(words.movedTo, { label: gone, n: to + 1, total: lines().length }));
+  }
+
+  /** A copy of a card, its answers too, right after it, the cursor in its first field. */
+  function copy(key: string) {
+    const all = lines();
+    const at = all.findIndex((l) => l.key === key);
+    if (readonly || at < 0 || all.length >= max) return;
+    const values = { ...all[at].values };
+    if (def.sequenceField) delete values[def.sequenceField];
+    const made = form.addLine(name, values);
+    moveLineTo(form, name, def, made, at + 1);
+    cards.get(made)?.fields[0]?.widget.focus();
   }
 
   function settle() {
@@ -115,6 +158,10 @@ export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, docume
         card.title.textContent = titleOf(index + 1);
         card.remove.setAttribute('aria-label', fillIn(words.remove, { name: card.title.textContent }));
         card.remove.hidden = readonly || current.length <= min;
+        for (const [button, word] of card.tools) {
+          button.setAttribute('aria-label', fillIn(words[word], { label: card.title.textContent, name: card.title.textContent }));
+          button.hidden = readonly || (word === 'moveUp' ? index === 0 : word === 'moveDown' ? index === current.length - 1 : current.length >= max);
+        }
         for (const f of card.fields) {
           const message = errors[`${name}.${line.key}.${f.name}`];
           f.error.hidden = !message;
