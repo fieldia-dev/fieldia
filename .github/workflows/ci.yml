@@ -30,9 +30,15 @@ jobs:
       - run: node tools/release.mjs check
 
   browser:
-    name: Browser gates (every framework demo)
+    name: Browser gates (every framework demo, ${{ matrix.shard }} of 2)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Two runners, each the whole build and half the scenarios: one alone had
+    # grown to 19 of its 20 minutes.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -53,10 +59,10 @@ jobs:
       - run: node tools/build-demos.mjs
       # fieldia.dev, gated like the demos: every page, link and the live form.
       - run: node tools/build-site.mjs
-      - run: npx playwright test
+      - run: npx playwright test --shard=${{ matrix.shard }}/2
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: screens
+          name: screens-${{ matrix.shard }}
           path: test-results/
           retention-days: 14
