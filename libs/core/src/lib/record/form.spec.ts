@@ -214,7 +214,7 @@ describe('createForm — validation', () => {
     form.setValue('name', 'Delta');
     form.setValue('email', 'not-an-email');
     expect(form.validate()).toBe(false);
-    expect(form.getState().errors).toEqual({ email: 'Email is not in the expected format' });
+    expect(form.getState().errors).toEqual({ email: 'Enter an email address, like name@example.com' });
   });
 
   it('clears a field error as soon as the field is fixed', () => {

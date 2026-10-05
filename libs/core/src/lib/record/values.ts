@@ -1,5 +1,6 @@
 import type { Field, LineField } from '../format/field';
 import type { JsonValue } from '../format/json';
+import { dayOf } from './limits';
 
 /**
  * The values a form holds while someone edits it. Plain JSON, so a draft can
@@ -68,11 +69,12 @@ export function emptyValue(field: AnyField): Value {
   }
 }
 
-/** A fresh record: each field's default, or its empty value. */
-export function initialValues(fields: Record<string, AnyField>): Values {
+/** A fresh record: each field's default, or its empty value. A date's default may be a day counted from `today` ("today", "today+1"). */
+export function initialValues(fields: Record<string, AnyField>, today?: string): Values {
   const values: Values = {};
   for (const [name, field] of Object.entries(fields)) {
-    values[name] = field.default !== undefined ? structuredCopy(field.default) : emptyValue(field);
+    const start = field.default;
+    values[name] = start === undefined ? emptyValue(field) : field.type === 'date' && typeof start === 'string' && start.startsWith('today') ? dayOf(start, today) : structuredCopy(start);
   }
   return values;
 }

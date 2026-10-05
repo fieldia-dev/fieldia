@@ -47,6 +47,17 @@ export interface Messages {
   holds: string;
   /** Joins the last two items of a list: "PDF or image". */
   or: string;
+  /** What to type in an email, a web address, a phone number and a time of day, by example. */
+  email: string;
+  url: string;
+  phone: string;
+  time: string;
+  /** A date or a time outside its earliest (`{min}`) or latest (`{max}`), and a day of the week it may not fall on (`{days}`). */
+  before: string;
+  after: string;
+  weekday: string;
+  /** The language the days in these messages are written in, as Intl reads it. */
+  locale: string;
 }
 
 export type Locale = 'en' | 'ar' | 'de' | 'fr';
@@ -87,6 +98,14 @@ export const MESSAGES: Record<Locale, Messages> = {
     dateFuture: '{label} must be in the future',
     holds: '{label} does not agree with the other answers',
     or: 'or',
+    email: 'Enter an email address, like name@example.com',
+    url: 'Enter a web address, like example.com',
+    phone: 'Enter a phone number, like +20 100 123 4567',
+    time: 'Enter a time, like 14:30',
+    before: '{label} can’t be before {min}',
+    after: '{label} can’t be after {max}',
+    weekday: '{label} can’t be on a {days}',
+    locale: 'en',
   },
   ar: {
     required: '{label} مطلوب',
@@ -123,6 +142,14 @@ export const MESSAGES: Record<Locale, Messages> = {
     dateFuture: 'يجب أن يكون {label} في المستقبل',
     holds: 'لا يتفق {label} مع الإجابات الأخرى',
     or: 'أو',
+    email: 'أدخل بريدًا إلكترونيًا، مثل name@example.com',
+    url: 'أدخل عنوان موقع، مثل example.com',
+    phone: 'أدخل رقم هاتف، مثل \u2066+20 100 123 4567\u2069',
+    time: 'أدخل وقتًا، مثل 14:30',
+    before: 'لا يمكن أن يكون {label} قبل {min}',
+    after: 'لا يمكن أن يكون {label} بعد {max}',
+    weekday: 'لا يمكن أن يكون {label} يوم {days}',
+    locale: 'ar',
   },
   de: {
     required: '{label} ist erforderlich',
@@ -159,6 +186,14 @@ export const MESSAGES: Record<Locale, Messages> = {
     dateFuture: '{label} muss in der Zukunft liegen',
     holds: '{label} passt nicht zu den anderen Antworten',
     or: 'oder',
+    email: 'Geben Sie eine E-Mail-Adresse ein, z. B. name@example.com',
+    url: 'Geben Sie eine Webadresse ein, z. B. example.com',
+    phone: 'Geben Sie eine Telefonnummer ein, z. B. +49 30 1234 5678',
+    time: 'Geben Sie eine Uhrzeit ein, z. B. 14:30',
+    before: '{label}: frühestens {min}',
+    after: '{label}: spätestens {max}',
+    weekday: '{label} darf nicht auf einen {days} fallen',
+    locale: 'de',
   },
   fr: {
     required: '{label} est obligatoire',
@@ -195,6 +230,14 @@ export const MESSAGES: Record<Locale, Messages> = {
     dateFuture: '{label} doit être dans le futur',
     holds: '{label} ne concorde pas avec les autres réponses',
     or: 'ou',
+    email: 'Saisissez une adresse e-mail, par exemple nom@exemple.com',
+    url: 'Saisissez une adresse web, par exemple exemple.com',
+    phone: 'Saisissez un numéro de téléphone, par exemple +33 1 23 45 67 89',
+    time: 'Saisissez une heure, par exemple 14:30',
+    before: '{label} : au plus tôt {min}',
+    after: '{label} : au plus tard {max}',
+    weekday: '{label} ne peut pas tomber un {days}',
+    locale: 'fr',
   },
 };
 

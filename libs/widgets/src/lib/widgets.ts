@@ -373,8 +373,8 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
 function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
   return ({ form, name, field, node, id, document, labels, locale }) => {
     const words = labels ?? WIDGET_LABELS[locale ?? 'en'];
-    const min = 'min' in field && field.min !== undefined ? field.min : style === 'rating' ? 1 : 0;
-    const max = 'max' in field && field.max !== undefined ? field.max : style === 'rating' ? 5 : 10;
+    const min = 'min' in field && typeof field.min === 'number' ? field.min : style === 'rating' ? 1 : 0;
+    const max = 'max' in field && typeof field.max === 'number' ? field.max : style === 'rating' ? 5 : 10;
     const group = make(document, 'div', { id, class: `fd-points fd-${style}`, role: 'radiogroup' });
     const points: HTMLButtonElement[] = [];
     for (let n = min; n <= max; n++) {

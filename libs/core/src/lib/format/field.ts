@@ -122,8 +122,16 @@ const Monetary = z
   })
   .strict();
 const BooleanField = z.object({ type: z.literal('boolean'), ...common }).strict();
-const DateField = z.object({ type: z.literal('date'), ...common }).strict();
-const DateTime = z.object({ type: z.literal('datetime'), ...common }).strict();
+/**
+ * A date's limits: its earliest and latest day, each a day or one counted
+ * from the day the form is opened ("today", "today+30", "today-7"), and the
+ * days of the week it may fall on, 1 Monday … 7 Sunday (ISO 8601). A date and
+ * time keeps them by the day it falls on. A date's `default` may be "today".
+ */
+const dayLimit = z.string().regex(/^(\d{4}-\d{2}-\d{2}|today([+-]\d{1,4})?)$/).optional();
+const days = { min: dayLimit, max: dayLimit, days: z.array(z.int().min(1).max(7)).min(1).optional() };
+const DateField = z.object({ type: z.literal('date'), ...common, ...days }).strict();
+const DateTime = z.object({ type: z.literal('datetime'), ...common, ...days }).strict();
 /**
  * Choices the app gives rather than the page: its list by name, loaded through
  * the data source's `options` when the form shows the field, and again when a

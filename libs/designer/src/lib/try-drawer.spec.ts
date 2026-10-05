@@ -66,7 +66,7 @@ describe('Try it’s drawer of data and problems', () => {
     expect(problems()).toEqual(['NameName is required', 'CommentsComments is required']);
     fill('Email', 'not an address');
     fill('Name', 'Mona');
-    expect(problems()).toEqual(['EmailEmail is not in the expected format', 'CommentsComments is required']);
+    expect(problems()).toEqual(['EmailEnter an email address, like name@example.com', 'CommentsComments is required']);
     (drawer().querySelector('.fd-try-problem') as HTMLButtonElement).click();
     expect(document.activeElement).toBe(fieldOf('Email'));
   });
