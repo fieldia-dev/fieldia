@@ -37,6 +37,31 @@ import { ScreenEditor, SurveyEditor } from '@fieldia/designer/react';
 In Vue they are `SurveyEditor` and `ScreenEditor` too; in Angular,
 `<fieldia-survey-editor [designer]>` and `<fieldia-screen-editor [designer]>`.
 
+## Laying a screen out
+
+The screen editor opens in Simple mode, which keeps the panel to what most
+forms need and the layout as it is. Advanced lays the page out by dragging,
+as Grafloria's split board does: a line shows where a part will go, and a chip
+says it in words before it is let go.
+
+- Beside a part — its edge, the gap to the next, or the room at either end of
+  its row — the part joins that row. A group's rows divide in twelfths, each its
+  own way: a group of one to four columns is divided in twelfths the first time
+  a drop or a divider needs it, nothing moving as it is, and a part dropped
+  into a row shares it out equally (halves, thirds, quarters; four to a row).
+  Only that row changes.
+- Under or above a part, or between two rows: a new row.
+- Within a few pixels of a group's border: beside or under the whole group.
+- The divider between two parts of a row trades width a twelfth at a time,
+  said as percentages ("58% · 42%"), by the pointer or the arrow keys.
+- A group keeps each row full (the default): when a part leaves, the rest of
+  its row widens to fill it. Set **Rows → Allow gaps** in its Layout tab and a
+  part keeps its width instead; its far edge can then be pulled in.
+
+The page stores `columns: 12` on such a group, each part's `colspan` in
+twelfths, and `rows: 'gaps'` when set. A form draws the widths as stored: a
+tablet keeps a row's proportions, a phone puts its parts one under another.
+
 ## What an app adds
 
 ### Kinds of its own
