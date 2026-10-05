@@ -296,6 +296,7 @@ export function sampleDataSource() {
           client_id: { id: 1, label: 'Nile Traders' },
           tag_ids: [{ id: 11, label: 'VIP' }],
           team_ids: [{ id: 21, label: 'Mona Adel' }, { id: 22, label: 'Karim Fathy' }],
+          partner_ids: [{ id: 20, label: 'Amira Clinics' }],
           service_ids: [{ id: 31, label: 'Design' }, { id: 32, label: 'Project management' }],
           source: { model: 'partner', id: 1, label: 'Nile Traders' },
           milestone_ids: [
