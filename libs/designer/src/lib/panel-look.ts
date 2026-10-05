@@ -5,6 +5,7 @@ import type { Designer, LookPatch } from './designer';
 import { isSection, nodeOf } from './layout-tree';
 import { lookRow } from './look-row';
 import { onTab, segmented, setting, type Choice, type Segmented } from './panel-controls';
+import type { DesignerWords } from './designer-words';
 
 /**
  * The Look tab's settings: looks to start from, then the page's look — its
@@ -30,66 +31,77 @@ export const SWATCHES: readonly [string, string][] = [
 ];
 
 type Key = 'font' | 'density' | 'corners' | 'labels' | 'scheme';
-const CHOICES: { key: Key; name: string; choices: Choice<string>[]; hint?: string }[] = [
-  { key: 'font', name: 'Font', choices: [{ value: 'system', words: 'System' }, { value: 'serif', words: 'Serif' }, { value: 'rounded', words: 'Rounded' }] },
-  {
-    key: 'density',
-    name: 'Spacing',
-    choices: [{ value: 'compact', words: 'Compact' }, { value: 'comfortable', words: 'Comfortable' }, { value: 'roomy', words: 'Roomy' }],
-    hint: 'Compact suits long office forms; roomy, a short public one.',
-  },
-  { key: 'corners', name: 'Corners', choices: [{ value: 'square', words: 'Square' }, { value: 'soft', words: 'Soft' }, { value: 'round', words: 'Round' }] },
-  {
-    key: 'labels',
-    name: 'Labels',
-    choices: [{ value: 'above', words: 'Above' }, { value: 'beside', words: 'Beside' }, { value: 'hidden', words: 'In the box', title: 'Inside the box, as its placeholder; still read out by screen readers' }],
-    hint: 'Where every label sits, unless a group or a field says otherwise.',
-  },
-  { key: 'scheme', name: 'Colours', choices: [{ value: 'light', words: 'Light' }, { value: 'dark', words: 'Dark' }, { value: 'auto', words: 'Auto', title: 'As the reader’s system has it' }] },
+/** The look's choices of a few, by their key, in the order they stand: their names and words are the designer's. */
+const CHOICES: { key: Key; name: string; values: string[] }[] = [
+  { key: 'font', name: 'Font', values: ['system', 'serif', 'rounded'] },
+  { key: 'density', name: 'Spacing', values: ['compact', 'comfortable', 'roomy'] },
+  { key: 'corners', name: 'Corners', values: ['square', 'soft', 'round'] },
+  { key: 'labels', name: 'Labels', values: ['above', 'beside', 'hidden'] },
+  { key: 'scheme', name: 'Colours', values: ['light', 'dark', 'auto'] },
 ];
+
+/** A choice of the look in the designer's words: its name, each value's words, a hint. */
+function lookChoice(w: DesignerWords['panel'], key: Key, value: string): Choice<string> {
+  switch (key) {
+    case 'font':
+      return { value, words: w.fonts[value as keyof typeof w.fonts] };
+    case 'density':
+      return { value, words: w.spacings[value as keyof typeof w.spacings] };
+    case 'corners':
+      return { value, words: w.cornerKinds[value as keyof typeof w.cornerKinds] };
+    case 'labels':
+      return value === 'hidden' ? { value, words: w.inTheBox, title: w.inBoxTitle } : { value, words: value === 'above' ? w.above : w.beside };
+    default:
+      return value === 'auto' ? { value, words: w.schemes.auto, title: w.schemeAutoTitle } : { value, words: w.schemes[value as 'light' | 'dark'] };
+  }
+}
+const lookName = (w: DesignerWords['panel'], key: Key) => ({ font: w.font, density: w.spacing, corners: w.corners, labels: w.labels, scheme: w.colours })[key];
+const lookHint = (w: DesignerWords['panel'], key: Key) => (key === 'density' ? w.spacingHint : key === 'labels' ? w.labelsHint : undefined);
 
 /** The page's look, setting by setting. Pressing what is pressed gives the setting back to the skin. */
 export function pageLookSettings(el: ElementFactory, designer: Designer): LookSetting {
+  const w = designer.words.panel;
   const presets = lookRow(el, designer);
   // ---- the accent: a swatch, or any colour ----
   const swatches = segmented<string>(
     el,
-    'Accent colour',
-    SWATCHES.map(([value, name]) => ({ value, words: '', label: name })),
+    w.accentColour,
+    SWATCHES.map(([value, name]) => ({ value, words: '', label: w.swatches[value] ?? name })),
     (value) => designer.setLook({ accent: value }),
     { toggle: true, className: 'fd-insp-swatches' }
   );
   for (const button of swatches.element.querySelectorAll<HTMLElement>('[data-choice]')) button.style.setProperty('--fd-swatch', button.dataset['choice'] as string);
-  const any = el('input', { type: 'color', class: 'fd-insp-colour', 'aria-label': 'Any accent colour', title: 'Any colour' });
+  const any = el('input', { type: 'color', class: 'fd-insp-colour', 'aria-label': w.anyAccent, title: w.anyColour });
   any.addEventListener('input', () => designer.setLook({ accent: any.value }));
-  const skins = el('button', { type: 'button', class: 'fd-button fd-button-link fd-insp-reset', 'aria-label': 'Accent as the skin has it' }, 'As the skin');
+  const skins = el('button', { type: 'button', class: 'fd-button fd-button-link fd-insp-reset', 'aria-label': w.accentAsSkin }, w.asTheSkin);
   skins.addEventListener('click', () => designer.setLook({ accent: null }));
-  const accent = setting(el, 'look', 'Accent colour', [swatches.element, el('div', { class: 'fd-insp-any' }, el('label', { class: 'fd-insp-any-colour' }, any, el('span', {}, 'Any colour')), skins)], {
-    hint: 'Buttons, the tab and the box being typed in, and the band under the title.',
+  const accent = setting(el, 'look', 'Accent colour', [swatches.element, el('div', { class: 'fd-insp-any' }, el('label', { class: 'fd-insp-any-colour' }, any, el('span', {}, w.anyColour)), skins)], {
+    hint: w.accentHint,
+    words: w.accentColour,
   });
 
   // ---- the choices of a few ----
   const segs = new Map<Key, Segmented<string>>();
-  const rows = CHOICES.map(({ key, name, choices, hint }) => {
-    const seg = segmented<string>(el, name, choices, (value) => designer.setLook({ [key]: value } as LookPatch), { toggle: true });
+  const rows = CHOICES.map(({ key, name, values }) => {
+    const seg = segmented<string>(el, lookName(w, key), values.map((value) => lookChoice(w, key, value)), (value) => designer.setLook({ [key]: value } as LookPatch), { toggle: true });
     segs.set(key, seg);
-    return setting(el, 'look', name, seg.element, { hint });
+    return setting(el, 'look', name, seg.element, { hint: lookHint(w, key), words: lookName(w, key) });
   });
 
   // ---- how wide labels beside their boxes are ----
-  const slider = el('input', { type: 'range', class: 'fd-insp-slider', min: '60', max: '320', step: '10', 'aria-label': 'Label width' });
-  const number = el('input', { type: 'number', class: 'fd-input fd-insp-number', min: '60', max: '320', step: '1', 'aria-label': 'Label width' });
+  const slider = el('input', { type: 'range', class: 'fd-insp-slider', min: '60', max: '320', step: '10', 'aria-label': w.labelWidth });
+  const number = el('input', { type: 'number', class: 'fd-input fd-insp-number', min: '60', max: '320', step: '1', 'aria-label': w.labelWidth });
   const width = (value: string) => {
     const n = Number(value);
     if (Number.isInteger(n) && n >= 60 && n <= 320) designer.setLook({ labelWidth: n });
   };
   slider.addEventListener('input', () => width(slider.value));
   number.addEventListener('input', () => width(number.value));
-  const widthRow = setting(el, 'look', 'Label width', [el('div', { class: 'fd-insp-range' }, slider, number, el('span', { class: 'fd-insp-unit' }, 'px'))]);
+  const widthRow = setting(el, 'look', 'Label width', [el('div', { class: 'fd-insp-range' }, slider, number, el('span', { class: 'fd-insp-unit' }, w.px))], { words: w.labelWidth });
   const labelsAt = CHOICES.findIndex((c) => c.key === 'labels');
   rows.splice(labelsAt + 1, 0, widthRow);
 
-  const note = onTab(el('p', { class: 'fd-properties-hint' }, 'These are the form’s own tokens: every field follows them, and a dark scheme keeps working.'), 'look');
+  const note = onTab(el('p', { class: 'fd-properties-hint' }, w.tokensNote), 'look');
   return {
     rows: [...presets.rows, accent, ...rows, note],
     update(page) {
@@ -117,6 +129,7 @@ const STYLES: [NonNullable<SectionNode['style']>, string, string][] = [
 
 /** How a group is drawn: a card, plain, a line under its title, or a frame with the title on it. */
 export function groupStyleSetting(el: ElementFactory, designer: Designer, id: string): LookSetting {
+  const w = designer.words.panel;
   const picture = (shape: string) => {
     const box = el('span', { class: 'fd-insp-style-picture', 'aria-hidden': 'true' });
     box.innerHTML = `<svg viewBox="0 0 44 30" focusable="false">${shape}</svg>`;
@@ -124,14 +137,14 @@ export function groupStyleSetting(el: ElementFactory, designer: Designer, id: st
   };
   const style = segmented<string>(
     el,
-    'Style',
-    STYLES.map(([value, words, shape]) => ({ value, words, picture: picture(shape) })),
+    w.style,
+    STYLES.map(([value, , shape]) => ({ value, words: w.styles[value], picture: picture(shape) })),
     (value) => {
       if (value) designer.setSectionLook(id, { style: value as NonNullable<SectionNode['style']> });
     },
     { className: 'fd-insp-styles' }
   );
-  const row = setting(el, 'look', 'Style', style.element, { hint: 'Plain draws nothing round it: with no title, its parts simply sit side by side.' });
+  const row = setting(el, 'look', 'Style', style.element, { hint: w.styleHint, words: w.style });
   return {
     rows: [row],
     update(page) {

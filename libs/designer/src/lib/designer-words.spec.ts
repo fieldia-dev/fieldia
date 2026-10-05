@@ -24,6 +24,8 @@ export const LATIN_KEPT = [
   ...['Ctrl', 'Shift', 'Alt', 'Enter', 'Esc', 'Tab', 'Home', 'End', 'Delete', 'Backspace', 'K', 'J', 'Z', 'Y', 'D', 'C', 'V', 'X', 'A', 'G'],
   // Formats and currencies.
   ...['JSON', 'CSV', 'PDF', 'USD', 'EGP', 'IBAN', 'URL', 'https'],
+  // Fieldia's own name, as its look's.
+  'Fieldia',
   // Names in code, in examples.
   ...['contact', 'confirm', 'open_invoices', 'archive', 'active'],
 ];

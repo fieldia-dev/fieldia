@@ -2,6 +2,8 @@ import type { Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { findHeaderPart } from './header-commands';
 import { isSection, isWrapper, locate } from './layout-tree';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * The panel's tabs: Content, Layout, Look, Rules and Data, and which of them
@@ -100,9 +102,9 @@ export interface TabStrip {
  * round its ends (mirrored right to left), Home and End to its ends. A tab is
  * chosen as the arrows reach it, as the panels show at once.
  */
-export function tabStrip(el: ElementFactory, choose: (tab: PanelTab) => void): TabStrip {
+export function tabStrip(el: ElementFactory, choose: (tab: PanelTab) => void, words: DesignerWords = en): TabStrip {
   const base = `fd-insp-${++made}`;
-  const element = el('div', { class: 'fd-insp-tabs', role: 'tablist', 'aria-label': 'Settings' });
+  const element = el('div', { class: 'fd-insp-tabs', role: 'tablist', 'aria-label': words.panel.settings });
   const buttons = () => [...element.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
   const go = (button: HTMLButtonElement | undefined) => {
     if (!button) return;
@@ -136,7 +138,7 @@ export function tabStrip(el: ElementFactory, choose: (tab: PanelTab) => void): T
         element.dataset['tabs'] = key;
         element.replaceChildren(
           ...tabs.map((tab) => {
-            const button = el('button', { type: 'button', role: 'tab', class: 'fd-insp-tab', id: tabId(tab), 'data-tab': tab, 'aria-controls': panelId(tab) }, TAB_NAMES[tab]);
+            const button = el('button', { type: 'button', role: 'tab', class: 'fd-insp-tab', id: tabId(tab), 'data-tab': tab, 'aria-controls': panelId(tab) }, words.panel.tabs[tab]);
             button.addEventListener('click', () => choose(tab));
             return button;
           })

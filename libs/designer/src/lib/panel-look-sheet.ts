@@ -17,13 +17,14 @@ export interface LookSheet {
 
 export function lookSheet(options: { el: ElementFactory; designer: Designer; root: HTMLElement; bar: HTMLElement; wearer: HTMLElement }): LookSheet {
   const { el, designer, root, bar, wearer } = options;
+  const w = designer.words.panel;
   const look = pageLookSettings(el, designer);
-  const button = el('button', { type: 'button', class: 'fd-button fd-look-button', 'aria-label': 'Look', 'aria-haspopup': 'dialog', 'aria-expanded': 'false', title: 'The form’s look: colour, font, spacing' }, 'Look');
-  const close = el('button', { type: 'button', class: 'fd-icon-button', 'aria-label': 'Close', title: 'Close' }, '×');
+  const button = el('button', { type: 'button', class: 'fd-button fd-look-button', 'aria-label': w.look, 'aria-haspopup': 'dialog', 'aria-expanded': 'false', title: w.lookTitle }, w.look);
+  const close = el('button', { type: 'button', class: 'fd-icon-button', 'aria-label': w.close, title: w.close }, '×');
   const sheet = el(
     'aside',
-    { class: 'fd-look-sheet fd-properties', role: 'dialog', 'aria-label': 'Look' },
-    el('div', { class: 'fd-look-sheet-head' }, el('div', {}, el('div', { class: 'fd-insp-kind' }, el('span', { class: 'fd-panel-title' }, 'Look')), el('div', { class: 'fd-insp-name' }, 'The form’s look')), close),
+    { class: 'fd-look-sheet fd-properties', role: 'dialog', 'aria-label': w.look },
+    el('div', { class: 'fd-look-sheet-head' }, el('div', {}, el('div', { class: 'fd-insp-kind' }, el('span', { class: 'fd-panel-title' }, w.look)), el('div', { class: 'fd-insp-name' }, w.formsLook)), close),
     el('div', { class: 'fd-props fd-insp-panel fd-look-sheet-body' }, ...look.rows)
   );
 

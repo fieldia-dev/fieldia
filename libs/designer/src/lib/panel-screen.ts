@@ -4,8 +4,10 @@ import { settingItems, type FindItem } from './find-anything';
 import type { Designer, DesignerState } from './designer';
 import { findHeaderPart } from './header-commands';
 import { headerPartProperties, statusbarProperties } from './header-properties';
-import { kindById, kindOfField } from './kinds';
-import { locate, nameOf, seenAs } from './layout-tree';
+import { kindById, kindName, kindOfField } from './kinds';
+import { locate, nameOf, seenAs, type Part } from './layout-tree';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 import { columnProperties, listActionProperties, listProperties } from './list-properties';
 import { fieldProperties } from './panel-field';
 import { arrangementProperties, groupProperties } from './panel-group';
@@ -15,7 +17,7 @@ import { pageProperties } from './panel-page';
 import type { SampleOptions } from './rules-sample';
 import { blockProperties, severalProperties } from './panel-parts';
 import { settingSearch } from './panel-search';
-import { partKindOf, TAB_NAMES, type PanelTab, type PartKind } from './panel-tabs';
+import { partKindOf, type PanelTab, type PartKind } from './panel-tabs';
 import { tabProperties, tabsProperties, type PropertiesView } from './screen-properties';
 
 /**
@@ -40,69 +42,73 @@ export interface ScreenPanel {
 /** The tab each part the canvas asks for is on. */
 const PART_TAB: Record<'field' | 'when' | 'filters', PanelTab> = { field: 'content', when: 'rules', filters: 'content' };
 
-const BLOCK_WORDS: Record<string, [string, string]> = {
-  button: ['Button', 'play'],
-  image: ['Image', 'image'],
-  divider: ['Divider', 'width'],
-  spacer: ['Spacer', 'width'],
-  slot: ['The app’s own part', 'more'],
+/** A block's kind in the head, by its type, and its icon. */
+const BLOCK_HEADS: Record<string, [keyof DesignerWords['panel']['heads'], string]> = {
+  button: ['button', 'play'],
+  image: ['image', 'image'],
+  divider: ['divider', 'width'],
+  spacer: ['spacer', 'width'],
+  slot: ['slot', 'more'],
 };
 
 /** What is picked, as the head says it: its kind, with an icon, and its name. */
-export function headOf(page: Page, kind: PartKind, picked: readonly string[], fromModel: (id: string) => boolean): InspectorHead {
+export function headOf(page: Page, kind: PartKind, picked: readonly string[], fromModel: (id: string) => boolean, words: DesignerWords = en): InspectorHead {
+  const w = words.panel;
+  const h = w.heads;
+  const named = (node: Part | null | undefined) => nameOf(page, node ?? null, words);
   const id = picked[picked.length - 1] ?? '';
   const node = locate(page, id)?.node;
   const layout = page.layout;
   switch (kind) {
     case 'several':
-      return { icon: 'check', kind: 'Several', name: `${picked.length} parts picked` };
+      return { icon: 'check', kind: h.several, name: w.partsPicked(picked.length) };
     case 'field': {
       const field = node?.type === 'field' ? node : null;
       const def = field ? page.fields[field.field] : undefined;
       const made = field && def ? kindOfField(def, field) : null;
-      return { icon: made ?? 'short-answer', kind: made ? kindById(made).label : 'Field', note: fromModel(id) ? 'from the model' : undefined, name: nameOf(page, node ?? null) };
+      return { icon: made ?? 'short-answer', kind: made ? kindName(kindById(made), words) : h.field, note: fromModel(id) ? w.fromTheModel : undefined, name: named(node) };
     }
     case 'group':
-      return { icon: 'section', kind: 'Group', name: nameOf(page, node ?? null) || 'Untitled section' };
+      return { icon: 'section', kind: h.group, name: named(node) || words.parts.untitledSection };
     case 'arrangement':
-      return { icon: 'width', kind: 'Side by side', name: node ? seenAs(page, node) : '' };
+      return { icon: 'width', kind: h.sideBySide, name: node ? seenAs(page, node, words) : '' };
     case 'tabs':
-      return { icon: 'tabs', kind: 'Tabs', name: node?.type === 'tabs' ? node.children.map((t) => t.label).join(', ') : 'Tabs' };
+      return { icon: 'tabs', kind: h.tabs, name: node?.type === 'tabs' ? words.parts.commaList(node.children.map((t) => t.label)) : h.tabs };
     case 'tab':
-      return { icon: 'tabs', kind: 'Tab', name: nameOf(page, node ?? null) };
+      return { icon: 'tabs', kind: h.tab, name: named(node) };
     case 'block': {
       const heading = node?.type === 'text' && node.style === 'heading';
-      const [words, icon] = node?.type === 'text' ? [heading ? 'Heading' : 'Words', 'paragraph'] : (BLOCK_WORDS[node?.type ?? ''] ?? ['Part', 'more']);
-      return { icon, kind: words, name: nameOf(page, node ?? null) };
+      const [key, icon]: [keyof typeof h, string] = node?.type === 'text' ? [heading ? 'heading' : 'words', 'paragraph'] : (BLOCK_HEADS[node?.type ?? ''] ?? ['part', 'more']);
+      return { icon, kind: h[key], name: named(node) };
     }
     case 'header': {
       const part = findHeaderPart(page, id);
-      const words = { button: 'Button', stat: 'Counter', badge: 'Badge' } as const;
-      return { icon: 'play', kind: part ? words[part.kind] : 'Button', name: part?.part.label ?? '' };
+      const kinds = { button: h.button, stat: h.counter, badge: h.badge } as const;
+      return { icon: 'play', kind: part ? kinds[part.kind] : h.button, name: part?.part.label ?? '' };
     }
     case 'statusbar': {
       const field = layout.type === 'sheet' ? layout.statusbar?.field : undefined;
-      return { icon: 'status', kind: 'Status steps', name: field ? (page.fields[field]?.label ?? field) : '' };
+      return { icon: 'status', kind: h.statusSteps, name: field ? (page.fields[field]?.label ?? field) : '' };
     }
     case 'list':
-      return { icon: 'lines', kind: 'List', name: page.title || 'Untitled list' };
+      return { icon: 'lines', kind: h.list, name: page.title || w.untitledList };
     case 'column': {
       const name = id.slice('column:'.length);
-      return { icon: 'lines', kind: 'Column', name: page.fields[name]?.label ?? name };
+      return { icon: 'lines', kind: h.column, name: page.fields[name]?.label ?? name };
     }
     case 'action': {
       const action = layout.type === 'list' ? layout.actions?.find((a) => a.id === id) : undefined;
-      return { icon: 'play', kind: 'Button', name: action?.label ?? '' };
+      return { icon: 'play', kind: h.button, name: action?.label ?? '' };
     }
     default:
-      return { icon: 'file', kind: layout.type === 'sheet' ? 'Sheet' : 'Screen', name: page.title || 'Untitled screen' };
+      return { icon: 'file', kind: layout.type === 'sheet' ? h.sheet : h.screen, name: page.title || words.bar.untitledScreen };
   }
 }
 
 export function screenPanel(options: { el: ElementFactory; doc: Document; designer: Designer; wearer?: HTMLElement; sampling?: SampleOptions }): ScreenPanel {
   const { el, doc, designer, wearer } = options;
-  const shell = inspectorShell(el, doc);
-  const search = settingSearch(el, doc, shell);
+  const shell = inspectorShell(el, doc, designer.words);
+  const search = settingSearch(el, doc, shell, designer.words);
   let key = '';
   let view: PropertiesView | null = null;
   let mode: 'simple' | 'advanced' = 'advanced';
@@ -162,7 +168,7 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
         shell.show(kind, view, mode);
       }
       view?.update(page);
-      shell.head(headOf(page, kind, picked, (id) => designer.isFromModel(id)));
+      shell.head(headOf(page, kind, picked, (id) => designer.isFromModel(id), designer.words));
       search.refresh();
       // The canvas wears the page's look as it is set.
       if (wearer) wearLook(wearer, page.look);
@@ -178,9 +184,10 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
     },
     findItems() {
       const page = designer.getPage();
+      const w = designer.words.panel;
       const own = shell.rows();
       const items = settingItems(
-        own.map((row) => ({ ...row, tab: TAB_NAMES[row.tab], row })),
+        own.map((row) => ({ ...row, name: w.settingName(row.name), tab: w.tabs[row.tab], row })),
         ({ row }, choice) => go(row.tab, row.name, choice),
         designer.words
       );
@@ -193,7 +200,7 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
       return [
         ...items,
         ...settingItems(
-          rows.map((row) => ({ ...row, name: names.has(row.name) ? `The page’s ${row.name.toLowerCase()}` : row.name, tab: 'the page’s look', own: row.name })),
+          rows.map((row) => ({ ...row, name: names.has(row.name) ? w.pagesSetting(w.settingName(row.name)) : w.settingName(row.name), tab: w.pagesLook, own: row.name })),
           ({ own: name }, choice) => {
             designer.select(null);
             go('look', name, choice);

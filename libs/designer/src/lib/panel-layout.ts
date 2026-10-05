@@ -1,9 +1,11 @@
 import { wideColumns, type ColumnCount, type LabelPlace, type Page, type SectionNode } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
-import { across, andList, colsOf, isSection, isWrapper, locate, nameOf, nodeOf, onTracks, sharesOneCell, spanOf, type Part } from './layout-tree';
-import { inTwelfths, isGroup, keepsFull, percent, ROW_PARTS, rowShare, TWELVE, widthsFor } from './layout-twelfths';
+import { across, colsOf, isSection, isWrapper, locate, nameOf, nodeOf, onTracks, sharesOneCell, spanOf, type Part } from './layout-tree';
+import { inTwelfths, isGroup, keepsFull, percent, rowParts, rowShare, TWELVE, widthsFor } from './layout-twelfths';
 import { segmented, setting, type Choice } from './panel-controls';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * The Layout tab's settings: a group's columns on a desktop, a tablet and a
@@ -19,18 +21,15 @@ export interface LayoutSetting {
   update(page: Page): void;
 }
 
-const SCREENS = [
-  ['wide', 'Desktop', 'a desktop'],
-  ['medium', 'Tablet', 'a tablet'],
-  ['narrow', 'Phone', 'a phone'],
-] as const;
+const SCREENS = ['wide', 'medium', 'narrow'] as const;
 
 const COUNTS: ColumnCount[] = [1, 2, 3, 4, TWELVE];
 /** “Auto”: a count left out, which the skin stacks as it does by itself. */
 const AUTO = 0;
 
 /** A group's columns, on each size of screen: a tablet or a phone never more than a desktop, a phone never more than a tablet. */
-export function columnsSetting(el: ElementFactory, designer: Designer, id: string, words = 'Columns inside'): LayoutSetting {
+export function columnsSetting(el: ElementFactory, designer: Designer, id: string, words = designer.words.panel.columnsInside): LayoutSetting {
+  const w = designer.words.panel;
   const read = (): { wide: ColumnCount; medium?: ColumnCount; narrow?: ColumnCount } => {
     const section = nodeOf(designer.getPage(), id) as SectionNode | null;
     const columns = section?.columns;
@@ -49,17 +48,17 @@ export function columnsSetting(el: ElementFactory, designer: Designer, id: strin
       designer.setColumns(id, { wide: now.wide, medium: n, narrow });
     } else designer.setColumns(id, { wide: now.wide, medium: now.medium, narrow: n });
   };
-  const segs = SCREENS.map(([screen, , on]) => {
+  const segs = SCREENS.map((screen) => {
     const choices: Choice<number>[] = [
-      ...(screen === 'wide' ? [] : [{ value: AUTO, words: 'Auto', title: 'As the skin stacks them on a smaller screen' }]),
-      ...COUNTS.map((n) => (n === TWELVE ? { value: n, words: 'Twelfths', title: 'Each row divided its own way, in twelfths' } : { value: n, words: String(n), label: `${n} column${n === 1 ? '' : 's'}` })),
+      ...(screen === 'wide' ? [] : [{ value: AUTO, words: w.auto, title: w.autoTitle }]),
+      ...COUNTS.map((n) => (n === TWELVE ? { value: n, words: w.twelfths, title: w.twelfthsTitle } : { value: n, words: String(n), label: w.columnCount(n) })),
     ];
-    return segmented(el, `Columns on ${on}`, choices, (value) => value !== null && choose(screen, value));
+    return segmented(el, w.columnsOn[screen], choices, (value) => value !== null && choose(screen, value));
   });
   const screens = el(
     'div',
     { class: 'fd-insp-screens' },
-    ...SCREENS.map(([, name], i) => el('div', { class: 'fd-insp-screen' }, el('span', { class: 'fd-insp-screen-name' }, name), segs[i].element))
+    ...SCREENS.map((screen, i) => el('div', { class: 'fd-insp-screen' }, el('span', { class: 'fd-insp-screen-name' }, w.screens[screen]), segs[i].element))
   );
   const hint = el('p', { class: 'fd-properties-hint fd-set-hint' });
   const row = setting(el, 'layout', 'Columns', screens, { hint, words });
@@ -70,14 +69,14 @@ export function columnsSetting(el: ElementFactory, designer: Designer, id: strin
       if (!isSection(section)) return;
       // On the columns of the group round it, or sharing one of them: it has no columns of its own to set.
       const around = locate(page, id)?.parent;
-      const aroundName = around ? nameOf(page, around) : '';
+      const aroundName = around ? nameOf(page, around, designer.words) : '';
       const tracks = onTracks(page, section);
       const shared = !tracks && isWrapper(section) && sharesOneCell(section) && isSection(around) && colsOf(page, around) > 1;
       screens.hidden = tracks || shared;
-      if (tracks) hint.textContent = `Its parts sit on the ${colsOf(page, section)} columns it covers in “${aroundName}”, so they line up with everything above and below. Make it wider or narrower to change that.`;
-      else if (shared) hint.textContent = `Its ${section.children.length} parts share one column of “${aroundName}”, side by side. Where that column is narrow, they go one under the other.`;
-      else if (inTwelfths(section)) hint.textContent = 'Each row divides its own way, in twelfths: drop a part beside another to share its row. Auto keeps a row’s proportions on a tablet, and puts its parts one under another on a phone.';
-      else hint.textContent = 'Each size of screen can have its own. Auto stacks them as the skin does: one column on a phone.';
+      if (tracks) hint.textContent = w.onTracks(colsOf(page, section), aroundName);
+      else if (shared) hint.textContent = w.sharedColumn(section.children.length, aroundName);
+      else if (inTwelfths(section)) hint.textContent = w.twelfthsHint;
+      else hint.textContent = w.columnsHint;
       const columns = section.columns;
       const counts = typeof columns === 'object' ? columns : { wide: wideColumns(columns), medium: undefined, narrow: undefined };
       segs[0].set(counts.wide);
@@ -94,17 +93,18 @@ export function columnsSetting(el: ElementFactory, designer: Designer, id: strin
 
 /** In twelfths, whether a group's rows stay full as parts come and go, or may leave gaps. */
 export function rowsSetting(el: ElementFactory, designer: Designer, id: string): LayoutSetting {
+  const w = designer.words.panel;
   const seg = segmented<string>(
     el,
-    'Rows',
+    w.rows,
     [
-      { value: 'full', words: 'Keep each row full' },
-      { value: 'gaps', words: 'Allow gaps' },
+      { value: 'full', words: w.keepRowsFull },
+      { value: 'gaps', words: w.allowGaps },
     ],
     (value) => value && designer.setSectionLook(id, { rows: value as 'full' | 'gaps' })
   );
   const hint = el('p', { class: 'fd-properties-hint fd-set-hint' });
-  const row = setting(el, 'layout', 'Rows', seg.element, { hint });
+  const row = setting(el, 'layout', 'Rows', seg.element, { hint, words: w.rows });
   return {
     rows: [row],
     update(page) {
@@ -112,28 +112,26 @@ export function rowsSetting(el: ElementFactory, designer: Designer, id: string):
       row.hidden = !inTwelfths(section);
       if (!isSection(section)) return;
       seg.set(section.rows ?? 'full');
-      hint.textContent = keepsFull(section)
-        ? 'A part leaving a row widens the rest to fill it; a part alone takes the whole row.'
-        : 'A part keeps its width when a neighbour leaves, and its far edge can be pulled in to leave room.';
+      hint.textContent = keepsFull(section) ? w.rowsFullHint : w.gapsHint;
     },
   };
 }
 
-const capital = (words: string) => words.charAt(0).toUpperCase() + words.slice(1);
-
 /** The parts beside one, in words: by name when one or two, else how many. */
-function othersOf(page: Page, list: Part[], id: string): string {
+function othersOf(page: Page, list: Part[], id: string, words: DesignerWords): string {
   const others = list.filter((p) => p.id !== id);
-  return others.length <= 2 ? andList(others.map((p) => `“${nameOf(page, p)}”`)) : `${others.length} others`;
+  return words.panel.others(others.map((p) => words.parts.quote(nameOf(page, p, words))), others.length);
 }
 
 /** How many columns a part spans where it sits, or why it takes the whole row. */
 export function widthSetting(el: ElementFactory, designer: Designer, id: string): LayoutSetting {
+  const words = designer.words;
+  const w = words.panel;
   /** What the choices are drawn for: a grid's columns, or twelfths and a width none of the fractions is. */
   let drawn = '';
   const box = el('div', { class: 'fd-insp-width' });
   const hint = el('p', { class: 'fd-properties-hint fd-set-hint' });
-  const row = setting(el, 'layout', 'Width', box, { hint });
+  const row = setting(el, 'layout', 'Width', box, { hint, words: w.width });
   let seg: ReturnType<typeof segmented<number>> | null = null;
   return {
     rows: [row],
@@ -145,37 +143,35 @@ export function widthSetting(el: ElementFactory, designer: Designer, id: string)
       const cols = across(page, at.parent);
       if (String(cols) !== drawn) {
         drawn = String(cols);
-        seg = cols > 1 ? segmented(el, 'Width', Array.from({ length: cols }, (_, i) => ({ value: i + 1, words: i + 1 === cols ? `All ${cols}` : String(i + 1), label: i + 1 === cols ? `All ${cols} columns` : `${i + 1} column${i ? 's' : ''}` })), (n) => n !== null && designer.setColspan(id, n)) : null;
+        seg = cols > 1 ? segmented(el, w.width, Array.from({ length: cols }, (_, i) => ({ value: i + 1, words: i + 1 === cols ? w.all(cols) : String(i + 1), label: i + 1 === cols ? w.allColumns(cols) : w.columnCount(i + 1) })), (n) => n !== null && designer.setColspan(id, n)) : null;
         box.replaceChildren(...(seg ? [seg.element] : []));
       }
       const span = Math.min((at.node as { colspan?: number }).colspan ?? 1, cols);
       seg?.set(span);
-      if (cols > 1) hint.textContent = isWrapper(parent) ? `${span} of the ${cols} columns it shares with ${othersOf(page, parent.children, id)}.` : `${span} of the ${cols} columns of “${nameOf(page, parent)}”.`;
-      else if (isSection(parent)) hint.textContent = `“${nameOf(page, parent)}” has one column, so it takes the full width.`;
-      else hint.textContent = `It sits ${parent.type === 'tab' ? 'in a tab' : 'on the page'}, so it takes the full width. Put it in a group with columns, or side by side with another part, to give it a width.`;
+      if (cols > 1) hint.textContent = isWrapper(parent) ? w.sharesWith(span, cols, othersOf(page, parent.children, id, words)) : w.ofColumnsOf(span, cols, nameOf(page, parent, words));
+      else if (isSection(parent)) hint.textContent = w.oneColumnFull(nameOf(page, parent, words));
+      else hint.textContent = w.fullWidthOn(parent.type === 'tab');
     },
   };
 
   /** In twelfths: fractions of its row — those that leave the rest of it room where the row stays full — and its own width when none of them. */
   function twelfths(page: Page, group: SectionNode, part: Part) {
     const span = Math.min(spanOf(part), TWELVE);
-    const odd = ROW_PARTS.some((p) => p.span === span) ? 0 : span;
+    const odd = rowParts(words).some((p) => p.span === span) ? 0 : span;
     if (`t${odd}` !== drawn) {
       drawn = `t${odd}`;
-      const choices: Choice<number>[] = ROW_PARTS.map((p) => ({ value: p.span, words: p.words, label: p.label }));
-      if (odd) choices.push({ value: odd, words: `${percent(odd)}%`, label: `${percent(odd)}% of the row` });
-      seg = segmented(el, 'Width', choices, (n) => n !== null && designer.setColspan(id, n));
+      const choices: Choice<number>[] = rowParts(words).map((p) => ({ value: p.span, words: p.words, label: p.label }));
+      if (odd) choices.push({ value: odd, words: w.percent(percent(odd)), label: w.percentOfRow(percent(odd)) });
+      seg = segmented(el, w.width, choices, (n) => n !== null && designer.setColspan(id, n));
       box.replaceChildren(seg.element);
     }
     const fits = widthsFor(page, group, part);
     seg?.set(span);
     seg?.only((n) => n === span || fits(n));
-    const name = `“${nameOf(page, group)}”`;
+    const name = words.parts.quote(nameOf(page, group, words));
     // Nothing narrower fits beside the rest of its row: it is alone in it.
     const alone = keepsFull(group) && !fits(1);
-    hint.textContent = alone
-      ? `The whole row in ${name}: alone in its row, it fills it. Let the group’s rows leave gaps to make it narrower.`
-      : `${capital(rowShare(span))} in ${name}. ${keepsFull(group) ? 'Its row stays full: the rest of it takes up the difference.' : 'Narrower, it leaves room in its row.'}`;
+    hint.textContent = alone ? w.aloneFills(name) : w.shareIn(rowShare(span, TWELVE, words), name, keepsFull(group));
   }
 }
 
@@ -194,38 +190,40 @@ function labelsAround(page: Page, id: string): { place?: LabelPlace; width?: num
 }
 
 /** What “as round it” is, in words: as its group says, or as the page does. */
-export const aroundWords = (page: Page, id: string): string => (labelsAround(page, id).group ? 'As group' : 'As page');
+export const aroundWords = (page: Page, id: string, words: DesignerWords = en): string => (labelsAround(page, id).group ? words.panel.asGroup : words.panel.asPage);
 
-const PLACES: Choice<string>[] = [
-  { value: 'above', words: 'Above', title: 'Above their boxes' },
-  { value: 'beside', words: 'Beside', title: 'Beside their boxes' },
-  { value: 'hidden', words: 'In box', title: 'Inside the box, as its placeholder; still read out by screen readers' },
+/** Where labels may sit, in the designer's words. */
+const placesIn = (w: DesignerWords['panel']): Choice<string>[] => [
+  { value: 'above', words: w.above, title: w.aboveTitle },
+  { value: 'beside', words: w.beside, title: w.besideTitle },
+  { value: 'hidden', words: w.inBox, title: w.inBoxTitle },
 ];
 /** Where the labels round it say: no setting of its own. */
 const AROUND = 'around';
 
 /** Where a group's labels sit, or one field's; and, for a group whose labels sit beside, how wide they are. */
 export function labelsSetting(el: ElementFactory, designer: Designer, id: string, what: 'group' | 'field'): LayoutSetting {
-  const place = segmented<string>(el, 'Labels', [{ value: AROUND, words: 'As group' }, ...PLACES], (value) => {
+  const w = designer.words.panel;
+  const place = segmented<string>(el, w.labels, [{ value: AROUND, words: w.asGroup }, ...placesIn(w)], (value) => {
     const chosen = value === AROUND || value === null ? null : (value as LabelPlace);
     if (what === 'field') designer.setFieldLabels(id, chosen);
     else designer.setSectionLook(id, { labels: chosen });
   });
   const notSet = place.element.querySelector('[data-choice="around"] .fd-seg-words') as HTMLElement;
-  const rows = [setting(el, 'layout', 'Labels', place.element, what === 'field' ? { words: 'Label', hint: 'In box: the label is the empty box’s placeholder, still read out by screen readers.' } : { words: 'Labels inside' })];
+  const rows = [setting(el, 'layout', 'Labels', place.element, what === 'field' ? { words: w.label, hint: w.labelInBox } : { words: w.labelsInside })];
   if (what === 'field') {
     return {
       rows,
       update(page) {
         const node = locate(page, id)?.node as { labels?: LabelPlace } | undefined;
         if (!node) return;
-        notSet.textContent = aroundWords(page, id);
+        notSet.textContent = aroundWords(page, id, designer.words);
         place.set(node.labels ?? AROUND);
       },
     };
   }
-  const slider = el('input', { type: 'range', class: 'fd-insp-slider', min: '60', max: '320', step: '10', 'aria-label': 'Label width' });
-  const number = el('input', { type: 'number', class: 'fd-input fd-insp-number', min: '60', max: '320', step: '1', 'aria-label': 'Label width' });
+  const slider = el('input', { type: 'range', class: 'fd-insp-slider', min: '60', max: '320', step: '10', 'aria-label': w.labelWidth });
+  const number = el('input', { type: 'number', class: 'fd-input fd-insp-number', min: '60', max: '320', step: '1', 'aria-label': w.labelWidth });
   const width = (value: string) => {
     const n = Number(value);
     // Only a width it can keep: one being typed on its way to one is left alone.
@@ -233,14 +231,14 @@ export function labelsSetting(el: ElementFactory, designer: Designer, id: string
   };
   slider.addEventListener('input', () => width(slider.value));
   number.addEventListener('input', () => width(number.value));
-  const widthRow = setting(el, 'layout', 'Label width', [el('div', { class: 'fd-insp-range' }, slider, number, el('span', { class: 'fd-insp-unit' }, 'px'))]);
+  const widthRow = setting(el, 'layout', 'Label width', [el('div', { class: 'fd-insp-range' }, slider, number, el('span', { class: 'fd-insp-unit' }, w.px))], { words: w.labelWidth });
   return {
     rows: [...rows, widthRow],
     update(page) {
       const section = nodeOf(page, id);
       if (!isSection(section)) return;
       const around = labelsAround(page, id);
-      notSet.textContent = around.group ? 'As group' : 'As page';
+      notSet.textContent = around.group ? w.asGroup : w.asPage;
       place.set(section.labels ?? AROUND);
       widthRow.hidden = (section.labels ?? around.place) !== 'beside';
       const value = String(section.labelWidth ?? around.width ?? 140);

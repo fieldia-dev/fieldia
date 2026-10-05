@@ -15,6 +15,8 @@ import { checks } from './checks';
 import { questions } from './questions';
 import { layout } from './layout';
 import { canvas } from './canvas';
+import { panel } from './panel';
+import { looks } from './looks';
 
 /**
  * The designer's words in Arabic: Modern Standard Arabic as Arabic software
@@ -36,4 +38,4 @@ import { canvas } from './canvas';
  *   model (the backend's) نموذج البيانات · record سجل · list قائمة · sheet ورقة
  *   desktop / tablet / phone سطح المكتب / جهاز لوحي / هاتف · width العرض
  */
-export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas };
+export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks };

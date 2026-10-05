@@ -5,7 +5,7 @@ import { choicesOf, conditionEditor } from './condition-editor';
 import type { Designer } from './designer';
 import { kindsReason } from './field-bar';
 import { inlineSettings } from './inline-settings';
-import { kindOfField, storedAs } from './kinds';
+import { kindName, kindOfField, storedAs } from './kinds';
 import { onTab, setting } from './panel-controls';
 import { labelsSetting, widthSetting } from './panel-layout';
 import { allSections, findField, sectionLabel } from './page-tree';
@@ -24,45 +24,46 @@ const TAKES_PLACEHOLDER = new Set(['char', 'text', 'integer', 'float', 'monetary
 
 export function fieldProperties(el: ElementFactory, designer: Designer, id: string, sampling: SampleOptions = {}): PropertiesView {
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
+  const w = designer.words.panel;
 
   // ---- Content: its words, and how it is shown ----
-  const label = el('input', { class: 'fd-input fd-prop-label', 'aria-label': 'Label' });
+  const label = el('input', { class: 'fd-input fd-prop-label', 'aria-label': w.label });
   label.addEventListener('input', () => designer.updateQuestion(id, { label: label.value }));
-  const help = el('input', { class: 'fd-input', 'aria-label': 'Help text', placeholder: 'Optional' });
+  const help = el('input', { class: 'fd-input', 'aria-label': w.helpText, placeholder: w.optional });
   help.addEventListener('input', () => designer.updateQuestion(id, { help: help.value }));
-  const placeholder = el('input', { class: 'fd-input', 'aria-label': 'Placeholder', placeholder: 'Words inside the empty box' });
+  const placeholder = el('input', { class: 'fd-input', 'aria-label': w.placeholder, placeholder: w.placeholderHint });
   placeholder.addEventListener('input', () => designer.updateQuestion(id, { placeholder: placeholder.value }));
-  const placeholderRow = setting(el, 'content', 'Placeholder', placeholder);
+  const placeholderRow = setting(el, 'content', 'Placeholder', placeholder, { words: w.placeholder });
   // Only the kinds that suit what the field holds, as the bar on the canvas offers them, and why.
-  const kind = el('select', { class: 'fd-input fd-select', 'aria-label': 'Shown as' });
+  const kind = el('select', { class: 'fd-input fd-select', 'aria-label': w.shownAs });
   kind.addEventListener('change', () => designer.changeKind(id, kind.value));
   const kindNote = el('p', { class: 'fd-properties-hint fd-kind-note' });
   const appSettings = appKindPanel(el, designer, id);
   const options = optionsEditor(el, designer, id);
-  const optionsRow = setting(el, 'content', 'Options', options.element);
+  const optionsRow = setting(el, 'content', 'Options', options.element, { words: w.options });
   // Its kind's own settings — levels, a range, the files it takes, a link's records, a table's columns — the card's own, here too.
   const kindOwn = inlineSettings(el, designer, id);
-  const kindName = el('span', { class: 'fd-prop-name' });
-  const kindRow = onTab(el('div', { class: 'fd-prop fd-prop-kind' }, kindName, kindOwn.element), 'content', 'Settings for its kind');
-  const duplicate = el('button', { type: 'button', class: 'fd-button' }, 'Duplicate');
+  const ownKind = el('span', { class: 'fd-prop-name' });
+  const kindRow = onTab(el('div', { class: 'fd-prop fd-prop-kind' }, ownKind, kindOwn.element), 'content', 'Settings for its kind');
+  const duplicate = el('button', { type: 'button', class: 'fd-button' }, w.duplicate);
   duplicate.addEventListener('click', () => {
     const copy = designer.duplicateNode(id);
     if (copy) designer.select(copy);
   });
-  const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, 'Delete field');
+  const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.deleteField);
   remove.addEventListener('click', () => designer.removeNode(id));
 
   // ---- Layout: how wide it is, and where it sits ----
   const width = widthSetting(el, designer, id);
   const labels = labelsSetting(el, designer, id, 'field');
-  const section = el('select', { class: 'fd-input fd-select', 'aria-label': 'Section' });
+  const section = el('select', { class: 'fd-input fd-select', 'aria-label': w.section });
   section.addEventListener('change', () => {
     const target = allSections(designer.getPage()).find((s) => s.id === section.value);
     if (target) designer.placeNode(id, target.id, target.children.length);
   });
 
   // ---- Rules: required, read-only, when it shows ----
-  const required = el('input', { type: 'checkbox', 'aria-label': 'Required', 'data-required': '' });
+  const required = el('input', { type: 'checkbox', 'aria-label': w.required, 'data-required': '' });
   required.addEventListener('change', () => {
     // Read before anything redraws the panel.
     const always = required.checked;
@@ -72,17 +73,17 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   });
   // Required, or read-only, only when a rule holds.
   const requiredWhen = conditionEditor(el, designer, id, 'question', 'required');
-  const requiredOnly = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when', 'aria-label': 'Required only when…' }, 'Only when…');
+  const requiredOnly = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when', 'aria-label': w.requiredOnlyWhen }, w.onlyWhen);
   requiredOnly.addEventListener('click', () => requiredWhen.start());
   const readonlyWhen = conditionEditor(el, designer, id, 'question', 'readonly');
-  const readonlyOnly = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, 'Read-only when…');
+  const readonlyOnly = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, w.readonlyWhen);
   readonlyOnly.addEventListener('click', () => readonlyWhen.start());
   // When it shows: rules on the other fields that hold one of a list, or yes or no.
   const when = conditionEditor(el, designer, id, 'question');
-  const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, 'Show only when…');
+  const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, w.showOnlyWhen);
   showWhen.addEventListener('click', () => when.start());
-  const noRules = el('p', { class: 'fd-properties-hint', hidden: '' }, 'Always. A rule needs another field that holds one of a list, or yes or no.');
-  const whenBox = onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, 'When it shows'), when.element, showWhen, noRules), 'rules', 'When it shows');
+  const noRules = el('p', { class: 'fd-properties-hint', hidden: '' }, w.noRulesField);
+  const whenBox = onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, w.whenItShows), when.element, showWhen, noRules), 'rules', 'When it shows');
   // Worked out from others, set when, and the rules its answer keeps.
   const own = fieldRules(el, designer, id, sampling);
 
@@ -95,23 +96,23 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const element = el(
     'div',
     { class: 'fd-props' },
-    setting(el, 'content', 'Label', label),
-    setting(el, 'content', 'Help text', help),
+    setting(el, 'content', 'Label', label, { words: w.label }),
+    setting(el, 'content', 'Help text', help, { words: w.helpText }),
     placeholderRow,
-    setting(el, 'content', 'Shown as', kind, { hint: kindNote }),
+    setting(el, 'content', 'Shown as', kind, { hint: kindNote, words: w.shownAs }),
     appSettings.element,
     optionsRow,
     kindRow,
     onTab(el('div', { class: 'fd-props-actions' }, duplicate, remove), 'content', 'Duplicate or delete'),
     ...width.rows,
     ...labels.rows,
-    setting(el, 'layout', 'Section', section),
-    onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('div', { class: 'fd-q-required-row' }, el('label', { class: 'fd-q-required' }, required, el('span', {}, 'Required')), requiredOnly), requiredWhen.element), 'rules', 'Required'),
+    setting(el, 'layout', 'Section', section, { words: w.section }),
+    onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('div', { class: 'fd-q-required-row' }, el('label', { class: 'fd-q-required' }, required, el('span', {}, w.required)), requiredOnly), requiredWhen.element), 'rules', 'Required'),
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, readonlyWhen.element, readonlyOnly), 'rules', 'Read-only'),
     whenBox,
     ...own.rows,
-    setting(el, 'data', 'Field name', name, { hint: nameHint }),
-    setting(el, 'data', 'Stored as', stored, { hint: fromModelNote })
+    setting(el, 'data', 'Field name', name, { hint: nameHint, words: w.fieldName }),
+    setting(el, 'data', 'Stored as', stored, { hint: fromModelNote, words: w.storedAs })
   );
 
   return {
@@ -130,7 +131,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       const key = offered.map((k) => k.id).join(',');
       if (kind.dataset['offered'] !== key) {
         kind.dataset['offered'] = key;
-        kind.replaceChildren(...offered.map((k) => el('option', { value: k.id }, k.label)));
+        kind.replaceChildren(...offered.map((k) => el('option', { value: k.id }, kindName(k, designer.words))));
       }
       kind.value = current ?? '';
       kind.disabled = current === null || offered.length < 2;
@@ -141,12 +142,13 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       optionsRow.hidden = options.element.hidden;
       kindOwn.update(page, found.node);
       kindRow.hidden = kindOwn.element.hidden;
-      kindName.textContent = offered.find((k) => k.id === current)?.label ?? '';
+      const shownKind = offered.find((k) => k.id === current);
+      ownKind.textContent = shownKind ? kindName(shownKind, designer.words) : '';
 
       // Layout.
       width.update(page);
       labels.update(page);
-      section.replaceChildren(...allSections(page).map((s) => el('option', { value: s.id }, sectionLabel(page, s))));
+      section.replaceChildren(...allSections(page).map((s) => el('option', { value: s.id }, sectionLabel(page, s, designer.words))));
       section.value = found.section.id;
 
       // Rules.
@@ -163,10 +165,10 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
 
       // Data.
       name.textContent = found.node.field;
-      nameHint.textContent = fromModel ? 'From your model: it keeps its name.' : 'What the answer is stored under.';
-      stored.textContent = fromModel ? `${capital(storedAs(def))} · from your model` : capital(storedAs(def));
+      nameHint.textContent = fromModel ? w.keepsName : w.storedUnder;
+      stored.textContent = fromModel ? w.fromYourModel(capital(storedAs(def, designer.words))) : capital(storedAs(def, designer.words));
       // What the model keeps for itself, for the kind of field this is.
-      const kept = def.type === 'selection' ? 'Its options come from the model.' : def.type === 'monetary' ? 'Its currency comes from the model.' : ['many2one', 'many2many', 'one2many'].includes(def.type) ? 'The records it points to come from the model.' : '';
+      const kept = def.type === 'selection' ? w.optionsFromModel : def.type === 'monetary' ? w.currencyFromModel : ['many2one', 'many2many', 'one2many'].includes(def.type) ? w.recordsFromModel : '';
       fromModelNote.textContent = kept;
       fromModelNote.hidden = !fromModel || !kept;
     },

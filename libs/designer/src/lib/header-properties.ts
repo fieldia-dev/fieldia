@@ -26,42 +26,43 @@ function testable(page: Page): FieldNode[] {
 
 export function headerPartProperties(el: ElementFactory, designer: Designer, id: string): PropertiesView {
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
-  const words = el('input', { class: 'fd-input', 'aria-label': 'Words' }) as HTMLInputElement;
+  const w = designer.words.panel;
+  const words = el('input', { class: 'fd-input', 'aria-label': w.words }) as HTMLInputElement;
   words.addEventListener('input', () => designer.updateHeaderPart(id, { label: words.value }));
-  const action = el('input', { class: 'fd-input', 'aria-label': 'Action', placeholder: 'confirm' }) as HTMLInputElement;
+  const action = el('input', { class: 'fd-input', 'aria-label': w.action, placeholder: 'confirm' }) as HTMLInputElement;
   action.addEventListener('input', () => action.value.trim() && designer.updateHeaderPart(id, { action: action.value }));
-  const actionRow = el('div', { class: 'fd-prop' }, prop(el, 'Action', action), el('p', { class: 'fd-properties-hint' }, 'The name the app receives when it is pressed; the app decides what it does.'));
-  const look = select(el, 'Look', [['secondary', 'Plain'], ['primary', 'Main'], ['danger', 'Danger'], ['link', 'A link']]);
+  const actionRow = el('div', { class: 'fd-prop' }, prop(el, w.action, action), el('p', { class: 'fd-properties-hint' }, w.actionHint));
+  const look = select(el, w.look, [['secondary', w.buttonLooks.secondary], ['primary', w.buttonLooks.primary], ['danger', w.buttonLooks.danger], ['link', w.buttonLooks.link]]);
   look.addEventListener('change', () => designer.updateHeaderPart(id, { style: look.value as ButtonNode['style'] }));
-  const lookRow = prop(el, 'Look', look);
-  const asks = el('input', { class: 'fd-input', 'aria-label': 'Asks first', placeholder: 'Nothing: it acts at once' }) as HTMLInputElement;
+  const lookRow = prop(el, w.look, look);
+  const asks = el('input', { class: 'fd-input', 'aria-label': w.asksFirst, placeholder: w.actsAtOnce }) as HTMLInputElement;
   asks.addEventListener('input', () => designer.updateHeaderPart(id, { confirm: asks.value }));
-  const asksRow = prop(el, 'Asks first', asks);
-  const count = el('select', { class: 'fd-input fd-select', 'aria-label': 'Number from' }) as HTMLSelectElement;
+  const asksRow = prop(el, w.asksFirst, asks);
+  const count = el('select', { class: 'fd-input fd-select', 'aria-label': w.numberFrom }) as HTMLSelectElement;
   count.addEventListener('change', () => designer.updateHeaderPart(id, { field: count.value }));
-  const countRow = prop(el, 'Number from', count);
-  const tone = select(el, 'Tone', [['muted', 'Grey'], ['info', 'Blue'], ['success', 'Green'], ['warning', 'Amber'], ['danger', 'Red']]);
+  const countRow = prop(el, w.numberFrom, count);
+  const tone = select(el, w.tone, [['muted', w.tones.muted], ['info', w.tones.info], ['success', w.tones.success], ['warning', w.tones.warning], ['danger', w.tones.danger]]);
   tone.addEventListener('change', () => designer.updateHeaderPart(id, { tone: tone.value as Tone }));
-  const toneRow = prop(el, 'Tone', tone);
+  const toneRow = prop(el, w.tone, tone);
   const when = conditionEditor(el, designer, id, 'question');
-  const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, 'Show only when…');
+  const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, w.showOnlyWhen);
   showWhen.addEventListener('click', () => when.start());
-  const left = el('button', { type: 'button', class: 'fd-button' }, 'Move left');
-  const right = el('button', { type: 'button', class: 'fd-button' }, 'Move right');
-  const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, 'Delete');
+  const left = el('button', { type: 'button', class: 'fd-button' }, w.moveLeft);
+  const right = el('button', { type: 'button', class: 'fd-button' }, w.moveRight);
+  const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.delete);
   left.addEventListener('click', () => designer.moveHeaderPart(id, -1));
   right.addEventListener('click', () => designer.moveHeaderPart(id, 1));
   remove.addEventListener('click', () => designer.removeHeaderPart(id));
   const element = el(
     'div',
     { class: 'fd-props' },
-    prop(el, 'Words', words),
+    prop(el, w.words, words),
     actionRow,
     lookRow,
     asksRow,
     countRow,
     toneRow,
-    el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, 'When it shows'), when.element, showWhen),
+    el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, w.whenItShows), when.element, showWhen),
     el('div', { class: 'fd-props-actions' }, left, right, remove)
   );
 
@@ -83,7 +84,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
       if (kind === 'stat') {
         const numbers = Object.entries(page.fields).filter(([, f]) => ['integer', 'float', 'monetary'].includes(f.type));
         const offered = [...numbers, ...designer.modelFields().filter((m) => ['integer', 'float', 'monetary'].includes(m.field.type)).map((m) => [m.name, m.field] as const)];
-        count.replaceChildren(el('option', { value: '' }, 'Nothing'), ...offered.map(([name, f]) => el('option', { value: name }, f.label)));
+        count.replaceChildren(el('option', { value: '' }, w.nothing), ...offered.map(([name, f]) => el('option', { value: name }, f.label)));
         count.value = (part as { field?: string }).field ?? '';
       }
       toneRow.hidden = kind !== 'badge';
@@ -100,9 +101,10 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
 }
 
 export function statusbarProperties(el: ElementFactory, designer: Designer): PropertiesView {
-  const which = el('select', { class: 'fd-input fd-select', 'aria-label': 'Steps from' }) as HTMLSelectElement;
-  const clickable = el('input', { type: 'checkbox', 'aria-label': 'People can click a step' }) as HTMLInputElement;
-  const where = select(el, 'Where', [['header', 'In the header bar'], ['title', 'Under the title']]);
+  const w = designer.words.panel;
+  const which = el('select', { class: 'fd-input fd-select', 'aria-label': w.stepsFrom }) as HTMLSelectElement;
+  const clickable = el('input', { type: 'checkbox', 'aria-label': w.clickStep }) as HTMLInputElement;
+  const where = select(el, w.where, [['header', w.inHeaderBar], ['title', w.underTitle]]);
   const current = () => (designer.getPage().layout as SheetNode).statusbar;
   const save = () => {
     const position = where.value as 'header' | 'title';
@@ -111,17 +113,17 @@ export function statusbarProperties(el: ElementFactory, designer: Designer): Pro
   which.addEventListener('change', save);
   clickable.addEventListener('change', save);
   where.addEventListener('change', save);
-  const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, 'Remove the status steps');
+  const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.removeStatus);
   remove.addEventListener('click', () => {
     if (designer.setStatusbar(null)) designer.select(null);
   });
   const element = el(
     'div',
     { class: 'fd-props' },
-    prop(el, 'Steps from', which),
-    el('label', { class: 'fd-q-required' }, clickable, el('span', {}, 'People can click a step')),
-    prop(el, 'Where', where),
-    el('p', { class: 'fd-properties-hint' }, 'The steps are the field’s choices, in their order. Clicking one moves the record to it.'),
+    prop(el, w.stepsFrom, which),
+    el('label', { class: 'fd-q-required' }, clickable, el('span', {}, w.clickStep)),
+    prop(el, w.where, where),
+    el('p', { class: 'fd-properties-hint' }, w.stepsHint),
     el('div', { class: 'fd-props-actions' }, remove)
   );
   return {
