@@ -12,7 +12,7 @@ import { codeWidgets } from '@fieldia/code';
 import type { ActionRequest, Form, FormState, Locale, RecordId, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 
 const params = new URLSearchParams(location.search);
 const page = pageFromQuery(params);
@@ -93,7 +93,7 @@ class NoteComponent implements OnInit {
     [locale]="locale"
     [fieldTypes]="fieldTypes"
     [widgets]="widgets"
-    [relatedPages]="relatedPages"
+    [pages]="pages"
     [keys]="options.keys"
     [showValid]="options.showValid ?? false"
     [saveStatus]="options.saveStatus ?? 'inline'"
@@ -117,7 +117,7 @@ class DemoComponent {
   readonly locale = (params.get('locale') as Locale | null) ?? undefined;
   readonly fieldTypes = { 'char.shout': ShoutComponent };
   readonly widgets = { ...gridWidgets, ...codeWidgets };
-  readonly relatedPages = relatedPages;
+  readonly pages = appPages;
   readonly options = optionsFromQuery(params);
   ready(handle: ViewerHandle) {
     Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter } });

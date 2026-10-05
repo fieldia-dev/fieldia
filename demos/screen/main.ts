@@ -6,6 +6,7 @@ import { APP_KINDS, APP_WIDGETS } from '../shared/app-kinds';
 import { demoAssistant } from '../shared/assistant';
 import { timeFirstPaint } from '../shared/timing';
 import layoutPage from '../../examples/pages/layout.page.json';
+import addressPage from '../../examples/pages/address.page.json';
 
 /**
  * The screen editor on its own page, opened on a small site-visit screen,
@@ -16,6 +17,11 @@ import layoutPage from '../../examples/pages/layout.page.json';
  * the "New employee" page: groups side by side, arrangements, tabs and blocks,
  * and `?start=big` a supplier's file of 500 fields, for timing.
  * `?assistant-delay=` sets how long the demo assistant takes, in ms.
+ *
+ * The store holds the app's saved forms, to place from the toolbox's “A saved
+ * form”: Address, in two versions, and a Visit follow-up that places the site
+ * visit itself — placing it in the site visit is refused. “Open it” opens a
+ * saved form in the editor.
  */
 const customer: Record<string, Field> = {
   name: { type: 'char', label: 'Name', required: true },
@@ -68,6 +74,24 @@ function customers() {
 
 const params = new URLSearchParams(location.search);
 const store = createMemoryPageStore();
+// The saved forms, published: Address once without the building and the country, then whole.
+const published = (page: Page, version: number) => ({ version, publishedAt: new Date(2026, 8, version * 7).toISOString(), page });
+const address = addressPage as unknown as Page;
+const firstAddress: Page = {
+  ...address,
+  fields: { street: address.fields['street'], city: address.fields['city'], postcode: address.fields['postcode'] },
+  layout: { type: 'sections', id: 'address', children: [{ type: 'section', id: 'address-parts', columns: 2, children: [{ type: 'field', id: 'street', field: 'street', colspan: 2 }, { type: 'field', id: 'city', field: 'city' }, { type: 'field', id: 'postcode', field: 'postcode' }] }] },
+};
+store.pages.set('address', { draft: null, versions: [published(firstAddress, 1), published(address, 2)] });
+const followUp: Page = {
+  fieldia: '0.1',
+  id: 'follow-up',
+  title: 'Visit follow-up',
+  data: { kind: 'responses' },
+  fields: { outcome: { type: 'text', label: 'What came of it' } },
+  layout: { type: 'sections', id: 'follow-up', children: [{ type: 'form', id: 'the-visit', page: 'site-visit', name: 'visit' }, { type: 'field', id: 'outcome', field: 'outcome' }] },
+};
+store.pages.set('follow-up', { draft: null, versions: [published(followUp, 1)] });
 const start = params.get('start');
 const model = start === 'sheet' || start === 'list' ? customer : undefined;
 const first =
@@ -75,7 +99,9 @@ const first =
 // The app's own kind, an IBAN, and the widget that draws it.
 const opened = timeFirstPaint('screen');
 // No `looks` given: the looks people save are kept in this browser, and offered by both designer demos.
-const designer = createDesigner({ page: first, store, model, lists: APP_LISTS, kinds: APP_KINDS });
+/** “Open it” on a saved form: the editor closes, and opens that form from the store. */
+const openForm = (id: string) => void reopen(id);
+const designer = createDesigner({ page: first, store, model, lists: APP_LISTS, kinds: APP_KINDS, openForm });
 // The app's lists' choices, for Try it.
 const dataSource = sampleDataSource();
 const skin = (params.get('skin') as Skin) ?? 'outlined';
@@ -84,10 +110,10 @@ const assistant = demoAssistant({ delay: Number(params.get('assistant-delay') ??
 const app = document.getElementById('app') as HTMLElement;
 const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource, widgets: APP_WIDGETS, assistant }), reopen };
 opened();
-/** Close the editor and open the page again from the store, as an app does the next day. */
-async function reopen() {
+/** Close the editor and open the page again from the store, as an app does the next day — or another page, a saved form opened. */
+async function reopen(id = demo.designer.getPage().id) {
   demo.handle.destroy();
-  demo.designer = await createDesigner.open(demo.designer.getPage().id, store, { model, lists: APP_LISTS, kinds: APP_KINDS });
+  demo.designer = await createDesigner.open(id, store, { model, lists: APP_LISTS, kinds: APP_KINDS, openForm });
   demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource, widgets: APP_WIDGETS, assistant });
 }
 Object.assign(window, { fieldiaDesigner: demo });

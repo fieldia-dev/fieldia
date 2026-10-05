@@ -138,6 +138,18 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'delivery',
+    name: 'A saved form, placed twice',
+    category: 'forms',
+    query: 'page=delivery&skin=outlined',
+    blurb: 'One Address form, made once and saved, placed twice in a delivery form: each copy answers apart, under a name of its own, and asks for its own required fields in its own words.',
+    howTo: [
+      'Press Submit with the address empty: Street and number and City refuse, in their own words, inside the Delivery address.',
+      'Tick “Send the invoice to another address”: the same Address form comes again, for the billing address.',
+      'Fill both and send: the app gets the answers nested, { "delivery_address": { … }, "billing_address": { … } }.',
+    ],
+  },
+  {
     id: 'rules',
     name: 'Totals and answer rules',
     category: 'forms',

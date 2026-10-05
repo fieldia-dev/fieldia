@@ -6,7 +6,7 @@ import { codeWidgets } from '@fieldia/code';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
-import { openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { timeFirstPaint } from '../shared/timing';
 
 /**
@@ -57,7 +57,7 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
     requests.push(request);
   },
   widgets: { 'char.shout': shoutWidget, ...gridWidgets, ...codeWidgets },
-  relatedPages,
+  pages: appPages,
   ...optionsFromQuery(params),
   slots: {
     // The record's conversation, to-dos and followers, beside it.
