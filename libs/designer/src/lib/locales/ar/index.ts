@@ -4,6 +4,7 @@ import { kinds } from './kinds';
 import { defaults } from './defaults';
 import { toolbox } from './toolbox';
 import { options } from './options';
+import { refusals } from './refusals';
 
 /**
  * The designer's words in Arabic: Modern Standard Arabic as Arabic software
@@ -25,4 +26,4 @@ import { options } from './options';
  *   model (the backend's) نموذج البيانات · record سجل · list قائمة · sheet ورقة
  *   desktop / tablet / phone سطح المكتب / جهاز لوحي / هاتف · width العرض
  */
-export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options };
+export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals };

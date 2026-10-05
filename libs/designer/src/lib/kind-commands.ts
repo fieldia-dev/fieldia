@@ -2,6 +2,7 @@ import { ADDRESS_PARTS, type Field, type FieldNode, type Option, type Page } fro
 import { kindOfField } from './kinds';
 import { findNode } from './page-tree';
 import { Refusal } from './refusal';
+import type { DesignerWords } from './designer-words';
 
 /**
  * The edits the newer kinds of question need beyond words and options: a
@@ -68,12 +69,12 @@ export function relabel(old: readonly Option[], labels: string[], prefix: string
 
 export function kindCommands({ apply, fromModel }: KindCommandsDeps) {
   /** The question's node and its field, when the field is the page's own to change. */
-  function question(draft: Page, id: string, owned: (label: string) => string): { node: FieldNode; field: Field } {
+  function question(draft: Page, id: string, owned: (w: DesignerWords, label: string) => string): { node: FieldNode; field: Field } {
     const found = findNode(draft, id);
-    if (!found || found.node.type !== 'field') throw new Refusal(`There is no question "${id}"`);
+    if (!found || found.node.type !== 'field') throw new Refusal((w) => w.refusals.noQuestion(id));
     const node = found.node;
     const field = draft.fields[node.field];
-    if (fromModel(node.field)) throw new Refusal(owned(field.label));
+    if (fromModel(node.field)) throw new Refusal((w) => owned(w, field.label));
     return { node, field };
   }
 
@@ -81,12 +82,12 @@ export function kindCommands({ apply, fromModel }: KindCommandsDeps) {
     setOptionDetails(id: string, index: number, details: OptionDetails): boolean {
       return apply(
         (draft) => {
-          const { field } = question(draft, id, (label) => `The options of ${label} come from the model`);
+          const { field } = question(draft, id, (w, label) => w.refusals.optionsFromModel(label));
           // A matrix's columns are its options: each may be worth points, as a choice's options are.
-          if (field.type === 'matrix' && details.image !== undefined) throw new Refusal('A matrix’s columns have no pictures');
-          if (field.type !== 'selection' && field.type !== 'matrix') throw new Refusal('Only a question with options has pictures and points');
+          if (field.type === 'matrix' && details.image !== undefined) throw new Refusal((w) => w.refusals.matrixNoPictures);
+          if (field.type !== 'selection' && field.type !== 'matrix') throw new Refusal((w) => w.refusals.onlyOptionsPictures);
           const option = (field.type === 'matrix' ? field.columns : field.options)[index];
-          if (!option) throw new Refusal(`There is no option ${index + 1}`);
+          if (!option) throw new Refusal((w) => w.refusals.noOption(index + 1));
           if (details.image !== undefined) {
             if (details.image === null || !details.image.trim()) delete option.image;
             else option.image = details.image.trim();
@@ -101,7 +102,7 @@ export function kindCommands({ apply, fromModel }: KindCommandsDeps) {
           }
           if (details.score !== undefined) {
             if (details.score === null) delete option.score;
-            else if (!Number.isFinite(details.score)) throw new Refusal('Points are a number, such as 1 or 0.5');
+            else if (!Number.isFinite(details.score)) throw new Refusal((w) => w.refusals.pointsNumber);
             else option.score = details.score;
           }
         },
@@ -113,10 +114,10 @@ export function kindCommands({ apply, fromModel }: KindCommandsDeps) {
     setMatrixItems(id: string, which: 'rows' | 'columns', labels: string[]): boolean {
       return apply(
         (draft) => {
-          const { field } = question(draft, id, (label) => `The ${which} of ${label} come from the model`);
-          if (field.type !== 'matrix') throw new Refusal('Only a matrix has rows and columns');
+          const { field } = question(draft, id, (w, label) => (which === 'rows' ? w.refusals.rowsFromModel(label) : w.refusals.matrixColumnsFromModel(label)));
+          if (field.type !== 'matrix') throw new Refusal((w) => w.refusals.onlyMatrix);
           const items = relabel(field[which], labels, which === 'rows' ? 'row' : 'column');
-          if (!items.length) throw new Refusal(`A matrix needs a ${which === 'rows' ? 'row' : 'column'}`);
+          if (!items.length) throw new Refusal((w) => (which === 'rows' ? w.refusals.matrixNeedsRow : w.refusals.matrixNeedsColumn));
           field[which] = items;
         },
         `matrix:${id}:${which}:${labels.length}`
@@ -126,10 +127,10 @@ export function kindCommands({ apply, fromModel }: KindCommandsDeps) {
     setAddressParts(id: string, parts: string[]): boolean {
       return apply((draft) => {
         const found = findNode(draft, id);
-        if (!found || found.node.type !== 'field' || found.node.widget !== 'address') throw new Refusal('Only an address has parts');
+        if (!found || found.node.type !== 'field' || found.node.widget !== 'address') throw new Refusal((w) => w.refusals.onlyAddressParts);
         const node = found.node;
         const known = ADDRESS_PARTS.filter((part) => parts.includes(part));
-        if (!known.length) throw new Refusal('An address asks for one part at least');
+        if (!known.length) throw new Refusal((w) => w.refusals.addressOnePart);
         // The usual four, in their order, is what an address asks for anyway.
         const options = { ...(node.options ?? {}) };
         if (known.join() === USUAL_ADDRESS.join()) delete options['parts'];
@@ -141,9 +142,9 @@ export function kindCommands({ apply, fromModel }: KindCommandsDeps) {
 
     setSeveral(id: string, on: boolean): boolean {
       return apply((draft) => {
-        const { node, field } = question(draft, id, (label) => `How many answers ${label} takes comes from the model`);
+        const { node, field } = question(draft, id, (w, label) => w.refusals.answersFromModel(label));
         // A matrix: several columns in a row, or one.
-        if (field.type !== 'matrix' && (field.type !== 'selection' || kindOfField(field, node) !== 'image-choice')) throw new Refusal('Only pictures to choose from and a matrix take one answer or several');
+        if (field.type !== 'matrix' && (field.type !== 'selection' || kindOfField(field, node) !== 'image-choice')) throw new Refusal((w) => w.refusals.onlySeveral);
         if (on) field.multiple = true;
         else delete field.multiple;
       });

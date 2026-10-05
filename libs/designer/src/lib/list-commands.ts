@@ -78,12 +78,12 @@ export function listCommands(context: {
     if (context.selected() === id) context.select(null);
   };
   const listOf = (draft: Page): ListNode => {
-    if (draft.layout.type !== 'list') throw new Refusal('Only a list has columns');
+    if (draft.layout.type !== 'list') throw new Refusal((w) => w.refusals.onlyListColumns);
     return draft.layout;
   };
   const fieldFor = (draft: Page, name: string): Field => {
     const own = draft.fields[name] ?? model[name];
-    if (!own) throw new Refusal(`There is no field "${name}"`);
+    if (!own) throw new Refusal((w) => w.refusals.noField(name));
     draft.fields[name] = own;
     return own;
   };
@@ -93,12 +93,12 @@ export function listCommands(context: {
   };
   const filterOf = (list: ListNode, id: string) => {
     const at = (list.filters ?? []).findIndex((f) => f.id === id);
-    if (at === -1) throw new Refusal(`There is no filter "${id}"`);
+    if (at === -1) throw new Refusal((w) => w.refusals.noFilter(id));
     return at;
   };
   const actionOf = (list: ListNode, id: string) => {
     const at = (list.actions ?? []).findIndex((a) => a.id === id);
-    if (at === -1) throw new Refusal(`There is no button "${id}"`);
+    if (at === -1) throw new Refusal((w) => w.refusals.noButton(id));
     return at;
   };
   const fresh = (draft: Page, prefix: string) => {
@@ -111,8 +111,8 @@ export function listCommands(context: {
       return apply((draft) => {
         const list = listOf(draft);
         const def = fieldFor(draft, field);
-        if (list.columns.includes(field)) throw new Refusal(`${def.label} is a column already`);
-        if (!canBeColumn(def)) throw new Refusal(`A list cannot show ${def.label} in a column: it holds ${storedAs(def)}`);
+        if (list.columns.includes(field)) throw new Refusal((w) => w.refusals.columnAlready(def.label));
+        if (!canBeColumn(def)) throw new Refusal((w) => w.refusals.cannotBeColumn(def.label, storedAs(def, w)));
         list.columns.splice(index === undefined ? list.columns.length : Math.max(0, Math.min(index, list.columns.length)), 0, field);
       });
     },
@@ -121,7 +121,7 @@ export function listCommands(context: {
       return apply((draft) => {
         const list = listOf(draft);
         const at = list.columns.indexOf(field);
-        if (at === -1) throw new Refusal(`"${field}" is not a column`);
+        if (at === -1) throw new Refusal((w) => w.refusals.notAColumn(field));
         list.columns.splice(at, 1);
         list.columns.splice(Math.max(0, Math.min(index, list.columns.length)), 0, field);
       });
@@ -131,8 +131,8 @@ export function listCommands(context: {
       const ok = apply((draft) => {
         const list = listOf(draft);
         const at = list.columns.indexOf(field);
-        if (at === -1) throw new Refusal(`"${field}" is not a column`);
-        if (list.columns.length === 1) throw new Refusal('A list needs a column');
+        if (at === -1) throw new Refusal((w) => w.refusals.notAColumn(field));
+        if (list.columns.length === 1) throw new Refusal((w) => w.refusals.listNeedsColumn);
         list.columns.splice(at, 1);
         // The order and the search leave a column that is gone.
         if (list.sort) list.sort = list.sort.filter((s) => s.field !== field);
@@ -147,7 +147,7 @@ export function listCommands(context: {
       return apply((draft) => {
         const list = listOf(draft);
         if (options.pageSize !== undefined) {
-          if (!Number.isInteger(options.pageSize) || options.pageSize < 1 || options.pageSize > 500) throw new Refusal('A page of the list holds 1 to 500 rows');
+          if (!Number.isInteger(options.pageSize) || options.pageSize < 1 || options.pageSize > 500) throw new Refusal((w) => w.refusals.pageSize);
           list.pageSize = options.pageSize;
         }
         const fields = (key: 'searchFields' | 'groupBy', names: string[] | undefined) => {
@@ -171,8 +171,8 @@ export function listCommands(context: {
       let created = '';
       const ok = apply((draft) => {
         const list = listOf(draft);
-        if (!label.trim()) throw new Refusal('A filter needs a name people will recognise, such as Active');
-        if (!filter.length) throw new Refusal('A filter needs a condition');
+        if (!label.trim()) throw new Refusal((w) => w.refusals.filterName);
+        if (!filter.length) throw new Refusal((w) => w.refusals.filterCondition);
         for (const name of filterFields(filter)) fieldFor(draft, name);
         created = fresh(draft, 'filter');
         list.filters = [...(list.filters ?? []), { id: created, label: label.trim(), filter }];
@@ -188,7 +188,7 @@ export function listCommands(context: {
           const at = filterOf(list, id);
           if (patch.label !== undefined) filters[at].label = patch.label;
           if (patch.filter !== undefined) {
-            if (!patch.filter.length) throw new Refusal('A filter needs a condition');
+            if (!patch.filter.length) throw new Refusal((w) => w.refusals.filterCondition);
             for (const name of filterFields(patch.filter)) fieldFor(draft, name);
             filters[at].filter = patch.filter;
           }
@@ -221,7 +221,7 @@ export function listCommands(context: {
       let created = '';
       const ok = apply((draft) => {
         const list = listOf(draft);
-        if (!label.trim()) throw new Refusal('A button needs words');
+        if (!label.trim()) throw new Refusal((w) => w.refusals.buttonWords);
         created = fresh(draft, 'button');
         list.actions = [...(list.actions ?? []), { type: 'button', id: created, label: label.trim(), action: actionName(label) }];
       });
@@ -236,7 +236,7 @@ export function listCommands(context: {
           const button = (list.actions ?? [])[actionOf(list, id)];
           if (patch.label !== undefined) button.label = patch.label;
           if (patch.action !== undefined) {
-            if (!patch.action.trim()) throw new Refusal('A button needs the name of its action, such as archive');
+            if (!patch.action.trim()) throw new Refusal((w) => w.refusals.listButtonAction);
             button.action = patch.action.trim();
           }
           if (patch.style !== undefined) button.style = patch.style;

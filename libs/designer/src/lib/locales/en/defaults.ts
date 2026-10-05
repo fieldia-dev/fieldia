@@ -21,4 +21,8 @@ export const defaults = {
   newButton: 'New button',
   counter: 'Counter',
   badge: 'Badge',
+  noneOfThese: 'None of these',
+  /** A scale made NPS: the words at its ends. */
+  npsStart: 'Not at all likely',
+  npsEnd: 'Extremely likely',
 };

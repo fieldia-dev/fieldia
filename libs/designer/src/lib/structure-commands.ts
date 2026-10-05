@@ -35,7 +35,7 @@ export interface StructureCommands {
 export function structureCommands({ apply, fromModel }: StructureCommandsDeps): StructureCommands {
   function question(draft: Page, id: string): FieldNode {
     const found = findNode(draft, id);
-    if (!found || found.node.type !== 'field') throw new Refusal(`There is no question "${id}"`);
+    if (!found || found.node.type !== 'field') throw new Refusal((w) => w.refusals.noQuestion(id));
     return found.node;
   }
 
@@ -44,11 +44,11 @@ export function structureCommands({ apply, fromModel }: StructureCommandsDeps): 
       return apply((draft) => {
         const node = question(draft, id);
         const field = draft.fields[node.field];
-        if (field.type !== 'one2many') throw new Refusal('Only a table of lines has totals and columns to hide');
+        if (field.type !== 'one2many') throw new Refusal((w) => w.refusals.onlyLinesTotals);
         const numbers = (name: string) => ['integer', 'float', 'monetary'].includes(field.fields[name]?.type ?? '');
         if (table.totals !== undefined) {
           const totals = (table.totals ?? []).filter((name) => field.fields[name]);
-          if (totals.some((name) => !numbers(name))) throw new Refusal('Only a column of numbers adds up');
+          if (totals.some((name) => !numbers(name))) throw new Refusal((w) => w.refusals.onlyNumbersAdd);
           if (totals.length) node.totals = totals;
           else delete node.totals;
         }
@@ -65,10 +65,10 @@ export function structureCommands({ apply, fromModel }: StructureCommandsDeps): 
         (draft) => {
           const node = question(draft, id);
           const field = draft.fields[node.field];
-          if (field.type !== 'many2one' && field.type !== 'many2many') throw new Refusal('Only a link or links offer records');
-          if (fromModel(node.field)) throw new Refusal(`The records ${field.label} offers come from the model`);
+          if (field.type !== 'many2one' && field.type !== 'many2many') throw new Refusal((w) => w.refusals.onlyLinksOffer);
+          if (fromModel(node.field)) throw new Refusal((w) => w.refusals.offersFromModel(field.label));
           const name = condition?.field.trim() ?? '';
-          if (condition && !name) throw new Refusal('Say which of their fields, such as active');
+          if (condition && !name) throw new Refusal((w) => w.refusals.sayWhichFields);
           const kept: FilterCondition[] = condition ? [{ field: name, op: '=', value: condition.value }] : [];
           if (kept.length) field.filter = kept;
           else delete field.filter;

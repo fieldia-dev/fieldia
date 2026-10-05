@@ -14,15 +14,23 @@ import { mountSurveyEditor } from './survey-editor';
  */
 
 /**
- * Latin words an Arabic sentence keeps, as Arabic software keeps them: the
- * names of keys on a keyboard, of file formats, and of a currency's code in
- * an example. Anything else in Latin letters is English left behind.
+ * Latin words an Arabic sentence keeps, as Arabic software keeps them: keys
+ * on a keyboard, the names of formats and currencies, and names in code an
+ * example gives (an action's, a model's) — typed as they are, in Latin.
+ * Anything else in Latin letters is English left behind.
  */
-export const LATIN_KEPT = ['Ctrl', 'Shift', 'Alt', 'Enter', 'Esc', 'Tab', 'Home', 'End', 'JSON', 'CSV', 'USD', 'EGP', 'IBAN', 'URL', 'Delete', 'Backspace', 'K', 'J', 'Z', 'Y', 'D', 'C', 'V', 'X', 'A', 'G'];
+export const LATIN_KEPT = [
+  // Keys, and the letters of shortcuts.
+  ...['Ctrl', 'Shift', 'Alt', 'Enter', 'Esc', 'Tab', 'Home', 'End', 'Delete', 'Backspace', 'K', 'J', 'Z', 'Y', 'D', 'C', 'V', 'X', 'A', 'G'],
+  // Formats and currencies.
+  ...['JSON', 'CSV', 'USD', 'EGP', 'IBAN', 'URL'],
+  // Names in code, in examples.
+  ...['contact', 'confirm', 'open_invoices', 'archive', 'active'],
+];
 
 /** Latin letters left in Arabic words, besides those kept on purpose. */
 export function latinIn(text: string): string[] {
-  return (text.match(/[A-Za-z][A-Za-z'’-]*/g) ?? []).filter((word) => !LATIN_KEPT.includes(word));
+  return (text.match(/[A-Za-z][A-Za-z0-9_'’-]*/g) ?? []).filter((word) => !LATIN_KEPT.includes(word));
 }
 
 type Table = Record<string, unknown>;

@@ -17,4 +17,7 @@ export const defaults: DesignerWords['defaults'] = {
   newButton: 'زر جديد',
   counter: 'عدّاد',
   badge: 'شارة',
+  noneOfThese: 'لا شيء مما سبق',
+  npsStart: 'غير مرجّح إطلاقًا',
+  npsEnd: 'مرجّح للغاية',
 };
