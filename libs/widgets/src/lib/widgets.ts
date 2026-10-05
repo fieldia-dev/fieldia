@@ -31,7 +31,7 @@ import { imageChoiceWidget } from './choice-images';
 import { rankingWidget } from './ranking';
 import { addressWidget } from './address';
 import { cardsWidget } from './cards';
-import { clearSelection, setAttr, setText } from './kind-parts';
+import { clearSelection, fillIn, setAttr, setText } from './kind-parts';
 import { shownOptions } from './shuffle';
 import { listChoices } from './choices-from';
 
@@ -379,7 +379,7 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
     const group = make(document, 'div', { id, class: `fd-points fd-${style}`, role: 'radiogroup' });
     const points: HTMLButtonElement[] = [];
     for (let n = min; n <= max; n++) {
-      const point = make(document, 'button', { type: 'button', role: 'radio', 'aria-label': `${n} of ${max}`, 'data-value': String(n) }, style === 'rating' ? '★' : String(n));
+      const point = make(document, 'button', { type: 'button', role: 'radio', 'aria-label': fillIn(words.ofMax, { n, max }), 'data-value': String(n) }, style === 'rating' ? '★' : String(n));
       if (style === 'scale') point.removeAttribute('aria-label');
       point.addEventListener('click', () => form.setValue(name, n));
       points.push(point);

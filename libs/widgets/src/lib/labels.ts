@@ -86,6 +86,8 @@ export interface WidgetLabels {
   loadingChoices: string;
   choicesFailed: string;
   notOffered: string;
+  /** A rating's point, as a screen reader names it: `{n}` of `{max}`. */
+  ofMax: string;
 }
 
 export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
@@ -156,6 +158,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     loadingChoices: 'Loading choices…',
     choicesFailed: 'Load the choices again',
     notOffered: '{name}: no longer offered',
+    ofMax: '{n} of {max}',
   },
   ar: {
     search: 'بحث…',
@@ -224,6 +227,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     loadingChoices: 'تحميل الخيارات…',
     choicesFailed: 'أعد تحميل الخيارات',
     notOffered: '{name}: لم يعد متاحًا',
+    ofMax: '{n} من {max}',
   },
   de: {
     search: 'Suchen…',
@@ -292,6 +296,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     loadingChoices: 'Auswahl lädt…',
     choicesFailed: 'Auswahl neu laden',
     notOffered: '{name}: nicht mehr angeboten',
+    ofMax: '{n} von {max}',
   },
   fr: {
     search: 'Rechercher…',
@@ -360,5 +365,6 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     loadingChoices: 'Chargement des choix…',
     choicesFailed: 'Recharger les choix',
     notOffered: '{name} : plus proposé',
+    ofMax: '{n} sur {max}',
   },
 };
