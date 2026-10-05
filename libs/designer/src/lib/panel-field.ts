@@ -1,10 +1,10 @@
 import type { FieldNode } from '@fieldia/core';
 import { appKindPanel } from './app-kinds-ui';
 import { optionsEditor, type ElementFactory } from './chrome';
-import { columnsEditor } from './columns-editor';
 import { choicesOf, conditionEditor } from './condition-editor';
 import type { Designer } from './designer';
 import { kindsReason } from './field-bar';
+import { inlineSettings } from './inline-settings';
 import { kindOfField, storedAs } from './kinds';
 import { onTab, setting } from './panel-controls';
 import { labelsSetting, widthSetting } from './panel-layout';
@@ -39,7 +39,10 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const appSettings = appKindPanel(el, designer, id);
   const options = optionsEditor(el, designer, id);
   const optionsRow = setting(el, 'content', 'Options', options.element);
-  const lineColumns = columnsEditor(el, designer, id);
+  // Its kind's own settings — levels, a range, the files it takes, a link's records, a table's columns — the card's own, here too.
+  const kindOwn = inlineSettings(el, designer, id);
+  const kindName = el('span', { class: 'fd-prop-name' });
+  const kindRow = onTab(el('div', { class: 'fd-prop fd-prop-kind' }, kindName, kindOwn.element), 'content', 'Settings for its kind');
   const duplicate = el('button', { type: 'button', class: 'fd-button' }, 'Duplicate');
   duplicate.addEventListener('click', () => {
     const copy = designer.duplicateNode(id);
@@ -87,13 +90,6 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const nameHint = el('p', { class: 'fd-properties-hint fd-set-hint' });
   const stored = el('span', { class: 'fd-insp-chip' });
   const fromModelNote = el('p', { class: 'fd-properties-hint fd-set-hint', hidden: '' });
-  const relation = el('input', { class: 'fd-input', 'aria-label': 'Links to', placeholder: 'contact' });
-  relation.addEventListener('input', () => designer.setRelation(id, relation.value));
-  const relationRow = setting(el, 'content', 'Links to', relation);
-  const currency = el('input', { class: 'fd-input', 'aria-label': 'Currency', maxlength: '3', placeholder: 'USD' });
-  // Only a whole code: two letters on the way to three are not a currency yet.
-  currency.addEventListener('input', () => currency.value.trim().length === 3 && designer.setCurrency(id, currency.value));
-  const currencyRow = setting(el, 'content', 'Currency', currency);
 
   const element = el(
     'div',
@@ -104,7 +100,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     setting(el, 'content', 'Shown as', kind, { hint: kindNote }),
     appSettings.element,
     optionsRow,
-    onTab(lineColumns.element, 'content', 'Columns'),
+    kindRow,
     onTab(el('div', { class: 'fd-props-actions' }, duplicate, remove), 'content', 'Duplicate or delete'),
     ...width.rows,
     ...labels.rows,
@@ -114,9 +110,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     whenBox,
     ...own.rows,
     setting(el, 'data', 'Field name', name, { hint: nameHint }),
-    setting(el, 'data', 'Stored as', stored, { hint: fromModelNote }),
-    relationRow,
-    currencyRow
+    setting(el, 'data', 'Stored as', stored, { hint: fromModelNote })
   );
 
   return {
@@ -144,8 +138,9 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       options.update(def, found.node);
       options.element.hidden ||= fromModel;
       optionsRow.hidden = options.element.hidden;
-      lineColumns.update(def);
-      lineColumns.element.hidden ||= fromModel;
+      kindOwn.update(page, found.node);
+      kindRow.hidden = kindOwn.element.hidden;
+      kindName.textContent = offered.find((k) => k.id === current)?.label ?? '';
 
       // Layout.
       width.update(page);
@@ -173,10 +168,6 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       const kept = def.type === 'selection' ? 'Its options come from the model.' : def.type === 'monetary' ? 'Its currency comes from the model.' : ['many2one', 'many2many', 'one2many'].includes(def.type) ? 'The records it points to come from the model.' : '';
       fromModelNote.textContent = kept;
       fromModelNote.hidden = !fromModel || !kept;
-      relationRow.hidden = !('relation' in def) || fromModel;
-      if (!focused(relation)) relation.value = 'relation' in def ? def.relation : '';
-      currencyRow.hidden = def.type !== 'monetary' || fromModel;
-      if (!focused(currency)) currency.value = def.type === 'monetary' ? (def.currency ?? '') : '';
     },
     focus(part) {
       if (part === 'when') {
