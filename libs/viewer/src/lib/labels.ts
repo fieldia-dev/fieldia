@@ -85,6 +85,16 @@ export interface ViewerLabels {
   /** A list's groups: the one of records with no value, and the rest of a group's records (`{n}`). */
   none: string;
   loadMore: string;
+  /**
+   * A saved form placed in another, in its place when it cannot be shown
+   * (`{page}`, its title or id): not found, placed inside itself (`{chain}`,
+   * the forms round it), laid out as no form can hold, or with problems of its
+   * own (said in the console).
+   */
+  formMissing: string;
+  formInItself: string;
+  formNotPlaceable: string;
+  formBroken: string;
 }
 
 /** English: always here, and the words a language leaves out. */
@@ -156,6 +166,10 @@ const en: ViewerLabels = {
   no: 'No',
   none: 'None',
   loadMore: 'Show {n} more',
+  formMissing: 'The saved form “{page}” cannot be found.',
+  formInItself: 'The saved form “{page}” is not shown here: it would be placed inside itself ({chain}).',
+  formNotPlaceable: 'The saved form “{page}” cannot be placed here: only a form of sections or tabs can.',
+  formBroken: 'The saved form “{page}” cannot be shown.',
 };
 
 /**

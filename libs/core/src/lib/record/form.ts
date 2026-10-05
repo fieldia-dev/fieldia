@@ -12,7 +12,7 @@ import { compileSetWhen } from './set-when';
 import { checkRules, compileRules, type CompiledRule } from './rules';
 import { expressionEnv } from './env';
 import { MESSAGES, type Messages } from './messages';
-import { saveProblemOf, type CreateRequest, type DataSource, type LineOp, type LinkOp, type OptionsRequest, type RecordChanges, type ResolvedFilter, type SaveProblem, type SearchRequest } from './data-source';
+import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
 import {
   emptyValue,
@@ -224,16 +224,6 @@ type Sync = 'start' | 'edit' | 'fresh';
 const isRecord = (value: unknown): value is Values => value !== null && typeof value === 'object' && !Array.isArray(value);
 /** A saved form's answers, as the one value they are in the form round it. */
 const asValue = (values: Readonly<Values>) => values as unknown as Value;
-
-/** Only finding and making linked records, and a list's choices: a saved form placed in another is no record of its own to load, save or send. */
-function lookupsOf(source: DataSource | undefined): DataSource | undefined {
-  if (!source) return undefined;
-  return {
-    ...(source.search ? { search: (request: SearchRequest) => source.search!(request) } : {}),
-    ...(source.create ? { create: (request: CreateRequest) => source.create!(request) } : {}),
-    ...(source.options ? { options: (request: OptionsRequest) => source.options!(request) } : {}),
-  };
-}
 
 /** `within` are the pages round this one, outermost first: a page among them placed again would hold itself. */
 function innerForm(options: FormOptions, within: string[]): InnerForm {
@@ -772,9 +762,6 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
 
     problem(name) {
       fieldDef(name);
-      // A saved form's answers: the first problem inside it, while it shows.
-      const part = [...attached].find(([, p]) => p.name === name);
-      if (part) return visibleFieldNodes(undefined, 'form').some((node) => node.id === part[0]) ? Object.values(part[1].inner.errorsNow())[0] ?? null : null;
       // Only a field someone can see is asked anything, and required wherever it is shown so.
       const shown = visibleFieldNodes().filter((node) => node.field === name);
       if (!shown.length) return null;
@@ -1000,8 +987,9 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       const chain = [...within, page.id];
       if (chain.includes(inner.id)) throw new Error(`a page cannot be placed inside itself: ${[...chain.slice(chain.indexOf(inner.id)), inner.id].join(' → ')}`);
       const given = state.values[part.name];
+      // A record of no model of its own: its links search and its lists load, but it never loads, saves, sends or recalculates alone.
       const made = innerForm(
-        { page: inner, dataSource: lookupsOf(options.dataSource), values: isRecord(given) ? given : {}, scheduler, messages, now: options.now },
+        { page: { ...inner, data: { kind: 'responses' } }, dataSource: options.dataSource, values: isRecord(given) ? given : {}, onAction: options.onAction, scheduler, messages, now: options.now },
         chain
       );
       attached.set(id, { name: part.name, inner: made });
