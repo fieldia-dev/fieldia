@@ -3,6 +3,7 @@ import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import type { MenuItem } from './menu';
 import { answerRulesEditor } from './rules-answers';
+import type { SampleOptions } from './rules-sample';
 import { workedOutSetting } from './rules-worked-out';
 import { kindsFitting } from './rules-words';
 
@@ -21,6 +22,7 @@ export interface CardRules {
   /** Do what was picked in ⋮; false when it was not this one's. */
   pick(item: string): boolean;
   update(page: Page, node: FieldNode): void;
+  destroy(): void;
 }
 
 /** One part of the card's rules: shown while it has something, or was asked for from ⋮ until the card closes. */
@@ -31,8 +33,8 @@ interface Part {
   offered: boolean;
 }
 
-export function cardRules(el: ElementFactory, designer: Designer, id: string): CardRules {
-  const answers = answerRulesEditor(el, designer, id);
+export function cardRules(el: ElementFactory, designer: Designer, id: string, sampling: SampleOptions = {}): CardRules {
+  const answers = answerRulesEditor(el, designer, id, sampling);
   const workedOut = workedOutSetting(el, designer, id);
   const parts: Record<'answer-rules' | 'worked-out', Part> = {
     'answer-rules': { element: el('div', { class: 'fd-q-rules-part' }, answers.element), wanted: false, has: false, offered: false },
@@ -69,5 +71,6 @@ export function cardRules(el: ElementFactory, designer: Designer, id: string): C
       Object.assign(parts['worked-out'], { has: def.compute !== undefined, offered: !workedOut.element.hidden });
       draw();
     },
+    destroy: () => answers.destroy(),
   };
 }

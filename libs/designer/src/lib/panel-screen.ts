@@ -12,6 +12,7 @@ import { arrangementProperties, groupProperties } from './panel-group';
 import { inspectorShell, settingRows, type InspectorHead, type SettingRow } from './panel-inspector';
 import { pageLookSettings, wearLook } from './panel-look';
 import { pageProperties } from './panel-page';
+import type { SampleOptions } from './rules-sample';
 import { blockProperties, severalProperties } from './panel-parts';
 import { settingSearch } from './panel-search';
 import { partKindOf, TAB_NAMES, type PanelTab, type PartKind } from './panel-tabs';
@@ -33,6 +34,7 @@ export interface ScreenPanel {
   findItems(): FindItem[];
   /** Simple or Advanced: the tabs and settings on show follow it. */
   setMode(mode: 'simple' | 'advanced'): void;
+  destroy(): void;
 }
 
 /** The tab each part the canvas asks for is on. */
@@ -97,7 +99,7 @@ export function headOf(page: Page, kind: PartKind, picked: readonly string[], fr
   }
 }
 
-export function screenPanel(options: { el: ElementFactory; doc: Document; designer: Designer; wearer?: HTMLElement }): ScreenPanel {
+export function screenPanel(options: { el: ElementFactory; doc: Document; designer: Designer; wearer?: HTMLElement; sampling?: SampleOptions }): ScreenPanel {
   const { el, doc, designer, wearer } = options;
   const shell = inspectorShell(el, doc);
   const search = settingSearch(el, doc, shell);
@@ -113,7 +115,7 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
       case 'statusbar':
         return statusbarProperties(el, designer);
       case 'field':
-        return fieldProperties(el, designer, id);
+        return fieldProperties(el, designer, id, options.sampling);
       case 'group':
         return groupProperties(el, designer, id);
       case 'arrangement':
@@ -155,6 +157,7 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
       const now = `${mode}:${kind === 'page' || kind === 'list' ? kind : `${kind}:${picked.join(',')}`}`;
       if (now !== key) {
         key = now;
+        view?.destroy?.();
         view = viewOf(kind, picked);
         shell.show(kind, view, mode);
       }
@@ -168,6 +171,10 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
       mode = next;
       key = '';
       this.update(designer.getState());
+    },
+    destroy() {
+      view?.destroy?.();
+      view = null;
     },
     findItems() {
       const page = designer.getPage();

@@ -2,6 +2,7 @@ import type { Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { answerRulesEditor } from './rules-answers';
+import type { SampleOptions } from './rules-sample';
 import { setWhenSetting, workedOutSetting } from './rules-worked-out';
 
 /**
@@ -16,12 +17,13 @@ export interface FieldRules {
   update(page: Page): void;
   /** Bring the answer rules forward. */
   focus(): void;
+  destroy(): void;
 }
 
-export function fieldRules(el: ElementFactory, designer: Designer, id: string): FieldRules {
+export function fieldRules(el: ElementFactory, designer: Designer, id: string, sampling: SampleOptions = {}): FieldRules {
   const workedOut = workedOutSetting(el, designer, id);
   const setWhen = setWhenSetting(el, designer, id);
-  const answers = answerRulesEditor(el, designer, id);
+  const answers = answerRulesEditor(el, designer, id, sampling);
   return {
     rows: [workedOut.element, setWhen.element, answers.element],
     update(page) {
@@ -30,5 +32,6 @@ export function fieldRules(el: ElementFactory, designer: Designer, id: string): 
       answers.update(page);
     },
     focus: () => answers.focus(),
+    destroy: () => answers.destroy(),
   };
 }

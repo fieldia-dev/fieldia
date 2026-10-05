@@ -35,6 +35,8 @@ export interface TryIt {
   /** Where the page is tried. */
   element: HTMLElement;
   readonly trying: boolean;
+  /** Try the page, as Try it in the bar does. */
+  start(): void;
   /** For Find anything: trying it, at a phone's width, in Arabic; or back to designing. */
   items(): FindItem[];
   destroy(): void;
@@ -157,6 +159,7 @@ export function tryIt(options: TryItOptions): TryIt {
     get trying() {
       return trying;
     },
+    start: () => set(true),
     items() {
       if (trying) return [{ label: 'Back to designing', hint: 'Design', run: () => design.click() }];
       return [

@@ -162,4 +162,36 @@ export const DESIGNER_RULES_CSS = /* css */ `
 .fd-q-rules .fd-prop-name { font-size: 12.5px; font-weight: 600; color: var(--fd-text); }
 .fd-q-rules-part { display: grid; gap: 6px; }
 .fd-q-rules-part[hidden] { display: none; }
+
+/* ---- try a value: the field by its own widget, and what the form says of it ---- */
+.fd-answer-sample { display: grid; gap: 8px; margin-block-start: 6px; padding: 10px 12px 12px; border-radius: 8px; background: var(--fd-page); min-width: 0; }
+.fd-answer-sample[hidden] { display: none; }
+.fd-answer-sample-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; min-width: 0; }
+.fd-answer-sample .fd-answer-sample-title { font-size: 12.5px; font-weight: 600; color: var(--fd-text); }
+.fd-answer-sample-language { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fd-muted); min-width: 0; white-space: nowrap; }
+.fd-answer-sample-language[hidden] { display: none; }
+.fd-answer-sample-language .fd-select { min-height: 28px; min-width: 0; max-width: 170px; font-size: 12.5px; }
+.fd-answer-sample-boxes { display: grid; gap: 8px; min-width: 0; }
+.fd-answer-sample-boxes:empty { display: none; }
+.fd-answer-sample-field { min-width: 0; }
+.fd-answer-sample-field > .fd-label { font-size: 12px; font-weight: 600; }
+.fd-answer-sample-field .fd-input { width: 100%; box-sizing: border-box; min-width: 0; min-height: 32px; background: var(--fd-surface); }
+.fd-answer-sample-reads { margin: 2px 0 0; font-size: 12px; color: var(--fd-muted); }
+.fd-answer-sample-reads[hidden], .fd-answer-sample-elsewhere[hidden] { display: none; }
+.fd-answer-sample-elsewhere { display: grid; gap: 2px; font-size: 12.5px; line-height: 1.45; color: var(--fd-muted); }
+.fd-answer-sample-elsewhere p { margin: 0; }
+.fd-answer-sample-try { justify-self: start; padding-inline: 0; min-height: 26px; }
+.fd-answer-sample-results { display: grid; gap: 4px; min-width: 0; }
+/* The mark beside the message; whether it still sends under the message, the same place every time. */
+.fd-answer-sample-result {
+  margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: 1px 6px;
+  font-size: 12.5px; line-height: 1.45; padding: 6px 9px; border-radius: 6px; overflow-wrap: anywhere;
+}
+.fd-answer-sample-result[data-level="idle"] { display: block; color: var(--fd-muted); padding: 0; }
+.fd-answer-sample-result[data-level="pass"] { color: var(--fd-success); background: var(--fd-success-soft); }
+.fd-answer-sample-result[data-level="error"] { color: var(--fd-error); background: var(--fd-error-soft); }
+.fd-answer-sample-result[data-level="warning"] { color: var(--fd-warning); background: var(--fd-warning-soft); }
+.fd-answer-sample-mark { font-weight: 700; min-width: 0.8em; text-align: center; }
+.fd-answer-sample-message { min-width: 0; }
+.fd-answer-sample-tag { grid-column: 2; font-size: 11px; font-weight: 600; letter-spacing: 0.01em; opacity: 0.85; }
 `;

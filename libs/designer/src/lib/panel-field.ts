@@ -10,6 +10,7 @@ import { onTab, setting } from './panel-controls';
 import { labelsSetting, widthSetting } from './panel-layout';
 import { allSections, findField, sectionLabel } from './page-tree';
 import { fieldRules } from './rules-panel';
+import type { SampleOptions } from './rules-sample';
 import type { PropertiesView } from './screen-properties';
 
 /**
@@ -21,7 +22,7 @@ import type { PropertiesView } from './screen-properties';
 /** The kinds whose empty box shows words of their own. */
 const TAKES_PLACEHOLDER = new Set(['char', 'text', 'integer', 'float', 'monetary']);
 
-export function fieldProperties(el: ElementFactory, designer: Designer, id: string): PropertiesView {
+export function fieldProperties(el: ElementFactory, designer: Designer, id: string, sampling: SampleOptions = {}): PropertiesView {
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
 
   // ---- Content: its words, and how it is shown ----
@@ -83,7 +84,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const noRules = el('p', { class: 'fd-properties-hint', hidden: '' }, 'Always. A rule needs another field that holds one of a list, or yes or no.');
   const whenBox = onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, 'When it shows'), when.element, showWhen, noRules), 'rules', 'When it shows');
   // Worked out from others, set when, and the rules its answer keeps.
-  const own = fieldRules(el, designer, id);
+  const own = fieldRules(el, designer, id, sampling);
 
   // ---- Data: what it is stored under and as ----
   const name = el('code', { class: 'fd-insp-code' });
@@ -179,6 +180,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
         label.scrollIntoView?.({ block: 'nearest' });
       }
     },
+    destroy: () => own.destroy(),
   };
 }
 

@@ -64,6 +64,23 @@ The page stores `columns: 12` on such a group, each part's `colspan` in
 twelfths, and `rows: 'gaps'` when set. A form draws the widths as stored: a
 tablet keeps a row's proportions, a phone puts its parts one under another.
 
+## Trying a field's rules
+
+Under a field's answer rules — on the panel's Rules tab, and in a survey
+question's open card — **Try a value** draws the field by its own widget (the
+one the form and the canvas use, the app's own among them) and says, as you
+type or pick, what the form would say: *Passes*, each rule that stops sending
+with its message, each warning marked *Still sends*. The form's own checks say
+it, on a form made of the page, so it is what people will see; it says it
+again at once when a rule is added, edited or removed. A field a rule reads —
+across fields, or in its *Only when* — gets a box of its own; one that cannot
+take a value there (worked out from other answers, an app's records, files)
+is named, with Try it beside it. Where the page keeps translations, *Words in*
+says the messages in one of its languages, right to left where it is written
+so. Nothing typed there is kept in the page or makes an undo step, and it
+lasts while the field stays picked. A field with no rules shows no sample:
+Add a rule is the invitation.
+
 ## What an app adds
 
 ### Kinds of its own

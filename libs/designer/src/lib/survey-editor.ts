@@ -428,7 +428,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     const painter = answerBox(answer, id);
     const settings = inlineSettings(el, designer, id);
     const when = conditionEditor(el, designer, id, 'question');
-    const rules = cardRules(el, designer, id);
+    const rules = cardRules(el, designer, id, { widgets: options.widgets, tryIt: () => trial.start() });
     const tool = (label: string, icon: string, onClick: () => void, extra = '') => {
       const button = el('button', { type: 'button', class: `fd-q-tool ${extra}`.trim(), 'aria-label': label, title: label }, designerIcon(doc, icon));
       button.addEventListener('click', onClick);
@@ -526,7 +526,10 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
         when.update(page, questionsBefore(page, node.id), node.invisible);
         rules.update(page, node);
       },
-      destroy: () => painter.destroy(),
+      destroy() {
+        painter.destroy();
+        rules.destroy();
+      },
     };
   }
 
