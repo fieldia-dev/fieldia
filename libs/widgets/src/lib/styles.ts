@@ -1,4 +1,5 @@
 import { KINDS_CSS } from './styles-kinds';
+import { INPUTS_CSS } from './styles-inputs';
 
 /**
  * Fieldia's stylesheet: two skins and the layout chrome, all scoped to the
@@ -672,8 +673,8 @@ const SKINS_CSS = /* css */ `
 @media (prefers-reduced-motion: reduce) { .fd-form *, .fd-form *::before, .fd-form *::after { transition: none !important; } }
 `;
 
-/** Fieldia's whole stylesheet: the skins, then the layout over them. */
-export const FIELDIA_CSS = SKINS_CSS + LAYOUT_CSS + KINDS_CSS;
+/** Fieldia's whole stylesheet: the skins, then the layout over them, the inputs' details and the question kinds. */
+export const FIELDIA_CSS = SKINS_CSS + LAYOUT_CSS + INPUTS_CSS + KINDS_CSS;
 
 const STYLE_ID = 'fieldia-styles';
 

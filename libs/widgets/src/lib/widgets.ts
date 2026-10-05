@@ -33,6 +33,7 @@ import { addressWidget } from './address';
 import { cardsWidget } from './cards';
 import { clearSelection, fillIn, setAttr, setText } from './kind-parts';
 import { shownOptions } from './shuffle';
+import { counted, grower } from './limits';
 import { listChoices } from './choices-from';
 
 /**
@@ -142,13 +143,14 @@ function describe(element: HTMLElement, state: WidgetState) {
 const textOf = (value: Value | undefined) => (value === null || value === undefined ? '' : String(value));
 
 function textWidget(inputType: string): WidgetFactory {
-  return ({ form, name, field, node, id, document }) => {
+  return (context) => {
+    const { form, name, field, node, id, document } = context;
     // A person's own email, phone or web address, the browser may offer.
     const input = make(document, 'input', { id, type: inputType, class: 'fd-input', autocomplete: /^(email|tel|url)$/.test(inputType) ? inputType : 'off' });
     if (field.type === 'char' && field.size !== undefined) input.maxLength = field.size;
     if (node.placeholder) input.placeholder = node.placeholder;
     input.addEventListener('input', () => form.setValue(name, input.value === '' ? null : input.value));
-    return {
+    return counted({
       element: input,
       focus: () => input.focus(),
       update(state) {
@@ -157,25 +159,33 @@ function textWidget(inputType: string): WidgetFactory {
         if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
         describe(input, state);
       },
-    };
+    }, context, input);
   };
 }
 
-const textareaWidget: WidgetFactory = ({ form, name, field, node, id, document }) => {
+const textareaWidget: WidgetFactory = (context) => {
+  const { form, name, field, node, id, document } = context;
   const area = make(document, 'textarea', { id, class: 'fd-input fd-textarea', rows: '3' });
   if (field.type === 'text' && field.size !== undefined) area.maxLength = field.size;
   if (node.placeholder) area.placeholder = node.placeholder;
-  area.addEventListener('input', () => form.setValue(name, area.value === '' ? null : area.value));
-  return {
+  const grow = grower(area, node);
+  area.addEventListener('input', () => {
+    grow();
+    form.setValue(name, area.value === '' ? null : area.value);
+  });
+  return counted({
     element: area,
     focus: () => area.focus(),
     update(state) {
       const text = textOf(state.value);
-      if (area.value !== text) area.value = text;
+      if (area.value !== text) {
+        area.value = text;
+        grow();
+      }
       if (area.readOnly !== state.readonly) area.readOnly = state.readonly;
       describe(area, state);
     },
-  };
+  }, context, area);
 };
 
 const NUMBER = /^-?(\d+\.?\d*|\.\d+)$/;

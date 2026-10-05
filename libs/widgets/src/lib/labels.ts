@@ -88,6 +88,8 @@ export interface WidgetLabels {
   notOffered: string;
   /** A rating's point, as a screen reader names it: `{n}` of `{max}`. */
   ofMax: string;
+  /** How many more characters a box with a most takes, said to a screen reader once typing pauses. */
+  charactersLeft: string;
 }
 
 export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
@@ -159,6 +161,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     choicesFailed: 'Load the choices again',
     notOffered: '{name}: no longer offered',
     ofMax: '{n} of {max}',
+    charactersLeft: 'Characters left: {n}',
   },
   ar: {
     search: 'بحث…',
@@ -228,6 +231,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     choicesFailed: 'أعد تحميل الخيارات',
     notOffered: '{name}: لم يعد متاحًا',
     ofMax: '{n} من {max}',
+    charactersLeft: 'الأحرف المتبقية: {n}',
   },
   de: {
     search: 'Suchen…',
@@ -297,6 +301,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     choicesFailed: 'Auswahl neu laden',
     notOffered: '{name}: nicht mehr angeboten',
     ofMax: '{n} von {max}',
+    charactersLeft: 'Noch {n} Zeichen',
   },
   fr: {
     search: 'Rechercher…',
@@ -366,5 +371,6 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     choicesFailed: 'Recharger les choix',
     notOffered: '{name} : plus proposé',
     ofMax: '{n} sur {max}',
+    charactersLeft: 'Caractères restants : {n}',
   },
 };
