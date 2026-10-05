@@ -138,14 +138,17 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // and copied; links searched in full and opened; a heading button; a picture's width, place, link and caption,
 // in four languages) add 10, to 291.7.
 // English alone in the one-tag script; the other languages as add-ons save 29.8, to 262.2.
-const BUDGET_KB = 263;
+// A saved form placed in another — the part checked, its answers nested under its name and checked by
+// its own page, drawn in place from the app's pages, said in words when it cannot be — adds 6, to 268.2.
+const BUDGET_KB = 269;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
 // checked, a date's limits, a count of characters, units and symbols, rating looks and NPS) 2.8, to 85.1;
 // signatures' pens and undo, addresses' parts and countries, lines' and cards' moves and pictures' captions
 // 3.4, to 88.5. English alone, the other languages as add-ons (fieldia.ar.js, …) save 8, to 80.6.
-const GZIP_BUDGET_KB = 81;
+// A saved form placed in another, its answers nested and checked inside it, adds 2.3, to 82.9.
+const GZIP_BUDGET_KB = 83;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -157,7 +160,8 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
  * may run first) or twice — Fieldia then has every word of that language, as
  * the packages have it.
  */
-const ADD_ON_BUDGET_KB = { ar: [18, 4], de: [8, 3.5], fr: [8, 3.5] };
+// A saved form's four messages take Arabic's to 18.1.
+const ADD_ON_BUDGET_KB = { ar: [18.5, 4], de: [8, 3.5], fr: [8, 3.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,
