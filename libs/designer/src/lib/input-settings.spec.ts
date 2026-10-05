@@ -140,6 +140,40 @@ describe('a number’s range, decimals and unit', () => {
   });
 });
 
+describe('a rating’s look, and its words at each end', () => {
+  const card = (host: Element) => host.querySelector('.fd-canvas-field.fd-editing') as HTMLElement;
+
+  it('shows hearts, thumbs up or numbers instead of stars, on the card too', () => {
+    const { designer, id, host } = screenWith('rating');
+    expect(inline(host, 'Icon')?.value).toBe('');
+    choose(inline(host, 'Icon') ?? undefined, 'heart');
+    expect(nodeOf(designer, id).options).toEqual({ icon: 'heart' });
+    expect(card(host).querySelector('.fd-rating-heart')).not.toBeNull();
+    choose(inline(host, 'Icon') ?? undefined, 'number');
+    expect(card(host).querySelectorAll('.fd-scale [role=radio]')).toHaveLength(5);
+    choose(inline(host, 'Icon') ?? undefined, '');
+    expect(nodeOf(designer, id).options).toBeUndefined();
+  });
+
+  it('has words at each end, as a scale has', () => {
+    const { designer, id, host } = screenWith('rating');
+    type(inline(host, 'Words at the start') ?? undefined, 'Poor');
+    type(inline(host, 'Words at the end') ?? undefined, 'Great');
+    expect(nodeOf(designer, id).options).toEqual({ startLabel: 'Poor', endLabel: 'Great' });
+    expect([...card(host).querySelectorAll('.fd-scale-ends span')].map((s) => s.textContent)).toEqual(['Poor', 'Great']);
+  });
+});
+
+describe('a slider’s words at each end', () => {
+  it('are typed beside its range, and shown under its ends', () => {
+    const { designer, id, host } = screenWith('slider');
+    type(inline(host, 'Words at the start') ?? undefined, 'Never');
+    type(inline(host, 'Words at the end') ?? undefined, 'Every day');
+    expect(nodeOf(designer, id).options).toEqual({ startLabel: 'Never', endLabel: 'Every day' });
+    expect([...host.querySelectorAll('.fd-canvas-field.fd-editing .fd-slider-word')].map((s) => s.textContent)).toEqual(['Never', 'Every day']);
+  });
+});
+
 describe('the words for what changed, when published', () => {
   it('says a text’s most characters, a paragraph’s rows and whether it grows', () => {
     const designer = createDesigner({ page: blankPage('survey', 'Feedback') });
@@ -167,5 +201,17 @@ describe('the words for what changed, when published', () => {
     designer.setLimits(q, { min: null, decimals: 3 });
     designer.setWidgetOptions(q, { suffix: null, prefix: '≈' });
     expect(pageChanges(later, designer.getPage())).toEqual(['“Weight”: at most 300', '“Weight”: 3 decimals', '“Weight”: no unit after the number', '“Weight”: shows “≈” before the number']);
+  });
+
+  it('says a rating’s look', () => {
+    const designer = createDesigner({ page: blankPage('survey', 'Move') });
+    const q = designer.addQuestion('rating') as string;
+    designer.updateQuestion(q, { label: 'Lunch' });
+    const before = designer.getPage();
+    designer.setWidgetOptions(q, { icon: 'thumb' });
+    expect(pageChanges(before, designer.getPage())).toEqual(['“Lunch”: shown as thumbs up']);
+    const later = designer.getPage();
+    designer.setWidgetOptions(q, { icon: null });
+    expect(pageChanges(later, designer.getPage())).toEqual(['“Lunch”: shown as stars']);
   });
 });

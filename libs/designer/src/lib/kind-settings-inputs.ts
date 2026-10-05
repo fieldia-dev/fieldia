@@ -7,7 +7,8 @@ import type { InputLimits } from './input-commands';
  * The text, number and date kinds' settings, in the picked field itself
  * beside the rest of its kind's, and in the side panel the same way: the
  * most characters a box takes, a paragraph's rows and whether it grows; a
- * number's or an amount's range and decimals, and a number's unit.
+ * number's or an amount's range and decimals, and a number's unit; a
+ * rating's look and the words at a rating's or a slider's ends.
  */
 
 export interface InputSettings {
@@ -99,11 +100,37 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     };
   }
 
+  /** A rating's look: stars, hearts, thumbs up or numbers. */
+  function look(): Part {
+    const icon = select('Icon', [['', 'Stars'], ['heart', 'Hearts'], ['thumb', 'Thumbs up'], ['number', 'Numbers']]);
+    icon.addEventListener('change', () => designer.setWidgetOptions(id, { icon: icon.value || null }));
+    return { element: word('Icon', icon), refresh: (_page, node) => show(icon, node.options?.['icon']) };
+  }
+
+  /** Words at either end, under the first and last points, as a scale has them. */
+  function ends(): Part {
+    const box = (which: 'start' | 'end') => {
+      const input = el('input', { class: 'fd-inline-input fd-inline-end-words', 'aria-label': `Words at the ${which}`, placeholder: 'Label (optional)', autocomplete: 'off' }) as HTMLInputElement;
+      input.addEventListener('input', () => designer.setWidgetOptions(id, { [`${which}Label`]: input.value }));
+      return input;
+    };
+    const [start, end] = [box('start'), box('end')];
+    return {
+      element: row(word('Start', start), word('End', end)),
+      refresh(_page, node) {
+        show(start, node.options?.['startLabel']);
+        show(end, node.options?.['endLabel']);
+      },
+    };
+  }
+
   const parts: Part[] = [];
   if (kind === 'short-answer' || kind === 'paragraph') parts.push(most());
   if (kind === 'paragraph') parts.push(rows());
   if (kind === 'number' || kind === 'amount') parts.push(range());
   if (kind === 'number') parts.push(units());
+  if (kind === 'rating') parts.push(look());
+  if (kind === 'rating' || kind === 'slider') parts.push(ends());
   if (!parts.length) return null;
   return { elements: parts.map((p) => p.element), refresh: (page, node) => parts.forEach((p) => p.refresh(page, node)) };
 }

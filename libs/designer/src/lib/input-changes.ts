@@ -35,6 +35,7 @@ const OPTION_WORDS: Record<string, Words> = {
   autoGrow: (v) => (v === false ? 'keeps its height as people type' : 'grows as people type'),
   prefix: (v) => (v ? `shows “${v}” before the number` : 'no unit before the number'),
   suffix: (v) => (v ? `shows “${v}” after the number` : 'no unit after the number'),
+  icon: (v) => `shown as ${({ heart: 'hearts', thumb: 'thumbs up', number: 'numbers' } as Record<string, string>)[v as string] ?? 'stars'}`,
 };
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
