@@ -230,3 +230,31 @@ describe('a date’s, a date and time’s and a time’s limits on the input', (
     expect(form.getState().values['x']).toBe('10:30');
   });
 });
+
+describe('keywords at most', () => {
+  it('stop taking more once there are as many as the page allows', () => {
+    const { el, value, form } = mountKind({ type: 'char' }, { widget: 'tags', options: { max: 2 } });
+    const box = el.querySelector('input') as HTMLInputElement;
+    typeInto(box, 'oak,');
+    typeInto(box, 'glass,');
+    expect(value()).toBe('oak, glass');
+    expect(box.closest('[hidden]')).not.toBeNull();
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Remove glass');
+    typeInto(box, 'steel,');
+    expect(value()).toBe('oak, glass');
+    form.setValue('x', 'oak');
+    expect(box.closest('[hidden]')).toBeNull();
+  });
+});
+
+describe('a progress bar’s range', () => {
+  it('is the field’s own, unless the page gives the bar one', () => {
+    const own = mountKind({ type: 'integer', min: 0, max: 320 }, { widget: 'progressbar' });
+    own.form.setValue('x', 160);
+    const bar = own.el.querySelector('[role=progressbar]') ?? own.el;
+    expect([bar.getAttribute('aria-valuemax'), bar.getAttribute('aria-valuetext')]).toEqual(['320', '50%']);
+    const given = mountKind({ type: 'integer', min: 0, max: 100 }, { widget: 'progressbar', options: { max: 200 } });
+    given.form.setValue('x', 50);
+    expect((given.el.querySelector('[role=progressbar]') ?? given.el).getAttribute('aria-valuetext')).toBe('25%');
+  });
+});

@@ -5,7 +5,7 @@ import { createWidget, type Widget, type WidgetFactory } from './widgets';
  * A number shown as a bar that fills towards a maximum, coloured by how far
  * it has come: red under 30 %, yellow under 70 %, green from there. Options:
  *
- *   max        the maximum, 100 by default (min 0)
+ *   max        the maximum: the field's own, else 100 (min: the field's own, else 0)
  *   maxField   a number field that holds the maximum instead
  *   color      "auto", or always "success", "warning", "danger" or "info"
  *   showPercent  false to leave the percentage off the bar
@@ -23,10 +23,14 @@ function percent(value: number, locale: Locale) {
 }
 
 export const progressbarWidget: WidgetFactory = (context) => {
-  const { node, id, document, locale = 'en' } = context;
+  const { field, node, id, document, locale = 'en' } = context;
   const options = node.options ?? {};
-  const min = typeof options['min'] === 'number' ? options['min'] : 0;
-  const fixedMax = typeof options['max'] === 'number' ? options['max'] : 100;
+  const range = (key: 'min' | 'max', usual: number) => {
+    const set = options[key] ?? (field as Record<string, unknown>)[key];
+    return typeof set === 'number' ? set : usual;
+  };
+  const min = range('min', 0);
+  const fixedMax = range('max', 100);
   const maxField = typeof options['maxField'] === 'string' ? options['maxField'] : null;
   const color = typeof options['color'] === 'string' ? options['color'] : 'auto';
   const showPercent = options['showPercent'] !== false;
