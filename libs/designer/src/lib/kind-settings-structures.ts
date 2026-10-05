@@ -28,6 +28,7 @@ export const PEN_COLOURS: [string, string][] = [
 ];
 
 export function structureSettings(el: ElementFactory, designer: Designer, id: string, kind: string | null): StructurePart[] {
+  const w = designer.words.questions;
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
   const word = (text: string, control: HTMLElement) => el('label', { class: 'fd-inline-setting' }, el('span', {}, text), control);
   const row = (...parts: HTMLElement[]) => el('div', { class: 'fd-inline-row' }, ...parts);
@@ -48,24 +49,25 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
 
   /** A signature's pen — its ink and width — the words on the pad and under it, and whether a picture may be uploaded. */
   function signature(): StructurePart {
-    const inks = PEN_COLOURS.map(([colour, name], i) => {
+    const inks = PEN_COLOURS.map(([colour], i) => {
+      const name = w.pens[colour];
       const chip = el('button', { type: 'button', class: 'fd-inline-chip fd-pen-ink', 'aria-pressed': 'false', style: `--fd-ink: ${colour}` }, el('span', { class: 'fd-pen-dot', 'aria-hidden': 'true' }), name) as HTMLButtonElement;
       chip.addEventListener('click', () => widget({ color: i === 0 ? null : colour }));
       return { chip, colour };
     });
-    const width = select('Pen width', [['2', 'Thin'], ['3', 'Medium'], ['5', 'Thick']]);
+    const width = select(w.penWidth, [['2', w.thin], ['3', w.medium], ['5', w.thick]]);
     width.addEventListener('change', () => widget({ penWidth: width.value === '3' ? null : Number(width.value) }));
-    const pad = textBox('Words on the pad', 'Sign here');
+    const pad = textBox(w.wordsOnPad, w.signHere);
     pad.addEventListener('input', () => designer.updateQuestion(id, { placeholder: pad.value }));
-    const under = textBox('Words under it', 'I agree this is my signature');
+    const under = textBox(w.wordsUnder, w.agree);
     under.addEventListener('input', () => widget({ footerLabel: under.value }));
-    const upload = toggle('People can upload a picture of it', (on) => widget({ upload: on || null }));
+    const upload = toggle(w.uploadSignature, (on) => widget({ upload: on || null }));
     return {
       element: el(
         'div',
         { class: 'fd-kind-block' },
-        row(el('span', {}, 'Ink'), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': 'Ink' }, ...inks.map((i) => i.chip)), word('Pen width', width)),
-        row(word('Words on the pad', pad), word('Words under it', under)),
+        row(el('span', {}, w.ink), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': w.ink }, ...inks.map((i) => i.chip)), word(w.penWidth, width)),
+        row(word(w.wordsOnPad, pad), word(w.wordsUnder, under)),
         upload.element
       ),
       refresh(_page, node) {
@@ -81,22 +83,21 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
 
   /** An address's parts that must be filled, among those it asks for, and the country it starts on. */
   function address(): StructurePart {
-    const WORDS: Record<string, string> = { street: 'Street', line2: 'Line 2', city: 'City', region: 'Region', postcode: 'Postcode', country: 'Country' };
     let needed: string[] = [];
     const chips = ADDRESS_PARTS.map((part) => {
-      const chip = el('button', { type: 'button', class: 'fd-inline-chip', 'aria-pressed': 'false', 'data-part': part }, WORDS[part]) as HTMLButtonElement;
+      const chip = el('button', { type: 'button', class: 'fd-inline-chip', 'aria-pressed': 'false', 'data-part': part }, w.addressParts[part]) as HTMLButtonElement;
       chip.addEventListener('click', () => designer.setWidgetList(id, 'requiredParts', needed.includes(part) ? needed.filter((p) => p !== part) : ADDRESS_PARTS.filter((p) => p === part || needed.includes(p))));
       return { part, chip };
     });
-    const country = select('Starts on', [['', 'No country']]);
+    const country = select(w.startsOn, [['', w.noCountry]]);
     country.addEventListener('change', () => widget({ country: country.value || null }));
     let listed = false;
     return {
       element: el(
         'div',
         { class: 'fd-kind-block' },
-        row(el('span', {}, 'Must be filled'), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': 'Parts that must be filled' }, ...chips.map((c) => c.chip))),
-        word('Starts on', country)
+        row(el('span', {}, w.mustBeFilled), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': w.partsFilled }, ...chips.map((c) => c.chip))),
+        word(w.startsOn, country)
       ),
       refresh(_page, node) {
         const asked = option(node, 'parts');
@@ -110,7 +111,7 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
         // The countries a form lists, named once the setting is first drawn.
         if (!listed) {
           listed = true;
-          country.append(...countriesIn('en').map(([code, name]) => el('option', { value: code }, name)));
+          country.append(...countriesIn(designer.locale ?? 'en').map(([code, name]) => el('option', { value: code }, name)));
         }
         country.value = String(option(node, 'country') ?? '');
         country.parentElement!.hidden = !parts.includes('country');
@@ -120,7 +121,7 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
 
   /** A whole number, 1 or more, saved once typed and left; anything else takes it away. */
   const countBox = (label: string, key: string) => {
-    const input = el('input', { type: 'number', class: 'fd-inline-input fd-inline-number', 'aria-label': label, min: '0', step: '1', inputmode: 'numeric', placeholder: 'Any' }) as HTMLInputElement;
+    const input = el('input', { type: 'number', class: 'fd-inline-input fd-inline-number', 'aria-label': label, min: '0', step: '1', inputmode: 'numeric', placeholder: w.any }) as HTMLInputElement;
     input.addEventListener('change', () => {
       const n = Number(input.value);
       widget({ [key]: input.value.trim() !== '' && Number.isInteger(n) && n > 0 ? n : null });
@@ -134,13 +135,13 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
    * the table, or one people may hide, shown or hidden to start with.
    */
   function table(): StructurePart {
-    const least = countBox('At least', 'min');
-    const most = countBox('At most', 'max');
-    const button = textBox('Button words', 'Add a line');
+    const least = countBox(w.atLeast, 'min');
+    const most = countBox(w.atMost, 'max');
+    const button = textBox(w.buttonWords, w.addALine);
     button.addEventListener('input', () => widget({ addLabel: button.value }));
-    const empty = textBox('When empty', 'No lines yet');
+    const empty = textBox(w.whenEmpty, w.noLines);
     empty.addEventListener('input', () => widget({ emptyLabel: empty.value }));
-    const ask = toggle('Ask before removing a line', (on) => widget({ confirmDelete: on || null }));
+    const ask = toggle(w.askBeforeRemoving, (on) => widget({ confirmDelete: on || null }));
     const list = el('ul', { class: 'fd-line-columns' });
     let drawn = '';
     let totals: string[] = [];
@@ -149,10 +150,10 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
       element: el(
         'div',
         { class: 'fd-kind-block' },
-        row(word('At least', least), word('At most', most)),
-        row(word('Button words', button), word('When empty', empty)),
+        row(word(w.atLeast, least), word(w.atMost, most)),
+        row(word(w.buttonWords, button), word(w.whenEmpty, empty)),
         ask.element,
-        el('span', { class: 'fd-prop-name' }, 'Each column'),
+        el('span', { class: 'fd-prop-name' }, w.eachColumn),
         list
       ),
       refresh(page, node) {
@@ -166,10 +167,10 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
           drawn = key;
           list.replaceChildren(
             ...columns.map(([name, f]) => {
-              const adds = el('button', { type: 'button', class: 'fd-inline-chip', 'aria-pressed': 'false', 'aria-label': `Add up ${f.label}`, 'data-column': name }, 'Add up') as HTMLButtonElement;
+              const adds = el('button', { type: 'button', class: 'fd-inline-chip', 'aria-pressed': 'false', 'aria-label': w.addUpNamed(f.label), 'data-column': name }, w.addUp) as HTMLButtonElement;
               adds.hidden = !['integer', 'float', 'monetary'].includes(f.type);
               adds.addEventListener('click', () => designer.setLineTable(id, { totals: totals.includes(name) ? totals.filter((t) => t !== name) : [...totals, name] }));
-              const shown = select(`${f.label}: shown`, [['', 'Always shown'], ['show', 'People can hide it'], ['hide', 'Hidden to start']]);
+              const shown = select(w.shownNamed(f.label), [['', w.alwaysShown], ['show', w.canHide], ['hide', w.hiddenToStart]]);
               shown.dataset['column'] = name;
               shown.addEventListener('change', () => {
                 const next = { ...optional };
@@ -194,9 +195,9 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
 
   /** Whether a link makes new records from a typed name, and the records it offers: only where one of their fields has a value. */
   function link(): StructurePart {
-    const create = toggle('People can create new ones', (on) => widget({ create: on ? null : false }));
-    const where = textBox('Only where', 'active');
-    const value = textBox('has the value', 'true');
+    const create = toggle(w.canCreate, (on) => widget({ create: on ? null : false }));
+    const where = textBox(w.onlyWhere, 'active');
+    const value = textBox(w.hasTheValue, 'true');
     // Saved once typed and left: "true" and "false" are yes and no, a number a number.
     const save = () => {
       const typed = value.value.trim();
@@ -204,8 +205,8 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
     };
     where.addEventListener('change', save);
     value.addEventListener('change', save);
-    const simple = row(word('Only where', where), word('has the value', value));
-    const own = el('span', { class: 'fd-help' }, 'Offers records by a filter of its own');
+    const simple = row(word(w.onlyWhere, where), word(w.hasTheValue, value));
+    const own = el('span', { class: 'fd-help' }, w.ownFilter);
     return {
       element: el('div', { class: 'fd-kind-block' }, create.element, simple, own),
       refresh(page, node) {
@@ -227,7 +228,7 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
   if (kind === 'link' || kind === 'links') parts.push(link());
   // Rich text with its formatting toolbar, or plain of it.
   if (kind === 'rich-text') {
-    const bar = toggle('Formatting toolbar', (on) => widget({ toolbar: on ? null : false }));
+    const bar = toggle(w.toolbar, (on) => widget({ toolbar: on ? null : false }));
     parts.push({ element: bar.element, refresh: (_page, node) => bar.button.setAttribute('aria-checked', String(option(node, 'toolbar') !== false)) });
   }
   if (kind === 'lines') parts.push(table());

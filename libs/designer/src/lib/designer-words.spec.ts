@@ -23,7 +23,7 @@ export const LATIN_KEPT = [
   // Keys, and the letters of shortcuts.
   ...['Ctrl', 'Shift', 'Alt', 'Enter', 'Esc', 'Tab', 'Home', 'End', 'Delete', 'Backspace', 'K', 'J', 'Z', 'Y', 'D', 'C', 'V', 'X', 'A', 'G'],
   // Formats and currencies.
-  ...['JSON', 'CSV', 'USD', 'EGP', 'IBAN', 'URL'],
+  ...['JSON', 'CSV', 'PDF', 'USD', 'EGP', 'IBAN', 'URL', 'https'],
   // Names in code, in examples.
   ...['contact', 'confirm', 'open_invoices', 'archive', 'active'],
 ];
@@ -52,6 +52,7 @@ const SAMPLES: Record<string, unknown[][]> = {
   'changes.renamedHeader': ['button', 'counter', 'badge'].map((kind) => [kind, 'س', 'ص']),
   'changes.drawn': ['card', 'plain', 'line', 'framed'].map((style) => ['س', style]),
   'changes.folds': ['no', 'open', 'folded'].map((fold) => ['س', fold]),
+  'questions.size': [[512], [1024 * 1024], [7.3 * 1024 * 1024], [2 * 1024 ** 3]],
   'changes.lookValue': [['font', 'serif'], ['density', 'compact'], ['corners', 'round'], ['scheme', 'auto'], ['labels', 'beside'], ['labelWidth', 120], ['accent', null]],
 };
 const GENERIC: unknown[] = [0, 1, 2, 3, 11, 100, 'س', ['س', 'ص']];

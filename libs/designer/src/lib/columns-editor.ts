@@ -2,12 +2,7 @@ import type { Field } from '@fieldia/core';
 import { iconButton, type ElementFactory } from './chrome';
 import { columnKind, type Designer, type LineColumn } from './designer';
 
-const KINDS: [LineColumn['kind'], string][] = [
-  ['text', 'Text'],
-  ['number', 'Number'],
-  ['date', 'Date'],
-  ['yes-no', 'Yes or no'],
-];
+const KINDS: Exclude<LineColumn['kind'], 'other'>[] = ['text', 'number', 'date', 'yes-no'];
 
 /**
  * A table of lines' columns in the properties panel: a label and a kind for
@@ -15,9 +10,10 @@ const KINDS: [LineColumn['kind'], string][] = [
  * not offer, such as a link, keeps its type and shows it as "Other".
  */
 export function columnsEditor(el: ElementFactory, designer: Designer, nodeId: string) {
+  const w = designer.words.questions;
   const list = el('ul', { class: 'fd-columns' });
-  const add = el('button', { type: 'button', class: 'fd-button fd-button-link', 'data-add-column': '' }, 'Add column');
-  const element = el('div', { class: 'fd-columns-box' }, el('span', { class: 'fd-prop-name' }, 'Columns'), list, add);
+  const add = el('button', { type: 'button', class: 'fd-button fd-button-link', 'data-add-column': '' }, w.addColumn);
+  const element = el('div', { class: 'fd-columns-box' }, el('span', { class: 'fd-prop-name' }, w.columns), list, add);
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
   const read = (): LineColumn[] =>
     [...list.children].map((row) => ({
@@ -27,7 +23,7 @@ export function columnsEditor(el: ElementFactory, designer: Designer, nodeId: st
     }));
   add.addEventListener('click', () => {
     const current = read();
-    designer.setLineColumns(nodeId, [...current, { label: `Column ${current.length + 1}`, kind: 'text' }]);
+    designer.setLineColumns(nodeId, [...current, { label: designer.words.defaults.column(current.length + 1), kind: 'text' }]);
     (list.lastElementChild?.querySelector('input') as HTMLInputElement | null)?.focus();
   });
 
@@ -40,11 +36,11 @@ export function columnsEditor(el: ElementFactory, designer: Designer, nodeId: st
       while (list.children.length > columns.length) list.lastElementChild?.remove();
       while (list.children.length < columns.length) {
         const index = list.children.length + 1;
-        const input = el('input', { class: 'fd-input', 'aria-label': `Column ${index}` });
+        const input = el('input', { class: 'fd-input', 'aria-label': w.column(index) });
         input.addEventListener('input', () => designer.setLineColumns(nodeId, read()));
-        const kind = el('select', { class: 'fd-input fd-select', 'aria-label': `Kind of column ${index}` }, ...KINDS.map(([value, text]) => el('option', { value }, text)), el('option', { value: 'other', hidden: '' }, 'Other'));
+        const kind = el('select', { class: 'fd-input fd-select', 'aria-label': w.kindOfColumn(index) }, ...KINDS.map((value) => el('option', { value }, w.columnKinds[value])), el('option', { value: 'other', hidden: '' }, w.columnKinds.other));
         kind.addEventListener('change', () => designer.setLineColumns(nodeId, read()));
-        const remove = iconButton(el, 'Remove column', '×', () => {
+        const remove = iconButton(el, w.removeColumn, '×', () => {
           const current = read();
           current.splice([...list.children].indexOf(remove.parentElement as Element), 1);
           designer.setLineColumns(nodeId, current);
@@ -58,8 +54,8 @@ export function columnsEditor(el: ElementFactory, designer: Designer, nodeId: st
         if (!focused(input)) input.value = def.label;
         (row.querySelector('select') as HTMLSelectElement).value = columnKind(def);
         const remove = row.querySelector('button') as HTMLButtonElement;
-        remove.setAttribute('aria-label', `Remove column ${def.label}`);
-        remove.title = `Remove column ${def.label}`;
+        remove.setAttribute('aria-label', w.removeColumnNamed(def.label));
+        remove.title = w.removeColumnNamed(def.label);
         remove.hidden = columns.length === 1;
       });
     },

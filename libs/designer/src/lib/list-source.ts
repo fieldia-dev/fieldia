@@ -14,26 +14,27 @@ let sources = 0;
 /** A choice's options as one of the app's lists: whether they are, which list, and the fields it changes with. */
 export function listSource(el: ElementFactory, designer: Designer, nodeId: string) {
   // A name of its own: the canvas and the panel may both show this question's options.
+  const w = designer.words.questions;
   const name = `fd-q-source-${++sources}`;
   const written = el('input', { type: 'radio', name, value: 'written' });
   const listed = el('input', { type: 'radio', name, value: 'list' });
   const element = el(
     'div',
-    { class: 'fd-q-source', role: 'radiogroup', 'aria-label': 'Choices' },
-    el('span', { class: 'fd-q-source-words', 'aria-hidden': 'true' }, 'Choices'),
-    el('label', { class: 'fd-q-source-pick' }, written, 'Written here'),
-    el('label', { class: 'fd-q-source-pick' }, listed, 'From the app’s list')
+    { class: 'fd-q-source', role: 'radiogroup', 'aria-label': w.choices },
+    el('span', { class: 'fd-q-source-words', 'aria-hidden': 'true' }, w.choices),
+    el('label', { class: 'fd-q-source-pick' }, written, w.writtenHere),
+    el('label', { class: 'fd-q-source-pick' }, listed, w.fromAppList)
   );
-  const pick = el('select', { class: 'fd-input', 'aria-label': 'List' });
-  const typed = el('input', { class: 'fd-input', 'aria-label': 'List name', autocomplete: 'off', spellcheck: 'false' });
+  const pick = el('select', { class: 'fd-input', 'aria-label': w.listWord });
+  const typed = el('input', { class: 'fd-input', 'aria-label': w.listName, autocomplete: 'off', spellcheck: 'false' });
   const depends = el('div', { class: 'fd-q-depends-boxes' });
-  const none = el('p', { class: 'fd-q-list-note' }, 'No other fields on the page yet.');
+  const none = el('p', { class: 'fd-q-list-note' }, w.noOtherFields);
   const list = el(
     'div',
     { class: 'fd-q-list', hidden: '' },
-    el('label', { class: 'fd-q-list-name' }, el('span', {}, 'List'), pick, typed),
-    el('fieldset', { class: 'fd-q-depends' }, el('legend', {}, 'Changes with'), depends, none),
-    el('p', { class: 'fd-q-list-note' }, 'The app gives these choices as the form opens, and again when a field they change with changes.')
+    el('label', { class: 'fd-q-list-name' }, el('span', {}, w.listWord), pick, typed),
+    el('fieldset', { class: 'fd-q-depends' }, el('legend', {}, w.changesWith), depends, none),
+    el('p', { class: 'fd-q-list-note' }, w.listNote)
   );
   /** The choice's own field, and its list as the page has it now. */
   const own = () => {

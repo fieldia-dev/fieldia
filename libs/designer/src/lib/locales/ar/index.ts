@@ -12,6 +12,7 @@ import { languages } from './languages';
 import { changes } from './changes';
 import { settingsChanges } from './settings-changes';
 import { checks } from './checks';
+import { questions } from './questions';
 
 /**
  * The designer's words in Arabic: Modern Standard Arabic as Arabic software
@@ -33,4 +34,4 @@ import { checks } from './checks';
  *   model (the backend's) نموذج البيانات · record سجل · list قائمة · sheet ورقة
  *   desktop / tablet / phone سطح المكتب / جهاز لوحي / هاتف · width العرض
  */
-export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks };
+export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions };

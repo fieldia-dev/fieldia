@@ -29,12 +29,12 @@ type Part = Omit<KindSettings, 'elements'> & { element: HTMLElement };
 const SHUFFLED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choice', 'ranking']);
 /** Kinds whose options may be worth points: a matrix's options are its columns. */
 const SCORED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choice', 'matrix']);
-const PART_WORDS: Record<(typeof ADDRESS_PARTS)[number], string> = { street: 'Street', line2: 'Line 2', city: 'City', region: 'Region', postcode: 'Postcode', country: 'Country' };
 
 const optionsOf = (field: Field) => (field.type === 'selection' ? field.options : field.type === 'matrix' ? field.columns : []);
 const numberOrNull = (text: string) => (text.trim() === '' || !Number.isFinite(Number(text)) ? null : Number(text));
 
 export function kindSettings(el: ElementFactory, designer: Designer, id: string, kind: string | null): KindSettings | null {
+  const w = designer.words.questions;
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
   const word = (text: string, control: HTMLElement) => el('label', { class: 'fd-inline-setting' }, el('span', {}, text), control);
   const numberBox = (label: string, extra: Record<string, string> = {}) =>
@@ -49,9 +49,9 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
   const optionOf = (node: FieldNode, key: string) => node.options?.[key];
 
   function slider(): Part {
-    const from = numberBox('From', { step: 'any' });
-    const to = numberBox('To', { step: 'any' });
-    const step = numberBox('Step', { min: '0', step: 'any' });
+    const from = numberBox(w.from, { step: 'any' });
+    const to = numberBox(w.toLabel, { step: 'any' });
+    const step = numberBox(w.step, { min: '0', step: 'any' });
     // Saved once a number is typed and left, so a range half typed is not refused.
     const range = () => {
       const min = numberOrNull(from.value);
@@ -63,7 +63,7 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
     // A step with decimals makes the field a decimal, so the values it reaches are ones the field takes.
     step.addEventListener('change', () => designer.setStep(id, numberOrNull(step.value)));
     return {
-      element: el('div', { class: 'fd-inline-row' }, word('From', from), word('to', to), word('Step', step)),
+      element: el('div', { class: 'fd-inline-row' }, word(w.from, from), word(w.to, to), word(w.step, step)),
       standsIn: false,
       refresh(page, node) {
         const def = page.fields[node.field];
@@ -77,13 +77,13 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
 
   function pictures(): Part {
     const list = el('ul', { class: 'fd-kind-pictures' });
-    const several = toggle('Several answers', (on) => designer.setSeveral(id, on));
-    const element = el('div', { class: 'fd-kind-block' }, el('span', { class: 'fd-prop-name' }, 'Pictures'), list, several.element);
+    const several = toggle(w.severalAnswers, (on) => designer.setSeveral(id, on));
+    const element = el('div', { class: 'fd-kind-block' }, el('span', { class: 'fd-prop-name' }, w.pictures), list, several.element);
     const rows: { thumb: HTMLElement; name: HTMLElement; address: HTMLInputElement; file: HTMLInputElement; alt: HTMLInputElement }[] = [];
     function row(index: number) {
       const thumb = el('span', { class: 'fd-kind-thumb' });
       const name = el('span', { class: 'fd-kind-picture-name' });
-      const address = el('input', { class: 'fd-inline-input fd-kind-picture-address', placeholder: 'Picture address, https://…', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+      const address = el('input', { class: 'fd-inline-input fd-kind-picture-address', placeholder: w.pictureAddress, autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
       // Kept once typed and left: a picture half typed is an address that is not there.
       address.addEventListener('change', () => designer.setOptionDetails(id, index, { image: address.value }));
       // Or a picture from this computer, kept in the page as a data: address: 1200 px wide at most, refused over 5 MB.
@@ -97,9 +97,9 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
         else void pictureForPage(chosen, file.ownerDocument).then(keep, () => keep(''));
       });
       // What it shows, for people who cannot see it.
-      const alt = el('input', { class: 'fd-inline-input fd-kind-picture-alt', placeholder: 'What it shows, for people who cannot see it', autocomplete: 'off' }) as HTMLInputElement;
+      const alt = el('input', { class: 'fd-inline-input fd-kind-picture-alt', placeholder: w.pictureAlt, autocomplete: 'off' }) as HTMLInputElement;
       alt.addEventListener('input', () => designer.setOptionDetails(id, index, { alt: alt.value }));
-      const upload = el('button', { type: 'button', class: 'fd-button fd-button-link fd-kind-upload' }, 'Upload');
+      const upload = el('button', { type: 'button', class: 'fd-button fd-button-link fd-kind-upload' }, w.upload);
       upload.addEventListener('click', () => file.click());
       list.append(el('li', { class: 'fd-kind-picture' }, thumb, name, address, upload, file, alt));
       rows.push({ thumb, name, address, file, alt });
@@ -118,8 +118,8 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
         options.forEach((option, i) => {
           const { thumb, name, address, alt } = rows[i];
           name.textContent = option.label;
-          address.setAttribute('aria-label', `Picture for ${option.label}`);
-          alt.setAttribute('aria-label', `What the picture for ${option.label} shows`);
+          address.setAttribute('aria-label', w.pictureFor(option.label));
+          alt.setAttribute('aria-label', w.pictureShows(option.label));
           alt.hidden = !option.image;
           if (!focused(alt)) alt.value = option.alt ?? '';
           const src = option.image ?? '';
@@ -129,7 +129,7 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
           if (!focused(address)) {
             const uploaded = src.startsWith('data:');
             address.value = uploaded ? '' : src;
-            address.placeholder = uploaded ? 'Uploaded picture' : 'Picture address, https://…';
+            address.placeholder = uploaded ? w.uploaded : w.pictureAddress;
           }
         });
         several.button.setAttribute('aria-checked', String(def.type === 'selection' && def.multiple === true));
@@ -139,11 +139,11 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
 
   function matrix(): Part {
     const editors = (['rows', 'columns'] as const).map((which) => {
-      const one = which === 'rows' ? 'Row' : 'Column';
+      const said = which === 'rows' ? { add: w.addRow, item: w.row, made: designer.words.defaults.row, remove: w.removeRow, removeNamed: w.removeRowNamed } : { add: w.addColumn, item: w.column, made: designer.words.defaults.column, remove: w.removeColumn, removeNamed: w.removeColumnNamed };
       const list = el('ul', { class: 'fd-kind-items' });
       const read = () => [...list.querySelectorAll('input')].map((input) => input.value);
       const save = () => designer.setMatrixItems(id, which, read());
-      const add = el('button', { type: 'button', class: 'fd-button fd-button-link', [`data-add-${which}`]: '' }, `Add ${one.toLowerCase()}`);
+      const add = el('button', { type: 'button', class: 'fd-button fd-button-link', [`data-add-${which}`]: '' }, said.add);
       const focusAt = (index: number) => {
         const input = list.querySelectorAll('input')[index] as HTMLInputElement | undefined;
         input?.focus();
@@ -151,16 +151,16 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
       };
       add.addEventListener('click', () => {
         const labels = read();
-        if (designer.setMatrixItems(id, which, [...labels, `${one} ${labels.length + 1}`])) focusAt(labels.length);
+        if (designer.setMatrixItems(id, which, [...labels, said.made(labels.length + 1)])) focusAt(labels.length);
       });
-      const element = el('div', { class: 'fd-kind-block' }, el('span', { class: 'fd-prop-name' }, which === 'rows' ? 'Rows' : 'Columns'), list, add);
+      const element = el('div', { class: 'fd-kind-block' }, el('span', { class: 'fd-prop-name' }, which === 'rows' ? w.rows : w.columns), list, add);
       return {
         element,
         update(items: { label: string }[]) {
           while (list.children.length > items.length) list.lastElementChild?.remove();
           while (list.children.length < items.length) {
             const index = list.children.length;
-            const input = el('input', { class: 'fd-inline-input fd-kind-item', 'aria-label': `${one} ${index + 1}`, autocomplete: 'off' }) as HTMLInputElement;
+            const input = el('input', { class: 'fd-inline-input fd-kind-item', 'aria-label': said.item(index + 1), autocomplete: 'off' }) as HTMLInputElement;
             // Emptied while typed in, it stays until the cursor leaves; then it goes.
             input.addEventListener('input', () => input.value.trim() && save());
             input.addEventListener('change', () => !input.value.trim() && save());
@@ -168,10 +168,10 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
               if (event.key !== 'Enter') return;
               event.preventDefault();
               const labels = read();
-              labels.splice(index + 1, 0, `${one} ${labels.length + 1}`);
+              labels.splice(index + 1, 0, said.made(labels.length + 1));
               if (designer.setMatrixItems(id, which, labels)) focusAt(index + 1);
             });
-            const remove = iconButton(el, `Remove ${one.toLowerCase()}`, '×', () => {
+            const remove = iconButton(el, said.remove, '×', () => {
               const labels = read();
               labels.splice(index, 1);
               designer.setMatrixItems(id, which, labels);
@@ -183,7 +183,7 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
             const input = row.querySelector('input') as HTMLInputElement;
             if (!focused(input)) input.value = item.label;
             const remove = row.querySelector('button') as HTMLButtonElement;
-            remove.setAttribute('aria-label', `Remove ${one.toLowerCase()} ${item.label}`);
+            remove.setAttribute('aria-label', said.removeNamed(item.label));
             remove.title = remove.getAttribute('aria-label') ?? '';
             remove.hidden = items.length === 1;
           });
@@ -205,12 +205,12 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
   function address(): Part {
     let current: string[] = USUAL_ADDRESS;
     const chips = ADDRESS_PARTS.map((part) => {
-      const chip = el('button', { type: 'button', class: 'fd-inline-chip', 'aria-pressed': 'true', 'data-part': part }, PART_WORDS[part]) as HTMLButtonElement;
+      const chip = el('button', { type: 'button', class: 'fd-inline-chip', 'aria-pressed': 'true', 'data-part': part }, w.addressParts[part]) as HTMLButtonElement;
       chip.addEventListener('click', () => designer.setAddressParts(id, current.includes(part) ? current.filter((p) => p !== part) : [...current, part]));
       return { part, chip };
     });
     return {
-      element: el('div', { class: 'fd-inline-row' }, el('span', {}, 'Asks for'), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': 'Parts of the address' }, ...chips.map((c) => c.chip))),
+      element: el('div', { class: 'fd-inline-row' }, el('span', {}, w.asksFor), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': w.partsOfAddress }, ...chips.map((c) => c.chip))),
       standsIn: false,
       refresh(_page, node) {
         const parts = optionOf(node, 'parts');
@@ -224,13 +224,13 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
     const columns = columnsEditor(el, designer, id);
     // The table's column editor, for the fields of each card.
     const heading = columns.element.querySelector('.fd-prop-name');
-    if (heading) heading.textContent = 'Fields in each card';
+    if (heading) heading.textContent = w.fieldsInCard;
     const addField = columns.element.querySelector('[data-add-column]');
-    if (addField) addField.textContent = 'Add field';
-    const least = numberBox('At least', { min: '0', step: '1' });
-    const most = numberBox('At most', { min: '1', step: '1' });
-    const title = textBox('Card title', 'Entry');
-    const button = textBox('Button words', 'Add another');
+    if (addField) addField.textContent = w.addField;
+    const least = numberBox(w.atLeast, { min: '0', step: '1' });
+    const most = numberBox(w.atMost, { min: '1', step: '1' });
+    const title = textBox(w.cardTitle, w.entry);
+    const button = textBox(w.buttonWords, w.addAnother);
     const count = (input: HTMLInputElement, key: 'min' | 'max') =>
       input.addEventListener('change', () => {
         const n = numberOrNull(input.value);
@@ -245,8 +245,8 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
         'div',
         { class: 'fd-kind-block' },
         columns.element,
-        el('div', { class: 'fd-inline-row' }, word('At least', least), word('At most', most)),
-        el('div', { class: 'fd-inline-row' }, word('Card title', title), word('Button words', button))
+        el('div', { class: 'fd-inline-row' }, word(w.atLeast, least), word(w.atMost, most)),
+        el('div', { class: 'fd-inline-row' }, word(w.cardTitle, title), word(w.buttonWords, button))
       ),
       standsIn: true,
       refresh(page, node) {
@@ -261,7 +261,7 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
   }
 
   function shuffle(): Part {
-    const toggled = toggle('Shuffle option order', (on) => designer.setWidgetOptions(id, { shuffle: on ? true : null }));
+    const toggled = toggle(w.shuffle, (on) => designer.setWidgetOptions(id, { shuffle: on ? true : null }));
     return {
       element: toggled.element,
       standsIn: false,
@@ -273,12 +273,12 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
 
   /** Points for each option once the page is a quiz — some option on it has points — and the way to make it one. */
   function points(): Part {
-    const start = el('button', { type: 'button', class: 'fd-button fd-button-link fd-kind-give-points' }, 'Give points: make it a quiz');
+    const start = el('button', { type: 'button', class: 'fd-button fd-button-link fd-kind-give-points' }, w.givePoints);
     start.addEventListener('click', () => {
       if (designer.setOptionDetails(id, 0, { score: 0 })) (list.querySelector('input') as HTMLInputElement | null)?.focus();
     });
     const list = el('ul', { class: 'fd-kind-points' });
-    const block = el('div', { class: 'fd-kind-block' }, el('span', { class: 'fd-prop-name' }, 'Points'), list);
+    const block = el('div', { class: 'fd-kind-block' }, el('span', { class: 'fd-prop-name' }, w.points), list);
     const rows: { name: HTMLElement; input: HTMLInputElement }[] = [];
     return {
       element: el('div', { class: 'fd-kind-points-box' }, start, block),
@@ -295,14 +295,14 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
         while (rows.length < options.length) {
           const index = rows.length;
           const name = el('span', { class: 'fd-kind-points-name' });
-          const input = numberBox('Points', { step: 'any', placeholder: '0' });
+          const input = numberBox(w.points, { step: 'any', placeholder: '0' });
           input.addEventListener('input', () => designer.setOptionDetails(id, index, { score: numberOrNull(input.value) }));
           list.append(el('li', { class: 'fd-kind-points-row' }, name, input));
           rows.push({ name, input });
         }
         options.forEach((option, i) => {
           rows[i].name.textContent = option.label;
-          rows[i].input.setAttribute('aria-label', `Points for ${option.label}`);
+          rows[i].input.setAttribute('aria-label', w.pointsFor(option.label));
           if (!focused(rows[i].input)) rows[i].input.value = option.score === undefined ? '' : String(option.score);
         });
       },

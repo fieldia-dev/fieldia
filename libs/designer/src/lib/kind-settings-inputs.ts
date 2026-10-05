@@ -25,6 +25,7 @@ type Part = Omit<InputSettings, 'elements'> & { element: HTMLElement };
 const numberOrNull = (text: string) => (text.trim() === '' || !Number.isFinite(Number(text)) ? null : Number(text));
 
 export function inputSettings(el: ElementFactory, designer: Designer, id: string, kind: string | null): InputSettings | null {
+  const w = designer.words.questions;
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
   const word = (text: string, control: HTMLElement) => el('label', { class: 'fd-inline-setting' }, el('span', {}, text), control);
   const row = (...parts: HTMLElement[]) => el('div', { class: 'fd-inline-row' }, ...parts);
@@ -51,17 +52,17 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
 
   /** The most characters a short answer or a paragraph takes: a count shows under its box. */
   function most(): Part {
-    const input = limitBox('Most characters', 'size', { min: '1', step: '1', placeholder: 'Any' });
-    return { element: word('Most characters', input), refresh: (page, node) => show(input, own(page.fields[node.field], 'size')) };
+    const input = limitBox(w.mostCharacters, 'size', { min: '1', step: '1', placeholder: w.any });
+    return { element: word(w.mostCharacters, input), refresh: (page, node) => show(input, own(page.fields[node.field], 'size')) };
   }
 
   /** A paragraph's rows, and whether it grows as people type. */
   function rows(): Part {
-    const count = select('Rows', Array.from({ length: 11 }, (_, i) => [String(i + 2), String(i + 2)]));
+    const count = select(w.rows, Array.from({ length: 11 }, (_, i) => [String(i + 2), String(i + 2)]));
     count.addEventListener('change', () => designer.setWidgetOptions(id, { rows: count.value === '3' ? null : Number(count.value) }));
-    const grows = toggle('Grows as people type', (on) => designer.setWidgetOptions(id, { autoGrow: on ? null : false }));
+    const grows = toggle(w.growsAsTyped, (on) => designer.setWidgetOptions(id, { autoGrow: on ? null : false }));
     return {
-      element: row(word('Rows', count), grows.element),
+      element: row(word(w.rows, count), grows.element),
       refresh(_page, node) {
         const n = node.options?.['rows'];
         count.value = String(typeof n === 'number' ? n : 3);
@@ -72,12 +73,12 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
 
   /** Where a number or an amount runs from and to, and its decimals. */
   function range(): Part {
-    const from = limitBox('From', 'min', { step: 'any', placeholder: 'Any' });
-    const to = limitBox('To', 'max', { step: 'any', placeholder: 'Any' });
-    const decimals = select('Decimals', [['', 'Usual'], ...Array.from({ length: 7 }, (_, d): [string, string] => [String(d), String(d)])]);
+    const from = limitBox(w.from, 'min', { step: 'any', placeholder: w.any });
+    const to = limitBox(w.toLabel, 'max', { step: 'any', placeholder: w.any });
+    const decimals = select(w.decimals, [['', w.usual], ...Array.from({ length: 7 }, (_, d): [string, string] => [String(d), String(d)])]);
     decimals.addEventListener('change', () => designer.setLimits(id, { decimals: numberOrNull(decimals.value) }));
     return {
-      element: row(word('From', from), word('to', to), word('Decimals', decimals)),
+      element: row(word(w.from, from), word(w.to, to), word(w.decimals, decimals)),
       refresh(page, node) {
         const def = page.fields[node.field];
         show(from, own(def, 'min'));
@@ -94,10 +95,10 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
       input.addEventListener('input', () => designer.setWidgetOptions(id, { [key]: input.value.trim() || null }));
       return input;
     };
-    const before = box('Unit before', 'prefix', '≈');
-    const after = box('Unit after', 'suffix', 'kg');
+    const before = box(w.unitBefore, 'prefix', '≈');
+    const after = box(w.unitAfter, 'suffix', 'kg');
     return {
-      element: row(word('Unit before', before), word('Unit after', after)),
+      element: row(word(w.unitBefore, before), word(w.unitAfter, after)),
       refresh(_page, node) {
         show(before, node.options?.['prefix']);
         show(after, node.options?.['suffix']);
@@ -107,21 +108,21 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
 
   /** A rating's look: stars, hearts, thumbs up or numbers. */
   function look(): Part {
-    const icon = select('Icon', [['', 'Stars'], ['heart', 'Hearts'], ['thumb', 'Thumbs up'], ['number', 'Numbers']]);
+    const icon = select(w.icon, [['', w.stars], ['heart', w.hearts], ['thumb', w.thumbs], ['number', w.numbers]]);
     icon.addEventListener('change', () => designer.setWidgetOptions(id, { icon: icon.value || null }));
-    return { element: word('Icon', icon), refresh: (_page, node) => show(icon, node.options?.['icon']) };
+    return { element: word(w.icon, icon), refresh: (_page, node) => show(icon, node.options?.['icon']) };
   }
 
   /** Words at either end, under the first and last points, as a scale has them. */
   function ends(): Part {
     const box = (which: 'start' | 'end') => {
-      const input = el('input', { class: 'fd-inline-input fd-inline-end-words', 'aria-label': `Words at the ${which}`, placeholder: 'Label (optional)', autocomplete: 'off' }) as HTMLInputElement;
+      const input = el('input', { class: 'fd-inline-input fd-inline-end-words', 'aria-label': w.wordsAt(which), placeholder: w.labelOptional, autocomplete: 'off' }) as HTMLInputElement;
       input.addEventListener('input', () => designer.setWidgetOptions(id, { [`${which}Label`]: input.value }));
       return input;
     };
     const [start, end] = [box('start'), box('end')];
     return {
-      element: row(word('Start', start), word('End', end)),
+      element: row(word(w.start, start), word(w.end, end)),
       refresh(_page, node) {
         show(start, node.options?.['startLabel']);
         show(end, node.options?.['endLabel']);
@@ -131,9 +132,9 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
 
   /** A linear scale made NPS in one step, and coloured as NPS when it runs 0 to 10. */
   function nps(): Part {
-    const make = el('button', { type: 'button', class: 'fd-button fd-button-link' }, 'Make it NPS') as HTMLButtonElement;
+    const make = el('button', { type: 'button', class: 'fd-button fd-button-link' }, w.makeNps) as HTMLButtonElement;
     make.addEventListener('click', () => designer.makeNps(id));
-    const colours = toggle('Colour as NPS', (on) => designer.setWidgetOptions(id, { nps: on || null }));
+    const colours = toggle(w.colourNps, (on) => designer.setWidgetOptions(id, { nps: on || null }));
     return {
       element: row(make, colours.element),
       refresh(page, node) {
@@ -150,10 +151,10 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
    * or a day — "today", "today+30", "today-7", "2026-03-02" in the format.
    */
   function day(which: 'min' | 'max'): Part {
-    const name = which === 'min' ? 'Earliest' : 'Latest';
-    const how = select(name, [['', 'Any day'], ['today', 'Today'], ['after', 'Days after today'], ['before', 'Days before today'], ['day', 'A day']]);
+    const name = which === 'min' ? w.earliest : w.latest;
+    const how = select(name, [['', w.anyDay], ['today', w.today], ['after', w.daysAfter], ['before', w.daysBefore], ['day', w.aDay]]);
     const days = numberBox('', { min: '1', step: '1' });
-    const date = el('input', { type: 'date', class: 'fd-inline-input', 'aria-label': `${name} day` }) as HTMLInputElement;
+    const date = el('input', { type: 'date', class: 'fd-inline-input', 'aria-label': w.dayOf(which) }) as HTMLInputElement;
     // A day picked to be fixed waits for its date: until then the limit stays as it was.
     let waiting = false;
     const save = () => {
@@ -178,7 +179,7 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
         if (counted) show(days, counted[2]);
         if (mode === 'day' && !waiting) show(date, limit);
         days.hidden = mode !== 'after' && mode !== 'before';
-        days.setAttribute('aria-label', `Days ${mode === 'before' ? 'before' : 'after'} today, ${name.toLowerCase()}`);
+        days.setAttribute('aria-label', w.daysFrom(mode === 'before', which));
         date.hidden = mode !== 'day';
       },
     };
@@ -187,10 +188,10 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   /** The weekends a date may not fall on: Saturday and Sunday, or Friday and Saturday. */
   function weekends(): Part {
     const WEEKS: Record<string, number[]> = { 'sat-sun': [1, 2, 3, 4, 5], 'fri-sat': [1, 2, 3, 4, 7] };
-    const weekend = select('Weekends', [['', 'Allowed'], ['sat-sun', 'Not Saturday or Sunday'], ['fri-sat', 'Not Friday or Saturday'], ['own', 'Some days only']]);
+    const weekend = select(w.weekends, [['', w.allowed], ['sat-sun', w.notSatSun], ['fri-sat', w.notFriSat], ['own', w.someDays]]);
     weekend.addEventListener('change', () => weekend.value !== 'own' && designer.setLimits(id, { days: WEEKS[weekend.value] ?? null }));
     return {
-      element: word('Weekends', weekend),
+      element: word(w.weekends, weekend),
       refresh(page, node) {
         const days = JSON.stringify(own(page.fields[node.field], 'days') ?? null);
         weekend.value = days === 'null' ? '' : (Object.keys(WEEKS).find((k) => JSON.stringify(WEEKS[k]) === days) ?? 'own');
@@ -201,15 +202,15 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
 
   /** A date that starts on the day the form is opened. */
   function startsToday(): Part {
-    const today = toggle('Starts on today', (on) => designer.setLimits(id, { startsToday: on }));
+    const today = toggle(w.startsToday, (on) => designer.setLimits(id, { startsToday: on }));
     return { element: today.element, refresh: (page, node) => today.button.setAttribute('aria-checked', String(own(page.fields[node.field], 'default') === 'today')) };
   }
 
   /** The minutes a date and time's or a time's picker steps by. */
   function minutes(): Part {
-    const step = select('Minutes', ['1', '5', '10', '15', '30'].map((m): [string, string] => [m, m === '1' ? 'Any minute' : `Every ${m}`]));
+    const step = select(w.minutes, ['1', '5', '10', '15', '30'].map((m): [string, string] => [m, m === '1' ? w.anyMinute : w.every(m)]));
     step.addEventListener('change', () => designer.setWidgetOptions(id, { step: step.value === '1' ? null : Number(step.value) }));
-    return { element: word('Minutes', step), refresh: (_page, node) => (step.value = String(node.options?.['step'] ?? 1)) };
+    return { element: word(w.minutes, step), refresh: (_page, node) => (step.value = String(node.options?.['step'] ?? 1)) };
   }
 
   /** A time's earliest and latest: "09:00", "17:30". */
@@ -219,9 +220,9 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
       input.addEventListener('change', () => designer.setWidgetOptions(id, { [key]: input.value || null }));
       return input;
     };
-    const [from, to] = [box('Earliest time', 'min'), box('Latest time', 'max')];
+    const [from, to] = [box(w.earliestTime, 'min'), box(w.latestTime, 'max')];
     return {
-      element: row(word('Earliest time', from), word('Latest time', to)),
+      element: row(word(w.earliestTime, from), word(w.latestTime, to)),
       refresh(_page, node) {
         show(from, node.options?.['min']);
         show(to, node.options?.['max']);
@@ -231,17 +232,17 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
 
   /** Keywords: the suggestions offered as people type, one a line; what keeps them apart; at most how many. */
   function keywords(): Part {
-    const list = el('textarea', { class: 'fd-inline-input fd-inline-list', 'aria-label': 'Suggestions, one a line', rows: '3', placeholder: 'oak\nglass' }) as HTMLTextAreaElement;
+    const list = el('textarea', { class: 'fd-inline-input fd-inline-list', 'aria-label': w.suggestionsLabel, rows: '3', placeholder: 'oak\nglass' }) as HTMLTextAreaElement;
     list.addEventListener('input', () => designer.setWidgetList(id, 'suggestions', list.value.split('\n')));
-    const separator = select('Separator', [[',', 'Comma'], [';', 'Semicolon']]);
+    const separator = select(w.separator, [[',', w.comma], [';', w.semicolon]]);
     separator.addEventListener('change', () => designer.setWidgetOptions(id, { separator: separator.value === ',' ? null : separator.value }));
-    const most = numberBox('At most', { min: '1', step: '1', placeholder: 'Any' });
+    const most = numberBox(w.atMost, { min: '1', step: '1', placeholder: w.any });
     most.addEventListener('change', () => {
       const n = numberOrNull(most.value);
       designer.setWidgetOptions(id, { max: n !== null && Number.isInteger(n) && n > 0 ? n : null });
     });
     return {
-      element: el('div', { class: 'fd-kind-block' }, word('Suggestions', list), row(word('Separator', separator), word('At most', most))),
+      element: el('div', { class: 'fd-kind-block' }, word(w.suggestions, list), row(word(w.separator, separator), word(w.atMost, most))),
       refresh(_page, node) {
         const suggestions = node.options?.['suggestions'];
         if (!focused(list)) list.value = Array.isArray(suggestions) ? suggestions.join('\n') : '';
@@ -253,12 +254,12 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
 
   /** A progress bar's most, its colour — by how far it has come, or always one — and whether the percent shows on it. */
   function progress(): Part {
-    const most = limitBox('Most', 'max', { min: '1', step: '1' });
-    const colour = select('Colour', [['', 'By how far it has come'], ['success', 'Always green'], ['warning', 'Always amber'], ['danger', 'Always red'], ['info', 'Always blue']]);
+    const most = limitBox(w.most, 'max', { min: '1', step: '1' });
+    const colour = select(w.colour, [['', w.byProgress], ['success', w.green], ['warning', w.amber], ['danger', w.red], ['info', w.blue]]);
     colour.addEventListener('change', () => designer.setWidgetOptions(id, { color: colour.value || null }));
-    const percent = toggle('Shows the percent', (on) => designer.setWidgetOptions(id, { showPercent: on ? null : false }));
+    const percent = toggle(w.showsPercent, (on) => designer.setWidgetOptions(id, { showPercent: on ? null : false }));
     return {
-      element: row(word('Most', most), word('Colour', colour), percent.element),
+      element: row(word(w.most, most), word(w.colour, colour), percent.element),
       refresh(page, node) {
         show(most, own(page.fields[node.field], 'max') ?? 100);
         show(colour, node.options?.['color']);
