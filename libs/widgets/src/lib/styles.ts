@@ -299,6 +299,8 @@ const SKINS_CSS = /* css */ `
 .fd-lines-table .fd-input { min-height: 28px; }
 /* A yes/no cell sits level with the inputs beside it. */
 .fd-lines-table td > .fd-checkbox, .fd-lines-table td > .fd-switch { margin-block-start: 6px; }
+.fd-lines-table .fd-lines-grip { width: 22px; min-width: 22px; padding-inline: 0; text-align: center; }
+.fd-line-grip { display: inline-block; padding: 6px 3px; color: var(--fd-muted); cursor: grab; touch-action: none; user-select: none; }
 .fd-line-delete { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
 .fd-line-delete:hover { color: var(--fd-error); background: var(--fd-error-soft); }
 .fd-lines-totals td { padding: 8px; font-weight: 600; border-block-start: 1px solid var(--fd-border); font-variant-numeric: tabular-nums; }

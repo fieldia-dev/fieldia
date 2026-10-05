@@ -10,6 +10,8 @@ export interface WidgetLabels {
   addSection: string;
   addNote: string;
   deleteLine: string;
+  /** A line of a table, as a person is told of it: `{n}` counts from 1. */
+  lineN: string;
   /** Heads the row that adds up a table's number columns. */
   total: string;
   /** A problem on one line of a table, under the table. `{n}` counts from 1. */
@@ -139,6 +141,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addSection: 'Add a section',
     addNote: 'Add a note',
     deleteLine: 'Delete line',
+    lineN: 'line {n}',
     total: 'Total',
     lineProblem: 'Line {n}: {message}',
     moreProblems: 'and {n} more',
@@ -236,6 +239,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addSection: 'إضافة قسم',
     addNote: 'إضافة ملاحظة',
     deleteLine: 'حذف السطر',
+    lineN: 'السطر {n}',
     total: 'الإجمالي',
     lineProblem: 'السطر {n}: {message}',
     moreProblems: 'و{n} أخرى',
@@ -333,6 +337,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addSection: 'Abschnitt hinzufügen',
     addNote: 'Notiz hinzufügen',
     deleteLine: 'Zeile löschen',
+    lineN: 'Zeile {n}',
     total: 'Summe',
     lineProblem: 'Zeile {n}: {message}',
     moreProblems: 'und {n} weitere',
@@ -430,6 +435,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addSection: 'Ajouter une section',
     addNote: 'Ajouter une note',
     deleteLine: 'Supprimer la ligne',
+    lineN: 'ligne {n}',
     total: 'Total',
     lineProblem: 'Ligne {n} : {message}',
     moreProblems: 'et {n} de plus',
