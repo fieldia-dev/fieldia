@@ -78,6 +78,8 @@ ${code(
     <tr><td>${c('button')}</td><td>A button that names an ${c('action')}, with an ${c('icon')} if you like. Fieldia hands the press to your app with the record; your app decides what it does. It can ask to ${c('confirm')} first.</td></tr>
     <tr><td>${c('text')}</td><td>A heading, a paragraph or a note.</td></tr>
     <tr><td>${c('slot')}</td><td>A named place your app fills with its own content — an activity feed, a map, a chart.</td></tr>
+    <tr><td>${c('image')}</td><td>A picture between parts: its ${c('src')} and its ${c('alt')}, what it shows for those who cannot see it — empty only for a picture that is decoration. ${c('width')}: ${c('small')} (160px), ${c('medium')} (320px), ${c('large')} (480px), ${c('full')} or a number of pixels, never wider than its row; ${c('align')}: ${c('start')}, ${c('center')} or ${c('end')}; ${c('href')}: a web or mail address it opens in a new tab; ${c('caption')}: words under it, translated with the page's others.</td></tr>
+    <tr><td>${c('divider')}, ${c('spacer')}</td><td>A line across the row, and empty room.</td></tr>
   </tbody>
 </table>
 <p>Every node has an ${c('id')}, unique in the page. Ids are what a designer, a test or your app use to find a node.</p>
