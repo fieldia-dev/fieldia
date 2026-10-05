@@ -301,7 +301,8 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
   } satisfies Widget;
 };
 
-export const tagsWidget: WidgetFactory = ({ form, name, node, id, document, labels = WIDGET_LABELS.en }) => {
+export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, dialogs }) => {
+  const relation = field.type === 'many2many' ? field.relation : '';
   const current = () => (form.getState().values[name] as RelatedRecord[] | null) ?? [];
   const element = document.createElement('div');
   element.className = 'fd-tags';
@@ -312,9 +313,11 @@ export const tagsWidget: WidgetFactory = ({ form, name, node, id, document, labe
     document,
     id,
     labels,
-    search: (query) => form.search(name, query),
+    // One past what the list shows, besides those chosen, to know whether Search more… has more to find.
+    search: (query) => form.search(name, query, SHOWN + 1 + current().length),
+    shown: SHOWN,
     pick: (record) => {
-      form.setValue(name, [...current(), record]);
+      if (!current().some((r) => r.id === record.id)) form.setValue(name, [...current(), record]);
       box.input.value = '';
     },
     exclude: () => new Set(current().map((record) => record.id)),
@@ -323,7 +326,17 @@ export const tagsWidget: WidgetFactory = ({ form, name, node, id, document, labe
       if (records.length) form.setValue(name, records.slice(0, -1));
     },
     create: creator(form, name, node),
+    // With dialogs: pick from a full list when the short one has no room.
+    more: (_typed, overflow) => (dialogs && overflow ? [{ label: labels.searchMore, act: () => dialogs.searchMore({ title: field.label, search: (query, limit) => form.search(name, query, limit) }) }] : []),
   });
+  // A linked record, opened from its tag in a dialog where the app can show it; a new name it is saved with follows here.
+  const open =
+    dialogs && dialogs.canOpen(relation)
+      ? async (record: RelatedRecord) => {
+          const saved = await dialogs.openRecord(relation, { recordId: record.id, title: record.label });
+          if (saved && saved.label !== record.label) form.setValue(name, current().map((r) => (r.id === record.id ? saved : r)));
+        }
+      : undefined;
   element.append(chips, box.element);
   let readonly = false;
   let drawn = '';
@@ -341,22 +354,27 @@ export const tagsWidget: WidgetFactory = ({ form, name, node, id, document, labe
       if (state.describedBy) box.input.setAttribute('aria-describedby', state.describedBy);
       if (key === drawn) return;
       drawn = key;
-      drawChips(chips, records, readonly, labels, (record) => form.setValue(name, current().filter((r) => r.id !== record.id)));
+      drawChips(chips, records, readonly, labels, (record) => form.setValue(name, current().filter((r) => r.id !== record.id)), open);
       box.setText('');
     },
   };
 };
 
-/** Chips for tags, each with a remove button unless read-only. */
-function drawChips(chips: HTMLElement, records: RelatedRecord[], readonly: boolean, labels: WidgetLabels, remove: (record: RelatedRecord) => void) {
+/** Chips for tags, each with a remove button unless read-only; with `open`, each one's words a button that opens it. */
+function drawChips(chips: HTMLElement, records: RelatedRecord[], readonly: boolean, labels: WidgetLabels, remove: (record: RelatedRecord) => void, open?: (record: RelatedRecord) => void) {
   const doc = chips.ownerDocument;
   chips.replaceChildren(
     ...records.map((record) => {
       const chip = doc.createElement('li');
       chip.className = 'fd-chip';
-      const text = doc.createElement('span');
+      const text = doc.createElement(open ? 'button' : 'span');
       text.className = 'fd-chip-label';
       text.textContent = record.label;
+      if (open) {
+        (text as HTMLButtonElement).type = 'button';
+        text.setAttribute('aria-label', fill(labels.openNamed, { name: record.label }));
+        text.addEventListener('click', () => open(record));
+      }
       chip.append(text);
       if (!readonly) {
         const button = doc.createElement('button');

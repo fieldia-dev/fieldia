@@ -282,6 +282,8 @@ const SKINS_CSS = /* css */ `
   display: inline-flex; align-items: center; gap: 4px; padding: 1px 4px 1px 10px; border-radius: 999px;
   background: var(--fd-accent-soft); color: var(--fd-text); font-size: 13px; line-height: 22px;
 }
+button.fd-chip-label { border: none; padding: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
+button.fd-chip-label:hover { text-decoration: underline; }
 .fd-chip-remove { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 15px; line-height: 1; padding: 0 4px; border-radius: 999px; }
 .fd-chip-remove:hover { color: var(--fd-error); }
 .fd-tags .fd-combo { flex: 1 1 140px; }
