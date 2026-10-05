@@ -72,7 +72,8 @@ export function lookRow(el: ElementFactory, designer: Designer): LookRow {
   let drawn = '';
 
   // ---- naming one: a box on the page, never a prompt -------------------------
-  const save = el('button', { type: 'button', class: 'fd-button fd-button-link fd-look-save' }, 'Save this look…');
+  // Words in their own direction: English keeps its order, and its “…”, on a page right to left.
+  const save = el('button', { type: 'button', class: 'fd-button fd-button-link fd-look-save' }, el('bdi', {}, 'Save this look…'));
   const label = el('label', { class: 'fd-look-name-label', for: `${base}-name` });
   const input = el('input', { id: `${base}-name`, class: 'fd-input', type: 'text', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
   const problem = el('p', { id: `${base}-problem`, class: 'fd-look-name-problem', role: 'alert', hidden: '' });
@@ -128,7 +129,7 @@ export function lookRow(el: ElementFactory, designer: Designer): LookRow {
   function openBox(look: SavedLook | null) {
     renaming = look;
     const words = look ? `New name for “${look.name}”` : 'Name this look';
-    label.textContent = words;
+    label.replaceChildren(el('bdi', {}, words));
     input.setAttribute('aria-label', words);
     submit.textContent = look ? 'Rename' : 'Save';
     input.value = look?.name ?? '';
@@ -151,7 +152,7 @@ export function lookRow(el: ElementFactory, designer: Designer): LookRow {
     else (save.hidden ? (presets[0]?.button ?? null) : save)?.focus();
   }
   function refuse(words: string) {
-    problem.textContent = words;
+    problem.replaceChildren(el('bdi', {}, words));
     problem.hidden = false;
     input.setAttribute('aria-invalid', 'true');
     input.setAttribute('aria-describedby', problem.id);
@@ -159,7 +160,7 @@ export function lookRow(el: ElementFactory, designer: Designer): LookRow {
   }
   function clearProblem() {
     problem.hidden = true;
-    problem.textContent = '';
+    problem.replaceChildren();
     input.removeAttribute('aria-invalid');
     input.removeAttribute('aria-describedby');
   }
@@ -200,7 +201,7 @@ export function lookRow(el: ElementFactory, designer: Designer): LookRow {
       return;
     }
     removed = saved;
-    statusWords.textContent = `Removed “${saved.name}”. `;
+    statusWords.replaceChildren(el('bdi', {}, `Removed “${saved.name}”.`), ' ');
     status.hidden = false;
     draw();
     undo.focus();
@@ -274,7 +275,7 @@ export function lookRow(el: ElementFactory, designer: Designer): LookRow {
     save.hidden = worn || !mine || !box.hidden;
     const shown = failed ?? (hub.problem === null ? null : { words: said('Your looks could not be loaded', hub.problem) });
     trouble.hidden = !shown;
-    troubleWords.textContent = shown ? `${shown.words} ` : '';
+    troubleWords.replaceChildren(...(shown ? [el('bdi', {}, shown.words), ' '] : []));
   }
 
   hub.ensure();
