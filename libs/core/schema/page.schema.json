@@ -3368,6 +3368,39 @@
             "alt": {
               "type": "string"
             },
+            "width": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "small",
+                    "medium",
+                    "large",
+                    "full"
+                  ]
+                },
+                {
+                  "type": "integer",
+                  "minimum": 16,
+                  "maximum": 4000
+                }
+              ]
+            },
+            "align": {
+              "type": "string",
+              "enum": [
+                "start",
+                "center",
+                "end"
+              ]
+            },
+            "href": {
+              "type": "string",
+              "pattern": "^(https?:\\/\\/|mailto:)\\S+$"
+            },
+            "caption": {
+              "type": "string"
+            },
             "colspan": {
               "type": "integer",
               "minimum": 1,

@@ -132,6 +132,14 @@ export interface ImageNode {
   src: string;
   /** What it shows, for people who cannot see it. */
   alt: string;
+  /** How wide: small (160px), medium (320px), large (480px), the whole row, or a width in pixels; never wider than its row. Its own width when left out. */
+  width?: 'small' | 'medium' | 'large' | 'full' | number;
+  /** Where it sits in its row: at the start, in the centre or at the end. */
+  align?: 'start' | 'center' | 'end';
+  /** A web or mail address it opens, in a new tab. */
+  href?: string;
+  /** Words under it. */
+  caption?: string;
   colspan?: number;
   invisible?: Modifier;
 }
@@ -440,7 +448,18 @@ export const DividerNodeSchema = z.strictObject({ type: z.literal('divider'), id
 
 export const SpacerNodeSchema = z.strictObject({ type: z.literal('spacer'), id, colspan: span, invisible });
 
-export const ImageNodeSchema = z.strictObject({ type: z.literal('image'), id, src: z.string().min(1), alt: z.string(), colspan: span, invisible });
+export const ImageNodeSchema = z.strictObject({
+  type: z.literal('image'),
+  id,
+  src: z.string().min(1),
+  alt: z.string(),
+  width: z.union([z.enum(['small', 'medium', 'large', 'full']), z.int().min(16).max(4000)]).optional(),
+  align: z.enum(['start', 'center', 'end']).optional(),
+  href: z.string().regex(/^(https?:\/\/|mailto:)\S+$/i, 'a link is a web address, https://…, or a mail address, mailto:…').optional(),
+  caption: z.string().optional(),
+  colspan: span,
+  invisible,
+});
 
 export const SlotNodeSchema = z.strictObject({ type: z.literal('slot'), id, name: z.string().min(1), invisible });
 
