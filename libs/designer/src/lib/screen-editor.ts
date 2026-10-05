@@ -120,6 +120,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     el,
     doc,
     kinds,
+    words: designer.words,
     layout: true,
     onPick: (spec) => add(spec, null),
     onPress: (spec, event, tile) => (isList() ? list.drag : canvas.drag).press({ tool: spec }, event, tile),

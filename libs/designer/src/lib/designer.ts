@@ -26,7 +26,7 @@ import { choiceCommands, type ChoiceCommands } from './choice-commands';
 import { inputCommands, type InputCommands } from './input-commands';
 import { structureCommands, type StructureCommands } from './structure-commands';
 import { fixCheck, pageChecks, type PageCheck } from './page-checks';
-import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, orList, registerKinds, storedAs, type LineColumn, type QuestionKind } from './kinds';
+import { COLUMN_TYPES, columnKind, kindById, kindFits, kindName, kindOfField, kindsFor, registerKinds, storedAs, type LineColumn, type QuestionKind } from './kinds';
 import type { AppKind } from './app-kinds';
 import { replaceWith, templatesFor, type PageTemplate } from './templates';
 import type { DesignerAssistant } from './assistant';
@@ -66,7 +66,7 @@ import { DESIGNER_WORDS, designerLocale, type DesignerLocale, type DesignerWords
  * field from the model keeps what it holds, and only changes editor.
  */
 
-export { columnKind, kindFits, kindOfField, kindsFor, QUESTION_KINDS, SCREEN_KINDS, storedAs } from './kinds';
+export { columnKind, kindFits, kindName, kindOfField, kindsFor, QUESTION_KINDS, SCREEN_KINDS, storedAs } from './kinds';
 export type { LineColumn, QuestionKind } from './kinds';
 export type { AppKind, AppKindContext, AppKindPreviewContext, AppKindSettings } from './app-kinds';
 export { isBlank, SCREEN_TEMPLATES, SURVEY_TEMPLATES, type PageTemplate } from './templates';
@@ -87,15 +87,29 @@ export { DESIGNER_WORDS, designerLocale, type DesignerLocale, type DesignerWords
 /** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
 export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
 
-const slug = (text: string, sep = '_') =>
+/** Words as a name for code: Latin letters and digits; `empty` for words written in another script, as Arabic is. */
+const slug = (text: string, sep = '_', empty = 'page') =>
   text
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, sep)
-    .replace(new RegExp(`^\\${sep}+|\\${sep}+$`, 'g'), '') || 'page';
+    .replace(new RegExp(`^\\${sep}+|\\${sep}+$`, 'g'), '') || empty;
 
-export function blankPage(kind: PageKind, title: string): Page {
+/** An option's words as the designer writes them for a new one — "Option 2", "الخيار 2" — in any language it speaks. */
+const isDefaultOption = (label: string) => {
+  const n = /\d+/.exec(label);
+  return !!n && Object.values(DESIGNER_WORDS).some((w) => w.defaults.option(Number(n[0])) === label);
+};
+
+/**
+ * A page with nothing on it yet, titled: a survey with its first page, a
+ * screen with its first section, a sheet with its record's name, a list with
+ * its column. What it names (Page 1, Section 1) is in the designer's
+ * language (`locale`), English unless said.
+ */
+export function blankPage(kind: PageKind, title: string, options: { locale?: string } = {}): Page {
+  const w = DESIGNER_WORDS[designerLocale(options.locale) ?? 'en'].defaults;
   const id = slug(title, '-');
   if (kind === 'survey') {
     return {
@@ -104,7 +118,7 @@ export function blankPage(kind: PageKind, title: string): Page {
       title,
       data: { kind: 'responses' },
       fields: {},
-      layout: { type: 'wizard', id: 'steps', children: [{ type: 'step', id: 'step-1', label: 'Page 1', children: [] }] },
+      layout: { type: 'wizard', id: 'steps', children: [{ type: 'step', id: 'step-1', label: w.page(1), children: [] }] },
     };
   }
   if (kind === 'list') {
@@ -114,7 +128,7 @@ export function blankPage(kind: PageKind, title: string): Page {
       id,
       title,
       data: { kind: 'record', model: slug(title, '.') },
-      fields: { name: { type: 'char', label: 'Name' } },
+      fields: { name: { type: 'char', label: w.name } },
       layout: { type: 'list', id: 'list', columns: ['name'] },
     };
   }
@@ -125,8 +139,8 @@ export function blankPage(kind: PageKind, title: string): Page {
       id,
       title,
       data: { kind: 'record', model: slug(title, '.') },
-      fields: { name: { type: 'char', label: 'Name', required: true } },
-      layout: { type: 'sheet', id: 'sheet', title: { field: 'name', placeholder: 'Name' }, children: [{ type: 'section', id: 'section-1', columns: 2, children: [] }] },
+      fields: { name: { type: 'char', label: w.name, required: true } },
+      layout: { type: 'sheet', id: 'sheet', title: { field: 'name', placeholder: w.name }, children: [{ type: 'section', id: 'section-1', columns: 2, children: [] }] },
     };
   }
   return {
@@ -135,7 +149,7 @@ export function blankPage(kind: PageKind, title: string): Page {
     title,
     data: { kind: 'record', model: slug(title, '.') },
     fields: {},
-    layout: { type: 'sections', id: 'sections', children: [{ type: 'section', id: 'section-1', title: 'Section 1', columns: 2, children: [] }] },
+    layout: { type: 'sections', id: 'sections', children: [{ type: 'section', id: 'section-1', title: w.section(1), columns: 2, children: [] }] },
   };
 }
 
@@ -751,7 +765,7 @@ export function createDesigner(options: {
         const ids = allIds(draft);
         const field = nextName((name) => name in draft.fields, 'q', '_');
         const id = nextName((name) => ids.has(name), 'q', '-');
-        draft.fields[field] = kind.field('Untitled question');
+        draft.fields[field] = kind.field(words.defaults.untitledQuestion, words);
         const node: FieldNode = { type: 'field', id, field, ...(kind.widget ? { widget: kind.widget } : {}) };
         created = id;
         placeAfter(draft, node, where);
@@ -809,7 +823,7 @@ export function createDesigner(options: {
         if (fromModel(node.field)) throw new Refusal(`The options of ${field.label} come from the model`);
         const old = field.options;
         const used = new Set<string | number>();
-        const placeholder = (o: Option | undefined) => !!o && /^option_\d+$/.test(String(o.value)) && /^Option \d+$/.test(o.label);
+        const placeholder = (o: Option | undefined) => !!o && /^option_\d+$/.test(String(o.value)) && isDefaultOption(o.label);
         const clean = labels.map((label) => label.trim()).filter(Boolean);
         // The same words are the same option: one put between others, or taken from among them, leaves theirs alone.
         const claimed = new Set<number>();
@@ -825,7 +839,7 @@ export function createDesigner(options: {
             // Words changed in place keep the value the answers already use, unless it was a placeholder.
             const there = claimed.has(i) ? undefined : old[i];
             if (there) claimed.add(i);
-            value = there && !placeholder(there) ? there.value : slug(label);
+            value = there && !placeholder(there) ? there.value : slug(label, '_', `option_${i + 1}`);
           }
           while (used.has(value)) value = `${value}_${i + 1}`;
           used.add(value);
@@ -848,14 +862,14 @@ export function createDesigner(options: {
         if (fromModel(node.field)) {
           // What the backend stores stays as it is: only the editor changes.
           if (!kindFits(kind, old)) {
-            const fitting = kindsFor(old, { fromModel: true, survey: draft.data.kind === 'responses', app: appKinds }).map((k) => k.label);
-            throw new Refusal(`${old.label} is stored as ${storedAs(old)} in the model, so it can only be shown as ${orList(fitting)}`);
+            const fitting = kindsFor(old, { fromModel: true, survey: draft.data.kind === 'responses', app: appKinds });
+            throw new Refusal((w) => w.kinds.onlyShownAs(old.label, storedAs(old, w), w.kinds.orList(fitting.map((k) => kindName(k, w)))));
           }
           if (kind.widget) node.widget = kind.widget;
           else delete node.widget;
           return;
         }
-        const next = kind.field(old.label) as Field & { help?: string; required?: boolean };
+        const next = kind.field(old.label, words) as Field & { help?: string; required?: boolean };
         if (old.type === 'selection' && next.type === 'selection') {
           next.options = old.options;
           // "Other" stays where the new kind has it too; a dropdown has none.
@@ -1033,7 +1047,7 @@ export function createDesigner(options: {
           return id;
         };
         created = name('tabs');
-        const tabs: TabsNode = { type: 'tabs', id: created, children: [{ type: 'tab', id: name('tab'), label: 'Tab 1', children: [{ type: 'section', id: name('section'), columns: 2, children: [] }] }] };
+        const tabs: TabsNode = { type: 'tabs', id: created, children: [{ type: 'tab', id: name('tab'), label: words.defaults.tab(1), children: [{ type: 'section', id: name('section'), columns: 2, children: [] }] }] };
         const after = where.after ? root.children.findIndex((n) => n.id === where.after) : -1;
         if (where.after && after === -1) throw new Refusal(`There is no element "${where.after}" on the sheet`);
         root.children.splice(after === -1 ? root.children.length : after + 1, 0, tabs);
@@ -1272,7 +1286,7 @@ export function createDesigner(options: {
             let name = column.name && column.name in old ? column.name : null;
             if (!name) {
               // A new column is named after its label, as a backend names a field.
-              const base = slug(column.label || 'column', '_').replace(/^(\d)/, 'c_$1');
+              const base = slug(column.label, '_', 'column').replace(/^(\d)/, 'c_$1');
               name = base;
               for (let n = 2; taken.has(name); n++) name = `${base}_${n}`;
               taken.add(name);
@@ -1366,7 +1380,7 @@ export function createDesigner(options: {
           if (!from) {
             delete field.optionsFrom;
             // Written again: one option to start from, when there were none.
-            if (!field.options.length) field.options = [{ value: 'option_1', label: 'Option 1' }];
+            if (!field.options.length) field.options = [{ value: 'option_1', label: words.defaults.option(1) }];
             return;
           }
           field.optionsFrom = { list: from.list, ...(from.dependsOn?.length ? { dependsOn: [...from.dependsOn] } : {}) };

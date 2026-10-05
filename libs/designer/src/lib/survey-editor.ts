@@ -173,6 +173,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     el,
     doc,
     kinds,
+    words: designer.words,
     onPick: (spec) => add(spec.slice(spec.indexOf(':') + 1), target()),
     onPress: (spec, event, tile) => drag.press({ tool: spec }, event, tile),
   });

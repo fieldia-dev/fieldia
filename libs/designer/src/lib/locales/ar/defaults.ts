@@ -1,0 +1,20 @@
+import type { DesignerWords } from '../../designer-words';
+
+export const defaults: DesignerWords['defaults'] = {
+  untitledQuestion: 'سؤال بلا عنوان',
+  option: (n) => `الخيار ${n}`,
+  row: (n) => `الصف ${n}`,
+  column: (n) => `العمود ${n}`,
+  page: (n) => `الصفحة ${n}`,
+  section: (n) => `القسم ${n}`,
+  tab: (n) => `علامة التبويب ${n}`,
+  name: 'الاسم',
+  description: 'الوصف',
+  quantity: 'الكمية',
+  draft: 'مسودة',
+  confirmed: 'مؤكَّد',
+  done: 'منجز',
+  newButton: 'زر جديد',
+  counter: 'عدّاد',
+  badge: 'شارة',
+};

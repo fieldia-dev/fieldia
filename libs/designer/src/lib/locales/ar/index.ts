@@ -1,5 +1,9 @@
 import type { DesignerWords } from '../../designer-words';
 import { bar } from './bar';
+import { kinds } from './kinds';
+import { defaults } from './defaults';
+import { toolbox } from './toolbox';
+import { options } from './options';
 
 /**
  * The designer's words in Arabic: Modern Standard Arabic as Arabic software
@@ -21,4 +25,4 @@ import { bar } from './bar';
  *   model (the backend's) نموذج البيانات · record سجل · list قائمة · sheet ورقة
  *   desktop / tablet / phone سطح المكتب / جهاز لوحي / هاتف · width العرض
  */
-export const ar: DesignerWords = { bar };
+export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options };

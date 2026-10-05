@@ -34,8 +34,8 @@ function everyWord(table: Table, path = ''): { path: string; words: string }[] {
     if (typeof value === 'string') return [{ path: at, words: value }];
     if (typeof value === 'function') {
       const said: { path: string; words: string }[] = [];
-      // Counts in every plural form Arabic has, and a name in Arabic letters.
-      for (const sample of [0, 1, 2, 3, 11, 100, 'س']) {
+      // Counts in every plural form Arabic has, a name in Arabic letters, and a list of names.
+      for (const sample of [0, 1, 2, 3, 11, 100, 'س', ['س', 'ص']]) {
         try {
           said.push({ path: `${at}(${sample})`, words: String((value as (...args: unknown[]) => unknown)(...Array(value.length).fill(sample))) });
         } catch {

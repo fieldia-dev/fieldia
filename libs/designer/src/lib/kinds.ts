@@ -1,5 +1,7 @@
 import type { Field, FieldNode, Option } from '@fieldia/core';
 import { checkAppKinds, widgetOf, type AppKind } from './app-kinds';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * The kinds of field the designer makes, and which of them suit a field that
@@ -11,8 +13,10 @@ import { checkAppKinds, widgetOf, type AppKind } from './app-kinds';
 
 export interface QuestionKind {
   id: string;
+  /** Its name in English; the designer says it in its own language (`kindName`). */
   label: string;
-  field: (label: string) => Field;
+  /** The field a new one starts as; what it starts with (its first option) in the designer's words, English unless given. */
+  field: (label: string, words?: DesignerWords) => Field;
   widget?: string;
   /** Where the screen editor's palette lists it; a kind for records is refused in a survey. */
   group?: 'records' | 'more';
@@ -20,16 +24,16 @@ export interface QuestionKind {
   app?: AppKind;
 }
 
-const firstOption = (): Option[] => [{ value: 'option_1', label: 'Option 1' }];
+const firstOption = (w: DesignerWords): Option[] => [{ value: 'option_1', label: w.defaults.option(1) }];
 /** "Row 1", "Row 2"…, with the values a new option has. */
-const numbered = (value: string, label: string, count: number): Option[] => Array.from({ length: count }, (_, i) => ({ value: `${value}_${i + 1}`, label: `${label} ${i + 1}` }));
+const numbered = (value: string, label: (n: number) => string, count: number): Option[] => Array.from({ length: count }, (_, i) => ({ value: `${value}_${i + 1}`, label: label(i + 1) }));
 
 export const QUESTION_KINDS: readonly QuestionKind[] = [
   { id: 'short-answer', label: 'Short answer', field: (label) => ({ type: 'char', label }) },
   { id: 'paragraph', label: 'Paragraph', field: (label) => ({ type: 'text', label }) },
-  { id: 'multiple-choice', label: 'Multiple choice', field: (label) => ({ type: 'selection', label, options: firstOption() }), widget: 'radio' },
-  { id: 'checkboxes', label: 'Checkboxes', field: (label) => ({ type: 'selection', label, options: firstOption(), multiple: true }), widget: 'checkboxes' },
-  { id: 'dropdown', label: 'Dropdown', field: (label) => ({ type: 'selection', label, options: firstOption() }) },
+  { id: 'multiple-choice', label: 'Multiple choice', field: (label, w = en) => ({ type: 'selection', label, options: firstOption(w) }), widget: 'radio' },
+  { id: 'checkboxes', label: 'Checkboxes', field: (label, w = en) => ({ type: 'selection', label, options: firstOption(w), multiple: true }), widget: 'checkboxes' },
+  { id: 'dropdown', label: 'Dropdown', field: (label, w = en) => ({ type: 'selection', label, options: firstOption(w) }) },
   { id: 'rating', label: 'Rating', field: (label) => ({ type: 'integer', label, min: 1, max: 5 }), widget: 'rating' },
   { id: 'scale', label: 'Linear scale', field: (label) => ({ type: 'integer', label, min: 0, max: 10 }), widget: 'scale' },
   { id: 'number', label: 'Number', field: (label) => ({ type: 'float', label }) },
@@ -45,12 +49,12 @@ export const QUESTION_KINDS: readonly QuestionKind[] = [
   { id: 'file', label: 'File upload', field: (label) => ({ type: 'binary', label, maxSize: 10 * 1024 * 1024 }) },
   { id: 'signature', label: 'Signature', field: (label) => ({ type: 'binary', label }), widget: 'signature' },
   { id: 'slider', label: 'Slider', field: (label) => ({ type: 'integer', label, min: 0, max: 10 }), widget: 'slider' },
-  { id: 'tags', label: 'Tags', field: (label) => ({ type: 'selection', label, options: firstOption(), multiple: true }), widget: 'tags' },
-  { id: 'image-choice', label: 'Image choice', field: (label) => ({ type: 'selection', label, options: firstOption() }), widget: 'image-choice' },
-  { id: 'ranking', label: 'Ranking', field: (label) => ({ type: 'selection', label, options: numbered('option', 'Option', 3), multiple: true }), widget: 'ranking' },
-  { id: 'matrix', label: 'Matrix', field: (label) => ({ type: 'matrix', label, rows: numbered('row', 'Row', 2), columns: numbered('column', 'Column', 2) }) },
+  { id: 'tags', label: 'Tags', field: (label, w = en) => ({ type: 'selection', label, options: firstOption(w), multiple: true }), widget: 'tags' },
+  { id: 'image-choice', label: 'Image choice', field: (label, w = en) => ({ type: 'selection', label, options: firstOption(w) }), widget: 'image-choice' },
+  { id: 'ranking', label: 'Ranking', field: (label, w = en) => ({ type: 'selection', label, options: numbered('option', w.defaults.option, 3), multiple: true }), widget: 'ranking' },
+  { id: 'matrix', label: 'Matrix', field: (label, w = en) => ({ type: 'matrix', label, rows: numbered('row', w.defaults.row, 2), columns: numbered('column', w.defaults.column, 2) }) },
   { id: 'address', label: 'Address', field: (label) => ({ type: 'json', label }), widget: 'address' },
-  { id: 'repeating', label: 'Repeating group', field: (label) => ({ type: 'one2many', label, relation: 'entry', fields: { name: { type: 'char', label: 'Name' } } }), widget: 'cards' },
+  { id: 'repeating', label: 'Repeating group', field: (label, w = en) => ({ type: 'one2many', label, relation: 'entry', fields: { name: { type: 'char', label: w.defaults.name } } }), widget: 'cards' },
 ];
 
 /** Kinds for app screens only: links to other records, a table of lines, and the fields a business record has. */
@@ -61,7 +65,7 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
     id: 'lines',
     label: 'Table of lines',
     group: 'records',
-    field: (label) => ({ type: 'one2many', label, relation: 'line', fields: { name: { type: 'char', label: 'Description' }, quantity: { type: 'float', label: 'Quantity' } } }),
+    field: (label, w = en) => ({ type: 'one2many', label, relation: 'line', fields: { name: { type: 'char', label: w.defaults.description }, quantity: { type: 'float', label: w.defaults.quantity } } }),
     // The spreadsheet grid where the app has it (`gridWidgets`), the plain table where it does not.
     widget: 'grid',
   },
@@ -71,7 +75,7 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
     id: 'status',
     label: 'Status steps',
     group: 'more',
-    field: (label) => ({ type: 'selection', label, options: [{ value: 'draft', label: 'Draft' }, { value: 'confirmed', label: 'Confirmed' }, { value: 'done', label: 'Done' }] }),
+    field: (label, w = en) => ({ type: 'selection', label, options: [{ value: 'draft', label: w.defaults.draft }, { value: 'confirmed', label: w.defaults.confirmed }, { value: 'done', label: w.defaults.done }] }),
     widget: 'statusbar',
   },
   { id: 'rich-text', label: 'Rich text', group: 'more', field: (label) => ({ type: 'html', label }) },
@@ -211,49 +215,19 @@ export function kindsFor(field: Field, options: { fromModel: boolean; survey: bo
   return options.fromModel ? offered.filter((k) => kindFits(k, field)) : [...offered];
 }
 
-/** What a field holds, in words, as the designer explains a refusal. */
-export function storedAs(field: Field): string {
-  switch (field.type) {
-    case 'char':
-      return 'text';
-    case 'text':
-      return 'long text';
-    case 'html':
-      return 'rich text';
-    case 'selection':
-      return field.multiple ? 'several of a list' : 'one of a list';
-    case 'integer':
-      return 'a whole number';
-    case 'float':
-      return 'a number';
-    case 'monetary':
-      return 'an amount';
-    case 'date':
-      return 'a date';
-    case 'datetime':
-      return 'a date and time';
-    case 'boolean':
-      return 'yes or no';
-    case 'binary':
-      return 'a file';
-    case 'image':
-      return 'an image';
-    case 'many2one':
-      return 'a link to a record';
-    case 'many2many':
-      return 'links to records';
-    case 'one2many':
-      return 'lines';
-    case 'matrix':
-      return 'answers in rows';
-    case 'json':
-      return 'structured data';
-    default:
-      return 'its own kind of data';
-  }
+/** What a field holds, in words, as the designer explains a refusal: in English unless given the designer's words. */
+export function storedAs(field: Field, words: DesignerWords = en): string {
+  const said = words.kinds.stored;
+  if (field.type === 'selection') return field.multiple ? said.selectionMany : said.selectionOne;
+  return Object.prototype.hasOwnProperty.call(said, field.type) ? said[field.type as keyof typeof said] : said.other;
 }
 
-/** "A, B or C". */
-export function orList(words: string[]): string {
-  return words.length < 2 ? words.join('') : `${words.slice(0, -1).join(', ')} or ${words[words.length - 1]}`;
+/** A kind's name in the designer's words: Fieldia's in its language, an app's as the app named it. */
+export function kindName(kind: QuestionKind, words: DesignerWords): string {
+  if (kind.app) return kind.label;
+  const names: Record<string, string> = words.kinds.names;
+  return names[kind.id] ?? kind.label;
 }
+
+/** A kind's name by its id. */
+export const kindNameOf = (id: string, words: DesignerWords): string => kindName(kindById(id), words);
