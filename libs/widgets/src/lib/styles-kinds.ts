@@ -23,6 +23,7 @@ export const KINDS_CSS = /* css */ `
 }
 .fd-signature-tools { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; width: 100%; }
 .fd-signature-typed { flex: 1 1 200px; min-width: 0; }
+.fd-signature-footer { margin-block-start: -4px; color: var(--fd-muted); font-size: 12.5px; }
 /* A slider: the value beside the track and its ends under it; dimmed until it is slid. */
 .fd-slider { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 14px; row-gap: 0; align-items: center; width: 100%; max-width: 440px; min-width: 0; }
 .fd-slider-track { display: contents; }

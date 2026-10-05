@@ -29,6 +29,8 @@ export interface FileValue {
   size: number;
   data?: string;
   url?: string;
+  /** A signature typed rather than drawn: the name typed, kept beside its picture. */
+  text?: string;
 }
 
 /**

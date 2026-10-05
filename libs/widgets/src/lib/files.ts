@@ -17,7 +17,7 @@ import type { WidgetFactory } from './widgets';
 
 type FileField = Extract<Field, { type: 'binary' | 'image' }>;
 
-const read = (file: File) =>
+export const readFile = (file: File) =>
   new Promise<FileValue>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -104,7 +104,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
       if (over && several) lines.push(fill(words.tooMany, { max: most, n: over }));
       say(lines);
       if (!kept.length) return;
-      const added = await Promise.all(kept.map(read));
+      const added = await Promise.all(kept.map(readFile));
       form.setValue(name, several ? [...files, ...added] : added[0]);
     };
     input.addEventListener('change', () => {

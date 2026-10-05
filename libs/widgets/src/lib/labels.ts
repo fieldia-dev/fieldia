@@ -92,6 +92,9 @@ export interface WidgetLabels {
   signHere: string;
   typeSignature: string;
   clearDrawing: string;
+  /** Takes the last stroke away; a picture of a signature, uploaded instead. */
+  undo: string;
+  uploadSignature: string;
   /** A slider not slid yet, as a screen reader reads it. */
   notAnswered: string;
   /** A ranking's buttons for a line (`{label}`), and where it went, said aloud: `{n}` of `{total}`, counted from 1. */
@@ -197,6 +200,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     signHere: 'Sign here',
     typeSignature: 'Or type your name',
     clearDrawing: 'Clear',
+    undo: 'Undo',
+    uploadSignature: 'Upload a picture',
     notAnswered: 'Not answered',
     moveUp: 'Move {label} up',
     moveDown: 'Move {label} down',
@@ -290,6 +295,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     signHere: 'وقّع هنا',
     typeSignature: 'أو اكتب اسمك',
     clearDrawing: 'مسح',
+    undo: 'تراجع',
+    uploadSignature: 'رفع صورة',
     notAnswered: 'لم تتم الإجابة',
     moveUp: 'نقل {label} لأعلى',
     moveDown: 'نقل {label} لأسفل',
@@ -383,6 +390,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     signHere: 'Hier unterschreiben',
     typeSignature: 'Oder Namen eingeben',
     clearDrawing: 'Löschen',
+    undo: 'Rückgängig',
+    uploadSignature: 'Bild hochladen',
     notAnswered: 'Nicht beantwortet',
     moveUp: '{label} nach oben verschieben',
     moveDown: '{label} nach unten verschieben',
@@ -476,6 +485,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     signHere: 'Signez ici',
     typeSignature: 'Ou tapez votre nom',
     clearDrawing: 'Effacer',
+    undo: 'Annuler',
+    uploadSignature: 'Importer une image',
     notAnswered: 'Pas de réponse',
     moveUp: 'Monter {label}',
     moveDown: 'Descendre {label}',
