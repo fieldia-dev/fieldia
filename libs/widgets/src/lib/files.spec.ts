@@ -175,7 +175,7 @@ describe('formatted text toolbar', () => {
     const bar = el.querySelector('[role="toolbar"]') as HTMLElement;
     expect(bar.getAttribute('aria-label')).toBe('Formatting');
     expect([...bar.querySelectorAll('button')].map((b) => b.getAttribute('aria-label'))).toEqual([
-      'Bold', 'Italic', 'Underline', 'Bulleted list', 'Numbered list', 'Align left', 'Align centre', 'Align right', 'Link',
+      'Bold', 'Italic', 'Underline', 'Heading', 'Bulleted list', 'Numbered list', 'Align left', 'Align centre', 'Align right', 'Link',
     ]);
     expect((bar.querySelector('select') as HTMLSelectElement).getAttribute('aria-label')).toBe('Text style');
     const area = q<HTMLElement>(el, '[contenteditable]');
@@ -197,6 +197,20 @@ describe('formatted text toolbar', () => {
       ['insertUnorderedList', undefined],
       ['justifyCenter', undefined],
       ['formatBlock', '<h2>'],
+    ]);
+  });
+
+  it('makes a heading in one press, and words again in the next', () => {
+    const { el } = setup({ type: 'html' });
+    const heading = el.querySelector('[role="toolbar"] button[aria-label="Heading"]') as HTMLButtonElement;
+    expect(heading.getAttribute('aria-pressed')).toBe('false');
+    heading.click();
+    const style = el.querySelector('[role="toolbar"] select') as HTMLSelectElement;
+    style.value = 'h2';
+    heading.click();
+    expect(commands).toEqual([
+      ['formatBlock', '<h2>'],
+      ['formatBlock', '<p>'],
     ]);
   });
 
