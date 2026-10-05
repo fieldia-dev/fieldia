@@ -161,6 +161,9 @@ const SKINS_CSS = /* css */ `
   .fd-form[data-fd-skin="underline"] .fd-field:where(:not([data-labels])) > * { grid-column: 1 !important; }
   /* The narrow count, or one column when only the medium one was given. */
   .fd-form .fd-grid[data-columns-medium], .fd-form .fd-grid[data-columns-narrow] { --fd-cols: var(--fd-columns-narrow, 1); }
+  /* A file open on a phone: its name and Close on a row, the tools on the next. */
+  .fd-form .fd-file-viewer > :first-child { padding-inline-end: 16px; }
+  .fd-form .fd-file-viewer h2 { flex-basis: 100%; margin-inline-end: 36px; }
 }
 
 /* ---- inputs ---------------------------------------------------------------- */
@@ -320,7 +323,7 @@ const SKINS_CSS = /* css */ `
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius);
 }
 .fd-file-open:hover { border-color: var(--fd-accent); }
-.fd-file-thumb, 
+.fd-file-thumb, .fd-file-icon { flex: none; width: 36px; height: 36px; border-radius: 3px; object-fit: cover; }
 /* A page with its corner folded, its colour by kind, its extension on it. */
 .fd-file-icon {
   display: grid; place-items: end center; padding-block-end: 4px; font-size: 9px; font-weight: 700; color: #fff;
@@ -332,7 +335,8 @@ const SKINS_CSS = /* css */ `
 .fd-file-icon[data-kind="zip"] { --fd-kind: #8a5300; }
 .fd-file-name { flex: 1; display: flex; min-width: 0; white-space: pre; }
 .fd-file-name > span { overflow: hidden; text-overflow: ellipsis; }
-.fd-file-size { color: var(--fd-muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+/* A size reads in its own direction, right to left too. */
+.fd-file-size { color: var(--fd-muted); font-size: 12.5px; font-variant-numeric: tabular-nums; unicode-bidi: plaintext; }
 .fd-file-remove { flex: none; width: 32px; height: 32px; border: none; border-radius: 999px; background: none; color: var(--fd-muted); font-size: 20px; line-height: 1; cursor: pointer; }
 .fd-file-remove:hover { color: var(--fd-error); background: var(--fd-error-soft); }
 .fd-file-confirm:not([hidden]) { display: flex; flex-wrap: wrap; gap: 4px 14px; }
@@ -353,18 +357,19 @@ const SKINS_CSS = /* css */ `
   background: rgba(15, 20, 25, 0.62); color: #fff; opacity: 0;
 }
 .fd-file-item:is(:hover, :focus-within) .fd-file-remove { opacity: 1; }
-.fd-files-thumbs .fd-file-remove:hover { background: var(--fd-error); color: #fff; }
 .fd-image-pick {
   order: 1; display: grid; place-content: center; justify-items: center; gap: 2px; padding: 6px; text-align: center; font-size: 12px;
   border: 1px dashed var(--fd-border-strong); border-radius: var(--fd-control-radius); background: var(--fd-page);
 }
 .fd-image-pick .fd-button { border: none; background: none; color: var(--fd-accent); padding: 0; min-height: 0; font-size: 13px; }
-.fd-image-pick .fd-help { font-size: 11.5px; }
 /* A file open to look at: its name and tools over it, the image whole, a PDF or text filling the box. */
 .fd-file-viewer { max-width: 1000px; height: min(88vh, 100%); background: var(--fd-surface); }
-.fd-file-viewer > :first-child { flex-wrap: wrap; gap: 6px 10px; padding-block: 8px; }
+/* Close in the corner, beside the name however the tools wrap. */
+.fd-file-viewer > :first-child { position: relative; flex-wrap: wrap; justify-content: start; gap: 6px 10px; padding-block: 8px; padding-inline-end: 52px; }
+.fd-file-viewer .fd-dialog-close { position: absolute; inset-block-start: 10px; inset-inline-end: 10px; }
 .fd-file-viewer h2 { flex: 1 1 10em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fd-file-step { font-size: 18px; line-height: 1; min-width: 34px; }
+.fd-file-viewer a { text-decoration: none; }
 .fd-file-viewer-body { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: auto; background: var(--fd-page); }
 .fd-file-viewer-body img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .fd-file-viewer-body :is(iframe, pre) { flex: 1; align-self: stretch; margin: 0; border: 0; background: var(--fd-surface); }

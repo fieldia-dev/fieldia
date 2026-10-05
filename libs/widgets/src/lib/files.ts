@@ -1,6 +1,6 @@
 import { describeTypes, fileProblem, fill, formatBytes, MESSAGES, type Field, type FileValue } from '@fieldia/core';
 import { keepTabIn } from './focus-trap';
-import { maker, rightToLeft, setHidden, setText, wordsFor, type Make } from './kind-parts';
+import { describeState, maker, rightToLeft, setHidden, setText, wordsFor, type Make } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -89,7 +89,6 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
     let shown: unknown;
     let asking = -1;
     const say = (lines: string[]) => note.replaceChildren(...lines.map((line) => make('div', {}, line)));
-    const focusAt = (selector: string, at: number) => (list.querySelectorAll<HTMLElement>(selector)[at] ?? (pick.hidden ? replace : input)).focus();
 
     const take = async (chosen: File[]) => {
       if (readonly || !chosen.length) return;
@@ -142,7 +141,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
         form.setValue(name, several ? files.filter((_, i) => i !== at) : null);
         say([fill(words.removed, { name: gone.name })]);
       }
-      focusAt('.fd-file-remove', remove ? Math.min(at, files.length - 1) : at);
+      (list.querySelectorAll<HTMLElement>('.fd-file-remove')[remove ? Math.min(at, files.length - 1) : at] ?? (pick.hidden ? replace : input)).focus();
     };
     yes.addEventListener('click', () => answered(true));
     no.addEventListener('click', () => answered(false));
@@ -180,7 +179,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
         const data = file.data ? bytes(file.data) : null;
         url = data ? URL.createObjectURL(new Blob([data], { type: file.type })) : (file.url ?? '');
         title.textContent = file.name;
-        meta.textContent = [formatBytes(file.size), all.length > 1 ? fill(words.fileAt, { n: at + 1, total: all.length }) : ''].filter(Boolean).join(' · ');
+        meta.replaceChildren(make('span', { class: 'fd-file-size' }, formatBytes(file.size)), all.length > 1 ? ` · ${fill(words.fileAt, { n: at + 1, total: all.length })}` : '');
         download.href = url;
         download.download = file.name;
         const kind = kindOf(file);
@@ -228,8 +227,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
         input.hidden = pick.hidden;
         setHidden(replace, several || !files.length || readonly);
         if (count) setText(count, !files.length ? '' : several && field.maxFiles ? fill(words.fileCountOf, { n: files.length, max: field.maxFiles }) : files.length === 1 ? words.oneFile : fill(words.fileCount, { n: files.length }));
-        input.setAttribute('aria-invalid', String(state.invalid));
-        if (state.describedBy) input.setAttribute('aria-describedby', state.describedBy);
+        describeState(input, state);
         if (shown === value && list.dataset['readonly'] === String(readonly)) return;
         shown = value;
         list.dataset['readonly'] = String(readonly);
