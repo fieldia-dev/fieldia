@@ -64,8 +64,9 @@ function kindsOf(scope: Locator) {
     row,
     kind,
     pick: (words: string) => row.getByRole('group', { name: 'Kind of part' }).getByRole('button', { name: words, exact: true }).click(),
-    colour: (kindWords: string, name: string) => kind(kindWords).getByLabel(name, { exact: true }),
-    press: (kindWords: string, name: string, choice: string) => kind(kindWords).getByRole('group', { name, exact: true }).getByRole('button', { name: choice, exact: true }).click(),
+    // Each by its name in full: “Text boxes’ background”, “Buttons’ colour”.
+    colour: (kindWords: string, name: string) => kind(kindWords).getByLabel(`${kindWords}’ ${name.toLowerCase()}`, { exact: true }),
+    press: (kindWords: string, name: string, choice: string) => kind(kindWords).getByRole('group', { name: `${kindWords}’ ${name.toLowerCase()}`, exact: true }).getByRole('button', { name: choice, exact: true }).click(),
   };
 }
 

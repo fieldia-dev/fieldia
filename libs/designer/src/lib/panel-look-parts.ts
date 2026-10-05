@@ -40,11 +40,13 @@ export function partLookSettings(el: ElementFactory, designer: Designer): PartLo
     const draws: ((part: PartLook) => void)[] = [];
     const rows = PART_LOOKS[kind].map((name: keyof PartLook) => {
       const words = settingWords(kind, name);
+      // Its name in full, the kind's with it: every kind has corners, and the page has too.
+      const named = `${KIND_WORDS[kind]}’ ${words.toLowerCase()}`;
       const choices = CHOICES[name];
       if (choices) {
         const seg: Segmented<string> = segmented(
           el,
-          words,
+          named,
           choices.map((value) => ({ value, words: VALUE_WORDS[value] })),
           (value) => designer.setPartLook(kind, { [name]: value }),
           { toggle: true }
@@ -52,10 +54,10 @@ export function partLookSettings(el: ElementFactory, designer: Designer): PartLo
         draws.push((part) => seg.set(part[name]));
         return el('div', { class: 'fd-part-setting', 'data-part-setting': words }, el('span', { class: 'fd-part-setting-name' }, words), seg.element);
       }
-      const colour = el('input', { type: 'color', class: 'fd-insp-colour', 'aria-label': words });
+      const colour = el('input', { type: 'color', class: 'fd-insp-colour', 'aria-label': named });
       colour.addEventListener('input', () => designer.setPartLook(kind, { [name]: colour.value }));
       const value = el('span', { class: 'fd-part-colour-value' });
-      const clear = el('button', { type: 'button', class: 'fd-part-colour-clear', 'aria-label': `${words} as the page`, title: 'As the page' }, '×');
+      const clear = el('button', { type: 'button', class: 'fd-part-colour-clear', 'aria-label': `${named} as the page`, title: 'As the page' }, '×');
       clear.addEventListener('click', () => {
         designer.setPartLook(kind, { [name]: null });
         colour.focus();

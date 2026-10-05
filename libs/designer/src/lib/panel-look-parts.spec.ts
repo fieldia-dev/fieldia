@@ -84,6 +84,23 @@ describe('the Look tab’s “Each kind of part”', () => {
     expect(row().hidden).toBe(false);
   });
 
+  // The page has corners too, as every kind has: each named in full, so neither a screen reader nor a search confuses them.
+  it('names every choice and colour in full, the kind’s name with it: no two on the tab share a name', () => {
+    const { host, row } = screenEditor();
+    const tab = host.querySelector('.fd-properties [role="tabpanel"]:not([hidden])') as HTMLElement;
+    const named = [...tab.querySelectorAll('[role="group"][aria-label], input[aria-label]')];
+    const mine = named.filter((n) => row().contains(n)).map((n) => n.getAttribute('aria-label'));
+    const rest = named.filter((n) => !row().contains(n)).map((n) => n.getAttribute('aria-label'));
+    expect(mine.filter((name, i) => mine.indexOf(name) !== i || rest.includes(name))).toEqual([]);
+    expect([...row().querySelectorAll('[role="group"][aria-label^="Text boxes’"], input[aria-label^="Text boxes’"]')].map((n) => n.getAttribute('aria-label'))).toEqual([
+      'Text boxes’ background',
+      'Text boxes’ border',
+      'Text boxes’ corners',
+      'Text boxes’ text size',
+      'Text boxes’ accent',
+    ]);
+  });
+
   it('picks a kind, text boxes first, and shows only the settings it has', () => {
     const { row, group, press, pressed } = screenEditor();
     expect([...group('Kind of part').querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Text boxes', 'Choices', 'Groups', 'Buttons', 'Tables']);
@@ -101,28 +118,28 @@ describe('the Look tab’s “Each kind of part”', () => {
 
   it('sets text boxes’ background, border and corners, and the canvas wears each as it is set', () => {
     const { row, canvas, press, pressed, parts } = screenEditor();
-    type(field(row(), 'Background'), '#fff7e6');
+    type(field(row(), 'Text boxes’ background'), '#fff7e6');
     expect(parts()).toEqual({ inputs: { background: '#fff7e6' } });
     expect(canvas.getAttribute('data-inputs')).toBe('bg');
     expect(canvas.style.getPropertyValue('--fd-inputs-bg')).toBe('#fff7e6');
-    type(field(row(), 'Border'), '#c4320a');
-    press('Corners', 'Round');
-    expect(pressed('Corners')).toEqual(['Round']);
+    type(field(row(), 'Text boxes’ border'), '#c4320a');
+    press('Text boxes’ corners', 'Round');
+    expect(pressed('Text boxes’ corners')).toEqual(['Round']);
     expect(parts()).toEqual({ inputs: { background: '#fff7e6', border: '#c4320a', corners: 'round' } });
     expect(canvas.getAttribute('data-inputs')).toBe('bg border radius');
     expect(canvas.style.getPropertyValue('--fd-inputs-radius')).toBe('12px');
     // Pressed again, a choice goes back to the page's.
-    press('Corners', 'Round');
+    press('Text boxes’ corners', 'Round');
     expect(parts()?.inputs?.corners).toBeUndefined();
     expect(canvas.style.getPropertyValue('--fd-inputs-radius')).toBe('');
   });
 
   it('sets the buttons’ colour; each change is one undo step, and the panel follows', () => {
     const { designer, row, canvas, press, pressed, parts } = screenEditor();
-    press('Corners', 'Round');
+    press('Text boxes’ corners', 'Round');
     press('Kind of part', 'Buttons');
-    type(field(row(), 'Colour'), '#6941c6');
-    type(field(row(), 'Colour'), '#5b34b0');
+    type(field(row(), 'Buttons’ colour'), '#6941c6');
+    type(field(row(), 'Buttons’ colour'), '#5b34b0');
     expect(parts()).toEqual({ inputs: { corners: 'round' }, buttons: { accent: '#5b34b0' } });
     expect(canvas.getAttribute('data-buttons')).toBe('accent');
     designer.undo();
@@ -130,10 +147,10 @@ describe('the Look tab’s “Each kind of part”', () => {
     expect(canvas.hasAttribute('data-buttons')).toBe(false);
     expect(canvas.style.getPropertyValue('--fd-buttons-accent')).toBe('');
     press('Kind of part', 'Text boxes');
-    expect(pressed('Corners')).toEqual(['Round']);
+    expect(pressed('Text boxes’ corners')).toEqual(['Round']);
     designer.undo();
     expect(parts()).toBeUndefined();
-    expect(pressed('Corners')).toEqual([]);
+    expect(pressed('Text boxes’ corners')).toEqual([]);
     expect(canvas.hasAttribute('data-inputs')).toBe(false);
   });
 
@@ -141,10 +158,10 @@ describe('the Look tab’s “Each kind of part”', () => {
     const { row, group, press, parts } = screenEditor();
     const asPage = () => button(row(), 'Text boxes as the page');
     expect(asPage()).toBeUndefined();
-    type(field(row(), 'Background'), '#fff7e6');
-    press('Text size', 'Large');
+    type(field(row(), 'Text boxes’ background'), '#fff7e6');
+    press('Text boxes’ text size', 'Large');
     press('Kind of part', 'Choices');
-    type(field(row(), 'Accent'), '#1f7a4d');
+    type(field(row(), 'Choices’ accent'), '#1f7a4d');
     const own = () => [...group('Kind of part').querySelectorAll('button[data-own]')].map((b) => b.textContent);
     expect(own()).toEqual(['Text boxes', 'Choices']);
     press('Kind of part', 'Text boxes');
@@ -156,11 +173,11 @@ describe('the Look tab’s “Each kind of part”', () => {
 
   it('takes one colour back to the page’s by its own button, leaving the rest', () => {
     const { row, parts } = screenEditor();
-    type(field(row(), 'Background'), '#fff7e6');
-    type(field(row(), 'Border'), '#c4320a');
-    button(row(), 'Background as the page')?.click();
+    type(field(row(), 'Text boxes’ background'), '#fff7e6');
+    type(field(row(), 'Text boxes’ border'), '#c4320a');
+    button(row(), 'Text boxes’ background as the page')?.click();
     expect(parts()).toEqual({ inputs: { border: '#c4320a' } });
-    expect(button(row(), 'Background as the page')).toBeUndefined();
+    expect(button(row(), 'Text boxes’ background as the page')).toBeUndefined();
   });
 });
 
@@ -182,7 +199,7 @@ describe('the survey’s Look sheet', () => {
     const sheet = host.querySelector('[role="dialog"][aria-label="Look"]') as HTMLElement;
     const row = sheet.querySelector('[data-setting="Each kind of part"]') as HTMLElement;
     (row.querySelector('[role="group"][aria-label="Kind of part"] [data-choice="choices"]') as HTMLButtonElement).click();
-    type(field(row, 'Accent'), '#1f7a4d');
+    type(field(row, 'Choices’ accent'), '#1f7a4d');
     const cards = host.querySelector('.fd-survey-canvas') as HTMLElement;
     expect(designer.getPage().look?.parts).toEqual({ choices: { accent: '#1f7a4d' } });
     expect(cards.getAttribute('data-choices')).toBe('accent');
