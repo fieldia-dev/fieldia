@@ -54,6 +54,7 @@ const BLOCK_KINDS: Record<string, [kind: string, icon: string]> = {
   image: ['Picture', 'image'],
   button: ['Button', 'button'],
   slot: ['Slot', 'group'],
+  form: ['Saved form', 'form'],
 };
 const TEXT_KINDS: Record<string, [kind: string, icon: string]> = { heading: ['Heading', 'heading'], note: ['Note', 'text'], paragraph: ['Words', 'text'] };
 

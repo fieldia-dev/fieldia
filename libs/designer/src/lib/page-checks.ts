@@ -9,6 +9,7 @@ import { containers, type Container } from './page-tree';
 import { translationChanges } from './translations';
 import { ruleChanges } from './rules-changes';
 import { fixRuleCheck, ruleChecks, type RuleFix, type RuleFixer } from './rules-checks';
+import { formChecks, SAID_BY_FORM_CHECKS, type SavedFormsCache } from './saved-forms';
 
 /**
  * Before a page is published: what people would trip over, each with a fix
@@ -78,13 +79,17 @@ function withRules(page: Page): { id: string; name: string; invisible: unknown }
  * pass `validatePage`, as each page the designer keeps is: it is not checked
  * against the format again, which on a big page is most of the time it takes.
  */
-export function pageChecks(page: Page, options: { valid?: boolean } = {}): PageCheck[] {
+export function pageChecks(page: Page, options: { valid?: boolean; forms?: SavedFormsCache | null } = {}): PageCheck[] {
   const found: PageCheck[] = [];
   const checked = options.valid ? null : validatePage(page);
   const rules = ruleChecks(page);
-  // A page written by hand can be wrong in ways the designer would never let it be; what the rules' checks say in words is not said again.
-  if (checked && !checked.ok) for (const issue of checked.issues) if (!rules.covers(issue.path)) found.push({ at: null, severity: 'must', text: issue.path ? `${issue.path}: ${issue.message}` : issue.message });
+  // A page written by hand can be wrong in ways the designer would never let it be; what the rules' checks — and the saved forms' — say in words is not said again.
+  if (checked && !checked.ok) {
+    for (const issue of checked.issues) if (!rules.covers(issue.path) && !SAID_BY_FORM_CHECKS.test(issue.message)) found.push({ at: null, severity: 'must', text: issue.path ? `${issue.path}: ${issue.message}` : issue.message });
+  }
   found.push(...rules.checks);
+  // embed lane: saved forms placed in the page that cannot be found, would hold it, or would mix their answers.
+  found.push(...formChecks(page, options.forms ?? null));
   const survey = page.data.kind === 'responses';
   const noun = survey ? 'question' : 'field';
   const placed = placedFields(page);

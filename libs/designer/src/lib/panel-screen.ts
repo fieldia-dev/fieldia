@@ -46,6 +46,7 @@ const BLOCK_WORDS: Record<string, [string, string]> = {
   divider: ['Divider', 'width'],
   spacer: ['Spacer', 'width'],
   slot: ['The app’s own part', 'more'],
+  form: ['Saved form', 'saved-form'],
 };
 
 /** What is picked, as the head says it: its kind, with an icon, and its name. */

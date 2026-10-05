@@ -7,7 +7,7 @@ import { createApp, defineComponent, h, onBeforeUnmount, onMounted, ref, type Pr
 import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 
 /** The same demo again, mounted by Vue with render functions. */
 const params = new URLSearchParams(location.search);
@@ -83,7 +83,7 @@ createApp({
         locale: (params.get('locale') as Locale | null) ?? undefined,
         fieldTypes: { 'char.shout': Shout },
         widgets: { ...gridWidgets, ...codeWidgets },
-        relatedPages,
+        pages: appPages,
         ...optionsFromQuery(params),
         onAction: (request: ActionRequest) => {
           actions.push(request.action);

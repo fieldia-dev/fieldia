@@ -144,6 +144,33 @@ export interface ImageNode {
   invisible?: Modifier;
 }
 
+/**
+ * A saved form placed in this one: another page, found by its id, drawn where
+ * this part stands, its fields answered and checked as on their own page — its
+ * required fields, answer rules, conditions and worked-out values all hold
+ * inside it. Its answers are kept under `name`, as an object, so two copies of
+ * one form never mix: `{ "home": { "street": … }, "work": { "street": … } }`.
+ * It is edited on its own page; this one only places it. A page of sections
+ * or tabs can be placed; a wizard, a sheet or a list cannot.
+ */
+export interface FormNode {
+  type: 'form';
+  id: string;
+  /** The saved page's id. */
+  page: string;
+  /** A published version to keep to. The latest published version when left out. */
+  version?: number;
+  /** Where its answers go: the name they are kept under, as a field's are. */
+  name: string;
+  /** Words over it: the saved page's own title when left out, none when empty. */
+  title?: string;
+  /** Grid columns it spans inside a section. */
+  colspan?: number;
+  invisible?: Modifier;
+  /** Every field inside is read-only while this holds. */
+  readonly?: Modifier;
+}
+
 /** A named place the app fills with its own content, such as an activity feed. */
 export interface SlotNode {
   type: 'slot';
@@ -358,7 +385,7 @@ export interface ListNode {
 }
 
 /** Anything that can sit inside a section, tab, step or sheet. */
-export type LayoutNode = FieldNode | ButtonNode | TextNode | SlotNode | SectionNode | TabsNode | DividerNode | SpacerNode | ImageNode;
+export type LayoutNode = FieldNode | ButtonNode | TextNode | SlotNode | SectionNode | TabsNode | DividerNode | SpacerNode | ImageNode | FormNode;
 
 /** What a page's `layout` can be: the four page layouts. */
 export type RootLayout = SheetNode | SectionsNode | TabsNode | WizardNode | ListNode;
@@ -463,6 +490,18 @@ export const ImageNodeSchema = z.strictObject({
 
 export const SlotNodeSchema = z.strictObject({ type: z.literal('slot'), id, name: z.string().min(1), invisible });
 
+export const FormNodeSchema = z.strictObject({
+  type: z.literal('form'),
+  id,
+  page: id,
+  version: z.int().min(1).optional(),
+  name: fieldName,
+  title: z.string().optional(),
+  colspan: span,
+  invisible,
+  readonly: ModifierSchema.optional(),
+});
+
 export const SectionNodeSchema = z.strictObject({
   type: z.literal('section'),
   id,
@@ -514,6 +553,7 @@ export const LayoutNodeSchema = z
     DividerNodeSchema,
     SpacerNodeSchema,
     ImageNodeSchema,
+    FormNodeSchema,
   ])
   .meta({ id: 'LayoutNode' });
 

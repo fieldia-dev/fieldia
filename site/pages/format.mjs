@@ -80,6 +80,7 @@ ${code(
     <tr><td>${c('slot')}</td><td>A named place your app fills with its own content — an activity feed, a map, a chart.</td></tr>
     <tr><td>${c('image')}</td><td>A picture between parts: its ${c('src')} and its ${c('alt')}, what it shows for those who cannot see it — empty only for a picture that is decoration. ${c('width')}: ${c('small')} (160px), ${c('medium')} (320px), ${c('large')} (480px), ${c('full')} or a number of pixels, never wider than its row; ${c('align')}: ${c('start')}, ${c('center')} or ${c('end')}; ${c('href')}: a web or mail address it opens in a new tab; ${c('caption')}: words under it, translated with the page's others.</td></tr>
     <tr><td>${c('divider')}, ${c('spacer')}</td><td>A line across the row, and empty room.</td></tr>
+    <tr><td>${c('form')}</td><td>A saved form placed whole — an address made once, placed wherever a form asks for one: ${c('{ "type": "form", "id": "home", "page": "address", "name": "home_address" }')}. ${c('page')} is the saved page's id; ${c('version')} keeps to a published version, the latest when left out. Its answers go under ${c('name')} as an object, ${c('{ "home_address": { "street": … } }')}, so two copies never mix; its own required fields, rules and worked-out values hold inside it. ${c('title')}: the saved page's own when left out, none when empty. The viewer finds the page through its ${c('pages')} option.</td></tr>
   </tbody>
 </table>
 <p>Every node has an ${c('id')}, unique in the page. Ids are what a designer, a test or your app use to find a node.</p>

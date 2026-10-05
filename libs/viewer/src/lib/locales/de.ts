@@ -69,4 +69,8 @@ export const de: ViewerLabels = {
   no: 'Nein',
   none: 'Ohne Angabe',
   loadMore: '{n} weitere anzeigen',
+  formMissing: 'Das gespeicherte Formular „{page}“ wurde nicht gefunden.',
+  formInItself: 'Das gespeicherte Formular „{page}“ wird hier nicht gezeigt: Es stünde in sich selbst ({chain}).',
+  formNotPlaceable: 'Das gespeicherte Formular „{page}“ kann hier nicht stehen: Nur ein Formular aus Abschnitten oder Reitern kann das.',
+  formBroken: 'Das gespeicherte Formular „{page}“ kann nicht gezeigt werden.',
 };

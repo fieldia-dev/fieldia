@@ -26,6 +26,7 @@ import type { DesignerAssistant } from './assistant';
 import type { PageTemplate } from './templates';
 import { startHere } from './templates-start';
 import { dropEcho } from './drop-echo';
+import { openMenu } from './menu';
 import { setHidden } from './writes';
 
 /**
@@ -120,6 +121,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     doc,
     kinds,
     layout: true,
+    forms: true,
     onPick: (spec) => add(spec, null),
     onPress: (spec, event, tile) => (isList() ? list.drag : canvas.drag).press({ tool: spec }, event, tile),
   });
@@ -191,6 +193,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       if (created) canvas.focus(created, 'label', true);
     } else if (kind === 'model') designer.addModelField(name, where ?? target(page));
     else if (kind === 'block') designer.addBlock(name as BlockKind, where ?? blockWhere(page));
+    else if (kind === 'form') void pickSavedForm(where ?? blockWhere(page));
     else if (spec === 'layout:section') {
       const selected = designer.getState().selected;
       const tab = selected ? findTab(page, selected) : null;
@@ -203,6 +206,28 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       const tabs = created ? (topOf(designer.getPage()).find((n) => n.id === created) as TabsNode) : null;
       if (tabs) designer.select(tabs.children[0].id);
     }
+  }
+
+  /**
+   * One of the app's saved forms, picked from a menu under the toolbox's tile,
+   * placed where it was dropped or would go. It is loaded first, with what it
+   * places, so one that would hold this page is refused, saying why.
+   */
+  async function pickSavedForm(where: Where) {
+    const anchor = root.querySelector<HTMLElement>('.fd-toolbox [data-tool="form:saved"]');
+    if (!anchor) return;
+    const found = await designer.savedForms();
+    openMenu({
+      el,
+      anchor,
+      title: 'A saved form',
+      items: found.map((form) => ({ id: form.id, label: form.title, icon: 'saved-form' })),
+      note: found.length ? 'Placed whole, its answers kept apart; it is changed on its own page.' : 'The app has no saved form to place yet: publish one first.',
+      onPick: async (id) => {
+        await designer.loadSavedForm(id);
+        designer.addForm(id, where);
+      },
+    });
   }
 
   /** Where a block clicked in the toolbox goes: right after what is picked, into a picked tab, or where a field would. */
@@ -241,6 +266,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       })),
       ...allSections(page).map((section) => ({ label: `Go to the section “${sectionLabel(page, section)}”`, hint: 'section', run: () => designer.select(section.id) })),
       { label: 'Add a section', hint: 'layout', run: () => add('layout:section', null) },
+      ...(designer.canPlaceForms() ? [{ label: 'Add a saved form', hint: 'saved form', run: () => add('form:saved', null) }] : []),
       ...(layout.type === 'sheet' && !topOf(page).some((n) => n.type === 'tabs') ? [{ label: 'Add tabs', hint: 'layout', run: () => add('layout:tabs', null) }] : []),
     ];
   }
@@ -331,6 +357,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       tabs: state.page.layout.type === 'sheet' && !topOf(state.page).some((n) => n.type === 'tabs'),
       kinds: !listing,
       advanced: mode === 'advanced',
+      forms: designer.canPlaceForms(),
     });
     side.update(state);
     panel.update(state);

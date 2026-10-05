@@ -29,6 +29,30 @@ function valuesPage(fields: Record<string, Field>, title: string, readonly: bool
   };
 }
 
+/**
+ * What a part asks the app's pages for: the page for a model, to show a
+ * linked record in a dialog; or a saved page by its id — and the version it
+ * keeps to, when it keeps to one — to draw a saved form placed in another.
+ */
+export type PageRequest = { model: string } | { id: string; version?: number };
+
+/**
+ * The app's pages: a record of them by key — a model, a page's id, or
+ * `id@version` for a version kept to — or a function asked for each, which
+ * may answer at once or with a promise.
+ */
+export type PageFinder = Record<string, Page> | ((request: PageRequest) => Page | null | undefined | Promise<Page | null | undefined>);
+
+/** The page the app gives for a request: from `pages`, and for a model from `relatedPages` after it. A promise when it answers later. */
+export function findPage(options: Pick<ViewerOptions, 'pages' | 'relatedPages'>, request: PageRequest): Page | null | Promise<Page | null> {
+  const { pages, relatedPages } = options;
+  const key = 'model' in request ? request.model : request.version === undefined ? request.id : `${request.id}@${request.version}`;
+  const found = typeof pages === 'function' ? pages(request) : pages && Object.prototype.hasOwnProperty.call(pages, key) ? pages[key] : null;
+  if (found instanceof Promise) return found.then((page) => page ?? null);
+  if (found || !('model' in request)) return found ?? null;
+  return (typeof relatedPages === 'function' ? relatedPages(request.model) : relatedPages?.[request.model]) ?? null;
+}
+
 /** Only finding and making linked records: values edited in a dialog are no record of the source's to load, save or recalculate. */
 function lookupsOf(source: DataSource | undefined): DataSource | undefined {
   if (!source) return undefined;
@@ -40,8 +64,7 @@ function lookupsOf(source: DataSource | undefined): DataSource | undefined {
 
 /** The dialogs a page's widgets may open, made from the viewer's own options. */
 export function pageDialogs(options: ViewerOptions): WidgetDialogs {
-  const pageFor = (model: string) =>
-    (typeof options.relatedPages === 'function' ? options.relatedPages(model) : options.relatedPages?.[model]) ?? null;
+  const pageFor = (model: string) => findPage(options, { model });
   // A dialog's page looks and reads like the page that opened it, and can open dialogs of its own.
   const shared = {
     locale: options.locale,
@@ -49,6 +72,7 @@ export function pageDialogs(options: ViewerOptions): WidgetDialogs {
     dir: options.dir,
     widgets: options.widgets,
     preferences: options.preferences,
+    pages: options.pages,
     relatedPages: options.relatedPages,
     translate: options.translate,
     look: options.page.look,
@@ -56,7 +80,7 @@ export function pageDialogs(options: ViewerOptions): WidgetDialogs {
   return {
     canOpen: (model) => pageFor(model) !== null,
     async openRecord(model, request) {
-      const related = pageFor(model);
+      const related = await pageFor(model);
       if (!related) return null;
       const nameField = nameFieldOf(related);
       const result = await openFormDialog({

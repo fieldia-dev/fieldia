@@ -64,7 +64,7 @@ export const isWrapper = (node: unknown): node is SectionNode => isSection(node)
 export const spanOf = (node: Part): number => (node as { colspan?: number }).colspan ?? 1;
 
 /** The parts that take a width; a divider runs across the whole row. */
-export const SPANNED = new Set(['field', 'button', 'text', 'section', 'tabs', 'spacer', 'image']);
+export const SPANNED = new Set(['field', 'button', 'text', 'section', 'tabs', 'spacer', 'image', 'form']);
 
 /** Set how many columns a part spans; one is the default, and a part that spans nothing (a divider) is left as it is. */
 export function setSpan(node: Part, span: number): void {
@@ -174,6 +174,9 @@ export function nameOf(page: Page, node: Part | Holder | null): string {
       return part.alt || 'Image';
     case 'slot':
       return part.name;
+    case 'form':
+      // Its own words, or its answers' name as words: “Address 2”.
+      return part.title || `${part.name.charAt(0).toUpperCase()}${part.name.slice(1).replace(/_/g, ' ')}`;
     default:
       return part.type === 'divider' ? 'Divider' : 'Spacer';
   }

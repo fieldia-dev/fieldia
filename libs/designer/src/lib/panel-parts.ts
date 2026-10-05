@@ -21,6 +21,7 @@ const ABOUT: Record<string, string> = {
   button: 'A button people press.',
   text: 'Words on the page, between the fields.',
   slot: 'A place the app fills with its own part.',
+  form: 'A saved form, drawn as the form draws it. It is changed on its own page; here, which one, its version, its title and where its answers go.',
 };
 
 export function blockProperties(el: ElementFactory, designer: Designer, id: string): PropertiesView {

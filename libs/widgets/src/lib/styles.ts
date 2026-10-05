@@ -440,6 +440,9 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-form[data-fd-skin="outlined"] :is(.fd-sections > .fd-section:not([data-style]), .fd-section[data-style="card"][data-on-page]) {
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: var(--fd-radius); padding: var(--fd-group-pad, 20px 24px);
 }
+/* A saved form placed in another: a quiet line while its page comes, and words in a dashed box when it cannot be shown. */
+.fd-form-part-note { margin: 0; color: var(--fd-muted); font-size: 13px; }
+.fd-form-part-problem { padding: 10px 12px; border: 1px dashed var(--fd-border); border-radius: var(--fd-radius); }
 .fd-tablist { display: flex; gap: 2px; border-block-end: 1px solid var(--fd-border); overflow-x: auto; }
 .fd-tab {
   font: inherit; background: none; border: none; cursor: pointer; padding: 8px 14px; color: var(--fd-muted);
