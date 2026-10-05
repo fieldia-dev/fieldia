@@ -1,4 +1,4 @@
-import type { Field, Page } from '@fieldia/core';
+import { localizePage, type Field, type Page } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor } from '@fieldia/designer';
 import type { Skin } from '@fieldia/viewer';
 import { APP_LISTS, APP_LISTS_AR, pages, sampleDataSource } from '../shared/sample-data';
@@ -84,7 +84,8 @@ function siteVisit() {
   draft.setOptions(add('dropdown', say('Next step', 'الخطوة التالية'), followUp), arabic ? ['إرسال عرض سعر', 'حجز زيارة ثانية', 'إغلاق'] : ['Send a quote', 'Book a second visit', 'Close']);
   add('date', say('Due by', 'الموعد النهائي'), followUp);
   add('yes-no', say('Manager to call?', 'هل يتصل المدير؟'), followUp);
-  return draft.getPage();
+  // Under the same id in either language: the visit follow-up places it by that id.
+  return { ...draft.getPage(), id: 'site-visit' };
 }
 
 function customers() {
@@ -101,7 +102,8 @@ function customers() {
 const store = createMemoryPageStore();
 // The saved forms, published: Address once without the building and the country, then whole.
 const published = (page: Page, version: number) => ({ version, publishedAt: new Date(2026, 8, version * 7).toISOString(), page });
-const address = addressPage as unknown as Page;
+// In Arabic, the saved Address in the words it keeps for Arabic: as an Arabic app's own saved forms are.
+const address = arabic ? { ...localizePage(addressPage as unknown as Page, 'ar'), language: 'ar' } : (addressPage as unknown as Page);
 const firstAddress: Page = {
   ...address,
   fields: { street: address.fields['street'], city: address.fields['city'], postcode: address.fields['postcode'] },
@@ -111,9 +113,10 @@ store.pages.set('address', { draft: null, versions: [published(firstAddress, 1),
 const followUp: Page = {
   fieldia: '0.1',
   id: 'follow-up',
-  title: 'Visit follow-up',
+  title: say('Visit follow-up', 'متابعة الزيارة'),
+  ...(arabic ? { language: 'ar' } : {}),
   data: { kind: 'responses' },
-  fields: { outcome: { type: 'text', label: 'What came of it' } },
+  fields: { outcome: { type: 'text', label: say('What came of it', 'ما نتج عنها') } },
   layout: { type: 'sections', id: 'follow-up', children: [{ type: 'form', id: 'the-visit', page: 'site-visit', name: 'visit' }, { type: 'field', id: 'outcome', field: 'outcome' }] },
 };
 store.pages.set('follow-up', { draft: null, versions: [published(followUp, 1)] });
