@@ -1,6 +1,6 @@
 import { describeTypes, fileProblem, fill, formatBytes, MESSAGES, type Field, type FileValue } from '@fieldia/core';
 import { keepTabIn } from './focus-trap';
-import { describeState, maker, rightToLeft, setHidden, setText, wordsFor, type Make } from './kind-parts';
+import { askFirst, describeState, maker, rightToLeft, setHidden, setText, wordsFor, type Make } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -76,18 +76,14 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
     const replace = make('button', { type: 'button', class: 'fd-button fd-button-link' }, words.replace);
     replace.addEventListener('click', () => input.click());
     // Removing asks first, in place: "Remove report.pdf?  Remove · Keep".
-    const question = make('span');
-    const yes = make('button', { type: 'button', class: 'fd-button fd-button-link' }, words.removeFile);
-    const no = make('button', { type: 'button', class: 'fd-button fd-button-link' }, words.keep);
-    const confirm = make('div', { class: 'fd-file-confirm', hidden: '' }, question, yes, no);
+    const confirm = askFirst(make, words);
     // Why files were not added, and one removed: said politely, and shown.
     const note = make('div', { class: 'fd-help fd-file-note', role: 'status' });
-    element.append(input, pick, ...(limits.length ? [limited] : []), ...(count ? [count] : []), list, replace, confirm, note);
+    element.append(input, pick, ...(limits.length ? [limited] : []), ...(count ? [count] : []), list, replace, confirm.element, note);
 
     let readonly = false;
     let files: FileValue[] = [];
     let shown: unknown;
-    let asking = -1;
     const say = (lines: string[]) => note.replaceChildren(...lines.map((line) => make('div', {}, line)));
 
     const take = async (chosen: File[]) => {
@@ -128,24 +124,15 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
       const at = Number(button?.dataset['at']);
       if (!button) return;
       if (button.classList.contains('fd-file-open')) return view(at, button);
-      asking = at;
-      question.textContent = fill(words.removeAsk, { name: files[at].name });
-      confirm.hidden = false;
-      no.focus();
+      confirm.ask(fill(words.removeAsk, { name: files[at].name }), (remove) => {
+        const gone = files[at];
+        if (remove) {
+          form.setValue(name, several ? files.filter((_, i) => i !== at) : null);
+          say([fill(words.removed, { name: gone.name })]);
+        }
+        (list.querySelectorAll<HTMLElement>('.fd-file-remove')[remove ? Math.min(at, files.length - 1) : at] ?? (pick.hidden ? replace : input)).focus();
+      });
     });
-    const answered = (remove: boolean) => {
-      const at = asking;
-      const gone = files[at];
-      confirm.hidden = true;
-      if (remove) {
-        form.setValue(name, several ? files.filter((_, i) => i !== at) : null);
-        say([fill(words.removed, { name: gone.name })]);
-      }
-      (list.querySelectorAll<HTMLElement>('.fd-file-remove')[remove ? Math.min(at, files.length - 1) : at] ?? (pick.hidden ? replace : input)).focus();
-    };
-    yes.addEventListener('click', () => answered(true));
-    no.addEventListener('click', () => answered(false));
-    confirm.addEventListener('keydown', (event) => event.key === 'Escape' && answered(false));
 
     /** A file open in a dialog, the arrows and Previous and Next going through them all. */
     function view(at: number, opener: HTMLElement) {

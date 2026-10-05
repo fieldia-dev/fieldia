@@ -132,15 +132,6 @@ describe('a repeating group’s cards moved and copied', () => {
     expect(document.activeElement).toBe(button(shown(el)[0], 'Move Person 1 down'));
   });
 
-  it('moves the card with the focus by Alt+↑/↓', () => {
-    const { el, value } = three();
-    const input = shown(el)[2].querySelector('input') as HTMLInputElement;
-    input.focus();
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, bubbles: true, cancelable: true }));
-    expect(names(value())).toEqual(['Sara', 'Laila', 'Omar']);
-    expect(document.activeElement).toBe(input);
-  });
-
   it('copies a card right after it, its answers too, the cursor in the copy, and none past the most', () => {
     const { el, value } = three({ max: 4 });
     button(shown(el)[0], 'Copy Person 1').click();

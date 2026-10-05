@@ -301,8 +301,8 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-lines-table .fd-input { min-height: 28px; }
 /* A yes/no cell sits level with the inputs beside it. */
 .fd-lines-table td > .fd-checkbox, .fd-lines-table td > .fd-switch { margin-block-start: 6px; }
-.fd-lines-table .fd-lines-grip { width: 22px; min-width: 22px; padding-inline: 0; text-align: center; }
-.fd-line-grip { display: inline-block; padding: 6px 3px; color: var(--fd-muted); cursor: grab; touch-action: none; user-select: none; }
+.fd-lines-table .fd-lines-grip { width: 1px; min-width: 0; padding-inline: 6px 2px; }
+.fd-line-grip { display: block; margin-block-start: 7px; cursor: grab; }
 .fd-line-delete { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
 .fd-line-delete:hover { color: var(--fd-error); background: var(--fd-error-soft); }
 .fd-lines-totals td { padding: 8px; font-weight: 600; border-block-start: 1px solid var(--fd-border); font-variant-numeric: tabular-nums; }
@@ -345,7 +345,7 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-file-size { color: var(--fd-muted); font-size: 12.5px; font-variant-numeric: tabular-nums; unicode-bidi: plaintext; }
 .fd-file-remove { flex: none; width: 32px; height: 32px; border: none; border-radius: 999px; background: none; color: var(--fd-muted); font-size: 20px; line-height: 1; cursor: pointer; }
 .fd-file-remove:hover { color: var(--fd-error); background: var(--fd-error-soft); }
-.fd-file-confirm:not([hidden]) { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.fd-file-confirm:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
 .fd-file-note:empty { display: none; }
 .fd-file-note { color: var(--fd-warning); }
 /* Thumbnails: tiles in a row that wraps, the picker the last of them. */

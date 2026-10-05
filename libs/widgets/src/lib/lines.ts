@@ -1,6 +1,6 @@
 import { isEmpty, lineKind, type Field, type FieldNode, type Form, type FormState, type Line, type LineField, type Value } from '@fieldia/core';
 import { displayValue } from './display';
-import { fillIn, maker } from './kind-parts';
+import { askFirst, fillIn, maker } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
 import { moveLineTo } from './line-moves';
 import { createWidget, type Widget, type WidgetFactory } from './widgets';
@@ -126,21 +126,17 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     addButton(labels.addSection, { [kinds.field]: kinds.section ?? 'section' }, 'section');
     addButton(labels.addNote, { [kinds.field]: kinds.note ?? 'note' }, 'note');
   }
-  const empty = words('emptyLabel') ? make('div', { class: 'fd-help fd-lines-empty' }, words('emptyLabel') as string) : null;
+  const emptyWords = words('emptyLabel');
+  const empty = emptyWords ? make('div', { class: 'fd-help fd-lines-empty' }, emptyWords) : null;
   // Removing a line with something in it asks first, in place: "Remove line 2?  Remove · Keep".
-  const question = make('span');
-  const yes = make('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.removeFile);
-  const no = make('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.keep);
-  const confirm = make('div', { class: 'fd-file-confirm', hidden: '' }, question, yes, no);
+  const confirm = askFirst(make, labels);
   // Where a line went, said politely; not the page's own announcer, which a page looks for by its class.
   const voice = make('div', { class: 'fd-sr-only', role: 'status' });
-  element.append(scroller, ...(empty ? [empty] : []), adds, confirm, voice);
+  element.append(scroller, ...(empty ? [empty] : []), adds, confirm.element, voice);
 
   const rows = new Map<string, Row>();
   let focusNew: string | null = null;
   let readonly = false;
-  /** The line asked about before it is removed. */
-  let asking = '';
   const current = () => (form.getState().values[name] as Line[] | null) ?? [];
   // A new table starts with the lines it needs at least.
   for (let have = current().length; have < min; have++) form.addLine(name);
@@ -162,18 +158,6 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     event.preventDefault();
     move(key, current().findIndex((line) => line.key === key) + (event.key === 'ArrowUp' ? -1 : 1));
   });
-  const answered = (remove: boolean) => {
-    const at = current().findIndex((line) => line.key === asking);
-    confirm.hidden = true;
-    if (remove) form.removeLine(name, asking);
-    const left = current();
-    const next = remove ? left[Math.min(at, left.length - 1)] : left[at];
-    (next ? rows.get(next.key)?.remove : adds.querySelector('button'))?.focus();
-  };
-  yes.addEventListener('click', () => answered(true));
-  no.addEventListener('click', () => answered(false));
-  confirm.addEventListener('keydown', (event) => event.key === 'Escape' && answered(false));
-
   function makeCell(tr: HTMLTableRowElement, line: Line, column: string, sub: LineField, span = 1) {
     const cellId = `${id}-${line.key}-${column}`;
     const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column };
@@ -198,7 +182,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     const kind = lineKind(def, line.values);
     if (kind) tr.className = `fd-line-${kind}`;
     // Dragged by its grip, the line takes the place the pointer is at.
-    const grip = make('span', { class: 'fd-line-grip', 'aria-hidden': 'true' }, '⠿');
+    const grip = make('span', { class: 'fd-line-grip fd-rank-grip', 'aria-hidden': 'true' });
     let dragging = false;
     grip.addEventListener('pointerdown', (event) => {
       if (readonly || event.button !== 0) return;
@@ -208,8 +192,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     });
     grip.addEventListener('pointermove', (event) => {
       if (!dragging) return;
-      const others = [...body.children].filter((row) => row !== tr);
-      move(line.key, others.filter((row) => { const box = row.getBoundingClientRect(); return box.top + box.height / 2 < event.clientY; }).length);
+      // The place among the others: as many as have their middle above the pointer.
+      move(line.key, [...body.children].filter((row) => row !== tr && row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2 < event.clientY).length);
     });
     for (const end of ['pointerup', 'pointercancel']) grip.addEventListener(end, () => (dragging = false));
     tr.append(make('td', { class: 'fd-lines-grip' }, grip));
@@ -225,14 +209,16 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     remove.textContent = '×';
     remove.setAttribute('aria-label', labels.deleteLine);
     remove.addEventListener('click', () => {
-      const now = (form.getState().values[name] as Line[] | null) ?? [];
-      const at = now.findIndex((l) => l.key === line.key);
-      const values = now[at]?.values ?? {};
+      const at = current().findIndex((l) => l.key === line.key);
+      const values = current()[at]?.values ?? {};
       if (options['confirmDelete'] !== true || cells.every((cell) => isEmpty(cell.def, values[cell.name]) || values[cell.name] === false)) return form.removeLine(name, line.key);
-      asking = line.key;
-      question.textContent = fillIn(labels.removeAsk, { name: fillIn(labels.lineN, { n: at + 1 }) });
-      confirm.hidden = false;
-      no.focus();
+      confirm.ask(fillIn(labels.removeAsk, { name: fillIn(labels.lineN, { n: at + 1 }) }), (gone) => {
+        if (gone) form.removeLine(name, line.key);
+        // The line that took its place, or this one kept; else Add.
+        const left = current();
+        const next = left[gone ? Math.min(at, left.length - 1) : at];
+        (next ? rows.get(next.key)?.remove : adds.querySelector('button'))?.focus();
+      });
     });
     tools.append(remove);
     tr.append(tools);
@@ -246,7 +232,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
       readonly = state.readonly;
       const current = (state.value as Line[] | null) ?? [];
       adds.hidden = readonly || current.length >= max;
-      if (readonly) confirm.hidden = true;
+      if (readonly) confirm.element.hidden = true;
       if (empty) empty.hidden = current.length > 0;
       const errors = form.getState().errors;
       const keep = new Set(current.map((line) => line.key));

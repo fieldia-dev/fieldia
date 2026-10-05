@@ -11,8 +11,7 @@ import { createWidget, type Widget, type WidgetFactory } from './widgets';
  * adds a card and puts the cursor in its first field; × takes one away, the
  * cursor going to the card that took its place, and the removal is said
  * aloud. `options.min` cards at least — a new form starts with them — and
- * `options.max` at most. ↑ and ↓ — or Alt+↑/↓ inside a card — move a card,
- * where it went said aloud; Copy puts a copy of a card, its answers too,
+ * `options.max` at most. ↑ and ↓ move a card, where it went said aloud; Copy puts a copy of a card, its answers too,
  * right after it.
  */
 
@@ -73,11 +72,6 @@ export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, docume
     const tools = [tool('↑', 'moveUp', () => move(line.key, at() - 1)), tool('↓', 'moveDown', () => move(line.key, at() + 1)), tool('⧉', 'copy', () => copy(line.key))];
     const body = make('div', { class: 'fd-repeat-fields' });
     const cardElement = make('div', { class: 'fd-repeat-card', role: 'group', 'aria-labelledby': titleId, 'data-line': line.key }, make('div', { class: 'fd-repeat-head' }, title, ...tools.map(([b]) => b), remove), body);
-    cardElement.addEventListener('keydown', (event) => {
-      if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
-      event.preventDefault();
-      move(line.key, at() + (event.key === 'ArrowUp' ? -1 : 1));
-    });
     const fields = names.map((column) => {
       const sub = def.fields[column];
       const cellId = `${id}-${line.key}-${column}`;
@@ -109,13 +103,11 @@ export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, docume
   function move(key: string, to: number) {
     const from = lines().findIndex((l) => l.key === key);
     if (readonly || to < 0 || to >= lines().length || to === from) return;
-    const focused = document.activeElement as HTMLElement | null;
     const gone = cards.get(key)?.title.textContent ?? '';
     moveLineTo(form, name, def, key, to);
-    // A way up or down that is no more hands the focus to the other.
-    const card = cards.get(key);
-    const next = focused && !focused.hidden ? focused : card?.tools.find(([b]) => !b.hidden)?.[0];
-    if (next && next !== document.activeElement) next.focus();
+    // The focus stays on the button pressed; at an end, the other way takes it.
+    const way = (from > to && to > 0) || to === lines().length - 1 ? 0 : 1;
+    cards.get(key)?.tools[way][0].focus();
     voice.say(fillIn(words.movedTo, { label: gone, n: to + 1, total: lines().length }));
   }
 
