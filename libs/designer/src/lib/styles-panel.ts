@@ -98,6 +98,27 @@ export const DESIGNER_PANEL_CSS = /* css */ `
 .fd-insp-colour::-webkit-color-swatch { border: 0; border-radius: 3px; }
 .fd-insp-colour::-moz-color-swatch { border: 0; border-radius: 3px; }
 .fd-properties .fd-insp-reset { padding: 0; min-height: 0; font-size: 12.5px; }
+/* Each kind of part: its kinds as chips that wrap, a dot on one with a look of its own; under them the kind's settings, a row each. */
+.fd-properties .fd-insp-kinds { display: flex; flex-wrap: wrap; }
+.fd-properties .fd-insp-kinds > .fd-seg-button { flex: 1 1 auto; display: inline-flex; justify-content: center; align-items: center; gap: 5px; }
+.fd-properties .fd-insp-kinds > .fd-seg-button[data-own]::after { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--fd-accent); }
+.fd-part-look { display: grid; gap: 6px; margin-block-start: 6px; padding: 10px 12px; border: 1px solid var(--fd-border); border-radius: 8px; }
+.fd-part-look[hidden] { display: none; }
+/* A choice of a few beside its name while there is room for its words; under it, as wide as the box, where there is not. */
+.fd-part-setting { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-height: 28px; min-width: 0; }
+.fd-part-setting-name { flex: none; width: 84px; font-size: 12.5px; color: var(--fd-text); }
+.fd-part-colour { display: inline-flex; align-items: center; gap: 8px; min-height: 28px; cursor: pointer; }
+.fd-properties .fd-part-setting > .fd-insp-seg { flex: 1 1 170px; width: auto; min-width: 0; }
+.fd-part-colour-value { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--fd-text); }
+.fd-part-colour-value.fd-part-colour-unset { color: var(--fd-muted); }
+.fd-part-colour-clear {
+  all: unset; box-sizing: border-box; display: inline-grid; place-items: center; width: 24px; height: 24px; margin-inline-start: auto;
+  border-radius: 4px; color: var(--fd-muted); font-size: 16px; line-height: 1; cursor: pointer;
+}
+.fd-part-colour-clear:hover { color: var(--fd-text); background: var(--fd-page); }
+.fd-part-colour-clear:focus-visible { outline: 2px solid var(--fd-focus); }
+.fd-part-colour-clear[hidden] { display: none; }
+.fd-part-look > .fd-insp-reset { justify-self: start; }
 /* A group's style: a small drawing over each word. */
 .fd-properties .fd-insp-styles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 0; border: 0; background: none; }
 .fd-properties .fd-insp-styles > .fd-seg-button {
