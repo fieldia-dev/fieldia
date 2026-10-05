@@ -3,7 +3,7 @@ import { appKindSettings } from './app-kinds-ui';
 import { iconButton, type ElementFactory } from './chrome';
 import { columnsEditor } from './columns-editor';
 import type { Designer } from './designer';
-import { ADDRESS_PARTS } from './kind-commands';
+import { ADDRESS_PARTS, USUAL_ADDRESS } from './kind-commands';
 import { choiceSettings } from './kind-settings-choices';
 import { LARGEST_PICTURE } from './choice-commands';
 import { pictureForPage } from './picture-upload';
@@ -29,7 +29,7 @@ type Part = Omit<KindSettings, 'elements'> & { element: HTMLElement };
 const SHUFFLED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choice', 'ranking']);
 /** Kinds whose options may be worth points: a matrix's options are its columns. */
 const SCORED = new Set(['multiple-choice', 'checkboxes', 'dropdown', 'image-choice', 'matrix']);
-const PART_WORDS: Record<(typeof ADDRESS_PARTS)[number], string> = { street: 'Street', city: 'City', postcode: 'Postcode', country: 'Country' };
+const PART_WORDS: Record<(typeof ADDRESS_PARTS)[number], string> = { street: 'Street', line2: 'Line 2', city: 'City', region: 'Region', postcode: 'Postcode', country: 'Country' };
 
 const optionsOf = (field: Field) => (field.type === 'selection' ? field.options : field.type === 'matrix' ? field.columns : []);
 const numberOrNull = (text: string) => (text.trim() === '' || !Number.isFinite(Number(text)) ? null : Number(text));
@@ -203,7 +203,7 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
   }
 
   function address(): Part {
-    let current: string[] = [...ADDRESS_PARTS];
+    let current: string[] = USUAL_ADDRESS;
     const chips = ADDRESS_PARTS.map((part) => {
       const chip = el('button', { type: 'button', class: 'fd-inline-chip', 'aria-pressed': 'true', 'data-part': part }, PART_WORDS[part]) as HTMLButtonElement;
       chip.addEventListener('click', () => designer.setAddressParts(id, current.includes(part) ? current.filter((p) => p !== part) : [...current, part]));
@@ -214,7 +214,7 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
       standsIn: false,
       refresh(_page, node) {
         const parts = optionOf(node, 'parts');
-        current = Array.isArray(parts) ? parts.filter((p): p is string => typeof p === 'string') : [...ADDRESS_PARTS];
+        current = Array.isArray(parts) ? parts.filter((p): p is string => typeof p === 'string') : USUAL_ADDRESS;
         for (const { part, chip } of chips) chip.setAttribute('aria-pressed', String(current.includes(part)));
       },
     };

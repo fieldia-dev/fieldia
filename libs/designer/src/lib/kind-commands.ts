@@ -1,4 +1,4 @@
-import type { Field, FieldNode, Option, Page } from '@fieldia/core';
+import { ADDRESS_PARTS, type Field, type FieldNode, type Option, type Page } from '@fieldia/core';
 import { kindOfField } from './kinds';
 import { findNode } from './page-tree';
 import { Refusal } from './refusal';
@@ -28,7 +28,9 @@ export interface KindCommandsDeps {
   fromModel(name: string): boolean;
 }
 
-export const ADDRESS_PARTS = ['street', 'city', 'postcode', 'country'] as const;
+/** An address's parts, in their order; it asks for the street, city, postcode and country unless it says. */
+export { ADDRESS_PARTS };
+export const USUAL_ADDRESS = ['street', 'city', 'postcode', 'country'];
 
 /**
  * Labels as options, keeping what answers already use: the same words keep
@@ -128,9 +130,9 @@ export function kindCommands({ apply, fromModel }: KindCommandsDeps) {
         const node = found.node;
         const known = ADDRESS_PARTS.filter((part) => parts.includes(part));
         if (!known.length) throw new Refusal('An address asks for one part at least');
-        // All four, in their usual order, is what an address asks for anyway.
+        // The usual four, in their order, is what an address asks for anyway.
         const options = { ...(node.options ?? {}) };
-        if (known.length === ADDRESS_PARTS.length) delete options['parts'];
+        if (known.join() === USUAL_ADDRESS.join()) delete options['parts'];
         else options['parts'] = known;
         if (Object.keys(options).length) node.options = options;
         else delete node.options;

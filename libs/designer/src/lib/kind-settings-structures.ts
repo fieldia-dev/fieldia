@@ -1,6 +1,8 @@
-import type { FieldNode, Page } from '@fieldia/core';
+import { ADDRESS_PARTS, type FieldNode, type Page } from '@fieldia/core';
+import { countriesIn } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
+import { USUAL_ADDRESS } from './kind-commands';
 
 /**
  * The settings of the kinds that hold more than one value — a signature, an
@@ -77,7 +79,48 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
     };
   }
 
+  /** An address's parts that must be filled, among those it asks for, and the country it starts on. */
+  function address(): StructurePart {
+    const WORDS: Record<string, string> = { street: 'Street', line2: 'Line 2', city: 'City', region: 'Region', postcode: 'Postcode', country: 'Country' };
+    let needed: string[] = [];
+    const chips = ADDRESS_PARTS.map((part) => {
+      const chip = el('button', { type: 'button', class: 'fd-inline-chip', 'aria-pressed': 'false', 'data-part': part }, WORDS[part]) as HTMLButtonElement;
+      chip.addEventListener('click', () => designer.setWidgetList(id, 'requiredParts', needed.includes(part) ? needed.filter((p) => p !== part) : ADDRESS_PARTS.filter((p) => p === part || needed.includes(p))));
+      return { part, chip };
+    });
+    const country = select('Starts on', [['', 'No country']]);
+    country.addEventListener('change', () => widget({ country: country.value || null }));
+    let listed = false;
+    return {
+      element: el(
+        'div',
+        { class: 'fd-kind-block' },
+        row(el('span', {}, 'Must be filled'), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': 'Parts that must be filled' }, ...chips.map((c) => c.chip))),
+        word('Starts on', country)
+      ),
+      refresh(_page, node) {
+        const asked = option(node, 'parts');
+        const parts = Array.isArray(asked) ? asked : USUAL_ADDRESS;
+        const kept = option(node, 'requiredParts');
+        needed = Array.isArray(kept) ? kept.filter((p): p is string => typeof p === 'string') : [];
+        for (const { part, chip } of chips) {
+          chip.hidden = !parts.includes(part);
+          chip.setAttribute('aria-pressed', String(needed.includes(part)));
+        }
+        // The countries a form lists, named once the setting is first drawn.
+        if (!listed) {
+          listed = true;
+          country.append(...countriesIn('en').map(([code, name]) => el('option', { value: code }, name)));
+        }
+        country.value = String(option(node, 'country') ?? '');
+        country.parentElement!.hidden = !parts.includes('country');
+      },
+    };
+  }
+
   const parts: StructurePart[] = [];
   if (kind === 'signature') parts.push(signature());
+  if (kind === 'address') parts.push(address());
   return parts;
 }
+

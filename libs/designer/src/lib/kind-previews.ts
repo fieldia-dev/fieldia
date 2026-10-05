@@ -1,7 +1,7 @@
 import type { FieldNode, Page } from '@fieldia/core';
 import { appKindPreview } from './app-kinds-ui';
 import type { ElementFactory } from './chrome';
-import { ADDRESS_PARTS } from './kind-commands';
+import { ADDRESS_PARTS, USUAL_ADDRESS } from './kind-commands';
 
 /**
  * How the newer kinds read on a closed card, before anyone answers: a
@@ -11,7 +11,7 @@ import { ADDRESS_PARTS } from './kind-commands';
  * a matrix — show their real answer box, so this gives none for them.
  */
 
-const PART_WORDS: Record<(typeof ADDRESS_PARTS)[number], string> = { street: 'Street address', city: 'City', postcode: 'Postcode', country: 'Country' };
+const PART_WORDS: Record<(typeof ADDRESS_PARTS)[number], string> = { street: 'Street address', line2: 'Address line 2', city: 'City', region: 'State or region', postcode: 'Postcode', country: 'Country' };
 
 export function kindPreview(el: ElementFactory, page: Page, node: FieldNode, kind: string | null): HTMLElement | null {
   const def = page.fields[node.field];
@@ -26,7 +26,7 @@ export function kindPreview(el: ElementFactory, page: Page, node: FieldNode, kin
     }
     case 'address': {
       const asked = option('parts');
-      const parts = Array.isArray(asked) ? ADDRESS_PARTS.filter((p) => asked.includes(p)) : ADDRESS_PARTS;
+      const parts = ADDRESS_PARTS.filter((p) => (Array.isArray(asked) ? asked : USUAL_ADDRESS).includes(p));
       return el('div', { class: 'fd-q-preview-lines' }, ...parts.map((part) => line(PART_WORDS[part])));
     }
     case 'tags':

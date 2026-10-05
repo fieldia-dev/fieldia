@@ -64,3 +64,35 @@ describe('a signature’s settings', () => {
     expect(node().options).toEqual({ footerLabel: 'I agree this is my signature' });
   });
 });
+
+describe('an address’s settings', () => {
+  it('asks for a second line and a region too, chosen with the other parts', () => {
+    const { card, node } = openQuestion('address');
+    const asks = (name: string) => card().querySelector(`[aria-label="Parts of the address"] [data-part="${name}"]`) as HTMLButtonElement;
+    expect(['street', 'line2', 'city', 'region', 'postcode', 'country'].map((p) => asks(p).getAttribute('aria-pressed'))).toEqual(['true', 'false', 'true', 'false', 'true', 'true']);
+    asks('line2').click();
+    asks('region').click();
+    expect(node().options).toEqual({ parts: ['street', 'line2', 'city', 'region', 'postcode', 'country'] });
+    asks('line2').click();
+    asks('region').click();
+    expect(node().options).toBeUndefined();
+  });
+
+  it('marks parts that must be filled, among those it asks for, and starts on a country', () => {
+    const { card, box, node, designer, id } = openQuestion('address');
+    const must = (name: string) => card().querySelector(`[aria-label="Parts that must be filled"] [data-part="${name}"]`) as HTMLButtonElement;
+    expect(must('line2').hidden).toBe(true);
+    must('city').click();
+    must('street').click();
+    expect(node().options).toEqual({ requiredParts: ['street', 'city'] });
+    expect(must('street').getAttribute('aria-pressed')).toBe('true');
+    choose(box('Starts on'), 'EG');
+    expect(node().options).toEqual({ requiredParts: ['street', 'city'], country: 'EG' });
+    expect(box('Starts on').selectedOptions[0].textContent).toBe('Egypt');
+    must('street').click();
+    expect(node().options).toEqual({ requiredParts: ['city'], country: 'EG' });
+    // No country asked for: none to start on.
+    designer.setAddressParts(id, ['street', 'city']);
+    expect(box('Starts on').closest('label')?.hidden).toBe(true);
+  });
+});
