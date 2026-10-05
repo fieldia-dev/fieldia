@@ -26,24 +26,25 @@ export function openAssistantDialog(options: AssistantDialogOptions): { close():
   const doc = root.ownerDocument;
   const opener = doc.activeElement as HTMLElement | null;
   const id = `fd-assist-dialog-${++made}`;
+  const w = designer.words.assistant;
   const box = assistantBox({
     el,
     designer,
     assistant,
-    label: 'What should change?',
-    placeholder: 'Add a question about the date, make the email required, put the rating first…',
-    ask: 'Ask',
-    busy: 'Changing your form…',
+    label: w.whatShouldChange,
+    placeholder: w.changeExample,
+    ask: w.ask,
+    busy: w.changing,
     onApplied(changes) {
       close(false);
       options.onApplied(changes);
     },
   });
-  const closeX = el('button', { type: 'button', class: 'fd-dialog-close', 'aria-label': 'Close' }, '×');
+  const closeX = el('button', { type: 'button', class: 'fd-dialog-close', 'aria-label': w.close }, '×');
   const dialog = el(
     'div',
     { class: 'fd-form-dialog fd-size-small fd-assist-dialog', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': `${id}-title`, tabindex: '-1' },
-    el('div', { class: 'fd-form-dialog-head' }, el('h2', { class: 'fd-form-dialog-title', id: `${id}-title` }, 'Ask the assistant'), closeX),
+    el('div', { class: 'fd-form-dialog-head' }, el('h2', { class: 'fd-form-dialog-title', id: `${id}-title` }, w.askTitle), closeX),
     el('div', { class: 'fd-assist-dialog-body' }, box.element)
   );
   const backdrop = el('div', { class: 'fd-dialog-backdrop fd-assist-backdrop' }, dialog);

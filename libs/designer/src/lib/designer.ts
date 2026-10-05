@@ -1389,7 +1389,7 @@ export function createDesigner(options: {
     ...rulesCommands({ apply, getPage: () => page, fromModel }),
     // extend lane
     appKinds: () => [...appKinds],
-    templates: () => templatesFor(page, options.templates),
+    templates: () => templatesFor(page, options.templates, words),
     replacePage(next) {
       return apply((draft) => replaceWith(draft, next), null, () => {
         selected = null;

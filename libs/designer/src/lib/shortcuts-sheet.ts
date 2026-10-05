@@ -1,4 +1,6 @@
 import type { ElementFactory } from './chrome';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 import type { FindItem } from './find-anything';
 import { designerIcon } from './icons';
 import { forPlatform, shortcutGroups, type KeyRow } from './shortcuts-list';
@@ -16,6 +18,8 @@ export interface ShortcutKeysOptions {
   /** The editor: the sheet opens over it, and “?” counts only in it. */
   root: HTMLElement;
   survey: boolean;
+  /** The designer's words: English unless given. */
+  words?: DesignerWords;
   /** Whether the editor is designing: not while trying the form, or writing JSON. */
   active(): boolean;
 }
@@ -29,13 +33,15 @@ export interface ShortcutKeys {
 
 let count = 0;
 
-/** Keys as boxes to read, and the words between them (“/”, “or”) as words. */
+/** Keys as boxes to read, and the words between them (“/”, “or”, “أو”) as words. */
 function keyBoxes(el: ElementFactory, keys: string): (Node | string)[] {
-  return keys.split(/( \/ | or )/).map((part) => (/^( \/ | or )$/.test(part) || / /.test(part) ? part : el('kbd', {}, part)));
+  return keys.split(/( \/ | or | أو )/).map((part) => (/^( \/ | or | أو )$/.test(part) || / /.test(part) ? part : el('kbd', {}, part)));
 }
 
 export function shortcutKeys(options: ShortcutKeysOptions): ShortcutKeys {
   const { el, root } = options;
+  const words = options.words ?? en;
+  const w = words.shortcuts;
   const doc = root.ownerDocument;
   const mac = /Mac|iPhone|iPad/.test(doc.defaultView?.navigator.platform ?? '');
   let close: (() => void) | null = null;
@@ -44,10 +50,10 @@ export function shortcutKeys(options: ShortcutKeysOptions): ShortcutKeys {
     if (close) return;
     const opener = doc.activeElement as HTMLElement | null;
     const id = `fd-keys-${++count}`;
-    const find = el('input', { class: 'fd-keys-find', type: 'search', 'aria-label': 'Find a key', placeholder: 'Find a key, or what it does', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
-    const shut = el('button', { type: 'button', class: 'fd-keys-close', 'aria-label': 'Close', title: 'Close' }, designerIcon(doc, 'plus'));
+    const find = el('input', { class: 'fd-keys-find', type: 'search', 'aria-label': w.findKey, placeholder: w.findPlaceholder, autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+    const shut = el('button', { type: 'button', class: 'fd-keys-close', 'aria-label': w.close, title: w.close }, designerIcon(doc, 'plus'));
     const rows: { row: HTMLElement; words: string }[] = [];
-    const groups = shortcutGroups({ survey: options.survey }).map((group) => {
+    const groups = shortcutGroups({ survey: options.survey, words }).map((group) => {
       const heading = `${id}-${group.name.toLowerCase()}`;
       const list = el(
         'dl',
@@ -56,27 +62,27 @@ export function shortcutKeys(options: ShortcutKeysOptions): ShortcutKeys {
           const shown = forPlatform(keys, mac);
           const said = forPlatform(what, mac);
           const row = el('div', { class: 'fd-keys-row' }, el('dt', {}, ...keyBoxes(el, shown)), el('dd', {}, said));
-          rows.push({ row, words: `${shown} ${said} ${group.name}`.toLowerCase() });
+          rows.push({ row, words: `${shown} ${said} ${group.title}`.toLowerCase() });
           return row;
         })
       );
-      return el('section', { class: 'fd-keys-group', 'aria-labelledby': heading }, el('h3', { id: heading }, group.name), ...(group.when ? [el('p', { class: 'fd-keys-when' }, group.when)] : []), list);
+      return el('section', { class: 'fd-keys-group', 'aria-labelledby': heading }, el('h3', { id: heading }, group.title), ...(group.when ? [el('p', { class: 'fd-keys-when' }, group.when)] : []), list);
     });
-    const none = el('p', { class: 'fd-keys-none', hidden: '' }, 'No key does that.');
+    const none = el('p', { class: 'fd-keys-none', hidden: '' }, w.none);
     const dialog = el(
       'div',
       { class: 'fd-keys', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': `${id}-title` },
-      el('div', { class: 'fd-keys-head' }, el('h2', { class: 'fd-keys-title', id: `${id}-title` }, 'Keyboard shortcuts'), shut),
+      el('div', { class: 'fd-keys-head' }, el('h2', { class: 'fd-keys-title', id: `${id}-title` }, w.title), shut),
       find,
       // A region the keyboard can scroll (WCAG 2.1.1): the keys are words to read, with nothing in them to focus.
-      el('div', { class: 'fd-keys-groups', role: 'region', 'aria-label': 'The keys', tabindex: '0' }, ...groups),
+      el('div', { class: 'fd-keys-groups', role: 'region', 'aria-label': w.keys, tabindex: '0' }, ...groups),
       none
     );
     const backdrop = el('div', { class: 'fd-dialog-backdrop fd-keys-backdrop' }, dialog);
 
     find.addEventListener('input', () => {
-      const words = find.value.toLowerCase().split(/\s+/).filter(Boolean);
-      for (const { row, words: has } of rows) row.hidden = !words.every((word) => has.includes(word));
+      const wanted = find.value.toLowerCase().split(/\s+/).filter(Boolean);
+      for (const { row, words: has } of rows) row.hidden = !wanted.every((word) => has.includes(word));
       for (const group of groups) group.hidden = ![...group.querySelectorAll<HTMLElement>('.fd-keys-row')].some((row) => !row.hidden);
       none.hidden = groups.some((group) => !group.hidden);
     });
@@ -114,7 +120,7 @@ export function shortcutKeys(options: ShortcutKeysOptions): ShortcutKeys {
   doc.addEventListener('keydown', onKey, true);
 
   return {
-    items: () => [{ label: 'Keyboard shortcuts', hint: '?', run: open }],
+    items: () => [{ label: w.title, hint: '?', run: open }],
     open,
     destroy() {
       close?.();

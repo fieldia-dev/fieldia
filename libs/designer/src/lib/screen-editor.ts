@@ -155,7 +155,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
   const ruleList = rulesOverview({ el, doc, designer, root, body, modes: trial.toggle });
   const clip = clipboardKeys({ root, designer, active: () => !trial.trying && !json.open });
-  const shortcuts = shortcutKeys({ el, root, survey: false, active: () => !trial.trying && !json.open });
+  const shortcuts = shortcutKeys({ el, root, survey: false, words: designer.words, active: () => !trial.trying && !json.open });
   // gap lane: a drag in the outline shows where it lands on the canvas, and one on the canvas in the outline.
   const echoes = dropEcho({
     editor: root,

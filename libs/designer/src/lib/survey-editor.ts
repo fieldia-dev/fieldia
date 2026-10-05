@@ -189,7 +189,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
   const ruleList = rulesOverview({ el, doc, designer, root, body, modes: trial.toggle });
   const clip = clipboardKeys({ root, designer, active: () => !trial.trying && !json.open });
-  const shortcuts = shortcutKeys({ el, root, survey: true, active: () => !trial.trying && !json.open });
+  const shortcuts = shortcutKeys({ el, root, survey: true, words: designer.words, active: () => !trial.trying && !json.open });
   // The form's look: from the bar, in a sheet at the side; the cards wear it.
   const look = lookSheet({ el, designer, root, bar: bar.element, wearer: editor });
 

@@ -61,23 +61,19 @@ function fieldsOf(page: Page): FieldNode[] {
 export function startHere(options: StartOptions): StartHere {
   const { el, doc, designer } = options;
   const assistant = options.assistant ?? null;
+  const w = designer.words.templates;
+  const a = designer.words.assistant;
   const id = `fd-start-${++made}`;
   const list = el('ul', { class: 'fd-start-list', role: 'list' });
-  const blank = el('button', { type: 'button', class: 'fd-button fd-start-blank' }, 'Start blank');
+  const blank = el('button', { type: 'button', class: 'fd-button fd-start-blank' }, w.startBlank);
   const panel = el(
     'section',
     { class: 'fd-start', 'aria-labelledby': `${id}-title`, hidden: '' },
     el(
       'div',
       { class: 'fd-start-head' },
-      el('h2', { class: 'fd-start-title', id: `${id}-title` }, 'Start from a template'),
-      el(
-        'p',
-        { class: 'fd-start-lead' },
-        assistant
-          ? `Pick one to make your own, describe what you need to the assistant, or start blank and add ${options.survey ? 'questions' : 'fields'} one by one.`
-          : `Pick one to make your own, or start blank and add ${options.survey ? 'questions' : 'fields'} one by one.`
-      )
+      el('h2', { class: 'fd-start-title', id: `${id}-title` }, w.startTitle),
+      el('p', { class: 'fd-start-lead' }, w.lead(options.survey, !!assistant))
     ),
     list
   );
@@ -86,16 +82,16 @@ export function startHere(options: StartOptions): StartHere {
     if (!panel.hidden) list.querySelector<HTMLButtonElement>('.fd-start-card')?.focus();
   });
   /** What the assistant did, said with Undo. */
-  const saidDone = (changes: string[], wasBlank: boolean) => notice.show(wasBlank ? 'The assistant built the form:' : 'The assistant changed the form:', changes);
+  const saidDone = (changes: string[], wasBlank: boolean) => notice.show(wasBlank ? a.built : a.changed, changes);
   const box: AssistantBox | null = assistant
     ? assistantBox({
         el,
         designer,
         assistant,
-        label: 'Describe the form you need',
-        placeholder: options.survey ? 'A feedback form for a cooking class: a rating, what people liked most, and their email' : 'A supplier’s details: their name, a contact, the address and the bank account',
-        ask: 'Build it',
-        busy: 'Building your form…',
+        label: a.describe,
+        placeholder: a.describeExample(options.survey),
+        ask: a.build,
+        busy: a.building,
         onApplied: saidDone,
         onSettled: () => update(designer.getState()),
       })
@@ -114,7 +110,7 @@ export function startHere(options: StartOptions): StartHere {
     return [...designer.templates(), ...(options.templates ?? []).filter((t) => (t.page.layout.type === 'wizard') === survey)].filter((t) => !seen.has(t.id) && !!seen.add(t.id));
   }
   function pick(template: PageTemplate) {
-    if (designer.replacePage(template.page)) notice.show(`Started from the template “${template.title}”.`);
+    if (designer.replacePage(template.page)) notice.show(w.started(template.title));
   }
   function preview(template: PageTemplate): HTMLElement {
     const fields = fieldsOf(template.page);
@@ -122,7 +118,7 @@ export function startHere(options: StartOptions): StartHere {
       const def = template.page.fields[node.field];
       return el('span', { class: 'fd-start-preview-row' }, designerIcon(doc, kindOfField(def, node) ?? 'short-answer'), el('bdi', { class: 'fd-start-preview-label' }, node.label ?? def.label));
     });
-    const more = fields.length > PREVIEWED ? [el('span', { class: 'fd-start-preview-more' }, `and ${fields.length - PREVIEWED} more`)] : [];
+    const more = fields.length > PREVIEWED ? [el('span', { class: 'fd-start-preview-more' }, w.andMore(fields.length - PREVIEWED))] : [];
     return el('span', { class: 'fd-start-preview', 'aria-hidden': 'true' }, ...rows, ...more);
   }
   function draw(templates: PageTemplate[]) {
@@ -164,10 +160,10 @@ export function startHere(options: StartOptions): StartHere {
     element,
     notice,
     items() {
-      if (showing(designer.getPage())) return offered().map((template) => ({ label: `Start from the template “${template.title}”`, hint: 'template', run: () => pick(template) }));
+      if (showing(designer.getPage())) return offered().map((template) => ({ label: w.startFrom(template.title), hint: w.template, run: () => pick(template) }));
       if (!assistant) return [];
       const ask = () => openAssistantDialog({ el, root: options.root, designer, assistant, onApplied: (changes) => saidDone(changes, false) });
-      return [{ label: 'Ask the assistant…', hint: assistant.name ?? 'assistant', run: ask }];
+      return [{ label: a.askItem, hint: assistant.name ?? a.hint, run: ask }];
     },
     update,
   };

@@ -22,6 +22,8 @@ import { list } from './list';
 import { tryIt } from './try-it';
 import { json } from './json';
 import { translations } from './translations';
+import { shortcuts } from './shortcuts';
+import { templates, assistant } from './templates';
 
 /**
  * The designer's words in Arabic: Modern Standard Arabic as Arabic software
@@ -43,4 +45,4 @@ import { translations } from './translations';
  *   model (the backend's) نموذج البيانات · record سجل · list قائمة · sheet ورقة
  *   desktop / tablet / phone سطح المكتب / جهاز لوحي / هاتف · width العرض
  */
-export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations };
+export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations, shortcuts, templates, assistant };

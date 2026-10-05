@@ -64,16 +64,8 @@ export interface CanvasKeys {
   say(words: string): void;
 }
 
-export const KEYS: [string, string][] = [
-  ['Alt+↑ / Alt+↓', 'Move it before or after the part next to it'],
-  ['Alt+← / Alt+→', 'Put it beside the part before or after it'],
-  ['Alt+Shift+← / →', 'Make it a column narrower or wider'],
-  ['Shift-click', 'Pick several (⌘- or Ctrl-click too)'],
-  ['⌘G / ⌘⇧G', 'Put what is picked in a group, or ungroup it (Ctrl on Windows)'],
-  ['⌘D', 'Copy what is picked'],
-  ['Delete', 'Take what is picked off the page'],
-  ['Escape', 'Put it down'],
-];
+/** The keys of Advanced's canvas, as the sheet of shortcuts lists them (in the designer's words: `words.canvas.keys`). */
+export const KEYS: [string, string][] = en.canvas.keys;
 
 export function canvasKeys(options: { el: ElementFactory; designer: Designer; rtl(): boolean }): CanvasKeys {
   const { el, designer } = options;
