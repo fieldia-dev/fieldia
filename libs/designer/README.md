@@ -64,6 +64,14 @@ The page stores `columns: 12` on such a group, each part's `colspan` in
 twelfths, and `rows: 'gaps'` when set. A form draws the widths as stored: a
 tablet keeps a row's proportions, a phone puts its parts one under another.
 
+Between the canvas's Desktop · Tablet · Phone steps, drag its end edge (the
+left one, right to left) to any width from a phone's 320px to the stage's
+whole — or focus it and use ← / → (10px, Shift 100px), Home and End. A chip
+says the width and the size the form takes it for by its own widths (a form
+up to 520px wide is a phone's, up to 760px a tablet's), and each group shows
+the columns it has there; a double-click goes back to the size's own width.
+The width is kept in this browser.
+
 ## Trying a field's rules
 
 Under a field's answer rules — on the panel's Rules tab, and in a survey

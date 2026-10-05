@@ -7,7 +7,8 @@ import { canvasDrag, type CanvasDrag } from './canvas-drag';
 import { canvasHeader } from './canvas-header';
 import { canvasKeys, type CanvasKeys } from './canvas-keys';
 import { lockWords, type DesignerMode } from './canvas-mode';
-import { columnsAt, readSize, sizeSwitch, writeSize, type ScreenSize } from './canvas-size';
+import { canvasResize } from './canvas-resize';
+import { columnsAt, readSize, readWidth, sizeSwitch, writeSize, writeWidth, type ScreenSize } from './canvas-size';
 import { multiBar } from './canvas-multi';
 import { canvasGuides } from './canvas-guides';
 import { widthMarks } from './canvas-width';
@@ -92,15 +93,42 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   const keys = canvasKeys({ el, designer, rtl: () => doc.defaultView?.getComputedStyle(element).direction === 'rtl' });
   // A form of its own, in the form's skin: its look and its widths are the page's, not the designer's.
   // The size of screen shown, chosen on the stage at the canvas's top, with the keys' help; Advanced only.
-  let size: ScreenSize = readSize(doc.defaultView);
-  const sizes = sizeSwitch(el, doc, size, (next) => {
+  // Or a width of the canvas's own, dragged to on its end edge: the size is then the one the form takes it for.
+  const win = doc.defaultView;
+  let size: ScreenSize = readSize(win);
+  let width: number | null = readWidth(win);
+  /** A size picked, at its own width; or a width dragged or keyed to, at the size it falls in — kept in this browser when it is let go. */
+  function showSize(next: ScreenSize, own: number | null, keep: boolean) {
+    const redraw = next !== size;
     size = next;
-    writeSize(doc.defaultView, next);
-    sizes.set(next);
-    api.update(designer.getState());
-  });
-  const stage = el('div', { class: 'fd-canvas-stage' }, sizes.element, keys.help);
+    width = own;
+    if (keep) {
+      writeSize(win, next);
+      writeWidth(win, own);
+    }
+    sizes.set(next, own);
+    ownWidth();
+    if (redraw) api.update(designer.getState());
+  }
+  const sizes = sizeSwitch(el, doc, size, (next) => showSize(next, null, true), width);
+  const stage = el('div', { class: 'fd-canvas-stage' }, sizes.element, sizes.note, keys.help);
   const element = el('div', { class: 'fd-canvas fd-form', 'data-fd-skin': options.skin ?? 'outlined' }, multi.element, stage, header.top, header.card, titleCard, body, keys.said);
+  const resize = canvasResize({
+    el,
+    canvas: element,
+    rtl: () => win?.getComputedStyle(element).direction === 'rtl',
+    size: () => size,
+    change: (next, at, done) => showSize(at, next, done),
+    reset: () => showSize(size, null, true),
+    say: keys.say,
+  });
+  /** The canvas as wide as its own width, in Advanced; else as wide as its size. */
+  function ownWidth() {
+    const own = mode === 'advanced' ? width : null;
+    setData(element, 'width', own === null ? undefined : '');
+    if (own === null) element.style.removeProperty('--fd-canvas-width');
+    else element.style.setProperty('--fd-canvas-width', `${own}px`);
+  }
   const blocks = blockViews({ el, doc, designer });
   let page = designer.getPage();
   let selected: string | null = null;
@@ -560,7 +588,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
    * and the picked field's bar, lined up with the field's far edge, is nudged
    * back inside the canvas where that edge would put it past the near one, as
    * over a phone's first column. The bar is read before the handle is written,
-   * and moved only when it must.
+   * and moved only when it must. The handle on the canvas's own edge says the
+   * canvas's width as it now is, read with the rest and written last.
    */
   let widthsFor: DesignerState | null = null;
   let frameAsked = false;
@@ -568,7 +597,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   let nudged = { bar: null as HTMLElement | null, by: 0 };
   function nextFrame(state: DesignerState | null) {
     if (state) widthsFor = state;
-    const view = doc.defaultView;
+    const view = win;
     if (!view?.requestAnimationFrame) {
       if (state) widths.update(state, mode === 'advanced');
       return;
@@ -580,9 +609,12 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       const latest = widthsFor;
       widthsFor = null;
       if (gone) return;
+      // Read, all of it, before anything is written.
+      const sized = mode === 'advanced' ? resize.read() : null;
       const nudge = barNudge();
       if (latest) widths.update(latest, mode === 'advanced');
       nudge?.();
+      sized?.();
     });
   }
   /** Where the picked field's bar must move to stay inside the canvas, read now; the move, to write after. */
@@ -624,6 +656,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     },
     update(state) {
       setData(element, 'size', shownSize());
+      ownWidth();
       page = state.page;
       selected = state.selected;
       picked = state.picked;
@@ -686,6 +719,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       gone = true;
       drag.destroy();
       widths.destroy();
+      resize.destroy();
       header.destroy();
       nameRoom?.disconnect();
       resized?.disconnect();

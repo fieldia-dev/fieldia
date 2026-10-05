@@ -3,7 +3,8 @@
  * where the form puts it, and the marks of Advanced — the drop line and the
  * group tinted under it, the chip that says where, the width handle and the
  * gutter between two parts, the guides of a grid's columns, the bar for
- * several picked, and the note Simple mode shows on an arrangement.
+ * several picked, the handle the canvas's own width is dragged by, and the
+ * note Simple mode shows on an arrangement.
  *
  * Logical properties throughout, so right to left mirrors on its own.
  */
@@ -55,7 +56,7 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 /* 24px wide, a target a finger can hit (WCAG 2.5.8); the line drawn down its middle. */
 .fd-gutter { position: absolute; z-index: 9; width: 24px; cursor: col-resize; touch-action: none; border-radius: 6px; }
 /* While a part is carried, what floats over the parts lets the pointer through: a drop at a picked part's edge goes beside it, not onto its handle. */
-.fd-canvas.fd-dragging :is(.fd-width-handle, .fd-gutter, .fd-field-bar) { pointer-events: none; }
+.fd-canvas.fd-dragging :is(.fd-width-handle, .fd-gutter, .fd-field-bar, .fd-canvas-resize) { pointer-events: none; }
 .fd-gutter::before { content: ""; position: absolute; inset-block: 6px; inset-inline-start: 11px; width: 2px; border-radius: 2px; background: color-mix(in srgb, var(--fd-accent) 55%, transparent); }
 .fd-gutter:hover::before, .fd-gutter:focus-visible::before { inset-inline-start: 10px; width: 4px; background: var(--fd-accent); }
 .fd-gutter:focus-visible { outline: none; }
@@ -142,4 +143,39 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 /* On a tablet or a phone, the canvas is as wide as one. */
 .fd-canvas[data-size="tablet"] { width: 100%; max-width: 768px; margin-inline: auto; }
 .fd-canvas[data-size="phone"] { width: 100%; max-width: 390px; margin-inline: auto; }
+
+/* ---- Advanced: a width of the canvas's own ---- */
+/* Dragged or keyed to: as wide as that, never wider than the stage, in its middle as a tablet's is. */
+.fd-canvas[data-mode="advanced"][data-width] { width: var(--fd-canvas-width); max-width: 100%; margin-inline: auto; }
+/* The width beside the switch, once the canvas has one of its own. */
+/* Its words, and the chip's, run the way they are written — "640 px" stays so on a right-to-left page. */
+.fd-canvas-size-px { font-size: 12.5px; font-weight: 600; color: var(--fd-muted); font-variant-numeric: tabular-nums; white-space: nowrap; unicode-bidi: plaintext; }
+.fd-canvas-size-px[hidden] { display: none; }
+/* The handle: the canvas's whole end edge takes the pointer, 24px wide (WCAG 2.5.8), inside the canvas so the page is never
+   wider for it; its grip stays in the middle of what is in view. */
+.fd-screen-designer { container-name: fd-designer; }
+.fd-canvas-resize { position: absolute; z-index: 4; inset-block: 0; inset-inline-end: 0; width: 24px; cursor: ew-resize; touch-action: none; user-select: none; -webkit-user-select: none; }
+.fd-canvas:not([data-mode="advanced"]) > .fd-canvas-resize { display: none; }
+/* A designer narrower than a tablet shows the canvas as wide as it is: no handle, and no width of its own to note. */
+@container fd-designer (max-width: 767px) { .fd-canvas-resize, .fd-canvas-size-px { display: none; } }
+.fd-canvas-resize:focus-visible { outline: none; }
+/* The edge itself, drawn over the canvas's border while the handle is pointed at, focused or dragged. */
+.fd-canvas-resize::before { content: ""; position: absolute; inset-block: 0; inset-inline-end: -1px; width: 2px; background: transparent; transition: background 120ms; }
+.fd-canvas-resize:is(:hover, :focus-visible, [data-active])::before { background: var(--fd-accent); }
+.fd-canvas-resize-grip {
+  position: sticky; top: calc(50vh - 20px); display: block; width: 8px; height: 40px; margin-inline: auto 3px; border-radius: 4px;
+  background: var(--fd-surface); box-shadow: 0 0 0 1.5px var(--fd-border-strong), 0 1px 3px rgba(15, 23, 42, 0.16);
+}
+.fd-canvas-resize-grip::after { content: ""; position: absolute; inset: 13px 2px; border-inline: 1px solid var(--fd-muted); }
+.fd-canvas-resize:is(:hover, :focus-visible, [data-active]) .fd-canvas-resize-grip { box-shadow: 0 0 0 1.5px var(--fd-accent), 0 1px 3px rgba(15, 23, 42, 0.2); }
+.fd-canvas-resize:is(:hover, :focus-visible, [data-active]) .fd-canvas-resize-grip::after { border-color: var(--fd-accent); }
+.fd-canvas-resize:focus-visible .fd-canvas-resize-grip { outline: 2px solid var(--fd-focus); outline-offset: 3px; }
+/* The width and the size the form takes it for, beside the grip while it moves. */
+.fd-canvas-resize-chip {
+  position: absolute; inset-inline-end: calc(100% + 10px); top: 50%; translate: 0 -50%; display: none; pointer-events: none;
+  background: var(--fd-text); color: var(--fd-surface); font-size: 12px; font-weight: 600; line-height: 1; padding: 6px 8px; border-radius: 6px;
+  white-space: nowrap; font-variant-numeric: tabular-nums; unicode-bidi: plaintext;
+}
+.fd-canvas-resize[data-active] .fd-canvas-resize-chip { display: block; }
+@media (prefers-reduced-motion: reduce) { .fd-canvas-resize::before { transition: none; } }
 `;
