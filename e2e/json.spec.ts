@@ -149,7 +149,9 @@ test.describe('a choice from the app’s list, in the screen editor', () => {
     await expect(panel.getByLabel('List', { exact: true })).toHaveValue('countries');
     await panel.getByLabel('List', { exact: true }).selectOption({ label: 'Cities of the country' });
     await panel.getByRole('group', { name: 'Changes with' }).getByLabel('Customer').check();
-    const field = await page.evaluate(() => (window as unknown as { fieldiaDesigner: { designer: { getPage(): { fields: Record<string, unknown> } } } }).fieldiaDesigner.designer.getPage().fields['q_4']);
+    const field = await page.evaluate(() =>
+      Object.values((window as unknown as { fieldiaDesigner: { designer: { getPage(): { fields: Record<string, { label: string }> } } } }).fieldiaDesigner.designer.getPage().fields).find((f) => f.label === 'Next step')
+    );
     expect(field).toMatchObject({ optionsFrom: { list: 'cities', dependsOn: ['q_1'] } });
     await screen(page, 'json-list-choice', { viewport: true });
     expect(await doubleLines(page, '.fd-properties *')).toEqual([]);

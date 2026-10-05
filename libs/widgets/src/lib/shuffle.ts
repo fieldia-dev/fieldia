@@ -42,15 +42,21 @@ function numbers(seed: number): () => number {
   };
 }
 
-/** The options in the order this form shows them: as written, or shuffled when the question asks. */
+/**
+ * The options in the order this form shows them: as written, or shuffled when
+ * the question asks — those kept in place (`fixed`) where they were written,
+ * and one that goes alone ("None of these") last, as "Other" is.
+ */
 export function shownOptions<T>(options: readonly T[], form: object, name: string, node: Pick<FieldNode, 'options'>): T[] {
-  const shown = [...options];
-  if (node.options?.['shuffle'] !== true) return shown;
+  if (node.options?.['shuffle'] !== true) return [...options];
+  const is = (option: T, flag: string) => (option as Record<string, unknown>)[flag] === true;
+  const shown = options.filter((o) => !is(o, 'fixed') && !is(o, 'exclusive'));
   const next = numbers(stir(seedOf(form), name));
   // Fisher–Yates.
   for (let i = shown.length - 1; i > 0; i--) {
     const j = Math.floor(next() * (i + 1));
     [shown[i], shown[j]] = [shown[j], shown[i]];
   }
-  return shown;
+  shown.push(...options.filter((o) => !is(o, 'fixed') && is(o, 'exclusive')));
+  return options.map((o) => (is(o, 'fixed') ? o : (shown.shift() as T)));
 }

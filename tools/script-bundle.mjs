@@ -71,13 +71,18 @@ if (/ZodError|\$ZodType/.test(code)) throw new Error('the script bundle carries 
 // address, repeating group) and shuffled options add 26; values worked out from others, values set by a
 // condition and answer rules add 13; groups side by side, arrangements, group styles, labels and the
 // page's look add 7. The page's translations, choices from the app's lists, the tick box and dialogs in
-// the page's look add 2.5 more, to 252. The inputs' details (web, phone, email and time checks, a date's
-// limits and weekends, a count of characters, units and currency symbols, ratings' icons, NPS colours,
-// keywords' most, in four languages) add 8.5, to 262.5.
-const BUDGET_KB = 263;
+// the page's look add 2.5 more, to 252. The choices' details (a yes or no as two buttons, a limit on
+// boxes ticked, "None of these", columns, a dropdown that searches, pictures' words and sizes, a ranking's
+// top few, a matrix's cards on a phone) add 7, to 267. Several files with a count, their list and
+// thumbnails, the viewer and their words in four languages add 12, to 279.
+// The inputs' details (web, phone, email and time checks, a date's limits and weekends, a count of
+// characters, units and currency symbols, ratings' icons, NPS colours, keywords' most, in four languages)
+// add 8.3, to 281.7.
+const BUDGET_KB = 282;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
-// What a visitor downloads: the bundle gzipped, as servers send it.
-const GZIP_BUDGET_KB = 80;
+// What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
+// 2.3 and several files with their viewer 3.9, to 82.3.
+const GZIP_BUDGET_KB = 83;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

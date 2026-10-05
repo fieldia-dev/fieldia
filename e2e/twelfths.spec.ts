@@ -41,7 +41,7 @@ test('(a) a field dropped on Visit date’s far side: the end of that row, the r
   const { words, refused } = await dropAt(page, centre(await at(page, 'Next step')), to, { shot: 'twelfths-a-drag' });
   expect([words, refused]).toEqual(['at the end of the row, after “Visit date” — the row in thirds', false]);
   expect(await layout(page)).toEqual([
-    ['Customer:4', 'Visit date:4', 'Next step:4', 'Notes:12'],
+    ['Customer:4', 'Visit date:4', 'Next step:4', 'Notes:12', 'Photos:12'],
     ['Due by:1', 'Manager to call?:1'],
   ]);
   expect((await built(page)).layout.children[0].columns).toBe(12);
@@ -83,7 +83,7 @@ test('a new column inside Visit, beside all its rows: the padding past them, as 
   const visitNode = (await built(page)).layout.children[0] as unknown as { columns: unknown; children: { id: string; type: string; colspan?: number; children?: { colspan?: number }[] }[] };
   expect(visitNode.columns).toBe(12);
   expect(visitNode.children.map((c) => [c.type, c.colspan])).toEqual([['section', 6], ['field', 6]]);
-  expect(visitNode.children[0].children?.map((c) => c.colspan)).toEqual([3, 3, 6]);
+  expect(visitNode.children[0].children?.map((c) => c.colspan)).toEqual([3, 3, 6, 6]);
   // Customer and Visit date side by side in the left half, Notes under them; Email at the right, level with the first row.
   const [customer, day, words2, mail] = await Promise.all(['Customer', 'Visit date', 'Notes', 'Untitled question'].map((label) => own(page, label)));
   expect(Math.round(customer.top)).toBe(Math.round(day.top));
@@ -126,7 +126,7 @@ test('(b) dropped in the gap between Customer and Visit date: between them, the 
   const to = { x: (customer.right + date.left) / 2, y: customer.top + customer.height / 2 };
   const { words } = await dropAt(page, centre(await at(page, 'Due by')), to, { shot: 'twelfths-b-drag' });
   expect(words).toBe('between “Customer” and “Visit date” — the row in thirds');
-  expect((await layout(page))[0]).toEqual(['Customer:4', 'Due by:4', 'Visit date:4', 'Notes:12']);
+  expect((await layout(page))[0]).toEqual(['Customer:4', 'Due by:4', 'Visit date:4', 'Notes:12', 'Photos:12']);
   // The line was drawn in the gap: on the edge the part went to.
   expect((await misalignedOnCanvas(page)).off).toEqual([]);
   await page.mouse.click(5, 5);
@@ -150,7 +150,7 @@ async function inThirds(page: Page) {
   const date = await own(page, 'Visit date');
   await dropAt(page, centre(await at(page, 'Next step')), { x: date.right - 10, y: date.top + date.height / 2 });
   await page.mouse.click(5, 5);
-  expect((await layout(page))[0]).toEqual(['Customer:4', 'Visit date:4', 'Next step:4', 'Notes:12']);
+  expect((await layout(page))[0]).toEqual(['Customer:4', 'Visit date:4', 'Next step:4', 'Notes:12', 'Photos:12']);
 }
 
 test('(c) the gutter between Customer and Visit date: twelfths by the pointer and by the keys, said as percentages, one undo each', async ({ page }) => {
@@ -173,7 +173,7 @@ test('(c) the gutter between Customer and Visit date: twelfths by the pointer an
   await expect(group(page, 'section-1').locator('> .fd-grid')).toHaveCSS('grid-template-columns', /^(\S+\s){11}\S+$/);
   await screen(page, 'twelfths-c-gutter-drag', { viewport: true });
   await page.mouse.up();
-  expect((await layout(page))[0]).toEqual(['Customer:7', 'Visit date:5', 'Notes:12']);
+  expect((await layout(page))[0]).toEqual(['Customer:7', 'Visit date:5', 'Notes:12', 'Photos:12']);
   expect((await built(page)).layout.children[0].columns).toBe(12);
   const wider = await own(page, 'Customer');
   expect(wider.width).toBeGreaterThan(customer.width + twelfth / 2);
@@ -181,18 +181,18 @@ test('(c) the gutter between Customer and Visit date: twelfths by the pointer an
   await screen(page, 'twelfths-c-gutter-after', { viewport: true });
   // One undo: the two columns as they were, the group too.
   await undo(page);
-  expect((await layout(page))[0]).toEqual(['Customer:1', 'Visit date:1', 'Notes:2']);
+  expect((await layout(page))[0]).toEqual(['Customer:1', 'Visit date:1', 'Notes:2', 'Photos:2']);
   // By the keys, a twelfth a press, each its own undo.
   await pick(page, 'Customer');
   await gutter(page).focus();
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowRight');
-  expect((await layout(page))[0]).toEqual(['Customer:8', 'Visit date:4', 'Notes:12']);
+  expect((await layout(page))[0]).toEqual(['Customer:8', 'Visit date:4', 'Notes:12', 'Photos:12']);
   await expect(gutter(page)).toBeFocused();
   await expect(gutter(page)).toHaveAttribute('aria-valuetext', '67% · 33%');
   await screen(page, 'twelfths-c-gutter-keys', { viewport: true });
   await undo(page);
-  expect((await layout(page))[0]).toEqual(['Customer:7', 'Visit date:5', 'Notes:12']);
+  expect((await layout(page))[0]).toEqual(['Customer:7', 'Visit date:5', 'Notes:12', 'Photos:12']);
   expect((await misalignedOnCanvas(page)).off).toEqual([]);
 });
 
@@ -211,7 +211,7 @@ test('(d) rows that allow gaps: a part moved out leaves its room, and the width 
   const call = await own(page, 'Manager to call?');
   await dropAt(page, centre(await at(page, 'Next step')), { x: call.right + 14, y: call.top + call.height / 2 });
   await page.mouse.click(5, 5);
-  expect((await layout(page))[0]).toEqual(['Customer:4', 'Visit date:4', 'Notes:12']);
+  expect((await layout(page))[0]).toEqual(['Customer:4', 'Visit date:4', 'Notes:12', 'Photos:12']);
   const date = await own(page, 'Visit date');
   const notes = await own(page, 'Notes');
   expect(notes.right - date.right, 'a gap at the row’s end').toBeGreaterThan(notes.width / 4);
@@ -229,7 +229,7 @@ test('(d) rows that allow gaps: a part moved out leaves its room, and the width 
   await expect(page.locator('.fd-width-chip')).toHaveText('25% of the row');
   await screen(page, 'twelfths-d-handle-in', { viewport: true });
   await page.mouse.up();
-  expect((await layout(page))[0]).toEqual(['Customer:4', 'Visit date:3', 'Notes:12']);
+  expect((await layout(page))[0]).toEqual(['Customer:4', 'Visit date:3', 'Notes:12', 'Photos:12']);
   await pick(page, 'Visit date');
   const again = (await handle.boundingBox())!;
   await page.mouse.move(again.x + again.width / 2, again.y + again.height / 2);
@@ -238,7 +238,7 @@ test('(d) rows that allow gaps: a part moved out leaves its room, and the width 
   // No further than the room the row has: the rest of it.
   await expect(page.locator('.fd-width-chip')).toHaveText('67% of the row');
   await page.mouse.up();
-  expect((await layout(page))[0]).toEqual(['Customer:4', 'Visit date:8', 'Notes:12']);
+  expect((await layout(page))[0]).toEqual(['Customer:4', 'Visit date:8', 'Notes:12', 'Photos:12']);
   expect((await misalignedOnCanvas(page)).off).toEqual([]);
   await page.mouse.click(5, 5);
   await screen(page, 'twelfths-d-after', { viewport: true });
@@ -287,7 +287,7 @@ test('(e) after a run of drops, every part on its tracks; the canvas draws each 
   await dropAt(page, centre(await at(page, 'Manager to call?')), { x: due.right - 10, y: due.top + due.height / 2 });
   await page.mouse.click(5, 5);
   expect(await layout(page)).toEqual([
-    ['Customer:5', 'Visit date:3', 'Next step:4', 'Notes:12'],
+    ['Customer:5', 'Visit date:3', 'Next step:4', 'Notes:12', 'Photos:12'],
     ['Due by:6', 'Manager to call?:6'],
   ]);
   const { checked, off } = await misalignedOnCanvas(page);

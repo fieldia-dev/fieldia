@@ -1,4 +1,5 @@
 import type { Option } from '@fieldia/core';
+import { layOut, limiter, withAlone } from './choice-rules';
 import { clearSelection, describeState, maker, rightToLeft, wordsFor } from './kind-parts';
 import { shownOptions } from './shuffle';
 import type { WidgetFactory } from './widgets';
@@ -11,7 +12,11 @@ import type { WidgetFactory } from './widgets';
  * selection" when it need not be answered. Several answers, when the field
  * takes several, are checkboxes, each its own stop. "Other" is not offered:
  * an answer of one's own has no picture. `options.shuffle` shows the cards
- * in an order of the form's own.
+ * in an order of the form's own. Each picture is described by its option's
+ * `alt`. `options.showLabels: false` keeps the words out of sight (still each
+ * card's name), `imageSize` is small, medium or large, `imageFit: "whole"`
+ * shows the whole picture rather than filling the card, and `columns` lays
+ * the cards in columns or in a row.
  */
 
 /** A frame with a hill and a sun: the tile of an option without a picture. */
@@ -23,13 +28,17 @@ export const imageChoiceWidget: WidgetFactory = ({ form, name, field, node, id, 
   const multiple = field.type === 'selection' && field.multiple === true;
   const written: Option[] = field.type === 'selection' ? field.options : [];
   const options = shownOptions(written, form, name, node);
-  const group = make('div', { id, class: 'fd-image-choices', role: multiple ? 'group' : 'radiogroup' });
+  const look = node.options ?? {};
+  const bare = look['showLabels'] === false;
+  const group = make('div', { id, class: `fd-image-choices${bare ? ' fd-image-choices-bare' : ''}`, role: multiple ? 'group' : 'radiogroup', 'data-size': look['imageSize'] as string, 'data-fit': look['imageFit'] as string });
+  layOut(group, node);
+  const limit = multiple ? limiter(make, words, node) : null;
   const cards = options.map((option) => {
-    const picture = option.image ? make('img', { src: option.image, alt: '', loading: 'lazy', draggable: 'false' }) : make('span', { class: 'fd-image-card-blank' });
+    const picture = option.image ? make('img', { src: option.image, alt: option.alt ?? '', loading: 'lazy', draggable: 'false' }) : make('span', { class: 'fd-image-card-blank' });
     if (!option.image) picture.innerHTML = BLANK; // a constant drawing, never words from the page
     const card = make(
       'button',
-      { type: 'button', class: 'fd-image-card', role: multiple ? 'checkbox' : 'radio', 'aria-checked': 'false' },
+      { type: 'button', class: 'fd-image-card', role: multiple ? 'checkbox' : 'radio', 'aria-checked': 'false', 'aria-label': bare ? option.label : undefined },
       make('span', { class: 'fd-image-card-picture' }, picture),
       make('span', { class: 'fd-image-card-words' }, option.label)
     );
@@ -42,9 +51,7 @@ export const imageChoiceWidget: WidgetFactory = ({ form, name, field, node, id, 
   function pick(option: Option) {
     if (!multiple) return form.setValue(name, option.value);
     const now = Array.isArray(current()) ? (current() as unknown[]) : [];
-    const on = new Set(now);
-    if (on.has(option.value)) on.delete(option.value);
-    else on.add(option.value);
+    const on = new Set(now.includes(option.value) ? now.filter((v) => v !== option.value) : withAlone(written, now, option.value));
     // In the options' own order, as checkboxes keep them, however they are shown.
     form.setValue(name, written.filter((o) => on.has(o.value)).map((o) => o.value));
   }
@@ -71,6 +78,7 @@ export const imageChoiceWidget: WidgetFactory = ({ form, name, field, node, id, 
         cards[0]?.focus();
       });
 
+  if (limit?.element) group.append(limit.element);
   return {
     element: clear ? make('div', { class: 'fd-choices-box' }, group, clear.button) : group,
     focus: () => (cards.find((c) => c.getAttribute('aria-checked') === 'true') ?? cards[0])?.focus(),
@@ -78,10 +86,12 @@ export const imageChoiceWidget: WidgetFactory = ({ form, name, field, node, id, 
       readonly = state.readonly;
       const chosen = new Set<unknown>(Array.isArray(state.value) ? state.value : [state.value]);
       const stop = multiple ? -1 : Math.max(0, options.findIndex((o) => chosen.has(o.value)));
+      const full = !!limit?.full(Array.isArray(state.value) ? state.value.length : 0);
       cards.forEach((card, i) => {
-        card.setAttribute('aria-checked', String(chosen.has(options[i].value)));
+        const on = chosen.has(options[i].value);
+        card.setAttribute('aria-checked', String(on));
         card.tabIndex = multiple || i === stop ? 0 : -1;
-        card.disabled = readonly;
+        card.disabled = readonly || (full && !on && !options[i].exclusive);
       });
       clear?.allow(state);
       clear?.show(options.some((o) => chosen.has(o.value)));

@@ -353,10 +353,17 @@ export function createForm(options: FormOptions): Form {
     return checkRules(def, label, state.values[name], rules, { context: ctx, env, now: options.now?.() ?? new Date(), messages });
   }
 
+  /** A tick box required and not ticked, as an "I agree" box: "no" answers a yes or no, never a box to tick. */
+  function unticked(node: IndexedNode): string | undefined {
+    const name = node.field as string;
+    const ticks = (node.source as FieldNode).widget === 'tick' && page.fields[name].type === 'boolean';
+    return ticks && state.values[name] !== true && nodeState(node.id).required ? messages.tick : undefined;
+  }
+
   /** A field node's error now: its field's own rules first, then its answer rules. */
   function nodeError(node: IndexedNode): string | undefined {
     const name = node.field as string;
-    return checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages) ?? checkValue(checked(name), state.values[name], nodeState(node.id).required, messages, today()) ?? ruleCheck(node).error;
+    return unticked(node) ?? checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages) ?? checkValue(checked(name), state.values[name], nodeState(node.id).required, messages, today()) ?? ruleCheck(node).error;
   }
 
   /** Warnings for the visible fields of the page, without publishing them. */
@@ -681,6 +688,7 @@ export function createForm(options: FormOptions): Form {
       const shown = visibleFieldNodes().filter((node) => node.field === name);
       if (!shown.length) return null;
       const own =
+        shown.map(unticked).find(Boolean) ??
         shown.map((node) => checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages)).find(Boolean) ??
         checkValue(checked(name), state.values[name], shown.some((node) => nodeState(node.id).required), messages, today());
       return own ?? shown.map((node) => ruleCheck(node).error).find((error) => error !== undefined) ?? null;

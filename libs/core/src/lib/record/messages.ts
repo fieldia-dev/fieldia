@@ -32,6 +32,9 @@ export interface Messages {
   file: string;
   fileSize: string;
   fileType: string;
+  /** Several files: fewer than the fewest (never under two: one is what required asks), more than the most. */
+  minFiles: string;
+  maxFiles: string;
   /**
    * Answer rules, besides the messages above they share (maxLength, pattern,
    * min, max): a shortest length, an ending, how many may be ticked, a day
@@ -47,6 +50,8 @@ export interface Messages {
   holds: string;
   /** Joins the last two items of a list: "PDF or image". */
   or: string;
+  /** A tick box that must be ticked to go on, as an "I agree" box. */
+  tick: string;
   /** What to type in an email, a web address, a phone number and a time of day, by example. */
   email: string;
   url: string;
@@ -90,6 +95,8 @@ export const MESSAGES: Record<Locale, Messages> = {
     file: '{label} must be a file',
     fileSize: '{label} is larger than {size}',
     fileType: '{label} must be {aTypes} file',
+    minFiles: 'Add at least {min} files to {label}',
+    maxFiles: 'Too many files for {label}: at most {max}',
     minLength: '{label} must be at least {min} characters',
     endsWith: '{label} must end with {ending}',
     atLeast: 'Choose at least {min} for {label}',
@@ -98,6 +105,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     dateFuture: '{label} must be in the future',
     holds: '{label} does not agree with the other answers',
     or: 'or',
+    tick: 'Tick this box to go on',
     email: 'Enter an email address, like name@example.com',
     url: 'Enter a web address, like example.com',
     phone: 'Enter a phone number, like +20 100 123 4567',
@@ -134,6 +142,8 @@ export const MESSAGES: Record<Locale, Messages> = {
     file: 'يجب أن يكون {label} ملفًا',
     fileSize: 'حجم {label} أكبر من {size}',
     fileType: 'يجب أن يكون {label} ملف {types}',
+    minFiles: 'أضف إلى {label} ملفات لا يقل عددها عن {min}',
+    maxFiles: 'عدد الملفات في {label} أكثر من {max}',
     minLength: 'يجب ألا يقل {label} عن {min} حرفًا',
     endsWith: 'يجب أن ينتهي {label} بـ {ending}',
     atLeast: 'اختر {min} على الأقل في {label}',
@@ -142,6 +152,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     dateFuture: 'يجب أن يكون {label} في المستقبل',
     holds: 'لا يتفق {label} مع الإجابات الأخرى',
     or: 'أو',
+    tick: 'ضع علامة في هذا المربع للمتابعة',
     email: 'أدخل بريدًا إلكترونيًا، مثل name@example.com',
     url: 'أدخل عنوان موقع، مثل example.com',
     phone: 'أدخل رقم هاتف، مثل \u2066+20 100 123 4567\u2069',
@@ -178,6 +189,8 @@ export const MESSAGES: Record<Locale, Messages> = {
     file: '{label} muss eine Datei sein',
     fileSize: '{label} ist größer als {size}',
     fileType: '{label} muss eine {types}-Datei sein',
+    minFiles: 'Fügen Sie {label} mindestens {min} Dateien hinzu',
+    maxFiles: 'Zu viele Dateien für {label}: höchstens {max}',
     minLength: '{label} muss mindestens {min} Zeichen haben',
     endsWith: '{label} muss auf {ending} enden',
     atLeast: 'Wählen Sie bei {label} mindestens {min} aus',
@@ -186,6 +199,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     dateFuture: '{label} muss in der Zukunft liegen',
     holds: '{label} passt nicht zu den anderen Antworten',
     or: 'oder',
+    tick: 'Kreuzen Sie dieses Kästchen an, um fortzufahren',
     email: 'Geben Sie eine E-Mail-Adresse ein, z. B. name@example.com',
     url: 'Geben Sie eine Webadresse ein, z. B. example.com',
     phone: 'Geben Sie eine Telefonnummer ein, z. B. +49 30 1234 5678',
@@ -222,6 +236,8 @@ export const MESSAGES: Record<Locale, Messages> = {
     file: '{label} doit être un fichier',
     fileSize: '{label} dépasse {size}',
     fileType: '{label} doit être un fichier {types}',
+    minFiles: 'Ajoutez au moins {min} fichiers à {label}',
+    maxFiles: 'Trop de fichiers pour {label} : {max} au plus',
     minLength: '{label} doit comporter au moins {min} caractères',
     endsWith: '{label} doit se terminer par {ending}',
     atLeast: 'Choisissez au moins {min} pour {label}',
@@ -230,6 +246,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     dateFuture: '{label} doit être dans le futur',
     holds: '{label} ne concorde pas avec les autres réponses',
     or: 'ou',
+    tick: 'Cochez cette case pour continuer',
     email: 'Saisissez une adresse e-mail, par exemple nom@exemple.com',
     url: 'Saisissez une adresse web, par exemple exemple.com',
     phone: 'Saisissez un numéro de téléphone, par exemple +33 1 23 45 67 89',

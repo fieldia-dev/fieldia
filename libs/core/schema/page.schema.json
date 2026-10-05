@@ -683,6 +683,9 @@
             "other": {
               "type": "boolean"
             },
+            "ownAnswers": {
+              "type": "boolean"
+            },
             "optionsFrom": {
               "$ref": "#/$defs/OptionsFrom"
             }
@@ -751,13 +754,48 @@
               "type": "integer",
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991
+            },
+            "multiple": {
+              "type": "boolean"
+            },
+            "minFiles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "maxFiles": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
             }
           },
           "required": [
             "type",
             "label"
           ],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "dependentSchemas": {
+            "minFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            },
+            "maxFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            }
+          }
         },
         {
           "type": "object",
@@ -796,13 +834,48 @@
               "type": "integer",
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991
+            },
+            "multiple": {
+              "type": "boolean"
+            },
+            "minFiles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "maxFiles": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
             }
           },
           "required": [
             "type",
             "label"
           ],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "dependentSchemas": {
+            "minFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            },
+            "maxFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            }
+          }
         },
         {
           "type": "object",
@@ -1152,6 +1225,9 @@
             },
             "multiple": {
               "type": "boolean"
+            },
+            "onePerColumn": {
+              "type": "boolean"
             }
           },
           "required": [
@@ -1234,6 +1310,15 @@
         },
         "score": {
           "type": "number"
+        },
+        "alt": {
+          "type": "string"
+        },
+        "exclusive": {
+          "type": "boolean"
+        },
+        "fixed": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -1866,6 +1951,9 @@
             "other": {
               "type": "boolean"
             },
+            "ownAnswers": {
+              "type": "boolean"
+            },
             "optionsFrom": {
               "not": {}
             }
@@ -1920,13 +2008,48 @@
               "type": "integer",
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991
+            },
+            "multiple": {
+              "type": "boolean"
+            },
+            "minFiles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "maxFiles": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
             }
           },
           "required": [
             "type",
             "label"
           ],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "dependentSchemas": {
+            "minFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            },
+            "maxFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            }
+          }
         },
         {
           "type": "object",
@@ -1965,13 +2088,48 @@
               "type": "integer",
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991
+            },
+            "multiple": {
+              "type": "boolean"
+            },
+            "minFiles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "maxFiles": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
             }
           },
           "required": [
             "type",
             "label"
           ],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "dependentSchemas": {
+            "minFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            },
+            "maxFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            }
+          }
         },
         {
           "type": "object",

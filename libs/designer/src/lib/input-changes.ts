@@ -5,8 +5,8 @@ import { kindOfField } from './kinds';
  * What changed in a field's text, number and date settings from one version
  * of a page to the next, in words: "“Bio”: takes at most 200 characters". A
  * field's own settings are said only while it stays the same kind of data —
- * a field made another kind says so on its own. `others` tells whether its
- * widget's settings changed in ways these words do not say.
+ * a field made another kind says so on its own. It hands back the keys of its
+ * widget's settings it does not say (`unsaid`), for other words to say.
  */
 
 interface Placed {
@@ -71,7 +71,7 @@ const OPTION_WORDS: Record<string, Words> = {
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
-export function inputChanges(name: string, was: Placed, now: Placed): { lines: string[]; others: boolean } {
+export function inputChanges(name: string, was: Placed, now: Placed): { lines: string[]; unsaid: string[] } {
   const lines: string[] = [];
   const say = (words: string | null) => words !== null && lines.push(`“${name}”: ${words}`);
   const kind = kindOfField(now.field, now.node);
@@ -84,11 +84,11 @@ export function inputChanges(name: string, was: Placed, now: Placed): { lines: s
   }
   const [before, after] = [was.node.options ?? {}, now.node.options ?? {}];
   const changed = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter((key) => !same(before[key], after[key]));
-  let others = false;
+  const unsaid: string[] = [];
   for (const key of changed) {
     const words = OPTION_WORDS[key]?.(after[key], now, kind) ?? null;
-    if (words === null) others = true;
+    if (words === null) unsaid.push(key);
     say(words);
   }
-  return { lines, others };
+  return { lines, unsaid };
 }

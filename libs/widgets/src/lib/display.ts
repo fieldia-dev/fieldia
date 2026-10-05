@@ -49,7 +49,8 @@ export function displayValue(def: LineField, value: Value | undefined, values: R
       return String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     case 'binary':
     case 'image':
-      return (value as { name?: string }).name ?? '';
+      // One file, or several: their names.
+      return [value].flat().map((file) => (file as { name?: string }).name ?? '').join(', ');
     case 'boolean':
       return value ? '✓' : '';
     default:

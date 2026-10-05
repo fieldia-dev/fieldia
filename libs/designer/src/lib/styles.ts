@@ -7,6 +7,7 @@ import { DESIGNER_RULES_CSS } from './styles-rules';
 import { DESIGNER_EXTEND_CSS } from './styles-extend';
 import { DESIGNER_OUTLINE_CSS } from './styles-outline';
 import { DESIGNER_GAP_CSS } from './styles-gap';
+import { DESIGNER_CHOICES_CSS } from './styles-choices';
 
 /** The designer's own chrome, on top of Fieldia's form stylesheet and tokens. */
 export const DESIGNER_CSS = /* css */ `
@@ -339,7 +340,8 @@ export const DESIGNER_CSS = /* css */ `
   font: inherit; font-size: 13.5px; color: var(--fd-text); background: none; border: 0; border-bottom: 1px solid var(--fd-border-strong);
   border-radius: 0; box-shadow: none; padding: 2px 0; min-height: 0;
 }
-.fd-inline-select { padding-inline-end: 2px; cursor: pointer; }
+/* As tall as a finger needs (WCAG 2.5.8), however close the next setting sits. */
+.fd-inline-select { padding-inline-end: 2px; cursor: pointer; min-height: 24px; }
 .fd-inline-input { width: 12ch; }
 .fd-inline-currency { width: 4.5ch; text-transform: uppercase; }
 .fd-designer .fd-inline-select:focus-visible, .fd-designer .fd-inline-input:focus-visible, .fd-designer .fd-inline-settings .fd-column > .fd-input:focus-visible { outline: none; }
@@ -655,6 +657,6 @@ export function installDesignerStyles(document: Document): void {
   if (document.getElementById(STYLE_ID)) return;
   const style = document.createElement('style');
   style.id = STYLE_ID;
-  style.textContent = DESIGNER_CSS + DESIGNER_CANVAS_CSS + DESIGNER_KINDS_CSS + DESIGNER_TRANSLATIONS_CSS + DESIGNER_RULES_CSS + DESIGNER_PANEL_CSS + DESIGNER_JSON_CSS + DESIGNER_EXTEND_CSS + DESIGNER_OUTLINE_CSS + DESIGNER_GAP_CSS;
+  style.textContent = DESIGNER_CSS + DESIGNER_CANVAS_CSS + DESIGNER_KINDS_CSS + DESIGNER_TRANSLATIONS_CSS + DESIGNER_RULES_CSS + DESIGNER_PANEL_CSS + DESIGNER_JSON_CSS + DESIGNER_EXTEND_CSS + DESIGNER_OUTLINE_CSS + DESIGNER_GAP_CSS + DESIGNER_CHOICES_CSS;
   (document.head ?? document.documentElement).append(style);
 }

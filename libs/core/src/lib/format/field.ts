@@ -22,6 +22,12 @@ export const OptionSchema = z
     image: z.string().min(1).optional(),
     /** Points this choice is worth, for a quiz or a score. */
     score: z.number().optional(),
+    /** What the picture shows, for people who cannot see it. */
+    alt: z.string().optional(),
+    /** Goes alone, as "None of these": choosing it clears the others, and another clears it — the widgets see to it. */
+    exclusive: z.boolean().optional(),
+    /** Keeps its place when the options are shuffled. */
+    fixed: z.boolean().optional(),
   })
   .strict()
   .meta({ id: 'Option' });
@@ -161,6 +167,8 @@ const selection = {
    * among the chosen when several may be.
    */
   other: z.boolean().optional(),
+  /** People may add answers of their own, as many as they like: tags typed beside the options. */
+  ownAnswers: z.boolean().optional(),
 };
 const Selection = z
   .object({ ...selection, optionsFrom: OptionsFromSchema.optional() })
@@ -173,17 +181,45 @@ const Selection = z
   .meta({ anyOf: [{ properties: { options: { minItems: 1 } } }, { required: ['optionsFrom'] }] });
 /** A choice in a table's lines: its options written in the page, as a list loads only for the page's own fields. */
 const LineSelection = z.object({ ...selection, options: z.array(OptionSchema).min(1), optionsFrom: z.never({ error: 'choices from the app’s lists are for the page’s own fields, not a table’s lines' }).optional() }).strict();
-const Binary = z
-  .object({
-    type: z.literal('binary'),
-    ...common,
-    /** Accepted media types, such as "application/pdf" or "image/*". */
-    accept: z.array(z.string()).optional(),
-    /** Largest accepted file, in bytes. */
-    maxSize: z.int().positive().optional(),
-  })
-  .strict();
-const Image = z.object({ type: z.literal('image'), ...common, maxSize: z.int().positive().optional() }).strict();
+/**
+ * What a file or an image field takes: the largest file, and whether it holds
+ * several — its value then a list of files, as few as `minFiles` and as many
+ * as `maxFiles`. How they are shown, a list or thumbnails, and whether a phone
+ * offers its camera, are the layout node's `options` (`files`, `camera`).
+ */
+const files = {
+  /** Largest accepted file, in bytes. */
+  maxSize: z.int().positive().optional(),
+  /** Several files: the value becomes a list of them. */
+  multiple: z.boolean().optional(),
+  /** With `multiple`: the fewest files an answer has, once it has any — `required` asks for one. */
+  minFiles: z.int().nonnegative().optional(),
+  /** With `multiple`: the most files it takes. */
+  maxFiles: z.int().positive().optional(),
+};
+type FileRules = { multiple?: boolean; minFiles?: number; maxFiles?: number };
+const SEVERAL = 'the fewest and the most files are for a field of several files: set multiple';
+/** The fewest and the most only with several files, the fewest no more than the most — and the same for tools that read only the JSON Schema. */
+const withFileRules = <T extends z.ZodType<FileRules>>(schema: T) =>
+  schema
+    .superRefine((field, context) => {
+      for (const key of ['minFiles', 'maxFiles'] as const) if (field[key] !== undefined && field.multiple !== true) context.addIssue({ code: 'custom', message: SEVERAL, path: [key] });
+      if (field.minFiles !== undefined && field.maxFiles !== undefined && field.minFiles > field.maxFiles) context.addIssue({ code: 'custom', message: 'the fewest files cannot be more than the most', path: ['minFiles'] });
+    })
+    .meta({ dependentSchemas: Object.fromEntries(['minFiles', 'maxFiles'].map((key) => [key, { properties: { multiple: { const: true } }, required: ['multiple'] }])) });
+const Binary = withFileRules(
+  z
+    .object({
+      type: z.literal('binary'),
+      ...common,
+      /** Accepted media types, such as "application/pdf" or "image/*". */
+      accept: z.array(z.string()).optional(),
+      ...files,
+    })
+    .strict()
+);
+/** Images only: an image field takes no list of kinds. */
+const Image = withFileRules(z.object({ type: z.literal('image'), ...common, ...files }).strict());
 const Many2one = z.object({ type: z.literal('many2one'), ...common, relation, filter }).strict();
 const Many2many = z.object({ type: z.literal('many2many'), ...common, relation, filter }).strict();
 const Reference = z
@@ -225,6 +261,8 @@ const Matrix = z
     columns: z.array(OptionSchema).min(1),
     /** Several columns may be chosen in a row. */
     multiple: z.boolean().optional(),
+    /** Each column may be chosen in one row only, as a ranking in a grid: picked in a row, it leaves the row that had it. */
+    onePerColumn: z.boolean().optional(),
   })
   .strict();
 

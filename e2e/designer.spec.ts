@@ -134,15 +134,18 @@ test.describe('survey designer', () => {
     await preview.getByLabel('Role').selectOption({ label: 'Manager' });
     await expect(why).toBeHidden();
     await preview.getByLabel('Role').selectOption({ label: 'Developer' });
+    // Coming? is not answered yet — a yes or no starts with neither — so the question waits for a No.
+    await expect(why).toBeHidden();
+    await preview.getByRole('radio', { name: 'No', exact: true }).click();
     await expect(why).toBeVisible();
-    await preview.getByLabel('Coming?').check();
+    await preview.getByRole('radio', { name: 'Yes', exact: true }).click();
     await expect(why).toBeHidden();
 
     // Any of them: a developer who is coming is asked too.
     await page.getByRole('button', { name: 'Design', exact: true }).click();
     await card(2).getByLabel('Match').selectOption({ label: 'any of these' });
     await page.getByRole('button', { name: 'Try it' }).click();
-    await preview.getByLabel('Coming?').check();
+    await preview.getByRole('radio', { name: 'Yes', exact: true }).click();
     await preview.getByLabel('Role').selectOption({ label: 'Developer' });
     await expect(preview.getByText('Why not?')).toBeVisible();
   });

@@ -180,7 +180,7 @@ describe('survey editor — questions as people see them, the one picked open', 
     tile(host, 'kind:yes-no').click();
     const steps = (designer.getPage().layout as WizardNode).children as StepNode[];
     expect(steps.map((s) => s.children.length)).toEqual([4, 0]);
-    expect((steps[0].children[3] as FieldNode).widget).toBe('toggle');
+    expect((steps[0].children[3] as FieldNode).widget).toBe('buttons');
   });
 
   it('moves the question picked with Alt and an arrow, deletes it with Delete, and puts it down with Escape', () => {

@@ -4,6 +4,9 @@ import { iconButton, type ElementFactory } from './chrome';
 import { columnsEditor } from './columns-editor';
 import type { Designer } from './designer';
 import { ADDRESS_PARTS } from './kind-commands';
+import { choiceSettings } from './kind-settings-choices';
+import { LARGEST_PICTURE } from './choice-commands';
+import { pictureForPage } from './picture-upload';
 
 /**
  * The settings of the newer kinds, in the picked question itself, as the
@@ -76,27 +79,30 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
     const list = el('ul', { class: 'fd-kind-pictures' });
     const several = toggle('Several answers', (on) => designer.setSeveral(id, on));
     const element = el('div', { class: 'fd-kind-block' }, el('span', { class: 'fd-prop-name' }, 'Pictures'), list, several.element);
-    const rows: { thumb: HTMLElement; name: HTMLElement; address: HTMLInputElement; file: HTMLInputElement }[] = [];
+    const rows: { thumb: HTMLElement; name: HTMLElement; address: HTMLInputElement; file: HTMLInputElement; alt: HTMLInputElement }[] = [];
     function row(index: number) {
       const thumb = el('span', { class: 'fd-kind-thumb' });
       const name = el('span', { class: 'fd-kind-picture-name' });
       const address = el('input', { class: 'fd-inline-input fd-kind-picture-address', placeholder: 'Picture address, https://…', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
       // Kept once typed and left: a picture half typed is an address that is not there.
       address.addEventListener('change', () => designer.setOptionDetails(id, index, { image: address.value }));
-      // Or a picture from this computer, kept in the page as a data: address.
+      // Or a picture from this computer, kept in the page as a data: address: 1200 px wide at most, refused over 5 MB.
       const file = el('input', { type: 'file', accept: 'image/*', class: 'fd-sr-only', tabindex: '-1' }) as HTMLInputElement;
       file.addEventListener('change', () => {
         const chosen = file.files?.[0];
-        if (!chosen) return;
-        const reader = new FileReader();
-        reader.onload = () => designer.setOptionDetails(id, index, { image: String(reader.result ?? '') });
-        reader.readAsDataURL(chosen);
         file.value = '';
+        if (!chosen) return;
+        const keep = (src: string) => designer.setOptionPicture(id, index, { src, bytes: chosen.size });
+        if (chosen.size > LARGEST_PICTURE) keep('');
+        else void pictureForPage(chosen, file.ownerDocument).then(keep, () => keep(''));
       });
+      // What it shows, for people who cannot see it.
+      const alt = el('input', { class: 'fd-inline-input fd-kind-picture-alt', placeholder: 'What it shows, for people who cannot see it', autocomplete: 'off' }) as HTMLInputElement;
+      alt.addEventListener('input', () => designer.setOptionDetails(id, index, { alt: alt.value }));
       const upload = el('button', { type: 'button', class: 'fd-button fd-button-link fd-kind-upload' }, 'Upload');
       upload.addEventListener('click', () => file.click());
-      list.append(el('li', { class: 'fd-kind-picture' }, thumb, name, address, upload, file));
-      rows.push({ thumb, name, address, file });
+      list.append(el('li', { class: 'fd-kind-picture' }, thumb, name, address, upload, file, alt));
+      rows.push({ thumb, name, address, file, alt });
     }
     return {
       element,
@@ -110,9 +116,12 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
         }
         while (rows.length < options.length) row(rows.length);
         options.forEach((option, i) => {
-          const { thumb, name, address } = rows[i];
+          const { thumb, name, address, alt } = rows[i];
           name.textContent = option.label;
           address.setAttribute('aria-label', `Picture for ${option.label}`);
+          alt.setAttribute('aria-label', `What the picture for ${option.label} shows`);
+          alt.hidden = !option.image;
+          if (!focused(alt)) alt.value = option.alt ?? '';
           const src = option.image ?? '';
           const shown = thumb.querySelector('img');
           if ((shown?.getAttribute('src') ?? '') !== src) thumb.replaceChildren(...(src ? [el('img', { src, alt: '' })] : []));
@@ -307,6 +316,7 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
   if (kind === 'address') parts.push(address());
   if (kind === 'repeating') parts.push(repeating());
   if (kind && SHUFFLED.has(kind)) parts.push(shuffle());
+  parts.push(...choiceSettings(el, designer, id, kind));
   if (kind && SCORED.has(kind)) parts.push(points());
   const app = appKindSettings(el, designer, id, kind);
   if (app) parts.push(app);

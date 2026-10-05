@@ -26,17 +26,19 @@ import { htmlWidget, jsonWidget } from './extras';
 import { matrixWidget } from './matrix';
 import { signatureWidget } from './signature';
 import { sliderWidget } from './slider';
-import { choiceTagsWidget } from './choice-tags';
+import { choiceTagsWidget, searchWidget } from './choice-tags';
 import { imageChoiceWidget } from './choice-images';
 import { rankingWidget } from './ranking';
 import { addressWidget } from './address';
 import { cardsWidget } from './cards';
-import { clearSelection, fillIn, setAttr, setText } from './kind-parts';
+import { clearSelection, fillIn, maker, setAttr, setText } from './kind-parts';
 import { shownOptions } from './shuffle';
 import { bounds, counted, grower } from './limits';
 import { currencySymbol } from './units';
 import { drawIcon } from './icons';
 import { listChoices } from './choices-from';
+import { yesNoWidget } from './yes-no';
+import { layOut, limiter } from './choice-rules';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -297,7 +299,11 @@ function options(field: Field) {
   return field.type === 'selection' ? field.options : [];
 }
 
-const selectWidget: WidgetFactory = ({ form, name, field, node, id, document }) => {
+const selectWidget: WidgetFactory = (context) => {
+  const { form, name, field, node, id, document } = context;
+  // A long list, or one the page asks to: a box to type in, its options found as one types.
+  const search = node.options?.['search'];
+  if (search === true || (search !== false && options(field).length > 15)) return searchWidget(context);
   const choices = shownOptions(options(field), form, name, node);
   const select = make(document, 'select', { id, class: 'fd-input fd-select' }, make(document, 'option', { value: '' }));
   choices.forEach((option, i) => select.append(make(document, 'option', { value: String(i) }, option.label)));
@@ -320,6 +326,8 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
     const choices = shownOptions(options(field), form, name, node);
     const words = labels ?? WIDGET_LABELS[locale ?? 'en'];
     const group = make(document, 'div', { id, class: `fd-choices fd-choices-${kind}`, role: kind === 'radio' ? 'radiogroup' : 'group' });
+    layOut(group, node);
+    const limit = kind === 'checkbox' ? limiter(maker(document), words, node) : null;
     const inputs = choices.map((option, i) => {
       const input = make(document, 'input', { type: kind, name: id, value: String(i), id: `${id}-${i}` });
       group.append(make(document, 'label', { class: 'fd-choice', for: `${id}-${i}` }, input, make(document, 'span', {}, option.label)));
@@ -334,14 +342,21 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
       // Typing picks "Other"; picking "Other" puts the cursor in its box.
       otherBox.addEventListener('input', () => {
         if (!otherChoice.checked) otherChoice.checked = true;
-        save();
+        save(otherChoice);
       });
       otherChoice.addEventListener('change', () => {
         if (otherChoice.checked) otherBox.focus();
       });
     }
+    if (limit?.element) group.append(limit.element);
     /** The answer the boxes say now: the options picked, and the words of "Other" when it is picked and has any. */
-    function save() {
+    function save(ticked?: EventTarget | null) {
+      // "None of these" goes alone: ticked, it unticks the rest; another ticked unticks it.
+      if (kind === 'checkbox' && ticked instanceof HTMLInputElement && ticked.checked) {
+        const alone = choices[inputs.indexOf(ticked)]?.exclusive === true;
+        inputs.forEach((input, i) => input !== ticked && (alone || choices[i].exclusive) && (input.checked = false));
+        if (alone && otherChoice) otherChoice.checked = false;
+      }
       const own = otherChoice?.checked && otherBox && otherBox.value.trim() ? otherBox.value : null;
       if (kind === 'radio') {
         const chosen = inputs.findIndex((input) => input.checked);
@@ -353,7 +368,7 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
       }
     }
     group.addEventListener('change', (event) => {
-      if (event.target !== otherBox) save();
+      if (event.target !== otherBox) save(event.target);
     });
     const known = new Set(choices.map((o) => o.value as unknown));
     const picked = () => inputs.some((input) => input.checked) || otherChoice?.checked === true;
@@ -371,9 +386,12 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
       focus: () => (inputs.find((input) => input.checked) ?? (otherChoice?.checked ? otherBox : null) ?? inputs[0])?.focus(),
       update(state) {
         const chosen = Array.isArray(state.value) ? state.value : [state.value];
+        // At the most a question takes, the boxes not ticked wait; "None of these" stays open.
+        const full = !!limit?.full(Array.isArray(state.value) ? state.value.length : 0);
         inputs.forEach((input, i) => {
           input.checked = chosen.includes(choices[i].value as never);
-          if (input.disabled !== state.readonly) input.disabled = state.readonly;
+          const off = state.readonly || (full && !input.checked && !choices[i].exclusive);
+          if (input.disabled !== off) input.disabled = off;
         });
         if (otherChoice && otherBox) {
           // A value not among the options is an answer of its own: "Other", with its words.
@@ -382,7 +400,8 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
           const waiting = otherChoice.checked && !otherBox.value.trim() && (kind === 'checkbox' || chosen.every((v) => v === null || v === undefined));
           otherChoice.checked = own !== undefined || waiting;
           if (own !== undefined && document.activeElement !== otherBox) otherBox.value = own as string;
-          if (otherChoice.disabled !== state.readonly) otherChoice.disabled = otherBox.disabled = state.readonly;
+          const off = state.readonly || (full && !otherChoice.checked);
+          if (otherChoice.disabled !== off) otherChoice.disabled = otherBox.disabled = off;
         }
         clear?.allow(state);
         clear?.show(picked());
@@ -531,7 +550,7 @@ export function summary(value: Value | undefined, field: Field): string {
     }
     case 'binary':
     case 'image':
-      return (value as FileValue).name;
+      return [value as FileValue | FileValue[]].flat().map((file) => file.name).join(', ');
     case 'html':
       return String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     default:
@@ -564,6 +583,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   boolean: checkboxWidget(),
   'boolean.toggle': checkboxWidget('switch'),
   'boolean.tick': checkboxWidget('tick'),
+  'boolean.buttons': yesNoWidget,
   selection: selectWidget,
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),

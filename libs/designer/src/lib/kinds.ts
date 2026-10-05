@@ -37,7 +37,8 @@ export const QUESTION_KINDS: readonly QuestionKind[] = [
   { id: 'date-time', label: 'Date and time', field: (label) => ({ type: 'datetime', label }) },
   // A time of day, kept as HH:MM: the pattern says so to a backend too.
   { id: 'time', label: 'Time', field: (label) => ({ type: 'char', label, pattern: '^([01]\\d|2[0-3]):[0-5]\\d$' }), widget: 'time' },
-  { id: 'yes-no', label: 'Yes or no', field: (label) => ({ type: 'boolean', label }), widget: 'toggle' },
+  // Two buttons, neither picked until one is: the field starts empty, so Required asks for an answer.
+  { id: 'yes-no', label: 'Yes or no', field: (label) => ({ type: 'boolean', label, default: null }), widget: 'buttons' },
   { id: 'tick', label: 'Tick box', field: (label) => ({ type: 'boolean', label }), widget: 'tick' },
   { id: 'email', label: 'Email', field: (label) => ({ type: 'char', label, pattern: '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$' }), widget: 'email' },
   { id: 'phone', label: 'Phone', field: (label) => ({ type: 'char', label }), widget: 'phone' },

@@ -201,7 +201,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       // `for` stays: a custom field that puts the id on its own input is
       // labelled natively. Only a wrapper with a role (a radio group, say) may
       // carry a name; ARIA forbids naming a plain div or span.
-      if (widget.element.getAttribute('role')) widget.element.setAttribute('aria-labelledby', label.id);
+      // A group inside a box of its own (a radio group with "Clear selection" under it) is named too.
+      const named = widget.element.getAttribute('role') ? widget.element : widget.element.querySelector(`[id="${id}"][role]`);
+      named?.setAttribute('aria-labelledby', label.id);
       label.addEventListener('click', () => widget.focus());
     }
     const helpText = node.help ?? def.help;

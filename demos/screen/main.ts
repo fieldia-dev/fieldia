@@ -8,7 +8,8 @@ import { timeFirstPaint } from '../shared/timing';
 import layoutPage from '../../examples/pages/layout.page.json';
 
 /**
- * The screen editor on its own page, opened on a small site-visit screen.
+ * The screen editor on its own page, opened on a small site-visit screen,
+ * its photos several to a field.
  * `?start=blank` opens an empty one, `?start=sheet` an empty customer sheet
  * with the customer's model behind it, its fields first in the toolbox, and
  * `?start=list` the customers' list, on the same model, and `?start=layout`
@@ -42,6 +43,11 @@ function siteVisit() {
   add('short-answer', 'Customer', visit);
   add('date', 'Visit date', visit);
   draft.setColspan(add('paragraph', 'Notes', visit), 2);
+  // Photos of the site: several, up to six, as thumbnails, a phone offering its camera.
+  const photos = add('image', 'Photos', visit);
+  draft.setFileRules(photos, { multiple: true, maxFiles: 6 });
+  draft.setWidgetOptions(photos, { files: 'thumbnails', camera: true });
+  draft.setColspan(photos, 2);
   const followUp = draft.addContainer('Follow-up') as string;
   draft.setOptions(add('dropdown', 'Next step', followUp), ['Send a quote', 'Book a second visit', 'Close']);
   add('date', 'Due by', followUp);
