@@ -318,6 +318,8 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
   const onKey = (event: KeyboardEvent) => {
     if (!on?.next || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
     event.preventDefault();
+    // A press before the next frame reads the group as the last press left it, not as the marks were placed.
+    if (on.group) on.group = (nodeAt(on.group.id) as SectionNode | undefined) ?? on.group;
     const forward = (event.key === 'ArrowRight') !== options.rtl();
     const nextId = on.next.dataset['node'] as string;
     const a = widthNow(on.id);

@@ -369,6 +369,16 @@ describe('widths in a group: twelfths of its rows', () => {
     expect([span(designer, 'f-start_date'), span(designer, 'f-contract')]).toEqual([5, 7]);
   });
 
+  it('by the keys, a second press before the next frame counts too: it reads the group as the first left it', () => {
+    const { marks, gutter, show, designer } = setup(false, undefined, 'full');
+    current = marks;
+    show('f-start_date');
+    // The first press divides the group in twelfths; the marks are placed again only in the next frame.
+    gutter().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    gutter().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect([span(designer, 'f-start_date'), span(designer, 'f-contract')]).toEqual([6, 6]);
+  });
+
   it('a row kept full has no handle: its last part has the gutter before it, and a part alone in its row nothing', () => {
     const { marks, handle, gutter, show } = setup(false, undefined, 'full');
     current = marks;
