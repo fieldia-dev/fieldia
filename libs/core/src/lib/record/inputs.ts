@@ -1,6 +1,7 @@
 import type { Field } from '../format/field';
 import type { FieldNode } from '../format/layout';
 import { fill, type Messages } from './messages';
+import { checkStructure } from './structures';
 import type { Value } from './values';
 
 /**
@@ -8,8 +9,9 @@ import type { Value } from './values';
  * rules: an email, a web address (example.com, www.example.com or https://…),
  * a phone number (a plus, digits, spaces, dots, dashes and brackets, 7 to 15
  * digits), a time of day (HH:MM, between the node's `min` and `max`), and no
- * more keywords than the node's `max`. Undefined when it keeps them, or when
- * there is nothing to check: an empty answer is `required`'s to judge.
+ * more keywords than the node's `max` — and the structures' own, from
+ * `structures`. Undefined when it keeps them, or when there is nothing to
+ * check: an empty answer is `required`'s to judge.
  */
 const FORMATS: Record<string, RegExp> = {
   email: /^[^@\s]+@[^@\s]+\.[^@\s]+$/,
@@ -20,7 +22,8 @@ const FORMATS: Record<string, RegExp> = {
 
 export function checkInput(field: Field, node: FieldNode, value: Value | undefined, messages: Messages): string | undefined {
   const widget = node.widget ?? '';
-  if (field.type !== 'char' || typeof value !== 'string' || !value.trim()) return undefined;
+  if (field.type !== 'char') return checkStructure(field, node, value, messages);
+  if (typeof value !== 'string' || !value.trim()) return undefined;
   const text = value.trim();
   const options = node.options ?? {};
   const label = node.label ?? field.label;

@@ -2,6 +2,7 @@ import { validatePage, type Field, type FieldNode, type Page } from '@fieldia/co
 import { readCondition, type Condition } from './conditions';
 import { kindById, kindOfField } from './kinds';
 import { inputChanges } from './input-changes';
+import { structureChanges } from './structure-changes';
 import { holderName as placeName, layoutChanges, lookChanges, placements } from './layout-changes';
 import { isWrapper } from './layout-tree';
 import { containers, type Container } from './page-tree';
@@ -101,6 +102,19 @@ export function pageChecks(page: Page, options: { valid?: boolean } = {}): PageC
         severity: 'should',
         text: `“${label}” still offers ${andList(p.field.options.map((o) => o.label))} as its options.`,
         fix: { label: 'Type its options', action: { kind: 'go', id: p.node.id, part: 'options' } },
+      });
+    }
+  }
+
+  // A picture with no description says nothing to those who cannot see it; one that is a link is a link with no name.
+  for (const c of containers(page)) {
+    for (const image of c.children) {
+      if (image.type !== 'image' || image.alt.trim()) continue;
+      found.push({
+        at: image.id,
+        severity: 'should',
+        text: image.href ? 'A picture that is a link has no description: a screen reader would read it as a link with no name.' : 'A picture has no description: people who cannot see it are told nothing of it.',
+        fix: { label: 'Describe it', action: { kind: 'go', id: image.id, part: 'label' } },
       });
     }
   }
@@ -283,6 +297,7 @@ export function pageChanges(before: Page | null, after: Page): string[] {
     const settings = inputChanges(name, was, p);
     out.push(...settings.lines);
     out.push(...fileChanges(name, was, p));
+    out.push(...structureChanges(name, was, p));
     // How it shows, beyond what the files' own words and the inputs' said.
     if (settings.unsaid.some((key) => !isFiles(p.field) || (key !== 'files' && key !== 'camera'))) out.push(`“${name}”: how it shows changed`);
     const shows = whenItShows(name, was.node.invisible, p.node.invisible, answers);

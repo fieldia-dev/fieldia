@@ -548,3 +548,78 @@ describe('a link field and its dialogs', () => {
     expect(options(el)).toEqual(['Create “Oman”']);
   });
 });
+
+describe('links to records and their dialogs', () => {
+  const manyTags = () => createMemoryDataSource({ records: { tag: Object.fromEntries(['Art', 'Bars', 'Cafés', 'Dance', 'Eats', 'Fairs', 'Games', 'Hats', 'Jazz', 'Kayaks'].map((name, i) => [i + 1, { name }])) } });
+  function mountTags(dialogs: WidgetDialogs | undefined, dataSource = manyTags()) {
+    const form = createForm({ page, dataSource });
+    const node = (page.layout as { children: FieldNode[] }).children.find((n) => n.id === 'n-tags') as FieldNode;
+    const widget = createWidget({ form, name: 'tag_ids', field: page.fields['tag_ids'] as Field, node, id: 'fd-tags', document, labels: WIDGET_LABELS.en, dialogs });
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values['tag_ids'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    return { form, el: widget.element, input: widget.element.querySelector('input') as HTMLInputElement };
+  }
+  const fakeDialogs = (answers: { searchMore?: () => Promise<{ id: number; label: string } | null>; openRecord?: () => Promise<{ id: number; label: string } | null> }) => {
+    const calls: unknown[][] = [];
+    const dialogs: WidgetDialogs = {
+      canOpen: (model) => model === 'tag',
+      openRecord: async (...args) => (calls.push(['openRecord', ...args]), answers.openRecord ? answers.openRecord() : null),
+      searchMore: async (request) => (calls.push(['searchMore', request.title]), answers.searchMore ? answers.searchMore() : null),
+      editValues: async () => null,
+    };
+    return { dialogs, calls };
+  };
+
+  it('shows eight matches and Search more… when more match, which adds the one picked there', async () => {
+    const { dialogs, calls } = fakeDialogs({ searchMore: async () => ({ id: 10, label: 'Kayaks' }) });
+    const { form, el, input } = mountTags(dialogs);
+    form.setValue('tag_ids', [{ id: 1, label: 'Art' }]);
+    input.focus();
+    input.dispatchEvent(new Event('focus'));
+    await settle();
+    // Art is chosen already: eight others, and more besides.
+    expect(options(el)).toEqual(['Bars', 'Cafés', 'Dance', 'Eats', 'Fairs', 'Games', 'Hats', 'Jazz', 'Search more…']);
+    ([...el.querySelectorAll('[role=option]')].find((o) => o.textContent === 'Search more…') as HTMLElement).click();
+    await settle();
+    expect(calls).toEqual([['searchMore', 'Tags']]);
+    expect(form.getState().values['tag_ids']).toEqual([{ id: 1, label: 'Art' }, { id: 10, label: 'Kayaks' }]);
+  });
+
+  it('never adds a record twice from the searchable list', async () => {
+    const { dialogs } = fakeDialogs({ searchMore: async () => ({ id: 1, label: 'Art' }) });
+    const { form, el, input } = mountTags(dialogs);
+    form.setValue('tag_ids', [{ id: 1, label: 'Art' }]);
+    type(input, 'a');
+    await settle();
+    ([...el.querySelectorAll('[role=option]')].find((o) => o.textContent === 'Search more…') as HTMLElement).click();
+    await settle();
+    expect(form.getState().values['tag_ids']).toEqual([{ id: 1, label: 'Art' }]);
+  });
+
+  it('opens a linked record from its tag, and follows a new name', async () => {
+    const { dialogs, calls } = fakeDialogs({ openRecord: async () => ({ id: 2, label: 'Bars & pubs' }) });
+    const { form, el } = mountTags(dialogs);
+    form.setValue('tag_ids', [{ id: 1, label: 'Art' }, { id: 2, label: 'Bars' }]);
+    const open = el.querySelector('button[aria-label="Open Bars"]') as HTMLButtonElement;
+    expect(open.textContent).toBe('Bars');
+    open.click();
+    await settle();
+    expect(calls).toEqual([['openRecord', 'tag', { recordId: 2, title: 'Bars' }]]);
+    expect(form.getState().values['tag_ids']).toEqual([{ id: 1, label: 'Art' }, { id: 2, label: 'Bars & pubs' }]);
+  });
+
+  it('opens nothing, and searches no more, without dialogs or a page for the records', async () => {
+    const { form, el, input } = mountTags(undefined);
+    form.setValue('tag_ids', [{ id: 1, label: 'Art' }]);
+    expect(el.querySelector('button[aria-label^="Open"]')).toBeNull();
+    expect(el.querySelector('.fd-chip-label')?.tagName).toBe('SPAN');
+    type(input, 'a');
+    await settle();
+    expect(options(el)).not.toContain('Search more…');
+    const none = mountTags({ ...fakeDialogs({}).dialogs, canOpen: () => false });
+    none.form.setValue('tag_ids', [{ id: 1, label: 'Art' }]);
+    expect(none.el.querySelector('button[aria-label^="Open"]')).toBeNull();
+  });
+});

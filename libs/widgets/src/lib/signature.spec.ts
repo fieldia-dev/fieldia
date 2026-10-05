@@ -13,7 +13,8 @@ beforeEach(() => {
     {},
     {
       get: (_, key: string) => (key === 'canvas' ? undefined : (...args: unknown[]) => strokes.push(`${key}(${args.join(',')})`)),
-      set: () => true,
+      // What the pen is set to, as `strokeStyle=#1b2a5c`.
+      set: (_, key: string, value: unknown) => (strokes.push(`${key}=${value}`), true),
     }
   );
   jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => pen as never);
@@ -77,7 +78,8 @@ describe('signature', () => {
     const { el, value } = signature();
     typeInto(typed(el), 'Sara Hassan');
     expect(strokes).toContain('fillText(Sara Hassan,300,90,560)');
-    expect(value()).toEqual(SIGNED);
+    // The name typed is kept with its picture.
+    expect(value()).toEqual({ ...SIGNED, text: 'Sara Hassan' });
     typeInto(typed(el), '  ');
     expect(value()).toBeNull();
   });
@@ -126,5 +128,93 @@ describe('signature', () => {
     expect(typed(el).getAttribute('aria-invalid')).toBe('true');
     refresh({ invalid: false });
     expect(el.getAttribute('aria-invalid')).toBe('false');
+  });
+});
+
+describe('a signature’s settings', () => {
+  const drawLine = (el: Element, from: number, to: number) => {
+    pointer(pad(el), 'pointerdown', from, from);
+    pointer(pad(el), 'pointermove', to, to);
+    pointer(pad(el), 'pointerup', to, to);
+  };
+  const button = (el: Element, name: string) => [...el.querySelectorAll('button')].find((b) => b.textContent === name) as HTMLButtonElement;
+
+  it('draws in the page’s pen colour and width, and a typed name in the same ink', () => {
+    const { el } = mountKind({ type: 'binary', label: 'Signature' }, { widget: 'signature', options: { color: '#0b57d0', penWidth: 5 } });
+    drawLine(el, 10, 40);
+    expect(strokes).toEqual(expect.arrayContaining(['strokeStyle=#0b57d0', 'fillStyle=#0b57d0', 'lineWidth=5']));
+    strokes.length = 0;
+    typeInto(typed(el), 'Sara');
+    expect(strokes).toContain('fillStyle=#0b57d0');
+  });
+
+  it('keeps the usual blue-black ink and width for a colour or a width that is not one', () => {
+    const { el } = mountKind({ type: 'binary', label: 'Signature' }, { widget: 'signature', options: { color: 'red;x', penWidth: -2 } });
+    drawLine(el, 10, 40);
+    expect(strokes).toEqual(expect.arrayContaining(['strokeStyle=#1b2a5c', 'lineWidth=3']));
+  });
+
+  it('undoes the last stroke, drawing the rest again; the last one undone leaves it unanswered', () => {
+    const { el, value } = signature();
+    expect(button(el, 'Undo').hidden).toBe(true);
+    drawLine(el, 10, 40);
+    drawLine(el, 50, 80);
+    expect(button(el, 'Undo').hidden).toBe(false);
+    strokes.length = 0;
+    button(el, 'Undo').click();
+    // Wiped, and the first stroke drawn again, not the second.
+    expect(strokes.find((s) => s.includes('('))).toBe('clearRect(0,0,600,180)');
+    expect(strokes).toContain('lineTo(80,80)');
+    expect(strokes).not.toContain('lineTo(160,160)');
+    expect(value()).toEqual(SIGNED);
+    button(el, 'Undo').click();
+    expect(value()).toBeNull();
+    expect(button(el, 'Undo').hidden).toBe(true);
+    expect(el.querySelector<HTMLElement>('.fd-signature-hint')?.hidden).toBe(false);
+  });
+
+  it('says the page’s own words on the pad, and keeps words under it', () => {
+    const { el } = mountKind({ type: 'binary', label: 'Signature' }, { widget: 'signature', placeholder: 'Sign as in your passport', options: { footerLabel: 'I agree this is my signature' } });
+    expect(el.querySelector('.fd-signature-hint')?.textContent).toBe('Sign as in your passport');
+    const footer = el.querySelector('.fd-signature-footer') as HTMLElement;
+    expect(footer.textContent).toBe('I agree this is my signature');
+    drawLine(el, 10, 40);
+    expect(footer.hidden).toBe(false);
+    // None asked for: none shown.
+    expect(signature().el.querySelector('.fd-signature-footer')).toBeNull();
+  });
+
+  it('takes a picture of a signature, uploaded, where the page allows it', async () => {
+    expect(button(signature().el, 'Upload a picture')).toBeUndefined();
+    const { el, value } = mountKind({ type: 'binary', label: 'Signature' }, { widget: 'signature', options: { upload: true } });
+    const input = el.querySelector('input[type=file]') as HTMLInputElement;
+    expect(input.accept).toBe('image/*');
+    const click = jest.spyOn(input, 'click').mockImplementation(() => undefined);
+    button(el, 'Upload a picture').click();
+    expect(click).toHaveBeenCalled();
+    Object.defineProperty(input, 'files', { value: [new File(['ABCD'], 'mine.png', { type: 'image/png' })], configurable: true });
+    input.dispatchEvent(new Event('change'));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(value()).toEqual({ name: 'mine.png', type: 'image/png', size: 4, data: 'QUJDRA==' });
+    // Shown as its picture, until Clear.
+    expect((el.querySelector('img') as HTMLImageElement).hidden).toBe(false);
+  });
+
+  it('drops the name once drawn over, and shows a kept name in its box again', () => {
+    const { el, value, form } = signature();
+    typeInto(typed(el), 'Sara');
+    drawLine(el, 10, 40);
+    expect(value()).toEqual(SIGNED);
+    typed(el).blur();
+    form.setValue('x', null);
+    form.setValue('x', { ...SIGNED, data: 'WFla', text: 'Sara Hassan' });
+    expect(typed(el).value).toBe('Sara Hassan');
+  });
+
+  it('has no undo or upload while read-only', () => {
+    const { el, refresh } = mountKind({ type: 'binary', label: 'Signature' }, { widget: 'signature', options: { upload: true } });
+    refresh({ readonly: true });
+    expect(button(el, 'Undo').hidden).toBe(true);
+    expect(button(el, 'Upload a picture').hidden).toBe(true);
   });
 });

@@ -10,6 +10,8 @@ export interface WidgetLabels {
   addSection: string;
   addNote: string;
   deleteLine: string;
+  /** A line of a table, as a person is told of it: `{n}` counts from 1. */
+  lineN: string;
   /** Heads the row that adds up a table's number columns. */
   total: string;
   /** A problem on one line of a table, under the table. `{n}` counts from 1. */
@@ -92,6 +94,9 @@ export interface WidgetLabels {
   signHere: string;
   typeSignature: string;
   clearDrawing: string;
+  /** Takes the last stroke away; a picture of a signature, uploaded instead. */
+  undo: string;
+  uploadSignature: string;
   /** A slider not slid yet, as a screen reader reads it. */
   notAnswered: string;
   /** A ranking's buttons for a line (`{label}`), and where it went, said aloud: `{n}` of `{total}`, counted from 1. */
@@ -101,11 +106,15 @@ export interface WidgetLabels {
   /** An address's parts. */
   addressStreet: string;
   addressCity: string;
+  addressLine2: string;
+  addressRegion: string;
   addressPostcode: string;
   addressCountry: string;
   /** A repeating group: a card's title (`{n}` counts from 1), the button that adds one, and a card gone, said aloud. */
   entry: string;
   addAnother: string;
+  /** A repeating group's card copied right after it: `{name}` is its title. */
+  copy: string;
   removed: string;
   /** Choices from the app's list: while they load, a button to load them again, and a value the list no longer has (`{name}`). */
   loadingChoices: string;
@@ -134,6 +143,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addSection: 'Add a section',
     addNote: 'Add a note',
     deleteLine: 'Delete line',
+    lineN: 'line {n}',
     total: 'Total',
     lineProblem: 'Line {n}: {message}',
     moreProblems: 'and {n} more',
@@ -197,16 +207,21 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     signHere: 'Sign here',
     typeSignature: 'Or type your name',
     clearDrawing: 'Clear',
+    undo: 'Undo',
+    uploadSignature: 'Upload a picture',
     notAnswered: 'Not answered',
     moveUp: 'Move {label} up',
     moveDown: 'Move {label} down',
     movedTo: '{label} moved to place {n} of {total}',
     addressStreet: 'Street address',
     addressCity: 'City',
+    addressLine2: 'Address line 2',
+    addressRegion: 'State or region',
     addressPostcode: 'Postcode',
     addressCountry: 'Country',
     entry: 'Entry {n}',
     addAnother: 'Add another',
+    copy: 'Copy {name}',
     removed: '{name} removed',
     loadingChoices: 'Loading choices…',
     choicesFailed: 'Load the choices again',
@@ -227,6 +242,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addSection: 'إضافة قسم',
     addNote: 'إضافة ملاحظة',
     deleteLine: 'حذف السطر',
+    lineN: 'السطر {n}',
     total: 'الإجمالي',
     lineProblem: 'السطر {n}: {message}',
     moreProblems: 'و{n} أخرى',
@@ -290,16 +306,21 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     signHere: 'وقّع هنا',
     typeSignature: 'أو اكتب اسمك',
     clearDrawing: 'مسح',
+    undo: 'تراجع',
+    uploadSignature: 'رفع صورة',
     notAnswered: 'لم تتم الإجابة',
     moveUp: 'نقل {label} لأعلى',
     moveDown: 'نقل {label} لأسفل',
     movedTo: 'أصبح {label} في المرتبة {n} من {total}',
     addressStreet: 'عنوان الشارع',
     addressCity: 'المدينة',
+    addressLine2: 'سطر العنوان 2',
+    addressRegion: 'المحافظة أو المنطقة',
     addressPostcode: 'الرمز البريدي',
     addressCountry: 'الدولة',
     entry: 'الإدخال {n}',
     addAnother: 'إضافة المزيد',
+    copy: 'نسخ {name}',
     removed: 'أُزيل {name}',
     loadingChoices: 'تحميل الخيارات…',
     choicesFailed: 'أعد تحميل الخيارات',
@@ -320,6 +341,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addSection: 'Abschnitt hinzufügen',
     addNote: 'Notiz hinzufügen',
     deleteLine: 'Zeile löschen',
+    lineN: 'Zeile {n}',
     total: 'Summe',
     lineProblem: 'Zeile {n}: {message}',
     moreProblems: 'und {n} weitere',
@@ -383,16 +405,21 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     signHere: 'Hier unterschreiben',
     typeSignature: 'Oder Namen eingeben',
     clearDrawing: 'Löschen',
+    undo: 'Rückgängig',
+    uploadSignature: 'Bild hochladen',
     notAnswered: 'Nicht beantwortet',
     moveUp: '{label} nach oben verschieben',
     moveDown: '{label} nach unten verschieben',
     movedTo: '{label} ist jetzt auf Platz {n} von {total}',
     addressStreet: 'Straße und Hausnummer',
     addressCity: 'Ort',
+    addressLine2: 'Adresszeile 2',
+    addressRegion: 'Bundesland oder Region',
     addressPostcode: 'Postleitzahl',
     addressCountry: 'Land',
     entry: 'Eintrag {n}',
     addAnother: 'Weitere hinzufügen',
+    copy: '{name} kopieren',
     removed: '{name} entfernt',
     loadingChoices: 'Auswahl lädt…',
     choicesFailed: 'Auswahl neu laden',
@@ -413,6 +440,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     addSection: 'Ajouter une section',
     addNote: 'Ajouter une note',
     deleteLine: 'Supprimer la ligne',
+    lineN: 'ligne {n}',
     total: 'Total',
     lineProblem: 'Ligne {n} : {message}',
     moreProblems: 'et {n} de plus',
@@ -476,16 +504,21 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     signHere: 'Signez ici',
     typeSignature: 'Ou tapez votre nom',
     clearDrawing: 'Effacer',
+    undo: 'Annuler',
+    uploadSignature: 'Importer une image',
     notAnswered: 'Pas de réponse',
     moveUp: 'Monter {label}',
     moveDown: 'Descendre {label}',
     movedTo: '{label} est maintenant en position {n} sur {total}',
     addressStreet: 'Adresse',
     addressCity: 'Ville',
+    addressLine2: 'Complément d’adresse',
+    addressRegion: 'État ou région',
     addressPostcode: 'Code postal',
     addressCountry: 'Pays',
     entry: 'Entrée {n}',
     addAnother: 'En ajouter un autre',
+    copy: 'Copier {name}',
     removed: '{name} retiré',
     loadingChoices: 'Chargement des choix…',
     choicesFailed: 'Recharger les choix',

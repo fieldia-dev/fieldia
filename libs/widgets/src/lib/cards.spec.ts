@@ -105,3 +105,45 @@ describe('repeating group', () => {
     expect((shown(el)[0].querySelector('input') as HTMLInputElement).readOnly).toBe(true);
   });
 });
+
+describe('a repeating group’s cards moved and copied', () => {
+  const button = (card: Element, name: string) => card.querySelector(`button[aria-label="${name}"]`) as HTMLButtonElement;
+  const names = (value: unknown) => lines(value).map((l) => l.values['name']);
+  function three(options: FieldNode['options'] = {}) {
+    const mounted = cards({ itemLabel: 'Person', ...options });
+    for (const name of ['Sara', 'Omar', 'Laila']) mounted.form.addLine('x', { name });
+    return mounted;
+  }
+
+  it('moves a card up and down by its buttons, none past either end, the focus staying on the button', () => {
+    const { el, value } = three();
+    const [first, second, last] = shown(el);
+    expect(button(first, 'Move Person 1 up').hidden).toBe(true);
+    expect(button(last, 'Move Person 3 down').hidden).toBe(true);
+    const up = button(second, 'Move Person 2 up');
+    up.focus();
+    up.click();
+    expect(names(value())).toEqual(['Omar', 'Sara', 'Laila']);
+    // Numbered again by the order it keeps.
+    expect(lines(value()).map((l) => l.values['seq'])).toEqual([1, 2, 3]);
+    expect(titles(el)).toEqual(['Person 1', 'Person 2', 'Person 3']);
+    expect(said(el)).toBe('Person 2 moved to place 1 of 3');
+    // The button the person pressed keeps the focus, now first: it has no way up, so the way down takes it.
+    expect(document.activeElement).toBe(button(shown(el)[0], 'Move Person 1 down'));
+  });
+
+  it('copies a card right after it, its answers too, the cursor in the copy, and none past the most', () => {
+    const { el, value } = three({ max: 4 });
+    button(shown(el)[0], 'Copy Person 1').click();
+    expect(names(value())).toEqual(['Sara', 'Sara', 'Omar', 'Laila']);
+    expect(document.activeElement).toBe(shown(el)[1].querySelector('input'));
+    // At its most, nothing more is copied.
+    expect(shown(el).every((card) => button(card, `Copy ${card.querySelector('.fd-repeat-title')?.textContent}`).hidden)).toBe(true);
+  });
+
+  it('offers no moving or copying when read-only', () => {
+    const { el, refresh } = three();
+    refresh({ readonly: true });
+    expect(shown(el).every((card) => [...card.querySelectorAll<HTMLButtonElement>('.fd-repeat-head button')].every((b) => b.hidden))).toBe(true);
+  });
+});

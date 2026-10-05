@@ -89,3 +89,32 @@ export function clearSelection(document: Document, words: WidgetLabels, clear: (
     },
   };
 }
+
+/**
+ * Removing asks first, in place: "Remove report.pdf?  Remove · Keep", the
+ * focus on Keep, Escape keeping it. `ask` shows the question; `then` hears
+ * the answer, true to remove.
+ */
+export function askFirst(make: Make, words: WidgetLabels) {
+  const question = make('span');
+  const yes = make('button', { type: 'button', class: 'fd-button fd-button-link' }, words.removeFile);
+  const no = make('button', { type: 'button', class: 'fd-button fd-button-link' }, words.keep);
+  const element = make('div', { class: 'fd-file-confirm', hidden: '' }, question, yes, no);
+  let then = (_remove: boolean) => undefined as void;
+  const answered = (remove: boolean) => {
+    element.hidden = true;
+    then(remove);
+  };
+  yes.addEventListener('click', () => answered(true));
+  no.addEventListener('click', () => answered(false));
+  element.addEventListener('keydown', (event) => event.key === 'Escape' && answered(false));
+  return {
+    element,
+    ask(text: string, answer: (remove: boolean) => void) {
+      question.textContent = text;
+      then = answer;
+      element.hidden = false;
+      no.focus();
+    },
+  };
+}

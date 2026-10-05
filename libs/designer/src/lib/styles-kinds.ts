@@ -38,4 +38,15 @@ export const DESIGNER_KINDS_CSS = /* css */ `
 .fd-q-preview-card { display: grid; gap: 2px; width: 100%; box-sizing: border-box; padding: 8px 12px 10px; border: 1px solid var(--fd-border); border-radius: 6px; }
 .fd-q-preview-card-title { font-size: 13px; font-weight: 600; color: var(--fd-text); }
 .fd-q-preview-add { font-size: 13px; color: var(--fd-accent); }
+/* The structures' settings: a signature's inks, each a dot of its colour. */
+.fd-pen-ink { display: inline-flex; align-items: center; gap: 6px; }
+.fd-pen-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--fd-ink); box-shadow: 0 0 0 1px var(--fd-surface), 0 0 0 2px var(--fd-border); }
+.fd-q-preview-under { font-size: 12.5px; color: var(--fd-muted); }
+/* A picture block on the canvas, as wide as the form draws it. */
+.fd-canvas-block.fd-image:not(.fd-figure) { width: var(--fd-image-width, auto); }
+/* A table's columns: each one's name, Add up for a number, and whether people may hide it. */
+.fd-line-columns { display: grid; gap: 6px; width: 100%; margin: 0; padding: 0; list-style: none; }
+.fd-line-column { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 11em); gap: 8px; align-items: center; }
+.fd-line-column-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fd-text); }
+.fd-line-column > select { grid-column: 3; }
 `;

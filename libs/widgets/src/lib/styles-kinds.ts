@@ -23,6 +23,7 @@ export const KINDS_CSS = /* css */ `
 }
 .fd-signature-tools { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; width: 100%; }
 .fd-signature-typed { flex: 1 1 200px; min-width: 0; }
+.fd-signature-footer { margin-block-start: -4px; color: var(--fd-muted); font-size: 12.5px; }
 /* A slider: the value beside the track and its ends under it; dimmed until it is slid. */
 .fd-slider { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 14px; row-gap: 0; align-items: center; width: 100%; max-width: 440px; min-width: 0; }
 .fd-slider-track { display: contents; }
@@ -89,7 +90,8 @@ export const KINDS_CSS = /* css */ `
 /* An address: its parts in two columns, the street across both, each named above its box; one column when narrow. */
 .fd-address { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; width: 100%; max-width: 560px; min-width: 0; }
 .fd-address-part { display: grid; gap: 3px; min-width: 0; align-content: start; }
-.fd-address-street { grid-column: 1 / -1; }
+.fd-address-street, .fd-address-line2 { grid-column: 1 / -1; }
+.fd-address-part.fd-required > .fd-address-label::after { content: " *"; color: var(--fd-error); }
 .fd-address-label { font-size: 12.5px; color: var(--fd-muted); }
 @container (max-width: 420px) { .fd-address { grid-template-columns: minmax(0, 1fr); } }
 /* A repeating group: each line a card of its fields under its numbered title, × at its end; "Add another" under the cards. */
@@ -100,10 +102,12 @@ export const KINDS_CSS = /* css */ `
   display: grid; gap: 8px; min-width: 0; padding: 10px 14px 14px;
   background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: max(var(--fd-radius), 6px);
 }
-.fd-repeat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; }
-.fd-repeat-title { font-weight: 600; font-size: 13.5px; }
-.fd-repeat-remove { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 18px; line-height: 1; padding: 4px 8px; border-radius: 4px; }
+.fd-repeat-head { display: flex; align-items: center; gap: 2px; min-height: 28px; }
+.fd-repeat-title { font-weight: 600; font-size: 13.5px; margin-inline-end: auto; }
+.fd-repeat-remove, .fd-repeat-tool { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 18px; line-height: 1; padding: 4px 8px; border-radius: 4px; }
 .fd-repeat-remove:hover { color: var(--fd-error); background: var(--fd-error-soft); }
+.fd-repeat-tool { font-size: 15px; }
+.fd-repeat-tool:hover { color: var(--fd-accent); background: var(--fd-accent-soft); }
 .fd-repeat-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px 14px; }
 .fd-repeat-field { display: grid; gap: 3px; min-width: 0; align-content: start; }
 .fd-repeat-label { font-size: 12.5px; color: var(--fd-muted); }

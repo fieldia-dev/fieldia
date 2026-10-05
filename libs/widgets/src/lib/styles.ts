@@ -282,6 +282,8 @@ const SKINS_CSS = /* css */ `
   display: inline-flex; align-items: center; gap: 4px; padding: 1px 4px 1px 10px; border-radius: 999px;
   background: var(--fd-accent-soft); color: var(--fd-text); font-size: 13px; line-height: 22px;
 }
+button.fd-chip-label { border: none; padding: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
+button.fd-chip-label:hover { text-decoration: underline; }
 .fd-chip-remove { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 15px; line-height: 1; padding: 0 4px; border-radius: 999px; }
 .fd-chip-remove:hover { color: var(--fd-error); }
 .fd-tags .fd-combo { flex: 1 1 140px; }
@@ -299,6 +301,8 @@ const SKINS_CSS = /* css */ `
 .fd-lines-table .fd-input { min-height: 28px; }
 /* A yes/no cell sits level with the inputs beside it. */
 .fd-lines-table td > .fd-checkbox, .fd-lines-table td > .fd-switch { margin-block-start: 6px; }
+.fd-lines-table .fd-lines-grip { width: 1px; min-width: 0; padding-inline: 6px 2px; }
+.fd-line-grip { display: block; margin-block-start: 7px; cursor: grab; }
 .fd-line-delete { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
 .fd-line-delete:hover { color: var(--fd-error); background: var(--fd-error-soft); }
 .fd-lines-totals td { padding: 8px; font-weight: 600; border-block-start: 1px solid var(--fd-border); font-variant-numeric: tabular-nums; }
@@ -341,7 +345,7 @@ const SKINS_CSS = /* css */ `
 .fd-file-size { color: var(--fd-muted); font-size: 12.5px; font-variant-numeric: tabular-nums; unicode-bidi: plaintext; }
 .fd-file-remove { flex: none; width: 32px; height: 32px; border: none; border-radius: 999px; background: none; color: var(--fd-muted); font-size: 20px; line-height: 1; cursor: pointer; }
 .fd-file-remove:hover { color: var(--fd-error); background: var(--fd-error-soft); }
-.fd-file-confirm:not([hidden]) { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.fd-file-confirm:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
 .fd-file-note:empty { display: none; }
 .fd-file-note { color: var(--fd-warning); }
 /* Thumbnails: tiles in a row that wraps, the picker the last of them. */
@@ -652,6 +656,13 @@ const SKINS_CSS = /* css */ `
 .fd-block { min-width: 0; }
 .fd-spacer { min-height: 24px; }
 .fd-image { display: block; max-width: 100%; height: auto; border-radius: var(--fd-radius); }
+/* A picture's width, by name or in pixels, its place in its row, its link and its caption. */
+.fd-figure { display: grid; justify-items: start; gap: 6px; margin: 0; }
+.fd-figure[data-align="center"] { justify-items: center; }
+.fd-figure[data-align="end"] { justify-items: end; }
+.fd-figure > a, .fd-figure .fd-image { width: var(--fd-image-width, auto); max-width: 100%; }
+.fd-figure > a { display: block; border-radius: var(--fd-radius); }
+.fd-caption { font-size: 13px; color: var(--fd-muted); }
 .fd-text-paragraph { margin: 0; }
 .fd-text-note { margin: 0; color: var(--fd-muted); font-size: 13px; }
 .fd-status { min-height: 1.4em; color: var(--fd-muted); font-size: 13px; }

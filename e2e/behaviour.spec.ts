@@ -285,10 +285,11 @@ test.describe('every field', () => {
   test('adds up the milestones’ hours and amounts under the table, and follows a change', async ({ page }) => {
     await open(page, variant, 'page=fields&skin=outlined');
     const totals = node(page, 'f-milestones').locator('tfoot td');
-    await expect(totals).toHaveText(['Total', '', '76.0', 'EGP 425,000.00', '', '', '']);
+    // The first column holds each line's grip.
+    await expect(totals).toHaveText(['', 'Total', '', '76.0', 'EGP 425,000.00', '', '', '']);
     const hours = node(page, 'f-milestones').locator('tbody tr').first().getByLabel('Hours');
     await hours.fill('20');
-    await expect(totals.nth(2)).toHaveText('84.0');
+    await expect(totals.nth(3)).toHaveText('84.0');
     await node(page, 'f-milestones').scrollIntoViewIfNeeded();
     await screen(page, `${variant}-fields-totals`);
   });
@@ -302,7 +303,7 @@ test.describe('every field', () => {
     await budget.press('Tab');
     await expect(budget).toHaveValue('2.000.000,50');
     expect(await value(page, 'budget')).toBe(2000000.5);
-    await expect(node(page, 'f-milestones').locator('tfoot td').nth(3)).toHaveText('EGP 425.000,00');
+    await expect(node(page, 'f-milestones').locator('tfoot td').nth(4)).toHaveText('EGP 425.000,00');
     await budget.scrollIntoViewIfNeeded();
     await screen(page, `${variant}-fields-german-numbers`);
   });

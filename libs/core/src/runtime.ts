@@ -104,3 +104,4 @@ export {
 } from './lib/record/form';
 export { MESSAGES, fill, type Messages, type Locale } from './lib/record/messages';
 export { dayOf } from './lib/record/limits';
+export { ADDRESS_PARTS } from './lib/record/structures';

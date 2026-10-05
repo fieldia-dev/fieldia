@@ -6,7 +6,7 @@
   "data": {"kind": "responses"},
   "fields": {
     "name": {"type": "char", "label": "Your name", "required": true},
-    "signature": {"type": "binary", "label": "Your signature", "help": "Draw it, or type your name."},
+    "signature": {"type": "binary", "label": "Your signature", "help": "Draw it, type your name, or upload a picture of it."},
     "office_days": {"type": "integer", "label": "How many days a week will you come in?", "min": 0, "max": 5},
     "commute": {"type": "float", "label": "How long is your trip to the new building, in hours?", "min": 0, "max": 3, "digits": [3, 1]},
     "rooms": {"type": "selection", "label": "Which rooms will you use?", "multiple": true,
@@ -137,7 +137,7 @@
           {"type": "field", "id": "q-days", "field": "office_days", "widget": "slider"},
           {"type": "field", "id": "q-commute", "field": "commute", "widget": "slider", "options": {"step": 0.5, "startLabel": "Next door", "endLabel": "Three hours"}},
           {"type": "field", "id": "q-rooms", "field": "rooms", "widget": "tags"},
-          {"type": "field", "id": "q-address", "field": "badge_address", "widget": "address", "options": {"parts": ["street", "city", "postcode"]}}
+          {"type": "field", "id": "q-address", "field": "badge_address", "widget": "address", "options": {"parts": ["street", "line2", "city", "postcode", "country"], "requiredParts": ["street", "city"], "country": "EG"}}
         ]
       },
       {
@@ -145,6 +145,7 @@
         "id": "s-place",
         "title": "Your place",
         "children": [
+          {"type": "image", "id": "q-plan", "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 160'%3E%3Crect width='320' height='160' fill='%23f4f1ea'/%3E%3Cg fill='none' stroke='%232f5d8a' stroke-width='4'%3E%3Crect x='10' y='10' width='300' height='140'/%3E%3Cpath d='M130 10v80H10M130 90h70v60M200 60h110'/%3E%3C/g%3E%3Cg fill='%237fb3d5'%3E%3Crect x='24' y='24' width='20' height='12'/%3E%3Crect x='56' y='24' width='20' height='12'/%3E%3Crect x='88' y='24' width='20' height='12'/%3E%3Crect x='24' y='56' width='20' height='12'/%3E%3Crect x='56' y='56' width='20' height='12'/%3E%3Crect x='88' y='56' width='20' height='12'/%3E%3C/g%3E%3Cg font-family='sans-serif' font-size='13' fill='%232f5d8a'%3E%3Ctext x='24' y='120'%3EOpen desks%3C/text%3E%3Ctext x='214' y='40'%3EMeeting%3C/text%3E%3Ctext x='214' y='112'%3EKitchen%3C/text%3E%3C/g%3E%3C/svg%3E", "alt": "A plan of the new floor: open desks by the windows, a meeting room and the kitchen", "width": "medium", "align": "center", "caption": "The new floor, seen from above"},
           {"type": "field", "id": "q-desk", "field": "desk", "widget": "image-choice"},
           {"type": "field", "id": "q-kitchen", "field": "kitchen", "widget": "image-choice", "options": {"imageSize": "small", "imageFit": "whole", "columns": 3}},
           {"type": "field", "id": "q-priorities", "field": "priorities", "widget": "ranking", "options": {"shuffle": true}},
@@ -192,7 +193,7 @@
         "id": "s-sign",
         "title": "Sign it off",
         "children": [
-          {"type": "field", "id": "q-signature", "field": "signature", "widget": "signature"}
+          {"type": "field", "id": "q-signature", "field": "signature", "widget": "signature", "options": {"footerLabel": "I agree to move on the day above", "upload": true}}
         ]
       }
     ]

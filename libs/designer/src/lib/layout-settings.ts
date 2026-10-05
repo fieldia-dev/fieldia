@@ -1,4 +1,4 @@
-import type { ButtonNode, ColumnCount, ColumnsByWidth, LabelPlace, Page, PageLook, SectionNode, TextNode } from '@fieldia/core';
+import type { ButtonNode, ColumnCount, ColumnsByWidth, ImageNode, LabelPlace, Page, PageLook, SectionNode, TextNode } from '@fieldia/core';
 import { columnsValue, setSpan, SPANNED } from './layout-ops';
 import { across, isSection, locate, nodeOf, rowsOf, spanOf, type Holder, type Part } from './layout-tree';
 import { fill, fromTwelfths, inTwelfths, isGroup, keepsFull, laidInTwelfths, resize, toTwelfths, TWELVE, twelfthsAhead } from './layout-twelfths';
@@ -131,20 +131,28 @@ export function setLook(page: Page, change: LookPatch): void {
   else delete page.look;
 }
 
-/** A block's own words and look: words and how they read, a button's label and look, a picture's address and description. */
+/**
+ * A block's own words and look: words and how they read, a button's label and
+ * look, a picture's address and description — and its width, its place in its
+ * row, the address it opens and its caption; `null` or empty takes one away.
+ */
 export interface BlockPatch {
   text?: string;
   style?: string;
   label?: string;
   src?: string;
   alt?: string;
+  width?: ImageNode['width'] | null;
+  align?: ImageNode['align'] | null;
+  href?: string;
+  caption?: string;
 }
 
 export function updateBlock(page: Page, id: string, patch: BlockPatch): void {
   const node = locate(page, id)?.node;
   if (!node) throw new Refusal(`There is no part “${id}”`);
   if (node.type === 'text') {
-    if (patch.label !== undefined || patch.src !== undefined || patch.alt !== undefined) throw new Refusal('Words have text, not a label');
+    if (patch.label !== undefined || patch.src !== undefined || patch.alt !== undefined || patch.caption !== undefined) throw new Refusal('Words have text, not a label');
     if (patch.text !== undefined) node.text = patch.text;
     if (patch.style !== undefined) node.style = patch.style as TextNode['style'];
   } else if (node.type === 'button') {
@@ -158,7 +166,25 @@ export function updateBlock(page: Page, id: string, patch: BlockPatch): void {
       node.src = patch.src.trim();
     }
     if (patch.alt !== undefined) node.alt = patch.alt;
+    pictureLook(node, patch);
   } else throw new Refusal('Only words, a button or a picture are changed here');
+}
+
+/** A picture's width, place, link and caption, each checked; `null` or empty takes one away. */
+function pictureLook(node: ImageNode, patch: BlockPatch): void {
+  const { width, align, href, caption } = patch;
+  if (width !== undefined && width !== null && typeof width === 'number' && !(Number.isInteger(width) && width >= 16 && width <= 4000)) throw new Refusal('A picture’s width is 16 to 4000 pixels');
+  const link = href?.trim();
+  if (link && !/^(https?:\/\/|mailto:)\S+$/i.test(link)) throw new Refusal('A link is a web address, https://…, or a mail address, mailto:…');
+  const set = <K extends 'width' | 'align' | 'href' | 'caption'>(key: K, value: ImageNode[K] | null | undefined) => {
+    if (value === undefined) return;
+    if (value === null || value === '') delete node[key];
+    else node[key] = value;
+  };
+  set('width', width);
+  set('align', align);
+  set('href', link === undefined ? undefined : link);
+  set('caption', caption);
 }
 
 /**

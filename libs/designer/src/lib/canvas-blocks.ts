@@ -76,6 +76,10 @@ export function blockViews(options: { el: ElementFactory; doc: Document; designe
       else if (node.type === 'image') {
         if (element.getAttribute('src') !== node.src) element.setAttribute('src', node.src);
         element.setAttribute('alt', node.alt);
+        // As wide, and where in its row, as the form draws it.
+        const width = typeof node.width === 'number' ? `${node.width}px` : node.width ? { small: '160px', medium: '320px', large: '480px', full: '100%' }[node.width] : '';
+        element.style.setProperty('--fd-image-width', width || null);
+        element.style.justifySelf = node.align ?? '';
       } else if (node.type === 'slot') element.textContent = node.name;
       const span = node.type === 'divider' ? undefined : (node as { colspan?: number }).colspan;
       if (span) element.style.setProperty('--fd-span', String(span));

@@ -64,6 +64,7 @@
     "client_id": { "type": "many2one", "label": "Client", "relation": "partner" },
     "tag_ids": { "type": "many2many", "label": "Tags", "relation": "partner.tag" },
     "team_ids": { "type": "many2many", "label": "Team", "relation": "employee" },
+    "partner_ids": { "type": "many2many", "label": "Also billed to", "relation": "partner" },
     "approver_id": {
       "type": "many2one",
       "label": "Signs off the design",
@@ -200,6 +201,7 @@
           { "type": "field", "id": "f-tags", "field": "tag_ids" },
           { "type": "field", "id": "f-team", "field": "team_ids", "widget": "tags" },
           { "type": "field", "id": "f-approver", "field": "approver_id" },
+          { "type": "field", "id": "f-partners", "field": "partner_ids" },
           { "type": "field", "id": "f-services", "field": "service_ids", "widget": "checkboxes", "colspan": 2 }
         ]
       },
@@ -207,7 +209,7 @@
         "type": "section",
         "id": "s-lines",
         "title": "Lines",
-        "children": [{ "type": "field", "id": "f-milestones", "field": "milestone_ids", "totals": ["hours", "amount"] }]
+        "children": [{ "type": "field", "id": "f-milestones", "field": "milestone_ids", "totals": ["hours", "amount"], "options": { "max": 8, "addLabel": "Add a milestone", "emptyLabel": "No milestones yet: add the first.", "confirmDelete": true } }]
       },
       {
         "type": "section",

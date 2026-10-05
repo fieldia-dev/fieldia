@@ -66,6 +66,8 @@ const TOOLS: [keyof WidgetLabels, string, string][] = [
   ['bold', 'bold', '<b>B</b>'],
   ['italic', 'italic', '<i>I</i>'],
   ['underline', 'underline', '<u>U</u>'],
+  // A heading, or back to words: the text style list's first two, in one press.
+  ['heading', 'heading', '<b>H</b>'],
   ['bulletList', 'insertUnorderedList', '<svg viewBox="0 0 16 16"><circle cx="3" cy="4" r="1.2"/><circle cx="3" cy="8" r="1.2"/><circle cx="3" cy="12" r="1.2"/><path d="M6 4h8M6 8h8M6 12h8"/></svg>'],
   ['numberList', 'insertOrderedList', '<svg viewBox="0 0 16 16"><path d="M2.5 3h1v3M2 10.5c.5-.8 2-.8 2 .2 0 .8-2 1.3-2 2.3h2M6 4h8M6 8h8M6 12h8"/></svg>'],
   ['alignLeft', 'justifyLeft', '<svg viewBox="0 0 16 16"><path d="M2 3.5h12M2 6.5h8M2 9.5h12M2 12.5h8"/></svg>'],
@@ -213,10 +215,11 @@ function formattingToolbar(area: HTMLElement, doc: Document, labels: WidgetLabel
     button.title = labels[key];
     button.innerHTML = icon;
     button.querySelector('svg')?.setAttribute('aria-hidden', 'true');
-    if (['bold', 'italic', 'underline'].includes(command)) button.setAttribute('aria-pressed', 'false');
+    if (['bold', 'italic', 'underline', 'heading'].includes(command)) button.setAttribute('aria-pressed', 'false');
     // Keep the text's selection when the button is pressed.
     button.addEventListener('mousedown', (event) => event.preventDefault());
     button.addEventListener('click', () => {
+      if (command === 'heading') return run('formatBlock', style.value === 'h2' ? '<p>' : '<h2>');
       if (command !== 'createLink') return run(command);
       linkRow.hidden = false;
       address.value = '';
@@ -246,12 +249,12 @@ function formattingToolbar(area: HTMLElement, doc: Document, labels: WidgetLabel
     const selection = doc.getSelection();
     if (!selection || !selection.rangeCount || !area.contains(selection.anchorNode)) return;
     lastRange = selection.getRangeAt(0).cloneRange();
-    for (const button of buttons) {
-      const command = TOOLS[buttons.indexOf(button)][1];
-      if (button.hasAttribute('aria-pressed')) button.setAttribute('aria-pressed', String(doc.queryCommandState?.(command) ?? false));
-    }
     const block = String(doc.queryCommandValue?.('formatBlock') ?? '').toLowerCase().replace(/[<>]/g, '');
     style.value = block === 'h2' || block === 'h3' ? block : 'p';
+    for (const button of buttons) {
+      const command = TOOLS[buttons.indexOf(button)][1];
+      if (button.hasAttribute('aria-pressed')) button.setAttribute('aria-pressed', String(command === 'heading' ? block === 'h2' : (doc.queryCommandState?.(command) ?? false)));
+    }
   };
   doc.addEventListener('selectionchange', reflect);
   return { bar, linkRow, destroy: () => doc.removeEventListener('selectionchange', reflect) };

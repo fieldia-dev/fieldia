@@ -444,9 +444,24 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const element =
       node.type === 'divider' ? el('hr', { class: 'fd-divider', 'data-node': node.id })
       : node.type === 'spacer' ? el('div', { class: 'fd-block fd-spacer', 'aria-hidden': 'true', 'data-node': node.id })
-      : el('img', { class: 'fd-block fd-image', src: node.src, alt: node.alt, loading: 'lazy', 'data-node': node.id });
+      : figure(node);
     if (node.type !== 'divider' && node.colspan) element.style.setProperty('--fd-span', String(node.colspan));
     hideWhen(element, node.id);
+    return element;
+  }
+
+  /** A picture as wide and where its page says, opening its link in a new tab — a web or mail address only — its caption under it. */
+  function figure(node: ImageNode): HTMLElement {
+    const image = el('img', { class: 'fd-image', src: node.src, alt: node.alt, loading: 'lazy' });
+    const href = node.href && /^(https?:\/\/|mailto:)/i.test(node.href) ? node.href : undefined;
+    const element = el(
+      'figure',
+      { class: 'fd-block fd-figure', 'data-node': node.id, 'data-align': node.align },
+      href ? el('a', { href, target: '_blank', rel: 'noopener noreferrer' }, image) : image,
+      ...(node.caption ? [el('figcaption', { class: 'fd-caption' }, node.caption)] : [])
+    );
+    const width = typeof node.width === 'number' ? `${node.width}px` : node.width && { small: '160px', medium: '320px', large: '480px', full: '100%' }[node.width];
+    if (width) element.style.setProperty('--fd-image-width', width);
     return element;
   }
 

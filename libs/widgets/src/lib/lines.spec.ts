@@ -44,7 +44,8 @@ function type(input: HTMLInputElement, text: string) {
 describe('one2many lines', () => {
   it('shows the chosen columns as a table', () => {
     const { el } = mount();
-    expect([...el.querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['Product', 'Quantity', '']);
+    // A grip to move each line by comes first.
+    expect([...el.querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['', 'Product', 'Quantity', '']);
   });
 
   it('adds a line and focuses its first cell', () => {
@@ -92,7 +93,7 @@ describe('one2many lines', () => {
     const { form, el } = mount();
     form.addLine('line_ids', { quantity: 0 });
     form.validate();
-    const cells = rows(el)[0].querySelectorAll('td');
+    const cells = rows(el)[0].querySelectorAll('td:not(.fd-lines-grip)');
     expect(cells[0].querySelector('.fd-cell-error')?.textContent).toBe('Product is required');
     expect(cells[1].querySelector('.fd-cell-error')?.textContent).toBe('Quantity must be at least 1');
     expect(cells[1].querySelector('input')?.getAttribute('aria-invalid')).toBe('true');
@@ -151,7 +152,7 @@ describe('one2many lines with sections and notes', () => {
 
   it('never shows the field that says what a line is, or the one that keeps their order, as a column', () => {
     const { el } = mountSectioned();
-    expect([...el.querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['Product', 'Description', 'Quantity', '']);
+    expect([...el.querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['', 'Product', 'Description', 'Quantity', '']);
   });
 
   it('shows a section as one wide heading and a note as one wide text, each with its delete button', () => {
@@ -161,10 +162,10 @@ describe('one2many lines with sections and notes', () => {
     form.addLine('line_ids', { display_type: 'note', name: 'Fitted on delivery day.' });
     const [section, item, note] = rows(el);
     expect(section.classList.contains('fd-line-section')).toBe(true);
-    expect(section.querySelectorAll('td')).toHaveLength(2);
-    expect((section.querySelector('td') as HTMLTableCellElement).colSpan).toBe(3);
+    expect(section.querySelectorAll('td')).toHaveLength(3);
+    expect((section.querySelectorAll('td')[1] as HTMLTableCellElement).colSpan).toBe(3);
     expect((section.querySelector('input') as HTMLInputElement).value).toBe('Workstations');
-    expect(item.querySelectorAll('td')).toHaveLength(4);
+    expect(item.querySelectorAll('td')).toHaveLength(5);
     expect(note.classList.contains('fd-line-note')).toBe(true);
     expect((note.querySelector('textarea') as HTMLTextAreaElement).value).toBe('Fitted on delivery day.');
     expect(note.querySelector('[aria-label="Delete line"]')).not.toBeNull();
@@ -198,9 +199,9 @@ describe('one2many lines with sections and notes', () => {
     const first = form.addLine('line_ids', { quantity: 2 });
     form.addLine('line_ids', { quantity: 5 });
     const footer = () => [...widget.element.querySelectorAll('tfoot td')].map((td) => td.textContent);
-    expect(footer()).toEqual(['Total', '', '7', '']);
+    expect(footer()).toEqual(['', 'Total', '', '7', '']);
     form.updateLine('line_ids', first, 'quantity', 10);
-    expect(footer()).toEqual(['Total', '', '15', '']);
+    expect(footer()).toEqual(['', 'Total', '', '15', '']);
   });
 
   it('leaves out an optional column the page starts hidden', () => {
@@ -208,7 +209,7 @@ describe('one2many lines with sections and notes', () => {
     optional.layout.children[0] = { ...optional.layout.children[0], optionalColumns: { quantity: 'hide', name: 'show' } };
     const form = createForm({ page: optional });
     const widget = createWidget({ form, name: 'line_ids', field: optional.fields['line_ids'] as Field, node: optional.layout.children[0], id: 'fd-lines', document, labels: WIDGET_LABELS.en });
-    expect([...widget.element.querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['Product', 'Description', '']);
+    expect([...widget.element.querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['', 'Product', 'Description', '']);
   });
 
   it('offers no section or note buttons to lines without kinds', () => {
