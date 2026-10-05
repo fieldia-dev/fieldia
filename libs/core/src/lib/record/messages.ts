@@ -61,6 +61,11 @@ export interface Messages {
   before: string;
   after: string;
   weekday: string;
+  /** A table's or a repeating group's lines: fewer than its least, more than its most. */
+  minLines: string;
+  maxLines: string;
+  /** An address's parts, as its boxes name them, for one that must be filled: street, line 2, city, region, postcode, country. */
+  addressParts: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
 }
@@ -113,6 +118,9 @@ export const MESSAGES: Record<Locale, Messages> = {
     before: '{label} can’t be before {min}',
     after: '{label} can’t be after {max}',
     weekday: '{label} can’t be on a {days}',
+    minLines: 'Add at least {min} to {label}',
+    maxLines: 'Too many in {label}: at most {max}',
+    addressParts: 'Street address|Address line 2|City|State or region|Postcode|Country',
     locale: 'en',
   },
   ar: {
@@ -160,6 +168,9 @@ export const MESSAGES: Record<Locale, Messages> = {
     before: 'لا يمكن أن يكون {label} قبل {min}',
     after: 'لا يمكن أن يكون {label} بعد {max}',
     weekday: 'لا يمكن أن يكون {label} يوم {days}',
+    minLines: 'أضف إلى {label} ما لا يقل عن {min}',
+    maxLines: 'عدد ما في {label} أكثر من {max}',
+    addressParts: 'عنوان الشارع|سطر العنوان 2|المدينة|المحافظة أو المنطقة|الرمز البريدي|الدولة',
     locale: 'ar',
   },
   de: {
@@ -207,6 +218,9 @@ export const MESSAGES: Record<Locale, Messages> = {
     before: '{label}: frühestens {min}',
     after: '{label}: spätestens {max}',
     weekday: '{label} darf nicht auf einen {days} fallen',
+    minLines: 'Fügen Sie {label} mindestens {min} hinzu',
+    maxLines: 'Zu viele in {label}: höchstens {max}',
+    addressParts: 'Straße und Hausnummer|Adresszeile 2|Ort|Bundesland oder Region|Postleitzahl|Land',
     locale: 'de',
   },
   fr: {
@@ -254,6 +268,9 @@ export const MESSAGES: Record<Locale, Messages> = {
     before: '{label} : au plus tôt {min}',
     after: '{label} : au plus tard {max}',
     weekday: '{label} ne peut pas tomber un {days}',
+    minLines: 'Ajoutez au moins {min} à {label}',
+    maxLines: 'Trop d’éléments dans {label} : {max} au plus',
+    addressParts: 'Adresse|Complément d’adresse|Ville|État ou région|Code postal|Pays',
     locale: 'fr',
   },
 };
