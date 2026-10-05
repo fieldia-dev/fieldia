@@ -17,6 +17,14 @@ import { INPUTS_CSS } from './styles-inputs';
  */
 import { LAYOUT_CSS } from './layout-styles';
 
+/**
+ * The widths of a form at which its groups take their medium and their narrow
+ * columns: up to 760px and up to 520px of the form's own width, as the
+ * stylesheet's @container rules say (a spec holds the two together). What
+ * shows a form at a width — the designer's canvas — asks these.
+ */
+export const FORM_WIDTHS = { medium: 760, narrow: 520 } as const;
+
 /** The skins and the parts' chrome. One literal, so the script bundle can minify it as CSS. */
 const SKINS_CSS = /* css */ `
 /* .fd-theme carries the same tokens for things outside a form, such as a dialog over the page. One inside a form
