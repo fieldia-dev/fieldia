@@ -17,6 +17,7 @@ const start = params.get('start') === 'survey' ? pages['survey'] : params.get('s
 // The app's own kind, an IBAN, and the widget that draws it; and a stand-in for the app's own assistant.
 const assistant = demoAssistant({ delay: Number(params.get('assistant-delay') ?? 1200) });
 const opened = timeFirstPaint('designer');
+// No `looks` given: the looks people save are kept in this browser, and offered by both designer demos.
 const designer = createDesigner({ page: start, store, lists: APP_LISTS, kinds: APP_KINDS, assistant });
 const handle = mountSurveyEditor(document.getElementById('app') as HTMLElement, { designer, skin: (params.get('skin') as Skin) ?? 'outlined', dataSource: sampleDataSource(), widgets: APP_WIDGETS });
 opened();

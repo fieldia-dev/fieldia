@@ -140,4 +140,41 @@ const assistant: DesignerAssistant = {
 createDesigner({ page, assistant }); // or mountSurveyEditor(host, { designer, assistant })
 ```
 
+### Looks of your own
+
+The Look tab (the Look sheet, in the survey editor) starts with Fieldia's
+presets. Once a look is your own, "Save this look…" names it in a box on the
+page, and it shows under "Your looks", to put on any other page as a preset is:
+its accent, font, spacing, corners and colours, as one undo step. Where labels
+sit is the layout's, so a look never carries it. Each look is renamed or
+removed from the menu on its tile; a removal leaves Undo at hand.
+
+Without a store of the app's, looks are kept in this browser
+(`createBrowserLookStore`), so they are offered again after a reload, and every
+editor on the page shares them. An app keeps them for a whole workspace with a
+`LookStore` of its own; renaming saves the same id under its new name. A store
+that rejects is said in the editor, in its error's words.
+
+```ts
+import { createDesigner, type LookStore } from '@fieldia/designer';
+
+const looks: LookStore = {
+  async list() {
+    const reply = await fetch('/api/workspace/looks');
+    if (!reply.ok) throw new Error('The looks could not be fetched'); // said in the editor
+    return reply.json(); // [{ id, name, look: { accent, font, density, corners, scheme } }]
+  },
+  async save(look) {
+    const reply = await fetch(`/api/workspace/looks/${look.id}`, { method: 'PUT', body: JSON.stringify(look) });
+    if (!reply.ok) throw new Error('The workspace is read-only for you');
+  },
+  async remove(id) {
+    await fetch(`/api/workspace/looks/${id}`, { method: 'DELETE' });
+  },
+};
+createDesigner({ page, looks }); // the same store for every designer, so they offer the same looks
+```
+
+`createMemoryLookStore()` keeps them for as long as the page is open, as for a test.
+
 MIT licensed.
