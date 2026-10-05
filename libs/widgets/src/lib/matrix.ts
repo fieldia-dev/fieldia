@@ -1,13 +1,17 @@
 import type { Field, Value } from '@fieldia/core';
+import { setAttr } from './kind-parts';
+import { shownOptions } from './shuffle';
 import type { WidgetFactory } from './widgets';
 
 /**
  * A matrix question: rows down the side, columns across — a Likert grid. Each
  * row is a group of radios (or of boxes when several may be chosen), named by
- * its row for screen readers, so the arrow keys move within a row. The table
- * scrolls sideways inside its own box when the screen is narrow.
+ * its row for screen readers, so the arrow keys move within a row. On a phone
+ * each row is a card, its answers listed with their columns' words.
+ * `options.shuffle` shows the rows in an order of the form's own; with
+ * `onePerColumn`, a column picked in one row leaves the row that had it.
  */
-export const matrixWidget: WidgetFactory = ({ form, name, field, id, document }) => {
+export const matrixWidget: WidgetFactory = ({ form, name, field, node, id, document }) => {
   const def = field as Extract<Field, { type: 'matrix' }>;
   const kind = def.multiple ? 'checkbox' : 'radio';
   const make = <K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, ...children: (Node | string)[]) => {
@@ -20,14 +24,20 @@ export const matrixWidget: WidgetFactory = ({ form, name, field, id, document })
   table.append(make('thead', {}, make('tr', {}, make('th', { scope: 'col' }), ...def.columns.map((c) => make('th', { scope: 'col' }, c.label)))));
   const body = make('tbody');
   const inputs: HTMLInputElement[] = [];
-  for (const row of def.rows) {
+  const rows: HTMLElement[] = [];
+  for (const row of shownOptions(def.rows, form, name, node)) {
     const tr = make('tr', { role: kind === 'radio' ? 'radiogroup' : 'group', 'aria-label': row.label });
+    rows.push(tr);
     tr.append(make('th', { scope: 'row' }, row.label));
     for (const column of def.columns) {
       const input = make('input', { type: kind, name: `${id}-${row.value}`, value: String(column.value), 'data-row': String(row.value), 'aria-label': `${row.label}: ${column.label}` }) as HTMLInputElement;
-      input.addEventListener('change', save);
+      input.addEventListener('change', () => {
+        if (def.onePerColumn && input.checked) for (const other of inputs) if (other.value === input.value && other !== input) other.checked = false;
+        save();
+      });
       inputs.push(input);
-      tr.append(make('td', {}, input));
+      // The column's words beside the box, seen on a phone's card.
+      tr.append(make('td', {}, make('label', { class: 'fd-matrix-pick' }, input, make('span', { class: 'fd-matrix-column' }, column.label))));
     }
     body.append(tr);
   }
@@ -57,6 +67,8 @@ export const matrixWidget: WidgetFactory = ({ form, name, field, id, document })
         input.disabled = state.readonly;
       }
       table.setAttribute('aria-invalid', String(state.invalid));
+      // A row of radios is a radio group, which ARIA lets say it is required.
+      if (kind === 'radio') for (const tr of rows) setAttr(tr, 'aria-required', String(state.required));
       // A table cannot be marked required in ARIA; the question's label says it.
       if (state.describedBy) table.setAttribute('aria-describedby', state.describedBy);
       else table.removeAttribute('aria-describedby');

@@ -86,6 +86,13 @@ export interface WidgetLabels {
   loadingChoices: string;
   choicesFailed: string;
   notOffered: string;
+  /** A yes or no as two buttons. */
+  yes: string;
+  no: string;
+  /** Said once as many boxes are ticked as a question takes (`{n}`). */
+  upTo: string;
+  /** A ranking: taking the order shown as the answer. */
+  keepOrder: string;
 }
 
 export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
@@ -156,6 +163,10 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     loadingChoices: 'Loading choices…',
     choicesFailed: 'Load the choices again',
     notOffered: '{name}: no longer offered',
+    yes: 'Yes',
+    no: 'No',
+    upTo: 'Up to {n}',
+    keepOrder: 'Keep this order',
   },
   ar: {
     search: 'بحث…',
@@ -224,6 +235,10 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     loadingChoices: 'تحميل الخيارات…',
     choicesFailed: 'أعد تحميل الخيارات',
     notOffered: '{name}: لم يعد متاحًا',
+    yes: 'نعم',
+    no: 'لا',
+    upTo: 'حتى {n}',
+    keepOrder: 'أبقِ هذا الترتيب',
   },
   de: {
     search: 'Suchen…',
@@ -292,6 +307,10 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     loadingChoices: 'Auswahl lädt…',
     choicesFailed: 'Auswahl neu laden',
     notOffered: '{name}: nicht mehr angeboten',
+    yes: 'Ja',
+    no: 'Nein',
+    upTo: 'Bis zu {n}',
+    keepOrder: 'Diese Reihenfolge behalten',
   },
   fr: {
     search: 'Rechercher…',
@@ -360,5 +379,9 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     loadingChoices: 'Chargement des choix…',
     choicesFailed: 'Recharger les choix',
     notOffered: '{name} : plus proposé',
+    yes: 'Oui',
+    no: 'Non',
+    upTo: 'Jusqu’à {n}',
+    keepOrder: 'Garder cet ordre',
   },
 };

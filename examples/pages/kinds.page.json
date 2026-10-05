@@ -9,7 +9,7 @@
     "signature": {"type": "binary", "label": "Your signature", "help": "Draw it, or type your name."},
     "office_days": {"type": "integer", "label": "How many days a week will you come in?", "min": 0, "max": 5},
     "commute": {"type": "float", "label": "How long is your trip to the new building, in hours?", "min": 0, "max": 3, "digits": [3, 1]},
-    "rooms": {"type": "selection", "label": "Which rooms will you use?", "multiple": true,
+    "rooms": {"type": "selection", "label": "Which rooms will you use?", "multiple": true, "ownAnswers": true,
       "options": [
         {"value": "kitchen", "label": "Kitchen"},
         {"value": "quiet", "label": "Quiet room"},
@@ -21,10 +21,10 @@
     },
     "desk": {"type": "selection", "label": "Which desk would you like?",
       "options": [
-        {"value": "standing", "label": "Standing desk", "image": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 120'%3E%3Crect width='160' height='120' fill='%23e3eefb'/%3E%3Crect y='100' width='160' height='20' fill='%2300000014'/%3E%3Crect x='42' y='52' width='76' height='6' rx='2' fill='%232f5d8a'/%3E%3Crect x='54' y='58' width='5' height='44' fill='%234b6f93'/%3E%3Crect x='101' y='58' width='5' height='44' fill='%234b6f93'/%3E%3Crect x='62' y='24' width='36' height='24' rx='2' fill='%231f2d3d'/%3E%3Crect x='77' y='48' width='6' height='4' fill='%231f2d3d'/%3E%3Ccircle cx='128' cy='34' r='9' fill='%23f5b14c'/%3E%3C/svg%3E"},
-        {"value": "corner", "label": "Corner desk", "image": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 120'%3E%3Crect width='160' height='120' fill='%23f3ece2'/%3E%3Crect y='100' width='160' height='20' fill='%2300000014'/%3E%3Cpath d='M28 60h104v8H44v34h-8V68h-8z' fill='%238a5a2f'/%3E%3Crect x='124' y='68' width='8' height='34' fill='%23a0703f'/%3E%3Crect x='34' y='30' width='32' height='22' rx='2' fill='%231f2d3d'/%3E%3Crect x='48' y='52' width='4' height='8' fill='%231f2d3d'/%3E%3Crect x='92' y='40' width='22' height='20' rx='3' fill='%235f8f5a'/%3E%3Cpath d='M103 40c-6-10 4-16 0-24 8 6 6 14 0 24z' fill='%237fb36f'/%3E%3C/svg%3E"},
-        {"value": "bench", "label": "Shared bench", "image": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 120'%3E%3Crect width='160' height='120' fill='%23e7f3ec'/%3E%3Crect y='100' width='160' height='20' fill='%2300000014'/%3E%3Crect x='14' y='58' width='132' height='7' rx='2' fill='%232e7d5b'/%3E%3Crect x='22' y='65' width='5' height='37' fill='%233f8f6c'/%3E%3Crect x='133' y='65' width='5' height='37' fill='%233f8f6c'/%3E%3Cg fill='%231f2d3d'%3E%3Crect x='26' y='38' width='22' height='16' rx='2'/%3E%3Crect x='69' y='38' width='22' height='16' rx='2'/%3E%3Crect x='112' y='38' width='22' height='16' rx='2'/%3E%3C/g%3E%3Cg fill='%239cc9b3'%3E%3Ccircle cx='37' cy='86' r='8'/%3E%3Ccircle cx='80' cy='86' r='8'/%3E%3Ccircle cx='123' cy='86' r='8'/%3E%3C/g%3E%3C/svg%3E"},
-        {"value": "booth", "label": "Quiet booth", "image": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 120'%3E%3Crect width='160' height='120' fill='%23efe8f6'/%3E%3Crect y='100' width='160' height='20' fill='%2300000014'/%3E%3Cpath d='M40 104V44a40 30 0 0 1 80 0v60z' fill='%236a4c93'/%3E%3Cpath d='M50 104V48a30 22 0 0 1 60 0v56z' fill='%23d9cdea'/%3E%3Crect x='62' y='70' width='36' height='5' rx='2' fill='%236a4c93'/%3E%3Crect x='72' y='52' width='16' height='12' rx='2' fill='%231f2d3d'/%3E%3Ccircle cx='80' cy='90' r='7' fill='%23a58cc9'/%3E%3C/svg%3E"}
+        {"value": "standing", "label": "Standing desk", "image": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 120'%3E%3Crect width='160' height='120' fill='%23e3eefb'/%3E%3Crect y='100' width='160' height='20' fill='%2300000014'/%3E%3Crect x='42' y='52' width='76' height='6' rx='2' fill='%232f5d8a'/%3E%3Crect x='54' y='58' width='5' height='44' fill='%234b6f93'/%3E%3Crect x='101' y='58' width='5' height='44' fill='%234b6f93'/%3E%3Crect x='62' y='24' width='36' height='24' rx='2' fill='%231f2d3d'/%3E%3Crect x='77' y='48' width='6' height='4' fill='%231f2d3d'/%3E%3Ccircle cx='128' cy='34' r='9' fill='%23f5b14c'/%3E%3C/svg%3E", "alt": "A tall desk with a screen on it, the sun beside it"},
+        {"value": "corner", "label": "Corner desk", "image": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 120'%3E%3Crect width='160' height='120' fill='%23f3ece2'/%3E%3Crect y='100' width='160' height='20' fill='%2300000014'/%3E%3Cpath d='M28 60h104v8H44v34h-8V68h-8z' fill='%238a5a2f'/%3E%3Crect x='124' y='68' width='8' height='34' fill='%23a0703f'/%3E%3Crect x='34' y='30' width='32' height='22' rx='2' fill='%231f2d3d'/%3E%3Crect x='48' y='52' width='4' height='8' fill='%231f2d3d'/%3E%3Crect x='92' y='40' width='22' height='20' rx='3' fill='%235f8f5a'/%3E%3Cpath d='M103 40c-6-10 4-16 0-24 8 6 6 14 0 24z' fill='%237fb36f'/%3E%3C/svg%3E", "alt": "An L-shaped desk in a corner, with a plant"},
+        {"value": "bench", "label": "Shared bench", "image": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 120'%3E%3Crect width='160' height='120' fill='%23e7f3ec'/%3E%3Crect y='100' width='160' height='20' fill='%2300000014'/%3E%3Crect x='14' y='58' width='132' height='7' rx='2' fill='%232e7d5b'/%3E%3Crect x='22' y='65' width='5' height='37' fill='%233f8f6c'/%3E%3Crect x='133' y='65' width='5' height='37' fill='%233f8f6c'/%3E%3Cg fill='%231f2d3d'%3E%3Crect x='26' y='38' width='22' height='16' rx='2'/%3E%3Crect x='69' y='38' width='22' height='16' rx='2'/%3E%3Crect x='112' y='38' width='22' height='16' rx='2'/%3E%3C/g%3E%3Cg fill='%239cc9b3'%3E%3Ccircle cx='37' cy='86' r='8'/%3E%3Ccircle cx='80' cy='86' r='8'/%3E%3Ccircle cx='123' cy='86' r='8'/%3E%3C/g%3E%3C/svg%3E", "alt": "A long table with three screens on it"},
+        {"value": "booth", "label": "Quiet booth", "image": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 120'%3E%3Crect width='160' height='120' fill='%23efe8f6'/%3E%3Crect y='100' width='160' height='20' fill='%2300000014'/%3E%3Cpath d='M40 104V44a40 30 0 0 1 80 0v60z' fill='%236a4c93'/%3E%3Cpath d='M50 104V48a30 22 0 0 1 60 0v56z' fill='%23d9cdea'/%3E%3Crect x='62' y='70' width='36' height='5' rx='2' fill='%236a4c93'/%3E%3Crect x='72' y='52' width='16' height='12' rx='2' fill='%231f2d3d'/%3E%3Ccircle cx='80' cy='90' r='7' fill='%23a58cc9'/%3E%3C/svg%3E", "alt": "A booth with a curved roof and a desk inside"}
       ]
     },
     "kitchen": {"type": "selection", "label": "What should the kitchen have?", "multiple": true,
@@ -43,6 +43,57 @@
         {"value": "screens", "label": "Two screens"}
       ]
     },
+    "drive": {"type": "boolean", "label": "Will you drive to the new building?", "default": null, "required": true},
+    "bring": {"type": "selection", "label": "What will you bring from your old desk?", "multiple": true, "help": "Three things at most: the movers take the rest.",
+      "options": [
+        {"value": "screen", "label": "My screen"},
+        {"value": "chair", "label": "My chair"},
+        {"value": "plants", "label": "Plants"},
+        {"value": "lamp", "label": "A lamp"},
+        {"value": "footrest", "label": "A footrest"},
+        {"value": "photos", "label": "Photos"},
+        {"value": "nothing", "label": "None of these", "exclusive": true}
+      ]
+    },
+    "floor": {"type": "selection", "label": "Which floor would you like to sit on?",
+      "options": [
+        {"value": "ground", "label": "Ground floor"},
+        {"value": "floor_1", "label": "Floor 1"},
+        {"value": "floor_2", "label": "Floor 2"},
+        {"value": "floor_3", "label": "Floor 3"},
+        {"value": "floor_4", "label": "Floor 4"},
+        {"value": "floor_5", "label": "Floor 5"},
+        {"value": "floor_6", "label": "Floor 6"},
+        {"value": "floor_7", "label": "Floor 7"},
+        {"value": "floor_8", "label": "Floor 8"},
+        {"value": "floor_9", "label": "Floor 9"},
+        {"value": "floor_10", "label": "Floor 10"},
+        {"value": "floor_11", "label": "Floor 11"},
+        {"value": "floor_12", "label": "Floor 12"},
+        {"value": "floor_13", "label": "Floor 13"},
+        {"value": "floor_14", "label": "Floor 14"},
+        {"value": "floor_15", "label": "Floor 15"},
+        {"value": "floor_16", "label": "Floor 16"},
+        {"value": "floor_17", "label": "Floor 17"},
+        {"value": "floor_18", "label": "Floor 18"},
+        {"value": "roof", "label": "Roof terrace"}
+      ]
+    },
+    "miss": {"type": "selection", "label": "Which three would you miss most from the old building?", "multiple": true,
+      "options": [
+        {"value": "view", "label": "The view"},
+        {"value": "cafe", "label": "The café downstairs"},
+        {"value": "park", "label": "The park"},
+        {"value": "parking", "label": "Parking"},
+        {"value": "station", "label": "The station"},
+        {"value": "team", "label": "Sitting with my team"}
+      ]
+    },
+    "when": {"type": "matrix", "label": "When will you use each room?", "multiple": true,
+      "rows": [{"value": "kitchen", "label": "Kitchen"}, {"value": "quiet", "label": "Quiet room"}, {"value": "meeting", "label": "Meeting rooms"}],
+      "columns": [{"value": "morning", "label": "Mornings"}, {"value": "afternoon", "label": "Afternoons"}, {"value": "evening", "label": "Evenings"}]
+    },
+    "guide": {"type": "boolean", "label": "I have read the moving guide", "required": true},
     "badge_address": {"type": "json", "label": "Where should we post your new badge?"},
     "movers": {"type": "one2many", "label": "Who in your team moves with you?", "relation": "mover",
       "fields": {
@@ -81,9 +132,21 @@
         "title": "Your place",
         "children": [
           {"type": "field", "id": "q-desk", "field": "desk", "widget": "image-choice"},
-          {"type": "field", "id": "q-kitchen", "field": "kitchen", "widget": "image-choice"},
+          {"type": "field", "id": "q-kitchen", "field": "kitchen", "widget": "image-choice", "options": {"imageSize": "small", "imageFit": "whole", "columns": 3}},
           {"type": "field", "id": "q-priorities", "field": "priorities", "widget": "ranking", "options": {"shuffle": true}},
           {"type": "field", "id": "q-movers", "field": "movers", "widget": "cards", "options": {"max": 4, "itemLabel": "Person", "addLabel": "Add a person"}}
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-details",
+        "title": "The small things",
+        "children": [
+          {"type": "field", "id": "q-drive", "field": "drive", "widget": "buttons", "options": {"yesLabel": "Yes, I will"}},
+          {"type": "field", "id": "q-bring", "field": "bring", "widget": "checkboxes", "options": {"columns": 2}, "validate": [{"atMost": 3}]},
+          {"type": "field", "id": "q-floor", "field": "floor"},
+          {"type": "field", "id": "q-miss", "field": "miss", "widget": "ranking", "options": {"top": 3}},
+          {"type": "field", "id": "q-when", "field": "when", "options": {"shuffle": true}}
         ]
       },
       {
@@ -91,7 +154,8 @@
         "id": "s-check",
         "title": "Did you read the guide?",
         "children": [
-          {"type": "field", "id": "q-kitchen-floor", "field": "kitchen_floor", "widget": "radio", "options": {"shuffle": true}}
+          {"type": "field", "id": "q-kitchen-floor", "field": "kitchen_floor", "widget": "radio", "options": {"shuffle": true}},
+          {"type": "field", "id": "q-guide", "field": "guide", "widget": "tick"}
         ]
       },
       {
