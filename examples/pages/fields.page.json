@@ -101,7 +101,8 @@
       }
     },
     "contract": { "type": "binary", "label": "Signed contract", "accept": ["application/pdf"] },
-    "photo": { "type": "image", "label": "Site photo" },
+    "photo": { "type": "image", "label": "Site photos", "multiple": true, "maxFiles": 6 },
+    "documents": { "type": "binary", "label": "Documents", "help": "Drawings, quotes and notes for the job.", "multiple": true, "maxFiles": 8, "maxSize": 10485760 },
     "settings": { "type": "json", "label": "Access control settings" },
     "door_schedule": { "type": "json", "label": "Door schedule" },
     "extra": {
@@ -216,7 +217,8 @@
         "collapsible": true,
         "children": [
           { "type": "field", "id": "f-contract", "field": "contract" },
-          { "type": "field", "id": "f-photo", "field": "photo" }
+          { "type": "field", "id": "f-photo", "field": "photo" },
+          { "type": "field", "id": "f-documents", "field": "documents", "colspan": 2 }
         ]
       },
       {

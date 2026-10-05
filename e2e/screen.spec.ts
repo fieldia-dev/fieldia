@@ -9,7 +9,7 @@ import { expectNoSidewaysScroll, screen } from './support';
  */
 
 const start = [
-  ['Customer:1', 'Visit date:1', 'Notes:2'],
+  ['Customer:1', 'Visit date:1', 'Notes:2', 'Photos:2'],
   ['Next step:1', 'Due by:1', 'Manager to call?:1'],
 ];
 const mod = process.platform === 'darwin' ? 'Meta' : 'Control';
@@ -20,7 +20,7 @@ test.describe('screen designer', () => {
   test.beforeEach(async ({ page }) => {
     problems = watch(page);
     await page.goto('/screen/');
-    await expect(page.locator('.fd-canvas-field')).toHaveCount(6);
+    await expect(page.locator('.fd-canvas-field')).toHaveCount(7);
   });
   test.afterEach(() => expect(problems).toEqual([]));
 
@@ -40,7 +40,7 @@ test.describe('screen designer', () => {
     expect(gap.width, 'the gap is not as wide as Notes').toBeGreaterThan(notes.width - 30);
     await screen(page, 'screen-drag-gap', { viewport: true });
     await page.mouse.up();
-    await expect.poll(() => layout(page)).toEqual([['Notes:2', 'Customer:1', 'Visit date:1'], start[1]]);
+    await expect.poll(() => layout(page)).toEqual([['Notes:2', 'Customer:1', 'Visit date:1', 'Photos:2'], start[1]]);
     await expect(page.locator('.fd-drag-ghost, .fd-drop-slot')).toHaveCount(0);
     // The canvas is the viewer's grid: Notes takes the whole row, Customer goes under it.
     await expect.poll(async () => (await box(page, 'Customer')).y - (await box(page, 'Notes')).y).toBeGreaterThan(60);
@@ -56,7 +56,7 @@ test.describe('screen designer', () => {
     await expect(page.locator('.fd-drop-slot + .fd-canvas-field .fd-label')).toHaveText('Due by');
     await screen(page, 'screen-drag-across', { viewport: true });
     await page.mouse.up();
-    await expect.poll(() => layout(page)).toEqual([['Visit date:1', 'Notes:2'], ['Next step:1', 'Customer:1', 'Due by:1', 'Manager to call?:1']]);
+    await expect.poll(() => layout(page)).toEqual([['Visit date:1', 'Notes:2', 'Photos:2'], ['Next step:1', 'Customer:1', 'Due by:1', 'Manager to call?:1']]);
     // A dragged field is picked, open where it landed.
     await expect(editing(page).label).toHaveValue('Customer');
     await page.getByRole('button', { name: 'Undo' }).click();
@@ -64,6 +64,8 @@ test.describe('screen designer', () => {
   });
 
   test('drops a field after the last one in a section', async ({ page }) => {
+    // Below the site's photos: brought into view, as a person scrolls to it.
+    await (await cardOf(page, 'Next step')).evaluate((card) => card.scrollIntoView({ block: 'center' }));
     const next = await box(page, 'Next step');
     const last = await box(page, 'Manager to call?');
     await drag(page, { x: next.x + 40, y: next.y + 12 }, { x: last.x + 200, y: last.y + last.height + 6 });
@@ -103,7 +105,7 @@ test.describe('screen designer', () => {
     await expect(card).toHaveClass(/fd-required/);
     await card.getByRole('button', { name: 'Width' }).click();
     await page.getByRole('menuitemradio', { name: 'Full width' }).click();
-    await expect.poll(async () => (await layout(page))[0]).toEqual(['Customer name:2', 'Visit date:1', 'Notes:2']);
+    await expect.poll(async () => (await layout(page))[0]).toEqual(['Customer name:2', 'Visit date:1', 'Notes:2', 'Photos:2']);
     await card.getByRole('button', { name: 'Show as: Short answer' }).click();
     await expect(page.getByRole('menu')).toContainText('Made on this page, so it can be any kind');
     await screen(page, 'screen-show-as', { viewport: true });
@@ -147,9 +149,9 @@ test.describe('screen designer', () => {
     const picked = (await page.locator('.fd-canvas-field.fd-editing').boundingBox())!;
     await page.mouse.click(picked.x + picked.width - 4, picked.y + picked.height - 4);
     await page.keyboard.press('Alt+ArrowDown');
-    await expect.poll(async () => (await layout(page))[0]).toEqual(['Visit date:1', 'Customer:1', 'Notes:2']);
+    await expect.poll(async () => (await layout(page))[0]).toEqual(['Visit date:1', 'Customer:1', 'Notes:2', 'Photos:2']);
     await page.keyboard.press('Delete');
-    await expect.poll(async () => (await layout(page))[0]).toEqual(['Visit date:1', 'Notes:2']);
+    await expect.poll(async () => (await layout(page))[0]).toEqual(['Visit date:1', 'Notes:2', 'Photos:2']);
   });
 
   test('adds a section and a field in it, previews the screen, and publishes it', async ({ page }) => {
@@ -168,11 +170,11 @@ test.describe('screen designer', () => {
 
     await page.getByRole('button', { name: 'Try it' }).click();
     const preview = page.locator('.fd-try');
-    await expect(preview.locator('.fd-label')).toHaveText(['Customer', 'Visit date', 'Notes', 'Next step', 'Due by', 'Manager to call?', 'Photo of the site']);
+    await expect(preview.locator('.fd-label')).toHaveText(['Customer', 'Visit date', 'Notes', 'Photos', 'Next step', 'Due by', 'Manager to call?', 'Photo of the site']);
     await preview.getByLabel('Customer').fill('Nile Towers');
     await expect(preview.getByLabel('Customer')).toHaveValue('Nile Towers');
     await page.getByRole('button', { name: 'Design', exact: true }).click();
-    await expect(page.locator('.fd-canvas-field')).toHaveCount(7);
+    await expect(page.locator('.fd-canvas-field')).toHaveCount(8);
 
     await publish(page, 1);
   });
