@@ -86,8 +86,10 @@ const BUDGET_KB = 292;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
-// checked, a date's limits, a count of characters, units and symbols, rating looks and NPS) 2.8, to 85.1.
-const GZIP_BUDGET_KB = 86;
+// checked, a date's limits, a count of characters, units and symbols, rating looks and NPS) 2.8, to 85.1;
+// signatures' pens and undo, addresses' parts and countries, lines' and cards' moves and pictures' captions
+// 3.4, to 88.5.
+const GZIP_BUDGET_KB = 89;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
