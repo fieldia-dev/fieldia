@@ -108,6 +108,22 @@ export function inputCommands({ apply, fromModel }: InputCommandsDeps) {
       );
     },
 
+    /** A list among the widget's settings, such as keywords' suggestions; empty takes it away. Typing in it is one undo step. */
+    setWidgetList(id: string, key: string, list: string[]): boolean {
+      return apply(
+        (draft) => {
+          const { node } = question(draft, id);
+          const options = { ...(node.options ?? {}) };
+          const kept = list.map((item) => item.trim()).filter(Boolean);
+          if (kept.length) options[key] = kept;
+          else delete options[key];
+          if (Object.keys(options).length) node.options = options;
+          else delete node.options;
+        },
+        `widget-list:${id}:${key}`
+      );
+    },
+
     /** A linear scale made NPS, as one edit: 0 to 10, "Not at all likely" to "Extremely likely". */
     makeNps(id: string): boolean {
       return apply((draft) => {

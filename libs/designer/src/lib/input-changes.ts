@@ -61,7 +61,11 @@ const OPTION_WORDS: Record<string, Words> = {
   nps: (v) => (v ? 'coloured as NPS' : 'no longer coloured as NPS'),
   icon: (v) => `shown as ${({ heart: 'hearts', thumb: 'thumbs up', number: 'numbers' } as Record<string, string>)[v as string] ?? 'stars'}`,
   min: (v, _now, kind) => (kind !== 'time' ? null : v ? `no earlier than ${v}` : 'any time from midnight'),
-  max: (v, _now, kind) => (kind !== 'time' ? null : v ? `no later than ${v}` : 'any time until midnight'),
+  max: (v, _now, kind) => (kind === 'time' ? (v ? `no later than ${v}` : 'any time until midnight') : kind === 'keywords' ? (v ? `takes at most ${v}` : 'takes any number') : null),
+  color: (v, _now, kind) => (kind !== 'progress' ? null : `${({ success: 'always green', warning: 'always amber', danger: 'always red', info: 'always blue' } as Record<string, string>)[v as string] ?? 'coloured by how far it has come'}`),
+  showPercent: (v, _now, kind) => (kind !== 'progress' ? null : v === false ? 'no percent on the bar' : 'the percent on the bar'),
+  separator: (v, _now, kind) => (kind === 'keywords' ? `keywords apart by “${v ?? ','}”` : null),
+  suggestions: (v, _now, kind) => (kind !== 'keywords' ? null : Array.isArray(v) ? `suggests ${v.length < 2 ? v.join('') : `${v.slice(0, -1).join(', ')} and ${v[v.length - 1]}`}` : 'suggests nothing'),
   step: (v, _now, kind) => (kind === 'time' || kind === 'date-time' ? (v ? `every ${v} minutes` : 'any minute') : kind === 'slider' ? `steps by ${v ?? 1}` : null),
 };
 

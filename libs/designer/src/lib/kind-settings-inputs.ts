@@ -11,7 +11,9 @@ import type { InputLimits } from './input-commands';
  * rating's look and the words at a rating's or a slider's ends; a linear
  * scale made NPS, and coloured as NPS; a date's earliest and latest day,
  * fixed or counted from today, its weekends and its start; a date and
- * time's and a time's step of minutes, and a time's earliest and latest.
+ * time's and a time's step of minutes, and a time's earliest and latest;
+ * keywords' suggestions, separator and most; a progress bar's most, colour
+ * and percent.
  */
 
 export interface InputSettings {
@@ -227,6 +229,44 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     };
   }
 
+  /** Keywords: the suggestions offered as people type, one a line; what keeps them apart; at most how many. */
+  function keywords(): Part {
+    const list = el('textarea', { class: 'fd-inline-input fd-inline-list', 'aria-label': 'Suggestions, one a line', rows: '3', placeholder: 'oak\nglass' }) as HTMLTextAreaElement;
+    list.addEventListener('input', () => designer.setWidgetList(id, 'suggestions', list.value.split('\n')));
+    const separator = select('Separator', [[',', 'Comma'], [';', 'Semicolon']]);
+    separator.addEventListener('change', () => designer.setWidgetOptions(id, { separator: separator.value === ',' ? null : separator.value }));
+    const most = numberBox('At most', { min: '1', step: '1', placeholder: 'Any' });
+    most.addEventListener('change', () => {
+      const n = numberOrNull(most.value);
+      designer.setWidgetOptions(id, { max: n !== null && Number.isInteger(n) && n > 0 ? n : null });
+    });
+    return {
+      element: el('div', { class: 'fd-kind-block' }, word('Suggestions', list), row(word('Separator', separator), word('At most', most))),
+      refresh(_page, node) {
+        const suggestions = node.options?.['suggestions'];
+        if (!focused(list)) list.value = Array.isArray(suggestions) ? suggestions.join('\n') : '';
+        separator.value = String(node.options?.['separator'] ?? ',');
+        show(most, node.options?.['max']);
+      },
+    };
+  }
+
+  /** A progress bar's most, its colour — by how far it has come, or always one — and whether the percent shows on it. */
+  function progress(): Part {
+    const most = limitBox('Most', 'max', { min: '1', step: '1' });
+    const colour = select('Colour', [['', 'By how far it has come'], ['success', 'Always green'], ['warning', 'Always amber'], ['danger', 'Always red'], ['info', 'Always blue']]);
+    colour.addEventListener('change', () => designer.setWidgetOptions(id, { color: colour.value || null }));
+    const percent = toggle('Shows the percent', (on) => designer.setWidgetOptions(id, { showPercent: on ? null : false }));
+    return {
+      element: row(word('Most', most), word('Colour', colour), percent.element),
+      refresh(page, node) {
+        show(most, own(page.fields[node.field], 'max') ?? 100);
+        show(colour, node.options?.['color']);
+        percent.button.setAttribute('aria-checked', String(node.options?.['showPercent'] !== false));
+      },
+    };
+  }
+
   const parts: Part[] = [];
   if (kind === 'short-answer' || kind === 'paragraph') parts.push(most());
   if (kind === 'paragraph') parts.push(rows());
@@ -239,6 +279,8 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   if (kind === 'date') parts.push(startsToday());
   if (kind === 'time') parts.push(hours());
   if (kind === 'date-time' || kind === 'time') parts.push(minutes());
+  if (kind === 'keywords') parts.push(keywords());
+  if (kind === 'progress') parts.push(progress());
   if (!parts.length) return null;
   return { elements: parts.map((p) => p.element), refresh: (page, node) => parts.forEach((p) => p.refresh(page, node)) };
 }

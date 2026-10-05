@@ -289,6 +289,43 @@ describe('a time of day', () => {
   });
 });
 
+describe('keywords', () => {
+  it('take suggestions, one a line, a separator and at most so many', () => {
+    const { designer, id, host } = screenWith('keywords');
+    const suggestions = host.querySelector('.fd-canvas-field.fd-editing [aria-label="Suggestions, one a line"]') as HTMLTextAreaElement;
+    suggestions.value = 'oak\n glass \n\nsteel';
+    suggestions.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(nodeOf(designer, id).options).toEqual({ suggestions: ['oak', 'glass', 'steel'] });
+    choose(inline(host, 'Separator') ?? undefined, ';');
+    enter(inline(host, 'At most'), '3');
+    expect(nodeOf(designer, id).options).toEqual({ suggestions: ['oak', 'glass', 'steel'], separator: ';', max: 3 });
+    choose(inline(host, 'Separator') ?? undefined, ',');
+    enter(inline(host, 'At most'), '');
+    suggestions.value = '';
+    suggestions.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(nodeOf(designer, id).options).toBeUndefined();
+  });
+});
+
+describe('a progress bar', () => {
+  it('sets its most, its colour and whether it shows the percent, the bar on the card following', () => {
+    const { designer, id, host } = screenWith('progress');
+    const bar = () => host.querySelector('.fd-canvas-field.fd-editing [role=progressbar]') as HTMLElement;
+    expect(inline(host, 'Most')?.value).toBe('100');
+    enter(inline(host, 'Most'), '320');
+    expect(fieldOf(designer, id)).toMatchObject({ type: 'integer', min: 0, max: 320 });
+    expect(bar().getAttribute('aria-valuemax')).toBe('320');
+    choose(inline(host, 'Colour') ?? undefined, 'info');
+    expect(nodeOf(designer, id).options).toEqual({ color: 'info' });
+    expect(bar().dataset['tone']).toBe('info');
+    (inline(host, 'Shows the percent') as unknown as HTMLButtonElement).click();
+    expect(nodeOf(designer, id).options).toEqual({ color: 'info', showPercent: false });
+    choose(inline(host, 'Colour') ?? undefined, '');
+    (inline(host, 'Shows the percent') as unknown as HTMLButtonElement).click();
+    expect(nodeOf(designer, id).options).toBeUndefined();
+  });
+});
+
 describe('the words for what changed, when published', () => {
   it('says a text’s most characters, a paragraph’s rows and whether it grows', () => {
     const designer = createDesigner({ page: blankPage('survey', 'Feedback') });
@@ -359,5 +396,25 @@ describe('the words for what changed, when published', () => {
     const later = designer.getPage();
     designer.setLimits(date, { min: null, max: '2026-12-31', days: null, startsToday: false });
     expect(pageChanges(later, designer.getPage())).toEqual(['“Visit”: no later than 2026-12-31', '“Visit”: any day of the week', '“Visit”: starts empty']);
+  });
+
+  it('says keywords’ suggestions, separator and most', () => {
+    const designer = createDesigner({ page: blankPage('screen', 'Project') });
+    const q = designer.addQuestion('keywords') as string;
+    designer.updateQuestion(q, { label: 'Materials' });
+    const before = designer.getPage();
+    designer.setWidgetOptions(q, { max: 3, separator: ';' });
+    designer.setWidgetList(q, 'suggestions', ['oak', 'glass']);
+    expect(pageChanges(before, designer.getPage())).toEqual(['“Materials”: takes at most 3', '“Materials”: keywords apart by “;”', '“Materials”: suggests oak and glass']);
+  });
+
+  it('says a progress bar’s most, colour and percent', () => {
+    const designer = createDesigner({ page: blankPage('screen', 'Project') });
+    const q = designer.addQuestion('progress') as string;
+    designer.updateQuestion(q, { label: 'Hours' });
+    const before = designer.getPage();
+    designer.setLimits(q, { max: 320 });
+    designer.setWidgetOptions(q, { color: 'danger', showPercent: false });
+    expect(pageChanges(before, designer.getPage())).toEqual(['“Hours”: from 0 to 320', '“Hours”: always red', '“Hours”: no percent on the bar']);
   });
 });
