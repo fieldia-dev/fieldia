@@ -11,7 +11,7 @@
     <header id="demo-head" data-app="script"></header>
     <main id="app"></main>
     <script type="module" src="../shell.mjs"></script>
-    <!-- The whole of Fieldia's viewer in one file: core, widgets and viewer, as the global `Fieldia`. -->
+    <!-- The whole of Fieldia's viewer in one file: core, widgets and viewer, as the global `Fieldia`. Its own words are English. -->
     <script src="fieldia.js"></script>
     <script>
       const page = {
@@ -47,10 +47,30 @@
             },
           ],
         },
+        // The page's own words in other languages; Fieldia's own words come with its language script.
+        translations: {
+          ar: { 'Ask for a call back': 'اطلب أن نتصل بك', 'Your name': 'اسمك', Phone: 'الهاتف', 'Best time': 'أفضل وقت', Morning: 'صباحًا', Afternoon: 'بعد الظهر' },
+          de: { 'Ask for a call back': 'Rückruf anfordern', 'Your name': 'Ihr Name', Phone: 'Telefon', 'Best time': 'Beste Zeit', Morning: 'Vormittags', Afternoon: 'Nachmittags' },
+          fr: { 'Ask for a call back': 'Demander à être rappelé', 'Your name': 'Votre nom', Phone: 'Téléphone', 'Best time': 'Meilleur moment', Morning: 'Le matin', Afternoon: 'L’après-midi' },
+        },
       };
-      const dataSource = Fieldia.createMemoryDataSource();
-      const handle = Fieldia.mountViewer(document.getElementById('app'), { page, dataSource, skin: 'outlined' });
-      window.fieldiaDemo = { handle, dataSource, version: Fieldia.VERSION };
+      const locale = new URLSearchParams(location.search).get('locale') || 'en';
+      function show() {
+        const dataSource = Fieldia.createMemoryDataSource();
+        const handle = Fieldia.mountViewer(document.getElementById('app'), { page, dataSource, skin: 'outlined', locale });
+        window.fieldiaDemo = { handle, dataSource, page, version: Fieldia.VERSION };
+      }
+      // Arabic, German and French each come in a script of their own, loaded after fieldia.js: fieldia.ar.js,
+      // fieldia.de.js, fieldia.fr.js. Here the address picks the language (/script/?locale=ar), so its script
+      // is added as the page starts; a page in one language just writes its script tag after fieldia.js.
+      if (['ar', 'de', 'fr'].includes(locale)) {
+        const words = document.createElement('script');
+        words.src = `fieldia.${locale}.js`;
+        words.onload = show;
+        document.head.append(words);
+      } else {
+        show();
+      }
     </script>
   </body>
 </html>
