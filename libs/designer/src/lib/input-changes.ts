@@ -15,15 +15,26 @@ interface Placed {
 
 type Words = (value: unknown, now: Placed) => string;
 
-/** The field's own settings, by key. */
+/** A number's range: "from 0 to 300", "at least 0", "at most 300", "any number". */
+function range(field: Field): string {
+  const { min, max } = field as { min?: unknown; max?: unknown };
+  if (min !== undefined && max !== undefined) return `from ${min} to ${max}`;
+  return min !== undefined ? `at least ${min}` : max !== undefined ? `at most ${max}` : 'any number';
+}
+
+/** The field's own settings, by key: those said together, under the first. */
 const FIELD_WORDS: Record<string, Words> = {
   size: (v) => (v === undefined ? 'takes any number of characters' : `takes at most ${v} characters`),
+  'min,max': (_v, now) => range(now.field),
+  digits: (v) => (v === undefined ? 'the usual decimals' : `${(v as number[])[1]} decimal${(v as number[])[1] === 1 ? '' : 's'}`),
 };
 
 /** The widget's settings, by key. */
 const OPTION_WORDS: Record<string, Words> = {
   rows: (v) => `starts ${v ?? 3} rows high`,
   autoGrow: (v) => (v === false ? 'keeps its height as people type' : 'grows as people type'),
+  prefix: (v) => (v ? `shows “${v}” before the number` : 'no unit before the number'),
+  suffix: (v) => (v ? `shows “${v}” after the number` : 'no unit after the number'),
 };
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
@@ -32,7 +43,10 @@ export function inputChanges(name: string, was: Placed, now: Placed): { lines: s
   const lines: string[] = [];
   const own = (p: Placed, key: string) => (p.field as Record<string, unknown>)[key];
   if (was.field.type === now.field.type) {
-    for (const [key, words] of Object.entries(FIELD_WORDS)) if (!same(own(was, key), own(now, key))) lines.push(`“${name}”: ${words(own(now, key), now)}`);
+    for (const [keys, words] of Object.entries(FIELD_WORDS)) {
+      const read = (p: Placed) => keys.split(',').map((key) => own(p, key));
+      if (!same(read(was), read(now))) lines.push(`“${name}”: ${words(own(now, keys), now)}`);
+    }
   }
   const [before, after] = [was.node.options ?? {}, now.node.options ?? {}];
   const changed = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter((key) => !same(before[key], after[key]));

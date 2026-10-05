@@ -101,6 +101,45 @@ describe('the most characters, and a paragraph’s rows', () => {
   });
 });
 
+describe('a number’s range, decimals and unit', () => {
+  it('sets From, To and Decimals, refusing a range the wrong way round', () => {
+    const { designer, id, host } = screenWith('number');
+    enter(inline(host, 'From'), '0');
+    enter(inline(host, 'To'), '300');
+    expect(fieldOf(designer, id)).toMatchObject({ type: 'float', min: 0, max: 300 });
+    choose(inline(host, 'Decimals') ?? undefined, '1');
+    expect(fieldOf(designer, id)).toMatchObject({ digits: [16, 1] });
+    choose(inline(host, 'Decimals') ?? undefined, '');
+    expect(fieldOf(designer, id)).not.toHaveProperty('digits');
+    enter(inline(host, 'To'), '-5');
+    expect(designer.getState().issues).toEqual(['From is not less than To']);
+    expect(fieldOf(designer, id)).toMatchObject({ max: 300 });
+    enter(inline(host, 'From'), '');
+    expect(fieldOf(designer, id)).not.toHaveProperty('min');
+  });
+
+  it('puts a unit before or after the number, inside its box', () => {
+    const { designer, id, host } = screenWith('number');
+    type(inline(host, 'Unit after') ?? undefined, 'kg');
+    expect(nodeOf(designer, id).options).toEqual({ suffix: 'kg' });
+    type(inline(host, 'Unit before') ?? undefined, '≈');
+    expect(nodeOf(designer, id).options).toEqual({ suffix: 'kg', prefix: '≈' });
+    expect([...host.querySelectorAll('.fd-canvas-field.fd-editing .fd-unit')].map((u) => u.textContent)).toEqual(['≈', 'kg']);
+    type(inline(host, 'Unit after') ?? undefined, '');
+    expect(nodeOf(designer, id).options).toEqual({ prefix: '≈' });
+  });
+
+  it('sets an amount’s From, To and Decimals beside its currency, whose symbol shows in its box', () => {
+    const { designer, id, host } = screenWith('amount');
+    enter(inline(host, 'From'), '10');
+    enter(inline(host, 'To'), '1000');
+    choose(inline(host, 'Decimals') ?? undefined, '0');
+    expect(fieldOf(designer, id)).toMatchObject({ type: 'monetary', currency: 'USD', min: 10, max: 1000, digits: [16, 0] });
+    expect(host.querySelector('.fd-canvas-field.fd-editing .fd-currency')?.textContent).toBe('$');
+    expect(inline(host, 'Unit after')).toBeNull();
+  });
+});
+
 describe('the words for what changed, when published', () => {
   it('says a text’s most characters, a paragraph’s rows and whether it grows', () => {
     const designer = createDesigner({ page: blankPage('survey', 'Feedback') });
@@ -114,5 +153,19 @@ describe('the words for what changed, when published', () => {
     designer.setLimits(q, { size: null });
     designer.setWidgetOptions(q, { rows: null, autoGrow: null, other: 'x' });
     expect(pageChanges(later, designer.getPage())).toEqual(['“Bio”: takes any number of characters', '“Bio”: starts 3 rows high', '“Bio”: grows as people type', '“Bio”: how it shows changed']);
+  });
+
+  it('says a number’s range, decimals and unit', () => {
+    const designer = createDesigner({ page: blankPage('survey', 'Move') });
+    const q = designer.addQuestion('number') as string;
+    designer.updateQuestion(q, { label: 'Weight' });
+    const before = designer.getPage();
+    designer.setLimits(q, { min: 0, max: 300, decimals: 1 });
+    designer.setWidgetOptions(q, { suffix: 'kg' });
+    expect(pageChanges(before, designer.getPage())).toEqual(['“Weight”: from 0 to 300', '“Weight”: 1 decimal', '“Weight”: shows “kg” after the number']);
+    const later = designer.getPage();
+    designer.setLimits(q, { min: null, decimals: 3 });
+    designer.setWidgetOptions(q, { suffix: null, prefix: '≈' });
+    expect(pageChanges(later, designer.getPage())).toEqual(['“Weight”: at most 300', '“Weight”: 3 decimals', '“Weight”: no unit after the number', '“Weight”: shows “≈” before the number']);
   });
 });

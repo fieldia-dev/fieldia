@@ -6,7 +6,8 @@ import type { InputLimits } from './input-commands';
 /**
  * The text, number and date kinds' settings, in the picked field itself
  * beside the rest of its kind's, and in the side panel the same way: the
- * most characters a box takes, a paragraph's rows and whether it grows.
+ * most characters a box takes, a paragraph's rows and whether it grows; a
+ * number's or an amount's range and decimals, and a number's unit.
  */
 
 export interface InputSettings {
@@ -63,9 +64,46 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     };
   }
 
+  /** Where a number or an amount runs from and to, and its decimals. */
+  function range(): Part {
+    const from = limitBox('From', 'min', { step: 'any', placeholder: 'Any' });
+    const to = limitBox('To', 'max', { step: 'any', placeholder: 'Any' });
+    const decimals = select('Decimals', [['', 'Usual'], ...Array.from({ length: 7 }, (_, d): [string, string] => [String(d), String(d)])]);
+    decimals.addEventListener('change', () => designer.setLimits(id, { decimals: numberOrNull(decimals.value) }));
+    return {
+      element: row(word('From', from), word('to', to), word('Decimals', decimals)),
+      refresh(page, node) {
+        const def = page.fields[node.field];
+        show(from, own(def, 'min'));
+        show(to, own(def, 'max'));
+        show(decimals, def.type === 'float' || def.type === 'monetary' ? def.digits?.[1] : undefined);
+      },
+    };
+  }
+
+  /** A unit inside the number's box, before or after it: "kg", "°C", "%". */
+  function units(): Part {
+    const box = (label: string, key: string, placeholder: string) => {
+      const input = el('input', { class: 'fd-inline-input fd-inline-unit', 'aria-label': label, placeholder, autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+      input.addEventListener('input', () => designer.setWidgetOptions(id, { [key]: input.value.trim() || null }));
+      return input;
+    };
+    const before = box('Unit before', 'prefix', '≈');
+    const after = box('Unit after', 'suffix', 'kg');
+    return {
+      element: row(word('Unit before', before), word('Unit after', after)),
+      refresh(_page, node) {
+        show(before, node.options?.['prefix']);
+        show(after, node.options?.['suffix']);
+      },
+    };
+  }
+
   const parts: Part[] = [];
   if (kind === 'short-answer' || kind === 'paragraph') parts.push(most());
   if (kind === 'paragraph') parts.push(rows());
+  if (kind === 'number' || kind === 'amount') parts.push(range());
+  if (kind === 'number') parts.push(units());
   if (!parts.length) return null;
   return { elements: parts.map((p) => p.element), refresh: (page, node) => parts.forEach((p) => p.refresh(page, node)) };
 }
