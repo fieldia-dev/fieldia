@@ -28,9 +28,12 @@ export const LATIN_KEPT = [
   ...['contact', 'confirm', 'open_invoices', 'archive', 'active'],
 ];
 
-/** Latin letters left in Arabic words, besides those kept on purpose. */
+/** Code an example writes as it is typed: a formula's function and the fields it reads, as in round(price * qty, 2). */
+const CODE = /\b[a-z_]+\([^)]*\)/g;
+
+/** Latin letters left in Arabic words, besides those kept on purpose and code. */
 export function latinIn(text: string): string[] {
-  return (text.match(/[A-Za-z][A-Za-z0-9_'’-]*/g) ?? []).filter((word) => !LATIN_KEPT.includes(word));
+  return (text.replace(CODE, '').match(/[A-Za-z][A-Za-z0-9_'’-]*/g) ?? []).filter((word) => !LATIN_KEPT.includes(word));
 }
 
 type Table = Record<string, unknown>;

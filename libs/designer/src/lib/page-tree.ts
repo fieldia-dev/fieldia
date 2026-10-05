@@ -1,4 +1,6 @@
 import type { FieldNode, FilterItem, LayoutNode, Page, SectionNode, StepNode, TabNode, TabsNode } from '@fieldia/core';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * Finding one's way around a page's layout, for the designer's edits: the
@@ -126,12 +128,12 @@ export function findField(page: Page, id: string): { node: FieldNode; section: S
 }
 
 /** A section's name as a list of them shows it: the tab it is in first, when it is in one. */
-export function sectionLabel(page: Page, section: SectionNode): string {
-  const own = section.title || 'Untitled section';
+export function sectionLabel(page: Page, section: SectionNode, words: DesignerWords = en): string {
+  const own = section.title || words.parts.untitledSection;
   const tab = tabsNodes(page)
     .flatMap((tabs) => tabs.children)
     .find((t) => t.children.includes(section));
-  return tab ? `${tab.label} › ${own}` : own;
+  return tab ? words.parts.inTab(tab.label, own) : own;
 }
 
 /** Whether `id` is the tab, or something inside it. */

@@ -1,5 +1,10 @@
 import { pageWords, type Page } from '@fieldia/core';
 import { Refusal } from './refusal';
+import { COMMON_LANGUAGES } from './language-names';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
+
+export { COMMON_LANGUAGES } from './language-names';
 
 /**
  * The page's words in other languages, as the page keeps them: by language
@@ -34,44 +39,6 @@ export interface TranslationCommandsDeps {
   getPage(): Page;
 }
 
-/** Common languages, by tag, named in English: offered when adding one, and their names when the browser has none. */
-export const COMMON_LANGUAGES: Record<string, string> = {
-  ar: 'Arabic',
-  bn: 'Bengali',
-  zh: 'Chinese',
-  cs: 'Czech',
-  da: 'Danish',
-  nl: 'Dutch',
-  en: 'English',
-  fi: 'Finnish',
-  fr: 'French',
-  de: 'German',
-  el: 'Greek',
-  he: 'Hebrew',
-  hi: 'Hindi',
-  hu: 'Hungarian',
-  id: 'Indonesian',
-  it: 'Italian',
-  ja: 'Japanese',
-  ko: 'Korean',
-  ckb: 'Central Kurdish',
-  ms: 'Malay',
-  nb: 'Norwegian Bokmål',
-  fa: 'Persian',
-  pl: 'Polish',
-  pt: 'Portuguese',
-  'pt-BR': 'Brazilian Portuguese',
-  ro: 'Romanian',
-  ru: 'Russian',
-  es: 'Spanish',
-  sw: 'Swahili',
-  sv: 'Swedish',
-  th: 'Thai',
-  tr: 'Turkish',
-  uk: 'Ukrainian',
-  ur: 'Urdu',
-  vi: 'Vietnamese',
-};
 
 /** The language the page's own words are written in: its `language`, or English. */
 export const pageLanguage = (page: Page): string => page.language ?? 'en';
@@ -79,26 +46,9 @@ export const pageLanguage = (page: Page): string => page.language ?? 'en';
 /** The languages the page keeps translations in, in the order they were added. */
 export const languagesOf = (page: Page): string[] => Object.keys(page.translations ?? {});
 
-/** Each language's name, found once: a list of languages sorted by name asks for each many times. */
-const names = new Map<string, string>();
-
-/** A language's name in English: `ar` is Arabic. The browser's names, or the common ones', or the tag itself. */
-export function languageName(tag: string): string {
-  let name = names.get(tag);
-  if (name === undefined) names.set(tag, (name = nameOf(tag)));
-  return name;
-}
-
-function nameOf(tag: string): string {
-  try {
-    const name = new Intl.DisplayNames(['en'], { type: 'language' }).of(tag);
-    if (name && name !== tag) return name;
-  } catch {
-    // A browser with no names of languages, or a tag it cannot read.
-  }
-  const [base, ...rest] = tag.split('-');
-  if (COMMON_LANGUAGES[tag]) return COMMON_LANGUAGES[tag];
-  return COMMON_LANGUAGES[base] ? `${COMMON_LANGUAGES[base]} (${rest.join('-')})` : tag;
+/** A language's name in the designer's words — English unless given: `ar` is Arabic, or العربية. The browser's names, or the common ones', or the tag itself. */
+export function languageName(tag: string, words: DesignerWords = en): string {
+  return words.languages.name(tag);
 }
 
 /** A language tag written the way tags are written (`ar-EG`, `zh-Hant`), or null for what is not one. */

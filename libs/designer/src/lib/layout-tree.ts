@@ -1,4 +1,6 @@
 import { wideColumns, type LayoutNode, type Page, type SectionNode, type TabNode } from '@fieldia/core';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * Reading a page's layout as the designer lays it out: where a part sits,
@@ -148,9 +150,10 @@ function shortened(text: string): string {
 }
 
 /** A part's name as a person reads it. */
-export function nameOf(page: Page, node: Part | Holder | null): string {
+export function nameOf(page: Page, node: Part | Holder | null, words: DesignerWords = en): string {
+  const w = words.parts;
   if (!node) return '';
-  if (node.id === page.layout.id) return page.title || 'Page';
+  if (node.id === page.layout.id) return page.title || w.page;
   const part = node as Part;
   switch (part.type) {
     case 'field':
@@ -160,10 +163,10 @@ export function nameOf(page: Page, node: Part | Holder | null): string {
       // Named by how its parts fall: one under another, side by side, or in rows of so many.
       const rows = rowsOf(page, part);
       const most = rows.reduce((n, r) => Math.max(n, r.items.length), 0);
-      return most < 2 ? 'Column' : rows.length > 1 ? `${most} columns` : 'Side by side';
+      return most < 2 ? w.column : rows.length > 1 ? w.columns(most) : w.sideBySide;
     }
     case 'tabs':
-      return 'Tabs';
+      return w.tabs;
     case 'tab':
       return part.label;
     case 'text':
@@ -171,11 +174,11 @@ export function nameOf(page: Page, node: Part | Holder | null): string {
     case 'button':
       return part.label;
     case 'image':
-      return part.alt || 'Image';
+      return part.alt || w.image;
     case 'slot':
       return part.name;
     default:
-      return part.type === 'divider' ? 'Divider' : 'Spacer';
+      return part.type === 'divider' ? w.divider : w.spacer;
   }
 }
 

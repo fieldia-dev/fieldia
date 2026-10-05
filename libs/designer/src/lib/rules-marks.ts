@@ -4,6 +4,7 @@ import type { Designer } from './designer';
 import { designerIcon } from './icons';
 import { openRules } from './rules-open';
 import { pageRules, type RuleKind } from './rules-words';
+import type { DesignerWords } from './designer-words';
 
 /**
  * Small marks on the canvas for a part with a rule: shown only sometimes,
@@ -31,24 +32,25 @@ const PLACES: { parts: string; into?: string }[] = [
   { parts: '.fd-design-step[data-node]', into: '.fd-step-head-row' },
 ];
 
-const WORDS: Record<MarkKind, string> = { sometimes: 'only sometimes', 'worked-out': 'worked out', answer: '' };
-const NAMES: Record<MarkKind, string> = { sometimes: 'Shown only sometimes', 'worked-out': 'Worked out', answer: 'Answer rules' };
+/** The marks in the order they stand. */
+const ORDER: MarkKind[] = ['sometimes', 'worked-out', 'answer'];
 
 /** Each part's marks, in a mark's order: when it shows, what it holds, what it asks of an answer. */
-function marksOf(page: Page): Map<string, Mark[]> {
+function marksOf(page: Page, words: DesignerWords): Map<string, Mark[]> {
+  const w = words.rulesUi;
   const out = new Map<string, Mark[]>();
-  for (const rule of pageRules(page)) {
+  for (const rule of pageRules(page, words)) {
     const kind: MarkKind | null = rule.kind === 'shows' ? 'sometimes' : rule.kind === 'compute' ? 'worked-out' : rule.kind === 'answer' ? 'answer' : null;
     if (!kind || !rule.part) continue;
     const marks = out.get(rule.part) ?? [];
     const mark = marks.find((m) => m.kind === kind);
     if (mark) mark.sentences.push(rule.sentence);
-    else marks.push({ kind, rule: rule.kind, words: WORDS[kind], sentences: [rule.sentence] });
+    else marks.push({ kind, rule: rule.kind, words: kind === 'answer' ? '' : w.marks[kind], sentences: [rule.sentence] });
     out.set(rule.part, marks);
   }
   for (const marks of out.values()) {
-    marks.sort((a, b) => Object.keys(WORDS).indexOf(a.kind) - Object.keys(WORDS).indexOf(b.kind));
-    for (const mark of marks) if (mark.kind === 'answer') mark.words = mark.sentences.length === 1 ? '1 rule' : `${mark.sentences.length} rules`;
+    marks.sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
+    for (const mark of marks) if (mark.kind === 'answer') mark.words = w.markCount(mark.sentences.length);
   }
   return out;
 }
@@ -62,7 +64,7 @@ export function ruleMarks(container: HTMLElement, page: Page, designer: Designer
   const doc = container.ownerDocument;
   const el = elementFactory(doc);
   let marks = marksFor.get(page);
-  if (!marks) marksFor.set(page, (marks = marksOf(page)));
+  if (!marks) marksFor.set(page, (marks = marksOf(page, designer.words)));
   const root = (container.closest('.fd-designer') as HTMLElement | null) ?? container;
   for (const place of PLACES) {
     for (const part of container.querySelectorAll<HTMLElement>(place.parts)) {
@@ -96,7 +98,7 @@ export function ruleMarks(container: HTMLElement, page: Page, designer: Designer
           const tip = el('span', { class: 'fd-rule-tip', role: 'tooltip', id: tipId }, mark.sentences.join('\n'));
           const button = inButton
             ? el('span', { class: 'fd-rule-mark', 'data-mark': mark.kind }, icon, words, tip)
-            : el('button', { type: 'button', class: 'fd-rule-mark', 'data-mark': mark.kind, 'aria-label': `${NAMES[mark.kind]}: open the rules`, 'aria-describedby': tipId }, icon, words, tip);
+            : el('button', { type: 'button', class: 'fd-rule-mark', 'data-mark': mark.kind, 'aria-label': designer.words.rulesUi.openTheRules(designer.words.rulesUi.markNames[mark.kind]), 'aria-describedby': tipId }, icon, words, tip);
           button.addEventListener('click', (event) => {
             event.stopPropagation();
             openRules(root, designer, { part: id, kind: mark.rule });

@@ -152,16 +152,22 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const map = el('details', { class: 'fd-branch-map', open: '', hidden: '' }, el('summary', { class: 'fd-branch-summary' }, 'Where answers lead'), mapScroll);
   let mapKey = '';
   function drawMap(page: Page, selected: string | null) {
-    const drawn = branchMap(page);
+    const drawn = branchMap(page, designer.words);
     map.hidden = drawn.nodes.length < 2;
     const key = JSON.stringify([drawn, selected]);
     if (map.hidden || key === mapKey) return;
     mapKey = key;
     mapScroll.replaceChildren(
-      drawBranchMap(doc, drawn, selected, (id) => {
-        designer.select(id);
-        stepViews.get(id)?.element.scrollIntoView?.({ block: 'nearest' });
-      })
+      drawBranchMap(
+        doc,
+        drawn,
+        selected,
+        (id) => {
+          designer.select(id);
+          stepViews.get(id)?.element.scrollIntoView?.({ block: 'nearest' });
+        },
+        designer.words
+      )
     );
   }
 
@@ -438,7 +444,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       button.addEventListener('click', onClick);
       return button;
     };
-    const required = el('button', { type: 'button', class: 'fd-switch', role: 'switch', 'aria-checked': 'false', 'aria-label': 'Required' });
+    const required = el('button', { type: 'button', class: 'fd-switch', role: 'switch', 'aria-checked': 'false', 'aria-label': 'Required', 'data-required': '' });
     required.addEventListener('click', () => designer.updateQuestion(id, { required: required.getAttribute('aria-checked') !== 'true' }));
     const moreButton = tool('More options', 'kebab', () => openMore());
     moreButton.setAttribute('aria-haspopup', 'menu');

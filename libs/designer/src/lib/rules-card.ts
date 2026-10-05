@@ -41,7 +41,7 @@ export function cardRules(el: ElementFactory, designer: Designer, id: string, sa
     'worked-out': { element: el('div', { class: 'fd-q-rules-part' }, workedOut.element), wanted: false, has: false, offered: false },
   };
   const element = el('div', { class: 'fd-q-rules', hidden: '' }, parts['worked-out'].element, parts['answer-rules'].element);
-  const LABELS = { 'answer-rules': 'Answer rules', 'worked-out': 'Worked out from other answers' } as const;
+  const LABELS = { 'answer-rules': designer.words.rulesUi.answerRules, 'worked-out': designer.words.rulesUi.workedOutFromOthers } as const;
 
   function draw() {
     for (const part of Object.values(parts)) part.element.hidden = !(part.has || (part.wanted && part.offered));

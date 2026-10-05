@@ -38,15 +38,8 @@ export interface RulesOverview {
 
 type GroupKey = 'branches' | RuleKind;
 
-const GROUPS: { key: GroupKey; title: string }[] = [
-  { key: 'branches', title: 'Where answers lead' },
-  { key: 'shows', title: 'Shows when' },
-  { key: 'required', title: 'Required when' },
-  { key: 'readonly', title: 'Read-only when' },
-  { key: 'compute', title: 'Worked out from' },
-  { key: 'set', title: 'Set when' },
-  { key: 'answer', title: 'Answer rules' },
-];
+/** The groups, in the order the view lists them; their titles are the designer's words (`rulesUi.groups`). */
+const GROUPS: GroupKey[] = ['branches', 'shows', 'required', 'readonly', 'compute', 'set', 'answer'];
 
 /** The group a rule is listed under: a survey's page shown only sometimes is where answers lead. */
 function groupOf(page: Page, rule: RuleEntry): GroupKey {
@@ -58,21 +51,22 @@ let views = 0;
 
 export function rulesOverview(options: RulesOverviewOptions): RulesOverview {
   const { el, doc, designer, root, body, modes } = options;
+  const w = designer.words.rulesUi;
   const id = `fd-rules-${++views}`;
-  const toggle = el('button', { type: 'button', class: 'fd-mode-button', 'data-mode': 'rules', 'aria-pressed': 'false' }, designerIcon(doc, 'rules'), 'Rules');
+  const toggle = el('button', { type: 'button', class: 'fd-mode-button', 'data-mode': 'rules', 'aria-pressed': 'false' }, designerIcon(doc, 'rules'), w.rules);
   modes.append(toggle);
 
   const note = el('p', { class: 'fd-rules-note' });
-  const filter = el('input', { type: 'search', class: 'fd-input fd-rules-filter-box', 'aria-label': 'Filter the rules', placeholder: 'Filter by words: a field, a value…', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+  const filter = el('input', { type: 'search', class: 'fd-input fd-rules-filter-box', 'aria-label': w.filter, placeholder: w.filterPlaceholder, autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
   const bar = el(
     'div',
     { class: 'fd-rules-bar' },
-    el('div', { class: 'fd-rules-heading' }, el('h2', { class: 'fd-rules-title' }, 'Rules'), note),
+    el('div', { class: 'fd-rules-heading' }, el('h2', { class: 'fd-rules-title' }, w.rules), note),
     el('label', { class: 'fd-rules-filter' }, el('span', { class: 'fd-rules-filter-icon', 'aria-hidden': 'true' }, designerIcon(doc, 'search')), filter)
   );
   const groups = el('div', { class: 'fd-rules-groups' });
   const empty = el('p', { class: 'fd-rules-empty', hidden: '' });
-  const element = el('section', { class: 'fd-rules-view', 'aria-label': 'Rules', hidden: '' }, bar, groups, empty);
+  const element = el('section', { class: 'fd-rules-view', 'aria-label': w.rules, hidden: '' }, bar, groups, empty);
   root.append(element);
 
   let open = false;
@@ -117,17 +111,17 @@ export function rulesOverview(options: RulesOverviewOptions): RulesOverview {
 
   function render() {
     const page = designer.getPage();
-    const rules = pageRules(page);
-    // English words keep their order in a page right to left, on the page's side.
-    note.replaceChildren(el('span', { dir: 'ltr' }, rules.length === 1 ? '1 rule on this page.' : `${rules.length} rules on this page.`));
+    const rules = pageRules(page, designer.words);
+    // English words keep their order in a page right to left, on the page's side; the designer's own language runs its own way.
+    note.replaceChildren(el('span', { dir: designer.locale ? undefined : 'ltr' }, w.count(rules.length)));
     const words = filter.value.toLowerCase().split(/\s+/).filter(Boolean);
-    const titleOf = new Map(GROUPS.map((g) => [g.key, g.title]));
     const kept = rules.filter((rule) => {
-      const text = `${rule.name} ${rule.sentence} ${titleOf.get(groupOf(page, rule))}`.toLowerCase();
+      const text = `${rule.name} ${rule.sentence} ${w.groups[groupOf(page, rule)]}`.toLowerCase();
       return words.every((word) => text.includes(word));
     });
     groups.replaceChildren(
-      ...GROUPS.flatMap(({ key, title }) => {
+      ...GROUPS.flatMap((key) => {
+        const title = w.groups[key];
         const own = kept.filter((rule) => groupOf(page, rule) === key);
         if (!own.length) return [];
         const titleId = `${id}-${key}`;
@@ -136,14 +130,14 @@ export function rulesOverview(options: RulesOverviewOptions): RulesOverview {
       })
     );
     empty.hidden = kept.length > 0;
-    empty.textContent = rules.length ? `No rule says “${filter.value.trim()}”.` : 'No rules yet: pick a field and open Rules.';
+    empty.textContent = rules.length ? w.noRuleSays(filter.value.trim()) : w.noRules;
   }
 
   /** A survey's pages and where answers lead, as the map above the pages draws it. */
   function branches(page: Page): HTMLElement | null {
-    const drawn = branchMap(page);
+    const drawn = branchMap(page, designer.words);
     if (drawn.nodes.length < 2) return null;
-    return el('div', { class: 'fd-branch-scroll fd-rules-branches' }, drawBranchMap(doc, drawn, null, (part) => go({ kind: 'shows', part, name: '', sentence: '', reads: [] })));
+    return el('div', { class: 'fd-branch-scroll fd-rules-branches' }, drawBranchMap(doc, drawn, null, (part) => go({ kind: 'shows', part, name: '', sentence: '', reads: [] }), designer.words));
   }
 
   filter.addEventListener('input', render);
@@ -184,12 +178,11 @@ export function rulesOverview(options: RulesOverviewOptions): RulesOverview {
     },
     items() {
       const page = designer.getPage();
-      const titleOf = new Map(GROUPS.map((g) => [g.key, g.title]));
-      const each = pageRules(page)
+      const each = pageRules(page, designer.words)
         .filter((rule) => rule.part)
-        .map((rule) => ({ label: `Rule: ${rule.name} — ${rule.sentence}`, hint: titleOf.get(groupOf(page, rule)) ?? 'Rules', run: () => go(rule) }));
-      if (!open) return [{ label: 'Rules', hint: 'every rule on the page, in words', icon: 'rules', run: () => show(true) }, ...each];
-      return [{ label: 'Back to designing', hint: 'Design', run: () => show(false) }, { label: 'Filter the rules', hint: 'Rules', run: () => filter.focus() }, ...each];
+        .map((rule) => ({ label: w.findRule(rule.name, rule.sentence), hint: w.groups[groupOf(page, rule)], run: () => go(rule) }));
+      if (!open) return [{ label: w.rules, hint: w.everyRule, icon: 'rules', run: () => show(true) }, ...each];
+      return [{ label: w.backToDesigning, hint: w.design, run: () => show(false) }, { label: w.filter, hint: w.rules, run: () => filter.focus() }, ...each];
     },
     destroy() {
       leave();

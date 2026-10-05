@@ -57,7 +57,7 @@ export function openRules(root: HTMLElement, designer: Designer, to: RuleTarget)
   // Or the survey editor: the question's open card, or the page's card.
   const scope = tab ? root.querySelector('.fd-properties [data-panel="rules"]') : root.querySelector(`.fd-q-selected[data-node="${to.part}"], .fd-design-step[data-node="${to.part}"]`);
   if (!scope) return;
-  const hand = target(scope, to.kind, to.index ?? 0) ?? (to.kind === 'required' ? first(scope, '[role="switch"][aria-label="Required"], input[aria-label="Required"]') : null);
+  const hand = target(scope, to.kind, to.index ?? 0) ?? (to.kind === 'required' ? first(scope, '[role="switch"][data-required], input[data-required]') : null);
   (hand ?? (tab as HTMLElement | null))?.focus();
   (hand ?? scope).scrollIntoView?.({ block: 'nearest' });
 }

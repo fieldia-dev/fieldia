@@ -3,7 +3,9 @@ import { storedAs } from './kinds';
 import { findNode } from './page-tree';
 import { Refusal } from './refusal';
 import { formulaProblem, literalOf, problemWords, wouldCircle } from './rules-formula';
-import { asksNotFitting, ruleAsks, type Ask } from './rules-words';
+import { asksNotFitting, ruleAsks } from './rules-words';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * The store's rules: a field's value worked out from others ("Worked out
@@ -39,40 +41,27 @@ export interface RulesCommandsDeps {
 /** The kinds of field a formula can give a value to, as the page format allows. */
 const WORKED_OUT = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'boolean', 'date', 'datetime', 'selection', 'json']);
 
-const ASK_WORDS: Record<Ask, string> = {
-  minLength: 'a length',
-  maxLength: 'a length',
-  endsWith: 'an ending',
-  pattern: 'a pattern',
-  min: 'a range',
-  max: 'a range',
-  atLeast: 'how many are ticked',
-  atMost: 'how many are ticked',
-  date: 'a date in the past or the future',
-  holds: 'a rule across fields',
-};
-
 function fieldNode(draft: Page, id: string): FieldNode {
   const found = findNode(draft, id);
-  if (!found || found.node.type !== 'field') throw new Refusal(`There is no field "${id}"`);
+  if (!found || found.node.type !== 'field') throw new Refusal((w) => w.refusals.noField(id));
   return found.node;
 }
 
 const labelOf = (draft: Page, node: FieldNode) => node.label ?? draft.fields[node.field]?.label ?? node.field;
 
 /** A formula's problem on this page, in words, led by which box it is in when there are several. */
-function refuseFormula(draft: Page, source: string, lead = ''): void {
-  const problem = formulaProblem(draft, source);
-  if (problem) throw new Refusal(`${lead}${problemWords(problem)}`);
+function refuseFormula(draft: Page, source: string, lead: (w: DesignerWords, problem: string) => string = (_w, problem) => problem): void {
+  if (formulaProblem(draft, source)) throw new Refusal((w) => lead(w, problemWords(formulaProblem(draft, source, w), w)));
 }
 
 /** What is wrong with setting this value on this field, in words; null when it can hold it, or it is worked out as it goes. */
-export function cannotHold(field: Field, label: string, value: string): string | null {
+export function cannotHold(field: Field, label: string, value: string, words: DesignerWords = en): string | null {
+  const w = words.rules;
   const literal = literalOf(value);
   if (!literal || literal.value === null) return null;
   const v = literal.value;
-  const said = typeof v === 'string' ? `“${v}”` : typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v);
-  const not = () => `“${label}” holds ${storedAs(field)}, not ${said}`;
+  const said = typeof v === 'string' ? w.text(v) : typeof v === 'boolean' ? (v ? w.yes : w.no) : String(v);
+  const not = () => w.holdsNot(label, storedAs(field, words), said);
   switch (field.type) {
     case 'integer':
       return typeof v === 'number' && Number.isInteger(v) ? null : not();
@@ -90,9 +79,7 @@ export function cannotHold(field: Field, label: string, value: string): string |
       return typeof v === 'boolean' ? not() : null;
     case 'selection': {
       if (field.options.some((o) => o.value === v) || (field.other && typeof v === 'string')) return null;
-      const labels = field.options.map((o) => o.label);
-      const offered = labels.length < 2 ? labels.join('') : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
-      return `“${label}” offers ${offered}, not ${said}`;
+      return w.offersNot(label, field.options.map((o) => o.label), said);
     }
     default:
       return null;
@@ -100,35 +87,36 @@ export function cannotHold(field: Field, label: string, value: string): string |
 }
 
 /** What is wrong with an answer rule on this field, in words; null when it can be kept. */
-export function ruleRefusal(draft: Page, node: FieldNode, rule: AnswerRule): string | null {
+export function ruleRefusal(draft: Page, node: FieldNode, rule: AnswerRule, words: DesignerWords = en): string | null {
+  const w = words.rules;
   const field = draft.fields[node.field];
   const label = labelOf(draft, node);
   const asks = ruleAsks(rule);
-  if (!asks.length) return 'A rule asks for something: a length, an ending, a pattern, a range, how many are ticked, a date or a rule across fields';
+  if (!asks.length) return w.askSomething;
   const misfit = asksNotFitting(field, rule);
-  if (misfit.length) return `“${label}” holds ${storedAs(field)}: ${ASK_WORDS[misfit[0]]} does not fit it`;
+  if (misfit.length) return w.askMisfit(label, storedAs(field, words), w.asks[misfit[0]]);
   if (rule.pattern !== undefined) {
     try {
       new RegExp(`^(?:${rule.pattern})$`);
     } catch {
-      return `The pattern “${rule.pattern}” cannot be read`;
+      return w.patternUnreadable(rule.pattern);
     }
   }
   for (const key of ['minLength', 'maxLength', 'atLeast', 'atMost'] as const) {
     const n = rule[key];
-    if (n !== undefined && !(Number.isInteger(n) && n >= (key === 'minLength' || key === 'atLeast' ? 0 : 1))) return key.endsWith('Length') ? 'A length is a whole number of letters' : 'How many are ticked is a whole number';
+    if (n !== undefined && !(Number.isInteger(n) && n >= (key === 'minLength' || key === 'atLeast' ? 0 : 1))) return key.endsWith('Length') ? w.lengthWhole : w.tickedWhole;
   }
-  for (const key of ['min', 'max'] as const) if (rule[key] !== undefined && !Number.isFinite(rule[key])) return 'A range runs between numbers';
-  if (rule.minLength !== undefined && rule.maxLength !== undefined && rule.minLength > rule.maxLength) return `The shortest, ${rule.minLength}, is longer than the longest, ${rule.maxLength}`;
-  if (rule.min !== undefined && rule.max !== undefined && rule.min > rule.max) return `The smallest, ${rule.min}, is more than the largest, ${rule.max}`;
-  if (rule.atLeast !== undefined && rule.atMost !== undefined && rule.atLeast > rule.atMost) return `At least ${rule.atLeast} is more than at most ${rule.atMost}`;
+  for (const key of ['min', 'max'] as const) if (rule[key] !== undefined && !Number.isFinite(rule[key])) return w.rangeNumbers;
+  if (rule.minLength !== undefined && rule.maxLength !== undefined && rule.minLength > rule.maxLength) return w.shortestLonger(rule.minLength, rule.maxLength);
+  if (rule.min !== undefined && rule.max !== undefined && rule.min > rule.max) return w.smallestMore(rule.min, rule.max);
+  if (rule.atLeast !== undefined && rule.atMost !== undefined && rule.atLeast > rule.atMost) return w.atLeastMore(rule.atLeast, rule.atMost);
   if (rule.holds !== undefined) {
-    const problem = formulaProblem(draft, rule.holds);
-    if (problem) return `Must hold: ${problemWords(problem)}`;
+    const problem = formulaProblem(draft, rule.holds, words);
+    if (problem) return w.inMustHold(problemWords(problem, words));
   }
   if (typeof rule.when === 'string') {
-    const problem = formulaProblem(draft, rule.when);
-    if (problem) return `Only when: ${problemWords(problem)}`;
+    const problem = formulaProblem(draft, rule.when, words);
+    if (problem) return w.inOnlyWhen(problemWords(problem, words));
   }
   return null;
 }
@@ -148,16 +136,15 @@ export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps):
           const node = fieldNode(draft, id);
           const field = draft.fields[node.field];
           const label = labelOf(draft, node);
-          if (fromModel(node.field)) throw new Refusal(`How “${label}” is worked out comes from the model`);
+          if (fromModel(node.field)) throw new Refusal((w) => w.rules.computeFromModel(label));
           const source = expression?.trim() ?? '';
           if (!source) {
             delete field.compute;
             return;
           }
-          if (!WORKED_OUT.has(field.type)) throw new Refusal(`“${label}” holds ${storedAs(field)}, which cannot be worked out from other fields`);
+          if (!WORKED_OUT.has(field.type)) throw new Refusal((w) => w.rules.cannotBeWorkedOut(label, storedAs(field, w)));
           refuseFormula(draft, source);
-          const circle = wouldCircle(draft, node.field, source);
-          if (circle) throw new Refusal(circle);
+          if (wouldCircle(draft, node.field, source)) throw new Refusal((w) => wouldCircle(draft, node.field, source, w) as string);
           field.compute = source;
         },
         // Typing a formula is one step; taking it away is a step of its own.
@@ -175,17 +162,16 @@ export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps):
           const node = fieldNode(draft, id);
           const field = draft.fields[node.field];
           const label = labelOf(draft, node);
-          if (fromModel(node.field)) throw new Refusal(`What sets “${label}” comes from the model`);
+          if (fromModel(node.field)) throw new Refusal((w) => w.rules.setFromModel(label));
           if (!list.length) {
             delete field.setWhen;
             return;
           }
-          if (!WORKED_OUT.has(field.type)) throw new Refusal(`“${label}” holds ${storedAs(field)}, which cannot be set by a rule`);
+          if (!WORKED_OUT.has(field.type)) throw new Refusal((w) => w.rules.cannotBeSet(label, storedAs(field, w)));
           for (const item of list) {
-            refuseFormula(draft, item.when, 'When: ');
-            refuseFormula(draft, item.value, 'Set to: ');
-            const wrong = cannotHold(field, label, item.value);
-            if (wrong) throw new Refusal(wrong);
+            refuseFormula(draft, item.when, (w, problem) => w.rules.inWhen(problem));
+            refuseFormula(draft, item.value, (w, problem) => w.rules.inSetTo(problem));
+            if (cannotHold(field, label, item.value)) throw new Refusal((w) => cannotHold(field, label, item.value, w) as string);
           }
           field.setWhen = list;
         },
@@ -197,8 +183,7 @@ export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps):
       return apply((draft) => {
         const node = fieldNode(draft, id);
         const tidy = withoutEmpty(rule);
-        const refusal = ruleRefusal(draft, node, tidy);
-        if (refusal) throw new Refusal(refusal);
+        if (ruleRefusal(draft, node, tidy)) throw new Refusal((w) => ruleRefusal(draft, node, tidy, w) as string);
         node.validate = [...(node.validate ?? []), tidy];
       });
     },
@@ -208,10 +193,9 @@ export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps):
         (draft) => {
           const node = fieldNode(draft, id);
           const rule = node.validate?.[index];
-          if (!rule) throw new Refusal(`“${labelOf(draft, node)}” has no rule ${index + 1}`);
+          if (!rule) throw new Refusal((w) => w.rules.noRule(labelOf(draft, node), index + 1));
           const next = withoutEmpty({ ...rule, ...patch } as AnswerRulePatch);
-          const refusal = ruleRefusal(draft, node, next);
-          if (refusal) throw new Refusal(refusal);
+          if (ruleRefusal(draft, node, next)) throw new Refusal((w) => ruleRefusal(draft, node, next, w) as string);
           (node.validate as AnswerRule[])[index] = next;
         },
         `answer-rule:${id}:${index}:${Object.keys(patch).sort().join(',')}`
@@ -221,7 +205,7 @@ export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps):
     removeAnswerRule(id, index) {
       return apply((draft) => {
         const node = fieldNode(draft, id);
-        if (!node.validate?.[index]) throw new Refusal(`“${labelOf(draft, node)}” has no rule ${index + 1}`);
+        if (!node.validate?.[index]) throw new Refusal((w) => w.rules.noRule(labelOf(draft, node), index + 1));
         node.validate.splice(index, 1);
         if (!node.validate.length) delete node.validate;
       });

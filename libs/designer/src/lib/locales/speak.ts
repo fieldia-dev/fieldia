@@ -26,7 +26,10 @@ export function number(locale: 'en' | 'ar', n: number): string {
  * A name in a sentence of Arabic words: in guillemets, and isolated, so a
  * name written left to right keeps its own order and its marks stay at its ends.
  */
-export const quoteAr = (name: string): string => `«⁨${name}⁩»`;
+export const quoteAr = (name: string): string => `«\u2068${name}\u2069»`;
+
+/** Words written left to right — a pattern, an ending, a range of places — kept so in a sentence right to left. */
+export const ltr = (text: string | number): string => `\u2066${text}\u2069`;
 
 /** Several things said as one, the language's way: "A, B and C", "أ وب وج". */
 export function listOf(locale: 'en' | 'ar', items: readonly string[], join: 'and' | 'or'): string {

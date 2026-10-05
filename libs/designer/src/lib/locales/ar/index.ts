@@ -5,6 +5,10 @@ import { defaults } from './defaults';
 import { toolbox } from './toolbox';
 import { options } from './options';
 import { refusals } from './refusals';
+import { rules } from './rules';
+import { parts } from './parts';
+import { rulesUi } from './rules-ui';
+import { languages } from './languages';
 
 /**
  * The designer's words in Arabic: Modern Standard Arabic as Arabic software
@@ -26,4 +30,4 @@ import { refusals } from './refusals';
  *   model (the backend's) نموذج البيانات · record سجل · list قائمة · sheet ورقة
  *   desktop / tablet / phone سطح المكتب / جهاز لوحي / هاتف · width العرض
  */
-export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals };
+export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages };

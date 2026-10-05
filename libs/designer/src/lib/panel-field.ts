@@ -62,7 +62,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   });
 
   // ---- Rules: required, read-only, when it shows ----
-  const required = el('input', { type: 'checkbox', 'aria-label': 'Required' });
+  const required = el('input', { type: 'checkbox', 'aria-label': 'Required', 'data-required': '' });
   required.addEventListener('change', () => {
     // Read before anything redraws the panel.
     const always = required.checked;
