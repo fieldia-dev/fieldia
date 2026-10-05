@@ -9,7 +9,7 @@
     "signature": {"type": "binary", "label": "Your signature", "help": "Draw it, or type your name."},
     "office_days": {"type": "integer", "label": "How many days a week will you come in?", "min": 0, "max": 5},
     "commute": {"type": "float", "label": "How long is your trip to the new building, in hours?", "min": 0, "max": 3, "digits": [3, 1]},
-    "rooms": {"type": "selection", "label": "Which rooms will you use?", "multiple": true, "ownAnswers": true,
+    "rooms": {"type": "selection", "label": "Which rooms will you use?", "multiple": true,
       "options": [
         {"value": "kitchen", "label": "Kitchen"},
         {"value": "quiet", "label": "Quiet room"},
@@ -93,6 +93,13 @@
       "rows": [{"value": "kitchen", "label": "Kitchen"}, {"value": "quiet", "label": "Quiet room"}, {"value": "meeting", "label": "Meeting rooms"}],
       "columns": [{"value": "morning", "label": "Mornings"}, {"value": "afternoon", "label": "Afternoons"}, {"value": "evening", "label": "Evenings"}]
     },
+    "needs": {"type": "selection", "label": "What else should the new building have?", "multiple": true, "ownAnswers": true, "help": "Pick from the list, or type your own and press Enter.",
+      "options": [
+        {"value": "showers", "label": "Showers"},
+        {"value": "bikes", "label": "Bike racks"},
+        {"value": "lockers", "label": "Lockers"}
+      ]
+    },
     "guide": {"type": "boolean", "label": "I have read the moving guide", "required": true},
     "badge_address": {"type": "json", "label": "Where should we post your new badge?"},
     "movers": {"type": "one2many", "label": "Who in your team moves with you?", "relation": "mover",
@@ -145,6 +152,7 @@
           {"type": "field", "id": "q-drive", "field": "drive", "widget": "buttons", "options": {"yesLabel": "Yes, I will"}},
           {"type": "field", "id": "q-bring", "field": "bring", "widget": "checkboxes", "options": {"columns": 2}, "validate": [{"atMost": 3}]},
           {"type": "field", "id": "q-floor", "field": "floor"},
+          {"type": "field", "id": "q-needs", "field": "needs", "widget": "tags"},
           {"type": "field", "id": "q-miss", "field": "miss", "widget": "ranking", "options": {"top": 3}},
           {"type": "field", "id": "q-when", "field": "when", "options": {"shuffle": true}}
         ]

@@ -105,15 +105,17 @@ test.describe('the choice kinds in the viewer', () => {
   });
 
   test('tags take words of one’s own', async ({ page }) => {
-    const rooms = node(page, 'q-rooms');
-    const combo = rooms.getByRole('combobox');
+    const needs = node(page, 'q-needs');
+    const combo = needs.getByRole('combobox');
+    await combo.scrollIntoViewIfNeeded();
     await combo.fill('Bike room');
-    await expect(rooms.getByRole('option')).toHaveText(['Create “Bike room”']);
+    await expect(needs.getByRole('option')).toHaveText(['Create “Bike room”']);
     await page.keyboard.press('Enter');
-    await combo.fill('Gym');
+    await combo.fill('Lock');
+    await expect(needs.getByRole('option')).toHaveText(['Lockers', 'Create “Lock”']);
     await page.keyboard.press('Enter');
-    expect(await valueOf(page, 'rooms')).toEqual(['Bike room', 'gym']);
-    await expect(rooms.locator('.fd-chip-label')).toHaveText(['Bike room', 'Gym']);
+    expect(await valueOf(page, 'needs')).toEqual(['Bike room', 'lockers']);
+    await expect(needs.locator('.fd-chip-label')).toHaveText(['Bike room', 'Lockers']);
     await screen(page, 'choices-tags-own', { viewport: true });
   });
 
