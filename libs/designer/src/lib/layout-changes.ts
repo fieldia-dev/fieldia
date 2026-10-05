@@ -1,6 +1,7 @@
 import type { Page, PageLook, SectionNode, TabsNode } from '@fieldia/core';
 import { across, andList, isSection, isWrapper, listOf, nameOf, rowsOf, seenAs, spanOf, type Holder, type Part } from './layout-tree';
 import { FOLD_WORDS, foldOf } from './group-fold';
+import { inTwelfths, laidInTwelfths, rowShare, TWELVE } from './layout-twelfths';
 
 /**
  * What changed in a page's layout, in the words a person would use for what
@@ -93,11 +94,12 @@ function nearby(page: Page, parent: Holder | undefined, node: Part): string | nu
 
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
 
-/** Columns in words: "3 columns", or "3 columns on a desktop, 1 on a phone". */
+/** Columns in words: "3 columns", or "3 columns on a desktop, 1 on a phone"; twelve are twelfths. */
 function columnsWords(columns: SectionNode['columns']): string {
-  if (typeof columns !== 'object') return plural(columns ?? 1, 'column');
-  const smaller = [columns.medium ? `${columns.medium} on a tablet` : '', columns.narrow ? `${columns.narrow} on a phone` : ''].filter(Boolean);
-  return smaller.length ? `${plural(columns.wide, 'column')} on a desktop, ${smaller.join(', ')}` : plural(columns.wide, 'column');
+  const count = (n: number) => (n === TWELVE ? 'twelfths' : plural(n, 'column'));
+  if (typeof columns !== 'object') return count(columns ?? 1);
+  const smaller = [columns.medium ? `${columns.medium === TWELVE ? 'twelfths' : columns.medium} on a tablet` : '', columns.narrow ? `${columns.narrow === TWELVE ? 'twelfths' : columns.narrow} on a phone` : ''].filter(Boolean);
+  return smaller.length ? `${count(columns.wide)} on a desktop, ${smaller.join(', ')}` : count(columns.wide);
 }
 
 const STYLES: Record<string, string> = { card: 'as a card', plain: 'plain, with no box', line: 'with a line under its title', framed: 'in a frame, its title on it' };
@@ -232,17 +234,20 @@ export function layoutChanges(before: Page, after: Page): LayoutChanges {
     const name = quoted(after, node);
     if (isSection(node) && isSection(old)) {
       const sameParts = old.children.map((c) => c.id).join() === node.children.map((c) => c.id).join();
-      if (JSON.stringify(old.columns) !== JSON.stringify(node.columns) && (!isWrapper(node) || sameParts)) lines.push(`${name}: ${columnsWords(node.columns)}`);
+      // Divided in twelfths, every part as wide as it was: said once, not as each width and count.
+      if (inTwelfths(node) && !inTwelfths(old)) lines.push(`${name}: rows divided in twelfths`);
+      else if (JSON.stringify(old.columns) !== JSON.stringify(node.columns) && (!isWrapper(node) || sameParts)) lines.push(`${name}: ${columnsWords(node.columns)}`);
+      if ((old.rows ?? 'full') !== (node.rows ?? 'full')) lines.push(`${name}: ${node.rows === 'gaps' ? 'rows may leave gaps' : 'rows kept full'}`);
       if ((old.style ?? 'card') !== (node.style ?? 'card')) lines.push(`${name}: drawn ${STYLES[node.style ?? 'card']}`);
       if (foldOf(old) !== foldOf(node)) lines.push(`${name}: ${FOLD_WORDS[foldOf(node)]}`);
       if (old.labels !== node.labels) lines.push(`${name}: labels ${node.labels ? LABELS[node.labels] : 'where the page puts them'}`);
       if (old.labelWidth !== node.labelWidth) lines.push(`${name}: labels ${node.labelWidth ? `${node.labelWidth} px wide` : 'as wide as the page has them'}`);
     }
-    // As wide as its group before and after, as when the group takes a column more, its width did not change.
-    const whole = (page: Page, holder: Holder | undefined, part: Part) => !!holder && spanOf(part) >= across(page, holder);
-    const stillWhole = whole(before, was.parent.get(id), old) && whole(after, now.parent.get(id), node);
-    if (now.holder.has(id) && !said.has(id) && was.holder.get(id)?.id === now.holder.get(id)?.id && spanOf(old) !== spanOf(node) && !stillWhole) {
-      lines.push(`${name}: ${plural(spanOf(node), 'column')} wide`);
+    // As wide a share of its row before and after — as wide as its group, or the same width in twelfths — its width did not change.
+    const share = (page: Page, holder: Holder | undefined, part: Part) => (holder ? Math.min(spanOf(part), across(page, holder)) / across(page, holder) : 0);
+    const holder = now.parent.get(id);
+    if (now.holder.has(id) && !said.has(id) && was.holder.get(id)?.id === now.holder.get(id)?.id && spanOf(old) !== spanOf(node) && share(before, was.parent.get(id), old) !== share(after, holder, node)) {
+      lines.push(`${name}: ${laidInTwelfths(after, holder) ? rowShare(spanOf(node), across(after, holder as Holder)) : `${plural(spanOf(node), 'column')} wide`}`);
     }
     if (node.type === 'field' && old.type === 'field' && old.labels !== node.labels) lines.push(`${name}: its label ${node.labels ? LABEL[node.labels] : 'where its group puts it'}`);
     // The words in its empty box, which the panel sets.

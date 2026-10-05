@@ -1,6 +1,7 @@
 import type { Page, SectionNode } from '@fieldia/core';
-import { detach, setRowColumns, setSpan, tidy } from './layout-ops';
-import { across, contains, isRow, listOf, locate, nameOf, nodeOf, spanOf, type Holder, type Part, type Spot } from './layout-tree';
+import { cameFrom, detach, setRowColumns, tidy } from './layout-ops';
+import { contains, isRow, listOf, locate, nameOf, nodeOf, type Holder, type Part, type Spot } from './layout-tree';
+import { landingSpan, putAt } from './layout-twelfths';
 import { Refusal } from './refusal';
 
 /**
@@ -10,9 +11,10 @@ import { Refusal } from './refusal';
  * it, as a drop line between two rows says. Nothing is put side by side on
  * the way: a part lands in the list as it is, no wider than the columns
  * there; a row of parts on the page takes one more column (four at most)
- * and closes up when one leaves; an arrangement left holding one part folds
- * away (layout-ops.ts's `tidy`). A part picked inside another part picked
- * goes along with it.
+ * and closes up when one leaves; in a group in twelfths that keeps its rows
+ * full, a part is a row of its own (layout-twelfths.ts); an arrangement left
+ * holding one part folds away (layout-ops.ts's `tidy`). A part picked inside
+ * another part picked goes along with it.
  */
 
 /** A part's name as a person reads it — a survey's page by its title — in quotes. */
@@ -100,11 +102,10 @@ function anchorOf(list: readonly Part[], index: number, moving: ReadonlySet<stri
 function put(page: Page, coming: Coming[], parent: Holder, anchor: Part | null): string[] {
   // A row of parts on the page: each part one column of it, and the row as many columns as it has parts.
   const row = isRow(page, parent);
+  const came = new Map(coming.map(({ node, from }) => [node, from ? cameFrom(page, node.id) : undefined]));
   for (const { node, from } of coming) if (from) detach(page, node.id);
-  const cols = across(page, parent);
-  for (const { node } of coming) setSpan(node, row ? 1 : Math.min(spanOf(node), cols));
   const at = anchor ? parent.children.indexOf(anchor) : parent.children.length;
-  parent.children.splice(at, 0, ...coming.map((c) => c.node));
+  putAt(page, parent, at, coming.map((c) => c.node), (node) => (row ? 1 : landingSpan(page, node, parent, came.get(node))), (node) => came.get(node)?.cols);
   if (row) setRowColumns(parent as SectionNode, parent.children.length);
   tidy(page);
   return coming.map((c) => c.node.id);

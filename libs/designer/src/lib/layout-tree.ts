@@ -63,6 +63,17 @@ export const isWrapper = (node: unknown): node is SectionNode => isSection(node)
 
 export const spanOf = (node: Part): number => (node as { colspan?: number }).colspan ?? 1;
 
+/** The parts that take a width; a divider runs across the whole row. */
+export const SPANNED = new Set(['field', 'button', 'text', 'section', 'tabs', 'spacer', 'image']);
+
+/** Set how many columns a part spans; one is the default, and a part that spans nothing (a divider) is left as it is. */
+export function setSpan(node: Part, span: number): void {
+  if (!SPANNED.has(node.type)) return;
+  const own = node as { colspan?: number };
+  if (span <= 1) delete own.colspan;
+  else own.colspan = span;
+}
+
 /** The columns a section has: its own, or — an arrangement in a grid — the ones it covers there. */
 export function colsOf(page: Page, section: SectionNode): number {
   if (onTracks(page, section)) return Math.min(spanOf(section), colsOf(page, locate(page, section.id)?.parent as SectionNode));
@@ -95,17 +106,24 @@ export function isRow(page: Page, node: Part | Holder | null): node is SectionNo
   return cols >= 2 && node.children.length === cols;
 }
 
+export interface Row {
+  items: Part[];
+  used: number;
+}
+
 /**
  * The rows a list's parts fall into, in reading order as the grid places them:
  * a part too wide for what is left of a row starts the next. A divider is a
  * line across the whole row.
  */
-export function rowsOf(page: Page, holder: Holder, skip?: string): { items: Part[]; used: number }[] {
-  const cols = across(page, holder);
-  const rows: { items: Part[]; used: number }[] = [];
+export const rowsOf = (page: Page, holder: Holder, skip?: string): Row[] => rowsIn(holder.children, across(page, holder), skip);
+
+/** The rows of a list of parts on a grid of `cols` columns. */
+export function rowsIn(list: Part[], cols: number, skip?: string): Row[] {
+  const rows: Row[] = [];
   let row: Part[] = [];
   let used = 0;
-  for (const part of holder.children) {
+  for (const part of list) {
     if (part.id === skip) continue;
     const span = part.type === 'divider' ? cols : Math.min(spanOf(part), cols);
     if (used + span > cols && row.length) {
@@ -139,8 +157,10 @@ export function nameOf(page: Page, node: Part | Holder | null): string {
       return part.label ?? page.fields[part.field]?.label ?? part.field;
     case 'section': {
       if (part.title) return part.title;
-      const cols = colsOf(page, part);
-      return cols > 1 ? (part.children.length > cols ? `${cols} columns` : 'Side by side') : 'Column';
+      // Named by how its parts fall: one under another, side by side, or in rows of so many.
+      const rows = rowsOf(page, part);
+      const most = rows.reduce((n, r) => Math.max(n, r.items.length), 0);
+      return most < 2 ? 'Column' : rows.length > 1 ? `${most} columns` : 'Side by side';
     }
     case 'tabs':
       return 'Tabs';

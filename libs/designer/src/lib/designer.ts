@@ -29,10 +29,12 @@ import type { DesignerAssistant } from './assistant';
 import * as ops from './layout-ops';
 import type { BlockKind, Drop, NewPart } from './layout-ops';
 import * as settings from './layout-settings';
+import * as twelfths from './layout-twelfths';
 import type { BlockPatch, LookPatch, SectionLook } from './layout-settings';
 import * as several from './layout-several';
 import type { EachChange } from './layout-several';
-import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields } from './page-tree';
+import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields, type Container } from './page-tree';
+import type { Holder } from './layout-tree';
 import { Refusal } from './refusal';
 import { translationCommands } from './translations';
 import { pageJsonCommands, type PageJsonResult } from './page-json';
@@ -348,8 +350,12 @@ export interface Designer extends HeaderCommands, ListCommands {
   // canvas lane
   /** A block's words and look, a button's label, a picture's address and description; a run of typing in one is one undo step. */
   updateBlock(id: string, patch: BlockPatch): boolean;
-  /** Several parts' widths as one edit: two trading width across the gutter between them. */
-  setWidths(widths: { id: string; span: number }[]): boolean;
+  /**
+   * Several parts' widths as one edit: two trading width across the gutter
+   * between them. With `twelfths`, widths are twelfths of their row, and a
+   * group of one to four columns is divided in twelfths first, in the same edit.
+   */
+  setWidths(widths: { id: string; span: number }[], options?: { twelfths?: boolean }): boolean;
   // rules lane
   /** A field's value worked out from others, such as `price * qty`; `null` makes it a field to fill in again. Typing a formula is one undo step. */
   setCompute(id: string, expression: string | null): boolean;
@@ -538,17 +544,19 @@ export function createDesigner(options: {
     return true;
   }
 
+  /** A new part after another, or in a container at a place: in a group in twelfths, a row of its own. */
   function placeAfter(draft: Page, node: LayoutNode, where: Where = {}): void {
+    const new_ = (holder: Container, index: number) => twelfths.putAt(draft, holder as Holder, index, [node], (p) => twelfths.landingSpan(draft, p, holder as Holder));
     if (where.after) {
       const found = findNode(draft, where.after);
       if (!found) throw new Refusal(`There is no element "${where.after}"`);
-      found.parent.children.splice(found.index + 1, 0, node);
+      new_(found.parent, found.index + 1);
       return;
     }
     const all = containers(draft);
     const parent = where.parent ? all.find((c) => c.id === where.parent) : all[all.length - 1];
     if (!parent) throw new Refusal(`There is no step or section "${where.parent}"`);
-    parent.children.splice(where.index === undefined ? parent.children.length : Math.max(0, Math.min(where.index, parent.children.length)), 0, node);
+    new_(parent, where.index === undefined ? parent.children.length : Math.max(0, Math.min(where.index, parent.children.length)));
   }
 
   function refuseInSurvey(draft: Page, kind: QuestionKind) {
@@ -815,14 +823,11 @@ export function createDesigner(options: {
         if (!found) throw new Refusal(`There is no element "${id}"`);
         const parent = containers(draft).find((c) => c.id === parentId);
         if (!parent) throw new Refusal(`There is no step or section "${parentId}"`);
-        found.parent.children.splice(found.index, 1);
-        parent.children.splice(Math.max(0, Math.min(index, parent.children.length)), 0, found.node);
-        // No wider than its new section.
-        const columns = (parent as SectionNode).type === 'section' ? wideColumns((parent as SectionNode).columns) : null;
-        if (columns && found.node.type === 'field' && (found.node.colspan ?? 1) > columns) {
-          if (columns === 1) delete found.node.colspan;
-          else found.node.colspan = columns;
-        }
+        const came = ops.cameFrom(draft, id);
+        // Its row closes up behind it; it is no wider than its new section, and as wide a share of a row in twelfths.
+        ops.detach(draft, id);
+        const holder = parent as Holder;
+        twelfths.putAt(draft, holder, Math.max(0, Math.min(index, parent.children.length)), [found.node], (p) => twelfths.landingSpan(draft, p, holder, came), () => came?.cols);
       }, null, pick);
     },
 
@@ -850,7 +855,7 @@ export function createDesigner(options: {
           // A whole page (wizard step), or what sits at the top of a screen or a sheet.
           if (root.children.length === 1) throw new Refusal('A page needs at least one step or section');
           root.children.splice(topIndex, 1);
-        } else if (found) found.parent.children.splice(found.index, 1);
+        } else if (found) ops.detach(draft, id); // Its row closes up.
         else if (tab) {
           tab.tabs.children.splice(tab.index, 1);
           // Tabs with no tab left go too.
@@ -1283,7 +1288,7 @@ export function createDesigner(options: {
     },
     // canvas lane
     updateBlock: (id, patch) => apply((draft) => settings.updateBlock(draft, id, patch), `block:${id}:${Object.keys(patch).join(',')}`),
-    setWidths: (widths) => apply((draft) => settings.setWidths(draft, widths)),
+    setWidths: (widths, options) => apply((draft) => settings.setWidths(draft, widths, options?.twelfths)),
     // rules lane
     ...rulesCommands({ apply, getPage: () => page, fromModel }),
     // extend lane

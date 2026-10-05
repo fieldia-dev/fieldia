@@ -25,71 +25,32 @@ describe('a drop beside a part', () => {
     expectValid(d.getPage());
   });
 
-  /** The site visit as the screen demo starts it: Customer and Visit date side by side, Notes the whole width under them. */
-  function visit() {
-    const d = watched(createDesigner({ page: blankPage('screen', 'Site visit') }));
-    d.renameContainer('section-1', 'Visit');
-    d.setColumns('section-1', 2);
-    const ids = ['Customer', 'Visit date', 'Notes'].map((label, i) => {
-      const id = d.addQuestion(['short-answer', 'date', 'paragraph'][i], { parent: 'section-1' }) as string;
-      d.updateQuestion(id, { label });
-      return id;
-    });
-    d.setColspan(ids[2], 2);
-    return { d, ids, kids: () => where(d.getPage(), ids[0])?.kids, span: (id: string) => nodeOf(d.getPage(), id)?.['colspan'] };
-  }
-
-  it('beside a field in a group’s full row: the group takes one more column, and a part as wide as the group stays as wide', () => {
-    const { d, ids, kids, span } = visit();
-    const drop = { how: 'beside', target: ids[1], after: true } as const;
-    expect(d.describeDrop(drop)).toBe('a third column of “Visit”, beside “Visit date”');
-    const id = d.place({ kind: 'number' }, drop) as string;
-    expect(nodeOf(d.getPage(), 'section-1')?.['columns']).toBe(3);
-    expect(kids()).toEqual([ids[0], ids[1], id, ids[2]]);
-    expect([span(ids[0]), span(ids[1]), span(id), span(ids[2])]).toEqual([undefined, undefined, undefined, 3]);
-    expectValid(d.getPage());
-  });
-
-  it('a part of the group moved beside a field of its full row: the third column is that part', () => {
-    const { d, ids, kids, span } = visit();
-    const drop = { how: 'beside', target: ids[1], after: true } as const;
-    expect(d.describeDrop(drop, ids[2])).toBe('a third column of “Visit”, beside “Visit date”');
-    d.place(ids[2], drop);
-    expect(nodeOf(d.getPage(), 'section-1')?.['columns']).toBe(3);
-    expect(kids()).toEqual(ids);
-    expect(span(ids[2])).toBeUndefined();
-    // Moved along its own row, with room there, it only changes places: no column more.
-    expect(d.describeDrop({ how: 'beside', target: ids[1], after: true }, ids[0])).toBe('beside “Visit date”');
-    expectValid(d.getPage());
-  });
-
-  it('a group of one column takes a second: the rest stay the whole width', () => {
+  // In a named group, a row divides in twelfths: see layout-twelfths.spec.ts for the site visit, case by case.
+  it('a group of one column, divided in twelfths: the row of the part beside in halves, the rest the whole width', () => {
     const d = employeeDesigner();
     const id = d.place({ kind: 'email' }, { how: 'beside', target: 'f-ec_name', after: true }) as string;
     const page = d.getPage();
-    expect(nodeOf(page, 'emergency')?.['columns']).toBe(2);
+    expect(nodeOf(page, 'emergency')?.['columns']).toBe(12);
     expect(where(page, id)?.kids).toEqual(['f-ec_name', id, 'f-ec_relation', 'f-ec_phone']);
-    expect(['f-ec_name', id, 'f-ec_relation', 'f-ec_phone'].map((n) => nodeOf(page, n)?.['colspan'])).toEqual([undefined, undefined, 2, 2]);
+    expect(['f-ec_name', id, 'f-ec_relation', 'f-ec_phone'].map((n) => nodeOf(page, n)?.['colspan'])).toEqual([6, 6, 12, 12]);
     expectValid(page);
   });
 
-  it('columns given per screen size: the desktop’s grow, the tablet’s and the phone’s stay', () => {
+  it('columns given per screen size: a tablet’s two or more become twelfths too, keeping the row’s proportions; a phone’s one stays', () => {
     const d = employeeDesigner();
-    expect(d.describeDrop({ how: 'beside', target: 'f-manager', after: true })).toBe('a fourth column of “Role”, beside “Manager”');
+    expect(d.describeDrop({ how: 'beside', target: 'f-manager', after: true })).toBe('at the end of the row, after “Manager” — the row in quarters');
     d.place({ kind: 'number' }, { how: 'beside', target: 'f-manager', after: true });
-    expect(nodeOf(d.getPage(), 'role')?.['columns']).toEqual({ wide: 4, medium: 2, narrow: 1 });
+    expect(nodeOf(d.getPage(), 'role')?.['columns']).toEqual({ wide: 12, medium: 12, narrow: 1 });
     expectValid(d.getPage());
   });
 
-  it('a group of four columns takes no fifth: beside a field of a full row, the two share its cell', () => {
+  it('a row of four takes no fifth: refused, saying so', () => {
     const d = employeeDesigner();
     d.place({ kind: 'number' }, { how: 'beside', target: 'f-manager', after: true });
     const drop = { how: 'beside', target: 'f-department', after: true } as const;
-    expect(d.describeDrop(drop)).toBe('beside “Department”');
-    const id = d.place({ kind: 'date' }, drop) as string;
-    expect(nodeOf(d.getPage(), 'role')?.['columns']).toEqual({ wide: 4, medium: 2, narrow: 1 });
-    expect(where(d.getPage(), id)).toMatchObject({ style: 'plain', kids: ['f-department', id], grand: 'role' });
-    expectValid(d.getPage());
+    expect(d.dropRefusal(drop)).toBe('A row holds four');
+    expect(d.place({ kind: 'date' }, drop)).toBe(false);
+    expect(d.getState().issues).toEqual(['A row holds four']);
   });
 
   it('before it, when dropped on its leading edge', () => {
@@ -107,34 +68,34 @@ describe('a drop beside a part', () => {
     expectValid(d.getPage());
   });
 
-  it('beside a field whose row has room: it takes the free cell, no arrangement', () => {
+  it('beside a field whose row has room, in a group that keeps its rows full: the row divides, no arrangement', () => {
     const d = employeeDesigner();
     const drop = { how: 'beside', target: 'f-salary', after: true } as const;
-    expect(d.describeDrop(drop)).toBe('beside “Monthly salary”');
+    expect(d.describeDrop(drop)).toBe('at the end of the row, after “Monthly salary” — the row in thirds');
     const id = d.place({ kind: 'number' }, drop) as string;
     const at = spot(d.getPage(), id);
     expect([at?.parent.id, (at?.parent.children as { id: string }[])[(at?.index ?? 0) - 1].id]).toEqual(['role', 'f-salary']);
-    expect(nodeOf(d.getPage(), id)?.['colspan']).toBeUndefined();
+    expect(['f-end_date', 'f-salary', id].map((n) => nodeOf(d.getPage(), n)?.['colspan'])).toEqual([4, 4, 4]);
     expect(picked(d)).toEqual([id]);
     expectValid(d.getPage());
   });
 
-  it('beside a part two or more columns wide: it gives half its width, both stay on the columns', () => {
+  it('beside a part two columns wide in a group: its row in thirds', () => {
     const d = employeeDesigner();
     const id = d.place({ kind: 'short-answer' }, { how: 'beside', target: 'f-contract', after: true }) as string;
     const page = d.getPage();
     expect(where(page, id)?.parent).toBe('role');
     expect(where(page, id)?.kids.slice(4, 6)).toEqual(['f-contract', id]);
-    expect([nodeOf(page, 'f-contract')?.['colspan'], nodeOf(page, id)?.['colspan']]).toEqual([undefined, undefined]);
+    expect(['f-start_date', 'f-contract', id].map((n) => nodeOf(page, n)?.['colspan'])).toEqual([4, 4, 4]);
     expectValid(page);
   });
 
-  it('beside a part four columns wide: two each', () => {
+  it('beside a part the whole width of a group of four: halves, before it when on its leading edge', () => {
     const d = employeeDesigner();
     d.setColumns('role', 4);
     d.setColspan('f-contract', 4);
     const id = d.place({ kind: 'short-answer' }, { how: 'beside', target: 'f-contract', after: false }) as string;
-    expect([nodeOf(d.getPage(), id)?.['colspan'], nodeOf(d.getPage(), 'f-contract')?.['colspan']]).toEqual([2, 2]);
+    expect([nodeOf(d.getPage(), id)?.['colspan'], nodeOf(d.getPage(), 'f-contract')?.['colspan']]).toEqual([6, 6]);
     expect(where(d.getPage(), id)?.kids.indexOf(id)).toBe((where(d.getPage(), id)?.kids.indexOf('f-contract') ?? 0) - 1);
   });
 

@@ -34,9 +34,9 @@ describe('columns per screen size, and widths', () => {
     expect(d.setColumns('personal', { wide: 3, medium: 1, narrow: 2 })).toBe(false);
     expect(d.getState().issues).toEqual(['A phone shows no more columns than a tablet']);
     expect(d.setColumns('personal', { wide: 5 as never })).toBe(false);
-    expect(d.getState().issues).toEqual(['A group has one to four columns']);
+    expect(d.getState().issues).toEqual(['A group has one to four columns, or twelfths']);
     expect(d.setColumns('personal', { wide: 2, narrow: 0 as never })).toBe(false);
-    expect(d.getState().issues).toEqual(['A group has one to four columns']);
+    expect(d.getState().issues).toEqual(['A group has one to four columns, or twelfths']);
     expect(d.setColumns('f-email', { wide: 2 })).toBe(false);
     expect(d.getState().issues).toEqual(['There is no section "f-email"']);
   });

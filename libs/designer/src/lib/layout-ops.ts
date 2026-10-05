@@ -1,6 +1,7 @@
 import type { ColumnCount, ColumnsByWidth, Field, LayoutNode, Page, SectionNode, TabsNode } from '@fieldia/core';
 import { kindById, type QuestionKind } from './kinds';
-import { across, colsOf, contains, isRow, isSection, isWrapper, listOf, locate, nameOf, nodeOf, rowsOf, seenAs, spanOf, type Holder, type Part, type Spot } from './layout-tree';
+import { across, colsOf, contains, isRow, isSection, isWrapper, listOf, locate, nameOf, nodeOf, rowsOf, seenAs, setSpan, spanOf, SPANNED, type Holder, type Part, type Spot } from './layout-tree';
+import { besideIn, besideWords, fill, inTwelfths, isGroup, keepsFull, laidInTwelfths, landingSpan, putAt, resize, shares, toTwelfths, TWELVE, type Beside } from './layout-twelfths';
 import { allIds, containers, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
 
@@ -12,8 +13,9 @@ import { Refusal } from './refusal';
  * goes in, where, and how wide.
  *
  * Parts go side by side, or one under another, in arrangements (see
- * layout-tree.ts). After every drop the page is tidied: an arrangement left
- * holding one part or none folds away, and so does a column in a column.
+ * layout-tree.ts); beside a part in a group, its row divides in twelfths (see
+ * layout-twelfths.ts). After every drop the page is tidied: an arrangement
+ * left holding one part or none folds away, and so does a column in a column.
  */
 
 /** Where a dragged part lands; `at` puts it at a place in a list as it is, as a key moving it along its list does. */
@@ -60,44 +62,26 @@ export function describeDrop(page: Page, drop: Drop, moving?: string): string {
     const edge = drop.after ? target.children[target.children.length - 1] : target.children[0];
     return `new column beside “${nameOf(page, edge)}”`;
   }
-  const at = locate(page, drop.target);
-  const grows = drop.how === 'beside' && !drop.whole && at ? growsTo(page, at, moving) : 0;
-  if (grows) return `a ${ORDINAL[grows]} column of “${nameOf(page, at?.parent ?? null)}”, beside ${seenAs(page, target)}`;
+  const plan = besidePlan(page, drop, moving);
+  if (plan) return besideWords(page, plan, target as Part, drop.after);
   const whole = drop.whole ? (drop.how === 'beside' ? 'new column ' : 'new row ') : '';
   const name = seenAs(page, target);
   if (drop.how === 'beside') return `${whole}beside ${name}`;
   return `${whole}${drop.after ? 'under' : 'above'} ${name}`;
 }
 
-const ORDINAL: Record<number, string> = { 2: 'second', 3: 'third', 4: 'fourth' };
-
-/**
- * Beside a one-column part whose row is full, in a group with columns of its
- * own (a titled group, or one with a look): the columns the group grows to,
- * four at most — or 0 where the drop does something else: a free cell in the
- * row takes it, a wider part gives half its width, and an arrangement or a
- * group of four shares the part's cell. `moving` is left out of the row.
- */
-function growsTo(page: Page, at: Spot, moving?: string): number {
-  const group = at.parent;
-  if (!isSection(group) || isWrapper(group) || moving === at.node.id) return 0;
-  const cols = across(page, group);
-  if (cols >= 4 || Math.min(spanOf(at.node), cols) >= 2) return 0;
-  const row = rowsOf(page, group, moving).find((r) => r.items.includes(at.node));
-  return row && row.used < cols ? 0 : cols + 1;
+/** Beside a part in a group: where its row puts the part dropped (see layout-twelfths.ts); null for a drop the other rules take. */
+function besidePlan(page: Page, drop: Drop, moving?: string, node?: Part): Beside | null {
+  if (drop.how !== 'beside') return null;
+  const at = locate(page, drop.target);
+  const kind = node?.type ?? (moving ? locate(page, moving)?.node.type : undefined);
+  if (!at || !isGroup(at.parent) || !SPANNED.has(at.node.type) || (kind && !SPANNED.has(kind)) || moving === drop.target) return null;
+  return besideIn(page, at.parent, at.node, moving);
 }
 
 // ---- changing the page --------------------------------------------------------------------------------
 
-export const SPANNED = new Set(['field', 'button', 'text', 'section', 'tabs', 'spacer', 'image']);
-
-/** Set how many columns a part spans; one is the default, and a part that spans nothing (a divider) is left as it is. */
-export function setSpan(node: Part, span: number): void {
-  if (!SPANNED.has(node.type)) return;
-  const own = node as { colspan?: number };
-  if (span <= 1) delete own.colspan;
-  else own.colspan = span;
-}
+export { SPANNED, setSpan };
 
 /** Columns written as plainly as they can be: a number when only the widest is given. */
 export function columnsValue(wide: number, medium?: number, narrow?: number): ColumnCount | ColumnsByWidth {
@@ -114,13 +98,22 @@ export function setRowColumns(section: SectionNode, count: number): void {
   section.columns = typeof given === 'object' ? columnsValue(wide, given.medium && Math.min(given.medium, wide), given.narrow && Math.min(given.narrow, wide)) : wide as ColumnCount;
 }
 
-/** Take a part out of where it is; a row it leaves closes up. */
+/** Take a part out of where it is; a row it leaves closes up — in a group that keeps its rows full, the rest of it widening to fill it. */
 export function detach(page: Page, id: string): void {
   const at = locate(page, id);
   if (!at) return;
   const wasRow = isRow(page, at.parent);
+  const group = at.parent;
+  const rest = inTwelfths(group) && keepsFull(group) ? rowsOf(page, group).find((r) => r.items.includes(at.node))?.items.filter((p) => p !== at.node) : undefined;
   at.list.splice(at.index, 1);
   if (wasRow && at.parent.children.length >= 2) setRowColumns(at.parent as SectionNode, at.parent.children.length);
+  if (rest) fill(rest);
+}
+
+/** Where a part on the page comes from: the columns of its grid, and whether they are twelfths. */
+export function cameFrom(page: Page, id: string): { cols: number; twelfths: boolean } | undefined {
+  const at = locate(page, id);
+  return at ? { cols: across(page, at.parent), twelfths: laidInTwelfths(page, at.parent) } : undefined;
 }
 
 /** An arrangement with nothing of its own to lose: no rule, no label settings, no words. */
@@ -162,16 +155,34 @@ const arrangement = (id: string, colspan: number, columns: ColumnCount | Columns
 /** Put a part where a drop says, then tidy the page. The part may be new, or moved from where it is. */
 export function placeAt(page: Page, node: Part, drop: Drop): void {
   const name = namer(page);
-  if (locate(page, node.id)) detach(page, node.id);
-  if (drop.how === 'into') {
+  const came = cameFrom(page, node.id);
+  const plan = besidePlan(page, drop, came && node.id, node);
+  if (plan?.how === 'refused') throw new Refusal(plan.why);
+  if (plan && drop.how === 'beside') {
+    // The group in twelfths first, so the row the part leaves closes up by the group's own rule.
+    toTwelfths(locate(page, drop.target)?.parent as SectionNode);
+    // Along its own row it only changes places; from elsewhere, the row it leaves closes up.
+    if (plan.how === 'reorder') (locate(page, node.id) as Spot).list.splice((locate(page, node.id) as Spot).index, 1);
+    else if (came) detach(page, node.id);
+    const at = locate(page, drop.target) as Spot;
+    at.list.splice(at.index + (drop.after ? 1 : 0), 0, node);
+    if (plan.how === 'room') resize(node, plan.span, came?.cols ?? 1);
+    else if (plan.how === 'divide') {
+      // The row divides equally: halves, thirds or quarters.
+      const row = [...plan.row];
+      row.splice(row.indexOf(at.node) + (drop.after ? 1 : 0), 0, node);
+      const each = shares(row.map(() => 1), TWELVE);
+      row.forEach((p, i) => resize(p, each[i], p === node ? (came?.cols ?? 1) : TWELVE));
+    }
+    tidy(page);
+    return;
+  }
+  if (came) detach(page, node.id);
+  if (drop.how === 'into' || drop.how === 'row' || drop.how === 'at') {
     const box = nodeOf(page, drop.container) as Holder;
-    setSpan(node, Math.min(spanOf(node), across(page, box)));
-    box.children.push(node);
-  } else if (drop.how === 'row' || drop.how === 'at') {
-    const box = nodeOf(page, drop.container) as Holder;
-    // A new row is as wide as its grid; a part put at a place keeps its width, no wider than there.
-    setSpan(node, drop.how === 'row' ? across(page, box) : Math.min(spanOf(node), across(page, box)));
-    box.children.splice(Math.min(drop.index, box.children.length), 0, node);
+    const index = drop.how === 'into' ? box.children.length : Math.min(drop.index, box.children.length);
+    // A new row is as wide as its grid; a part put at a place keeps its width — its share of the row, into or out of twelfths — no wider than there.
+    putAt(page, box, index, [node], (p) => (drop.how === 'row' ? across(page, box) : landingSpan(page, p, box, came)), () => came?.cols);
   } else {
     const at = locate(page, drop.target) as Spot;
     const parent = at.parent;
@@ -209,12 +220,6 @@ export function placeAt(page: Page, node: Part, drop: Drop): void {
       setSpan(node, Math.floor(span / 2));
       setSpan(target, span - Math.floor(span / 2));
       at.list.splice(index, 0, node);
-    } else if (growsTo(page, at, node.id)) {
-      // A group's full row: the group takes one more column; a part as wide as the group stays as wide.
-      for (const part of parent.children) if (part !== target && spanOf(part) >= cols) setSpan(part, cols + 1);
-      setSpan(node, 1);
-      at.list.splice(index, 0, node);
-      setRowColumns(parent as SectionNode, cols + 1);
     } else {
       // One column wide, in a group of four or an arrangement: the two share its cell, side by side (they stack where it is narrow). On the page, a row of two.
       const span = Math.min(spanOf(target), cols);
@@ -247,6 +252,8 @@ export function dropRefusal(page: Page, drop: Drop, moving?: string): string | n
   if (drop.how === 'beside') {
     const full = (node: Part | Holder) => isRow(page, node) && node.children.length >= 4 && !node.children.some((c) => c.id === moving);
     if (full(at.node) || (!isRow(page, at.node) && full(at.parent))) return 'A row holds four';
+    const plan = besidePlan(page, drop, moving);
+    if (plan?.how === 'refused') return plan.why;
   }
   return null;
 }
@@ -457,7 +464,7 @@ function insert(page: Page, node: LayoutNode, where: Where): void {
     const at = locate(page, where.after);
     if (!at) throw new Refusal(`There is no part “${where.after}”`);
     if (at.node.type === 'tab') throw new Refusal('Put it in one of the tabs');
-    at.list.splice(at.index + 1, 0, node);
+    putAt(page, at.parent, at.index + 1, [node], (p) => landingSpan(page, p, at.parent));
     return;
   }
   const all = containers(page);
@@ -465,7 +472,7 @@ function insert(page: Page, node: LayoutNode, where: Where): void {
   if (box?.type === 'tabs') throw new Refusal('Put it in one of the tabs');
   const list = listOf(box ?? undefined);
   if (!list) throw new Refusal(`There is no group or tab “${where.parent}”`);
-  list.splice(where.index === undefined ? list.length : Math.max(0, Math.min(where.index, list.length)), 0, node);
+  putAt(page, box as Holder, where.index === undefined ? list.length : Math.max(0, Math.min(where.index, list.length)), [node], (p) => landingSpan(page, p, box as Holder));
 }
 
 /** A block where a tile is clicked: words, a line, room, a picture, a button, a group or tabs. Returns its id. */
