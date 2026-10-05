@@ -22,12 +22,12 @@ const WORKED_OUT = new Set(['char', 'text', 'integer', 'float', 'monetary']);
 const SET = new Set([...WORKED_OUT, 'selection', 'boolean', 'date', 'datetime']);
 
 /** The functions offered, with where the cursor goes: the first value to type. */
-const FUNCTIONS: { name: string; text: string; back: number; title: string }[] = [
-  { name: 'round', text: 'round(, 2)', back: 4, title: 'Rounded to so many decimals: round(price * qty, 2)' },
-  { name: 'min', text: 'min(, )', back: 3, title: 'The smallest of the values: min(price, 100)' },
-  { name: 'max', text: 'max(, )', back: 3, title: 'The largest of the values: max(price, 0)' },
-  { name: 'if', text: 'if(, , )', back: 5, title: 'One value or another: if(qty > 10, 5, 0)' },
-  { name: 'abs', text: 'abs()', back: 1, title: 'Without its sign: abs(balance)' },
+const FUNCTIONS: { name: 'round' | 'min' | 'max' | 'if' | 'abs'; text: string; back: number }[] = [
+  { name: 'round', text: 'round(, 2)', back: 4 },
+  { name: 'min', text: 'min(, )', back: 3 },
+  { name: 'max', text: 'max(, )', back: 3 },
+  { name: 'if', text: 'if(, , )', back: 5 },
+  { name: 'abs', text: 'abs()', back: 1 },
 ];
 
 interface Own {
@@ -50,24 +50,27 @@ export interface RulesSetting {
 // ---- worked out from ------------------------------------------------------------------------------
 
 export function workedOutSetting(el: ElementFactory, designer: Designer, id: string): RulesSetting {
+  const words = designer.words;
+  const w = words.rulesUi;
   let own: Own | null = null;
   const box = formulaBox(el, {
-    label: 'Worked out from',
-    placeholder: 'Type a field’s name, or @',
+    words,
+    label: w.workedOutFrom,
+    placeholder: w.typeAName,
     own: () => own?.name,
-    check: (page, source) => formulaProblem(page, source) ?? (own && wouldCircle(page, own.name, source) ? { words: wouldCircle(page, own.name, source) as string } : null),
+    check: (page, source) => formulaProblem(page, source, words) ?? (own && wouldCircle(page, own.name, source) ? { words: wouldCircle(page, own.name, source, words) as string } : null),
     commit(source) {
       const was = own?.def.compute ?? '';
       if (source === was) return;
       designer.setCompute(id, source || null);
     },
-    said: (page, source) => (own ? sampleResult(page, own.name, source) : ''),
+    said: (page, source) => (own ? sampleResult(page, own.name, source, words) : ''),
   });
   const functions = el(
     'div',
-    { class: 'fd-formula-functions', role: 'group', 'aria-label': 'Functions' },
+    { class: 'fd-formula-functions', role: 'group', 'aria-label': w.functions },
     ...FUNCTIONS.map((fn) => {
-      const button = el('button', { type: 'button', class: 'fd-formula-function', title: fn.title }, fn.name);
+      const button = el('button', { type: 'button', class: 'fd-formula-function', title: w.functionTips[fn.name] }, fn.name);
       // The box keeps its cursor: the function goes in where it was.
       button.addEventListener('mousedown', (event) => event.preventDefault());
       button.addEventListener('click', () => box.insert(fn.text, fn.back));
@@ -75,7 +78,7 @@ export function workedOutSetting(el: ElementFactory, designer: Designer, id: str
     })
   );
   const hint = el('p', { class: 'fd-properties-hint fd-set-hint' });
-  const element = el('div', { class: 'fd-prop fd-worked-out', 'data-tab': 'rules', 'data-setting': 'Worked out from' }, el('span', { class: 'fd-prop-name' }, 'Worked out from'), box.element, functions, box.problem, box.result, hint);
+  const element = el('div', { class: 'fd-prop fd-worked-out', 'data-tab': 'rules', 'data-setting': 'Worked out from' }, el('span', { class: 'fd-prop-name' }, w.workedOutFrom), box.element, functions, box.problem, box.result, hint);
   return {
     element,
     update(page) {
@@ -83,9 +86,7 @@ export function workedOutSetting(el: ElementFactory, designer: Designer, id: str
       element.hidden = !own || !WORKED_OUT.has(own.def.type) || designer.isFromModel(id);
       if (!own || element.hidden) return;
       box.update(page, own.def.compute ?? '');
-      hint.textContent = own.def.compute
-        ? 'Worked out as people fill in the form, so they cannot type in it. Empty the box to let them.'
-        : 'A value from other fields, such as Price × Quantity. People then cannot type in it.';
+      hint.textContent = own.def.compute ? w.computedHint : w.computeHint;
     },
   };
 }
@@ -123,10 +124,12 @@ function rawFrom(value: string): string {
 }
 
 export function setWhenSetting(el: ElementFactory, designer: Designer, id: string): RulesSetting {
-  const list = el('ul', { class: 'fd-answer-rules fd-set-when-list', 'aria-label': 'Values set when' });
-  const add = el('button', { type: 'button', class: 'fd-button fd-button-link fd-answer-rules-add' }, 'Set when…');
-  const hint = el('p', { class: 'fd-properties-hint fd-set-hint' }, 'Set as the condition starts to hold. People can still change it.');
-  const element = el('div', { class: 'fd-prop fd-answer-rules-box fd-set-when', 'data-tab': 'rules', 'data-setting': 'Set when' }, el('span', { class: 'fd-prop-name' }, 'Set when'), list, add, hint);
+  const words = designer.words;
+  const w = words.rulesUi;
+  const list = el('ul', { class: 'fd-answer-rules fd-set-when-list', 'aria-label': w.valuesSetWhen });
+  const add = el('button', { type: 'button', class: 'fd-button fd-button-link fd-answer-rules-add' }, w.setWhenAdd);
+  const hint = el('p', { class: 'fd-properties-hint fd-set-hint' }, w.setWhenHint);
+  const element = el('div', { class: 'fd-prop fd-answer-rules-box fd-set-when', 'data-tab': 'rules', 'data-setting': 'Set when' }, el('span', { class: 'fd-prop-name' }, w.setWhen), list, add, hint);
   let page = designer.getPage();
   let own: Own | null = null;
   let rows: Row[] = [];
@@ -152,22 +155,23 @@ export function setWhenSetting(el: ElementFactory, designer: Designer, id: strin
 
   function row(index: number, def: Field, raw: boolean): Row {
     const say = el('button', { type: 'button', class: 'fd-answer-rule-say fd-set-when-say', 'aria-expanded': 'false' });
-    const remove = el('button', { type: 'button', class: 'fd-icon-button fd-answer-rule-remove', title: 'Remove' }, '×');
+    const remove = el('button', { type: 'button', class: 'fd-icon-button fd-answer-rule-remove', title: w.remove }, '×');
     const problem = el('p', { class: 'fd-answer-rule-problem', role: 'alert', hidden: '' });
     let value: HTMLInputElement | HTMLSelectElement;
-    if (raw) value = el('input', { class: 'fd-input fd-answer-rule-code', 'aria-label': 'Set to', spellcheck: 'false', autocomplete: 'off' });
+    if (raw) value = el('input', { class: 'fd-input fd-answer-rule-code', 'aria-label': w.setTo, spellcheck: 'false', autocomplete: 'off' });
     else if (def.type === 'selection' || def.type === 'boolean') {
-      const options = def.type === 'boolean' ? [{ value: 'True', label: 'Yes' }, { value: 'False', label: 'No' }] : def.options.map((o) => ({ value: String(o.value), label: o.label }));
-      value = el('select', { class: 'fd-input fd-select', 'aria-label': 'Set to' }, el('option', { value: '' }, 'Choose…'), ...options.map((o) => el('option', { value: o.value }, o.label)));
+      const options = def.type === 'boolean' ? [{ value: 'True', label: w.yes }, { value: 'False', label: w.no }] : def.options.map((o) => ({ value: String(o.value), label: o.label }));
+      value = el('select', { class: 'fd-input fd-select', 'aria-label': w.setTo }, el('option', { value: '' }, w.choose), ...options.map((o) => el('option', { value: o.value }, o.label)));
     } else {
       const type = ['integer', 'float', 'monetary'].includes(def.type) ? 'number' : def.type === 'date' ? 'date' : def.type === 'datetime' ? 'datetime-local' : 'text';
-      value = el('input', { class: 'fd-input', type, 'aria-label': 'Set to', autocomplete: 'off' });
+      value = el('input', { class: 'fd-input', type, 'aria-label': w.setTo, autocomplete: 'off' });
     }
     let when = '';
     const whenBox = formulaBox(el, {
-      label: 'When',
-      placeholder: 'Quantity > 10 — type a field’s name, or @',
-      check: (p, source) => formulaProblem(p, source),
+      words,
+      label: w.when,
+      placeholder: w.whenPlaceholder,
+      check: (p, source) => formulaProblem(p, source, words),
       commit(source) {
         when = source;
         save();
@@ -176,8 +180,8 @@ export function setWhenSetting(el: ElementFactory, designer: Designer, id: strin
     const body = el(
       'div',
       { class: 'fd-answer-rule-body', hidden: '' },
-      el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, 'Set to'), value),
-      el('div', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, 'When'), whenBox.element, whenBox.problem),
+      el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.setTo), value),
+      el('div', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.when), whenBox.element, whenBox.problem),
       problem
     );
     const element = el('li', { class: 'fd-answer-rule' }, el('div', { class: 'fd-answer-rule-head' }, say, remove), body);
@@ -186,7 +190,7 @@ export function setWhenSetting(el: ElementFactory, designer: Designer, id: strin
     function save() {
       if (!own) return;
       const expression = raw ? value.value.trim() : literalFrom(own.def, value.value);
-      const wrong = !expression ? null : raw ? formulaProblem(page, expression)?.words ?? null : cannotHold(own.def, own.node.label ?? own.def.label, expression);
+      const wrong = !expression ? null : raw ? formulaProblem(page, expression, words)?.words ?? null : cannotHold(own.def, own.node.label ?? own.def.label, expression, words);
       problem.textContent = wrong ?? '';
       problem.hidden = !wrong;
       if (!expression || !when || wrong) return;
@@ -228,9 +232,9 @@ export function setWhenSetting(el: ElementFactory, designer: Designer, id: strin
       open,
       focusFirst: () => value.focus(),
       update(item) {
-        const sentence = item ? (pageRules(page).find((r) => r.kind === 'set' && r.field === own?.name && r.index === index)?.sentence ?? '') : 'Set to … when …';
+        const sentence = item ? (pageRules(page, words).find((r) => r.kind === 'set' && r.field === own?.name && r.index === index)?.sentence ?? '') : w.setToWhen;
         say.textContent = sentence;
-        remove.setAttribute('aria-label', item ? `Remove: ${sentence}` : 'Remove this new rule');
+        remove.setAttribute('aria-label', item ? w.removeSet(sentence) : w.removeNewRule);
         const doc = element.ownerDocument;
         if (item && doc.activeElement !== value) value.value = rawFrom(item.value);
         if (item) when = item.when;

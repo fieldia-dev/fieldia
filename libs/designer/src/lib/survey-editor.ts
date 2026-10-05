@@ -4,11 +4,12 @@ import { createWidget, installStyles, type Widget, type WidgetFactory } from '@f
 import { branchMap, drawBranchMap } from './branch-map';
 import { canvasDrag } from './canvas-drag';
 import { designerBar, elementFactory, iconButton as makeIconButton, optionsEditor, putDownOnClickOutside, type ElementFactory, type OptionsEditor } from './chrome';
+import { speakIn, widgetWords } from './chrome-language';
 import { conditionEditor } from './condition-editor';
 import { kindOfField, QUESTION_KINDS, type Designer, type DesignerState, type Where } from './designer';
 import type { FindItem } from './find-anything';
 import { designerIcon } from './icons';
-import { kindById } from './kinds';
+import { kindById, kindName as nameOfKind } from './kinds';
 import { kindPreview } from './kind-previews';
 import { openMenu, type MenuItem } from './menu';
 import { lookSheet } from './panel-look-sheet';
@@ -76,20 +77,8 @@ function questionsBefore(page: Page, id: string): FieldNode[] {
 
 const stepsOf = (page: Page) => (page.layout as WizardNode).children;
 
-/** What a text question's dotted line says: the kind of answer that goes there. */
-const PREVIEW_WORDS: Record<string, string> = {
-  'short-answer': 'Short answer text',
-  paragraph: 'Long answer text',
-  email: 'Email address',
-  phone: 'Phone number',
-  website: 'Web address',
-  number: 'A number',
-  amount: 'An amount',
-  keywords: 'Keywords',
-  date: 'Day, month, year',
-  'date-time': 'Day, month, year, time',
-  time: 'Hours and minutes',
-};
+/** The kinds whose dotted line says what goes there (`questions.preview`). */
+const PREVIEWED = new Set(['short-answer', 'paragraph', 'email', 'phone', 'website', 'number', 'amount', 'keywords', 'date', 'date-time', 'time']);
 
 /** A box whose line grows from the middle when it is typed in, the Google Forms way. */
 const lined = (el: ElementFactory, input: HTMLElement, extra = '') => el('span', { class: `fd-line ${extra}`.trim() }, input);
@@ -101,17 +90,23 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   installDesignerStyles(doc);
 
   const el = elementFactory(doc);
+  const own = designer.words;
+  const w = own.questions;
   const iconButton = (label: string, text: string, onClick: () => void, extra = '') => makeIconButton(el, label, text, onClick, extra);
   const focused = (node: Element) => doc.activeElement === node;
 
   const skin = options.skin ?? 'outlined';
   const root = el('div', { class: 'fd-form fd-designer fd-survey-designer', 'data-fd-skin': skin });
+  // The editor in its own language: the cards are its own, the form's words in them run their own way.
+  speakIn(root, host, designer, () => []);
+  /** The form's own words, typed in the cards: in their own direction, when the editor runs its language's way. */
+  const dataDirection: { dir?: string } = designer.locale ? { dir: 'auto' } : {};
   const trial = tryIt({ el, doc, designer, skin, dataSource: options.dataSource, widgets: options.widgets, onChange: (trying) => (body.hidden = trying) });
   /** Fieldia's kinds a survey asks, then the app's own. */
   const kinds = [...QUESTION_KINDS, ...designer.appKinds()];
   const bar = designerBar(root, designer, {
-    titleLabel: 'Form title',
-    placeholder: 'Untitled form',
+    titleLabel: designer.words.bar.formTitle,
+    placeholder: designer.words.bar.untitledForm,
     extra: [trial.toggle],
     find: () => [...start.items(), ...findItems(), ...trial.items(), ...words.items(), ...ruleList.items(), ...json.items(), ...shortcuts.items()],
     // A check about a question's words or options: its card is open by now, the cursor goes there.
@@ -123,42 +118,48 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     },
   });
   const pages = el('div', { class: 'fd-designer-pages' });
-  const addPage = el('button', { type: 'button', class: 'fd-button' }, 'Add page');
+  const addPage = el('button', { type: 'button', class: 'fd-button' }, w.addPage);
   addPage.addEventListener('click', () => {
     const count = stepsOf(designer.getPage()).length;
-    designer.addContainer(`Page ${count + 1}`);
+    designer.addContainer(own.defaults.page(count + 1));
   });
 
   // The card heading the form: its title and description, as people will see them.
-  const headTitle = el('input', { class: 'fd-survey-head-title', 'aria-label': 'Form heading', placeholder: 'Untitled form', autocomplete: 'off' }) as HTMLInputElement;
+  const headTitle = el('input', { class: 'fd-survey-head-title', 'aria-label': w.formHeading, placeholder: own.bar.untitledForm, autocomplete: 'off', ...dataDirection }) as HTMLInputElement;
   headTitle.addEventListener('input', () => designer.setPageInfo({ title: headTitle.value }));
-  const headDescription = el('input', { class: 'fd-survey-head-description', 'aria-label': 'Form description', placeholder: 'Form description', autocomplete: 'off' }) as HTMLInputElement;
+  const headDescription = el('input', { class: 'fd-survey-head-description', 'aria-label': w.formDescription, placeholder: w.formDescription, autocomplete: 'off', ...dataDirection }) as HTMLInputElement;
   headDescription.addEventListener('input', () => designer.setPageInfo({ description: headDescription.value }));
   const head = el('div', { class: 'fd-survey-head' }, lined(el, headTitle), lined(el, headDescription));
   head.addEventListener('focusin', () => designer.getState().selected !== null && designer.select(null));
 
   // Beside the card picked, following it down the page: a question after it, or a page.
-  const railQuestion = el('button', { type: 'button', class: 'fd-rail-button', 'aria-label': 'Add a question after this one', title: 'Add question' }, designerIcon(doc, 'plus'));
-  const railPage = el('button', { type: 'button', class: 'fd-rail-button', 'aria-label': 'Add a page after this one', title: 'Add page' }, designerIcon(doc, 'section'));
-  const rail = el('div', { class: 'fd-q-rail', role: 'toolbar', 'aria-label': 'Add' }, railQuestion, railPage);
+  const railQuestion = el('button', { type: 'button', class: 'fd-rail-button', 'aria-label': w.addQuestionAfter, title: w.addQuestion }, designerIcon(doc, 'plus'));
+  const railPage = el('button', { type: 'button', class: 'fd-rail-button', 'aria-label': w.addPageAfter, title: w.addPage }, designerIcon(doc, 'section'));
+  const rail = el('div', { class: 'fd-q-rail', role: 'toolbar', 'aria-label': w.add }, railQuestion, railPage);
   railQuestion.addEventListener('click', () => add('short-answer', railTarget()));
   railPage.addEventListener('click', addPageHere);
 
   // Where answers lead: the pages on one line, those for some answers off it.
   const mapScroll = el('div', { class: 'fd-branch-scroll' });
-  const map = el('details', { class: 'fd-branch-map', open: '', hidden: '' }, el('summary', { class: 'fd-branch-summary' }, 'Where answers lead'), mapScroll);
+  const map = el('details', { class: 'fd-branch-map', open: '', hidden: '' }, el('summary', { class: 'fd-branch-summary' }, w.whereAnswersLead), mapScroll);
   let mapKey = '';
   function drawMap(page: Page, selected: string | null) {
-    const drawn = branchMap(page);
+    const drawn = branchMap(page, designer.words);
     map.hidden = drawn.nodes.length < 2;
     const key = JSON.stringify([drawn, selected]);
     if (map.hidden || key === mapKey) return;
     mapKey = key;
     mapScroll.replaceChildren(
-      drawBranchMap(doc, drawn, selected, (id) => {
-        designer.select(id);
-        stepViews.get(id)?.element.scrollIntoView?.({ block: 'nearest' });
-      })
+      drawBranchMap(
+        doc,
+        drawn,
+        selected,
+        (id) => {
+          designer.select(id);
+          stepViews.get(id)?.element.scrollIntoView?.({ block: 'nearest' });
+        },
+        designer.words
+      )
     );
   }
 
@@ -170,6 +171,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     el,
     doc,
     kinds,
+    words: designer.words,
     onPick: (spec) => add(spec.slice(spec.indexOf(':') + 1), target()),
     onPress: (spec, event, tile) => drag.press({ tool: spec }, event, tile),
   });
@@ -187,7 +189,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
   const ruleList = rulesOverview({ el, doc, designer, root, body, modes: trial.toggle });
   const clip = clipboardKeys({ root, designer, active: () => !trial.trying && !json.open });
-  const shortcuts = shortcutKeys({ el, root, survey: true, active: () => !trial.trying && !json.open });
+  const shortcuts = shortcutKeys({ el, root, survey: true, words: designer.words, active: () => !trial.trying && !json.open });
   // The form's look: from the bar, in a sheet at the side; the cards wear it.
   const look = lookSheet({ el, designer, root, bar: bar.element, wearer: editor });
 
@@ -203,14 +205,14 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       box?.setSelectionRange(box.value.length, box.value.length);
     };
     return [
-      ...kinds.map((kind) => ({ label: `Add a question: ${kind.label}`, hint: 'new question', run: () => add(kind.id, target()) })),
+      ...kinds.map((kind) => ({ label: w.findAdd(nameOfKind(kind, own)), hint: w.newQuestion, run: () => add(kind.id, target()) })),
       ...steps.flatMap((step) =>
         step.children
           .filter((n): n is FieldNode => n.type === 'field')
-          .map((node) => ({ label: `Go to “${page.fields[node.field]?.label ?? node.id}”`, hint: step.label, run: () => goTo(node.id, '.fd-q-selected .fd-q-label') }))
+          .map((node) => ({ label: w.goTo(page.fields[node.field]?.label ?? node.id), hint: step.label, run: () => goTo(node.id, '.fd-q-selected .fd-q-label') }))
       ),
-      ...steps.map((step) => ({ label: `Go to the page “${step.label}”`, hint: 'page', run: () => goTo(step.id, `.fd-design-step[data-node="${step.id}"] .fd-step-title`) })),
-      { label: 'Add a page', hint: 'page', run: () => addPage.click() },
+      ...steps.map((step) => ({ label: w.goToPage(step.label), hint: w.page, run: () => goTo(step.id, `.fd-design-step[data-node="${step.id}"] .fd-step-title`) })),
+      { label: w.addAPage, hint: w.page, run: () => addPage.click() },
     ];
   }
 
@@ -238,7 +240,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     const page = designer.getPage();
     const selected = designer.getState().selected;
     const question = selected && stepsOf(page).some((s) => s.children.some((n) => n.id === selected)) ? selected : null;
-    const created = designer.addContainer(`Page ${stepsOf(page).length + 1}`, question ? { after: question } : {});
+    const created = designer.addContainer(own.defaults.page(stepsOf(page).length + 1), question ? { after: question } : {});
     if (!created) return;
     designer.select(created);
     const title = stepViews.get(created)?.element.querySelector<HTMLInputElement>('.fd-step-title');
@@ -255,6 +257,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     placeRail();
   }
   const drag = canvasDrag({
+    words: designer.words,
     canvas: editor,
     cards: '.fd-q[data-node]',
     drop: (source, step, index) => {
@@ -281,12 +284,14 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     return {
       paint(page: Page, node: FieldNode) {
         const def = page.fields[node.field];
-        const key = JSON.stringify([node, def]);
+        // Its own words in the page's language, as the form will have them.
+        const said = widgetWords(page);
+        const key = JSON.stringify([node, def, said.locale]);
         if (key === painted && widget) return;
         painted = key;
         widget?.destroy?.();
         const form = formFor(page);
-        widget = createWidget({ form, name: node.field, field: def, node, id: `fd-design-${id}`, document: doc }, options.widgets);
+        widget = createWidget({ form, name: node.field, field: def, node, id: `fd-design-${id}`, document: doc, ...said }, options.widgets);
         widget.update({ value: form.getState().values[node.field], values: form.getState().values, readonly: false, required: def.required === true, invalid: false });
         box.replaceChildren(widget.element);
       },
@@ -308,10 +313,11 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   function preview(page: Page, node: FieldNode): HTMLElement | null {
     const def = page.fields[node.field];
     const kind = kindOfField(def, node);
-    if (kind === 'date' || kind === 'date-time' || kind === 'time') return el('div', { class: 'fd-q-preview fd-q-preview-short fd-q-preview-date' }, PREVIEW_WORDS[kind], designerIcon(doc, kind === 'time' ? 'time' : 'date'));
-    if (kind && PREVIEW_WORDS[kind]) return el('div', { class: `fd-q-preview fd-q-preview-${kind === 'paragraph' ? 'long' : 'short'}` }, PREVIEW_WORDS[kind]);
+    const said = kind && PREVIEWED.has(kind) ? w.preview[kind as keyof typeof w.preview] : null;
+    if (said && (kind === 'date' || kind === 'date-time' || kind === 'time')) return el('div', { class: 'fd-q-preview fd-q-preview-short fd-q-preview-date' }, said, designerIcon(doc, kind === 'time' ? 'time' : 'date'));
+    if (said) return el('div', { class: `fd-q-preview fd-q-preview-${kind === 'paragraph' ? 'long' : 'short'}` }, said);
     if (kind === 'dropdown' && def.type === 'selection') return el('ol', { class: 'fd-q-preview fd-q-preview-list' }, ...def.options.map((o, i) => el('li', {}, `${i + 1}. ${o.label}`)));
-    return kindPreview(el, page, node, kind);
+    return kindPreview(el, page, node, kind, own);
   }
   /** Paints a question's answer into a box: the preview where there is one, else the real answer box. */
   function answerBox(box: HTMLElement, id: string) {
@@ -337,14 +343,14 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
 
   /** A question not picked: as people will see it. */
   function closedCard(id: string): CardView {
-    const text = el('span', { class: 'fd-q-text' });
+    const text = el('span', { class: 'fd-q-text', ...dataDirection });
     const title = el('div', { class: 'fd-q-title' }, text);
     const help = el('div', { class: 'fd-help' });
     const answer = el('div', { class: 'fd-q-answer', inert: '' });
-    const note = el('span', { class: 'fd-q-when-note' }, 'Shown only for some answers');
+    const note = el('span', { class: 'fd-q-when-note' }, w.someAnswers);
     // Forms' six dots, across the top when pointed at: what it is carried by.
     // For the pointer only — the keys move it too — so no control of its own.
-    const grip = el('span', { class: 'fd-q-grip', 'data-grip': '', 'aria-hidden': 'true', title: 'Drag to move · Ctrl+Shift+K or J moves it too' }, designerIcon(doc, 'grip'));
+    const grip = el('span', { class: 'fd-q-grip', 'data-grip': '', 'aria-hidden': 'true', title: w.dragTitle }, designerIcon(doc, 'grip'));
     // Reached by Tab and opened by Enter or Space, as a click opens it (WCAG 2.1.1).
     const element = el('div', { class: 'fd-q fd-q-closed', 'data-node': id, role: 'button', tabindex: '0' }, grip, title, help, answer);
     const painter = answerBox(answer, id);
@@ -387,8 +393,8 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
 
   /** The question picked: open to edit, the Google Forms way. */
   function openCard(id: string): CardView {
-    const grip = el('button', { type: 'button', class: 'fd-q-grip', 'data-grip': '', 'aria-label': 'Drag to move', title: 'Drag to move · Ctrl+Shift+K or J moves it too' }, designerIcon(doc, 'grip'));
-    const label = el('input', { class: 'fd-q-label', 'aria-label': 'Question', autocomplete: 'off', placeholder: 'Question' }) as HTMLInputElement;
+    const grip = el('button', { type: 'button', class: 'fd-q-grip', 'data-grip': '', 'aria-label': w.dragToMove, title: w.dragTitle }, designerIcon(doc, 'grip'));
+    const label = el('input', { class: 'fd-q-label', 'aria-label': w.question, autocomplete: 'off', placeholder: w.question, ...dataDirection }) as HTMLInputElement;
     label.addEventListener('input', () => designer.updateQuestion(id, { label: label.value }));
     const kindIcon = el('span', { class: 'fd-q-kind-icon' });
     const kindName = el('span', { class: 'fd-q-kind-name' });
@@ -400,10 +406,10 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       const current = kindOfField(page.fields[node.field], node);
       const offered = new Set(designer.kindsFor(id).map((k) => k.id));
       // Google Forms' menu: a row for each kind, its icon first, the groups between lines.
-      const items: MenuItem[] = toolboxGroups(designer.kindsFor(id)).flatMap(([, ids]) => ids.filter((k) => offered.has(k)).map((k, i) => ({ id: k, label: kindById(k).label, icon: k, checked: k === current, ...(i === 0 ? { divider: true } : {}) })));
-      openMenu({ el, anchor: kind, title: 'Kind of question', items, roomy: true, onPick: (k) => designer.changeKind(id, k) });
+      const items: MenuItem[] = toolboxGroups(designer.kindsFor(id)).flatMap(([, ids]) => ids.filter((k) => offered.has(k)).map((k, i) => ({ id: k, label: nameOfKind(kindById(k), own), icon: k, checked: k === current, ...(i === 0 ? { divider: true } : {}) })));
+      openMenu({ el, anchor: kind, title: w.kindOfQuestion, items, roomy: true, onPick: (k) => designer.changeKind(id, k) });
     });
-    const help = el('input', { class: 'fd-q-help', 'aria-label': 'Description', placeholder: 'Description', autocomplete: 'off' }) as HTMLInputElement;
+    const help = el('input', { class: 'fd-q-help', 'aria-label': w.description, placeholder: w.description, autocomplete: 'off', ...dataDirection }) as HTMLInputElement;
     help.addEventListener('input', () => designer.updateQuestion(id, { help: help.value }));
     const helpBox = lined(el, help, 'fd-q-help-box');
     /** A description asked for from ⋮, still empty: shown until the card closes. */
@@ -434,9 +440,9 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       button.addEventListener('click', onClick);
       return button;
     };
-    const required = el('button', { type: 'button', class: 'fd-switch', role: 'switch', 'aria-checked': 'false', 'aria-label': 'Required' });
+    const required = el('button', { type: 'button', class: 'fd-switch', role: 'switch', 'aria-checked': 'false', 'aria-label': w.required, 'data-required': '' });
     required.addEventListener('click', () => designer.updateQuestion(id, { required: required.getAttribute('aria-checked') !== 'true' }));
-    const moreButton = tool('More options', 'kebab', () => openMore());
+    const moreButton = tool(w.moreOptions, 'kebab', () => openMore());
     moreButton.setAttribute('aria-haspopup', 'menu');
     moreButton.setAttribute('aria-expanded', 'false');
     // ⋮: the description, when it shows, and moving it — what Google Forms keeps there.
@@ -446,16 +452,16 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       const at = step ? step.children.findIndex((n) => n.id === id) : -1;
       const hasHelp = !helpBox.hidden;
       const items: MenuItem[] = [
-        { id: 'help', label: 'Description', checked: hasHelp },
-        ...(when.element.hidden && when.canStart() ? [{ id: 'when', label: 'Show only when…' }] : []),
+        { id: 'help', label: w.description, checked: hasHelp },
+        ...(when.element.hidden && when.canStart() ? [{ id: 'when', label: w.showOnlyWhen }] : []),
         ...rules.menuItems(),
-        ...(at > 0 ? [{ id: 'up', label: 'Move up', divider: true }] : []),
-        ...(step && at !== -1 && at < step.children.length - 1 ? [{ id: 'down', label: 'Move down', ...(at > 0 ? {} : { divider: true }) }] : []),
+        ...(at > 0 ? [{ id: 'up', label: w.moveUp, divider: true }] : []),
+        ...(step && at !== -1 && at < step.children.length - 1 ? [{ id: 'down', label: w.moveDown, ...(at > 0 ? {} : { divider: true }) }] : []),
       ];
       openMenu({
         el,
         anchor: moreButton,
-        title: 'More options',
+        title: w.moreOptions,
         items,
         actions: true,
         onPick(item) {
@@ -479,13 +485,13 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     const foot = el(
       'div',
       { class: 'fd-q-foot' },
-      tool('Duplicate', 'duplicate', () => {
+      tool(w.duplicate, 'duplicate', () => {
         const copy = designer.duplicateNode(id);
         if (copy) designer.select(copy);
       }),
-      tool('Delete', 'delete', () => designer.removeNode(id), 'fd-q-tool-danger'),
+      tool(w.delete, 'delete', () => designer.removeNode(id), 'fd-q-tool-danger'),
       el('span', { class: 'fd-q-sep', 'aria-hidden': 'true' }),
-      el('span', { class: 'fd-q-required-words', 'aria-hidden': 'true' }, 'Required'),
+      el('span', { class: 'fd-q-required-words', 'aria-hidden': 'true' }, w.required),
       required,
       moreButton
     );
@@ -511,8 +517,8 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
         if (!focused(help)) help.value = def.help ?? '';
         helpBox.hidden = !def.help && !wantHelp;
         const current = kindOfQuestion(def, node);
-        const name = current ? kindById(current).label : 'Custom';
-        kind.setAttribute('aria-label', `Kind of question: ${name}`);
+        const name = current ? nameOfKind(kindById(current), own) : w.custom;
+        kind.setAttribute('aria-label', w.kindNamed(name));
         if (kindName.textContent !== name) {
           kindName.textContent = name;
           kindIcon.replaceChildren(designerIcon(doc, current ?? 'short-answer'));
@@ -544,15 +550,15 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   function makeStep(id: string): StepView {
     const section = el('section', { class: 'fd-design-step', 'data-node': id });
     const number = el('span', { class: 'fd-step-number' });
-    const name = el('input', { class: 'fd-step-title', 'aria-label': 'Page title', placeholder: 'Untitled page', autocomplete: 'off' }) as HTMLInputElement;
+    const name = el('input', { class: 'fd-step-title', 'aria-label': w.pageTitle, placeholder: w.untitledPage, autocomplete: 'off', ...dataDirection }) as HTMLInputElement;
     name.addEventListener('input', () => designer.renameContainer(id, name.value));
     name.addEventListener('focus', () => designer.getState().selected !== id && designer.select(id));
-    const removeStep = iconButton('Delete page', '✕', () => designer.removeNode(id), 'fd-icon-danger');
+    const removeStep = iconButton(w.deletePage, '✕', () => designer.removeNode(id), 'fd-icon-danger');
     const when = conditionEditor(el, designer, id, 'page');
     const condition = el('div', { class: 'fd-step-when' }, when.element);
     const cards = el('div', { class: 'fd-step-cards', 'data-drop-section': id, 'data-drop-flow': 'column' });
-    const addQuestion = el('button', { type: 'button', class: 'fd-button fd-button-link fd-add-question' }, designerIcon(doc, 'short-answer'), 'Add question');
-    addQuestion.setAttribute('aria-label', 'Add question');
+    const addQuestion = el('button', { type: 'button', class: 'fd-button fd-button-link fd-add-question' }, designerIcon(doc, 'short-answer'), w.addQuestion);
+    addQuestion.setAttribute('aria-label', w.addQuestion);
     addQuestion.addEventListener('click', () => add('short-answer', { parent: id }));
     // The page's own card, its number on a tab over it, as Google Forms heads a section.
     section.append(el('header', { class: 'fd-step-head' }, number, el('div', { class: 'fd-step-head-row' }, lined(el, name, 'fd-step-title-box'), removeStep), condition), cards, addQuestion);
@@ -561,7 +567,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
       element: section,
       cards,
       update(page, step, index, total) {
-        const numbered = `Page ${index + 1} of ${total}`;
+        const numbered = w.pageOf(index + 1, total);
         if (number.textContent !== numbered) number.textContent = numbered;
         if (!focused(name) && name.value !== step.label) name.value = step.label;
         removeStep.hidden = total === 1;

@@ -75,16 +75,17 @@ export function designerBar(
 ): DesignerBar {
   const doc = root.ownerDocument;
   const el = elementFactory(doc);
+  const w = designer.words.bar;
   const title = el('input', { class: 'fd-input fd-designer-title', 'aria-label': options.titleLabel, placeholder: options.placeholder });
   title.addEventListener('input', () => designer.setPageInfo({ title: title.value }));
   // Where the page stands, as words a screen reader hears change; pressed, the versions published.
-  const status = el('button', { type: 'button', class: 'fd-designer-status', 'aria-haspopup': 'menu', 'aria-expanded': 'false', title: 'Versions' });
+  const status = el('button', { type: 'button', class: 'fd-designer-status', 'aria-haspopup': 'menu', 'aria-expanded': 'false', title: w.versions });
   status.addEventListener('click', () => versionsMenu(el, designer, status));
   const goTo: GoTo = options.goTo ?? (() => undefined);
   const checks = checksButton(el, doc, designer, goTo);
-  const undo = el('button', { type: 'button', class: 'fd-button' }, 'Undo');
-  const redo = el('button', { type: 'button', class: 'fd-button' }, 'Redo');
-  const publish = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, 'Publish');
+  const undo = el('button', { type: 'button', class: 'fd-button' }, w.undo);
+  const redo = el('button', { type: 'button', class: 'fd-button' }, w.redo);
+  const publish = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, w.publish);
   undo.addEventListener('click', () => designer.undo());
   redo.addEventListener('click', () => designer.redo());
   publish.addEventListener('click', () => openPublishDialog(el, designer, root, goTo));
@@ -93,17 +94,17 @@ export function designerBar(
     const state = designer.getState();
     return [
       ...(options.find?.() ?? []),
-      { label: 'Show the checks', hint: checks.element.getAttribute('aria-label') ?? '', run: () => checks.element.click() },
-      ...(state.unpublished ? [{ label: 'Publish', hint: `version ${(state.versions[state.versions.length - 1]?.version ?? 0) + 1}`, run: () => publish.click() }] : []),
-      ...(state.canUndo ? [{ label: 'Undo', hint: '⌘Z', run: () => designer.undo() }] : []),
-      ...(state.canRedo ? [{ label: 'Redo', hint: '⇧⌘Z', run: () => designer.redo() }] : []),
-      ...(state.versions.length ? [{ label: 'Open an earlier version', hint: 'versions', run: () => status.click() }] : []),
+      { label: w.showChecks, hint: checks.element.getAttribute('aria-label') ?? '', run: () => checks.element.click() },
+      ...(state.unpublished ? [{ label: w.publish, hint: w.publishHint((state.versions[state.versions.length - 1]?.version ?? 0) + 1), run: () => publish.click() }] : []),
+      ...(state.canUndo ? [{ label: w.undo, hint: '⌘Z', run: () => designer.undo() }] : []),
+      ...(state.canRedo ? [{ label: w.redo, hint: '⇧⌘Z', run: () => designer.redo() }] : []),
+      ...(state.versions.length ? [{ label: w.openEarlier, hint: w.versionsHint, run: () => status.click() }] : []),
     ];
   };
   const mac = /Mac|iPhone|iPad/.test(doc.defaultView?.navigator.platform ?? '');
   const keys = mac ? '⌘K' : 'Ctrl K';
-  const find = el('button', { type: 'button', class: 'fd-button fd-find-button', 'aria-label': 'Find anything', title: `Find anything · ${keys} or /` }, designerIcon(doc, 'search'), el('kbd', { class: 'fd-find-keys', 'aria-hidden': 'true' }, keys));
-  find.addEventListener('click', () => openFind(el, root, findItems()));
+  const find = el('button', { type: 'button', class: 'fd-button fd-find-button', 'aria-label': w.findAnything, title: w.findTitle(keys) }, designerIcon(doc, 'search'), el('kbd', { class: 'fd-find-keys', 'aria-hidden': 'true' }, keys));
+  find.addEventListener('click', () => openFind(el, root, findItems(), designer.words));
   // Where the bar breaks when it has less room than its parts: the ways to look at the page go under the rest.
   const lineBreak = el('span', { class: 'fd-bar-break', 'aria-hidden': 'true' });
   const element = el('div', { class: 'fd-designer-bar' }, title, el('span', { class: 'fd-designer-status-box', role: 'status' }, status), el('span', { class: 'fd-spacer' }), find, undo, redo, lineBreak, ...(options.extra ?? []), checks.element, publish);
@@ -132,7 +133,7 @@ export function designerBar(
     const slash = key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey;
     if ((chord || slash) && !root.querySelector('.fd-find')) {
       event.preventDefault();
-      openFind(el, root, findItems());
+      openFind(el, root, findItems(), designer.words);
       return;
     }
     if (typing || !(event.ctrlKey || event.metaKey)) return;
@@ -154,7 +155,7 @@ export function designerBar(
       setHidden(undo, !state.canUndo);
       setHidden(redo, !state.canRedo);
       setHidden(publish, !state.unpublished);
-      setText(status, statusWords(state));
+      setText(status, statusWords(state, designer.words));
       checks.update();
       setHidden(issues, state.issues.length === 0);
       setText(issues, state.issues.join('\n'));
@@ -182,18 +183,21 @@ export interface OptionsEditor {
  * box; checkboxes take "None of these", an option that goes alone.
  */
 export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: string): OptionsEditor {
+  const w = designer.words.options;
+  /** A new option's words, as the designer writes them. */
+  const newOption = (n: number) => designer.words.defaults.option(n);
   const list = el('ul', { class: 'fd-q-options' });
-  const add = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-add-option' }, 'Add option');
+  const add = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-add-option' }, w.addOption);
   // Google Forms' "Add option or add "Other"": an answer of one's own, after the options.
-  const addOther = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-add-other' }, 'add “Other”');
+  const addOther = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-add-other' }, w.addOther);
   addOther.addEventListener('click', () => designer.setOther(nodeId, true));
-  const or = el('span', { class: 'fd-q-or' }, 'or');
-  const removeOther = iconButton(el, 'Remove “Other”', '×', () => designer.setOther(nodeId, false));
-  const otherRow = el('div', { class: 'fd-q-option fd-q-option-other', hidden: '' }, el('span', { class: 'fd-q-bullet', 'aria-hidden': 'true' }), el('span', { class: 'fd-q-other-words' }, 'Other…'), removeOther);
+  const or = el('span', { class: 'fd-q-or' }, w.or);
+  const removeOther = iconButton(el, w.removeOther, '×', () => designer.setOther(nodeId, false));
+  const otherRow = el('div', { class: 'fd-q-option fd-q-option-other', hidden: '' }, el('span', { class: 'fd-q-bullet', 'aria-hidden': 'true' }), el('span', { class: 'fd-q-other-words' }, w.other), removeOther);
   // "None of these", for checkboxes: picked, it clears the others.
-  const addNone = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-add-none' }, 'add “None of these”');
+  const addNone = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-add-none' }, w.addNone);
   addNone.addEventListener('click', () => designer.addNoneOption(nodeId));
-  const orNone = el('span', { class: 'fd-q-or' }, 'or');
+  const orNone = el('span', { class: 'fd-q-or' }, w.or);
   const addRow = el('div', { class: 'fd-q-add-row' }, add, or, addOther);
   const source = listSource(el, designer, nodeId);
   const element = el('div', { class: 'fd-q-option-box' }, source.element, list, otherRow, addRow, source.list);
@@ -208,7 +212,7 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
   };
   add.addEventListener('click', () => {
     const current = labels();
-    designer.setOptions(nodeId, [...current, `Option ${current.length + 1}`]);
+    designer.setOptions(nodeId, [...current, newOption(current.length + 1)]);
     focusAt(inputs().length - 1);
   });
   const indexOf = (input: HTMLInputElement) => inputs().indexOf(input);
@@ -305,7 +309,7 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
       while (list.children.length > choices.length) list.lastElementChild?.remove();
       while (list.children.length < choices.length) {
         const index = list.children.length;
-        const input = el('input', { class: 'fd-input', 'aria-label': `Option ${index + 1}` });
+        const input = el('input', { class: 'fd-input', 'aria-label': w.option(index + 1) });
         // An option emptied while it is typed in stays, empty, until Backspace or the cursor leaving it says what to do.
         input.addEventListener('input', () => input.value.trim() && designer.setOptions(nodeId, labels()));
         input.addEventListener('keydown', (event) => {
@@ -313,7 +317,7 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
           if (event.key === 'Enter') {
             event.preventDefault();
             const current = labels();
-            current.splice(at + 1, 0, `Option ${current.length + 1}`);
+            current.splice(at + 1, 0, newOption(current.length + 1));
             if (designer.setOptions(nodeId, current)) focusAt(at + 1);
           } else if (event.key === 'Backspace' && input.value === '' && labels().length > 1) {
             event.preventDefault();
@@ -355,7 +359,7 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
             const at = indexOf(input);
             const current = labels();
             if (current.length < 2) {
-              designer.setOptions(nodeId, ['Option 1']);
+              designer.setOptions(nodeId, [newOption(1)]);
               return;
             }
             current.splice(at, 1);
@@ -372,15 +376,15 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
             if (was !== -1) focusAt(was > at ? was - 1 : was, true);
           }, 0);
         });
-        const remove = iconButton(el, 'Remove option', '×', () => {
+        const remove = iconButton(el, w.removeOption, '×', () => {
           const current = labels();
           current.splice([...list.children].indexOf(remove.parentElement as Element), 1);
           designer.setOptions(nodeId, current);
         });
         // For the pointer only: Alt+↑/↓ in the box moves it too, so the grip is no stop of its own.
-        const grip = el('span', { class: 'fd-q-option-grip', 'aria-hidden': 'true', title: 'Drag to move · Alt+↑ or ↓ moves it too' }, designerIcon(list.ownerDocument, 'grip'));
+        const grip = el('span', { class: 'fd-q-option-grip', 'aria-hidden': 'true', title: w.grip }, designerIcon(list.ownerDocument, 'grip'));
         grip.addEventListener('pointerdown', (event) => drag(grip, event));
-        const alone = el('span', { class: 'fd-q-alone', hidden: '' }, 'goes alone');
+        const alone = el('span', { class: 'fd-q-alone', hidden: '' }, w.alone);
         list.append(el('li', { class: 'fd-q-option' }, grip, el('span', { class: 'fd-q-bullet', 'aria-hidden': 'true' }, multiple ? '☐' : '◯'), input, alone, remove));
       }
       choices.forEach((option, i) => {
@@ -388,7 +392,7 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
         const input = row.querySelector('input') as HTMLInputElement;
         if (!focused(input)) input.value = option.label;
         const remove = row.querySelector('button') as HTMLButtonElement;
-        remove.setAttribute('aria-label', `Remove option ${option.label}`);
+        remove.setAttribute('aria-label', w.removeNamed(option.label));
         remove.hidden = choices.length === 1;
         (row.querySelector('.fd-q-alone') as HTMLElement).hidden = !option.exclusive;
         (row.querySelector('.fd-q-option-grip') as HTMLElement).hidden = choices.length === 1;

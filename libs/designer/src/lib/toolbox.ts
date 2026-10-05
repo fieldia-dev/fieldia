@@ -4,7 +4,8 @@ import { APP_GROUP } from './app-kinds';
 import type { ElementFactory } from './chrome';
 import type { ModelField, QuestionKind } from './designer';
 import { designerIcon } from './icons';
-import { kindOfField, storedAs } from './kinds';
+import { kindName, kindOfField, storedAs } from './kinds';
+import type { DesignerWords } from './designer-words';
 import { setAttr, setData, setHidden } from './writes';
 
 /**
@@ -25,6 +26,8 @@ export interface ToolboxOptions {
   kinds: readonly QuestionKind[];
   /** Sections and tabs, for a screen. */
   layout?: boolean;
+  /** The designer's words. */
+  words: DesignerWords;
   /** “A saved form”, for a screen: shown while the designer can place one (`update`'s `forms`). */
   forms?: boolean;
   onPick(spec: string): void;
@@ -63,8 +66,15 @@ export function toolboxGroups(kinds: readonly QuestionKind[]): [string, string[]
   return groups;
 }
 
+/** A toolbox group's title in the designer's words: Fieldia's by their key, an app's as the app named it. */
+export function groupName(words: DesignerWords, key: string): string {
+  const groups: Record<string, string> = words.kinds.groups;
+  return Object.prototype.hasOwnProperty.call(groups, key) ? groups[key] : key;
+}
+
 export function toolbox(options: ToolboxOptions): ToolboxHandle {
   const { el, doc } = options;
+  const w = options.words.toolbox;
   const offered = new Map(options.kinds.map((k) => [k.id, k]));
   const folded = new Set<string>();
   let query = '';
@@ -72,10 +82,10 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
   let advancedOn = false;
   let formsOn = false;
 
-  const find = el('input', { type: 'search', class: 'fd-input fd-tool-find', placeholder: 'Find a field or a kind', 'aria-label': 'Find a field or a kind' });
-  const none = el('p', { class: 'fd-tool-none', hidden: '' }, 'Nothing by that name.');
+  const find = el('input', { type: 'search', class: 'fd-input fd-tool-find', placeholder: w.find, 'aria-label': w.find });
+  const none = el('p', { class: 'fd-tool-none', hidden: '' }, w.nothing);
   const groupsBox = el('div', { class: 'fd-tool-groups' });
-  const element = el('aside', { class: 'fd-toolbox', 'aria-label': 'Add a field' }, find, groupsBox, none);
+  const element = el('aside', { class: 'fd-toolbox', 'aria-label': w.addAField }, find, groupsBox, none);
 
   function tile(spec: string, icon: string | SVGSVGElement, name: string, title: string, extra = ''): HTMLButtonElement {
     const picture = typeof icon === 'string' ? designerIcon(doc, icon) : icon;
@@ -108,35 +118,30 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
     return { key, element, heading, count, tiles };
   }
 
-  const fromModel = group('model', 'From the model');
+  const fromModel = group('model', w.fromTheModel);
   fromModel.element.classList.add('fd-tool-group-model');
   const kindGroups = toolboxGroups(options.kinds).map(([title, ids]) => {
-    const g = group(title, title);
+    // Fieldia's groups by their key, in the designer's words; an app's by the name it gave.
+    const g = group(title, groupName(options.words, title));
     for (const id of ids) {
       const kind = offered.get(id);
-      if (kind) g.tiles.append(tile(`kind:${id}`, id, kind.label, `${kind.label}: add a new field`));
+      const name = kind ? kindName(kind, options.words) : '';
+      if (kind) g.tiles.append(tile(`kind:${id}`, id, name, w.addNew(name)));
     }
     return g;
   }).filter((g) => g.tiles.children.length > 0);
   // One of the app's saved forms, placed whole: an address, a contact person, a consent made once.
-  const formTile = tile('form:saved', 'saved-form', 'A saved form', 'A saved form: place one of the app’s saved forms, such as an address');
+  const formTile = tile('form:saved', 'saved-form', options.words.savedForms.tile, options.words.savedForms.tileTip);
   if (options.forms) kindGroups.find((g) => g.key === 'More')?.tiles.append(formTile);
-  const layout = group('layout', 'Layout');
-  const tabsTile = tile('layout:tabs', 'tabs', 'Tabs', 'Tabs: pages of sections on a record sheet');
-  layout.tiles.append(tile('layout:section', 'section', 'Section', 'Section: a titled group of fields'), tabsTile);
+  const layout = group('layout', w.layout);
+  const tabsTile = tile('layout:tabs', 'tabs', w.tabs, w.tabsTip);
+  layout.tiles.append(tile('layout:section', 'section', w.section, w.sectionTip), tabsTile);
   // Advanced's layout tiles: dropped beside, under, into or between parts like any field.
-  const blocks: [string, string, string][] = [
-    ['group', 'Group', 'A titled group, with its own columns'],
-    ['side', 'Side by side', 'Two groups next to each other'],
-    ['tabs', 'Tabs', 'Pages of groups, one shown at a time'],
-    ['heading', 'Heading', 'A title between parts'],
-    ['text', 'Text', 'A paragraph or a note'],
-    ['divider', 'Divider', 'A line across'],
-    ['spacer', 'Spacer', 'Room, or an empty cell'],
-    ['image', 'Image', 'A picture or a logo'],
-    ['button', 'Button', 'Send, or another action'],
-  ];
-  const blockTiles = blocks.map(([kind, name, tip]) => tile(`block:${kind}`, blockIcon(doc, kind), name, `${name}: ${tip}`));
+  const blocks = ['group', 'side', 'tabs', 'heading', 'text', 'divider', 'spacer', 'image', 'button'] as const;
+  const blockTiles = blocks.map((kind) => {
+    const [name, tip] = w.blocks[kind];
+    return tile(`block:${kind}`, blockIcon(doc, kind), name, w.blockTip(name, tip));
+  });
   layout.tiles.append(...blockTiles);
   groupsBox.append(fromModel.element, ...kindGroups.map((g) => g.element), ...(options.layout ? [layout.element] : []));
 
@@ -181,7 +186,7 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
           ...modelFields.map((m) => {
             const node: FieldNode = { type: 'field', id: m.name, field: m.name };
             const icon = kindOfField(m.field, node) ?? 'short-answer';
-            return tile(`model:${m.name}`, icon, m.field.label, `${m.field.label}: already in the model, stored as ${storedAs(m.field)}`, 'fd-tool-model');
+            return tile(`model:${m.name}`, icon, m.field.label, w.inTheModel(m.field.label, storedAs(m.field, options.words)), 'fd-tool-model');
           })
         );
         fromModel.count.textContent = String(modelFields.length);

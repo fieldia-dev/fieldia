@@ -57,7 +57,8 @@ export function outlineDrag(options: OutlineDragOptions): { destroy(): void } {
   let pointer = { x: 0, y: 0 };
   let edgeTimer: ReturnType<typeof setTimeout> | undefined;
 
-  const nameOf = (ids: string[]) => (ids.length === 1 ? (options.rows().find((r) => r.id === ids[0])?.label ?? 'Part') : `${ids.length} parts`);
+  const w = designer.words.outline;
+  const nameOf = (ids: string[]) => (ids.length === 1 ? (options.rows().find((r) => r.id === ids[0])?.label ?? w.part) : w.parts(ids.length));
 
   function onDown(event: PointerEvent) {
     if (event.button !== 0 || drag) return;
@@ -123,7 +124,7 @@ export function outlineDrag(options: OutlineDragOptions): { destroy(): void } {
     const spot = over === -1 ? null : dropSpot(rows, designer.getPage().layout.id, over, fraction, current.level + Math.round(across), options.folded(), takes);
     current.spot = spot;
     current.refused = spot ? designer.moveRefusal(current.ids, spot.parent) : null;
-    current.words = !spot ? 'Not here' : (current.refused ?? designer.describeMove(current.ids, spot.parent, spot.index));
+    current.words = !spot ? w.notHere : (current.refused ?? designer.describeMove(current.ids, spot.parent, spot.index));
     (chip.querySelector('.fd-outline-chip-where') as HTMLElement).textContent = current.words;
     chip.classList.toggle('fd-outline-refused', !spot || !!current.refused);
     line.hidden = !spot || !!spot.into;
@@ -219,7 +220,7 @@ export function outlineDrag(options: OutlineDragOptions): { destroy(): void } {
     if (!commit || !current.spot) return;
     if (current.refused) return options.say(current.refused);
     const moved = designer.moveParts(current.ids, current.spot.parent, current.spot.index);
-    options.say(moved ? `${nameOf(current.ids)}: ${current.words}` : (designer.getState().issues[0] ?? 'Not moved'));
+    options.say(moved ? designer.words.canvas.named(nameOf(current.ids), current.words) : (designer.getState().issues[0] ?? w.notMoved));
   }
 
   const onUp = () => end(true);

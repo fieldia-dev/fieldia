@@ -1,7 +1,8 @@
 import type { ButtonNode, LineField, ListNode, Page } from '@fieldia/core';
-import { installListStyles } from '@fieldia/viewer';
+import { installListStyles, VIEWER_LABELS, type ViewerLabels } from '@fieldia/viewer';
 import { displayValue } from '@fieldia/widgets';
 import { canvasDrag, type CanvasDrag } from './canvas-drag';
+import { pageLocale } from './chrome-language';
 import type { ElementFactory } from './chrome';
 import type { Designer, DesignerState } from './designer';
 import { designerIcon } from './icons';
@@ -47,14 +48,18 @@ const TOTAL = 128;
 
 export function listCanvas(options: ListCanvasOptions): ListCanvas {
   const { el, doc, designer } = options;
+  const w = designer.words.list;
   installListStyles(doc);
+  /** What the viewer itself says on the list — its search box, its pager, the rows chosen — in the page's language, as the form will. */
+  const viewerWords = (page: Page): ViewerLabels => VIEWER_LABELS[pageLocale(page)];
 
   // ---- the search bar and the pager ----------------------------------------------------
   const facets = el('span', { class: 'fd-facets' });
+  const searchWords = el('span', { class: 'fd-search-placeholder' });
   const search = el(
     'div',
-    { class: 'fd-search fd-canvas-search', role: 'button', tabindex: '0', 'aria-label': 'Search and filters', title: 'Where the search looks, the filters and the groupings: in the panel' },
-    el('div', { class: 'fd-search-field' }, designerIcon(doc, 'search'), facets, el('span', { class: 'fd-search-placeholder' }, 'Search…'))
+    { class: 'fd-search fd-canvas-search', role: 'button', tabindex: '0', 'aria-label': w.searchAndFilters, title: w.searchTitle },
+    el('div', { class: 'fd-search-field' }, designerIcon(doc, 'search'), facets, searchWords)
   );
   const openFilters = () => {
     designer.select(null);
@@ -73,16 +78,17 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
 
   // ---- the buttons for the rows chosen -----------------------------------------------------
   const actions = el('div', { class: 'fd-canvas-list-actions' });
-  const addAction = el('button', { type: 'button', class: 'fd-canvas-add-part', 'data-add-part': 'action' }, designerIcon(doc, 'plus'), 'Add a button');
+  const chosen = el('span', { class: 'fd-list-count' });
+  const addAction = el('button', { type: 'button', class: 'fd-canvas-add-part', 'data-add-part': 'action' }, designerIcon(doc, 'plus'), w.addButton);
   addAction.addEventListener('click', () => {
-    const created = designer.addListAction('New button');
+    const created = designer.addListAction(designer.words.defaults.newButton);
     if (created) focusAction(created);
   });
   const selection = el(
     'div',
     { class: 'fd-list-selection fd-canvas-selection' },
-    el('span', { class: 'fd-list-count' }, '2 selected'),
-    el('span', { class: 'fd-canvas-selection-hint' }, 'Shows when rows are chosen'),
+    chosen,
+    el('span', { class: 'fd-canvas-selection-hint' }, w.showsWhenChosen),
     actions,
     addAction
   );
@@ -104,7 +110,7 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
   }
 
   function openAction(action: ButtonNode): ActionView {
-    const input = el('input', { class: 'fd-part-input', 'aria-label': 'Words', autocomplete: 'off', size: String(Math.max(4, action.label.length + 1)) }) as HTMLInputElement;
+    const input = el('input', { class: 'fd-part-input', 'aria-label': w.words, autocomplete: 'off', size: String(Math.max(4, action.label.length + 1)) }) as HTMLInputElement;
     input.addEventListener('input', () => {
       input.size = Math.max(4, input.value.length + 1);
       designer.updateListAction(action.id, { label: input.value });
@@ -115,7 +121,7 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
         input.blur();
       }
     });
-    const remove = el('button', { type: 'button', class: 'fd-bar-button', 'aria-label': 'Delete', title: 'Delete' }, designerIcon(doc, 'delete'));
+    const remove = el('button', { type: 'button', class: 'fd-bar-button', 'aria-label': w.delete, title: w.delete }, designerIcon(doc, 'delete'));
     remove.addEventListener('click', () => designer.removeListAction(action.id));
     const tools = el('div', { class: 'fd-field-bar fd-part-bar', role: 'toolbar', 'aria-label': action.label }, remove);
     const element = el('span', { class: `fd-button fd-button-${action.style ?? 'secondary'} fd-canvas-part fd-editing`, 'data-part': action.id }, tools, input);
@@ -169,9 +175,9 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
     openMenu({
       el,
       anchor,
-      title: 'Add a column',
+      title: w.addColumn,
       items: choices.map(({ name, field }) => ({ id: name, label: field.label, icon: kindOfField(field, { type: 'field', id: name, field: name }) ?? 'short-answer' })),
-      note: choices.length ? 'A list shows the fields the model has. New fields are made on the record’s page.' : 'Every field the model has that a column can show is a column already.',
+      note: w.addColumnNote(choices.length > 0),
       onPick: (name) => designer.addColumn(name),
     });
   }
@@ -187,10 +193,10 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
     };
     return el(
       'div',
-      { class: 'fd-field-bar fd-column-bar', role: 'toolbar', 'aria-label': 'Column' },
-      ...(index > 0 ? [tool('Move left', 'left', () => designer.moveColumn(name, index - 1))] : []),
-      ...(index < count - 1 ? [tool('Move right', 'right', () => designer.moveColumn(name, index + 1))] : []),
-      tool('Remove the column', 'delete', () => designer.removeColumn(name))
+      { class: 'fd-field-bar fd-column-bar', role: 'toolbar', 'aria-label': w.column },
+      ...(index > 0 ? [tool(w.moveLeft, 'left', () => designer.moveColumn(name, index - 1))] : []),
+      ...(index < count - 1 ? [tool(w.moveRight, 'right', () => designer.moveColumn(name, index + 1))] : []),
+      tool(w.removeColumn, 'delete', () => designer.removeColumn(name))
     );
   }
 
@@ -220,7 +226,7 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       });
       return th;
     });
-    const add = el('button', { type: 'button', class: 'fd-canvas-add-part', 'aria-label': 'Add a column', title: 'Add a column' }, designerIcon(doc, 'plus'), 'Column');
+    const add = el('button', { type: 'button', class: 'fd-canvas-add-part', 'aria-label': w.addColumn, title: w.addColumn }, designerIcon(doc, 'plus'), w.column);
     add.addEventListener('click', () => addColumnMenu(add));
     const rows = sampleRows(page.fields, list.columns, ROWS).map((values) =>
       el(
@@ -245,6 +251,7 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
   const element = el('div', { class: 'fd-canvas fd-list-canvas' }, el('div', { class: 'fd-list' }, bar, selection, scroll));
 
   const drag = canvasDrag({
+    words: designer.words,
     canvas: element,
     cards: '.fd-list-table th[data-node]',
     drop(source, _section, index) {
@@ -264,7 +271,10 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       const on = new Set(list.defaultFilters ?? []);
       facets.replaceChildren(...(list.filters ?? []).filter((f) => on.has(f.id)).map((f) => el('span', { class: 'fd-facet' }, el('span', { class: 'fd-facet-text' }, f.label))));
       const size = list.pageSize ?? 40;
-      pagerText.textContent = `1–${Math.min(size, TOTAL)} / ${TOTAL}`;
+      const said = viewerWords(page);
+      searchWords.textContent = said.search;
+      chosen.textContent = said.selected.replace('{n}', '2');
+      pagerText.textContent = said.range.replace('{from}', '1').replace('{to}', String(Math.min(size, TOTAL))).replace('{total}', String(TOTAL));
       drawActions(list, selected);
       drawTable(page, list, selected);
     },

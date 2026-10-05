@@ -4,6 +4,7 @@ import type { WidgetFactory } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { designerIcon } from './icons';
+import { shownTitle } from './saved-forms';
 import { setHidden, setText } from './writes';
 
 /**
@@ -39,10 +40,12 @@ interface View {
 }
 
 /** A page of one part, the saved form placed as this page places it: what the form draws, without the page's own conditions round it. */
-function placing(node: FormNode, look: Page['look']): Page {
+function placing(node: FormNode, look: Page['look'], language: string | undefined): Page {
   return {
     fieldia: '0.1',
     id: 'fieldia-designer-preview',
+    // In the page's language, as the form will draw it: the saved form's own words in it, where it keeps them.
+    ...(language ? { language } : {}),
     data: { kind: 'responses' },
     fields: {},
     ...(look ? { look } : {}),
@@ -56,6 +59,7 @@ function placing(node: FormNode, look: Page['look']): Page {
 
 export function formViews(options: { el: ElementFactory; doc: Document; designer: Designer; skin?: string; widgets?: Record<string, WidgetFactory> }): FormViews {
   const { el, doc, designer } = options;
+  const w = designer.words.savedForms;
   const views = new Map<string, View>();
 
   /** A saved form inside the saved form, as the app's store has it: the viewer draws it too. */
@@ -68,7 +72,7 @@ export function formViews(options: { el: ElementFactory; doc: Document; designer
 
   function make(id: string): View {
     const tag = el('span', { class: 'fd-canvas-form-tag' });
-    const open = el('button', { type: 'button', class: 'fd-button fd-button-link fd-canvas-form-open' }, 'Open it') as HTMLButtonElement;
+    const open = el('button', { type: 'button', class: 'fd-button fd-button-link fd-canvas-form-open' }, w.openIt) as HTMLButtonElement;
     const note = el('p', { class: 'fd-canvas-form-note' });
     // Shown, never used: what is inside takes no focus and no click, so a click picks the saved form itself.
     const body = el('div', { class: 'fd-canvas-form-body', inert: '' });
@@ -100,9 +104,10 @@ export function formViews(options: { el: ElementFactory; doc: Document; designer
       view.pageId = node.page;
       const known = designer.savedForm(node.page, node.version);
       const saved = known?.page ?? null;
-      const name = saved?.title || node.page;
-      setText(view.tag, `Saved form “${name}” · ${node.version === undefined ? 'latest version' : `version ${node.version}`}`);
-      view.open.title = `Open “${name}” on its own page, to change it`;
+      // Its title as the form will show it: in the page's language, where the saved form keeps a translation.
+      const name = shownTitle(saved, designer.getPage().language) || node.page;
+      setText(view.tag, w.tag(name, node.version));
+      view.open.title = w.openTitle(name);
       setHidden(view.open, !designer.canOpenForm());
       view.element.classList.toggle('fd-canvas-selected', picked);
       view.element.classList.toggle('fd-hidden-sometimes', node.invisible !== undefined);
@@ -110,7 +115,7 @@ export function formViews(options: { el: ElementFactory; doc: Document; designer
       else view.element.style.removeProperty('--fd-span');
 
       const problem = known === undefined ? null : designer.checks().find((check) => check.at === node.id && check.severity === 'must');
-      const words = known === undefined ? `Loading “${node.page}”…` : problem ? problem.text : '';
+      const words = known === undefined ? w.loading(node.page) : problem ? problem.text : '';
       setText(view.note, words);
       setHidden(view.note, !words);
       view.note.classList.toggle('fd-canvas-form-problem', !!problem);
@@ -120,15 +125,15 @@ export function formViews(options: { el: ElementFactory; doc: Document; designer
         return view.element;
       }
       // Drawn by the viewer, placed as the form places it — its card, its title, its fields — in this page's look.
-      const look = designer.getPage().look;
-      const key = JSON.stringify([node.page, node.version ?? null, node.title ?? null, look ?? null]);
+      const { look, language } = designer.getPage();
+      const key = JSON.stringify([node.page, node.version ?? null, node.title ?? null, look ?? null, language ?? null]);
       if (view.drawn?.page !== saved || view.drawn.key !== key) {
         unmount(view);
         view.body.replaceChildren();
         try {
-          view.viewer = mountViewer(view.body, { page: placing(node, look), showActions: false, skin: (options.skin ?? 'outlined') as 'outlined' | 'underline', widgets: options.widgets, pages });
+          view.viewer = mountViewer(view.body, { page: placing(node, look, language), showActions: false, skin: (options.skin ?? 'outlined') as 'outlined' | 'underline', widgets: options.widgets, pages });
         } catch (error) {
-          setText(view.note, `“${name}” cannot be shown: ${(error as Error).message.split('\n')[0]}`);
+          setText(view.note, w.cannotShow(name, (error as Error).message.split('\n')[0]));
           setHidden(view.note, false);
         }
         view.drawn = { page: saved, key };

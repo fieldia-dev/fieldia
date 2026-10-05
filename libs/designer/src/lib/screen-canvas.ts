@@ -24,6 +24,7 @@ import { tabHolds } from './page-tree';
 import { sampleRows } from './samples';
 import { foldMark, type FoldMark } from './canvas-fold';
 import { setAttr, setData, setHidden, setText } from './writes';
+import { chromeLanguage, widgetWords } from './chrome-language';
 
 /**
  * The screen editor's canvas: the page drawn the way the viewer draws it —
@@ -85,6 +86,10 @@ const topOf = (page: Page) => (page.layout as { children: LayoutNode[] }).childr
 export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   const { designer, doc } = options;
   const el = elementFactory(doc);
+  const words = designer.words;
+  const w = words.canvas;
+  /** The designer's own words on the screen drawn: its language and direction, when it has one. */
+  const own = chromeLanguage(designer);
   const titleCard = el('button', { type: 'button', class: 'fd-canvas-title', hidden: '' });
   titleCard.addEventListener('click', () => designer.select(null));
   const body = el('div', { class: 'fd-canvas-body' });
@@ -111,8 +116,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     ownWidth();
     if (redraw) api.update(designer.getState());
   }
-  const sizes = sizeSwitch(el, doc, size, (next) => showSize(next, null, true), width);
-  const stage = el('div', { class: 'fd-canvas-stage' }, sizes.element, sizes.note, keys.help);
+  const sizes = sizeSwitch(el, doc, size, (next) => showSize(next, null, true), width, words);
+  const stage = el('div', { class: 'fd-canvas-stage', ...own }, sizes.element, sizes.note, keys.help);
   const element = el('div', { class: 'fd-canvas fd-form', 'data-fd-skin': options.skin ?? 'outlined' }, multi.element, stage, header.top, header.card, titleCard, body, keys.said);
   const resize = canvasResize({
     el,
@@ -122,6 +127,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     change: (next, at, done) => showSize(at, next, done),
     reset: () => showSize(size, null, true),
     say: keys.say,
+    words,
   });
   /** The canvas as wide as its own width, in Advanced; else as wide as its size. */
   function ownWidth() {
@@ -167,7 +173,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     options: OptionsEditor | null;
     settings: InlineSettings | null;
     /** What a card not being edited was drawn from: while all of it is the same, the card stays as it is. */
-    drawn: { node: FieldNode; def: Field; labels: Place['labels']; picked: boolean; sample: number | null } | null;
+    drawn: { node: FieldNode; def: Field; labels: Place['labels']; picked: boolean; sample: number | null; language: string | undefined } | null;
   }
   const cards = new Map<string, Card>();
   /** Where a part sits in its grid: its place in it, the grid's columns, and the names right above the grid's first row. */
@@ -183,7 +189,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   }
 
   /** Six dots beside a field, shown when it is pointed at or picked: what it is carried by. For the pointer only — the keys move it too — so no control of its own. */
-  const gripOf = () => el('span', { class: 'fd-card-grip', 'data-grip': '', 'aria-hidden': 'true', title: 'Drag to move · Alt+↑ or ↓ moves it too' }, designerIcon(doc, 'grip'));
+  const gripOf = () => el('span', { class: 'fd-card-grip', 'data-grip': '', 'aria-hidden': 'true', title: words.options.grip }, designerIcon(doc, 'grip'));
 
   function buildCard(id: string, editing: boolean, ownChoice: boolean): Card {
     const widgetBox = el('div', { class: 'fd-canvas-widget', inert: '' });
@@ -195,12 +201,12 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       return { element, editing, widgetBox, widget: null, painted: '', label, help, bar: null, options: null, settings: null, drawn: null };
     }
     const bar = fieldBar({ el, doc, designer, id, more: options.more });
-    const label = el('input', { class: 'fd-canvas-label-input', 'data-inline': 'label', 'aria-label': 'Label', autocomplete: 'off' });
+    const label = el('input', { class: 'fd-canvas-label-input', 'data-inline': 'label', 'aria-label': w.label, autocomplete: 'off' });
     label.addEventListener('input', () => {
       sizeToWords(label as HTMLInputElement);
       designer.updateQuestion(id, { label: (label as HTMLInputElement).value });
     });
-    const help = el('input', { class: 'fd-canvas-help-input fd-help', 'data-inline': 'help', 'aria-label': 'Help', placeholder: 'Add a line of help', autocomplete: 'off' });
+    const help = el('input', { class: 'fd-canvas-help-input fd-help', 'data-inline': 'help', 'aria-label': w.help, placeholder: w.addHelp, autocomplete: 'off' });
     help.addEventListener('input', () => designer.updateQuestion(id, { help: (help as HTMLInputElement).value }));
     // Enter goes from the label to the help, and from the help out.
     label.addEventListener('keydown', (event) => {
@@ -250,8 +256,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     // A card not being edited, drawn from the same field, picked or not as before, for the same record: as it is.
     const isPicked = picked.includes(node.id) && picked.length > 1;
     const was = card.drawn;
-    if (!editing && was?.node === node && was.def === def && was.labels === labels && was.picked === isPicked && was.sample === sample) return element;
-    card.drawn = editing ? null : { node, def, labels, picked: isPicked, sample };
+    if (!editing && was?.node === node && was.def === def && was.labels === labels && was.picked === isPicked && was.sample === sample && was.language === page.language) return element;
+    card.drawn = editing ? null : { node, def, labels, picked: isPicked, sample, language: page.language };
     element.dataset['type'] = def.type;
     const labelsAt = labelPlace(node, def.type, labels);
     if (labelsAt) element.dataset['labels'] = labelsAt;
@@ -291,12 +297,14 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   /** The field's real widget, inert: on the canvas it is looked at and moved, not typed in. */
   function paint(card: Card, node: FieldNode) {
     const def = page.fields[node.field];
-    const key = JSON.stringify([node, def, sample]);
+    // Its own words in the page's language, as the form will have them.
+    const said = widgetWords(designer.getPage());
+    const key = JSON.stringify([node, def, sample, said.locale]);
     if (card.painted === key && card.widget) return;
     card.painted = key;
     card.widget?.destroy?.();
     const f = form();
-    const widget = createWidget({ form: f, name: node.field, field: def, node, id: `fd-canvas-${node.id}`, document: doc }, options.widgets);
+    const widget = createWidget({ form: f, name: node.field, field: def, node, id: `fd-canvas-${node.id}`, document: doc, ...said }, options.widgets);
     widget.update({ value: f.getState().values[node.field], values: f.getState().values, readonly: false, required: def.required === true, invalid: false });
     card.widget = widget;
     card.widgetBox.replaceChildren(widget.element);
@@ -330,7 +338,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   /** A group is a fieldset, named by its title; an arrangement is no group to name, and a fieldset cannot lay parts on the columns round it. */
   function makeSection(id: string, tag: 'fieldset' | 'div'): SectionView {
     const title = el('button', { type: 'button', class: 'fd-canvas-section-title' });
-    const titleInput = el('input', { class: 'fd-canvas-section-title-input', 'aria-label': 'Section title', placeholder: 'Untitled section', autocomplete: 'off' });
+    const titleInput = el('input', { class: 'fd-canvas-section-title-input', 'aria-label': w.sectionTitle, placeholder: words.parts.untitledSection, autocomplete: 'off' });
     titleInput.addEventListener('input', () => designer.renameContainer(id, titleInput.value));
     titleInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') titleInput.blur();
@@ -340,15 +348,15 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       titleInput.focus();
       titleInput.select();
     });
-    const fold = foldMark(el, doc);
+    const fold = foldMark(el, doc, words);
     const legend = el('legend', { class: 'fd-section-title' }, fold.element, title, titleInput);
     const description = el('p', { class: 'fd-section-description', hidden: '' });
     const grid = el('div', { class: 'fd-grid', 'data-drop-grid': '', 'data-container': id });
-    const empty = el('p', { class: 'fd-canvas-empty' }, 'Drop a field here, or pick one in the toolbox.');
+    const empty = el('p', { class: 'fd-canvas-empty', ...own }, w.dropHere);
     // Simple mode's word on an arrangement it keeps as Advanced laid it out.
-    const advanced = el('button', { type: 'button', class: 'fd-button' }, 'Open in Advanced');
+    const advanced = el('button', { type: 'button', class: 'fd-button' }, w.openAdvanced);
     advanced.addEventListener('click', () => options.openAdvanced?.());
-    const lock = el('div', { class: 'fd-simple-lock', hidden: '' }, el('span', { class: 'fd-simple-lock-how' }), el('span', {}, 'Simple mode keeps it as it is. Edit what is inside by picking it.'), advanced);
+    const lock = el('div', { class: 'fd-simple-lock', hidden: '', ...own }, el('span', { class: 'fd-simple-lock-how' }), el('span', {}, w.simpleKeeps), advanced);
     const element = el(tag, { class: 'fd-section fd-canvas-section', 'data-node': id, 'data-drop-section': id }, legend, description, grid, empty, lock);
     nameRoom?.observe(legend);
     nameRoom?.observe(description);
@@ -384,7 +392,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     element.classList.toggle('fd-canvas-picked', picked.includes(section.id) && picked.length > 1);
     // An arrangement has no title to show or type: it only holds parts.
     setHidden(view.legend, plan.arrangement);
-    setText(view.title, section.title || 'Untitled section');
+    setText(view.title, section.title || words.parts.untitledSection);
     view.title.classList.toggle('fd-canvas-untitled', !section.title);
     setHidden(view.title, isPicked);
     setHidden(view.titleInput, !isPicked);
@@ -415,7 +423,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     setHidden(view.empty, section.children.length > 0);
     const locked = mode === 'simple' && plan.arrangement && isPicked;
     setHidden(view.lock, !locked);
-    if (locked) (view.lock.firstElementChild as HTMLElement).textContent = lockWords(page, section);
+    if (locked) (view.lock.firstElementChild as HTMLElement).textContent = lockWords(page, section, words);
     return element;
   }
 
@@ -449,7 +457,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
 
   function makeTabs(id: string): TabsView {
     const list = el('div', { class: 'fd-tablist', role: 'tablist' });
-    const add = el('button', { type: 'button', class: 'fd-canvas-add-tab', 'aria-label': 'Add a tab', title: 'Add a tab' }, '+');
+    const add = el('button', { type: 'button', class: 'fd-canvas-add-tab', 'aria-label': w.addTab, title: w.addTab }, '+');
     const grid = el('div', { class: 'fd-grid', 'data-drop-grid': '' });
     grid.style.setProperty('--fd-columns', '1');
     const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel' }, grid);
@@ -457,7 +465,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     const view: TabsView = { element, list, panel, grid, add, active: null };
     add.addEventListener('click', () => {
       const tabs = locate(designer.getPage(), id)?.node as TabsNode | undefined;
-      const created = tabs && designer.addTab(id, `Tab ${tabs.children.length + 1}`);
+      const created = tabs && designer.addTab(id, words.defaults.tab(tabs.children.length + 1));
       if (!created) return;
       view.active = created;
       designer.select(created);
@@ -476,7 +484,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     shown.element.classList.toggle('fd-canvas-picked', picked.includes(node.id) && picked.length > 1);
     span(shown.element, node.colspan);
     const buttons = node.children.map((tab) => {
-      const button = el('button', { type: 'button', role: 'tab', class: 'fd-tab fd-canvas-tab', 'data-node': tab.id, 'aria-selected': String(tab.id === shown.active) }, tab.label || 'Untitled tab');
+      const button = el('button', { type: 'button', role: 'tab', class: 'fd-tab fd-canvas-tab', 'data-node': tab.id, 'aria-selected': String(tab.id === shown.active) }, tab.label || w.untitledTab);
       button.classList.toggle('fd-canvas-selected', selected === tab.id);
       button.addEventListener('click', () => {
         shown.active = tab.id;
@@ -567,6 +575,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   // Simple carries fields among fields, as before; Advanced drops any part beside, under, into or between others.
   const simpleDrag = canvasDrag({
     canvas: element,
+    words,
     parts: '[data-node]:not([role="tab"])',
     enabled: () => mode === 'simple',
     drop: (source, section, index) => {

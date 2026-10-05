@@ -1,6 +1,7 @@
 import { dayOf, type Field, type FieldNode, type Page } from '@fieldia/core';
 import { findNode } from './page-tree';
 import { Refusal } from './refusal';
+import type { DesignerWords } from './designer-words';
 
 /**
  * The edits the text, number and date kinds need beyond words: the most
@@ -29,6 +30,8 @@ export interface InputCommandsDeps {
   apply(edit: (draft: Page) => void, merge?: string | null): boolean;
   /** Whether a field is the backend's, whose definition the page does not change. */
   fromModel(name: string): boolean;
+  /** The designer's words, for the words it writes at a scale's ends. */
+  words: DesignerWords;
 }
 
 const NUMBERS = ['integer', 'float', 'monetary'];
@@ -40,22 +43,22 @@ const WIDTH = 16;
 /** How many decimals a number is written with: 0.25 has 2. */
 export const decimalsOf = (n: number) => (Number.isInteger(n) ? 0 : (String(n).split('.')[1] ?? '').length);
 
-export function inputCommands({ apply, fromModel }: InputCommandsDeps) {
+export function inputCommands({ apply, fromModel, words }: InputCommandsDeps) {
   /** The question's node and its field. */
   function question(draft: Page, id: string): { node: FieldNode; field: Field; owned: boolean } {
     const found = findNode(draft, id);
-    if (!found || found.node.type !== 'field') throw new Refusal(`There is no question "${id}"`);
+    if (!found || found.node.type !== 'field') throw new Refusal((w) => w.refusals.noQuestion(id));
     return { node: found.node, field: draft.fields[found.node.field], owned: !fromModel(found.node.field) };
   }
 
   /** A number's least or most, or a date's earliest or latest day, as the field takes it. */
   function limit(field: Field, value: number | string): number | string {
     if (NUMBERS.includes(field.type)) {
-      if (typeof value !== 'number' || !Number.isFinite(value)) throw new Refusal('From and To are numbers');
-      if (field.type === 'integer' && !Number.isInteger(value)) throw new Refusal('A whole number runs from and to whole numbers');
+      if (typeof value !== 'number' || !Number.isFinite(value)) throw new Refusal((w) => w.refusals.fromToNumbers);
+      if (field.type === 'integer' && !Number.isInteger(value)) throw new Refusal((w) => w.refusals.wholeRange);
       return value;
     }
-    if (typeof value !== 'string' || !DAY.test(value) || Number.isNaN(Date.parse(dayOf(value)))) throw new Refusal('A day is a date, today, or days after or before today');
+    if (typeof value !== 'string' || !DAY.test(value) || Number.isNaN(Date.parse(dayOf(value)))) throw new Refusal((w) => w.refusals.dayIs);
     return value;
   }
 
@@ -65,41 +68,41 @@ export function inputCommands({ apply, fromModel }: InputCommandsDeps) {
       return apply(
         (draft) => {
           const { field, owned } = question(draft, id);
-          if (!owned) throw new Refusal(`The limits of ${field.label} come from the model`);
+          if (!owned) throw new Refusal((w) => w.refusals.limitsFromModel(field.label));
           const own = field as Field & Record<string, unknown>;
           const put = (key: string, value: unknown) => (value === null || value === undefined ? delete own[key] : (own[key] = value));
           if (limits.size !== undefined) {
-            if (field.type !== 'char' && field.type !== 'text') throw new Refusal('Only a short answer or a paragraph has a most characters');
-            if (limits.size !== null && !(Number.isInteger(limits.size) && limits.size > 0)) throw new Refusal('The most characters is a whole number, 1 or more');
+            if (field.type !== 'char' && field.type !== 'text') throw new Refusal((w) => w.refusals.onlyTextSize);
+            if (limits.size !== null && !(Number.isInteger(limits.size) && limits.size > 0)) throw new Refusal((w) => w.refusals.sizeWhole);
             put('size', limits.size);
           }
           for (const key of ['min', 'max'] as const) {
             const value = limits[key];
             if (value === undefined) continue;
-            if (![...NUMBERS, ...DATES].includes(field.type)) throw new Refusal('Only a number, an amount or a date has limits');
+            if (![...NUMBERS, ...DATES].includes(field.type)) throw new Refusal((w) => w.refusals.onlyLimits);
             put(key, value === null ? null : limit(field, value));
           }
           if (own['min'] !== undefined && own['max'] !== undefined) {
             const [min, max] = [own['min'], own['max']].map((v) => (typeof v === 'string' ? dayOf(v) : (v as number)));
             const dates = DATES.includes(field.type);
             // A date may be one day only; a number runs from less to more.
-            if (dates ? (min as number) > (max as number) : (min as number) >= (max as number)) throw new Refusal(dates ? 'The earliest day is after the latest' : 'From is not less than To');
+            if (dates ? (min as number) > (max as number) : (min as number) >= (max as number)) throw new Refusal((w) => (dates ? w.refusals.earliestAfterLatest : w.refusals.fromNotLess));
           }
           if (limits.decimals !== undefined) {
-            if (field.type !== 'float' && field.type !== 'monetary') throw new Refusal('Only a number or an amount has decimals');
+            if (field.type !== 'float' && field.type !== 'monetary') throw new Refusal((w) => w.refusals.onlyDecimals);
             const d = limits.decimals;
-            if (d !== null && !(Number.isInteger(d) && d >= 0 && d <= 6)) throw new Refusal('Decimals run from 0 to 6');
+            if (d !== null && !(Number.isInteger(d) && d >= 0 && d <= 6)) throw new Refusal((w) => w.refusals.decimalsRange);
             put('digits', d === null ? null : [field.digits?.[0] ?? WIDTH, d]);
           }
           if (limits.days !== undefined) {
-            if (!DATES.includes(field.type)) throw new Refusal('Only a date falls on days of the week');
+            if (!DATES.includes(field.type)) throw new Refusal((w) => w.refusals.onlyDateDays);
             const days = limits.days === null ? [] : [...new Set(limits.days)].sort();
-            if (days.some((d) => !Number.isInteger(d) || d < 1 || d > 7)) throw new Refusal('The days of the week are 1, Monday, to 7, Sunday');
-            if (limits.days !== null && !days.length) throw new Refusal('A date falls on one day of the week at least');
+            if (days.some((d) => !Number.isInteger(d) || d < 1 || d > 7)) throw new Refusal((w) => w.refusals.daysRange);
+            if (limits.days !== null && !days.length) throw new Refusal((w) => w.refusals.oneDay);
             put('days', days.length && days.length < 7 ? days : null);
           }
           if (limits.startsToday !== undefined) {
-            if (field.type !== 'date') throw new Refusal('Only a date starts on today');
+            if (field.type !== 'date') throw new Refusal((w) => w.refusals.onlyDateToday);
             put('default', limits.startsToday ? 'today' : null);
           }
         },
@@ -128,10 +131,10 @@ export function inputCommands({ apply, fromModel }: InputCommandsDeps) {
     makeNps(id: string): boolean {
       return apply((draft) => {
         const { node, field, owned } = question(draft, id);
-        if (node.widget !== 'scale' || field.type !== 'integer') throw new Refusal('Only a linear scale is made NPS');
-        if (!owned) throw new Refusal(`The range of ${field.label} comes from the model`);
+        if (node.widget !== 'scale' || field.type !== 'integer') throw new Refusal((w) => w.refusals.onlyScaleNps);
+        if (!owned) throw new Refusal((w) => w.refusals.rangeFromModel(field.label));
         Object.assign(field, { min: 0, max: 10 });
-        node.options = { ...(node.options ?? {}), startLabel: 'Not at all likely', endLabel: 'Extremely likely' };
+        node.options = { ...(node.options ?? {}), startLabel: words.defaults.npsStart, endLabel: words.defaults.npsEnd };
       });
     },
 
@@ -145,10 +148,10 @@ export function inputCommands({ apply, fromModel }: InputCommandsDeps) {
       return apply(
         (draft) => {
           const { node, field, owned } = question(draft, id);
-          if (node.widget !== 'slider' || (field.type !== 'integer' && field.type !== 'float')) throw new Refusal('Only a slider has a step');
-          if (step !== null && !(Number.isFinite(step) && step > 0)) throw new Refusal('A step is a number more than 0, such as 1 or 0.5');
+          if (node.widget !== 'slider' || (field.type !== 'integer' && field.type !== 'float')) throw new Refusal((w) => w.refusals.onlySliderStep);
+          if (step !== null && !(Number.isFinite(step) && step > 0)) throw new Refusal((w) => w.refusals.stepNumber);
           const whole = step === null || Number.isInteger(step);
-          if (!owned && !whole && field.type === 'integer') throw new Refusal(`${field.label} holds whole numbers in the model, so it steps by whole numbers`);
+          if (!owned && !whole && field.type === 'integer') throw new Refusal((w) => w.refusals.stepWhole(field.label));
           const options = { ...(node.options ?? {}) };
           if (step === null || step === 1) delete options['step'];
           else options['step'] = step;

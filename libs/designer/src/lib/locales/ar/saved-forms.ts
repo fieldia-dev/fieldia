@@ -1,0 +1,47 @@
+import type { DesignerWords } from '../../designer-words';
+import { ltr, quoteAr } from '../speak';
+
+const q = quoteAr;
+const DATE = new Intl.DateTimeFormat('ar-u-nu-latn', { dateStyle: 'medium' });
+
+export const savedForms: DesignerWords['savedForms'] = {
+  savedForm: 'النموذج المحفوظ',
+  copy: (n) => (n === 1 ? 'النموذج المحفوظ' : `النموذج المحفوظ ${n}`),
+  tile: 'نموذج محفوظ',
+  tileTip: 'نموذج محفوظ: ضع أحد النماذج المحفوظة في التطبيق، مثل عنوان',
+  menuNote: (any) => (any ? 'يوضع كاملًا، وتُحفظ إجاباته على حدة؛ ويُعدَّل في صفحته الخاصة.' : 'لا نموذج محفوظ في التطبيق لوضعه بعد: انشر نموذجًا أولًا.'),
+  add: 'إضافة نموذج محفوظ',
+  hint: 'نموذج محفوظ',
+  tag: (name, version) => `نموذج محفوظ ${q(name)} · ${version === undefined ? 'أحدث إصدار' : `الإصدار ${version}`}`,
+  openIt: 'فتح النموذج',
+  openTitle: (name) => `فتح ${q(name)} في صفحته الخاصة لتغييره`,
+  loading: (id) => `جارٍ تحميل ${q(id)}…`,
+  cannotShow: (name, why) => `تعذّر عرض ${q(name)}: ${ltr(why)}`,
+  version: 'الإصدار',
+  title: 'العنوان',
+  showTitle: 'إظهار عنوان',
+  answersGoUnder: 'تُحفظ الإجابات تحت',
+  latest: 'أحدث إصدار',
+  versionOn: (version, publishedAt) => `الإصدار ${version} · ${DATE.format(new Date(publishedAt))}`,
+  versionOnly: (version) => `الإصدار ${version}`,
+  notFound: (id) => `${id} (غير موجود)`,
+  openHint: 'يُعدَّل النموذج المحفوظ في صفحته الخاصة: تتبعه كل النماذج التي تضعه، ما لم تلتزم بإصدار.',
+  versionHint: 'الأحدث: يظهر هنا كل إصدار فور نشره. والإصدار المُلتزَم به يبقى كما كان.',
+  titleHint: 'عنوانه الخاص، ما لم تُكتب كلمات هنا.',
+  answersHint: `تُحفظ إجاباته تحت هذا الاسم، بمعزل عن نسخة ثانية: ${ltr('{ "home": { "street": … } }')}.`,
+  noForm: (id) => `لا يوجد نموذج محفوظ ${q(id)} في هذه الصفحة`,
+  pickForm: 'اختر النموذج المحفوظ لوضعه',
+  versionWhole: 'الإصدار عدد صحيح يبدأ من 1',
+  answersName: (hint) => `مكان حفظ الإجابات اسم من حروف وأرقام و${ltr('_')}، يبدأ بحرف: ${q(hint)} مثلًا`,
+  insideItself: 'لا يمكن وضع صفحة داخل نفسها',
+  way: (titles) => titles.map(q).join(' ← '),
+  holdsThisPage: (name, way) => `${q(name)} يحتوي هذه الصفحة: ستوضع داخل نفسها (${way})`,
+  mixWithField: (name) => `يحفظ نموذج محفوظ إجاباته تحت ${q(name)}، وهو اسم حقل: ستختلط الإجابات. أعطه اسمًا خاصًا به.`,
+  mixWithCopy: (name) => `نموذجان محفوظان يحفظان إجاباتهما تحت ${q(name)}: ستختلط الإجابات. أعطِ كل نسخة اسمًا خاصًا بها.`,
+  placedInItself: 'هذه الصفحة موضوعة داخل نفسها: لا يمكن للنموذج عرضها.',
+  cannotBeFound: (id) => `تعذّر العثور على النموذج المحفوظ ${q(id)}: سيقول النموذج ذلك في مكانه.`,
+  noVersion: (title, version) => `ليس لـ${q(title)} الإصدار ${version}: سيقول النموذج إنه تعذّر العثور عليه.`,
+  notSections: (title) => `${q(title)} ليس نموذجًا من أقسام أو علامات تبويب: لا يمكن وضعه في نموذج آخر.`,
+  holdsThisPageCheck: (name, way) => `${q(name)} يحتوي هذه الصفحة: ستوضع داخل نفسها (${way}).`,
+  takeItOff: 'إزالته من الصفحة',
+};

@@ -2,6 +2,7 @@ import type { Page } from '@fieldia/core';
 import type { Designer } from './designer';
 import { pageChanges } from './page-checks';
 import { pageProblem } from './templates';
+import { en } from './locales/en';
 
 /**
  * The app's own assistant: given what a person asks and the page as it is,
@@ -34,11 +35,12 @@ export interface AssistantRun {
   done: Promise<AssistantResult>;
 }
 
-/** What is said when nothing is written for the assistant. */
-export const ASK_FOR_WORDS = 'Say what the form is for, and what it should ask.';
+/** What is said when nothing is written for the assistant (in the designer's words: `words.assistant.askForWords`). */
+export const ASK_FOR_WORDS = en.assistant.askForWords;
 
 export function askAssistant(designer: Designer, assistant: DesignerAssistant, prompt: string): AssistantRun {
   const words = prompt.trim();
+  const w = designer.words.assistant;
   const stop = new AbortController();
   let settle: (result: AssistantResult) => void = () => undefined;
   let settled = false;
@@ -54,7 +56,7 @@ export function askAssistant(designer: Designer, assistant: DesignerAssistant, p
     finish({ status: 'cancelled' });
   };
   if (!words) {
-    finish({ status: 'refused', problem: ASK_FOR_WORDS });
+    finish({ status: 'refused', problem: w.askForWords });
     return { cancel, done };
   }
   const asked = designer.getPage();
@@ -68,15 +70,14 @@ export function askAssistant(designer: Designer, assistant: DesignerAssistant, p
     (page) => {
       if (settled) return;
       const before = designer.getPage();
-      const problem = pageProblem(before, page);
-      if (problem) return finish({ status: 'refused', problem: `The assistant’s form cannot be used: ${problem}` });
+      const problem = pageProblem(before, page, designer.words);
+      if (problem) return finish({ status: 'refused', problem: w.cannotBeUsed(problem) });
       if (JSON.stringify({ ...page, id: before.id, data: before.data }) === JSON.stringify(before)) return finish({ status: 'unchanged' });
-      if (!designer.replacePage(page)) return finish({ status: 'refused', problem: `The assistant’s form cannot be used: ${designer.getState().issues.join('; ')}` });
-      finish({ status: 'applied', changes: pageChanges(before, designer.getPage()) });
+      if (!designer.replacePage(page)) return finish({ status: 'refused', problem: w.cannotBeUsed(designer.getState().issues.join('; ')) });
+      finish({ status: 'applied', changes: pageChanges(before, designer.getPage(), designer.words) });
     },
     (error: unknown) => {
-      const why = error instanceof Error && error.message ? `: ${error.message}` : '.';
-      finish({ status: 'failed', problem: `The assistant could not do it${why}` });
+      finish({ status: 'failed', problem: w.couldNot(error instanceof Error && error.message ? error.message : null) });
     }
   );
   return { cancel, done };

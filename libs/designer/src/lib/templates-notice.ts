@@ -22,8 +22,9 @@ const LISTED = 8;
 export function doneNotice(el: ElementFactory, designer: Designer, afterUndo: () => void): DoneNotice {
   const words = el('p', { class: 'fd-start-done-words' });
   const list = el('ul', { class: 'fd-start-done-changes' });
-  const undo = el('button', { type: 'button', class: 'fd-button' }, 'Undo');
-  const close = el('button', { type: 'button', class: 'fd-icon-button fd-start-done-close', 'aria-label': 'Close', title: 'Close' }, '×');
+  const w = designer.words.templates;
+  const undo = el('button', { type: 'button', class: 'fd-button' }, w.undo);
+  const close = el('button', { type: 'button', class: 'fd-icon-button fd-start-done-close', 'aria-label': w.close, title: w.close }, '×');
   const element = el('div', { class: 'fd-start-done', role: 'status', tabindex: '-1', hidden: '' }, el('div', { class: 'fd-start-done-body' }, words, list), el('div', { class: 'fd-start-done-actions' }, undo, close));
   /** The page it speaks of. */
   let about: object | null = null;
@@ -43,7 +44,7 @@ export function doneNotice(el: ElementFactory, designer: Designer, afterUndo: ()
       // Each in its own direction: English words keep their order on a page right to left.
       words.replaceChildren(el('bdi', {}, text));
       const listed = changes.slice(0, LISTED);
-      list.replaceChildren(...listed.map((c) => el('li', {}, el('bdi', {}, c))), ...(changes.length > LISTED ? [el('li', { class: 'fd-start-done-more' }, el('bdi', {}, `and ${changes.length - LISTED} more`))] : []));
+      list.replaceChildren(...listed.map((c) => el('li', {}, el('bdi', {}, c))), ...(changes.length > LISTED ? [el('li', { class: 'fd-start-done-more' }, el('bdi', {}, w.andMore(changes.length - LISTED)))] : []));
       list.hidden = !changes.length;
       about = designer.getPage();
       element.hidden = false;

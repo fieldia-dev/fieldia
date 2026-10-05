@@ -47,14 +47,15 @@ export function movers(el: ElementFactory, designer: Designer, id: string, words
 
 /** A set of tabs: where it sits on the sheet, and taking it away with its tabs. */
 export function tabsProperties(el: ElementFactory, designer: Designer, id: string): PropertiesView {
-  const moves = movers(el, designer, id, ['Move up', 'Move down']);
-  const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, 'Delete tabs');
+  const w = designer.words.panel;
+  const moves = movers(el, designer, id, [w.moveUp, w.moveDown]);
+  const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.deleteTabs);
   remove.addEventListener('click', () => designer.removeNode(id));
   const width = widthSetting(el, designer, id);
   const element = el(
     'div',
     { class: 'fd-props' },
-    el('p', { class: 'fd-properties-hint' }, 'Tabs show one page of sections at a time. Select a tab to rename it.'),
+    el('p', { class: 'fd-properties-hint' }, w.tabsHint),
     onTab(el('div', { class: 'fd-props-actions' }, ...moves.buttons, remove), 'content', 'Move or delete'),
     ...width.rows
   );
@@ -70,12 +71,13 @@ export function tabsProperties(el: ElementFactory, designer: Designer, id: strin
 /** One tab: its label, its place among the others, and taking it away. */
 export function tabProperties(el: ElementFactory, designer: Designer, id: string): PropertiesView {
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
-  const label = el('input', { class: 'fd-input', 'aria-label': 'Tab label' });
+  const w = designer.words.panel;
+  const label = el('input', { class: 'fd-input', 'aria-label': w.tabLabel });
   label.addEventListener('input', () => designer.renameContainer(id, label.value));
-  const moves = movers(el, designer, id, ['Move left', 'Move right']);
-  const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, 'Delete tab');
+  const moves = movers(el, designer, id, [w.moveLeft, w.moveRight]);
+  const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.deleteTab);
   remove.addEventListener('click', () => designer.removeNode(id));
-  const element = el('div', { class: 'fd-props' }, setting(el, 'content', 'Label', label), onTab(el('div', { class: 'fd-props-actions' }, ...moves.buttons, remove), 'content', 'Move or delete'));
+  const element = el('div', { class: 'fd-props' }, setting(el, 'content', 'Label', label, { words: w.label }), onTab(el('div', { class: 'fd-props-actions' }, ...moves.buttons, remove), 'content', 'Move or delete'));
   return {
     element,
     update(page) {

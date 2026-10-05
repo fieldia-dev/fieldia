@@ -1,4 +1,6 @@
 import { compileModifier, createForm, type Field, type Page } from '@fieldia/core';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * A formula as a person types it — "Worked out from" a field's value, or a
@@ -59,12 +61,12 @@ export function formulaTokens(source: string): FormulaToken[] | { bad: number } 
 }
 
 /** "Unknown field “prise” at 1–5": the words, and where, as they are shown under the box. */
-export function problemWords(problem: FormulaProblem | null): string {
+export function problemWords(problem: FormulaProblem | null, words: DesignerWords = en): string {
   if (!problem) return '';
   if (problem.from === undefined) return problem.words;
   const at = problem.to === undefined || problem.to === problem.from ? `${problem.from}` : `${problem.from}–${problem.to}`;
   // Words that go on past the place end in a comma of their own: "“round” takes 1 or 2 values, at 9–13".
-  return `${problem.words} at ${at}`;
+  return words.rules.at(problem.words, at);
 }
 
 const place = (token: FormulaToken) => ({ from: token.from + 1, to: token.to });
@@ -90,38 +92,40 @@ const ranOut = (message: string) => /EOF|^Expected/.test(message);
  * cannot hold, a piece out of place, something missing, a function there is
  * not or given too many values, a field the page does not have.
  */
-export function formulaProblem(page: Page, source: string): FormulaProblem | null {
-  if (!source.trim()) return { words: 'Type a formula' };
+export function formulaProblem(page: Page, source: string, words: DesignerWords = en): FormulaProblem | null {
+  const w = words.rules;
+  if (!source.trim()) return { words: w.typeAFormula };
   const tokens = formulaTokens(source);
-  if (!Array.isArray(tokens)) return { words: `“${source[tokens.bad]}” cannot be in a formula,`, from: tokens.bad + 1, to: tokens.bad + 1 };
+  if (!Array.isArray(tokens)) return { words: w.cannotBeIn(source[tokens.bad]), from: tokens.bad + 1, to: tokens.bad + 1 };
   const message = readError(source);
-  if (message !== null) return whereItStops(source, tokens, message);
+  if (message !== null) return whereItStops(source, tokens, message, words);
   // It reads: each name must be a field of the page.
   for (const [i, token] of tokens.entries()) {
     if (token.kind !== 'name' || calls(tokens, i)) continue;
     const root = token.text.split('.')[0];
-    if (!Object.prototype.hasOwnProperty.call(page.fields, root)) return { words: `Unknown field “${root}”`, ...place(token) };
+    if (!Object.prototype.hasOwnProperty.call(page.fields, root)) return { words: w.unknownField(root), ...place(token) };
   }
   return null;
 }
 
-function whereItStops(source: string, tokens: FormulaToken[], message: string): FormulaProblem {
+function whereItStops(source: string, tokens: FormulaToken[], message: string, words: DesignerWords): FormulaProblem {
+  const w = words.rules;
   const named = /^no function "(\w+)"/.exec(message) ?? /^(\w+) takes /.exec(message) ?? /^(sum) takes the name/.exec(message);
   if (named) {
     // The call the reader stopped at: the last one of that name before where it stopped.
     const at = firstFailing(source, tokens);
     const name = [...tokens.slice(0, at + 1)].reverse().find((t) => t.kind === 'name' && t.text === named[1]) ?? tokens.find((t) => t.text === named[1]);
-    const words = /^no function/.test(message) ? `Unknown function “${named[1]}”` : `“${named[1]}”${message.slice(named[1].length)},`;
-    return name ? { words, ...place(name) } : { words };
+    const said = /^no function/.test(message) ? w.unknownFunction(named[1]) : w.takes(named[1], message.slice(named[1].length));
+    return name ? { words: said, ...place(name) } : { words: said };
   }
   if (ranOut(message)) {
     const open = unclosed(tokens);
-    if (open) return { words: 'A “(” is never closed', ...place(open) };
+    if (open) return { words: w.neverClosed, ...place(open) };
     const last = tokens[tokens.length - 1];
-    return { words: `Something is missing after “${last.text}”`, ...place(last) };
+    return { words: w.missingAfter(last.text), ...place(last) };
   }
   const token = tokens[firstFailing(source, tokens)];
-  return { words: `“${token.text}” is out of place`, ...place(token) };
+  return { words: w.outOfPlace(token.text), ...place(token) };
 }
 
 /** The first piece the formula cannot go on from: up to it, the formula reads, or only runs out. */
@@ -159,9 +163,9 @@ const labelOf = (page: Page, name: string) => page.fields[name]?.label || name;
  * Whether working a field out from this formula would have it worked out
  * from itself, directly or through other worked-out fields; the words if so.
  */
-export function wouldCircle(page: Page, own: string, source: string): string | null {
+export function wouldCircle(page: Page, own: string, source: string, words: DesignerWords = en): string | null {
   const reads = (name: string) => (name === own ? fieldsReadBy(source) : fieldsReadBy(page.fields[name]?.compute));
-  if (reads(own).includes(own)) return `“${labelOf(page, own)}” cannot be worked out from itself`;
+  if (reads(own).includes(own)) return words.rules.fromItself(labelOf(page, own));
   const path: string[] = [own];
   const seen = new Set<string>();
   const visit = (name: string): boolean => {
@@ -176,15 +180,18 @@ export function wouldCircle(page: Page, own: string, source: string): string | n
     return false;
   };
   if (!visit(own)) return null;
-  return `“${labelOf(page, own)}” would be worked out from itself: ${[...path, own].map((name) => labelOf(page, name)).join(' → ')}`;
+  return words.rules.circle(labelOf(page, own), [...path, own].map((name) => labelOf(page, name)));
 }
 
 // ---- in words ------------------------------------------------------------------------------------
 
-const SIGNS: Record<string, string> = { '*': '×', '/': '÷', '-': '−', '>=': '≥', '<=': '≤', '==': 'is', '!=': 'is not', '<>': 'is not' };
+const SIGNS: Record<string, string> = { '*': '×', '/': '÷', '-': '−', '>=': '≥', '<=': '≤' };
+/** Signs said in words: `==` as "is". */
+const SAID_SIGNS: Record<string, 'is' | 'isNot'> = { '==': 'is', '!=': 'isNot', '<>': 'isNot' };
+const signWords = (sign: string, words: DesignerWords) => (SAID_SIGNS[sign] ? words.rules.signs[SAID_SIGNS[sign]] : (SIGNS[sign] ?? sign));
 
 /** A label that holds a sign of its own, "Price - net", is quoted, so it reads as one name and not as a sum. */
-const nameWords = (label: string) => (/[-+*/%<>=!(),'"×÷−≥≤]/.test(label) ? `“${label}”` : label);
+const nameWords = (label: string, words: DesignerWords) => (/[-+*/%<>=!(),'"×÷−≥≤]/.test(label) ? words.rules.quoteName(label) : label);
 
 /** A literal as written, as its value: `'bulk'` is bulk, `-5` is −5; null for anything else. */
 export function literalOf(source: string): { value: string | number | boolean | null } | null {
@@ -200,10 +207,10 @@ export function literalOf(source: string): { value: string | number | boolean | 
 }
 
 /** A value as a person reads it: a choice by its label, yes or no, text as it is. */
-export function valueInWords(field: Field | undefined, value: unknown): string {
+export function valueInWords(field: Field | undefined, value: unknown, words: DesignerWords = en): string {
   if (field?.type === 'selection') return field.options.find((o) => o.value === value)?.label ?? String(value);
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-  if (value === null || value === undefined) return 'nothing';
+  if (typeof value === 'boolean') return value ? words.rules.yes : words.rules.no;
+  if (value === null || value === undefined) return words.rules.nothing;
   return String(value);
 }
 
@@ -216,7 +223,7 @@ export interface WordPiece {
 }
 
 /** A formula in words, piece by piece: what `formulaInWords` joins, and the box draws with each field marked. */
-export function formulaPieces(page: Page, source: string): WordPiece[] {
+export function formulaPieces(page: Page, source: string, words: DesignerWords = en): WordPiece[] {
   const tokens = formulaTokens(source);
   if (!Array.isArray(tokens)) return [{ text: source, was: source, space: false }];
   return tokens.map((token, i) => {
@@ -224,13 +231,14 @@ export function formulaPieces(page: Page, source: string): WordPiece[] {
     let field: string | undefined;
     if (token.kind === 'name' && !calls(tokens, i)) {
       field = token.text.split('.')[0];
-      text = nameWords(labelOf(page, field));
-    } else if (token.kind === 'sign') text = SIGNS[token.text] ?? token.text;
-    else if (token.kind === 'word' && CONSTANTS.has(token.text)) text = valueInWords(undefined, literalOf(token.text)?.value);
+      text = nameWords(labelOf(page, field), words);
+    } else if (token.kind === 'sign') text = signWords(token.text, words);
+    else if (token.kind === 'word' && CONSTANTS.has(token.text)) text = valueInWords(undefined, literalOf(token.text)?.value, words);
+    else if (token.kind === 'word') text = words.rules.keyword(token.text);
     else if (token.kind === 'text') {
       // Compared with a choice: the choice's label.
       const compared = tokens[i - 1]?.kind === 'sign' && tokens[i - 2]?.kind === 'name' ? page.fields[tokens[i - 2].text] : undefined;
-      text = compared?.type === 'selection' ? valueInWords(compared, token.text.slice(1, -1)) : `“${token.text.slice(1, -1)}”`;
+      text = compared?.type === 'selection' ? valueInWords(compared, token.text.slice(1, -1), words) : words.rules.text(token.text.slice(1, -1));
     }
     const tight = token.kind === 'close' || token.kind === 'comma' || i === 0 || tokens[i - 1].kind === 'open' || (token.kind === 'open' && tokens[i - 1]?.kind === 'name');
     return { text, was: token.text, space: !tight, ...(field ? { field } : {}) };
@@ -243,8 +251,8 @@ export function formulaPieces(page: Page, source: string): WordPiece[] {
  * compared with a value by the value's label: `state == 'done'` reads
  * "Status is Done". A label with a sign in it is quoted.
  */
-export function formulaInWords(page: Page, source: string): string {
-  return formulaPieces(page, source)
+export function formulaInWords(page: Page, source: string, words: DesignerWords = en): string {
+  return formulaPieces(page, source, words)
     .map((piece) => (piece.space ? ' ' : '') + piece.text)
     .join('');
 }
@@ -281,7 +289,8 @@ function sampleOf(name: string, field: Field, n: number): unknown {
   }
 }
 
-const shown = (field: Field | undefined, value: unknown) => (typeof value === 'string' && field?.type !== 'selection' && !/^\d{4}-/.test(value) ? `“${value}”` : valueInWords(field, value));
+const shown = (field: Field | undefined, value: unknown, words: DesignerWords) =>
+  typeof value === 'string' && field?.type !== 'selection' && !/^\d{4}-/.test(value) ? words.rules.text(value) : valueInWords(field, value, words);
 
 /** Made-up values for the fields a formula reads, the n-th of a kind taking the n-th sample; a worked-out field is left to be worked out. */
 function samplesFor(page: Page, reads: string[]): Record<string, unknown> {
@@ -307,17 +316,15 @@ function settled(fields: Page['fields'], values: Record<string, unknown>): Recor
   }
 }
 
-const andWords = (words: string[]) => (words.length < 2 ? words.join('') : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`);
-
-/** "Price 120 and Quantity 3": each field read, by its label, with its value. */
-const givenWords = (page: Page, reads: string[], values: Record<string, unknown>) => andWords(reads.map((name) => `${labelOf(page, name)} ${shown(page.fields[name], values[name])}`));
+/** "Price 120", "Quantity 3": each field read, by its label, with its value. */
+const givenWords = (page: Page, reads: string[], values: Record<string, unknown>, words: DesignerWords) => reads.map((name) => words.rules.given(labelOf(page, name), shown(page.fields[name], values[name], words)));
 
 /**
  * The formula worked out on made-up values, the way the form works it out
  * (a whole number rounded, text as text): "With Price 120 and Quantity 3:
  * 360". Empty when the formula does not read.
  */
-export function sampleResult(page: Page, own: string, source: string): string {
+export function sampleResult(page: Page, own: string, source: string, words: DesignerWords = en): string {
   if (formulaProblem(page, source) || wouldCircle(page, own, source)) return '';
   const reads = fieldsReadBy(source).filter((name) => name !== own && page.fields[name]);
   const target = page.fields[own];
@@ -325,9 +332,9 @@ export function sampleResult(page: Page, own: string, source: string): string {
   const worked = settled({ ...page.fields, [own]: { ...target, compute: source } as Field }, samplesFor(page, reads));
   if (!worked) return '';
   const result = worked[own];
-  const said = result === null || result === undefined || (typeof result === 'number' && !Number.isFinite(result)) ? 'nothing — it cannot be worked out' : shown(target, result);
-  if (!reads.length) return `Always ${said}`;
-  return `With ${givenWords(page, reads, worked)}: ${said}`;
+  const said = result === null || result === undefined || (typeof result === 'number' && !Number.isFinite(result)) ? words.rules.cannotWorkOut : shown(target, result, words);
+  if (!reads.length) return words.rules.always(said);
+  return words.rules.withValues(givenWords(page, reads, worked, words), said);
 }
 
 /**
@@ -335,15 +342,16 @@ export function sampleResult(page: Page, own: string, source: string): string {
  * it: "With Contract ends 2026-03-14 and Start date 2026-03-01: holds".
  * Empty when the formula does not read.
  */
-export function sampleHolds(page: Page, source: string): string {
+export function sampleHolds(page: Page, source: string, words: DesignerWords = en): string {
+  const w = words.rules;
   if (formulaProblem(page, source)) return '';
   const reads = fieldsReadBy(source).filter((name) => page.fields[name]);
   const worked = settled(page.fields, samplesFor(page, reads));
   if (!worked) return '';
   const holds = compileModifier(source).evaluate(worked);
-  if (!reads.length) return holds ? 'Always holds' : 'Never holds';
+  if (!reads.length) return holds ? w.alwaysHolds : w.neverHolds;
   // The form waits for every field a rule reads: one with no made-up value is said so.
   const waits = reads.filter((name) => worked[name] === null || worked[name] === undefined);
-  if (waits.length) return `Checked once ${andWords(waits.map((name) => labelOf(page, name)))} ${waits.length === 1 ? 'is' : 'are'} filled in`;
-  return `With ${givenWords(page, reads, worked)}: ${holds ? 'holds' : 'does not hold'}`;
+  if (waits.length) return w.checkedOnce(waits.map((name) => labelOf(page, name)));
+  return w.withValues(givenWords(page, reads, worked, words), holds ? w.holds : w.doesNotHold);
 }

@@ -3,6 +3,8 @@ import { FORM_WIDTHS } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import { designerIcon } from './icons';
 import { setHidden, setText } from './writes';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * The size of screen the Advanced canvas shows, as the mockup's switch on its
@@ -20,7 +22,6 @@ export type ScreenSize = 'desktop' | 'tablet' | 'phone';
 const KEY = 'fieldia.designer.size';
 const WIDTH_KEY = 'fieldia.designer.width';
 const SIZES: readonly ScreenSize[] = ['desktop', 'tablet', 'phone'];
-export const SIZE_WORDS: Record<ScreenSize, string> = { desktop: 'Desktop', tablet: 'Tablet', phone: 'Phone' };
 
 /** The narrowest the canvas is dragged to: a small phone's screen. */
 export const MIN_WIDTH = 320;
@@ -95,14 +96,15 @@ export interface SizeSwitch {
 }
 
 /** Three buttons — a picture each, and its name where there is room — the one shown pressed; a note of the width dragged to. */
-export function sizeSwitch(el: ElementFactory, doc: Document, size: ScreenSize, change: (size: ScreenSize) => void, width: number | null = null): SizeSwitch {
+export function sizeSwitch(el: ElementFactory, doc: Document, size: ScreenSize, change: (size: ScreenSize) => void, width: number | null = null, words: DesignerWords = en): SizeSwitch {
+  const w = words.canvas;
   const icons: Record<ScreenSize, string> = { desktop: 'desktop', tablet: 'tablet', phone: 'device' };
   const buttons = SIZES.map((s) => {
-    const b = el('button', { type: 'button', class: 'fd-canvas-size', 'data-size': s, title: SIZE_WORDS[s] }, designerIcon(doc, icons[s]), el('span', { class: 'fd-canvas-size-name' }, SIZE_WORDS[s]));
+    const b = el('button', { type: 'button', class: 'fd-canvas-size', 'data-size': s, title: w.sizes[s] }, designerIcon(doc, icons[s]), el('span', { class: 'fd-canvas-size-name' }, w.sizes[s]));
     b.addEventListener('click', () => change(s));
     return b;
   });
-  const element = el('div', { class: 'fd-canvas-sizes', role: 'group', 'aria-label': 'Screen size' }, ...buttons);
+  const element = el('div', { class: 'fd-canvas-sizes', role: 'group', 'aria-label': w.screenSize }, ...buttons);
   const note = el('span', { class: 'fd-canvas-size-px', hidden: '' });
   const set = (now: ScreenSize, own: number | null = null) => {
     buttons.forEach((b, i) => {
@@ -110,7 +112,7 @@ export function sizeSwitch(el: ElementFactory, doc: Document, size: ScreenSize, 
       if (b.getAttribute('aria-pressed') !== pressed) b.setAttribute('aria-pressed', pressed);
     });
     setHidden(note, own === null);
-    setText(note, own === null ? '' : `${own} px`);
+    setText(note, own === null ? '' : w.px(own));
   };
   set(size, width);
   return { element, note, set };

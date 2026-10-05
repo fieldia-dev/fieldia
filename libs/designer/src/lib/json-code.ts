@@ -39,7 +39,8 @@ export function codeBox(el: ElementFactory, doc: Document, options: { label: str
   });
   const gutter = el('pre', { class: 'fd-json-gutter', 'aria-hidden': 'true' });
   const marks = el('div', { class: 'fd-json-marks', 'aria-hidden': 'true' });
-  const element = el('div', { class: 'fd-json-code' }, marks, gutter, input);
+  // JSON reads left to right, whichever way the page or the designer runs.
+  const element = el('div', { class: 'fd-json-code', dir: 'ltr' }, marks, gutter, input);
   let lines = 0;
 
   function refresh() {

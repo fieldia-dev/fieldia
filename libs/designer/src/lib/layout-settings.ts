@@ -2,7 +2,7 @@ import { PART_LOOKS, type ButtonNode, type ColumnCount, type ColumnsByWidth, typ
 import { columnsValue, setSpan, SPANNED } from './layout-ops';
 import { across, isSection, locate, nodeOf, rowsOf, spanOf, type Holder, type Part } from './layout-tree';
 import { fill, fromTwelfths, inTwelfths, isGroup, keepsFull, laidInTwelfths, resize, toTwelfths, TWELVE, twelfthsAhead } from './layout-twelfths';
-import { KIND_WORDS, settingWords } from './look-parts-words';
+import { settingWords } from './look-parts-words';
 import { Refusal } from './refusal';
 
 /**
@@ -35,9 +35,9 @@ function narrowTo(section: SectionNode, wide: number): void {
 /** A group's columns: one count, or a count for a desktop, a tablet and a phone (a plain number when only a desktop's is given). */
 export function setColumns(page: Page, id: string, columns: ColumnCount | ColumnsByWidth): void {
   const section = nodeOf(page, id);
-  if (!isSection(section)) throw new Refusal(`There is no section "${id}"`);
+  if (!isSection(section)) throw new Refusal((w) => w.refusals.noSection(id));
   const { wide, medium, narrow } = typeof columns === 'object' ? columns : { wide: columns, medium: undefined, narrow: undefined };
-  if ([wide, medium, narrow].some((n) => n !== undefined && !COUNTS.includes(n))) throw new Refusal('A group has one to four columns, or twelfths');
+  if ([wide, medium, narrow].some((n) => n !== undefined && !COUNTS.includes(n))) throw new Refusal((w) => w.layout.groupColumns);
   // Into twelfths or out of them, each part as wide as it was, as near as the columns allow.
   if (isGroup(section) && (wide === TWELVE) !== inTwelfths(section)) {
     if (wide === TWELVE) toTwelfths(section);
@@ -52,23 +52,22 @@ export function setColumns(page: Page, id: string, columns: ColumnCount | Column
         ? { wide, ...(given.medium ? { medium: Math.min(given.medium, wide) as ColumnCount } : {}), ...(given.narrow ? { narrow: Math.min(given.narrow, wide) as ColumnCount } : {}) }
         : wide;
   } else {
-    if ((medium ?? 0) > wide || (narrow ?? 0) > wide) throw new Refusal('A tablet or a phone shows no more columns than a desktop');
-    if ((narrow ?? 0) > (medium ?? 4)) throw new Refusal('A phone shows no more columns than a tablet');
+    if ((medium ?? 0) > wide || (narrow ?? 0) > wide) throw new Refusal((w) => w.layout.smallerScreens);
+    if ((narrow ?? 0) > (medium ?? 4)) throw new Refusal((w) => w.layout.phoneScreen);
     section.columns = columnsValue(wide, medium, narrow);
   }
   narrowTo(section, wide);
 }
 
-const NOUNS: Record<string, string> = { field: 'A field', section: 'A group', tabs: 'Tabs', text: 'Words', button: 'A button', spacer: 'A spacer', image: 'An image' };
 
 /** The part, checked: one that takes a width, no wider than where it sits. */
 function widthOf(page: Page, id: string, span: number) {
   const at = locate(page, id);
-  if (!at) throw new Refusal(`There is no part “${id}”`);
-  if (at.node.type === 'tab') throw new Refusal('A tab is as wide as its tabs');
-  if (!SPANNED.has(at.node.type)) throw new Refusal(`A ${at.node.type} runs across the whole row`);
+  if (!at) throw new Refusal((w) => w.layout.noPart(id));
+  if (at.node.type === 'tab') throw new Refusal((w) => w.layout.tabWidth);
+  if (!SPANNED.has(at.node.type)) throw new Refusal((w) => w.layout.runsAcross(at.node.type));
   const cols = across(page, at.parent);
-  if (span > cols) throw new Refusal(inTwelfths(at.parent) ? `${NOUNS[at.node.type]} is no wider than its row` : `${NOUNS[at.node.type]} cannot be wider than its section's ${cols} columns`);
+  if (span > cols) throw new Refusal((w) => (inTwelfths(at.parent) ? w.layout.noWiderThanRow(w.layout.nouns[at.node.type]) : w.layout.noWiderThanSection(w.layout.nouns[at.node.type], cols)));
   return at;
 }
 
@@ -88,15 +87,14 @@ export function setColspan(page: Page, id: string, span: number): void {
     resize(at.node, span);
     fill(row.slice(0, row.indexOf(at.node)));
     fill(row.slice(row.indexOf(at.node) + 1));
-  } else if (!rest.length) throw new Refusal('Alone in its row, it fills it: let the group’s rows leave gaps to make it narrower');
-  else if (TWELVE - span < rest.length) throw new Refusal('The rest of its row needs room beside it');
+  } else if (!rest.length) throw new Refusal((w) => w.layout.aloneInRow);
+  else if (TWELVE - span < rest.length) throw new Refusal((w) => w.layout.restNeedsRoom);
   else {
     resize(at.node, span);
     fill(rest, TWELVE - span);
   }
 }
 
-const LABEL_WIDTH = 'Labels set beside are 60 to 320 px wide';
 const labelWidthOk = (width: number | null | undefined) => width === null || width === undefined || (Number.isInteger(width) && width >= 60 && width <= 320);
 
 /** Set or take back each setting given: `null` takes it back, and so does a card, which a group is unless it says otherwise. */
@@ -111,24 +109,24 @@ function patch(target: Record<string, unknown>, settings: Record<string, unknown
 /** How a group looks, and where its fields' labels sit. */
 export function setSectionLook(page: Page, id: string, look: SectionLook): void {
   const section = nodeOf(page, id);
-  if (!isSection(section)) throw new Refusal(`There is no group “${id}”`);
-  if (!labelWidthOk(look.labelWidth)) throw new Refusal(LABEL_WIDTH);
-  if (look.rows !== undefined && !isGroup(section)) throw new Refusal('Only a group keeps its rows full or with gaps');
+  if (!isSection(section)) throw new Refusal((w) => w.layout.noGroup(id));
+  if (!labelWidthOk(look.labelWidth)) throw new Refusal((w) => w.layout.labelWidth);
+  if (look.rows !== undefined && !isGroup(section)) throw new Refusal((w) => w.layout.onlyGroupRows);
   patch(section as unknown as Record<string, unknown>, { style: look.style, labels: look.labels, labelWidth: look.labelWidth, rows: look.rows }, { style: 'card', rows: 'full' });
 }
 
 /** Where one field's label sits; `null` for where its group or the page puts labels. */
 export function setFieldLabels(page: Page, id: string, place: LabelPlace | null): void {
   const at = locate(page, id);
-  if (at?.node.type !== 'field') throw new Refusal(`There is no field “${id}”`);
+  if (at?.node.type !== 'field') throw new Refusal((w) => w.layout.noField(id));
   if (place) at.node.labels = place;
   else delete at.node.labels;
 }
 
 /** The page's look: its colour, font, spacing, corners, labels and scheme. */
 export function setLook(page: Page, change: LookPatch): void {
-  if (change.accent && !/^#[0-9a-fA-F]{6}$/.test(change.accent)) throw new Refusal('A colour is written #rrggbb, such as #1f7a4d');
-  if (!labelWidthOk(change.labelWidth)) throw new Refusal(LABEL_WIDTH);
+  if (change.accent && !/^#[0-9a-fA-F]{6}$/.test(change.accent)) throw new Refusal((w) => w.layout.colour);
+  if (!labelWidthOk(change.labelWidth)) throw new Refusal((w) => w.layout.labelWidth);
   const look: Record<string, unknown> = { ...page.look };
   patch(look, change);
   if (Object.keys(look).length) page.look = look as PageLook;
@@ -145,19 +143,18 @@ export const PART_VALUES: Record<keyof PartLook, (value: unknown) => boolean> = 
   accent: (value) => typeof value === 'string' && COLOUR.test(value),
 };
 
-const PART_REFUSALS: Partial<Record<keyof PartLook, string>> = { corners: 'Corners are square, soft or round', textSize: 'Text is small or large' };
 
 /** One kind of part's look: each setting given set, or taken back with `null`; `null` for the whole gives the kind back to the page's look. */
 export function setPartLook(page: Page, kind: PartLookKind, change: PartLookPatch | null): void {
   const settings: readonly string[] | undefined = PART_LOOKS[kind];
-  if (!settings) throw new Refusal(`There is no kind of part “${kind}”`);
+  if (!settings) throw new Refusal((w) => w.partLooks.noKind(kind));
   const parts: Record<string, Record<string, unknown>> = { ...page.look?.parts };
   const part: Record<string, unknown> = { ...parts[kind] };
   for (const [key, value] of Object.entries(change ?? {})) {
     if (value === undefined) continue;
     const setting = key as keyof PartLook;
-    if (!settings.includes(setting)) throw new Refusal(`${KIND_WORDS[kind]} have no ${settingWords(kind, setting).toLowerCase()} of their own`);
-    if (value !== null && !PART_VALUES[setting](value)) throw new Refusal(PART_REFUSALS[setting] ?? 'A colour is written #rrggbb, such as #1f7a4d');
+    if (!settings.includes(setting)) throw new Refusal((w) => w.partLooks.noSetting(w.partLooks.kinds[kind], settingWords(kind, setting, w)));
+    if (value !== null && !PART_VALUES[setting](value)) throw new Refusal((w) => (setting === 'corners' ? w.partLooks.corners : setting === 'textSize' ? w.partLooks.textSize : w.partLooks.colour));
   }
   patch(part, change ?? Object.fromEntries(Object.keys(part).map((key) => [key, null])));
   if (Object.keys(part).length) parts[kind] = part;
@@ -184,32 +181,32 @@ export interface BlockPatch {
 
 export function updateBlock(page: Page, id: string, patch: BlockPatch): void {
   const node = locate(page, id)?.node;
-  if (!node) throw new Refusal(`There is no part “${id}”`);
+  if (!node) throw new Refusal((w) => w.layout.noPart(id));
   if (node.type === 'text') {
-    if (patch.label !== undefined || patch.src !== undefined || patch.alt !== undefined || patch.caption !== undefined) throw new Refusal('Words have text, not a label');
+    if (patch.label !== undefined || patch.src !== undefined || patch.alt !== undefined || patch.caption !== undefined) throw new Refusal((w) => w.layout.wordsNotLabel);
     if (patch.text !== undefined) node.text = patch.text;
     if (patch.style !== undefined) node.style = patch.style as TextNode['style'];
   } else if (node.type === 'button') {
-    if (patch.text !== undefined || patch.src !== undefined || patch.alt !== undefined) throw new Refusal('A button has a label, not text');
+    if (patch.text !== undefined || patch.src !== undefined || patch.alt !== undefined) throw new Refusal((w) => w.layout.buttonNotText);
     if (patch.label !== undefined) node.label = patch.label;
     if (patch.style !== undefined) node.style = patch.style as ButtonNode['style'];
   } else if (node.type === 'image') {
-    if (patch.text !== undefined || patch.label !== undefined) throw new Refusal('A picture has an address and a description');
+    if (patch.text !== undefined || patch.label !== undefined) throw new Refusal((w) => w.layout.pictureWords);
     if (patch.src !== undefined) {
-      if (!patch.src.trim()) throw new Refusal('A picture needs its address');
+      if (!patch.src.trim()) throw new Refusal((w) => w.layout.pictureAddress);
       node.src = patch.src.trim();
     }
     if (patch.alt !== undefined) node.alt = patch.alt;
     pictureLook(node, patch);
-  } else throw new Refusal('Only words, a button or a picture are changed here');
+  } else throw new Refusal((w) => w.layout.onlyBlocks);
 }
 
 /** A picture's width, place, link and caption, each checked; `null` or empty takes one away. */
 function pictureLook(node: ImageNode, patch: BlockPatch): void {
   const { width, align, href, caption } = patch;
-  if (width !== undefined && width !== null && typeof width === 'number' && !(Number.isInteger(width) && width >= 16 && width <= 4000)) throw new Refusal('A picture’s width is 16 to 4000 pixels');
+  if (width !== undefined && width !== null && typeof width === 'number' && !(Number.isInteger(width) && width >= 16 && width <= 4000)) throw new Refusal((w) => w.layout.pictureWidth);
   const link = href?.trim();
-  if (link && !/^(https?:\/\/|mailto:)\S+$/i.test(link)) throw new Refusal('A link is a web address, https://…, or a mail address, mailto:…');
+  if (link && !/^(https?:\/\/|mailto:)\S+$/i.test(link)) throw new Refusal((w) => w.layout.link);
   const set = <K extends 'width' | 'align' | 'href' | 'caption'>(key: K, value: ImageNode[K] | null | undefined) => {
     if (value === undefined) return;
     if (value === null || value === '') delete node[key];

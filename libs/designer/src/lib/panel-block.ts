@@ -23,49 +23,50 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
   const kind = locate(designer.getPage(), id)?.node.type;
   // embed lane: a saved form placed here.
   if (kind === 'form') return formContent(el, designer, id);
+  const w = designer.words.panel;
   if (kind === 'image') {
-    const src = el('input', { class: 'fd-input', 'aria-label': 'Picture address', placeholder: 'https://…', inputmode: 'url', autocomplete: 'off' }) as HTMLInputElement;
+    const src = el('input', { class: 'fd-input', 'aria-label': w.pictureAddress, placeholder: 'https://…', inputmode: 'url', autocomplete: 'off' }) as HTMLInputElement;
     src.addEventListener('input', () => designer.updateBlock(id, { src: src.value }));
-    const alt = el('input', { class: 'fd-input', 'aria-label': 'Description', placeholder: 'What the picture shows', autocomplete: 'off' }) as HTMLInputElement;
+    const alt = el('input', { class: 'fd-input', 'aria-label': w.description, placeholder: w.pictureShows, autocomplete: 'off' }) as HTMLInputElement;
     alt.addEventListener('input', () => designer.updateBlock(id, { alt: alt.value }));
     // How wide — its own width, a size, the whole row, or pixels — and where it sits in its row.
     const width = segmented<string>(
       el,
-      'Width',
+      w.width,
       [
-        { value: 'auto', words: 'Own', label: 'Own width' },
-        { value: 'small', words: 'S', label: 'Small' },
-        { value: 'medium', words: 'M', label: 'Medium' },
-        { value: 'large', words: 'L', label: 'Large' },
-        { value: 'full', words: 'Full', label: 'Full row' },
+        { value: 'auto', words: w.own, label: w.ownWidth },
+        { value: 'small', words: w.sizeS, label: w.small },
+        { value: 'medium', words: w.sizeM, label: w.medium },
+        { value: 'large', words: w.sizeL, label: w.large },
+        { value: 'full', words: w.full, label: w.fullRow },
       ],
       (value) => value && designer.updateBlock(id, { width: value === 'auto' ? null : (value as ImageNode['width']) })
     );
-    const pixels = el('input', { type: 'number', class: 'fd-input', 'aria-label': 'Width in pixels', min: '16', max: '4000', step: '1', inputmode: 'numeric', placeholder: 'px' }) as HTMLInputElement;
+    const pixels = el('input', { type: 'number', class: 'fd-input', 'aria-label': w.widthInPixels, min: '16', max: '4000', step: '1', inputmode: 'numeric', placeholder: w.px }) as HTMLInputElement;
     pixels.addEventListener('change', () => designer.updateBlock(id, { width: pixels.value.trim() ? Number(pixels.value) : null }));
     const place = segmented<string>(
       el,
-      'Place',
+      w.place,
       [
-        { value: 'start', words: 'Start', title: 'At the start of its row' },
-        { value: 'center', words: 'Centre' },
-        { value: 'end', words: 'End', title: 'At the end of its row' },
+        { value: 'start', words: w.start, title: w.atStart },
+        { value: 'center', words: w.centre },
+        { value: 'end', words: w.end, title: w.atEnd },
       ],
       (value) => value && designer.updateBlock(id, { align: value === 'start' ? null : (value as ImageNode['align']) })
     );
-    const href = el('input', { class: 'fd-input', 'aria-label': 'Link', placeholder: 'https://…', inputmode: 'url', autocomplete: 'off' }) as HTMLInputElement;
+    const href = el('input', { class: 'fd-input', 'aria-label': w.link, placeholder: 'https://…', inputmode: 'url', autocomplete: 'off' }) as HTMLInputElement;
     // Kept once typed and left: an address half typed is not one yet.
     href.addEventListener('change', () => designer.updateBlock(id, { href: href.value }));
-    const caption = el('input', { class: 'fd-input', 'aria-label': 'Caption', placeholder: 'Words under the picture', autocomplete: 'off' }) as HTMLInputElement;
+    const caption = el('input', { class: 'fd-input', 'aria-label': w.caption, placeholder: w.wordsUnderPicture, autocomplete: 'off' }) as HTMLInputElement;
     caption.addEventListener('input', () => designer.updateBlock(id, { caption: caption.value }));
     return {
       rows: [
-        setting(el, 'content', 'Picture address', src),
-        setting(el, 'content', 'Description', alt, { hint: 'Read out to those who cannot see it, and shown if the picture does not load; a picture that is a link is named by it. Leave it empty only for a picture that is decoration.' }),
-        setting(el, 'content', 'Width', [width.element, pixels]),
-        setting(el, 'content', 'Place', place.element),
-        setting(el, 'content', 'Link', href, { hint: 'Opens in a new tab.' }),
-        setting(el, 'content', 'Caption', caption),
+        setting(el, 'content', 'Picture address', src, { words: w.pictureAddress }),
+        setting(el, 'content', 'Description', alt, { hint: w.descriptionHint, words: w.description }),
+        setting(el, 'content', 'Width', [width.element, pixels], { words: w.width }),
+        setting(el, 'content', 'Place', place.element, { words: w.place }),
+        setting(el, 'content', 'Link', href, { hint: w.opensNewTab, words: w.link }),
+        setting(el, 'content', 'Caption', caption, { words: w.caption }),
       ],
       update(page) {
         const node = locate(page, id)?.node;
@@ -84,16 +85,16 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
   if (kind === 'text') {
     const style = segmented<NonNullable<TextNode['style']>>(
       el,
-      'Reads as',
+      w.readsAs,
       [
-        { value: 'heading', words: 'Heading' },
-        { value: 'paragraph', words: 'Words' },
-        { value: 'note', words: 'Note', title: 'Set apart in a soft panel' },
+        { value: 'heading', words: w.heading },
+        { value: 'paragraph', words: w.words },
+        { value: 'note', words: w.note, title: w.noteTitle },
       ],
       (value) => value && designer.updateBlock(id, { style: value })
     );
     return {
-      rows: [setting(el, 'content', 'Reads as', style.element)],
+      rows: [setting(el, 'content', 'Reads as', style.element, { words: w.readsAs })],
       update(page) {
         const node = locate(page, id)?.node;
         if (node?.type === 'text') style.set(node.style ?? 'paragraph');
@@ -101,10 +102,10 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
     };
   }
   if (kind === 'button') {
-    const words = el('input', { class: 'fd-input', 'aria-label': 'Button words', autocomplete: 'off' }) as HTMLInputElement;
+    const words = el('input', { class: 'fd-input', 'aria-label': w.buttonWords, autocomplete: 'off' }) as HTMLInputElement;
     words.addEventListener('input', () => designer.updateBlock(id, { label: words.value }));
     return {
-      rows: [setting(el, 'content', 'Button words', words)],
+      rows: [setting(el, 'content', 'Button words', words, { words: w.buttonWords })],
       update(page) {
         const node = locate(page, id)?.node;
         if (node?.type === 'button' && !focused(words)) words.value = node.label;

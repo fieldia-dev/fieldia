@@ -3,6 +3,8 @@ import { designerIcon } from './icons';
 import { shownWithin } from './panel-controls';
 import { SIMPLE_RULES, tabStrip, tabsFor, type PanelTab, type PartKind } from './panel-tabs';
 import type { PropertiesView } from './screen-properties';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * The panel beside the canvas, as the approved mockup draws it: a head saying
@@ -69,16 +71,16 @@ export interface InspectorShell {
   setTabsHidden(hidden: boolean): void;
 }
 
-export function inspectorShell(el: ElementFactory, doc: Document): InspectorShell {
+export function inspectorShell(el: ElementFactory, doc: Document, words: DesignerWords = en): InspectorShell {
   const icon = el('span', { class: 'fd-insp-icon' });
   const title = el('span', { class: 'fd-panel-title' });
   const note = el('span', { class: 'fd-insp-note' });
   const name = el('div', { class: 'fd-insp-name' });
   const headBox = el('div', { class: 'fd-insp-head' }, el('div', { class: 'fd-insp-kind' }, icon, title, note), name);
   const top = el('div', { class: 'fd-insp-top' });
-  const strip = tabStrip(el, (tab) => choose(tab));
+  const strip = tabStrip(el, (tab) => choose(tab), words);
   const panels = el('div', { class: 'fd-insp-panels' });
-  const element = el('aside', { class: 'fd-properties fd-inspector', 'aria-label': 'Properties' }, headBox, top, strip.element, panels);
+  const element = el('aside', { class: 'fd-properties fd-inspector', 'aria-label': words.panel.properties }, headBox, top, strip.element, panels);
 
   let kind: PartKind = 'page';
   let shown: PanelTab[] = [];

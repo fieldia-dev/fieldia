@@ -80,11 +80,15 @@ function build(prompt: string, page: Page): Page {
 }
 
 /** The demo assistant: an answer after `delay` milliseconds, or none once cancelled. */
-export function demoAssistant(options: { delay?: number } = {}): DesignerAssistant {
+export function demoAssistant(options: { delay?: number; locale?: string } = {}): DesignerAssistant {
   const delay = options.delay ?? 1200;
+  // The app names its assistant in the designer's language, as an app would.
+  const arabic = options.locale?.startsWith('ar');
   return {
-    name: 'Demo assistant',
-    note: 'A stand-in for your app’s own assistant: it looks for words such as contact, rating, date or IBAN. Fieldia ships no AI of its own.',
+    name: arabic ? 'مساعد تجريبي' : 'Demo assistant',
+    note: arabic
+      ? 'بديل لمساعد تطبيقك: يبحث عن كلمات مثل contact وrating وdate وIBAN. لا يأتي Fieldia بذكاء اصطناعي خاص به.'
+      : 'A stand-in for your app’s own assistant: it looks for words such as contact, rating, date or IBAN. Fieldia ships no AI of its own.',
     describe({ prompt, page, signal }) {
       return new Promise<Page>((resolve, reject) => {
         const timer = setTimeout(() => {

@@ -1,5 +1,6 @@
 import type { ElementFactory } from './chrome';
 import { designerIcon } from './icons';
+import { speakLike } from './chrome-language';
 
 /**
  * A small menu of choices under the button that opened it: the editor a
@@ -105,7 +106,7 @@ export function openMenu(options: MenuOptions): { element: HTMLElement; close():
   }
 
   // Inside the editor, so the menu keeps the form's look; fixed, so nothing clips it.
-  (anchor.closest('.fd-form') ?? doc.body).append(menu);
+  (anchor.closest('.fd-form') ?? doc.body).append(speakLike(menu, anchor));
   anchor.setAttribute('aria-expanded', 'true');
   const r = anchor.getBoundingClientRect();
   const view = doc.defaultView;

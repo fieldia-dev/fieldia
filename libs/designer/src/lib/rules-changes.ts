@@ -2,6 +2,8 @@ import type { AnswerRule, FieldNode, Page } from '@fieldia/core';
 import { containers } from './page-tree';
 import { formulaInWords } from './rules-formula';
 import { answerRuleMust, setValueInWords } from './rules-words';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * The rules' part of what changed since the last version, in words for the
@@ -26,35 +28,34 @@ function without(a: AnswerRule[], b: AnswerRule[]): AnswerRule[] {
   });
 }
 
-function answerRuleChanges(before: Page, after: Page, was: AnswerRule[], now: AnswerRule[], name: string): string[] {
+function answerRuleChanges(before: Page, after: Page, was: AnswerRule[], now: AnswerRule[], name: string, words: DesignerWords): string[] {
+  const w = words.changes;
   if (JSON.stringify(was) === JSON.stringify(now)) return [];
   // One rule changed where it stands: said as changed, not as one gone and one added.
   if (was.length === now.length) {
     const changed = now.filter((rule, i) => JSON.stringify(rule) !== JSON.stringify(was[i]));
-    if (changed.length === 1) return [`“${name}”: a rule changed — ${answerRuleMust(after, changed[0])}`];
+    if (changed.length === 1) return [w.ruleChanged(name, answerRuleMust(after, changed[0], words))];
   }
-  return [
-    ...without(was, now).map((rule) => `“${name}”: removed the rule — ${answerRuleMust(before, rule)}`),
-    ...without(now, was).map((rule) => `“${name}”: a rule — ${answerRuleMust(after, rule)}`),
-  ];
+  return [...without(was, now).map((rule) => w.ruleRemoved(name, answerRuleMust(before, rule, words))), ...without(now, was).map((rule) => w.ruleAdded(name, answerRuleMust(after, rule, words)))];
 }
 
-export function ruleChanges(before: Page, after: Page): string[] {
+export function ruleChanges(before: Page, after: Page, words: DesignerWords = en): string[] {
+  const w = words.changes;
   const out: string[] = [];
   const wasNodes = new Map(fieldNodes(before).map((n) => [n.id, n]));
   const said = new Set<string>();
   for (const node of fieldNodes(after)) {
     const def = after.fields[node.field];
     const name = node.label ?? def?.label ?? node.field;
-    out.push(...answerRuleChanges(before, after, wasNodes.get(node.id)?.validate ?? [], node.validate ?? [], name));
+    out.push(...answerRuleChanges(before, after, wasNodes.get(node.id)?.validate ?? [], node.validate ?? [], name, words));
     // A field's own rules once, where it first shows.
     if (said.has(node.field) || !def) continue;
     said.add(node.field);
     const was = before.fields[node.field];
-    if ((was?.compute ?? '') !== (def.compute ?? '')) out.push(def.compute ? `“${name}” is worked out from ${formulaInWords(after, def.compute)}` : `“${name}” is no longer worked out`);
+    if ((was?.compute ?? '') !== (def.compute ?? '')) out.push(def.compute ? w.workedOut(name, formulaInWords(after, def.compute, words)) : w.noLongerWorkedOut(name));
     if (JSON.stringify(was?.setWhen ?? []) !== JSON.stringify(def.setWhen ?? [])) {
       const items = def.setWhen ?? [];
-      out.push(items.length ? items.map((item) => `“${name}” is set to ${setValueInWords(after, def, item.value)} when ${formulaInWords(after, item.when)}`).join('; ') : `“${name}” is no longer set by a rule`);
+      out.push(items.length ? w.setWhenJoin(items.map((item) => w.setWhen(name, setValueInWords(after, def, item.value, words), formulaInWords(after, item.when, words)))) : w.noLongerSet(name));
     }
   }
   return out;

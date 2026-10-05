@@ -33,9 +33,10 @@ export interface JsonView {
   destroy(): void;
 }
 
-const SEVERITY: Record<JsonRow['severity'], string> = { error: 'Cannot apply', must: 'Must fix', should: 'Should fix' };
 /** How long typing rests before the text is checked, in milliseconds. */
 const REST = 250;
+/** A problem the page's format found, in the format's own words: one that stops the text being applied, at a path in the page. */
+const formatted = (row: JsonRow) => row.severity === 'error' && row.path !== undefined;
 let count = 0;
 
 /** `<>`: code, drawn as the designer's other icons are. */
@@ -49,34 +50,35 @@ export function jsonView({ el, doc, designer, trial, body }: JsonViewOptions): J
   const id = `fd-json-${++count}`;
   const mac = /Mac|iPhone|iPad/.test(doc.defaultView?.navigator.platform ?? '');
   const chord = mac ? '⌘' : 'Ctrl+';
-  const toggle = el('button', { type: 'button', class: 'fd-mode-button', 'data-mode': 'json', 'aria-pressed': 'false', title: 'The page as JSON' }, codeIcon(doc), 'JSON');
+  const w = designer.words.json;
+  const toggle = el('button', { type: 'button', class: 'fd-mode-button', 'data-mode': 'json', 'aria-pressed': 'false', title: w.pageAsJson }, codeIcon(doc), 'JSON');
   trial.toggle.append(toggle);
   const mode = (name: string) => trial.toggle.querySelector<HTMLButtonElement>(`[data-mode="${name}"]`);
 
   const state = el('p', { class: 'fd-json-state', id: `${id}-state`, role: 'status' });
-  const hint = el('p', { class: 'fd-json-hint', id: `${id}-hint` }, `Tab indents. To leave the box, press Esc, then Tab. ${chord}Enter applies.`);
-  const code = codeBox(el, doc, { label: 'The page as JSON', describedBy: `${id}-state ${id}-hint`, onApply: () => applyNow() });
+  const hint = el('p', { class: 'fd-json-hint', id: `${id}-hint` }, w.hint(chord));
+  const code = codeBox(el, doc, { label: w.pageAsJson, describedBy: `${id}-state ${id}-hint`, onApply: () => applyNow() });
   const input = code.input;
-  const copyButton = el('button', { type: 'button', class: 'fd-button' }, 'Copy JSON');
-  const applyButton = el('button', { type: 'button', class: 'fd-button fd-button-primary', hidden: '' }, 'Apply');
+  const copyButton = el('button', { type: 'button', class: 'fd-button' }, w.copyJson);
+  const applyButton = el('button', { type: 'button', class: 'fd-button fd-button-primary', hidden: '' }, w.apply);
   const bar = el(
     'div',
     { class: 'fd-json-bar' },
-    el('div', { class: 'fd-json-title' }, el('h2', { class: 'fd-json-heading' }, 'The page as JSON'), state),
+    el('div', { class: 'fd-json-title' }, el('h2', { class: 'fd-json-heading' }, w.pageAsJson), state),
     el('div', { class: 'fd-json-actions' }, copyButton, applyButton)
   );
   // Leaving with changes not applied: asked here, in the page.
-  const askApply = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, 'Apply');
-  const askDiscard = el('button', { type: 'button', class: 'fd-button' }, 'Discard');
-  const askKeep = el('button', { type: 'button', class: 'fd-button' }, 'Keep editing');
+  const askApply = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, w.apply);
+  const askDiscard = el('button', { type: 'button', class: 'fd-button' }, w.discard);
+  const askKeep = el('button', { type: 'button', class: 'fd-button' }, w.keepEditing);
   const question = el(
     'div',
     { class: 'fd-json-leave', role: 'alertdialog', 'aria-labelledby': `${id}-leave`, hidden: '' },
-    el('p', { class: 'fd-json-leave-text', id: `${id}-leave` }, 'The changes typed here are not applied yet.'),
+    el('p', { class: 'fd-json-leave-text', id: `${id}-leave` }, w.notApplied),
     el('div', { class: 'fd-json-actions' }, askApply, askDiscard, askKeep)
   );
-  const list = el('ul', { class: 'fd-json-problems', 'aria-label': 'Problems' });
-  const element = el('section', { class: 'fd-json', 'aria-label': 'The page as JSON', hidden: '' }, bar, question, code.element, hint, list);
+  const list = el('ul', { class: 'fd-json-problems', 'aria-label': w.problems });
+  const element = el('section', { class: 'fd-json', 'aria-label': w.pageAsJson, hidden: '' }, bar, question, code.element, hint, list);
 
   let open = false;
   /** The page as the text last matched it: untouched text follows the page as it changes. */
@@ -94,7 +96,7 @@ export function jsonView({ el, doc, designer, trial, body }: JsonViewOptions): J
   function check() {
     if (timer !== null) clearTimeout(timer);
     timer = null;
-    ({ rows, errors } = checkJson(input.value));
+    ({ rows, errors } = checkJson(input.value, designer.words));
     draw();
   }
 
@@ -104,9 +106,9 @@ export function jsonView({ el, doc, designer, trial, body }: JsonViewOptions): J
     drawState();
     list.replaceChildren(
       ...rows.map((row) => {
-        const at = el('button', { type: 'button', class: 'fd-json-at', 'aria-label': `Go to line ${row.line}, column ${row.column}` }, `Line ${row.line}`);
+        const at = el('button', { type: 'button', class: 'fd-json-at', 'aria-label': w.goToLine(row.line, row.column) }, w.line(row.line));
         at.addEventListener('click', () => code.goTo(row));
-        const item = el('li', { class: 'fd-json-problem', 'data-severity': row.severity }, at, el('span', { class: 'fd-json-severity' }, SEVERITY[row.severity]), el('span', { class: 'fd-json-message' }, row.message));
+        const item = el('li', { class: 'fd-json-problem', 'data-severity': row.severity }, at, el('span', { class: 'fd-json-severity' }, w.severity[row.severity]), el('span', { class: 'fd-json-message' }, formatted(row) ? w.formatProblem(row.message) : row.message));
         if (row.fix) {
           const fix = el('button', { type: 'button', class: 'fd-button fd-button-link fd-json-fix' }, row.fix.label);
           fix.addEventListener('click', () => fixRow(row));
@@ -124,16 +126,12 @@ export function jsonView({ el, doc, designer, trial, body }: JsonViewOptions): J
     applyButton.hidden = !changed || errors > 0;
     state.textContent =
       said ??
-      (errors > 0
-        ? `${errors} ${errors === 1 ? 'problem' : 'problems'} to put right before this can be applied.`
-        : changed
-          ? `Changed here, not applied yet: Apply or ${chord}Enter.`
-          : 'Nothing to apply: the text is the page as it is.');
+      (errors > 0 ? w.toPutRight(errors) : changed ? w.changed(chord) : w.nothingToApply);
   }
 
   function fixRow(row: JsonRow) {
     const fixed = fixJson(input.value, row.fix?.check ?? null);
-    said = fixed === null ? 'That fix cannot be made in the text as it is.' : 'Fixed in the text. Apply to keep it.';
+    said = fixed === null ? w.cannotFix : w.fixed;
     if (fixed !== null) code.replace(fixed);
     check();
   }
@@ -149,7 +147,7 @@ export function jsonView({ el, doc, designer, trial, body }: JsonViewOptions): J
     if (result.ok) {
       synced = designer.pageJson();
       code.replace(synced);
-      said = 'Applied. Undo takes it back.';
+      said = w.applied;
     } else said = null;
     check();
     return result.ok;
@@ -241,12 +239,12 @@ export function jsonView({ el, doc, designer, trial, body }: JsonViewOptions): J
   async function copy() {
     try {
       await (doc.defaultView?.navigator as Navigator).clipboard.writeText(input.value);
-      said = 'Copied.';
+      said = w.copied;
     } catch {
       // No clipboard to write to: the text selected, for the person to copy.
       input.focus({ preventScroll: true });
       input.setSelectionRange(0, input.value.length);
-      said = `Selected: press ${chord}C to copy.`;
+      said = w.selected(chord);
     }
     draw();
   }
@@ -271,8 +269,8 @@ export function jsonView({ el, doc, designer, trial, body }: JsonViewOptions): J
       return open;
     },
     items() {
-      if (open) return [{ label: 'Back to designing', hint: 'Design', run: () => mode('design')?.click() }];
-      return [{ label: 'Edit the page as JSON', hint: 'JSON', run: () => toggle.click() }];
+      if (open) return [{ label: w.backToDesigning, hint: designer.words.tryIt.design, run: () => mode('design')?.click() }];
+      return [{ label: w.editAsJson, hint: 'JSON', run: () => toggle.click() }];
     },
     destroy() {
       if (timer !== null) clearTimeout(timer);

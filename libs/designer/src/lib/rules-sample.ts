@@ -4,6 +4,8 @@ import type { ElementFactory } from './chrome';
 import { findNode } from './page-tree';
 import { fieldsReadBy } from './rules-formula';
 import { languageName, languagesOf, pageLanguage } from './translations';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * Try a value, under a field's answer rules: the field drawn by its own
@@ -119,11 +121,11 @@ export function sampleChecker(page: Page, nodeId: string, tag: string, now?: () 
 const NEEDS_THE_APP = new Set(['many2one', 'many2many', 'one2many', 'reference', 'binary', 'image', 'properties', 'json']);
 
 /** Why a field cannot take a value here, in words after its name; null when it can. */
-function notHere(def: Field): string | null {
-  if (def.compute !== undefined) return 'worked out from other answers';
-  if (def.type === 'selection' && def.optionsFrom) return 'whose choices come from the app';
-  if (def.type === 'binary' || def.type === 'image') return 'which takes files';
-  if (NEEDS_THE_APP.has(def.type)) return 'which needs the app’s records';
+function notHere(def: Field): keyof DesignerWords['rulesUi']['elsewhere'] | null {
+  if (def.compute !== undefined) return 'computed';
+  if (def.type === 'selection' && def.optionsFrom) return 'listed';
+  if (def.type === 'binary' || def.type === 'image') return 'files';
+  if (NEEDS_THE_APP.has(def.type)) return 'records';
   return null;
 }
 
@@ -160,16 +162,17 @@ interface Box {
   required: boolean;
 }
 
-export function answerSample(el: ElementFactory, nodeId: string, options: SampleOptions = {}): AnswerSample {
+export function answerSample(el: ElementFactory, nodeId: string, options: SampleOptions = {}, words: DesignerWords = en): AnswerSample {
+  const w = words.rulesUi;
   const base = `fd-sample-${++made}`;
-  const title = el('span', { class: 'fd-prop-name fd-answer-sample-title', id: `${base}-title` }, 'Try a value');
-  const language = el('select', { class: 'fd-input fd-select', 'aria-label': 'Words in' }) as HTMLSelectElement;
-  const languageRow = el('label', { class: 'fd-answer-sample-language', hidden: '' }, el('span', { 'aria-hidden': 'true' }, 'Words in'), language);
+  const title = el('span', { class: 'fd-prop-name fd-answer-sample-title', id: `${base}-title` }, w.tryAValue);
+  const language = el('select', { class: 'fd-input fd-select', 'aria-label': w.wordsIn }) as HTMLSelectElement;
+  const languageRow = el('label', { class: 'fd-answer-sample-language', hidden: '' }, el('span', { 'aria-hidden': 'true' }, w.wordsIn), language);
   const own = el('div', { class: 'fd-answer-sample-boxes' });
-  const readsTitle = el('p', { class: 'fd-answer-sample-reads', hidden: '' }, 'The rules also read');
+  const readsTitle = el('p', { class: 'fd-answer-sample-reads', hidden: '' }, w.alsoRead);
   const others = el('div', { class: 'fd-answer-sample-boxes' });
   const elsewhereWords = el('div', { class: 'fd-answer-sample-elsewhere-words' });
-  const tryButton = el('button', { type: 'button', class: 'fd-button fd-button-link fd-answer-sample-try' }, 'Try it');
+  const tryButton = el('button', { type: 'button', class: 'fd-button fd-button-link fd-answer-sample-try' }, w.tryIt);
   const elsewhere = el('div', { class: 'fd-answer-sample-elsewhere', hidden: '' }, elsewhereWords, tryButton);
   const results = el('div', { class: 'fd-answer-sample-results', id: `${base}-results`, 'aria-live': 'polite' });
   const element = el(
@@ -281,12 +284,12 @@ export function answerSample(el: ElementFactory, nodeId: string, options: Sample
     saidKey = key;
     const line = (level: string, mark: string, words: Node, tag?: string) =>
       el('p', { class: 'fd-answer-sample-result', 'data-level': level }, ...(mark ? [el('span', { class: 'fd-answer-sample-mark', 'aria-hidden': 'true' }, mark)] : []), words, ...(tag ? [el('span', { class: 'fd-answer-sample-tag' }, tag)] : []));
-    if (said === null) return results.replaceChildren(line('idle', '', el('span', { class: 'fd-answer-sample-message' }, 'Type or pick an answer to see what the form says.')));
-    if (!said.length) return results.replaceChildren(line('pass', '✓', el('span', { class: 'fd-answer-sample-message' }, 'Passes')));
+    if (said === null) return results.replaceChildren(line('idle', '', el('span', { class: 'fd-answer-sample-message' }, w.typeOrPick)));
+    if (!said.length) return results.replaceChildren(line('pass', '✓', el('span', { class: 'fd-answer-sample-message' }, w.passes)));
     results.replaceChildren(
       ...said.map((result) => {
-        const words = el('span', { class: 'fd-answer-sample-message', lang: tag, dir: isRightToLeft(tag) ? 'rtl' : 'ltr' }, result.message);
-        return result.level === 'error' ? line('error', '×', words, 'Stops sending') : line('warning', '!', words, 'Still sends');
+        const message = el('span', { class: 'fd-answer-sample-message', lang: tag, dir: isRightToLeft(tag) ? 'rtl' : 'ltr' }, result.message);
+        return result.level === 'error' ? line('error', '×', message, w.stopsSending) : line('warning', '!', message, w.stillSends);
       })
     );
   }
@@ -298,8 +301,8 @@ export function answerSample(el: ElementFactory, nodeId: string, options: Sample
     const lines = names.map((name) => {
       const def = shown.fields[name];
       const label = placeOf(shown, name).label ?? def.label;
-      const why = notHere(def) as string;
-      return el('p', {}, ownField ? `${label}, ${why}: try its rules with the whole form.` : `Also reads ${label}, ${why}: try it with the whole form.`);
+      const why = w.elsewhere[notHere(def) as keyof typeof w.elsewhere];
+      return el('p', {}, ownField ? w.ownElsewhere(label, why) : w.alsoReadsElsewhere(label, why));
     });
     elsewhereWords.replaceChildren(...lines);
     elsewhere.hidden = !lines.length;
@@ -328,7 +331,7 @@ export function answerSample(el: ElementFactory, nodeId: string, options: Sample
     const choices = JSON.stringify([pageLanguage(next), languages]);
     if (language.dataset['choices'] !== choices) {
       language.dataset['choices'] = choices;
-      language.replaceChildren(el('option', { value: '' }, `${languageName(pageLanguage(next))}, as written`), ...languages.map((tag) => el('option', { value: tag }, languageName(tag))));
+      language.replaceChildren(el('option', { value: '' }, w.asWritten(languageName(pageLanguage(next), words))), ...languages.map((tag) => el('option', { value: tag }, languageName(tag, words))));
     }
     language.value = picked ?? '';
     // The field itself cannot take a value here: said, with Try it.

@@ -1,4 +1,4 @@
-import { ASK_FOR_WORDS, askAssistant, type AssistantRun, type DesignerAssistant } from './assistant';
+import { askAssistant, type AssistantRun, type DesignerAssistant } from './assistant';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { isBlank } from './templates';
@@ -40,6 +40,7 @@ let made = 0;
 
 export function assistantBox(options: AssistantBoxOptions): AssistantBox {
   const { el, designer, assistant } = options;
+  const w = designer.words.assistant;
   const id = `fd-assist-${++made}`;
   const area = el('textarea', { id, class: 'fd-input fd-assist-prompt', rows: '3', placeholder: options.placeholder, spellcheck: 'true' }) as HTMLTextAreaElement;
   const label = el('label', { class: 'fd-assist-label', for: id }, options.label);
@@ -47,7 +48,7 @@ export function assistantBox(options: AssistantBoxOptions): AssistantBox {
   const note = assistant.note ? el('p', { class: 'fd-assist-note', id: `${id}-note` }, el('bdi', {}, assistant.note)) : null;
   if (note) area.setAttribute('aria-describedby', note.id);
   const submit = el('button', { type: 'submit', class: 'fd-button fd-button-primary fd-assist-ask' }, options.ask);
-  const cancelButton = el('button', { type: 'button', class: 'fd-button fd-assist-cancel', hidden: '' }, 'Cancel');
+  const cancelButton = el('button', { type: 'button', class: 'fd-button fd-assist-cancel', hidden: '' }, w.cancel);
   const waiting = el('span', { class: 'fd-assist-busy', role: 'status', hidden: '' }, el('span', { class: 'fd-assist-spinner', 'aria-hidden': 'true' }), options.busy);
   const said = el('p', { class: 'fd-assist-said', role: 'status' });
   const problem = el('p', { class: 'fd-assist-problem', role: 'alert', hidden: '' });
@@ -79,7 +80,7 @@ export function assistantBox(options: AssistantBoxOptions): AssistantBox {
     if (run) return;
     tell('', false);
     if (!area.value.trim()) {
-      tell(ASK_FOR_WORDS, true);
+      tell(w.askForWords, true);
       area.focus();
       return;
     }
@@ -99,7 +100,7 @@ export function assistantBox(options: AssistantBoxOptions): AssistantBox {
       options.onApplied(result.changes, wasBlank);
       return;
     }
-    if (result.status === 'unchanged') tell('The assistant left the form as it was.', false);
+    if (result.status === 'unchanged') tell(w.leftAsItWas, false);
     else if (result.status !== 'cancelled') tell(result.problem, true);
     area.focus();
   }
@@ -121,7 +122,7 @@ export function assistantBox(options: AssistantBoxOptions): AssistantBox {
     current.cancel();
     setBusy(false);
     options.onSettled?.();
-    tell('Cancelled. Nothing was changed.', false);
+    tell(w.cancelled, false);
     area.focus();
   }
   cancelButton.addEventListener('click', cancel);

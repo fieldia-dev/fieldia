@@ -1,0 +1,61 @@
+const s = (n: number | string) => (String(n) === '1' ? '' : 's');
+const orList = (words: readonly string[]) => (words.length < 2 ? words.join('') : `${words.slice(0, -1).join(', ')} or ${words[words.length - 1]}`);
+const andList = (words: readonly string[]) => (words.length < 2 ? words.join('') : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`);
+
+/**
+ * What changed in a field's own settings, for Publish, after its name:
+ * "“Bio”: takes at most 200 characters", "“Visit”: not on Saturday or Sunday".
+ */
+export const settingsChanges = {
+  line: (name: string, words: string) => `“${name}”: ${words}`,
+  anySize: 'takes any number of characters',
+  size: (n: number) => `takes at most ${n} characters`,
+  fromTo: (min: number, max: number) => `from ${min} to ${max}`,
+  atLeast: (min: number) => `at least ${min}`,
+  atMost: (max: number) => `at most ${max}`,
+  anyNumber: 'any number',
+  between: (a: string, b: string) => `between ${a} and ${b}`,
+  noEarlier: (day: string) => `no earlier than ${day}`,
+  noLater: (day: string) => `no later than ${day}`,
+  anyDay: 'any day',
+  today: 'today',
+  daysAfter: (n: number) => `${n} day${s(n)} after today`,
+  daysBefore: (n: number) => `${n} day${s(n)} before today`,
+  usualDecimals: 'the usual decimals',
+  decimals: (n: number) => `${n} decimal${s(n)}`,
+  /** The days of the week, Monday first. */
+  dayNames: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as readonly string[],
+  notOn: (days: readonly string[]) => `not on ${orList(days)}`,
+  anyWeekday: 'any day of the week',
+  startsToday: 'starts on today',
+  startsEmpty: 'starts empty',
+  rows: (n: number) => `starts ${n} rows high`,
+  keepsHeight: 'keeps its height as people type',
+  grows: 'grows as people type',
+  before: (unit: string) => `shows “${unit}” before the number`,
+  noBefore: 'no unit before the number',
+  after: (unit: string) => `shows “${unit}” after the number`,
+  noAfter: 'no unit after the number',
+  atStart: (words: string) => `“${words}” at the start`,
+  noStart: 'no words at the start',
+  atEnd: (words: string) => `“${words}” at the end`,
+  noEnd: 'no words at the end',
+  nps: 'coloured as NPS',
+  noNps: 'no longer coloured as NPS',
+  icons: { heart: 'shown as hearts', thumb: 'shown as thumbs up', number: 'shown as numbers', star: 'shown as stars' },
+  timeFrom: (time: string) => `no earlier than ${time}`,
+  anyTimeFrom: 'any time from midnight',
+  timeUntil: (time: string) => `no later than ${time}`,
+  anyTimeUntil: 'any time until midnight',
+  takesAtMost: (n: number) => `takes at most ${n}`,
+  takesAny: 'takes any number',
+  colours: { success: 'always green', warning: 'always amber', danger: 'always red', info: 'always blue', none: 'coloured by how far it has come' },
+  noPercent: 'no percent on the bar',
+  percent: 'the percent on the bar',
+  apart: (separator: string) => `keywords apart by “${separator}”`,
+  suggests: (words: readonly string[]) => `suggests ${andList(words)}`,
+  suggestsNothing: 'suggests nothing',
+  everyMinutes: (n: number) => `every ${n} minutes`,
+  anyMinute: 'any minute',
+  stepsBy: (n: number) => `steps by ${n}`,
+};

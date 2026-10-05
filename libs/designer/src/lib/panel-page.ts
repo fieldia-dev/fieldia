@@ -13,21 +13,22 @@ import type { PropertiesView } from './screen-properties';
  */
 export function pageProperties(el: ElementFactory, designer: Designer): PropertiesView {
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
-  const description = el('textarea', { class: 'fd-input fd-insp-area', 'aria-label': 'Description', rows: '2', placeholder: 'Words under the title' });
+  const w = designer.words.panel;
+  const description = el('textarea', { class: 'fd-input fd-insp-area', 'aria-label': w.description, rows: '2', placeholder: w.wordsUnderTitle });
   description.addEventListener('input', () => designer.setPageInfo({ description: description.value }));
-  const layout = el('select', { class: 'fd-input fd-select', 'aria-label': 'Layout' }, el('option', { value: 'sections' }, 'Sections'), el('option', { value: 'sheet' }, 'Record sheet'));
+  const layout = el('select', { class: 'fd-input fd-select', 'aria-label': w.layout }, el('option', { value: 'sections' }, w.sections), el('option', { value: 'sheet' }, w.recordSheet));
   layout.addEventListener('change', () => designer.setLayoutKind(layout.value as 'sections' | 'sheet'));
-  const title = el('select', { class: 'fd-input fd-select', 'aria-label': 'Title field' });
+  const title = el('select', { class: 'fd-input fd-select', 'aria-label': w.titleField });
   title.addEventListener('change', () => designer.setTitleField(title.value === '' ? null : title.value === CURRENT_TITLE ? ((designer.getPage().layout as SheetNode).title?.field ?? null) : title.value));
-  const titleRow = setting(el, 'content', 'Title field', title, { hint: 'The text field the record is named by, in big letters at the top.' });
+  const titleRow = setting(el, 'content', 'Title field', title, { hint: w.titleFieldHint, words: w.titleField });
   const look = pageLookSettings(el, designer);
   const element = el(
     'div',
     { class: 'fd-props' },
-    setting(el, 'content', 'Description', description),
+    setting(el, 'content', 'Description', description, { words: w.description }),
     titleRow,
-    el('p', { class: 'fd-properties-hint' }, 'Nothing is picked, so these are the screen’s own settings. Pick a field or a section to change it.'),
-    setting(el, 'layout', 'Layout', layout, { hint: 'A record sheet names its record at the top, and can have tabs, a status bar and buttons.' }),
+    el('p', { class: 'fd-properties-hint' }, w.nothingPicked),
+    setting(el, 'layout', 'Layout', layout, { hint: w.layoutHint, words: w.layout }),
     ...look.rows
   );
   return {
@@ -42,7 +43,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
       // The text fields that could be the title, and the one that is.
       const texts = allSections(page).flatMap((s) => s.children.filter((n): n is FieldNode => n.type === 'field' && page.fields[n.field]?.type === 'char'));
       title.replaceChildren(
-        el('option', { value: '' }, 'No title'),
+        el('option', { value: '' }, w.noTitle),
         ...(root.title ? [el('option', { value: CURRENT_TITLE }, page.fields[root.title.field]?.label ?? root.title.field)] : []),
         ...texts.map((n) => el('option', { value: n.id }, n.label ?? page.fields[n.field].label))
       );

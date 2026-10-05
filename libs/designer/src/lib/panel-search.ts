@@ -1,7 +1,9 @@
 import type { ElementFactory } from './chrome';
 import { designerIcon } from './icons';
 import type { InspectorShell, SettingRow } from './panel-inspector';
-import { TAB_NAMES, type PanelTab } from './panel-tabs';
+import type { PanelTab } from './panel-tabs';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * Searching the panel's settings by name, across all its tabs: what is found
@@ -50,21 +52,22 @@ export interface SettingSearch {
   refresh(): void;
 }
 
-export function settingSearch(el: ElementFactory, doc: Document, shell: InspectorShell): SettingSearch {
+export function settingSearch(el: ElementFactory, doc: Document, shell: InspectorShell, words: DesignerWords = en): SettingSearch {
+  const w = words.panel;
   const id = `fd-insp-search-${++made}`;
   const box = el('input', {
     type: 'search',
     class: 'fd-input fd-insp-search-box',
     role: 'combobox',
-    'aria-label': 'Search settings',
+    'aria-label': w.searchSettings,
     'aria-expanded': 'false',
     'aria-controls': `${id}-list`,
     'aria-autocomplete': 'list',
     autocomplete: 'off',
     spellcheck: 'false',
-    placeholder: 'Search settings',
+    placeholder: w.searchSettings,
   }) as HTMLInputElement;
-  const list = el('div', { class: 'fd-insp-found', role: 'listbox', id: `${id}-list`, 'aria-label': 'Settings found', hidden: '' });
+  const list = el('div', { class: 'fd-insp-found', role: 'listbox', id: `${id}-list`, 'aria-label': w.settingsFound, hidden: '' });
   const none = el('p', { class: 'fd-properties-hint fd-insp-none', role: 'status', hidden: '' });
   const element = el('div', { class: 'fd-insp-search' }, el('span', { class: 'fd-insp-search-icon' }, designerIcon(doc, 'search')), box);
 
@@ -75,7 +78,8 @@ export function settingSearch(el: ElementFactory, doc: Document, shell: Inspecto
     const query = box.value;
     const searching = query.trim() !== '';
     const rows = shell.rows();
-    const ranked = searching ? rankSettings(rows.map((row, order) => ({ ...row, order, words: row.choices.map((c) => c.words).join(' ') })), query) : [];
+    // Found by its name as the panel says it, in the designer's language.
+    const ranked = searching ? rankSettings(rows.map((row, order) => ({ ...row, name: w.settingName(row.name), order, words: row.choices.map((c) => c.words).join(' ') })), query) : [];
     // Grouped by tab, the tab of the best first; the arrows go down the list as it is drawn.
     const tabs: PanelTab[] = [];
     for (const row of ranked) if (!tabs.includes(row.tab)) tabs.push(row.tab);
@@ -84,14 +88,14 @@ export function settingSearch(el: ElementFactory, doc: Document, shell: Inspecto
     shell.setTabsHidden(searching);
     list.hidden = !found.length;
     none.hidden = !searching || found.length > 0;
-    none.textContent = `No setting called “${query.trim()}”.`;
+    none.textContent = w.noSetting(query.trim());
     box.setAttribute('aria-expanded', String(found.length > 0));
     list.replaceChildren(
       ...tabs.map((tab) =>
         el(
           'div',
-          { class: 'fd-insp-found-group', role: 'group', 'aria-label': TAB_NAMES[tab] },
-          el('div', { class: 'fd-insp-found-tab', 'aria-hidden': 'true' }, TAB_NAMES[tab]),
+          { class: 'fd-insp-found-group', role: 'group', 'aria-label': w.tabs[tab] },
+          el('div', { class: 'fd-insp-found-tab', 'aria-hidden': 'true' }, w.tabs[tab]),
           ...found.flatMap((row, index) => (row.tab === tab ? [option(row, index)] : []))
         )
       )

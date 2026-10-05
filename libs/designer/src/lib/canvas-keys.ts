@@ -4,6 +4,8 @@ import type { Designer } from './designer';
 import type { Drop } from './layout-ops';
 import { across, isWrapper, locate, nameOf, spanOf } from './layout-tree';
 import { laidInTwelfths, rowShare } from './layout-twelfths';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * Moving parts on the Advanced canvas from the keyboard, as a drag would:
@@ -22,7 +24,7 @@ import { laidInTwelfths, rowShare } from './layout-twelfths';
 export type KeyMove = { drop: Drop } | { span: number } | { said: string } | null;
 
 /** What a key does to a part: a drop, a width, or words saying why nothing. */
-export function keyMove(page: Page, id: string, key: { key: string; altKey: boolean; shiftKey: boolean }, rtl: boolean): KeyMove {
+export function keyMove(page: Page, id: string, key: { key: string; altKey: boolean; shiftKey: boolean }, rtl: boolean, words: DesignerWords = en): KeyMove {
   if (!key.altKey) return null;
   const at = locate(page, id);
   if (!at || at.node.type === 'tab') return null;
@@ -34,23 +36,23 @@ export function keyMove(page: Page, id: string, key: { key: string; altKey: bool
     // At the edge of an arrangement — there only to lay parts out — it steps out of it.
     const outer = isWrapper(parent) ? locate(page, parent.id) : null;
     if (outer) return { drop: { how: 'at', container: outer.parent.id, index: outer.index + (down ? 1 : 0) } };
-    return { said: 'It cannot move further' };
+    return { said: words.refusals.cannotMoveFurther };
   }
   if (key.key !== 'ArrowLeft' && key.key !== 'ArrowRight') return null;
   const forward = (key.key === 'ArrowRight') !== rtl;
   if (key.shiftKey) {
     const span = spanOf(at.node) + (forward ? 1 : -1);
-    return span < 1 ? { said: laidInTwelfths(page, parent) ? 'It is a twelfth of the row already' : 'It is one column wide already' } : { span };
+    return span < 1 ? { said: laidInTwelfths(page, parent) ? words.canvas.twelfthAlready : words.canvas.oneColumnAlready } : { span };
   }
   const beside = list[index + (forward ? 1 : -1)];
-  if (!beside) return { said: 'There is nothing that way to put it beside' };
+  if (!beside) return { said: words.canvas.nothingThatWay };
   return { drop: { how: 'beside', target: beside.id, after: forward } };
 }
 
 /** A width said aloud: a fraction of the row in twelfths, else so many columns. */
-function widthWords(page: Page, id: string, span: number): string {
+function widthWords(page: Page, id: string, span: number, words: DesignerWords): string {
   const parent = locate(page, id)?.parent;
-  return parent && laidInTwelfths(page, parent) ? rowShare(span, across(page, parent)) : `${span} column${span === 1 ? '' : 's'} wide`;
+  return parent && laidInTwelfths(page, parent) ? rowShare(span, across(page, parent), words) : words.canvas.columnsWide(span);
 }
 
 export interface CanvasKeys {
@@ -62,22 +64,15 @@ export interface CanvasKeys {
   say(words: string): void;
 }
 
-export const KEYS: [string, string][] = [
-  ['Alt+↑ / Alt+↓', 'Move it before or after the part next to it'],
-  ['Alt+← / Alt+→', 'Put it beside the part before or after it'],
-  ['Alt+Shift+← / →', 'Make it a column narrower or wider'],
-  ['Shift-click', 'Pick several (⌘- or Ctrl-click too)'],
-  ['⌘G / ⌘⇧G', 'Put what is picked in a group, or ungroup it (Ctrl on Windows)'],
-  ['⌘D', 'Copy what is picked'],
-  ['Delete', 'Take what is picked off the page'],
-  ['Escape', 'Put it down'],
-];
+/** The keys of Advanced's canvas, as the sheet of shortcuts lists them (in the designer's words: `words.canvas.keys`). */
+export const KEYS: [string, string][] = en.canvas.keys;
 
 export function canvasKeys(options: { el: ElementFactory; designer: Designer; rtl(): boolean }): CanvasKeys {
   const { el, designer } = options;
+  const w = designer.words.canvas;
   const said = el('div', { class: 'fd-canvas-said', role: 'status', 'aria-live': 'polite' });
-  const list = el('dl', { class: 'fd-canvas-keys', id: 'fd-canvas-keys', hidden: '' }, ...KEYS.flatMap(([key, what]) => [el('dt', {}, key), el('dd', {}, what)]));
-  const toggle = el('button', { type: 'button', class: 'fd-canvas-help-button', 'aria-label': 'Keys for moving parts', title: 'Keys for moving parts', 'aria-expanded': 'false', 'aria-controls': 'fd-canvas-keys' }, '?');
+  const list = el('dl', { class: 'fd-canvas-keys', id: 'fd-canvas-keys', hidden: '' }, ...w.keys.flatMap(([key, what]) => [el('dt', {}, key), el('dd', {}, what)]));
+  const toggle = el('button', { type: 'button', class: 'fd-canvas-help-button', 'aria-label': w.keysTitle, title: w.keysTitle, 'aria-expanded': 'false', 'aria-controls': 'fd-canvas-keys' }, '?');
   const open = (on: boolean) => {
     list.hidden = !on;
     toggle.setAttribute('aria-expanded', String(on));
@@ -102,30 +97,30 @@ export function canvasKeys(options: { el: ElementFactory; designer: Designer; rt
     if (mod && key === 'g') {
       if (event.shiftKey) designer.ungroup(state.selected as string);
       else designer.wrap(state.picked, 'group');
-      say(designer.getState().issues[0] ?? (event.shiftKey ? 'Ungrouped' : `Grouped ${state.picked.length}`));
+      say(designer.getState().issues[0] ?? (event.shiftKey ? w.ungrouped : w.grouped(state.picked.length)));
       return true;
     }
     if (mod && key === 'd') {
       designer.duplicate(state.picked);
-      say(`Copied ${state.picked.length}`);
+      say(w.copied(state.picked.length));
       return true;
     }
     if (event.key === 'Delete' || event.key === 'Backspace') {
       designer.remove(state.picked);
-      say(designer.getState().issues[0] ?? `Took ${state.picked.length} off the page`);
+      say(designer.getState().issues[0] ?? w.tookOff(state.picked.length));
       return true;
     }
     if (state.picked.length !== 1 || !state.selected) return false;
     const id = state.selected;
     const page = state.page;
-    const move = keyMove(page, id, event, options.rtl());
+    const move = keyMove(page, id, event, options.rtl(), designer.words);
     if (!move) return false;
-    const name = nameOf(page, locate(page, id)?.node ?? null);
+    const name = nameOf(page, locate(page, id)?.node ?? null, designer.words);
     if ('said' in move) say(move.said);
-    else if ('span' in move) say(designer.setColspan(id, move.span) ? `${name}: ${widthWords(page, id, move.span)}` : designer.getState().issues[0]);
+    else if ('span' in move) say(designer.setColspan(id, move.span) ? w.named(name, widthWords(page, id, move.span, designer.words)) : designer.getState().issues[0]);
     else {
       const words = designer.describeDrop(move.drop, id);
-      say(designer.place(id, move.drop) ? `${name}: ${words}` : designer.getState().issues[0]);
+      say(designer.place(id, move.drop) ? w.named(name, words) : designer.getState().issues[0]);
     }
     return true;
   }

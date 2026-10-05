@@ -1,5 +1,7 @@
 import { FIELD_NAME, type FormNode, type Page } from '@fieldia/core';
 import { containers } from './page-tree';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 import { Refusal } from './refusal';
 import type { PageCheck } from './page-checks';
 
@@ -75,21 +77,23 @@ export function answersName(page: Page, title: string): string {
 /** A saved form placed here changed as the panel says: each value checked, `null` or empty taking one back. */
 export function updateFormPart(page: Page, id: string, patch: FormPartPatch): void {
   const part = formParts(page).find((p) => p.id === id);
-  if (!part) throw new Refusal(`There is no saved form “${id}” on this page`);
+  if (!part) throw new Refusal((w) => w.savedForms.noForm(id));
   if (patch.page !== undefined) {
-    if (!patch.page) throw new Refusal('Pick the saved form to place');
+    if (!patch.page) throw new Refusal((w) => w.savedForms.pickForm);
     part.page = patch.page;
   }
   if (patch.version !== undefined) {
     if (patch.version === null) delete part.version;
-    else if (!Number.isInteger(patch.version) || patch.version < 1) throw new Refusal('A version is a whole number from 1');
+    else if (!Number.isInteger(patch.version) || patch.version < 1) throw new Refusal((w) => w.savedForms.versionWhole);
     else part.version = patch.version;
   }
   if (patch.name !== undefined) {
     const name = patch.name.trim();
     if (!FIELD_NAME.test(name)) {
-      const hint = name.replace(/[^A-Za-z0-9_]+/g, '_').replace(/^[^A-Za-z_]+/, '') || 'answers';
-      throw new Refusal(`Where its answers go is a name of letters, digits and _, starting with a letter: “${hint}”, say`);
+      // Words of another script give no letters to keep: a name of the kind it takes, then.
+      const kept = name.replace(/[^A-Za-z0-9_]+/g, '_').replace(/^[^A-Za-z_]+/, '');
+      const hint = /[A-Za-z]/.test(kept) ? kept : 'answers';
+      throw new Refusal((w) => w.savedForms.answersName(hint));
     }
     part.name = name;
   }
@@ -189,12 +193,18 @@ export function savedFormsCache(source: FormSource | undefined, changed: () => v
   };
 }
 
+/** A saved form's title as the page shows it: in the page's language, where the saved form keeps a translation of it. */
+export function shownTitle(saved: Page | null | undefined, language: string | undefined): string | undefined {
+  if (!saved?.title) return undefined;
+  return (language ? saved.translations?.[language]?.[saved.title] : undefined) || saved.title;
+}
+
 /** Refuse a saved form placed where it would hold the page itself, once what it places has loaded. */
 export function refuseCycle(cache: SavedFormsCache, part: { page: string; version?: number }, self: Page): void {
   const title = self.title || self.id;
-  if (part.page === self.id) throw new Refusal('A page cannot be placed inside itself');
+  if (part.page === self.id) throw new Refusal((w) => w.savedForms.insideItself);
   const round = cache.cycle(part, { id: self.id, title });
-  if (round) throw new Refusal(`“${round[1]}” holds this page: it would be placed inside itself (${round.join(' → ')})`);
+  if (round) throw new Refusal((w) => w.savedForms.holdsThisPage(round[1], w.savedForms.way(round)));
 }
 
 /**
@@ -203,19 +213,20 @@ export function refuseCycle(cache: SavedFormsCache, part: { page: string; versio
  * itself, and copies whose answers would mix. A saved form still loading
  * says nothing yet.
  */
-export function formChecks(page: Page, cache: SavedFormsCache | null): PageCheck[] {
+export function formChecks(page: Page, cache: SavedFormsCache | null, words: DesignerWords = en): PageCheck[] {
+  const w = words.savedForms;
   const found: PageCheck[] = [];
-  const fix = (id: string) => ({ label: 'Take it off the page', action: { kind: 'remove' as const, id } });
+  const fix = (id: string) => ({ label: w.takeItOff, action: { kind: 'remove' as const, id } });
   const names = new Set<string>();
   for (const part of formParts(page)) {
     if (Object.prototype.hasOwnProperty.call(page.fields, part.name)) {
-      found.push({ at: part.id, severity: 'must', text: `A saved form keeps its answers under “${part.name}”, the name of a field: their answers would mix. Give it a name of its own.` });
+      found.push({ at: part.id, severity: 'must', text: w.mixWithField(part.name) });
     } else if (names.has(part.name)) {
-      found.push({ at: part.id, severity: 'must', text: `Two saved forms keep their answers under “${part.name}”: their answers would mix. Give each copy a name of its own.` });
+      found.push({ at: part.id, severity: 'must', text: w.mixWithCopy(part.name) });
     }
     names.add(part.name);
     if (part.page === page.id) {
-      found.push({ at: part.id, severity: 'must', text: 'This page is placed inside itself: the form cannot show it.', fix: fix(part.id) });
+      found.push({ at: part.id, severity: 'must', text: w.placedInItself, fix: fix(part.id) });
       continue;
     }
     if (!cache) continue;
@@ -223,13 +234,13 @@ export function formChecks(page: Page, cache: SavedFormsCache | null): PageCheck
     if (all === undefined) continue;
     const placed = cache.page(part.page, part.version);
     const title = all?.[all.length - 1]?.page.title || part.page;
-    if (!all) found.push({ at: part.id, severity: 'must', text: `The saved form “${part.page}” cannot be found: the form would say so in its place.`, fix: fix(part.id) });
-    else if (!placed) found.push({ at: part.id, severity: 'must', text: `“${title}” has no version ${part.version}: the form would say it cannot be found.` });
+    if (!all) found.push({ at: part.id, severity: 'must', text: w.cannotBeFound(part.page), fix: fix(part.id) });
+    else if (!placed) found.push({ at: part.id, severity: 'must', text: w.noVersion(title, part.version as number) });
     else if (placed.layout.type !== 'sections' && placed.layout.type !== 'tabs') {
-      found.push({ at: part.id, severity: 'must', text: `“${placed.title || part.page}” is not a form of sections or tabs: it cannot be placed in another.`, fix: fix(part.id) });
+      found.push({ at: part.id, severity: 'must', text: w.notSections(placed.title || part.page), fix: fix(part.id) });
     } else {
       const round = cache.cycle(part, { id: page.id, title: page.title || page.id });
-      if (round) found.push({ at: part.id, severity: 'must', text: `“${round[1]}” holds this page: it would be placed inside itself (${round.join(' → ')}).`, fix: fix(part.id) });
+      if (round) found.push({ at: part.id, severity: 'must', text: w.holdsThisPageCheck(round[1], w.way(round)), fix: fix(part.id) });
     }
   }
   return found;

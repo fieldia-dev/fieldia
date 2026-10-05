@@ -7,6 +7,8 @@ import type { PageCheck } from './page-checks';
 import { cannotHold } from './rules-commands';
 import { formulaProblem, problemWords, wouldCircle } from './rules-formula';
 import { asksNotFitting, pageRules, ruleAsks, type RuleEntry, type RuleKind } from './rules-words';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * What would trip people up in a page's rules, each with a fix: a rule
@@ -41,7 +43,6 @@ export interface RuleFixer {
   removeAnswerRule(id: string, index: number): boolean;
 }
 
-const andList = (words: string[]) => (words.length < 2 ? (words[0] ?? '') : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`);
 
 /** Where each part sits in the page, as the page's own check names it: `layout.children[0].children[3]`. */
 function nodePaths(page: Page): Map<string, string> {
@@ -57,7 +58,8 @@ function nodePaths(page: Page): Map<string, string> {
 const CONDITION_KEY: Partial<Record<RuleKind, string>> = { shows: 'invisible', required: 'required', readonly: 'readonly' };
 
 /** The rules' checks, and whether the page's own check said one of the same things at a path. */
-export function ruleChecks(page: Page): { checks: PageCheck[]; covers(path: string): boolean } {
+export function ruleChecks(page: Page, words: DesignerWords = en): { checks: PageCheck[]; covers(path: string): boolean } {
+  const w = words.checks;
   const checks: PageCheck[] = [];
   const covered: string[] = [];
   if (page.layout.type === 'list') return { checks, covers: () => false };
@@ -79,32 +81,32 @@ export function ruleChecks(page: Page): { checks: PageCheck[]; covers(path: stri
     if (path) covered.push(path);
   };
 
-  for (const rule of pageRules(page)) {
+  for (const rule of pageRules(page, words)) {
     // A field it reads that no one can fill in here any more.
     const gone = rule.reads.filter((name) => !shown.has(name));
     if (gone.length) {
       // In a survey nothing else fills it in, and a field not even defined cannot be read; a record may still hold one defined.
       const severity = page.data.kind === 'responses' || gone.some((name) => !page.fields[name]) ? 'must' : 'should';
-      say(rule, severity, `“${rule.name}”: “${rule.sentence}” reads ${andList(gone.map(label))}, which ${gone.length === 1 ? 'is' : 'are'} no longer on the page.`, 'Remove the rule', { fields: gone });
+      say(rule, severity, w.readsGone(rule.name, rule.sentence, gone.map(label)), w.removeTheRule, { fields: gone });
       continue;
     }
     const def = rule.field ? page.fields[rule.field] : undefined;
     if (rule.kind === 'compute' && def?.compute !== undefined && rule.field) {
-      const problem = formulaProblem(page, def.compute);
-      const words = problem ? problemWords(problem) : wouldCircle(page, rule.field, def.compute);
-      if (words) say(rule, 'must', `“${rule.name}”: its formula no longer reads — ${words}.`, 'Remove the formula');
+      const problem = formulaProblem(page, def.compute, words);
+      const said = problem ? problemWords(problem, words) : wouldCircle(page, rule.field, def.compute, words);
+      if (said) say(rule, 'must', w.formulaBroken(rule.name, said), w.removeTheFormula);
       continue;
     }
     if (rule.kind === 'set' && def?.setWhen && rule.index !== undefined) {
       const item = def.setWhen[rule.index];
-      const problem = formulaProblem(page, item.when) ?? formulaProblem(page, item.value);
+      const problem = formulaProblem(page, item.when, words) ?? formulaProblem(page, item.value, words);
       if (problem) {
-        say(rule, 'must', `“${rule.name}”: “${rule.sentence}” no longer reads — ${problemWords(problem)}.`, 'Remove it');
+        say(rule, 'must', w.setBroken(rule.name, rule.sentence, problemWords(problem, words)), w.removeIt);
         continue;
       }
-      const wrong = cannotHold(def, rule.name, item.value);
+      const wrong = cannotHold(def, rule.name, item.value, words);
       if (wrong) {
-        say(rule, 'must', `“${rule.name}”: “${rule.sentence}” sets a value it cannot hold — ${wrong}.`, 'Remove it');
+        say(rule, 'must', w.setCannotHold(rule.name, rule.sentence, wrong), w.removeIt);
         continue;
       }
     }
@@ -112,10 +114,10 @@ export function ruleChecks(page: Page): { checks: PageCheck[]; covers(path: stri
       const node = findNode(page, rule.part)?.node as FieldNode | undefined;
       const answer = node?.validate?.[rule.index];
       const field = node ? page.fields[node.field] : undefined;
-      if (answer && field && answerCheck(rule, answer, field, say)) continue;
+      if (answer && field && answerCheck(rule, answer, field, say, words)) continue;
     }
     // A condition waiting for a choice no longer offered (when a part shows is the page's older check's).
-    if (rule.kind !== 'shows' && rule.kind !== 'compute' && rule.part) choiceGone(page, rule, say);
+    if (rule.kind !== 'shows' && rule.kind !== 'compute' && rule.part) choiceGone(page, rule, say, words);
   }
   // A path names the rule itself, or something inside it: its pattern, its condition.
   return { checks, covers: (path) => covered.some((at) => path === at || path.startsWith(`${at}.`)) };
@@ -124,22 +126,23 @@ export function ruleChecks(page: Page): { checks: PageCheck[]; covers(path: stri
 type Say = (rule: RuleEntry, severity: PageCheck['severity'], text: string, fix: string, extra?: Partial<RuleFix>) => void;
 
 /** An answer rule that checks nothing, or cannot be read: said, and true. */
-function answerCheck(rule: RuleEntry, answer: NonNullable<FieldNode['validate']>[number], field: Field, say: Say): boolean {
+function answerCheck(rule: RuleEntry, answer: NonNullable<FieldNode['validate']>[number], field: Field, say: Say, words: DesignerWords): boolean {
+  const w = words.checks;
   if (answer.pattern !== undefined) {
     try {
       new RegExp(answer.pattern);
     } catch {
-      say(rule, 'must', `“${rule.name}”: the rule’s pattern “${answer.pattern}” cannot be read.`, 'Remove the rule');
+      say(rule, 'must', w.patternBroken(rule.name, answer.pattern), w.removeTheRule);
       return true;
     }
   }
   const asks = ruleAsks(answer);
   if (!asks.length) {
-    say(rule, 'should', `“${rule.name}”: a rule asks for nothing, so it checks nothing.`, 'Remove the rule');
+    say(rule, 'should', w.asksNothing(rule.name), w.removeTheRule);
     return true;
   }
   if (asksNotFitting(field, answer).length === asks.length) {
-    say(rule, 'should', `“${rule.name}”: the rule “${rule.sentence}” checks nothing, as ${rule.name} holds ${storedAs(field)}.`, 'Remove the rule');
+    say(rule, 'should', w.checksNothing(rule.name, rule.sentence, storedAs(field, words)), w.removeTheRule);
     return true;
   }
   return false;
@@ -162,7 +165,7 @@ function conditionValue(page: Page, rule: RuleEntry): unknown {
   return key ? node?.[key] : undefined;
 }
 
-function choiceGone(page: Page, rule: RuleEntry, say: Say) {
+function choiceGone(page: Page, rule: RuleEntry, say: Say, words: DesignerWords) {
   // A group's read-only rule is written by hand: there is nothing here to take part of it away with.
   if (!rule.field) return;
   const condition = conditionOf(page, rule);
@@ -170,7 +173,7 @@ function choiceGone(page: Page, rule: RuleEntry, say: Say) {
     const tested = page.fields[part.field];
     if (part.op !== 'is' || tested?.type !== 'selection' || typeof part.value !== 'string' || tested.options.some((o) => o.value === part.value)) return;
     // A field's own rule loses only that part; an answer rule or a value set goes whole (the fix takes those whole).
-    say(rule, 'should', `“${rule.name}”: the rule “${tested.label} is ${part.value}” can never hold, as ${tested.label} no longer offers it.`, 'Remove the rule', { parts: [index] });
+    say(rule, 'should', words.checks.neverHolds(rule.name, tested.label, part.value), words.checks.removeTheRule, { parts: [index] });
   });
 }
 

@@ -16,13 +16,14 @@ const focused = (node: Element) => node.ownerDocument.activeElement === node;
 const LATEST = 'latest';
 
 export function formContent(el: ElementFactory, designer: Designer, id: string): BlockContent {
+  const w = designer.words.savedForms;
   const partOf = (page: Page) => {
     const node = locate(page, id)?.node;
     return node?.type === 'form' ? node : null;
   };
 
   // ---- which saved form: the store's, loaded once; the one placed stays even when the store no longer has it ----
-  const which = el('select', { class: 'fd-input fd-select', 'aria-label': 'Saved form' }) as HTMLSelectElement;
+  const which = el('select', { class: 'fd-input fd-select', 'aria-label': w.savedForm }) as HTMLSelectElement;
   let listed: { id: string; title: string }[] | null = null;
   void designer.savedForms().then((found) => {
     listed = found;
@@ -36,34 +37,34 @@ export function formContent(el: ElementFactory, designer: Designer, id: string):
   });
 
   // ---- the latest version, or one kept to ----
-  const version = el('select', { class: 'fd-input fd-select', 'aria-label': 'Version' }) as HTMLSelectElement;
+  const version = el('select', { class: 'fd-input fd-select', 'aria-label': w.version }) as HTMLSelectElement;
   version.addEventListener('change', () => designer.setForm(id, { version: version.value === LATEST ? null : Number(version.value) }));
 
   // ---- its title: the saved form's own, words of this page's, or none ----
-  const title = el('input', { class: 'fd-input', 'aria-label': 'Title', autocomplete: 'off' }) as HTMLInputElement;
+  const title = el('input', { class: 'fd-input', 'aria-label': w.title, autocomplete: 'off' }) as HTMLInputElement;
   title.addEventListener('input', () => designer.setForm(id, { title: title.value === '' ? null : title.value }));
-  const showTitle = el('input', { type: 'checkbox', 'aria-label': 'Show a title' }) as HTMLInputElement;
+  const showTitle = el('input', { type: 'checkbox', 'aria-label': w.showTitle }) as HTMLInputElement;
   showTitle.addEventListener('change', () => designer.setForm(id, { title: showTitle.checked ? null : '' }));
 
   // ---- where its answers go: kept once typed and left, a name half typed being no name yet ----
-  const name = el('input', { class: 'fd-input', 'aria-label': 'Answers go under', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+  const name = el('input', { class: 'fd-input', 'aria-label': w.answersGoUnder, autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
   name.addEventListener('change', () => {
     if (!designer.setForm(id, { name: name.value })) name.setAttribute('aria-invalid', 'true');
   });
 
-  const open = el('button', { type: 'button', class: 'fd-button' }, 'Open it') as HTMLButtonElement;
+  const open = el('button', { type: 'button', class: 'fd-button' }, w.openIt) as HTMLButtonElement;
   open.addEventListener('click', () => {
     const node = partOf(designer.getPage());
     if (node) designer.openForm(node.page);
   });
-  const openRow = setting(el, 'content', 'Open it', open, { hint: 'A saved form is changed on its own page: every form that places it follows, unless it keeps to a version.' });
+  const openRow = setting(el, 'content', 'Open it', open, { hint: w.openHint, words: w.openIt });
 
   function draw(page: Page) {
     const node = partOf(page);
     if (!node) return;
     // The saved forms to pick from, and the one placed even if the store has it no longer.
     const choices = [...(listed ?? [])];
-    if (!choices.some((c) => c.id === node.page)) choices.unshift({ id: node.page, title: listed ? `${node.page} (not found)` : node.page });
+    if (!choices.some((c) => c.id === node.page)) choices.unshift({ id: node.page, title: listed ? w.notFound(node.page) : node.page });
     const key = choices.map((c) => `${c.id}:${c.title}`).join('|');
     if (which.dataset['key'] !== key) {
       which.dataset['key'] = key;
@@ -86,9 +87,9 @@ export function formContent(el: ElementFactory, designer: Designer, id: string):
   function versions(node: FormNode) {
     const known = designer.savedForm(node.page);
     const published = known ? [...known.versions].reverse() : [];
-    const options: [string, string][] = [[LATEST, 'Latest version'], ...published.map((v): [string, string] => [String(v.version), `Version ${v.version} · ${new Date(v.publishedAt).toLocaleDateString()}`])];
+    const options: [string, string][] = [[LATEST, w.latest], ...published.map((v): [string, string] => [String(v.version), w.versionOn(v.version, v.publishedAt)])];
     // A version kept to that the store has not got still shows, as the Checks list names it.
-    if (node.version !== undefined && !published.some((v) => v.version === node.version)) options.push([String(node.version), `Version ${node.version}`]);
+    if (node.version !== undefined && !published.some((v) => v.version === node.version)) options.push([String(node.version), w.versionOnly(node.version)]);
     const key = options.map(([value, words]) => `${value}:${words}`).join('|');
     if (version.dataset['key'] !== key) {
       version.dataset['key'] = key;
@@ -99,10 +100,10 @@ export function formContent(el: ElementFactory, designer: Designer, id: string):
 
   return {
     rows: [
-      setting(el, 'content', 'Saved form', which),
-      setting(el, 'content', 'Version', version, { hint: 'The latest: each version published shows here once it is. A version kept to stays as it was.' }),
-      setting(el, 'content', 'Title', [el('label', { class: 'fd-q-required' }, showTitle, el('span', {}, 'Show a title')), title], { hint: 'Its own title unless words are typed here.' }),
-      setting(el, 'content', 'Answers go under', name, { hint: 'Its answers are kept under this name, apart from a second copy’s: { "home": { "street": … } }.' }),
+      setting(el, 'content', 'Saved form', which, { words: w.savedForm }),
+      setting(el, 'content', 'Version', version, { hint: w.versionHint, words: w.version }),
+      setting(el, 'content', 'Title', [el('label', { class: 'fd-q-required' }, showTitle, el('span', {}, w.showTitle)), title], { hint: w.titleHint, words: w.title }),
+      setting(el, 'content', 'Answers go under', name, { hint: w.answersHint, words: w.answersGoUnder }),
       openRow,
     ],
     update: draw,

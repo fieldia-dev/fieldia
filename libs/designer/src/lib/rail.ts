@@ -41,6 +41,7 @@ let count = 0;
 
 export function rail(options: RailOptions): Rail {
   const { el, doc, designer } = options;
+  const w = designer.words.toolbox;
   let pane: Pane = 'add';
   let sample: number | null = null;
   // Said aloud, politely: what a move in the outline did. Outside the panes, so it is heard whichever is on show.
@@ -52,7 +53,7 @@ export function rail(options: RailOptions): Rail {
   const id = `fd-rail-${++count}`;
   for (const [name, p] of Object.entries(panes)) p.id ||= `${id}-${name}`;
   const tabs = (['add', 'outline', 'data'] as const).map((name) => {
-    const button = el('button', { type: 'button', role: 'tab', class: 'fd-rail-tab', 'data-rail': name, 'aria-selected': String(name === pane), 'aria-controls': panes[name].id, tabindex: name === pane ? '0' : '-1' }, { add: 'Add', outline: 'Outline', data: 'Data' }[name]);
+    const button = el('button', { type: 'button', role: 'tab', class: 'fd-rail-tab', 'data-rail': name, 'aria-selected': String(name === pane), 'aria-controls': panes[name].id, tabindex: name === pane ? '0' : '-1' }, { add: w.add, outline: w.outline, data: w.data }[name]);
     button.addEventListener('click', () => open(name));
     return button;
   });
@@ -61,7 +62,7 @@ export function rail(options: RailOptions): Rail {
     draw(designer.getState());
   }
   // A row of tabs as a keyboard knows one: the tab open takes Tab; the arrows (mirrored right to left), Home and End open another.
-  const tablist = el('div', { class: 'fd-rail-tabs', role: 'tablist', 'aria-label': 'Beside the page' }, ...tabs);
+  const tablist = el('div', { class: 'fd-rail-tabs', role: 'tablist', 'aria-label': w.besideThePage }, ...tabs);
   tablist.addEventListener('keydown', (event) => {
     const at = tabs.indexOf(event.target as HTMLButtonElement);
     if (at === -1) return;
@@ -73,7 +74,7 @@ export function rail(options: RailOptions): Rail {
     open(tabs[to].dataset['rail'] as Pane);
     tabs[to].focus();
   });
-  const element = el('aside', { class: 'fd-rail', 'aria-label': 'Add, outline and data' }, tablist, options.tools.element, outline, data, said);
+  const element = el('aside', { class: 'fd-rail', 'aria-label': w.railLabel }, tablist, options.tools.element, outline, data, said);
   // The toolbox is its own aside; inside the rail it is a pane.
   options.tools.element.classList.add('fd-rail-pane');
 
@@ -81,8 +82,8 @@ export function rail(options: RailOptions): Rail {
     const page = state.page;
     if (page.data.kind !== 'record') {
       data.replaceChildren(
-        el('div', { class: 'fd-data-card' }, el('span', {}, 'Answers are kept as responses:'), el('b', { class: 'fd-data-model' }, 'one record per person, one field per question')),
-        el('p', { class: 'fd-properties-hint' }, 'A survey makes its own fields: each question added is a new one, so every kind is offered.')
+        el('div', { class: 'fd-data-card' }, el('span', {}, w.responses), el('b', { class: 'fd-data-model' }, w.responsesModel)),
+        el('p', { class: 'fd-properties-hint' }, w.surveyFields)
       );
       return;
     }
@@ -90,13 +91,13 @@ export function rail(options: RailOptions): Rail {
     const onPage = Object.entries(page.fields);
     const list = page.layout.type === 'list';
     const row = (name: string, label: string, type: string, used: boolean, stored: string) => {
-      const add = !used && options.addModelField ? el('button', { type: 'button', class: 'fd-button fd-button-link' }, list ? 'Add as a column' : 'Add') : null;
+      const add = !used && options.addModelField ? el('button', { type: 'button', class: 'fd-button fd-button-link' }, list ? w.addAsColumn : w.addField) : null;
       add?.addEventListener('click', () => options.addModelField?.(name));
       return el(
         'div',
-        { class: 'fd-data-row', 'data-field': name, title: `${label}: ${stored}` },
+        { class: 'fd-data-row', 'data-field': name, title: w.storedTitle(label, stored) },
         el('span', { class: 'fd-data-label' }, label),
-        el('span', { class: `fd-data-used${used ? ' fd-data-on' : ''}` }, used ? 'On the page' : 'Not used'),
+        el('span', { class: `fd-data-used${used ? ' fd-data-on' : ''}` }, used ? w.onThePage : w.notUsed),
         el('code', {}, `${name} · ${type}`),
         ...(add ? [add] : [])
       );
@@ -107,11 +108,11 @@ export function rail(options: RailOptions): Rail {
           el(
             'div',
             { class: 'fd-prop' },
-            el('span', { class: 'fd-prop-name' }, 'Record on the canvas'),
+            el('span', { class: 'fd-prop-name' }, w.recordOnCanvas),
             el(
               'div',
-              { class: 'fd-seg', role: 'group', 'aria-label': 'Record on the canvas' },
-              ...([['none', 'Empty', 'Empty'], ['0', '1', 'Record 1'], ['1', '2', 'Record 2'], ['2', '3', 'Record 3']] as const).map(([key, words, name]) => {
+              { class: 'fd-seg', role: 'group', 'aria-label': w.recordOnCanvas },
+              ...([['none', w.empty, w.empty], ['0', '1', w.record(1)], ['1', '2', w.record(2)], ['2', '3', w.record(3)]] as const).map(([key, words, name]) => {
                 const button = el('button', { type: 'button', class: 'fd-seg-button', 'data-sample': key, 'aria-label': name, title: name, 'aria-pressed': String((sample === null ? 'none' : String(sample)) === key) }, words);
                 button.addEventListener('click', () => {
                   sample = key === 'none' ? null : Number(key);
@@ -121,13 +122,13 @@ export function rail(options: RailOptions): Rail {
                 return button;
               })
             ),
-            el('p', { class: 'fd-properties-hint' }, 'A made-up record fills the page, so it reads as it will with real ones. Nothing here is saved.')
+            el('p', { class: 'fd-properties-hint' }, w.madeUp)
           ),
         ];
     data.replaceChildren(
-      el('div', { class: 'fd-data-card' }, el('span', {}, list ? 'This list shows records of' : 'This page shows records of'), el('b', { class: 'fd-data-model' }, page.data.model), el('span', { class: 'fd-data-count' }, `${onPage.length + unused.length} fields · ${onPage.length} on this page`)),
+      el('div', { class: 'fd-data-card' }, el('span', {}, list ? w.listShows : w.pageShows), el('b', { class: 'fd-data-model' }, page.data.model), el('span', { class: 'fd-data-count' }, w.fieldCount(onPage.length + unused.length, onPage.length))),
       ...samples,
-      el('div', { class: 'fd-data-rows' }, ...onPage.map(([name, field]) => row(name, field.label, field.type, true, storedAs(field))), ...unused.map(({ name, field }) => row(name, field.label, field.type, false, storedAs(field))))
+      el('div', { class: 'fd-data-rows' }, ...onPage.map(([name, field]) => row(name, field.label, field.type, true, storedAs(field, designer.words))), ...unused.map(({ name, field }) => row(name, field.label, field.type, false, storedAs(field, designer.words))))
     );
   }
 

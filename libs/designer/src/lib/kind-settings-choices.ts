@@ -26,6 +26,7 @@ const LONG_LIST = 15;
 const optionsOf = (field: Field) => (field.type === 'selection' ? field.options : []);
 
 export function choiceSettings(el: ElementFactory, designer: Designer, id: string, kind: string | null): ChoicePart[] {
+  const w = designer.words.questions;
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
   const option = (node: FieldNode, key: string) => node.options?.[key];
   const word = (text: string, control: HTMLElement) => el('label', { class: 'fd-inline-setting' }, el('span', {}, text), control);
@@ -53,12 +54,12 @@ export function choiceSettings(el: ElementFactory, designer: Designer, id: strin
 
   /** Columns or a row, as Jotform spreads options to columns; a phone stacks them again. */
   function layout(pictures: boolean): ChoicePart {
-    const counts: [string, string][] = [['1', 'One column'], ['2', 'Two columns'], ['3', 'Three columns'], ['4', 'Four columns']];
-    const box = select('Lay out', pictures ? [['', 'Automatic'], ...counts, ['row', 'All in a row']] : [['', 'In a row'], ...counts], (value) =>
+    const counts: [string, string][] = [['1', w.oneColumn], ['2', w.twoColumns], ['3', w.threeColumns], ['4', w.fourColumns]];
+    const box = select(w.layOut, pictures ? [['', w.automatic], ...counts, ['row', w.allInARow]] : [['', w.inARow], ...counts], (value) =>
       widget({ columns: value === '' ? null : value === 'row' ? 'row' : Number(value) })
     );
     return {
-      element: word('Lay out', box),
+      element: word(w.layOut, box),
       standsIn: false,
       refresh(_page, node) {
         const columns = option(node, 'columns');
@@ -69,8 +70,8 @@ export function choiceSettings(el: ElementFactory, designer: Designer, id: strin
 
   /** Shuffled, which options keep their place: Tally's "Lock options in place". */
   function keepInPlace(): ChoicePart {
-    const chips = el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': 'Options kept in place' });
-    const element = el('div', { class: 'fd-inline-row fd-kind-keep' }, el('span', {}, 'Keep in place'), chips);
+    const chips = el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': w.keptInPlace });
+    const element = el('div', { class: 'fd-inline-row fd-kind-keep' }, el('span', {}, w.keepInPlace), chips);
     return {
       element,
       standsIn: false,
@@ -100,7 +101,7 @@ export function choiceSettings(el: ElementFactory, designer: Designer, id: strin
   };
   function search(): ChoicePart {
     return switchPart(
-      'Search the list',
+      w.searchTheList,
       // Only what differs from what its length does anyway is written.
       (on) => widget({ search: on === count() > LONG_LIST ? null : on }),
       searching
@@ -109,11 +110,11 @@ export function choiceSettings(el: ElementFactory, designer: Designer, id: strin
 
   /** Pictures: their words under them, their size, and whether the whole picture shows. */
   function pictureLook(): ChoicePart {
-    const labels = toggle('Show labels', (on) => widget({ showLabels: on ? null : false }));
-    const size = select('Picture size', [['small', 'Small'], ['', 'Medium'], ['large', 'Large']], (value) => widget({ imageSize: value || null }));
-    const fit = select('Fit', [['', 'Fill the card'], ['whole', 'Whole picture']], (value) => widget({ imageFit: value || null }));
+    const labels = toggle(w.showLabels, (on) => widget({ showLabels: on ? null : false }));
+    const size = select(w.pictureSize, [['small', w.small], ['', w.medium], ['large', w.large]], (value) => widget({ imageSize: value || null }));
+    const fit = select(w.fit, [['', w.fillTheCard], ['whole', w.wholePicture]], (value) => widget({ imageFit: value || null }));
     return {
-      element: el('div', { class: 'fd-inline-row' }, labels.element, word('Picture size', size), word('Fit', fit)),
+      element: el('div', { class: 'fd-inline-row' }, labels.element, word(w.pictureSize, size), word(w.fit, fit)),
       standsIn: false,
       refresh(_page, node) {
         labels.button.setAttribute('aria-checked', String(option(node, 'showLabels') !== false));
@@ -125,13 +126,13 @@ export function choiceSettings(el: ElementFactory, designer: Designer, id: strin
 
   /** A ranking of the top few only: picked from the rest, then put in order. */
   function top(): ChoicePart {
-    const box = el('input', { type: 'number', class: 'fd-inline-input fd-inline-number', 'aria-label': 'Rank only the top', min: '1', step: '1', placeholder: 'All', inputmode: 'numeric' }) as HTMLInputElement;
+    const box = el('input', { type: 'number', class: 'fd-inline-input fd-inline-number', 'aria-label': w.rankTop, min: '1', step: '1', placeholder: w.all, inputmode: 'numeric' }) as HTMLInputElement;
     box.addEventListener('change', () => {
       const n = Number(box.value);
       widget({ top: box.value.trim() && Number.isInteger(n) && n >= 1 && n < count() ? n : null });
     });
     return {
-      element: word('Rank only the top', box),
+      element: word(w.rankTop, box),
       standsIn: false,
       refresh(_page, node) {
         if (!focused(box)) box.value = typeof option(node, 'top') === 'number' ? String(option(node, 'top')) : '';
@@ -141,17 +142,17 @@ export function choiceSettings(el: ElementFactory, designer: Designer, id: strin
 
   /** A yes or no: two buttons with words of their own, or a switch. */
   function yesNo(): ChoicePart {
-    const look = select('Show as', [['buttons', 'Buttons'], ['switch', 'Switch']], (value) => designer.setYesNoLook(id, value as 'buttons' | 'switch'));
+    const look = select(w.showAs, [['buttons', w.buttons], ['switch', w.switch]], (value) => designer.setYesNoLook(id, value as 'buttons' | 'switch'));
     const words = (key: 'yesLabel' | 'noLabel', label: string, placeholder: string) => {
       const box = el('input', { class: 'fd-inline-input fd-inline-words', 'aria-label': label, placeholder, autocomplete: 'off' }) as HTMLInputElement;
       box.addEventListener('input', () => widget({ [key]: box.value }));
       return box;
     };
-    const yes = words('yesLabel', 'Words for yes', 'Yes');
-    const no = words('noLabel', 'Words for no', 'No');
-    const said = el('div', { class: 'fd-inline-row' }, word('Words for yes', yes), word('Words for no', no));
+    const yes = words('yesLabel', w.wordsForYes, w.yes);
+    const no = words('noLabel', w.wordsForNo, w.no);
+    const said = el('div', { class: 'fd-inline-row' }, word(w.wordsForYes, yes), word(w.wordsForNo, no));
     return {
-      element: el('div', { class: 'fd-kind-block' }, word('Show as', look), said),
+      element: el('div', { class: 'fd-kind-block' }, word(w.showAs, look), said),
       standsIn: false,
       refresh(_page, node) {
         const buttons = node.widget === 'buttons';
@@ -169,16 +170,16 @@ export function choiceSettings(el: ElementFactory, designer: Designer, id: strin
   if (kind === 'dropdown') parts.push(search());
   if (kind === 'ranking') parts.push(top());
   if (kind && SHUFFLED.has(kind)) parts.push(keepInPlace());
-  if (kind === 'tags') parts.push(switchPart('Let people add their own', (on) => designer.setOwnAnswers(id, on), (page, node) => (page.fields[node.field] as { ownAnswers?: boolean }).ownAnswers === true));
+  if (kind === 'tags') parts.push(switchPart(w.ownAnswers, (on) => designer.setOwnAnswers(id, on), (page, node) => (page.fields[node.field] as { ownAnswers?: boolean }).ownAnswers === true));
   if (kind === 'matrix') {
     const def = (page: Page, node: FieldNode) => page.fields[node.field] as Extract<Field, { type: 'matrix' }>;
     parts.push(
-      switchPart('Several answers per row', (on) => designer.setSeveral(id, on), (page, node) => def(page, node).multiple === true),
-      switchPart('Shuffle rows', (on) => widget({ shuffle: on || null }), (_page, node) => option(node, 'shuffle') === true),
-      switchPart('One answer per column', (on) => designer.setOnePerColumn(id, on), (page, node) => def(page, node).onePerColumn === true)
+      switchPart(w.severalPerRow, (on) => designer.setSeveral(id, on), (page, node) => def(page, node).multiple === true),
+      switchPart(w.shuffleRows, (on) => widget({ shuffle: on || null }), (_page, node) => option(node, 'shuffle') === true),
+      switchPart(w.onePerColumn, (on) => designer.setOnePerColumn(id, on), (page, node) => def(page, node).onePerColumn === true)
     );
   }
   if (kind === 'yes-no') parts.push(yesNo());
-  if (kind === 'status') parts.push(switchPart('People can pick a step', (on) => widget({ clickable: on || null }), (_page, node) => option(node, 'clickable') === true));
+  if (kind === 'status') parts.push(switchPart(w.pickAStep, (on) => widget({ clickable: on || null }), (_page, node) => option(node, 'clickable') === true));
   return parts;
 }

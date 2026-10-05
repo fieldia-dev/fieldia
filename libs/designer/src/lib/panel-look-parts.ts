@@ -1,7 +1,7 @@
 import { PART_LOOKS, type Page, type PartLook, type PartLookKind } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
-import { KIND_HINTS, KIND_WORDS, settingWords, VALUE_WORDS } from './look-parts-words';
+import { settingWords } from './look-parts-words';
 import { segmented, setting, type Segmented } from './panel-controls';
 
 /**
@@ -24,11 +24,12 @@ const CHOICES: Partial<Record<keyof PartLook, string[]>> = { corners: ['square',
 const SHOWN_UNSET: Partial<Record<keyof PartLook, string>> = { background: '#ffffff', border: '#cfd4da', accent: '#1365d9' };
 
 export function partLookSettings(el: ElementFactory, designer: Designer): PartLookSetting {
+  const w = designer.words.partLooks;
   let picked: PartLookKind = 'inputs';
   const kinds = segmented<PartLookKind>(
     el,
-    'Kind of part',
-    KINDS.map((kind) => ({ value: kind, words: KIND_WORDS[kind] })),
+    w.kindOfPart,
+    KINDS.map((kind) => ({ value: kind, words: w.kinds[kind] })),
     (kind) => {
       if (kind) show(kind);
     },
@@ -39,25 +40,27 @@ export function partLookSettings(el: ElementFactory, designer: Designer): PartLo
   const blocks = KINDS.map((kind) => {
     const draws: ((part: PartLook) => void)[] = [];
     const rows = PART_LOOKS[kind].map((name: keyof PartLook) => {
-      const words = settingWords(kind, name);
+      // Kept by its English name, as the panel keeps every setting; said in the designer's words.
+      const key = settingWords(kind, name);
+      const words = settingWords(kind, name, designer.words);
       // Its name in full, the kind's with it: every kind has corners, and the page has too.
-      const named = `${KIND_WORDS[kind]}’ ${words.toLowerCase()}`;
+      const named = w.named(w.kinds[kind], words);
       const choices = CHOICES[name];
       if (choices) {
         const seg: Segmented<string> = segmented(
           el,
           named,
-          choices.map((value) => ({ value, words: VALUE_WORDS[value] })),
+          choices.map((value) => ({ value, words: w.values[value] })),
           (value) => designer.setPartLook(kind, { [name]: value }),
           { toggle: true }
         );
         draws.push((part) => seg.set(part[name]));
-        return el('div', { class: 'fd-part-setting', 'data-part-setting': words }, el('span', { class: 'fd-part-setting-name' }, words), seg.element);
+        return el('div', { class: 'fd-part-setting', 'data-part-setting': key }, el('span', { class: 'fd-part-setting-name' }, words), seg.element);
       }
       const colour = el('input', { type: 'color', class: 'fd-insp-colour', 'aria-label': named });
       colour.addEventListener('input', () => designer.setPartLook(kind, { [name]: colour.value }));
       const value = el('span', { class: 'fd-part-colour-value' });
-      const clear = el('button', { type: 'button', class: 'fd-part-colour-clear', 'aria-label': `${named} as the page`, title: 'As the page' }, '×');
+      const clear = el('button', { type: 'button', class: 'fd-part-colour-clear', 'aria-label': w.namedAsThePage(named), title: w.asThePage }, '×');
       clear.addEventListener('click', () => {
         designer.setPartLook(kind, { [name]: null });
         colour.focus();
@@ -65,30 +68,28 @@ export function partLookSettings(el: ElementFactory, designer: Designer): PartLo
       draws.push((part) => {
         const set = part[name] as string | undefined;
         if (colour.ownerDocument.activeElement !== colour) colour.value = (set ?? SHOWN_UNSET[name] ?? '#ffffff').toLowerCase();
-        value.textContent = set ? set.toLowerCase() : 'As the page';
+        value.textContent = set ? set.toLowerCase() : w.asThePage;
         value.classList.toggle('fd-part-colour-unset', !set);
         clear.hidden = !set;
       });
       return el(
         'div',
-        { class: 'fd-part-setting', 'data-part-setting': words },
+        { class: 'fd-part-setting', 'data-part-setting': key },
         el('label', { class: 'fd-part-colour' }, el('span', { class: 'fd-part-setting-name' }, words), colour),
         value,
         clear
       );
     });
-    const reset = el('button', { type: 'button', class: 'fd-button fd-button-link fd-insp-reset', 'aria-label': `${KIND_WORDS[kind]} as the page` }, 'As the page');
+    const reset = el('button', { type: 'button', class: 'fd-button fd-button-link fd-insp-reset', 'aria-label': w.namedAsThePage(w.kinds[kind]) }, w.asThePage);
     reset.addEventListener('click', () => {
       designer.setPartLook(kind, null);
       kinds.element.querySelector<HTMLElement>(`[data-choice="${kind}"]`)?.focus();
     });
-    const element = el('div', { class: 'fd-part-look', role: 'group', 'aria-label': KIND_WORDS[kind], hidden: '' }, ...rows, reset, el('p', { class: 'fd-properties-hint fd-set-hint' }, KIND_HINTS[kind]));
+    const element = el('div', { class: 'fd-part-look', role: 'group', 'aria-label': w.kinds[kind], hidden: '' }, ...rows, reset, el('p', { class: 'fd-properties-hint fd-set-hint' }, w.hints[kind]));
     return { kind, element, reset, draw: (part: PartLook) => draws.forEach((draw) => draw(part)) };
   });
 
-  const row = setting(el, 'look', 'Each kind of part', [kinds.element, ...blocks.map((b) => b.element)], {
-    hint: 'Each over the page’s look. A colour words would be hard to read on is drawn lighter or darker, just as far as it has to be.',
-  });
+  const row = setting(el, 'look', 'Each kind of part', [kinds.element, ...blocks.map((b) => b.element)], { hint: w.hint, words: w.setting });
 
   function show(kind: PartLookKind) {
     picked = kind;
@@ -109,7 +110,7 @@ export function partLookSettings(el: ElementFactory, designer: Designer): PartLo
         const chip = kinds.element.querySelector<HTMLElement>(`[data-choice="${block.kind}"]`);
         if (own) chip?.setAttribute('data-own', '');
         else chip?.removeAttribute('data-own');
-        chip?.setAttribute('title', own ? `${KIND_WORDS[block.kind]}: a look of their own` : `${KIND_WORDS[block.kind]}: as the page`);
+        chip?.setAttribute('title', own ? w.ownLook(w.kinds[block.kind]) : w.pageLook(w.kinds[block.kind]));
       }
     },
   };

@@ -184,6 +184,8 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 .fd-canvas-form-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .fd-canvas-form-head > .fd-dicon { flex: none; width: 18px; height: 18px; color: var(--fd-muted); }
 .fd-canvas-form-tag { flex: 1 1 auto; min-width: 0; color: var(--fd-muted); font-size: 12.5px; overflow-wrap: anywhere; }
+/* Picked, on the picked part's tint: the muted words would fall short of 4.5:1, so they take the text's colour. */
+.fd-canvas-form.fd-canvas-selected .fd-canvas-form-tag { color: var(--fd-text); }
 .fd-canvas-form-open { flex: none; }
 .fd-canvas-form-note { margin: 0; color: var(--fd-muted); }
 .fd-canvas-form-note.fd-canvas-form-problem { color: var(--fd-error); }

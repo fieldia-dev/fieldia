@@ -2,6 +2,8 @@ import type { Page, SectionNode } from '@fieldia/core';
 import { cameFrom, detach, setRowColumns, tidy } from './layout-ops';
 import { contains, isRow, listOf, locate, nameOf, nodeOf, type Holder, type Part, type Spot } from './layout-tree';
 import { landingSpan, putAt } from './layout-twelfths';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 import { Refusal } from './refusal';
 
 /**
@@ -18,9 +20,9 @@ import { Refusal } from './refusal';
  */
 
 /** A part's name as a person reads it — a survey's page by its title — in quotes. */
-export function quoted(page: Page, part: Part | Holder): string {
+export function quoted(page: Page, part: Part | Holder, words: DesignerWords = en): string {
   const step = (part as { type: string }).type === 'step';
-  return `“${step ? (part as { label?: string }).label || 'Untitled page' : nameOf(page, part)}”`;
+  return words.parts.quote(step ? (part as { label?: string }).label || words.outline.kinds.untitledPage : nameOf(page, part, words));
 }
 
 /** The parts named that are on the page, in reading order: none inside another of them, none twice. */
@@ -34,7 +36,7 @@ export function partsInOrder(page: Page, ids: string[]): Spot[] {
 /** The parts to move, in reading order; a refusal naming one not on the page. */
 function movingSpots(page: Page, ids: string[]): Spot[] {
   const missing = ids.find((id) => !locate(page, id));
-  if (missing !== undefined) throw new Refusal(`There is no part “${missing}”`);
+  if (missing !== undefined) throw new Refusal((w) => w.layout.noPart(missing));
   return partsInOrder(page, ids);
 }
 
@@ -47,12 +49,12 @@ function* allParts(holder: Holder): Generator<string> {
 }
 
 /** Why these parts cannot go into `parentId`, or null when they can. */
-export function moveRefusal(page: Page, ids: string[], parentId: string): string | null {
+export function moveRefusal(page: Page, ids: string[], parentId: string, words: DesignerWords = en): string | null {
   try {
     check(page, ids, parentId);
     return null;
   } catch (error) {
-    if (error instanceof Refusal) return error.message;
+    if (error instanceof Refusal) return error.in(words);
     throw error;
   }
 }
@@ -64,7 +66,7 @@ interface Coming {
 }
 
 function check(page: Page, ids: string[], parentId: string) {
-  if (!ids.length) throw new Refusal('Pick a part to move');
+  if (!ids.length) throw new Refusal((w) => w.outline.pickToMove);
   const spots = movingSpots(page, ids);
   refuse(page, spots.map((s) => ({ node: s.node, from: s.parent })), parentId);
   return spots;
@@ -73,23 +75,23 @@ function check(page: Page, ids: string[], parentId: string) {
 /** What the parts go into, or a refusal saying why they cannot. */
 function refuse(page: Page, coming: Coming[], parentId: string): Holder {
   const parent = nodeOf(page, parentId);
-  if (!parent) throw new Refusal(`There is no part “${parentId}”`);
+  if (!parent) throw new Refusal((w) => w.layout.noPart(parentId));
   const wizard = page.layout.type === 'wizard';
   for (const { node, from } of coming) {
     // A survey's page sits in the page's own list, as a part does.
     const step = (node as { type: string }).type === 'step';
     if (node.type === 'tab') {
-      if (parent.type === 'tab') throw new Refusal('A tab holds parts, not other tabs');
-      if (from && parent.id !== from.id) throw new Refusal('A tab moves only among its tabs');
-      if (!from && parent.type !== 'tabs') throw new Refusal('A tab goes among tabs: pick a tab to paste it after');
-    } else if (parent.type === 'tabs') throw new Refusal('Put it in one of the tabs');
-    if (wizard && step && parent.id !== page.layout.id) throw new Refusal('A page holds questions, not other pages');
-    if (wizard && !step && parent.id === page.layout.id) throw new Refusal('A question goes on a page');
-    if (from && contains(page, node.id, parentId)) throw new Refusal('A part cannot go inside itself');
+      if (parent.type === 'tab') throw new Refusal((w) => w.outline.tabNotInTab);
+      if (from && parent.id !== from.id) throw new Refusal((w) => w.outline.tabAmongItsTabs);
+      if (!from && parent.type !== 'tabs') throw new Refusal((w) => w.outline.tabAmongTabs);
+    } else if (parent.type === 'tabs') throw new Refusal((w) => w.outline.inOneOfTheTabs);
+    if (wizard && step && parent.id !== page.layout.id) throw new Refusal((w) => w.outline.pageNotInPage);
+    if (wizard && !step && parent.id === page.layout.id) throw new Refusal((w) => w.outline.questionOnPage);
+    if (from && contains(page, node.id, parentId)) throw new Refusal((w) => w.outline.notInsideItself);
   }
-  if (!listOf(parent)) throw new Refusal(`${quoted(page, parent)} holds no parts`);
+  if (!listOf(parent)) throw new Refusal((w) => w.outline.holdsNoParts(quoted(page, parent, w)));
   const joining = coming.filter((c) => c.from?.id !== parentId).length;
-  if (isRow(page, parent) && (parent as Holder).children.length + joining > 4) throw new Refusal('A row holds four');
+  if (isRow(page, parent) && (parent as Holder).children.length + joining > 4) throw new Refusal((w) => w.layout.rowHoldsFour);
   return parent as Holder;
 }
 
@@ -127,23 +129,23 @@ export function putNewParts(page: Page, nodes: Part[], parentId: string, index: 
 }
 
 /** Where the parts would go, in the words the drag chip says: “into “Home address”, before “City””. */
-export function describeMove(page: Page, ids: string[], parentId: string, index: number): string {
-  const refused = moveRefusal(page, ids, parentId);
+export function describeMove(page: Page, ids: string[], parentId: string, index: number, words: DesignerWords = en): string {
+  const w = words.outline;
+  const refused = moveRefusal(page, ids, parentId, words);
   if (refused) return refused;
   const spots = movingSpots(page, ids);
   const parent = nodeOf(page, parentId) as Holder;
   const moving = new Set(spots.map((s) => s.node.id));
   const anchor = anchorOf(parent.children, index, moving);
-  const name = (part: Part) => quoted(page, part);
+  const name = (part: Part) => quoted(page, part, words);
   if (spots.every((s) => s.parent.id === parentId)) {
     const rest = parent.children.filter((p) => !moving.has(p.id));
     const at = anchor ? rest.indexOf(anchor) : rest.length;
     const after = [...rest.slice(0, at), ...spots.map((s) => s.node), ...rest.slice(at)];
-    if (after.every((p, i) => p === parent.children[i])) return spots.length === 1 ? 'where it is' : 'where they are';
+    if (after.every((p, i) => p === parent.children[i])) return w.stays(spots.length === 1);
     // Down the list, they go after the part they pass; up it, before the part they pass.
     const was = parent.children.slice(0, parent.children.indexOf(spots[0].node)).filter((p) => !moving.has(p.id)).length;
-    return anchor && at <= was ? `before ${name(anchor)}` : `after ${name(rest[at - 1])}`;
+    return anchor && at <= was ? w.before(name(anchor)) : w.after(name(rest[at - 1]));
   }
-  const into = parentId === page.layout.id ? 'onto the page' : `into ${name(parent as Part)}`;
-  return anchor ? `${into}, before ${name(anchor)}` : `${into}, at the end`;
+  return w.into(parentId === page.layout.id ? null : name(parent as Part), anchor ? name(anchor) : null);
 }

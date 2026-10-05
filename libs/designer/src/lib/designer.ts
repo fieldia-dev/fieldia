@@ -28,7 +28,7 @@ import { choiceCommands, type ChoiceCommands } from './choice-commands';
 import { inputCommands, type InputCommands } from './input-commands';
 import { structureCommands, type StructureCommands } from './structure-commands';
 import { fixCheck, pageChecks, type PageCheck } from './page-checks';
-import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, orList, registerKinds, storedAs, type LineColumn, type QuestionKind } from './kinds';
+import { COLUMN_TYPES, columnKind, kindById, kindFits, kindName, kindOfField, kindsFor, registerKinds, storedAs, type LineColumn, type QuestionKind } from './kinds';
 import type { AppKind } from './app-kinds';
 import { replaceWith, templatesFor, type PageTemplate } from './templates';
 import type { DesignerAssistant } from './assistant';
@@ -53,6 +53,7 @@ import { LOOK_PRESETS, wholeLook, type LookValues } from './look-presets';
 import { browserLooks } from './look-store';
 import { setFold, type Fold } from './group-fold';
 import { editChecker } from './validate-edit';
+import { DESIGNER_WORDS, designerLocale, isDefaultOption, type DesignerLocale, type DesignerWords } from './designer-words';
 import { answersName, formParts, freeFieldName, refuseCycle, savedFormsCache, updateFormPart, type FormPartPatch, type SavedFormRef } from './saved-forms';
 
 /**
@@ -68,7 +69,7 @@ import { answersName, formParts, freeFieldName, refuseCycle, savedFormsCache, up
  * field from the model keeps what it holds, and only changes editor.
  */
 
-export { columnKind, kindFits, kindOfField, kindsFor, QUESTION_KINDS, SCREEN_KINDS, storedAs } from './kinds';
+export { columnKind, kindFits, kindName, kindOfField, kindsFor, QUESTION_KINDS, SCREEN_KINDS, storedAs } from './kinds';
 export type { LineColumn, QuestionKind } from './kinds';
 export type { AppKind, AppKindContext, AppKindPreviewContext, AppKindSettings } from './app-kinds';
 export { isBlank, SCREEN_TEMPLATES, SURVEY_TEMPLATES, type PageTemplate } from './templates';
@@ -85,28 +86,41 @@ export type { AnswerRulePatch } from './rules-commands';
 export type { FormPartPatch, SavedFormRef } from './saved-forms';
 export { createBrowserLookStore, createMemoryLookStore } from './look-store';
 export type { LookValues } from './look-presets';
+export { DESIGNER_WORDS, designerLocale, type DesignerLocale, type DesignerWords } from './designer-words';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
 export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
 
-const slug = (text: string, sep = '_') =>
+/** Words as a name for code: Latin letters and digits; `empty` for words written in another script, as Arabic is. */
+const slug = (text: string, sep = '_', empty = 'page') =>
   text
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, sep)
-    .replace(new RegExp(`^\\${sep}+|\\${sep}+$`, 'g'), '') || 'page';
+    .replace(new RegExp(`^\\${sep}+|\\${sep}+$`, 'g'), '') || empty;
 
-export function blankPage(kind: PageKind, title: string): Page {
+/**
+ * A page with nothing on it yet, titled: a survey with its first page, a
+ * screen with its first section, a sheet with its record's name, a list with
+ * its column. What it names (Page 1, Section 1) is in the designer's
+ * language (`locale`), English unless said; and a page begun in another
+ * language is written in it (`language`), so its form speaks it too.
+ */
+export function blankPage(kind: PageKind, title: string, options: { locale?: string } = {}): Page {
+  const locale = designerLocale(options.locale) ?? 'en';
+  const w = DESIGNER_WORDS[locale].defaults;
   const id = slug(title, '-');
+  const written = locale === 'en' ? {} : { language: locale };
   if (kind === 'survey') {
     return {
       fieldia: '0.1',
       id,
       title,
+      ...written,
       data: { kind: 'responses' },
       fields: {},
-      layout: { type: 'wizard', id: 'steps', children: [{ type: 'step', id: 'step-1', label: 'Page 1', children: [] }] },
+      layout: { type: 'wizard', id: 'steps', children: [{ type: 'step', id: 'step-1', label: w.page(1), children: [] }] },
     };
   }
   if (kind === 'list') {
@@ -115,8 +129,9 @@ export function blankPage(kind: PageKind, title: string): Page {
       fieldia: '0.1',
       id,
       title,
+      ...written,
       data: { kind: 'record', model: slug(title, '.') },
-      fields: { name: { type: 'char', label: 'Name' } },
+      fields: { name: { type: 'char', label: w.name } },
       layout: { type: 'list', id: 'list', columns: ['name'] },
     };
   }
@@ -126,18 +141,20 @@ export function blankPage(kind: PageKind, title: string): Page {
       fieldia: '0.1',
       id,
       title,
+      ...written,
       data: { kind: 'record', model: slug(title, '.') },
-      fields: { name: { type: 'char', label: 'Name', required: true } },
-      layout: { type: 'sheet', id: 'sheet', title: { field: 'name', placeholder: 'Name' }, children: [{ type: 'section', id: 'section-1', columns: 2, children: [] }] },
+      fields: { name: { type: 'char', label: w.name, required: true } },
+      layout: { type: 'sheet', id: 'sheet', title: { field: 'name', placeholder: w.name }, children: [{ type: 'section', id: 'section-1', columns: 2, children: [] }] },
     };
   }
   return {
     fieldia: '0.1',
     id,
     title,
+    ...written,
     data: { kind: 'record', model: slug(title, '.') },
     fields: {},
-    layout: { type: 'sections', id: 'sections', children: [{ type: 'section', id: 'section-1', title: 'Section 1', columns: 2, children: [] }] },
+    layout: { type: 'sections', id: 'sections', children: [{ type: 'section', id: 'section-1', title: w.section(1), columns: 2, children: [] }] },
   };
 }
 
@@ -247,6 +264,15 @@ export interface ModelField {
 }
 
 export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, InputCommands, StructureCommands {
+  /** The designer's own words, in its language: English unless `locale` said another it speaks. */
+  readonly words: DesignerWords;
+  /**
+   * The designer's language, when one was given: its own words are in it, and
+   * the editors run its way — Arabic right to left, English left to right —
+   * whatever the direction of the page around them. Null when none was given:
+   * English, running the way the page around it does.
+   */
+  readonly locale: DesignerLocale | null;
   getPage(): Page;
   /** The model's fields not on the page yet, in the model's order. Empty without a model. */
   modelFields(): ModelField[];
@@ -516,10 +542,20 @@ export function createDesigner(options: {
   assistant?: DesignerAssistant;
   /** Where looks of one's own are kept, for a whole workspace. Without one, in this browser. */
   looks?: LookStore;
+  /**
+   * The designer's own language, as a language tag (`ar`, `en`): its buttons,
+   * menus, messages and checks in it — English and Arabic; English for any
+   * other — and its editors running that language's way. The page's own
+   * words are never translated: they are the page's. English, taking the
+   * direction of the page around it, unless said.
+   */
+  locale?: DesignerLocale | (string & {});
   /** Open a saved form placed in the page where it is made, by its id: “Open it” on the canvas. Without one, it is not offered. */
   openForm?: (id: string) => void;
 }): Designer {
   const store = options.store;
+  const locale = designerLocale(options.locale);
+  const words = DESIGNER_WORDS[locale ?? 'en'];
   const appKinds = registerKinds(options.kinds ?? []);
   /** A kind this designer offers: Fieldia's, or one of this app's. */
   const kindOf = (id: string): QuestionKind => {
@@ -617,7 +653,7 @@ export function createDesigner(options: {
       edit(draft);
     } catch (error) {
       if (!(error instanceof Refusal)) throw error;
-      issues = [error.message];
+      issues = [error.in(words)];
       notify();
       return false;
     }
@@ -625,7 +661,7 @@ export function createDesigner(options: {
     keepWhatRulesRead(page, draft);
     const checked = checkEdit(page, draft);
     if (!checked.ok) {
-      issues = checked.issues.map((issue) => `${issue.path}: ${issue.message}`);
+      issues = checked.issues.map((issue) => words.refusals.invalid(issue.path, issue.message));
       notify();
       return false;
     }
@@ -647,26 +683,26 @@ export function createDesigner(options: {
     const new_ = (holder: Container, index: number) => twelfths.putAt(draft, holder as Holder, index, [node], (p) => twelfths.landingSpan(draft, p, holder as Holder));
     if (where.after) {
       const found = findNode(draft, where.after);
-      if (!found) throw new Refusal(`There is no element "${where.after}"`);
+      if (!found) throw new Refusal((w) => w.refusals.noElement(where.after as string));
       new_(found.parent, found.index + 1);
       return;
     }
     const all = containers(draft);
     const parent = where.parent ? all.find((c) => c.id === where.parent) : all[all.length - 1];
-    if (!parent) throw new Refusal(`There is no step or section "${where.parent}"`);
+    if (!parent) throw new Refusal((w) => w.refusals.noStepOrSection(String(where.parent)));
     new_(parent, where.index === undefined ? parent.children.length : Math.max(0, Math.min(where.index, parent.children.length)));
   }
 
   function refuseInSurvey(draft: Page, kind: QuestionKind) {
-    if (kind.group === 'records' && draft.data.kind === 'responses') throw new Refusal('A survey has no records to link to or list: this kind is for app screens');
+    if (kind.group === 'records' && draft.data.kind === 'responses') throw new Refusal((w) => w.refusals.surveyHasNoRecords);
   }
 
   /** A field of the node, when it is one of the given types and the page's own to change: `owned` says what the model keeps otherwise. */
-  function fieldOfType<T extends Field['type']>(draft: Page, id: string, types: T[], refusal: string, owned: (label: string) => string): Extract<Field, { type: T }> {
+  function fieldOfType<T extends Field['type']>(draft: Page, id: string, types: T[], refusal: (w: DesignerWords) => string, owned: (w: DesignerWords, label: string) => string): Extract<Field, { type: T }> {
     const name = fieldNode(draft, id).field;
     const field = draft.fields[name];
     if (!(types as string[]).includes(field.type)) throw new Refusal(refusal);
-    if (fromModel(name)) throw new Refusal(owned(field.label));
+    if (fromModel(name)) throw new Refusal((w) => owned(w, field.label));
     return field as Extract<Field, { type: T }>;
   }
 
@@ -694,7 +730,7 @@ export function createDesigner(options: {
 
   function fieldNode(draft: Page, id: string): FieldNode {
     const found = findNode(draft, id);
-    if (!found || found.node.type !== 'field') throw new Refusal(`There is no question "${id}"`);
+    if (!found || found.node.type !== 'field') throw new Refusal((w) => w.refusals.noQuestion(id));
     return found.node;
   }
 
@@ -718,8 +754,8 @@ export function createDesigner(options: {
   });
 
   const kinds = kindCommands({ apply, fromModel });
-  const choices = choiceCommands({ apply, fromModel });
-  const inputs = inputCommands({ apply, fromModel });
+  const choices = choiceCommands({ apply, fromModel, words });
+  const inputs = inputCommands({ apply, fromModel, words });
   const structures = structureCommands({ apply, fromModel });
 
   const designer: Designer = {
@@ -729,6 +765,8 @@ export function createDesigner(options: {
     ...choices,
     ...inputs,
     ...structures,
+    words,
+    locale,
     getPage: () => page,
     modelFields() {
       const shown = shownFields(page);
@@ -740,8 +778,8 @@ export function createDesigner(options: {
     addModelField(name, where) {
       let created = '';
       const ok = apply((draft) => {
-        if (!fromModel(name)) throw new Refusal(`The model has no field "${name}"`);
-        if (shownFields(draft).has(name)) throw new Refusal(`${model[name].label} is on the page already`);
+        if (!fromModel(name)) throw new Refusal((w) => w.refusals.noModelField(name));
+        if (shownFields(draft).has(name)) throw new Refusal((w) => w.refusals.onThePageAlready(model[name].label));
         // A definition the page already keeps for it stays; otherwise the model's.
         draft.fields[name] = draft.fields[name] ?? clone(model[name]);
         const ids = allIds(draft);
@@ -784,7 +822,7 @@ export function createDesigner(options: {
         const ids = allIds(draft);
         const field = freeFieldName(draft);
         const id = nextName((name) => ids.has(name), 'q', '-');
-        draft.fields[field] = kind.field('Untitled question');
+        draft.fields[field] = kind.field(words.defaults.untitledQuestion, words);
         const node: FieldNode = { type: 'field', id, field, ...(kind.widget ? { widget: kind.widget } : {}) };
         created = id;
         placeAfter(draft, node, where);
@@ -838,11 +876,11 @@ export function createDesigner(options: {
         (draft) => {
         const node = fieldNode(draft, id);
         const field = draft.fields[node.field];
-        if (field.type !== 'selection') throw new Refusal(`"${id}" has no options`);
-        if (fromModel(node.field)) throw new Refusal(`The options of ${field.label} come from the model`);
+        if (field.type !== 'selection') throw new Refusal((w) => w.refusals.noOptions(id));
+        if (fromModel(node.field)) throw new Refusal((w) => w.refusals.optionsFromModel(field.label));
         const old = field.options;
         const used = new Set<string | number>();
-        const placeholder = (o: Option | undefined) => !!o && /^option_\d+$/.test(String(o.value)) && /^Option \d+$/.test(o.label);
+        const placeholder = (o: Option | undefined) => !!o && /^option_\d+$/.test(String(o.value)) && isDefaultOption(o.label);
         const clean = labels.map((label) => label.trim()).filter(Boolean);
         // The same words are the same option: one put between others, or taken from among them, leaves theirs alone.
         const claimed = new Set<number>();
@@ -858,7 +896,7 @@ export function createDesigner(options: {
             // Words changed in place keep the value the answers already use, unless it was a placeholder.
             const there = claimed.has(i) ? undefined : old[i];
             if (there) claimed.add(i);
-            value = there && !placeholder(there) ? there.value : slug(label);
+            value = there && !placeholder(there) ? there.value : slug(label, '_', `option_${i + 1}`);
           }
           while (used.has(value)) value = `${value}_${i + 1}`;
           used.add(value);
@@ -881,14 +919,14 @@ export function createDesigner(options: {
         if (fromModel(node.field)) {
           // What the backend stores stays as it is: only the editor changes.
           if (!kindFits(kind, old)) {
-            const fitting = kindsFor(old, { fromModel: true, survey: draft.data.kind === 'responses', app: appKinds }).map((k) => k.label);
-            throw new Refusal(`${old.label} is stored as ${storedAs(old)} in the model, so it can only be shown as ${orList(fitting)}`);
+            const fitting = kindsFor(old, { fromModel: true, survey: draft.data.kind === 'responses', app: appKinds });
+            throw new Refusal((w) => w.kinds.onlyShownAs(old.label, storedAs(old, w), w.kinds.orList(fitting.map((k) => kindName(k, w)))));
           }
           if (kind.widget) node.widget = kind.widget;
           else delete node.widget;
           return;
         }
-        const next = kind.field(old.label) as Field & { help?: string; required?: boolean };
+        const next = kind.field(old.label, words) as Field & { help?: string; required?: boolean };
         if (old.type === 'selection' && next.type === 'selection') {
           next.options = old.options;
           // "Other" stays where the new kind has it too; a dropdown has none.
@@ -908,9 +946,9 @@ export function createDesigner(options: {
         const tab = found ? null : findTab(draft, id);
         const list = (found?.parent.children ?? tab?.tabs.children) as { id: string }[] | undefined;
         const index = found?.index ?? tab?.index;
-        if (!list || index === undefined) throw new Refusal(`There is no element "${id}"`);
+        if (!list || index === undefined) throw new Refusal((w) => w.refusals.noElement(id));
         const to = index + delta;
-        if (to < 0 || to >= list.length) throw new Refusal('It cannot move further');
+        if (to < 0 || to >= list.length) throw new Refusal((w) => w.refusals.cannotMoveFurther);
         const [moved] = list.splice(index, 1);
         list.splice(to, 0, moved);
       });
@@ -924,9 +962,9 @@ export function createDesigner(options: {
       };
       return apply((draft) => {
         const found = findNode(draft, id);
-        if (!found) throw new Refusal(`There is no element "${id}"`);
+        if (!found) throw new Refusal((w) => w.refusals.noElement(id));
         const parent = containers(draft).find((c) => c.id === parentId);
-        if (!parent) throw new Refusal(`There is no step or section "${parentId}"`);
+        if (!parent) throw new Refusal((w) => w.refusals.noStepOrSection(parentId));
         const came = ops.cameFrom(draft, id);
         // Its row closes up behind it; it is no wider than its new section, and as wide a share of a row in twelfths.
         ops.detach(draft, id);
@@ -939,7 +977,7 @@ export function createDesigner(options: {
       let created = '';
       const ok = apply((draft) => {
         const found = findNode(draft, id);
-        if (!found || found.node.type !== 'field') throw new Refusal(`There is no question "${id}"`);
+        if (!found || found.node.type !== 'field') throw new Refusal((w) => w.refusals.noQuestion(id));
         const ids = allIds(draft);
         const field = freeFieldName(draft);
         created = nextName((name) => ids.has(name), 'q', '-');
@@ -957,7 +995,7 @@ export function createDesigner(options: {
         const topIndex = root.children.findIndex((child) => child.id === id);
         if (topIndex !== -1) {
           // A whole page (wizard step), or what sits at the top of a screen or a sheet.
-          if (root.children.length === 1) throw new Refusal('A page needs at least one step or section');
+          if (root.children.length === 1) throw new Refusal((w) => w.refusals.oneStepOrSection);
           root.children.splice(topIndex, 1);
         } else if (found) ops.detach(draft, id); // Its row closes up.
         else if (tab) {
@@ -967,7 +1005,7 @@ export function createDesigner(options: {
             const holder = findNode(draft, tab.tabs.id);
             if (holder) holder.parent.children.splice(holder.index, 1);
           }
-        } else throw new Refusal(`There is no element "${id}"`);
+        } else throw new Refusal((w) => w.refusals.noElement(id));
         // Drop the fields nothing shows any more.
         const shown = shownFields(draft);
         for (const name of Object.keys(draft.fields)) if (!shown.has(name)) delete draft.fields[name];
@@ -988,12 +1026,12 @@ export function createDesigner(options: {
         };
         if (where.parent) {
           const tab = findTab(draft, where.parent);
-          if (!tab) throw new Refusal(`There is no tab "${where.parent}"`);
+          if (!tab) throw new Refusal((w) => w.refusals.noTab(where.parent as string));
           tab.tab.children.push(section());
         } else if (root.type === 'wizard') {
           created = nextName((name) => ids.has(name), 'step', '-');
           const at = where.after ? root.children.findIndex((step) => step.children.some((n) => n.id === where.after)) : -1;
-          if (where.after && at === -1) throw new Refusal(`There is no question "${where.after}"`);
+          if (where.after && at === -1) throw new Refusal((w) => w.refusals.noQuestion(where.after as string));
           if (at === -1) root.children.push({ type: 'step', id: created, label, children: [] });
           else {
             const step = root.children[at];
@@ -1001,7 +1039,7 @@ export function createDesigner(options: {
             root.children.splice(at + 1, 0, { type: 'step', id: created, label, children: step.children.splice(cut) });
           }
         } else if (root.type === 'sections' || root.type === 'sheet') root.children.push(section());
-        else throw new Refusal('This page has no steps or sections to add to');
+        else throw new Refusal((w) => w.refusals.nothingToAddTo);
       });
       return ok ? created : false;
     },
@@ -1009,21 +1047,21 @@ export function createDesigner(options: {
     setLayoutKind(kind) {
       return apply((draft) => {
         const root = draft.layout;
-        if (root.type === kind) throw new Refusal(`It is a ${kind === 'sheet' ? 'sheet' : 'screen of sections'} already`);
+        if (root.type === kind) throw new Refusal((w) => (kind === 'sheet' ? w.refusals.sheetAlready : w.refusals.sectionsAlready));
         const ids = allIds(draft);
         const rootId = ids.has(kind) ? root.id : kind;
         if (kind === 'sheet') {
-          if (root.type !== 'sections') throw new Refusal('Only a screen of sections becomes a sheet');
+          if (root.type !== 'sections') throw new Refusal((w) => w.refusals.onlySectionsBecomeSheet);
           draft.layout = { type: 'sheet', id: rootId, children: root.children };
           return;
         }
-        if (root.type !== 'sheet') throw new Refusal('Only a sheet becomes a screen of sections');
-        if (root.children.some((n) => n.type === 'tabs')) throw new Refusal('Take the tabs out first: a screen of sections has none');
+        if (root.type !== 'sheet') throw new Refusal((w) => w.refusals.onlySheetBecomesSections);
+        if (root.children.some((n) => n.type === 'tabs')) throw new Refusal((w) => w.refusals.takeTabsOut);
         const parts = (['statusbar', 'buttons', 'statButtons', 'ribbon', 'alerts', 'badges', 'sidePanel'] as const).filter((part) => root[part] !== undefined);
-        if (parts.length) throw new Refusal(`A screen of sections cannot show this sheet's ${parts.join(', ')}`);
+        if (parts.length) throw new Refusal((w) => w.refusals.cannotShowSheetParts(parts.join(', ')));
         if (root.title) {
           const first = firstSection(draft);
-          if (!first) throw new Refusal('A screen of sections needs a section for the title field');
+          if (!first) throw new Refusal((w) => w.refusals.sectionForTitle);
           first.children.unshift({ type: 'field', id: nextName((name) => ids.has(name), 'q', '-'), field: root.title.field });
         }
         draft.layout = { type: 'sections', id: rootId, children: root.children };
@@ -1033,7 +1071,7 @@ export function createDesigner(options: {
     setTitleField(nodeId) {
       return apply((draft) => {
         const root = draft.layout as SheetNode;
-        if (root.type !== 'sheet') throw new Refusal('Only a sheet has a title');
+        if (root.type !== 'sheet') throw new Refusal((w) => w.refusals.onlySheetHasTitle);
         const ids = allIds(draft);
         // The field that was the title goes where the new one was, or first in the first section.
         const old: FieldNode | null = root.title ? { type: 'field', id: nextName((name) => ids.has(name), 'q', '-'), field: root.title.field } : null;
@@ -1041,14 +1079,14 @@ export function createDesigner(options: {
           if (!old) return;
           delete root.title;
           const first = firstSection(draft);
-          if (!first) throw new Refusal('The title field needs a section to go back to');
+          if (!first) throw new Refusal((w) => w.refusals.titleNeedsSection);
           first.children.unshift(old);
           return;
         }
         const found = findNode(draft, nodeId);
-        if (!found || found.node.type !== 'field') throw new Refusal(`There is no question "${nodeId}"`);
+        if (!found || found.node.type !== 'field') throw new Refusal((w) => w.refusals.noQuestion(nodeId));
         const def = draft.fields[found.node.field];
-        if (def.type !== 'char') throw new Refusal('A title is a text field');
+        if (def.type !== 'char') throw new Refusal((w) => w.refusals.titleIsText);
         found.parent.children.splice(found.index, 1, ...(old ? [old] : []));
         root.title = { field: found.node.field, placeholder: def.label };
       });
@@ -1058,7 +1096,7 @@ export function createDesigner(options: {
       let created = '';
       const ok = apply((draft) => {
         const root = draft.layout;
-        if (root.type !== 'sheet') throw new Refusal('Tabs go on a sheet');
+        if (root.type !== 'sheet') throw new Refusal((w) => w.refusals.tabsOnSheet);
         const ids = allIds(draft);
         const name = (prefix: string) => {
           const id = nextName((n) => ids.has(n), prefix, '-');
@@ -1066,9 +1104,9 @@ export function createDesigner(options: {
           return id;
         };
         created = name('tabs');
-        const tabs: TabsNode = { type: 'tabs', id: created, children: [{ type: 'tab', id: name('tab'), label: 'Tab 1', children: [{ type: 'section', id: name('section'), columns: 2, children: [] }] }] };
+        const tabs: TabsNode = { type: 'tabs', id: created, children: [{ type: 'tab', id: name('tab'), label: words.defaults.tab(1), children: [{ type: 'section', id: name('section'), columns: 2, children: [] }] }] };
         const after = where.after ? root.children.findIndex((n) => n.id === where.after) : -1;
-        if (where.after && after === -1) throw new Refusal(`There is no element "${where.after}" on the sheet`);
+        if (where.after && after === -1) throw new Refusal((w) => w.refusals.noElementOnSheet(where.after as string));
         root.children.splice(after === -1 ? root.children.length : after + 1, 0, tabs);
       });
       return ok ? created : false;
@@ -1078,7 +1116,7 @@ export function createDesigner(options: {
       let created = '';
       const ok = apply((draft) => {
         const holder = findNode(draft, tabsId);
-        if (!holder || holder.node.type !== 'tabs') throw new Refusal(`There are no tabs "${tabsId}"`);
+        if (!holder || holder.node.type !== 'tabs') throw new Refusal((w) => w.refusals.noTabs(tabsId));
         const ids = allIds(draft);
         created = nextName((n) => ids.has(n), 'tab', '-');
         ids.add(created);
@@ -1091,9 +1129,9 @@ export function createDesigner(options: {
       return apply(
         (draft) => {
           const container = findContainer(draft, id) as (StepNode | SectionNode) | null;
-          if (!container) throw new Refusal(`There is no step or section "${id}"`);
+          if (!container) throw new Refusal((w) => w.refusals.noStepOrSection(id));
           // gap lane: a group that folds does so by its title.
-          if ((container as SectionNode).collapsible && !label.trim()) throw new Refusal(`“${(container as SectionNode).title}” folds by its title: set Folds to No to take the title away`);
+          if ((container as SectionNode).collapsible && !label.trim()) throw new Refusal((w) => w.refusals.foldsByTitle((container as SectionNode).title ?? ''));
           if ('label' in container) container.label = label;
           else (container as SectionNode).title = label;
         },
@@ -1107,7 +1145,7 @@ export function createDesigner(options: {
         const found = container ? null : findNode(draft, id);
         // A badge, a counter or a button of a sheet's header shows only for some records too.
         const target = container ?? (found?.node as { invisible?: string } | undefined) ?? (findHeaderPart(draft, id)?.part as { invisible?: string } | undefined);
-        if (!target) throw new Refusal(`There is no element "${id}"`);
+        if (!target) throw new Refusal((w) => w.refusals.noElement(id));
         const rules: Condition = !condition
           ? { join: 'all', rules: [] }
           : 'rules' in condition
@@ -1118,7 +1156,7 @@ export function createDesigner(options: {
           return;
         }
         const own = found?.node.type === 'field' ? found.node.field : null;
-        if (own && rules.rules.some((rule) => rule.field === own)) throw new Refusal('A question cannot depend on its own answer');
+        if (own && rules.rules.some((rule) => rule.field === own)) throw new Refusal((w) => w.refusals.questionOwnAnswer);
         target.invisible = conditionToHide(rules);
       });
     },
@@ -1126,18 +1164,18 @@ export function createDesigner(options: {
     setRule(id, which, condition) {
       return apply((draft) => {
         const found = findNode(draft, id);
-        if (!found || found.node.type !== 'field') throw new Refusal(`There is no field "${id}"`);
+        if (!found || found.node.type !== 'field') throw new Refusal((w) => w.refusals.noField(id));
         const node = found.node;
         const rules: Condition = !condition
           ? { join: 'all', rules: [] }
           : 'rules' in condition
             ? condition
             : { join: 'all', rules: [{ field: condition.field, op: 'is', value: condition.equals }] };
-        if (rules.rules.some((rule) => rule.field === node.field)) throw new Refusal('A field cannot depend on its own answer');
+        if (rules.rules.some((rule) => rule.field === node.field)) throw new Refusal((w) => w.refusals.fieldOwnAnswer);
         const field = draft.fields[node.field];
         if (which === 'required' && rules.rules.length && field?.required === true) {
           // The model's own word stands; a field of the page's own becomes required only when the rule holds.
-          if (fromModel(node.field)) throw new Refusal(`The model requires ${field.label} always, so it cannot be required only sometimes`);
+          if (fromModel(node.field)) throw new Refusal((w) => w.refusals.alwaysRequired(field.label));
           delete field.required;
         }
         if (rules.rules.length) node[which] = conditionToHold(rules);
@@ -1151,12 +1189,12 @@ export function createDesigner(options: {
     arrangeSection(sectionId, items) {
       return apply((draft) => {
         const section = findContainer(draft, sectionId) as SectionNode | null;
-        if (!section) throw new Refusal(`There is no section "${sectionId}"`);
+        if (!section) throw new Refusal((w) => w.refusals.noSection(sectionId));
         const fields = section.children.filter((n): n is FieldNode => n.type === 'field');
         const others = section.children.filter((n) => n.type !== 'field');
         const byId = new Map(fields.map((n) => [n.id, n]));
         if (items.length !== fields.length || items.some((item) => !byId.has(item.id))) {
-          throw new Refusal('The arrangement does not match the fields in this section');
+          throw new Refusal((w) => w.refusals.arrangementMismatch);
         }
         const columns = wideColumns(section.columns);
         section.children = [
@@ -1188,8 +1226,8 @@ export function createDesigner(options: {
     setRelation(id, model) {
       return apply(
         (draft) => {
-          const field = fieldOfType(draft, id, ['many2one', 'many2many', 'one2many'], 'Only a link, links or a table of lines point to records', (label) => `What ${label} points to comes from the model`);
-          if (!model.trim()) throw new Refusal('Say which records it points to, such as contact');
+          const field = fieldOfType(draft, id, ['many2one', 'many2many', 'one2many'], (w) => w.refusals.onlyLinksPoint, (w, label) => w.refusals.pointsFromModel(label));
+          if (!model.trim()) throw new Refusal((w) => w.refusals.sayWhichRecords);
           field.relation = model.trim();
         },
         `relation:${id}`
@@ -1198,9 +1236,9 @@ export function createDesigner(options: {
 
     setCurrency(id, code) {
       return apply((draft) => {
-        const field = fieldOfType(draft, id, ['monetary'], 'Only an amount has a currency', (label) => `The currency of ${label} comes from the model`);
+        const field = fieldOfType(draft, id, ['monetary'], (w) => w.refusals.onlyAmountCurrency, (w, label) => w.refusals.currencyFromModel(label));
         const currency = code.trim().toUpperCase();
-        if (!/^[A-Z]{3}$/.test(currency)) throw new Refusal('A currency is three letters, such as USD');
+        if (!/^[A-Z]{3}$/.test(currency)) throw new Refusal((w) => w.refusals.currencyLetters);
         field.currency = currency;
         delete field.currencyField;
       });
@@ -1208,17 +1246,17 @@ export function createDesigner(options: {
 
     setRange(id, range) {
       return apply((draft) => {
-        const field = fieldOfType(draft, id, ['integer'], 'Only a rating, a scale or a progress has a range', (label) => `The range of ${label} comes from the model`);
+        const field = fieldOfType(draft, id, ['integer'], (w) => w.refusals.onlyRange, (w, label) => w.refusals.rangeFromModel(label));
         const { min, max } = range;
-        if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max) throw new Refusal('A range runs from a smaller whole number to a bigger one');
+        if (!Number.isInteger(min) || !Number.isInteger(max) || min >= max) throw new Refusal((w) => w.refusals.rangeWhole);
         Object.assign(field, { min, max });
       });
     },
 
     setOther(id, on) {
       return apply((draft) => {
-        const ask = 'Only multiple choice and checkboxes take an answer of one’s own';
-        const field = fieldOfType(draft, id, ['selection'], ask, (label) => `Whether ${label} takes an answer of its own comes from the model`);
+        const ask = (w: DesignerWords) => w.refusals.onlyOther;
+        const field = fieldOfType(draft, id, ['selection'], ask, (w, label) => w.refusals.otherFromModel(label));
         const kind = kindOfField(field, fieldNode(draft, id));
         if (kind !== 'multiple-choice' && kind !== 'checkboxes') throw new Refusal(ask);
         if (on) field.other = true;
@@ -1244,15 +1282,15 @@ export function createDesigner(options: {
 
     setFileRules(id, rules) {
       return apply((draft) => {
-        const field = fieldOfType(draft, id, ['binary', 'image'], 'Only a file upload takes files', (label) => `The files ${label} takes come from the model`);
+        const field = fieldOfType(draft, id, ['binary', 'image'], (w) => w.refusals.onlyFiles, (w, label) => w.refusals.filesFromModel(label));
         if (rules.accept !== undefined) {
-          if (field.type === 'image') throw new Refusal('An image takes images only');
+          if (field.type === 'image') throw new Refusal((w) => w.refusals.imageOnly);
           if (rules.accept.length) field.accept = [...rules.accept];
           else delete field.accept;
         }
         if (rules.maxSize !== undefined) {
           if (rules.maxSize === null) delete field.maxSize;
-          else if (!Number.isInteger(rules.maxSize) || rules.maxSize <= 0) throw new Refusal('The largest file is a size in bytes, more than nothing');
+          else if (!Number.isInteger(rules.maxSize) || rules.maxSize <= 0) throw new Refusal((w) => w.refusals.largestFile);
           else field.maxSize = rules.maxSize;
         }
         if (rules.multiple === true) field.multiple = true;
@@ -1261,23 +1299,23 @@ export function createDesigner(options: {
           delete field.minFiles;
           delete field.maxFiles;
         }
-        const counts = [['minFiles', 0, 'At least is a whole number of files'], ['maxFiles', 1, 'At most is a whole number of files, one or more']] as const;
+        const counts = [['minFiles', 0, (w: DesignerWords) => w.refusals.atLeastFiles], ['maxFiles', 1, (w: DesignerWords) => w.refusals.atMostFiles]] as const;
         for (const [key, least, refusal] of counts) {
           const count = rules[key];
           if (count === undefined) continue;
-          if (count !== null && !field.multiple) throw new Refusal('Turn on More than one file first');
+          if (count !== null && !field.multiple) throw new Refusal((w) => w.refusals.severalFirst);
           if (count === null) delete field[key];
           else if (!Number.isInteger(count) || count < least) throw new Refusal(refusal);
           else field[key] = count;
         }
-        if ((field.minFiles ?? 0) > (field.maxFiles ?? Infinity)) throw new Refusal('At least cannot be more than at most');
+        if ((field.minFiles ?? 0) > (field.maxFiles ?? Infinity)) throw new Refusal((w) => w.refusals.leastOverMost);
       });
     },
 
-    place: (part, drop) => layoutEdit((draft) => ops.place(draft, part, drop, { model })),
-    describeDrop: (drop, moving) => ops.describeDrop(page, drop, moving),
-    dropRefusal: (drop, moving) => ops.dropRefusal(page, drop, moving),
-    wrap: (ids, kind) => layoutEdit((draft) => ops.wrap(draft, ids, kind)),
+    place: (part, drop) => layoutEdit((draft) => ops.place(draft, part, drop, { model, words })),
+    describeDrop: (drop, moving) => ops.describeDrop(page, drop, moving, words),
+    dropRefusal: (drop, moving) => ops.dropRefusal(page, drop, moving, words),
+    wrap: (ids, kind) => layoutEdit((draft) => ops.wrap(draft, ids, kind, words)),
     ungroup: (id) => layoutEdit((draft) => ops.ungroup(draft, id)) !== false,
     duplicate: (ids) => layoutEdit((draft) => ops.duplicate(draft, ids)),
     remove: (ids) => apply((draft) => ops.remove(draft, ids), null, forgetGone),
@@ -1295,13 +1333,13 @@ export function createDesigner(options: {
       const colours = !!patch && Object.values(patch).every((value) => typeof value === 'string' && value.startsWith('#'));
       return apply((draft) => settings.setPartLook(draft, kind, patch), colours ? `part-look:${kind}:${Object.keys(patch).join(',')}` : null);
     },
-    addBlock: (kind, where) => layoutEdit((draft) => ops.addBlock(draft, kind, where)),
+    addBlock: (kind, where) => layoutEdit((draft) => ops.addBlock(draft, kind, where, words)),
 
     setLineColumns(id, columns) {
       return apply(
         (draft) => {
-          const field = fieldOfType(draft, id, ['one2many'], 'Only a table of lines has columns', (label) => `The columns of ${label} come from the model`);
-          if (!columns.length) throw new Refusal('A table of lines needs a column');
+          const field = fieldOfType(draft, id, ['one2many'], (w) => w.refusals.onlyLinesColumns, (w, label) => w.refusals.columnsFromModel(label));
+          if (!columns.length) throw new Refusal((w) => w.refusals.linesNeedColumn);
           const old = field.fields;
           const taken = new Set(columns.map((c) => c.name).filter((name): name is string => !!name && name in old));
           const fields: typeof old = {};
@@ -1309,7 +1347,7 @@ export function createDesigner(options: {
             let name = column.name && column.name in old ? column.name : null;
             if (!name) {
               // A new column is named after its label, as a backend names a field.
-              const base = slug(column.label || 'column', '_').replace(/^(\d)/, 'c_$1');
+              const base = slug(column.label, '_', 'column').replace(/^(\d)/, 'c_$1');
               name = base;
               for (let n = 2; taken.has(name); n++) name = `${base}_${n}`;
               taken.add(name);
@@ -1317,7 +1355,7 @@ export function createDesigner(options: {
             // A column of the same kind keeps its field: a whole number stays whole, a link stays a link.
             const kept = old[name];
             if (kept && columnKind(kept) === column.kind) fields[name] = { ...kept, label: column.label };
-            else if (column.kind === 'other') throw new Refusal('A new column is text, a number, a date, or yes or no');
+            else if (column.kind === 'other') throw new Refusal((w) => w.refusals.newColumnKind);
             else fields[name] = { type: COLUMN_TYPES[column.kind], label: column.label } as (typeof old)[string];
           }
           field.fields = fields;
@@ -1357,7 +1395,7 @@ export function createDesigner(options: {
 
     async publish() {
       const checked = validatePage(page);
-      if (!checked.ok) throw new Error('This page has problems and cannot be published');
+      if (!checked.ok) throw new Error(words.refusals.cannotPublish);
       const version = store ? await store.publish(clone(page)) : versions.length + 1;
       versions = [...versions, { version, publishedAt: new Date().toISOString(), page: clone(page) }];
       notify();
@@ -1365,7 +1403,7 @@ export function createDesigner(options: {
     },
 
     checks() {
-      if (checksOf?.page !== page || checksOf.forms !== formsCame) checksOf = { page, forms: formsCame, checks: pageChecks(page, { valid: checkEdit.passed(page), forms }) };
+      if (checksOf?.page !== page || checksOf.forms !== formsCame) checksOf = { page, forms: formsCame, checks: pageChecks(page, { valid: checkEdit.passed(page), forms, words }) };
       return [...checksOf.checks];
     },
     fixCheck: (check) => fixCheck(designer, check),
@@ -1373,7 +1411,7 @@ export function createDesigner(options: {
     revertTo(version) {
       const found = versions.find((v) => v.version === version);
       if (!found) {
-        issues = [`There is no version ${version}`];
+        issues = [words.refusals.noVersion(version)];
         notify();
         return false;
       }
@@ -1399,11 +1437,11 @@ export function createDesigner(options: {
       const naming = !!from && !!was && JSON.stringify(was.dependsOn ?? []) === JSON.stringify(from.dependsOn ?? []);
       return apply(
         (draft) => {
-          const field = fieldOfType(draft, id, ['selection'], 'Only a choice takes its options from a list', (label) => `The choices of ${label} come from the model`);
+          const field = fieldOfType(draft, id, ['selection'], (w) => w.refusals.onlyChoiceFromList, (w, label) => w.refusals.choicesFromModel(label));
           if (!from) {
             delete field.optionsFrom;
             // Written again: one option to start from, when there were none.
-            if (!field.options.length) field.options = [{ value: 'option_1', label: 'Option 1' }];
+            if (!field.options.length) field.options = [{ value: 'option_1', label: words.defaults.option(1) }];
             return;
           }
           field.optionsFrom = { list: from.list, ...(from.dependsOn?.length ? { dependsOn: [...from.dependsOn] } : {}) };
@@ -1418,7 +1456,7 @@ export function createDesigner(options: {
     ...rulesCommands({ apply, getPage: () => page, fromModel }),
     // extend lane
     appKinds: () => [...appKinds],
-    templates: () => templatesFor(page, options.templates),
+    templates: () => templatesFor(page, options.templates, locale ?? 'en'),
     replacePage(next) {
       return apply((draft) => replaceWith(draft, next), null, () => {
         selected = null;
@@ -1435,8 +1473,8 @@ export function createDesigner(options: {
     },
     // The part that led the pick still leads it.
     moveParts: (ids, parentId, index) => layoutEdit((draft) => moves.moveParts(draft, ids, parentId, index), selected),
-    moveRefusal: (ids, parentId) => moves.moveRefusal(page, ids, parentId),
-    describeMove: (ids, parentId, index) => moves.describeMove(page, ids, parentId, index),
+    moveRefusal: (ids, parentId) => moves.moveRefusal(page, ids, parentId, words),
+    describeMove: (ids, parentId, index) => moves.describeMove(page, ids, parentId, index, words),
     copyParts: (ids) => clipboard.copyParts(page, ids) ?? false,
     pasteParts(text) {
       let pasted: { ids: string[]; dropped: number } | null = null;
@@ -1452,7 +1490,7 @@ export function createDesigner(options: {
     setLookPreset(id) {
       return apply((draft) => {
         const preset = LOOK_PRESETS.find((p) => p.id === id);
-        if (!preset) throw new Refusal(`There is no look “${id}”`);
+        if (!preset) throw new Refusal((w) => w.refusals.noLook(id));
         settings.setLook(draft, wholeLook(preset.look));
       });
     },
@@ -1500,10 +1538,10 @@ export function createDesigner(options: {
 createDesigner.open = async (
   id: string,
   store: PageStore,
-  options: { model?: Record<string, Field>; lists?: AppList[]; kinds?: readonly AppKind[]; looks?: LookStore; openForm?: (id: string) => void } = {}
+  options: { model?: Record<string, Field>; lists?: AppList[]; kinds?: readonly AppKind[]; looks?: LookStore; openForm?: (id: string) => void; locale?: DesignerLocale | (string & {}) } = {}
 ): Promise<Designer> => {
   const { draft, versions } = await store.load(id);
   const page = draft ?? versions[versions.length - 1]?.page;
   if (!page) throw new Error(`The store has no page "${id}"`);
-  return createDesigner({ page, store, versions, model: options.model, lists: options.lists, kinds: options.kinds, looks: options.looks, openForm: options.openForm });
+  return createDesigner({ page, store, versions, model: options.model, lists: options.lists, kinds: options.kinds, looks: options.looks, openForm: options.openForm, locale: options.locale });
 };

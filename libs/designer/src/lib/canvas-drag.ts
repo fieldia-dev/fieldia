@@ -1,3 +1,6 @@
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
+import { speakLike } from './chrome-language';
 /**
  * Dragging on the canvas: a field to another place, in its section or
  * another, or a tile from the toolbox onto the page. What is carried leaves
@@ -38,6 +41,8 @@ export function dropIndex(cards: readonly Rect[], x: number, y: number): number 
 export type DragSource = { node: string } | { tool: string };
 
 export interface CanvasDragOptions {
+  /** The designer's words, for what a carried thing is called when it shows none. English unless given. */
+  words?: DesignerWords;
   /**
    * The canvas: its sections carry `data-drop-section` — and `data-drop-flow="column"`
    * where they are one column, as a survey's page is — its fields `.fd-canvas-field[data-node]`.
@@ -77,11 +82,11 @@ const EDGE = 48;
 const EDGE_DELAY = 250;
 
 /** The words a carried thing goes by, for the chip that follows the pointer. */
-function nameOf(element: HTMLElement): string {
+function nameOf(element: HTMLElement, words: DesignerWords): string {
   // The words being typed in, for a field open to edit; else the words it shows.
   const box = element.querySelector<HTMLInputElement>('.fd-canvas-label-input, .fd-q-label');
-  const words = box?.value || element.querySelector('.fd-label, .fd-q-text, .fd-tool-name, .fd-list-sort')?.textContent || element.textContent || '';
-  return words.trim().replace(/\s+/g, ' ').slice(0, 48) || 'Field';
+  const said = box?.value || element.querySelector('.fd-label, .fd-q-text, .fd-tool-name, .fd-list-sort')?.textContent || element.textContent || '';
+  return said.trim().replace(/\s+/g, ' ').slice(0, 48) || words.canvas.field;
 }
 
 export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
@@ -164,9 +169,9 @@ export function canvasDrag(options: CanvasDragOptions): CanvasDrag {
     const ghost = doc.createElement('div');
     ghost.className = 'fd-drag-ghost fd-drag-chip';
     ghost.setAttribute('aria-hidden', 'true');
-    ghost.textContent = nameOf(current.element);
+    ghost.textContent = nameOf(current.element, options.words ?? en);
     current.ghost = ghost;
-    (canvas.closest('.fd-form') ?? doc.body).append(ghost);
+    (canvas.closest('.fd-form') ?? doc.body).append(speakLike(ghost, canvas));
     if (flowOf(home) === 'row' || ('tool' in current.source && canvas.querySelector('[data-drop-flow="row"]'))) {
       // Columns of a table: a line where it lands; the column dims in its place.
       if ('node' in current.source) current.element.classList.add('fd-drag-source-dim');

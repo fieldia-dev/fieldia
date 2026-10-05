@@ -3,7 +3,9 @@ import type { Skin } from '@fieldia/viewer';
 import { installStyles, type WidgetFactory } from '@fieldia/widgets';
 import { modeSwitch, readMode, writeMode, type DesignerMode } from './canvas-mode';
 import { designerBar, elementFactory, putDownOnClickOutside } from './chrome';
+import { speakIn } from './chrome-language';
 import { QUESTION_KINDS, SCREEN_KINDS, type Designer, type DesignerState, type Where } from './designer';
+import { kindName } from './kinds';
 import { findHeaderPart } from './header-commands';
 import { listCanvas } from './list-canvas';
 import { canBeColumn } from './list-commands';
@@ -74,7 +76,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const kinds = [...QUESTION_KINDS, ...SCREEN_KINDS, ...designer.appKinds()];
   // Simple or Advanced: the person's preference, kept in this browser, never in the page.
   let mode: DesignerMode = readMode(doc.defaultView);
-  const modes = modeSwitch(el, mode, (next) => setMode(next));
+  const modes = modeSwitch(el, mode, (next) => setMode(next), designer.words);
   root.dataset['mode'] = mode;
   function setMode(next: DesignerMode) {
     mode = next;
@@ -86,8 +88,8 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     render(designer.getState());
   }
   const bar = designerBar(root, designer, {
-    titleLabel: 'Screen title',
-    placeholder: 'Untitled screen',
+    titleLabel: designer.words.bar.screenTitle,
+    placeholder: designer.words.bar.untitledScreen,
     extra: [modes.element, trial.toggle],
     find: () => [...start.items(), ...findItems(), ...trial.items(), ...words.items(), ...ruleList.items(), ...panel.findItems(), ...json.items(), ...shortcuts.items()],
     // A check about a field's words or options: it is open on the canvas by now, the cursor goes there.
@@ -120,6 +122,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     el,
     doc,
     kinds,
+    words: designer.words,
     layout: true,
     forms: true,
     onPick: (spec) => add(spec, null),
@@ -150,10 +153,12 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const body = el('div', { class: 'fd-screen-body' }, side.element, el('div', { class: 'fd-canvas-scroll' }, start.element, canvas.element, list.element), panel.element);
   const json = jsonView({ el, doc, designer, trial, body });
   root.append(bar.element, bar.issues, body, trial.element, json.element);
+  // The editor in its own language; the screen drawn as the page around it runs, as the form will.
+  const followHost = speakIn(root, host, designer, () => [canvas.element, list.element]);
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
   const ruleList = rulesOverview({ el, doc, designer, root, body, modes: trial.toggle });
   const clip = clipboardKeys({ root, designer, active: () => !trial.trying && !json.open });
-  const shortcuts = shortcutKeys({ el, root, survey: false, active: () => !trial.trying && !json.open });
+  const shortcuts = shortcutKeys({ el, root, survey: false, words: designer.words, active: () => !trial.trying && !json.open });
   // gap lane: a drag in the outline shows where it lands on the canvas, and one on the canvas in the outline.
   const echoes = dropEcho({
     editor: root,
@@ -197,7 +202,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     else if (spec === 'layout:section') {
       const selected = designer.getState().selected;
       const tab = selected ? findTab(page, selected) : null;
-      const created = designer.addContainer(`Section ${allSections(page).length + 1}`, tab ? { parent: tab.tab.id } : {});
+      const created = designer.addContainer(designer.words.defaults.section(allSections(page).length + 1), tab ? { parent: tab.tab.id } : {});
       if (!created) return;
       designer.select(created);
       canvas.focusTitle(created);
@@ -220,9 +225,9 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     openMenu({
       el,
       anchor,
-      title: 'A saved form',
+      title: designer.words.savedForms.tile,
       items: found.map((form) => ({ id: form.id, label: form.title, icon: 'saved-form' })),
-      note: found.length ? 'Placed whole, its answers kept apart; it is changed on its own page.' : 'The app has no saved form to place yet: publish one first.',
+      note: designer.words.savedForms.menuNote(found.length > 0),
       onPick: async (id) => {
         await designer.loadSavedForm(id);
         designer.addForm(id, where);
@@ -242,32 +247,33 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   // ---- find anything -----------------------------------------------------------
   /** On a screen: a field of the model or a kind to add, a field or a section to go to. On a list: a column to add or go to. */
   function findItems(): FindItem[] {
+    const f = designer.words.canvas.find;
     const page = designer.getPage();
     const layout = page.layout;
     if (layout.type === 'list') {
       const own = Object.entries(page.fields).filter(([name]) => !layout.columns.includes(name)).map(([name, field]) => ({ name, field }));
       return [
-        ...[...own, ...designer.modelFields()].filter(({ field }) => canBeColumn(field)).map(({ name, field }) => ({ label: `Add the column “${field.label}”`, hint: 'column', run: () => designer.addColumn(name) })),
-        ...layout.columns.map((name) => ({ label: `Go to the column “${page.fields[name]?.label ?? name}”`, hint: 'column', run: () => designer.select(`column:${name}`) })),
-        { label: 'Add a button for the rows chosen', hint: 'list', run: () => (root.querySelector('[data-add-part="action"]') as HTMLButtonElement | null)?.click() },
+        ...[...own, ...designer.modelFields()].filter(({ field }) => canBeColumn(field)).map(({ name, field }) => ({ label: f.addColumn(field.label), hint: f.column, run: () => designer.addColumn(name) })),
+        ...layout.columns.map((name) => ({ label: f.goToColumn(page.fields[name]?.label ?? name), hint: f.column, run: () => designer.select(`column:${name}`) })),
+        { label: f.addListButton, hint: f.list, run: () => (root.querySelector('[data-add-part="action"]') as HTMLButtonElement | null)?.click() },
       ];
     }
     const fields = allSections(page).flatMap((section) => section.children.filter((n): n is FieldNode => n.type === 'field').map((node) => ({ node, section })));
     return [
-      ...designer.modelFields().map(({ name, field }) => ({ label: `Add “${field.label}”`, hint: 'from the model', run: () => add(`model:${name}`, null) })),
-      ...kinds.map((kind) => ({ label: `Add a field: ${kind.label}`, hint: 'new field', run: () => add(`kind:${kind.id}`, null) })),
+      ...designer.modelFields().map(({ name, field }) => ({ label: f.addModelField(field.label), hint: f.fromModel, run: () => add(`model:${name}`, null) })),
+      ...kinds.map((kind) => ({ label: f.addField(kindName(kind, designer.words)), hint: f.newField, run: () => add(`kind:${kind.id}`, null) })),
       ...fields.map(({ node, section }) => ({
-        label: `Go to “${(node as FieldNode & { label?: string }).label ?? page.fields[node.field]?.label ?? node.id}”`,
-        hint: sectionLabel(page, section),
+        label: f.goTo((node as FieldNode & { label?: string }).label ?? page.fields[node.field]?.label ?? node.id),
+        hint: sectionLabel(page, section, designer.words),
         run: () => {
           designer.select(node.id);
           canvas.focus(node.id, 'label');
         },
       })),
-      ...allSections(page).map((section) => ({ label: `Go to the section “${sectionLabel(page, section)}”`, hint: 'section', run: () => designer.select(section.id) })),
-      { label: 'Add a section', hint: 'layout', run: () => add('layout:section', null) },
-      ...(designer.canPlaceForms() ? [{ label: 'Add a saved form', hint: 'saved form', run: () => add('form:saved', null) }] : []),
-      ...(layout.type === 'sheet' && !topOf(page).some((n) => n.type === 'tabs') ? [{ label: 'Add tabs', hint: 'layout', run: () => add('layout:tabs', null) }] : []),
+      ...allSections(page).map((section) => ({ label: f.goToSection(sectionLabel(page, section, designer.words)), hint: f.section, run: () => designer.select(section.id) })),
+      { label: f.addSection, hint: f.layout, run: () => add('layout:section', null) },
+      ...(designer.canPlaceForms() ? [{ label: designer.words.savedForms.add, hint: designer.words.savedForms.hint, run: () => add('form:saved', null) }] : []),
+      ...(layout.type === 'sheet' && !topOf(page).some((n) => n.type === 'tabs') ? [{ label: f.addTabs, hint: f.layout, run: () => add('layout:tabs', null) }] : []),
     ];
   }
 
@@ -344,6 +350,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
 
   // ---- render -----------------------------------------------------------------------
   function render(state: DesignerState) {
+    followHost();
     bar.update(state);
     start.update(state);
     const listing = state.page.layout.type === 'list';

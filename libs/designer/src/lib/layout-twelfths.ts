@@ -1,4 +1,6 @@
 import { wideColumns, type ColumnCount, type ColumnsByWidth, type Page, type SectionNode } from '@fieldia/core';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 import { across, isSection, isWrapper, locate, nameOf, onTracks, rowsIn, rowsOf, setSpan, sharesOneCell, spanOf, type Holder, type Part, type Row } from './layout-tree';
 
 /**
@@ -129,7 +131,7 @@ export function fromTwelfths(group: SectionNode, cols: number): void {
  * that leaves gaps has; else into the row, which divides equally — four to a
  * row. `row` is the target's row without the part dropped.
  */
-export type Beside = { how: 'reorder' | 'divide'; row: Part[] } | { how: 'room'; row: Part[]; span: number } | { how: 'refused'; why: string };
+export type Beside = { how: 'reorder' | 'divide'; row: Part[] } | { how: 'room'; row: Part[]; span: number } | { how: 'refused'; why: 'rowHoldsFour' };
 
 export function besideIn(page: Page, group: SectionNode, target: Part, moving?: string): Beside {
   const own = rowsOf(page, group).find((r) => r.items.includes(target)) as Row;
@@ -137,23 +139,23 @@ export function besideIn(page: Page, group: SectionNode, target: Part, moving?: 
   const full = keepsFull(group);
   // A part leaving a row that keeps gaps lets the rest move up, as the grid lays them out; a full row closes up and stays a row.
   const row = full ? own.items : (rowsOf(page, group, moving).find((r) => r.items.includes(target)) as Row).items;
-  if (row.length >= 4) return { how: 'refused', why: 'A row holds four' };
+  if (row.length >= 4) return { how: 'refused', why: 'rowHoldsFour' };
   const cols = across(page, group);
   const used = (row.reduce((n, p) => n + widthOn(p, cols), 0) * TWELVE) / cols;
   return !full && used < TWELVE ? { how: 'room', row, span: TWELVE - used } : { how: 'divide', row };
 }
 
-const PARTS_IN: Record<number, string> = { 2: 'halves', 3: 'thirds', 4: 'quarters' };
 
 /** A drop beside a part in a group, in the words the chip says: "between “Customer” and “Visit date” — the row in thirds". */
-export function besideWords(page: Page, plan: Beside, target: Part, after: boolean): string {
-  if (plan.how === 'refused') return plan.why;
-  const name = (p: Part) => `“${nameOf(page, p)}”`;
-  if (plan.how === 'room') return `beside ${name(target)}, in the room left`;
+export function besideWords(page: Page, plan: Beside, target: Part, after: boolean, words: DesignerWords = en): string {
+  const w = words.layout;
+  if (plan.how === 'refused') return w[plan.why];
+  const name = (p: Part) => words.parts.quote(nameOf(page, p, words));
+  if (plan.how === 'room') return w.inRoomLeft(name(target));
   const at = plan.row.indexOf(target) + (after ? 1 : 0);
   const [before, next] = [plan.row[at - 1], plan.row[at]];
-  const where = before && next ? `between ${name(before)} and ${name(next)}` : before ? `at the end of the row, after ${name(before)}` : `at the start of the row, before ${name(next)}`;
-  return plan.how === 'divide' ? `${where} — the row in ${PARTS_IN[plan.row.length + 1]}` : where;
+  const where = before && next ? w.between(name(before), name(next)) : before ? w.atRowEnd(name(before)) : w.atRowStart(name(next));
+  return plan.how === 'divide' ? w.divided(where, plan.row.length + 1) : where;
 }
 
 /** The width a part takes where it lands: in or out of twelfths, as wide a share of the row as it had; new in twelfths, the whole row; else no wider than there. */
@@ -183,28 +185,27 @@ export function putAt(page: Page, holder: Holder, index: number, parts: Part[], 
   fill(split.items.slice(cut));
 }
 
-const FRACTIONS: [number, string][] = [
-  [12, 'the whole row'],
-  [9, 'three quarters of the row'],
-  [8, 'two thirds of the row'],
-  [6, 'half the row'],
-  [4, 'a third of the row'],
-  [3, 'a quarter of the row'],
+const FRACTIONS: [number, keyof DesignerWords['parts']['shares']][] = [
+  [12, 'whole'],
+  [9, 'threeQuarters'],
+  [8, 'twoThirds'],
+  [6, 'half'],
+  [4, 'third'],
+  [3, 'quarter'],
 ];
 
 /** The fractions of a row a part in twelfths is offered: in twelfths, as a short word, its label, and its name in a menu. */
-export const ROW_PARTS: { span: number; words: string; label: string; name: string }[] = [
-  { span: 12, words: 'Whole', label: 'Whole row', name: 'Whole row' },
-  { span: 9, words: '¾', label: '¾ of the row', name: 'Three quarters' },
-  { span: 8, words: '⅔', label: '⅔ of the row', name: 'Two thirds' },
-  { span: 6, words: '½', label: '½ of the row', name: 'Half' },
-  { span: 4, words: '⅓', label: '⅓ of the row', name: 'A third' },
-  { span: 3, words: '¼', label: '¼ of the row', name: 'A quarter' },
-];
+export const ROW_PARTS: { span: number; words: string; label: string; name: string }[] = rowParts(en);
+
+/** The same fractions, in the designer's words. */
+export function rowParts(words: DesignerWords): { span: number; words: string; label: string; name: string }[] {
+  return FRACTIONS.map(([span, key]) => ({ span, ...words.layout.rowParts[key] }));
+}
 
 /** A part's width as a share of a row of `cols` columns, in words: "half the row", "58% of the row". */
-export function rowShare(span: number, cols = TWELVE): string {
-  return FRACTIONS.find(([n]) => n * cols === span * TWELVE)?.[1] ?? `${percent(span, cols)}% of the row`;
+export function rowShare(span: number, cols = TWELVE, words: DesignerWords = en): string {
+  const named = FRACTIONS.find(([n]) => n * cols === span * TWELVE)?.[1];
+  return named ? words.parts.shares[named] : words.parts.percentOfRow(percent(span, cols));
 }
 
 /** A width as a whole percentage of a row. */

@@ -4,6 +4,7 @@ import { echo } from './drop-echo';
 import type { Designer } from './designer';
 import type { Drop, NewPart } from './layout-ops';
 import { nameOf, nodeOf } from './layout-tree';
+import { speakLike } from './chrome-language';
 
 /**
  * Dragging on the Advanced canvas, as the approved mockup drags: what is
@@ -132,13 +133,13 @@ export function advancedDrag(options: AdvancedDragOptions): AdvancedDrag {
     current.started = true;
     canvas.classList.add('fd-dragging');
     doc.getSelection()?.removeAllRanges();
-    const name = 'node' in current.source ? nameOf(designer.getPage(), nodeOf(designer.getPage(), current.source.node)) : (current.element.querySelector('.fd-tool-name')?.textContent ?? current.element.textContent ?? '').trim();
+    const name = 'node' in current.source ? nameOf(designer.getPage(), nodeOf(designer.getPage(), current.source.node), designer.words) : (current.element.querySelector('.fd-tool-name')?.textContent ?? current.element.textContent ?? '').trim();
     const chip = doc.createElement('div');
     chip.className = 'fd-drop-chip';
     chip.setAttribute('aria-hidden', 'true');
     const label = doc.createElement('span');
     label.className = 'fd-drop-name';
-    label.textContent = name || 'Part';
+    label.textContent = name || designer.words.canvas.part;
     const where = doc.createElement('span');
     where.className = 'fd-drop-where';
     chip.append(label, where);
@@ -148,7 +149,7 @@ export function advancedDrag(options: AdvancedDragOptions): AdvancedDrag {
     const zone = doc.createElement('div');
     zone.className = 'fd-drop-zone';
     zone.hidden = true;
-    canvas.append(zone, bar, chip);
+    canvas.append(zone, bar, speakLike(chip, canvas));
     Object.assign(current, { chip, where, bar, zone });
     if ('node' in current.source) current.element.classList.add('fd-drag-carried');
   }
@@ -168,7 +169,7 @@ export function advancedDrag(options: AdvancedDragOptions): AdvancedDrag {
     const refused = mark ? designer.dropRefusal(mark.drop, moving(current)) : null;
     current.drop = mark && !refused ? mark.drop : null;
     chip.classList.toggle('fd-drop-refused', !current.drop);
-    (current.where as HTMLElement).textContent = !mark ? 'Not here' : (refused ?? designer.describeDrop(mark.drop, moving(current)));
+    (current.where as HTMLElement).textContent = !mark ? designer.words.canvas.notHere : (refused ?? designer.describeDrop(mark.drop, moving(current)));
     bar.hidden = !current.drop;
     zone.hidden = !current.drop || !mark?.zone;
     // gap lane: the outline draws where it lands too.

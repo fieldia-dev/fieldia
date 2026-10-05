@@ -1,6 +1,7 @@
 import { elementFactory } from './chrome';
 import { QUESTION_KINDS, SCREEN_KINDS } from './designer';
 import { toolbox } from './toolbox';
+import { en } from './locales/en';
 
 function make(kinds = [...QUESTION_KINDS, ...SCREEN_KINDS], layout = true) {
   const picked: string[] = [];
@@ -10,6 +11,7 @@ function make(kinds = [...QUESTION_KINDS, ...SCREEN_KINDS], layout = true) {
     doc: document,
     kinds,
     layout,
+    words: en,
     onPick: (spec) => picked.push(spec),
     onPress: (spec) => pressed.push(spec),
   });

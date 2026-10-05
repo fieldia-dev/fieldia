@@ -56,16 +56,18 @@ let made = 0;
 const numberOf = (box: HTMLInputElement) => (box.value.trim() === '' ? null : Number(box.value));
 
 export function answerRulesEditor(el: ElementFactory, designer: Designer, id: string, sampling: SampleOptions = {}): AnswerRulesEditor {
+  const words = designer.words;
+  const w = words.rulesUi;
   const base = `fd-answer-rules-${++made}`;
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
-  const list = el('ul', { class: 'fd-answer-rules', 'aria-label': 'Answer rules' });
-  const add = el('button', { type: 'button', class: 'fd-button fd-button-link fd-answer-rules-add', 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, 'Add a rule');
-  const undo = el('button', { type: 'button', class: 'fd-button fd-button-link' }, 'Undo');
+  const list = el('ul', { class: 'fd-answer-rules', 'aria-label': w.answerRules });
+  const add = el('button', { type: 'button', class: 'fd-button fd-button-link fd-answer-rules-add', 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, w.addARule);
+  const undo = el('button', { type: 'button', class: 'fd-button fd-button-link' }, w.undo);
   const statusWords = el('span', {});
   const status = el('p', { class: 'fd-answer-rules-status', role: 'status', hidden: '' }, statusWords, undo);
-  const hint = el('p', { class: 'fd-properties-hint fd-set-hint' }, 'Checked as people type, and again when they send.');
-  const sample = answerSample(el, id, sampling);
-  const element = el('div', { class: 'fd-prop fd-answer-rules-box', 'data-tab': 'rules', 'data-setting': 'Answer rules' }, el('span', { class: 'fd-prop-name' }, 'Answer rules'), list, add, status, hint, sample.element);
+  const hint = el('p', { class: 'fd-properties-hint fd-set-hint' }, w.checkedAsTyped);
+  const sample = answerSample(el, id, sampling, words);
+  const element = el('div', { class: 'fd-prop fd-answer-rules-box', 'data-tab': 'rules', 'data-setting': 'Answer rules' }, el('span', { class: 'fd-prop-name' }, w.answerRules), list, add, status, hint, sample.element);
 
   let page = designer.getPage();
   let views: RuleView[] = [];
@@ -88,9 +90,9 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
     openMenu({
       el,
       anchor: add,
-      title: 'Add a rule',
+      title: w.addARule,
       actions: true,
-      items: kinds.map((kind) => ({ id: kind.id, label: kind.label })),
+      items: kinds.map((kind) => ({ id: kind.id, label: words.rules.kinds[kind.id] })),
       onPick(kindId) {
         const kind = kinds.find((k) => k.id === kindId);
         if (!kind) return;
@@ -138,7 +140,7 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
       if (!own) return;
       const next = { ...current, ...patch } as AnswerRule;
       for (const key of Object.keys(next) as (keyof AnswerRule)[]) if (next[key] === null || (key === 'message' && next[key] === '')) delete next[key];
-      const wrong = ruleRefusal(page, own, next);
+      const wrong = ruleRefusal(page, own, next, words);
       problem.textContent = wrong ?? '';
       problem.hidden = !wrong;
       if (wrong) return;
@@ -172,15 +174,15 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
     };
 
     // What it asks, by kind.
-    const shortest = box('Shortest', { type: 'number', min: '0', placeholder: 'Any', inputmode: 'numeric' }, (i) => ({ minLength: numberOf(i) }));
-    const longest = box('Longest', { type: 'number', min: '1', placeholder: 'Any', inputmode: 'numeric' }, (i) => ({ maxLength: numberOf(i) }));
-    const ending = box('Ends with', { placeholder: '@company.com', autocomplete: 'off' }, (i) => ({ endsWith: i.value || null }));
-    const atLeast = box('At least', { type: 'number', placeholder: 'Any' }, (i) => ({ min: numberOf(i) }));
-    const atMost = box('At most', { type: 'number', placeholder: 'Any' }, (i) => ({ max: numberOf(i) }));
-    const tickLeast = box('Tick at least', { type: 'number', min: '0', placeholder: 'Any' }, (i) => ({ atLeast: numberOf(i) }));
-    const tickMost = box('Tick at most', { type: 'number', min: '1', placeholder: 'Any' }, (i) => ({ atMost: numberOf(i) }));
-    const looks = el('select', { class: 'fd-input fd-select', 'aria-label': 'Looks like' }, ...NAMED_PATTERNS.map((p) => el('option', { value: p.pattern }, p.words)), el('option', { value: '' }, 'A pattern I write')) as HTMLSelectElement;
-    const pattern = box('Pattern', { class: 'fd-input fd-answer-rule-code', spellcheck: 'false', autocomplete: 'off', placeholder: '[A-Z]{2}\\d+' }, (i) => ({ pattern: i.value || null }));
+    const shortest = box(w.shortest, { type: 'number', min: '0', placeholder: w.any, inputmode: 'numeric' }, (i) => ({ minLength: numberOf(i) }));
+    const longest = box(w.longest, { type: 'number', min: '1', placeholder: w.any, inputmode: 'numeric' }, (i) => ({ maxLength: numberOf(i) }));
+    const ending = box(w.endsWith, { placeholder: '@company.com', autocomplete: 'off' }, (i) => ({ endsWith: i.value || null }));
+    const atLeast = box(w.atLeast, { type: 'number', placeholder: w.any }, (i) => ({ min: numberOf(i) }));
+    const atMost = box(w.atMost, { type: 'number', placeholder: w.any }, (i) => ({ max: numberOf(i) }));
+    const tickLeast = box(w.tickAtLeast, { type: 'number', min: '0', placeholder: w.any }, (i) => ({ atLeast: numberOf(i) }));
+    const tickMost = box(w.tickAtMost, { type: 'number', min: '1', placeholder: w.any }, (i) => ({ atMost: numberOf(i) }));
+    const looks = el('select', { class: 'fd-input fd-select', 'aria-label': w.looksLike }, ...NAMED_PATTERNS.map((p) => el('option', { value: p.pattern }, words.rules.patterns[p.id])), el('option', { value: '' }, w.myPattern)) as HTMLSelectElement;
+    const pattern = box(w.pattern, { class: 'fd-input fd-answer-rule-code', spellcheck: 'false', autocomplete: 'off', placeholder: '[A-Z]{2}\\d+' }, (i) => ({ pattern: i.value || null }));
     looks.addEventListener('change', () => {
       pattern.row.hidden = looks.value !== '';
       if (looks.value) change({ pattern: looks.value });
@@ -188,47 +190,48 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
     });
     // A rule across fields: a formula, the page's fields suggested by their labels, tried on made-up values.
     const holds = formulaBox(el, {
-      label: 'Must hold',
-      placeholder: 'Ends >= Starts — type a field’s name, or @',
-      check: (on, source) => formulaProblem(on, source),
+      words,
+      label: w.mustHold,
+      placeholder: w.mustHoldPlaceholder,
+      check: (on, source) => formulaProblem(on, source, words),
       commit: (source) => source && change({ holds: source }),
       said: (on, source) => {
-        const words = sampleHolds(on, source);
-        holds.result.toggleAttribute('data-fails', words.endsWith('does not hold') || words === 'Never holds');
-        return words;
+        const said = sampleHolds(on, source, words);
+        holds.result.toggleAttribute('data-fails', said.endsWith(words.rules.doesNotHold) || said === words.rules.neverHolds);
+        return said;
       },
     });
-    const when = segmented(el, 'Allowed dates', [{ value: 'past', words: 'In the past' }, { value: 'future', words: 'In the future' }], (value) => value && change({ date: value }));
+    const when = segmented(el, w.allowedDates, [{ value: 'past', words: w.inThePast }, { value: 'future', words: w.inTheFuture }], (value) => value && change({ date: value }));
     const groups: Record<Group, HTMLElement> = {
       length: pair(shortest, longest, ['minLength', 'maxLength']),
-      pattern: el('div', { class: 'fd-answer-rule-pattern' }, el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, 'Looks like'), looks), pattern.row),
+      pattern: el('div', { class: 'fd-answer-rule-pattern' }, el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.looksLike), looks), pattern.row),
       ending: ending.row,
       range: pair(atLeast, atMost, ['min', 'max']),
       count: pair(tickLeast, tickMost, ['atLeast', 'atMost']),
-      date: el('div', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, 'Allowed'), when.element),
-      across: el('div', { class: 'fd-answer-rule-field fd-answer-rule-across' }, el('span', { class: 'fd-answer-rule-word' }, 'Must hold'), holds.element, holds.problem, holds.result),
+      date: el('div', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.allowed), when.element),
+      across: el('div', { class: 'fd-answer-rule-field fd-answer-rule-across' }, el('span', { class: 'fd-answer-rule-word' }, w.mustHold), holds.element, holds.problem, holds.result),
     };
     const shown = groupsOf(rule);
     // When it is broken: the form will not send, or only says so.
-    const level = segmented(el, 'When it does not fit', [{ value: 'error', words: 'Stops sending' }, { value: 'warning', words: 'Only warns' }], (value) => value && change({ level: value === 'warning' ? 'warning' : null }));
-    const message = box('Message when it does not fit', { placeholder: 'Said under the question', autocomplete: 'off' }, (i) => ({ message: i.value || null }));
+    const level = segmented(el, w.whenItDoesNotFit, [{ value: 'error', words: w.stopsSending }, { value: 'warning', words: w.onlyWarns }], (value) => value && change({ level: value === 'warning' ? 'warning' : null }));
+    const message = box(w.message, { placeholder: w.messagePlaceholder, autocomplete: 'off' }, (i) => ({ message: i.value || null }));
     // Only when: a condition on other answers, as a field's "Required" takes one.
     const only = conditionEditor(el, designer, id, 'question', 'required', {
-      lead: 'Only',
-      label: 'When the rule is checked',
+      lead: w.only,
+      label: w.whenChecked,
       save: (condition) => {
         change({ when: condition.rules.length ? conditionToHold(condition) : null });
         return true;
       },
     });
-    const onlyStart = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when', 'aria-label': 'Checked only when…' }, 'Only when…');
+    const onlyStart = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when', 'aria-label': w.checkedOnlyWhen }, w.onlyWhen);
     onlyStart.addEventListener('click', () => {
       only.start();
       (body.querySelector('.fd-when select') as HTMLElement | null)?.focus();
     });
     body.append(
       ...shown.map((g) => groups[g]),
-      el('div', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, 'When it does not fit'), level.element),
+      el('div', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.whenItDoesNotFit), level.element),
       message.row,
       only.element,
       onlyStart,
@@ -244,10 +247,10 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
         add.focus();
         return;
       }
-      const words = answerRuleSentence(page, current);
+      const sentence = answerRuleSentence(page, current, words);
       if (!designer.removeAnswerRule(id, index)) return;
       removedAt = designer.getPage();
-      statusWords.textContent = `Removed “${words}”. `;
+      statusWords.textContent = w.removed(sentence);
       status.hidden = false;
       undo.focus();
     });
@@ -269,11 +272,11 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
 
     function update(next: AnswerRule) {
       current = next;
-      const sentence = answerRuleSentence(page, next);
+      const sentence = answerRuleSentence(page, next, words);
       const kept = index < (node()?.validate?.length ?? 0);
       say.textContent = sentence;
-      remove.setAttribute('aria-label', kept ? `Remove the rule “${sentence}”` : 'Remove this new rule');
-      remove.title = 'Remove the rule';
+      remove.setAttribute('aria-label', kept ? w.removeRule(sentence) : w.removeNewRule);
+      remove.title = w.removeTheRule;
       const set = (input: HTMLInputElement, value: unknown) => {
         if (!focused(input)) input.value = value === undefined || value === null ? '' : String(value);
       };

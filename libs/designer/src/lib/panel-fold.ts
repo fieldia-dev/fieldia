@@ -11,18 +11,19 @@ import { segmented, setting } from './panel-controls';
  * by: in place of the choices, it says so.
  */
 export function foldSetting(el: ElementFactory, designer: Designer, id: string): { rows: HTMLElement[]; update(page: Page): void } {
+  const w = designer.words.panel;
   const choice = segmented<Fold>(
     el,
-    'Folds',
+    w.folds,
     [
-      { value: 'no', words: 'No' },
-      { value: 'open', words: 'Starts open', title: 'People can fold it by its title' },
-      { value: 'folded', words: 'Starts folded', title: 'It starts folded: people open it by its title' },
+      { value: 'no', words: w.no },
+      { value: 'open', words: w.startsOpen, title: w.startsOpenTitle },
+      { value: 'folded', words: w.startsFolded, title: w.startsFoldedTitle },
     ],
     (value) => value && designer.setFold(id, value)
   );
-  const why = el('p', { class: 'fd-properties-hint fd-fold-why', hidden: '' }, 'A group folds by its title. Give it a title to let it fold.');
-  const row = setting(el, 'content', 'Folds', [choice.element, why]);
+  const why = el('p', { class: 'fd-properties-hint fd-fold-why', hidden: '' }, w.foldsWhy);
+  const row = setting(el, 'content', 'Folds', [choice.element, why], { words: w.folds });
   return {
     rows: [row],
     update(page) {

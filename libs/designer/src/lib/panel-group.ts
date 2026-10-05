@@ -19,7 +19,8 @@ import { movers, type PropertiesView } from './screen-properties';
 
 export function groupProperties(el: ElementFactory, designer: Designer, id: string): PropertiesView {
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
-  const title = el('input', { class: 'fd-input', 'aria-label': 'Section title' });
+  const w = designer.words.panel;
+  const title = el('input', { class: 'fd-input', 'aria-label': w.sectionTitle });
   title.addEventListener('input', () => designer.renameContainer(id, title.value));
   const columns = columnsSetting(el, designer, id);
   const rows = rowsSetting(el, designer, id);
@@ -27,18 +28,18 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
   const width = widthSetting(el, designer, id);
   const style = groupStyleSetting(el, designer, id);
   const fold = foldSetting(el, designer, id);
-  const moves = movers(el, designer, id, ['Move up', 'Move down']);
-  const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, 'Delete section');
+  const moves = movers(el, designer, id, [w.moveUp, w.moveDown]);
+  const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.deleteSection);
   remove.addEventListener('click', () => designer.removeNode(id));
   // When it shows: rules on the fields outside it that hold one of a list, or yes or no.
   const when = conditionEditor(el, designer, id, 'group');
-  const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, 'Show only when…');
+  const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, w.showOnlyWhen);
   showWhen.addEventListener('click', () => when.start());
-  const noRules = el('p', { class: 'fd-properties-hint', hidden: '' }, 'Always. A rule needs a field outside it that holds one of a list, or yes or no.');
+  const noRules = el('p', { class: 'fd-properties-hint', hidden: '' }, w.noRulesGroup);
   const element = el(
     'div',
     { class: 'fd-props' },
-    setting(el, 'content', 'Title', title),
+    setting(el, 'content', 'Title', title, { words: w.title }),
     ...fold.rows,
     onTab(el('div', { class: 'fd-props-actions' }, ...moves.buttons, remove), 'content', 'Move or delete'),
     ...columns.rows,
@@ -46,7 +47,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
     ...labels.rows,
     ...width.rows,
     ...style.rows,
-    onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, 'When it shows'), when.element, showWhen, noRules), 'rules', 'When it shows')
+    onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, w.whenItShows), when.element, showWhen, noRules), 'rules', 'When it shows')
   );
   return {
     element,
@@ -69,7 +70,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
 
 /** Parts side by side: the columns they take, and how wide they are where they sit. */
 export function arrangementProperties(el: ElementFactory, designer: Designer, id: string): PropertiesView {
-  const columns = columnsSetting(el, designer, id, 'Columns');
+  const columns = columnsSetting(el, designer, id, designer.words.panel.columns);
   const width = widthSetting(el, designer, id);
   const element = el('div', { class: 'fd-props' }, ...columns.rows, ...width.rows);
   return {

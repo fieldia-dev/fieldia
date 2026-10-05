@@ -1,7 +1,7 @@
 import type { FieldNode, Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
-import { andList, locate } from './layout-tree';
+import { locate } from './layout-tree';
 import { segmented, setting } from './panel-controls';
 
 /**
@@ -16,18 +16,19 @@ type Choice = 'yes' | 'no' | 'as';
 export function severalRequired(el: ElementFactory, designer: Designer, ids: readonly string[]): { rows: HTMLElement[]; update(page: Page): void } {
   const page = designer.getPage();
   if (!ids.every((id) => locate(page, id)?.node.type === 'field')) return { rows: [], update: () => undefined };
+  const w = designer.words.panel;
   const choice = segmented<Choice>(
     el,
-    'Required',
+    w.required,
     [
-      { value: 'yes', words: 'Yes' },
-      { value: 'no', words: 'No' },
-      { value: 'as', words: 'As they are', title: 'Each as it is now' },
+      { value: 'yes', words: w.yes },
+      { value: 'no', words: w.no },
+      { value: 'as', words: w.asTheyAre, title: w.eachAsNow },
     ],
     (value) => value && value !== 'as' && designer.setEach([...ids], { required: value === 'yes' })
   );
   const hint = el('p', { class: 'fd-properties-hint fd-set-hint', hidden: '' });
-  const row = setting(el, 'rules', 'Required', choice.element, { hint });
+  const row = setting(el, 'rules', 'Required', choice.element, { hint, words: w.required });
   return {
     rows: [row],
     update(now) {
@@ -36,9 +37,9 @@ export function severalRequired(el: ElementFactory, designer: Designer, ids: rea
       const required = nodes.map((node) => now.fields[node.field]?.required === true || node.required === true);
       choice.set(required.every(Boolean) ? 'yes' : required.some(Boolean) ? 'as' : 'no');
       // The model's word stands: what it requires stays required, whatever is picked here.
-      const kept = nodes.filter((node) => designer.isFromModel(node.id) && now.fields[node.field]?.required === true).map((node) => `“${node.label ?? now.fields[node.field].label}”`);
+      const kept = nodes.filter((node) => designer.isFromModel(node.id) && now.fields[node.field]?.required === true).map((node) => designer.words.parts.quote(node.label ?? now.fields[node.field].label));
       hint.hidden = !kept.length;
-      hint.textContent = kept.length === 1 ? `${kept[0]} stays required: the model requires it.` : `${andList(kept)} stay required: the model requires them.`;
+      hint.textContent = w.staysRequired(kept);
     },
   };
 }

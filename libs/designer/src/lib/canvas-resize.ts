@@ -1,6 +1,8 @@
-import { MIN_WIDTH, SIZE_WORDS, sizeAt, type ScreenSize } from './canvas-size';
+import { MIN_WIDTH, sizeAt, type ScreenSize } from './canvas-size';
 import type { ElementFactory } from './chrome';
 import { setAttr, setText } from './writes';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * The canvas dragged to any width, as Designable's is: a handle on its end
@@ -40,6 +42,8 @@ export interface CanvasResizeOptions {
   reset(): void;
   /** Words for the live region. */
   say(words: string): void;
+  /** The designer's words. English unless given. */
+  words?: DesignerWords;
   /** Read off the page by default. */
   measure?(): CanvasMeasure;
 }
@@ -72,12 +76,13 @@ export function keyWidth(width: number, key: { key: string; shiftKey: boolean; a
 }
 
 /** The chip's words: "640 px · Tablet". */
-export const chipWords = (width: number, size: ScreenSize) => `${width} px · ${SIZE_WORDS[size]}`;
+export const chipWords = (width: number, size: ScreenSize, words: DesignerWords = en) => words.canvas.chip(width, words.canvas.sizes[size]);
 /** A screen reader's: "640 pixels, tablet". */
-export const valueWords = (width: number, size: ScreenSize) => `${width} pixels, ${size}`;
+export const valueWords = (width: number, size: ScreenSize, words: DesignerWords = en) => words.canvas.value(width, size);
 
 export function canvasResize(options: CanvasResizeOptions): CanvasResize {
   const { el, canvas } = options;
+  const words = options.words ?? en;
   const doc = canvas.ownerDocument;
   const view = doc.defaultView;
   /** Pixels of a computed style's properties, added up. */
@@ -99,10 +104,10 @@ export function canvasResize(options: CanvasResizeOptions): CanvasResize {
       class: 'fd-canvas-resize',
       role: 'separator',
       'aria-orientation': 'vertical',
-      'aria-label': 'Screen width',
+      'aria-label': words.canvas.screenWidth,
       'aria-valuemin': String(MIN_WIDTH),
       tabindex: '0',
-      title: 'Drag to change the width · double-click for the size’s own',
+      title: words.canvas.resizeTitle,
     },
     grip
   );
@@ -112,8 +117,8 @@ export function canvasResize(options: CanvasResizeOptions): CanvasResize {
   function show(width: number, room: number, size: ScreenSize) {
     setAttr(element, 'aria-valuenow', String(width));
     setAttr(element, 'aria-valuemax', String(Math.max(MIN_WIDTH, Math.round(room))));
-    setAttr(element, 'aria-valuetext', valueWords(width, size));
-    setText(chip, chipWords(width, size));
+    setAttr(element, 'aria-valuetext', valueWords(width, size, words));
+    setText(chip, chipWords(width, size, words));
   }
 
   // ---- the pointer ---------------------------------------------------------------
@@ -164,7 +169,7 @@ export function canvasResize(options: CanvasResizeOptions): CanvasResize {
       if (!commit || !moved) return;
       settle();
       options.change(width, size, true);
-      options.say(valueWords(width, size));
+      options.say(valueWords(width, size, words));
     };
     // Let go, or taken by the browser: the width shown is the one kept.
     const up = () => end(true);
@@ -189,7 +194,7 @@ export function canvasResize(options: CanvasResizeOptions): CanvasResize {
     const size = sizeAt(next - m.inset);
     show(next, m.room, size);
     options.change(next, size, true);
-    options.say(valueWords(next, size));
+    options.say(valueWords(next, size, words));
   };
 
   const onDouble = (event: MouseEvent) => {

@@ -1,5 +1,7 @@
 import { wideColumns, type FieldNode, type Page, type SectionNode } from '@fieldia/core';
-import { kindById, kindOfField } from './kinds';
+import type { DesignerWords } from './designer-words';
+import { kindById, kindName, kindOfField } from './kinds';
+import { en } from './locales/en';
 import { isWrapper, listOf, nameOf, type Part } from './layout-tree';
 import { columnId } from './list-commands';
 
@@ -41,25 +43,27 @@ export interface OutlineRow {
 const ruled = (invisible: unknown) => invisible !== undefined && invisible !== null && invisible !== false && invisible !== '';
 
 /** A group's columns at each size of screen, as the badge shows them and in words; nothing for one column. */
-function columnsBadge(section: SectionNode): Pick<OutlineRow, 'badge' | 'badgeWords'> {
+function columnsBadge(section: SectionNode, words: DesignerWords): Pick<OutlineRow, 'badge' | 'badgeWords'> {
   const columns = section.columns;
-  if (typeof columns !== 'object') return wideColumns(columns) > 1 ? { badge: String(columns), badgeWords: `${columns} columns, stacked on smaller screens as the skin does` } : {};
-  const at = (count: number | undefined, screen: string) => (count === undefined ? `${screen} as the skin stacks them` : `${screen} ${count}`);
-  return { badge: [columns.wide, columns.medium ?? '–', columns.narrow ?? '–'].join('·'), badgeWords: `Columns: ${at(columns.wide, 'desktop')}, ${at(columns.medium, 'tablet')}, ${at(columns.narrow, 'phone')}` };
+  const w = words.outline;
+  if (typeof columns !== 'object') return wideColumns(columns) > 1 ? { badge: String(columns), badgeWords: w.columnsStacked(columns as number) } : {};
+  return { badge: [columns.wide, columns.medium ?? '–', columns.narrow ?? '–'].join('·'), badgeWords: w.columnsAt(columns.wide, columns.medium, columns.narrow) };
 }
 
-const BLOCK_KINDS: Record<string, [kind: string, icon: string]> = {
-  divider: ['Line', 'divider'],
-  spacer: ['Room', 'spacer'],
-  image: ['Picture', 'image'],
-  button: ['Button', 'button'],
-  slot: ['Slot', 'group'],
-  form: ['Saved form', 'form'],
+type RowKinds = DesignerWords['outline']['kinds'];
+const BLOCK_KINDS: Record<string, [kind: keyof RowKinds, icon: string]> = {
+  divider: ['divider', 'divider'],
+  spacer: ['spacer', 'spacer'],
+  image: ['image', 'image'],
+  button: ['button', 'button'],
+  slot: ['slot', 'group'],
+  form: ['form', 'form'],
 };
-const TEXT_KINDS: Record<string, [kind: string, icon: string]> = { heading: ['Heading', 'heading'], note: ['Note', 'text'], paragraph: ['Words', 'text'] };
+const TEXT_KINDS: Record<string, [kind: keyof RowKinds, icon: string]> = { heading: ['heading', 'heading'], note: ['note', 'text'], paragraph: ['words', 'text'] };
 
 /** One part's row. */
-function rowOf(page: Page, node: Part, level: number, parent: string | null): OutlineRow {
+function rowOf(page: Page, node: Part, level: number, parent: string | null, words: DesignerWords): OutlineRow {
+  const w = words.outline.kinds;
   const kids = listOf(node);
   const base = { id: node.id, level, parent, holds: !!kids, children: kids?.length ?? 0, ruled: ruled((node as { invisible?: unknown }).invisible), required: false, movable: true };
   switch (node.type) {
@@ -67,51 +71,52 @@ function rowOf(page: Page, node: Part, level: number, parent: string | null): Ou
       const def = page.fields[node.field];
       const kind = def ? kindOfField(def, node) : null;
       const required = def?.required === true || (node as FieldNode).required === true;
-      return { ...base, label: nameOf(page, node), kind: kind ? kindById(kind).label : 'Custom', icon: kind ?? 'short-answer', required };
+      return { ...base, label: nameOf(page, node, words), kind: kind ? kindName(kindById(kind), words) : w.custom, icon: kind ?? 'short-answer', required };
     }
     case 'section': {
       const section: SectionNode = node;
       // Asked of the part as it is: a guard that says no would leave no section to read.
-      if (isWrapper(section as unknown)) return { ...base, label: nameOf(page, section), kind: 'Side by side', icon: 'side', block: true, ...columnsBadge(section) };
-      return { ...base, label: section.title || 'Untitled section', kind: 'Group', icon: 'section', ...columnsBadge(section) };
+      if (isWrapper(section as unknown)) return { ...base, label: nameOf(page, section, words), kind: w.sideBySide, icon: 'side', block: true, ...columnsBadge(section, words) };
+      return { ...base, label: section.title || words.parts.untitledSection, kind: w.group, icon: 'section', ...columnsBadge(section, words) };
     }
     case 'tabs':
-      return { ...base, label: 'Tabs', kind: `${node.children.length} tab${node.children.length === 1 ? '' : 's'}`, icon: 'tabs' };
+      return { ...base, label: w.tabs, kind: w.tabCount(node.children.length), icon: 'tabs' };
     case 'tab':
-      return { ...base, label: node.label || 'Untitled tab', kind: 'Tab', icon: 'tabs', block: true };
+      return { ...base, label: node.label || w.untitledTab, kind: w.tab, icon: 'tabs', block: true };
     case 'text': {
       const [kind, icon] = TEXT_KINDS[node.style ?? 'paragraph'] ?? TEXT_KINDS['paragraph'];
-      return { ...base, label: nameOf(page, node), kind, icon, block: true };
+      return { ...base, label: nameOf(page, node, words), kind: w[kind] as string, icon, block: true };
     }
     default: {
-      const [kind, icon] = BLOCK_KINDS[node.type] ?? ['Part', 'group'];
-      return { ...base, label: nameOf(page, node), kind, icon, block: true };
+      const [kind, icon] = BLOCK_KINDS[node.type] ?? ['part', 'group'];
+      return { ...base, label: nameOf(page, node, words), kind: w[kind] as string, icon, block: true };
     }
   }
 }
 
 /** The page as rows of a tree, in reading order. */
-export function outlineRows(page: Page): OutlineRow[] {
+export function outlineRows(page: Page, words: DesignerWords = en): OutlineRow[] {
+  const w = words.outline.kinds;
   const root = page.layout;
   const rows: OutlineRow[] = [];
   const fixed = (id: string, label: string, kind: string, icon: string, invisible?: unknown, block = false): OutlineRow => ({ id, label, kind, level: 0, icon, block, parent: null, holds: false, children: 0, ruled: ruled(invisible), required: false, movable: false });
-  if (root.type === 'list') return root.columns.map((name) => fixed(columnId(name), page.fields[name]?.label ?? name, 'Column', 'lines'));
+  if (root.type === 'list') return root.columns.map((name) => fixed(columnId(name), page.fields[name]?.label ?? name, w.column, 'lines'));
   if (root.type === 'wizard') {
     for (const step of root.children) {
-      rows.push({ id: step.id, label: step.label || 'Untitled page', kind: 'Page', level: 0, icon: 'section', parent: null, holds: true, children: step.children.length, ruled: ruled(step.invisible), required: false, movable: true });
+      rows.push({ id: step.id, label: step.label || w.untitledPage, kind: w.page, level: 0, icon: 'section', parent: null, holds: true, children: step.children.length, ruled: ruled(step.invisible), required: false, movable: true });
       for (const node of step.children) walk(node, 1, step.id);
     }
     return rows;
   }
   if (root.type === 'sheet') {
     // The header's parts: picked from here, moved along their own row on the canvas.
-    if (root.statusbar) rows.push(fixed('#statusbar', 'Status steps', page.fields[root.statusbar.field]?.label ?? 'Status', 'status'));
-    for (const part of root.buttons ?? []) rows.push(fixed(part.id, part.label, 'Button', 'button', part.invisible, true));
-    for (const part of root.statButtons ?? []) rows.push(fixed(part.id, part.label, 'Counter', 'number', part.invisible));
-    for (const part of root.badges ?? []) rows.push(fixed(part.id, part.label, 'Badge', 'keywords', part.invisible));
+    if (root.statusbar) rows.push(fixed('#statusbar', w.statusSteps, page.fields[root.statusbar.field]?.label ?? w.status, 'status'));
+    for (const part of root.buttons ?? []) rows.push(fixed(part.id, part.label, w.button, 'button', part.invisible, true));
+    for (const part of root.statButtons ?? []) rows.push(fixed(part.id, part.label, w.counter, 'number', part.invisible));
+    for (const part of root.badges ?? []) rows.push(fixed(part.id, part.label, w.badge, 'keywords', part.invisible));
   }
   function walk(node: Part, level: number, parent: string | null) {
-    rows.push(rowOf(page, node, level, parent));
+    rows.push(rowOf(page, node, level, parent, words));
     for (const child of listOf(node) ?? []) walk(child, level + 1, node.id);
   }
   for (const node of (root as { children?: Part[] }).children ?? []) walk(node, 0, null);

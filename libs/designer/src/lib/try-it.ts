@@ -1,4 +1,4 @@
-import { createMemoryDataSource, scoreOf, type DataSource, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, isRightToLeft, scoreOf, type DataSource, type Page, type Values } from '@fieldia/core';
 import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
@@ -6,6 +6,7 @@ import type { Designer } from './designer';
 import type { FindItem } from './find-anything';
 import { designerIcon } from './icons';
 import { sampleRows } from './samples';
+import { pageLanguage } from './translations';
 import { tryLanguage } from './try-language';
 import { tryDrawer } from './try-drawer';
 
@@ -54,27 +55,30 @@ function madeUp(page: Page): Record<string, Record<string, Values>> {
 
 export function tryIt(options: TryItOptions): TryIt {
   const { el, doc, designer } = options;
+  const w = designer.words.tryIt;
   const modeButton = (mode: string, words: string, icon: string) =>
     el('button', { type: 'button', class: 'fd-mode-button', 'data-mode': mode, 'aria-pressed': 'false' }, designerIcon(doc, icon), words);
-  const design = modeButton('design', 'Design', 'edit');
-  const tryButton = modeButton('try', 'Try it', 'play');
-  const toggle = el('div', { class: 'fd-mode', role: 'group', 'aria-label': 'Design or try the page' }, design, tryButton);
+  const design = modeButton('design', w.design, 'edit');
+  const tryButton = modeButton('try', w.tryIt, 'play');
+  const toggle = el('div', { class: 'fd-mode', role: 'group', 'aria-label': w.modes }, design, tryButton);
 
   const control = (name: string, words: string, icon?: string) =>
     el('button', { type: 'button', class: 'fd-try-button', 'data-try': name, 'aria-pressed': 'false', title: words, ...(icon ? { 'aria-label': words } : {}) }, ...(icon ? [designerIcon(doc, icon)] : [words]));
-  const widths: Record<Width, HTMLButtonElement> = { desktop: control('desktop', 'Desktop', 'desktop'), tablet: control('tablet', 'Tablet', 'tablet'), phone: control('phone', 'Phone', 'device') };
+  const widths: Record<Width, HTMLButtonElement> = { desktop: control('desktop', w.sizes.desktop, 'desktop'), tablet: control('tablet', w.sizes.tablet, 'tablet'), phone: control('phone', w.sizes.phone, 'device') };
   const directions: Record<Direction, HTMLButtonElement> = { ltr: control('ltr', 'English'), rtl: control('rtl', 'العربية') };
+  // Each language by its own name, in its own language: a person finds theirs whatever the designer speaks.
+  directions.ltr.setAttribute('lang', 'en');
   directions.rtl.setAttribute('lang', 'ar');
   const frame = el('div', { class: 'fd-try-frame', 'data-width': 'desktop' });
   const element = el(
     'section',
-    { class: 'fd-try', 'aria-label': 'Try the page', hidden: '' },
+    { class: 'fd-try', 'aria-label': w.tryThePage, hidden: '' },
     el(
       'div',
       { class: 'fd-try-bar' },
-      el('div', { class: 'fd-try-group', role: 'group', 'aria-label': 'Width' }, ...Object.values(widths)),
-      el('p', { class: 'fd-try-note' }, 'The page works as people will use it. Nothing typed here is kept.'),
-      el('div', { class: 'fd-try-group', role: 'group', 'aria-label': 'Language' }, ...Object.values(directions))
+      el('div', { class: 'fd-try-group', role: 'group', 'aria-label': w.width }, ...Object.values(widths)),
+      el('p', { class: 'fd-try-note' }, w.note),
+      el('div', { class: 'fd-try-group', role: 'group', 'aria-label': w.language }, ...Object.values(directions))
     ),
     frame
   );
@@ -83,6 +87,8 @@ export function tryIt(options: TryItOptions): TryIt {
   let trying = false;
   let width: Width = 'desktop';
   let direction: Direction = 'ltr';
+  /** Whether a direction was pressed: until one is, the page is tried the way its own language runs. */
+  let pressed = false;
   let viewer: ViewerHandle | null = null;
 
   function draw() {
@@ -109,7 +115,7 @@ export function tryIt(options: TryItOptions): TryIt {
       widgets: options.widgets,
       ...language.viewerOptions(direction),
     });
-    tryDrawer(el, frame, viewer);
+    tryDrawer(el, frame, viewer, designer.words);
   }
   /** "Score: 3 of 5": the points of the questions that were asked, out of the most they could earn. */
   function showScore(page: Page, values: Values) {
@@ -131,6 +137,7 @@ export function tryIt(options: TryItOptions): TryIt {
   function set(next: boolean) {
     if (next === trying) return;
     trying = next;
+    if (trying && !pressed) direction = isRightToLeft(pageLanguage(designer.getPage())) ? 'rtl' : 'ltr';
     show();
     draw();
     options.onChange(trying);
@@ -147,6 +154,7 @@ export function tryIt(options: TryItOptions): TryIt {
   for (const [name, button] of Object.entries(directions)) {
     button.addEventListener('click', () => {
       direction = name as Direction;
+      pressed = true;
       show();
       draw();
     });
@@ -161,20 +169,20 @@ export function tryIt(options: TryItOptions): TryIt {
     },
     start: () => set(true),
     items() {
-      if (trying) return [{ label: 'Back to designing', hint: 'Design', run: () => design.click() }];
+      if (trying) return [{ label: w.backToDesigning, hint: w.design, run: () => design.click() }];
       return [
-        { label: 'Try it', hint: 'as people will use it', run: () => tryButton.click() },
+        { label: w.tryIt, hint: w.asPeopleWillUseIt, run: () => tryButton.click() },
         {
-          label: 'Try it at a phone’s width',
-          hint: 'Try it',
+          label: w.atPhoneWidth,
+          hint: w.tryIt,
           run: () => {
             tryButton.click();
             widths.phone.click();
           },
         },
         {
-          label: 'Try it in Arabic, right to left',
-          hint: 'Try it',
+          label: w.inArabic,
+          hint: w.tryIt,
           run: () => {
             tryButton.click();
             directions.rtl.click();

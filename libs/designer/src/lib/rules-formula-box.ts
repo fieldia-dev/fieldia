@@ -1,6 +1,7 @@
 import type { Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { formulaPieces, problemWords, type FormulaProblem } from './rules-formula';
+import type { DesignerWords } from './designer-words';
 
 /**
  * A box to type a formula in, the way a person writes one: typing a field's
@@ -18,6 +19,8 @@ import { formulaPieces, problemWords, type FormulaProblem } from './rules-formul
  */
 
 export interface FormulaBoxOptions {
+  /** The designer's words. */
+  words: DesignerWords;
   label: string;
   placeholder?: string;
   /** The field it is about, left out of the suggestions. */
@@ -73,7 +76,7 @@ export function formulaBox(el: ElementFactory, options: FormulaBoxOptions): Form
     placeholder: options.placeholder ?? '',
     'aria-describedby': `${id}-words`,
   }) as HTMLInputElement;
-  const list = el('div', { class: 'fd-formula-suggest', role: 'listbox', id: `${id}-list`, 'aria-label': 'Fields', hidden: '' });
+  const list = el('div', { class: 'fd-formula-suggest', role: 'listbox', id: `${id}-list`, 'aria-label': options.words.rulesUi.fields, hidden: '' });
   // The formula in words, above the box it is about.
   const reads = el('p', { class: 'fd-formula-reads', id: `${id}-words`, hidden: '' });
   const element = el('div', { class: 'fd-formula' }, reads, input, list);
@@ -160,7 +163,7 @@ export function formulaBox(el: ElementFactory, options: FormulaBoxOptions): Form
     // While a name is being picked, the half-typed name is not yet wrong.
     problem.hidden = !wrong || !list.hidden;
     if (!wrong) return;
-    words.textContent = problemWords(wrong);
+    words.textContent = problemWords(wrong, options.words);
     if (wrong.from === undefined) {
       copy.hidden = true;
       return;
@@ -173,10 +176,10 @@ export function formulaBox(el: ElementFactory, options: FormulaBoxOptions): Form
   /** What the formula reads as, and gives: shown only where there is something to say. */
   function say(on: Page, source: string) {
     // In words only when the words are not the formula as it is written: `120` reads as itself.
-    const pieces = source ? formulaPieces(on, source) : [];
+    const pieces = source ? formulaPieces(on, source, options.words) : [];
     reads.replaceChildren(
       ...(pieces.some((piece) => piece.text !== piece.was)
-        ? ['Reads: ', ...pieces.flatMap((piece) => [...(piece.space ? [' '] : []), piece.field ? el('span', { class: 'fd-formula-name' }, piece.text) : piece.text])]
+        ? [options.words.rulesUi.reads, ...pieces.flatMap((piece) => [...(piece.space ? [' '] : []), piece.field ? el('span', { class: 'fd-formula-name' }, piece.text) : piece.text])]
         : [])
     );
     reads.hidden = !reads.textContent;

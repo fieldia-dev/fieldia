@@ -47,7 +47,7 @@ export function blockViews(options: { el: ElementFactory; doc: Document; designe
       case 'divider':
         return el('hr', { class: 'fd-divider fd-canvas-block', 'data-node': id });
       case 'spacer':
-        return el('div', { class: 'fd-block fd-spacer fd-canvas-block', 'data-node': id, 'aria-label': 'Empty room' });
+        return el('div', { class: 'fd-block fd-spacer fd-canvas-block', 'data-node': id, 'aria-label': designer.words.canvas.emptyRoom });
       case 'image':
         return el('img', { class: 'fd-block fd-image fd-canvas-block', 'data-node': id, alt: '' });
       case 'slot':

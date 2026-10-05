@@ -70,13 +70,13 @@ export interface HeaderContext {
 export function headerCommands(context: HeaderContext): HeaderCommands {
   const { apply, model } = context;
   const sheetOf = (draft: Page): SheetNode => {
-    if (draft.layout.type !== 'sheet') throw new Refusal('Only a record sheet has a header');
+    if (draft.layout.type !== 'sheet') throw new Refusal((w) => w.refusals.onlySheetHeader);
     return draft.layout;
   };
   /** A field the page has, or the model's, put on the page as the model has it. */
   const fieldFor = (draft: Page, name: string): Field => {
     const own = draft.fields[name] ?? model[name];
-    if (!own) throw new Refusal(`There is no field "${name}"`);
+    if (!own) throw new Refusal((w) => w.refusals.noField(name));
     draft.fields[name] = own;
     return own;
   };
@@ -87,7 +87,7 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
   };
   const partOf = (draft: Page, id: string) => {
     const found = findHeaderPart(draft, id);
-    if (!found) throw new Refusal(`There is no button, counter or badge "${id}"`);
+    if (!found) throw new Refusal((w) => w.refusals.noHeaderPart(id));
     return found;
   };
 
@@ -101,7 +101,7 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
           return;
         }
         const def = fieldFor(draft, field);
-        if (def.type !== 'selection' || def.multiple) throw new Refusal(`Status steps show a field that holds one of a list; ${def.label} holds ${storedAs(def)}`);
+        if (def.type !== 'selection' || def.multiple) throw new Refusal((w) => w.refusals.statusOneOfList(def.label, storedAs(def, w)));
         const kept = root.statusbar?.field === field ? root.statusbar : undefined;
         root.statusbar = { ...kept, field, ...options };
         if (root.statusbar.clickable === false) delete root.statusbar.clickable;
@@ -115,7 +115,7 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
       const words = label.trim();
       const ok = apply((draft) => {
         const root = sheetOf(draft);
-        if (!words) throw new Refusal('A button, a counter or a badge needs words');
+        if (!words) throw new Refusal((w) => w.refusals.headerNeedsWords);
         const ids = allIds(draft);
         created = nextName((id) => ids.has(id), kind, '-');
         if (kind === 'button') root.buttons = [...(root.buttons ?? []), { type: 'button', id: created, label: words, action: actionName(words) }];
@@ -134,29 +134,29 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
           const { kind, part } = partOf(draft, id);
           if (patch.label !== undefined) part.label = patch.label;
           if (patch.action !== undefined) {
-            if (kind === 'badge') throw new Refusal('A badge has no action');
-            if (!patch.action.trim()) throw new Refusal(`A ${kind === 'stat' ? 'counter' : 'button'} needs the name of its action, such as ${kind === 'stat' ? 'open_invoices' : 'confirm'}`);
+            if (kind === 'badge') throw new Refusal((w) => w.refusals.badgeNoAction);
+            if (!patch.action.trim()) throw new Refusal((w) => (kind === 'stat' ? w.refusals.counterAction : w.refusals.buttonAction));
             (part as ButtonNode | StatButton).action = patch.action.trim();
           }
           if (patch.style !== undefined) {
-            if (kind !== 'button') throw new Refusal('Only a button has a style');
+            if (kind !== 'button') throw new Refusal((w) => w.refusals.onlyButtonStyle);
             (part as ButtonNode).style = patch.style;
           }
           if (patch.confirm !== undefined) {
-            if (kind !== 'button') throw new Refusal('Only a button asks before it acts');
+            if (kind !== 'button') throw new Refusal((w) => w.refusals.onlyButtonAsks);
             if (patch.confirm.trim()) (part as ButtonNode).confirm = patch.confirm;
             else delete (part as ButtonNode).confirm;
           }
           if (patch.tone !== undefined) {
-            if (kind !== 'badge') throw new Refusal('Only a badge has a tone');
+            if (kind !== 'badge') throw new Refusal((w) => w.refusals.onlyBadgeTone);
             (part as Badge).tone = patch.tone;
           }
           if (patch.field !== undefined) {
-            if (kind !== 'stat') throw new Refusal('Only a counter shows a field');
+            if (kind !== 'stat') throw new Refusal((w) => w.refusals.onlyCounterField);
             if (!patch.field) delete (part as StatButton).field;
             else {
               const def = fieldFor(draft, patch.field);
-              if (!['integer', 'float', 'monetary'].includes(def.type)) throw new Refusal(`A counter shows a number; ${def.label} holds ${storedAs(def)}`);
+              if (!['integer', 'float', 'monetary'].includes(def.type)) throw new Refusal((w) => w.refusals.counterNumber(def.label, storedAs(def, w)));
               (part as StatButton).field = patch.field;
             }
             prune(draft);
@@ -174,7 +174,7 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
       return apply((draft) => {
         const { list, index } = partOf(draft, id);
         const to = index + delta;
-        if (to < 0 || to >= list.length) throw new Refusal('It cannot move further');
+        if (to < 0 || to >= list.length) throw new Refusal((w) => w.refusals.cannotMoveFurther);
         const [moved] = list.splice(index, 1);
         list.splice(to, 0, moved);
       });

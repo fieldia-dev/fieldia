@@ -2,6 +2,7 @@ import type { Field, FieldNode, Page } from '@fieldia/core';
 import { kindOfField } from './kinds';
 import { findNode } from './page-tree';
 import { Refusal } from './refusal';
+import type { DesignerWords } from './designer-words';
 
 /**
  * The edits the choice kinds need beyond their options' words: an option
@@ -15,6 +16,8 @@ export interface ChoiceCommandsDeps {
   apply(edit: (draft: Page) => void, merge?: string | null): boolean;
   /** Whether a field is the backend's, whose definition the page does not change. */
   fromModel(name: string): boolean;
+  /** The designer's words, for an option it writes. */
+  words: DesignerWords;
 }
 
 /** The largest picture an option takes, as uploaded: 5 MB. */
@@ -35,38 +38,41 @@ export interface ChoiceCommands {
   setYesNoLook(id: string, look: 'buttons' | 'switch'): boolean;
 }
 
-const megabytes = (bytes: number) => `${Math.round((bytes / 1024 / 1024) * 10) / 10} MB`;
+const megabytes = (bytes: number) => Math.round((bytes / 1024 / 1024) * 10) / 10;
 
-export function choiceCommands({ apply, fromModel }: ChoiceCommandsDeps): ChoiceCommands {
+/** What the model keeps of a field, in words: "The options of Status come from the model". */
+type Owned = (w: DesignerWords, label: string) => string;
+
+export function choiceCommands({ apply, fromModel, words }: ChoiceCommandsDeps): ChoiceCommands {
   /** The question's node and its field, when the field is the page's own to change. */
-  function question(draft: Page, id: string, owned: string): { node: FieldNode; field: Field } {
+  function question(draft: Page, id: string, owned: Owned): { node: FieldNode; field: Field } {
     const found = findNode(draft, id);
-    if (!found || found.node.type !== 'field') throw new Refusal(`There is no question "${id}"`);
+    if (!found || found.node.type !== 'field') throw new Refusal((w) => w.refusals.noQuestion(id));
     const field = draft.fields[found.node.field];
-    if (fromModel(found.node.field)) throw new Refusal(`${owned} of ${field.label} comes from the model`);
+    if (fromModel(found.node.field)) throw new Refusal((w) => owned(w, field.label));
     return { node: found.node, field };
   }
-  const choice = (draft: Page, id: string, owned: string) => {
+  const choice = (draft: Page, id: string, owned: Owned) => {
     const { node, field } = question(draft, id, owned);
-    if (field.type !== 'selection') throw new Refusal('Only a question with options has these');
+    if (field.type !== 'selection') throw new Refusal((w) => w.refusals.onlyOptions);
     return { node, field };
   };
 
   return {
     moveOption(id, from, to) {
       return apply((draft) => {
-        const { field } = choice(draft, id, 'The order of the options');
-        if (!field.options[from] || to < 0 || to >= field.options.length) throw new Refusal('An option moves among the others');
+        const { field } = choice(draft, id, (w, label) => w.refusals.orderFromModel(label));
+        if (!field.options[from] || to < 0 || to >= field.options.length) throw new Refusal((w) => w.refusals.optionMoves);
         const [option] = field.options.splice(from, 1);
         field.options.splice(to, 0, option);
       });
     },
 
-    addNoneOption(id, label = 'None of these') {
+    addNoneOption(id, label = words.defaults.noneOfThese) {
       return apply((draft) => {
-        const { node, field } = choice(draft, id, 'The options');
-        if (!field.multiple || kindOfField(field, node) !== 'checkboxes') throw new Refusal('Only checkboxes take “None of these”');
-        if (field.options.some((o) => o.exclusive)) throw new Refusal(`${field.label} has an option that goes alone already`);
+        const { node, field } = choice(draft, id, (w, label) => w.refusals.theOptionsFromModel(label));
+        if (!field.multiple || kindOfField(field, node) !== 'checkboxes') throw new Refusal((w) => w.refusals.onlyCheckboxesNone);
+        if (field.options.some((o) => o.exclusive)) throw new Refusal((w) => w.refusals.goesAloneAlready(field.label));
         const values = new Set(field.options.map((o) => String(o.value)));
         let value = 'none';
         for (let n = 2; values.has(value); n++) value = `none_${n}`;
@@ -76,19 +82,19 @@ export function choiceCommands({ apply, fromModel }: ChoiceCommandsDeps): Choice
 
     setOptionPicture(id, index, { src, bytes }) {
       return apply((draft) => {
-        const { field } = choice(draft, id, 'The pictures');
+        const { field } = choice(draft, id, (w, label) => w.refusals.picturesFromModel(label));
         const option = field.options[index];
-        if (!option) throw new Refusal(`There is no option ${index + 1}`);
-        if (bytes > LARGEST_PICTURE) throw new Refusal(`A picture is 5 MB at most: this one is ${megabytes(bytes)}`);
-        if (!src.startsWith('data:image/')) throw new Refusal('That file is not a picture');
+        if (!option) throw new Refusal((w) => w.refusals.noOption(index + 1));
+        if (bytes > LARGEST_PICTURE) throw new Refusal((w) => w.refusals.pictureTooBig(w.refusals.megabytes(megabytes(bytes))));
+        if (!src.startsWith('data:image/')) throw new Refusal((w) => w.refusals.notAPicture);
         option.image = src;
       });
     },
 
     setOwnAnswers(id, on) {
       return apply((draft) => {
-        const { node, field } = choice(draft, id, 'Whether people add their own');
-        if (kindOfField(field, node) !== 'tags') throw new Refusal('Only tags take answers of one’s own');
+        const { node, field } = choice(draft, id, (w, label) => w.refusals.ownAnswersFromModel(label));
+        if (kindOfField(field, node) !== 'tags') throw new Refusal((w) => w.refusals.onlyTagsOwn);
         if (on) field.ownAnswers = true;
         else delete field.ownAnswers;
       });
@@ -96,8 +102,8 @@ export function choiceCommands({ apply, fromModel }: ChoiceCommandsDeps): Choice
 
     setOnePerColumn(id, on) {
       return apply((draft) => {
-        const { field } = question(draft, id, 'How the columns are taken');
-        if (field.type !== 'matrix') throw new Refusal('Only a matrix has columns to take once');
+        const { field } = question(draft, id, (w, label) => w.refusals.columnsTakenFromModel(label));
+        if (field.type !== 'matrix') throw new Refusal((w) => w.refusals.onlyMatrixOnce);
         if (on) field.onePerColumn = true;
         else delete field.onePerColumn;
       });
@@ -106,7 +112,7 @@ export function choiceCommands({ apply, fromModel }: ChoiceCommandsDeps): Choice
     setYesNoLook(id, look) {
       return apply((draft) => {
         const found = findNode(draft, id);
-        if (!found || found.node.type !== 'field' || draft.fields[found.node.field].type !== 'boolean' || found.node.widget === 'tick') throw new Refusal('Only a yes or no shows as buttons or a switch');
+        if (!found || found.node.type !== 'field' || draft.fields[found.node.field].type !== 'boolean' || found.node.widget === 'tick') throw new Refusal((w) => w.refusals.onlyYesNoLook);
         const node = found.node;
         const field = draft.fields[node.field];
         node.widget = look === 'buttons' ? 'buttons' : 'toggle';

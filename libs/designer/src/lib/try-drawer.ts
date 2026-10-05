@@ -1,6 +1,8 @@
 import type { FieldNode, FormState, LayoutNode, Page } from '@fieldia/core';
 import type { ViewerHandle } from '@fieldia/viewer';
 import type { ElementFactory } from './chrome';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * Under the page being tried, a drawer with what the form holds as it is
@@ -38,7 +40,8 @@ function shownFields(page: Page): string[] {
   return names;
 }
 
-export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: ViewerHandle): HTMLElement | null {
+export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: ViewerHandle, words: DesignerWords = en): HTMLElement | null {
+  const w = words.tryIt;
   const doc = frame.ownerDocument;
   const form = viewer.form;
   const page = form.page;
@@ -52,22 +55,22 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
   const id = `fd-try-drawer-${++drawers}`;
   // Two buttons that each open their part of the drawer, the open one folding it: no tabs, so the page tried keeps the only tabs here.
   const tab = (name: Tab, words: string) => el('button', { type: 'button', class: 'fd-try-tab', id: `${id}-${name}`, 'aria-controls': `${id}-${name}-panel` }, words);
-  const tabs: Record<Tab, HTMLButtonElement> = { data: tab('data', 'Data'), problems: tab('problems', 'Problems') };
+  const tabs: Record<Tab, HTMLButtonElement> = { data: tab('data', w.data), problems: tab('problems', w.problems) };
   const count = el('span', { class: 'fd-try-count' });
   tabs.problems.append(' ', count);
   const said = el('span', { class: 'fd-try-said', role: 'status' });
-  const copy = el('button', { type: 'button', class: 'fd-button fd-button-link fd-try-copy' }, 'Copy data');
+  const copy = el('button', { type: 'button', class: 'fd-button fd-button-link fd-try-copy' }, w.copyData);
   const fold = el('button', { type: 'button', class: 'fd-button fd-button-link fd-try-fold', 'aria-controls': `${id}-panels` });
-  const data = el('pre', { class: 'fd-try-data', tabindex: '0', 'aria-label': 'The answers as JSON' });
+  const data = el('pre', { class: 'fd-try-data', tabindex: '0', 'aria-label': w.answersAsJson });
   const list = el('ul', { class: 'fd-try-problems' });
-  const none = el('p', { class: 'fd-try-none' }, 'Nothing stands in the way of sending this.');
+  const none = el('p', { class: 'fd-try-none' }, w.nothingInTheWay);
   const panels: Record<Tab, HTMLElement> = {
     data: el('div', { class: 'fd-try-panel', role: 'region', id: `${id}-data-panel`, 'aria-labelledby': `${id}-data` }, data),
     problems: el('div', { class: 'fd-try-panel', role: 'region', id: `${id}-problems-panel`, 'aria-labelledby': `${id}-problems` }, list, none),
   };
   const drawer = el(
     'section',
-    { class: 'fd-try-drawer', 'aria-label': 'Data and problems' },
+    { class: 'fd-try-drawer', 'aria-label': w.drawer },
     el('div', { class: 'fd-try-drawer-bar' }, el('div', { class: 'fd-try-tabs' }, tabs.data, tabs.problems), said, copy, fold),
     el('div', { class: 'fd-try-panels', id: `${id}-panels` }, panels.data, panels.problems)
   );
@@ -78,7 +81,7 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
       panels[name].hidden = name !== mine.tab;
     }
     (drawer.querySelector('.fd-try-panels') as HTMLElement).hidden = mine.folded;
-    fold.textContent = mine.folded ? 'Show' : 'Hide';
+    fold.textContent = mine.folded ? w.show : w.hide;
     fold.setAttribute('aria-expanded', String(!mine.folded));
   }
 
@@ -134,7 +137,7 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
   copy.addEventListener('click', async () => {
     try {
       await (doc.defaultView?.navigator as Navigator).clipboard.writeText(JSON.stringify(form.getState().values, null, 2));
-      said.textContent = 'Copied.';
+      said.textContent = w.copied;
     } catch {
       // No clipboard to write to: the data selected, for the person to copy.
       mine.tab = 'data';
@@ -142,7 +145,7 @@ export function tryDrawer(el: ElementFactory, frame: HTMLElement, viewer: Viewer
       show();
       draw(form.getState());
       doc.getSelection()?.selectAllChildren(data);
-      said.textContent = 'Selected: copy it with the keyboard.';
+      said.textContent = w.selected;
     }
   });
 
