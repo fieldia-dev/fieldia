@@ -147,8 +147,9 @@ test.describe('the new kinds in the viewer', () => {
     await address.getByLabel('Street address').fill('12 Nile Street');
     await address.getByLabel('City').fill('Cairo');
     await address.getByLabel('Postcode').fill('11511');
-    await expect(address.getByLabel('Country')).toHaveCount(0);
-    expect(await valueOf(page, 'badge_address')).toEqual({ street: '12 Nile Street', city: 'Cairo', postcode: '11511' });
+    // The country it starts on, kept with what was typed.
+    await expect(address.getByLabel('Country')).toHaveValue('EG');
+    expect(await valueOf(page, 'badge_address')).toEqual({ street: '12 Nile Street', city: 'Cairo', postcode: '11511', country: 'EG' });
     await screen(page, 'kinds-address', { viewport: true });
   });
 
@@ -326,7 +327,7 @@ test.describe('the new kinds in the survey designer', () => {
     await screen(page, 'kinds-designer-picture-settings', { viewport: true });
 
     await tool('address');
-    await picked(page).locator('.fd-inline-chip', { hasText: 'Country' }).click();
+    await picked(page).getByRole('group', { name: 'Parts of the address' }).getByRole('button', { name: 'Country' }).click();
     await expect(picked(page).locator('.fd-q-answer .fd-q-preview-part')).toHaveText(['Street address', 'City', 'Postcode']);
 
     await tool('slider');
