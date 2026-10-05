@@ -340,7 +340,8 @@ export const DESIGNER_CSS = /* css */ `
   font: inherit; font-size: 13.5px; color: var(--fd-text); background: none; border: 0; border-bottom: 1px solid var(--fd-border-strong);
   border-radius: 0; box-shadow: none; padding: 2px 0; min-height: 0;
 }
-.fd-inline-select { padding-inline-end: 2px; cursor: pointer; }
+/* As tall as a finger needs (WCAG 2.5.8), however close the next setting sits. */
+.fd-inline-select { padding-inline-end: 2px; cursor: pointer; min-height: 24px; }
 .fd-inline-input { width: 12ch; }
 .fd-inline-currency { width: 4.5ch; text-transform: uppercase; }
 .fd-designer .fd-inline-select:focus-visible, .fd-designer .fd-inline-input:focus-visible, .fd-designer .fd-inline-settings .fd-column > .fd-input:focus-visible { outline: none; }

@@ -161,9 +161,9 @@ test.describe('the panel', () => {
     await expect(panel(page).getByRole('tab')).toHaveText(['Layout', 'Rules']);
     await check(page, 'several');
     await choice(page, 'Width', 'All 2 columns').click();
-    await expect.poll(async () => (await layout(page))[0]).toEqual(['Customer:2', 'Visit date:2', 'Notes:2']);
+    await expect.poll(async () => (await layout(page))[0]).toEqual(['Customer:2', 'Visit date:2', 'Notes:2', 'Photos:2']);
     await page.keyboard.press('ControlOrMeta+z');
-    await expect.poll(async () => (await layout(page))[0]).toEqual(['Customer:1', 'Visit date:1', 'Notes:2']);
+    await expect.poll(async () => (await layout(page))[0]).toEqual(['Customer:1', 'Visit date:1', 'Notes:2', 'Photos:2']);
     expect(problems).toEqual([]);
   });
 

@@ -80,7 +80,7 @@
     "salary": { "type": "monetary", "label": "Monthly salary", "currency": "EGP", "min": 0 },
     "id_doc": { "type": "binary", "label": "ID or passport", "required": true },
     "contract_doc": { "type": "binary", "label": "Signed contract" },
-    "certificates": { "type": "binary", "label": "Certificates", "help": "PDF or images, up to 10 MB each." },
+    "certificates": { "type": "binary", "label": "Certificates", "accept": ["application/pdf", "image/*"], "maxSize": 10485760, "multiple": true, "maxFiles": 5 },
     "bank_name": { "type": "char", "label": "Bank" },
     "pay_currency": {
       "type": "selection",
@@ -299,7 +299,6 @@
       "ID or passport": "البطاقة أو جواز السفر",
       "Signed contract": "العقد الموقع",
       "Certificates": "الشهادات",
-      "PDF or images, up to 10 MB each.": "ملفات PDF أو صور، حتى 10 ميجابايت لكل ملف.",
       "Pay": "الراتب",
       "Bank account": "الحساب البنكي",
       "Bank": "البنك",

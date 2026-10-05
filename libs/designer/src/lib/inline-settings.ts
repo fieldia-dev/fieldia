@@ -1,4 +1,4 @@
-import type { FieldNode, Page } from '@fieldia/core';
+import { formatBytes, type FieldNode, type Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { columnsEditor } from './columns-editor';
 import type { Designer } from './designer';
@@ -103,8 +103,8 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
         const def = page.fields[node.field];
         if (!focused(target)) target.value = 'relation' in def ? def.relation : '';
       };
-    } else if (kind === 'file') {
-      // Which kinds of file it takes — none picked, any — and the largest.
+    } else if (kind === 'file' || kind === 'image') {
+      // Which kinds of file it takes — none picked, any; an image takes images — and the largest.
       const types = FILE_TYPES.map(([label, accept]) => {
         const button = el('button', { type: 'button', class: 'fd-inline-chip', 'aria-pressed': 'false' }, label) as HTMLButtonElement;
         button.addEventListener('click', () => {
@@ -119,19 +119,64 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
         return { button, accept };
       });
       let current: () => string[] = () => [];
-      const largest = select('Largest file', FILE_SIZES.map(([bytes]) => String(bytes)));
-      FILE_SIZES.forEach(([, words], i) => (largest.options[i].textContent = words));
-      largest.addEventListener('change', () => designer.setFileRules(id, { maxSize: Number(largest.value) }));
+      const largest = select('Largest file', ['', ...FILE_SIZES.map(([bytes]) => String(bytes))]);
+      ['Any size', ...FILE_SIZES.map(([, words]) => words)].forEach((words, i) => (largest.options[i].textContent = words));
+      // A size the page set that is none of these is shown as it is.
+      const own = el('option', { hidden: '' }) as HTMLOptionElement;
+      largest.append(own);
+      largest.addEventListener('change', () => designer.setFileRules(id, { maxSize: largest.value ? Number(largest.value) : null }));
+      // Several files, as few and as many as it takes: a box left empty is no limit. Saved once typed and left.
+      const several = el('button', { type: 'button', class: 'fd-switch', role: 'switch', 'aria-checked': 'false', 'aria-label': 'More than one file' }) as HTMLButtonElement;
+      several.addEventListener('click', () => designer.setFileRules(id, { multiple: several.getAttribute('aria-checked') !== 'true' }));
+      const count = (label: string, key: 'minFiles' | 'maxFiles') => {
+        const box = el('input', { type: 'number', class: 'fd-inline-input fd-inline-number', 'aria-label': label, min: key === 'minFiles' ? '0' : '1', step: '1', inputmode: 'numeric', placeholder: 'Any' }) as HTMLInputElement;
+        box.addEventListener('change', () => designer.setFileRules(id, { [key]: box.value.trim() === '' ? null : Number(box.value) }));
+        return box;
+      };
+      const least = count('At least', 'minFiles');
+      const most = count('At most', 'maxFiles');
+      // Each box with its word for what it counts, so the two never part on a narrow card.
+      const files = (text: string, box: HTMLElement) => el('label', { class: 'fd-inline-setting' }, el('span', {}, text), box, el('span', {}, 'files'));
+      const counts = el('div', { class: 'fd-inline-row' }, files('At least', least), files('At most', most));
+      // How the chosen files show: as a list, or as thumbnails; what the kind shows anyway is kept as nothing.
+      let shownAs = 'list';
+      let usual = 'list';
+      const asChip = (value: string, words: string) => {
+        const chip = el('button', { type: 'button', class: 'fd-inline-chip', 'aria-pressed': 'false', 'data-choice': value }, words) as HTMLButtonElement;
+        chip.addEventListener('click', () => value !== shownAs && designer.setWidgetOptions(id, { files: value === usual ? null : value }));
+        return chip;
+      };
+      const asChips = [asChip('list', 'List'), asChip('thumbnails', 'Thumbnails')];
+      // A phone's camera, for an image: the rear one, or the front.
+      const camera = select('Camera on phones', ['', 'environment', 'user']);
+      ['No', 'Rear camera', 'Front camera'].forEach((words, i) => (camera.options[i].textContent = words));
+      camera.addEventListener('change', () => designer.setWidgetOptions(id, { camera: camera.value === 'user' ? 'user' : camera.value ? true : null }));
       element.replaceChildren(
-        el('div', { class: 'fd-inline-row' }, el('span', {}, 'Takes only'), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': 'Kinds of file' }, ...types.map((t) => t.button))),
-        word('Largest file', largest)
+        ...(kind === 'file' ? [el('div', { class: 'fd-inline-row' }, el('span', {}, 'Takes only'), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': 'Kinds of file' }, ...types.map((t) => t.button)))] : []),
+        el('div', { class: 'fd-inline-row' }, word('Largest file', largest), el('span', { class: 'fd-inline-setting fd-inline-toggle' }, several, el('span', { 'aria-hidden': 'true' }, 'More than one file'))),
+        counts,
+        el('div', { class: 'fd-inline-row' }, el('span', {}, 'Show chosen files as'), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': 'Show chosen files as' }, ...asChips)),
+        ...(kind === 'image' ? [word('Camera on phones', camera)] : [])
       );
       refresh = (page, node) => {
         const def = page.fields[node.field];
+        if (def.type !== 'binary' && def.type !== 'image') return;
         const accept = def.type === 'binary' ? (def.accept ?? []) : [];
         current = () => accept;
         for (const t of types) t.button.setAttribute('aria-pressed', String(t.accept.every((a) => accept.includes(a))));
-        largest.value = String(def.type === 'binary' && def.maxSize ? def.maxSize : FILE_SIZES[1][0]);
+        own.hidden = !def.maxSize || FILE_SIZES.some(([bytes]) => bytes === def.maxSize);
+        own.value = String(def.maxSize ?? '');
+        own.textContent = def.maxSize ? formatBytes(def.maxSize) : '';
+        largest.value = String(def.maxSize ?? '');
+        several.setAttribute('aria-checked', String(def.multiple === true));
+        counts.hidden = def.multiple !== true;
+        if (!focused(least)) least.value = def.minFiles === undefined ? '' : String(def.minFiles);
+        if (!focused(most)) most.value = def.maxFiles === undefined ? '' : String(def.maxFiles);
+        usual = def.type === 'image' ? 'thumbnails' : 'list';
+        shownAs = String(node.options?.['files'] ?? usual);
+        for (const chip of asChips) chip.setAttribute('aria-pressed', String(chip.dataset['choice'] === shownAs));
+        const facing = node.options?.['camera'];
+        camera.value = facing ? (facing === 'user' ? 'user' : 'environment') : '';
       };
     } else if (kind === 'lines') {
       const columns = columnsEditor(el, designer, id);

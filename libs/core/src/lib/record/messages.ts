@@ -32,6 +32,9 @@ export interface Messages {
   file: string;
   fileSize: string;
   fileType: string;
+  /** Several files: fewer than the fewest (never under two: one is what required asks), more than the most. */
+  minFiles: string;
+  maxFiles: string;
   /**
    * Answer rules, besides the messages above they share (maxLength, pattern,
    * min, max): a shortest length, an ending, how many may be ticked, a day
@@ -81,6 +84,8 @@ export const MESSAGES: Record<Locale, Messages> = {
     file: '{label} must be a file',
     fileSize: '{label} is larger than {size}',
     fileType: '{label} must be {aTypes} file',
+    minFiles: 'Add at least {min} files to {label}',
+    maxFiles: 'Too many files for {label}: at most {max}',
     minLength: '{label} must be at least {min} characters',
     endsWith: '{label} must end with {ending}',
     atLeast: 'Choose at least {min} for {label}',
@@ -118,6 +123,8 @@ export const MESSAGES: Record<Locale, Messages> = {
     file: 'يجب أن يكون {label} ملفًا',
     fileSize: 'حجم {label} أكبر من {size}',
     fileType: 'يجب أن يكون {label} ملف {types}',
+    minFiles: 'أضف إلى {label} ملفات لا يقل عددها عن {min}',
+    maxFiles: 'عدد الملفات في {label} أكثر من {max}',
     minLength: 'يجب ألا يقل {label} عن {min} حرفًا',
     endsWith: 'يجب أن ينتهي {label} بـ {ending}',
     atLeast: 'اختر {min} على الأقل في {label}',
@@ -155,6 +162,8 @@ export const MESSAGES: Record<Locale, Messages> = {
     file: '{label} muss eine Datei sein',
     fileSize: '{label} ist größer als {size}',
     fileType: '{label} muss eine {types}-Datei sein',
+    minFiles: 'Fügen Sie {label} mindestens {min} Dateien hinzu',
+    maxFiles: 'Zu viele Dateien für {label}: höchstens {max}',
     minLength: '{label} muss mindestens {min} Zeichen haben',
     endsWith: '{label} muss auf {ending} enden',
     atLeast: 'Wählen Sie bei {label} mindestens {min} aus',
@@ -192,6 +201,8 @@ export const MESSAGES: Record<Locale, Messages> = {
     file: '{label} doit être un fichier',
     fileSize: '{label} dépasse {size}',
     fileType: '{label} doit être un fichier {types}',
+    minFiles: 'Ajoutez au moins {min} fichiers à {label}',
+    maxFiles: 'Trop de fichiers pour {label} : {max} au plus',
     minLength: '{label} doit comporter au moins {min} caractères',
     endsWith: '{label} doit se terminer par {ending}',
     atLeast: 'Choisissez au moins {min} pour {label}',

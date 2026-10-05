@@ -15,8 +15,8 @@ const ROWS = [
   ['many2many', 'Links to several records', 'tags, checkboxes', 'relation, filter'],
   ['one2many', 'A table of lines that belong to this record', '', 'relation, fields; columns on the node'],
   ['reference', 'A link to a record of one of several models', '', 'models'],
-  ['binary', 'A file, uploaded or dropped', '', 'accept, maxSize'],
-  ['image', 'An image, with a preview', '', 'maxSize'],
+  ['binary', 'A file, uploaded or dropped; several with multiple, each opening in a viewer', '', 'accept, maxSize, multiple, minFiles, maxFiles'],
+  ['image', 'An image, with a preview; several with multiple', '', 'maxSize, multiple, minFiles, maxFiles'],
   ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code)', ''],
   ['properties', 'Extra values, each edited with the field for its type', '', 'definitions'],
 ];
@@ -63,6 +63,7 @@ ${code(
     <tr><td>${c('statusbar')}</td><td>${c('clickable')}, ${c('visibleStates')}. On a ${c('many2one')} its steps are the records the link may point to</td></tr>
     <tr><td>a ${c('monetary')} field</td><td>${c('symbol')}: ${c('"after"')} puts the currency after the amount; ${c('pickCurrency')}: a currency box beside the amount</td></tr>
     <tr><td>a ${c('date')} or ${c('datetime')}</td><td>${c('weekNumbers')}: a calendar beside the date, with ISO week numbers</td></tr>
+    <tr><td>a ${c('binary')} or ${c('image')} field</td><td>${c('files')}: ${c('"list"')} (a file's default) or ${c('"thumbnails"')} (an image's); ${c('camera')}: ${c('true')} has a phone offer its rear camera, ${c('"user"')} its front one</td></tr>
     <tr><td>an ${c('html')} field</td><td>${c('toolbar')}: ${c('false')} leaves the formatting toolbar off</td></tr>
     <tr><td>a ${c('many2one')} or ${c('many2many')}</td><td>${c('create')}: ${c('false')} never offers to make a record from what was typed</td></tr>
   </tbody>

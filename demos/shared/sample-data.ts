@@ -303,7 +303,12 @@ export function sampleDataSource() {
             { key: 'm2', id: 52, values: { name: 'Design sign-off', due: '2026-11-05', hours: 64, amount: 380000, owner_id: { id: 22, label: 'Karim Fathy' }, invoiced: false } },
           ],
           contract: null,
-          photo: null,
+          photo: [],
+          // Two files already with the job, to open and go through.
+          documents: [
+            { name: 'Site survey notes.txt', type: 'text/plain', size: 137, data: 'U2l0ZSBzdXJ2ZXksIE5pbGUgVG93ZXJzIDEydGggZmxvb3IKCi0gRnJlaWdodCBsaWZ0IGJvb2tlZCAwODowMC0xMDowMAotIFNwcmlua2xlcnMgZml0dGVkIG9uIGV2ZXJ5IGZsb29yCi0gTWVldGluZyByb29tcyBmYWNlIHRoZSByaXZlcgo=' },
+            { name: 'Floor plan, 12th floor.svg', type: 'image/svg+xml', size: 435, data: 'PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAzMjAgMjAwJz48cmVjdCB3aWR0aD0nMzIwJyBoZWlnaHQ9JzIwMCcgZmlsbD0nI2Y0ZjFlYScvPjxnIGZpbGw9J25vbmUnIHN0cm9rZT0nIzJmNWQ4YScgc3Ryb2tlLXdpZHRoPSc0Jz48cmVjdCB4PScyMCcgeT0nMjAnIHdpZHRoPScyODAnIGhlaWdodD0nMTYwJy8+PHBhdGggZD0nTTE0MCAyMHY5MGgtMTIwTTE0MCAxMTBoNjB2NzBNMjAwIDcwaDEwMCcvPjwvZz48ZyBmb250LWZhbWlseT0nc2Fucy1zZXJpZicgZm9udC1zaXplPScxNCcgZmlsbD0nIzJmNWQ4YSc+PHRleHQgeD0nNDAnIHk9JzYwJz5PcGVuIHBsYW48L3RleHQ+PHRleHQgeD0nMjEyJyB5PSc1MCc+TWVldGluZzwvdGV4dD48dGV4dCB4PScyMTInIHk9JzE0MCc+S2l0Y2hlbjwvdGV4dD48L2c+PC9zdmc+' },
+          ],
           settings: { badge_readers: 4, visitor_hours: '08:00-18:00', zones: ['reception', 'open-plan'] },
           door_schedule: { weekdays: '07:00-20:00', weekends: 'closed', holidays: ['2026-10-06'] },
           extra: { floor: 12, lift_access: 'Freight lift, 08:00-10:00', parking: 6, sprinklers: true, zone: 'b' },

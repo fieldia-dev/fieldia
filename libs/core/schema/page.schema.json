@@ -720,13 +720,48 @@
               "type": "integer",
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991
+            },
+            "multiple": {
+              "type": "boolean"
+            },
+            "minFiles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "maxFiles": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
             }
           },
           "required": [
             "type",
             "label"
           ],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "dependentSchemas": {
+            "minFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            },
+            "maxFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            }
+          }
         },
         {
           "type": "object",
@@ -765,13 +800,48 @@
               "type": "integer",
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991
+            },
+            "multiple": {
+              "type": "boolean"
+            },
+            "minFiles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "maxFiles": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
             }
           },
           "required": [
             "type",
             "label"
           ],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "dependentSchemas": {
+            "minFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            },
+            "maxFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            }
+          }
         },
         {
           "type": "object",
@@ -1870,13 +1940,48 @@
               "type": "integer",
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991
+            },
+            "multiple": {
+              "type": "boolean"
+            },
+            "minFiles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "maxFiles": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
             }
           },
           "required": [
             "type",
             "label"
           ],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "dependentSchemas": {
+            "minFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            },
+            "maxFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            }
+          }
         },
         {
           "type": "object",
@@ -1915,13 +2020,48 @@
               "type": "integer",
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991
+            },
+            "multiple": {
+              "type": "boolean"
+            },
+            "minFiles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "maxFiles": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
             }
           },
           "required": [
             "type",
             "label"
           ],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "dependentSchemas": {
+            "minFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            },
+            "maxFiles": {
+              "properties": {
+                "multiple": {
+                  "const": true
+                }
+              },
+              "required": [
+                "multiple"
+              ]
+            }
+          }
         },
         {
           "type": "object",

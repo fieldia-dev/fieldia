@@ -279,8 +279,10 @@ export function pageChanges(before: Page | null, after: Page): string[] {
       if (!added.length && !gone.length && JSON.stringify(was.field.options) !== JSON.stringify(p.field.options)) out.push(`“${name}”: its options changed`);
       if (!was.field.other !== !p.field.other) out.push(p.field.other ? `“${name}”: takes an answer of its own (“Other”)` : `“${name}”: no longer takes an answer of its own`);
     }
-    if (JSON.stringify(was.node.options ?? {}) !== JSON.stringify(p.node.options ?? {})) out.push(`“${name}”: how it shows changed`);
-    if (was.field.type === 'binary' && p.field.type === 'binary' && JSON.stringify([was.field.accept, was.field.maxSize]) !== JSON.stringify([p.field.accept, p.field.maxSize])) out.push(`“${name}”: the files it takes changed`);
+    out.push(...fileChanges(name, was, p));
+    // How it shows, beyond what the files' own words said.
+    const howShown = (q: typeof p) => JSON.stringify(Object.entries(q.node.options ?? {}).filter(([key]) => !isFiles(q.field) || (key !== 'files' && key !== 'camera')));
+    if (howShown(was) !== howShown(p)) out.push(`“${name}”: how it shows changed`);
     const shows = whenItShows(name, was.node.invisible, p.node.invisible, answers);
     if (shows) out.push(shows);
     if (was.holder.id !== p.holder.id && !layout.said.has(p.node.id)) out.push(`Moved “${name}” to “${placeName(after, p.holder)}”`);
@@ -301,6 +303,27 @@ export function pageChanges(before: Page | null, after: Page): string[] {
   out.push(...translationChanges(before, after));
   // Something changed that has no words of its own here: say so rather than nothing.
   return out.length ? out : ['Other changes to the page’s settings'];
+}
+
+const isFiles = (field: Field) => field.type === 'binary' || field.type === 'image';
+
+/** A file upload's or an image's: the files it takes, how many, how the chosen ones show, a phone's camera. */
+function fileChanges(name: string, was: { field: Field; node: FieldNode }, now: { field: Field; node: FieldNode }): string[] {
+  const [a, b] = [was.field, now.field];
+  if (a.type !== b.type || (b.type !== 'binary' && b.type !== 'image') || (a.type !== 'binary' && a.type !== 'image')) return [];
+  const out: string[] = [];
+  if (JSON.stringify(['accept' in a ? a.accept : 0, a.maxSize]) !== JSON.stringify(['accept' in b ? b.accept : 0, b.maxSize])) out.push(`“${name}”: the files it takes changed`);
+  if (!a.multiple !== !b.multiple) out.push(b.multiple ? `“${name}” now takes several files` : `“${name}” takes one file again`);
+  else if (b.multiple && (a.minFiles !== b.minFiles || a.maxFiles !== b.maxFiles)) {
+    const [least, most] = [b.minFiles, b.maxFiles];
+    out.push(`“${name}”: ${least !== undefined && most !== undefined ? `from ${least} to ${most} files` : most !== undefined ? `up to ${most} files` : least !== undefined ? `at least ${least} files` : 'any number of files'}`);
+  }
+  const option = (q: { node: FieldNode }, key: string) => q.node.options?.[key];
+  const shownAs = (q: { node: FieldNode; field: Field }) => option(q, 'files') ?? (q.field.type === 'image' ? 'thumbnails' : 'list');
+  if (shownAs(was) !== shownAs(now)) out.push(`“${name}”: chosen files shown as ${shownAs(now) === 'thumbnails' ? 'thumbnails' : 'a list'}`);
+  const camera = (q: { node: FieldNode }) => (option(q, 'camera') ? (option(q, 'camera') === 'user' ? 'front' : 'rear') : null);
+  if (camera(was) !== camera(now)) out.push(camera(now) ? `“${name}”: phones offer the ${camera(now)} camera` : `“${name}”: phones no longer offer the camera`);
+  return out;
 }
 
 function headerChanges(before: Page, after: Page): string[] {

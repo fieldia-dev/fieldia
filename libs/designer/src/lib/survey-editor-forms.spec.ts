@@ -277,7 +277,7 @@ describe('survey editor — every kind’s own details, as Google Forms has them
     expect(fieldOfQ(designer, q)).toMatchObject({ accept: ['image/*', 'application/pdf'] });
     expect(button(open(host), 'Images')?.getAttribute('aria-pressed')).toBe('true');
     const largest = open(host).querySelector('[aria-label="Largest file"]') as HTMLSelectElement;
-    expect([...largest.options].map((o) => o.textContent)).toEqual(['1 MB', '10 MB', '100 MB', '1 GB']);
+    expect([...largest.options].filter((o) => !o.hidden).map((o) => o.textContent)).toEqual(['Any size', '1 MB', '10 MB', '100 MB', '1 GB']);
     expect(largest.value).toBe(String(10 * 1024 * 1024));
     largest.value = String(1024 * 1024);
     largest.dispatchEvent(new Event('change', { bubbles: true }));
