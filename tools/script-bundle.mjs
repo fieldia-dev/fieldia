@@ -72,8 +72,9 @@ if (/ZodError|\$ZodType/.test(code)) throw new Error('the script bundle carries 
 // condition and answer rules add 13; groups side by side, arrangements, group styles, labels and the
 // page's look add 7. The page's translations, choices from the app's lists, the tick box and dialogs in
 // the page's look add 2.5 more, to 252. The inputs' details (web, phone, email and time checks, a date's
-// limits, a count of characters, units and currency symbols, in four languages) add 1.
-const BUDGET_KB = 261;
+// limits and weekends, a count of characters, units and currency symbols, ratings' icons, NPS colours,
+// keywords' most, in four languages) add 8.5, to 262.5.
+const BUDGET_KB = 263;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it.
 const GZIP_BUDGET_KB = 80;
