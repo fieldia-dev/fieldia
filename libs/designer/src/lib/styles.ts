@@ -532,6 +532,11 @@ export const DESIGNER_CSS = /* css */ `
 .fd-q-preview-long { width: min(80%, 600px); }
 .fd-q-preview-date { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .fd-q-preview-date > .fd-dicon { width: 18px; height: 18px; flex: none; }
+/* The line wears the text boxes' own look, as the form's boxes will: their ground behind it, their edge for its line, their corners and size of words. */
+.fd-survey-canvas[data-inputs~=bg] :is(.fd-q-preview-short, .fd-q-preview-long) { background: var(--fd-inputs-bg); padding-inline: 8px; }
+.fd-survey-canvas[data-inputs~=border] :is(.fd-q-preview-short, .fd-q-preview-long) { border-block-end: 1px solid var(--fd-inputs-border); }
+.fd-survey-canvas[data-inputs~=radius] :is(.fd-q-preview-short, .fd-q-preview-long) { border-radius: var(--fd-inputs-radius); }
+.fd-survey-canvas[data-inputs~=size] :is(.fd-q-preview-short, .fd-q-preview-long) { font-size: var(--fd-inputs-size); }
 .fd-q-preview-list { list-style: none; margin: 0; padding: 0; border: 0; width: auto; display: grid; gap: 10px; color: var(--fd-text); }
 /* Where answers lead: the pages on one line, those for some answers off it and back. */
 .fd-branch-map { background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: 8px; padding: 10px 16px 12px; min-width: 0; }
