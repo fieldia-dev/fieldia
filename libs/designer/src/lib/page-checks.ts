@@ -105,6 +105,19 @@ export function pageChecks(page: Page, options: { valid?: boolean } = {}): PageC
     }
   }
 
+  // A picture with no description says nothing to those who cannot see it; one that is a link is a link with no name.
+  for (const c of containers(page)) {
+    for (const image of c.children) {
+      if (image.type !== 'image' || image.alt.trim()) continue;
+      found.push({
+        at: image.id,
+        severity: 'should',
+        text: image.href ? 'A picture that is a link has no description: a screen reader would read it as a link with no name.' : 'A picture has no description: people who cannot see it are told nothing of it.',
+        fix: { label: 'Describe it', action: { kind: 'go', id: image.id, part: 'label' } },
+      });
+    }
+  }
+
   // Pages and sections with nothing in them.
   const holders = parts(page).filter((h) => h.type === 'step' || h.type === 'section');
   const steps = holders.filter((h) => h.type === 'step');

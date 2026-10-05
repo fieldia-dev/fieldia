@@ -42,4 +42,6 @@ export const DESIGNER_KINDS_CSS = /* css */ `
 .fd-pen-ink { display: inline-flex; align-items: center; gap: 6px; }
 .fd-pen-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--fd-ink); box-shadow: 0 0 0 1px var(--fd-surface), 0 0 0 2px var(--fd-border); }
 .fd-q-preview-under { font-size: 12.5px; color: var(--fd-muted); }
+/* A picture block on the canvas, as wide as the form draws it. */
+.fd-canvas-block.fd-image:not(.fd-figure) { width: var(--fd-image-width, auto); }
 `;
