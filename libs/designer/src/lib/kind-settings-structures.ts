@@ -141,7 +141,7 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
     const empty = textBox('When empty', 'No lines yet');
     empty.addEventListener('input', () => widget({ emptyLabel: empty.value }));
     const ask = toggle('Ask before removing a line', (on) => widget({ confirmDelete: on || null }));
-    const list = el('ul', { class: 'fd-kind-items fd-line-columns' });
+    const list = el('ul', { class: 'fd-line-columns' });
     let drawn = '';
     let totals: string[] = [];
     let optional: Record<string, 'show' | 'hide'> = {};
@@ -149,7 +149,7 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
       element: el(
         'div',
         { class: 'fd-kind-block' },
-        row(word('At least', least), word('At most', most), el('span', {}, 'lines')),
+        row(word('At least', least), word('At most', most)),
         row(word('Button words', button), word('When empty', empty)),
         ask.element,
         el('span', { class: 'fd-prop-name' }, 'Each column'),
@@ -177,7 +177,7 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
                 else delete next[name];
                 designer.setLineTable(id, { optionalColumns: next });
               });
-              return el('li', { class: 'fd-kind-item-row' }, el('span', { class: 'fd-kind-points-name' }, f.label), adds, shown);
+              return el('li', { class: 'fd-line-column' }, el('span', { class: 'fd-line-column-name' }, f.label), adds, shown);
             })
           );
         }

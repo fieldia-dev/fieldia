@@ -44,4 +44,9 @@ export const DESIGNER_KINDS_CSS = /* css */ `
 .fd-q-preview-under { font-size: 12.5px; color: var(--fd-muted); }
 /* A picture block on the canvas, as wide as the form draws it. */
 .fd-canvas-block.fd-image:not(.fd-figure) { width: var(--fd-image-width, auto); }
+/* A table's columns: each one's name, Add up for a number, and whether people may hide it. */
+.fd-line-columns { display: grid; gap: 6px; width: 100%; margin: 0; padding: 0; list-style: none; }
+.fd-line-column { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 11em); gap: 8px; align-items: center; }
+.fd-line-column-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fd-text); }
+.fd-line-column > .fd-inline-chip[hidden] { display: block; visibility: hidden; }
 `;
