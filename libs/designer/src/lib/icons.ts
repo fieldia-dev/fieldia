@@ -22,6 +22,7 @@ const SHAPES: Record<string, string> = {
   progress: '<rect x="3" y="9" width="18" height="6" rx="3"/><path d="M6 12h7" stroke-width="3"/>',
   date: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
   'date-time': '<rect x="3" y="5" width="13" height="13" rx="2"/><path d="M3 9.5h13M7 3v4M12 3v4"/><circle cx="17.5" cy="17.5" r="4"/><path d="M17.5 15.8v1.9l1.2 1"/>',
+  time: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/>',
   dropdown: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M14 11l2 2 2-2"/>',
   'multiple-choice': '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/>',
   checkboxes: '<rect x="3.5" y="4" width="7" height="7" rx="1.5"/><path d="M5.3 7.5l1.4 1.4 2.4-2.6"/><rect x="3.5" y="13" width="7" height="7" rx="1.5"/><path d="M14 7.5h6.5M14 16.5h6.5"/>',

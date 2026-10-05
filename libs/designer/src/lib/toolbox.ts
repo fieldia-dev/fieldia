@@ -37,7 +37,7 @@ export interface ToolboxHandle {
 /** The kinds in the order and groups the toolbox shows them. */
 export const TOOLBOX_GROUPS: readonly [string, readonly string[]][] = [
   ['Text', ['short-answer', 'paragraph', 'email', 'phone', 'website', 'keywords']],
-  ['Numbers and dates', ['number', 'amount', 'rating', 'scale', 'slider', 'progress', 'date', 'date-time']],
+  ['Numbers and dates', ['number', 'amount', 'rating', 'scale', 'slider', 'progress', 'date', 'date-time', 'time']],
   ['Choices', ['dropdown', 'multiple-choice', 'checkboxes', 'image-choice', 'tags', 'ranking', 'matrix', 'status', 'yes-no', 'tick']],
   ['Records', ['link', 'links', 'lines']],
   ['More', ['rich-text', 'image', 'file', 'signature', 'address', 'repeating']],

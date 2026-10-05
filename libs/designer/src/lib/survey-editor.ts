@@ -88,6 +88,7 @@ const PREVIEW_WORDS: Record<string, string> = {
   keywords: 'Keywords',
   date: 'Day, month, year',
   'date-time': 'Day, month, year, time',
+  time: 'Hours and minutes',
 };
 
 /** A box whose line grows from the middle when it is typed in, the Google Forms way. */
@@ -307,7 +308,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
   function preview(page: Page, node: FieldNode): HTMLElement | null {
     const def = page.fields[node.field];
     const kind = kindOfField(def, node);
-    if (kind === 'date' || kind === 'date-time') return el('div', { class: 'fd-q-preview fd-q-preview-short fd-q-preview-date' }, PREVIEW_WORDS[kind], designerIcon(doc, 'date'));
+    if (kind === 'date' || kind === 'date-time' || kind === 'time') return el('div', { class: 'fd-q-preview fd-q-preview-short fd-q-preview-date' }, PREVIEW_WORDS[kind], designerIcon(doc, kind === 'time' ? 'time' : 'date'));
     if (kind && PREVIEW_WORDS[kind]) return el('div', { class: `fd-q-preview fd-q-preview-${kind === 'paragraph' ? 'long' : 'short'}` }, PREVIEW_WORDS[kind]);
     if (kind === 'dropdown' && def.type === 'selection') return el('ol', { class: 'fd-q-preview fd-q-preview-list' }, ...def.options.map((o, i) => el('li', {}, `${i + 1}. ${o.label}`)));
     return kindPreview(el, page, node, kind);

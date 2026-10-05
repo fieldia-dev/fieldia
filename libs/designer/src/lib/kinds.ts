@@ -35,6 +35,8 @@ export const QUESTION_KINDS: readonly QuestionKind[] = [
   { id: 'number', label: 'Number', field: (label) => ({ type: 'float', label }) },
   { id: 'date', label: 'Date', field: (label) => ({ type: 'date', label }) },
   { id: 'date-time', label: 'Date and time', field: (label) => ({ type: 'datetime', label }) },
+  // A time of day, kept as HH:MM: the pattern says so to a backend too.
+  { id: 'time', label: 'Time', field: (label) => ({ type: 'char', label, pattern: '^([01]\\d|2[0-3]):[0-5]\\d$' }), widget: 'time' },
   { id: 'yes-no', label: 'Yes or no', field: (label) => ({ type: 'boolean', label }), widget: 'toggle' },
   { id: 'tick', label: 'Tick box', field: (label) => ({ type: 'boolean', label }), widget: 'tick' },
   { id: 'email', label: 'Email', field: (label) => ({ type: 'char', label, pattern: '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$' }), widget: 'email' },
@@ -88,7 +90,7 @@ export function kindOfField(field: Field, node: FieldNode): string | null {
 function builtInKindOf(field: Field, node: FieldNode): string | null {
   switch (field.type) {
     case 'char':
-      return node.widget === 'email' ? 'email' : node.widget === 'phone' ? 'phone' : node.widget === 'url' ? 'website' : node.widget === 'tags' ? 'keywords' : 'short-answer';
+      return node.widget === 'email' ? 'email' : node.widget === 'phone' ? 'phone' : node.widget === 'url' ? 'website' : node.widget === 'tags' ? 'keywords' : node.widget === 'time' ? 'time' : 'short-answer';
     case 'text':
       return 'paragraph';
     case 'html':
@@ -193,6 +195,8 @@ export function kindFits(kind: QuestionKind, field: Field): boolean {
   if (kind.id === 'image-choice') return field.type === 'selection';
   if (made.type === 'selection' && field.type === 'selection') return !!made.multiple === !!field.multiple;
   if (kind.id === 'number' || kind.id === 'slider') return field.type === 'integer' || field.type === 'float';
+  // A time of day: only text the model keeps as one.
+  if (kind.id === 'time') return field.type === 'char' && field.pattern === (made as { pattern?: string }).pattern;
   return made.type === field.type;
 }
 
