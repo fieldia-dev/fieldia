@@ -183,9 +183,7 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 .fd-canvas-form { display: grid; gap: 10px; min-width: 0; padding: 12px 14px 14px; border: 1px dashed var(--fd-border-strong); border-radius: 10px; }
 .fd-canvas-form-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .fd-canvas-form-head > .fd-dicon { flex: none; width: 18px; height: 18px; color: var(--fd-muted); }
-.fd-canvas-form-words { display: grid; flex: 1 1 auto; min-width: 0; }
-.fd-canvas-form-title { font-size: 15px; font-weight: 650; overflow-wrap: anywhere; }
-.fd-canvas-form-tag { color: var(--fd-muted); font-size: 12.5px; overflow-wrap: anywhere; }
+.fd-canvas-form-tag { flex: 1 1 auto; min-width: 0; color: var(--fd-muted); font-size: 12.5px; overflow-wrap: anywhere; }
 .fd-canvas-form-open { flex: none; }
 .fd-canvas-form-note { margin: 0; color: var(--fd-muted); }
 .fd-canvas-form-note.fd-canvas-form-problem { color: var(--fd-error); }

@@ -65,7 +65,7 @@ describe('the screen editor with saved forms', () => {
     expect(tile(unlisted.host, 'form:saved').hidden).toBe(true);
   });
 
-  it('places the one picked from a menu of the app’s saved forms, drawn as the form draws it, read-only, in a frame', async () => {
+  it('places the one picked from a menu of the app’s saved forms, drawn as the form draws it, in a frame, nothing in it to type in', async () => {
     const { designer, host } = await editor();
     tile(host, 'form:saved').click();
     await settle();
@@ -73,15 +73,17 @@ describe('the screen editor with saved forms', () => {
     (document.querySelector('.fd-menu [data-item="address"]') as HTMLButtonElement).click();
     await settle();
     const [part] = parts(designer.getPage());
-    expect(part).toMatchObject({ page: 'address', name: 'address' });
+    // A whole row of its group.
+    expect(part).toMatchObject({ page: 'address', name: 'address', colspan: 2 });
     expect(designer.getState().selected).toBe(part.id);
     const shown = frame(host, part.id);
-    expect(shown.querySelector('.fd-canvas-form-title')?.textContent).toBe('Address');
     expect(shown.querySelector('.fd-canvas-form-tag')?.textContent).toBe('Saved form “Address” · latest version');
+    // Placed as the form places it: its card, its title over it, its fields; shown, never used here.
     const body = shown.querySelector('.fd-canvas-form-body') as HTMLElement;
     expect(body.hasAttribute('inert')).toBe(true);
+    expect(body.querySelector('.fd-form-part > legend')?.textContent).toBe('Address');
     expect(body.querySelector('[data-saved-node="street"] .fd-label')?.textContent).toBe('Street and number');
-    expect((body.querySelector('[data-saved-node="street"] input') as HTMLInputElement).readOnly).toBe(true);
+    expect(body.querySelector('[data-saved-node="street"] input')).not.toBeNull();
     // Its parts keep their ids apart from the page's: the canvas never mistakes one for a part of this page.
     expect(body.querySelector('[data-node]')).toBeNull();
     // No “Open it” without the app's way to open one.
@@ -124,7 +126,12 @@ describe('the screen editor with saved forms', () => {
     expect(title.placeholder).toBe('Address');
     title.value = 'Home address';
     title.dispatchEvent(new Event('input', { bubbles: true }));
-    expect(frame(host, part.id).querySelector('.fd-canvas-form-title')?.textContent).toBe('Home address');
+    expect(frame(host, part.id).querySelector('.fd-form-part > legend')?.textContent).toBe('Home address');
+    (field(host, 'Show a title') as HTMLInputElement).click();
+    expect(parts(designer.getPage())[0].title).toBe('');
+    expect(frame(host, part.id).querySelector('.fd-form-part > legend')).toBeNull();
+    (field(host, 'Show a title') as HTMLInputElement).click();
+    expect(parts(designer.getPage())[0].title).toBeUndefined();
     const firstField = Object.keys(designer.getPage().fields)[0];
     const again = field(host, 'Answers go under') as HTMLInputElement;
     again.value = firstField;

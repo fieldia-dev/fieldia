@@ -39,7 +39,7 @@ import type { BlockPatch, LookPatch, SectionLook } from './layout-settings';
 import * as several from './layout-several';
 import type { EachChange } from './layout-several';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields, type Container } from './page-tree';
-import type { Holder } from './layout-tree';
+import { across, setSpan, type Holder } from './layout-tree';
 import { Refusal } from './refusal';
 import { translationCommands } from './translations';
 import { pageJsonCommands, type PageJsonResult } from './page-json';
@@ -1466,6 +1466,9 @@ export function createDesigner(options: {
         const title = forms.page(pageId)?.title || pageId;
         const node: FormNode = { type: 'form', id: nextName((n) => ids.has(n), 'form', '-'), page: pageId, name: answersName(draft, title) };
         placeAfter(draft, node, where);
+        // A whole form takes a whole row of the group it lands in.
+        const holder = findNode(draft, node.id)?.parent;
+        if (holder) setSpan(node, across(draft, holder as Holder));
         return node.id;
       });
     },

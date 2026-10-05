@@ -175,7 +175,8 @@ export function nameOf(page: Page, node: Part | Holder | null): string {
     case 'slot':
       return part.name;
     case 'form':
-      return part.title || part.name;
+      // Its own words, or its answers' name as words: “Address 2”.
+      return part.title || `${part.name.charAt(0).toUpperCase()}${part.name.slice(1).replace(/_/g, ' ')}`;
     default:
       return part.type === 'divider' ? 'Divider' : 'Spacer';
   }
