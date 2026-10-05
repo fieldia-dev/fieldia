@@ -274,3 +274,48 @@ test('(f) no box drawn in a box, and axe clean on the gutter, Twelfths, Rows and
   expect(await axeFindings(page, 'a group in twelfths, its columns and rows')).toEqual([]);
   expect(await doubleLines(page, '.fd-canvas *')).toEqual([]);
 });
+
+test('dividing a group in twelfths moves nothing: every part’s box before and after, on the site visit and on the “New employee” page', async ({ page }) => {
+  await openVisit(page);
+  const before = await boxes(page, '.fd-canvas-body');
+  // By the panel, as a person does it.
+  await pickGroup(page, 'section-1');
+  await page.getByRole('tab', { name: 'Layout' }).click();
+  await page.getByRole('group', { name: 'Columns on a desktop' }).getByRole('button', { name: 'Twelfths' }).click();
+  expect((await built(page)).layout.children[0].columns).toBe(12);
+  await page.mouse.click(5, 5);
+  expect(await boxes(page, '.fd-canvas-body')).toEqual(before);
+  // Every group of the employee page, at a desktop's width and at a tablet's, where its tablet shows the desktop's columns.
+  await page.goto('/screen/?start=layout');
+  for (const size of ['Desktop', 'Tablet'] as const) {
+    await page.getByRole('group', { name: 'Screen size' }).getByRole('button', { name: size }).click();
+    const was = await boxes(page, '.fd-canvas-body');
+    const groups = size === 'Desktop' ? ['personal', 'address', 'emergency', 'role', 'bank'] : ['address', 'emergency', 'bank'];
+    const divided = await page.evaluate((ids) => {
+      const designer = (window as unknown as { fieldiaDesigner: { designer: { setColumns(id: string, c: number): boolean; undo(): void } } }).fieldiaDesigner.designer;
+      return ids.map((id) => designer.setColumns(id, 12));
+    }, groups);
+    expect(divided).toEqual(groups.map(() => true));
+    const now = await boxes(page, '.fd-canvas-body');
+    const moved = Object.keys(was).filter((id) => (['x', 'y', 'w', 'h'] as const).some((k) => Math.abs(was[id][k] - (now[id]?.[k] ?? -99)) > 1));
+    expect(moved, `${size}: parts that moved`).toEqual([]);
+    expect(Object.keys(now).length).toBeGreaterThan(20);
+    if (size === 'Desktop') await screen(page, 'twelfths-g-employee-desktop');
+    await page.evaluate((n) => {
+      const designer = (window as unknown as { fieldiaDesigner: { designer: { undo(): void } } }).fieldiaDesigner.designer;
+      for (let i = 0; i < n; i++) designer.undo();
+    }, groups.length);
+  }
+});
+
+test('Simple draws a page in twelfths as Advanced does, and switching changes nothing in it', async ({ page }) => {
+  await openVisit(page);
+  await inThirds(page);
+  const advanced = await boxes(page, '.fd-canvas-body');
+  const json = JSON.stringify(await built(page));
+  await page.getByRole('group', { name: 'Editing mode' }).getByRole('button', { name: 'Simple' }).click();
+  await expect(page.locator('.fd-screen-designer')).toHaveAttribute('data-mode', 'simple');
+  expect(await boxes(page, '.fd-canvas-body')).toEqual(advanced);
+  expect(JSON.stringify(await built(page))).toBe(json);
+  await screen(page, 'twelfths-g-simple', { viewport: true });
+});
