@@ -26,7 +26,7 @@ for (const variant of VARIANTS) {
       expect(Math.abs(creditHead.y - nameTop), 'the headers do not share a line').toBeLessThan(1.5);
       const credit = (await page.locator('.fd-list-row').first().locator('td').nth(6).locator('bdi').boundingBox())!;
       expect(Math.abs(credit.x + credit.width - (creditHead.x + creditHead.width)), 'the amount is not on the end').toBeLessThan(2);
-      await expect(page.locator('.fd-list-row').first().locator('td').nth(6)).toHaveText('EGP 50,000.00');
+      await expect(page.locator('.fd-list-row').first().locator('td').nth(6)).toHaveText('E£50,000.00');
       await expect(page.locator('.fd-list-row').nth(1).locator('td').nth(6)).toHaveText('JOD 18,000.00');
       await expectNoSidewaysScroll(page);
       await screen(page, `${variant}-list`, { viewport: true });

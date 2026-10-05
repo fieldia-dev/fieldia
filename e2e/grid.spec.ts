@@ -65,7 +65,7 @@ for (const variant of VARIANTS) {
   test.describe(`${variant} · lines grid`, () => {
     test.beforeEach(async ({ page }) => {
       await open(page, variant, 'page=order&skin=underline');
-      await expect(cell(page, LAMP, 'subtotal')).toHaveText('EGP 4,560.00');
+      await expect(cell(page, LAMP, 'subtotal')).toHaveText('E£4,560.00');
     });
 
     test('a number cell selects its value, typing replaces it, and the subtotal follows while still editing', async ({ page }) => {
@@ -73,7 +73,7 @@ for (const variant of VARIANTS) {
       await expect(editor(page)).toBeFocused();
       await page.keyboard.type('20');
       await expect(editor(page)).toHaveValue('20');
-      await expect(cell(page, LAMP, 'subtotal')).toHaveText('EGP 7,600.00');
+      await expect(cell(page, LAMP, 'subtotal')).toHaveText('E£7,600.00');
       await expect.poll(() => editing(page)).toEqual([LAMP, 'qty']);
       await screen(page, `${variant}-grid-editing`);
     });
@@ -187,8 +187,8 @@ for (const variant of VARIANTS) {
       await page.keyboard.press('ArrowDown');
       await page.keyboard.press('Enter');
       await expect(editor(page)).toHaveValue('Monitor arm, dual');
-      await expect(cell(page, NEW, 'price')).toHaveText('EGP 749.00');
-      await expect(cell(page, NEW, 'subtotal')).toHaveText('EGP 749.00');
+      await expect(cell(page, NEW, 'price')).toHaveText('E£749.00');
+      await expect(cell(page, NEW, 'subtotal')).toHaveText('E£749.00');
       // Enter picked the product and nothing else: the cell is still the one being edited.
       await expect.poll(() => editing(page)).toEqual([NEW, 'product_id']);
       await page.keyboard.press('Tab');
@@ -385,11 +385,11 @@ for (const variant of VARIANTS) {
       const totals = grid(page).locator('.ag-grid-pinned-bottom-rows .ag-row');
       await expect(totals.locator('.ag-cell[col-id="product_id"]')).toHaveText('Total');
       await expect(totals.locator('.ag-cell[col-id="qty"]')).toHaveText('30.00');
-      await expect(totals.locator('.ag-cell[col-id="subtotal"]')).toHaveText('EGP 64,656.00');
+      await expect(totals.locator('.ag-cell[col-id="subtotal"]')).toHaveText('E£64,656.00');
       await cell(page, LAMP, 'qty').click();
       await page.keyboard.type('20');
       await expect(totals.locator('.ag-cell[col-id="qty"]')).toHaveText('38.00');
-      await expect(totals.locator('.ag-cell[col-id="subtotal"]')).toHaveText('EGP 67,696.00');
+      await expect(totals.locator('.ag-cell[col-id="subtotal"]')).toHaveText('E£67,696.00');
       await expect.poll(() => editing(page)).toEqual([LAMP, 'qty']);
       // The totals row is not a line: nothing to edit, drag or delete there.
       await expect(totals.locator('.ag-drag-handle, button')).toHaveCount(0);
@@ -479,14 +479,14 @@ for (const variant of VARIANTS) {
       const arranged = await order();
 
       await page.reload();
-      await expect(cell(page, LAMP, 'subtotal')).toHaveText('EGP 4,560.00');
+      await expect(cell(page, LAMP, 'subtotal')).toHaveText('E£4,560.00');
       expect(await order()).toEqual(arranged);
       await expect(header('discount')).toHaveCount(0);
       await expect(cell(page, LAMP, 'lead_days')).toHaveText('7');
       expect(Math.abs((await header('name').boundingBox())!.width - widened)).toBeLessThanOrEqual(2);
       // The money total, in bold, still fits its narrower column.
       const total = grid(page).locator('.ag-grid-pinned-bottom-rows .ag-cell[col-id="subtotal"]');
-      await expect(total).toHaveText('EGP 64,656.00');
+      await expect(total).toHaveText('E£64,656.00');
       expect(await total.evaluate(textFits), 'the subtotal total is cut off').toBe(true);
       await screen(page, `${variant}-grid-arranged`);
     });
@@ -509,7 +509,7 @@ for (const variant of VARIANTS) {
         await cell(page, 0, '__delete').getByRole('button', { name: 'Delete line' }).click();
         await expect(lineRows(page)).toHaveCount(left - 1);
       }
-      await expect(grid(page).locator('.ag-grid-pinned-bottom-rows .ag-cell[col-id="subtotal"]')).toHaveText('EGP 0.00');
+      await expect(grid(page).locator('.ag-grid-pinned-bottom-rows .ag-cell[col-id="subtotal"]')).toHaveText('E£0.00');
       // No tall blank where the lines were: at most one row's height between the header and the totals.
       const head = (await grid(page).locator('.ag-header').boundingBox())!;
       const totals = (await grid(page).locator('.ag-grid-pinned-bottom-rows').boundingBox())!;
@@ -521,7 +521,7 @@ for (const variant of VARIANTS) {
       await expect(grid(page).getByRole('option', { name: 'Office chair, ergonomic' })).toBeVisible();
       await page.keyboard.press('ArrowDown');
       await page.keyboard.press('Enter');
-      await expect(cell(page, 0, 'price')).toHaveText('EGP 1,890.00');
+      await expect(cell(page, 0, 'price')).toHaveText('E£1,890.00');
     });
     test('a long table stops growing, scrolls inside, draws only the rows in view, and keeps its totals in sight', async ({ page }) => {
       await page.evaluate(() => {
@@ -568,11 +568,11 @@ for (const variant of VARIANTS) {
     });
     test('in French the grid writes its numbers and dates as a French reader does', async ({ page }) => {
       await open(page, variant, 'page=order&skin=underline&locale=fr');
-      await expect(cell(page, CHAIR, 'price')).toHaveText('EGP 1\u202f890,00');
-      await expect(grid(page).locator('.ag-grid-pinned-bottom-rows .ag-cell[col-id="subtotal"]')).toHaveText('EGP 64\u202f656,00');
+      await expect(cell(page, CHAIR, 'price')).toHaveText('1\u202f890,00 £E');
+      await expect(grid(page).locator('.ag-grid-pinned-bottom-rows .ag-cell[col-id="subtotal"]')).toHaveText('64\u202f656,00 £E');
       await cell(page, LAMP, 'qty').click();
       await page.keyboard.type('20,5');
-      await expect(cell(page, LAMP, 'subtotal')).toHaveText('EGP 7\u202f790,00');
+      await expect(cell(page, LAMP, 'subtotal')).toHaveText('7\u202f790,00 £E');
       await screen(page, `${variant}-grid-french`);
     });
   });

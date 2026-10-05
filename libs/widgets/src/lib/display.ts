@@ -1,5 +1,5 @@
 import type { LineField, Locale, Value } from '@fieldia/core';
-import { formatNumber } from './numbers';
+import { formatMoney, formatNumber } from './numbers';
 
 
 function localDate(text: string): Date | null {
@@ -32,8 +32,8 @@ export function displayValue(def: LineField, value: Value | undefined, values: R
       return number(Number(value), def.digits?.[1] ?? 2);
     case 'monetary': {
       const currency = def.currency ?? (def.currencyField ? (values[def.currencyField] as { label?: string } | null)?.label : undefined);
-      const amount = number(Number(value), def.digits?.[1] ?? 2);
-      return currency ? `${currency} ${amount}` : amount;
+      // Its currency's symbol, as the amount's own box shows it.
+      return currency ? formatMoney(Number(value), currency, def.digits?.[1] ?? 2, locale) : number(Number(value), def.digits?.[1] ?? 2);
     }
     case 'date': {
       const date = localDate(String(value));

@@ -25,8 +25,8 @@ describe('a list of records', () => {
     const host = await mount();
     expect([...host.querySelectorAll('.fd-list-table thead th')].slice(1).map((th) => th.textContent)).toEqual(['Name', 'Country', 'Status', 'Credit limit']);
     expect(rows(host).map(cells)).toEqual([
-      ['Amira Clinics', 'Egypt', 'Draft', 'EGP 50,000.00'],
-      ['Nile Traders', 'Egypt', 'Active', 'EGP 250,000.00'],
+      ['Amira Clinics', 'Egypt', 'Draft', 'E£50,000.00'],
+      ['Nile Traders', 'Egypt', 'Active', 'E£250,000.00'],
     ]);
     expect(host.querySelector('.fd-pager-text')?.textContent).toBe('1–2 / 4');
     expect(button(host, 'Previous page')?.disabled).toBe(true);
@@ -34,7 +34,7 @@ describe('a list of records', () => {
     await until(() => rows(host)[0]?.textContent?.includes('Petra'));
     expect(rows(host).map((r) => cells(r)[0])).toEqual(['Petra Tours', 'Zamalek Studio']);
     // An amount in the record's own currency, which the list asks for though it is not a column.
-    expect(cells(rows(host)[0])[3]).toBe('JOD 80,000.00');
+    expect(cells(rows(host)[0])[3]).toBe('JOD\u00a080,000.00');
     expect(host.querySelector('.fd-pager-text')?.textContent).toBe('3–4 / 4');
     expect(button(host, 'Next page')?.disabled).toBe(true);
   });

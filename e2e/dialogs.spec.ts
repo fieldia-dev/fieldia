@@ -107,7 +107,7 @@ for (const variant of VARIANTS) {
       await open(page, variant, 'page=order&skin=underline');
       const grid = node(page, 'f-lines');
       const cell = (row: number, col: string) => grid.locator(`.ag-row[row-index="${row}"] .ag-cell[col-id="${col}"]`);
-      await expect(cell(1, 'subtotal')).toHaveText('EGP 21,546.00');
+      await expect(cell(1, 'subtotal')).toHaveText('E£21,546.00');
       await cell(1, '__open').getByRole('button', { name: 'Open line' }).click();
       const dialog = page.getByRole('dialog', { name: 'Order lines' });
       await expect(dialog.getByLabel('Description')).toHaveValue('Black mesh back');
@@ -127,11 +127,11 @@ for (const variant of VARIANTS) {
       expect(surfaces[0], 'the fields sit on the page grey').toBe(surfaces[1]);
       await dialog.getByLabel('Quantity').fill('15');
       await expect(dialog.locator('[data-node="values-subtotal"] input')).toHaveValue('26,932.50');
-      await expect(cell(1, 'subtotal')).toHaveText('EGP 21,546.00');
+      await expect(cell(1, 'subtotal')).toHaveText('E£21,546.00');
       await screen(page, `${variant}-dialog-order-line`, { viewport: true });
       await dialog.getByRole('button', { name: 'Save & Close' }).click();
       await expect(dialog).toBeHidden();
-      await expect(cell(1, 'subtotal')).toHaveText('EGP 26,932.50');
+      await expect(cell(1, 'subtotal')).toHaveText('E£26,932.50');
       await expect.poll(() => value(page, 'amount_untaxed')).toBe(70042.5);
     });
   });

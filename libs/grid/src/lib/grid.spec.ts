@@ -91,7 +91,7 @@ describe('the grid', () => {
     const { box } = await mount();
     const [product, description, qty, price, delivery] = rowCells(box, 0);
     expect([product, description, qty]).toEqual(['Office chair', 'Ergonomic, black', '4.00']);
-    expect(price).toBe('EGP 1,890.00');
+    expect(price).toBe('E£1,890.00');
     expect(delivery).toBe('20 Oct 2026');
     const taxed = box.querySelector('.ag-row[row-index="0"] .ag-cell[col-id="taxed"] input[type=checkbox]') as HTMLInputElement;
     expect(taxed.checked).toBe(true);
@@ -379,10 +379,10 @@ describe('the grid totals', () => {
     totalled.layout.children[0].children[1].totals = ['qty', 'price'];
     const { box, form } = await mount(totalled);
     const totals = () => [...box.querySelectorAll('.ag-grid-pinned-bottom-rows .ag-row .ag-cell')].map((c) => (c as HTMLElement).textContent?.trim());
-    expect(totals()).toEqual(['Total', '', '10.00', 'EGP 2,270.00', '', '', '', '']);
+    expect(totals()).toEqual(['Total', '', '10.00', 'E£2,270.00', '', '', '', '']);
     form.updateLine('line_ids', 'l1', 'qty', 14);
     await frames();
-    expect(totals()).toEqual(['Total', '', '20.00', 'EGP 2,270.00', '', '', '', '']);
+    expect(totals()).toEqual(['Total', '', '20.00', 'E£2,270.00', '', '', '', '']);
   });
 
   it('never takes a key pressed on the totals row for one meant for the first line', async () => {

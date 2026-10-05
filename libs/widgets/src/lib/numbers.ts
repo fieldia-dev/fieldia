@@ -18,6 +18,20 @@ function format(locale: Locale, decimals: number): Intl.NumberFormat {
   return found;
 }
 
+/**
+ * An amount with its currency, as the page's language writes money: the
+ * symbol before or after, grouped, in Latin digits ("E£425,000.00",
+ * "1.850.000,50 €"). A currency named by words that are no code is written
+ * before the amount as it is.
+ */
+export function formatMoney(value: number, currency: string, decimals: number, locale: Locale = 'en'): string {
+  try {
+    return new Intl.NumberFormat(locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol', numberingSystem: 'latn', minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(value);
+  } catch {
+    return `${currency} ${formatNumber(value, decimals, locale)}`;
+  }
+}
+
 /** The language's grouping and decimal marks. */
 function marks(locale: Locale): { group: string; decimal: string } {
   const parts = format(locale, 1).formatToParts(12345.6);
