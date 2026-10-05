@@ -1,5 +1,6 @@
 import type { Designer } from './designer';
 import { FIELDIA_MIME, readParts } from './clipboard-ops';
+import { en } from './locales/en';
 
 /**
  * ⌘C, ⌘X and ⌘V (Ctrl on Windows) on the parts picked — on the canvas or in
@@ -19,18 +20,15 @@ export interface ClipboardKeysOptions {
   active(): boolean;
 }
 
-/** The keys, as the sheet of shortcuts lists them. */
-export const CLIPBOARD_KEYS: [string, string][] = [
-  ['⌘C', 'Copy what is picked, to paste here or in another designer'],
-  ['⌘X', 'Cut what is picked'],
-  ['⌘V', 'Paste after what is picked, or into the group picked'],
-];
+/** The keys, as the sheet of shortcuts lists them (in the designer's words: `words.clipboard.keys`). */
+export const CLIPBOARD_KEYS: [string, string][] = en.clipboard.keys;
 
 /** How long the line saying what was done stays. */
 const SHOWN_FOR = 2600;
 
 export function clipboardKeys(options: ClipboardKeysOptions): { destroy(): void } {
   const { root, designer } = options;
+  const w = designer.words.clipboard;
   const doc = root.ownerDocument;
   const said = doc.createElement('div');
   said.className = 'fd-clipboard-said';
@@ -54,7 +52,7 @@ export function clipboardKeys(options: ClipboardKeysOptions): { destroy(): void 
   }
   const wordsChosen = () => !!doc.getSelection()?.toString().trim();
   const named = (parts: { id: string; label?: string; title?: string; field?: string }[], fields: Record<string, { label?: string }>) =>
-    parts.length === 1 ? `“${parts[0].label ?? fields[parts[0].field ?? '']?.label ?? parts[0].title ?? 'part'}”` : `${parts.length} parts`;
+    parts.length === 1 ? designer.words.parts.quote(parts[0].label ?? fields[parts[0].field ?? '']?.label ?? parts[0].title ?? w.part) : w.parts(parts.length);
 
   function copy(event: ClipboardEvent, cut: boolean) {
     if (!ours(event) || wordsChosen()) return;
@@ -65,8 +63,8 @@ export function clipboardKeys(options: ClipboardKeysOptions): { destroy(): void 
     event.clipboardData.setData(FIELDIA_MIME, text);
     event.clipboardData.setData('text/plain', text);
     const name = named(copied.parts as never, copied.fields);
-    if (!cut) return say(`Copied ${name}`);
-    say(designer.remove(copied.parts.map((p) => p.id)) ? `Cut ${name}` : (designer.getState().issues[0] ?? 'Copied, but not taken off the page'));
+    if (!cut) return say(w.copied(name));
+    say(designer.remove(copied.parts.map((p) => p.id)) ? w.cut(name) : (designer.getState().issues[0] ?? w.copiedNotCut));
   }
 
   function paste(event: ClipboardEvent) {
@@ -75,11 +73,10 @@ export function clipboardKeys(options: ClipboardKeysOptions): { destroy(): void 
     const text = data?.getData(FIELDIA_MIME) || data?.getData('text/plain') || '';
     event.preventDefault();
     const pasted = designer.pasteParts(text);
-    if (!pasted) return say(designer.getState().issues[0] ?? 'Nothing was pasted');
+    if (!pasted) return say(designer.getState().issues[0] ?? w.nothingPasted);
     const copied = readParts(text);
-    const name = copied ? named(copied.parts as never, copied.fields) : `${pasted.ids.length} parts`;
-    const left = pasted.dropped ? `; ${pasted.dropped} rule${pasted.dropped === 1 ? '' : 's'} left off: ${pasted.dropped === 1 ? 'it' : 'they'} read a field this page has not got` : '';
-    say(`Pasted ${name}${left}`);
+    const name = copied ? named(copied.parts as never, copied.fields) : w.parts(pasted.ids.length);
+    say(w.pasted(name, pasted.dropped));
   }
 
   const onCopy = (event: ClipboardEvent) => copy(event, false);

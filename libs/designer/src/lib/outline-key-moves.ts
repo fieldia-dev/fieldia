@@ -1,5 +1,7 @@
 import type { Page } from '@fieldia/core';
 import { isWrapper, listOf, locate, type Holder } from './layout-tree';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 import { partsInOrder, quoted } from './outline-moves';
 
 /**
@@ -19,22 +21,21 @@ import { partsInOrder, quoted } from './outline-moves';
 export type KeyPlace = { parent: string; index: number } | { said: string };
 
 /** Where Alt and an arrow would take the parts; null when the key is not one of these. */
-export function outlineKeyMove(page: Page, ids: string[], key: { key: string; altKey: boolean }, rtl: boolean): KeyPlace | null {
+export function outlineKeyMove(page: Page, ids: string[], key: { key: string; altKey: boolean }, rtl: boolean, words: DesignerWords = en): KeyPlace | null {
+  const w = words.outline;
   if (!key.altKey || !ids.length || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key.key)) return null;
   // A part picked inside another part picked goes with it.
   const outer = partsInOrder(page, ids);
   if (!outer.length) return null;
-  if (outer.some((s) => s.list !== outer[0].list)) return { said: 'Pick parts in the same group to move them together' };
+  if (outer.some((s) => s.list !== outer[0].list)) return { said: w.sameGroup };
   const { parent, list } = outer[0];
   const indexes = outer.map((s) => s.index);
   const first = Math.min(...indexes);
   const last = Math.max(...indexes);
   const one = outer.length === 1;
-  const it = one ? 'It is' : 'They are';
-  const them = one ? 'it' : 'them';
   const root = page.layout as Holder;
   const wizard = root.type === 'wizard';
-  const name = (holder: Holder) => quoted(page, holder);
+  const name = (holder: Holder) => quoted(page, holder, words);
   const holderOf = (holder: Holder) => locate(page, holder.id);
 
   if (key.key === 'ArrowUp' || key.key === 'ArrowDown') {
@@ -49,26 +50,26 @@ export function outlineKeyMove(page: Page, ids: string[], key: { key: string; al
       const step = steps.findIndex((s) => s.id === parent.id);
       const next = steps[step + (down ? 1 : -1)];
       if (next) return { parent: next.id, index: down ? 0 : next.children.length };
-      return { said: `${it} at the ${down ? 'bottom of the last' : 'top of the first'} page` };
+      return { said: w.atEdgeOfSurvey(one, down ? 'bottom' : 'top') };
     }
-    if (parent.id === root.id) return { said: `${it} at the ${down ? 'bottom' : 'top'} of the page` };
-    return { said: `${it} at the ${down ? 'bottom' : 'top'} of ${name(parent)}: Alt+${rtl ? '→' : '←'} takes ${them} out` };
+    if (parent.id === root.id) return { said: w.atEdgeOfPage(one, down ? 'bottom' : 'top') };
+    return { said: w.atEdgeOf(one, down ? 'bottom' : 'top', name(parent), rtl ? '→' : '←') };
   }
 
   const outward = (key.key === 'ArrowLeft') !== rtl;
   if (outward) {
-    if (parent.id === root.id) return { said: `${it} on the page itself, in no group` };
-    if (wizard && root.children.some((s) => s.id === parent.id)) return { said: 'A question goes on a page' };
-    if (parent.type === 'tabs') return { said: 'A tab moves only among its tabs' };
+    if (parent.id === root.id) return { said: w.onPageItself(one) };
+    if (wizard && root.children.some((s) => s.id === parent.id)) return { said: w.questionOnPage };
+    if (parent.type === 'tabs') return { said: w.tabAmongItsTabs };
     // Out of a tab: after its tabs.
     const from = parent.type === 'tab' ? (locate(page, parent.id)?.parent as Holder) : parent;
     const around = holderOf(from);
-    if (!around) return { said: `${it} on the page itself, in no group` };
+    if (!around) return { said: w.onPageItself(one) };
     return { parent: around.parent.id, index: around.index + 1 };
   }
   const before = list[first - 1];
   const into = before?.type === 'tabs' ? before.children[before.children.length - 1] : before;
   const inner = into ? listOf(into) : null;
-  if (!into || !inner) return { said: `There is no group before ${them} to put ${them} in` };
+  if (!into || !inner) return { said: w.noGroupBefore(one) };
   return { parent: into.id, index: inner.length };
 }

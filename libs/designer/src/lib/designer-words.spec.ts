@@ -55,6 +55,13 @@ const SAMPLES: Record<string, unknown[][]> = {
   'changes.drawn': ['card', 'plain', 'line', 'framed'].map((style) => ['س', style]),
   'changes.folds': ['no', 'open', 'folded'].map((fold) => ['س', fold]),
   'questions.size': [[512], [1024 * 1024], [7.3 * 1024 * 1024], [2 * 1024 ** 3]],
+  'outline.atEdgeOfPage': [[true, 'top'], [false, 'bottom']],
+  'outline.atEdgeOfSurvey': [[true, 'top'], [false, 'bottom']],
+  'outline.atEdgeOf': [[true, 'top', '«س»', '←'], [false, 'bottom', '«س»', '→']],
+  'outline.into': [[null, null], ['«س»', '«ص»']],
+  'outline.columnsAt': [[3, 2, 1], [3, undefined, undefined]],
+  'outline.tookOff': [['س'], [1], [2], [11]],
+  'clipboard.pasted': [['س', 0], ['س', 1], ['س', 2], ['س', 3]],
   'changes.lookValue': [['font', 'serif'], ['density', 'compact'], ['corners', 'round'], ['scheme', 'auto'], ['labels', 'beside'], ['labelWidth', 120], ['accent', null]],
 };
 const GENERIC: unknown[] = [0, 1, 2, 3, 11, 100, 'س', ['س', 'ص']];

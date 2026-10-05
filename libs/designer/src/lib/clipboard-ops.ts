@@ -97,11 +97,11 @@ function freeName(name: string, taken: (name: string) => boolean): string {
 /** Paste the parts the clipboard's words hold where `pasteWhere` says. Returns them, and how many rules were left off. */
 export function pasteParts(page: Page, text: string, picked: string[], context: { model: Record<string, Field> }): { ids: string[]; dropped: number } {
   const copied = readParts(text);
-  if (!copied) throw new Refusal('There are no Fieldia parts to paste: copy parts in a Fieldia designer first');
-  if (page.layout.type === 'list') throw new Refusal('A list takes columns, not parts: paste them on a screen or a survey');
+  if (!copied) throw new Refusal((w) => w.clipboard.nothingToPaste);
+  if (page.layout.type === 'list') throw new Refusal((w) => w.clipboard.listTakesColumns);
   const pages = copied.parts.filter((p) => (p.type as string) === 'step').length;
-  if (pages && pages !== copied.parts.length) throw new Refusal('Paste pages or questions, not both at once');
-  if (pages && page.layout.type !== 'wizard') throw new Refusal('A survey’s pages go in a survey');
+  if (pages && pages !== copied.parts.length) throw new Refusal((w) => w.clipboard.pagesOrQuestions);
+  if (pages && page.layout.type !== 'wizard') throw new Refusal((w) => w.clipboard.surveyPages);
   const where = pasteWhere(page, picked, copied);
   // Each field under its own name, or a free one: never one the page or the backend's model has.
   const names = new Map<string, string>();

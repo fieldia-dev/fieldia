@@ -48,20 +48,12 @@ const TYPED_FOR = 700;
 
 export function outlineView(options: OutlineViewOptions): OutlineView {
   const { el, doc, designer } = options;
-  const tree = el('div', { class: 'fd-outline-tree', role: 'tree', 'aria-label': 'The page’s parts', 'aria-multiselectable': 'true' });
-  const empty = el('p', { class: 'fd-properties-hint', hidden: '' }, 'Nothing on the page yet.');
-  const help = el(
-    'p',
-    { class: 'fd-outline-help' },
-    options.survey ? 'Pages and their questions. Drag a row to move it. ' : 'Drag a row to move it, into a group by its middle. ',
-    el('kbd', {}, '⇧'),
-    '-click picks several; ',
-    el('kbd', {}, 'Alt'),
-    ' with an arrow moves what is picked; ',
-    el('kbd', {}, '?'),
-    ' lists every key.'
-  );
-  const element = el('nav', { class: 'fd-outline', 'aria-label': 'Outline', hidden: '' }, tree, empty, help);
+  const w = designer.words.outline;
+  const tree = el('div', { class: 'fd-outline-tree', role: 'tree', 'aria-label': w.tree, 'aria-multiselectable': 'true' });
+  const empty = el('p', { class: 'fd-properties-hint', hidden: '' }, w.empty);
+  // The sentence as the words have it, each `{key}` in it drawn as a key.
+  const help = el('p', { class: 'fd-outline-help' }, ...w.help(options.survey).split(/\{([^}]+)\}/).map((piece, i) => (i % 2 ? el('kbd', {}, piece) : piece)));
+  const element = el('nav', { class: 'fd-outline', 'aria-label': w.label, hidden: '' }, tree, empty, help);
 
   /** Rows folded by the person, by id: kept while the page changes. */
   const folded = new Set<string>();
@@ -89,9 +81,9 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
 
   function words(row: OutlineRow): string {
     const parts = [row.label, row.kind];
-    if (row.ruled) parts.push(options.survey ? 'shown only for some answers' : 'shown only for some records');
-    if (row.required) parts.push('required');
-    return parts.join(', ');
+    if (row.ruled) parts.push(w.ruled(options.survey));
+    if (row.required) parts.push(w.required);
+    return w.rowWords(parts);
   }
 
   function drawRow(row: OutlineRow, state: DesignerState, setSize: number, position: number): HTMLElement {
@@ -123,8 +115,8 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
       icon,
       // A name reads in its own direction: an English label on a right-to-left page keeps its start in view.
       el('span', { class: 'fd-outline-name', dir: 'auto' }, el('span', { class: 'fd-outline-label' }, row.label), ...(kind ? [kind] : [])),
-      ...(row.ruled ? [el('span', { class: 'fd-outline-when', title: options.survey ? 'Shown only for some answers' : 'Shown only for some records', 'aria-hidden': 'true' }, designerIcon(doc, 'when'))] : []),
-      ...(row.required ? [el('span', { class: 'fd-outline-required', title: 'Required', 'aria-hidden': 'true' }, designerIcon(doc, 'required'))] : []),
+      ...(row.ruled ? [el('span', { class: 'fd-outline-when', title: w.ruledTitle(options.survey), 'aria-hidden': 'true' }, designerIcon(doc, 'when'))] : []),
+      ...(row.required ? [el('span', { class: 'fd-outline-required', title: w.requiredTitle, 'aria-hidden': 'true' }, designerIcon(doc, 'required'))] : []),
       ...(row.badge ? [el('span', { class: 'fd-outline-badge', title: row.badgeWords, 'aria-hidden': 'true', dir: 'ltr' }, row.badge)] : [])
     );
     return view;
@@ -132,7 +124,7 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
 
   function draw(state: DesignerState) {
     const was = indexOf(active);
-    all = outlineRows(state.page);
+    all = outlineRows(state.page, designer.words);
     for (const id of [...folded]) if (!all.some((r) => r.id === id && opens(r))) folded.delete(id);
     shown = shownRows(all, folded);
     const inTree = tree.contains(doc.activeElement);
@@ -194,25 +186,27 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
     const movable = new Set(all.filter((r) => r.movable).map((r) => r.id));
     return designer.getState().picked.filter((id) => movable.has(id));
   };
-  const named = (ids: string[]) => (ids.length === 1 ? (all.find((r) => r.id === ids[0])?.label ?? 'It') : `${ids.length} parts`);
+  const named = (ids: string[]) => (ids.length === 1 ? (all.find((r) => r.id === ids[0])?.label ?? w.it) : w.parts(ids.length));
 
   /** Alt and an arrow move the rows picked; Delete takes them off the page. Each said aloud. Whether the key was one of these. */
   function moveByKey(event: KeyboardEvent): boolean {
     const ids = movablePicks();
     if (!ids.length) return false;
     if ((event.key === 'Delete' || event.key === 'Backspace') && !event.altKey && !event.ctrlKey && !event.metaKey) {
-      options.say(designer.remove(ids) ? `Took ${ids.length === 1 ? named(ids) : ids.length} off the page` : (designer.getState().issues[0] ?? 'Not taken off'));
+      // Named before it goes: once off the page, its row is too.
+      const what = ids.length === 1 ? named(ids) : ids.length;
+      options.say(designer.remove(ids) ? w.tookOff(what) : (designer.getState().issues[0] ?? w.notTakenOff));
       return true;
     }
-    const place = outlineKeyMove(designer.getPage(), ids, event, rtl());
+    const place = outlineKeyMove(designer.getPage(), ids, event, rtl(), designer.words);
     if (!place) return false;
     if ('said' in place) {
       options.say(place.said);
       return true;
     }
     const refused = designer.moveRefusal(ids, place.parent);
-    const words = refused ?? designer.describeMove(ids, place.parent, place.index);
-    options.say(refused ?? (designer.moveParts(ids, place.parent, place.index) ? `${named(ids)}: ${words}` : (designer.getState().issues[0] ?? 'Not moved')));
+    const where = refused ?? designer.describeMove(ids, place.parent, place.index);
+    options.say(refused ?? (designer.moveParts(ids, place.parent, place.index) ? designer.words.canvas.named(named(ids), where) : (designer.getState().issues[0] ?? w.notMoved)));
     return true;
   }
 
@@ -233,7 +227,7 @@ export function outlineView(options: OutlineViewOptions): OutlineView {
     if (now === pickedBefore) return;
     pickedBefore = now;
     if (state.picked.length <= 1) anchor = state.selected;
-    const rows = outlineRows(state.page);
+    const rows = outlineRows(state.page, designer.words);
     for (const id of state.picked) for (const up of ancestorsOf(rows, id)) folded.delete(up);
     revealDue = true;
   }

@@ -1,3 +1,5 @@
+import { en } from './locales/en';
+
 /**
  * The outline's keys, as a tree's (the WAI-ARIA tree pattern): ↑ and ↓ go
  * from row to row, → unfolds a row and then goes to its first part, ← folds
@@ -82,18 +84,5 @@ export function typeAhead(rows: readonly TreeRow[], at: number, typed: string): 
   return -1;
 }
 
-/** The outline's keys, as the sheet of shortcuts lists them. */
-export const OUTLINE_KEYS: [string, string][] = [
-  ['↑ / ↓', 'Go to the row before or after'],
-  ['← / →', 'Fold or unfold a row, or go to the row it sits in or its first part'],
-  ['Home / End', 'Go to the first or the last row'],
-  ['A letter', 'Go to the next row whose name starts with it'],
-  ['Enter', 'Pick it and show it on the page'],
-  ['Space', 'Pick it (⌘ or Ctrl adds it to what is picked)'],
-  ['Shift+↑ / ↓', 'Pick the rows on the way too'],
-  ['Shift-click', 'Pick every row from the one picked to this one'],
-  ['⌘-click', 'Pick one more row, or let it go (Ctrl-click on Windows)'],
-  ['Alt+↑ / Alt+↓', 'Move what is picked before the row above it or after the row below'],
-  ['Alt+← / Alt+→', 'Take what is picked out of its group, or put it in the group before it'],
-  ['Delete', 'Take what is picked off the page'],
-];
+/** The outline's keys, as the sheet of shortcuts lists them (in the designer's words: `words.outline.keys`). */
+export const OUTLINE_KEYS: [string, string][] = en.outline.keys;

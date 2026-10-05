@@ -1406,8 +1406,8 @@ export function createDesigner(options: {
     },
     // The part that led the pick still leads it.
     moveParts: (ids, parentId, index) => layoutEdit((draft) => moves.moveParts(draft, ids, parentId, index), selected),
-    moveRefusal: (ids, parentId) => moves.moveRefusal(page, ids, parentId),
-    describeMove: (ids, parentId, index) => moves.describeMove(page, ids, parentId, index),
+    moveRefusal: (ids, parentId) => moves.moveRefusal(page, ids, parentId, words),
+    describeMove: (ids, parentId, index) => moves.describeMove(page, ids, parentId, index, words),
     copyParts: (ids) => clipboard.copyParts(page, ids) ?? false,
     pasteParts(text) {
       let pasted: { ids: string[]; dropped: number } | null = null;
