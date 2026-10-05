@@ -44,7 +44,7 @@ describe('ranking the settings found', () => {
 describe('the search box over the settings', () => {
   function picked() {
     const designer = createDesigner({ page: blankPage('screen', 'Visit') });
-    const id = designer.addQuestion('short-answer', { parent: 'section-1' }) as string;
+    const id = designer.addQuestion('email', { parent: 'section-1' }) as string;
     designer.updateQuestion(id, { label: 'Customer' });
     designer.select(id);
     const { host } = mount(designer, { mode: 'advanced' });

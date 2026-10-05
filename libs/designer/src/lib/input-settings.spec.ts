@@ -1,7 +1,8 @@
 import { checkValue, validatePage, type Field, type FieldNode } from '@fieldia/core';
 import { blankPage, createDesigner, type Designer } from './designer';
 import { findNode } from './page-tree';
-import { mount, type } from './test-editor';
+import { pageChanges } from './page-checks';
+import { choose, mount, type } from './test-editor';
 
 /** The text, number and date kinds' settings, as commands and in the picked field itself. */
 
@@ -57,5 +58,61 @@ describe('a slider’s step', () => {
     expect(fieldOf(designer, id)).toMatchObject({ type: 'float', digits: [16, 1] });
     expect(nodeOf(designer, id).options).toEqual({ step: 0.5 });
     expect(designer.getState().issues).toEqual([]);
+  });
+});
+
+describe('the most characters, and a paragraph’s rows', () => {
+  it('sets a short answer’s most characters, its count under the box, and takes it away', () => {
+    const { designer, id, host } = screenWith('short-answer');
+    enter(inline(host, 'Most characters'), '80');
+    expect(fieldOf(designer, id)).toMatchObject({ type: 'char', size: 80 });
+    expect(host.querySelector('.fd-canvas-field.fd-editing .fd-count')?.textContent).toBe('0 / 80');
+    enter(inline(host, 'Most characters'), '');
+    expect(fieldOf(designer, id)).not.toHaveProperty('size');
+    enter(inline(host, 'Most characters'), '0');
+    expect(designer.getState().issues).toEqual(['The most characters is a whole number, 1 or more']);
+  });
+
+  it('sets a paragraph’s most characters, rows, and whether it grows as people type', () => {
+    const { designer, id, host } = screenWith('paragraph');
+    enter(inline(host, 'Most characters'), '500');
+    expect(fieldOf(designer, id)).toMatchObject({ type: 'text', size: 500 });
+    expect(inline(host, 'Rows')?.value).toBe('3');
+    choose(inline(host, 'Rows') ?? undefined, '6');
+    expect(nodeOf(designer, id).options).toEqual({ rows: 6 });
+    expect((host.querySelector('.fd-canvas-field.fd-editing textarea') as HTMLTextAreaElement).rows).toBe(6);
+    const grows = inline(host, 'Grows as people type') as unknown as HTMLButtonElement;
+    expect(grows.getAttribute('aria-checked')).toBe('true');
+    grows.click();
+    expect(nodeOf(designer, id).options).toEqual({ rows: 6, autoGrow: false });
+    expect((inline(host, 'Grows as people type') as unknown as HTMLButtonElement).getAttribute('aria-checked')).toBe('false');
+    choose(inline(host, 'Rows') ?? undefined, '3');
+    (inline(host, 'Grows as people type') as unknown as HTMLButtonElement).click();
+    expect(nodeOf(designer, id).options).toBeUndefined();
+  });
+
+  it('leaves a model’s field as the model has it', () => {
+    const { host } = screenWith('short-answer', {});
+    expect(inline(host, 'Most characters')).not.toBeNull();
+    const designer = createDesigner({ page: blankPage('screen', 'Visit'), model: { name: { type: 'char', label: 'Name', size: 20 } } });
+    designer.addModelField('name');
+    const { host: modelHost } = mount(designer);
+    expect(inline(modelHost, 'Most characters')).toBeNull();
+  });
+});
+
+describe('the words for what changed, when published', () => {
+  it('says a text’s most characters, a paragraph’s rows and whether it grows', () => {
+    const designer = createDesigner({ page: blankPage('survey', 'Feedback') });
+    const q = designer.addQuestion('paragraph') as string;
+    designer.updateQuestion(q, { label: 'Bio' });
+    const before = designer.getPage();
+    designer.setLimits(q, { size: 200 });
+    designer.setWidgetOptions(q, { rows: 6, autoGrow: false });
+    expect(pageChanges(before, designer.getPage())).toEqual(['“Bio”: takes at most 200 characters', '“Bio”: starts 6 rows high', '“Bio”: keeps its height as people type']);
+    const later = designer.getPage();
+    designer.setLimits(q, { size: null });
+    designer.setWidgetOptions(q, { rows: null, autoGrow: null, other: 'x' });
+    expect(pageChanges(later, designer.getPage())).toEqual(['“Bio”: takes any number of characters', '“Bio”: starts 3 rows high', '“Bio”: grows as people type', '“Bio”: how it shows changed']);
   });
 });
