@@ -58,11 +58,14 @@ export function checkValue(
       const allowed = new Set(field.options.map((o) => o.value));
       const listing = say(field.other ? 'choiceOrOther' : 'choice', { options: field.options.map((o) => o.label).join(', ') });
       // An answer of one's own, where there is an "Other": words, never blank.
-      const own = (v: unknown) => field.other === true && typeof v === 'string' && v.trim() !== '' && !allowed.has(v);
+      const own = (v: unknown) => (field.other === true || field.ownAnswers === true) && typeof v === 'string' && v.trim() !== '' && !allowed.has(v);
       if (field.multiple) {
         if (!Array.isArray(value)) return say('choices');
         const owned = value.filter((v) => !allowed.has(v as string | number)).length;
-        return owned <= 1 && value.every((v) => allowed.has(v as string | number) || own(v)) ? undefined : listing;
+        if (!((owned <= 1 || field.ownAnswers) && value.every((v) => allowed.has(v as string | number) || own(v)))) return listing;
+        // "None of these" goes alone.
+        const alone = value.length > 1 && field.options.find((o) => o.exclusive && (value as unknown[]).includes(o.value));
+        return alone ? say('alone', { option: alone.label }) : undefined;
       }
       return allowed.has(value as string | number) || own(value) ? undefined : listing;
     }
@@ -109,6 +112,10 @@ function checkMatrix(
     return a !== null && a !== undefined && !(Array.isArray(a) && !a.length);
   };
   if (required && field.rows.some((r) => !answered(String(r.value)))) return say('matrixRows');
+  if (field.onePerColumn) {
+    const taken = Object.values(value as Record<string, unknown>).flat().filter((a) => a !== null && a !== undefined);
+    if (new Set(taken).size < taken.length) return say('matrixColumn');
+  }
   return undefined;
 }
 
