@@ -22,13 +22,13 @@ export const FOLDS_BY_TITLE = 'A group folds by its title: give it a title first
 
 export function setFold(page: Page, id: string, fold: Fold): void {
   const section = nodeOf(page, id);
-  if (!isSection(section)) throw new Refusal('Only a group folds');
+  if (!isSection(section)) throw new Refusal((w) => w.layout.onlyGroupFolds);
   delete section.collapsed;
   if (fold === 'no') {
     delete section.collapsible;
     return;
   }
-  if (!section.title?.trim()) throw new Refusal(FOLDS_BY_TITLE);
+  if (!section.title?.trim()) throw new Refusal((w) => w.layout.foldsByTitle);
   section.collapsible = true;
   if (fold === 'folded') section.collapsed = true;
 }

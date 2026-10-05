@@ -1,4 +1,5 @@
 import type { Field, FieldNode, LabelPlace, Page } from '@fieldia/core';
+import type { DesignerWords } from './designer-words';
 import { isSection, locate } from './layout-tree';
 import { setColspan, setFieldLabels, setSectionLook } from './layout-settings';
 import { Refusal } from './refusal';
@@ -18,7 +19,6 @@ export interface EachChange {
   required?: boolean;
 }
 
-const NOUNS: Record<string, string> = { section: 'A group', divider: 'A divider', text: 'Words', button: 'A button', spacer: 'A spacer', image: 'An image', tabs: 'Tabs', tab: 'A tab', slot: 'The app’s own part' };
 
 /**
  * A field required always, or not, as its own Required does: a rule for when
@@ -37,18 +37,19 @@ function setRequired(page: Page, node: FieldNode, on: boolean, fromModel: (name:
 }
 
 export function setEach(page: Page, ids: readonly string[], change: EachChange, fromModel: (name: string) => boolean = () => false): void {
-  if (!ids.length) throw new Refusal('Pick the parts to change first');
+  if (!ids.length) throw new Refusal((w) => w.layout.pickFirst);
+  const noun = (type: string) => (w: DesignerWords) => (type === 'field' ? w.layout.it : (w.layout.nouns[type] ?? w.layout.it));
   for (const id of ids) {
     const at = locate(page, id);
-    if (!at) throw new Refusal(`There is no part “${id}”`);
+    if (!at) throw new Refusal((w) => w.layout.noPart(id));
     if (change.span !== undefined) setColspan(page, id, change.span);
     if (change.required !== undefined) {
-      if (at.node.type !== 'field') throw new Refusal(`${NOUNS[at.node.type] ?? 'It'} is not answered: only fields are required`);
+      if (at.node.type !== 'field') throw new Refusal((w) => w.layout.notAnswered(noun(at.node.type)(w)));
       setRequired(page, at.node, change.required, fromModel);
     }
     if (change.labels === undefined) continue;
     if (at.node.type === 'field') setFieldLabels(page, id, change.labels);
     else if (isSection(at.node)) setSectionLook(page, id, { labels: change.labels });
-    else throw new Refusal(`${NOUNS[at.node.type] ?? 'It'} has no labels to place`);
+    else throw new Refusal((w) => w.layout.noLabels(noun(at.node.type)(w)));
   }
 }

@@ -29,7 +29,7 @@ export const LATIN_KEPT = [
 ];
 
 /** Code an example writes as it is typed: a formula's function and the fields it reads, as in round(price * qty, 2). */
-const CODE = /\b[a-z_]+\([^)]*\)/g;
+const CODE = /\b[a-z_]+\([^)]*\)|#\w+|https?:\/\/\S*|mailto:\S*/g;
 
 /** Latin letters left in Arabic words, besides those kept on purpose and code. */
 export function latinIn(text: string): string[] {

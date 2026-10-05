@@ -3,6 +3,8 @@ import type { ElementFactory } from './chrome';
 import { foldOf } from './group-fold';
 import { designerIcon } from './icons';
 import { setAttr, setData, setHidden } from './writes';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * The small mark before a group's title on the canvas when the group folds
@@ -15,7 +17,7 @@ export interface FoldMark {
   update(section: SectionNode): void;
 }
 
-export function foldMark(el: ElementFactory, doc: Document): FoldMark {
+export function foldMark(el: ElementFactory, doc: Document, words: DesignerWords = en): FoldMark {
   const element = el('span', { class: 'fd-canvas-fold', role: 'img', hidden: '' }, designerIcon(doc, 'chevron'));
   return {
     element,
@@ -24,9 +26,9 @@ export function foldMark(el: ElementFactory, doc: Document): FoldMark {
       const fold = foldOf(section);
       setHidden(element, fold === 'no' || !section.title);
       setData(element, 'fold', fold);
-      const words = fold === 'folded' ? 'Folds, starting folded' : 'Folds, starting open';
-      setAttr(element, 'aria-label', words);
-      setAttr(element, 'title', words);
+      const said = fold === 'folded' ? words.canvas.foldsFolded : words.canvas.foldsOpen;
+      setAttr(element, 'aria-label', said);
+      setAttr(element, 'title', said);
     },
   };
 }

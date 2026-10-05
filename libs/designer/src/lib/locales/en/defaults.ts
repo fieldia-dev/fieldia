@@ -22,6 +22,15 @@ export const defaults = {
   counter: 'Counter',
   badge: 'Badge',
   noneOfThese: 'None of these',
+  /** The blocks Advanced's toolbox adds. */
+  newGroup: 'New group',
+  left: 'Left',
+  right: 'Right',
+  first: 'First',
+  second: 'Second',
+  newHeading: 'New heading',
+  helpText: 'Words that help people fill this in.',
+  button: 'Button',
   /** A scale made NPS: the words at its ends. */
   npsStart: 'Not at all likely',
   npsEnd: 'Extremely likely',

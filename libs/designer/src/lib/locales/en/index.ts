@@ -12,6 +12,8 @@ import { changes } from './changes';
 import { settingsChanges } from './settings-changes';
 import { checks } from './checks';
 import { questions } from './questions';
+import { layout } from './layout';
+import { canvas } from './canvas';
 
 /** The designer's words in English: the source every other language's table follows, area by area. */
-export const en = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions };
+export const en = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas };

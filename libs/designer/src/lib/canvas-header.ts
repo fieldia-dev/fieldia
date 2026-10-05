@@ -26,11 +26,12 @@ export interface CanvasHeader {
   destroy(): void;
 }
 
-const NEW_WORDS: Record<HeaderPartKind, string> = { button: 'New button', stat: 'Counter', badge: 'Badge' };
-const ADD_WORDS: Record<HeaderPartKind | 'statusbar', string> = { button: 'Add a button', statusbar: 'Add status steps', stat: 'Add a counter', badge: 'Add a badge' };
 
 export function canvasHeader(options: { el: ElementFactory; doc: Document; designer: Designer }): CanvasHeader {
   const { el, doc, designer } = options;
+  const w = designer.words.canvas;
+  const NEW_WORDS: Record<HeaderPartKind, string> = { button: designer.words.defaults.newButton, stat: designer.words.defaults.counter, badge: designer.words.defaults.badge };
+  const ADD_WORDS: Record<HeaderPartKind | 'statusbar', string> = { button: w.addButton, statusbar: w.addStatus, stat: w.addCounter, badge: w.addBadge };
   const adder = (kind: HeaderPartKind | 'statusbar') => {
     const button = el('button', { type: 'button', class: 'fd-canvas-add-part', 'data-add-part': kind }, designerIcon(doc, 'plus'), ADD_WORDS[kind]);
     button.addEventListener('click', () => (kind === 'statusbar' ? pickStatusField(button) : add(kind)));
@@ -55,9 +56,9 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     openMenu({
       el,
       anchor,
-      title: 'Status steps from',
+      title: w.statusFrom,
       items: choices.map(({ name, field }) => ({ id: name, label: field.label })),
-      note: choices.length ? 'A field that holds one of a list: its choices become the steps.' : 'No field holds one of a list yet: add a dropdown, then show it as steps.',
+      note: choices.length ? w.statusNote : w.noStatusField,
       onPick: (name) => {
         if (designer.setStatusbar(name)) designer.select('#statusbar');
       },
@@ -87,7 +88,7 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
       const count = (part as StatButton).field;
       const value = el('span', { class: 'fd-stat-value' }, count ? '12' : '');
       element.append(el('span', { class: 'fd-stat-words' }, value, el('span', { class: 'fd-stat-label' }, part.label)));
-      if (count) element.title = `Shows ${page.fields[count]?.label ?? count}`;
+      if (count) element.title = w.shows(page.fields[count]?.label ?? count);
     } else element.append(part.label);
     const pick = () => {
       designer.select(part.id);
@@ -105,7 +106,7 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
   }
 
   function openPart(kind: HeaderPartKind, part: ButtonNode | StatButton | Badge): PartView {
-    const input = el('input', { class: 'fd-part-input', 'aria-label': 'Words', autocomplete: 'off', size: String(Math.max(4, part.label.length + 1)) }) as HTMLInputElement;
+    const input = el('input', { class: 'fd-part-input', 'aria-label': w.words, autocomplete: 'off', size: String(Math.max(4, part.label.length + 1)) }) as HTMLInputElement;
     input.addEventListener('input', () => {
       input.size = Math.max(4, input.value.length + 1);
       designer.updateHeaderPart(part.id, { label: input.value });
@@ -121,9 +122,9 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
       button.addEventListener('click', run);
       return button;
     };
-    const left = tool('Move left', 'left', () => designer.moveHeaderPart(part.id, -1));
-    const right = tool('Move right', 'right', () => designer.moveHeaderPart(part.id, 1));
-    const bar = el('div', { class: 'fd-field-bar fd-part-bar', role: 'toolbar', 'aria-label': part.label }, left, right, tool('Delete', 'delete', () => designer.removeHeaderPart(part.id)));
+    const left = tool(w.moveLeft, 'left', () => designer.moveHeaderPart(part.id, -1));
+    const right = tool(w.moveRight, 'right', () => designer.moveHeaderPart(part.id, 1));
+    const bar = el('div', { class: 'fd-field-bar fd-part-bar', role: 'toolbar', 'aria-label': part.label }, left, right, tool(w.delete, 'delete', () => designer.removeHeaderPart(part.id)));
     const words = kind === 'stat' ? el('span', { class: 'fd-stat-words' }, el('span', { class: 'fd-stat-value' }, (part as StatButton).field ? '12' : ''), input) : input;
     const element = el('span', { class: `${looks(kind, part)} fd-canvas-part fd-editing`, 'data-part': part.id }, bar, words);
     return { element, key: '', input, left, right };
@@ -151,7 +152,7 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
   // ---- the status steps ---------------------------------------------------------------
   let statusWidget: Widget | null = null;
   let statusKey = '';
-  const statusPart = el('div', { class: 'fd-canvas-part fd-canvas-statusbar', 'data-part': '#statusbar', role: 'button', tabindex: '0', 'aria-label': 'Status steps' });
+  const statusPart = el('div', { class: 'fd-canvas-part fd-canvas-statusbar', 'data-part': '#statusbar', role: 'button', tabindex: '0', 'aria-label': w.statusSteps });
   const statusBox = el('div', { class: 'fd-canvas-widget', inert: '' });
   statusPart.append(statusBox);
   statusPart.addEventListener('click', () => designer.select('#statusbar'));

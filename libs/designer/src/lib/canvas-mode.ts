@@ -1,6 +1,7 @@
 import type { Page, SectionNode } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { colsOf } from './layout-tree';
+import { en } from './locales/en';
 import type { DesignerWords } from './designer-words';
 
 /**
@@ -56,13 +57,11 @@ export function modeSwitch(el: ElementFactory, mode: DesignerMode, change: (mode
   return { element, set };
 }
 
-const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
 
 /** What Simple mode says of an arrangement: how Advanced laid it out, and that it stays so. */
-export function lockWords(page: Page, section: SectionNode): string {
+export function lockWords(page: Page, section: SectionNode, words: DesignerWords = en): string {
   const desktop = colsOf(page, section);
   // A width left out stacks as the skin does by itself: one column on a phone.
   const phone = Math.min(desktop, typeof section.columns === 'object' ? (section.columns.narrow ?? 1) : 1);
-  const how = desktop > 1 ? 'side by side' : 'together';
-  return `Laid out in Advanced: ${plural(section.children.length, 'part')} ${how}, ${plural(desktop, 'column')} on a desktop and ${phone} on a phone.`;
+  return words.canvas.lock(section.children.length, desktop > 1, desktop, phone);
 }

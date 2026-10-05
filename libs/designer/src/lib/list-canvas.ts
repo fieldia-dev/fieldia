@@ -245,6 +245,7 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
   const element = el('div', { class: 'fd-canvas fd-list-canvas' }, el('div', { class: 'fd-list' }, bar, selection, scroll));
 
   const drag = canvasDrag({
+    words: designer.words,
     canvas: element,
     cards: '.fd-list-table th[data-node]',
     drop(source, _section, index) {

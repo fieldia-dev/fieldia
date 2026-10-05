@@ -1249,10 +1249,10 @@ export function createDesigner(options: {
       });
     },
 
-    place: (part, drop) => layoutEdit((draft) => ops.place(draft, part, drop, { model })),
-    describeDrop: (drop, moving) => ops.describeDrop(page, drop, moving),
-    dropRefusal: (drop, moving) => ops.dropRefusal(page, drop, moving),
-    wrap: (ids, kind) => layoutEdit((draft) => ops.wrap(draft, ids, kind)),
+    place: (part, drop) => layoutEdit((draft) => ops.place(draft, part, drop, { model, words })),
+    describeDrop: (drop, moving) => ops.describeDrop(page, drop, moving, words),
+    dropRefusal: (drop, moving) => ops.dropRefusal(page, drop, moving, words),
+    wrap: (ids, kind) => layoutEdit((draft) => ops.wrap(draft, ids, kind, words)),
     ungroup: (id) => layoutEdit((draft) => ops.ungroup(draft, id)) !== false,
     duplicate: (ids) => layoutEdit((draft) => ops.duplicate(draft, ids)),
     remove: (ids) => apply((draft) => ops.remove(draft, ids), null, forgetGone),
@@ -1266,7 +1266,7 @@ export function createDesigner(options: {
     setSectionLook: (id, look) => apply((draft) => settings.setSectionLook(draft, id, look), `section-look:${id}:${Object.keys(look).join(',')}`),
     setFieldLabels: (id, place) => apply((draft) => settings.setFieldLabels(draft, id, place)),
     setLook: (patch) => apply((draft) => settings.setLook(draft, patch), `look:${Object.keys(patch).join(',')}`),
-    addBlock: (kind, where) => layoutEdit((draft) => ops.addBlock(draft, kind, where)),
+    addBlock: (kind, where) => layoutEdit((draft) => ops.addBlock(draft, kind, where, words)),
 
     setLineColumns(id, columns) {
       return apply(

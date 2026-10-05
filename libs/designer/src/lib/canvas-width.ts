@@ -56,7 +56,6 @@ export interface WidthMarks {
   destroy(): void;
 }
 
-const columnsWords = (n: number) => `${n} column${n === 1 ? '' : 's'}`;
 
 /** A part's width in twelfths of its group's row, as it is or as dividing the group in twelfths makes it. */
 function twelfthsOf(group: SectionNode, part: Part): number {
@@ -81,7 +80,7 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
   const handle = doc.createElement('div');
   handle.className = 'fd-width-handle';
   handle.hidden = true;
-  handle.title = 'Drag to widen or narrow';
+  handle.title = designer.words.canvas.widen;
   const gutter = doc.createElement('div');
   gutter.className = 'fd-gutter';
   gutter.hidden = true;
@@ -134,8 +133,9 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
   /** Widths in words: percentages of the row in twelfths, else columns. */
   const words = (a: number, b?: number) => {
     const units = on?.group ? TWELVE : (on?.cols ?? 1);
-    if (on?.percents) return b === undefined ? `${percent(a, units)}% of the row` : `${percent(a, units)}% · ${percent(b, units)}%`;
-    return b === undefined ? `${a} of ${columnsWords(units)}` : `${a} and ${b} of ${columnsWords(units)}`;
+    const w = designer.words;
+    if (on?.percents) return b === undefined ? w.parts.percentOfRow(percent(a, units)) : w.canvas.percents(percent(a, units), percent(b, units));
+    return b === undefined ? w.canvas.ofColumns(a, units) : w.canvas.twoOfColumns(a, b, units);
   };
 
   function update(state: DesignerState, advanced: boolean) {
@@ -181,7 +181,7 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
     place(gutter, { left: edge - 12, top, height: Math.max(r.bottom, n.bottom) - top });
     const nextId = next.dataset['node'] as string;
     const [a, b] = [widthNow(on.id), widthNow(nextId)];
-    gutter.setAttribute('aria-label', `Width between “${nameOf(page, nodeAt(on.id) ?? null)}” and “${nameOf(page, nodeAt(nextId) ?? null)}”`);
+    gutter.setAttribute('aria-label', designer.words.canvas.widthBetween(nameOf(page, nodeAt(on.id) ?? null, designer.words), nameOf(page, nodeAt(nextId) ?? null, designer.words)));
     gutter.setAttribute('aria-valuenow', String(a));
     gutter.setAttribute('aria-valuemax', String(a + b - 1));
     if (on.percents) gutter.setAttribute('aria-valuetext', words(a, b));

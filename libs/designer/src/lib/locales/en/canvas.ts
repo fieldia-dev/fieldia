@@ -1,0 +1,104 @@
+import { plural } from '../speak';
+
+const count = (n: number, one: string) => plural('en', n, { one: `# ${one}`, other: `# ${one}s` });
+
+/** The screen drawn as the viewer draws it, and what the designer adds on it: the field picked and its bar, the header's parts, sizes and widths, Advanced's marks and keys. */
+export const canvas = {
+  label: 'Label',
+  help: 'Help',
+  addHelp: 'Add a line of help',
+  sectionTitle: 'Section title',
+  dropHere: 'Drop a field here, or pick one in the toolbox.',
+  openAdvanced: 'Open in Advanced',
+  simpleKeeps: 'Simple mode keeps it as it is. Edit what is inside by picking it.',
+  /** What Simple mode says of an arrangement Advanced laid out. */
+  lock: (parts: number, sideBySide: boolean, desktop: number, phone: number) =>
+    `Laid out in Advanced: ${count(parts, 'part')} ${sideBySide ? 'side by side' : 'together'}, ${count(desktop, 'column')} on a desktop and ${phone} on a phone.`,
+  addTab: 'Add a tab',
+  untitledTab: 'Untitled tab',
+  emptyRoom: 'Empty room',
+  foldsFolded: 'Folds, starting folded',
+  foldsOpen: 'Folds, starting open',
+  // ---- a sheet's header
+  addButton: 'Add a button',
+  addStatus: 'Add status steps',
+  addCounter: 'Add a counter',
+  addBadge: 'Add a badge',
+  statusFrom: 'Status steps from',
+  statusNote: 'A field that holds one of a list: its choices become the steps.',
+  noStatusField: 'No field holds one of a list yet: add a dropdown, then show it as steps.',
+  shows: (label: string) => `Shows ${label}`,
+  words: 'Words',
+  moveLeft: 'Move left',
+  moveRight: 'Move right',
+  delete: 'Delete',
+  statusSteps: 'Status steps',
+  // ---- the field picked, and its bar
+  dragToMove: 'Drag to move',
+  required: 'Required',
+  width: 'Width',
+  showOnlyWhen: 'Show only when…',
+  duplicate: 'Duplicate',
+  moreSettings: 'More settings',
+  field: 'Field',
+  showAs: (label: string) => `Show ${label} as`,
+  showAsKind: (kind: string) => `Show as: ${kind}`,
+  custom: 'Custom',
+  madeHere: 'Made on this page, so it can be any kind: what it holds follows.',
+  storedIn: (label: string, stored: string, one: boolean) => `${label} is stored as ${stored} in the model, so ${one ? 'this is the one way to show it' : 'these are the ways to show it'}.`,
+  fullWidth: 'Full width',
+  oneColumn: 'One column',
+  columns: (n: number) => `${n} columns`,
+  percent: (n: number) => `${n}%`,
+  // ---- several picked
+  group: 'Group',
+  sideBySide: 'Side by side',
+  tabs: 'Tabs',
+  remove: 'Remove',
+  putDown: 'Put down',
+  ungroup: 'Ungroup',
+  sameGroupToGroup: 'Pick parts in the same group to group them',
+  whatIsPicked: 'What is picked',
+  picked: (n: number) => `${n} picked`,
+  // ---- sizes and widths
+  sizes: { desktop: 'Desktop', tablet: 'Tablet', phone: 'Phone' },
+  screenSize: 'Screen size',
+  px: (n: number) => `${n} px`,
+  screenWidth: 'Screen width',
+  resizeTitle: 'Drag to change the width · double-click for the size’s own',
+  /** The chip's words while the width is dragged: "640 px · Tablet". */
+  chip: (width: number, size: string) => `${width} px · ${size}`,
+  /** A screen reader's: "640 pixels, tablet" — the size by its own key. */
+  value: (width: number, size: 'desktop' | 'tablet' | 'phone') => `${width} pixels, ${size}`,
+  widen: 'Drag to widen or narrow',
+  percents: (a: number, b: number) => `${a}% · ${b}%`,
+  ofColumns: (a: number, columns: number) => `${a} of ${count(columns, 'column')}`,
+  twoOfColumns: (a: number, b: number, columns: number) => `${a} and ${b} of ${count(columns, 'column')}`,
+  widthBetween: (a: string, b: string) => `Width between “${a}” and “${b}”`,
+  // ---- moving by keys
+  twelfthAlready: 'It is a twelfth of the row already',
+  oneColumnAlready: 'It is one column wide already',
+  nothingThatWay: 'There is nothing that way to put it beside',
+  columnsWide: (n: number) => `${count(n, 'column')} wide`,
+  keysTitle: 'Keys for moving parts',
+  /** The keys of Advanced's canvas, and what each does. */
+  keys: [
+    ['Alt+↑ / Alt+↓', 'Move it before or after the part next to it'],
+    ['Alt+← / Alt+→', 'Put it beside the part before or after it'],
+    ['Alt+Shift+← / →', 'Make it a column narrower or wider'],
+    ['Shift-click', 'Pick several (⌘- or Ctrl-click too)'],
+    ['⌘G / ⌘⇧G', 'Put what is picked in a group, or ungroup it (Ctrl on Windows)'],
+    ['⌘D', 'Copy what is picked'],
+    ['Delete', 'Take what is picked off the page'],
+    ['Escape', 'Put it down'],
+  ] as [string, string][],
+  ungrouped: 'Ungrouped',
+  grouped: (n: number) => `Grouped ${n}`,
+  copied: (n: number) => `Copied ${n}`,
+  tookOff: (n: number) => `Took ${n} off the page`,
+  /** What a key did, said after the part's name. */
+  named: (name: string, words: string) => `${name}: ${words}`,
+  // ---- what is carried
+  part: 'Part',
+  notHere: 'Not here',
+};

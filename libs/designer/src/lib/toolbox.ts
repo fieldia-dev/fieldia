@@ -63,10 +63,15 @@ export function toolboxGroups(kinds: readonly QuestionKind[]): [string, string[]
   return groups;
 }
 
+/** A toolbox group's title in the designer's words: Fieldia's by their key, an app's as the app named it. */
+export function groupName(words: DesignerWords, key: string): string {
+  const groups: Record<string, string> = words.kinds.groups;
+  return Object.prototype.hasOwnProperty.call(groups, key) ? groups[key] : key;
+}
+
 export function toolbox(options: ToolboxOptions): ToolboxHandle {
   const { el, doc } = options;
   const w = options.words.toolbox;
-  const groupName = (key: string) => (Object.prototype.hasOwnProperty.call(options.words.kinds.groups, key) ? options.words.kinds.groups[key as keyof DesignerWords['kinds']['groups']] : key);
   const offered = new Map(options.kinds.map((k) => [k.id, k]));
   const folded = new Set<string>();
   let query = '';
@@ -112,7 +117,7 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
   fromModel.element.classList.add('fd-tool-group-model');
   const kindGroups = toolboxGroups(options.kinds).map(([title, ids]) => {
     // Fieldia's groups by their key, in the designer's words; an app's by the name it gave.
-    const g = group(title, groupName(title));
+    const g = group(title, groupName(options.words, title));
     for (const id of ids) {
       const kind = offered.get(id);
       const name = kind ? kindName(kind, options.words) : '';

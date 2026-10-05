@@ -1,4 +1,6 @@
 import type { ColumnCount, ColumnsByWidth, Field, LayoutNode, Page, SectionNode, TabsNode } from '@fieldia/core';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 import { kindById, type QuestionKind } from './kinds';
 import { across, colsOf, contains, isRow, isSection, isWrapper, listOf, locate, nameOf, nodeOf, rowsOf, seenAs, setSpan, spanOf, SPANNED, type Holder, type Part, type Spot } from './layout-tree';
 import { besideIn, besideWords, columnInside, fill, inTwelfths, isGroup, keepsFull, laidInTwelfths, landingSpan, putAt, resize, shares, toTwelfths, TWELVE, type Beside } from './layout-twelfths';
@@ -43,38 +45,42 @@ export interface Where {
 /** What the store lends a layout edit: the backend's model, to put its fields on the page as it has them. */
 export interface LayoutContext {
   model: Record<string, Field>;
+  /** The designer's words, for the words a new part starts with. English unless given. */
+  words?: DesignerWords;
 }
 
 /** What a drop means, in the words the drag chip says. */
-export function describeDrop(page: Page, drop: Drop, moving?: string): string {
+export function describeDrop(page: Page, drop: Drop, moving?: string, words: DesignerWords = en): string {
+  const w = words.layout;
+  const named = (node: Part | Holder | null) => nameOf(page, node, words);
   if (drop.how === 'column') {
     const plan = columnPlan(page, drop, moving);
-    if (plan.how !== 'wrap') return describeDrop(page, plan.drop, moving);
-    return `new column inside “${nameOf(page, nodeOf(page, drop.container))}”, ${drop.after ? 'after' : 'before'} all its rows — in halves`;
+    if (plan.how !== 'wrap') return describeDrop(page, plan.drop, moving, words);
+    return w.columnInside(named(nodeOf(page, drop.container)), !!drop.after);
   }
   if (drop.how === 'into') {
     const box = nodeOf(page, drop.container);
-    return box?.id === page.layout.id ? 'into the page' : `into “${nameOf(page, box)}”`;
+    return box?.id === page.layout.id ? w.intoThePage : w.into(named(box));
   }
   if (drop.how === 'row' || drop.how === 'at') {
     const box = nodeOf(page, drop.container);
     const next = (listOf(box ?? undefined) ?? []).filter((c) => c.id !== moving)[drop.index];
-    if (drop.how === 'at') return next ? `before “${nameOf(page, next)}”` : `at the end of “${nameOf(page, box)}”`;
-    return next ? `new full-width row above “${nameOf(page, next)}”` : `new full-width row at the end of “${nameOf(page, box)}”`;
+    if (drop.how === 'at') return next ? w.before(named(next)) : w.atEndOf(named(box));
+    return next ? w.newRowAbove(named(next)) : w.newRowAtEnd(named(box));
   }
   const target = nodeOf(page, drop.target);
   if (!target) return '';
   // A row of parts takes one more column: name the part it goes next to.
   if (drop.how === 'beside' && isRow(page, target)) {
     const edge = drop.after ? target.children[target.children.length - 1] : target.children[0];
-    return `new column beside “${nameOf(page, edge)}”`;
+    return w.beside(words.parts.quote(named(edge)), true);
   }
   const plan = besidePlan(page, drop, moving);
-  if (plan) return besideWords(page, plan, target as Part, drop.after);
-  const whole = drop.whole ? (drop.how === 'beside' ? 'new column ' : 'new row ') : '';
-  const name = seenAs(page, target);
-  if (drop.how === 'beside') return `${whole}beside ${name}`;
-  return `${whole}${drop.after ? 'under' : 'above'} ${name}`;
+  if (plan) return besideWords(page, plan, target as Part, drop.after, words);
+  const whole = !!drop.whole;
+  const name = seenAs(page, target, words);
+  if (drop.how === 'beside') return w.beside(name, whole);
+  return drop.after ? w.under(name, whole) : w.above(name, whole);
 }
 
 /** Beside a part in a group: where its row puts the part dropped (see layout-twelfths.ts); null for a drop the other rules take. */
@@ -186,7 +192,7 @@ export function placeAt(page: Page, node: Part, drop: Drop): void {
     return;
   }
   const plan = besidePlan(page, drop, came && node.id, node);
-  if (plan?.how === 'refused') throw new Refusal(plan.why);
+  if (plan?.how === 'refused') throw new Refusal((w) => w.layout[plan.why]);
   if (plan && drop.how === 'beside') {
     // The group in twelfths first, so the row the part leaves closes up by the group's own rule.
     toTwelfths(locate(page, drop.target)?.parent as SectionNode);
@@ -261,36 +267,37 @@ export function placeAt(page: Page, node: Part, drop: Drop): void {
 }
 
 /** Why a drop cannot be made, or null when it can. */
-export function dropRefusal(page: Page, drop: Drop, moving?: string): string | null {
+export function dropRefusal(page: Page, drop: Drop, moving?: string, words: DesignerWords = en): string | null {
+  const w = words.layout;
   const moved = moving ? locate(page, moving) : null;
-  if (moving && !moved) return `There is no part “${moving}”`;
-  if (moved?.node.type === 'tab') return 'A tab moves only among its tabs';
+  if (moving && !moved) return w.noPart(moving);
+  if (moved?.node.type === 'tab') return w.tabMoves;
   if (drop.how === 'column') {
     const group = nodeOf(page, drop.container);
-    if (!group) return `There is no part “${drop.container}”`;
-    if (moving && contains(page, moving, drop.container)) return 'A part cannot go inside itself';
-    if (!isGroup(group)) return 'A new column goes inside a group';
+    if (!group) return w.noPart(drop.container);
+    if (moving && contains(page, moving, drop.container)) return w.notInsideItself;
+    if (!isGroup(group)) return w.columnInGroup;
     const plan = columnPlan(page, drop, moving);
-    return plan.how === 'wrap' ? null : dropRefusal(page, plan.drop, moving);
+    return plan.how === 'wrap' ? null : dropRefusal(page, plan.drop, moving, words);
   }
   if (drop.how === 'into' || drop.how === 'row' || drop.how === 'at') {
     const box = nodeOf(page, drop.container);
-    if (!box) return `There is no part “${drop.container}”`;
-    if (box.type === 'tabs') return 'Put it in one of the tabs';
-    if (!listOf(box)) return `“${nameOf(page, box)}” holds no parts`;
-    if (moving && contains(page, moving, drop.container)) return 'A part cannot go inside itself';
+    if (!box) return w.noPart(drop.container);
+    if (box.type === 'tabs') return w.putInATab;
+    if (!listOf(box)) return w.holdsNoParts(nameOf(page, box, words));
+    if (moving && contains(page, moving, drop.container)) return w.notInsideItself;
     return null;
   }
   const at = locate(page, drop.target);
-  if (!at) return `There is no part “${drop.target}”`;
-  if (at.node.type === 'tab') return 'Put it in one of the tabs';
-  if (moving === drop.target) return 'A part cannot go beside or under itself';
-  if (moving && contains(page, moving, drop.target)) return 'A part cannot go inside itself';
+  if (!at) return w.noPart(drop.target);
+  if (at.node.type === 'tab') return w.putInATab;
+  if (moving === drop.target) return w.notBesideItself;
+  if (moving && contains(page, moving, drop.target)) return w.notInsideItself;
   if (drop.how === 'beside') {
     const full = (node: Part | Holder) => isRow(page, node) && node.children.length >= 4 && !node.children.some((c) => c.id === moving);
-    if (full(at.node) || (!isRow(page, at.node) && full(at.parent))) return 'A row holds four';
+    if (full(at.node) || (!isRow(page, at.node) && full(at.parent))) return w.rowHoldsFour;
     const plan = besidePlan(page, drop, moving);
-    if (plan?.how === 'refused') return plan.why;
+    if (plan?.how === 'refused') return w[plan.why];
   }
   return null;
 }
@@ -298,27 +305,28 @@ export function dropRefusal(page: Page, drop: Drop, moving?: string): string | n
 const IMAGE_PLACEHOLDER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"%3E%3Crect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="%23888"/%3E%3C/svg%3E';
 
 /** A new block, named so no id is taken twice. */
-export function makeBlock(kind: BlockKind, name: (prefix: string) => string): LayoutNode {
+export function makeBlock(kind: BlockKind, name: (prefix: string) => string, words: DesignerWords = en): LayoutNode {
+  const w = words.defaults;
   switch (kind) {
     case 'group':
-      return { type: 'section', id: name('section'), title: 'New group', columns: columnsValue(2, undefined, 1), children: [] };
+      return { type: 'section', id: name('section'), title: w.newGroup, columns: columnsValue(2, undefined, 1), children: [] };
     case 'side': {
       const id = name('side');
-      const left: SectionNode = { type: 'section', id: name('section'), title: 'Left', children: [] };
-      const right: SectionNode = { type: 'section', id: name('section'), title: 'Right', children: [] };
+      const left: SectionNode = { type: 'section', id: name('section'), title: w.left, children: [] };
+      const right: SectionNode = { type: 'section', id: name('section'), title: w.right, children: [] };
       return arrangement(id, 1, columnsValue(2, undefined, 1), [left, right]) as LayoutNode;
     }
     case 'tabs': {
       const tabs: TabsNode = { type: 'tabs', id: name('tabs'), children: [] };
-      tabs.children.push({ type: 'tab', id: name('tab'), label: 'First', children: [] }, { type: 'tab', id: name('tab'), label: 'Second', children: [] });
+      tabs.children.push({ type: 'tab', id: name('tab'), label: w.first, children: [] }, { type: 'tab', id: name('tab'), label: w.second, children: [] });
       return tabs;
     }
     case 'heading':
-      return { type: 'text', id: name('heading'), style: 'heading', text: 'New heading' };
+      return { type: 'text', id: name('heading'), style: 'heading', text: w.newHeading };
     case 'text':
-      return { type: 'text', id: name('text'), style: 'paragraph', text: 'Words that help people fill this in.' };
+      return { type: 'text', id: name('text'), style: 'paragraph', text: w.helpText };
     case 'button':
-      return { type: 'button', id: name('button'), label: 'Button', action: 'button', style: 'secondary' };
+      return { type: 'button', id: name('button'), label: w.button, action: 'button', style: 'secondary' };
     case 'image':
       return { type: 'image', id: name('image'), src: IMAGE_PLACEHOLDER, alt: '' };
     case 'divider':
@@ -332,15 +340,16 @@ const BLOCKS = new Set<string>(['group', 'side', 'tabs', 'heading', 'text', 'div
 
 /** A new part from the toolbox, its field (if any) added to the page's. Refuses what the store's rules refuse. */
 export function makePart(page: Page, part: NewPart, context: LayoutContext): LayoutNode {
+  const words = context.words ?? en;
   const name = namer(page);
   if ('block' in part) {
-    if (!BLOCKS.has(part.block)) throw new Refusal(`There is no kind of part “${part.block}”`);
-    return makeBlock(part.block, name);
+    if (!BLOCKS.has(part.block)) throw new Refusal((w) => w.layout.noKindOfPart(part.block));
+    return makeBlock(part.block, name, words);
   }
   if ('field' in part) {
     const def = Object.prototype.hasOwnProperty.call(context.model, part.field) ? context.model[part.field] : null;
-    if (!def) throw new Refusal(`The model has no field "${part.field}"`);
-    if (shownFields(page).has(part.field)) throw new Refusal(`${def.label} is on the page already`);
+    if (!def) throw new Refusal((w) => w.refusals.noModelField(part.field));
+    if (shownFields(page).has(part.field)) throw new Refusal((w) => w.refusals.onThePageAlready(def.label));
     // A definition the page already keeps for it stays; otherwise the model's.
     page.fields[part.field] = page.fields[part.field] ?? JSON.parse(JSON.stringify(def));
     return { type: 'field', id: name('q'), field: part.field };
@@ -349,19 +358,18 @@ export function makePart(page: Page, part: NewPart, context: LayoutContext): Lay
   try {
     kind = kindById(part.kind);
   } catch {
-    throw new Refusal(`There is no kind of part “${part.kind}”`);
+    throw new Refusal((w) => w.layout.noKindOfPart(part.kind));
   }
-  if (kind.group === 'records' && page.data.kind === 'responses') throw new Refusal('A survey has no records to link to or list: this kind is for app screens');
+  if (kind.group === 'records' && page.data.kind === 'responses') throw new Refusal((w) => w.refusals.surveyHasNoRecords);
   const field = nextName((n) => n in page.fields, 'q', '_');
-  page.fields[field] = kind.field('Untitled question');
+  page.fields[field] = kind.field(words.defaults.untitledQuestion, words);
   return { type: 'field', id: name('q'), field, ...(kind.widget ? { widget: kind.widget } : {}) };
 }
 
 /** Drop a part — one on the page, or a new one — where the drop says. Returns its id. */
 export function place(page: Page, target: string | NewPart, drop: Drop, context: LayoutContext): string {
   const moving = typeof target === 'string' ? target : undefined;
-  const refused = dropRefusal(page, drop, moving);
-  if (refused) throw new Refusal(refused);
+  if (dropRefusal(page, drop, moving)) throw new Refusal((w) => dropRefusal(page, drop, moving, w) as string);
   const node = moving ? (locate(page, moving) as Spot).node : makePart(page, target as NewPart, context);
   placeAt(page, node, drop);
   return node.id;
@@ -373,7 +381,7 @@ export function place(page: Page, target: string | NewPart, drop: Drop, context:
 function spotsOf(page: Page, ids: string[]): Spot[] {
   return [...new Set(ids)].map((id) => {
     const at = locate(page, id);
-    if (!at) throw new Refusal(`There is no part “${id}”`);
+    if (!at) throw new Refusal((w) => w.layout.noPart(id));
     return at;
   });
 }
@@ -381,7 +389,7 @@ function spotsOf(page: Page, ids: string[]): Spot[] {
 /** The parts, in reading order, when they sit in one list — never tabs among their tabs. */
 function siblings(page: Page, ids: string[]): Spot[] {
   const spots = spotsOf(page, ids);
-  if (!spots.length || new Set(spots.map((s) => s.list)).size !== 1 || spots[0].parent.type === 'tabs') throw new Refusal('Pick parts that sit in the same group');
+  if (!spots.length || new Set(spots.map((s) => s.list)).size !== 1 || spots[0].parent.type === 'tabs') throw new Refusal((w) => w.layout.sameGroup);
   return spots.sort((a, b) => a.index - b.index);
 }
 
@@ -397,7 +405,7 @@ function tabLabel(page: Page, node: LayoutNode): string {
  * (an arrangement), or in tabs, a tab each — where the first of them was.
  * Returns what holds them.
  */
-export function wrap(page: Page, ids: string[], kind: 'group' | 'side' | 'tabs'): string {
+export function wrap(page: Page, ids: string[], kind: 'group' | 'side' | 'tabs', words: DesignerWords = en): string {
   const spots = siblings(page, ids);
   const parent = spots[0].parent;
   const parentCols = across(page, parent);
@@ -406,10 +414,10 @@ export function wrap(page: Page, ids: string[], kind: 'group' | 'side' | 'tabs')
   let made: LayoutNode;
   if (kind === 'group') {
     const cols = isSection(parent) ? parentCols : Math.min(2, nodes.length);
-    made = { type: 'section', id: name('section'), title: 'New group', columns: cols === 1 ? 1 : columnsValue(cols, undefined, 1), children: nodes };
+    made = { type: 'section', id: name('section'), title: words.defaults.newGroup, columns: cols === 1 ? 1 : columnsValue(cols, undefined, 1), children: nodes };
     setSpan(made, parentCols);
   } else if (kind === 'side') {
-    if (nodes.length < 2) throw new Refusal('Pick two or more to put side by side');
+    if (nodes.length < 2) throw new Refusal((w) => w.layout.twoOrMore);
     if (parentCols > 1) {
       // In a grid: they keep their widths, on the grid's own columns.
       const total = Math.min(parentCols, nodes.reduce((sum, n) => sum + Math.min(spanOf(n), parentCols), 0));
@@ -421,7 +429,7 @@ export function wrap(page: Page, ids: string[], kind: 'group' | 'side' | 'tabs')
     }
   } else {
     const tabs: TabsNode = { type: 'tabs', id: name('tabs'), children: [] };
-    nodes.forEach((n, i) => tabs.children.push({ type: 'tab', id: name('tab'), label: tabLabel(page, n) || `Tab ${i + 1}`, children: [n] }));
+    nodes.forEach((n, i) => tabs.children.push({ type: 'tab', id: name('tab'), label: tabLabel(page, n) || words.defaults.tab(i + 1), children: [n] }));
     setSpan(tabs, parentCols);
     made = tabs;
   }
@@ -435,7 +443,7 @@ export function wrap(page: Page, ids: string[], kind: 'group' | 'side' | 'tabs')
 export function ungroup(page: Page, id: string): string[] {
   const at = spotsOf(page, [id])[0];
   const node = at.node;
-  if (node.type !== 'section' && node.type !== 'tabs') throw new Refusal('Only a group or tabs can be ungrouped');
+  if (node.type !== 'section' && node.type !== 'tabs') throw new Refusal((w) => w.layout.onlyUngroup);
   const inner: LayoutNode[] = node.type === 'tabs' ? node.children.flatMap((tab) => tab.children) : node.children;
   const cols = across(page, at.parent);
   for (const part of inner) setSpan(part, Math.min(spanOf(part), cols));
@@ -462,7 +470,7 @@ function renew(page: Page, node: Part, name: (prefix: string) => string): Part {
 /** A copy of each part right after it. Returns the copies. */
 export function duplicate(page: Page, ids: string[]): string[] {
   const spots = spotsOf(page, ids).filter((s) => s.node.type !== 'tab');
-  if (!spots.length) throw new Refusal('A tab cannot be duplicated on its own: duplicate the tabs, or what is in it');
+  if (!spots.length) throw new Refusal((w) => w.layout.tabAlone);
   const name = namer(page);
   return spots.map((s) => {
     const copy = renew(page, JSON.parse(JSON.stringify(s.node)), name);
@@ -491,7 +499,7 @@ export function remove(page: Page, ids: string[]): void {
     }
   }
   tidy(page);
-  if (!root.children.length) throw new Refusal('A page needs at least one step or section');
+  if (!root.children.length) throw new Refusal((w) => w.refusals.oneStepOrSection);
   prune(page);
 }
 
@@ -499,23 +507,23 @@ export function remove(page: Page, ids: string[]): void {
 function insert(page: Page, node: LayoutNode, where: Where): void {
   if (where.after) {
     const at = locate(page, where.after);
-    if (!at) throw new Refusal(`There is no part “${where.after}”`);
-    if (at.node.type === 'tab') throw new Refusal('Put it in one of the tabs');
+    if (!at) throw new Refusal((w) => w.layout.noPart(where.after as string));
+    if (at.node.type === 'tab') throw new Refusal((w) => w.layout.putInATab);
     putAt(page, at.parent, at.index + 1, [node], (p) => landingSpan(page, p, at.parent));
     return;
   }
   const all = containers(page);
   const box = where.parent ? nodeOf(page, where.parent) : (all[all.length - 1] as Holder | undefined);
-  if (box?.type === 'tabs') throw new Refusal('Put it in one of the tabs');
+  if (box?.type === 'tabs') throw new Refusal((w) => w.layout.putInATab);
   const list = listOf(box ?? undefined);
-  if (!list) throw new Refusal(`There is no group or tab “${where.parent}”`);
+  if (!list) throw new Refusal((w) => w.layout.noGroupOrTab(String(where.parent)));
   putAt(page, box as Holder, where.index === undefined ? list.length : Math.max(0, Math.min(where.index, list.length)), [node], (p) => landingSpan(page, p, box as Holder));
 }
 
 /** A block where a tile is clicked: words, a line, room, a picture, a button, a group or tabs. Returns its id. */
-export function addBlock(page: Page, kind: BlockKind, where: Where = {}): string {
-  if (!BLOCKS.has(kind)) throw new Refusal(`There is no kind of part “${kind}”`);
-  const node = makeBlock(kind, namer(page));
+export function addBlock(page: Page, kind: BlockKind, where: Where = {}, words: DesignerWords = en): string {
+  if (!BLOCKS.has(kind)) throw new Refusal((w) => w.layout.noKindOfPart(kind));
+  const node = makeBlock(kind, namer(page), words);
   insert(page, node, where);
   return node.id;
 }

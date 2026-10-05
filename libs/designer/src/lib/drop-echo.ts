@@ -4,6 +4,7 @@ import type { Designer } from './designer';
 import type { Drop } from './layout-ops';
 import { across, listOf, locate, nodeOf, type Holder } from './layout-tree';
 import type { DropSpot } from './outline-drop';
+import { speakLike } from './chrome-language';
 
 /**
  * One drop line, drawn in the outline and on the canvas at once, as
@@ -174,12 +175,12 @@ export function dropEcho(options: DropEchoOptions): DropEcho {
       where.className = 'fd-drop-where';
       marks = { zone: make('fd-drop-zone'), bar: make('fd-drop-bar'), chip: make('fd-drop-chip'), name, where };
       marks.chip.append(name, where);
-      canvas.append(marks.zone, marks.bar, marks.chip);
+      canvas.append(marks.zone, marks.bar, speakLike(marks.chip, canvas));
     }
     inCanvas(bar, marks.bar);
     marks.zone.hidden = !zone;
     if (zone) inCanvas(zone, marks.zone);
-    marks.name.textContent = detail.name ?? 'Part';
+    marks.name.textContent = detail.name ?? designer.words.canvas.part;
     marks.where.textContent = detail.words ?? '';
     // The chip under the line's start — its right end, right to left — kept inside the canvas.
     const c = rectOf(canvas);

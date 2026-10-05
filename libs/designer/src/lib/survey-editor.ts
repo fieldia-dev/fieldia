@@ -257,6 +257,7 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     placeRail();
   }
   const drag = canvasDrag({
+    words: designer.words,
     canvas: editor,
     cards: '.fd-q[data-node]',
     drop: (source, step, index) => {
