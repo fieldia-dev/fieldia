@@ -70,10 +70,23 @@
     if (viewer) viewer.destroy();
     viewer = Fieldia.mountViewer(host, { page: pageIn(locale.value), dataSource: dataSource, skin: skin.value, locale: locale.value });
   }
+  // fieldia.js speaks English; another language's words come in its own script, fetched the first time it is picked.
+  var loaded = { en: true };
+  function mountInLanguage() {
+    var code = locale.value;
+    if (loaded[code]) return mount();
+    var words = document.createElement('script');
+    words.src = '/fieldia.' + code + '.js';
+    words.onload = function () {
+      loaded[code] = true;
+      if (locale.value === code) mount();
+    };
+    document.head.appendChild(words);
+  }
   skin.addEventListener('change', function () {
     viewer.setSkin(skin.value);
   });
-  locale.addEventListener('change', mount);
-  mount();
+  locale.addEventListener('change', mountInLanguage);
+  mountInLanguage();
   window.fieldiaLive = { dataSource: memory };
 })();

@@ -30,6 +30,7 @@ ${code(
   `
 <!-- No build step: one script tag -->
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+<!-- In Arabic, German or French: one more, fieldia.ar.js and so on -->
 <script>
   Fieldia.mountViewer(document.getElementById('app'), {
     page, dataSource: Fieldia.createMemoryDataSource(),

@@ -34,7 +34,7 @@ page's buttons reach `onAction` with the chosen `recordIds`. See
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
-(core, widgets and viewer; about 60 KB gzipped):
+(core, widgets and viewer; about 81 KB gzipped):
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
@@ -45,6 +45,25 @@ This package carries a `<script>` bundle that sets the global `Fieldia`
   });
 </script>
 ```
+
+Its own words are English. For Arabic, German or French, add that language's
+script after it (about 3–4 KB gzipped each), then pass `locale`:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.ar.js"></script>
+<!-- or fieldia.de.js, fieldia.fr.js; one per language the page is shown in -->
+<script>
+  Fieldia.mountViewer(element, { page, dataSource, locale: 'ar' });
+</script>
+```
+
+Load both from the same version. A page set to a language whose script is
+missing shows Fieldia's words in English, and the console names the script to
+add. Installed from npm, `@fieldia/viewer` (and `@fieldia/core`,
+`@fieldia/widgets` and the React, Vue and Angular bindings) has all four
+languages with no extra import; `addLanguage(locale, { messages, widgets,
+viewer })` replaces a language's words in either.
 
 For React, Vue and Angular, use `@fieldia/react`, `@fieldia/vue` or
 `@fieldia/angular` — thin shells over this viewer. MIT licensed.
