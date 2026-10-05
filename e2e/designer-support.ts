@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { screen } from './support';
 
 /**
  * Finding things in the screen designer the way a person sees them. A card is
@@ -188,3 +189,87 @@ export async function inAdvanced(page: Page): Promise<void> {
     }
   });
 }
+
+// ---- the Advanced canvas -------------------------------------------------------
+
+/** Each part's box, against the box of what holds the page's parts: on the canvas without the ring a part is picked by. */
+export function boxes(page: Page, root: string): Promise<Record<string, { x: number; y: number; w: number; h: number }>> {
+  return page.evaluate((root) => {
+    const holder = document.querySelector(root) as HTMLElement;
+    const o = holder.getBoundingClientRect();
+    const out: Record<string, { x: number; y: number; w: number; h: number }> = {};
+    for (const part of holder.querySelectorAll<HTMLElement>('[data-node]:not([role="tab"])')) {
+      const r = part.getBoundingClientRect();
+      if (!r.width || part.closest('[hidden]')) continue;
+      // A field on the canvas reaches into the gap round it, so a ring can show; its own box is inside that.
+      const s = getComputedStyle(part);
+      const inset = part.classList.contains('fd-canvas-field') ? { x: parseFloat(s.paddingLeft), y: parseFloat(s.paddingTop) } : { x: 0, y: 0 };
+      out[part.dataset['node'] as string] = { x: Math.round(r.left - o.left + inset.x), y: Math.round(r.top - o.top + inset.y), w: Math.round(r.width - 2 * inset.x), h: Math.round(r.height - 2 * inset.y) };
+    }
+    return out;
+  }, root);
+}
+
+/** Press, move at hand speed — 60 px or so a step — and read the chip before letting go (or not). */
+export async function dropAt(page: Page, from: { x: number; y: number }, to: { x: number; y: number }, options: { release?: boolean; shot?: string } = {}) {
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  const steps = Math.max(3, Math.ceil(Math.hypot(to.x - from.x, to.y - from.y) / 60));
+  for (let i = 1; i <= steps; i++) await page.mouse.move(from.x + ((to.x - from.x) * i) / steps, from.y + ((to.y - from.y) * i) / steps);
+  await page.mouse.move(to.x + 1, to.y);
+  const chip = page.locator('.fd-drop-chip');
+  const words = (await chip.locator('.fd-drop-where').textContent()) ?? '';
+  const refused = await chip.evaluate((c) => c.classList.contains('fd-drop-refused'));
+  if (options.shot) await screen(page, options.shot, { viewport: true });
+  if (options.release !== false) await page.mouse.up();
+  return { words, refused };
+}
+
+export const centre = (b: { x: number; y: number; width: number; height: number }) => ({ x: b.x + b.width / 2, y: b.y + b.height / 2 });
+
+/**
+ * Every part on the canvas whose edges miss the columns of the grid it sits
+ * on — through arrangements on its tracks — measured by its own box (a field
+ * reaches into the gap round it for its ring). Parts sharing one cell are
+ * exempt; the cell they share is not. Says how many it looked at.
+ */
+export function misalignedOnCanvas(page: Page): Promise<{ checked: number; off: string[] }> {
+  return page.evaluate(() => {
+    const off: string[] = [];
+    let checked = 0;
+    const onTracks = (grid: Element | null) => !!grid?.parentElement?.matches('.fd-section[data-place="tracks"]');
+    for (const part of document.querySelectorAll<HTMLElement>('.fd-canvas-body .fd-grid > [data-node]')) {
+      const r = part.getBoundingClientRect();
+      if (!r.width || part.closest('[hidden]')) continue;
+      const s = getComputedStyle(part);
+      const inset = part.classList.contains('fd-canvas-field') ? parseFloat(s.paddingLeft) : 0;
+      const box = { left: r.left + inset, right: r.right - inset };
+      const shared = part.parentElement?.closest('.fd-section[data-place="shared"]');
+      if (shared && shared !== part) continue;
+      let grid: Element | null = part.parentElement;
+      while (onTracks(grid)) grid = grid?.parentElement?.parentElement?.closest('.fd-grid') ?? null;
+      if (!grid) continue;
+      const style = getComputedStyle(grid);
+      const tracks = style.gridTemplateColumns.split(' ').map(parseFloat);
+      const gap = parseFloat(style.columnGap) || 0;
+      const g = grid.getBoundingClientRect();
+      const rtl = style.direction === 'rtl';
+      const lefts: number[] = [];
+      const rights: number[] = [];
+      let x = rtl ? g.right : g.left;
+      for (const width of tracks) {
+        const left = rtl ? x - width : x;
+        lefts.push(left);
+        rights.push(left + width);
+        x += rtl ? -(width + gap) : width + gap;
+      }
+      const near = (value: number, list: number[]) => list.some((edge) => Math.abs(edge - value) <= 1.5);
+      checked++;
+      const startsOn = rtl ? near(box.right, rights) : near(box.left, lefts);
+      const endsOn = part.matches('.fd-button') || (rtl ? near(box.left, lefts) : near(box.right, rights));
+      if (!startsOn || !endsOn) off.push(`${part.dataset['node']} in ${grid.parentElement?.getAttribute('data-node')}`);
+    }
+    return { checked, off };
+  });
+}
+

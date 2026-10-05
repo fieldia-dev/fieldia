@@ -12,16 +12,16 @@ const span = (d: ReturnType<typeof employeeDesigner>, id: string) => nodeOf(d.ge
 const parentOf = (d: ReturnType<typeof employeeDesigner>, id: string) => where(d.getPage(), id)?.parent;
 
 describe('how wide a part is where it lands', () => {
-  it('one column wide under a part in one column, in a free cell, in a shared cell, or as a row’s new column', () => {
+  it('one column wide under a part in one column, or as a row’s new column; in a group, its share of the row in twelfths', () => {
     const under = employeeDesigner();
     under.place('f-street', { how: 'under', target: 'f-ec_phone', after: true });
     expect(span(under, 'f-street')).toBeUndefined();
-    const free = employeeDesigner();
-    free.place('f-street', { how: 'beside', target: 'f-salary', after: true });
-    expect([parentOf(free, 'f-street'), span(free, 'f-street')]).toEqual(['role', undefined]);
-    const shared = employeeDesigner();
-    shared.place('f-street', { how: 'beside', target: 'f-ec_phone', after: true });
-    expect(span(shared, 'f-street')).toBeUndefined();
+    const third = employeeDesigner();
+    third.place('f-street', { how: 'beside', target: 'f-salary', after: true });
+    expect([parentOf(third, 'f-street'), span(third, 'f-street')]).toEqual(['role', 4]);
+    const half = employeeDesigner();
+    half.place('f-street', { how: 'beside', target: 'f-ec_phone', after: true });
+    expect(span(half, 'f-street')).toBe(6);
     const column = employeeDesigner();
     column.place('f-street', { how: 'beside', target: 'side-1', after: true });
     expect(span(column, 'f-street')).toBeUndefined();
@@ -31,11 +31,11 @@ describe('how wide a part is where it lands', () => {
     expect(span(inRow, 'f-street')).toBeUndefined();
   });
 
-  it('halves a part two columns wide in a grid of two', () => {
+  it('halves the row of a part two columns wide in a group of two', () => {
     const d = employeeDesigner();
     const id = d.place({ kind: 'short-answer' }, { how: 'beside', target: 'f-street', after: true }) as string;
     expect(where(d.getPage(), id)).toMatchObject({ parent: 'address', kids: ['f-street', id, 'f-city', 'f-postcode', 'f-country'] });
-    expect([span(d, 'f-street'), span(d, id)]).toEqual([undefined, undefined]);
+    expect([span(d, 'f-street'), span(d, id), span(d, 'f-city')]).toEqual([6, 6, 6]);
   });
 
   it('narrows a part written wider than its grid when another goes under or beside it', () => {
@@ -69,12 +69,12 @@ describe('free cells and rows', () => {
     expect(where(other.getPage(), end)?.kids.slice(-3)).toEqual(['f-end_date', end, 'f-salary']);
   });
 
-  it('in a one-column group, parts beside one give the group a column each, the rest staying the whole width', () => {
+  it('in a one-column group, parts beside one divide its row, the rest staying the whole width', () => {
     const d = employeeDesigner();
     d.place('f-mobile', { how: 'beside', target: 'f-ec_phone', after: true });
     d.place('f-email', { how: 'beside', target: 'f-ec_phone', after: true });
-    expect(where(d.getPage(), 'f-email')).toMatchObject({ parent: 'emergency', kids: ['f-ec_name', 'f-ec_relation', 'f-ec_phone', 'f-email', 'f-mobile'], columns: 3 });
-    expect(['f-ec_name', 'f-ec_relation', 'f-ec_phone', 'f-email', 'f-mobile'].map((id) => nodeOf(d.getPage(), id)?.['colspan'])).toEqual([3, 3, undefined, undefined, undefined]);
+    expect(where(d.getPage(), 'f-email')).toMatchObject({ parent: 'emergency', kids: ['f-ec_name', 'f-ec_relation', 'f-ec_phone', 'f-email', 'f-mobile'], columns: 12 });
+    expect(['f-ec_name', 'f-ec_relation', 'f-ec_phone', 'f-email', 'f-mobile'].map((id) => nodeOf(d.getPage(), id)?.['colspan'])).toEqual([12, 12, 4, 4, 4]);
   });
 
   it('in a grid, a second part beside one sharing a cell shares a cell of its own there', () => {
@@ -85,11 +85,11 @@ describe('free cells and rows', () => {
     expect(where(d.getPage(), id)).toMatchObject({ kids: ['f-first_name', id], grand: shared });
   });
 
-  it('a titled group is never a row — it takes a column more, its parts in its own columns — nor is a row with a line across it', () => {
+  it('a titled group is never a row — its row divides, its parts in its own twelfths — nor is a row with a line across it', () => {
     const d = employeeDesigner();
     const group = d.wrap(['h-send', 't-note'], 'group') as string;
     d.place('send', { how: 'beside', target: 'h-send', after: true });
-    expect(nodeOf(d.getPage(), group)?.['columns']).toEqual({ wide: 3, narrow: 1 });
+    expect(nodeOf(d.getPage(), group)?.['columns']).toEqual({ wide: 12, narrow: 1 });
     expect(where(d.getPage(), 'send')).toMatchObject({ parent: group, kids: ['h-send', 'send', 't-note'] });
     const other = employeeDesigner();
     const row = other.wrap(['f-confirm', 'send'], 'side') as string;

@@ -76,6 +76,26 @@ describe('the bar on the field being edited', () => {
     expect(button(b, 'Width').hidden).toBe(true);
   });
 
+  it('in a group in twelfths, offers fractions of the row — those that leave the rest of it room — and its own width when none of them', () => {
+    const { designer, email, credit, bar, button } = setup();
+    designer.setColumns('section-1', 12);
+    const b = bar(email);
+    const items = () => [...document.querySelectorAll('.fd-menu [role="menuitemradio"]')].map((i) => `${i.textContent}:${i.getAttribute('aria-checked')}`);
+    button(b, 'Width').click();
+    expect(items()).toEqual(['Whole row:false', 'Three quarters:false', 'Two thirds:false', 'Half:true', 'A third:false', 'A quarter:false']);
+    (document.querySelector('.fd-menu [data-item="9"]') as HTMLElement).click();
+    const span = (id: string) => (nodes(designer.getPage()).find((n) => n.id === id) as FieldNode).colspan;
+    expect([span(email), span(credit)]).toEqual([9, 3]);
+    designer.setWidths([{ id: email, span: 7 }, { id: credit, span: 5 }]);
+    b.update(designer.getPage());
+    button(b, 'Width').click();
+    expect(items()).toEqual(['Whole row:false', 'Three quarters:false', 'Two thirds:false', '58%:true', 'Half:false', 'A third:false', 'A quarter:false']);
+    // Alone in a full row, there is nothing else for it to be.
+    designer.setColspan(email, 12);
+    b.update(designer.getPage());
+    expect(button(b, 'Width').hidden).toBe(true);
+  });
+
   it('opens the panel where the rest is: when it shows, and more', () => {
     const { designer, email, opened, bar, button } = setup();
     const b = bar(email);

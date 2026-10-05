@@ -69,9 +69,11 @@ test.describe('2.5.7 every drag has a way without dragging', () => {
     await expect(gutter).toHaveAttribute('role', 'separator');
     await expect(gutter).toHaveAttribute('tabindex', '0');
     await gutter.focus();
-    const before = [await spanOf(page, 'f-photo'), await spanOf(page, 'who')];
+    await expect(gutter).toHaveAttribute('aria-valuetext', '33% · 67%');
     await page.keyboard.press('ArrowRight');
-    expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who')]).toEqual([before[0] + 1, before[1] - 1]);
+    // A twelfth of the row a press: the group divided in twelfths, a third and a twelfth beside the rest.
+    expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who')]).toEqual([5, 7]);
+    await expect(gutter).toHaveAttribute('aria-valuetext', '42% · 58%');
   });
 
   test('the outline: a row moved by Alt+↓', async ({ page }) => {

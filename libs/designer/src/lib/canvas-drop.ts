@@ -1,6 +1,6 @@
 import type { Page } from '@fieldia/core';
 import type { Drop } from './layout-ops';
-import { across, nodeOf } from './layout-tree';
+import { across, isWrapper, nodeOf } from './layout-tree';
 
 /**
  * Where a part dropped on the Advanced canvas would go, read off the canvas the
@@ -8,7 +8,9 @@ import { across, nodeOf } from './layout-tree';
  * walked outermost first:
  *
  *  1. within a few pixels of a whole group's outer edge — that group: a new
- *     column beside it, or a new row under or above it;
+ *     column beside it, or a new row under or above it. A group's own padding
+ *     is not its edge: beside a row's last part it is the end of that row,
+ *     before its first part the start;
  *  2. at a boundary between a grid's rows — the gap, or a few pixels into a
  *     row — a new full-width row there;
  *  3. otherwise the part under the pointer, by its nearest edge (measured
@@ -46,7 +48,8 @@ export interface DropFinder {
   rectOf(element: Element): DOMRect;
 }
 
-/** How near a group's outer edge counts as the whole group. */
+/** How near a group's border counts as the whole group: its padding is its rows'. Arrangements and tabs, with no padding, count further in. */
+const GROUP_BAND = 4;
 const BAND = 10;
 /** How far into a row its boundary with the next still counts. */
 const ROW_BAND = 8;
@@ -154,7 +157,7 @@ export function findDrop(finder: DropFinder, target: Element | null, x: number, 
     const r = rectOf(element);
     const d: Record<Side, number> = { left: x - r.left, right: r.right - x, top: y - r.top, bottom: r.bottom - y };
     const at = (Object.keys(d) as Side[]).reduce((a, b) => (d[b] < d[a] ? b : a));
-    if (d[at] >= 0 && d[at] <= BAND) return side(node.id, at, true, r);
+    if (d[at] >= 0 && d[at] <= (node.type === 'section' && !isWrapper(node) ? GROUP_BAND : BAND)) return side(node.id, at, true, r);
   }
 
   const leaf = chain[chain.length - 1];

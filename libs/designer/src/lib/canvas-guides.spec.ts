@@ -70,6 +70,15 @@ describe('the guides', () => {
     }
   });
 
+  it('in twelfths, twelve faint tracks with no numbers — and the tracks an arrangement covers on them', () => {
+    const { designer, guides, shown } = setup();
+    designer.setColumns('personal', 12);
+    designer.select('who');
+    guides.update(designer.getState(), true);
+    expect(shown()).toEqual(['personal:12:', 'who:8:']);
+    expect(document.querySelectorAll('.fd-guides.fd-guides-fine')).toHaveLength(2);
+  });
+
   it('none where there is one column, none in Simple, none with nothing picked', () => {
     const { designer, guides, shown } = setup();
     designer.select('f-ec_name');

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { cardOf, doubleLines } from './designer-support';
+import { boxes, cardOf, centre, doubleLines, dropAt, misalignedOnCanvas } from './designer-support';
 import { expectNoSidewaysScroll, screen } from './support';
 
 /**
@@ -10,24 +10,6 @@ import { expectNoSidewaysScroll, screen } from './support';
  */
 
 const LAYOUT = '/screen/?start=layout';
-
-/** Each part's box, against the box of what holds the page's parts: on the canvas without the ring a part is picked by. */
-function boxes(page: Page, root: string): Promise<Record<string, { x: number; y: number; w: number; h: number }>> {
-  return page.evaluate((root) => {
-    const holder = document.querySelector(root) as HTMLElement;
-    const o = holder.getBoundingClientRect();
-    const out: Record<string, { x: number; y: number; w: number; h: number }> = {};
-    for (const part of holder.querySelectorAll<HTMLElement>('[data-node]:not([role="tab"])')) {
-      const r = part.getBoundingClientRect();
-      if (!r.width || part.closest('[hidden]')) continue;
-      // A field on the canvas reaches into the gap round it, so a ring can show; its own box is inside that.
-      const s = getComputedStyle(part);
-      const inset = part.classList.contains('fd-canvas-field') ? { x: parseFloat(s.paddingLeft), y: parseFloat(s.paddingTop) } : { x: 0, y: 0 };
-      out[part.dataset['node'] as string] = { x: Math.round(r.left - o.left + inset.x), y: Math.round(r.top - o.top + inset.y), w: Math.round(r.width - 2 * inset.x), h: Math.round(r.height - 2 * inset.y) };
-    }
-    return out;
-  }, root);
-}
 
 /** The canvas at a size of screen, its parts' boxes; then the form as wide as the canvas, its parts' boxes, compared. */
 async function agreeAt(page: Page, size: 'desktop' | 'tablet' | 'phone', viewport: number) {
@@ -119,23 +101,6 @@ async function box(page: Page, id: string) {
   return (await part(page, id).boundingBox())!;
 }
 
-/** Press, move at hand speed — 60 px or so a step — and read the chip before letting go (or not). */
-async function dropAt(page: Page, from: { x: number; y: number }, to: { x: number; y: number }, options: { release?: boolean; shot?: string } = {}) {
-  await page.mouse.move(from.x, from.y);
-  await page.mouse.down();
-  const steps = Math.max(3, Math.ceil(Math.hypot(to.x - from.x, to.y - from.y) / 60));
-  for (let i = 1; i <= steps; i++) await page.mouse.move(from.x + ((to.x - from.x) * i) / steps, from.y + ((to.y - from.y) * i) / steps);
-  await page.mouse.move(to.x + 1, to.y);
-  const chip = page.locator('.fd-drop-chip');
-  const words = (await chip.locator('.fd-drop-where').textContent()) ?? '';
-  const refused = await chip.evaluate((c) => c.classList.contains('fd-drop-refused'));
-  if (options.shot) await screen(page, options.shot, { viewport: true });
-  if (options.release !== false) await page.mouse.up();
-  return { words, refused };
-}
-
-const centre = (b: { x: number; y: number; width: number; height: number }) => ({ x: b.x + b.width / 2, y: b.y + b.height / 2 });
-
 /** Where a part sits in the page being built: what holds it, how that looks, and what is beside it. */
 function where(page: Page, id: string) {
   return page.evaluate((id) => {
@@ -163,7 +128,7 @@ test('beside a field in a full row: the two share its cell', async ({ page }) =>
   await expect(part(page, 'f-nationality')).toBeVisible();
 });
 
-test('beside a field in a named group’s full row: the group takes one more column, as the site visit is dragged', async ({ page }) => {
+test('beside a field in a named group’s row: the row divides in twelfths, as the site visit is dragged', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 1000 });
   await page.goto('/screen/');
   await page.getByRole('group', { name: 'Editing mode' }).getByRole('button', { name: 'Advanced' }).click();
@@ -173,24 +138,24 @@ test('beside a field in a named group’s full row: the group takes one more col
   const date = await at('Visit date');
   // Notes, the whole width under the two, put on Visit date's far side.
   const { words, refused } = await dropAt(page, centre(await at('Notes')), { x: date.x + date.width - 12, y: date.y + date.height / 2 }, { shot: 'advanced-third-column-drag' });
-  expect([words, refused]).toEqual(['a third column of “Visit”, beside “Visit date”', false]);
-  expect(await where(page, notes as string)).toMatchObject({ title: 'Visit', columns: 3 });
-  // One row of three, on the group's three columns, the guides numbering them.
+  expect([words, refused]).toEqual(['at the end of the row, after “Visit date” — the row in thirds', false]);
+  expect(await where(page, notes as string)).toMatchObject({ title: 'Visit', columns: 12 });
+  // One row of three, on the group's twelve columns.
   const tops = await Promise.all(['Customer', 'Visit date', 'Notes'].map(async (label) => Math.round((await at(label)).y)));
   expect(new Set(tops).size, `tops ${tops}`).toBe(1);
   const { checked, off } = await misalignedOnCanvas(page);
   expect(checked).toBeGreaterThan(2);
   expect(off).toEqual([]);
   await screen(page, 'advanced-third-column', { viewport: true });
-  // A field from the toolbox beside Notes: a fourth; then the group holds four, and a fifth shares a cell.
+  // A field from the toolbox beside Notes: the row in quarters; then the row holds four, and a fifth is refused.
   // The toolbox scrolls into view first: Notes is measured after it.
   const number = await tileAt(page, 'kind:number');
   const third = await at('Notes');
-  expect((await dropAt(page, number, { x: third.x + third.width - 12, y: third.y + third.height / 2 }, { shot: 'advanced-fourth-column-drag' })).words).toBe('a fourth column of “Visit”, beside “Notes”');
-  expect(await where(page, notes as string)).toMatchObject({ columns: 4 });
+  expect((await dropAt(page, number, { x: third.x + third.width - 12, y: third.y + third.height / 2 }, { shot: 'advanced-fourth-column-drag' })).words).toBe('at the end of the row, after “Notes” — the row in quarters');
+  expect(await where(page, notes as string)).toMatchObject({ columns: 12 });
   const day = await tileAt(page, 'kind:date');
   const last = await at('Notes');
-  expect((await dropAt(page, day, { x: last.x + last.width - 12, y: last.y + last.height / 2 }, { release: false })).words).toBe('beside “Notes”');
+  expect(await dropAt(page, day, { x: last.x + last.width - 12, y: last.y + last.height / 2 }, { release: false })).toEqual({ words: 'A row holds four', refused: true });
   await page.keyboard.press('Escape');
   await page.mouse.up();
 });
@@ -281,55 +246,76 @@ const spanOf = (page: Page, id: string) =>
     const text = JSON.stringify((window as unknown as { fieldiaDesigner: { designer: { getPage(): unknown } } }).fieldiaDesigner.designer.getPage());
     const at = text.indexOf(`"id":"${id}"`);
     const own = text.slice(at, text.indexOf('}', at));
-    return Number(/"colspan":(\d)/.exec(own)?.[1] ?? 1);
+    return Number(/"colspan":(\d+)/.exec(own)?.[1] ?? 1);
   }, id);
 
-test('the width handle on a picked part’s end edge snaps to the columns, saying how many', async ({ page }) => {
+test('the width handle on a picked part’s end edge snaps to the columns, saying how many — in an arrangement', async ({ page }) => {
   await openAdvanced(page);
+  await part(page, 'f-nationality').click({ position: { x: 6, y: 6 } });
+  const handle = page.locator('.fd-width-handle');
+  await expect(handle).toBeVisible();
+  const h = (await handle.boundingBox())!;
+  const nationality = (await part(page, 'f-nationality').boundingBox())!;
+  // On the end edge of the part, halfway down it.
+  expect(Math.abs(h.x + h.width / 2 - (nationality.x + nationality.width))).toBeLessThanOrEqual(10);
+  await page.mouse.move(h.x + 4, h.y + 15);
+  await page.mouse.down();
+  for (const x of [h.x - 60, h.x - 120, nationality.x + 10]) await page.mouse.move(x, h.y + 15);
+  await expect(page.locator('.fd-width-chip')).toHaveText('1 of 2 columns');
+  await screen(page, 'advanced-06-width-handle', { viewport: true });
+  await page.mouse.up();
+  expect(await spanOf(page, 'f-nationality')).toBe(1);
+});
+
+test('in a group that allows gaps, the width handle snaps to twelfths of the row, saying its share, one undo', async ({ page }) => {
+  await openAdvanced(page);
+  await page.evaluate(() => (window as unknown as { fieldiaDesigner: { designer: { setSectionLook(id: string, look: unknown): boolean } } }).fieldiaDesigner.designer.setSectionLook('role', { rows: 'gaps' }));
   await part(page, 'f-contract').scrollIntoViewIfNeeded();
   await part(page, 'f-contract').click({ position: { x: 30, y: 10 } });
   const handle = page.locator('.fd-width-handle');
   await expect(handle).toBeVisible();
   const h = (await handle.boundingBox())!;
   const contract = (await part(page, 'f-contract').boundingBox())!;
-  // On the end edge of the part, halfway down it.
-  expect(Math.abs(h.x + h.width / 2 - (contract.x + contract.width))).toBeLessThanOrEqual(10);
   await page.mouse.move(h.x + 4, h.y + 15);
   await page.mouse.down();
-  const steps = [h.x - 60, h.x - 120, h.x - 180, contract.x + contract.width / 2 - 10];
-  for (const x of steps) await page.mouse.move(x, h.y + 15);
-  await expect(page.locator('.fd-width-chip')).toHaveText('1 of 3 columns');
-  await screen(page, 'advanced-06-width-handle', { viewport: true });
+  for (const x of [h.x - 60, h.x - 120, h.x - 180, contract.x + contract.width / 2 - 10]) await page.mouse.move(x, h.y + 15);
+  await expect(page.locator('.fd-width-chip')).toHaveText('33% of the row');
+  await screen(page, 'advanced-06-width-handle-twelfths', { viewport: true });
   await page.mouse.up();
-  expect(await spanOf(page, 'f-contract')).toBe(1);
+  expect(await spanOf(page, 'f-contract')).toBe(4);
   await page.getByRole('button', { name: 'Undo' }).click();
   expect(await spanOf(page, 'f-contract')).toBe(2);
 });
 
-test('the gutter between two parts of a row trades columns, by the pointer and the keys, one undo each', async ({ page }) => {
+test('the gutter between two parts of a group’s row trades twelfths, by the pointer and the keys, one undo each', async ({ page }) => {
   await openAdvanced(page);
   await part(page, 'f-photo').click({ position: { x: 20, y: 10 } });
   const gutter = page.locator('.fd-gutter');
   await expect(gutter).toBeVisible();
   await expect(gutter).toHaveAttribute('aria-label', 'Width between “Photo” and “2 columns”');
+  await expect(gutter).toHaveAttribute('aria-valuetext', '33% · 67%');
   const g = (await gutter.boundingBox())!;
   const photo = (await part(page, 'f-photo').boundingBox())!;
   const column = photo.width;
   await page.mouse.move(g.x + 6, g.y + 30);
   await page.mouse.down();
   for (let i = 1; i <= 4; i++) await page.mouse.move(g.x + 6 + (column * i) / 4, g.y + 30);
-  await expect(page.locator('.fd-width-chip')).toHaveText('2 and 1 of 3 columns');
+  await expect(page.locator('.fd-width-chip')).toHaveText('67% · 33%');
   await screen(page, 'advanced-07-gutter', { viewport: true });
   await page.mouse.up();
-  expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who')]).toEqual([2, 1]);
+  // In twelfths now: the photo two thirds, the fields beside it in the third left, still two to a row.
+  expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who'), await spanOf(page, 'f-first-name')]).toEqual([8, 4, 2]);
   await page.getByRole('button', { name: 'Undo' }).click();
-  expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who')]).toEqual([1, 2]);
+  expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who'), await spanOf(page, 'f-first-name')]).toEqual([1, 2, 1]);
   await gutter.focus();
   await page.keyboard.press('ArrowRight');
-  expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who')]).toEqual([2, 1]);
+  expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who')]).toEqual([5, 7]);
   await expect(gutter).toBeFocused();
+  await expect(gutter).toHaveAttribute('aria-valuetext', '42% · 58%');
   await page.keyboard.press('ArrowLeft');
-  expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who')]).toEqual([1, 2]);
+  expect([await spanOf(page, 'f-photo'), await spanOf(page, 'who')]).toEqual([4, 8]);
+  const { off } = await misalignedOnCanvas(page);
+  expect(off).toEqual([]);
 });
 
 // ---- several picked -----------------------------------------------------------------
@@ -396,52 +382,6 @@ test('right to left, Alt+← puts a part beside the one after it', async ({ page
 });
 
 // ---- the layout gates, on the canvas --------------------------------------------------
-
-/**
- * Every part on the canvas whose edges miss the columns of the grid it sits
- * on — through arrangements on its tracks — measured by its own box (a field
- * reaches into the gap round it for its ring). Parts sharing one cell are
- * exempt; the cell they share is not. Says how many it looked at.
- */
-function misalignedOnCanvas(page: Page): Promise<{ checked: number; off: string[] }> {
-  return page.evaluate(() => {
-    const off: string[] = [];
-    let checked = 0;
-    const onTracks = (grid: Element | null) => !!grid?.parentElement?.matches('.fd-section[data-place="tracks"]');
-    for (const part of document.querySelectorAll<HTMLElement>('.fd-canvas-body .fd-grid > [data-node]')) {
-      const r = part.getBoundingClientRect();
-      if (!r.width || part.closest('[hidden]')) continue;
-      const s = getComputedStyle(part);
-      const inset = part.classList.contains('fd-canvas-field') ? parseFloat(s.paddingLeft) : 0;
-      const box = { left: r.left + inset, right: r.right - inset };
-      const shared = part.parentElement?.closest('.fd-section[data-place="shared"]');
-      if (shared && shared !== part) continue;
-      let grid: Element | null = part.parentElement;
-      while (onTracks(grid)) grid = grid?.parentElement?.parentElement?.closest('.fd-grid') ?? null;
-      if (!grid) continue;
-      const style = getComputedStyle(grid);
-      const tracks = style.gridTemplateColumns.split(' ').map(parseFloat);
-      const gap = parseFloat(style.columnGap) || 0;
-      const g = grid.getBoundingClientRect();
-      const rtl = style.direction === 'rtl';
-      const lefts: number[] = [];
-      const rights: number[] = [];
-      let x = rtl ? g.right : g.left;
-      for (const width of tracks) {
-        const left = rtl ? x - width : x;
-        lefts.push(left);
-        rights.push(left + width);
-        x += rtl ? -(width + gap) : width + gap;
-      }
-      const near = (value: number, list: number[]) => list.some((edge) => Math.abs(edge - value) <= 1.5);
-      checked++;
-      const startsOn = rtl ? near(box.right, rights) : near(box.left, lefts);
-      const endsOn = part.matches('.fd-button') || (rtl ? near(box.left, lefts) : near(box.right, rights));
-      if (!startsOn || !endsOn) off.push(`${part.dataset['node']} in ${grid.parentElement?.getAttribute('data-node')}`);
-    }
-    return { checked, off };
-  });
-}
 
 async function gates(page: Page, what: string) {
   const { checked, off } = await misalignedOnCanvas(page);

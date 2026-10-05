@@ -106,6 +106,21 @@ describe('the keys on the Advanced canvas', () => {
     expect(said()).toBe('Work email: 2 columns wide');
   });
 
+  it('in a group in twelfths, says a width as a fraction of the row, and a drop as where in it', () => {
+    const { designer, said } = setup();
+    designer.setColumns('address', 12);
+    designer.select('f-city');
+    press('ArrowRight', { altKey: true, shiftKey: true }, document.body);
+    expect(said()).toBe('City: 58% of the row');
+    press('ArrowLeft', { altKey: true, shiftKey: true }, document.body);
+    expect(said()).toBe('City: half the row');
+    press('ArrowRight', { altKey: true }, document.body);
+    expect(said()).toBe('City: at the end of the row, after “Postcode”');
+    designer.select('f-country');
+    press('ArrowLeft', { altKey: true }, document.body);
+    expect(said()).toBe('Country: between “Postcode” and “City” — the row in thirds');
+  });
+
   it('says why a move cannot be made', () => {
     const { designer, said } = setup();
     designer.select('f-street');

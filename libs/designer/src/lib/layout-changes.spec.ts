@@ -27,12 +27,17 @@ describe('words for a drop', () => {
     expect(words((d) => d.place('f-last_name', { how: 'beside', target: 'f-first_name', after: true }))).toEqual(['Put “First name” and “Last name” side by side']);
   });
 
-  it('a part put beside a part in another group: put there, not just moved — and the group’s column more, not the widths that only kept up', () => {
-    expect(words((d) => d.place('f-mobile', { how: 'beside', target: 'f-ec_phone', after: true }))).toEqual(['Put “Mobile” beside “Phone”', '“Emergency contact”: 2 columns']);
+  it('a part put beside a part in another group: put there, not just moved — the group in twelfths once, not the widths that only kept up', () => {
+    expect(words((d) => d.place('f-mobile', { how: 'beside', target: 'f-ec_phone', after: true }))).toEqual(['Put “Mobile” beside “Phone”', '“Emergency contact”: rows divided in twelfths', '“Phone”: half the row']);
   });
 
-  it('a part put in a free cell of another row', () => {
-    expect(words((d) => d.place('f-job_title', { how: 'beside', target: 'f-salary', after: true }))).toEqual(['Put “Job title” beside “Monthly salary”']);
+  it('a part put in another row of its group: that row in thirds, and the row it left closed up', () => {
+    expect(words((d) => d.place('f-job_title', { how: 'beside', target: 'f-salary', after: true }))).toEqual([
+      'Put “Job title” beside “Monthly salary”',
+      '“Role”: rows divided in twelfths',
+      '“Department”: half the row',
+      '“Manager”: half the row',
+    ]);
   });
 
   it('a new part put beside another, or as a new column of a row', () => {
@@ -40,8 +45,8 @@ describe('words for a drop', () => {
     expect(words((d) => d.place({ kind: 'email' }, { how: 'beside', target: 'emergency', after: true, whole: true }))).toEqual(['Added “Untitled question” beside “Emergency contact”']);
   });
 
-  it('a new part in a free cell, or on a row of its own, is simply added', () => {
-    expect(words((d) => d.place({ kind: 'number' }, { how: 'beside', target: 'f-salary', after: true }))).toEqual(['Added “Untitled question”']);
+  it('a new part in a row of a group, or on a row of its own, is simply added', () => {
+    expect(words((d) => d.place({ kind: 'number' }, { how: 'beside', target: 'f-salary', after: true }))).toEqual(['Added “Untitled question”', '“Role”: rows divided in twelfths']);
     expect(words((d) => d.place({ kind: 'paragraph' }, { how: 'row', container: 'who', index: 2 }))).toEqual(['Added “Untitled question”']);
   });
 
@@ -111,6 +116,20 @@ describe('words for a layout’s settings', () => {
     expect(words((d) => d.setColspan('f-mobile', 2))).toEqual(['“Mobile”: 2 columns wide']);
     expect(words((d) => d.setColspan('f-street', 1))).toEqual(['“Street and number”: 1 column wide']);
     expect(words((d) => d.setColspan('address', 2))).toEqual(['“Home address”: 2 columns wide']);
+  });
+
+  it('in twelfths: widths as fractions of the row, the group divided once, and how it keeps its rows', () => {
+    expect(words((d) => d.setColumns('address', 12))).toEqual(['“Home address”: rows divided in twelfths']);
+    expect(words((d) => d.setWidths([{ id: 'f-city', span: 7 }, { id: 'f-postcode', span: 5 }], { twelfths: true }))).toEqual([
+      '“Home address”: rows divided in twelfths',
+      '“City”: 58% of the row',
+      '“Postcode”: 42% of the row',
+    ]);
+    expect(words((d) => (d.setColumns('address', 12), d.setColspan('f-city', 4)))).toEqual(['“Home address”: rows divided in twelfths', '“City”: a third of the row', '“Postcode”: two thirds of the row']);
+    expect(words((d) => (d.setColumns('address', 12), d.setColspan('f-street', 12)))).toEqual(['“Home address”: rows divided in twelfths']);
+    expect(words((d) => d.setSectionLook('address', { rows: 'gaps' }))).toEqual(['“Home address”: rows may leave gaps']);
+    // Back on three columns, a row of halves cannot stay halves: as near as the columns go.
+    expect(words((d) => (d.setColumns('address', 12), d.setColumns('address', 3)))).toEqual(['“Home address”: 3 columns on a desktop, 1 on a phone', '“City”: 2 columns wide']);
   });
 
   it('a group’s look, and where its labels sit', () => {

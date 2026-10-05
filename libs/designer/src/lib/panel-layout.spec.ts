@@ -35,7 +35,7 @@ function picked(id: string) {
 describe('the Layout tab — a group', () => {
   it('sets its columns on a desktop, a tablet and a phone, never more on a smaller one', () => {
     const { designer, choices, press, node } = picked('personal');
-    expect(choices('Columns on a desktop')).toEqual({ words: ['1', '2', '3', '4'], pressed: '3' });
+    expect(choices('Columns on a desktop')).toEqual({ words: ['1', '2', '3', '4', 'Twelfths'], pressed: '3' });
     expect(choices('Columns on a tablet')).toEqual({ words: ['Auto', '1', '2', '3'], pressed: '3' });
     expect(choices('Columns on a phone')).toEqual({ words: ['Auto', '1', '2', '3'], pressed: '1' });
     press('Columns on a desktop', '2');
@@ -86,6 +86,57 @@ describe('the Layout tab — a group', () => {
     designer.select('personal');
     expect(choices('Width').words).toEqual([]);
     expect(hint('Width')).toBe('It sits on the page, so it takes the full width. Put it in a group with columns, or side by side with another part, to give it a width.');
+  });
+});
+
+describe('the Layout tab — a group in twelfths', () => {
+  it('offers Twelfths among a group’s columns: chosen, its rows divide their own way; one to four again, as near as they go', () => {
+    const { designer, choices, press, node, hint } = picked('address');
+    expect(choices('Columns on a desktop')).toEqual({ words: ['1', '2', '3', '4', 'Twelfths'], pressed: '2' });
+    expect(choices('Columns on a tablet').words).toEqual(['Auto', '1', '2']);
+    press('Columns on a desktop', 'Twelfths');
+    expect(node('address').columns).toEqual({ wide: 12, narrow: 1 });
+    expect((node('address').children as { colspan?: number }[]).map((c) => c.colspan ?? 1)).toEqual([12, 6, 6, 12]);
+    expect(choices('Columns on a tablet')).toEqual({ words: ['Auto', '1', 'Twelfths'], pressed: 'Auto' });
+    expect(choices('Columns on a phone')).toEqual({ words: ['Auto', '1', 'Twelfths'], pressed: '1' });
+    expect(hint('Columns')).toBe('Each row divides its own way, in twelfths: drop a part beside another to share its row. Auto keeps a row’s proportions on a tablet, and puts its parts one under another on a phone.');
+    press('Columns on a desktop', '2');
+    expect(node('address').columns).toEqual({ wide: 2, narrow: 1 });
+    designer.undo();
+    expect(node('address').columns).toEqual({ wide: 12, narrow: 1 });
+  });
+
+  it('sets whether its rows stay full or may leave gaps — only in twelfths', () => {
+    const { designer, choices, press, node, shown, hint } = picked('address');
+    const rows = () => shown().querySelector('[data-setting="Rows"]') as HTMLElement;
+    expect(rows().hidden).toBe(true);
+    designer.setColumns('address', 12);
+    expect(rows().hidden).toBe(false);
+    expect(choices('Rows')).toEqual({ words: ['Keep each row full', 'Allow gaps'], pressed: 'Keep each row full' });
+    expect(hint('Rows')).toBe('A part leaving a row widens the rest to fill it; a part alone takes the whole row.');
+    press('Rows', 'Allow gaps');
+    expect(node('address').rows).toBe('gaps');
+    expect(hint('Rows')).toBe('A part keeps its width when a neighbour leaves, and its far edge can be pulled in to leave room.');
+    press('Rows', 'Keep each row full');
+    expect(node('address')).not.toHaveProperty('rows');
+  });
+
+  it('a part’s width as a fraction of its row: those that leave the rest of the row room, and its own when none of them', () => {
+    const { designer, choices, press, node, hint } = picked('f-city');
+    designer.setColumns('address', 12);
+    expect(choices('Width')).toEqual({ words: ['Whole', '¾', '⅔', '½', '⅓', '¼'], pressed: '½' });
+    expect(hint('Width')).toBe('Half the row in “Home address”. Its row stays full: the rest of it takes up the difference.');
+    press('Width', '⅔');
+    expect([node('f-city').colspan, node('f-postcode').colspan]).toEqual([8, 4]);
+    designer.setWidths([{ id: 'f-city', span: 7 }, { id: 'f-postcode', span: 5 }]);
+    expect(choices('Width')).toEqual({ words: ['Whole', '¾', '⅔', '½', '⅓', '¼', '58%'], pressed: '58%' });
+    // Alone in its row, a full row's part is the whole of it.
+    designer.select('f-street');
+    expect(choices('Width')).toEqual({ words: ['Whole'], pressed: 'Whole' });
+    expect(hint('Width')).toBe('The whole row in “Home address”: alone in its row, it fills it. Let the group’s rows leave gaps to make it narrower.');
+    designer.setSectionLook('address', { rows: 'gaps' });
+    expect(choices('Width').words).toEqual(['Whole', '¾', '⅔', '½', '⅓', '¼']);
+    expect(hint('Width')).toBe('The whole row in “Home address”. Narrower, it leaves room in its row.');
   });
 });
 

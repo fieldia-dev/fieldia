@@ -1,6 +1,6 @@
 import { createDesigner } from './designer';
-import { spanAt, tradeAt, widthMarks, type WidthMarks } from './canvas-width';
-import { employeePage, nodeOf, watched } from './test-layout';
+import { columnsIn, spanAt, tradeAt, widthMarks, type WidthMarks } from './canvas-width';
+import { employeePage, nodeOf, spot, watched } from './test-layout';
 
 /**
  * Widths dragged on the Advanced canvas: a picked part's end edge snaps to the
@@ -26,6 +26,15 @@ describe('spanAt: the columns an edge dragged to covers', () => {
   });
 });
 
+describe('columnsIn: a grid’s columns as the browser gives them', () => {
+  it('a track each; a subgrid by its lines, one more than its columns, not by the words listing them', () => {
+    expect(columnsIn('100px 100px 100px')).toBe(3);
+    expect(columnsIn('subgrid [] [] []')).toBe(2);
+    expect(columnsIn('subgrid [] []')).toBe(1);
+    expect(columnsIn('')).toBe(1);
+  });
+});
+
 describe('tradeAt: where the gutter between two parts lands', () => {
   const grid = { colW: 100, gap: 20 };
   it('gives the first part the columns up to the gutter, at least one each', () => {
@@ -45,10 +54,16 @@ describe('tradeAt: where the gutter between two parts lands', () => {
 /**
  * Role's first rows laid out by hand: three columns of 100, gaps of 20 — Job
  * title | Department | Manager, then Start date | Contract (two wide). The
- * grid's columns are given, or — `'read'` — read off its style.
+ * grid's columns are given, or — `'read'` — read off its style. Role is made
+ * an arrangement, whose widths are columns, unless `group` keeps it a group,
+ * whose widths are twelfths of its rows — full, or allowing gaps.
  */
-function setup(rtl = false, columns: { cols: number; gap: number } | 'read' = { cols: 3, gap: 20 }) {
-  const designer = watched(createDesigner({ page: employeePage() }));
+function setup(rtl = false, columns: { cols: number; gap: number } | 'read' = { cols: 3, gap: 20 }, group?: 'full' | 'gaps') {
+  const page = employeePage();
+  const role = spot(page, 'role')?.node as Record<string, unknown>;
+  if (!group) Object.assign(role, { style: 'plain', title: undefined });
+  if (group === 'gaps') role['rows'] = 'gaps';
+  const designer = watched(createDesigner({ page: JSON.parse(JSON.stringify(page)) }));
   const rects = new Map<Element, DOMRect>();
   const place = (element: Element, left: number, top: number, width: number, height: number) =>
     rects.set(element, { left, top, width, height, right: left + width, bottom: top + height, x: left, y: top, toJSON: () => ({}) } as DOMRect);
@@ -230,6 +245,7 @@ describe('the gutter between two parts of a row', () => {
     show('f-start_date');
     expect(gutter().hidden).toBe(false);
     expect(gutter().getAttribute('aria-label')).toBe('Width between “Start date” and “Contract”');
+    expect(gutter().hasAttribute('aria-valuetext')).toBe(false);
     pointer('pointerdown', gutter(), 110, 110);
     pointer('pointermove', document, 170, 110);
     pointer('pointermove', document, 235, 110);
@@ -299,5 +315,105 @@ describe('the gutter between two parts of a row', () => {
     current = marks;
     show('f-manager');
     expect(gutter().hidden).toBe(true);
+  });
+});
+
+/** A part's width, as the page has it. */
+const span = (d: ReturnType<typeof setup>['designer'], id: string) => (nodeOf(d.getPage(), id)?.['colspan'] as number | undefined) ?? 1;
+
+describe('widths in a group: twelfths of its rows', () => {
+  // Role's 340px in twelve columns with gaps of 20: each 10px, a column starting every 30px from 0.
+  it('the gutter says the two as percentages of the row, its value in twelfths', () => {
+    const { marks, gutter, show } = setup(false, undefined, 'full');
+    current = marks;
+    show('f-start_date');
+    expect([gutter().getAttribute('aria-valuenow'), gutter().getAttribute('aria-valuemax'), gutter().getAttribute('aria-valuetext')]).toEqual(['4', '11', '33% · 67%']);
+  });
+
+  it('dragged, a group of columns is shown in twelfths, and divided so in the one edit it lets go as', () => {
+    const { marks, gutter, pointer, chip, show, designer, grid } = setup(false, undefined, 'full');
+    current = marks;
+    show('f-start_date');
+    const before = designer.getPage();
+    const guides = document.createElement('div');
+    guides.className = 'fd-guides';
+    guides.append(document.createElement('i'), document.createElement('i'), document.createElement('i'));
+    grid.prepend(guides);
+    pointer('pointerdown', gutter(), 110, 110);
+    expect(grid.style.getPropertyValue('--fd-cols')).toBe('12');
+    expect([guides.className, guides.children.length]).toEqual(['fd-guides fd-guides-fine', 12]);
+    expect((grid.querySelector('[data-node="f-job_title"]') as HTMLElement).style.getPropertyValue('--fd-span')).toBe('4');
+    pointer('pointermove', document, 150, 110);
+    pointer('pointermove', document, 200, 110);
+    expect(chip()?.textContent).toBe('58% · 42%');
+    pointer('pointerup', document, 200, 110);
+    expect(grid.style.getPropertyValue('--fd-cols')).toBe('');
+    expect([guides.className, guides.children.length]).toEqual(['fd-guides', 3]);
+    expect(nodeOf(designer.getPage(), 'role')?.['columns']).toEqual({ wide: 12, medium: 12, narrow: 1 });
+    expect([span(designer, 'f-start_date'), span(designer, 'f-contract'), span(designer, 'f-job_title')]).toEqual([7, 5, 4]);
+    designer.undo();
+    expect(designer.getPage()).toEqual(before);
+  });
+
+  it('by the keys, a twelfth at a time, one edit each', () => {
+    const { marks, gutter, show, designer } = setup(false, undefined, 'full');
+    current = marks;
+    show('f-start_date');
+    gutter().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect([span(designer, 'f-start_date'), span(designer, 'f-contract')]).toEqual([5, 7]);
+    marks.update(designer.getState(), true);
+    expect(gutter().getAttribute('aria-valuetext')).toBe('42% · 58%');
+    gutter().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    expect([span(designer, 'f-start_date'), span(designer, 'f-contract')]).toEqual([4, 8]);
+    designer.undo();
+    expect([span(designer, 'f-start_date'), span(designer, 'f-contract')]).toEqual([5, 7]);
+  });
+
+  it('a row kept full has no handle: its last part has the gutter before it, and a part alone in its row nothing', () => {
+    const { marks, handle, gutter, show } = setup(false, undefined, 'full');
+    current = marks;
+    show('f-contract');
+    expect([handle().hidden, gutter().hidden, gutter().getAttribute('aria-label')]).toEqual([true, false, 'Width between “Start date” and “Contract”']);
+    show('f-manager');
+    expect(gutter().getAttribute('aria-label')).toBe('Width between “Department” and “Manager”');
+  });
+
+  it('an arrangement dragged narrower lays its own parts on its new columns while it is dragged, as letting go will', () => {
+    const { marks, gutter, pointer, show, designer, grid } = setup(false, undefined, 'full');
+    current = marks;
+    const side = designer.wrap(['f-job_title', 'f-department'], 'side') as string;
+    const box = document.createElement('div');
+    box.dataset['node'] = side;
+    const cells = ['f-job_title', 'f-department'].map((id) => grid.querySelector(`[data-node="${id}"]`) as HTMLElement);
+    box.append(...cells);
+    grid.prepend(box);
+    show(side);
+    expect(gutter().getAttribute('aria-valuetext')).toBe('67% · 33%');
+    pointer('pointerdown', gutter(), 230, 30);
+    pointer('pointermove', document, 170, 30);
+    expect(cells.map((c) => c.style.getPropertyValue('--fd-span'))).toEqual(['3', '3']);
+    pointer('pointerup', document, 170, 30);
+    expect([span(designer, side), span(designer, 'f-job_title'), span(designer, 'f-department'), span(designer, 'f-manager')]).toEqual([6, 3, 3, 6]);
+  });
+
+  it('a row that allows gaps: the handle, into the room the row has, said as a share of it', () => {
+    const { marks, handle, gutter, pointer, chip, show, designer } = setup(false, undefined, 'gaps');
+    current = marks;
+    show('f-manager');
+    expect([handle().hidden, gutter().hidden]).toEqual([false, true]);
+    // Manager starts at 240: a full row, so the handle only narrows it.
+    pointer('pointerdown', handle(), 340, 30);
+    pointer('pointermove', document, 400, 30);
+    expect(chip()?.textContent).toBe('33% of the row');
+    pointer('pointermove', document, 285, 30);
+    expect(chip()?.textContent).toBe('17% of the row');
+    pointer('pointerup', document, 285, 30);
+    expect([span(designer, 'f-manager'), span(designer, 'f-department')]).toEqual([2, 4]);
+    // Room left: dragged out again, it takes it, and no more.
+    show('f-manager');
+    pointer('pointerdown', handle(), 290, 30);
+    pointer('pointermove', document, 600, 30);
+    expect(chip()?.textContent).toBe('33% of the row');
+    pointer('pointerup', document, 600, 30);
   });
 });
