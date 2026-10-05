@@ -197,6 +197,17 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
     const copy = JSON.parse(JSON.stringify(group)) as SectionNode;
     toTwelfths(copy);
     set(grid, '--fd-cols', String(TWELVE));
+    // The guides under it, twelve fine tracks for now.
+    const guides = grid.querySelector<HTMLElement>(':scope > .fd-guides');
+    if (guides) {
+      const [was, kind] = [[...guides.children], guides.className];
+      guides.className = 'fd-guides fd-guides-fine';
+      guides.replaceChildren(...Array.from({ length: TWELVE }, () => doc.createElement('i')));
+      undo.push(() => {
+        guides.className = kind;
+        guides.replaceChildren(...was);
+      });
+    }
     const walk = (list: Part[]) => {
       for (const part of list) {
         const element = partEl(part.id);
