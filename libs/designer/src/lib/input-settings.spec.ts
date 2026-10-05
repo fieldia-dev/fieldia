@@ -174,6 +174,33 @@ describe('a slider’s words at each end', () => {
   });
 });
 
+describe('a linear scale as NPS', () => {
+  const card = (host: Element) => host.querySelector('.fd-canvas-field.fd-editing') as HTMLElement;
+  const button = (host: Element, name: string) => [...card(host).querySelectorAll('button')].find((b) => b.textContent === name || b.getAttribute('aria-label') === name) as HTMLButtonElement | undefined;
+
+  it('is made in one step: 0 to 10 with the usual words at the ends, undone in one', () => {
+    const { designer, id, host } = screenWith('scale');
+    designer.setRange(id, { min: 1, max: 5 });
+    button(host, 'Make it NPS')?.click();
+    expect(fieldOf(designer, id)).toMatchObject({ min: 0, max: 10 });
+    expect(nodeOf(designer, id).options).toEqual({ startLabel: 'Not at all likely', endLabel: 'Extremely likely' });
+    designer.undo();
+    expect(fieldOf(designer, id)).toMatchObject({ min: 1, max: 5 });
+    expect(nodeOf(designer, id).options).toBeUndefined();
+  });
+
+  it('is coloured on request, 0–10 only, on the card too', () => {
+    const { designer, id, host } = screenWith('scale');
+    const colours = () => button(host, 'Colour as NPS');
+    expect(colours()?.getAttribute('aria-checked')).toBe('false');
+    colours()?.click();
+    expect(nodeOf(designer, id).options).toEqual({ nps: true });
+    expect(card(host).querySelector('.fd-nps')).not.toBeNull();
+    designer.setRange(id, { min: 1, max: 5 });
+    expect(colours()?.closest('[hidden]')).not.toBeNull();
+  });
+});
+
 describe('the words for what changed, when published', () => {
   it('says a text’s most characters, a paragraph’s rows and whether it grows', () => {
     const designer = createDesigner({ page: blankPage('survey', 'Feedback') });
@@ -213,5 +240,15 @@ describe('the words for what changed, when published', () => {
     const later = designer.getPage();
     designer.setWidgetOptions(q, { icon: null });
     expect(pageChanges(later, designer.getPage())).toEqual(['“Lunch”: shown as stars']);
+  });
+
+  it('says a scale made NPS and coloured', () => {
+    const designer = createDesigner({ page: blankPage('survey', 'Move') });
+    const q = designer.addQuestion('scale') as string;
+    designer.updateQuestion(q, { label: 'Recommend' });
+    const before = designer.getPage();
+    designer.makeNps(q);
+    designer.setWidgetOptions(q, { nps: true });
+    expect(pageChanges(before, designer.getPage())).toEqual(['“Recommend”: “Not at all likely” at the start', '“Recommend”: “Extremely likely” at the end', '“Recommend”: coloured as NPS']);
   });
 });

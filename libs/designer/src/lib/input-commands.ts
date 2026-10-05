@@ -108,6 +108,17 @@ export function inputCommands({ apply, fromModel }: InputCommandsDeps) {
       );
     },
 
+    /** A linear scale made NPS, as one edit: 0 to 10, "Not at all likely" to "Extremely likely". */
+    makeNps(id: string): boolean {
+      return apply((draft) => {
+        const { node, field, owned } = question(draft, id);
+        if (node.widget !== 'scale' || field.type !== 'integer') throw new Refusal('Only a linear scale is made NPS');
+        if (!owned) throw new Refusal(`The range of ${field.label} comes from the model`);
+        Object.assign(field, { min: 0, max: 10 });
+        node.options = { ...(node.options ?? {}), startLabel: 'Not at all likely', endLabel: 'Extremely likely' };
+      });
+    },
+
     /**
      * A slider's step; null or 1 for one at a time. A step with decimals
      * makes the field a decimal with as many, so every value it reaches is

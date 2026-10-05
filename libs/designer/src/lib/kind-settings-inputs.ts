@@ -8,7 +8,8 @@ import type { InputLimits } from './input-commands';
  * beside the rest of its kind's, and in the side panel the same way: the
  * most characters a box takes, a paragraph's rows and whether it grows; a
  * number's or an amount's range and decimals, and a number's unit; a
- * rating's look and the words at a rating's or a slider's ends.
+ * rating's look and the words at a rating's or a slider's ends; a linear
+ * scale made NPS, and coloured as NPS.
  */
 
 export interface InputSettings {
@@ -124,6 +125,22 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     };
   }
 
+  /** A linear scale made NPS in one step, and coloured as NPS when it runs 0 to 10. */
+  function nps(): Part {
+    const make = el('button', { type: 'button', class: 'fd-button fd-button-link' }, 'Make it NPS') as HTMLButtonElement;
+    make.addEventListener('click', () => designer.makeNps(id));
+    const colours = toggle('Colour as NPS', (on) => designer.setWidgetOptions(id, { nps: on || null }));
+    return {
+      element: row(make, colours.element),
+      refresh(page, node) {
+        const def = page.fields[node.field];
+        const nps = 'min' in def && def.min === 0 && def.max === 10;
+        colours.element.hidden = !nps;
+        colours.button.setAttribute('aria-checked', String(node.options?.['nps'] === true));
+      },
+    };
+  }
+
   const parts: Part[] = [];
   if (kind === 'short-answer' || kind === 'paragraph') parts.push(most());
   if (kind === 'paragraph') parts.push(rows());
@@ -131,6 +148,7 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   if (kind === 'number') parts.push(units());
   if (kind === 'rating') parts.push(look());
   if (kind === 'rating' || kind === 'slider') parts.push(ends());
+  if (kind === 'scale') parts.push(nps());
   if (!parts.length) return null;
   return { elements: parts.map((p) => p.element), refresh: (page, node) => parts.forEach((p) => p.refresh(page, node)) };
 }

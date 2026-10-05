@@ -35,6 +35,9 @@ const OPTION_WORDS: Record<string, Words> = {
   autoGrow: (v) => (v === false ? 'keeps its height as people type' : 'grows as people type'),
   prefix: (v) => (v ? `shows “${v}” before the number` : 'no unit before the number'),
   suffix: (v) => (v ? `shows “${v}” after the number` : 'no unit after the number'),
+  startLabel: (v) => (v ? `“${v}” at the start` : 'no words at the start'),
+  endLabel: (v) => (v ? `“${v}” at the end` : 'no words at the end'),
+  nps: (v) => (v ? 'coloured as NPS' : 'no longer coloured as NPS'),
   icon: (v) => `shown as ${({ heart: 'hearts', thumb: 'thumbs up', number: 'numbers' } as Record<string, string>)[v as string] ?? 'stars'}`,
 };
 
