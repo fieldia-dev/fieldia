@@ -1,7 +1,8 @@
 /**
  * The text, number and date inputs' part of the stylesheet: a count of
  * characters under a box, a number's unit and an amount's currency inside
- * its box, a rating's hearts and thumbs, words at a slider's ends. Scoped
+ * its box, a rating's hearts and thumbs, words at a slider's ends, an NPS
+ * scale's colours. Scoped
  * and written with logical properties as the rest of it is; it comes before
  * the question kinds' part.
  */
@@ -23,4 +24,11 @@ export const INPUTS_CSS = /* css */ `
 /* Words under a slider's ends, each under its own end. */
 .fd-slider-word { display: block; max-width: 12em; }
 .fd-slider-last { text-align: end; }
+/* An NPS scale: 0–6, 7–8 and 9–10 tinted red, amber and green in either scheme, and set apart by a gap. */
+.fd-nps [data-tone="low"] { --fd-tone: var(--fd-error); --fd-tone-soft: var(--fd-error-soft); }
+.fd-nps [data-tone="mid"] { --fd-tone: var(--fd-warning); --fd-tone-soft: var(--fd-warning-soft); }
+.fd-nps [data-tone="high"] { --fd-tone: var(--fd-success); --fd-tone-soft: var(--fd-success-soft); }
+.fd-nps button { background: var(--fd-tone-soft); border-color: var(--fd-tone); color: var(--fd-tone); font-weight: 600; }
+.fd-nps button.fd-on { background: var(--fd-tone); border-color: var(--fd-tone); color: var(--fd-surface); }
+.fd-nps [data-value="7"], .fd-nps [data-value="9"] { margin-inline-start: 8px; }
 `;

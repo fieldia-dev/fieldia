@@ -186,3 +186,18 @@ describe('a slider’s words at each end', () => {
     expect(el.querySelector('input')?.hasAttribute('aria-description')).toBe(false);
   });
 });
+
+describe('a scale coloured as NPS', () => {
+  const tones = (el: Element) => [...el.querySelectorAll('[role=radio]')].map((p) => (p as HTMLElement).dataset['tone']);
+
+  it('tells 0–6, 7–8 and 9–10 apart', () => {
+    const { el } = mountKind({ type: 'integer', min: 0, max: 10 }, { widget: 'scale', options: { nps: true } });
+    expect(el.querySelector('.fd-nps')).not.toBeNull();
+    expect(tones(el)).toEqual(['low', 'low', 'low', 'low', 'low', 'low', 'low', 'mid', 'mid', 'high', 'high']);
+  });
+
+  it('is a plain scale without the option, or on another range', () => {
+    expect(mountKind({ type: 'integer', min: 0, max: 10 }, { widget: 'scale' }).el.querySelector('.fd-nps')).toBeNull();
+    expect(mountKind({ type: 'integer', min: 1, max: 5 }, { widget: 'scale', options: { nps: true } }).el.querySelector('.fd-nps')).toBeNull();
+  });
+});

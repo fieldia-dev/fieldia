@@ -403,11 +403,14 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
     const max = 'max' in field && typeof field.max === 'number' ? field.max : style === 'rating' ? 5 : 10;
     const icon = style === 'rating' ? node.options?.['icon'] : 'number';
     const filling = icon !== 'number';
-    const group = make(document, 'div', { id, class: `fd-points fd-${filling ? 'rating' : 'scale'}${filling ? ` fd-rating-${icon ?? 'star'}` : ''}`, role: 'radiogroup' });
+    // A 0–10 scale coloured as NPS (options.nps): 0–6, 7–8 and 9–10 apart, in red, amber and green.
+    const nps = style === 'scale' && node.options?.['nps'] === true && min === 0 && max === 10;
+    const group = make(document, 'div', { id, class: `fd-points fd-${filling ? 'rating' : 'scale'}${filling ? ` fd-rating-${icon ?? 'star'}` : ''}${nps ? ' fd-nps' : ''}`, role: 'radiogroup' });
     const points: HTMLButtonElement[] = [];
     for (let n = min; n <= max; n++) {
       const point = make(document, 'button', { type: 'button', role: 'radio', 'aria-label': fillIn(words.ofMax, { n, max }), 'data-value': String(n) }, icon === 'thumb' ? (drawIcon(document, 'thumb') as SVGSVGElement) : icon === 'heart' ? '♥' : filling ? '★' : String(n));
       if (style === 'scale') point.removeAttribute('aria-label');
+      if (nps) point.dataset['tone'] = n < 7 ? 'low' : n < 9 ? 'mid' : 'high';
       point.addEventListener('click', () => form.setValue(name, n));
       points.push(point);
       group.append(point);
