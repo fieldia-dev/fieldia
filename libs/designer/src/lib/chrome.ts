@@ -253,7 +253,6 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
     const row = grip.parentElement as HTMLElement;
     const rows = () => [...list.children] as HTMLElement[];
     const from = rows().indexOf(row);
-    grip.setPointerCapture?.(event.pointerId);
     row.classList.add('fd-q-option-lifted');
     const onMove = (e: PointerEvent) => {
       const others = rows().filter((r) => r !== row);
@@ -263,17 +262,19 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
       }).length;
       if (rows().indexOf(row) !== at) list.insertBefore(row, others[at] ?? null);
     };
+    // Followed on the document: a row moved in the page lets go of the pointer it held.
+    const doc = list.ownerDocument;
     const onEnd = () => {
-      grip.removeEventListener('pointermove', onMove);
-      grip.removeEventListener('pointerup', onEnd);
-      grip.removeEventListener('pointercancel', onEnd);
+      doc.removeEventListener('pointermove', onMove);
+      doc.removeEventListener('pointerup', onEnd);
+      doc.removeEventListener('pointercancel', onEnd);
       row.classList.remove('fd-q-option-lifted');
       const to = rows().indexOf(row);
       if (to !== from) designer.moveOption(nodeId, from, to);
     };
-    grip.addEventListener('pointermove', onMove);
-    grip.addEventListener('pointerup', onEnd);
-    grip.addEventListener('pointercancel', onEnd);
+    doc.addEventListener('pointermove', onMove);
+    doc.addEventListener('pointerup', onEnd);
+    doc.addEventListener('pointercancel', onEnd);
   };
   return {
     element,
