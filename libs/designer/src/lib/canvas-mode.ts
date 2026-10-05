@@ -1,6 +1,7 @@
 import type { Page, SectionNode } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { colsOf } from './layout-tree';
+import type { DesignerWords } from './designer-words';
 
 /**
  * Simple and Advanced. Simple draws the page exactly as Advanced laid it out
@@ -36,16 +37,17 @@ export interface ModeSwitch {
 }
 
 /** Two buttons side by side in the editor's bar; the one on is pressed. */
-export function modeSwitch(el: ElementFactory, mode: DesignerMode, change: (mode: DesignerMode) => void): ModeSwitch {
+export function modeSwitch(el: ElementFactory, mode: DesignerMode, change: (mode: DesignerMode) => void, words: DesignerWords): ModeSwitch {
+  const w = words.bar;
   const button = (name: DesignerMode, words: string, title: string) => {
     const b = el('button', { type: 'button', class: 'fd-mode-button', 'data-mode': name, title }, words);
     b.addEventListener('click', () => change(name));
     return b;
   };
-  const simple = button('simple', 'Simple', 'Simple: pick a part and edit it where it stands');
-  const advanced = button('advanced', 'Advanced', 'Advanced: drop parts beside, under or between others, set widths, pick several');
+  const simple = button('simple', w.simple, w.simpleTitle);
+  const advanced = button('advanced', w.advanced, w.advancedTitle);
   // Drawn as the bar's other switch, Design or Try it, is.
-  const element = el('div', { class: 'fd-mode fd-mode-switch', role: 'group', 'aria-label': 'Editing mode' }, simple, advanced);
+  const element = el('div', { class: 'fd-mode fd-mode-switch', role: 'group', 'aria-label': w.editingMode }, simple, advanced);
   const set = (now: DesignerMode) => {
     simple.setAttribute('aria-pressed', String(now === 'simple'));
     advanced.setAttribute('aria-pressed', String(now === 'advanced'));

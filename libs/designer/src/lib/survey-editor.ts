@@ -4,6 +4,7 @@ import { createWidget, installStyles, type Widget, type WidgetFactory } from '@f
 import { branchMap, drawBranchMap } from './branch-map';
 import { canvasDrag } from './canvas-drag';
 import { designerBar, elementFactory, iconButton as makeIconButton, optionsEditor, putDownOnClickOutside, type ElementFactory, type OptionsEditor } from './chrome';
+import { speakIn } from './chrome-language';
 import { conditionEditor } from './condition-editor';
 import { kindOfField, QUESTION_KINDS, type Designer, type DesignerState, type Where } from './designer';
 import type { FindItem } from './find-anything';
@@ -106,12 +107,14 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
 
   const skin = options.skin ?? 'outlined';
   const root = el('div', { class: 'fd-form fd-designer fd-survey-designer', 'data-fd-skin': skin });
+  // The editor in its own language: the cards are its own, the form's words in them run their own way.
+  speakIn(root, host, designer, () => []);
   const trial = tryIt({ el, doc, designer, skin, dataSource: options.dataSource, widgets: options.widgets, onChange: (trying) => (body.hidden = trying) });
   /** Fieldia's kinds a survey asks, then the app's own. */
   const kinds = [...QUESTION_KINDS, ...designer.appKinds()];
   const bar = designerBar(root, designer, {
-    titleLabel: 'Form title',
-    placeholder: 'Untitled form',
+    titleLabel: designer.words.bar.formTitle,
+    placeholder: designer.words.bar.untitledForm,
     extra: [trial.toggle],
     find: () => [...start.items(), ...findItems(), ...trial.items(), ...words.items(), ...ruleList.items(), ...json.items(), ...shortcuts.items()],
     // A check about a question's words or options: its card is open by now, the cursor goes there.

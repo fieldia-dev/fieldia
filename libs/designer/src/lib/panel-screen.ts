@@ -181,7 +181,8 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
       const own = shell.rows();
       const items = settingItems(
         own.map((row) => ({ ...row, tab: TAB_NAMES[row.tab], row })),
-        ({ row }, choice) => go(row.tab, row.name, choice)
+        ({ row }, choice) => go(row.tab, row.name, choice),
+        designer.words
       );
       // The page's look, from wherever: what is picked is put down to show it. Simple keeps the look as it is.
       if (mode === 'simple' || partKindOf(page, designer.getState().picked) === 'page' || page.layout.type === 'list') return items;
@@ -196,7 +197,8 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
           ({ own: name }, choice) => {
             designer.select(null);
             go('look', name, choice);
-          }
+          },
+          designer.words
         ),
       ];
     },

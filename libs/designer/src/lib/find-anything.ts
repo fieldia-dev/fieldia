@@ -1,5 +1,6 @@
 import type { ElementFactory } from './chrome';
 import { designerIcon } from './icons';
+import type { DesignerWords } from './designer-words';
 
 /**
  * Find anything: one box over a list of everything the editor can add, go to
@@ -19,24 +20,25 @@ export interface FindItem {
 
 let count = 0;
 
-export function openFind(el: ElementFactory, root: HTMLElement, items: FindItem[]): { close(): void } {
+export function openFind(el: ElementFactory, root: HTMLElement, items: FindItem[], words: DesignerWords): { close(): void } {
   const doc = root.ownerDocument;
+  const w = words.bar;
   const opener = doc.activeElement as HTMLElement | null;
   const id = `fd-find-${++count}`;
   const input = el('input', {
     class: 'fd-find-input',
     role: 'combobox',
-    'aria-label': 'Find anything',
+    'aria-label': w.findAnything,
     'aria-expanded': 'true',
     'aria-controls': `${id}-list`,
     'aria-autocomplete': 'list',
     autocomplete: 'off',
     spellcheck: 'false',
-    placeholder: 'Find a field, a kind, a setting, an action…',
+    placeholder: w.findPlaceholder,
   }) as HTMLInputElement;
-  const list = el('div', { class: 'fd-find-list', role: 'listbox', id: `${id}-list`, 'aria-label': 'Found' });
-  const none = el('p', { class: 'fd-find-none', hidden: '' }, 'Nothing by that name.');
-  const box = el('div', { class: 'fd-find', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Find anything' }, input, list, none);
+  const list = el('div', { class: 'fd-find-list', role: 'listbox', id: `${id}-list`, 'aria-label': w.found });
+  const none = el('p', { class: 'fd-find-none', hidden: '' }, w.nothingFound);
+  const box = el('div', { class: 'fd-find', role: 'dialog', 'aria-modal': 'true', 'aria-label': w.findAnything }, input, list, none);
   const backdrop = el('div', { class: 'fd-dialog-backdrop fd-find-backdrop' }, box);
 
   let found: FindItem[] = items;
@@ -116,14 +118,14 @@ export interface SettingEntry {
  * choices as "Labels: beside" — by the choices' own group where a setting
  * has several, as Columns has one for each size of screen.
  */
-export function settingItems<T extends SettingEntry>(entries: readonly T[], open: (entry: T, choice?: string) => void, kind = 'setting'): FindItem[] {
+export function settingItems<T extends SettingEntry>(entries: readonly T[], open: (entry: T, choice?: string) => void, words: DesignerWords, kind = words.bar.setting): FindItem[] {
   return entries.flatMap((entry) => {
-    const hint = `${kind} · ${entry.tab}`;
+    const hint = words.bar.settingHint(kind, entry.tab);
     const groups = new Set(entry.choices.map((c) => c.group));
     return [
       { label: entry.name, hint, run: () => open(entry) },
       ...entry.choices.map((choice) => ({
-        label: `${groups.size > 1 && choice.group ? choice.group : entry.name}: ${choice.words.toLowerCase()}`,
+        label: words.bar.settingChoice(groups.size > 1 && choice.group ? choice.group : entry.name, choice.words),
         hint,
         run: () => open(entry, choice.value),
       })),

@@ -51,6 +51,7 @@ import { LOOK_PRESETS, wholeLook, type LookValues } from './look-presets';
 import { browserLooks } from './look-store';
 import { setFold, type Fold } from './group-fold';
 import { editChecker } from './validate-edit';
+import { DESIGNER_WORDS, designerLocale, type DesignerLocale, type DesignerWords } from './designer-words';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -81,6 +82,7 @@ export type { JsonProblem, PageJsonResult } from './page-json';
 export type { AnswerRulePatch } from './rules-commands';
 export { createBrowserLookStore, createMemoryLookStore } from './look-store';
 export type { LookValues } from './look-presets';
+export { DESIGNER_WORDS, designerLocale, type DesignerLocale, type DesignerWords } from './designer-words';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
 export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
@@ -232,6 +234,15 @@ export interface ModelField {
 }
 
 export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, InputCommands, StructureCommands {
+  /** The designer's own words, in its language: English unless `locale` said another it speaks. */
+  readonly words: DesignerWords;
+  /**
+   * The designer's language, when one was given: its own words are in it, and
+   * the editors run its way — Arabic right to left, English left to right —
+   * whatever the direction of the page around them. Null when none was given:
+   * English, running the way the page around it does.
+   */
+  readonly locale: DesignerLocale | null;
   getPage(): Page;
   /** The model's fields not on the page yet, in the model's order. Empty without a model. */
   modelFields(): ModelField[];
@@ -468,8 +479,18 @@ export function createDesigner(options: {
   assistant?: DesignerAssistant;
   /** Where looks of one's own are kept, for a whole workspace. Without one, in this browser. */
   looks?: LookStore;
+  /**
+   * The designer's own language, as a language tag (`ar`, `en`): its buttons,
+   * menus, messages and checks in it — English and Arabic; English for any
+   * other — and its editors running that language's way. The page's own
+   * words are never translated: they are the page's. English, taking the
+   * direction of the page around it, unless said.
+   */
+  locale?: DesignerLocale | (string & {});
 }): Designer {
   const store = options.store;
+  const locale = designerLocale(options.locale);
+  const words = DESIGNER_WORDS[locale ?? 'en'];
   const appKinds = registerKinds(options.kinds ?? []);
   /** A kind this designer offers: Fieldia's, or one of this app's. */
   const kindOf = (id: string): QuestionKind => {
@@ -561,7 +582,7 @@ export function createDesigner(options: {
       edit(draft);
     } catch (error) {
       if (!(error instanceof Refusal)) throw error;
-      issues = [error.message];
+      issues = [error.in(words)];
       notify();
       return false;
     }
@@ -673,6 +694,8 @@ export function createDesigner(options: {
     ...choices,
     ...inputs,
     ...structures,
+    words,
+    locale,
     getPage: () => page,
     modelFields() {
       const shown = shownFields(page);
@@ -1404,9 +1427,9 @@ export function createDesigner(options: {
 }
 
 /** Open a page from a store: its latest draft, or else its latest version. */
-createDesigner.open = async (id: string, store: PageStore, options: { model?: Record<string, Field>; lists?: AppList[]; kinds?: readonly AppKind[]; looks?: LookStore } = {}): Promise<Designer> => {
+createDesigner.open = async (id: string, store: PageStore, options: { model?: Record<string, Field>; lists?: AppList[]; kinds?: readonly AppKind[]; looks?: LookStore; locale?: DesignerLocale | (string & {}) } = {}): Promise<Designer> => {
   const { draft, versions } = await store.load(id);
   const page = draft ?? versions[versions.length - 1]?.page;
   if (!page) throw new Error(`The store has no page "${id}"`);
-  return createDesigner({ page, store, versions, model: options.model, lists: options.lists, kinds: options.kinds, looks: options.looks });
+  return createDesigner({ page, store, versions, model: options.model, lists: options.lists, kinds: options.kinds, looks: options.looks, locale: options.locale });
 };

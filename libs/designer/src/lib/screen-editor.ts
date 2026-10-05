@@ -3,6 +3,7 @@ import type { Skin } from '@fieldia/viewer';
 import { installStyles, type WidgetFactory } from '@fieldia/widgets';
 import { modeSwitch, readMode, writeMode, type DesignerMode } from './canvas-mode';
 import { designerBar, elementFactory, putDownOnClickOutside } from './chrome';
+import { speakIn } from './chrome-language';
 import { QUESTION_KINDS, SCREEN_KINDS, type Designer, type DesignerState, type Where } from './designer';
 import { findHeaderPart } from './header-commands';
 import { listCanvas } from './list-canvas';
@@ -73,7 +74,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const kinds = [...QUESTION_KINDS, ...SCREEN_KINDS, ...designer.appKinds()];
   // Simple or Advanced: the person's preference, kept in this browser, never in the page.
   let mode: DesignerMode = readMode(doc.defaultView);
-  const modes = modeSwitch(el, mode, (next) => setMode(next));
+  const modes = modeSwitch(el, mode, (next) => setMode(next), designer.words);
   root.dataset['mode'] = mode;
   function setMode(next: DesignerMode) {
     mode = next;
@@ -85,8 +86,8 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     render(designer.getState());
   }
   const bar = designerBar(root, designer, {
-    titleLabel: 'Screen title',
-    placeholder: 'Untitled screen',
+    titleLabel: designer.words.bar.screenTitle,
+    placeholder: designer.words.bar.untitledScreen,
     extra: [modes.element, trial.toggle],
     find: () => [...start.items(), ...findItems(), ...trial.items(), ...words.items(), ...ruleList.items(), ...panel.findItems(), ...json.items(), ...shortcuts.items()],
     // A check about a field's words or options: it is open on the canvas by now, the cursor goes there.
@@ -148,6 +149,8 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   const body = el('div', { class: 'fd-screen-body' }, side.element, el('div', { class: 'fd-canvas-scroll' }, start.element, canvas.element, list.element), panel.element);
   const json = jsonView({ el, doc, designer, trial, body });
   root.append(bar.element, bar.issues, body, trial.element, json.element);
+  // The editor in its own language; the screen drawn as the page around it runs, as the form will.
+  const followHost = speakIn(root, host, designer, () => [canvas.element, list.element]);
   const words = translationsView({ el, doc, designer, root, body, modes: trial.toggle });
   const ruleList = rulesOverview({ el, doc, designer, root, body, modes: trial.toggle });
   const clip = clipboardKeys({ root, designer, active: () => !trial.trying && !json.open });
@@ -318,6 +321,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
 
   // ---- render -----------------------------------------------------------------------
   function render(state: DesignerState) {
+    followHost();
     bar.update(state);
     start.update(state);
     const listing = state.page.layout.type === 'list';

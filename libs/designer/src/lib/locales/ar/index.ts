@@ -1,0 +1,24 @@
+import type { DesignerWords } from '../../designer-words';
+import { bar } from './bar';
+
+/**
+ * The designer's words in Arabic: Modern Standard Arabic as Arabic software
+ * says it (Google Forms and Microsoft Forms in Arabic), numbers in Latin
+ * digits. A name in a sentence is quoted «…» and isolated (`quoteAr`).
+ *
+ * Glossary — one word for one thing, across the whole designer:
+ *   form (a survey) نموذج · screen شاشة · page (what is designed; a survey's page) صفحة
+ *   section قسم · group مجموعة · tab علامة تبويب · row صف · column عمود · part جزء
+ *   field حقل · question سؤال · option خيار · answer إجابة · kind (of field) نوع
+ *   label التسمية · help نص المساعدة · placeholder النص الإرشادي · title العنوان · description الوصف
+ *   required مطلوب · read-only للقراءة فقط · hidden مخفي · shows when يظهر عندما
+ *   rule قاعدة · condition شرط · formula صيغة · worked out (computed) محسوب
+ *   publish نشر · version إصدار · draft مسودة · Checks التحقق · undo تراجع · redo إعادة
+ *   design / try it تصميم / تجربة · Simple / Advanced بسيط / متقدم
+ *   toolbox الأدوات · outline المخطط · panel اللوحة · look المظهر · layout التخطيط
+ *   template قالب · assistant المساعد · translation ترجمة · language لغة
+ *   duplicate تكرار · delete حذف · remove إزالة · move نقل · copy نسخ · paste لصق
+ *   model (the backend's) نموذج البيانات · record سجل · list قائمة · sheet ورقة
+ *   desktop / tablet / phone سطح المكتب / جهاز لوحي / هاتف · width العرض
+ */
+export const ar: DesignerWords = { bar };

@@ -1,6 +1,7 @@
 import type { FieldNode, SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner } from './designer';
 import { settingItems } from './find-anything';
+import { en } from './locales/en';
 import { mount, press } from './test-editor';
 
 /** Find anything (⌘K) finds the settings of what is picked, and the page's look, and goes to them. */
@@ -35,6 +36,7 @@ describe('settings as things to find', () => {
         { name: 'Columns', tab: 'Layout', choices: [{ value: '2', words: '2', group: 'Columns on a desktop', button: button('2') }, { value: '0', words: 'Auto', group: 'Columns on a phone', button: button('Auto') }] },
       ],
       () => undefined,
+      en,
       'setting'
     );
     expect(items.map((i) => [i.label, i.hint])).toEqual([

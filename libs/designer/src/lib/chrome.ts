@@ -75,16 +75,17 @@ export function designerBar(
 ): DesignerBar {
   const doc = root.ownerDocument;
   const el = elementFactory(doc);
+  const w = designer.words.bar;
   const title = el('input', { class: 'fd-input fd-designer-title', 'aria-label': options.titleLabel, placeholder: options.placeholder });
   title.addEventListener('input', () => designer.setPageInfo({ title: title.value }));
   // Where the page stands, as words a screen reader hears change; pressed, the versions published.
-  const status = el('button', { type: 'button', class: 'fd-designer-status', 'aria-haspopup': 'menu', 'aria-expanded': 'false', title: 'Versions' });
+  const status = el('button', { type: 'button', class: 'fd-designer-status', 'aria-haspopup': 'menu', 'aria-expanded': 'false', title: w.versions });
   status.addEventListener('click', () => versionsMenu(el, designer, status));
   const goTo: GoTo = options.goTo ?? (() => undefined);
   const checks = checksButton(el, doc, designer, goTo);
-  const undo = el('button', { type: 'button', class: 'fd-button' }, 'Undo');
-  const redo = el('button', { type: 'button', class: 'fd-button' }, 'Redo');
-  const publish = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, 'Publish');
+  const undo = el('button', { type: 'button', class: 'fd-button' }, w.undo);
+  const redo = el('button', { type: 'button', class: 'fd-button' }, w.redo);
+  const publish = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, w.publish);
   undo.addEventListener('click', () => designer.undo());
   redo.addEventListener('click', () => designer.redo());
   publish.addEventListener('click', () => openPublishDialog(el, designer, root, goTo));
@@ -93,17 +94,17 @@ export function designerBar(
     const state = designer.getState();
     return [
       ...(options.find?.() ?? []),
-      { label: 'Show the checks', hint: checks.element.getAttribute('aria-label') ?? '', run: () => checks.element.click() },
-      ...(state.unpublished ? [{ label: 'Publish', hint: `version ${(state.versions[state.versions.length - 1]?.version ?? 0) + 1}`, run: () => publish.click() }] : []),
-      ...(state.canUndo ? [{ label: 'Undo', hint: '⌘Z', run: () => designer.undo() }] : []),
-      ...(state.canRedo ? [{ label: 'Redo', hint: '⇧⌘Z', run: () => designer.redo() }] : []),
-      ...(state.versions.length ? [{ label: 'Open an earlier version', hint: 'versions', run: () => status.click() }] : []),
+      { label: w.showChecks, hint: checks.element.getAttribute('aria-label') ?? '', run: () => checks.element.click() },
+      ...(state.unpublished ? [{ label: w.publish, hint: w.publishHint((state.versions[state.versions.length - 1]?.version ?? 0) + 1), run: () => publish.click() }] : []),
+      ...(state.canUndo ? [{ label: w.undo, hint: '⌘Z', run: () => designer.undo() }] : []),
+      ...(state.canRedo ? [{ label: w.redo, hint: '⇧⌘Z', run: () => designer.redo() }] : []),
+      ...(state.versions.length ? [{ label: w.openEarlier, hint: w.versionsHint, run: () => status.click() }] : []),
     ];
   };
   const mac = /Mac|iPhone|iPad/.test(doc.defaultView?.navigator.platform ?? '');
   const keys = mac ? '⌘K' : 'Ctrl K';
-  const find = el('button', { type: 'button', class: 'fd-button fd-find-button', 'aria-label': 'Find anything', title: `Find anything · ${keys} or /` }, designerIcon(doc, 'search'), el('kbd', { class: 'fd-find-keys', 'aria-hidden': 'true' }, keys));
-  find.addEventListener('click', () => openFind(el, root, findItems()));
+  const find = el('button', { type: 'button', class: 'fd-button fd-find-button', 'aria-label': w.findAnything, title: w.findTitle(keys) }, designerIcon(doc, 'search'), el('kbd', { class: 'fd-find-keys', 'aria-hidden': 'true' }, keys));
+  find.addEventListener('click', () => openFind(el, root, findItems(), designer.words));
   // Where the bar breaks when it has less room than its parts: the ways to look at the page go under the rest.
   const lineBreak = el('span', { class: 'fd-bar-break', 'aria-hidden': 'true' });
   const element = el('div', { class: 'fd-designer-bar' }, title, el('span', { class: 'fd-designer-status-box', role: 'status' }, status), el('span', { class: 'fd-spacer' }), find, undo, redo, lineBreak, ...(options.extra ?? []), checks.element, publish);
@@ -132,7 +133,7 @@ export function designerBar(
     const slash = key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey;
     if ((chord || slash) && !root.querySelector('.fd-find')) {
       event.preventDefault();
-      openFind(el, root, findItems());
+      openFind(el, root, findItems(), designer.words);
       return;
     }
     if (typing || !(event.ctrlKey || event.metaKey)) return;
@@ -154,7 +155,7 @@ export function designerBar(
       setHidden(undo, !state.canUndo);
       setHidden(redo, !state.canRedo);
       setHidden(publish, !state.unpublished);
-      setText(status, statusWords(state));
+      setText(status, statusWords(state, designer.words));
       checks.update();
       setHidden(issues, state.issues.length === 0);
       setText(issues, state.issues.join('\n'));
