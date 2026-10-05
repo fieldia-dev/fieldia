@@ -23,6 +23,8 @@ const KEPT = [
   ...['JSON', 'CSV', 'PDF', 'USD', 'EGP', 'IBAN', 'URL', 'https'],
   // Fieldia's own name, as its look's.
   'Fieldia',
+  // Names in code, in an example of where a saved form's answers go: { "home": { "street": … } }.
+  ...['home', 'street'],
   // JSON's own words, and language tags, as examples of what to type.
   ...['true', 'false', 'null', 'ar', 'es', 'pt-BR'],
 ];
@@ -30,6 +32,7 @@ const KEPT = [
 /** Where the words are the page's or the app's, not the designer's, and why. */
 const DATA: [selector: string, why: string][] = [
   ['.fd-try-frame', 'the form being tried: the page’s own words, in the language it is tried in'],
+  ['.fd-canvas-form-body', 'a saved form placed, drawn by the viewer: its own words, in the page’s language where it keeps them'],
   ['.fd-list-table tbody', 'the made-up records a list is drawn with'],
   ['.fd-json-code', 'the page as JSON: code'],
   ['[lang]:not([lang|="ar"])', 'words marked as another language: “English” beside “العربية”, a language’s own name'],
@@ -99,7 +102,7 @@ function clipped(page: Page): Promise<string[]> {
     const scrollsAcross = (element: Element) => !!element.closest('.fd-words-scroll, .fd-list-scroll, .fd-json-code, .fd-rules-table-scroll, .fd-try-frame, .fd-toolbox-scroll, [class*="scroll"]');
     for (const element of document.querySelectorAll<HTMLElement>('.fd-designer button, .fd-designer [role="tab"], .fd-designer .fd-prop-name, .fd-designer h2, .fd-designer h3, .fd-designer label, [role="dialog"] button, [role="menu"] [role^="menuitem"]')) {
       // The form tried is the viewer's, and its own gates look at it; a name kept for a screen reader alone is meant to be one pixel wide.
-      if (!element.checkVisibility({ checkVisibilityCSS: true }) || !element.textContent?.trim() || element.closest('.fd-try-frame') || element.clientWidth <= 1) continue;
+      if (!element.checkVisibility({ checkVisibilityCSS: true }) || !element.textContent?.trim() || element.closest('.fd-try-frame, .fd-canvas-form-body') || element.clientWidth <= 1) continue;
       const style = getComputedStyle(element);
       const cuts = style.overflowX === 'hidden' || style.overflowX === 'clip' || style.textOverflow === 'ellipsis';
       if (cuts && element.scrollWidth > element.clientWidth + 1) found.push(`cut: ${element.className || element.tagName} “${element.textContent.trim().slice(0, 60)}”`);
@@ -139,6 +142,34 @@ interface Run {
   advanced?: boolean;
   /** What to do first: a template to start from, a field and the header's parts on a blank sheet. */
   prepare?: (page: Page, look: (state: string, shot?: boolean) => Promise<void>) => Promise<void>;
+  /** Places of its own to go, last: each kind of part's look, a saved form placed. */
+  more?: (page: Page, look: (state: string, shot?: boolean, dialog?: boolean) => Promise<void>) => Promise<void>;
+}
+
+/**
+ * The screen's own places: the Look tab's “Each kind of part” with a kind
+ * picked, and a saved form placed from the toolbox — its menu, its frame on
+ * the canvas, its panel open.
+ */
+async function lookAndSavedForm(page: Page, look: (state: string, shot?: boolean, dialog?: boolean) => Promise<void>) {
+  await page.locator('body').click({ position: { x: 2, y: 2 } });
+  await page.keyboard.press('Escape');
+  const panel = page.locator('.fd-properties');
+  await panel.locator('[role="tab"]').filter({ hasText: 'المظهر' }).click();
+  const kinds = panel.locator('[data-setting="Each kind of part"]');
+  await kinds.locator('[data-choice="tables"]').click();
+  await kinds.scrollIntoViewIfNeeded();
+  await look('look each kind of part', true);
+  await page.locator('.fd-rail [role="tab"]').first().click();
+  await page.locator('.fd-toolbox [data-tool="form:saved"]').click();
+  await expect(page.locator('.fd-menu')).toBeVisible();
+  await look('saved form menu', true, true);
+  await page.locator('.fd-menu [data-item="address"]').click();
+  await expect(page.locator('.fd-canvas-form .fd-canvas-form-body .fd-field').first()).toBeVisible();
+  await expect(page.locator('.fd-properties .fd-panel-title')).toHaveText('نموذج محفوظ');
+  await look('saved form placed', true);
+  await page.locator('.fd-canvas-form').scrollIntoViewIfNeeded();
+  await screen(page, `arabic-${page.viewportSize()?.width === 390 ? 'screen-phone' : 'screen-desktop'}-saved-form-frame`, { viewport: true });
 }
 
 const RUNS: Run[] = [
@@ -163,6 +194,7 @@ const RUNS: Run[] = [
     part: '.fd-canvas-field',
     advanced: true,
     prepare: (page) => addRule(page, 'هل يتصل المدير؟', 'الخطوة التالية'),
+    more: lookAndSavedForm,
   },
   {
     name: 'sheet',
@@ -249,6 +281,7 @@ async function walk(page: Page, run: Run, tag: string, phone: boolean): Promise<
     await look(name, true, true);
     await page.keyboard.press('Escape');
   }
+  await run.more?.(page, look);
   return found;
 }
 
