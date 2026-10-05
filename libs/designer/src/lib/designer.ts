@@ -11,6 +11,7 @@ import {
   type Option,
   type OptionsFrom,
   type Page,
+  type PageLook,
   type SectionNode,
   type SetWhen,
   type SheetNode,
@@ -46,7 +47,8 @@ import { keepWhatRulesRead } from './rules-reads';
 import * as clipboard from './clipboard-ops';
 import * as moves from './outline-moves';
 import { outlineRows } from './outline-rows';
-import { LOOK_PRESETS } from './look-presets';
+import { LOOK_PRESETS, wholeLook, type LookValues } from './look-presets';
+import { browserLooks } from './look-store';
 import { setFold, type Fold } from './group-fold';
 import { editChecker } from './validate-edit';
 
@@ -77,6 +79,8 @@ export type { EachChange } from './layout-several';
 export type { Fold } from './group-fold';
 export type { JsonProblem, PageJsonResult } from './page-json';
 export type { AnswerRulePatch } from './rules-commands';
+export { createBrowserLookStore, createMemoryLookStore } from './look-store';
+export type { LookValues } from './look-presets';
 
 /** What a page is for: a survey (wizard of steps), an app screen (sections), a record's sheet, or a list of records. */
 export type PageKind = 'survey' | 'screen' | 'sheet' | 'list';
@@ -144,6 +148,27 @@ export interface PageStore {
   load(id: string): Promise<{ draft: Page | null; versions: PublishedVersion[] }>;
   saveDraft(page: Page): Promise<void>;
   publish(page: Page): Promise<number>;
+}
+
+/** A look of one's own, kept by name to use again on other pages: the values a preset sets, any left to the skin. */
+export interface SavedLook {
+  id: string;
+  name: string;
+  look: LookValues;
+}
+
+/**
+ * Where looks of one's own are kept. An app implements this to keep them for
+ * a whole workspace on its server; without one, the designer keeps them in
+ * this browser (`createBrowserLookStore`). A store that rejects is said in
+ * the editor, in the words of its error.
+ */
+export interface LookStore {
+  /** Every look kept. The designer shows them by name. */
+  list(): Promise<SavedLook[]>;
+  /** Keep a look: a new one by a new id, or one kept already — renamed — in its place. */
+  save(look: SavedLook): Promise<void>;
+  remove(id: string): Promise<void>;
 }
 
 export function createMemoryPageStore(): PageStore & { pages: Map<string, { draft: Page | null; versions: PublishedVersion[] }> } {
@@ -408,6 +433,14 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   // gap lane
   /** A look to start from, by its id: its accent, font, spacing, corners and colours, as one undo step; where labels sit is kept. */
   setLookPreset(id: string): boolean;
+  /**
+   * A whole look on the page as one undo step, as a preset is put on it — a
+   * look of one's own: its accent, font, spacing, corners and colours, each it
+   * leaves unset given back to the skin. Where labels sit is kept.
+   */
+  useLook(look: PageLook): boolean;
+  /** Where looks of one's own are kept: the app's store, or this browser's, one for every designer on the page. */
+  looks(): LookStore;
   /** Whether a group folds by its title, and how it starts; refused for a group with no title. */
   setFold(id: string, fold: Fold): boolean;
 }
@@ -433,6 +466,8 @@ export function createDesigner(options: {
   templates?: readonly PageTemplate[];
   /** The app's own assistant, which makes a page from what a person describes. Without one, nothing about it shows. */
   assistant?: DesignerAssistant;
+  /** Where looks of one's own are kept, for a whole workspace. Without one, in this browser. */
+  looks?: LookStore;
 }): Designer {
   const store = options.store;
   const appKinds = registerKinds(options.kinds ?? []);
@@ -1358,18 +1393,20 @@ export function createDesigner(options: {
       return apply((draft) => {
         const preset = LOOK_PRESETS.find((p) => p.id === id);
         if (!preset) throw new Refusal(`There is no look “${id}”`);
-        settings.setLook(draft, preset.look);
+        settings.setLook(draft, wholeLook(preset.look));
       });
     },
+    useLook: (look) => apply((draft) => settings.setLook(draft, wholeLook(look))),
+    looks: () => options.looks ?? browserLooks(),
     setFold: (id, fold) => apply((draft) => setFold(draft, id, fold)),
   };
   return designer;
 }
 
 /** Open a page from a store: its latest draft, or else its latest version. */
-createDesigner.open = async (id: string, store: PageStore, options: { model?: Record<string, Field>; lists?: AppList[]; kinds?: readonly AppKind[] } = {}): Promise<Designer> => {
+createDesigner.open = async (id: string, store: PageStore, options: { model?: Record<string, Field>; lists?: AppList[]; kinds?: readonly AppKind[]; looks?: LookStore } = {}): Promise<Designer> => {
   const { draft, versions } = await store.load(id);
   const page = draft ?? versions[versions.length - 1]?.page;
   if (!page) throw new Error(`The store has no page "${id}"`);
-  return createDesigner({ page, store, versions, model: options.model, lists: options.lists, kinds: options.kinds });
+  return createDesigner({ page, store, versions, model: options.model, lists: options.lists, kinds: options.kinds, looks: options.looks });
 };
