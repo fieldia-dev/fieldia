@@ -143,7 +143,8 @@ const textOf = (value: Value | undefined) => (value === null || value === undefi
 
 function textWidget(inputType: string): WidgetFactory {
   return ({ form, name, field, node, id, document }) => {
-    const input = make(document, 'input', { id, type: inputType, class: 'fd-input', autocomplete: 'off' });
+    // A person's own email, phone or web address, the browser may offer.
+    const input = make(document, 'input', { id, type: inputType, class: 'fd-input', autocomplete: /^(email|tel|url)$/.test(inputType) ? inputType : 'off' });
     if (field.type === 'char' && field.size !== undefined) input.maxLength = field.size;
     if (node.placeholder) input.placeholder = node.placeholder;
     input.addEventListener('input', () => form.setValue(name, input.value === '' ? null : input.value));
