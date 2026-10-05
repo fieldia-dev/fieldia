@@ -21,6 +21,7 @@ import { conditionToHide, conditionToHold, type Condition } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { listCommands, type ListCommands } from './list-commands';
 import { kindCommands, type OptionDetails } from './kind-commands';
+import { choiceCommands, type ChoiceCommands } from './choice-commands';
 import { fixCheck, pageChecks, type PageCheck } from './page-checks';
 import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, orList, registerKinds, storedAs, type LineColumn, type QuestionKind } from './kinds';
 import type { AppKind } from './app-kinds';
@@ -203,7 +204,7 @@ export interface ModelField {
   field: Field;
 }
 
-export interface Designer extends HeaderCommands, ListCommands {
+export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands {
   getPage(): Page;
   /** The model's fields not on the page yet, in the model's order. Empty without a model. */
   modelFields(): ModelField[];
@@ -620,11 +621,13 @@ export function createDesigner(options: {
   });
 
   const kinds = kindCommands({ apply, fromModel });
+  const choices = choiceCommands({ apply, fromModel });
 
   const designer: Designer = {
     ...header,
     ...list,
     ...kinds,
+    ...choices,
     getPage: () => page,
     modelFields() {
       const shown = shownFields(page);
@@ -758,9 +761,9 @@ export function createDesigner(options: {
           }
           while (used.has(value)) value = `${value}_${i + 1}`;
           used.add(value);
-          // An option kept keeps its picture and points.
+          // An option kept keeps its picture, points and flags.
           const kept = old.find((o) => o.value === value);
-          return { ...(kept?.image !== undefined ? { image: kept.image } : {}), ...(kept?.score !== undefined ? { score: kept.score } : {}), value, label };
+          return { ...kept, value, label };
         });
         },
         // Typing in one option list is one undo step, like typing in a label.

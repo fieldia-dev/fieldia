@@ -7,6 +7,7 @@ import { DESIGNER_RULES_CSS } from './styles-rules';
 import { DESIGNER_EXTEND_CSS } from './styles-extend';
 import { DESIGNER_OUTLINE_CSS } from './styles-outline';
 import { DESIGNER_GAP_CSS } from './styles-gap';
+import { DESIGNER_CHOICES_CSS } from './styles-choices';
 
 /** The designer's own chrome, on top of Fieldia's form stylesheet and tokens. */
 export const DESIGNER_CSS = /* css */ `
@@ -655,6 +656,6 @@ export function installDesignerStyles(document: Document): void {
   if (document.getElementById(STYLE_ID)) return;
   const style = document.createElement('style');
   style.id = STYLE_ID;
-  style.textContent = DESIGNER_CSS + DESIGNER_CANVAS_CSS + DESIGNER_KINDS_CSS + DESIGNER_TRANSLATIONS_CSS + DESIGNER_RULES_CSS + DESIGNER_PANEL_CSS + DESIGNER_JSON_CSS + DESIGNER_EXTEND_CSS + DESIGNER_OUTLINE_CSS + DESIGNER_GAP_CSS;
+  style.textContent = DESIGNER_CSS + DESIGNER_CANVAS_CSS + DESIGNER_KINDS_CSS + DESIGNER_TRANSLATIONS_CSS + DESIGNER_RULES_CSS + DESIGNER_PANEL_CSS + DESIGNER_JSON_CSS + DESIGNER_EXTEND_CSS + DESIGNER_OUTLINE_CSS + DESIGNER_GAP_CSS + DESIGNER_CHOICES_CSS;
   (document.head ?? document.documentElement).append(style);
 }

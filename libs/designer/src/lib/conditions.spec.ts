@@ -47,8 +47,8 @@ describe('setCondition on a question', () => {
     const { designer, comes, why, field } = survey();
     expect(designer.setCondition(why, { join: 'all', rules: [{ field: field(comes), op: 'is', value: false }] })).toBe(true);
     const form = createForm({ page: designer.getPage() });
-    // A yes-or-no answer starts as No.
-    expect(form.node(why).invisible).toBe(false);
+    // A yes-or-no answer starts unanswered: neither yes nor no, so "Why not?" waits for a No.
+    expect(form.node(why).invisible).toBe(true);
     form.setValue(field(comes), true);
     expect(form.node(why).invisible).toBe(true);
     form.setValue(field(comes), false);
