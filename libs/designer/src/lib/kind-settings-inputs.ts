@@ -9,7 +9,9 @@ import type { InputLimits } from './input-commands';
  * most characters a box takes, a paragraph's rows and whether it grows; a
  * number's or an amount's range and decimals, and a number's unit; a
  * rating's look and the words at a rating's or a slider's ends; a linear
- * scale made NPS, and coloured as NPS.
+ * scale made NPS, and coloured as NPS; a date's earliest and latest day,
+ * fixed or counted from today, its weekends and its start; a date and
+ * time's and a time's step of minutes, and a time's earliest and latest.
  */
 
 export interface InputSettings {
@@ -141,6 +143,90 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     };
   }
 
+  /**
+   * A date's earliest or latest day: any, today, days after or before today,
+   * or a day — "today", "today+30", "today-7", "2026-03-02" in the format.
+   */
+  function day(which: 'min' | 'max'): Part {
+    const name = which === 'min' ? 'Earliest' : 'Latest';
+    const how = select(name, [['', 'Any day'], ['today', 'Today'], ['after', 'Days after today'], ['before', 'Days before today'], ['day', 'A day']]);
+    const days = numberBox('', { min: '1', step: '1' });
+    const date = el('input', { type: 'date', class: 'fd-inline-input', 'aria-label': `${name} day` }) as HTMLInputElement;
+    // A day picked to be fixed waits for its date: until then the limit stays as it was.
+    let waiting = false;
+    const save = () => {
+      const n = numberOrNull(days.value) ?? 1;
+      const limit = { '': null, today: 'today', after: `today+${n}`, before: `today-${n}`, day: date.value || null }[how.value];
+      waiting = how.value === 'day' && !limit;
+      if (waiting) return refreshed();
+      designer.setLimits(id, { [which]: limit === 'today+0' || limit === 'today-0' ? 'today' : limit });
+    };
+    let refreshed = () => undefined as void;
+    how.addEventListener('change', save);
+    days.addEventListener('change', save);
+    date.addEventListener('change', save);
+    return {
+      element: row(word(name, how), days, date),
+      refresh(page, node) {
+        refreshed = () => this.refresh(page, node);
+        const limit = own(page.fields[node.field], which);
+        const counted = typeof limit === 'string' ? /^today([+-])(\d+)$/.exec(limit) : null;
+        const mode = waiting || (typeof limit === 'string' && !counted && limit !== 'today') ? 'day' : typeof limit !== 'string' ? '' : limit === 'today' ? 'today' : (counted as RegExpExecArray)[1] === '+' ? 'after' : 'before';
+        if (!focused(how)) how.value = mode;
+        if (counted) show(days, counted[2]);
+        if (mode === 'day' && !waiting) show(date, limit);
+        days.hidden = mode !== 'after' && mode !== 'before';
+        days.setAttribute('aria-label', `Days ${mode === 'before' ? 'before' : 'after'} today, ${name.toLowerCase()}`);
+        date.hidden = mode !== 'day';
+      },
+    };
+  }
+
+  /** The weekends a date may not fall on: Saturday and Sunday, or Friday and Saturday. */
+  function weekends(): Part {
+    const WEEKS: Record<string, number[]> = { 'sat-sun': [1, 2, 3, 4, 5], 'fri-sat': [1, 2, 3, 4, 7] };
+    const weekend = select('Weekends', [['', 'Allowed'], ['sat-sun', 'Not Saturday or Sunday'], ['fri-sat', 'Not Friday or Saturday'], ['own', 'Some days only']]);
+    weekend.addEventListener('change', () => weekend.value !== 'own' && designer.setLimits(id, { days: WEEKS[weekend.value] ?? null }));
+    return {
+      element: word('Weekends', weekend),
+      refresh(page, node) {
+        const days = JSON.stringify(own(page.fields[node.field], 'days') ?? null);
+        weekend.value = days === 'null' ? '' : (Object.keys(WEEKS).find((k) => JSON.stringify(WEEKS[k]) === days) ?? 'own');
+        (weekend.options[3] as HTMLOptionElement).hidden = weekend.value !== 'own';
+      },
+    };
+  }
+
+  /** A date that starts on the day the form is opened. */
+  function startsToday(): Part {
+    const today = toggle('Starts on today', (on) => designer.setLimits(id, { startsToday: on }));
+    return { element: today.element, refresh: (page, node) => today.button.setAttribute('aria-checked', String(own(page.fields[node.field], 'default') === 'today')) };
+  }
+
+  /** The minutes a date and time's or a time's picker steps by. */
+  function minutes(): Part {
+    const step = select('Minutes', ['1', '5', '10', '15', '30'].map((m): [string, string] => [m, m === '1' ? 'Any minute' : `Every ${m}`]));
+    step.addEventListener('change', () => designer.setWidgetOptions(id, { step: step.value === '1' ? null : Number(step.value) }));
+    return { element: word('Minutes', step), refresh: (_page, node) => (step.value = String(node.options?.['step'] ?? 1)) };
+  }
+
+  /** A time's earliest and latest: "09:00", "17:30". */
+  function hours(): Part {
+    const box = (label: string, key: string) => {
+      const input = el('input', { type: 'time', class: 'fd-inline-input', 'aria-label': label }) as HTMLInputElement;
+      input.addEventListener('change', () => designer.setWidgetOptions(id, { [key]: input.value || null }));
+      return input;
+    };
+    const [from, to] = [box('Earliest time', 'min'), box('Latest time', 'max')];
+    return {
+      element: row(word('Earliest time', from), word('Latest time', to)),
+      refresh(_page, node) {
+        show(from, node.options?.['min']);
+        show(to, node.options?.['max']);
+      },
+    };
+  }
+
   const parts: Part[] = [];
   if (kind === 'short-answer' || kind === 'paragraph') parts.push(most());
   if (kind === 'paragraph') parts.push(rows());
@@ -149,6 +235,10 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   if (kind === 'rating') parts.push(look());
   if (kind === 'rating' || kind === 'slider') parts.push(ends());
   if (kind === 'scale') parts.push(nps());
+  if (kind === 'date' || kind === 'date-time') parts.push(day('min'), day('max'), weekends());
+  if (kind === 'date') parts.push(startsToday());
+  if (kind === 'time') parts.push(hours());
+  if (kind === 'date-time' || kind === 'time') parts.push(minutes());
   if (!parts.length) return null;
   return { elements: parts.map((p) => p.element), refresh: (page, node) => parts.forEach((p) => p.refresh(page, node)) };
 }

@@ -201,6 +201,94 @@ describe('a linear scale as NPS', () => {
   });
 });
 
+describe('a date’s earliest and latest day, its days and its start', () => {
+  const card = (host: Element) => host.querySelector('.fd-canvas-field.fd-editing') as HTMLElement;
+
+  it('takes a day fixed or counted from today, refusing one that is no day or after the latest', () => {
+    const designer = createDesigner({ page: blankPage('survey', 'Visit') });
+    const q = designer.addQuestion('date') as string;
+    expect(designer.setLimits(q, { min: 'today', max: 'today+30' })).toBe(true);
+    expect(fieldOf(designer, q)).toMatchObject({ type: 'date', min: 'today', max: 'today+30' });
+    expect(designer.setLimits(q, { min: 'tomorrow' })).toBe(false);
+    expect(designer.getState().issues).toEqual(['A day is a date, today, or days after or before today']);
+    expect(designer.setLimits(q, { min: 'today+31' })).toBe(false);
+    expect(designer.getState().issues).toEqual(['The earliest day is after the latest']);
+    expect(designer.setLimits(q, { min: 3 })).toBe(false);
+    expect(designer.setLimits(q, { days: [1, 2, 3, 4, 5], startsToday: true })).toBe(true);
+    expect(fieldOf(designer, q)).toMatchObject({ days: [1, 2, 3, 4, 5], default: 'today' });
+    expect(designer.setLimits(q, { days: [1, 2, 3, 4, 5, 6, 7], startsToday: false })).toBe(true);
+    expect(fieldOf(designer, q)).not.toHaveProperty('days');
+    expect(fieldOf(designer, q)).not.toHaveProperty('default');
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+  });
+
+  it('sets the earliest day as today, days from today or a day, in the date itself, its picker following', () => {
+    const { designer, id, host } = screenWith('date');
+    expect(inline(host, 'Earliest')?.value).toBe('');
+    choose(inline(host, 'Earliest') ?? undefined, 'today');
+    expect(fieldOf(designer, id)).toMatchObject({ min: 'today' });
+    choose(inline(host, 'Latest') ?? undefined, 'after');
+    enter(inline(host, 'Days after today, latest'), '30');
+    expect(fieldOf(designer, id)).toMatchObject({ max: 'today+30' });
+    choose(inline(host, 'Earliest') ?? undefined, 'before');
+    enter(inline(host, 'Days before today, earliest'), '7');
+    expect(fieldOf(designer, id)).toMatchObject({ min: 'today-7' });
+    choose(inline(host, 'Earliest') ?? undefined, 'day');
+    enter(inline(host, 'Earliest day'), '2026-03-02');
+    expect(fieldOf(designer, id)).toMatchObject({ min: '2026-03-02' });
+    expect((card(host).querySelector('input[type=date]') as HTMLInputElement).min).toBe('2026-03-02');
+    choose(inline(host, 'Earliest') ?? undefined, '');
+    expect(fieldOf(designer, id)).not.toHaveProperty('min');
+  });
+
+  it('refuses weekends, Saturday and Sunday or Friday and Saturday, and starts on today', () => {
+    const { designer, id, host } = screenWith('date');
+    choose(inline(host, 'Weekends') ?? undefined, 'sat-sun');
+    expect(fieldOf(designer, id)).toMatchObject({ days: [1, 2, 3, 4, 5] });
+    choose(inline(host, 'Weekends') ?? undefined, 'fri-sat');
+    expect(fieldOf(designer, id)).toMatchObject({ days: [1, 2, 3, 4, 7] });
+    choose(inline(host, 'Weekends') ?? undefined, '');
+    expect(fieldOf(designer, id)).not.toHaveProperty('days');
+    (inline(host, 'Starts on today') as unknown as HTMLButtonElement).click();
+    expect(fieldOf(designer, id)).toMatchObject({ default: 'today' });
+  });
+
+  it('gives a date and time the same, and a step of minutes, but no start', () => {
+    const { designer, id, host } = screenWith('date-time');
+    choose(inline(host, 'Earliest') ?? undefined, 'today');
+    choose(inline(host, 'Minutes') ?? undefined, '15');
+    expect(fieldOf(designer, id)).toMatchObject({ type: 'datetime', min: 'today' });
+    expect(nodeOf(designer, id).options).toEqual({ step: 15 });
+    expect((card(host).querySelector('input[type=datetime-local]') as HTMLInputElement).step).toBe('900');
+    expect(inline(host, 'Starts on today')).toBeNull();
+    choose(inline(host, 'Minutes') ?? undefined, '1');
+    expect(nodeOf(designer, id).options).toBeUndefined();
+  });
+});
+
+describe('a time of day', () => {
+  it('is a kind of its own, in Numbers and dates, kept as HH:MM', () => {
+    const designer = createDesigner({ page: blankPage('survey', 'Visit') });
+    const q = designer.addQuestion('time') as string;
+    expect(fieldOf(designer, q)).toMatchObject({ type: 'char', pattern: '^([01]\\d|2[0-3]):[0-5]\\d$' });
+    expect(nodeOf(designer, q).widget).toBe('time');
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+  });
+
+  it('sets its earliest, latest and step, in the time itself', () => {
+    const { designer, id, host } = screenWith('time');
+    const card = host.querySelector('.fd-canvas-field.fd-editing') as HTMLElement;
+    enter(inline(host, 'Earliest time'), '09:00');
+    enter(inline(host, 'Latest time'), '17:30');
+    choose(inline(host, 'Minutes') ?? undefined, '30');
+    expect(nodeOf(designer, id).options).toEqual({ min: '09:00', max: '17:30', step: 30 });
+    const time = card.querySelector('input[type=time]') as HTMLInputElement;
+    expect([time.min, time.max, time.step]).toEqual(['09:00', '17:30', '1800']);
+    enter(inline(host, 'Earliest time'), '');
+    expect(nodeOf(designer, id).options).toEqual({ max: '17:30', step: 30 });
+  });
+});
+
 describe('the words for what changed, when published', () => {
   it('says a text’s most characters, a paragraph’s rows and whether it grows', () => {
     const designer = createDesigner({ page: blankPage('survey', 'Feedback') });
@@ -250,5 +338,26 @@ describe('the words for what changed, when published', () => {
     designer.makeNps(q);
     designer.setWidgetOptions(q, { nps: true });
     expect(pageChanges(before, designer.getPage())).toEqual(['“Recommend”: “Not at all likely” at the start', '“Recommend”: “Extremely likely” at the end', '“Recommend”: coloured as NPS']);
+  });
+
+  it('says a date’s days, a time’s and a date and time’s step', () => {
+    const designer = createDesigner({ page: blankPage('survey', 'Visit') });
+    const date = designer.addQuestion('date') as string;
+    designer.updateQuestion(date, { label: 'Visit' });
+    const time = designer.addQuestion('time') as string;
+    designer.updateQuestion(time, { label: 'Arrival' });
+    const before = designer.getPage();
+    designer.setLimits(date, { min: 'today', max: 'today+30', days: [1, 2, 3, 4, 7], startsToday: true });
+    designer.setWidgetOptions(time, { min: '09:00', step: 15 });
+    expect(pageChanges(before, designer.getPage())).toEqual([
+      '“Visit”: between today and 30 days after today',
+      '“Visit”: not on Friday or Saturday',
+      '“Visit”: starts on today',
+      '“Arrival”: no earlier than 09:00',
+      '“Arrival”: every 15 minutes',
+    ]);
+    const later = designer.getPage();
+    designer.setLimits(date, { min: null, max: '2026-12-31', days: null, startsToday: false });
+    expect(pageChanges(later, designer.getPage())).toEqual(['“Visit”: no later than 2026-12-31', '“Visit”: any day of the week', '“Visit”: starts empty']);
   });
 });
