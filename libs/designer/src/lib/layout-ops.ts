@@ -4,6 +4,7 @@ import { across, colsOf, contains, isRow, isSection, isWrapper, listOf, locate, 
 import { besideIn, besideWords, columnInside, fill, inTwelfths, isGroup, keepsFull, laidInTwelfths, landingSpan, putAt, resize, shares, toTwelfths, TWELVE, type Beside } from './layout-twelfths';
 import { allIds, containers, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
+import { answersName, freeFieldName } from './saved-forms';
 
 /**
  * Laying a page out by dropping parts where they go, as the approved mockup
@@ -352,7 +353,7 @@ export function makePart(page: Page, part: NewPart, context: LayoutContext): Lay
     throw new Refusal(`There is no kind of part “${part.kind}”`);
   }
   if (kind.group === 'records' && page.data.kind === 'responses') throw new Refusal('A survey has no records to link to or list: this kind is for app screens');
-  const field = nextName((n) => n in page.fields, 'q', '_');
+  const field = freeFieldName(page);
   page.fields[field] = kind.field('Untitled question');
   return { type: 'field', id: name('q'), field, ...(kind.widget ? { widget: kind.widget } : {}) };
 }
@@ -450,8 +451,10 @@ export const prefixOf = (node: Part): string => (node.type === 'field' ? 'q' : i
 /** A copy made new: ids of its own, and fields of its own, as a copied question has. */
 function renew(page: Page, node: Part, name: (prefix: string) => string): Part {
   node.id = name(prefixOf(node));
+  // A copy of a saved form keeps its answers apart: `address_2`.
+  if (node.type === 'form') node.name = answersName(page, node.name.replace(/_\d+$/, ''));
   if (node.type === 'field') {
-    const field = nextName((n) => n in page.fields, 'q', '_');
+    const field = freeFieldName(page);
     page.fields[field] = JSON.parse(JSON.stringify(page.fields[node.field]));
     node.field = field;
   }

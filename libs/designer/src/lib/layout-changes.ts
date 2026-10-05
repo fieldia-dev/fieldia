@@ -118,6 +118,8 @@ function blockWords(page: Page, node: Part): string | null {
     case 'divider':
     case 'spacer':
       return `a ${node.type}`;
+    case 'form':
+      return `the saved form “${nameOf(page, node)}”`;
     default:
       return null;
   }
@@ -225,6 +227,8 @@ export function layoutChanges(before: Page, after: Page): LayoutChanges {
     else if (old.type === 'button' && node.type === 'button' && old.label !== node.label) lines.push(`Renamed the button “${old.label}” to “${node.label}”`);
     // A picture's address, description, width, place, link or caption.
     else if (old.type === 'image' && node.type === 'image' && JSON.stringify(old) !== JSON.stringify(node)) lines.push(`Changed ${words}`);
+    // A saved form: another one, another version, where its answers go, its title.
+    else if (old.type === 'form' && node.type === 'form' && JSON.stringify(old) !== JSON.stringify(node)) lines.push(`Changed ${words}`);
   }
   for (const [id, node] of was.node) if (!stays(id) && blockWords(before, node as Part)) lines.push(`Removed ${blockWords(before, node as Part)}`);
 
