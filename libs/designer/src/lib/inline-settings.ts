@@ -5,12 +5,14 @@ import type { Designer } from './designer';
 import { kindOfField } from './kinds';
 import { kindSettings } from './kind-settings';
 import { inputSettings } from './kind-settings-inputs';
+import { structureSettings } from './kind-settings-structures';
 
 /**
  * What a kind of field has beyond its words, set in the picked field itself,
  * where it is seen: a rating's levels, where a scale starts and ends, an
  * amount's currency, what a link points to, a table's columns — and the
- * newer kinds' own, from `kind-settings`. A field of the model keeps the
+ * newer kinds' own, from `kind-settings`, and the structures', from
+ * `kind-settings-structures`. A field of the model keeps the
  * model's, so it has none here. The panel has the same.
  */
 
@@ -191,12 +193,13 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
       standsIn = more?.standsIn ?? false;
       if (more) refresh = more.refresh;
     }
-    // The text, number and date kinds' own, after the rest of their kind's.
+    // The text, number and date kinds' own, then the structures', after the rest of their kind's.
     const inputs = inputSettings(el, designer, id, kind);
-    if (!inputs) return;
-    element.append(...inputs.elements);
+    const structures = structureSettings(el, designer, id, kind);
+    if (!inputs && !structures.length) return;
+    element.append(...(inputs?.elements ?? []), ...structures.map((p) => p.element));
     const before = refresh;
-    refresh = (page, node) => (before(page, node), inputs.refresh(page, node));
+    refresh = (page, node) => (before(page, node), inputs?.refresh(page, node), structures.forEach((p) => p.refresh(page, node)));
   }
 
   return {

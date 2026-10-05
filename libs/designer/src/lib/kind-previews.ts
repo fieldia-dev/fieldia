@@ -18,8 +18,12 @@ export function kindPreview(el: ElementFactory, page: Page, node: FieldNode, kin
   const option = (key: string) => node.options?.[key];
   const line = (words: string) => el('div', { class: 'fd-q-preview-part' }, words);
   switch (kind) {
-    case 'signature':
-      return el('div', { class: 'fd-q-preview fd-q-preview-signature' }, 'Sign here');
+    case 'signature': {
+      // The page's words on the pad, and those kept under it.
+      const pad = el('div', { class: 'fd-q-preview fd-q-preview-signature' }, node.placeholder || 'Sign here');
+      const under = option('footerLabel');
+      return typeof under === 'string' && under ? el('div', { class: 'fd-q-preview-lines' }, pad, el('span', { class: 'fd-q-preview-under' }, under)) : pad;
+    }
     case 'address': {
       const asked = option('parts');
       const parts = Array.isArray(asked) ? ADDRESS_PARTS.filter((p) => asked.includes(p)) : ADDRESS_PARTS;
