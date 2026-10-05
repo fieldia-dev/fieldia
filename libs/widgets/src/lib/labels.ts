@@ -104,6 +104,8 @@ export interface WidgetLabels {
   /** An address's parts. */
   addressStreet: string;
   addressCity: string;
+  addressLine2: string;
+  addressRegion: string;
   addressPostcode: string;
   addressCountry: string;
   /** A repeating group: a card's title (`{n}` counts from 1), the button that adds one, and a card gone, said aloud. */
@@ -208,6 +210,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     movedTo: '{label} moved to place {n} of {total}',
     addressStreet: 'Street address',
     addressCity: 'City',
+    addressLine2: 'Address line 2',
+    addressRegion: 'State or region',
     addressPostcode: 'Postcode',
     addressCountry: 'Country',
     entry: 'Entry {n}',
@@ -303,6 +307,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     movedTo: 'أصبح {label} في المرتبة {n} من {total}',
     addressStreet: 'عنوان الشارع',
     addressCity: 'المدينة',
+    addressLine2: 'سطر العنوان 2',
+    addressRegion: 'المحافظة أو المنطقة',
     addressPostcode: 'الرمز البريدي',
     addressCountry: 'الدولة',
     entry: 'الإدخال {n}',
@@ -398,6 +404,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     movedTo: '{label} ist jetzt auf Platz {n} von {total}',
     addressStreet: 'Straße und Hausnummer',
     addressCity: 'Ort',
+    addressLine2: 'Adresszeile 2',
+    addressRegion: 'Bundesland oder Region',
     addressPostcode: 'Postleitzahl',
     addressCountry: 'Land',
     entry: 'Eintrag {n}',
@@ -493,6 +501,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     movedTo: '{label} est maintenant en position {n} sur {total}',
     addressStreet: 'Adresse',
     addressCity: 'Ville',
+    addressLine2: 'Complément d’adresse',
+    addressRegion: 'État ou région',
     addressPostcode: 'Code postal',
     addressCountry: 'Pays',
     entry: 'Entrée {n}',
