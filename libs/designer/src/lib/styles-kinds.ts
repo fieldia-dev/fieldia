@@ -48,5 +48,5 @@ export const DESIGNER_KINDS_CSS = /* css */ `
 .fd-line-columns { display: grid; gap: 6px; width: 100%; margin: 0; padding: 0; list-style: none; }
 .fd-line-column { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 11em); gap: 8px; align-items: center; }
 .fd-line-column-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fd-text); }
-.fd-line-column > .fd-inline-chip[hidden] { display: block; visibility: hidden; }
+.fd-line-column > select { grid-column: 3; }
 `;
