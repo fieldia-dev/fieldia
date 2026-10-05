@@ -154,3 +154,34 @@ for (const mode of ['simple', 'advanced'] as const) {
     });
   }
 }
+
+/** A field's rule marks sit in its top corner: never over its label's words, however narrow the field. */
+for (const size of ['Desktop', 'Tablet'] as const) {
+  test(`rule marks leave a field's label readable · ${size.toLowerCase()}`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('fieldia.designer.mode', 'advanced');
+      } catch {
+        // A browser that keeps nothing opens Simple.
+      }
+    });
+    await page.goto('/screen/?start=layout');
+    await page.getByRole('group', { name: 'Screen size' }).getByRole('button', { name: size }).click();
+    await expect(page.locator('.fd-canvas-field .fd-rule-marks').first()).toBeVisible();
+    const over = await page.locator('.fd-canvas-field:has(> .fd-rule-marks)').evaluateAll((cards) =>
+      cards.flatMap((card) => {
+        const label = card.querySelector(':scope > .fd-label') as HTMLElement | null;
+        const marks = (card.querySelector(':scope > .fd-rule-marks') as HTMLElement).getBoundingClientRect();
+        if (!label || !marks.width) return [];
+        const range = document.createRange();
+        range.selectNodeContents(label);
+        const words = [...range.getClientRects()].filter((r) => r.width > 0);
+        const hit = words.some((r) => r.left < marks.right - 1 && r.right > marks.left + 1 && r.top < marks.bottom - 1 && r.bottom > marks.top + 1);
+        return hit ? [`${label.textContent?.trim()} (${Math.round(card.getBoundingClientRect().width)}px)`] : [];
+      })
+    );
+    expect(over).toEqual([]);
+    await screen(page, `look-rule-marks-${size.toLowerCase()}`, { viewport: true });
+  });
+}

@@ -126,6 +126,11 @@ export const DESIGNER_RULES_CSS = /* css */ `
 /* ---- marks on the canvas: a part with a rule says so; pointed at, its sentence ---- */
 .fd-rule-marks { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .fd-canvas-field > .fd-rule-marks { position: absolute; inset-block-start: 0; inset-inline-end: 6px; z-index: 2; }
+/* A field too narrow for the marks' words beside its label keeps their icons: pointed at, each still says its sentence, and a screen reader hears it. */
+.fd-canvas-field:has(> .fd-rule-marks) { container-type: inline-size; }
+@container (max-width: 320px) {
+  .fd-canvas-field > .fd-rule-marks .fd-rule-mark-words { display: none; }
+}
 .fd-canvas-section > .fd-rule-marks { position: absolute; inset-block-start: 0; inset-inline-end: 8px; z-index: 2; }
 .fd-step-head-row > .fd-rule-marks { flex: none; }
 /* A small chip, in a button 24px tall: a target a finger can hit (WCAG 2.5.8), the chip drawn inside it by ::before. */
