@@ -223,6 +223,8 @@ export function layoutChanges(before: Page, after: Page): LayoutChanges {
     if (!old) lines.push(`Added ${words}${placed.has(id) ? ` ${placed.get(id)}` : ''}`);
     else if (old.type === 'text' && node.type === 'text' && old.text !== node.text) lines.push(`Changed ${blockWords(before, old)} to “${nameOf(after, node)}”`);
     else if (old.type === 'button' && node.type === 'button' && old.label !== node.label) lines.push(`Renamed the button “${old.label}” to “${node.label}”`);
+    // A picture's address, description, width, place, link or caption.
+    else if (old.type === 'image' && node.type === 'image' && JSON.stringify(old) !== JSON.stringify(node)) lines.push(`Changed ${words}`);
   }
   for (const [id, node] of was.node) if (!stays(id) && blockWords(before, node as Part)) lines.push(`Removed ${blockWords(before, node as Part)}`);
 

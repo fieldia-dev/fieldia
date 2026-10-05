@@ -1,0 +1,32 @@
+import type { Field, FieldNode } from '@fieldia/core';
+
+/**
+ * What changed in a structure's own settings from one version of a page to
+ * the next, in words, for the Publish dialog: the records a link offers, a
+ * table's totals and the columns people may hide. The widgets' settings —
+ * a signature's pen, an address's parts — are "how it shows".
+ */
+
+interface Placed {
+  field: Field;
+  node: FieldNode;
+}
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+export function structureChanges(name: string, was: Placed, now: Placed): string[] {
+  const lines: string[] = [];
+  const filterOf = (p: Placed) => (p.field.type === 'many2one' || p.field.type === 'many2many' ? p.field.filter : undefined);
+  const filter = filterOf(now);
+  if (!same(filterOf(was), filter)) {
+    const one = filter?.length === 1 && 'op' in filter[0] && filter[0].op === '=' && filter[0].valueFrom === undefined ? filter[0] : null;
+    lines.push(!filter ? `“${name}”: offers every record` : one ? `“${name}”: offers only records where ${one.field} is ${JSON.stringify(one.value)}` : `“${name}”: the records it offers changed`);
+  }
+  if (now.field.type === 'one2many') {
+    const fields = now.field.fields;
+    const labels = (names: string[]) => names.map((n) => fields[n]?.label ?? n).join(', ');
+    if (!same(was.node.totals, now.node.totals)) lines.push(now.node.totals?.length ? `“${name}”: adds up ${labels(now.node.totals)}` : `“${name}”: adds up nothing`);
+    if (!same(was.node.optionalColumns, now.node.optionalColumns)) lines.push(`“${name}”: the columns people may hide changed`);
+  }
+  return lines;
+}

@@ -1,6 +1,6 @@
 import type { FieldNode, WizardNode } from '@fieldia/core';
 import type { SectionNode } from '@fieldia/core';
-import { blankPage, createDesigner, type Designer } from './designer';
+import { blankPage, createDesigner, pageChanges, type Designer } from './designer';
 import { mountSurveyEditor, type SurveyEditorHandle } from './survey-editor';
 import { mount as mountScreen } from './test-editor';
 
@@ -225,5 +225,31 @@ describe('rich text’s settings', () => {
     expect(card().querySelector('.fd-richtext-bar')).toBeNull();
     bar.click();
     expect(node().options).toBeUndefined();
+  });
+});
+
+describe('the structures’ changes, in words for the Publish dialog', () => {
+  it('says the records a link offers, a table’s totals and columns to hide, and a picture changed', () => {
+    const designer = createDesigner({ page: blankPage('screen', 'Visit') });
+    const lines = designer.addQuestion('lines', { parent: 'section-1' }) as string;
+    designer.updateQuestion(lines, { label: 'Milestones' });
+    const link = designer.addQuestion('link', { parent: 'section-1' }) as string;
+    designer.updateQuestion(link, { label: 'Owner' });
+    const image = designer.addBlock('image', { parent: 'section-1' }) as string;
+    designer.updateBlock(image, { alt: 'A plan' });
+    const before = designer.getPage();
+    designer.setLineTable(lines, { totals: ['quantity'], optionalColumns: { name: 'hide' } });
+    designer.setLinkFilter(link, { field: 'active', value: true });
+    designer.updateBlock(image, { width: 'small', caption: 'The new floor' });
+    expect(pageChanges(before, designer.getPage())).toEqual([
+      '“Milestones”: adds up Quantity',
+      '“Milestones”: the columns people may hide changed',
+      '“Owner”: offers only records where active is true',
+      'Changed the image “A plan”',
+    ]);
+    const after = designer.getPage();
+    designer.setLinkFilter(link, null);
+    designer.setLineTable(lines, { totals: null });
+    expect(pageChanges(after, designer.getPage())).toEqual(['“Milestones”: adds up nothing', '“Owner”: offers every record']);
   });
 });

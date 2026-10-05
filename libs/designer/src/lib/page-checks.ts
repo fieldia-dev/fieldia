@@ -2,6 +2,7 @@ import { validatePage, type Field, type FieldNode, type Page } from '@fieldia/co
 import { readCondition, type Condition } from './conditions';
 import { kindById, kindOfField } from './kinds';
 import { inputChanges } from './input-changes';
+import { structureChanges } from './structure-changes';
 import { holderName as placeName, layoutChanges, lookChanges, placements } from './layout-changes';
 import { isWrapper } from './layout-tree';
 import { containers, type Container } from './page-tree';
@@ -296,6 +297,7 @@ export function pageChanges(before: Page | null, after: Page): string[] {
     const settings = inputChanges(name, was, p);
     out.push(...settings.lines);
     out.push(...fileChanges(name, was, p));
+    out.push(...structureChanges(name, was, p));
     // How it shows, beyond what the files' own words and the inputs' said.
     if (settings.unsaid.some((key) => !isFiles(p.field) || (key !== 'files' && key !== 'camera'))) out.push(`“${name}”: how it shows changed`);
     const shows = whenItShows(name, was.node.invisible, p.node.invisible, answers);
