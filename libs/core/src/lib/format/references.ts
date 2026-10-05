@@ -1,5 +1,5 @@
 import type { Field, Fields, FilterItem, LineField, LineKinds } from './field';
-import type { FieldNode, LayoutNode, ListNode, RootLayout, SheetNode, TabsNode } from './layout';
+import type { FieldNode, FormNode, LayoutNode, ListNode, RootLayout, SheetNode, TabsNode } from './layout';
 import type { Page } from './page';
 import { compileModifier } from '../expression/modifier';
 import { compileExpression } from '../expression/expression';
@@ -36,6 +36,8 @@ const listed = (names: string[]) => {
 export class ReferenceCheck {
   private readonly issues: PageIssue[] = [];
   private readonly ids = new Map<string, string>();
+  /** Where the answers of each saved form placed here go, by name: the path of the part that took it first. */
+  private readonly formNames = new Map<string, string>();
 
   constructor(private readonly page: Page) {}
 
@@ -251,7 +253,7 @@ export class ReferenceCheck {
 
   private walkNode(node: LayoutNode, path: string) {
     this.claim(node.id, path);
-    this.checkModifiers(node, path, node.type === 'field' ? ['invisible', 'readonly', 'required'] : node.type === 'section' ? ['invisible', 'readonly'] : ['invisible']);
+    this.checkModifiers(node, path, node.type === 'field' ? ['invisible', 'readonly', 'required'] : node.type === 'section' || node.type === 'form' ? ['invisible', 'readonly'] : ['invisible']);
     switch (node.type) {
       case 'field':
         return this.checkFieldNode(node, path);
@@ -261,9 +263,24 @@ export class ReferenceCheck {
         return this.walkChildren(node.children, path);
       case 'tabs':
         return this.walkTabs(node, path);
+      case 'form':
+        return this.checkFormNode(node, path);
       default:
         return;
     }
+  }
+
+  /** A saved form placed here: never this page itself, and its answers under a name no field and no other copy has. */
+  private checkFormNode(node: FormNode, path: string) {
+    // The quick check reads no shapes: a part with no page or name to go by is said here.
+    if (typeof node.page !== 'string' || typeof node.name !== 'string') return this.report(path, 'a saved form placed here needs the page’s id and a name for its answers');
+    if (node.page === this.page.id) this.report(`${path}.page`, 'a page cannot be placed inside itself');
+    const first = this.formNames.get(node.name);
+    if (has(this.page.fields, node.name)) {
+      this.report(`${path}.name`, `"${node.name}" is a field of this page: the saved form’s answers need a name of their own`);
+    } else if (first !== undefined) {
+      this.report(`${path}.name`, `the answers of the saved form at ${first} go under "${node.name}" already: give each copy a name of its own`);
+    } else this.formNames.set(node.name, path);
   }
 
   private walkTabs(node: TabsNode, path: string) {

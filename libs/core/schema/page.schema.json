@@ -3417,6 +3417,53 @@
             "alt"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "form"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "page": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "name": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "title": {
+              "type": "string"
+            },
+            "colspan": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "invisible": {
+              "$ref": "#/$defs/Modifier"
+            },
+            "readonly": {
+              "$ref": "#/$defs/Modifier"
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "page",
+            "name"
+          ],
+          "additionalProperties": false
         }
       ]
     },
