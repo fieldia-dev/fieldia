@@ -71,8 +71,9 @@ if (/ZodError|\$ZodType/.test(code)) throw new Error('the script bundle carries 
 // address, repeating group) and shuffled options add 26; values worked out from others, values set by a
 // condition and answer rules add 13; groups side by side, arrangements, group styles, labels and the
 // page's look add 7. The page's translations, choices from the app's lists, the tick box and dialogs in
-// the page's look add 2.5 more, to 252.
-const BUDGET_KB = 260;
+// the page's look add 2.5 more, to 252. Several files with a count, their list and thumbnails, the viewer
+// and their words in four languages add 12, to 272.
+const BUDGET_KB = 272;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it.
 const GZIP_BUDGET_KB = 80;
