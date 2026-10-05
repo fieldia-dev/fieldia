@@ -29,6 +29,15 @@ export function designerLocale(tag: string | null | undefined): DesignerLocale |
   return Object.prototype.hasOwnProperty.call(DESIGNER_WORDS, base) ? (base as DesignerLocale) : 'en';
 }
 
+/** An option's words as the designer writes them for a new one — "Option 2", "الخيار 2" — in any language it speaks. */
+export function isDefaultOption(label: string): boolean {
+  const n = /\d+/.exec(label);
+  return !!n && Object.values(DESIGNER_WORDS).some((w) => w.defaults.option(Number(n[0])) === label);
+}
+
+/** A question's words as the designer writes them for a new one, in any language it speaks. */
+export const isUntitled = (label: string): boolean => /^Untitled (question|field)$/.test(label) || Object.values(DESIGNER_WORDS).some((w) => w.defaults.untitledQuestion === label);
+
 /** How each language writes dates and numbers: Arabic in Latin digits, as Arabic business software shows them. */
 export const DATE_TAGS: Record<DesignerLocale, string> = { en: 'en-GB', ar: 'ar-u-nu-latn' };
 

@@ -9,6 +9,9 @@ import { rules } from './rules';
 import { parts } from './parts';
 import { rulesUi } from './rules-ui';
 import { languages } from './languages';
+import { changes } from './changes';
+import { settingsChanges } from './settings-changes';
+import { checks } from './checks';
 
 /**
  * The designer's words in Arabic: Modern Standard Arabic as Arabic software
@@ -30,4 +33,4 @@ import { languages } from './languages';
  *   model (the backend's) نموذج البيانات · record سجل · list قائمة · sheet ورقة
  *   desktop / tablet / phone سطح المكتب / جهاز لوحي / هاتف · width العرض
  */
-export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages };
+export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks };

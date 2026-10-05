@@ -1,4 +1,6 @@
 import { wideColumns, type ColumnCount, type ColumnsByWidth, type Page, type SectionNode } from '@fieldia/core';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 import { across, isSection, isWrapper, locate, nameOf, onTracks, rowsIn, rowsOf, setSpan, sharesOneCell, spanOf, type Holder, type Part, type Row } from './layout-tree';
 
 /**
@@ -183,13 +185,13 @@ export function putAt(page: Page, holder: Holder, index: number, parts: Part[], 
   fill(split.items.slice(cut));
 }
 
-const FRACTIONS: [number, string][] = [
-  [12, 'the whole row'],
-  [9, 'three quarters of the row'],
-  [8, 'two thirds of the row'],
-  [6, 'half the row'],
-  [4, 'a third of the row'],
-  [3, 'a quarter of the row'],
+const FRACTIONS: [number, keyof DesignerWords['parts']['shares']][] = [
+  [12, 'whole'],
+  [9, 'threeQuarters'],
+  [8, 'twoThirds'],
+  [6, 'half'],
+  [4, 'third'],
+  [3, 'quarter'],
 ];
 
 /** The fractions of a row a part in twelfths is offered: in twelfths, as a short word, its label, and its name in a menu. */
@@ -203,8 +205,9 @@ export const ROW_PARTS: { span: number; words: string; label: string; name: stri
 ];
 
 /** A part's width as a share of a row of `cols` columns, in words: "half the row", "58% of the row". */
-export function rowShare(span: number, cols = TWELVE): string {
-  return FRACTIONS.find(([n]) => n * cols === span * TWELVE)?.[1] ?? `${percent(span, cols)}% of the row`;
+export function rowShare(span: number, cols = TWELVE, words: DesignerWords = en): string {
+  const named = FRACTIONS.find(([n]) => n * cols === span * TWELVE)?.[1];
+  return named ? words.parts.shares[named] : words.parts.percentOfRow(percent(span, cols));
 }
 
 /** A width as a whole percentage of a row. */

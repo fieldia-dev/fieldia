@@ -9,6 +9,9 @@ import { containers, type Container } from './page-tree';
 import { translationChanges } from './translations';
 import { ruleChanges } from './rules-changes';
 import { fixRuleCheck, ruleChecks, type RuleFix, type RuleFixer } from './rules-checks';
+import { isDefaultOption, isUntitled, type DesignerWords } from './designer-words';
+import { en } from './locales/en';
+import { kindName } from './kinds';
 
 /**
  * Before a page is published: what people would trip over, each with a fix
@@ -39,13 +42,6 @@ interface Placed {
   holder: Holder;
 }
 
-const DEFAULT_OPTION = /^Option \d+$/;
-const UNTITLED = /^Untitled (question|field)$/;
-
-/** "a", "a and b", "a, b and c". */
-function andList(words: string[]): string {
-  return words.length < 2 ? (words[0] ?? '') : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
-}
 
 /** Each field on the page, with the group that holds it (an arrangement is no group), in reading order. */
 function placedFields(page: Page): Placed[] {
@@ -63,12 +59,12 @@ function parts(page: Page): Holder[] {
 }
 
 const labelOf = (placed: { node: FieldNode; field: Field }) => (placed.node as FieldNode & { label?: string }).label ?? placed.field.label;
-const holderName = (holder: Holder) => holder.label || holder.title || 'Untitled section';
+const holderName = (holder: Holder, words: DesignerWords = en) => holder.label || holder.title || words.parts.untitledSection;
 
 /** Every element with its own `invisible`: fields, and the steps and sections that hold them. */
-function withRules(page: Page): { id: string; name: string; invisible: unknown }[] {
+function withRules(page: Page, words: DesignerWords = en): { id: string; name: string; invisible: unknown }[] {
   return [
-    ...parts(page).map((h) => ({ id: h.id, name: holderName(h), invisible: h.invisible })),
+    ...parts(page).map((h) => ({ id: h.id, name: holderName(h, words), invisible: h.invisible })),
     ...placedFields(page).map((p) => ({ id: p.node.id, name: labelOf(p), invisible: p.node.invisible })),
   ];
 }
@@ -78,30 +74,31 @@ function withRules(page: Page): { id: string; name: string; invisible: unknown }
  * pass `validatePage`, as each page the designer keeps is: it is not checked
  * against the format again, which on a big page is most of the time it takes.
  */
-export function pageChecks(page: Page, options: { valid?: boolean } = {}): PageCheck[] {
+export function pageChecks(page: Page, options: { valid?: boolean; words?: DesignerWords } = {}): PageCheck[] {
+  const words = options.words ?? en;
+  const w = words.checks;
   const found: PageCheck[] = [];
   const checked = options.valid ? null : validatePage(page);
-  const rules = ruleChecks(page);
+  const rules = ruleChecks(page, words);
   // A page written by hand can be wrong in ways the designer would never let it be; what the rules' checks say in words is not said again.
-  if (checked && !checked.ok) for (const issue of checked.issues) if (!rules.covers(issue.path)) found.push({ at: null, severity: 'must', text: issue.path ? `${issue.path}: ${issue.message}` : issue.message });
+  if (checked && !checked.ok) for (const issue of checked.issues) if (!rules.covers(issue.path)) found.push({ at: null, severity: 'must', text: w.invalid(issue.path, issue.message) });
   found.push(...rules.checks);
   const survey = page.data.kind === 'responses';
-  const noun = survey ? 'question' : 'field';
   const placed = placedFields(page);
-  if (survey && placed.length === 0) found.push({ at: null, severity: 'must', text: 'The survey has no questions yet, so there is nothing to answer.' });
+  if (survey && placed.length === 0) found.push({ at: null, severity: 'must', text: w.noQuestions });
 
   // What a question still lacks.
   for (const p of placed) {
     const label = labelOf(p);
-    if (!label.trim() || UNTITLED.test(label)) {
-      found.push({ at: p.node.id, severity: 'should', text: `A ${noun} has no words yet: people would read “${label.trim() || '…'}”.`, fix: { label: 'Type its words', action: { kind: 'go', id: p.node.id, part: 'label' } } });
+    if (!label.trim() || isUntitled(label)) {
+      found.push({ at: p.node.id, severity: 'should', text: w.noWords(survey, label.trim() || '…'), fix: { label: w.typeItsWords, action: { kind: 'go', id: p.node.id, part: 'label' } } });
     }
-    if (p.field.type === 'selection' && p.field.options.length && p.field.options.every((o) => DEFAULT_OPTION.test(o.label))) {
+    if (p.field.type === 'selection' && p.field.options.length && p.field.options.every((o) => isDefaultOption(o.label))) {
       found.push({
         at: p.node.id,
         severity: 'should',
-        text: `“${label}” still offers ${andList(p.field.options.map((o) => o.label))} as its options.`,
-        fix: { label: 'Type its options', action: { kind: 'go', id: p.node.id, part: 'options' } },
+        text: w.defaultOptions(label, p.field.options.map((o) => o.label)),
+        fix: { label: w.typeItsOptions, action: { kind: 'go', id: p.node.id, part: 'options' } },
       });
     }
   }
@@ -113,8 +110,8 @@ export function pageChecks(page: Page, options: { valid?: boolean } = {}): PageC
       found.push({
         at: image.id,
         severity: 'should',
-        text: image.href ? 'A picture that is a link has no description: a screen reader would read it as a link with no name.' : 'A picture has no description: people who cannot see it are told nothing of it.',
-        fix: { label: 'Describe it', action: { kind: 'go', id: image.id, part: 'label' } },
+        text: image.href ? w.linkedPicture : w.picture,
+        fix: { label: w.describeIt, action: { kind: 'go', id: image.id, part: 'label' } },
       });
     }
   }
@@ -131,13 +128,13 @@ export function pageChecks(page: Page, options: { valid?: boolean } = {}): PageC
     found.push({
       at: h.id,
       severity: 'should',
-      text: step ? `“${holderName(h)}” has no questions: people would see an empty page.` : `“${holderName(h)}” has no fields: it would show as an empty box.`,
-      ...(others ? { fix: { label: step ? 'Delete the page' : 'Delete the section', action: { kind: 'remove', id: h.id } as CheckFix } } : {}),
+      text: step ? w.emptyPage(holderName(h, words)) : w.emptySection(holderName(h, words)),
+      ...(others ? { fix: { label: step ? w.deletePage : w.deleteSection, action: { kind: 'remove', id: h.id } as CheckFix } } : {}),
     });
   }
 
   // A rule waiting for an answer the question no longer offers.
-  for (const target of withRules(page)) {
+  for (const target of withRules(page, words)) {
     const condition = readCondition(target.invisible);
     if (!condition || condition === 'custom') continue;
     condition.rules.forEach((rule, index) => {
@@ -149,10 +146,8 @@ export function pageChecks(page: Page, options: { valid?: boolean } = {}): PageC
       found.push({
         at: target.id,
         severity: never ? 'must' : 'should',
-        text: never
-          ? `“${target.name}” shows only when ${tested.label} is “${rule.value}”, which ${tested.label} no longer offers, so it never shows.`
-          : `“${target.name}”: the rule “${tested.label} is ${rule.value}” can never hold, as ${tested.label} no longer offers it.`,
-        fix: { label: 'Remove the rule', action: { kind: 'drop-rule', id: target.id, rule: index } },
+        text: never ? w.neverShows(target.name, tested.label, rule.value) : w.neverHolds(target.name, tested.label, rule.value),
+        fix: { label: w.removeTheRule, action: { kind: 'drop-rule', id: target.id, rule: index } },
       });
     });
   }
@@ -163,7 +158,7 @@ export function pageChecks(page: Page, options: { valid?: boolean } = {}): PageC
   const pageOf = (p: Placed) => stepOf?.get(p.node) ?? '';
   for (const p of placed) {
     const label = labelOf(p).trim();
-    if (!label || UNTITLED.test(label)) continue;
+    if (!label || isUntitled(label)) continue;
     const key = `${pageOf(p)}\n${label.toLowerCase()}`;
     if (!seen.has(key)) {
       seen.set(key, p.node.id);
@@ -172,8 +167,8 @@ export function pageChecks(page: Page, options: { valid?: boolean } = {}): PageC
     found.push({
       at: p.node.id,
       severity: 'should',
-      text: survey ? `Two questions read “${label}”: people may not tell them apart.` : `Two fields read “${label}”: people may not tell them apart.`,
-      fix: { label: 'Rename the second', action: { kind: 'go', id: p.node.id, part: 'label' } },
+      text: survey ? w.twoQuestions(label) : w.twoFields(label),
+      fix: { label: w.renameSecond, action: { kind: 'go', id: p.node.id, part: 'label' } },
     });
   }
 
@@ -221,51 +216,51 @@ export function fixCheck(designer: CheckFixer, check: PageCheck): boolean {
 
 // ---- what changed since the last version ------------------------------------------------------------
 
-const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
-
-function firstVersion(page: Page): string {
+function firstVersion(page: Page, words: DesignerWords): string {
+  const w = words.changes;
   const layout = page.layout;
-  if (layout.type === 'list') return `The first version: ${plural(layout.columns.length, 'column')}`;
+  if (layout.type === 'list') return w.firstList(layout.columns.length);
   const fields = placedFields(page).length;
-  if (page.data.kind === 'responses') return `The first version: ${plural(fields, 'question')} on ${plural(parts(page).filter((h) => h.type === 'step').length, 'page')}`;
-  return `The first version: ${plural(fields, 'field')} in ${plural(parts(page).filter((h) => h.type === 'section').length, 'section')}`;
+  if (page.data.kind === 'responses') return w.firstSurvey(fields, parts(page).filter((h) => h.type === 'step').length);
+  return w.firstScreen(fields, parts(page).filter((h) => h.type === 'section').length);
 }
 
 const required = (p: Placed) => p.field.required === true || p.node.required === true;
 const ruleOf = (invisible: unknown) => (invisible === undefined || invisible === null || invisible === '' || invisible === false ? null : JSON.stringify(invisible));
 
-function whenItShows(name: string, before: unknown, after: unknown, noun: string): string | null {
+function whenItShows(name: string, before: unknown, after: unknown, survey: boolean, words: DesignerWords): string | null {
   const [was, now] = [ruleOf(before), ruleOf(after)];
   if (was === now) return null;
-  if (!was) return `“${name}” now shows only for some ${noun}`;
-  if (!now) return `“${name}” now always shows`;
-  return `“${name}”: when it shows changed`;
+  if (!was) return words.changes.showsForSome(name, survey);
+  if (!now) return words.changes.alwaysShows(name);
+  return words.changes.whenShowsChanged(name);
 }
 
 /** Each change from one version of a page to the next, in words; nothing when nothing changed. */
-export function pageChanges(before: Page | null, after: Page): string[] {
-  if (!before) return [firstVersion(after)];
+export function pageChanges(before: Page | null, after: Page, words: DesignerWords = en): string[] {
+  const w = words.changes;
+  if (!before) return [firstVersion(after, words)];
   if (JSON.stringify(before) === JSON.stringify(after)) return [];
   const out: string[] = [];
   const survey = after.data.kind === 'responses';
-  const answers = survey ? 'answers' : 'records';
-  if ((before.title ?? '') !== (after.title ?? '')) out.push(`Title: “${before.title ?? ''}” → “${after.title ?? ''}”`);
-  if ((before.description ?? '') !== (after.description ?? '')) out.push('The description changed');
-  out.push(...lookChanges(before, after));
-  const layout = layoutChanges(before, after);
-  const at = (id: string) => (layout.placed.has(id) ? ` ${layout.placed.get(id)}` : '');
+  if ((before.title ?? '') !== (after.title ?? '')) out.push(w.title(before.title ?? '', after.title ?? ''));
+  if ((before.description ?? '') !== (after.description ?? '')) out.push(w.description);
+  out.push(...lookChanges(before, after, words));
+  const layout = layoutChanges(before, after, words);
+  const at = (id: string) => layout.placed.get(id) ?? '';
 
   // Pages, sections and tabs.
   const wasParts = new Map(parts(before).map((h) => [h.id, h]));
   const nowParts = new Map(parts(after).map((h) => [h.id, h]));
   const kindOf = (h: Holder) => (h.type === 'step' ? 'page' : h.type === 'tab' ? 'tab' : 'section');
-  for (const [id, h] of nowParts) if (!wasParts.has(id) && !layout.said.has(id)) out.push(`Added the ${kindOf(h)} “${holderName(h)}”${at(id)}`);
-  for (const [id, h] of wasParts) if (!nowParts.has(id) && !layout.said.has(id)) out.push(`Removed the ${kindOf(h)} “${holderName(h)}”`);
+  const named = (h: Holder) => holderName(h, words);
+  for (const [id, h] of nowParts) if (!wasParts.has(id) && !layout.said.has(id)) out.push(w.addedPart(kindOf(h), named(h), at(id)));
+  for (const [id, h] of wasParts) if (!nowParts.has(id) && !layout.said.has(id)) out.push(w.removedPart(kindOf(h), named(h)));
   for (const [id, h] of nowParts) {
     const was = wasParts.get(id);
     if (!was) continue;
-    if (holderName(was) !== holderName(h)) out.push(`Renamed the ${kindOf(h)} “${holderName(was)}” to “${holderName(h)}”`);
-    const shows = whenItShows(holderName(h), was.invisible, h.invisible, answers);
+    if (named(was) !== named(h)) out.push(w.renamedPart(kindOf(h), named(was), named(h)));
+    const shows = whenItShows(named(h), was.invisible, h.invisible, survey, words);
     if (shows) out.push(shows);
   }
 
@@ -273,36 +268,36 @@ export function pageChanges(before: Page | null, after: Page): string[] {
   const wasFields = new Map(placedFields(before).map((p) => [p.node.id, p]));
   const nowFields = placedFields(after);
   const nowIds = new Set(nowFields.map((p) => p.node.id));
-  for (const p of nowFields) if (!wasFields.has(p.node.id)) out.push(`Added “${labelOf(p)}”${at(p.node.id)}`);
-  for (const [id, p] of wasFields) if (!nowIds.has(id)) out.push(`Removed “${labelOf(p)}”`);
+  for (const p of nowFields) if (!wasFields.has(p.node.id)) out.push(w.added(labelOf(p), at(p.node.id)));
+  for (const [id, p] of wasFields) if (!nowIds.has(id)) out.push(w.removed(labelOf(p)));
   for (const p of nowFields) {
     const was = wasFields.get(p.node.id);
     if (!was) continue;
     const name = labelOf(p);
-    if (labelOf(was) !== name) out.push(`Renamed “${labelOf(was)}” to “${name}”`);
-    if ((was.field.help ?? '') !== (p.field.help ?? '') || (was.node as { help?: string }).help !== (p.node as { help?: string }).help) out.push(`“${name}”: its help changed`);
-    if (required(was) !== required(p)) out.push(required(p) ? `“${name}” is now required` : `“${name}” is no longer required`);
+    if (labelOf(was) !== name) out.push(w.renamed(labelOf(was), name));
+    if ((was.field.help ?? '') !== (p.field.help ?? '') || (was.node as { help?: string }).help !== (p.node as { help?: string }).help) out.push(w.helpChanged(name));
+    if (required(was) !== required(p)) out.push(required(p) ? w.nowRequired(name) : w.noLongerRequired(name));
     const [k0, k1] = [kindOfField(was.field, was.node), kindOfField(p.field, p.node)];
-    if (k0 !== k1) out.push(`“${name}” is now ${k1 ? kindById(k1).label : 'shown its own way'}`);
+    if (k0 !== k1) out.push(k1 ? w.nowKind(name, kindName(kindById(k1), words)) : w.nowOwnWay(name));
     if (was.field.type === 'selection' && p.field.type === 'selection') {
       const old = new Set(was.field.options.map((o) => o.value));
       const now = new Set(p.field.options.map((o) => o.value));
       const added = p.field.options.filter((o) => !old.has(o.value));
       const gone = was.field.options.filter((o) => !now.has(o.value));
-      for (const o of added) out.push(`“${name}”: added the option “${o.label}”`);
-      for (const o of gone) out.push(`“${name}”: removed the option “${o.label}”`);
-      if (!added.length && !gone.length && JSON.stringify(was.field.options) !== JSON.stringify(p.field.options)) out.push(`“${name}”: its options changed`);
-      if (!was.field.other !== !p.field.other) out.push(p.field.other ? `“${name}”: takes an answer of its own (“Other”)` : `“${name}”: no longer takes an answer of its own`);
+      for (const o of added) out.push(w.addedOption(name, o.label));
+      for (const o of gone) out.push(w.removedOption(name, o.label));
+      if (!added.length && !gone.length && JSON.stringify(was.field.options) !== JSON.stringify(p.field.options)) out.push(w.optionsChanged(name));
+      if (!was.field.other !== !p.field.other) out.push(p.field.other ? w.takesOther(name) : w.noOther(name));
     }
-    const settings = inputChanges(name, was, p);
+    const settings = inputChanges(name, was, p, words);
     out.push(...settings.lines);
-    out.push(...fileChanges(name, was, p));
-    out.push(...structureChanges(name, was, p));
+    out.push(...fileChanges(name, was, p, words));
+    out.push(...structureChanges(name, was, p, words));
     // How it shows, beyond what the files' own words and the inputs' said.
-    if (settings.unsaid.some((key) => !isFiles(p.field) || (key !== 'files' && key !== 'camera'))) out.push(`“${name}”: how it shows changed`);
-    const shows = whenItShows(name, was.node.invisible, p.node.invisible, answers);
+    if (settings.unsaid.some((key) => !isFiles(p.field) || (key !== 'files' && key !== 'camera'))) out.push(w.showsChanged(name));
+    const shows = whenItShows(name, was.node.invisible, p.node.invisible, survey, words);
     if (shows) out.push(shows);
-    if (was.holder.id !== p.holder.id && !layout.said.has(p.node.id)) out.push(`Moved “${name}” to “${placeName(after, p.holder)}”`);
+    if (was.holder.id !== p.holder.id && !layout.said.has(p.node.id)) out.push(w.moved(name, placeName(after, p.holder, words)));
   }
   out.push(...layout.lines);
   // In the same group, but in another order, and not put beside another.
@@ -311,39 +306,41 @@ export function pageChanges(before: Page | null, after: Page): string[] {
     // The fields that were here and still are, in each version's order.
     const stayed = (ids: string[]) => ids.filter((n) => wasFields.get(n)?.holder.id === id && nowHolder.get(n) === id && !layout.said.has(n));
     if (stayed(layout.before.order.get(id) ?? []).join() === stayed(order).join()) continue;
-    const where = placeName(after, layout.after.node.get(id) as Holder);
-    out.push(survey ? `Reordered the questions on “${where}”` : `Reordered the fields in “${where}”`);
+    const where = placeName(after, layout.after.node.get(id) as Holder, words);
+    out.push(survey ? w.reorderedQuestions(where) : w.reorderedFields(where));
   }
 
-  out.push(...headerChanges(before, after), ...listChanges(before, after));
-  out.push(...ruleChanges(before, after));
-  out.push(...translationChanges(before, after));
+  out.push(...headerChanges(before, after, words), ...listChanges(before, after, words));
+  out.push(...ruleChanges(before, after, words));
+  out.push(...translationChanges(before, after, words));
   // Something changed that has no words of its own here: say so rather than nothing.
-  return out.length ? out : ['Other changes to the page’s settings'];
+  return out.length ? out : [w.other];
 }
 
 const isFiles = (field: Field) => field.type === 'binary' || field.type === 'image';
 
 /** A file upload's or an image's: the files it takes, how many, how the chosen ones show, a phone's camera. */
-function fileChanges(name: string, was: { field: Field; node: FieldNode }, now: { field: Field; node: FieldNode }): string[] {
+function fileChanges(name: string, was: { field: Field; node: FieldNode }, now: { field: Field; node: FieldNode }, words: DesignerWords): string[] {
+  const w = words.changes;
   const [a, b] = [was.field, now.field];
   if (a.type !== b.type || (b.type !== 'binary' && b.type !== 'image') || (a.type !== 'binary' && a.type !== 'image')) return [];
   const out: string[] = [];
-  if (JSON.stringify(['accept' in a ? a.accept : 0, a.maxSize]) !== JSON.stringify(['accept' in b ? b.accept : 0, b.maxSize])) out.push(`“${name}”: the files it takes changed`);
-  if (!a.multiple !== !b.multiple) out.push(b.multiple ? `“${name}” now takes several files` : `“${name}” takes one file again`);
+  if (JSON.stringify(['accept' in a ? a.accept : 0, a.maxSize]) !== JSON.stringify(['accept' in b ? b.accept : 0, b.maxSize])) out.push(w.filesTaken(name));
+  if (!a.multiple !== !b.multiple) out.push(b.multiple ? w.severalFiles(name) : w.oneFile(name));
   else if (b.multiple && (a.minFiles !== b.minFiles || a.maxFiles !== b.maxFiles)) {
     const [least, most] = [b.minFiles, b.maxFiles];
-    out.push(`“${name}”: ${least !== undefined && most !== undefined ? `from ${least} to ${most} files` : most !== undefined ? `up to ${most} files` : least !== undefined ? `at least ${least} files` : 'any number of files'}`);
+    out.push(least !== undefined && most !== undefined ? w.filesFromTo(name, least, most) : most !== undefined ? w.filesUpTo(name, most) : least !== undefined ? w.filesAtLeast(name, least) : w.filesAny(name));
   }
   const option = (q: { node: FieldNode }, key: string) => q.node.options?.[key];
   const shownAs = (q: { node: FieldNode; field: Field }) => option(q, 'files') ?? (q.field.type === 'image' ? 'thumbnails' : 'list');
-  if (shownAs(was) !== shownAs(now)) out.push(`“${name}”: chosen files shown as ${shownAs(now) === 'thumbnails' ? 'thumbnails' : 'a list'}`);
+  if (shownAs(was) !== shownAs(now)) out.push(w.filesShownAs(name, shownAs(now) === 'thumbnails'));
   const camera = (q: { node: FieldNode }) => (option(q, 'camera') ? (option(q, 'camera') === 'user' ? 'front' : 'rear') : null);
-  if (camera(was) !== camera(now)) out.push(camera(now) ? `“${name}”: phones offer the ${camera(now)} camera` : `“${name}”: phones no longer offer the camera`);
+  if (camera(was) !== camera(now)) out.push(camera(now) ? w.camera(name, camera(now) === 'front') : w.noCamera(name));
   return out;
 }
 
-function headerChanges(before: Page, after: Page): string[] {
+function headerChanges(before: Page, after: Page, words: DesignerWords): string[] {
+  const w = words.changes;
   const [a, b] = [before.layout, after.layout];
   if (a.type !== 'sheet' || b.type !== 'sheet') return [];
   const out: string[] = [];
@@ -351,34 +348,35 @@ function headerChanges(before: Page, after: Page): string[] {
   for (const [key, word] of kinds) {
     const was = new Map((a[key] ?? []).map((p) => [p.id, p.label]));
     const now = new Map((b[key] ?? []).map((p) => [p.id, p.label]));
-    for (const [id, label] of now) if (!was.has(id)) out.push(`Added the ${word} “${label}”`);
-    for (const [id, label] of was) if (!now.has(id)) out.push(`Removed the ${word} “${label}”`);
-    for (const [id, label] of now) if (was.has(id) && was.get(id) !== label) out.push(`Renamed the ${word} “${was.get(id)}” to “${label}”`);
+    for (const [id, label] of now) if (!was.has(id)) out.push(w.addedHeader(word, label));
+    for (const [id, label] of was) if (!now.has(id)) out.push(w.removedHeader(word, label));
+    for (const [id, label] of now) if (was.has(id) && was.get(id) !== label) out.push(w.renamedHeader(word, was.get(id) as string, label));
   }
-  if (a.statusbar?.field !== b.statusbar?.field) out.push(b.statusbar ? `Status steps from “${after.fields[b.statusbar.field]?.label ?? b.statusbar.field}”` : 'Removed the status steps');
+  if (a.statusbar?.field !== b.statusbar?.field) out.push(b.statusbar ? w.statusFrom(after.fields[b.statusbar.field]?.label ?? b.statusbar.field) : w.noStatus);
   return out;
 }
 
-function listChanges(before: Page, after: Page): string[] {
+function listChanges(before: Page, after: Page, words: DesignerWords): string[] {
+  const w = words.changes;
   const [a, b] = [before.layout, after.layout];
   if (a.type !== 'list' || b.type !== 'list') return [];
   const out: string[] = [];
   const name = (page: Page, field: string) => page.fields[field]?.label ?? field;
-  for (const c of b.columns) if (!a.columns.includes(c)) out.push(`Added the column “${name(after, c)}”`);
-  for (const c of a.columns) if (!b.columns.includes(c)) out.push(`Removed the column “${name(before, c)}”`);
+  for (const c of b.columns) if (!a.columns.includes(c)) out.push(w.addedColumn(name(after, c)));
+  for (const c of a.columns) if (!b.columns.includes(c)) out.push(w.removedColumn(name(before, c)));
   const kept = (cols: string[], other: string[]) => cols.filter((c) => other.includes(c)).join();
-  if (kept(a.columns, b.columns) !== kept(b.columns, a.columns)) out.push('Reordered the columns');
-  if ((a.pageSize ?? 40) !== (b.pageSize ?? 40)) out.push(`Rows on a page: ${a.pageSize ?? 40} → ${b.pageSize ?? 40}`);
-  if (JSON.stringify(a.sort ?? []) !== JSON.stringify(b.sort ?? [])) out.push('The order of the list changed');
-  if (JSON.stringify(a.searchFields ?? []) !== JSON.stringify(b.searchFields ?? [])) out.push('Where the search looks changed');
+  if (kept(a.columns, b.columns) !== kept(b.columns, a.columns)) out.push(w.reorderedColumns);
+  if ((a.pageSize ?? 40) !== (b.pageSize ?? 40)) out.push(w.rowsOnPage(a.pageSize ?? 40, b.pageSize ?? 40));
+  if (JSON.stringify(a.sort ?? []) !== JSON.stringify(b.sort ?? [])) out.push(w.listOrder);
+  if (JSON.stringify(a.searchFields ?? []) !== JSON.stringify(b.searchFields ?? [])) out.push(w.searchLooks);
   const wasFilters = new Map((a.filters ?? []).map((f) => [f.id, f.label]));
   const nowFilters = new Map((b.filters ?? []).map((f) => [f.id, f.label]));
-  for (const [id, label] of nowFilters) if (!wasFilters.has(id)) out.push(`Added the filter “${label}”`);
-  for (const [id, label] of wasFilters) if (!nowFilters.has(id)) out.push(`Removed the filter “${label}”`);
-  if (JSON.stringify(a.groupBy ?? []) !== JSON.stringify(b.groupBy ?? [])) out.push('The groupings changed');
+  for (const [id, label] of nowFilters) if (!wasFilters.has(id)) out.push(w.addedFilter(label));
+  for (const [id, label] of wasFilters) if (!nowFilters.has(id)) out.push(w.removedFilter(label));
+  if (JSON.stringify(a.groupBy ?? []) !== JSON.stringify(b.groupBy ?? [])) out.push(w.groupings);
   const wasActions = new Map((a.actions ?? []).map((x) => [x.id, x.label]));
   const nowActions = new Map((b.actions ?? []).map((x) => [x.id, x.label]));
-  for (const [id, label] of nowActions) if (!wasActions.has(id)) out.push(`Added the button “${label}”`);
-  for (const [id, label] of wasActions) if (!nowActions.has(id)) out.push(`Removed the button “${label}”`);
+  for (const [id, label] of nowActions) if (!wasActions.has(id)) out.push(w.addedButton(label));
+  for (const [id, label] of wasActions) if (!nowActions.has(id)) out.push(w.removedButton(label));
   return out;
 }

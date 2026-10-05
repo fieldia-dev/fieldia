@@ -184,8 +184,8 @@ export function nameOf(page: Page, node: Part | Holder | null, words: DesignerWo
 
 export const andList = (words: string[]) => (words.length <= 2 ? words.join(' and ') : `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`);
 
-/** A part as people see it: an arrangement is named by what it holds. */
-export function seenAs(page: Page, node: Part | Holder): string {
-  if (!isWrapper(node)) return `“${nameOf(page, node)}”`;
-  return andList(node.children.map((c) => `“${nameOf(page, c)}”`));
+/** A part as people see it, quoted: an arrangement is named by what it holds. */
+export function seenAs(page: Page, node: Part | Holder, words: DesignerWords = en): string {
+  if (!isWrapper(node)) return words.parts.quote(nameOf(page, node, words));
+  return words.parts.and(node.children.map((c) => words.parts.quote(nameOf(page, c, words))));
 }

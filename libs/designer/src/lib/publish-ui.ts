@@ -138,7 +138,7 @@ export function openPublishDialog(el: ElementFactory, designer: Designer, root: 
   const state = designer.getState();
   const last = state.versions[state.versions.length - 1];
   const next = (last?.version ?? 0) + 1;
-  const changes = pageChanges(last?.page ?? null, state.page);
+  const changes = pageChanges(last?.page ?? null, state.page, designer.words);
   const must = designer.checks().filter((c) => c.severity === 'must');
   const id = `fd-publish-${next}-${Date.now()}`;
 

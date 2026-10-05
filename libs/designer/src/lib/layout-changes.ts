@@ -1,7 +1,9 @@
 import type { Page, PageLook, SectionNode, TabsNode } from '@fieldia/core';
-import { across, andList, isSection, isWrapper, listOf, nameOf, rowsOf, seenAs, spanOf, type Holder, type Part } from './layout-tree';
-import { FOLD_WORDS, foldOf } from './group-fold';
-import { inTwelfths, laidInTwelfths, rowShare, TWELVE } from './layout-twelfths';
+import { across, isSection, isWrapper, listOf, nameOf, rowsOf, seenAs, spanOf, type Holder, type Part } from './layout-tree';
+import { foldOf } from './group-fold';
+import { inTwelfths, laidInTwelfths, rowShare } from './layout-twelfths';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 
 /**
  * What changed in a page's layout, in the words a person would use for what
@@ -76,54 +78,44 @@ function keptInOrder(a: string[], b: string[]): Set<string> {
   return kept;
 }
 
-/** A part's name in quotes; an arrangement's, by what it holds. */
-const quoted = (page: Page, node: Part | Holder) => seenAs(page, node);
-
 /** Where a part sits next to another: beside the one sharing its row, or under or above the next in a column. */
-function nearby(page: Page, parent: Holder | undefined, node: Part): string | null {
+function nearby(page: Page, parent: Holder | undefined, node: Part, words: DesignerWords): string | null {
   if (!isSection(parent)) return null;
+  const w = words.changes;
+  const quoted = (n: Part | Holder) => seenAs(page, n, words);
   const rows = rowsOf(page, parent);
   const row = rows.find((r) => r.items.includes(node));
   const at = row?.items.indexOf(node) ?? -1;
   const mate = row?.items[at - 1] ?? row?.items[at + 1];
-  if (mate) return `beside ${quoted(page, mate)}`;
+  if (mate) return w.beside(quoted(mate));
   if (!isWrapper(parent) || rows.some((r) => r.items.length > 1)) return null;
   const index = parent.children.indexOf(node as SectionNode['children'][number]);
-  return index > 0 ? `under ${quoted(page, parent.children[index - 1])}` : `above ${quoted(page, parent.children[1])}`;
+  return index > 0 ? w.under(quoted(parent.children[index - 1])) : w.above(quoted(parent.children[1]));
 }
-
-const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
-
-/** Columns in words: "3 columns", or "3 columns on a desktop, 1 on a phone"; twelve are twelfths. */
-function columnsWords(columns: SectionNode['columns']): string {
-  const count = (n: number) => (n === TWELVE ? 'twelfths' : plural(n, 'column'));
-  if (typeof columns !== 'object') return count(columns ?? 1);
-  const smaller = [columns.medium ? `${columns.medium === TWELVE ? 'twelfths' : columns.medium} on a tablet` : '', columns.narrow ? `${columns.narrow === TWELVE ? 'twelfths' : columns.narrow} on a phone` : ''].filter(Boolean);
-  return smaller.length ? `${count(columns.wide)} on a desktop, ${smaller.join(', ')}` : count(columns.wide);
-}
-
-const STYLES: Record<string, string> = { card: 'as a card', plain: 'plain, with no box', line: 'with a line under its title', framed: 'in a frame, its title on it' };
-const LABELS: Record<string, string> = { above: 'above their boxes', beside: 'beside their boxes', hidden: 'inside their boxes' };
-const LABEL: Record<string, string> = { above: 'above its box', beside: 'beside its box', hidden: 'inside its box' };
 
 /** A block by what it is: "the heading “Before you send”", "a divider". */
-function blockWords(page: Page, node: Part): string | null {
+function blockWords(page: Page, node: Part, words: DesignerWords): string | null {
+  const w = words.changes.block;
   switch (node.type) {
     case 'text':
-      return `the ${node.style === 'heading' ? 'heading' : 'words'} “${nameOf(page, node)}”`;
+      return node.style === 'heading' ? w.heading(nameOf(page, node, words)) : w.words(nameOf(page, node, words));
     case 'button':
-      return `the button “${node.label}”`;
+      return w.button(node.label);
     case 'image':
-      return node.alt ? `the image “${node.alt}”` : 'an image';
+      return node.alt ? w.image(node.alt) : w.anImage;
     case 'divider':
+      return w.divider;
     case 'spacer':
-      return `a ${node.type}`;
+      return w.spacer;
     default:
       return null;
   }
 }
 
-export function layoutChanges(before: Page, after: Page): LayoutChanges {
+export function layoutChanges(before: Page, after: Page, words: DesignerWords = en): LayoutChanges {
+  const w = words.changes;
+  /** A part's name in quotes; an arrangement's, by what it holds. */
+  const quoted = (page: Page, node: Part | Holder) => seenAs(page, node, words);
   const was = placements(before);
   const now = placements(after);
   const lines: string[] = [];
@@ -150,13 +142,13 @@ export function layoutChanges(before: Page, after: Page): LayoutChanges {
     if (node.type === 'section' && !isWrapper(node)) {
       const inside = (now.order.get(id) ?? []).filter(existed);
       if (!inside.length) continue;
-      lines.push(`Grouped ${inside.length} into “${nameOf(after, node)}”`);
+      lines.push(w.grouped(inside.length, nameOf(after, node, words)));
       say([id, ...inside]);
     } else if (node.type === 'tabs') {
       const tabs = (node as TabsNode).children;
       const inside = tabs.flatMap((tab) => now.order.get(tab.id) ?? []).filter(existed);
       if (!inside.length) continue;
-      lines.push(`Made ${tabs.length} tabs: ${andList(tabs.map((tab) => `“${tab.label}”`))}`);
+      lines.push(w.madeTabs(tabs.length, words.parts.and(tabs.map((tab) => words.parts.quote(tab.label)))));
       say([id, ...tabs.map((tab) => tab.id), ...inside]);
     }
   }
@@ -167,18 +159,18 @@ export function layoutChanges(before: Page, after: Page): LayoutChanges {
     if (node.type === 'section' && !isWrapper(node)) {
       const out = (was.order.get(id) ?? []).filter(stays);
       if (!out.length) continue;
-      lines.push(`Ungrouped “${nameOf(before, node)}”`);
+      lines.push(w.ungrouped(nameOf(before, node, words)));
       say([id, ...out]);
     } else if (node.type === 'tabs') {
       const tabs = (node as TabsNode).children;
       const out = tabs.flatMap((tab) => was.order.get(tab.id) ?? []).filter(stays);
       if (!out.length) continue;
-      lines.push(`Ungrouped the tabs ${andList(tabs.map((tab) => `“${tab.label}”`))}`);
+      lines.push(w.ungroupedTabs(words.parts.and(tabs.map((tab) => words.parts.quote(tab.label)))));
       say([id, ...tabs.map((tab) => tab.id), ...out]);
     } else if (isWrapper(node)) {
       const held = node.children.map((c) => c.id);
       if (held.length < 2 || held.some((c) => !stays(c) || said.has(c) || moved.has(c) || now.holder.get(c)?.id !== was.holder.get(c)?.id)) continue;
-      lines.push(`Ungrouped ${quoted(before, node)}`);
+      lines.push(w.ungroupedArrangement(quoted(before, node)));
       say(held);
     }
   }
@@ -187,12 +179,12 @@ export function layoutChanges(before: Page, after: Page): LayoutChanges {
   for (const [id, node] of now.node) {
     if (said.has(id) || !now.holder.has(id)) continue;
     const parent = now.parent.get(id);
-    const where = nearby(after, parent, node as Part);
+    const where = nearby(after, parent, node as Part, words);
     if (!where) continue;
     if (!existed(id)) {
       if (isWrapper(parent)) placed.set(id, where);
     } else if (moved.has(id)) {
-      lines.push(`Put ${quoted(after, node)} ${where}`);
+      lines.push(w.put(quoted(after, node), where));
       said.add(id);
     }
   }
@@ -203,7 +195,7 @@ export function layoutChanges(before: Page, after: Page): LayoutChanges {
     const held = node.children.map((c) => c.id);
     if (held.length < 2 || held.some((c) => !existed(c) || said.has(c) || moved.has(c))) continue;
     const column = rowsOf(after, node).every((r) => r.items.length === 1);
-    lines.push(`Put ${quoted(after, node)} ${column ? 'one under the other' : 'side by side'}`);
+    lines.push(column ? w.putUnder(quoted(after, node)) : w.putSide(quoted(after, node)));
     say(held);
   }
 
@@ -211,22 +203,22 @@ export function layoutChanges(before: Page, after: Page): LayoutChanges {
   for (const id of moved) {
     const node = now.node.get(id) as Part;
     if (said.has(id) || node.type === 'field' || was.holder.get(id)?.id === now.holder.get(id)?.id) continue;
-    lines.push(`Moved ${quoted(after, node)} to “${holderName(after, now.holder.get(id) as Holder)}”`);
+    lines.push(w.movedTo(quoted(after, node), holderName(after, now.holder.get(id) as Holder, words)));
   }
 
   // Blocks added, removed, reworded.
   for (const [id, entry] of now.node) {
     const node = entry as Part;
-    const words = blockWords(after, node);
-    if (!words) continue;
+    const block = blockWords(after, node, words);
+    if (!block) continue;
     const old = was.node.get(id) as Part | undefined;
-    if (!old) lines.push(`Added ${words}${placed.has(id) ? ` ${placed.get(id)}` : ''}`);
-    else if (old.type === 'text' && node.type === 'text' && old.text !== node.text) lines.push(`Changed ${blockWords(before, old)} to “${nameOf(after, node)}”`);
-    else if (old.type === 'button' && node.type === 'button' && old.label !== node.label) lines.push(`Renamed the button “${old.label}” to “${node.label}”`);
+    if (!old) lines.push(w.addedBlock(block, placed.get(id) ?? ''));
+    else if (old.type === 'text' && node.type === 'text' && old.text !== node.text) lines.push(w.changedBlockTo(blockWords(before, old, words) as string, nameOf(after, node, words)));
+    else if (old.type === 'button' && node.type === 'button' && old.label !== node.label) lines.push(w.renamedButton(old.label, node.label));
     // A picture's address, description, width, place, link or caption.
-    else if (old.type === 'image' && node.type === 'image' && JSON.stringify(old) !== JSON.stringify(node)) lines.push(`Changed ${words}`);
+    else if (old.type === 'image' && node.type === 'image' && JSON.stringify(old) !== JSON.stringify(node)) lines.push(w.changedBlock(block));
   }
-  for (const [id, node] of was.node) if (!stays(id) && blockWords(before, node as Part)) lines.push(`Removed ${blockWords(before, node as Part)}`);
+  for (const [id, node] of was.node) if (!stays(id) && blockWords(before, node as Part, words)) lines.push(w.removedBlock(blockWords(before, node as Part, words) as string));
 
   // Columns, widths, looks and labels of what is on both.
   for (const [id, entry] of now.node) {
@@ -237,50 +229,47 @@ export function layoutChanges(before: Page, after: Page): LayoutChanges {
     if (isSection(node) && isSection(old)) {
       const sameParts = old.children.map((c) => c.id).join() === node.children.map((c) => c.id).join();
       // Divided in twelfths, every part as wide as it was: said once, not as each width and count.
-      if (inTwelfths(node) && !inTwelfths(old)) lines.push(`${name}: rows divided in twelfths`);
-      else if (JSON.stringify(old.columns) !== JSON.stringify(node.columns) && (!isWrapper(node) || sameParts)) lines.push(`${name}: ${columnsWords(node.columns)}`);
-      if ((old.rows ?? 'full') !== (node.rows ?? 'full')) lines.push(`${name}: ${node.rows === 'gaps' ? 'rows may leave gaps' : 'rows kept full'}`);
-      if ((old.style ?? 'card') !== (node.style ?? 'card')) lines.push(`${name}: drawn ${STYLES[node.style ?? 'card']}`);
-      if (foldOf(old) !== foldOf(node)) lines.push(`${name}: ${FOLD_WORDS[foldOf(node)]}`);
-      if (old.labels !== node.labels) lines.push(`${name}: labels ${node.labels ? LABELS[node.labels] : 'where the page puts them'}`);
-      if (old.labelWidth !== node.labelWidth) lines.push(`${name}: labels ${node.labelWidth ? `${node.labelWidth} px wide` : 'as wide as the page has them'}`);
+      if (inTwelfths(node) && !inTwelfths(old)) lines.push(w.twelfths(name));
+      else if (JSON.stringify(old.columns) !== JSON.stringify(node.columns) && (!isWrapper(node) || sameParts)) {
+        const columns = node.columns;
+        lines.push(typeof columns === 'object' ? w.columns(name, columns.wide, columns.medium, columns.narrow) : w.columns(name, columns ?? 1));
+      }
+      if ((old.rows ?? 'full') !== (node.rows ?? 'full')) lines.push(w.gaps(name, node.rows === 'gaps'));
+      if ((old.style ?? 'card') !== (node.style ?? 'card')) lines.push(w.drawn(name, node.style ?? 'card'));
+      if (foldOf(old) !== foldOf(node)) lines.push(w.folds(name, foldOf(node)));
+      if (old.labels !== node.labels) lines.push(w.labels(name, node.labels ?? ''));
+      if (old.labelWidth !== node.labelWidth) lines.push(w.labelWidth(name, node.labelWidth ?? 0));
     }
     // As wide a share of its row before and after — as wide as its group, or the same width in twelfths — its width did not change.
     const share = (page: Page, holder: Holder | undefined, part: Part) => (holder ? Math.min(spanOf(part), across(page, holder)) / across(page, holder) : 0);
     const holder = now.parent.get(id);
     if (now.holder.has(id) && !said.has(id) && was.holder.get(id)?.id === now.holder.get(id)?.id && spanOf(old) !== spanOf(node) && share(before, was.parent.get(id), old) !== share(after, holder, node)) {
-      lines.push(`${name}: ${laidInTwelfths(after, holder) ? rowShare(spanOf(node), across(after, holder as Holder)) : `${plural(spanOf(node), 'column')} wide`}`);
+      lines.push(laidInTwelfths(after, holder) ? w.share(name, rowShare(spanOf(node), across(after, holder as Holder), words)) : w.columnsWide(name, spanOf(node)));
     }
-    if (node.type === 'field' && old.type === 'field' && old.labels !== node.labels) lines.push(`${name}: its label ${node.labels ? LABEL[node.labels] : 'where its group puts it'}`);
+    if (node.type === 'field' && old.type === 'field' && old.labels !== node.labels) lines.push(w.itsLabel(name, node.labels ?? ''));
     // The words in its empty box, which the panel sets.
-    if (node.type === 'field' && old.type === 'field' && (old.placeholder ?? '') !== (node.placeholder ?? '')) lines.push(`${name}: its placeholder changed`);
+    if (node.type === 'field' && old.type === 'field' && (old.placeholder ?? '') !== (node.placeholder ?? '')) lines.push(w.placeholder(name));
   }
 
   return { lines, said, placed, before: was, after: now };
 }
 
 /** A group, tab, step or the page, by name; one whose name is empty yet as untitled. */
-export function holderName(page: Page, holder: { id: string; label?: string; title?: string }): string {
-  if (holder.id === page.layout.id) return page.title || 'the page';
-  return holder.label || holder.title || 'Untitled section';
+export function holderName(page: Page, holder: { id: string; label?: string; title?: string }, words: DesignerWords = en): string {
+  if (holder.id === page.layout.id) return page.title || words.changes.thePage;
+  return holder.label || holder.title || words.parts.untitledSection;
 }
 
-const LOOK: { key: keyof PageLook; words: string; none: string; value?: Record<string, string> }[] = [
-  { key: 'accent', words: 'The accent colour', none: 'as the skin has it' },
-  { key: 'font', words: 'The font', none: 'as the skin has it', value: { system: 'the system’s' } },
-  { key: 'density', words: 'The spacing', none: 'as the skin has it' },
-  { key: 'corners', words: 'The corners', none: 'as the skin has them' },
-  { key: 'labels', words: 'Where labels sit', none: 'as the skin has them', value: LABELS },
-  { key: 'labelWidth', words: 'Labels set beside', none: 'as wide as the skin has them' },
-  { key: 'scheme', words: 'The colours', none: 'as the skin has them', value: { auto: 'as the reader’s system has them' } },
-];
+/** The look's settings, in the order a change to them is said. */
+const LOOK: (keyof PageLook & keyof DesignerWords['changes']['look'])[] = ['accent', 'font', 'density', 'corners', 'labels', 'labelWidth', 'scheme'];
 
 /** The page's look, setting by setting: "The spacing: comfortable → compact". */
-export function lookChanges(before: Page, after: Page): string[] {
-  return LOOK.flatMap(({ key, words, none, value }) => {
+export function lookChanges(before: Page, after: Page, words: DesignerWords = en): string[] {
+  const w = words.changes;
+  return LOOK.flatMap((key) => {
     const [was, now] = [before.look?.[key], after.look?.[key]];
     if (was === now) return [];
-    const say = (v: unknown) => (v === undefined ? none : key === 'labelWidth' ? `${v} px wide` : (value?.[String(v)] ?? String(v)));
-    return [`${words}: ${say(was)} → ${say(now)}`];
+    const say = (v: string | number | undefined) => w.lookValue(key, v ?? null);
+    return [w.lookLine(w.look[key], say(was), say(now))];
   });
 }

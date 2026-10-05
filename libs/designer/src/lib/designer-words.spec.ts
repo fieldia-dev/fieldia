@@ -38,6 +38,24 @@ export function latinIn(text: string): string[] {
 
 type Table = Record<string, unknown>;
 
+/**
+ * Values to say a sentence with, for one that takes a choice of a few (a
+ * kind of part, a style): said with each. Any other is said with counts in
+ * every plural form Arabic has, a name in Arabic letters, and a list of names.
+ */
+const SAMPLES: Record<string, unknown[][]> = {
+  'changes.addedPart': ['page', 'tab', 'section'].map((kind) => [kind, 'س', 'بجانب «ص»']),
+  'changes.removedPart': ['page', 'tab', 'section'].map((kind) => [kind, 'س']),
+  'changes.renamedPart': ['page', 'tab', 'section'].map((kind) => [kind, 'س', 'ص']),
+  'changes.addedHeader': ['button', 'counter', 'badge'].map((kind) => [kind, 'س']),
+  'changes.removedHeader': ['button', 'counter', 'badge'].map((kind) => [kind, 'س']),
+  'changes.renamedHeader': ['button', 'counter', 'badge'].map((kind) => [kind, 'س', 'ص']),
+  'changes.drawn': ['card', 'plain', 'line', 'framed'].map((style) => ['س', style]),
+  'changes.folds': ['no', 'open', 'folded'].map((fold) => ['س', fold]),
+  'changes.lookValue': [['font', 'serif'], ['density', 'compact'], ['corners', 'round'], ['scheme', 'auto'], ['labels', 'beside'], ['labelWidth', 120], ['accent', null]],
+};
+const GENERIC: unknown[] = [0, 1, 2, 3, 11, 100, 'س', ['س', 'ص']];
+
 /** Every word of a table, each with its path: a sentence that names or counts is said with sample values. */
 function everyWord(table: Table, path = ''): { path: string; words: string }[] {
   return Object.entries(table).flatMap(([key, value]) => {
@@ -45,10 +63,10 @@ function everyWord(table: Table, path = ''): { path: string; words: string }[] {
     if (typeof value === 'string') return [{ path: at, words: value }];
     if (typeof value === 'function') {
       const said: { path: string; words: string }[] = [];
-      // Counts in every plural form Arabic has, a name in Arabic letters, and a list of names.
-      for (const sample of [0, 1, 2, 3, 11, 100, 'س', ['س', 'ص']]) {
+      const fn = value as (...args: unknown[]) => unknown;
+      for (const args of SAMPLES[at] ?? GENERIC.map((sample) => Array(fn.length).fill(sample))) {
         try {
-          said.push({ path: `${at}(${sample})`, words: String((value as (...args: unknown[]) => unknown)(...Array(value.length).fill(sample))) });
+          said.push({ path: `${at}(${args.join(', ')})`, words: String(fn(...args)) });
         } catch {
           // A sentence that takes a name, said with a number: the name's turn comes.
         }
@@ -92,7 +110,7 @@ describe('the Arabic table', () => {
   });
 
   it('is Arabic throughout: no English left behind', () => {
-    const left = everyWord(ar as unknown as Table).filter(({ words }) => latinIn(words).length);
+    const left = everyWord(ar as unknown as Table).filter(({ words }) => latinIn(words).length || /undefined|NaN|\[object/.test(words));
     expect(left).toEqual([]);
   });
 

@@ -103,22 +103,22 @@ export function staleWords(page: Page): string[] {
 }
 
 /** For Publish: languages added and removed, and in each language words translated, changed and taken out. */
-export function translationChanges(before: Page, after: Page): string[] {
+export function translationChanges(before: Page, after: Page, words: DesignerWords = en): string[] {
+  const w = words.changes;
   const [was, now] = [before.translations ?? {}, after.translations ?? {}];
   const out: string[] = [];
-  if (pageLanguage(before) !== pageLanguage(after)) out.push(`The page is now written in ${languageName(pageLanguage(after))}`);
-  for (const tag of Object.keys(now)) if (!(tag in was)) out.push(`Added ${languageName(tag)}`);
-  for (const tag of Object.keys(was)) if (!(tag in now)) out.push(`Removed ${languageName(tag)}`);
-  const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-  for (const [tag, words] of Object.entries(now)) {
+  if (pageLanguage(before) !== pageLanguage(after)) out.push(w.writtenIn(languageName(pageLanguage(after), words)));
+  for (const tag of Object.keys(now)) if (!(tag in was)) out.push(w.addedLanguage(languageName(tag, words)));
+  for (const tag of Object.keys(was)) if (!(tag in now)) out.push(w.removedLanguage(languageName(tag, words)));
+  for (const [tag, translated] of Object.entries(now)) {
     const old = was[tag] ?? {};
-    const added = Object.keys(words).filter((word) => !(word in old)).length;
-    const changed = Object.keys(words).filter((word) => word in old && old[word] !== words[word]).length;
-    const gone = Object.keys(old).filter((word) => !(word in words)).length;
-    const name = languageName(tag);
-    if (added) out.push(`${name}: ${count(added, 'word', 'words')} translated`);
-    if (changed) out.push(`${name}: ${count(changed, 'translation', 'translations')} changed`);
-    if (gone) out.push(`${name}: ${count(gone, 'translation', 'translations')} taken out`);
+    const added = Object.keys(translated).filter((word) => !(word in old)).length;
+    const changed = Object.keys(translated).filter((word) => word in old && old[word] !== translated[word]).length;
+    const gone = Object.keys(old).filter((word) => !(word in translated)).length;
+    const name = languageName(tag, words);
+    if (added) out.push(w.translated(name, added));
+    if (changed) out.push(w.translationsChanged(name, changed));
+    if (gone) out.push(w.translationsTakenOut(name, gone));
   }
   return out;
 }

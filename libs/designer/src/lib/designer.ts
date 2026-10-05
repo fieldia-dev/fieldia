@@ -51,7 +51,7 @@ import { LOOK_PRESETS, wholeLook, type LookValues } from './look-presets';
 import { browserLooks } from './look-store';
 import { setFold, type Fold } from './group-fold';
 import { editChecker } from './validate-edit';
-import { DESIGNER_WORDS, designerLocale, type DesignerLocale, type DesignerWords } from './designer-words';
+import { DESIGNER_WORDS, designerLocale, isDefaultOption, type DesignerLocale, type DesignerWords } from './designer-words';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -95,12 +95,6 @@ const slug = (text: string, sep = '_', empty = 'page') =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, sep)
     .replace(new RegExp(`^\\${sep}+|\\${sep}+$`, 'g'), '') || empty;
-
-/** An option's words as the designer writes them for a new one — "Option 2", "الخيار 2" — in any language it speaks. */
-const isDefaultOption = (label: string) => {
-  const n = /\d+/.exec(label);
-  return !!n && Object.values(DESIGNER_WORDS).some((w) => w.defaults.option(Number(n[0])) === label);
-};
 
 /**
  * A page with nothing on it yet, titled: a survey with its first page, a
@@ -1342,7 +1336,7 @@ export function createDesigner(options: {
     },
 
     checks() {
-      if (checksOf?.page !== page) checksOf = { page, checks: pageChecks(page, { valid: checkEdit.passed(page) }) };
+      if (checksOf?.page !== page) checksOf = { page, checks: pageChecks(page, { valid: checkEdit.passed(page), words }) };
       return [...checksOf.checks];
     },
     fixCheck: (check) => fixCheck(designer, check),
