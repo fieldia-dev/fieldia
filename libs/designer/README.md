@@ -202,4 +202,42 @@ createDesigner({ page, looks }); // the same store for every designer, so they o
 
 `createMemoryLookStore()` keeps them for as long as the page is open, as for a test.
 
+## The designer in Arabic
+
+The designer speaks English unless it is given a language: `locale: 'ar'` (any
+Arabic tag, `ar-EG` too) puts every word of its own in Arabic — the bar, the
+toolbox, the panel and its settings, the checks and their fixes, the outline,
+Try it, the JSON view, Translations, Rules, every menu, dialog, refusal and
+line read aloud. Numbers stay in Latin digits, as Arabic business software
+writes them. A language it has no words for is English.
+
+```ts
+const designer = createDesigner({ page: blankPage('survey', 'رأي الحضور', { locale: 'ar' }), store, locale: 'ar' });
+mountSurveyEditor(host, { designer });
+// Opened again from the store, the same way:
+await createDesigner.open(id, store, { locale: 'ar' });
+```
+
+Given a language, the editor runs that language's way — Arabic right to left on
+a page left to right, English left to right on a page right to left, so its
+sentences end where they should. What draws the page — the canvas, the cards,
+Try it and the form — keeps the direction of the page around the editor, as the
+form will have it. Given no language, everything takes the page's direction, as
+before.
+
+The page's own words are never translated: labels, help, options, titles, and
+what the app names (its kinds, lists and assistant) show as they were written.
+`blankPage(kind, title, { locale: 'ar' })` names its first page or section in
+Arabic and writes the page in Arabic (`language: 'ar'`), so the widgets drawn on
+the canvas, Try it and the form speak Arabic and run right to left. Fieldia's
+templates are offered in the designer's language, their answers stored under
+the same values in every language.
+
+`designer.words` is the table the editors say things from; `DESIGNER_WORDS`
+holds English and Arabic, typed against the English one (`DesignerWords`), so a
+word missing from a language fails to compile. The demos show it:
+`/designer/?locale=ar&dir=rtl` and `/screen/?locale=ar&dir=rtl` (with
+`&start=list`, `&start=sheet` or `&start=blank`); `?locale=en&dir=rtl` is the
+English designer on a page right to left.
+
 MIT licensed.
