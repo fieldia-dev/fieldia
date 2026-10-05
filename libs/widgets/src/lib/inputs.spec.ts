@@ -140,3 +140,49 @@ describe('an amount’s currency', () => {
     expect(unit(el).textContent).toBe('');
   });
 });
+
+describe('a rating’s look', () => {
+  const points = (el: Element) => [...el.querySelectorAll('[role=radio]')] as HTMLButtonElement[];
+  const on = (el: Element) => points(el).map((p) => p.classList.contains('fd-on'));
+
+  it('is stars unless the page picks hearts, thumbs up or numbers', () => {
+    expect(points(mountKind({ type: 'integer', min: 1, max: 5 }, { widget: 'rating' }).el).map((p) => p.textContent)).toEqual(['★', '★', '★', '★', '★']);
+    const hearts = mountKind({ type: 'integer', min: 1, max: 3 }, { widget: 'rating', options: { icon: 'heart' } }).el;
+    expect(points(hearts).map((p) => p.textContent)).toEqual(['♥', '♥', '♥']);
+    expect(hearts.querySelector('.fd-rating-heart')).not.toBeNull();
+    const thumbs = mountKind({ type: 'integer', min: 1, max: 3 }, { widget: 'rating', options: { icon: 'thumb' } }).el;
+    expect(points(thumbs).every((p) => p.querySelector('svg[aria-hidden="true"]'))).toBe(true);
+  });
+
+  it('fills up to the one picked, but numbers mark the one picked alone', () => {
+    const hearts = mountKind({ type: 'integer', min: 1, max: 4 }, { widget: 'rating', options: { icon: 'heart' } });
+    hearts.form.setValue('x', 3);
+    expect(on(hearts.el)).toEqual([true, true, true, false]);
+    const numbers = mountKind({ type: 'integer', min: 1, max: 4 }, { widget: 'rating', options: { icon: 'number' } });
+    expect(points(numbers.el).map((p) => p.textContent)).toEqual(['1', '2', '3', '4']);
+    numbers.form.setValue('x', 3);
+    expect(on(numbers.el)).toEqual([false, false, true, false]);
+    expect(points(numbers.el)[2].getAttribute('aria-label')).toBe('3 of 4');
+  });
+
+  it('has words at each end, as a scale has', () => {
+    const { el } = mountKind({ type: 'integer', min: 1, max: 5 }, { widget: 'rating', options: { startLabel: 'Poor', endLabel: 'Great' } });
+    expect([...el.querySelectorAll('.fd-scale-ends span')].map((s) => s.textContent)).toEqual(['Poor', 'Great']);
+    expect(el.querySelector('[role=radiogroup]')?.getAttribute('aria-description')).toBe('Poor … Great');
+  });
+});
+
+describe('a slider’s words at each end', () => {
+  it('stand under its ends’ numbers, and are read with it', () => {
+    const { el } = mountKind({ type: 'integer', min: 0, max: 5 }, { widget: 'slider', options: { startLabel: 'Never', endLabel: 'Every day' } });
+    expect([...el.querySelectorAll('.fd-slider-ends > span')].map((s) => s.textContent)).toEqual(['0Never', '5Every day']);
+    expect([...el.querySelectorAll('.fd-slider-word')].map((s) => s.textContent)).toEqual(['Never', 'Every day']);
+    expect(el.querySelector('input')?.getAttribute('aria-description')).toBe('Never … Every day');
+  });
+
+  it('leave the ends as numbers where there are none', () => {
+    const { el } = mountKind({ type: 'integer', min: 0, max: 5 }, { widget: 'slider' });
+    expect([...el.querySelectorAll('.fd-slider-ends > span')].map((s) => s.textContent)).toEqual(['0', '5']);
+    expect(el.querySelector('input')?.hasAttribute('aria-description')).toBe(false);
+  });
+});

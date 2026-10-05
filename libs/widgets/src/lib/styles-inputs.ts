@@ -1,8 +1,9 @@
 /**
  * The text, number and date inputs' part of the stylesheet: a count of
  * characters under a box, a number's unit and an amount's currency inside
- * its box. Scoped and written with logical properties as the
- * rest of it is; it comes before the question kinds' part.
+ * its box, a rating's hearts and thumbs, words at a slider's ends. Scoped
+ * and written with logical properties as the rest of it is; it comes before
+ * the question kinds' part.
  */
 export const INPUTS_CSS = /* css */ `
 /* ---- inputs' details ------------------------------------------------------- */
@@ -14,4 +15,12 @@ export const INPUTS_CSS = /* css */ `
 .fd-number > .fd-unit { position: absolute; inset-block: 0; display: flex; align-items: center; pointer-events: none; color: var(--fd-muted); }
 .fd-number > .fd-unit:first-child { inset-inline-start: var(--fd-pad-x); }
 .fd-number > .fd-unit:last-child { inset-inline-end: var(--fd-pad-x); }
+/* A rating of hearts or thumbs up: grey until picked, then filled. */
+.fd-rating-heart button.fd-on { color: #e5484d; }
+.fd-rating-thumb button.fd-on { color: var(--fd-accent); }
+.fd-rating .fd-icon { display: block; width: 1em; height: 1em; }
+.fd-rating .fd-on .fd-icon { fill: currentColor; }
+/* Words under a slider's ends, each under its own end. */
+.fd-slider-word { display: block; max-width: 12em; }
+.fd-slider-last { text-align: end; }
 `;

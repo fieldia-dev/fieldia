@@ -22,12 +22,16 @@ export const sliderWidget: WidgetFactory = ({ form, name, field, node, id, docum
 
   const input = make('input', { id, type: 'range', class: 'fd-slider-input', min: String(min), max: String(max), step: String(step) });
   const output = make('output', { class: 'fd-slider-value', for: id, 'aria-hidden': 'true' });
-  const ends = make('div', { class: 'fd-slider-ends', 'aria-hidden': 'true' }, make('span', {}, written(min)), make('span', {}, written(max)));
+  // Words under the ends' numbers, when the page has them: "Never" … "Every day".
+  const endWords = [node.options?.['startLabel'], node.options?.['endLabel']].map((v) => (typeof v === 'string' ? v : ''));
+  const end = (n: number, i: number) => make('span', { class: i ? 'fd-slider-last' : undefined }, written(n), ...(endWords[i] ? [make('span', { class: 'fd-slider-word' }, endWords[i])] : []));
+  const ends = make('div', { class: 'fd-slider-ends', 'aria-hidden': 'true' }, end(min, 0), end(max, 1));
   const clear = clearSelection(document, words, () => {
     form.setValue(name, null);
     input.focus();
   });
   const element = make('div', { class: 'fd-slider' }, make('div', { class: 'fd-slider-track' }, input, output), ends, clear.button);
+  if (endWords.some(Boolean)) input.setAttribute('aria-description', endWords.filter(Boolean).join(' … '));
   input.addEventListener('input', () => form.setValue(name, Number(input.value)));
 
   return {

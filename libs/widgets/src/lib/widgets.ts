@@ -35,6 +35,7 @@ import { clearSelection, fillIn, setAttr, setText } from './kind-parts';
 import { shownOptions } from './shuffle';
 import { counted, grower } from './limits';
 import { currencySymbol } from './units';
+import { drawIcon } from './icons';
 import { listChoices } from './choices-from';
 
 /**
@@ -390,16 +391,22 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
   };
 }
 
-/** Stars or numbers to pick from, as a radio group with arrow-key support. */
+/**
+ * Stars or numbers to pick from, as a radio group with arrow-key support. A
+ * rating shows `options.icon`: stars, "heart", "thumb" up, or "number"s that
+ * mark only the one picked, as a scale's do.
+ */
 function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
   return ({ form, name, field, node, id, document, labels, locale }) => {
     const words = labels ?? WIDGET_LABELS[locale ?? 'en'];
     const min = 'min' in field && typeof field.min === 'number' ? field.min : style === 'rating' ? 1 : 0;
     const max = 'max' in field && typeof field.max === 'number' ? field.max : style === 'rating' ? 5 : 10;
-    const group = make(document, 'div', { id, class: `fd-points fd-${style}`, role: 'radiogroup' });
+    const icon = style === 'rating' ? node.options?.['icon'] : 'number';
+    const filling = icon !== 'number';
+    const group = make(document, 'div', { id, class: `fd-points fd-${filling ? 'rating' : 'scale'}${filling ? ` fd-rating-${icon ?? 'star'}` : ''}`, role: 'radiogroup' });
     const points: HTMLButtonElement[] = [];
     for (let n = min; n <= max; n++) {
-      const point = make(document, 'button', { type: 'button', role: 'radio', 'aria-label': fillIn(words.ofMax, { n, max }), 'data-value': String(n) }, style === 'rating' ? '★' : String(n));
+      const point = make(document, 'button', { type: 'button', role: 'radio', 'aria-label': fillIn(words.ofMax, { n, max }), 'data-value': String(n) }, icon === 'thumb' ? (drawIcon(document, 'thumb') as SVGSVGElement) : icon === 'heart' ? '♥' : filling ? '★' : String(n));
       if (style === 'scale') point.removeAttribute('aria-label');
       point.addEventListener('click', () => form.setValue(name, n));
       points.push(point);
@@ -415,8 +422,8 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
       form.setValue(name, next);
       points[next - min]?.focus();
     });
-    // A scale's ends in words, under its first and last points: "Not likely" … "Very likely".
-    const ends = style === 'scale' ? [node.options?.['startLabel'], node.options?.['endLabel']].map((v) => (typeof v === 'string' ? v : '')) : ['', ''];
+    // The ends in words, under the first and last points: "Not likely" … "Very likely".
+    const ends = [node.options?.['startLabel'], node.options?.['endLabel']].map((v) => (typeof v === 'string' ? v : ''));
     const clear = clearSelection(document, words, () => {
       form.setValue(name, null);
       points[0]?.focus();
@@ -433,7 +440,7 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
         points.forEach((point, i) => {
           const n = min + i;
           setAttr(point, 'aria-checked', String(n === value));
-          point.classList.toggle('fd-on', style === 'rating' ? value !== null && n <= value : n === value);
+          point.classList.toggle('fd-on', filling ? value !== null && n <= value : n === value);
           const tab = n === value || (value === null && i === 0) ? 0 : -1;
           if (point.tabIndex !== tab) point.tabIndex = tab;
           if (point.disabled !== state.readonly) point.disabled = state.readonly;

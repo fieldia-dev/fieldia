@@ -40,6 +40,7 @@ export const ICONS: IconSet = {
   search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/>',
   filter: '<path d="M3 5h18l-7 8.5V20l-4-2v-4.5z"/>',
   layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+  thumb: '<path d="M7 21V10l4-8c1.6 0 2.6 1.3 2.2 3L12.5 9H19a2 2 0 0 1 2 2.3l-1.3 7.6a2.5 2.5 0 0 1-2.5 2.1H7zM7 10H3v11h4"/>',
 };
 
 /** An icon by name, the app's own first and then Fieldia's; null for a name neither has. */
