@@ -334,3 +334,70 @@ describe('widths and columns in twelfths', () => {
     expect(nodeOf(d.getPage(), 'address')).not.toHaveProperty('rows');
   });
 });
+
+describe('a new column inside a group, beside all its rows (as Grafloria splits a section’s content)', () => {
+  const holder = (d: Designer, id: string) => spot(d.getPage(), id)?.parent;
+
+  it('after them: the rows go into a column on the group’s tracks, the part beside it, the two in halves', () => {
+    const { d, customer, date, notes, span, kids, columns } = visit();
+    const drop = { how: 'column', container: 'section-1', after: true } as const;
+    expect(d.describeDrop(drop)).toBe('new column inside “Visit”, after all its rows — in halves');
+    const id = d.place({ kind: 'email' }, drop) as string;
+    expect(columns('section-1')).toBe(12);
+    const rows = holder(d, customer) as { id: string; style?: string; title?: string };
+    expect(kids('section-1')).toEqual([rows.id, id]);
+    expect([rows.style, rows.title]).toEqual(['plain', undefined]);
+    expect(kids(rows.id)).toEqual([customer, date, notes]);
+    // The rows keep their shares, on the six tracks they now have: Customer and Visit date a half each, Notes all six.
+    expect([span(rows.id), span(id), span(customer), span(date), span(notes)]).toEqual([6, 6, 3, 3, 6]);
+    expectValid(d.getPage());
+  });
+
+  it('before them, and said so; right to left the same, the words being the reading order', () => {
+    const { d, customer, kids } = visit();
+    const drop = { how: 'column', container: 'section-1', after: false } as const;
+    expect(d.describeDrop(drop)).toBe('new column inside “Visit”, before all its rows — in halves');
+    const id = d.place({ kind: 'email' }, drop) as string;
+    expect(kids('section-1')).toEqual([id, holder(d, customer)?.id]);
+  });
+
+  it('a part of the group moved there leaves its row first: Notes beside the one row left joins it, in thirds', () => {
+    const { d, customer, date, notes, span, kids } = visit();
+    const drop = { how: 'column', container: 'section-1', after: true } as const;
+    expect(d.describeDrop(drop, notes)).toBe('at the end of the row, after “Visit date” — the row in thirds');
+    d.place(notes, drop);
+    expect(kids('section-1')).toEqual([customer, date, notes]);
+    expect([span(customer), span(date), span(notes)]).toEqual([4, 4, 4]);
+  });
+
+  it('a group of one row: the part joins that row, as at its end; an empty group takes it', () => {
+    const { d, follow, next, due, call, kids } = visit();
+    const id = d.place({ kind: 'number' }, { how: 'column', container: follow, after: false }) as string;
+    // Follow-up is Next step and Due by, then Manager to call?: two rows, so a column; a group of one row is joined.
+    expect(kids(follow)).toHaveLength(2);
+    const one = d.addContainer('One row') as string;
+    const a = d.place({ kind: 'number' }, { how: 'into', container: one }) as string;
+    const b = d.place({ kind: 'date' }, { how: 'column', container: one, after: true }) as string;
+    expect(kids(one)).toEqual([a, b]);
+    const empty = d.addContainer('Empty') as string;
+    const c = d.place({ kind: 'date' }, { how: 'column', container: empty, after: true }) as string;
+    expect(kids(empty)).toEqual([c]);
+    void [id, next, due, call];
+    expectValid(d.getPage());
+  });
+
+  it('is refused anywhere but a group, and for a group inside itself', () => {
+    const { d } = visit();
+    expect(d.dropRefusal({ how: 'column', container: 'section-1', after: true }, 'section-1')).toBe('A part cannot go inside itself');
+    expect(d.dropRefusal({ how: 'column', container: d.getPage().layout.id, after: true })).toBe('A new column goes inside a group');
+    expect(d.dropRefusal({ how: 'column', container: 'nothing', after: true })).toBe('There is no part “nothing”');
+  });
+
+  it('undoes in one step', () => {
+    const { d } = visit();
+    const before = JSON.stringify(d.getPage());
+    d.place({ kind: 'email' }, { how: 'column', container: 'section-1', after: true });
+    d.undo();
+    expect(JSON.stringify(d.getPage())).toBe(before);
+  });
+});

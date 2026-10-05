@@ -9,8 +9,9 @@ import { across, isWrapper, nodeOf } from './layout-tree';
  *
  *  1. within a few pixels of a whole group's outer edge — that group: a new
  *     column beside it, or a new row under or above it. A group's own padding
- *     is not its edge: beside a row's last part it is the end of that row,
- *     before its first part the start;
+ *     at either side of its rows is not its edge: a new column inside it,
+ *     beside all its rows (as Grafloria splits a section's content); on a
+ *     row's last part, its far side is the end of that row;
  *  2. at a boundary between a grid's rows — the gap, or a few pixels into a
  *     row — a new full-width row there;
  *  3. otherwise the part under the pointer, by its nearest edge (measured
@@ -51,6 +52,8 @@ export interface DropFinder {
 /** How near a group's border counts as the whole group: its padding is its rows'. Arrangements and tabs, with no padding, count further in. */
 const GROUP_BAND = 4;
 const BAND = 10;
+/** How far in from a group's border its padding means a new column inside it, where the padding is narrower. */
+const INNER = 16;
 /** How far into a row its boundary with the next still counts. */
 const ROW_BAND = 8;
 /** How far a drop line sits off the edge it marks, and how thick it is. */
@@ -141,6 +144,22 @@ export function findDrop(finder: DropFinder, target: Element | null, x: number, 
     return side(best.element.dataset['node'] as string, at, false, r);
   }
 
+  /**
+   * The padding at a group's side, level with its rows: a new column inside the
+   * group, the line at its rows' edge, as tall as all of them. A group drawn
+   * with no padding still has the last few pixels in from its edge band.
+   */
+  function besideRows(group: Element, content: HTMLElement, id: string): DropMark | null {
+    const g = rectOf(group);
+    const c = rectOf(content);
+    if (y < c.top - ROW_BAND || y > c.bottom + ROW_BAND) return null;
+    const right = x >= Math.min(c.right, g.right - INNER) && x <= g.right - GROUP_BAND;
+    const left = x <= Math.max(c.left, g.left + INNER) && x >= g.left + GROUP_BAND;
+    if (!right && !left) return null;
+    const after = finder.rtl ? left : right;
+    return { drop: { how: 'column', container: id, after }, line: edgeLine(c, right ? 'right' : 'left'), zone: { left: c.left, top: c.top, width: c.width, height: c.height } };
+  }
+
   /** The element holding a part's own parts: its grid, or its open tab. */
   const contentOf = (part: Element) => [...part.querySelectorAll<HTMLElement>('[data-container]')].find((c) => c.parentElement?.closest('[data-node]') === part) ?? null;
 
@@ -166,6 +185,11 @@ export function findDrop(finder: DropFinder, target: Element | null, x: number, 
   if (!leaf || leafNode?.type === 'section' || leafNode?.type === 'tabs') {
     const content = leaf ? contentOf(leaf) : root;
     if (!content) return null;
+    // A group's padding at either side of its rows: a new column inside it, beside them all.
+    if (leaf && leafNode?.type === 'section' && !isWrapper(leafNode)) {
+      const column = besideRows(leaf, content, leafNode.id);
+      if (column) return column;
+    }
     const row = rowBoundary(content);
     if (row) return row;
     const near = nearestInside(content);

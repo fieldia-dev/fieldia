@@ -90,8 +90,9 @@ function inList(rows: readonly ShownRow[], page: Page, container: string, index:
 export function outlineMark(rows: readonly ShownRow[], page: Page, drop: Drop, moving?: string): OutlineMark | null {
   if (drop.how === 'row' || drop.how === 'at') return inList(rows, page, drop.container, drop.index, moving);
   if (drop.how === 'into' && drop.container === page.layout.id) return { gap: rows.length, level: 0 };
-  const found = rowFor(rows, page, drop.how === 'into' ? drop.container : drop.target);
-  if (drop.how === 'into') return !found ? null : 'into' in found ? found : { into: drop.container };
+  // A new column inside a group goes into it, as far as the outline tells.
+  const found = rowFor(rows, page, drop.how === 'into' || drop.how === 'column' ? drop.container : drop.target);
+  if (drop.how === 'into' || drop.how === 'column') return !found ? null : 'into' in found ? found : { into: drop.container };
   if (!found || 'into' in found) return found;
   return { gap: drop.after ? after(rows, found.at) : found.at, level: rows[found.at].level };
 }

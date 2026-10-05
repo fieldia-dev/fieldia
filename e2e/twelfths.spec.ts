@@ -32,14 +32,12 @@ async function own(page: Page, label: string) {
 }
 const built = (page: Page) => page.evaluate(() => (window as unknown as { fieldiaDesigner: { designer: { getPage(): unknown } } }).fieldiaDesigner.designer.getPage() as { layout: { children: { id: string; columns?: unknown; rows?: string }[] } });
 
-test('(a) a field dropped in the padding just past Visit date: the end of that row, the row in thirds, nothing else moving', async ({ page }) => {
+test('(a) a field dropped on Visit date’s far side: the end of that row, the row in thirds, nothing else moving', async ({ page }) => {
   await openVisit(page);
   const notesBefore = await own(page, 'Notes');
   const date = await own(page, 'Visit date');
-  const visit = (await group(page, 'section-1').boundingBox())!;
-  // The padding past Visit date, 14px past its edge — short of the group's border.
-  const to = { x: date.right + 14, y: date.top + date.height / 2 };
-  expect(to.x).toBeLessThan(visit.x + visit.width - 4);
+  // On Visit date itself, near its far edge: the end of its row (its group's padding past it is a new column inside the group).
+  const to = { x: date.right - 10, y: date.top + date.height / 2 };
   const { words, refused } = await dropAt(page, centre(await at(page, 'Next step')), to, { shot: 'twelfths-a-drag' });
   expect([words, refused]).toEqual(['at the end of the row, after “Visit date” — the row in thirds', false]);
   expect(await layout(page)).toEqual([
@@ -61,6 +59,64 @@ test('(a) a field dropped in the padding just past Visit date: the end of that r
   expect((await misalignedOnCanvas(page)).off).toEqual([]);
   await page.mouse.click(5, 5);
   await screen(page, 'twelfths-a-after', { viewport: true });
+});
+
+test('a new column inside Visit, beside all its rows: the padding past them, as Grafloria splits a section’s content', async ({ page }) => {
+  await openVisit(page);
+  const date = await own(page, 'Visit date');
+  const notes = await own(page, 'Notes');
+  const visit = (await group(page, 'section-1').boundingBox())!;
+  // In the padding past Visit date, level with Notes: short of the border's last 4px.
+  const email = await (async () => {
+    const tile = page.locator('.fd-toolbox [data-tool="kind:email"]');
+    await tile.scrollIntoViewIfNeeded();
+    return centre((await tile.boundingBox())!);
+  })();
+  const to = { x: (date.right + visit.x + visit.width) / 2, y: notes.top + 10 };
+  expect(to.x).toBeLessThan(visit.x + visit.width - 4);
+  const { words, refused } = await dropAt(page, email, to, { release: false, shot: 'twelfths-column-drag' });
+  expect([words, refused]).toEqual(['new column inside “Visit”, after all its rows — in halves', false]);
+  // The line stands at the rows' edge, as tall as all of them.
+  const line = (await page.locator('.fd-drop-bar').boundingBox())!;
+  expect(line.height).toBeGreaterThan(notes.bottom - date.top - 2);
+  await page.mouse.up();
+  const visitNode = (await built(page)).layout.children[0] as unknown as { columns: unknown; children: { id: string; type: string; colspan?: number; children?: { colspan?: number }[] }[] };
+  expect(visitNode.columns).toBe(12);
+  expect(visitNode.children.map((c) => [c.type, c.colspan])).toEqual([['section', 6], ['field', 6]]);
+  expect(visitNode.children[0].children?.map((c) => c.colspan)).toEqual([3, 3, 6]);
+  // Customer and Visit date side by side in the left half, Notes under them; Email at the right, level with the first row.
+  const [customer, day, words2, mail] = await Promise.all(['Customer', 'Visit date', 'Notes', 'Untitled question'].map((label) => own(page, label)));
+  expect(Math.round(customer.top)).toBe(Math.round(day.top));
+  expect(words2.top).toBeGreaterThan(day.bottom);
+  expect(Math.round(words2.right)).toBe(Math.round(day.right));
+  expect(mail.left).toBeGreaterThan(day.right);
+  expect(Math.abs(mail.top - customer.top)).toBeLessThanOrEqual(2);
+  expect((await misalignedOnCanvas(page)).off).toEqual([]);
+  await page.mouse.click(5, 5);
+  await screen(page, 'twelfths-column-after', { viewport: true });
+  // One undo puts it all back.
+  await page.keyboard.press('ControlOrMeta+z');
+  expect(((await built(page)).layout.children[0] as unknown as { columns: unknown }).columns).toBe(2);
+});
+
+test('at a group’s side, outside in: the end of a row on its last part, a new column inside in its padding, beside the whole group on its border', async ({ page }) => {
+  await openVisit(page);
+  const date = await own(page, 'Visit date');
+  const visit = (await group(page, 'section-1').boundingBox())!;
+  const border = visit.x + visit.width;
+  const said: string[] = [];
+  for (const x of [date.right - 10, date.right + 8, border - 8, border - 2]) {
+    const { words } = await dropAt(page, centre(await at(page, 'Next step')), { x, y: date.top + date.height / 2 }, { release: false });
+    said.push(words);
+    await page.keyboard.press('Escape');
+    await page.mouse.up();
+  }
+  expect(said).toEqual([
+    'at the end of the row, after “Visit date” — the row in thirds',
+    'new column inside “Visit”, after all its rows — in halves',
+    'new column inside “Visit”, after all its rows — in halves',
+    'new column beside “Visit”',
+  ]);
 });
 
 test('(b) dropped in the gap between Customer and Visit date: between them, the row in thirds', async ({ page }) => {
@@ -92,7 +148,7 @@ const gutter = (page: Page) => page.locator('.fd-gutter');
 /** The site visit with Next step dropped at the end of the first row: the group in twelfths, Customer | Visit date | Next step. */
 async function inThirds(page: Page) {
   const date = await own(page, 'Visit date');
-  await dropAt(page, centre(await at(page, 'Next step')), { x: date.right + 14, y: date.top + date.height / 2 });
+  await dropAt(page, centre(await at(page, 'Next step')), { x: date.right - 10, y: date.top + date.height / 2 });
   await page.mouse.click(5, 5);
   expect((await layout(page))[0]).toEqual(['Customer:4', 'Visit date:4', 'Next step:4', 'Notes:12']);
 }
@@ -228,7 +284,7 @@ test('(e) after a run of drops, every part on its tracks; the canvas draws each 
   await gutter(page).focus();
   await page.keyboard.press('ArrowRight');
   const due = await own(page, 'Due by');
-  await dropAt(page, centre(await at(page, 'Manager to call?')), { x: due.right + 14, y: due.top + due.height / 2 });
+  await dropAt(page, centre(await at(page, 'Manager to call?')), { x: due.right - 10, y: due.top + due.height / 2 });
   await page.mouse.click(5, 5);
   expect(await layout(page)).toEqual([
     ['Customer:5', 'Visit date:3', 'Next step:4', 'Notes:12'],

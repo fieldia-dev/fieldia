@@ -44,13 +44,15 @@ forms need and the layout as it is. Advanced lays the page out by dragging,
 as Grafloria's split board does: a line shows where a part will go, and a chip
 says it in words before it is let go.
 
-- Beside a part — its edge, the gap to the next, or the room at either end of
-  its row — the part joins that row. A group's rows divide in twelfths, each its
+- Beside a part — its edge, or the gap to the next — the part joins that row. A group's rows divide in twelfths, each its
   own way: a group of one to four columns is divided in twelfths the first time
   a drop or a divider needs it, nothing moving as it is, and a part dropped
   into a row shares it out equally (halves, thirds, quarters; four to a row).
   Only that row changes.
 - Under or above a part, or between two rows: a new row.
+- In a group's padding at either side of its rows: a new column inside the
+  group, beside all its rows — the rows go into a column of their own, the
+  part beside it, the two in halves (a group of one row is simply joined).
 - Within a few pixels of a group's border: beside or under the whole group.
 - The divider between two parts of a row trades width a twelfth at a time,
   said as percentages ("58% · 42%"), by the pointer or the arrow keys.

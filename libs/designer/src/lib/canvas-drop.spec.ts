@@ -38,15 +38,20 @@ describe('findDrop', () => {
     expect(at(898, 600)?.drop).toEqual({ how: 'beside', target: 'emergency', after: true, whole: true });
   });
 
-  it('a group’s padding is its rows’: past a row’s last part, the end of that row; before its first, the start', () => {
+  it('three lines at a group’s side, outside in: beside the whole group, a new column inside it beside all its rows, the end of one row', () => {
     const { at } = canvas();
-    // Personal details’ border is at 900; its padding runs from 880. Its one row: the photo, then the fields.
-    expect(at(892, 100)?.drop).toEqual({ how: 'beside', target: 'who', after: true, whole: false });
-    expect(at(892, 100)?.line).toEqual({ left: 883, top: 60, width: 4, height: 320 });
+    // Personal details’ border is at 900; its rows end at 880 (its content), the last part of the first row at 880 too.
     expect(at(896, 100)?.drop).toEqual({ how: 'beside', target: 'personal', after: true, whole: true });
-    expect(at(8, 100)?.drop).toEqual({ how: 'beside', target: 'f-photo', after: false, whole: false });
-    // Right to left, the padding at the left is after the row's last part.
-    expect(canvas(true).at(8, 100)?.drop).toEqual({ how: 'beside', target: 'f-photo', after: true, whole: false });
+    // Its padding: a new column inside it, the line at its rows’ edge, as tall as all of them, the rows tinted.
+    const column = at(888, 100);
+    expect(column?.drop).toEqual({ how: 'column', container: 'personal', after: true });
+    expect(column?.line).toEqual({ left: 883, top: 50, width: 4, height: 340 });
+    expect(column?.zone).toEqual({ left: 20, top: 50, width: 860, height: 340 });
+    expect(at(8, 100)?.drop).toEqual({ how: 'column', container: 'personal', after: false });
+    // Right to left, the padding at the left is after its rows.
+    expect(canvas(true).at(8, 100)?.drop).toEqual({ how: 'column', container: 'personal', after: true });
+    // On the last part of a row, its far side: the end of that row (here a few pixels in from the arrangement's own edge, 880).
+    expect(at(860, 100)?.drop).toEqual({ how: 'beside', target: 'f-last_name', after: true, whole: false });
   });
 
   it('between two rows of a grid, or above its first: a new row there', () => {

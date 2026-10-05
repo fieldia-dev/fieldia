@@ -101,6 +101,22 @@ export function toTwelfths(group: SectionNode): void {
   group.columns = withWide(group.columns, TWELVE, (n) => (n > 1 ? TWELVE : n));
 }
 
+/**
+ * A new column inside a group, beside all its rows, as Grafloria splits a
+ * section's content: the rows go into an arrangement on half the group's
+ * tracks, keeping their shares there, and the part takes the other half.
+ * `from` is the columns the part had where it came from.
+ */
+export function columnInside(group: SectionNode, part: Part, after: boolean, id: string, from = 1): void {
+  toTwelfths(group);
+  const half = TWELVE / 2;
+  const rows: SectionNode = { type: 'section', id, style: 'plain', columns: half as ColumnCount, children: group.children };
+  relay(rows.children, TWELVE, half);
+  setSpan(rows, half);
+  resize(part, half, from);
+  group.children = (after ? [rows, part] : [part, rows]) as SectionNode['children'];
+}
+
 /** A group in twelfths on one to four columns again: each part as near as wide as it was. */
 export function fromTwelfths(group: SectionNode, cols: number): void {
   relay(group.children, TWELVE, cols);

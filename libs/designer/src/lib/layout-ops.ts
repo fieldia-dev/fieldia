@@ -1,7 +1,7 @@
 import type { ColumnCount, ColumnsByWidth, Field, LayoutNode, Page, SectionNode, TabsNode } from '@fieldia/core';
 import { kindById, type QuestionKind } from './kinds';
 import { across, colsOf, contains, isRow, isSection, isWrapper, listOf, locate, nameOf, nodeOf, rowsOf, seenAs, setSpan, spanOf, SPANNED, type Holder, type Part, type Spot } from './layout-tree';
-import { besideIn, besideWords, fill, inTwelfths, isGroup, keepsFull, laidInTwelfths, landingSpan, putAt, resize, shares, toTwelfths, TWELVE, type Beside } from './layout-twelfths';
+import { besideIn, besideWords, columnInside, fill, inTwelfths, isGroup, keepsFull, laidInTwelfths, landingSpan, putAt, resize, shares, toTwelfths, TWELVE, type Beside } from './layout-twelfths';
 import { allIds, containers, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
 
@@ -23,7 +23,9 @@ export type Drop =
   | { how: 'into'; container: string }
   | { how: 'beside' | 'under'; target: string; after: boolean; whole?: boolean }
   | { how: 'row'; container: string; index: number }
-  | { how: 'at'; container: string; index: number };
+  | { how: 'at'; container: string; index: number }
+  /** A new column inside a group, beside all its rows: its padding at either side, as Grafloria splits a section's content. */
+  | { how: 'column'; container: string; after: boolean };
 
 /** What the toolbox adds besides fields: groups, tabs, and the blocks between fields. */
 export type BlockKind = 'group' | 'side' | 'tabs' | 'heading' | 'text' | 'divider' | 'spacer' | 'image' | 'button';
@@ -45,6 +47,11 @@ export interface LayoutContext {
 
 /** What a drop means, in the words the drag chip says. */
 export function describeDrop(page: Page, drop: Drop, moving?: string): string {
+  if (drop.how === 'column') {
+    const plan = columnPlan(page, drop, moving);
+    if (plan.how !== 'wrap') return describeDrop(page, plan.drop, moving);
+    return `new column inside “${nameOf(page, nodeOf(page, drop.container))}”, ${drop.after ? 'after' : 'before'} all its rows — in halves`;
+  }
   if (drop.how === 'into') {
     const box = nodeOf(page, drop.container);
     return box?.id === page.layout.id ? 'into the page' : `into “${nameOf(page, box)}”`;
@@ -77,6 +84,20 @@ function besidePlan(page: Page, drop: Drop, moving?: string, node?: Part): Besid
   const kind = node?.type ?? (moving ? locate(page, moving)?.node.type : undefined);
   if (!at || !isGroup(at.parent) || !SPANNED.has(at.node.type) || (kind && !SPANNED.has(kind)) || moving === drop.target) return null;
   return besideIn(page, at.parent, at.node, moving);
+}
+
+/**
+ * What a new column inside a group comes to: with its rows wrapped, the part
+ * beside them all; a group of one row is joined at that row's end (or start),
+ * and an empty group takes the part. `moving` is left out of the rows.
+ */
+function columnPlan(page: Page, drop: { container: string; after: boolean }, moving?: string): { how: 'wrap' } | { how: 'joins'; drop: Drop } {
+  const group = nodeOf(page, drop.container) as SectionNode;
+  const rows = rowsOf(page, group, moving);
+  if (!rows.length) return { how: 'joins', drop: { how: 'into', container: drop.container } };
+  if (rows.length > 1) return { how: 'wrap' };
+  const row = rows[0].items;
+  return { how: 'joins', drop: { how: 'beside', target: (drop.after ? row[row.length - 1] : row[0]).id, after: drop.after } };
 }
 
 // ---- changing the page --------------------------------------------------------------------------------
@@ -156,6 +177,14 @@ const arrangement = (id: string, colspan: number, columns: ColumnCount | Columns
 export function placeAt(page: Page, node: Part, drop: Drop): void {
   const name = namer(page);
   const came = cameFrom(page, node.id);
+  if (drop.how === 'column') {
+    const plan = columnPlan(page, drop, came && node.id);
+    if (plan.how !== 'wrap') return placeAt(page, node, plan.drop);
+    if (came) detach(page, node.id);
+    columnInside(nodeOf(page, drop.container) as SectionNode, node, drop.after, name('column'), came?.cols ?? 1);
+    tidy(page);
+    return;
+  }
   const plan = besidePlan(page, drop, came && node.id, node);
   if (plan?.how === 'refused') throw new Refusal(plan.why);
   if (plan && drop.how === 'beside') {
@@ -236,6 +265,14 @@ export function dropRefusal(page: Page, drop: Drop, moving?: string): string | n
   const moved = moving ? locate(page, moving) : null;
   if (moving && !moved) return `There is no part “${moving}”`;
   if (moved?.node.type === 'tab') return 'A tab moves only among its tabs';
+  if (drop.how === 'column') {
+    const group = nodeOf(page, drop.container);
+    if (!group) return `There is no part “${drop.container}”`;
+    if (moving && contains(page, moving, drop.container)) return 'A part cannot go inside itself';
+    if (!isGroup(group)) return 'A new column goes inside a group';
+    const plan = columnPlan(page, drop, moving);
+    return plan.how === 'wrap' ? null : dropRefusal(page, plan.drop, moving);
+  }
   if (drop.how === 'into' || drop.how === 'row' || drop.how === 'at') {
     const box = nodeOf(page, drop.container);
     if (!box) return `There is no part “${drop.container}”`;
