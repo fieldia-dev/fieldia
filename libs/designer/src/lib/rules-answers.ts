@@ -9,6 +9,7 @@ import { segmented } from './panel-controls';
 import { ruleRefusal, type AnswerRulePatch } from './rules-commands';
 import { formulaBox } from './rules-formula-box';
 import { formulaProblem, sampleHolds } from './rules-formula';
+import { answerSample, type SampleOptions } from './rules-sample';
 import { answerRuleSentence, kindsFitting, NAMED_PATTERNS, ruleAsks } from './rules-words';
 
 /**
@@ -20,7 +21,8 @@ import { answerRuleSentence, kindsFitting, NAMED_PATTERNS, ruleAsks } from './ru
  * What is typed is checked here first, and kept only when it reads, so a
  * half-typed rule says what is wrong under it and the page keeps the last
  * good one. A rule across fields begins as an empty formula, kept on the
- * page once what is typed reads.
+ * page once what is typed reads. Under the rules, Try a value: the field by
+ * its own widget, and what the form says of what is typed there.
  */
 
 export interface AnswerRulesEditor {
@@ -28,6 +30,8 @@ export interface AnswerRulesEditor {
   update(page: Page): void;
   /** Put the cursor on the first rule, or on Add a rule. */
   focus(): void;
+  /** Let go of the sample's widgets. */
+  destroy(): void;
 }
 
 /** The groups of asks a rule's settings show, in order. */
@@ -51,7 +55,7 @@ let made = 0;
 /** A number typed, or null for an empty box. */
 const numberOf = (box: HTMLInputElement) => (box.value.trim() === '' ? null : Number(box.value));
 
-export function answerRulesEditor(el: ElementFactory, designer: Designer, id: string): AnswerRulesEditor {
+export function answerRulesEditor(el: ElementFactory, designer: Designer, id: string, sampling: SampleOptions = {}): AnswerRulesEditor {
   const base = `fd-answer-rules-${++made}`;
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
   const list = el('ul', { class: 'fd-answer-rules', 'aria-label': 'Answer rules' });
@@ -60,7 +64,8 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
   const statusWords = el('span', {});
   const status = el('p', { class: 'fd-answer-rules-status', role: 'status', hidden: '' }, statusWords, undo);
   const hint = el('p', { class: 'fd-properties-hint fd-set-hint' }, 'Checked as people type, and again when they send.');
-  const element = el('div', { class: 'fd-prop fd-answer-rules-box', 'data-tab': 'rules', 'data-setting': 'Answer rules' }, el('span', { class: 'fd-prop-name' }, 'Answer rules'), list, add, status, hint);
+  const sample = answerSample(el, id, sampling);
+  const element = el('div', { class: 'fd-prop fd-answer-rules-box', 'data-tab': 'rules', 'data-setting': 'Answer rules' }, el('span', { class: 'fd-prop-name' }, 'Answer rules'), list, add, status, hint, sample.element);
 
   let page = designer.getPage();
   let views: RuleView[] = [];
@@ -345,10 +350,12 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
     update(next) {
       page = next;
       draw();
+      sample.update(next);
     },
     focus() {
       const first = list.querySelector<HTMLElement>('.fd-answer-rule-say');
       (first && !list.hidden ? first : add).focus();
     },
+    destroy: () => sample.destroy(),
   };
 }

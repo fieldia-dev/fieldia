@@ -140,7 +140,8 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       render(designer.getState());
     },
   });
-  const panel = screenPanel({ el, doc, designer, wearer: canvas.element });
+  // A field's answer rules are tried beside them by its own widget, the app's among them; what cannot be tried there, in Try it.
+  const panel = screenPanel({ el, doc, designer, wearer: canvas.element, sampling: { widgets: options.widgets, tryIt: () => trial.start() } });
   panel.setMode(mode);
   // A blank screen: templates to start from.
   const start = startHere({ el, doc, designer, root, survey: false, templates: options.templates, assistant: options.assistant ?? designer.assistant(), blankFocus: () => root.querySelector('.fd-tool-find') });
@@ -348,6 +349,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
       doc.removeEventListener('keydown', onKey);
       stopPuttingDown();
       canvas.destroy();
+      panel.destroy();
       side.destroy();
       clip.destroy();
       shortcuts.destroy();
