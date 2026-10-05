@@ -47,6 +47,7 @@ export type Value =
   | RelatedRecord[]
   | ReferenceValue
   | FileValue
+  | FileValue[]
   | Line[];
 
 export type Values = Record<string, Value>;
@@ -62,6 +63,8 @@ export function emptyValue(field: AnyField): Value {
     case 'one2many':
       return [];
     case 'selection':
+    case 'binary':
+    case 'image':
       return field.multiple ? [] : null;
     default:
       return null;
@@ -92,7 +95,8 @@ export function isEmpty(field: AnyField, value: Value | undefined): boolean {
 /**
  * The values as modifiers read them, matching what backends write in their
  * expressions: a many2one is its id, a many2many its ids, a reference
- * "model,id", a file its name, and lines a list (so `not child_ids` works).
+ * "model,id", a file its name — several files their names — and lines a list
+ * (so `not child_ids` works).
  */
 export function expressionContext(values: Values, fields: Record<string, AnyField>): Record<string, unknown> {
   const context: Record<string, unknown> = {};
@@ -118,7 +122,7 @@ function forExpressions(field: AnyField, value: Value): unknown {
     }
     case 'binary':
     case 'image':
-      return (value as FileValue).name;
+      return Array.isArray(value) ? (value as FileValue[]).map((file) => file.name) : (value as FileValue).name;
     default:
       return value;
   }
