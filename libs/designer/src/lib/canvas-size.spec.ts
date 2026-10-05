@@ -1,6 +1,49 @@
-import { columnsAt, readSize } from './canvas-size';
+import { FORM_WIDTHS } from '@fieldia/widgets';
+import { columnsAt, MIN_WIDTH, readSize, readWidth, sizeAt, writeWidth } from './canvas-size';
 import { mount } from './test-editor';
 import { employeeDesigner } from './test-layout';
+
+describe('sizeAt: the size a form of a width is, by the form’s own widths', () => {
+  it('a phone up to the narrow width, a tablet up to the medium one, a desktop beyond — the widths the form’s stylesheet uses', () => {
+    expect([FORM_WIDTHS.narrow, FORM_WIDTHS.medium]).toEqual([520, 760]);
+    expect(sizeAt(254)).toBe('phone');
+    expect(sizeAt(520)).toBe('phone');
+    expect(sizeAt(521)).toBe('tablet');
+    expect(sizeAt(760)).toBe('tablet');
+    expect(sizeAt(761)).toBe('desktop');
+    expect(sizeAt(1400)).toBe('desktop');
+  });
+});
+
+describe('the width kept in this browser', () => {
+  afterEach(() => localStorage.clear());
+
+  it('a width of its own, or none: the size’s own', () => {
+    expect(readWidth(window)).toBeNull();
+    writeWidth(window, 640);
+    expect(localStorage.getItem('fieldia.designer.width')).toBe('640');
+    expect(readWidth(window)).toBe(640);
+    writeWidth(window, null);
+    expect(localStorage.getItem('fieldia.designer.width')).toBeNull();
+    expect(readWidth(window)).toBeNull();
+  });
+
+  it('nothing it cannot use: words, fractions, or narrower than a phone', () => {
+    for (const kept of ['wide', '640.5', '-5', String(MIN_WIDTH - 1), '']) {
+      localStorage.setItem('fieldia.designer.width', kept);
+      expect(readWidth(window)).toBeNull();
+    }
+    localStorage.setItem('fieldia.designer.width', String(MIN_WIDTH));
+    expect(readWidth(window)).toBe(320);
+  });
+
+  it('works when the browser keeps nothing', () => {
+    const blocked = { get localStorage(): Storage { throw new Error('blocked'); } } as unknown as Window;
+    expect(readWidth(blocked)).toBeNull();
+    expect(() => writeWidth(blocked, 640)).not.toThrow();
+    expect(() => writeWidth(null, 640)).not.toThrow();
+  });
+});
 
 /**
  * The size of screen the canvas shows: a desktop, a tablet or a phone, as the
