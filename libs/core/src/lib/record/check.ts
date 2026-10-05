@@ -152,21 +152,33 @@ function realDay(year: number, month: number, day: number): boolean {
   return day <= lengths[month - 1];
 }
 
+type FileField = Extract<Field | LineField, { type: 'binary' | 'image' }>;
+
 /** A file, or several: as few and as many as the field says, then each against the kinds it takes and its largest size — named by its own name when there are several. */
-function checkFiles(field: Extract<Field | LineField, { type: 'binary' | 'image' }>, value: Value | undefined, say: Say, messages: Messages): string | undefined {
+function checkFiles(field: FileField, value: Value | undefined, say: Say, messages: Messages): string | undefined {
   // A lone file where several are taken is a list of one, as a backend may send it.
   const files = field.multiple ? (Array.isArray(value) ? value : [value]) : [value];
   if (field.multiple && field.minFiles !== undefined && files.length < field.minFiles) return say('minFiles', { min: field.minFiles });
   if (field.multiple && field.maxFiles !== undefined && files.length > field.maxFiles) return say('maxFiles', { max: field.maxFiles });
-  const accept = field.type === 'image' ? ['image/*'] : field.accept;
   for (const file of files) {
     if (!isFile(file)) return say('file');
-    const label = field.multiple ? file.name : field.label || 'This field';
-    if (field.maxSize !== undefined && file.size > field.maxSize) return fill(messages.fileSize, { label, size: formatBytes(field.maxSize) });
-    if (accept && !accepts(accept, file.type)) {
-      const types = listOr(accept.map(describeType), messages.or);
-      return fill(messages.fileType, { label, types, aTypes: article(types) });
-    }
+    const problem = fileProblem(field, file, messages, field.multiple ? file.name : field.label || 'This field');
+    if (problem) return problem;
+  }
+  return undefined;
+}
+
+/**
+ * What is wrong with one file for a file or image field — too large, or not a
+ * kind it takes — said with the limit and named by the file's own name; undefined
+ * when nothing is. A widget asks before it adds a file, as the check does after.
+ */
+export function fileProblem(field: FileField, file: { name: string; type: string; size: number }, messages: Messages = MESSAGES.en, label = file.name): string | undefined {
+  if (field.maxSize !== undefined && file.size > field.maxSize) return fill(messages.fileSize, { label, size: formatBytes(field.maxSize) });
+  const accept = field.type === 'image' ? ['image/*'] : field.accept;
+  if (accept && !accepts(accept, file.type)) {
+    const types = describeTypes(accept, messages.or);
+    return fill(messages.fileType, { label, types, aTypes: article(types) });
   }
   return undefined;
 }
@@ -177,14 +189,22 @@ function isFile(value: unknown): value is FileValue {
 }
 
 /** Whether a file of this media type is one of these kinds, such as "application/pdf" or "image/*". */
-export function accepts(patterns: readonly string[], type: string): boolean {
+function accepts(patterns: readonly string[], type: string): boolean {
   return patterns.some((pattern) => (pattern.endsWith('/*') ? type.startsWith(pattern.slice(0, -1)) : pattern === type));
 }
 
+/** Office kinds by the extension people know them by, from a word in their media type. */
+const EXTENSIONS = 'pdf PDF,msword DOC,wordprocessingml DOCX,opendocument.text ODT,plain TXT,ms-excel XLS,spreadsheetml XLSX,opendocument.spreadsheet ODS,csv CSV,ms-powerpoint PPT,presentationml PPTX,opendocument.presentation ODP'.split(',').map((pair) => pair.split(' '));
+
 function describeType(pattern: string): string {
   if (pattern.endsWith('/*')) return pattern.slice(0, -2);
-  if (pattern === 'application/pdf') return 'PDF';
-  return (pattern.split('/')[1] ?? pattern).toUpperCase();
+  const sub = pattern.split('/')[1] ?? pattern;
+  return EXTENSIONS.find(([word]) => sub.includes(word))?.[1] ?? sub.toUpperCase();
+}
+
+/** The kinds a file field takes, as people say them, each once: "PDF or image", "DOC, DOCX or ODT". */
+export function describeTypes(patterns: readonly string[], or: string): string {
+  return listOr([...new Set(patterns.map(describeType))], or);
 }
 
 function listOr(items: string[], or: string): string {

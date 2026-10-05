@@ -1,5 +1,5 @@
 import Ajv2020 from 'ajv/dist/2020';
-import { checkValue, createForm, emptyValue, expressionContext, MESSAGES, pageJsonSchema, validatePage, type Field, type FileValue, type Page } from '../../index';
+import { checkValue, createForm, describeTypes, emptyValue, fileProblem, expressionContext, MESSAGES, pageJsonSchema, validatePage, type Field, type FileValue, type Page } from '../../index';
 
 /**
  * Several files in one field: a file or an image field with `multiple` holds a
@@ -106,5 +106,22 @@ describe('several files, as values', () => {
     form.setValue('docs', [file('a.pdf', 'application/pdf')]);
     expect(form.validate()).toBe(false);
     expect(form.getState().errors['docs']).toBe('Add at least 2 files to Documents');
+  });
+});
+
+describe('a file the field would refuse, before it is added', () => {
+  const docs = { type: 'binary', label: 'Documents', multiple: true, accept: ['application/pdf', 'image/*'], maxSize: 10 * 1048576 } as Extract<Field, { type: 'binary' }>;
+
+  it('says what is wrong with it by its own name, stating the limit', () => {
+    expect(fileProblem(docs, { name: 'video.mp4', type: 'video/mp4', size: 20 * 1048576 })).toBe('video.mp4 is larger than 10 MB');
+    expect(fileProblem(docs, { name: 'notes.exe', type: 'application/x-msdownload', size: 10 })).toBe('notes.exe must be a PDF or image file');
+    expect(fileProblem(docs, { name: 'plan.pdf', type: 'application/pdf', size: 10 })).toBeUndefined();
+    expect(fileProblem(docs, { name: 'notes.exe', type: '', size: 10 }, MESSAGES.fr)).toBe('notes.exe doit être un fichier PDF ou image');
+  });
+
+  it('names office kinds by their extensions, each once', () => {
+    expect(describeTypes(['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text', 'text/plain'], 'or')).toBe('DOC, DOCX, ODT or TXT');
+    expect(describeTypes(['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv', 'application/vnd.oasis.opendocument.spreadsheet'], 'or')).toBe('XLS, XLSX, CSV or ODS');
+    expect(describeTypes(['image/*', 'application/pdf', 'application/pdf'], 'أو')).toBe('image أو PDF');
   });
 });
