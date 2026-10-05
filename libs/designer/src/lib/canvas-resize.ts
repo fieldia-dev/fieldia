@@ -121,7 +121,8 @@ export function canvasResize(options: CanvasResizeOptions): CanvasResize {
 
   const onDown = (event: PointerEvent) => {
     if (event.button !== 0 || drag) return;
-    event.preventDefault();
+    // Not prevented: the browser focuses the handle as a pointer focuses, its keys going on from there with no ring
+    // drawn; nothing is selected on the way, as the handle selects nothing (styles-canvas.ts).
     event.stopPropagation();
     // Captured, a fast drag never loses the handle; the moves still come up to the document.
     try {
@@ -173,8 +174,6 @@ export function canvasResize(options: CanvasResizeOptions): CanvasResize {
     drag = { end };
     show(width, m.room, size);
     element.setAttribute('data-active', '');
-    // Its keys go on from where the pointer left it.
-    element.focus({ preventScroll: true });
   };
 
   // ---- the keys ------------------------------------------------------------------

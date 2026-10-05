@@ -148,15 +148,16 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 /* Dragged or keyed to: as wide as that, never wider than the stage, in its middle as a tablet's is. */
 .fd-canvas[data-mode="advanced"][data-width] { width: var(--fd-canvas-width); max-width: 100%; margin-inline: auto; }
 /* The width beside the switch, once the canvas has one of its own. */
-.fd-canvas-size-px { font-size: 12.5px; font-weight: 600; color: var(--fd-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Its words, and the chip's, run the way they are written — "640 px" stays so on a right-to-left page. */
+.fd-canvas-size-px { font-size: 12.5px; font-weight: 600; color: var(--fd-muted); font-variant-numeric: tabular-nums; white-space: nowrap; unicode-bidi: plaintext; }
 .fd-canvas-size-px[hidden] { display: none; }
 /* The handle: the canvas's whole end edge takes the pointer, 24px wide (WCAG 2.5.8), inside the canvas so the page is never
    wider for it; its grip stays in the middle of what is in view. */
 .fd-screen-designer { container-name: fd-designer; }
-.fd-canvas-resize { position: absolute; z-index: 4; inset-block: 0; inset-inline-end: 0; width: 24px; cursor: ew-resize; touch-action: none; }
+.fd-canvas-resize { position: absolute; z-index: 4; inset-block: 0; inset-inline-end: 0; width: 24px; cursor: ew-resize; touch-action: none; user-select: none; -webkit-user-select: none; }
 .fd-canvas:not([data-mode="advanced"]) > .fd-canvas-resize { display: none; }
-/* A designer narrower than a tablet shows the canvas as wide as it is: no handle. */
-@container fd-designer (max-width: 767px) { .fd-canvas-resize { display: none; } }
+/* A designer narrower than a tablet shows the canvas as wide as it is: no handle, and no width of its own to note. */
+@container fd-designer (max-width: 767px) { .fd-canvas-resize, .fd-canvas-size-px { display: none; } }
 .fd-canvas-resize:focus-visible { outline: none; }
 /* The edge itself, drawn over the canvas's border while the handle is pointed at, focused or dragged. */
 .fd-canvas-resize::before { content: ""; position: absolute; inset-block: 0; inset-inline-end: -1px; width: 2px; background: transparent; transition: background 120ms; }
@@ -173,7 +174,7 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 .fd-canvas-resize-chip {
   position: absolute; inset-inline-end: calc(100% + 10px); top: 50%; translate: 0 -50%; display: none; pointer-events: none;
   background: var(--fd-text); color: var(--fd-surface); font-size: 12px; font-weight: 600; line-height: 1; padding: 6px 8px; border-radius: 6px;
-  white-space: nowrap; font-variant-numeric: tabular-nums;
+  white-space: nowrap; font-variant-numeric: tabular-nums; unicode-bidi: plaintext;
 }
 .fd-canvas-resize[data-active] .fd-canvas-resize-chip { display: block; }
 @media (prefers-reduced-motion: reduce) { .fd-canvas-resize::before { transition: none; } }
