@@ -656,6 +656,13 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-block { min-width: 0; }
 .fd-spacer { min-height: 24px; }
 .fd-image { display: block; max-width: 100%; height: auto; border-radius: var(--fd-radius); }
+/* A picture's width, by name or in pixels, its place in its row, its link and its caption. */
+.fd-figure { display: grid; justify-items: start; gap: 6px; margin: 0; }
+.fd-figure[data-align="center"] { justify-items: center; }
+.fd-figure[data-align="end"] { justify-items: end; }
+.fd-figure > a, .fd-figure .fd-image { width: var(--fd-image-width, auto); max-width: 100%; }
+.fd-figure > a { display: block; border-radius: var(--fd-radius); }
+.fd-caption { font-size: 13px; color: var(--fd-muted); }
 .fd-text-paragraph { margin: 0; }
 .fd-text-note { margin: 0; color: var(--fd-muted); font-size: 13px; }
 .fd-status { min-height: 1.4em; color: var(--fd-muted); font-size: 13px; }
