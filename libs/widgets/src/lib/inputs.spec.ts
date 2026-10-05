@@ -87,3 +87,56 @@ describe('a paragraph', () => {
     expect(fixed.style.height).toBe('');
   });
 });
+
+describe('a number’s unit', () => {
+  const units = (el: Element) => [...el.querySelectorAll('.fd-unit')].map((u) => u.textContent);
+
+  it('sits inside the box, before or after the number, and is read with it', () => {
+    const { el, form } = mountKind({ type: 'float', digits: [16, 1] }, { options: { suffix: 'kg' } });
+    expect([...el.children].map((c) => c.tagName)).toEqual(['INPUT', 'SPAN']);
+    expect(units(el)).toEqual(['kg']);
+    expect(input(el).id).toBe('fd-x');
+    expect(input(el).getAttribute('aria-describedby')).toBe(el.querySelector('.fd-unit')?.id);
+    form.setValue('x', 12.5);
+    expect(input(el).value).toBe('12.5');
+    const before = mountKind({ type: 'integer' }, { options: { prefix: '≈' } }).el;
+    expect([...before.children].map((c) => c.tagName)).toEqual(['SPAN', 'INPUT']);
+    expect(units(before)).toEqual(['≈']);
+  });
+
+  it('keeps the help and the error it is described by', () => {
+    const { el, refresh } = mountKind({ type: 'float' }, { options: { suffix: '°C' } });
+    refresh({ invalid: true, describedBy: 'help error' });
+    expect(input(el).getAttribute('aria-describedby')).toBe(`help error ${el.querySelector('.fd-unit')?.id}`);
+  });
+
+  it('is left out where there is none', () => {
+    expect(mountKind({ type: 'float' }).el.tagName).toBe('INPUT');
+  });
+});
+
+describe('an amount’s currency', () => {
+  const unit = (el: Element) => el.querySelector('.fd-currency') as HTMLElement;
+  const order = (el: Element) => [...el.children].map((c) => c.tagName);
+
+  it('shows the currency’s symbol where the page’s language writes it', () => {
+    const en = mountKind({ type: 'monetary', currency: 'USD' }).el;
+    expect(unit(en).textContent).toBe('$');
+    expect(order(en)).toEqual(['SPAN', 'INPUT']);
+    const de = mountKind({ type: 'monetary', currency: 'EUR' }, {}, { locale: 'de' }).el;
+    expect(unit(de).textContent).toBe('€');
+    expect(order(de)).toEqual(['INPUT', 'SPAN']);
+    expect(de.classList.contains('fd-currency-after')).toBe(true);
+    expect(unit(mountKind({ type: 'monetary', currency: 'EGP' }).el).textContent).toBe('E£');
+  });
+
+  it('goes where the page says, when it says', () => {
+    expect(order(mountKind({ type: 'monetary', currency: 'EUR' }, { options: { symbol: 'before' } }, { locale: 'de' }).el)).toEqual(['SPAN', 'INPUT']);
+    expect(order(mountKind({ type: 'monetary', currency: 'USD' }, { options: { symbol: 'after' } }).el)).toEqual(['INPUT', 'SPAN']);
+  });
+
+  it('keeps a name that is no currency code as it is', () => {
+    const { el } = mountKind({ type: 'monetary' }, { options: {} });
+    expect(unit(el).textContent).toBe('');
+  });
+});

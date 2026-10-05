@@ -565,7 +565,7 @@ describe('a sections page', () => {
     const { host } = mount('signup');
     expect(input(host, 'f-ticket').readOnly).toBe(true);
     expect(input(host, 'f-ticket').value).toBe('1,500.00');
-    expect(at(host, 'f-ticket').querySelector('.fd-currency')?.textContent).toBe('EGP');
+    expect(at(host, 'f-ticket').querySelector('.fd-currency')?.textContent).toBe('E£');
   });
 
   it('moves focus to the first problem when submitting fails', async () => {
