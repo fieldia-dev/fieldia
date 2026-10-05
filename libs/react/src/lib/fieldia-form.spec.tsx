@@ -53,6 +53,13 @@ describe('<FieldiaForm>', () => {
     expect(screen.getByRole('button', { name: 'Next' })).toBeDefined();
   });
 
+  it('draws a saved form placed in the page from the pages it is given', () => {
+    const { container } = render(<FieldiaForm page={page('delivery')} pages={{ address: page('address') }} />);
+    const part = container.querySelector('[data-node="delivery-address"]') as HTMLElement;
+    expect(part.querySelector('legend')?.textContent).toBe('Delivery address');
+    expect(part.querySelector('[data-node="street"] .fd-label')?.textContent).toBe('Street and number');
+  });
+
   it('switches skin without mounting again', () => {
     let mounts = 0;
     const survey = page('survey');

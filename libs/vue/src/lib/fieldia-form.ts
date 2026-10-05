@@ -75,6 +75,8 @@ export const FieldiaForm = defineComponent({
     scheduler: { type: Object as PropType<Scheduler>, default: undefined },
     confirm: { type: Function as PropType<(message: string) => Promise<boolean>>, default: undefined },
     preferences: { type: Object as PropType<PreferenceStore>, default: undefined },
+    /** The app's pages: a saved form placed in the page by its id, a link's record by its model. */
+    pages: { type: [Object, Function] as PropType<ViewerOptions['pages']>, default: undefined },
     relatedPages: { type: [Object, Function] as PropType<ViewerOptions['relatedPages']>, default: undefined },
     icons: { type: Object as PropType<ViewerOptions['icons']>, default: undefined },
     keys: { type: Object as PropType<ViewerOptions['keys']>, default: undefined },
@@ -158,6 +160,7 @@ export const FieldiaForm = defineComponent({
         confirm: props.confirm,
         // The app's own store, not Vue's reactive copy of it.
         preferences: props.preferences ? toRaw(props.preferences) : undefined,
+        pages: props.pages ? toRaw(props.pages) : undefined,
         relatedPages: props.relatedPages ? toRaw(props.relatedPages) : undefined,
         icons: props.icons ? toRaw(props.icons) : undefined,
         keys: props.keys ? toRaw(props.keys) : undefined,
