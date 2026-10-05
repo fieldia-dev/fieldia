@@ -118,7 +118,7 @@ export class SignupComponent {
 )}
 
 <h2 id="script">A script tag</h2>
-<p>For a page with no build step at all. The bundle holds what runs a form — the core, the fields and the viewer — in about 50 KB gzipped. It checks a page with ${c('Fieldia.checkPage')} as it shows it; the full ${c('validatePage')} is in ${c('@fieldia/core')}, for where pages are made.</p>
+<p>For a page with no build step at all. The bundle holds what runs a form — the core, the fields and the viewer — in about 81 KB gzipped, with its own words in English. It checks a page with ${c('Fieldia.checkPage')} as it shows it; the full ${c('validatePage')} is in ${c('@fieldia/core')}, for where pages are made.</p>
 ${code(
   'html',
   `
@@ -131,6 +131,17 @@ ${code(
       page,
       dataSource: Fieldia.createMemoryDataSource(),
     }));
+</script>`
+)}
+<p>Arabic, German and French come as small scripts of their own, 3 to 4 KB gzipped each: add the language's script after the main one, from the same version, and pass ${c('locale')}. A page whose language script is missing shows Fieldia's words in English and names the script to add in the console. Installed from npm, the packages have all four languages with no extra import.</p>
+${code(
+  'html',
+  `
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.ar.js"></script>
+<!-- or fieldia.de.js, fieldia.fr.js -->
+<script>
+  Fieldia.mountViewer(document.getElementById('app'), { page, dataSource, locale: 'ar' });
 </script>`
 )}
 

@@ -26,6 +26,8 @@ for (const variant of variants) {
     if (!existsSync(SCRIPT_BUNDLE)) throw new Error('demos/script needs the script bundle: run `npx nx build viewer` first');
     cpSync(join(WORKSPACE, 'demos/script'), join(OUT, 'script'), { recursive: true });
     cpSync(SCRIPT_BUNDLE, join(OUT, 'script/fieldia.js'));
+    // And each language's add-on beside it, for the demo in Arabic, German or French (?locale=ar).
+    for (const locale of ['ar', 'de', 'fr']) cpSync(SCRIPT_BUNDLE.replace(/\.js$/, `.${locale}.js`), join(OUT, `script/fieldia.${locale}.js`));
     console.log(`demo script: ${join('dist/demos', 'script')}`);
     continue;
   }

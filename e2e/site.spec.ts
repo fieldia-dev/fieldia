@@ -50,8 +50,12 @@ test('the live form on the front page checks, sends, changes skin and language',
 
   await page.locator('#live-skin').selectOption('underline');
   await expect(live.locator('.fd-form')).toHaveAttribute('data-fd-skin', 'underline');
+  // Arabic's own script, fetched as it is picked: the live form's words in Arabic, right to left.
+  const arabic = page.waitForResponse((response) => response.url().endsWith('/fieldia.ar.js'));
   await page.locator('#live-locale').selectOption('ar');
+  expect((await arabic).status()).toBe(200);
   await expect(live.locator('.fd-form')).toHaveAttribute('dir', 'rtl');
+  await expect(live.getByRole('button', { name: 'إرسال' })).toBeVisible();
   await page.screenshot({ path: 'test-results/screens/site-home-arabic.png', animations: 'disabled' });
   expect(problems).toEqual([]);
 });

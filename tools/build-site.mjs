@@ -41,6 +41,8 @@ writeFileSync(
 
 for (const file of ['site.css', 'live.js', 'favicon.svg']) cpSync(join(WORKSPACE, 'site', file), join(OUT, file));
 cpSync(BUNDLE, join(OUT, 'fieldia.js'));
+// Each language's add-on beside it: the live form fetches one when its language is picked.
+for (const locale of ['ar', 'de', 'fr']) cpSync(BUNDLE.replace(/\.js$/, `.${locale}.js`), join(OUT, `fieldia.${locale}.js`));
 cpSync(join(WORKSPACE, 'examples/pages'), join(OUT, 'examples'), { recursive: true });
 for (const file of ['demo.css', 'shell.css', 'shell.mjs', 'catalog.mjs', 'logo.svg']) cpSync(join(DEMOS, file), join(OUT, 'demos', file));
 cpSync(join(DEMOS, 'thumbs'), join(OUT, 'demos/thumbs'), { recursive: true });

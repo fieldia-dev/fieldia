@@ -55,8 +55,10 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
    * The page's language, as a language tag (`ar`, `es`, `pt-BR`): the page's
    * own words in it when the page keeps them, and the viewer's labels,
    * validation messages and widget words in it when Fieldia has them (English,
-   * Arabic, German, French; English otherwise). A language written right to
-   * left runs right to left. The language the page is written in unless said.
+   * Arabic, German, French; English otherwise — and in the one-tag script,
+   * English until the language's own script is loaded: `fieldia.ar.js`, …).
+   * A language written right to left runs right to left. The language the
+   * page is written in unless said.
    */
   locale?: Locale | (string & {});
   /** Labels that win over the language's defaults. */

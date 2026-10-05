@@ -46,6 +46,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
   return ({ form, name, field: def, node, id, document: doc, labels, locale = 'en' }) => {
     const field = def as FileField;
     const words = wordsFor(labels, locale);
+    const messages = MESSAGES[locale] ?? MESSAGES.en;
     const make = maker(doc);
     const several = field.multiple === true;
     const most = several ? (field.maxFiles ?? Infinity) : 1;
@@ -59,7 +60,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
 
     // The limits, said before anyone tries.
     const limits = [
-      !image && accept ? describeTypes(accept, MESSAGES[locale].or) : '',
+      !image && accept ? describeTypes(accept, messages.or) : '',
       field.maxSize ? fill(several ? words.upToEach : words.upToSize, { size: formatBytes(field.maxSize) }) : '',
       several && field.maxFiles ? fill(words.upToFiles, { max: field.maxFiles }) : '',
     ].filter(Boolean);
@@ -92,7 +93,7 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
       const lines: string[] = [];
       let over = 0;
       for (const file of chosen) {
-        const problem = fileProblem(field, file, MESSAGES[locale]) ?? (several && [...files, ...kept].some((f) => f.name === file.name) ? fill(words.alreadyAdded, { name: file.name }) : undefined);
+        const problem = fileProblem(field, file, messages) ?? (several && [...files, ...kept].some((f) => f.name === file.name) ? fill(words.alreadyAdded, { name: file.name }) : undefined);
         if (problem) lines.push(problem);
         else if ((several ? files.length : 0) + kept.length < most) kept.push(file);
         else over++;

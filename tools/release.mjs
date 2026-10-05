@@ -81,7 +81,7 @@ for (const { manifest } of packages) {
 const EXPECT = {
   '@fieldia/core': ['validatePage', 'createForm', 'createMemoryDataSource', 'evaluateModifier'],
   '@fieldia/widgets': ['createWidget', 'installStyles', 'sanitizeHtml'],
-  '@fieldia/viewer': ['mountViewer', 'VIEWER_LABELS'],
+  '@fieldia/viewer': ['mountViewer', 'VIEWER_LABELS', 'addLanguage'],
   '@fieldia/grid': ['gridWidgets', 'gridWidget', 'gridApiOf'],
   '@fieldia/code': ['codeWidgets', 'codeWidget'],
   '@fieldia/chatter': ['mountChatter', 'chatterSlot', 'createMemoryChatter', 'CHATTER_LABELS'],
@@ -91,6 +91,12 @@ const EXPECT = {
 };
 const names = packages.map((p) => p.manifest.name);
 const esmOnly = new Set(['@fieldia/angular']);
+// Every language in the packages with no extra import: only the script bundle leaves them to add-ons.
+const languagesCheck = (load) => `for (const [name, table] of [['@fieldia/core', 'MESSAGES'], ['@fieldia/widgets', 'WIDGET_LABELS'], ['@fieldia/viewer', 'VIEWER_LABELS']]) {
+  const held = Object.keys((${load})[table]).sort().join(',');
+  if (held !== 'ar,de,en,fr') throw new Error(name + ' has ' + table + ' in ' + held + ', not in all four languages');
+}
+`;
 
 // CommonJS: require() every package that ships CommonJS.
 writeFileSync(
@@ -100,7 +106,7 @@ for (const name of ${JSON.stringify(names.filter((n) => !esmOnly.has(n)))}) {
   const mod = require(name);
   for (const key of expect[name]) if (mod[key] === undefined) throw new Error(name + ' (require) has no ' + key);
 }
-const schema = require('@fieldia/core/page.schema.json');
+${languagesCheck('require(name)')}const schema = require('@fieldia/core/page.schema.json');
 if (!schema.$schema) throw new Error('@fieldia/core/page.schema.json is not a JSON Schema');
 `
 );
@@ -115,7 +121,7 @@ for (const name of ${JSON.stringify(names)}) {
   const mod = await import(name);
   for (const key of expect[name]) if (mod[key] === undefined) throw new Error(name + ' (import) has no ' + key);
 }
-`
+${languagesCheck('await import(name)')}`
 );
 run('node', ['import.mjs'], SMOKE);
 
@@ -161,8 +167,16 @@ if (!existsSync(bundle)) fail('@fieldia/viewer has no bundle/fieldia.js');
 const sandbox = {};
 runInNewContext(readFileSync(bundle, 'utf8'), sandbox);
 if (typeof sandbox.Fieldia?.mountViewer !== 'function' || sandbox.Fieldia.VERSION !== version) fail('the packed script bundle does not define Fieldia.mountViewer at this version');
+// Each language's add-on beside it: after the main script, Fieldia has that language's words.
+for (const locale of ['ar', 'de', 'fr']) {
+  const addOn = join(SMOKE, `node_modules/@fieldia/viewer/bundle/fieldia.${locale}.js`);
+  if (!existsSync(addOn)) fail(`@fieldia/viewer has no bundle/fieldia.${locale}.js`);
+  const page = {};
+  for (const file of [bundle, addOn]) runInNewContext(readFileSync(file, 'utf8'), page);
+  if (page.Fieldia.MESSAGES[locale]?.locale !== locale || !page.Fieldia.VIEWER_LABELS[locale] || !page.Fieldia.WIDGET_LABELS[locale]) fail(`the packed fieldia.${locale}.js does not give the script bundle its words`);
+}
 
-console.log(`  installed ${fromRegistry ? 'from npm' : 'the packs'} into an empty project: require, import, types (.mts and .cts) and the script bundle all check`);
+console.log(`  installed ${fromRegistry ? 'from npm' : 'the packs'} into an empty project: require, import, types (.mts and .cts), the script bundle and its language add-ons all check`);
 
 // ---- publish ---------------------------------------------------------------------
 if (mode === 'publish') {

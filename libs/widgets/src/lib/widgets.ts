@@ -13,7 +13,7 @@ import type {
 } from '@fieldia/core';
 import type { PreferenceStore } from './preferences';
 import { formatNumber, normalizeNumber } from './numbers';
-import { WIDGET_LABELS, type WidgetLabels } from './labels';
+import type { WidgetLabels } from './labels';
 import { charTagsWidget, linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
 import { linesWidget } from './lines';
 import { binaryWidget, imageWidget } from './files';
@@ -31,7 +31,7 @@ import { imageChoiceWidget } from './choice-images';
 import { rankingWidget } from './ranking';
 import { addressWidget } from './address';
 import { cardsWidget } from './cards';
-import { clearSelection, fillIn, maker, setAttr, setText } from './kind-parts';
+import { clearSelection, fillIn, maker, setAttr, setText, wordsFor } from './kind-parts';
 import { shownOptions } from './shuffle';
 import { bounds, counted, grower } from './limits';
 import { currencySymbol } from './units';
@@ -324,7 +324,7 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
   return ({ form, name, field, node, id, document, labels, locale }) => {
     // Shown shuffled when the page asks; "Other" comes after them all the same.
     const choices = shownOptions(options(field), form, name, node);
-    const words = labels ?? WIDGET_LABELS[locale ?? 'en'];
+    const words = wordsFor(labels, locale);
     const group = make(document, 'div', { id, class: `fd-choices fd-choices-${kind}`, role: kind === 'radio' ? 'radiogroup' : 'group' });
     layOut(group, node);
     const limit = kind === 'checkbox' ? limiter(maker(document), words, node) : null;
@@ -418,7 +418,7 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
  */
 function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
   return ({ form, name, field, node, id, document, labels, locale }) => {
-    const words = labels ?? WIDGET_LABELS[locale ?? 'en'];
+    const words = wordsFor(labels, locale);
     const min = 'min' in field && typeof field.min === 'number' ? field.min : style === 'rating' ? 1 : 0;
     const max = 'max' in field && typeof field.max === 'number' ? field.max : style === 'rating' ? 5 : 10;
     const icon = style === 'rating' ? node.options?.['icon'] : 'number';

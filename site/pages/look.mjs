@@ -33,6 +33,7 @@ ${code(
 <h2 id="languages">Four languages</h2>
 <p>Fieldia's own words — Save, Next, validation messages, “Step 2 of 3”, the upload and search prompts — come in English, Arabic, German and French:</p>
 ${code('ts', `mountViewer(host, { page, dataSource, locale: 'ar' });   // 'en' | 'ar' | 'de' | 'fr'`)}
+<p>The packages carry all four. The script tag carries English, and each other language in a small script of its own to add after it — ${c('fieldia.ar.js')}, ${c('fieldia.de.js')}, ${c('fieldia.fr.js')}; see <a href="/start/#script">A script tag</a>.</p>
 <p>Arabic lays the whole form out right to left. Pass ${c("dir: 'rtl'")} or ${c("dir: 'ltr'")} to choose the direction yourself. Any word can be replaced with ${c('labels')}:</p>
 ${code('ts', `mountViewer(host, { page, dataSource, labels: { submit: 'Send my answers' } });`)}
 <p>The page's own text — titles, labels, help, options — is the page author's. To offer a page in several languages, keep one page per language, or generate the page in the reader's language on your server.</p>

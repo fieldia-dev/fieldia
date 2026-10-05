@@ -19,8 +19,8 @@ export function maker(document: Document): Make {
   };
 }
 
-/** The words a widget shows: the page's, or English. */
-export const wordsFor = (labels: WidgetLabels | undefined, locale: Locale | undefined): WidgetLabels => labels ?? WIDGET_LABELS[locale ?? 'en'];
+/** The words a widget shows: the page's, its language's, or English (a language the one-tag script was not given). */
+export const wordsFor = (labels: WidgetLabels | undefined, locale: Locale | undefined): WidgetLabels => labels ?? WIDGET_LABELS[locale ?? 'en'] ?? WIDGET_LABELS.en;
 
 /** `{name}` and the like filled in. */
 export const fillIn = (template: string, values: Record<string, string | number>) =>
