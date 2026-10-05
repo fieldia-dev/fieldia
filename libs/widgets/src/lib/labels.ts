@@ -118,6 +118,10 @@ export interface WidgetLabels {
   upTo: string;
   /** A ranking: taking the order shown as the answer. */
   keepOrder: string;
+  /** A rating's point, as a screen reader names it: `{n}` of `{max}`. */
+  ofMax: string;
+  /** How many more characters a box with a most takes, said to a screen reader once typing pauses. */
+  charactersLeft: string;
 }
 
 export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
@@ -211,6 +215,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     no: 'No',
     upTo: 'Up to {n}',
     keepOrder: 'Keep this order',
+    ofMax: '{n} of {max}',
+    charactersLeft: 'Characters left: {n}',
   },
   ar: {
     search: 'بحث…',
@@ -302,6 +308,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     no: 'لا',
     upTo: 'حتى {n}',
     keepOrder: 'أبقِ هذا الترتيب',
+    ofMax: '{n} من {max}',
+    charactersLeft: 'الأحرف المتبقية: {n}',
   },
   de: {
     search: 'Suchen…',
@@ -393,6 +401,8 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     no: 'Nein',
     upTo: 'Bis zu {n}',
     keepOrder: 'Diese Reihenfolge behalten',
+    ofMax: '{n} von {max}',
+    charactersLeft: 'Noch {n} Zeichen',
   },
   fr: {
     search: 'Rechercher…',
@@ -484,5 +494,7 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     no: 'Non',
     upTo: 'Jusqu’à {n}',
     keepOrder: 'Garder cet ordre',
+    ofMax: '{n} sur {max}',
+    charactersLeft: 'Caractères restants : {n}',
   },
 };

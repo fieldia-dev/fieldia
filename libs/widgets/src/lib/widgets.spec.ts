@@ -309,10 +309,10 @@ describe('number widgets — typing a number is not one keystroke', () => {
     expect(q<HTMLInputElement>(setup({ type: 'integer' }).el, 'input').inputMode).toBe('numeric');
   });
 
-  it('shows the currency beside a monetary amount', () => {
+  it('shows the currency’s symbol with a monetary amount', () => {
     const { form, el } = setup({ type: 'monetary', currencyField: 'currency_id' });
     form.setValue('currency_id', { id: 1, label: 'EGP' });
-    expect(q<HTMLElement>(el, '.fd-currency').textContent).toBe('EGP');
+    expect(q<HTMLElement>(el, '.fd-currency').textContent).toBe('E£');
   });
 });
 

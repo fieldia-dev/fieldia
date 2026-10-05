@@ -61,8 +61,8 @@ describe('a field’s own settings in the side panel', () => {
     expect([...panel(lines.host).querySelectorAll('button')].filter((b) => b.textContent === 'Add column')).toHaveLength(1);
   });
 
-  it('a short answer has none, and a field from the model keeps its own', () => {
-    const text = picked('short-answer');
+  it('an email has none, and a field from the model keeps its own', () => {
+    const text = picked('email');
     expect((panel(text.host).querySelector('[data-setting="Settings for its kind"]') as HTMLElement | null)?.hidden ?? true).toBe(true);
     const model: Record<string, Field> = { score: { type: 'integer', label: 'Score', min: 1, max: 5 } };
     const designer = createDesigner({ page: blankPage('screen', 'Visit'), model });

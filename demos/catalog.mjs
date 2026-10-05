@@ -87,9 +87,11 @@ export const DEMOS = [
     name: 'Office move',
     category: 'fields',
     query: 'page=kinds&skin=outlined',
-    blurb: 'The newer kinds of question in one survey: sliders, a tag box, an address, choices with pictures, a ranking, a group that repeats, a quiz question with points, and a signature.',
+    blurb: 'The newer kinds of question in one survey: sliders, a tag box, an address, choices with pictures, a ranking, a group that repeats, a quiz question with points, and a signature — and a moving day with a day that keeps its limits, a time, a weight in kilograms, hearts and an NPS scale.',
     howTo: [
       'Drag a slider, or move it with the arrow keys: its value shows beside it.',
+      'On Moving day, pick a Friday, or a day three months away: each is refused, saying why.',
+      'Type a phone number with too few digits and leave it: it says how to write one.',
       'Pick a desk by its picture, then put what matters most in order by dragging, or with Alt and the arrow keys.',
       'Add a person who moves with you: each one is a small card of its own.',
       'Sign with the mouse or a finger, or type your name instead.',

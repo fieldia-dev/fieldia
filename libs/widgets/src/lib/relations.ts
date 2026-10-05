@@ -376,7 +376,7 @@ function drawChips(chips: HTMLElement, records: RelatedRecord[], readonly: boole
  * Free-text tags on a text field, kept as "oak, glass": Enter or a comma adds
  * what was typed, Backspace in an empty box takes the last one away, and the
  * node's `options.suggestions` are offered as you type. `options.separator`
- * is "," unless set.
+ * is "," unless set; with `options.max`, the box goes once there are as many.
  */
 export const charTagsWidget: WidgetFactory = ({ form, name, node, id, document, labels = WIDGET_LABELS.en }) => {
   const options = node.options ?? {};
@@ -389,7 +389,7 @@ export const charTagsWidget: WidgetFactory = ({ form, name, node, id, document, 
   const add = (raw: string) => {
     const tag = raw.trim();
     const tags = current();
-    if (tag && !tags.some((t) => t.toLowerCase() === tag.toLowerCase())) write([...tags, tag]);
+    if (tag && !tags.some((t) => t.toLowerCase() === tag.toLowerCase()) && !(tags.length >= (options['max'] as number))) write([...tags, tag]);
   };
 
   const element = document.createElement('div');
@@ -444,14 +444,17 @@ export const charTagsWidget: WidgetFactory = ({ form, name, node, id, document, 
     update(state) {
       const tags = split(state.value);
       box.setReadonly(state.readonly);
-      box.element.hidden = state.readonly;
+      box.element.hidden = state.readonly || tags.length >= (options['max'] as number);
       box.input.setAttribute('aria-invalid', String(state.invalid));
       if (state.describedBy) box.input.setAttribute('aria-describedby', state.describedBy);
       const key = JSON.stringify([state.readonly, tags]);
       if (key === drawn) return;
       drawn = key;
+      const typing = document.activeElement === box.input;
       drawChips(chips, tags.map((t) => ({ id: t, label: t })), state.readonly, labels, (record) => write(current().filter((t) => t !== record.label)));
       box.setText('');
+      // The box gone at the most, the cursor stays in the keywords: on the last one's ×.
+      if (typing && box.element.hidden) chips.querySelector<HTMLButtonElement>('li:last-child button')?.focus();
     },
   };
 };

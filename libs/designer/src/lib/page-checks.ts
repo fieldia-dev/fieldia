@@ -1,6 +1,7 @@
 import { validatePage, type Field, type FieldNode, type Page } from '@fieldia/core';
 import { readCondition, type Condition } from './conditions';
 import { kindById, kindOfField } from './kinds';
+import { inputChanges } from './input-changes';
 import { holderName as placeName, layoutChanges, lookChanges, placements } from './layout-changes';
 import { isWrapper } from './layout-tree';
 import { containers, type Container } from './page-tree';
@@ -279,10 +280,11 @@ export function pageChanges(before: Page | null, after: Page): string[] {
       if (!added.length && !gone.length && JSON.stringify(was.field.options) !== JSON.stringify(p.field.options)) out.push(`“${name}”: its options changed`);
       if (!was.field.other !== !p.field.other) out.push(p.field.other ? `“${name}”: takes an answer of its own (“Other”)` : `“${name}”: no longer takes an answer of its own`);
     }
+    const settings = inputChanges(name, was, p);
+    out.push(...settings.lines);
     out.push(...fileChanges(name, was, p));
-    // How it shows, beyond what the files' own words said.
-    const howShown = (q: typeof p) => JSON.stringify(Object.entries(q.node.options ?? {}).filter(([key]) => !isFiles(q.field) || (key !== 'files' && key !== 'camera')));
-    if (howShown(was) !== howShown(p)) out.push(`“${name}”: how it shows changed`);
+    // How it shows, beyond what the files' own words and the inputs' said.
+    if (settings.unsaid.some((key) => !isFiles(p.field) || (key !== 'files' && key !== 'camera'))) out.push(`“${name}”: how it shows changed`);
     const shows = whenItShows(name, was.node.invisible, p.node.invisible, answers);
     if (shows) out.push(shows);
     if (was.holder.id !== p.holder.id && !layout.said.has(p.node.id)) out.push(`Moved “${name}” to “${placeName(after, p.holder)}”`);

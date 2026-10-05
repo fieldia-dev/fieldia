@@ -4,6 +4,7 @@ import { columnsEditor } from './columns-editor';
 import type { Designer } from './designer';
 import { kindOfField } from './kinds';
 import { kindSettings } from './kind-settings';
+import { inputSettings } from './kind-settings-inputs';
 
 /**
  * What a kind of field has beyond its words, set in the picked field itself,
@@ -190,6 +191,12 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
       standsIn = more?.standsIn ?? false;
       if (more) refresh = more.refresh;
     }
+    // The text, number and date kinds' own, after the rest of their kind's.
+    const inputs = inputSettings(el, designer, id, kind);
+    if (!inputs) return;
+    element.append(...inputs.elements);
+    const before = refresh;
+    refresh = (page, node) => (before(page, node), inputs.refresh(page, node));
   }
 
   return {

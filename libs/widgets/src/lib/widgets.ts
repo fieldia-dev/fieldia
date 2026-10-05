@@ -31,8 +31,11 @@ import { imageChoiceWidget } from './choice-images';
 import { rankingWidget } from './ranking';
 import { addressWidget } from './address';
 import { cardsWidget } from './cards';
-import { clearSelection, maker, setAttr, setText } from './kind-parts';
+import { clearSelection, fillIn, maker, setAttr, setText } from './kind-parts';
 import { shownOptions } from './shuffle';
+import { bounds, counted, grower } from './limits';
+import { currencySymbol } from './units';
+import { drawIcon } from './icons';
 import { listChoices } from './choices-from';
 import { yesNoWidget } from './yes-no';
 import { layOut, limiter } from './choice-rules';
@@ -144,12 +147,15 @@ function describe(element: HTMLElement, state: WidgetState) {
 const textOf = (value: Value | undefined) => (value === null || value === undefined ? '' : String(value));
 
 function textWidget(inputType: string): WidgetFactory {
-  return ({ form, name, field, node, id, document }) => {
-    const input = make(document, 'input', { id, type: inputType, class: 'fd-input', autocomplete: 'off' });
+  return (context) => {
+    const { form, name, field, node, id, document } = context;
+    // A person's own email, phone or web address, the browser may offer.
+    const input = make(document, 'input', { id, type: inputType, class: 'fd-input', autocomplete: /^(email|tel|url)$/.test(inputType) ? inputType : 'off' });
     if (field.type === 'char' && field.size !== undefined) input.maxLength = field.size;
+    if (inputType === 'time') bounds(input, field, node);
     if (node.placeholder) input.placeholder = node.placeholder;
     input.addEventListener('input', () => form.setValue(name, input.value === '' ? null : input.value));
-    return {
+    return counted({
       element: input,
       focus: () => input.focus(),
       update(state) {
@@ -158,25 +164,33 @@ function textWidget(inputType: string): WidgetFactory {
         if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
         describe(input, state);
       },
-    };
+    }, context, input);
   };
 }
 
-const textareaWidget: WidgetFactory = ({ form, name, field, node, id, document }) => {
+const textareaWidget: WidgetFactory = (context) => {
+  const { form, name, field, node, id, document } = context;
   const area = make(document, 'textarea', { id, class: 'fd-input fd-textarea', rows: '3' });
   if (field.type === 'text' && field.size !== undefined) area.maxLength = field.size;
   if (node.placeholder) area.placeholder = node.placeholder;
-  area.addEventListener('input', () => form.setValue(name, area.value === '' ? null : area.value));
-  return {
+  const grow = grower(area, node);
+  area.addEventListener('input', () => {
+    grow();
+    form.setValue(name, area.value === '' ? null : area.value);
+  });
+  return counted({
     element: area,
     focus: () => area.focus(),
     update(state) {
       const text = textOf(state.value);
-      if (area.value !== text) area.value = text;
+      if (area.value !== text) {
+        area.value = text;
+        grow();
+      }
       if (area.readOnly !== state.readonly) area.readOnly = state.readonly;
       describe(area, state);
     },
-  };
+  }, context, area);
 };
 
 const NUMBER = /^-?(\d+\.?\d*|\.\d+)$/;
@@ -223,12 +237,18 @@ const numberWidget: WidgetFactory = (context) => {
       : null;
   if (picker && currencyDef) picker.element.querySelector('input, select')?.setAttribute('aria-label', currencyDef.label);
   if (picker?.element.matches('input, select') && currencyDef) picker.element.setAttribute('aria-label', currencyDef.label);
-  const currency = field.type === 'monetary' && !picker ? make(document, 'span', { class: 'fd-currency', 'aria-hidden': 'true' }) : null;
-  const side = picker?.element ?? currency;
-  const after = options['symbol'] === 'after';
-  const element = side
-    ? make(document, 'span', { class: `fd-number${after ? ' fd-currency-after' : ''}${picker ? ' fd-currency-picked' : ''}` }, ...(after ? [input, side] : [side, input]))
-    : input;
+  // Inside the box: the currency where the page's language writes it, unless the page says before or after; a number's unit (options.prefix, options.suffix).
+  const after = options['symbol'] ? options['symbol'] === 'after' : field.type === 'monetary' && currencySymbol(field.currency ?? 'USD', locale).after;
+  const unit = (text: string, n: number) => make(document, 'span', { class: `fd-unit${field.type === 'monetary' ? ' fd-currency' : ''}`, id: `${id}-unit${n}` }, text);
+  const currency = field.type === 'monetary' && !picker ? unit('', 0) : null;
+  const [prefix, suffix] = ['prefix', 'suffix'].map((key, n) => (typeof options[key] === 'string' && options[key] ? unit(options[key] as string, n + 1) : null));
+  const first = (after ? null : (picker?.element ?? currency)) ?? prefix;
+  const last = (after ? (picker?.element ?? currency) : null) ?? suffix;
+  const units = [first, last].filter((u): u is HTMLElement => !!u && u !== picker?.element);
+  const element =
+    first || last
+      ? make(document, 'span', { class: `fd-number${after ? ' fd-currency-after' : ''}${picker ? ' fd-currency-picked' : ''}` }, ...[first, input, last].filter((u): u is HTMLElement => !!u))
+      : input;
 
   return {
     element,
@@ -242,14 +262,17 @@ const numberWidget: WidgetFactory = (context) => {
         if (input.value !== text) input.value = text;
       }
       if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
-      describe(input, state);
+      describe(input, { ...state, describedBy: [state.describedBy, ...units.map((u) => u.id)].filter(Boolean).join(' ') });
       if (picker && currencyField) {
         picker.update({ value: state.values[currencyField], values: state.values, readonly: state.readonly, required: false, invalid: false });
       }
       if (currency && field.type === 'monetary') {
         const holder = field.currencyField ? state.values[field.currencyField] : null;
-        setText(currency, holder && typeof holder === 'object' && 'label' in holder ? (holder as RelatedRecord).label : (typeof holder === 'string' ? holder : field.currency ?? ''));
+        const code = holder && typeof holder === 'object' && 'label' in holder ? (holder as RelatedRecord).label : (typeof holder === 'string' ? holder : field.currency ?? '');
+        setText(currency, /^[A-Z]{3}$/.test(code) ? currencySymbol(code, locale).text : code);
       }
+      // Room in the box for its units, as wide as their words.
+      for (const [u, side] of [[first, 'start'], [last, 'end']] as const) if (u && units.includes(u)) input.style.setProperty(`padding-inline-${side}`, `calc(var(--fd-pad-x) + ${u.textContent?.length ?? 0}ch + 4px)`);
     },
   };
 };
@@ -388,17 +411,26 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
   };
 }
 
-/** Stars or numbers to pick from, as a radio group with arrow-key support. */
+/**
+ * Stars or numbers to pick from, as a radio group with arrow-key support. A
+ * rating shows `options.icon`: stars, "heart", "thumb" up, or "number"s that
+ * mark only the one picked, as a scale's do.
+ */
 function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
   return ({ form, name, field, node, id, document, labels, locale }) => {
     const words = labels ?? WIDGET_LABELS[locale ?? 'en'];
-    const min = 'min' in field && field.min !== undefined ? field.min : style === 'rating' ? 1 : 0;
-    const max = 'max' in field && field.max !== undefined ? field.max : style === 'rating' ? 5 : 10;
-    const group = make(document, 'div', { id, class: `fd-points fd-${style}`, role: 'radiogroup' });
+    const min = 'min' in field && typeof field.min === 'number' ? field.min : style === 'rating' ? 1 : 0;
+    const max = 'max' in field && typeof field.max === 'number' ? field.max : style === 'rating' ? 5 : 10;
+    const icon = style === 'rating' ? node.options?.['icon'] : 'number';
+    const filling = icon !== 'number';
+    // A 0–10 scale coloured as NPS (options.nps): 0–6, 7–8 and 9–10 apart, in red, amber and green.
+    const nps = style === 'scale' && node.options?.['nps'] === true && min === 0 && max === 10;
+    const group = make(document, 'div', { id, class: `fd-points fd-${filling ? 'rating' : 'scale'}${filling ? ` fd-rating-${icon ?? 'star'}` : ''}${nps ? ' fd-nps' : ''}`, role: 'radiogroup' });
     const points: HTMLButtonElement[] = [];
     for (let n = min; n <= max; n++) {
-      const point = make(document, 'button', { type: 'button', role: 'radio', 'aria-label': `${n} of ${max}`, 'data-value': String(n) }, style === 'rating' ? '★' : String(n));
+      const point = make(document, 'button', { type: 'button', role: 'radio', 'aria-label': fillIn(words.ofMax, { n, max }), 'data-value': String(n) }, icon === 'thumb' ? (drawIcon(document, 'thumb') as SVGSVGElement) : icon === 'heart' ? '♥' : filling ? '★' : String(n));
       if (style === 'scale') point.removeAttribute('aria-label');
+      if (nps) point.dataset['tone'] = n < 7 ? 'low' : n < 9 ? 'mid' : 'high';
       point.addEventListener('click', () => form.setValue(name, n));
       points.push(point);
       group.append(point);
@@ -413,8 +445,8 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
       form.setValue(name, next);
       points[next - min]?.focus();
     });
-    // A scale's ends in words, under its first and last points: "Not likely" … "Very likely".
-    const ends = style === 'scale' ? [node.options?.['startLabel'], node.options?.['endLabel']].map((v) => (typeof v === 'string' ? v : '')) : ['', ''];
+    // The ends in words, under the first and last points: "Not likely" … "Very likely".
+    const ends = [node.options?.['startLabel'], node.options?.['endLabel']].map((v) => (typeof v === 'string' ? v : ''));
     const clear = clearSelection(document, words, () => {
       form.setValue(name, null);
       points[0]?.focus();
@@ -431,7 +463,7 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
         points.forEach((point, i) => {
           const n = min + i;
           setAttr(point, 'aria-checked', String(n === value));
-          point.classList.toggle('fd-on', style === 'rating' ? value !== null && n <= value : n === value);
+          point.classList.toggle('fd-on', filling ? value !== null && n <= value : n === value);
           const tab = n === value || (value === null && i === 0) ? 0 : -1;
           if (point.tabIndex !== tab) point.tabIndex = tab;
           if (point.disabled !== state.readonly) point.disabled = state.readonly;
@@ -445,8 +477,9 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
 }
 
 const dateWidget: WidgetFactory = (context) => {
-  const { form, name, id, document, node } = context;
+  const { form, name, field, id, document, node } = context;
   const input = make(document, 'input', { id, type: 'date', class: 'fd-input fd-date' });
+  bounds(input, field, node);
   input.addEventListener('input', () => form.setValue(name, input.value || null));
   const widget: Widget = {
     element: input,
@@ -465,8 +498,9 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 /** Shown in local time, stored as an ISO instant in UTC. */
 const dateTimeWidget: WidgetFactory = (context) => {
-  const { form, name, id, document, node } = context;
+  const { form, name, field, id, document, node } = context;
   const input = make(document, 'input', { id, type: 'datetime-local', class: 'fd-input fd-datetime' });
+  bounds(input, field, node);
   const local = (iso: Value | undefined) => {
     if (typeof iso !== 'string' || !iso) return '';
     const d = new Date(iso);
@@ -530,6 +564,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'char.phone': textWidget('tel'),
   'char.url': textWidget('url'),
   'char.password': textWidget('password'),
+  'char.time': textWidget('time'),
   'char.tags': charTagsWidget,
   text: textareaWidget,
   integer: numberWidget,

@@ -22,6 +22,7 @@ import { findHeaderPart, headerCommands, type HeaderCommands } from './header-co
 import { listCommands, type ListCommands } from './list-commands';
 import { kindCommands, type OptionDetails } from './kind-commands';
 import { choiceCommands, type ChoiceCommands } from './choice-commands';
+import { inputCommands, type InputCommands } from './input-commands';
 import { fixCheck, pageChecks, type PageCheck } from './page-checks';
 import { COLUMN_TYPES, columnKind, kindById, kindFits, kindOfField, kindsFor, orList, registerKinds, storedAs, type LineColumn, type QuestionKind } from './kinds';
 import type { AppKind } from './app-kinds';
@@ -204,7 +205,7 @@ export interface ModelField {
   field: Field;
 }
 
-export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands {
+export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, InputCommands {
   getPage(): Page;
   /** The model's fields not on the page yet, in the model's order. Empty without a model. */
   modelFields(): ModelField[];
@@ -626,12 +627,14 @@ export function createDesigner(options: {
 
   const kinds = kindCommands({ apply, fromModel });
   const choices = choiceCommands({ apply, fromModel });
+  const inputs = inputCommands({ apply, fromModel });
 
   const designer: Designer = {
     ...header,
     ...list,
     ...kinds,
     ...choices,
+    ...inputs,
     getPage: () => page,
     modelFields() {
       const shown = shownFields(page);

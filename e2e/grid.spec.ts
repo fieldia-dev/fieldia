@@ -357,12 +357,13 @@ for (const variant of VARIANTS) {
       expect((await lines(page)).map((l) => l['sequence'])).toEqual([10, 20, 30, 40, 50, 60]);
       expect((await lines(page))[NOTE]['product_id']).toEqual({ id: 2, label: 'Desk lamp, LED' });
     });
-    test('the order total shows its currency after the amount', async ({ page }) => {
+    test('the order total shows its currency’s symbol after the amount, inside its box', async ({ page }) => {
       const total = page.locator('[data-node="f-total"]');
       const amount = (await total.locator('input').boundingBox())!;
       const currency = (await total.locator('.fd-currency').boundingBox())!;
-      await expect(total.locator('.fd-currency')).toHaveText('EGP');
-      expect(currency.x).toBeGreaterThan(amount.x + amount.width - 1);
+      await expect(total.locator('.fd-currency')).toHaveText('E£');
+      expect(currency.x).toBeGreaterThan(amount.x + amount.width / 2);
+      expect(currency.x + currency.width).toBeLessThanOrEqual(amount.x + amount.width + 1);
       // The amount ends right beside its currency, not across the row from it.
       const textEnd = await total.locator('input').evaluate((el: HTMLInputElement) => {
         const probe = document.createElement('span');
@@ -376,6 +377,8 @@ for (const variant of VARIANTS) {
         return cs.textAlign === 'end' || cs.textAlign === 'right' ? box.right - parseFloat(cs.paddingRight) : box.left + parseFloat(cs.paddingLeft) + width;
       });
       expect(currency.x - textEnd).toBeLessThanOrEqual(24);
+      // Never over it.
+      expect(currency.x - textEnd).toBeGreaterThanOrEqual(0);
     });
 
     test('a totals row adds up quantity and subtotal, leaving sections and notes out, and follows a change as it is typed', async ({ page }) => {

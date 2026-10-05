@@ -53,13 +53,13 @@ describe('a scale’s ends in words', () => {
     expect(nodeOf(designer.getPage(), q).options).toBeUndefined();
   });
 
-  it('takes words typed letter by letter back in one undo, and says how it shows changed', () => {
+  it('takes words typed letter by letter back in one undo, and says what they are', () => {
     const designer = createDesigner({ page: blankPage('survey', 'Feedback') });
     const q = designer.addQuestion('scale') as string;
     const before = designer.getPage();
     designer.setWidgetOptions(q, { startLabel: 'N' });
     designer.setWidgetOptions(q, { startLabel: 'No' });
-    expect(pageChanges(before, designer.getPage())).toEqual(['“Untitled question”: how it shows changed']);
+    expect(pageChanges(before, designer.getPage())).toEqual(['“Untitled question”: “No” at the start']);
     designer.undo();
     expect(nodeOf(designer.getPage(), q).options).toBeUndefined();
   });

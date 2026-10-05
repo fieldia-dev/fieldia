@@ -6,6 +6,7 @@ import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import type { ExpressionEnv } from '../expression/functions';
 import { localDay } from '../expression/functions';
 import { checkValue } from './check';
+import { checkInput } from './inputs';
 import { compileComputed } from './compute';
 import { compileSetWhen } from './set-when';
 import { checkRules, compileRules, type CompiledRule } from './rules';
@@ -209,7 +210,7 @@ export function createForm(options: FormOptions): Form {
   const computed = compileComputed(page, today);
   const setWhen = compileSetWhen(page, today);
 
-  let baseline: Values = computed.apply({ ...initialValues(page.fields), ...structuredCopy(options.values ?? {}) });
+  let baseline: Values = computed.apply({ ...initialValues(page.fields, today()), ...structuredCopy(options.values ?? {}) });
   /** The setWhen conditions holding for the values as they last settled: one starts to hold only against these. */
   let holding = setWhen.holding(baseline);
   let state: FormState = {
@@ -362,7 +363,7 @@ export function createForm(options: FormOptions): Form {
   /** A field node's error now: its field's own rules first, then its answer rules. */
   function nodeError(node: IndexedNode): string | undefined {
     const name = node.field as string;
-    return unticked(node) ?? checkValue(checked(name), state.values[name], nodeState(node.id).required, messages) ?? ruleCheck(node).error;
+    return unticked(node) ?? checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages) ?? checkValue(checked(name), state.values[name], nodeState(node.id).required, messages, today()) ?? ruleCheck(node).error;
   }
 
   /** Warnings for the visible fields of the page, without publishing them. */
@@ -402,7 +403,7 @@ export function createForm(options: FormOptions): Form {
           const kind = lineKind(def, line.values);
           for (const [sub, subDef] of Object.entries(def.fields)) {
             if (kind && sub !== def.lineKinds?.text) continue;
-            const lineMessage = checkValue(subDef, line.values[sub], subDef.required === true, messages);
+            const lineMessage = checkValue(subDef, line.values[sub], subDef.required === true, messages, today());
             if (lineMessage) errors[`${name}.${line.key}.${sub}`] = lineMessage;
           }
         }
@@ -650,7 +651,7 @@ export function createForm(options: FormOptions): Form {
     set({ status: 'loading', error: null });
     try {
       const loaded = await source.load({ model: page.data.model, id: state.recordId, fields: page.fields });
-      baseline = startFrom({ ...initialValues(page.fields), ...loaded });
+      baseline = startFrom({ ...initialValues(page.fields, today()), ...loaded });
       set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings) });
       offerDraft();
     } catch (error) {
@@ -686,7 +687,10 @@ export function createForm(options: FormOptions): Form {
       // Only a field someone can see is asked anything, and required wherever it is shown so.
       const shown = visibleFieldNodes().filter((node) => node.field === name);
       if (!shown.length) return null;
-      const own = shown.map(unticked).find(Boolean) ?? checkValue(checked(name), state.values[name], shown.some((node) => nodeState(node.id).required), messages);
+      const own =
+        shown.map(unticked).find(Boolean) ??
+        shown.map((node) => checkInput(page.fields[name], node.source as FieldNode, state.values[name], messages)).find(Boolean) ??
+        checkValue(checked(name), state.values[name], shown.some((node) => nodeState(node.id).required), messages, today());
       return own ?? shown.map((node) => ruleCheck(node).error).find((error) => error !== undefined) ?? null;
     },
 
@@ -711,7 +715,7 @@ export function createForm(options: FormOptions): Form {
       const def = lineField(field);
       const key = `new-${++lineKeys}`;
       const current = (state.values[field] as Line[] | null) ?? [];
-      const line: Line = { key, values: { ...initialValues(def.fields as Record<string, LineField>), ...structuredCopy(values) } };
+      const line: Line = { key, values: { ...initialValues(def.fields as Record<string, LineField>, today()), ...structuredCopy(values) } };
       // A new line comes last, so it is numbered after the last.
       if (def.sequenceField && line.values[def.sequenceField] == null) {
         const numbers = current.map((l) => l.values[def.sequenceField as string]).filter((n): n is number => typeof n === 'number');

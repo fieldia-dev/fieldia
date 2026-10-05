@@ -49,21 +49,19 @@ export function kindSettings(el: ElementFactory, designer: Designer, id: string,
   const optionOf = (node: FieldNode, key: string) => node.options?.[key];
 
   function slider(): Part {
-    const from = numberBox('From', { step: '1' });
-    const to = numberBox('To', { step: '1' });
+    const from = numberBox('From', { step: 'any' });
+    const to = numberBox('To', { step: 'any' });
     const step = numberBox('Step', { min: '0', step: 'any' });
     // Saved once a number is typed and left, so a range half typed is not refused.
     const range = () => {
       const min = numberOrNull(from.value);
       const max = numberOrNull(to.value);
-      if (min !== null && max !== null) designer.setRange(id, { min, max });
+      if (min !== null && max !== null) designer.setLimits(id, { min, max });
     };
     from.addEventListener('change', range);
     to.addEventListener('change', range);
-    step.addEventListener('change', () => {
-      const n = numberOrNull(step.value);
-      designer.setWidgetOptions(id, { step: n !== null && n > 0 && n !== 1 ? n : null });
-    });
+    // A step with decimals makes the field a decimal, so the values it reaches are ones the field takes.
+    step.addEventListener('change', () => designer.setStep(id, numberOrNull(step.value)));
     return {
       element: el('div', { class: 'fd-inline-row' }, word('From', from), word('to', to), word('Step', step)),
       standsIn: false,

@@ -1,4 +1,5 @@
 import type { Field, LineField } from '../format/field';
+import { checkDay } from './limits';
 import { fill, MESSAGES, type Messages } from './messages';
 import { isEmpty, type FileValue, type ReferenceValue, type RelatedRecord, type Value } from './values';
 
@@ -14,7 +15,9 @@ export function checkValue(
   field: Field | LineField,
   value: Value | undefined,
   required: boolean,
-  messages: Messages = MESSAGES.en
+  messages: Messages = MESSAGES.en,
+  /** The day it is, for a date's limits counted from today. The computer's own when left out. */
+  today?: string
 ): string | undefined {
   const label = field.label || 'This field';
   const say = (key: keyof Messages, values: Record<string, string | number> = {}) => fill(messages[key], { label, ...values });
@@ -49,9 +52,9 @@ export function checkValue(
     case 'boolean':
       return typeof value === 'boolean' ? undefined : say('boolean');
     case 'date':
-      return checkDate(value, say);
+      return checkDate(value, say) ?? checkDay(field, value as string, today, messages);
     case 'datetime':
-      return checkDateTime(value, say);
+      return checkDateTime(value, say) ?? checkDay(field, value as string, today, messages);
     case 'selection': {
       // The app's list, not loaded: nothing to say a choice is not one of it.
       if (field.optionsFrom) return undefined;
