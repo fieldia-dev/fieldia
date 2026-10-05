@@ -60,6 +60,7 @@ test.describe('the structures on “Office move”', () => {
     await expect(sign.locator('img.fd-signature-image')).toBeVisible();
     expect(await valueOf(page, 'signature')).toMatchObject({ name: 'my-signature.png', type: 'image/png' });
     await screen(page, 'structures-signature-uploaded', { viewport: true });
+    expect(await axeFindings(page, 'a signature uploaded')).toEqual([]);
   });
 
   test('an address: a second line, the parts it must have marked and asked for, the country it starts on, from a list', async ({ page }) => {
@@ -294,6 +295,7 @@ test.describe('the structures’ settings in the screen designer', () => {
     await expect(panel(page).getByLabel('Words under it', { exact: true })).toHaveValue('I agree this is my signature');
     await expect(panel(page).getByRole('button', { name: 'Blue', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await screen(page, 'structures-designer-signature', { viewport: true });
+    expect(await axeFindings(page, 'a signature’s settings, on its card and in the panel')).toEqual([]);
 
     await addField(page, 'address', 'Home address');
     const parts = card(page).getByRole('group', { name: 'Parts of the address' });
@@ -309,6 +311,7 @@ test.describe('the structures’ settings in the screen designer', () => {
     await expect(must.getByRole('button', { name: 'City' })).toHaveAttribute('aria-pressed', 'false');
     await must.getByRole('button', { name: 'City' }).click();
     await screen(page, 'structures-designer-address', { viewport: true });
+    expect(await axeFindings(page, 'an address’s settings, on its card and in the panel')).toEqual([]);
 
     await page.getByRole('button', { name: 'Try it' }).click();
     const tried = page.locator('.fd-try');
@@ -332,6 +335,7 @@ test.describe('the structures’ settings in the screen designer', () => {
     await expect(panel(page).getByRole('button', { name: 'Add up Quantity' })).toHaveAttribute('aria-pressed', 'true');
     await expect(panel(page).getByLabel('Description: shown', { exact: true })).toHaveValue('show');
     await screen(page, 'structures-designer-lines', { viewport: true });
+    expect(await axeFindings(page, 'a table’s settings, on its card and in the panel')).toEqual([]);
     // Its settings stand in for the table while it is picked; let go, the card shows the table as it will be used.
     await page.keyboard.press('Escape');
     const lines = page.locator('.fd-canvas-field', { has: page.locator('.fd-lines') });
@@ -349,6 +353,7 @@ test.describe('the structures’ settings in the screen designer', () => {
     expect(tags.filter).toEqual([{ field: 'active', op: '=', value: true }]);
     await expect(panel(page).getByLabel('Only where', { exact: true })).toHaveValue('active');
     await screen(page, 'structures-designer-links', { viewport: true });
+    expect(await axeFindings(page, 'a link’s settings')).toEqual([]);
 
     await addField(page, 'rich-text', 'Notes');
     await expect(card(page).locator('.fd-richtext-bar')).toBeVisible();
@@ -400,6 +405,7 @@ test.describe('a picture’s settings in the screen designer', () => {
     expect(wide).toBeLessThanOrEqual(321);
     expect(wide).toBeGreaterThan(200);
     await screen(page, 'structures-designer-picture', { viewport: true });
+    expect(await axeFindings(page, 'a picture’s panel')).toEqual([]);
     await page.getByRole('button', { name: 'Try it' }).click();
     const figure = page.locator('.fd-try figure.fd-figure');
     await expect(figure.locator('figcaption')).toHaveText('The new floor');
