@@ -8,7 +8,7 @@ import { displayValue } from './display';
  */
 
 const money = (extra: Partial<LineField> = {}) => ({ type: 'monetary', label: 'Amount', ...extra }) as LineField;
-const plain = (text: string) => text.replace(/[‎‏  ]/g, (c) => (c === ' ' || c === ' ' ? ' ' : ''));
+const plain = (text: string) => text.replace(/[\u200e\u200f\u00a0\u202f]/g, (c) => (c === '\u00a0' || c === '\u202f' ? ' ' : ''));
 
 describe('an amount at rest', () => {
   it('wears its currency’s symbol where the page’s language writes it, as its box does', () => {
