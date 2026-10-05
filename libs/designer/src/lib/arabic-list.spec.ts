@@ -11,13 +11,14 @@ const model: Record<string, Field> = {
   credit_limit: { type: 'monetary', label: 'حد الائتمان', currency: 'EGP' },
 };
 
-function visit(lang = 'ar') {
+/** A list begun in an Arabic designer, so written in Arabic; or the same page said to be in English. */
+function visit(language = 'ar') {
   const designer = createDesigner({ page: blankPage('list', 'العملاء', { locale: 'ar' }), model, locale: 'ar' });
+  if (language !== 'ar') designer.setPageLanguage(language);
   designer.addColumn('state');
   designer.select(null);
   const host = document.createElement('div');
-  host.lang = lang;
-  host.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  host.dir = language === 'ar' ? 'rtl' : 'ltr';
   document.body.append(host);
   const handle = mountScreenEditor(host, { designer });
   return { designer, host, handle };
@@ -29,6 +30,7 @@ afterEach(() => document.body.replaceChildren());
 describe('a list page, in Arabic', () => {
   it('says the designer’s words on the canvas in Arabic, and the viewer’s in the page’s language', () => {
     const { host, designer } = visit();
+    expect(designer.getPage().language).toBe('ar');
     designer.select(null);
     const search = host.querySelector('.fd-canvas-search') as HTMLElement;
     expect(search.getAttribute('aria-label')).toBe('البحث وعوامل التصفية');

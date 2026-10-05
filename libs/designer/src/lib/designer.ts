@@ -100,16 +100,20 @@ const slug = (text: string, sep = '_', empty = 'page') =>
  * A page with nothing on it yet, titled: a survey with its first page, a
  * screen with its first section, a sheet with its record's name, a list with
  * its column. What it names (Page 1, Section 1) is in the designer's
- * language (`locale`), English unless said.
+ * language (`locale`), English unless said; and a page begun in another
+ * language is written in it (`language`), so its form speaks it too.
  */
 export function blankPage(kind: PageKind, title: string, options: { locale?: string } = {}): Page {
-  const w = DESIGNER_WORDS[designerLocale(options.locale) ?? 'en'].defaults;
+  const locale = designerLocale(options.locale) ?? 'en';
+  const w = DESIGNER_WORDS[locale].defaults;
   const id = slug(title, '-');
+  const written = locale === 'en' ? {} : { language: locale };
   if (kind === 'survey') {
     return {
       fieldia: '0.1',
       id,
       title,
+      ...written,
       data: { kind: 'responses' },
       fields: {},
       layout: { type: 'wizard', id: 'steps', children: [{ type: 'step', id: 'step-1', label: w.page(1), children: [] }] },
@@ -121,6 +125,7 @@ export function blankPage(kind: PageKind, title: string, options: { locale?: str
       fieldia: '0.1',
       id,
       title,
+      ...written,
       data: { kind: 'record', model: slug(title, '.') },
       fields: { name: { type: 'char', label: w.name } },
       layout: { type: 'list', id: 'list', columns: ['name'] },
@@ -132,6 +137,7 @@ export function blankPage(kind: PageKind, title: string, options: { locale?: str
       fieldia: '0.1',
       id,
       title,
+      ...written,
       data: { kind: 'record', model: slug(title, '.') },
       fields: { name: { type: 'char', label: w.name, required: true } },
       layout: { type: 'sheet', id: 'sheet', title: { field: 'name', placeholder: w.name }, children: [{ type: 'section', id: 'section-1', columns: 2, children: [] }] },
@@ -141,6 +147,7 @@ export function blankPage(kind: PageKind, title: string, options: { locale?: str
     fieldia: '0.1',
     id,
     title,
+    ...written,
     data: { kind: 'record', model: slug(title, '.') },
     fields: {},
     layout: { type: 'sections', id: 'sections', children: [{ type: 'section', id: 'section-1', title: w.section(1), columns: 2, children: [] }] },
@@ -1389,7 +1396,7 @@ export function createDesigner(options: {
     ...rulesCommands({ apply, getPage: () => page, fromModel }),
     // extend lane
     appKinds: () => [...appKinds],
-    templates: () => templatesFor(page, options.templates, words),
+    templates: () => templatesFor(page, options.templates, locale ?? 'en'),
     replacePage(next) {
       return apply((draft) => replaceWith(draft, next), null, () => {
         selected = null;

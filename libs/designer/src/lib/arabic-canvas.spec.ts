@@ -77,6 +77,33 @@ describe('the screen drawn, in Arabic', () => {
     expect([...host.querySelectorAll('.fd-menu .fd-menu-label')].map((l) => l.textContent)).toContain('الصف كله');
   });
 
+  it('draws each field’s own words in the page’s language: a page begun in Arabic is written in Arabic', () => {
+    const { designer } = visit();
+    expect(designer.getPage().language).toBe('ar');
+    designer.updateQuestion(designer.addQuestion('yes-no', { parent: 'section-1' }) as string, { label: 'تم؟' });
+    designer.updateQuestion(designer.addQuestion('image', { parent: 'section-1' }) as string, { label: 'الصور' });
+    const { host } = mount(designer);
+    expect([...host.querySelectorAll('.fd-yes-no button')].map((b) => b.textContent)).toEqual(['نعم', 'لا']);
+    expect(host.querySelector('.fd-canvas .fd-button')?.textContent).toBe('إضافة صورة');
+    designer.setPageLanguage('en');
+    expect([...host.querySelectorAll('.fd-yes-no button')].map((b) => b.textContent)).toEqual(['Yes', 'No']);
+  });
+
+  it('offers Find anything’s ways in, in Arabic, and names a new section in Arabic', () => {
+    const { designer, ids } = visit();
+    designer.select(ids['customer']);
+    const { host } = mount(designer, { mode: 'advanced' });
+    press('k', { metaKey: true }, document.body);
+    const found = [...host.querySelectorAll('.fd-find-option')].map((o) => [o.querySelector('.fd-find-label')?.textContent, o.querySelector('.fd-find-hint')?.textContent]);
+    expect(found).toContainEqual(['إضافة حقل: إجابة قصيرة', 'حقل جديد']);
+    expect(found).toContainEqual([`الانتقال إلى ${q('العميل')}`, 'القسم 1']);
+    expect(found).toContainEqual(['إضافة قسم', 'التخطيط']);
+    const add = [...host.querySelectorAll<HTMLElement>('.fd-find-option')].find((o) => o.querySelector('.fd-find-label')?.textContent === 'إضافة قسم') as HTMLElement;
+    add.click();
+    const sections = (designer.getPage().layout as { children: SectionNode[] }).children;
+    expect(sections[sections.length - 1].title).toBe('القسم 2');
+  });
+
   it('says a key’s move in Arabic, after the part’s name', () => {
     const { designer, ids } = visit();
     designer.select(ids['customer']);

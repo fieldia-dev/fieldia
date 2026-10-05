@@ -1,6 +1,6 @@
 import { checkPage, validatePage, type Field, type FieldNode, type JsonValue, type Page } from '@fieldia/core';
 import { kindById } from './kinds';
-import type { DesignerWords } from './designer-words';
+import { DESIGNER_WORDS, type DesignerLocale, type DesignerWords } from './designer-words';
 import { en } from './locales/en';
 import { Refusal } from './refusal';
 
@@ -42,7 +42,7 @@ const valueOf = (words: string) => words.toLowerCase().replace(/[^a-z0-9]+/g, '_
 const choices = (english: readonly string[], said: readonly string[]) => english.map((label, i) => ({ value: valueOf(label), label: said[i] ?? label }));
 
 /** A template's page: its groups — a survey's pages, a screen's sections — and their questions, each made as its kind makes it. */
-function made(kind: 'survey' | 'screen', id: string, title: string, description: string, groups: [string, Ask[]][], words: DesignerWords): PageTemplate {
+function made(kind: 'survey' | 'screen', id: string, title: string, description: string, groups: [string, Ask[]][], words: DesignerWords, language?: string): PageTemplate {
   const fields: Record<string, Field> = {};
   const nodes = (asks: Ask[]): FieldNode[] =>
     asks.map((a) => {
@@ -59,11 +59,14 @@ function made(kind: 'survey' | 'screen', id: string, title: string, description:
       ? { type: 'wizard', id: 'steps', children: groups.map(([label, asks], i) => ({ type: 'step', id: `step-${i + 1}`, label, children: nodes(asks) })) }
       : { type: 'sections', id: 'sections', children: groups.map(([label, asks], i) => ({ type: 'section', id: `section-${i + 1}`, title: label, columns: 2, children: nodes(asks) })) };
   const data: Page['data'] = kind === 'survey' ? { kind: 'responses' } : { kind: 'record', model: id.replace(/-/g, '.') };
-  return { id, title, description, page: { fieldia: '0.1', id, title, description, data, fields, layout } };
+  // Written in another language than English: the page says so, and its form speaks it.
+  return { id, title, description, page: { fieldia: '0.1', id, title, description, ...(language ? { language } : {}), data, fields, layout } };
 }
 
-/** Fieldia's surveys to start from, in the designer's words. */
-export function surveyTemplates(words: DesignerWords = en): PageTemplate[] {
+/** Fieldia's surveys to start from, in the designer's language. */
+export function surveyTemplates(locale: DesignerLocale = 'en'): PageTemplate[] {
+  const words = DESIGNER_WORDS[locale];
+  const language = locale === 'en' ? undefined : locale;
   const { feedback, event, job } = words.templates;
   const english = en.templates;
   return [
@@ -84,7 +87,8 @@ export function surveyTemplates(words: DesignerWords = en): PageTemplate[] {
           ],
         ],
       ],
-      words
+      words,
+      language
     ),
     made(
       'survey',
@@ -110,7 +114,8 @@ export function surveyTemplates(words: DesignerWords = en): PageTemplate[] {
           ],
         ],
       ],
-      words
+      words,
+      language
     ),
     made(
       'survey',
@@ -138,13 +143,16 @@ export function surveyTemplates(words: DesignerWords = en): PageTemplate[] {
           ],
         ],
       ],
-      words
+      words,
+      language
     ),
   ];
 }
 
-/** Fieldia's screens to start from, in the designer's words. */
-export function screenTemplates(words: DesignerWords = en): PageTemplate[] {
+/** Fieldia's screens to start from, in the designer's language. */
+export function screenTemplates(locale: DesignerLocale = 'en'): PageTemplate[] {
+  const words = DESIGNER_WORDS[locale];
+  const language = locale === 'en' ? undefined : locale;
   const { contact, order } = words.templates;
   return [
     made(
@@ -165,7 +173,8 @@ export function screenTemplates(words: DesignerWords = en): PageTemplate[] {
         ],
         [contact.notes, [ask('notes', 'paragraph', contact.notes, { colspan: 2 })]],
       ],
-      words
+      words,
+      language
     ),
     made(
       'screen',
@@ -194,19 +203,20 @@ export function screenTemplates(words: DesignerWords = en): PageTemplate[] {
           ],
         ],
       ],
-      words
+      words,
+      language
     ),
   ];
 }
 
 /** Fieldia's templates in English, as they always were. */
-export const SURVEY_TEMPLATES: readonly PageTemplate[] = surveyTemplates(en);
-export const SCREEN_TEMPLATES: readonly PageTemplate[] = screenTemplates(en);
+export const SURVEY_TEMPLATES: readonly PageTemplate[] = surveyTemplates('en');
+export const SCREEN_TEMPLATES: readonly PageTemplate[] = screenTemplates('en');
 
 /** The templates for a page: Fieldia's for a survey or a screen, then the app's that are made the same way. */
-export function templatesFor(page: Page, app: readonly PageTemplate[] = [], words: DesignerWords = en): PageTemplate[] {
+export function templatesFor(page: Page, app: readonly PageTemplate[] = [], locale: DesignerLocale = 'en'): PageTemplate[] {
   const survey = page.layout.type === 'wizard';
-  const own = words === en ? (survey ? SURVEY_TEMPLATES : SCREEN_TEMPLATES) : survey ? surveyTemplates(words) : screenTemplates(words);
+  const own = locale === 'en' ? (survey ? SURVEY_TEMPLATES : SCREEN_TEMPLATES) : survey ? surveyTemplates(locale) : screenTemplates(locale);
   return [...own, ...app.filter((t) => (t.page.layout.type === 'wizard') === survey)];
 }
 

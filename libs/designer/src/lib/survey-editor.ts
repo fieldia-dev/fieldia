@@ -4,7 +4,7 @@ import { createWidget, installStyles, type Widget, type WidgetFactory } from '@f
 import { branchMap, drawBranchMap } from './branch-map';
 import { canvasDrag } from './canvas-drag';
 import { designerBar, elementFactory, iconButton as makeIconButton, optionsEditor, putDownOnClickOutside, type ElementFactory, type OptionsEditor } from './chrome';
-import { speakIn } from './chrome-language';
+import { speakIn, widgetWords } from './chrome-language';
 import { conditionEditor } from './condition-editor';
 import { kindOfField, QUESTION_KINDS, type Designer, type DesignerState, type Where } from './designer';
 import type { FindItem } from './find-anything';
@@ -284,12 +284,14 @@ export function mountSurveyEditor(host: HTMLElement, options: SurveyEditorOption
     return {
       paint(page: Page, node: FieldNode) {
         const def = page.fields[node.field];
-        const key = JSON.stringify([node, def]);
+        // Its own words in the page's language, as the form will have them.
+        const said = widgetWords(page);
+        const key = JSON.stringify([node, def, said.locale]);
         if (key === painted && widget) return;
         painted = key;
         widget?.destroy?.();
         const form = formFor(page);
-        widget = createWidget({ form, name: node.field, field: def, node, id: `fd-design-${id}`, document: doc }, options.widgets);
+        widget = createWidget({ form, name: node.field, field: def, node, id: `fd-design-${id}`, document: doc, ...said }, options.widgets);
         widget.update({ value: form.getState().values[node.field], values: form.getState().values, readonly: false, required: def.required === true, invalid: false });
         box.replaceChildren(widget.element);
       },

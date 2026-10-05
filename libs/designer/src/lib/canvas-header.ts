@@ -5,6 +5,7 @@ import type { Designer, HeaderPartKind } from './designer';
 import { designerIcon } from './icons';
 import { openMenu } from './menu';
 import { setHidden } from './writes';
+import { widgetWords } from './chrome-language';
 
 /**
  * A record's header on the canvas, drawn the way the viewer draws it: the
@@ -167,13 +168,14 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     const config = root.statusbar as NonNullable<SheetNode['statusbar']>;
     const def = page.fields[config.field];
     // The record on the canvas, made up or empty, stands on one of the steps.
-    const key = JSON.stringify([config, def, form().getState().values[config.field] ?? null]);
+    const said = widgetWords(designer.getPage());
+    const key = JSON.stringify([config, def, form().getState().values[config.field] ?? null, said.locale]);
     if (key !== statusKey) {
       statusKey = key;
       statusWidget?.destroy?.();
       const f = form();
       const node: FieldNode = { type: 'field', id: '#statusbar', field: config.field, widget: 'statusbar', options: { clickable: config.clickable === true } };
-      statusWidget = createWidget({ form: f, name: config.field, field: def, node, id: 'fd-canvas-statusbar', document: doc });
+      statusWidget = createWidget({ form: f, name: config.field, field: def, node, id: 'fd-canvas-statusbar', document: doc, ...said });
       statusWidget.update({ value: f.getState().values[config.field], values: f.getState().values, readonly: false, required: false, invalid: false });
       statusBox.replaceChildren(statusWidget.element);
     }

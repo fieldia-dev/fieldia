@@ -44,6 +44,18 @@ describe('Try it, in Arabic', () => {
     expect(viewer()?.getAttribute('dir')).toBe('rtl');
   });
 
+  it('tries a page written in Arabic right to left from the start, until a direction is pressed', () => {
+    const { designer, mode, viewer, control } = setup();
+    designer.setPageLanguage('ar');
+    mode('try').click();
+    expect(viewer()?.getAttribute('dir')).toBe('rtl');
+    expect(control('rtl').getAttribute('aria-pressed')).toBe('true');
+    control('ltr').click();
+    mode('design').click();
+    mode('try').click();
+    expect(viewer()?.getAttribute('dir')).toBe('ltr');
+  });
+
   it('says the drawer of data and problems in Arabic', () => {
     const { mode } = setup();
     mode('try').click();

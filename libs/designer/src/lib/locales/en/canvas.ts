@@ -101,4 +101,22 @@ export const canvas = {
   // ---- what is carried
   part: 'Part',
   notHere: 'Not here',
+  /** What Find anything offers on a screen, or a list. */
+  find: {
+    addColumn: (label: string) => `Add the column “${label}”`,
+    goToColumn: (label: string) => `Go to the column “${label}”`,
+    column: 'column',
+    addListButton: 'Add a button for the rows chosen',
+    list: 'list',
+    addModelField: (label: string) => `Add “${label}”`,
+    fromModel: 'from the model',
+    addField: (kind: string) => `Add a field: ${kind}`,
+    newField: 'new field',
+    goTo: (label: string) => `Go to “${label}”`,
+    goToSection: (label: string) => `Go to the section “${label}”`,
+    section: 'section',
+    addSection: 'Add a section',
+    addTabs: 'Add tabs',
+    layout: 'layout',
+  },
 };

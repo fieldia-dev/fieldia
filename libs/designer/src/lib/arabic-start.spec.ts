@@ -36,14 +36,14 @@ const button = (scope: Element, name: string) => [...scope.querySelectorAll<HTML
 
 describe('templates, in Arabic', () => {
   it('offers Fieldia’s templates in Arabic words, their answers kept under the English values', () => {
-    const [feedback, event, job] = surveyTemplates(ar);
+    const [feedback, event, job] = surveyTemplates('ar');
     expect([feedback.title, event.title, job.title]).toEqual(['رأي العملاء', 'التسجيل في فعالية', 'طلب توظيف']);
     expect(Object.values(feedback.page.fields).map((f) => f.label)).toEqual(['ما تقييمك العام؟', 'ما الذي أعجبك أكثر؟', 'ما الذي يمكننا تحسينه؟', 'ما مدى احتمال أن توصي بنا؟', 'بريدك الإلكتروني، للرد عليك']);
     const sessions = event.page.fields['sessions'] as unknown as SelectionField;
     const english = SURVEY_TEMPLATES[1].page.fields['sessions'] as unknown as SelectionField;
     expect(sessions.options.map((o) => o.value)).toEqual(english.options.map((o) => o.value));
     expect(sessions.options.map((o) => o.label)).toEqual(['محاضرات الصباح', 'ورشة الظهيرة', 'عشاء المساء']);
-    const [contact, order] = screenTemplates(ar);
+    const [contact, order] = screenTemplates('ar');
     expect([contact.title, order.title]).toEqual(['جهة اتصال', 'طلب شراء']);
     expect((order.page.fields['status'] as unknown as SelectionField).options.map((o) => o.label)).toEqual(['مسودة', 'مؤكَّد', 'منجز']);
   });
@@ -63,7 +63,7 @@ describe('templates, in Arabic', () => {
 
   it('refuses a screen in place of a survey in Arabic', () => {
     const { designer } = survey();
-    expect(designer.replacePage(screenTemplates(ar)[0].page)).toBe(false);
+    expect(designer.replacePage(screenTemplates('ar')[0].page)).toBe(false);
     expect(designer.getState().issues).toEqual(['الاستبيان مكوّن من صفحات أسئلة: وهذه شاشة من أقسام']);
   });
 });
@@ -81,7 +81,7 @@ describe('the assistant, in Arabic', () => {
     button(form, 'إنشاء')?.click();
     expect(form.querySelector('.fd-assist-busy')?.textContent).toBe('جارٍ إنشاء نموذجك…');
     expect(button(form, 'إلغاء')).toBeDefined();
-    app.answer(surveyTemplates(ar)[0].page);
+    app.answer(surveyTemplates('ar')[0].page);
     await settle();
     expect(root.querySelector('.fd-start-done-words')?.textContent).toBe('أنشأ المساعد النموذج:');
   });

@@ -5,6 +5,7 @@ import { modeSwitch, readMode, writeMode, type DesignerMode } from './canvas-mod
 import { designerBar, elementFactory, putDownOnClickOutside } from './chrome';
 import { speakIn } from './chrome-language';
 import { QUESTION_KINDS, SCREEN_KINDS, type Designer, type DesignerState, type Where } from './designer';
+import { kindName } from './kinds';
 import { findHeaderPart } from './header-commands';
 import { listCanvas } from './list-canvas';
 import { canBeColumn } from './list-commands';
@@ -198,7 +199,7 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
     else if (spec === 'layout:section') {
       const selected = designer.getState().selected;
       const tab = selected ? findTab(page, selected) : null;
-      const created = designer.addContainer(`Section ${allSections(page).length + 1}`, tab ? { parent: tab.tab.id } : {});
+      const created = designer.addContainer(designer.words.defaults.section(allSections(page).length + 1), tab ? { parent: tab.tab.id } : {});
       if (!created) return;
       designer.select(created);
       canvas.focusTitle(created);
@@ -221,31 +222,32 @@ export function mountScreenEditor(host: HTMLElement, options: ScreenEditorOption
   // ---- find anything -----------------------------------------------------------
   /** On a screen: a field of the model or a kind to add, a field or a section to go to. On a list: a column to add or go to. */
   function findItems(): FindItem[] {
+    const f = designer.words.canvas.find;
     const page = designer.getPage();
     const layout = page.layout;
     if (layout.type === 'list') {
       const own = Object.entries(page.fields).filter(([name]) => !layout.columns.includes(name)).map(([name, field]) => ({ name, field }));
       return [
-        ...[...own, ...designer.modelFields()].filter(({ field }) => canBeColumn(field)).map(({ name, field }) => ({ label: `Add the column “${field.label}”`, hint: 'column', run: () => designer.addColumn(name) })),
-        ...layout.columns.map((name) => ({ label: `Go to the column “${page.fields[name]?.label ?? name}”`, hint: 'column', run: () => designer.select(`column:${name}`) })),
-        { label: 'Add a button for the rows chosen', hint: 'list', run: () => (root.querySelector('[data-add-part="action"]') as HTMLButtonElement | null)?.click() },
+        ...[...own, ...designer.modelFields()].filter(({ field }) => canBeColumn(field)).map(({ name, field }) => ({ label: f.addColumn(field.label), hint: f.column, run: () => designer.addColumn(name) })),
+        ...layout.columns.map((name) => ({ label: f.goToColumn(page.fields[name]?.label ?? name), hint: f.column, run: () => designer.select(`column:${name}`) })),
+        { label: f.addListButton, hint: f.list, run: () => (root.querySelector('[data-add-part="action"]') as HTMLButtonElement | null)?.click() },
       ];
     }
     const fields = allSections(page).flatMap((section) => section.children.filter((n): n is FieldNode => n.type === 'field').map((node) => ({ node, section })));
     return [
-      ...designer.modelFields().map(({ name, field }) => ({ label: `Add “${field.label}”`, hint: 'from the model', run: () => add(`model:${name}`, null) })),
-      ...kinds.map((kind) => ({ label: `Add a field: ${kind.label}`, hint: 'new field', run: () => add(`kind:${kind.id}`, null) })),
+      ...designer.modelFields().map(({ name, field }) => ({ label: f.addModelField(field.label), hint: f.fromModel, run: () => add(`model:${name}`, null) })),
+      ...kinds.map((kind) => ({ label: f.addField(kindName(kind, designer.words)), hint: f.newField, run: () => add(`kind:${kind.id}`, null) })),
       ...fields.map(({ node, section }) => ({
-        label: `Go to “${(node as FieldNode & { label?: string }).label ?? page.fields[node.field]?.label ?? node.id}”`,
-        hint: sectionLabel(page, section),
+        label: f.goTo((node as FieldNode & { label?: string }).label ?? page.fields[node.field]?.label ?? node.id),
+        hint: sectionLabel(page, section, designer.words),
         run: () => {
           designer.select(node.id);
           canvas.focus(node.id, 'label');
         },
       })),
-      ...allSections(page).map((section) => ({ label: `Go to the section “${sectionLabel(page, section)}”`, hint: 'section', run: () => designer.select(section.id) })),
-      { label: 'Add a section', hint: 'layout', run: () => add('layout:section', null) },
-      ...(layout.type === 'sheet' && !topOf(page).some((n) => n.type === 'tabs') ? [{ label: 'Add tabs', hint: 'layout', run: () => add('layout:tabs', null) }] : []),
+      ...allSections(page).map((section) => ({ label: f.goToSection(sectionLabel(page, section, designer.words)), hint: f.section, run: () => designer.select(section.id) })),
+      { label: f.addSection, hint: f.layout, run: () => add('layout:section', null) },
+      ...(layout.type === 'sheet' && !topOf(page).some((n) => n.type === 'tabs') ? [{ label: f.addTabs, hint: f.layout, run: () => add('layout:tabs', null) }] : []),
     ];
   }
 

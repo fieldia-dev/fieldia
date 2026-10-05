@@ -1,3 +1,5 @@
+import type { Locale, Page } from '@fieldia/core';
+import { WIDGET_LABELS } from '@fieldia/widgets';
 import type { Designer } from './designer';
 import { designerDirection } from './designer-words';
 
@@ -53,4 +55,16 @@ export function speakLike(element: HTMLElement, from: Element | null): HTMLEleme
     element.lang = root.lang;
   }
   return element;
+}
+
+/** The language of Fieldia's own words on the page drawn — a widget's "Add photos", a list's "Search…" — the page's (`language`), as its form will speak; English for one Fieldia has no words in. */
+export function pageLocale(page: Page): Locale {
+  const base = (page.language ?? 'en').split('-')[0];
+  return Object.prototype.hasOwnProperty.call(WIDGET_LABELS, base) ? (base as Locale) : 'en';
+}
+
+/** What a widget drawn for the page needs to speak as it will on the form: its words, and the language. */
+export function widgetWords(page: Page): { labels: (typeof WIDGET_LABELS)[Locale]; locale: Locale } {
+  const locale = pageLocale(page);
+  return { labels: WIDGET_LABELS[locale], locale };
 }

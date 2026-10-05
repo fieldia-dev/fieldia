@@ -23,7 +23,7 @@ import { tabHolds } from './page-tree';
 import { sampleRows } from './samples';
 import { foldMark, type FoldMark } from './canvas-fold';
 import { setAttr, setData, setHidden, setText } from './writes';
-import { chromeLanguage } from './chrome-language';
+import { chromeLanguage, widgetWords } from './chrome-language';
 
 /**
  * The screen editor's canvas: the page drawn the way the viewer draws it —
@@ -171,7 +171,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     options: OptionsEditor | null;
     settings: InlineSettings | null;
     /** What a card not being edited was drawn from: while all of it is the same, the card stays as it is. */
-    drawn: { node: FieldNode; def: Field; labels: Place['labels']; picked: boolean; sample: number | null } | null;
+    drawn: { node: FieldNode; def: Field; labels: Place['labels']; picked: boolean; sample: number | null; language: string | undefined } | null;
   }
   const cards = new Map<string, Card>();
   /** Where a part sits in its grid: its place in it, the grid's columns, and the names right above the grid's first row. */
@@ -254,8 +254,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     // A card not being edited, drawn from the same field, picked or not as before, for the same record: as it is.
     const isPicked = picked.includes(node.id) && picked.length > 1;
     const was = card.drawn;
-    if (!editing && was?.node === node && was.def === def && was.labels === labels && was.picked === isPicked && was.sample === sample) return element;
-    card.drawn = editing ? null : { node, def, labels, picked: isPicked, sample };
+    if (!editing && was?.node === node && was.def === def && was.labels === labels && was.picked === isPicked && was.sample === sample && was.language === page.language) return element;
+    card.drawn = editing ? null : { node, def, labels, picked: isPicked, sample, language: page.language };
     element.dataset['type'] = def.type;
     const labelsAt = labelPlace(node, def.type, labels);
     if (labelsAt) element.dataset['labels'] = labelsAt;
@@ -295,12 +295,14 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
   /** The field's real widget, inert: on the canvas it is looked at and moved, not typed in. */
   function paint(card: Card, node: FieldNode) {
     const def = page.fields[node.field];
-    const key = JSON.stringify([node, def, sample]);
+    // Its own words in the page's language, as the form will have them.
+    const said = widgetWords(designer.getPage());
+    const key = JSON.stringify([node, def, sample, said.locale]);
     if (card.painted === key && card.widget) return;
     card.painted = key;
     card.widget?.destroy?.();
     const f = form();
-    const widget = createWidget({ form: f, name: node.field, field: def, node, id: `fd-canvas-${node.id}`, document: doc }, options.widgets);
+    const widget = createWidget({ form: f, name: node.field, field: def, node, id: `fd-canvas-${node.id}`, document: doc, ...said }, options.widgets);
     widget.update({ value: f.getState().values[node.field], values: f.getState().values, readonly: false, required: def.required === true, invalid: false });
     card.widget = widget;
     card.widgetBox.replaceChildren(widget.element);

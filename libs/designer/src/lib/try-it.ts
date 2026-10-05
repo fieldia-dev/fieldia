@@ -1,4 +1,4 @@
-import { createMemoryDataSource, scoreOf, type DataSource, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, isRightToLeft, scoreOf, type DataSource, type Page, type Values } from '@fieldia/core';
 import { mountViewer, type Skin, type ViewerHandle } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
@@ -6,6 +6,7 @@ import type { Designer } from './designer';
 import type { FindItem } from './find-anything';
 import { designerIcon } from './icons';
 import { sampleRows } from './samples';
+import { pageLanguage } from './translations';
 import { tryLanguage } from './try-language';
 import { tryDrawer } from './try-drawer';
 
@@ -86,6 +87,8 @@ export function tryIt(options: TryItOptions): TryIt {
   let trying = false;
   let width: Width = 'desktop';
   let direction: Direction = 'ltr';
+  /** Whether a direction was pressed: until one is, the page is tried the way its own language runs. */
+  let pressed = false;
   let viewer: ViewerHandle | null = null;
 
   function draw() {
@@ -134,6 +137,7 @@ export function tryIt(options: TryItOptions): TryIt {
   function set(next: boolean) {
     if (next === trying) return;
     trying = next;
+    if (trying && !pressed) direction = isRightToLeft(pageLanguage(designer.getPage())) ? 'rtl' : 'ltr';
     show();
     draw();
     options.onChange(trying);
@@ -150,6 +154,7 @@ export function tryIt(options: TryItOptions): TryIt {
   for (const [name, button] of Object.entries(directions)) {
     button.addEventListener('click', () => {
       direction = name as Direction;
+      pressed = true;
       show();
       draw();
     });

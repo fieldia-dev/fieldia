@@ -1,7 +1,8 @@
-import type { ButtonNode, LineField, ListNode, Locale, Page } from '@fieldia/core';
+import type { ButtonNode, LineField, ListNode, Page } from '@fieldia/core';
 import { installListStyles, VIEWER_LABELS, type ViewerLabels } from '@fieldia/viewer';
 import { displayValue } from '@fieldia/widgets';
 import { canvasDrag, type CanvasDrag } from './canvas-drag';
+import { pageLocale } from './chrome-language';
 import type { ElementFactory } from './chrome';
 import type { Designer, DesignerState } from './designer';
 import { designerIcon } from './icons';
@@ -50,10 +51,7 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
   const w = designer.words.list;
   installListStyles(doc);
   /** What the viewer itself says on the list — its search box, its pager, the rows chosen — in the page's language, as the form will. */
-  const viewerWords = (): ViewerLabels => {
-    const base = (element.closest('[lang]')?.getAttribute('lang') || 'en').split('-')[0];
-    return Object.prototype.hasOwnProperty.call(VIEWER_LABELS, base) ? VIEWER_LABELS[base as Locale] : VIEWER_LABELS.en;
-  };
+  const viewerWords = (page: Page): ViewerLabels => VIEWER_LABELS[pageLocale(page)];
 
   // ---- the search bar and the pager ----------------------------------------------------
   const facets = el('span', { class: 'fd-facets' });
@@ -273,7 +271,7 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       const on = new Set(list.defaultFilters ?? []);
       facets.replaceChildren(...(list.filters ?? []).filter((f) => on.has(f.id)).map((f) => el('span', { class: 'fd-facet' }, el('span', { class: 'fd-facet-text' }, f.label))));
       const size = list.pageSize ?? 40;
-      const said = viewerWords();
+      const said = viewerWords(page);
       searchWords.textContent = said.search;
       chosen.textContent = said.selected.replace('{n}', '2');
       pagerText.textContent = said.range.replace('{from}', '1').replace('{to}', String(Math.min(size, TOTAL))).replace('{total}', String(TOTAL));
