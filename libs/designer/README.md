@@ -165,6 +165,38 @@ const assistant: DesignerAssistant = {
 createDesigner({ page, assistant }); // or mountSurveyEditor(host, { designer, assistant })
 ```
 
+### Saved forms placed in a page
+
+A store that lists its saved forms — `PageStore.list()`, optional, giving
+`{ id, title }` for each page with a published version — puts “A saved form”
+under More in the screen editor's toolbox. It opens a menu of them; the one
+picked is placed whole, a full row of its group, its answers under a name of
+its own (`address`, then `address_2`). Without `list()` the tile is not there.
+
+On the canvas it is drawn as the form will draw it — by the viewer, its
+fields shown but never typed in — in a frame naming the saved form and its
+version, with “Open it” when the app gives the designer `openForm`: a saved form
+is changed on its own page, not here. Picked, the panel offers which saved
+form, the latest version or one kept to, its title, and where its answers go.
+A saved form that would place the page inside itself, directly or through
+others, is refused once it has loaded; the Checks list names one the store
+cannot find, a version it has not got, one that would hold the page, and two
+copies whose answers would mix.
+
+```ts
+import { createDesigner, type PageStore } from '@fieldia/designer';
+
+const store: PageStore = {
+  load: (id) => fetch(`/api/forms/${id}`).then((r) => r.json()), // { draft, versions }
+  saveDraft: (page) => fetch(`/api/forms/${page.id}/draft`, { method: 'PUT', body: JSON.stringify(page) }).then(() => undefined),
+  publish: (page) => fetch(`/api/forms/${page.id}/versions`, { method: 'POST', body: JSON.stringify(page) }).then((r) => r.json()),
+  list: () => fetch('/api/forms?published=1').then((r) => r.json()), // [{ id: 'address', title: 'Address' }]
+};
+createDesigner({ page, store, openForm: (id) => router.go(`/forms/${id}/design`) });
+```
+
+`createMemoryPageStore()` lists the pages it has published.
+
 ### Looks of your own
 
 The Look tab (the Look sheet, in the survey editor) starts with Fieldia's

@@ -125,10 +125,10 @@ ${code(
 mountViewer(host, {
   page: projectPage,
   dataSource,
-  relatedPages: { partner: customerPage },   // or (model) => page | null
+  pages: { partner: customerPage },   // or (request) => page | null: request.model for a link
 });`
 )}
-<p>In React pass ${c('relatedPages={…}')}, in Vue ${c(':related-pages="…"')}, in Angular ${c('[relatedPages]="…"')}. A link to one of those models then offers:</p>
+<p>In React pass ${c('pages={…}')}, in Vue ${c(':pages="…"')}, in Angular ${c('[pages]="…"')}. The same option gives a saved form placed in a page by its id (${c('request.id')}, ${c('request.version')}); the older ${c('relatedPages')}, by model only, is still read. A link to one of those models then offers:</p>
 <ul>
   <li><strong>↗ beside the link</strong> opens the linked record in a large dialog. Save &amp; Close saves it through the data source, and the link follows a new name.</li>
   <li><strong>Create and edit…</strong> after a name is typed opens the related page with that name filled in. Save &amp; Close makes the record and links to it.</li>
