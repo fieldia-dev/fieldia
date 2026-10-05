@@ -8,7 +8,7 @@ import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
 import { createRoot } from 'react-dom/client';
 import { clicked, greeting, shout } from '../shared/custom-page';
-import { openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource, relatedPages } from '../shared/sample-data';
+import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 
 /** The same demo as the plain one, mounted by React. StrictMode on, as apps run it. */
 const params = new URLSearchParams(location.search);
@@ -67,7 +67,7 @@ function Demo() {
       }}
       fieldTypes={{ 'char.shout': Shout }}
       widgets={{ ...gridWidgets, ...codeWidgets }}
-      relatedPages={relatedPages}
+      pages={appPages}
       {...optionsFromQuery(params)}
       slots={{ chatter: Chatter, note: Note }}
       onReady={(handle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter } })}

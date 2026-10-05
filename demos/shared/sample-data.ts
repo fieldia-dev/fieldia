@@ -1,4 +1,7 @@
 import { createMemoryDataSource, type Line, type Page, type Values } from '@fieldia/core';
+import type { PageRequest } from '@fieldia/viewer';
+import address from '../../examples/pages/address.page.json';
+import delivery from '../../examples/pages/delivery.page.json';
 import customer from '../../examples/pages/customer.page.json';
 import fields from '../../examples/pages/fields.page.json';
 import kinds from '../../examples/pages/kinds.page.json';
@@ -25,6 +28,8 @@ export const pages: Record<string, Page> = {
   layout: layout as Page,
   lists: lists as Page,
   custom: customPage,
+  // Places the saved Address form twice: see `savedForms`.
+  delivery: delivery as Page,
   // 500 fields, for timing: e2e/perf.spec.ts opens it; no card in the gallery (see e2e/demos-shell.spec.ts).
   big: big as Page,
 };
@@ -40,11 +45,13 @@ export function pageFromQuery(params: URLSearchParams): Page {
   const maxWidth = params.get('maxWidth');
   const actions = params.get('actions');
   const scheme = params.get('scheme') as NonNullable<Page['look']>['scheme'] | null;
+  // A look for each kind of part, as JSON: `parts={"inputs":{"corners":"round"}}`.
+  const parts = params.get('parts');
   return {
     ...page,
     ...(maxWidth ? { maxWidth: maxWidth as Page['maxWidth'] } : {}),
     ...(actions ? { actionsPosition: actions as Page['actionsPosition'] } : {}),
-    ...(scheme ? { look: { ...page.look, scheme } } : {}),
+    ...(scheme || parts ? { look: { ...page.look, ...(scheme ? { scheme } : {}), ...(parts ? { parts: JSON.parse(parts) } : {}) } } : {}),
   };
 }
 
@@ -106,6 +113,22 @@ const APP_CATALOG_FR: Record<string, string> = {
 
 /** The pages records of other models open in, in a dialog: a customer from a link to it. */
 export const relatedPages: Record<string, Page> = { partner: customer as Page };
+
+/** The app's saved forms, placed in other pages by their id: the Address form, twice in Delivery details. */
+export const savedForms: Record<string, Page> = { address: address as Page };
+
+/**
+ * The app's pages, as the viewer's `pages` asks for them: a linked record's
+ * page at once, by its model; a saved form by its id a moment later, as an app
+ * fetching it from its server would — its place shows a quiet placeholder
+ * first. `?pagesDelay=` sets the moment, in ms.
+ */
+export function appPages(request: PageRequest): Page | null | Promise<Page | null> {
+  if ('model' in request) return relatedPages[request.model] ?? null;
+  const found = savedForms[request.version === undefined ? request.id : `${request.id}@${request.version}`] ?? null;
+  const delay = Number(new URLSearchParams(location.search).get('pagesDelay') ?? 150);
+  return new Promise((resolve) => setTimeout(() => resolve(found), delay));
+}
 
 const PRODUCT_PRICES: Record<number, number> = { 1: 1890, 2: 380, 3: 749, 4: 6425, 5: 215 };
 const round = (n: number) => Math.round(n * 100) / 100;

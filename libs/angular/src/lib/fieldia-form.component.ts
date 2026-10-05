@@ -88,6 +88,8 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly scheduler = input<Scheduler | undefined>(undefined);
   readonly confirm = input<((message: string) => Promise<boolean>) | undefined>(undefined);
   readonly preferences = input<PreferenceStore | undefined>(undefined);
+  /** The app's pages: a saved form placed in the page by its id, a link's record by its model. */
+  readonly pages = input<ViewerOptions['pages']>(undefined);
   readonly relatedPages = input<ViewerOptions['relatedPages']>(undefined);
   /** The app's own icons, by the names its pages give them. */
   readonly icons = input<ViewerOptions['icons']>(undefined);
@@ -212,6 +214,7 @@ export class FieldiaFormComponent implements OnDestroy {
       scheduler: this.scheduler(),
       confirm: this.confirm(),
       preferences: this.preferences(),
+      pages: this.pages(),
       relatedPages: this.relatedPages(),
       icons: this.icons(),
       keys: this.keys(),

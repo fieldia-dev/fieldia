@@ -3,6 +3,7 @@ import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { locate } from './layout-tree';
 import { segmented, setting } from './panel-controls';
+import { formContent } from './panel-form';
 
 /**
  * A block's own settings, on the Content tab: a picture's address and the
@@ -20,6 +21,8 @@ const focused = (node: Element) => node.ownerDocument.activeElement === node;
 
 export function blockContent(el: ElementFactory, designer: Designer, id: string): BlockContent | null {
   const kind = locate(designer.getPage(), id)?.node.type;
+  // embed lane: a saved form placed here.
+  if (kind === 'form') return formContent(el, designer, id);
   const w = designer.words.panel;
   if (kind === 'image') {
     const src = el('input', { class: 'fd-input', 'aria-label': w.pictureAddress, placeholder: 'https://…', inputmode: 'url', autocomplete: 'off' }) as HTMLInputElement;

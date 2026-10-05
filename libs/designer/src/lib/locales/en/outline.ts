@@ -42,6 +42,7 @@ export const outline = {
     spacer: 'Room',
     image: 'Picture',
     slot: 'Slot',
+    form: 'Saved form',
     part: 'Part',
   },
   /** A group's columns, in the words its badge stands for. */

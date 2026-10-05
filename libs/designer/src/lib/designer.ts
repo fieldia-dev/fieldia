@@ -6,10 +6,12 @@ import {
   type ColumnsByWidth,
   type Field,
   type FieldNode,
+  type FormNode,
   type LabelPlace,
   type LayoutNode,
   type Option,
   type OptionsFrom,
+  type PartLookKind,
   type Page,
   type PageLook,
   type SectionNode,
@@ -34,11 +36,11 @@ import * as ops from './layout-ops';
 import type { BlockKind, Drop, NewPart } from './layout-ops';
 import * as settings from './layout-settings';
 import * as twelfths from './layout-twelfths';
-import type { BlockPatch, LookPatch, SectionLook } from './layout-settings';
+import type { BlockPatch, LookPatch, PartLookPatch, SectionLook } from './layout-settings';
 import * as several from './layout-several';
 import type { EachChange } from './layout-several';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields, type Container } from './page-tree';
-import type { Holder } from './layout-tree';
+import { across, setSpan, type Holder } from './layout-tree';
 import { Refusal } from './refusal';
 import { translationCommands } from './translations';
 import { pageJsonCommands, type PageJsonResult } from './page-json';
@@ -52,6 +54,7 @@ import { browserLooks } from './look-store';
 import { setFold, type Fold } from './group-fold';
 import { editChecker } from './validate-edit';
 import { DESIGNER_WORDS, designerLocale, isDefaultOption, type DesignerLocale, type DesignerWords } from './designer-words';
+import { answersName, formParts, freeFieldName, refuseCycle, savedFormsCache, updateFormPart, type FormPartPatch, type SavedFormRef } from './saved-forms';
 
 /**
  * The editing model behind the designer: no DOM, so it is tested in Node.
@@ -75,11 +78,12 @@ export type { HeaderCommands, HeaderPartKind, HeaderPartPatch } from './header-c
 export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-commands';
 export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-checks';
 export type { BlockKind, Drop, NewPart } from './layout-ops';
-export type { BlockPatch, LookPatch, SectionLook } from './layout-settings';
+export type { BlockPatch, LookPatch, PartLookPatch, SectionLook } from './layout-settings';
 export type { EachChange } from './layout-several';
 export type { Fold } from './group-fold';
 export type { JsonProblem, PageJsonResult } from './page-json';
 export type { AnswerRulePatch } from './rules-commands';
+export type { FormPartPatch, SavedFormRef } from './saved-forms';
 export { createBrowserLookStore, createMemoryLookStore } from './look-store';
 export type { LookValues } from './look-presets';
 export { DESIGNER_WORDS, designerLocale, type DesignerLocale, type DesignerWords } from './designer-words';
@@ -165,6 +169,12 @@ export interface PageStore {
   load(id: string): Promise<{ draft: Page | null; versions: PublishedVersion[] }>;
   saveDraft(page: Page): Promise<void>;
   publish(page: Page): Promise<number>;
+  /**
+   * The saved forms that can be placed in another page, by id and title:
+   * those with a published version. Optional: without it, the designer offers
+   * no saved form to place.
+   */
+  list?(): Promise<SavedFormRef[]>;
 }
 
 /** A look of one's own, kept by name to use again on other pages: the values a preset sets, any left to the skin. */
@@ -209,6 +219,11 @@ export function createMemoryPageStore(): PageStore & { pages: Map<string, { draf
       const version = found.versions.length + 1;
       found.versions.push({ version, publishedAt: new Date().toISOString(), page: copy(page) });
       return version;
+    },
+    async list() {
+      return [...pages]
+        .filter(([, found]) => found.versions.length)
+        .map(([id, found]) => ({ id, title: found.versions[found.versions.length - 1].page.title || id }));
     },
   };
 }
@@ -356,6 +371,13 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setFieldLabels(id: string, place: LabelPlace | null): boolean;
   /** The page's look: colour, font, spacing, corners, labels, scheme; `null` takes a setting back. */
   setLook(patch: LookPatch): boolean;
+  /**
+   * One kind of part's look, over the page's: text boxes, choices, groups,
+   * buttons or tables, with the settings `PART_LOOKS` gives each. `null` takes
+   * a setting back, or the whole kind. Each change is one undo step; a run of
+   * colours tried, one after another, is one, as typing is.
+   */
+  setPartLook(kind: PartLookKind, patch: PartLookPatch | null): boolean;
   /** A block after `after`, or in `parent` at `index`, or at the end of the last container. Returns its id, and picks it. */
   addBlock(kind: BlockKind, where?: Where): string | false;
   /** A table of lines' columns, in order. */
@@ -469,6 +491,32 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   looks(): LookStore;
   /** Whether a group folds by its title, and how it starts; refused for a group with no title. */
   setFold(id: string, fold: Fold): boolean;
+  // embed lane
+  /** Whether a saved form can be placed in the page: the app's store lists its saved forms (`PageStore.list`). */
+  canPlaceForms(): boolean;
+  /** The saved forms that can be placed in this page: the store's, this page itself left out. None without a store that lists them. */
+  savedForms(): Promise<SavedFormRef[]>;
+  /**
+   * A saved form as this page would place it: its published versions, newest
+   * last, and the page of the version kept to, or of the latest. Undefined
+   * while it loads — its listeners are told once it has — and null when the
+   * store has none.
+   */
+  savedForm(id: string, version?: number): { versions: readonly PublishedVersion[]; page: Page | null } | null | undefined;
+  /** Load a saved form afresh, and every saved form it places: once loaded, one that would hold this page is refused. */
+  loadSavedForm(id: string): Promise<void>;
+  /**
+   * Place a saved form after `after`, or in `parent` at `index`, its answers
+   * under a name of its own (after its title). Returns its id, and picks it.
+   * Refused when it would hold this page, as far as what has loaded tells.
+   */
+  addForm(pageId: string, where?: Where): string | false;
+  /** A saved form placed here: which one, the version it keeps to, where its answers go, its title. */
+  setForm(id: string, patch: FormPartPatch): boolean;
+  /** Whether a saved form can be opened where it is made: the app gave the designer a way to (`openForm`). */
+  canOpenForm(): boolean;
+  /** Open a saved form where it is made, the app's way. */
+  openForm(pageId: string): void;
 }
 
 /** One of the app's lists of choices, by the name its data source answers to, and the words a person picks it by. */
@@ -502,6 +550,8 @@ export function createDesigner(options: {
    * direction of the page around it, unless said.
    */
   locale?: DesignerLocale | (string & {});
+  /** Open a saved form placed in the page where it is made, by its id: “Open it” on the canvas. Without one, it is not offered. */
+  openForm?: (id: string) => void;
 }): Designer {
   const store = options.store;
   const locale = designerLocale(options.locale);
@@ -550,8 +600,14 @@ export function createDesigner(options: {
     if (compared?.page !== page || compared.published !== last) compared = { page, published: last, differs: JSON.stringify(page) !== JSON.stringify(last) };
     return compared.differs;
   }
-  /** The checks of the page, worked out once for each page. */
-  let checksOf: { page: Page; checks: PageCheck[] } | null = null;
+  /** The checks of the page, worked out once for each page, and again as saved forms placed in it load. */
+  let checksOf: { page: Page; forms: number; checks: PageCheck[] } | null = null;
+  /** How many times a saved form has come from the store: what depends on them is worked out again. */
+  let formsCame = 0;
+  const forms = savedFormsCache(store, () => {
+    formsCame++;
+    notify();
+  });
   const state = (): DesignerState => ({
     page,
     selected,
@@ -764,7 +820,7 @@ export function createDesigner(options: {
       const ok = apply((draft) => {
         refuseInSurvey(draft, kind);
         const ids = allIds(draft);
-        const field = nextName((name) => name in draft.fields, 'q', '_');
+        const field = freeFieldName(draft);
         const id = nextName((name) => ids.has(name), 'q', '-');
         draft.fields[field] = kind.field(words.defaults.untitledQuestion, words);
         const node: FieldNode = { type: 'field', id, field, ...(kind.widget ? { widget: kind.widget } : {}) };
@@ -923,7 +979,7 @@ export function createDesigner(options: {
         const found = findNode(draft, id);
         if (!found || found.node.type !== 'field') throw new Refusal((w) => w.refusals.noQuestion(id));
         const ids = allIds(draft);
-        const field = nextName((name) => name in draft.fields, 'q', '_');
+        const field = freeFieldName(draft);
         created = nextName((name) => ids.has(name), 'q', '-');
         draft.fields[field] = clone(draft.fields[found.node.field]);
         found.parent.children.splice(found.index + 1, 0, { ...clone(found.node), id: created, field });
@@ -1273,6 +1329,10 @@ export function createDesigner(options: {
     setSectionLook: (id, look) => apply((draft) => settings.setSectionLook(draft, id, look), `section-look:${id}:${Object.keys(look).join(',')}`),
     setFieldLabels: (id, place) => apply((draft) => settings.setFieldLabels(draft, id, place)),
     setLook: (patch) => apply((draft) => settings.setLook(draft, patch), `look:${Object.keys(patch).join(',')}`),
+    setPartLook: (kind, patch) => {
+      const colours = !!patch && Object.values(patch).every((value) => typeof value === 'string' && value.startsWith('#'));
+      return apply((draft) => settings.setPartLook(draft, kind, patch), colours ? `part-look:${kind}:${Object.keys(patch).join(',')}` : null);
+    },
     addBlock: (kind, where) => layoutEdit((draft) => ops.addBlock(draft, kind, where, words)),
 
     setLineColumns(id, columns) {
@@ -1343,7 +1403,7 @@ export function createDesigner(options: {
     },
 
     checks() {
-      if (checksOf?.page !== page) checksOf = { page, checks: pageChecks(page, { valid: checkEdit.passed(page), words }) };
+      if (checksOf?.page !== page || checksOf.forms !== formsCame) checksOf = { page, forms: formsCame, checks: pageChecks(page, { valid: checkEdit.passed(page), forms, words }) };
       return [...checksOf.checks];
     },
     fixCheck: (check) => fixCheck(designer, check),
@@ -1437,14 +1497,51 @@ export function createDesigner(options: {
     useLook: (look) => apply((draft) => settings.setLook(draft, wholeLook(look))),
     looks: () => options.looks ?? browserLooks(),
     setFold: (id, fold) => apply((draft) => setFold(draft, id, fold)),
+    // embed lane
+    canPlaceForms: () => typeof store?.list === 'function',
+    async savedForms() {
+      if (!store?.list) return [];
+      return (await store.list()).filter((ref) => ref.id !== page.id);
+    },
+    savedForm(id, version) {
+      const all = forms.versions(id);
+      if (!all) return all;
+      return { versions: all as PublishedVersion[], page: forms.page(id, version) ?? null };
+    },
+    loadSavedForm: (id) => forms.load(id),
+    addForm(pageId, where) {
+      return layoutEdit((draft) => {
+        refuseCycle(forms, { page: pageId }, draft);
+        const ids = allIds(draft);
+        const title = forms.page(pageId)?.title || pageId;
+        const node: FormNode = { type: 'form', id: nextName((n) => ids.has(n), 'form', '-'), page: pageId, name: answersName(draft, title) };
+        placeAfter(draft, node, where);
+        // A whole form takes a whole row of the group it lands in.
+        const holder = findNode(draft, node.id)?.parent;
+        if (holder) setSpan(node, across(draft, holder as Holder));
+        return node.id;
+      });
+    },
+    setForm: (id, patch) =>
+      apply((draft) => {
+        updateFormPart(draft, id, patch);
+        const part = formParts(draft).find((p) => p.id === id) as FormNode;
+        if (patch.page !== undefined || patch.version !== undefined) refuseCycle(forms, part, draft);
+      }, `form:${id}:${Object.keys(patch).join(',')}`),
+    canOpenForm: () => typeof options.openForm === 'function',
+    openForm: (id) => options.openForm?.(id),
   };
   return designer;
 }
 
 /** Open a page from a store: its latest draft, or else its latest version. */
-createDesigner.open = async (id: string, store: PageStore, options: { model?: Record<string, Field>; lists?: AppList[]; kinds?: readonly AppKind[]; looks?: LookStore; locale?: DesignerLocale | (string & {}) } = {}): Promise<Designer> => {
+createDesigner.open = async (
+  id: string,
+  store: PageStore,
+  options: { model?: Record<string, Field>; lists?: AppList[]; kinds?: readonly AppKind[]; looks?: LookStore; openForm?: (id: string) => void; locale?: DesignerLocale | (string & {}) } = {}
+): Promise<Designer> => {
   const { draft, versions } = await store.load(id);
   const page = draft ?? versions[versions.length - 1]?.page;
   if (!page) throw new Error(`The store has no page "${id}"`);
-  return createDesigner({ page, store, versions, model: options.model, lists: options.lists, kinds: options.kinds, looks: options.looks, locale: options.locale });
+  return createDesigner({ page, store, versions, model: options.model, lists: options.lists, kinds: options.kinds, looks: options.looks, openForm: options.openForm, locale: options.locale });
 };

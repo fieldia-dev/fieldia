@@ -44,6 +44,7 @@ const SHAPES: Record<string, string> = {
   address: '<path d="M12 21s-6.5-5.8-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 15.2 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.3"/>',
   repeating: '<rect x="3" y="3.5" width="13" height="7" rx="1.5"/><rect x="3" y="13.5" width="13" height="7" rx="1.5"/><path d="M20 14v6M17 17h6"/>',
   // Layout.
+  'saved-form': '<rect x="3" y="3" width="13" height="16" rx="2"/><path d="M7 8h5M7 12h5M20 7v12a2 2 0 0 1-2 2H8"/>',
   section: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M7 13h4M13 13h4M7 16h4"/>',
   tabs: '<path d="M3 20V9h18v11zM3 9V5h7v4M10 7h6V5h-6"/>',
   // The bars.

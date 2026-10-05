@@ -1,4 +1,5 @@
-import { canvasGuides } from './canvas-guides';
+import { FIELDIA_CSS } from '@fieldia/widgets';
+import { canvasGuides, SHARED_CELL_NARROW } from './canvas-guides';
 import { createDesigner } from './designer';
 import { mount } from './test-editor';
 import { employeeDesigner, employeePage, watched } from './test-layout';
@@ -70,6 +71,68 @@ describe('the guides', () => {
     }
   });
 
+  it('an arrangement on its grid’s tracks: as many as its span covers of the columns the grid has now, without measuring', () => {
+    const { designer, guides, shown } = setup();
+    const personal = document.querySelector<HTMLElement>('[data-container="personal"]') as HTMLElement;
+    const who = document.querySelector<HTMLElement>('[data-node="who"]') as HTMLElement;
+    who.dataset['place'] = 'tracks';
+    who.style.setProperty('--fd-span', '2');
+    personal.style.setProperty('--fd-cols', '3');
+    const measured = jest.spyOn(window, 'getComputedStyle');
+    try {
+      designer.select('who');
+      guides.update(designer.getState(), true);
+      expect(shown()).toEqual(['personal:3:123', 'who:2:12']);
+      // On a phone the grid has one column, and so has the arrangement on it: no guides.
+      personal.style.setProperty('--fd-cols', '1');
+      guides.update(designer.getState(), true);
+      expect(shown()).toEqual([]);
+      expect(measured).not.toHaveBeenCalled();
+    } finally {
+      measured.mockRestore();
+    }
+  });
+
+  it('parts sharing a cell: their own columns, one where the browser reports the cell 330px or narrower — never measured', () => {
+    const observers: { callback: ResizeObserverCallback; targets: Element[] }[] = [];
+    const real = window.ResizeObserver;
+    window.ResizeObserver = class {
+      targets: Element[] = [];
+      constructor(callback: ResizeObserverCallback) {
+        observers.push({ callback, targets: this.targets });
+      }
+      observe(target: Element) {
+        this.targets.push(target);
+      }
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+    const measured = jest.spyOn(window, 'getComputedStyle');
+    try {
+      const { designer, guides, shown } = setup();
+      document.querySelector<HTMLElement>('[data-container="personal"]')?.style.setProperty('--fd-cols', '3');
+      const who = document.querySelector<HTMLElement>('[data-node="who"]') as HTMLElement;
+      who.dataset['place'] = 'shared';
+      (who.querySelector('.fd-grid') as HTMLElement).style.setProperty('--fd-columns', '2');
+      designer.select('who');
+      guides.update(designer.getState(), true);
+      expect(shown()).toEqual(['personal:3:123', 'who:2:12']);
+      // The browser says the cell is narrow, after laying it out: the guides follow, with the cell's one column.
+      const [observer] = observers;
+      expect(observer.targets).toContain(who);
+      const report = (width: number) => observer.callback([{ target: who, contentRect: { width } } as unknown as ResizeObserverEntry], {} as ResizeObserver);
+      report(300);
+      expect(shown()).toEqual(['personal:3:123']);
+      report(420);
+      expect(shown()).toEqual(['personal:3:123', 'who:2:12']);
+      expect(measured).not.toHaveBeenCalled();
+    } finally {
+      measured.mockRestore();
+      if (real) window.ResizeObserver = real;
+      else delete (window as { ResizeObserver?: unknown }).ResizeObserver;
+    }
+  });
+
   it('in twelfths, twelve faint tracks with no numbers — and the tracks an arrangement covers on them', () => {
     const { designer, guides, shown } = setup();
     designer.setColumns('personal', 12);
@@ -125,5 +188,12 @@ describe('the guides and the canvas drawn again', () => {
       expect([word, document.activeElement === label, card.isConnected]).toEqual([word, true, true]);
     }
     expect(host.querySelector('.fd-guides')).not.toBeNull();
+  });
+});
+
+describe('the width a shared cell turns to one column at', () => {
+  it('is the form stylesheet’s own', () => {
+    const rules = FIELDIA_CSS.split(`@container (max-width: ${SHARED_CELL_NARROW}px) {`).slice(1).map((after) => after.slice(0, after.indexOf('\n}')));
+    expect(rules.some((r) => r.includes('.fd-section[data-place="shared"] > .fd-grid { --fd-cols: 1; }'))).toBe(true);
   });
 });

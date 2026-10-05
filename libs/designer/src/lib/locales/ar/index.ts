@@ -24,6 +24,8 @@ import { json } from './json';
 import { translations } from './translations';
 import { shortcuts } from './shortcuts';
 import { templates, assistant } from './templates';
+import { partLooks } from './part-looks';
+import { savedForms } from './saved-forms';
 
 /**
  * The designer's words in Arabic: Modern Standard Arabic as Arabic software
@@ -47,4 +49,4 @@ import { templates, assistant } from './templates';
  *   survey استبيان · canvas مساحة التصميم · filter عامل التصفية · grouping تجميع
  *   cut قص · keyboard shortcuts اختصارات لوحة المفاتيح · pick (select) اختيار / المختار
  */
-export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations, shortcuts, templates, assistant };
+export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations, shortcuts, templates, assistant, partLooks, savedForms };

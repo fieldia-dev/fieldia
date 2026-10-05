@@ -1,0 +1,50 @@
+{
+  "fieldia": "0.1",
+  "id": "delivery",
+  "title": "Delivery details",
+  "description": "Where the order goes, and where its invoice goes: one Address form, placed twice.",
+  "data": { "kind": "responses" },
+  "fields": {
+    "full_name": { "type": "char", "label": "Full name", "required": true },
+    "phone": { "type": "char", "label": "Phone" },
+    "bill_elsewhere": { "type": "boolean", "label": "Send the invoice to another address" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "delivery",
+    "children": [
+      {
+        "type": "section",
+        "id": "who",
+        "title": "Who receives it",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "full-name", "field": "full_name" },
+          { "type": "field", "id": "phone", "field": "phone", "widget": "phone" }
+        ]
+      },
+      { "type": "form", "id": "delivery-address", "page": "address", "name": "delivery_address", "title": "Delivery address" },
+      { "type": "field", "id": "bill-elsewhere", "field": "bill_elsewhere", "widget": "tick" },
+      {
+        "type": "form",
+        "id": "billing-address",
+        "page": "address",
+        "name": "billing_address",
+        "title": "Billing address",
+        "invisible": "not bill_elsewhere"
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Delivery details": "بيانات التوصيل",
+      "Where the order goes, and where its invoice goes: one Address form, placed twice.": "أين يذهب الطلب، وأين تذهب فاتورته: نموذج عنوان واحد، موضوع مرتين.",
+      "Full name": "الاسم الكامل",
+      "Phone": "الهاتف",
+      "Send the invoice to another address": "أرسل الفاتورة إلى عنوان آخر",
+      "Who receives it": "من يستلمه",
+      "Delivery address": "عنوان التوصيل",
+      "Billing address": "عنوان الفاتورة"
+    }
+  }
+}

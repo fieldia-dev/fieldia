@@ -42,6 +42,7 @@ export const outline: DesignerWords['outline'] = {
     spacer: 'مسافة',
     image: 'صورة',
     slot: 'جزء خاص بالتطبيق',
+    form: 'نموذج محفوظ',
     part: 'جزء',
   },
   columnsStacked: (n) => `${plural('ar', n, { two: 'عمودان', few: '# أعمدة', many: '# عمودًا', other: '# عمود' })}، وتُرصّ في الشاشات الأصغر كما يرصّها المظهر`,

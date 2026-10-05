@@ -31,7 +31,7 @@ export const LATIN_KEPT = [
   // Fieldia's own name, as its look's.
   'Fieldia',
   // Names in code, in examples.
-  ...['contact', 'confirm', 'open_invoices', 'archive', 'active'],
+  ...['contact', 'confirm', 'open_invoices', 'archive', 'active', 'home', 'street'],
 ];
 
 /** Code an example writes as it is typed: a formula's function and the fields it reads, as in round(price * qty, 2); an escape; and a place in a sentence that something is drawn in, as {language}. */

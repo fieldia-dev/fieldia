@@ -4,7 +4,7 @@ import type { ElementFactory } from './chrome';
 import type { Designer, SavedLook } from './designer';
 import { designerIcon } from './icons';
 import { looksHub, reasonOf } from './look-hub';
-import { LOOK_PRESETS, lookValuesOf, PRESET_KEYS, sameLook, type LookValues } from './look-presets';
+import { LOOK_KEYS, LOOK_PRESETS, lookValuesOf, sameLook, type LookValues } from './look-presets';
 import { openMenu } from './menu';
 import { setting } from './panel-controls';
 import type { DesignerWords } from './designer-words';
@@ -41,7 +41,7 @@ const presetName = (id: string, name: string, words: DesignerWords) => words.loo
 
 let made = 0;
 const newId = () => `look-${Date.now().toString(36)}-${(++made).toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-const anySet = (look: PageLook | undefined) => PRESET_KEYS.some((key) => look?.[key] !== undefined);
+const anySet = (look: PageLook | undefined) => LOOK_KEYS.some((key) => look?.[key] !== undefined);
 
 export interface LookRow {
   rows: HTMLElement[];

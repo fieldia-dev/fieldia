@@ -158,7 +158,7 @@ test('a look preset, picked, worn by the canvas, and taken back with Undo', asyn
   await expect(canvas).toHaveAttribute('data-scheme', 'dark');
   await shot(page, '08-preset-night');
   // A setting changed by hand: the look is your own.
-  await panel(page).getByRole('group', { name: 'Corners' }).getByRole('button', { name: 'Round' }).click();
+  await panel(page).getByRole('group', { name: 'Corners', exact: true }).getByRole('button', { name: 'Round' }).click();
   await expect(presets.locator('.fd-look-own')).toHaveText('Your own');
   await expect(presets.locator('[aria-pressed="true"]')).toHaveCount(0);
   // Undo, a step at a time: Night again, then Calm — each pick was one step.

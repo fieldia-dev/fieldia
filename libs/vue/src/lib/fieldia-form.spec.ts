@@ -144,6 +144,14 @@ describe('<FieldiaForm> for Vue', () => {
     wrapper.unmount();
   });
 
+  it('draws a saved form placed in the page from the pages it is given', () => {
+    const wrapper = mount(FieldiaForm, { props: { page: page('delivery'), pages: { address: page('address') } }, attachTo: document.body });
+    const part = document.querySelector('[data-node="delivery-address"]') as HTMLElement;
+    expect(part.querySelector('legend')?.textContent).toBe('Delivery address');
+    expect(part.querySelector('[data-node="street"] .fd-label')?.textContent).toBe('Street and number');
+    wrapper.unmount();
+  });
+
   it('draws the app’s own icons it is given', () => {
     const p = page('customer');
     (p.layout as any).statButtons[0].icon = 'rocket';

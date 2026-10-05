@@ -88,6 +88,7 @@ export const changes: DesignerWords['changes'] = {
     anImage: 'صورة',
     divider: 'خط فاصل',
     spacer: 'مسافة',
+    form: (name) => `النموذج المحفوظ ${q(name)}`,
   },
   addedBlock: (block, where) => `إضافة ${block}${at(where)}`,
   changedBlockTo: (block, text) => `تغيير ${block} إلى ${q(text)}`,

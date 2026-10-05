@@ -18,6 +18,7 @@ import type { SampleOptions } from './rules-sample';
 import { blockProperties, severalProperties } from './panel-parts';
 import { settingSearch } from './panel-search';
 import { partKindOf, type PanelTab, type PartKind } from './panel-tabs';
+import { shownTitle } from './saved-forms';
 import { tabProperties, tabsProperties, type PropertiesView } from './screen-properties';
 
 /**
@@ -49,10 +50,11 @@ const BLOCK_HEADS: Record<string, [keyof DesignerWords['panel']['heads'], string
   divider: ['divider', 'width'],
   spacer: ['spacer', 'width'],
   slot: ['slot', 'more'],
+  form: ['form', 'saved-form'],
 };
 
 /** What is picked, as the head says it: its kind, with an icon, and its name. */
-export function headOf(page: Page, kind: PartKind, picked: readonly string[], fromModel: (id: string) => boolean, words: DesignerWords = en): InspectorHead {
+export function headOf(page: Page, kind: PartKind, picked: readonly string[], fromModel: (id: string) => boolean, words: DesignerWords = en, savedTitle?: (pageId: string) => string | undefined): InspectorHead {
   const w = words.panel;
   const h = w.heads;
   const named = (node: Part | null | undefined) => nameOf(page, node ?? null, words);
@@ -79,7 +81,9 @@ export function headOf(page: Page, kind: PartKind, picked: readonly string[], fr
     case 'block': {
       const heading = node?.type === 'text' && node.style === 'heading';
       const [key, icon]: [keyof typeof h, string] = node?.type === 'text' ? [heading ? 'heading' : 'words', 'paragraph'] : (BLOCK_HEADS[node?.type ?? ''] ?? ['part', 'more']);
-      return { icon, kind: h[key], name: named(node) };
+      // A saved form with no words of its own over it: named by its title, as the canvas names it.
+      const title = node?.type === 'form' && !node.title ? savedTitle?.(node.page) : undefined;
+      return { icon, kind: h[key], name: title || named(node) };
     }
     case 'header': {
       const part = findHeaderPart(page, id);
@@ -168,7 +172,7 @@ export function screenPanel(options: { el: ElementFactory; doc: Document; design
         shell.show(kind, view, mode);
       }
       view?.update(page);
-      shell.head(headOf(page, kind, picked, (id) => designer.isFromModel(id), designer.words));
+      shell.head(headOf(page, kind, picked, (id) => designer.isFromModel(id), designer.words, (pageId) => shownTitle(designer.savedForm(pageId)?.page, designer.getPage().language)));
       search.refresh();
       // The canvas wears the page's look as it is set.
       if (wearer) wearLook(wearer, page.look);

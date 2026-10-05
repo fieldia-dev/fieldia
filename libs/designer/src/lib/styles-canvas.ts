@@ -178,4 +178,16 @@ export const DESIGNER_CANVAS_CSS = /* css */ `
 }
 .fd-canvas-resize[data-active] .fd-canvas-resize-chip { display: block; }
 @media (prefers-reduced-motion: reduce) { .fd-canvas-resize::before { transition: none; } }
+
+/* ---- a saved form placed in the page: the form as it will be drawn, in a frame with its words and “Open it” ---- */
+.fd-canvas-form { display: grid; gap: 10px; min-width: 0; padding: 12px 14px 14px; border: 1px dashed var(--fd-border-strong); border-radius: 10px; }
+.fd-canvas-form-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.fd-canvas-form-head > .fd-dicon { flex: none; width: 18px; height: 18px; color: var(--fd-muted); }
+.fd-canvas-form-tag { flex: 1 1 auto; min-width: 0; color: var(--fd-muted); font-size: 12.5px; overflow-wrap: anywhere; }
+.fd-canvas-form-open { flex: none; }
+.fd-canvas-form-note { margin: 0; color: var(--fd-muted); }
+.fd-canvas-form-note.fd-canvas-form-problem { color: var(--fd-error); }
+/* Shown, never used: what is inside is inert, and takes no pointer either. */
+.fd-canvas-form-body { min-width: 0; pointer-events: none; }
+.fd-canvas-form-body:empty { display: none; }
 `;

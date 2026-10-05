@@ -131,6 +131,146 @@
             "dark",
             "auto"
           ]
+        },
+        "parts": {
+          "type": "object",
+          "properties": {
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "background": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "border": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "corners": {
+                  "type": "string",
+                  "enum": [
+                    "square",
+                    "soft",
+                    "round"
+                  ]
+                },
+                "textSize": {
+                  "type": "string",
+                  "enum": [
+                    "small",
+                    "large"
+                  ]
+                },
+                "accent": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                }
+              },
+              "additionalProperties": false
+            },
+            "choices": {
+              "type": "object",
+              "properties": {
+                "accent": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "background": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "border": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "corners": {
+                  "type": "string",
+                  "enum": [
+                    "square",
+                    "soft",
+                    "round"
+                  ]
+                },
+                "textSize": {
+                  "type": "string",
+                  "enum": [
+                    "small",
+                    "large"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            "groups": {
+              "type": "object",
+              "properties": {
+                "background": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "border": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "corners": {
+                  "type": "string",
+                  "enum": [
+                    "square",
+                    "soft",
+                    "round"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            "buttons": {
+              "type": "object",
+              "properties": {
+                "accent": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "corners": {
+                  "type": "string",
+                  "enum": [
+                    "square",
+                    "soft",
+                    "round"
+                  ]
+                },
+                "textSize": {
+                  "type": "string",
+                  "enum": [
+                    "small",
+                    "large"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            "tables": {
+              "type": "object",
+              "properties": {
+                "background": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "border": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "textSize": {
+                  "type": "string",
+                  "enum": [
+                    "small",
+                    "large"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -3415,6 +3555,53 @@
             "id",
             "src",
             "alt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "form"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "page": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "name": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "title": {
+              "type": "string"
+            },
+            "colspan": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "invisible": {
+              "$ref": "#/$defs/Modifier"
+            },
+            "readonly": {
+              "$ref": "#/$defs/Modifier"
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "page",
+            "name"
           ],
           "additionalProperties": false
         }

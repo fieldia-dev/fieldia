@@ -16,6 +16,7 @@ import { setAttr, setData, setHidden } from './writes';
  *
  * A tile names what it adds: `kind:<id>`, `model:<field name>` or `layout:section` / `layout:tabs`;
  * in Advanced, the layout tiles are `block:<kind>` — groups, tabs and the blocks between fields.
+ * `form:saved`, under More, places one of the app's saved forms: the editor asks which.
  */
 
 export interface ToolboxOptions {
@@ -27,6 +28,8 @@ export interface ToolboxOptions {
   layout?: boolean;
   /** The designer's words. */
   words: DesignerWords;
+  /** “A saved form”, for a screen: shown while the designer can place one (`update`'s `forms`). */
+  forms?: boolean;
   onPick(spec: string): void;
   onPress?(spec: string, event: PointerEvent, tile: HTMLElement): void;
 }
@@ -34,7 +37,7 @@ export interface ToolboxOptions {
 export interface ToolboxHandle {
   element: HTMLElement;
   /** The model's fields still to place, whether tabs can be added, whether new fields can be — a list shows only what the model has — and whether it is Advanced. */
-  update(state: { modelFields: ModelField[]; tabs: boolean; kinds?: boolean; advanced?: boolean }): void;
+  update(state: { modelFields: ModelField[]; tabs: boolean; kinds?: boolean; advanced?: boolean; forms?: boolean }): void;
 }
 
 /** The kinds in the order and groups the toolbox shows them. */
@@ -77,6 +80,7 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
   let query = '';
   let kindsOn = true;
   let advancedOn = false;
+  let formsOn = false;
 
   const find = el('input', { type: 'search', class: 'fd-input fd-tool-find', placeholder: w.find, 'aria-label': w.find });
   const none = el('p', { class: 'fd-tool-none', hidden: '' }, w.nothing);
@@ -87,8 +91,9 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
     const picture = typeof icon === 'string' ? designerIcon(doc, icon) : icon;
     const button = el('button', { type: 'button', class: `fd-tool ${extra}`.trim(), 'data-tool': spec, title }, picture, el('span', { class: 'fd-tool-name' }, name));
     button.addEventListener('click', () => options.onPick(spec));
+    // A saved form is picked from a menu the tile opens: there is nothing to carry yet.
     button.addEventListener('pointerdown', (event) => {
-      if ((event as PointerEvent).button === 0) options.onPress?.(spec, event as PointerEvent, button);
+      if ((event as PointerEvent).button === 0 && spec !== 'form:saved') options.onPress?.(spec, event as PointerEvent, button);
     });
     return button;
   }
@@ -125,6 +130,9 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
     }
     return g;
   }).filter((g) => g.tiles.children.length > 0);
+  // One of the app's saved forms, placed whole: an address, a contact person, a consent made once.
+  const formTile = tile('form:saved', 'saved-form', options.words.savedForms.tile, options.words.savedForms.tileTip);
+  if (options.forms) kindGroups.find((g) => g.key === 'More')?.tiles.append(formTile);
   const layout = group('layout', w.layout);
   const tabsTile = tile('layout:tabs', 'tabs', w.tabs, w.tabsTip);
   layout.tiles.append(tile('layout:section', 'section', w.section, w.sectionTip), tabsTile);
@@ -149,7 +157,8 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
         const name = t.querySelector('.fd-tool-name')?.textContent?.toLowerCase() ?? '';
         const block = blockTiles.includes(t as HTMLButtonElement);
         const simpleOnly = g === layout && !block;
-        const unavailable = (g !== fromModel && !kindsOn) || (t === tabsTile && tabsTile.dataset['allowed'] !== 'true') || (block && !advancedOn) || (simpleOnly && advancedOn);
+        const unavailable =
+          (g !== fromModel && !kindsOn) || (t === tabsTile && tabsTile.dataset['allowed'] !== 'true') || (block && !advancedOn) || (simpleOnly && advancedOn) || (t === formTile && !formsOn);
         setHidden(t, unavailable || (!!query && !name.includes(query)));
         if (!t.hidden) shown++;
       }
@@ -166,9 +175,10 @@ export function toolbox(options: ToolboxOptions): ToolboxHandle {
 
   return {
     element,
-    update({ modelFields, tabs, kinds = true, advanced = false }) {
+    update({ modelFields, tabs, kinds = true, advanced = false, forms = false }) {
       kindsOn = kinds;
       advancedOn = advanced;
+      formsOn = forms;
       const key = modelFields.map((m) => `${m.name}:${m.field.label}:${m.field.type}`).join('|');
       if (fromModel.element.dataset['key'] !== key) {
         fromModel.element.dataset['key'] = key;

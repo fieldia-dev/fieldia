@@ -37,10 +37,12 @@ export type {
   DividerNode,
   SpacerNode,
   ImageNode,
+  FormNode,
 } from './lib/format/layout';
 export { wideColumns } from './lib/format/columns';
 export { FORMAT_VERSION } from './lib/format/version';
 export type { Page, PageData, PageLook } from './lib/format/page';
+export { PART_LOOKS, type PartLook, type PartLookKind, type PartsLook } from './lib/format/part-look';
 export { checkPage } from './lib/format/check-page';
 export type { PageIssue, PageValidation } from './lib/format/references';
 export { translatePage, localizePage, pageWords, isRightToLeft } from './lib/format/translate';

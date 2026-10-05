@@ -1,6 +1,7 @@
-import type { Page, PageLook, SectionNode, TabsNode } from '@fieldia/core';
+import { PART_LOOKS, type Page, type PageLook, type PartLook, type PartLookKind, type SectionNode, type TabsNode } from '@fieldia/core';
 import { across, isSection, isWrapper, listOf, nameOf, rowsOf, seenAs, spanOf, type Holder, type Part } from './layout-tree';
 import { foldOf } from './group-fold';
+import { settingWords } from './look-parts-words';
 import { inTwelfths, laidInTwelfths, rowShare } from './layout-twelfths';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
@@ -107,6 +108,8 @@ function blockWords(page: Page, node: Part, words: DesignerWords): string | null
       return w.divider;
     case 'spacer':
       return w.spacer;
+    case 'form':
+      return w.form(nameOf(page, node, words));
     default:
       return null;
   }
@@ -217,6 +220,8 @@ export function layoutChanges(before: Page, after: Page, words: DesignerWords = 
     else if (old.type === 'button' && node.type === 'button' && old.label !== node.label) lines.push(w.renamedButton(old.label, node.label));
     // A picture's address, description, width, place, link or caption.
     else if (old.type === 'image' && node.type === 'image' && JSON.stringify(old) !== JSON.stringify(node)) lines.push(w.changedBlock(block));
+    // A saved form: another one, another version, where its answers go, its title.
+    else if (old.type === 'form' && node.type === 'form' && JSON.stringify(old) !== JSON.stringify(node)) lines.push(w.changedBlock(block));
   }
   for (const [id, node] of was.node) if (!stays(id) && blockWords(before, node as Part, words)) lines.push(w.removedBlock(blockWords(before, node as Part, words) as string));
 
@@ -263,13 +268,23 @@ export function holderName(page: Page, holder: { id: string; label?: string; tit
 /** The look's settings, in the order a change to them is said. */
 const LOOK: (keyof PageLook & keyof DesignerWords['changes']['look'])[] = ['accent', 'font', 'density', 'corners', 'labels', 'labelWidth', 'scheme'];
 
-/** The page's look, setting by setting: "The spacing: comfortable → compact". */
+/** The page's look, setting by setting: "The spacing: comfortable → compact"; then each kind of part's: "Text boxes, corners: as the page → round". */
 export function lookChanges(before: Page, after: Page, words: DesignerWords = en): string[] {
   const w = words.changes;
-  return LOOK.flatMap((key) => {
+  const page = LOOK.flatMap((key) => {
     const [was, now] = [before.look?.[key], after.look?.[key]];
     if (was === now) return [];
     const say = (v: string | number | undefined) => w.lookValue(key, v ?? null);
     return [w.lookLine(w.look[key], say(was), say(now))];
   });
+  const partOf = (look: Page['look'], kind: string) => (look?.parts as Record<string, PartLook | undefined> | undefined)?.[kind];
+  const parts = Object.entries(PART_LOOKS).flatMap(([kind, settings]) =>
+    (settings as readonly (keyof PartLook)[]).flatMap((name) => {
+      const [was, now] = [partOf(before.look, kind)?.[name], partOf(after.look, kind)?.[name]];
+      if (was === now) return [];
+      const own = words.partLooks;
+      return [own.change(own.kinds[kind as PartLookKind], settingWords(kind as PartLookKind, name, words), own.said(was), own.said(now))];
+    })
+  );
+  return [...page, ...parts];
 }

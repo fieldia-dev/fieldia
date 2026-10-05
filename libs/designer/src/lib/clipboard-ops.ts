@@ -4,6 +4,7 @@ import { find, isWrapper, listOf, type Holder, type Part } from './layout-tree';
 import { remapReferences } from './clipboard-names';
 import { partsInOrder, putNewParts } from './outline-moves';
 import { Refusal } from './refusal';
+import { formParts } from './saved-forms';
 
 /**
  * Copying parts and pasting them, in one designer or another, through the
@@ -105,7 +106,8 @@ export function pasteParts(page: Page, text: string, picked: string[], context: 
   const where = pasteWhere(page, picked, copied);
   // Each field under its own name, or a free one: never one the page or the backend's model has.
   const names = new Map<string, string>();
-  const taken = (name: string) => name in page.fields || Object.prototype.hasOwnProperty.call(context.model, name) || [...names.values()].includes(name);
+  const answers = new Set(formParts(page).map((part) => part.name));
+  const taken = (name: string) => name in page.fields || answers.has(name) || Object.prototype.hasOwnProperty.call(context.model, name) || [...names.values()].includes(name);
   for (const name of Object.keys(copied.fields)) names.set(name, freeName(name, taken));
   const fields: Record<string, Field> = {};
   for (const [name, def] of Object.entries(copied.fields)) fields[names.get(name) as string] = clone(def);
@@ -115,6 +117,11 @@ export function pasteParts(page: Page, text: string, picked: string[], context: 
   const renew = (part: Part): Part => {
     part.id = name(prefixOf(part));
     if (part.type === 'field') part.field = names.get(part.field) ?? part.field;
+    // A saved form's answers under a name of their own too.
+    if (part.type === 'form') {
+      part.name = freeName(part.name, taken);
+      answers.add(part.name);
+    }
     for (const child of listOf(part) ?? []) renew(child);
     return part;
   };

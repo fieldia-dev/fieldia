@@ -62,6 +62,34 @@ function lookRow(row: () => HTMLElement) {
 /** A look of one's own on the page, by hand: none of the presets. */
 const ownLook = (designer: Designer) => designer.setLook(brandLook);
 
+describe('a look of one’s own with each kind of part’s', () => {
+  it('is offered to save once a kind of part has a look of its own, is kept with it, and is shown picked only with it', async () => {
+    const { designer, looks, saveButton, saveAs, tile, pressed } = lookTab();
+    designer.setLookPreset('calm');
+    expect(saveButton()).toBeUndefined();
+    designer.setPartLook('inputs', { background: '#fff7e6', corners: 'round' });
+    expect(pressed()).toEqual([]);
+    expect(saveButton()).toBeDefined();
+    await saveAs('Calm, cream boxes');
+    const kept = [...looks.looks.values()][0];
+    expect(kept.look).toEqual({ ...LOOK_PRESETS[1].look, parts: { inputs: { background: '#fff7e6', corners: 'round' } } });
+    expect(pressed()).toEqual(['Calm, cream boxes']);
+    designer.setLookPreset('calm');
+    expect(designer.getPage().look?.parts).toBeUndefined();
+    expect(pressed()).toEqual(['Calm']);
+    tile('Calm, cream boxes')?.click();
+    expect(designer.getPage().look?.parts).toEqual({ inputs: { background: '#fff7e6', corners: 'round' } });
+    expect(pressed()).toEqual(['Calm, cream boxes']);
+  });
+
+  it('with only a kind of part’s look, is one’s own: a page as the skin draws it but for its buttons', () => {
+    const { designer, saveButton, row } = lookTab();
+    designer.setPartLook('buttons', { accent: '#6941c6' });
+    expect(saveButton()).toBeDefined();
+    expect(row().querySelector('.fd-look-own')?.textContent).toBe('Your own');
+  });
+});
+
 describe('saving a look of one’s own', () => {
   it('is offered once the look is one’s own, in a box on the page, never a prompt', () => {
     const prompt = jest.spyOn(window, 'prompt').mockImplementation(() => null);

@@ -1,6 +1,7 @@
 import * as z from 'zod';
 import { FieldsSchema, type Fields } from './field';
 import { RootLayoutSchema, type RootLayout } from './layout';
+import { PART_LOOKS, type PartLook, type PartsLook } from './part-look';
 
 import { FORMAT_VERSION } from './version';
 export { FORMAT_VERSION } from './version';
@@ -29,6 +30,8 @@ export interface PageLook {
   labelWidth?: number;
   /** Light, dark, or as the reader's system has it. */
   scheme?: 'light' | 'dark' | 'auto';
+  /** A look for each kind of part, over the page's: text boxes, choices, groups, buttons, tables. See `PART_LOOKS`. */
+  parts?: PartsLook;
 }
 
 export interface Page {
@@ -60,6 +63,22 @@ export const PageDataSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('responses') }),
 ]);
 
+const COLOUR = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+const CORNERS = z.enum(['square', 'soft', 'round']);
+const PART_SETTING: { [K in keyof Required<PartLook>]: z.ZodType } = {
+  background: COLOUR,
+  border: COLOUR,
+  corners: CORNERS,
+  textSize: z.enum(['small', 'large']),
+  accent: COLOUR,
+};
+/** Each kind of part with only the settings it can draw. */
+const PartsLookSchema = z.strictObject(
+  Object.fromEntries(
+    Object.entries(PART_LOOKS).map(([kind, settings]) => [kind, z.strictObject(Object.fromEntries(settings.map((name) => [name, PART_SETTING[name].optional()]))).optional()])
+  )
+);
+
 export const PageSchema = z
   .strictObject({
     fieldia: z.literal(FORMAT_VERSION),
@@ -73,13 +92,14 @@ export const PageSchema = z
     actionsPosition: z.enum(['top', 'bottom']).optional(),
     look: z
       .strictObject({
-        accent: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+        accent: COLOUR.optional(),
         font: z.enum(['system', 'serif', 'rounded']).optional(),
         density: z.enum(['compact', 'comfortable', 'roomy']).optional(),
-        corners: z.enum(['square', 'soft', 'round']).optional(),
+        corners: CORNERS.optional(),
         labels: z.enum(['above', 'beside', 'hidden']).optional(),
         labelWidth: z.int().min(60).max(320).optional(),
         scheme: z.enum(['light', 'dark', 'auto']).optional(),
+        parts: PartsLookSchema.optional(),
       })
       .optional(),
     language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/).optional(),

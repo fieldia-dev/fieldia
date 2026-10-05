@@ -1,6 +1,7 @@
 import { FIELDIA_CSS, installStyles } from './styles';
 import { KINDS_CSS } from './styles-kinds';
 import { CHOICES_CSS } from './styles-choices';
+import { PARTS_CSS } from './styles-parts';
 import { foreignRules } from './test-kinds';
 
 describe('the question kinds’ stylesheet', () => {
@@ -21,9 +22,9 @@ describe('the question kinds’ stylesheet', () => {
 
   it('restyles nothing of the rest of Fieldia: every rule names a class of the kinds’ own', () => {
     // A rule on a class the stylesheet already styles — the sheet's .fd-card, say — would change that part everywhere.
-    // The rest of Fieldia: the whole stylesheet before the kinds' own part (the choices' details come after it).
+    // The rest of Fieldia: the whole stylesheet before the kinds' own part (the choices' details and each kind of part's look come after it).
     expect(foreignRules(KINDS_CSS, FIELDIA_CSS.slice(0, FIELDIA_CSS.indexOf(KINDS_CSS)))).toEqual([]);
-    expect(FIELDIA_CSS.endsWith(KINDS_CSS + CHOICES_CSS)).toBe(true);
+    expect(FIELDIA_CSS.endsWith(KINDS_CSS + CHOICES_CSS + PARTS_CSS)).toBe(true);
   });
 
   it('ends with the choices’ details, scoped to Fieldia and safe in a template literal', () => {

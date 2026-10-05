@@ -23,6 +23,36 @@ const viewer = mountViewer(document.getElementById('app')!, {
 // later: viewer.destroy()
 ```
 
+## Saved forms placed in a page
+
+A page may place another saved page in it by its id — an address made once,
+placed twice (see `@fieldia/core`'s `form` part). The viewer draws it where it
+stands, from the page `pages` gives for its id, its fields checked by its own
+rules and its answers nested under the part's name in `form.getState().values`
+and what is sent:
+
+```ts
+mountViewer(element, {
+  page,                     // places { "type": "form", "page": "address", "name": "home_address", … }
+  dataSource,
+  // The app's pages: a record by key, or a function asked for each, which may answer with a promise.
+  pages: async (request) => {
+    if ('model' in request) return customerPage;                      // a link's record, in a dialog
+    const reply = await fetch(`/api/forms/${request.id}?version=${request.version ?? 'latest'}`);
+    return reply.ok ? reply.json() : null;                           // a saved form, by id and version
+  },
+});
+```
+
+`pages` is one option for every part that shows another page: a saved form is
+asked for by `{ id, version }` (a record of pages is read by `id`, or
+`id@version` for a version kept to), and a link's record in a dialog by
+`{ model }` (the older `relatedPages`, by model only, is still read after it).
+While a saved form comes, its place shows a quiet "Loading…"; one that cannot
+be found, would be placed inside itself, or is not a page of sections or tabs
+says so in its place, in the page's language. The React, Vue and Angular
+bindings take `pages` too.
+
 ## Lists
 
 A page whose layout is a `list` shows its records as a table: pages, sorting,
@@ -34,7 +64,7 @@ page's buttons reach `onAction` with the chosen `recordIds`. See
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
-(core, widgets and viewer; about 81 KB gzipped):
+(core, widgets and viewer; about 83 KB gzipped):
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>

@@ -48,6 +48,21 @@ describe('the presets', () => {
   });
 });
 
+describe('a preset and each kind of part', () => {
+  it('is a whole look: put on, it gives each kind of part back to the page, as one undo step', () => {
+    const designer = createDesigner({ page: { ...blankPage('screen', 'Visit'), look: { labels: 'beside', parts: { buttons: { accent: '#6941c6' } } } } });
+    expect(designer.setLookPreset('calm')).toBe(true);
+    expect(designer.getPage().look).toEqual({ labels: 'beside', ...LOOK_PRESETS[1].look });
+    designer.undo();
+    expect(designer.getPage().look).toEqual({ labels: 'beside', parts: { buttons: { accent: '#6941c6' } } });
+  });
+
+  it('is not the look of a page whose kinds of part have looks of their own', () => {
+    expect(presetOf({ ...LOOK_PRESETS[1].look, parts: { inputs: { corners: 'round' } } })).toBeNull();
+    for (const preset of LOOK_PRESETS) expect(Object.keys(preset.look)).not.toContain('parts');
+  });
+});
+
 describe('a preset, picked', () => {
   it('sets every value of its look as one undo step, and keeps where labels sit', () => {
     const designer = createDesigner({ page: { ...blankPage('screen', 'Visit'), look: { labels: 'beside', density: 'roomy' } } });

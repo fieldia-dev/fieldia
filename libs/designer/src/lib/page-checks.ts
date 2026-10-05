@@ -12,6 +12,7 @@ import { fixRuleCheck, ruleChecks, type RuleFix, type RuleFixer } from './rules-
 import { isDefaultOption, isUntitled, type DesignerWords } from './designer-words';
 import { en } from './locales/en';
 import { kindName } from './kinds';
+import { formChecks, SAID_BY_FORM_CHECKS, type SavedFormsCache } from './saved-forms';
 
 /**
  * Before a page is published: what people would trip over, each with a fix
@@ -74,15 +75,19 @@ function withRules(page: Page, words: DesignerWords = en): { id: string; name: s
  * pass `validatePage`, as each page the designer keeps is: it is not checked
  * against the format again, which on a big page is most of the time it takes.
  */
-export function pageChecks(page: Page, options: { valid?: boolean; words?: DesignerWords } = {}): PageCheck[] {
+export function pageChecks(page: Page, options: { valid?: boolean; words?: DesignerWords; forms?: SavedFormsCache | null } = {}): PageCheck[] {
   const words = options.words ?? en;
   const w = words.checks;
   const found: PageCheck[] = [];
   const checked = options.valid ? null : validatePage(page);
   const rules = ruleChecks(page, words);
-  // A page written by hand can be wrong in ways the designer would never let it be; what the rules' checks say in words is not said again.
-  if (checked && !checked.ok) for (const issue of checked.issues) if (!rules.covers(issue.path)) found.push({ at: null, severity: 'must', text: w.invalid(issue.path, issue.message) });
+  // A page written by hand can be wrong in ways the designer would never let it be; what the rules' checks — and the saved forms' — say in words is not said again.
+  if (checked && !checked.ok) {
+    for (const issue of checked.issues) if (!rules.covers(issue.path) && !SAID_BY_FORM_CHECKS.test(issue.message)) found.push({ at: null, severity: 'must', text: w.invalid(issue.path, issue.message) });
+  }
   found.push(...rules.checks);
+  // embed lane: saved forms placed in the page that cannot be found, would hold it, or would mix their answers.
+  found.push(...formChecks(page, options.forms ?? null, words));
   const survey = page.data.kind === 'responses';
   const placed = placedFields(page);
   if (survey && placed.length === 0) found.push({ at: null, severity: 'must', text: w.noQuestions });

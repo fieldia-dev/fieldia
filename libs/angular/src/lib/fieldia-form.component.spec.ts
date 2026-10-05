@@ -186,6 +186,18 @@ describe('<fieldia-form> for Angular', () => {
     fixture.destroy();
   });
 
+  it('draws a saved form placed in the page from the pages it is given', async () => {
+    const fixture = TestBed.createComponent(FieldiaFormComponent);
+    fixture.componentRef.setInput('page', page('delivery'));
+    fixture.componentRef.setInput('pages', { address: page('address') });
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    const part = document.querySelector('[data-node="delivery-address"]') as HTMLElement;
+    expect(part.querySelector('legend')?.textContent).toBe('Delivery address');
+    expect(part.querySelector('[data-node="street"] .fd-label')?.textContent).toBe('Street and number');
+    fixture.destroy();
+  });
+
   it('draws the app’s own icons it is given', async () => {
     const p = page('customer');
     (p.layout as any).statButtons[0].icon = 'rocket';

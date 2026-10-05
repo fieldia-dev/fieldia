@@ -57,6 +57,7 @@ const BLOCK_KINDS: Record<string, [kind: keyof RowKinds, icon: string]> = {
   image: ['image', 'image'],
   button: ['button', 'button'],
   slot: ['slot', 'group'],
+  form: ['form', 'form'],
 };
 const TEXT_KINDS: Record<string, [kind: keyof RowKinds, icon: string]> = { heading: ['heading', 'heading'], note: ['note', 'text'], paragraph: ['words', 'text'] };
 

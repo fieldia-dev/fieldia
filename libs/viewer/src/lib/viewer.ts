@@ -15,6 +15,7 @@ import {
   type Page,
   type RecordId,
   type SectionNode,
+  type SectionsNode,
   type SheetNode,
   type SlotNode,
   type TabsNode,
@@ -22,13 +23,14 @@ import {
   type DividerNode,
   type SpacerNode,
   type ImageNode,
+  type FormNode,
   type WizardNode,
   type LabelPlace,
   type Locale,
   MESSAGES,
 } from '@fieldia/core';
 import { browserPreferences, createWidget, drawIcon, installStyles, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
-import { pageDialogs } from './related';
+import { findPage, pageDialogs, type PageFinder } from './related';
 import { listView } from './list';
 import { applyLook } from './look';
 import { labelPlace, planSection, type Place } from './place';
@@ -39,6 +41,7 @@ export type Skin = 'underline' | 'outlined';
 import { ownLocale, VIEWER_LABELS, type ViewerLabels } from './labels';
 import { keepTabIn } from './focus-trap';
 export { VIEWER_LABELS, DEFAULT_LABELS, type ViewerLabels } from './labels';
+export type { PageFinder, PageRequest } from './related';
 
 /** Fill a slot with the app's own content. Return a function to clean up. */
 export type SlotRenderer = (element: HTMLElement, context: { form: Form; name: string }) => void | (() => void);
@@ -71,9 +74,17 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
   /** False when something around the page saves it, such as a dialog: the page's own Save, Discard and Submit stay hidden. */
   showActions?: boolean;
   /**
-   * Pages for the models links point to, so a link can show its record in a
-   * dialog: Create and edit…, and the button that opens the linked record.
+   * The app's pages, for the parts that show another page. A saved form placed
+   * in this one (a `form` part) is drawn from the page asked for by its id —
+   * `{ id, version }` when it keeps to a version; and a link shows its record
+   * in a dialog (Create and edit…, and the button that opens the linked
+   * record) with the page asked for by the model it points to, `{ model }`.
+   * Either a record of pages by key — a model, a page's id, or `id@version`
+   * for a version kept to — or a function asked for each, which may answer
+   * with a promise: a saved form shows a quiet placeholder until it does.
    */
+  pages?: PageFinder;
+  /** Pages by the models links point to: what `pages` gives by model, as earlier versions had it. Still read. */
   relatedPages?: Record<string, Page> | ((model: string) => Page | null | undefined);
   /**
    * The app's own icons, or replacements for Fieldia's, by the name a page
@@ -119,6 +130,22 @@ export interface ViewerHandle {
 
 type Updater = (state: FormState) => void;
 
+/** What one page's parts are drawn with: the page shown, or — inside a saved form placed in it — the saved page, with its own form. */
+interface Scope {
+  /** The page shown, whose form is the one the viewer was given or made. */
+  root: boolean;
+  form: Form;
+  page: Page;
+  /** Before each element's id, so two copies of one saved form never share one. */
+  prefix: string;
+  /** The pages round it, outermost first, itself last: one of them placed again would hold itself. */
+  chain: { id: string; title: string }[];
+  /** Locked from outside: a saved form read-only where it is placed. */
+  locked(): boolean;
+  /** Before its fields' names among the outer form's problems: `home.` inside the saved form whose answers go under "home". */
+  path: string;
+}
+
 let mounts = 0;
 
 /**
@@ -137,6 +164,11 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   const tag = options.locale ?? checked.page.language;
   const localized = tag ? localizePage(checked.page, tag) : checked.page;
   const page = options.translate ? translatePage(localized, options.translate) : localized;
+  /** Another page as this one is shown: in its language, through the app's translator. */
+  const shownAs = (other: Page) => {
+    const own = tag ? localizePage(other, tag) : other;
+    return options.translate ? translatePage(own, options.translate) : own;
+  };
   const locale = ownLocale(tag);
   const preferences = options.preferences ?? browserPreferences();
   const dialogs = pageDialogs(options);
@@ -148,7 +180,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   const prefix = `fd${++mounts}`;
   const updaters: Updater[] = [];
   const cleanups: (() => void)[] = [];
-  const uid = (id: string) => `${prefix}-${id.replace(/[^A-Za-z0-9_-]/g, '_')}`;
+  const ownUid = (id: string) => `${prefix}-${id.replace(/[^A-Za-z0-9_-]/g, '_')}`;
+  const uid = ownUid;
   const fill = (template: string, values: Record<string, string | number>) =>
     template.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? ''));
 
@@ -178,294 +211,395 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
 
   // ---- the parts -------------------------------------------------------
 
-  /** A field with its label, help and messages. `labels` is where labels sit where it is put; the title's own fields take none. */
-  function fieldItem(node: FieldNode, labels?: LabelPlace): HTMLElement {
-    const def = page.fields[node.field];
-    const id = uid(node.id);
-    const labelsAt = labelPlace(node, def.type, labels);
-    const wrapper = el('div', { class: 'fd-field', 'data-node': node.id, 'data-field': node.field, 'data-type': def.type, 'data-labels': labelsAt });
-    if (node.colspan) wrapper.style.setProperty('--fd-span', String(node.colspan));
-    const labelText = node.label ?? def.label;
-    const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, labelText);
-    // The ✓ of a field filled in right; never on a yes/no box, a table or a file, where it would say nothing.
-    const mark = options.showValid && !NO_VALID_MARK.has(def.type) ? drawIcon(doc, 'check') : null;
-    if (mark) {
-      mark.classList.add('fd-valid-mark');
-      label.append(mark);
-    }
-    const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs }, options.widgets);
-    // A label kept out of sight still names the box; the empty box shows it instead, unless the page gives it words of its own.
-    if (labelsAt === 'hidden' && !node.placeholder) {
-      const box = widget.element.matches(TEXT_BOX) ? widget.element : widget.element.querySelector(TEXT_BOX);
-      box?.setAttribute('placeholder', labelText);
-    }
-    if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) {
-      // `for` stays: a custom field that puts the id on its own input is
-      // labelled natively. Only a wrapper with a role (a radio group, say) may
-      // carry a name; ARIA forbids naming a plain div or span.
-      // A group inside a box of its own (a radio group with "Clear selection" under it) is named too.
-      const named = widget.element.getAttribute('role') ? widget.element : widget.element.querySelector(`[id="${id}"][role]`);
-      named?.setAttribute('aria-labelledby', label.id);
-      label.addEventListener('click', () => widget.focus());
-    }
-    const helpText = node.help ?? def.help;
-    const help = helpText ? el('div', { class: 'fd-help', id: `${id}-help` }, helpText) : null;
-    // Not an alert of its own: a refused save is announced once, naming every field to look at.
-    const error = el('div', { class: 'fd-error', id: `${id}-error`, hidden: '' });
-    // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
-    const warning = el('div', { class: 'fd-warning', id: `${id}-warning`, role: 'status', hidden: '' });
-    wrapper.append(...(labelsAt === 'after' ? [widget.element, label] : [label, widget.element]), ...(help ? [help] : []), error, warning);
-    if (widget.destroy) cleanups.push(() => widget.destroy?.());
-    // An answer rule's warning waits until the person leaves the field: no advice
-    // mid-word. One already shown stays while they put it right, and goes once they have.
-    let typing = false;
-    let advice = '';
-    wrapper.addEventListener('focusin', () => (typing = true));
-    wrapper.addEventListener('focusout', (event) => {
-      if (wrapper.contains(event.relatedTarget as Node | null)) return;
-      typing = false;
-      // Not at once: focus also leaves when a redraw removes the focused part
-      // (a deleted line's button), and that redraw must finish first.
-      queueMicrotask(() => update(form.getState()));
-    });
-
-    const update = (state: FormState) => {
-      const shown = form.node(node.id);
-      setHidden(wrapper, shown.invisible);
-      wrapper.classList.toggle('fd-required', shown.required);
-      const message = state.errors[node.field];
-      setHidden(error, !message);
-      setText(error, message ?? '');
-      const now = state.warnings[node.field] ?? '';
-      if (!typing || !now) advice = now;
-      // An error shown says enough: the rule's warning gives way to it.
-      const warned = [message ? '' : advice, state.warning && state.warningField === node.field ? state.warning : ''].filter(Boolean).join(' ');
-      setHidden(warning, !warned);
-      setText(warning, warned);
-      if (mark) {
-        const value = state.values[node.field];
-        const filled = value !== null && value !== undefined && value !== '' && !(Array.isArray(value) && !value.length);
-        const valid = !shown.readonly && !message && filled && state.dirty.includes(node.field) && form.problem(node.field) === null;
-        wrapper.classList.toggle('fd-valid', valid);
-        mark.toggleAttribute('hidden', !valid);
-      }
-      widget.update({
-        value: state.values[node.field],
-        values: state.values,
-        readonly: shown.readonly || locked,
-        required: shown.required,
-        invalid: !!message,
-        describedBy: [help?.id, message ? error.id : undefined, warned ? warning.id : undefined].filter(Boolean).join(' ') || undefined,
-      });
-    };
-    updaters.push(update);
-    return wrapper;
-  }
-
-  function hideWhen(element: HTMLElement, id: string) {
-    updaters.push(() => setHidden(element, form.node(id).invisible));
-  }
-
-  function buttonItem(node: ButtonNode): HTMLElement {
-    const button = el('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, ...withIcon(node.icon, node.label));
-    spans(button, node.colspan);
-    button.addEventListener('click', async () => {
-      if (node.confirm && !(await confirm(node.confirm))) return;
-      await form.runAction(node.id);
-    });
-    hideWhen(button, node.id);
-    return button;
-  }
-
-  function textItem(node: TextNode): HTMLElement {
-    const style = node.style ?? 'paragraph';
-    const element = el(style === 'heading' ? 'h3' : 'p', { class: `fd-text-${style}`, 'data-node': node.id }, node.text);
-    spans(element, node.colspan);
-    hideWhen(element, node.id);
-    return element;
-  }
-
-  function slotItem(node: SlotNode): HTMLElement {
-    const element = el('div', { class: 'fd-slot', 'data-slot': node.name, 'data-node': node.id });
-    const cleanup = options.slots?.[node.name]?.(element, { form, name: node.name });
-    if (cleanup) cleanups.push(cleanup);
-    hideWhen(element, node.id);
-    return element;
-  }
+  /** Folded sections, and how to open each: a problem inside one has to be seen. */
+  const folds = new Map<HTMLElement, () => void>();
+  /** Every part drawn again from the state of the page shown. */
+  const renderNow = () => render(form.getState());
+  /** Set once the viewer is on the page; set again when it is taken away. */
+  let mounted = false;
+  let gone = false;
 
   /** The columns a part spans in the grid it sits in; the stylesheet keeps it within the columns there at each width. */
   function spans(element: HTMLElement, colspan: number | undefined) {
     if (colspan) element.style.setProperty('--fd-span', String(colspan));
   }
 
-  /**
-   * A grid of parts. With `columns` null, it has none of its own: it lays its
-   * parts on the columns of the grid round it (an arrangement on its tracks).
-   */
-  function grid(children: LayoutNode[], columns: SectionNode['columns'] | null, place: Place): HTMLElement {
-    const box = el('div', { class: 'fd-grid' });
-    if (columns !== null) {
-      box.style.setProperty('--fd-columns', String(wideColumns(columns)));
-      // Counts given for the narrower widths replace the skin's own stacking there.
-      if (typeof columns === 'object') {
-        for (const width of ['medium', 'narrow'] as const) {
-          const count = columns[width];
-          if (count === undefined) continue;
-          box.setAttribute(`data-columns-${width}`, String(count));
-          box.style.setProperty(`--fd-columns-${width}`, String(count));
-        }
-      }
-    }
-    box.append(...children.map((child) => item(child, place)));
-    return box;
-  }
-
   /** Where the parts of a page, a tab or a step sit: one column, the page's labels. */
   const top = (onPage: boolean): Place => ({ columns: 1, onPage, labels: page.look?.labels });
 
-  /** Folded sections, and how to open each: a problem inside one has to be seen. */
-  const folds = new Map<HTMLElement, () => void>();
+  /**
+   * The parts of one page, drawn with its own form: the page shown, or a saved
+   * form placed in it. Inside, `form` and `page` are the scope's.
+   */
+  function drawer(scope: Scope) {
+    const { form, page } = scope;
+    const uid = (id: string) => ownUid(scope.prefix + id);
+    /** A part's updater, handed the state of the part's own form. */
+    const watch = (update: Updater) => updaters.push(scope.root ? update : () => update(form.getState()));
 
-  function sectionItem(node: SectionNode, place: Place): HTMLElement {
-    const plan = planSection(node, place);
-    // An arrangement is no group to name, and a fieldset cannot lay its parts on the columns round it.
-    const section = el(plan.arrangement ? 'div' : 'fieldset', {
-      class: 'fd-section',
-      'data-node': node.id,
-      'data-style': plan.style,
-      'data-place': plan.at,
-      'data-on-page': plan.style === 'card' && place.onPage ? '' : undefined,
-    });
-    spans(section, node.colspan);
-    if (node.labelWidth) section.style.setProperty('--fd-label-width', `${node.labelWidth}px`);
-    const description = node.description ? el('p', { class: 'fd-section-description' }, node.description) : null;
-    const content = grid(node.children, plan.at === 'tracks' ? null : node.columns, plan.inner);
-    if (node.title && node.collapsible) {
-      content.id = uid(`${node.id}-content`);
-      const toggle = el(
-        'button',
-        { type: 'button', class: 'fd-section-toggle', 'aria-controls': content.id },
-        el('span', { class: 'fd-section-chevron', 'aria-hidden': 'true' }),
-        ...withIcon(node.icon, node.title)
-      );
-      let open = node.collapsed !== true;
-      const show = (next: boolean) => {
-        open = next;
-        toggle.setAttribute('aria-expanded', String(open));
-        content.hidden = !open;
-        if (description) description.hidden = !open;
-        section.classList.toggle('fd-section-folded', !open);
-      };
-      toggle.addEventListener('click', () => show(!open));
-      folds.set(section, () => show(true));
-      show(open);
-      section.append(el('legend', { class: 'fd-section-title' }, toggle));
-    } else if (node.title) {
-      section.append(el('legend', { class: 'fd-section-title' }, ...withIcon(node.icon, node.title)));
-    }
-    if (description) section.append(description);
-    section.append(content);
-    hideWhen(section, node.id);
-    return section;
-  }
 
-  function tabsItem(node: TabsNode, place: Place): HTMLElement {
-    const box = el('div', { class: 'fd-tabs', 'data-node': node.id });
-    spans(box, node.colspan);
-    const list = el('div', { class: 'fd-tablist', role: 'tablist' });
-    // The tab someone picked. Until they pick, the first visible tab is open —
-    // a tab hidden while the record loads must not leave its neighbour open.
-    let picked: string | null = null;
-    let active = node.children[0].id;
-    const parts = node.children.map((tab) => {
-      const tabId = uid(`${tab.id}-tab`);
-      const panelId = uid(`${tab.id}-panel`);
-      const button = el('button', { type: 'button', class: 'fd-tab', role: 'tab', id: tabId, 'aria-controls': panelId, 'data-node': tab.id }, ...withIcon(tab.icon, tab.label));
-      // A tab's parts sit where the tabs do: on the page, or in the box round them.
-      const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId }, grid(tab.children, 1, { columns: 1, onPage: place.onPage, labels: place.labels }));
-      button.addEventListener('click', () => {
-        picked = active = tab.id;
-        render(form.getState());
-      });
-      list.append(button);
-      return { tab, button, panel };
-    });
-    list.addEventListener('keydown', (event) => {
-      const shown = parts.filter((p) => !p.button.hidden);
-      const at = shown.findIndex((p) => p.tab.id === active);
-      const move = { ArrowRight: 1, ArrowLeft: -1, Home: -at, End: shown.length - 1 - at }[event.key];
-      if (move === undefined || at === -1) return;
-      event.preventDefault();
-      const rtl = root.getAttribute('dir') === 'rtl' && (event.key === 'ArrowRight' || event.key === 'ArrowLeft');
-      const next = shown[(at + (rtl ? -move : move) + shown.length) % shown.length];
-      picked = active = next.tab.id;
-      render(form.getState());
-      next.button.focus();
-    });
-    box.append(list, ...parts.map((p) => p.panel));
-    updaters.push(() => {
-      box.hidden = form.node(node.id).invisible;
-      const shown = parts.filter((p) => !form.node(p.tab.id).invisible);
-      const keep = picked !== null && shown.some((p) => p.tab.id === picked);
-      if (keep) active = picked as string;
-      else if (shown.length) active = shown[0].tab.id;
-      for (const p of parts) {
-        const selected = p.tab.id === active;
-        p.button.hidden = !shown.includes(p);
-        p.button.setAttribute('aria-selected', String(selected));
-        p.button.tabIndex = selected ? 0 : -1;
-        p.panel.hidden = !selected;
+    /** A field with its label, help and messages. `labels` is where labels sit where it is put; the title's own fields take none. */
+    function fieldItem(node: FieldNode, labels?: LabelPlace): HTMLElement {
+      const def = page.fields[node.field];
+      const id = uid(node.id);
+      const labelsAt = labelPlace(node, def.type, labels);
+      const wrapper = el('div', { class: 'fd-field', 'data-node': node.id, 'data-field': node.field, 'data-path': scope.path + node.field, 'data-type': def.type, 'data-labels': labelsAt });
+      if (node.colspan) wrapper.style.setProperty('--fd-span', String(node.colspan));
+      const labelText = node.label ?? def.label;
+      const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, labelText);
+      // The ✓ of a field filled in right; never on a yes/no box, a table or a file, where it would say nothing.
+      const mark = options.showValid && !NO_VALID_MARK.has(def.type) ? drawIcon(doc, 'check') : null;
+      if (mark) {
+        mark.classList.add('fd-valid-mark');
+        label.append(mark);
       }
-    });
-    return box;
-  }
+      const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs }, options.widgets);
+      // A label kept out of sight still names the box; the empty box shows it instead, unless the page gives it words of its own.
+      if (labelsAt === 'hidden' && !node.placeholder) {
+        const box = widget.element.matches(TEXT_BOX) ? widget.element : widget.element.querySelector(TEXT_BOX);
+        box?.setAttribute('placeholder', labelText);
+      }
+      if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) {
+        // `for` stays: a custom field that puts the id on its own input is
+        // labelled natively. Only a wrapper with a role (a radio group, say) may
+        // carry a name; ARIA forbids naming a plain div or span.
+        // A group inside a box of its own (a radio group with "Clear selection" under it) is named too.
+        const named = widget.element.getAttribute('role') ? widget.element : widget.element.querySelector(`[id="${id}"][role]`);
+        named?.setAttribute('aria-labelledby', label.id);
+        label.addEventListener('click', () => widget.focus());
+      }
+      const helpText = node.help ?? def.help;
+      const help = helpText ? el('div', { class: 'fd-help', id: `${id}-help` }, helpText) : null;
+      // Not an alert of its own: a refused save is announced once, naming every field to look at.
+      const error = el('div', { class: 'fd-error', id: `${id}-error`, hidden: '' });
+      // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
+      const warning = el('div', { class: 'fd-warning', id: `${id}-warning`, role: 'status', hidden: '' });
+      wrapper.append(...(labelsAt === 'after' ? [widget.element, label] : [label, widget.element]), ...(help ? [help] : []), error, warning);
+      if (widget.destroy) cleanups.push(() => widget.destroy?.());
+      // An answer rule's warning waits until the person leaves the field: no advice
+      // mid-word. One already shown stays while they put it right, and goes once they have.
+      let typing = false;
+      let advice = '';
+      wrapper.addEventListener('focusin', () => (typing = true));
+      wrapper.addEventListener('focusout', (event) => {
+        if (wrapper.contains(event.relatedTarget as Node | null)) return;
+        typing = false;
+        // Not at once: focus also leaves when a redraw removes the focused part
+        // (a deleted line's button), and that redraw must finish first.
+        queueMicrotask(() => update(form.getState()));
+      });
 
-  function item(node: LayoutNode, place: Place): HTMLElement {
-    switch (node.type) {
-      case 'field':
-        return fieldItem(node, place.labels);
-      case 'button':
-        return buttonItem(node);
-      case 'text':
-        return textItem(node);
-      case 'slot':
-        return slotItem(node);
-      case 'section':
-        return sectionItem(node, place);
-      case 'tabs':
-        return tabsItem(node, place);
-      case 'divider':
-      case 'spacer':
-      case 'image':
-        return blockItem(node);
+      const update = (state: FormState) => {
+        const shown = form.node(node.id);
+        setHidden(wrapper, shown.invisible);
+        wrapper.classList.toggle('fd-required', shown.required);
+        const message = state.errors[node.field];
+        setHidden(error, !message);
+        setText(error, message ?? '');
+        const now = state.warnings[node.field] ?? '';
+        if (!typing || !now) advice = now;
+        // An error shown says enough: the rule's warning gives way to it.
+        const warned = [message ? '' : advice, state.warning && state.warningField === node.field ? state.warning : ''].filter(Boolean).join(' ');
+        setHidden(warning, !warned);
+        setText(warning, warned);
+        if (mark) {
+          const value = state.values[node.field];
+          const filled = value !== null && value !== undefined && value !== '' && !(Array.isArray(value) && !value.length);
+          const valid = !shown.readonly && !message && filled && state.dirty.includes(node.field) && form.problem(node.field) === null;
+          wrapper.classList.toggle('fd-valid', valid);
+          mark.toggleAttribute('hidden', !valid);
+        }
+        widget.update({
+          value: state.values[node.field],
+          values: state.values,
+          readonly: shown.readonly || locked || scope.locked(),
+          required: shown.required,
+          invalid: !!message,
+          describedBy: [help?.id, message ? error.id : undefined, warned ? warning.id : undefined].filter(Boolean).join(' ') || undefined,
+        });
+      };
+      watch(update);
+      return wrapper;
     }
+
+    function hideWhen(element: HTMLElement, id: string) {
+      watch(() => setHidden(element, form.node(id).invisible));
+    }
+
+    function buttonItem(node: ButtonNode): HTMLElement {
+      const button = el('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, ...withIcon(node.icon, node.label));
+      spans(button, node.colspan);
+      button.addEventListener('click', async () => {
+        if (node.confirm && !(await confirm(node.confirm))) return;
+        await form.runAction(node.id);
+      });
+      hideWhen(button, node.id);
+      return button;
+    }
+
+    function textItem(node: TextNode): HTMLElement {
+      const style = node.style ?? 'paragraph';
+      const element = el(style === 'heading' ? 'h3' : 'p', { class: `fd-text-${style}`, 'data-node': node.id }, node.text);
+      spans(element, node.colspan);
+      hideWhen(element, node.id);
+      return element;
+    }
+
+    function slotItem(node: SlotNode): HTMLElement {
+      const element = el('div', { class: 'fd-slot', 'data-slot': node.name, 'data-node': node.id });
+      const cleanup = options.slots?.[node.name]?.(element, { form, name: node.name });
+      if (cleanup) cleanups.push(cleanup);
+      hideWhen(element, node.id);
+      return element;
+    }
+
+    /**
+     * A grid of parts. With `columns` null, it has none of its own: it lays its
+     * parts on the columns of the grid round it (an arrangement on its tracks).
+     */
+    function grid(children: LayoutNode[], columns: SectionNode['columns'] | null, place: Place): HTMLElement {
+      const box = el('div', { class: 'fd-grid' });
+      if (columns !== null) {
+        box.style.setProperty('--fd-columns', String(wideColumns(columns)));
+        // Counts given for the narrower widths replace the skin's own stacking there.
+        if (typeof columns === 'object') {
+          for (const width of ['medium', 'narrow'] as const) {
+            const count = columns[width];
+            if (count === undefined) continue;
+            box.setAttribute(`data-columns-${width}`, String(count));
+            box.style.setProperty(`--fd-columns-${width}`, String(count));
+          }
+        }
+      }
+      box.append(...children.map((child) => item(child, place)));
+      return box;
+    }
+
+    function sectionItem(node: SectionNode, place: Place): HTMLElement {
+      const plan = planSection(node, place);
+      // An arrangement is no group to name, and a fieldset cannot lay its parts on the columns round it.
+      const section = el(plan.arrangement ? 'div' : 'fieldset', {
+        class: 'fd-section',
+        'data-node': node.id,
+        'data-style': plan.style,
+        'data-place': plan.at,
+        'data-on-page': plan.style === 'card' && place.onPage ? '' : undefined,
+      });
+      spans(section, node.colspan);
+      if (node.labelWidth) section.style.setProperty('--fd-label-width', `${node.labelWidth}px`);
+      const description = node.description ? el('p', { class: 'fd-section-description' }, node.description) : null;
+      const content = grid(node.children, plan.at === 'tracks' ? null : node.columns, plan.inner);
+      if (node.title && node.collapsible) {
+        content.id = uid(`${node.id}-content`);
+        const toggle = el(
+          'button',
+          { type: 'button', class: 'fd-section-toggle', 'aria-controls': content.id },
+          el('span', { class: 'fd-section-chevron', 'aria-hidden': 'true' }),
+          ...withIcon(node.icon, node.title)
+        );
+        let open = node.collapsed !== true;
+        const show = (next: boolean) => {
+          open = next;
+          toggle.setAttribute('aria-expanded', String(open));
+          content.hidden = !open;
+          if (description) description.hidden = !open;
+          section.classList.toggle('fd-section-folded', !open);
+        };
+        toggle.addEventListener('click', () => show(!open));
+        folds.set(section, () => show(true));
+        show(open);
+        section.append(el('legend', { class: 'fd-section-title' }, toggle));
+      } else if (node.title) {
+        section.append(el('legend', { class: 'fd-section-title' }, ...withIcon(node.icon, node.title)));
+      }
+      if (description) section.append(description);
+      section.append(content);
+      hideWhen(section, node.id);
+      return section;
+    }
+
+    function tabsItem(node: TabsNode, place: Place): HTMLElement {
+      const box = el('div', { class: 'fd-tabs', 'data-node': node.id });
+      spans(box, node.colspan);
+      const list = el('div', { class: 'fd-tablist', role: 'tablist' });
+      // The tab someone picked. Until they pick, the first visible tab is open —
+      // a tab hidden while the record loads must not leave its neighbour open.
+      let picked: string | null = null;
+      let active = node.children[0].id;
+      const parts = node.children.map((tab) => {
+        const tabId = uid(`${tab.id}-tab`);
+        const panelId = uid(`${tab.id}-panel`);
+        const button = el('button', { type: 'button', class: 'fd-tab', role: 'tab', id: tabId, 'aria-controls': panelId, 'data-node': tab.id }, ...withIcon(tab.icon, tab.label));
+        // A tab's parts sit where the tabs do: on the page, or in the box round them.
+        const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId }, grid(tab.children, 1, { columns: 1, onPage: place.onPage, labels: place.labels }));
+        button.addEventListener('click', () => {
+          picked = active = tab.id;
+          renderNow();
+        });
+        list.append(button);
+        return { tab, button, panel };
+      });
+      list.addEventListener('keydown', (event) => {
+        const shown = parts.filter((p) => !p.button.hidden);
+        const at = shown.findIndex((p) => p.tab.id === active);
+        const move = { ArrowRight: 1, ArrowLeft: -1, Home: -at, End: shown.length - 1 - at }[event.key];
+        if (move === undefined || at === -1) return;
+        event.preventDefault();
+        const rtl = root.getAttribute('dir') === 'rtl' && (event.key === 'ArrowRight' || event.key === 'ArrowLeft');
+        const next = shown[(at + (rtl ? -move : move) + shown.length) % shown.length];
+        picked = active = next.tab.id;
+        renderNow();
+        next.button.focus();
+      });
+      box.append(list, ...parts.map((p) => p.panel));
+      watch(() => {
+        box.hidden = form.node(node.id).invisible;
+        const shown = parts.filter((p) => !form.node(p.tab.id).invisible);
+        const keep = picked !== null && shown.some((p) => p.tab.id === picked);
+        if (keep) active = picked as string;
+        else if (shown.length) active = shown[0].tab.id;
+        for (const p of parts) {
+          const selected = p.tab.id === active;
+          p.button.hidden = !shown.includes(p);
+          p.button.setAttribute('aria-selected', String(selected));
+          p.button.tabIndex = selected ? 0 : -1;
+          p.panel.hidden = !selected;
+        }
+      });
+      return box;
+    }
+
+    function item(node: LayoutNode, place: Place): HTMLElement {
+      switch (node.type) {
+        case 'field':
+          return fieldItem(node, place.labels);
+        case 'button':
+          return buttonItem(node);
+        case 'text':
+          return textItem(node);
+        case 'slot':
+          return slotItem(node);
+        case 'section':
+          return sectionItem(node, place);
+        case 'tabs':
+          return tabsItem(node, place);
+        case 'divider':
+        case 'spacer':
+        case 'image':
+          return blockItem(node);
+        case 'form':
+          return formItem(node, place);
+      }
+    }
+
+    /** A line across the row, empty room, or a picture: shown and hidden by its rule like any part. */
+    function blockItem(node: DividerNode | SpacerNode | ImageNode): HTMLElement {
+      const element =
+        node.type === 'divider' ? el('hr', { class: 'fd-divider', 'data-node': node.id })
+        : node.type === 'spacer' ? el('div', { class: 'fd-block fd-spacer', 'aria-hidden': 'true', 'data-node': node.id })
+        : figure(node);
+      if (node.type !== 'divider' && node.colspan) element.style.setProperty('--fd-span', String(node.colspan));
+      hideWhen(element, node.id);
+      return element;
+    }
+
+    /** A picture as wide and where its page says, opening its link in a new tab — a web or mail address only — its caption under it. */
+    function figure(node: ImageNode): HTMLElement {
+      const image = el('img', { class: 'fd-image', src: node.src, alt: node.alt, loading: 'lazy' });
+      const href = node.href && /^(https?:\/\/|mailto:)/i.test(node.href) ? node.href : undefined;
+      const element = el(
+        'figure',
+        { class: 'fd-block fd-figure', 'data-node': node.id, 'data-align': node.align },
+        href ? el('a', { href, target: '_blank', rel: 'noopener noreferrer' }, image) : image,
+        ...(node.caption ? [el('figcaption', { class: 'fd-caption' }, node.caption)] : [])
+      );
+      const width = typeof node.width === 'number' ? `${node.width}px` : node.width && { small: '160px', medium: '320px', large: '480px', full: '100%' }[node.width];
+      if (width) element.style.setProperty('--fd-image-width', width);
+      return element;
+    }
+
+    /**
+     * A saved form placed here, drawn from the page the app gives for its id
+     * with a form of its own inside this one. A quiet placeholder while the
+     * page comes; words in its place when it cannot be found, would hold
+     * itself, or cannot sit in a form.
+     */
+    function formItem(node: FormNode, place: Place): HTMLElement {
+      const box = el('fieldset', {
+        class: 'fd-section fd-form-part',
+        'data-node': node.id,
+        'data-style': 'card',
+        'data-on-page': place.onPage ? '' : undefined,
+        'aria-busy': 'true',
+      });
+      spans(box, node.colspan);
+      const note = el('p', { class: 'fd-form-part-note' }, labels.loading);
+      box.append(note);
+      hideWhen(box, node.id);
+      const refuse = (words: string) => {
+        box.removeAttribute('aria-busy');
+        note.textContent = words;
+        note.classList.add('fd-form-part-problem');
+      };
+      const draw = (found: Page | null) => {
+        if (gone) return;
+        if (!found) return refuse(fill(labels.formMissing, { page: node.page }));
+        const saved = shownAs(found);
+        const name = saved.title || found.id;
+        const at = scope.chain.findIndex((p) => p.id === found.id);
+        if (at !== -1) return refuse(fill(labels.formInItself, { page: name, chain: [...scope.chain.slice(at).map((p) => p.title), name].join(' → ') }));
+        if (found.layout.type !== 'sections' && found.layout.type !== 'tabs') return refuse(fill(labels.formNotPlaceable, { page: name }));
+        const checked = checkPage(saved);
+        let inner: Form;
+        try {
+          if (!checked.ok) throw new Error(checked.issues.map((i) => `${i.path}: ${i.message}`).join('; '));
+          inner = form.embed(node.id, saved);
+        } catch (error) {
+          console.warn(`Fieldia: the saved form "${found.id}" cannot be shown: ${(error as Error).message}`);
+          return refuse(fill(labels.formBroken, { page: name }));
+        }
+        const title = node.title ?? saved.title ?? '';
+        box.setAttribute('data-title', title);
+        if (title) box.prepend(el('legend', { class: 'fd-section-title' }, ...withIcon(undefined, title)));
+        const own = drawer({
+          root: false,
+          form: inner,
+          page: saved,
+          prefix: `${scope.prefix}${node.id}-`,
+          chain: [...scope.chain, { id: found.id, title: name }],
+          locked: () => scope.locked() || form.node(node.id).readonly,
+          path: `${scope.path}${node.name}.`,
+        });
+        const layout = saved.layout as SectionsNode | TabsNode;
+        // Its parts sit in the part's box: a card there draws none of its own.
+        note.replaceWith(own.grid(layout.type === 'tabs' ? [layout] : layout.children, 1, { columns: 1, onPage: false, labels: place.labels }));
+        box.removeAttribute('aria-busy');
+        cleanups.push(inner.subscribe(renderNow));
+        if (mounted) renderNow();
+      };
+      let asked: Page | null | Promise<Page | null>;
+      try {
+        asked = findPage(options, node.version === undefined ? { id: node.page } : { id: node.page, version: node.version });
+      } catch {
+        asked = null;
+      }
+      if (asked instanceof Promise) asked.then(draw, () => draw(null));
+      else draw(asked);
+      return box;
+    }
+
+    return { item, grid, fieldItem, buttonItem, hideWhen, slotItem };
   }
 
-  /** A line across the row, empty room, or a picture: shown and hidden by its rule like any part. */
-  function blockItem(node: DividerNode | SpacerNode | ImageNode): HTMLElement {
-    const element =
-      node.type === 'divider' ? el('hr', { class: 'fd-divider', 'data-node': node.id })
-      : node.type === 'spacer' ? el('div', { class: 'fd-block fd-spacer', 'aria-hidden': 'true', 'data-node': node.id })
-      : figure(node);
-    if (node.type !== 'divider' && node.colspan) element.style.setProperty('--fd-span', String(node.colspan));
-    hideWhen(element, node.id);
-    return element;
-  }
-
-  /** A picture as wide and where its page says, opening its link in a new tab — a web or mail address only — its caption under it. */
-  function figure(node: ImageNode): HTMLElement {
-    const image = el('img', { class: 'fd-image', src: node.src, alt: node.alt, loading: 'lazy' });
-    const href = node.href && /^(https?:\/\/|mailto:)/i.test(node.href) ? node.href : undefined;
-    const element = el(
-      'figure',
-      { class: 'fd-block fd-figure', 'data-node': node.id, 'data-align': node.align },
-      href ? el('a', { href, target: '_blank', rel: 'noopener noreferrer' }, image) : image,
-      ...(node.caption ? [el('figcaption', { class: 'fd-caption' }, node.caption)] : [])
-    );
-    const width = typeof node.width === 'number' ? `${node.width}px` : node.width && { small: '160px', medium: '320px', large: '480px', full: '100%' }[node.width];
-    if (width) element.style.setProperty('--fd-image-width', width);
-    return element;
-  }
+  const { item, grid, fieldItem, buttonItem, hideWhen, slotItem } = drawer({
+    root: true,
+    form,
+    page,
+    prefix: '',
+    chain: [{ id: page.id, title: page.title || page.id }],
+    locked: () => false,
+    path: '',
+  });
 
   // ---- shared chrome ----------------------------------------------------------
 
@@ -501,17 +635,26 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   retry.addEventListener('click', () => void submitOrSave());
   const status = el('div', { class: 'fd-status-box' }, statusText, retry);
   const notDone = () => (page.data.kind === 'responses' ? labels.notSent : labels.notSaved);
-  /** "Not saved. Check: Email, Phone": the fields with a problem, in the order they show. */
+  /**
+   * "Not saved. Check: Email, Phone": the fields with a problem, in the order
+   * they show; one inside a saved form with that form's title, "Street (Home address)".
+   */
   function checkText(state: FormState): string {
-    const names: string[] = [];
+    const fieldsShown = [...root.querySelectorAll<HTMLElement>('.fd-field[data-path]')];
+    const found: { name: string; at: number }[] = [];
     for (const key of Object.keys(state.errors)) {
-      const field = key.split('.')[0];
-      const shown = root.querySelector(`.fd-field[data-field="${field}"]:not([hidden]) > .fd-label`);
-      const name = shown?.firstChild?.textContent ?? page.fields[field]?.label ?? field;
-      if (!names.includes(name)) names.push(name);
+      // The field itself, or — for a line's — the table it is in.
+      let shown: HTMLElement | undefined;
+      for (let path = key; path && !shown; path = path.slice(0, Math.max(0, path.lastIndexOf('.')))) {
+        shown = fieldsShown.find((field) => field.getAttribute('data-path') === path && !field.hidden);
+      }
+      const first = key.split('.')[0];
+      const label = shown?.querySelector(':scope > .fd-label')?.firstChild?.textContent ?? page.fields[first]?.label ?? first;
+      const within = shown?.closest('.fd-form-part')?.getAttribute('data-title');
+      const name = within ? `${label} (${within})` : label;
+      if (!found.some((f) => f.name === name)) found.push({ name, at: shown ? fieldsShown.indexOf(shown) : Infinity });
     }
-    const inOrder = [...root.querySelectorAll('.fd-field[data-field] > .fd-label')].map((label) => label.firstChild?.textContent ?? '');
-    names.sort((a, b) => (inOrder.indexOf(a) + 1 || Infinity) - (inOrder.indexOf(b) + 1 || Infinity));
+    const names = found.sort((a, b) => a.at - b.at).map((f) => f.name);
     return names.length ? fill(labels.checkFields, { what: notDone(), fields: names.join(', ') }) : notDone();
   }
   let quietTimer: ReturnType<typeof setTimeout> | undefined;
@@ -981,6 +1124,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   host.append(root);
   const unsubscribe = form.subscribe(render);
   render(form.getState());
+  mounted = true;
   if (form.getState().status === 'idle') void form.load();
 
   return {
@@ -1006,6 +1150,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     },
     isReadonly: () => locked,
     destroy() {
+      gone = true;
       unsubscribe();
       for (const cleanup of cleanups) cleanup();
       root.remove();

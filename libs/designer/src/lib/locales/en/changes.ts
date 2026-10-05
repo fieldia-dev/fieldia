@@ -91,6 +91,7 @@ export const changes = {
     anImage: 'an image',
     divider: 'a divider',
     spacer: 'a spacer',
+    form: (name: string) => `the saved form “${name}”`,
   },
   addedBlock: (block: string, where: string) => `Added ${block}${at(where)}`,
   changedBlockTo: (block: string, text: string) => `Changed ${block} to “${text}”`,

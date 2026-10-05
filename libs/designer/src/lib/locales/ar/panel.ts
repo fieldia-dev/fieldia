@@ -57,6 +57,11 @@ const NAMES: Record<string, string> = {
   Order: 'الترتيب',
   Direction: 'الاتجاه',
   'Buttons for the rows chosen': 'أزرار للصفوف المختارة',
+  'Each kind of part': 'كل نوع من الأجزاء',
+  'Saved form': 'النموذج المحفوظ',
+  Version: 'الإصدار',
+  'Answers go under': 'تُحفظ الإجابات تحت',
+  'Open it': 'فتح النموذج',
 };
 
 export const panel: DesignerWords['panel'] = {
@@ -88,6 +93,7 @@ export const panel: DesignerWords['panel'] = {
     divider: 'خط فاصل',
     spacer: 'مسافة',
     slot: 'جزء التطبيق',
+    form: 'نموذج محفوظ',
     counter: 'عدّاد',
     badge: 'شارة',
     statusSteps: 'مراحل الحالة',
@@ -232,6 +238,7 @@ export const panel: DesignerWords['panel'] = {
     text: 'كلمات في الصفحة، بين الحقول.',
     slot: 'مكان يملؤه التطبيق بجزء من عنده.',
     heading: 'عنوان بين الحقول.',
+    form: 'نموذج محفوظ يُرسم كما يرسمه النموذج. يُعدَّل في صفحته الخاصة؛ وهنا تختار أيّ نموذج، وإصداره، وعنوانه، وأين تُحفظ إجاباته.',
   },
   delete: 'حذف',
   pictureAddress: 'عنوان الصورة',

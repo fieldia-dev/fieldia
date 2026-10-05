@@ -3,6 +3,7 @@ import { applyLook, labelPlace, planSection, type Place } from '@fieldia/viewer'
 import { createWidget, type Widget, type WidgetFactory } from '@fieldia/widgets';
 import { advancedDrag } from './canvas-advanced';
 import { blockViews } from './canvas-blocks';
+import { formViews } from './canvas-form';
 import { canvasDrag, type CanvasDrag } from './canvas-drag';
 import { canvasHeader } from './canvas-header';
 import { canvasKeys, type CanvasKeys } from './canvas-keys';
@@ -136,6 +137,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     else element.style.setProperty('--fd-canvas-width', `${own}px`);
   }
   const blocks = blockViews({ el, doc, designer });
+  const savedForms = formViews({ el, doc, designer, skin: options.skin, widgets: options.widgets });
   let page = designer.getPage();
   let selected: string | null = null;
   let picked: string[] = [];
@@ -431,6 +433,11 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
     if (node.type === 'field') return drawCard(node, place.labels, at);
     if (node.type === 'section') return drawSection(node, place, at.index < at.columns ? at.under : null);
     if (node.type === 'tabs') return drawTabs(node, place);
+    if (node.type === 'form') {
+      const frame = savedForms.draw(node, selected === node.id);
+      frame.classList.toggle('fd-canvas-picked', picked.includes(node.id) && picked.length > 1);
+      return frame;
+    }
     const element = blocks.draw(node, selected === node.id);
     element.classList.toggle('fd-canvas-selected', selected === node.id);
     element.classList.toggle('fd-canvas-picked', picked.includes(node.id) && picked.length > 1);
@@ -702,6 +709,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
         sections.delete(id);
       }
       blocks.keep(drawnIds);
+      savedForms.keep(drawnIds);
       setHidden(titleCard, root.type !== 'sheet' || !root.title);
       if (root.type === 'sheet' && root.title) {
         // A made-up record names itself in the title; else the field's name stands in, as a placeholder does.
@@ -734,6 +742,7 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       resized?.disconnect();
       for (const card of cards.values()) dropCard(card);
       cards.clear();
+      savedForms.destroy();
       sections.clear();
       tabsViews.clear();
       body.replaceChildren();

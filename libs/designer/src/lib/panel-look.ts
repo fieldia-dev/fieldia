@@ -1,4 +1,4 @@
-import type { Page, PageLook, SectionNode } from '@fieldia/core';
+import { PART_LOOKS, type Page, type PageLook, type SectionNode } from '@fieldia/core';
 import { applyLook } from '@fieldia/viewer';
 import type { ElementFactory } from './chrome';
 import type { Designer, LookPatch } from './designer';
@@ -6,12 +6,13 @@ import { isSection, nodeOf } from './layout-tree';
 import { lookRow } from './look-row';
 import { onTab, segmented, setting, type Choice, type Segmented } from './panel-controls';
 import type { DesignerWords } from './designer-words';
+import { partLookSettings } from './panel-look-parts';
 
 /**
  * The Look tab's settings: looks to start from, then the page's look — its
  * accent, font, spacing, corners, where labels sit and how wide, light or
- * dark — and how a group is drawn. What is set is worn at once by the
- * canvas, as the viewer wears it.
+ * dark, and each kind of part's own — and how a group is drawn. What is set
+ * is worn at once by the canvas, as the viewer wears it.
  */
 
 export interface LookSetting {
@@ -101,11 +102,13 @@ export function pageLookSettings(el: ElementFactory, designer: Designer): LookSe
   const labelsAt = CHOICES.findIndex((c) => c.key === 'labels');
   rows.splice(labelsAt + 1, 0, widthRow);
 
+  const parts = partLookSettings(el, designer);
   const note = onTab(el('p', { class: 'fd-properties-hint' }, w.tokensNote), 'look');
   return {
-    rows: [...presets.rows, accent, ...rows, note],
+    rows: [...presets.rows, accent, ...rows, parts.row, note],
     update(page) {
       presets.update(page);
+      parts.update(page);
       const look: PageLook = page.look ?? {};
       swatches.set(look.accent?.toLowerCase());
       skins.hidden = !look.accent;
@@ -155,6 +158,8 @@ export function groupStyleSetting(el: ElementFactory, designer: Designer, id: st
 }
 
 const WORN = ['data-font', 'data-density', 'data-corners', 'data-scheme', 'data-accent'];
+/** The tokens of each kind of part's look, as the viewer names them: `--fd-inputs-bg`, … */
+const PART_TOKENS = ['bg', 'border', 'radius', 'size', 'accent', 'accent-text'];
 const WORN_TOKENS = ['--fd-label-width', '--fd-look-accent', '--fd-look-accent-text', '--fd-look-accent-dark', '--fd-look-accent-dark-text'];
 
 /**
@@ -172,6 +177,11 @@ export function wearLook(element: HTMLElement, look: PageLook | undefined): void
   if (skin && element.getAttribute('data-fd-skin') !== skin) element.setAttribute('data-fd-skin', skin);
   for (const name of WORN) element.removeAttribute(name);
   for (const token of WORN_TOKENS) element.style.removeProperty(token);
+  // Each kind of part's: its name on the part, and every token of that kind.
+  for (const kind of Object.keys(PART_LOOKS)) {
+    element.removeAttribute(`data-${kind}`);
+    for (const token of PART_TOKENS) element.style.removeProperty(`--fd-${kind}-${token}`);
+  }
   applyLook(element, look);
 }
 
