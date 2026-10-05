@@ -1,6 +1,7 @@
 import type { Option } from '@fieldia/core';
-import { describeState, fillIn, maker, wordsFor } from './kind-parts';
-import type { WidgetFactory } from './widgets';
+import { withAlone } from './choice-rules';
+import { describeState, fillIn, maker, setAttr, wordsFor } from './kind-parts';
+import type { WidgetContext, WidgetFactory } from './widgets';
 
 /**
  * Several answers from a list, as tags in a box (`selection.tags`): the box
@@ -9,11 +10,21 @@ import type { WidgetFactory } from './widgets';
  * first match, when none is reached — as does a click. A tag goes with its ×,
  * or the last with Backspace in the empty box. The answer keeps the order the
  * tags were added in; a value not among the options shows as its own words.
+ * With `ownAnswers`, words that match nothing are offered as an answer of
+ * their own; "None of these" goes alone.
+ *
+ * One answer, the same box (`searchWidget`): a dropdown that searches its
+ * list — the box shows the choice, typing finds others, and a box left half
+ * typed shows the choice again; emptied, it takes the choice away.
  */
-export const choiceTagsWidget: WidgetFactory = ({ form, name, field, id, document, labels, locale }) => {
+export const choiceTagsWidget: WidgetFactory = (context) => combo(context, false);
+export const searchWidget: WidgetFactory = (context) => combo(context, true);
+
+function combo({ form, name, field, id, document, labels, locale }: WidgetContext, single: boolean) {
   const words = wordsFor(labels, locale);
   const make = maker(document);
   const options: Option[] = field.type === 'selection' ? field.options : [];
+  const own = field.type === 'selection' && field.ownAnswers === true && !single;
   const listId = `${id}-list`;
   const input = make('input', {
     id,
@@ -28,14 +39,13 @@ export const choiceTagsWidget: WidgetFactory = ({ form, name, field, id, documen
   });
   const list = make('ul', { id: listId, class: 'fd-listbox', role: 'listbox', hidden: '' });
   const chips = make('ul', { class: 'fd-chips' });
-  const element = make('div', { class: 'fd-tags fd-choice-tags' }, chips, make('div', { class: 'fd-combo' }, input, list));
+  const box = make('div', { class: 'fd-combo' }, input, list);
+  const element = single ? make('div', { class: 'fd-choice-search' }, box) : make('div', { class: 'fd-tags fd-choice-tags' }, chips, box);
 
-  const chosen = (): (string | number)[] => {
-    const value = form.getState().values[name];
-    return Array.isArray(value) ? (value as (string | number)[]) : [];
-  };
-  const write = (values: (string | number)[]) => form.setValue(name, values);
-  const labelOf = (value: unknown) => options.find((o) => o.value === value)?.label ?? String(value);
+  const current = () => form.getState().values[name];
+  const chosen = (): (string | number)[] => (Array.isArray(current()) ? (current() as (string | number)[]) : []);
+  const write = (values: unknown[] | unknown) => form.setValue(name, values as never);
+  const labelOf = (value: unknown) => options.find((o) => o.value === value)?.label ?? (value === null || value === undefined ? '' : String(value));
 
   /** The options on offer now, and the one the arrows reached. */
   let found: Option[] = [];
@@ -53,13 +63,16 @@ export const choiceTagsWidget: WidgetFactory = ({ form, name, field, id, documen
       })
     );
     if (!found.length) list.append(make('li', { class: 'fd-empty' }, words.noResults));
-    if (active >= 0) input.setAttribute('aria-activedescendant', `${listId}-${active}`);
-    else input.removeAttribute('aria-activedescendant');
+    setAttr(input, 'aria-activedescendant', active >= 0 ? `${listId}-${active}` : null);
   }
   function open() {
-    const typed = input.value.trim().toLowerCase();
+    const written = input.value.trim();
+    // The choice's own words in the box find every option, not only itself.
+    const typed = single && written === labelOf(current()) ? '' : written.toLowerCase();
     const taken = new Set(chosen());
     found = options.filter((o) => !taken.has(o.value) && o.label.toLowerCase().includes(typed));
+    // Words that match nothing, offered as an answer of one's own.
+    if (own && typed && !taken.has(written) && !options.some((o) => o.label.toLowerCase() === typed)) found.push({ value: written, label: fillIn(words.createNamed, { name: written }) });
     active = -1;
     draw();
     list.hidden = false;
@@ -72,15 +85,28 @@ export const choiceTagsWidget: WidgetFactory = ({ form, name, field, id, documen
     input.removeAttribute('aria-activedescendant');
   }
   function add(option: Option) {
+    if (single) {
+      input.value = option.label;
+      write(option.value);
+      return close();
+    }
     input.value = '';
-    write([...chosen(), option.value]);
+    write(withAlone(options, chosen(), option.value));
     if (document.activeElement === input) open();
     else close();
   }
 
-  input.addEventListener('focus', () => !readonly && open());
+  if (!single) input.addEventListener('focus', () => !readonly && open());
+  input.addEventListener('click', () => !readonly && list.hidden && open());
   input.addEventListener('input', () => !readonly && open());
-  input.addEventListener('blur', close);
+  input.addEventListener('blur', () => {
+    close();
+    // One answer: a box emptied takes the choice away; one left half typed shows the choice again.
+    if (single && !readonly) {
+      if (!input.value.trim()) write(null);
+      else input.value = labelOf(current());
+    }
+  });
   input.addEventListener('keydown', (event) => {
     if (readonly) return;
     switch (event.key) {
@@ -108,7 +134,7 @@ export const choiceTagsWidget: WidgetFactory = ({ form, name, field, id, documen
         close();
         return;
       case 'Backspace':
-        if (input.value === '' && chosen().length) write(chosen().slice(0, -1));
+        if (!single && input.value === '' && chosen().length) write(chosen().slice(0, -1));
         return;
     }
   });
@@ -119,10 +145,16 @@ export const choiceTagsWidget: WidgetFactory = ({ form, name, field, id, documen
     focus: () => input.focus(),
     update(state) {
       readonly = state.readonly;
-      const values = Array.isArray(state.value) ? (state.value as unknown[]) : [];
-      input.hidden = readonly;
       if (readonly) close();
       describeState(input, state);
+      setAttr(input, 'aria-required', String(state.required));
+      if (single) {
+        input.readOnly = readonly;
+        if (document.activeElement !== input) input.value = labelOf(state.value);
+        return;
+      }
+      const values = Array.isArray(state.value) ? (state.value as unknown[]) : [];
+      input.hidden = readonly;
       const key = JSON.stringify([readonly, values]);
       if (key === drawn) return;
       drawn = key;
@@ -141,5 +173,5 @@ export const choiceTagsWidget: WidgetFactory = ({ form, name, field, id, documen
       // The list follows what is chosen while it is open.
       if (!list.hidden) open();
     },
-  };
-};
+  } satisfies ReturnType<WidgetFactory>;
+}

@@ -12,6 +12,9 @@ import type { WidgetFactory } from './widgets';
  * until then the question is not answered. An order set from outside shows
  * as it is, the options it leaves out after it. `options.shuffle` starts the
  * lines in an order of the form's own, so none is first for being written first.
+ * "Keep this order" answers it as it is shown. With `options.top` set, only
+ * that many are ranked (a Top choice): each picked from the rest, then put in
+ * order, and taken out with its ×; "Up to 3" says how many.
  */
 
 interface Item {
@@ -20,6 +23,7 @@ interface Item {
   place: HTMLElement;
   up: HTMLButtonElement;
   down: HTMLButtonElement;
+  pick?: HTMLButtonElement;
 }
 
 /** How far the pointer goes before a press becomes a drag. */
@@ -31,7 +35,17 @@ export const rankingWidget: WidgetFactory = ({ form, name, field, node, id, docu
   const options: Option[] = shownOptions(field.type === 'selection' ? field.options : [], form, name, node);
   const list = make('ol', { class: 'fd-rank-list' });
   const voice = announcer(make);
-  const element = make('div', { id, class: 'fd-ranking', role: 'group' }, list, voice.element);
+  const most = node.options?.['top'];
+  const top = typeof most === 'number' && most >= 1 && most < options.length ? Math.floor(most) : 0;
+  const pool = make('div', { class: 'fd-rank-pool' });
+  const keepAsShown = make('button', { type: 'button', class: 'fd-button fd-rank-keep' }, words.keepOrder);
+  keepAsShown.addEventListener('click', () => form.setValue(name, shown.map((item) => item.option.value)));
+  const element = make(
+    'div',
+    { id, class: 'fd-ranking', role: 'group' },
+    ...(top ? [make('div', { class: 'fd-choice-limit' }, fillIn(words.upTo, { n: top })), pool, list] : [list, keepAsShown]),
+    voice.element
+  );
 
   const items: Item[] = options.map((option) => {
     const label = option.label;
@@ -39,8 +53,22 @@ export const rankingWidget: WidgetFactory = ({ form, name, field, node, id, docu
     const up = make('button', { type: 'button', class: 'fd-rank-move fd-rank-up', 'aria-label': fillIn(words.moveUp, { label }) }, '↑');
     const down = make('button', { type: 'button', class: 'fd-rank-move fd-rank-down', 'aria-label': fillIn(words.moveDown, { label }) }, '↓');
     const grip = make('span', { class: 'fd-rank-grip', 'aria-hidden': 'true' });
-    const li = make('li', { class: 'fd-rank-item', 'data-value': String(option.value) }, grip, place, make('span', { class: 'fd-rank-words' }, label), make('span', { class: 'fd-rank-tools' }, up, down));
+    const tools = make('span', { class: 'fd-rank-tools' }, up, down);
+    const li = make('li', { class: 'fd-rank-item', 'data-value': String(option.value) }, grip, place, make('span', { class: 'fd-rank-words' }, label), tools);
     const item: Item = { option, element: li, place, up, down };
+    if (top) {
+      // Picked from the rest to the end of those ranked; its × takes it out again.
+      const pick = make('button', { type: 'button', class: 'fd-rank-pick' }, label);
+      pick.addEventListener('click', () => !readonly && shown.length < top && keep([...shown, item], item));
+      const out = make('button', { type: 'button', class: 'fd-rank-move fd-rank-out', 'aria-label': fillIn(words.remove, { name: label }) }, '×');
+      out.addEventListener('click', () => {
+        voice.say(fillIn(words.removed, { name: label }));
+        form.setValue(name, shown.filter((other) => other !== item).map((other) => other.option.value));
+      });
+      tools.append(out);
+      pool.append(pick);
+      item.pick = pick;
+    }
     up.addEventListener('click', () => move(item, -1, 'up'));
     down.addEventListener('click', () => move(item, 1, 'down'));
     li.addEventListener('pointerdown', (event) => press(item, event));
@@ -61,6 +89,8 @@ export const rankingWidget: WidgetFactory = ({ form, name, field, node, id, docu
       item.up.disabled = i === 0;
       item.down.disabled = i === next.length - 1;
     });
+    // Ranking the top few, those not ranked wait among the rest.
+    while (list.children.length > next.length) list.lastElementChild?.remove();
   }
   /** Keep the order as the answer, and say where the line went. */
   function keep(next: Item[], moved: Item) {
@@ -133,21 +163,29 @@ export const rankingWidget: WidgetFactory = ({ form, name, field, node, id, docu
 
   /** The order a value says: its options first, in its order, then those it leaves out, as they were shown. */
   function orderOf(value: unknown): Item[] {
-    if (!Array.isArray(value)) return shown;
-    const named = value.map((v) => items.find((item) => item.option.value === v)).filter((item): item is Item => !!item);
-    return [...new Set([...named, ...shown])];
+    const named = (Array.isArray(value) ? value : []).map((v) => items.find((item) => item.option.value === v)).filter((item): item is Item => !!item);
+    if (top) return named.slice(0, top);
+    return Array.isArray(value) ? [...new Set([...named, ...shown])] : shown;
   }
 
-  draw(shown);
+  draw(top ? [] : shown);
   return {
     element,
-    focus: () => (shown[0]?.down.disabled ? shown[0]?.up : shown[0]?.down)?.focus(),
+    focus: () => (items.find((item) => item.pick && !item.pick.hidden && !item.pick.disabled)?.pick ?? (shown[0]?.down.disabled ? shown[0]?.up : shown[0]?.down))?.focus(),
     update(state) {
       readonly = state.readonly;
       element.classList.toggle('fd-ranking-locked', readonly);
       const next = orderOf(state.value);
-      if (next.some((item, i) => item !== shown[i]) || !list.children.length) draw(next);
-      for (const item of items) item.up.hidden = item.down.hidden = readonly;
+      if (next.length !== shown.length || next.some((item, i) => item !== shown[i]) || (!top && !list.children.length)) draw(next);
+      for (const item of items) {
+        item.up.hidden = item.down.hidden = readonly;
+        if (item.pick) {
+          item.pick.hidden = shown.includes(item);
+          item.pick.disabled = readonly || shown.length >= top;
+          (item.element.querySelector('.fd-rank-out') as HTMLElement).hidden = readonly;
+        }
+      }
+      keepAsShown.hidden = readonly || (Array.isArray(state.value) && state.value.length > 0);
       giveBackFocus();
       describeState(element, state);
     },

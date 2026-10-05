@@ -35,7 +35,8 @@ export const QUESTION_KINDS: readonly QuestionKind[] = [
   { id: 'number', label: 'Number', field: (label) => ({ type: 'float', label }) },
   { id: 'date', label: 'Date', field: (label) => ({ type: 'date', label }) },
   { id: 'date-time', label: 'Date and time', field: (label) => ({ type: 'datetime', label }) },
-  { id: 'yes-no', label: 'Yes or no', field: (label) => ({ type: 'boolean', label }), widget: 'toggle' },
+  // Two buttons, neither picked until one is: the field starts empty, so Required asks for an answer.
+  { id: 'yes-no', label: 'Yes or no', field: (label) => ({ type: 'boolean', label, default: null }), widget: 'buttons' },
   { id: 'tick', label: 'Tick box', field: (label) => ({ type: 'boolean', label }), widget: 'tick' },
   { id: 'email', label: 'Email', field: (label) => ({ type: 'char', label, pattern: '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$' }), widget: 'email' },
   { id: 'phone', label: 'Phone', field: (label) => ({ type: 'char', label }), widget: 'phone' },

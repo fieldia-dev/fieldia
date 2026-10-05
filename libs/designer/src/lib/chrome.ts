@@ -178,7 +178,8 @@ export interface OptionsEditor {
  * The choices of a question, one input each, kept by position so typing in
  * one keeps its focus — typed the Google Forms way: Enter adds the next one
  * under it, Backspace in an empty one takes it away, and one left empty goes
- * when the cursor leaves it.
+ * when the cursor leaves it. Each is moved by its grip, or by Alt+↑/↓ in its
+ * box; checkboxes take "None of these", an option that goes alone.
  */
 export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: string): OptionsEditor {
   const list = el('ul', { class: 'fd-q-options' });
@@ -189,6 +190,10 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
   const or = el('span', { class: 'fd-q-or' }, 'or');
   const removeOther = iconButton(el, 'Remove “Other”', '×', () => designer.setOther(nodeId, false));
   const otherRow = el('div', { class: 'fd-q-option fd-q-option-other', hidden: '' }, el('span', { class: 'fd-q-bullet', 'aria-hidden': 'true' }), el('span', { class: 'fd-q-other-words' }, 'Other…'), removeOther);
+  // "None of these", for checkboxes: picked, it clears the others.
+  const addNone = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-add-none' }, 'add “None of these”');
+  addNone.addEventListener('click', () => designer.addNoneOption(nodeId));
+  const orNone = el('span', { class: 'fd-q-or' }, 'or');
   const addRow = el('div', { class: 'fd-q-add-row' }, add, or, addOther);
   const source = listSource(el, designer, nodeId);
   const element = el('div', { class: 'fd-q-option-box' }, source.element, list, otherRow, addRow, source.list);
@@ -228,6 +233,49 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
     focusAt(Math.max(0, index - 1), true);
     return true;
   };
+  /** The option at `from` moved a place up or down, the cursor going with it. */
+  const moveBy = (from: number, step: number) => {
+    const to = from + step;
+    if (to < 0 || to >= labels().length) return;
+    busy = true;
+    try {
+      (list.ownerDocument.activeElement as HTMLElement | null)?.blur();
+      if (!designer.moveOption(nodeId, from, to)) return;
+    } finally {
+      busy = false;
+    }
+    focusAt(to, true);
+  };
+  /** Dragged by its grip: the row follows the pointer from place to place, and the move is kept when it is let go. */
+  const drag = (grip: HTMLElement, event: PointerEvent) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    const row = grip.parentElement as HTMLElement;
+    const rows = () => [...list.children] as HTMLElement[];
+    const from = rows().indexOf(row);
+    row.classList.add('fd-q-option-lifted');
+    const onMove = (e: PointerEvent) => {
+      const others = rows().filter((r) => r !== row);
+      const at = others.filter((r) => {
+        const box = r.getBoundingClientRect();
+        return box.top + box.height / 2 < e.clientY;
+      }).length;
+      if (rows().indexOf(row) !== at) list.insertBefore(row, others[at] ?? null);
+    };
+    // Followed on the document: a row moved in the page lets go of the pointer it held.
+    const doc = list.ownerDocument;
+    const onEnd = () => {
+      doc.removeEventListener('pointermove', onMove);
+      doc.removeEventListener('pointerup', onEnd);
+      doc.removeEventListener('pointercancel', onEnd);
+      row.classList.remove('fd-q-option-lifted');
+      const to = rows().indexOf(row);
+      if (to !== from) designer.moveOption(nodeId, from, to);
+    };
+    doc.addEventListener('pointermove', onMove);
+    doc.addEventListener('pointerup', onEnd);
+    doc.addEventListener('pointercancel', onEnd);
+  };
   return {
     element,
     update(field, node) {
@@ -243,6 +291,12 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
       const hasOther = field.type === 'selection' && field.other === true;
       otherRow.hidden = !hasOther;
       or.hidden = addOther.hidden = !takesOther || hasOther;
+      // In the row only where it is offered.
+      if (kind === 'checkboxes' && !designer.isFromModel(nodeId) && !choices.some((o) => o.exclusive)) addRow.append(orNone, addNone);
+      else {
+        orNone.remove();
+        addNone.remove();
+      }
       element.style.setProperty('--fd-next-number', `"${choices.length + 1}."`);
       // Choices from the app's list: its name and what it changes with, in place of the options written here.
       const listed = source.update(field, node);
@@ -264,6 +318,9 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
           } else if (event.key === 'Backspace' && input.value === '' && labels().length > 1) {
             event.preventDefault();
             without(at);
+          } else if (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+            event.preventDefault();
+            moveBy(at, event.key === 'ArrowUp' ? -1 : 1);
           }
         });
         // Lines pasted into an option become options, one to a line, as Google Forms makes them; one line is the box's own.
@@ -320,7 +377,11 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
           current.splice([...list.children].indexOf(remove.parentElement as Element), 1);
           designer.setOptions(nodeId, current);
         });
-        list.append(el('li', { class: 'fd-q-option' }, el('span', { class: 'fd-q-bullet', 'aria-hidden': 'true' }, multiple ? '☐' : '◯'), input, remove));
+        // For the pointer only: Alt+↑/↓ in the box moves it too, so the grip is no stop of its own.
+        const grip = el('span', { class: 'fd-q-option-grip', 'aria-hidden': 'true', title: 'Drag to move · Alt+↑ or ↓ moves it too' }, designerIcon(list.ownerDocument, 'grip'));
+        grip.addEventListener('pointerdown', (event) => drag(grip, event));
+        const alone = el('span', { class: 'fd-q-alone', hidden: '' }, 'goes alone');
+        list.append(el('li', { class: 'fd-q-option' }, grip, el('span', { class: 'fd-q-bullet', 'aria-hidden': 'true' }, multiple ? '☐' : '◯'), input, alone, remove));
       }
       choices.forEach((option, i) => {
         const row = list.children[i] as HTMLElement;
@@ -329,6 +390,8 @@ export function optionsEditor(el: ElementFactory, designer: Designer, nodeId: st
         const remove = row.querySelector('button') as HTMLButtonElement;
         remove.setAttribute('aria-label', `Remove option ${option.label}`);
         remove.hidden = choices.length === 1;
+        (row.querySelector('.fd-q-alone') as HTMLElement).hidden = !option.exclusive;
+        (row.querySelector('.fd-q-option-grip') as HTMLElement).hidden = choices.length === 1;
         (row.querySelector('.fd-q-bullet') as HTMLElement).textContent = kind === 'dropdown' ? `${i + 1}.` : multiple ? '☐' : '◯';
       });
     },

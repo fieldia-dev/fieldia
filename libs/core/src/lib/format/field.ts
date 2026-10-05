@@ -22,6 +22,12 @@ export const OptionSchema = z
     image: z.string().min(1).optional(),
     /** Points this choice is worth, for a quiz or a score. */
     score: z.number().optional(),
+    /** What the picture shows, for people who cannot see it. */
+    alt: z.string().optional(),
+    /** Goes alone, as "None of these": choosing it clears the others, and another clears it — the widgets see to it. */
+    exclusive: z.boolean().optional(),
+    /** Keeps its place when the options are shuffled. */
+    fixed: z.boolean().optional(),
   })
   .strict()
   .meta({ id: 'Option' });
@@ -153,6 +159,8 @@ const selection = {
    * among the chosen when several may be.
    */
   other: z.boolean().optional(),
+  /** People may add answers of their own, as many as they like: tags typed beside the options. */
+  ownAnswers: z.boolean().optional(),
 };
 const Selection = z
   .object({ ...selection, optionsFrom: OptionsFromSchema.optional() })
@@ -217,6 +225,8 @@ const Matrix = z
     columns: z.array(OptionSchema).min(1),
     /** Several columns may be chosen in a row. */
     multiple: z.boolean().optional(),
+    /** Each column may be chosen in one row only, as a ranking in a grid: picked in a row, it leaves the row that had it. */
+    onePerColumn: z.boolean().optional(),
   })
   .strict();
 

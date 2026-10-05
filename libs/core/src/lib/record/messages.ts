@@ -47,6 +47,8 @@ export interface Messages {
   holds: string;
   /** Joins the last two items of a list: "PDF or image". */
   or: string;
+  /** A tick box that must be ticked to go on, as an "I agree" box. */
+  tick: string;
 }
 
 export type Locale = 'en' | 'ar' | 'de' | 'fr';
@@ -87,6 +89,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     dateFuture: '{label} must be in the future',
     holds: '{label} does not agree with the other answers',
     or: 'or',
+    tick: 'Tick this box to go on',
   },
   ar: {
     required: '{label} مطلوب',
@@ -123,6 +126,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     dateFuture: 'يجب أن يكون {label} في المستقبل',
     holds: 'لا يتفق {label} مع الإجابات الأخرى',
     or: 'أو',
+    tick: 'ضع علامة في هذا المربع للمتابعة',
   },
   de: {
     required: '{label} ist erforderlich',
@@ -159,6 +163,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     dateFuture: '{label} muss in der Zukunft liegen',
     holds: '{label} passt nicht zu den anderen Antworten',
     or: 'oder',
+    tick: 'Kreuzen Sie dieses Kästchen an, um fortzufahren',
   },
   fr: {
     required: '{label} est obligatoire',
@@ -195,6 +200,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     dateFuture: '{label} doit être dans le futur',
     holds: '{label} ne concorde pas avec les autres réponses',
     or: 'ou',
+    tick: 'Cochez cette case pour continuer',
   },
 };
 

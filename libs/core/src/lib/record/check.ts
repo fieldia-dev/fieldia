@@ -58,11 +58,12 @@ export function checkValue(
       const allowed = new Set(field.options.map((o) => o.value));
       const listing = say(field.other ? 'choiceOrOther' : 'choice', { options: field.options.map((o) => o.label).join(', ') });
       // An answer of one's own, where there is an "Other": words, never blank.
-      const own = (v: unknown) => field.other === true && typeof v === 'string' && v.trim() !== '' && !allowed.has(v);
+      const own = (v: unknown) => (field.other === true || field.ownAnswers === true) && typeof v === 'string' && v.trim() !== '' && !allowed.has(v);
       if (field.multiple) {
         if (!Array.isArray(value)) return say('choices');
         const owned = value.filter((v) => !allowed.has(v as string | number)).length;
-        return owned <= 1 && value.every((v) => allowed.has(v as string | number) || own(v)) ? undefined : listing;
+        // Answers of one's own: one "Other", or as many as people add.
+        return (owned <= 1 || field.ownAnswers) && value.every((v) => allowed.has(v as string | number) || own(v)) ? undefined : listing;
       }
       return allowed.has(value as string | number) || own(value) ? undefined : listing;
     }

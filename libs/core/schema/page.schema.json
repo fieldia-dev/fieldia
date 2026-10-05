@@ -649,6 +649,9 @@
             "other": {
               "type": "boolean"
             },
+            "ownAnswers": {
+              "type": "boolean"
+            },
             "optionsFrom": {
               "$ref": "#/$defs/OptionsFrom"
             }
@@ -1118,6 +1121,9 @@
             },
             "multiple": {
               "type": "boolean"
+            },
+            "onePerColumn": {
+              "type": "boolean"
             }
           },
           "required": [
@@ -1200,6 +1206,15 @@
         },
         "score": {
           "type": "number"
+        },
+        "alt": {
+          "type": "string"
+        },
+        "exclusive": {
+          "type": "boolean"
+        },
+        "fixed": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -1796,6 +1811,9 @@
               "type": "boolean"
             },
             "other": {
+              "type": "boolean"
+            },
+            "ownAnswers": {
               "type": "boolean"
             },
             "optionsFrom": {

@@ -16,6 +16,10 @@ export interface OptionDetails {
   image?: string | null;
   /** Points for a quiz; `null` takes them away. */
   score?: number | null;
+  /** What the picture shows, for people who cannot see it; empty or `null` takes it away. */
+  alt?: string | null;
+  /** Kept in place when the options are shuffled; `null` or false lets it move. */
+  fixed?: boolean | null;
 }
 
 export interface KindCommandsDeps {
@@ -85,6 +89,14 @@ export function kindCommands({ apply, fromModel }: KindCommandsDeps) {
             if (details.image === null || !details.image.trim()) delete option.image;
             else option.image = details.image.trim();
           }
+          if (details.alt !== undefined) {
+            if (details.alt === null || !details.alt.trim()) delete option.alt;
+            else option.alt = details.alt;
+          }
+          if (details.fixed !== undefined) {
+            if (details.fixed) option.fixed = true;
+            else delete option.fixed;
+          }
           if (details.score !== undefined) {
             if (details.score === null) delete option.score;
             else if (!Number.isFinite(details.score)) throw new Refusal('Points are a number, such as 1 or 0.5');
@@ -128,7 +140,8 @@ export function kindCommands({ apply, fromModel }: KindCommandsDeps) {
     setSeveral(id: string, on: boolean): boolean {
       return apply((draft) => {
         const { node, field } = question(draft, id, (label) => `How many answers ${label} takes comes from the model`);
-        if (field.type !== 'selection' || kindOfField(field, node) !== 'image-choice') throw new Refusal('Only pictures to choose from take one answer or several');
+        // A matrix: several columns in a row, or one.
+        if (field.type !== 'matrix' && (field.type !== 'selection' || kindOfField(field, node) !== 'image-choice')) throw new Refusal('Only pictures to choose from and a matrix take one answer or several');
         if (on) field.multiple = true;
         else delete field.multiple;
       });

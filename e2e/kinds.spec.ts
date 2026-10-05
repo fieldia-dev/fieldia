@@ -180,11 +180,14 @@ test.describe('the new kinds in the viewer', () => {
     await node(page, 'q-desk').getByRole('radio', { name: 'Quiet booth' }).click();
     await node(page, 'q-kitchen-floor').getByRole('radio', { name: 'The third floor' }).click();
     await node(page, 'q-signature').getByLabel('Or type your name').fill('Sara Hassan');
+    // The choices' required questions: a yes or no, and a tick box that must be ticked.
+    await node(page, 'q-drive').getByRole('radio', { name: 'No' }).click();
+    await node(page, 'q-guide').getByRole('checkbox').check();
     await screen(page, 'kinds-page-filled');
     await page.getByRole('button', { name: 'Submit' }).click();
     await expect(page.locator('.fd-done')).toBeVisible();
     const sent = await page.evaluate(() => (window as any).fieldiaDemo.dataSource.responses[0].values);
-    expect(sent).toMatchObject({ name: 'Sara Hassan', office_days: 5, desk: 'booth', kitchen_floor: 'third', signature: { type: 'image/png' } });
+    expect(sent).toMatchObject({ name: 'Sara Hassan', office_days: 5, desk: 'booth', kitchen_floor: 'third', signature: { type: 'image/png' }, drive: false, guide: true });
   });
 
   test('fits a phone', async ({ page }) => {
