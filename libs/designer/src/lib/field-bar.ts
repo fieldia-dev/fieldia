@@ -1,8 +1,10 @@
-import { wideColumns, type Page } from '@fieldia/core';
+import type { Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { designerIcon } from './icons';
 import { kindById, kindOfField, storedAs } from './kinds';
+import { across } from './layout-tree';
+import { inTwelfths, percent, ROW_PARTS, TWELVE, widthsFor } from './layout-twelfths';
 import { openMenu, type MenuItem } from './menu';
 import { findField } from './page-tree';
 import { toolboxGroups } from './toolbox';
@@ -35,6 +37,25 @@ export function kindsReason(designer: Designer, page: Page, id: string): string 
   if (!designer.isFromModel(id)) return 'Made on this page, so it can be any kind: what it holds follows.';
   const count = designer.kindsFor(id).length;
   return `${found.node.label ?? def.label} is stored as ${storedAs(def)} in the model, so ${count === 1 ? 'this is the one way to show it' : 'these are the ways to show it'}.`;
+}
+
+/** The widths a field is offered where it sits: in a group in twelfths, fractions of its row that fit, and its own; else so many columns. */
+function widthItems(page: Page, id: string): MenuItem[] {
+  const found = findField(page, id);
+  if (!found) return [];
+  if (inTwelfths(found.section)) {
+    const span = Math.min(found.node.colspan ?? 1, TWELVE);
+    const fits = widthsFor(page, found.section, found.node);
+    const items = ROW_PARTS.filter((p) => p.span === span || fits(p.span)).map((p) => ({ id: String(p.span), label: p.name, checked: p.span === span }));
+    if (!items.some((item) => item.checked)) items.push({ id: String(span), label: `${percent(span)}%`, checked: true });
+    return items.sort((a, b) => Number(b.id) - Number(a.id));
+  }
+  const columns = across(page, found.section);
+  const span = Math.min(found.node.colspan ?? 1, columns);
+  return Array.from({ length: columns }, (_, i) => {
+    const n = i + 1;
+    return { id: String(n), label: n === columns ? 'Full width' : n === 1 ? 'One column' : `${n} columns`, checked: n === span };
+  });
 }
 
 export function fieldBar(options: FieldBarOptions): FieldBar {
@@ -73,15 +94,8 @@ export function fieldBar(options: FieldBarOptions): FieldBar {
   });
   required.addEventListener('click', () => designer.updateQuestion(id, { required: required.getAttribute('aria-pressed') !== 'true' }));
   width.addEventListener('click', () => {
-    const found = findField(page, id);
-    if (!found) return;
-    const columns = wideColumns(found.section.columns);
-    const span = Math.min(found.node.colspan ?? 1, columns);
-    const items = Array.from({ length: columns }, (_, i) => {
-      const n = i + 1;
-      return { id: String(n), label: n === columns ? 'Full width' : n === 1 ? 'One column' : `${n} columns`, checked: n === span };
-    });
-    openMenu({ el, anchor: width, title: 'Width', items, onPick: (n) => designer.setColspan(id, Number(n)) });
+    const items = widthItems(page, id);
+    if (items.length) openMenu({ el, anchor: width, title: 'Width', items, onPick: (n) => designer.setColspan(id, Number(n)) });
   });
   when.addEventListener('click', () => options.more('when'));
   more.addEventListener('click', () => options.more('field'));
@@ -107,7 +121,8 @@ export function fieldBar(options: FieldBarOptions): FieldBar {
         kindIcon.replaceChildren(icon(current ?? 'short-answer'));
       }
       required.setAttribute('aria-pressed', String(def.required === true || found.node.required === true));
-      width.hidden = wideColumns(found.section.columns) === 1;
+      // Nothing to choose: one column, or alone in a row that stays full.
+      width.hidden = widthItems(page, id).length < 2;
       when.setAttribute('aria-pressed', String(found.node.invisible !== undefined));
     },
   };

@@ -176,14 +176,14 @@ const FRACTIONS: [number, string][] = [
   [3, 'a quarter of the row'],
 ];
 
-/** The fractions of a row a part in twelfths is offered: twelfths, a short word, and its name. */
-export const ROW_PARTS: { span: number; words: string; label: string }[] = [
-  { span: 12, words: 'Whole', label: 'Whole row' },
-  { span: 9, words: '¾', label: '¾ of the row' },
-  { span: 8, words: '⅔', label: '⅔ of the row' },
-  { span: 6, words: '½', label: '½ of the row' },
-  { span: 4, words: '⅓', label: '⅓ of the row' },
-  { span: 3, words: '¼', label: '¼ of the row' },
+/** The fractions of a row a part in twelfths is offered: in twelfths, as a short word, its label, and its name in a menu. */
+export const ROW_PARTS: { span: number; words: string; label: string; name: string }[] = [
+  { span: 12, words: 'Whole', label: 'Whole row', name: 'Whole row' },
+  { span: 9, words: '¾', label: '¾ of the row', name: 'Three quarters' },
+  { span: 8, words: '⅔', label: '⅔ of the row', name: 'Two thirds' },
+  { span: 6, words: '½', label: '½ of the row', name: 'Half' },
+  { span: 4, words: '⅓', label: '⅓ of the row', name: 'A third' },
+  { span: 3, words: '¼', label: '¼ of the row', name: 'A quarter' },
 ];
 
 /** A part's width as a share of a row of `cols` columns, in words: "half the row", "58% of the row". */

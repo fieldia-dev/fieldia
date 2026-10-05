@@ -2,7 +2,8 @@ import type { Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import type { Drop } from './layout-ops';
-import { isWrapper, locate, nameOf, spanOf } from './layout-tree';
+import { across, isWrapper, locate, nameOf, spanOf } from './layout-tree';
+import { laidInTwelfths, rowShare } from './layout-twelfths';
 
 /**
  * Moving parts on the Advanced canvas from the keyboard, as a drag would:
@@ -10,7 +11,8 @@ import { isWrapper, locate, nameOf, spanOf } from './layout-tree';
  *  Alt+↑ / Alt+↓       before or after the part next to it, as it is — out of
  *                      an arrangement at its edge, no further than its group;
  *  Alt+← / Alt+→       beside the part before or after it (mirrored right to left);
- *  Alt+Shift+← / →     a column narrower or wider (mirrored right to left);
+ *  Alt+Shift+← / →     a column narrower or wider — in twelfths, a twelfth —
+ *                      (mirrored right to left);
  *
  * and with what is picked: ⌘G puts it in a group, ⌘⇧G ungroups, ⌘D copies,
  * Delete takes it off the page, Escape puts it down. Each move is said in a
@@ -38,11 +40,17 @@ export function keyMove(page: Page, id: string, key: { key: string; altKey: bool
   const forward = (key.key === 'ArrowRight') !== rtl;
   if (key.shiftKey) {
     const span = spanOf(at.node) + (forward ? 1 : -1);
-    return span < 1 ? { said: 'It is one column wide already' } : { span };
+    return span < 1 ? { said: laidInTwelfths(page, parent) ? 'It is a twelfth of the row already' : 'It is one column wide already' } : { span };
   }
   const beside = list[index + (forward ? 1 : -1)];
   if (!beside) return { said: 'There is nothing that way to put it beside' };
   return { drop: { how: 'beside', target: beside.id, after: forward } };
+}
+
+/** A width said aloud: a fraction of the row in twelfths, else so many columns. */
+function widthWords(page: Page, id: string, span: number): string {
+  const parent = locate(page, id)?.parent;
+  return parent && laidInTwelfths(page, parent) ? rowShare(span, across(page, parent)) : `${span} column${span === 1 ? '' : 's'} wide`;
 }
 
 export interface CanvasKeys {
@@ -114,7 +122,7 @@ export function canvasKeys(options: { el: ElementFactory; designer: Designer; rt
     if (!move) return false;
     const name = nameOf(page, locate(page, id)?.node ?? null);
     if ('said' in move) say(move.said);
-    else if ('span' in move) say(designer.setColspan(id, move.span) ? `${name}: ${move.span} column${move.span === 1 ? '' : 's'} wide` : designer.getState().issues[0]);
+    else if ('span' in move) say(designer.setColspan(id, move.span) ? `${name}: ${widthWords(page, id, move.span)}` : designer.getState().issues[0]);
     else {
       const words = designer.describeDrop(move.drop, id);
       say(designer.place(id, move.drop) ? `${name}: ${words}` : designer.getState().issues[0]);
