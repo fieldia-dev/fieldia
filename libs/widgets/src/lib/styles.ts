@@ -26,13 +26,6 @@ import { LAYOUT_CSS } from './layout-styles';
  */
 export const FORM_WIDTHS = { medium: 760, narrow: 520 } as const;
 
-/**
- * The width of a cell parts share, side by side, at or under which they go one
- * under the other: 330px, as the stylesheet's @container rule says (a spec
- * holds the two together). The designer's guides ask it, so they never measure.
- */
-export const SHARED_CELL_NARROW = 330;
-
 /** The skins and the parts' chrome. One literal, so the script bundle can minify it as CSS. */
 const SKINS_CSS = /* css */ `
 /* .fd-theme carries the same tokens for things outside a form, such as a dialog over the page. One inside a form

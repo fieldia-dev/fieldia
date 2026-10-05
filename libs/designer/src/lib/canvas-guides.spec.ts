@@ -1,4 +1,5 @@
-import { canvasGuides } from './canvas-guides';
+import { FIELDIA_CSS } from '@fieldia/widgets';
+import { canvasGuides, SHARED_CELL_NARROW } from './canvas-guides';
 import { createDesigner } from './designer';
 import { mount } from './test-editor';
 import { employeeDesigner, employeePage, watched } from './test-layout';
@@ -187,5 +188,12 @@ describe('the guides and the canvas drawn again', () => {
       expect([word, document.activeElement === label, card.isConnected]).toEqual([word, true, true]);
     }
     expect(host.querySelector('.fd-guides')).not.toBeNull();
+  });
+});
+
+describe('the width a shared cell turns to one column at', () => {
+  it('is the form stylesheet’s own', () => {
+    const rules = FIELDIA_CSS.split(`@container (max-width: ${SHARED_CELL_NARROW}px) {`).slice(1).map((after) => after.slice(0, after.indexOf('\n}')));
+    expect(rules.some((r) => r.includes('.fd-section[data-place="shared"] > .fd-grid { --fd-cols: 1; }'))).toBe(true);
   });
 });

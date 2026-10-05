@@ -1,4 +1,3 @@
-import { SHARED_CELL_NARROW } from '@fieldia/widgets';
 import type { Designer, DesignerState } from './designer';
 import { across, locate, nodeOf } from './layout-tree';
 
@@ -15,6 +14,14 @@ import { across, locate, nodeOf } from './layout-tree';
 export interface CanvasGuides {
   update(state: DesignerState, advanced: boolean): void;
 }
+
+/**
+ * The width of a cell parts share, side by side, at or under which the form
+ * puts them one under the other — its stylesheet's @container rule (a spec
+ * holds the two together). Kept here, not in the form's script, which has no
+ * use for it.
+ */
+export const SHARED_CELL_NARROW = 330;
 
 export function canvasGuides(options: { root: HTMLElement; designer: Designer }): CanvasGuides {
   const { root, designer } = options;
