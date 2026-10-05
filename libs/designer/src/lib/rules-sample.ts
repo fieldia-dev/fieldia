@@ -280,8 +280,8 @@ export function answerSample(el: ElementFactory, nodeId: string, options: Sample
     if (key === saidKey) return;
     saidKey = key;
     const line = (level: string, mark: string, words: Node, tag?: string) =>
-      el('p', { class: 'fd-answer-sample-result', 'data-level': level }, el('span', { class: 'fd-answer-sample-mark', 'aria-hidden': 'true' }, mark), words, ...(tag ? [el('span', { class: 'fd-answer-sample-tag' }, tag)] : []));
-    if (said === null) return results.replaceChildren(line('idle', '…', el('span', { class: 'fd-answer-sample-message' }, 'Type or pick an answer to see what the form says.')));
+      el('p', { class: 'fd-answer-sample-result', 'data-level': level }, ...(mark ? [el('span', { class: 'fd-answer-sample-mark', 'aria-hidden': 'true' }, mark)] : []), words, ...(tag ? [el('span', { class: 'fd-answer-sample-tag' }, tag)] : []));
+    if (said === null) return results.replaceChildren(line('idle', '', el('span', { class: 'fd-answer-sample-message' }, 'Type or pick an answer to see what the form says.')));
     if (!said.length) return results.replaceChildren(line('pass', '✓', el('span', { class: 'fd-answer-sample-message' }, 'Passes')));
     results.replaceChildren(
       ...said.map((result) => {
