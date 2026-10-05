@@ -78,7 +78,11 @@ if (/ZodError|\$ZodType/.test(code)) throw new Error('the script bundle carries 
 // The inputs' details (web, phone, email and time checks, a date's limits and weekends, a count of
 // characters, units and currency symbols, ratings' icons, NPS colours, keywords' most, in four languages)
 // add 8.3, to 281.7.
-const BUDGET_KB = 282;
+// The structures' details (a signature's ink, undo and upload; an address's line 2, region, country list and
+// parts that must be filled; a table's least and most lines, moves and asking before a line goes; cards moved
+// and copied; links searched in full and opened; a heading button; a picture's width, place, link and caption,
+// in four languages) add 10, to 291.7.
+const BUDGET_KB = 292;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
