@@ -1,6 +1,6 @@
-import type { Field, FilterItem, LineField, Option, OptionsFrom } from '../format/field';
+import type { Field, Fields, FilterItem, LineField, Option, OptionsFrom } from '../format/field';
 import type { JsonValue } from '../format/json';
-import type { ButtonNode, FieldNode, LayoutNode, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
+import type { ButtonNode, FieldNode, FormNode, LayoutNode, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import type { ExpressionEnv } from '../expression/functions';
@@ -12,7 +12,7 @@ import { compileSetWhen } from './set-when';
 import { checkRules, compileRules, type CompiledRule } from './rules';
 import { expressionEnv } from './env';
 import { MESSAGES, type Messages } from './messages';
-import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
+import { saveProblemOf, type CreateRequest, type DataSource, type LineOp, type LinkOp, type OptionsRequest, type RecordChanges, type ResolvedFilter, type SaveProblem, type SearchRequest } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
 import {
   emptyValue,
@@ -34,7 +34,7 @@ export interface FormState {
   readonly status: FormStatus;
   readonly recordId: RecordId | null;
   readonly values: Readonly<Values>;
-  /** Messages by field name; a line's field is `field.lineKey.subfield`. */
+  /** Messages by field name; a line's field is `field.lineKey.subfield`, a saved form's field `name.field`. */
   readonly errors: Readonly<Record<string, string>>;
   /** Fields that differ from the record as loaded or last saved. */
   readonly dirty: readonly string[];
@@ -172,13 +172,26 @@ export interface Form {
   discardDraft(): void;
   /** Resolves once every onchange, save and autosave started so far has finished. */
   settled(): Promise<void>;
+  /**
+   * Give a saved form placed on this page (a `form` part, by its id) its page,
+   * once the app has found it. From then its answers sit under the part's
+   * name as an object, checked by that page's own rules: this form refuses
+   * to save or send while one of them fails, with the error under
+   * `name.field`, and shows it on the inner form beside its field. Returns the
+   * inner form, which a view draws the part's fields from; giving the page
+   * again returns the same one. A page placed inside itself, directly or
+   * through others, is refused.
+   */
+  embed(id: string, page: Page): Form;
+  /** The inner form of a saved form placed on this page, once it has its page; null until then. */
+  embedded(id: string): Form | null;
   dispose(): void;
 }
 
 interface IndexedNode {
   id: string;
   parent: string | null;
-  kind: 'field' | 'button' | 'stat' | 'other' | 'step';
+  kind: 'field' | 'button' | 'stat' | 'other' | 'step' | 'form';
   field?: string;
   invisible: CompiledModifier;
   readonly: CompiledModifier;
@@ -192,6 +205,38 @@ interface IndexedNode {
  * binding renders from `getState()` and calls these methods.
  */
 export function createForm(options: FormOptions): Form {
+  return innerForm(options, []).form;
+}
+
+/** A form, and what the form round it — when it is a saved form placed in another — reaches it by. */
+interface InnerForm {
+  form: Form;
+  /** Answers from the form round it: where it starts from again (`start`), a change (`edit`), or a draft restored (`fresh`). */
+  take(values: Values, how: Sync): void;
+  /** What a check would find now, shown nowhere. */
+  errorsNow(): Record<string, string>;
+  /** Show the problems the form round it found inside it. */
+  show(errors: Record<string, string>): void;
+}
+
+type Sync = 'start' | 'edit' | 'fresh';
+
+const isRecord = (value: unknown): value is Values => value !== null && typeof value === 'object' && !Array.isArray(value);
+/** A saved form's answers, as the one value they are in the form round it. */
+const asValue = (values: Readonly<Values>) => values as unknown as Value;
+
+/** Only finding and making linked records, and a list's choices: a saved form placed in another is no record of its own to load, save or send. */
+function lookupsOf(source: DataSource | undefined): DataSource | undefined {
+  if (!source) return undefined;
+  return {
+    ...(source.search ? { search: (request: SearchRequest) => source.search!(request) } : {}),
+    ...(source.create ? { create: (request: CreateRequest) => source.create!(request) } : {}),
+    ...(source.options ? { options: (request: OptionsRequest) => source.options!(request) } : {}),
+  };
+}
+
+/** `within` are the pages round this one, outermost first: a page among them placed again would hold itself. */
+function innerForm(options: FormOptions, within: string[]): InnerForm {
   const { page } = options;
   const scheduler = options.scheduler ?? hostScheduler;
   const messages = options.messages ?? MESSAGES.en;
@@ -209,8 +254,18 @@ export function createForm(options: FormOptions): Form {
   const today = () => localDay(options.now?.() ?? new Date());
   const computed = compileComputed(page, today);
   const setWhen = compileSetWhen(page, today);
+  /** The saved forms placed on the page, by the part's id: each one's answers sit under its name, as JSON. */
+  const parts = new Map<string, FormNode>();
+  for (const node of index.values()) if (node.kind === 'form') parts.set(node.id, node.source as FormNode);
+  /** Those given their page, with the inner form that holds their answers. */
+  const attached = new Map<string, { name: string; inner: InnerForm }>();
+  /** The page's fields, and each saved form's answers as a JSON value: what is loaded, told as changed and saved. */
+  const fields: Fields = { ...page.fields };
+  for (const part of parts.values()) fields[part.name] = { type: 'json', label: part.title || part.name };
+  /** True while answers are handed to an inner form: what it says back then is no change of its own. */
+  let syncing = false;
 
-  let baseline: Values = computed.apply({ ...initialValues(page.fields, today()), ...structuredCopy(options.values ?? {}) });
+  let baseline: Values = computed.apply({ ...initialValues(fields, today()), ...structuredCopy(options.values ?? {}) });
   /** The setWhen conditions holding for the values as they last settled: one starts to hold only against these. */
   let holding = setWhen.holding(baseline);
   let state: FormState = {
@@ -244,7 +299,10 @@ export function createForm(options: FormOptions): Form {
 
   function set(patch: Partial<FormState>) {
     const was = state.values;
+    const shown = state.errors;
     state = { ...state, ...patch };
+    // The problems found inside a saved form are shown on it, beside its own fields.
+    if (state.errors !== shown) for (const part of attached.values()) part.inner.show(inside(state.errors, part.name));
     for (const listener of [...listeners]) listener(state);
     // Choices that change with a value that just changed are asked for again.
     if (state.values !== was) {
@@ -296,13 +354,13 @@ export function createForm(options: FormOptions): Form {
   const context = () => reading().context;
 
   function fieldDef(name: string): Field {
-    const def = page.fields[name];
+    const def = fields[name];
     if (!def) throw new Error(`The page has no field "${name}"`);
     return def;
   }
 
   function dirtyFields(values: Values): string[] {
-    return Object.keys(page.fields).filter((name) => JSON.stringify(values[name] ?? null) !== JSON.stringify(baseline[name] ?? null));
+    return Object.keys(fields).filter((name) => JSON.stringify(values[name] ?? null) !== JSON.stringify(baseline[name] ?? null));
   }
 
   function nodeState(id: string): NodeState {
@@ -326,8 +384,8 @@ export function createForm(options: FormOptions): Form {
     };
   }
 
-  /** Field nodes inside `root` (or the whole page), visible right now. */
-  function visibleFieldNodes(root?: string): IndexedNode[] {
+  /** Field nodes — or saved forms placed on the page — inside `root` (or the whole page), visible right now. */
+  function visibleFieldNodes(root?: string, kind: IndexedNode['kind'] = 'field'): IndexedNode[] {
     const inside = (node: IndexedNode) => {
       if (!root) return true;
       for (let at: string | null = node.id; at; at = index.get(at)?.parent ?? null) if (at === root) return true;
@@ -339,7 +397,7 @@ export function createForm(options: FormOptions): Form {
       for (let at: string | null = node.id; at; at = index.get(at)?.parent ?? null) if (state.skipped.includes(at)) return true;
       return false;
     };
-    return [...index.values()].filter((node) => node.kind === 'field' && inside(node) && !skipped(node) && !nodeState(node.id).invisible);
+    return [...index.values()].filter((node) => node.kind === kind && inside(node) && !skipped(node) && !nodeState(node.id).invisible);
   }
 
   /** What a field node's answer rules say of its value now: the first error and the first warning. */
@@ -409,7 +467,32 @@ export function createForm(options: FormOptions): Form {
         }
       }
     }
+    // A saved form placed here answers for its fields by its own page's rules.
+    for (const node of visibleFieldNodes(root, 'form')) {
+      const part = attached.get(node.id);
+      if (part) for (const [key, message] of Object.entries(part.inner.errorsNow())) errors[`${part.name}.${key}`] = message;
+    }
     return errors;
+  }
+
+  /**
+   * Answers changed from outside a saved form — loaded, put back, set — handed
+   * to it, and what it holds after taken back: its defaults and worked-out
+   * values filled in. A new starting point (`start`) is handed to each.
+   */
+  function syncParts(values: Values, how: Sync): Values {
+    let out = values;
+    for (const part of attached.values()) {
+      if (how !== 'start' && out[part.name] === part.inner.form.getState().values) continue;
+      syncing = true;
+      try {
+        part.inner.take(isRecord(out[part.name]) ? (out[part.name] as Values) : {}, how);
+      } finally {
+        syncing = false;
+      }
+      out = { ...out, [part.name]: asValue(part.inner.form.getState().values) };
+    }
+    return out;
   }
 
   /**
@@ -437,7 +520,7 @@ export function createForm(options: FormOptions): Form {
 
   /** Write values someone or something changed. `fresh` values are a starting point instead (a restored draft). */
   function writeValues(written: Values, extra: Partial<FormState> = {}, fresh = false) {
-    const values = fresh ? startFrom(written) : settle(written);
+    const values = syncParts(fresh ? startFrom(written) : settle(written), fresh ? 'fresh' : 'edit');
     const errors = Object.keys(state.errors).length ? revalidateShown(values) : state.errors;
     set({ values, dirty: dirtyFields(values), errors, warnings: withValues(values, collectWarnings), ...extra });
   }
@@ -525,10 +608,10 @@ export function createForm(options: FormOptions): Form {
     // included; a stored one sends only what changed since it was loaded.
     const creating = state.recordId === null || state.recordId === undefined;
     const names = creating
-      ? Object.keys(page.fields).filter((name) => state.dirty.includes(name) || !isEmpty(page.fields[name], state.values[name]))
+      ? Object.keys(fields).filter((name) => state.dirty.includes(name) || !isEmpty(fields[name], state.values[name]))
       : state.dirty;
     for (const name of names) {
-      const def = page.fields[name];
+      const def = fields[name];
       const now = state.values[name];
       const before = creating ? emptyValue(def) : baseline[name];
       if (def.type === 'one2many') result.lines[name] = lineOps((before as Line[] | null) ?? [], (now as Line[] | null) ?? []);
@@ -544,6 +627,11 @@ export function createForm(options: FormOptions): Form {
     for (const node of visibleFieldNodes()) {
       const name = node.field as string;
       shown[name] = structuredCopy(state.values[name]) as Value;
+    }
+    // And each saved form shown, by its page: one not found shows nothing to answer.
+    for (const node of visibleFieldNodes(undefined, 'form')) {
+      const part = attached.get(node.id);
+      if (part) shown[part.name] = structuredCopy(state.values[part.name]) as Value;
     }
     return shown;
   }
@@ -569,12 +657,12 @@ export function createForm(options: FormOptions): Form {
       const result = await source.save({
         model: page.data.model,
         id: state.recordId,
-        fields: page.fields,
+        fields,
         changes: changes(),
         values: structuredCopy(state.values as Values),
       });
       forgetDraft();
-      const values = startFrom(result.values ? { ...(state.values as Values), ...result.values } : (state.values as Values));
+      const values = syncParts(startFrom(result.values ? { ...(state.values as Values), ...result.values } : (state.values as Values)), 'start');
       baseline = structuredCopy(values);
       set({ status: 'saved', recordId: result.id, values, dirty: [], warnings: withValues(values, collectWarnings) });
       return true;
@@ -650,8 +738,8 @@ export function createForm(options: FormOptions): Form {
     }
     set({ status: 'loading', error: null });
     try {
-      const loaded = await source.load({ model: page.data.model, id: state.recordId, fields: page.fields });
-      baseline = startFrom({ ...initialValues(page.fields, today()), ...loaded });
+      const loaded = await source.load({ model: page.data.model, id: state.recordId, fields });
+      baseline = syncParts(startFrom({ ...initialValues(fields, today()), ...loaded }), 'start');
       set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings) });
       offerDraft();
     } catch (error) {
@@ -684,6 +772,9 @@ export function createForm(options: FormOptions): Form {
 
     problem(name) {
       fieldDef(name);
+      // A saved form's answers: the first problem inside it, while it shows.
+      const part = [...attached].find(([, p]) => p.name === name);
+      if (part) return visibleFieldNodes(undefined, 'form').some((node) => node.id === part[0]) ? Object.values(part[1].inner.errorsNow())[0] ?? null : null;
       // Only a field someone can see is asked anything, and required wherever it is shown so.
       const shown = visibleFieldNodes().filter((node) => node.field === name);
       if (!shown.length) return null;
@@ -706,7 +797,8 @@ export function createForm(options: FormOptions): Form {
       forgetDraft();
       serverErrors = {};
       holding = setWhen.holding(baseline);
-      set({ values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null });
+      const values = syncParts(structuredCopy(baseline), 'start');
+      set({ values, dirty: [], errors: {}, warnings: withValues(values, collectWarnings), warning: null, warningField: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null });
     },
 
     changes,
@@ -900,17 +992,66 @@ export function createForm(options: FormOptions): Form {
       while (pending.size) await Promise.allSettled([...pending]);
     },
 
+    embed(id, inner) {
+      const known = attached.get(id);
+      if (known) return known.inner.form;
+      const part = parts.get(id);
+      if (!part) throw new Error(`"${id}" is not a saved form placed on this page`);
+      const chain = [...within, page.id];
+      if (chain.includes(inner.id)) throw new Error(`a page cannot be placed inside itself: ${[...chain.slice(chain.indexOf(inner.id)), inner.id].join(' → ')}`);
+      const given = state.values[part.name];
+      const made = innerForm(
+        { page: inner, dataSource: lookupsOf(options.dataSource), values: isRecord(given) ? given : {}, scheduler, messages, now: options.now },
+        chain
+      );
+      attached.set(id, { name: part.name, inner: made });
+      // A change made inside it is a change of this form's: shown, kept in a draft, saved.
+      made.form.subscribe((inside) => {
+        if (syncing || inside.values === state.values[part.name]) return;
+        writeValues({ ...(state.values as Values), [part.name]: asValue(inside.values) });
+        afterEdit(part.name);
+      });
+      // What it starts with, its defaults and worked-out values filled in, is this form's starting point too — unless changed already.
+      const start = asValue(made.form.getState().values);
+      if (!state.dirty.includes(part.name)) baseline = { ...baseline, [part.name]: start };
+      const values = { ...(state.values as Values), [part.name]: start };
+      set({ values, dirty: dirtyFields(values) });
+      return made.form;
+    },
+
+    embedded: (id) => attached.get(id)?.inner.form ?? null,
+
     dispose() {
       if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
       if (autosaveTimer !== null) scheduler.clearTimeout(autosaveTimer);
       listeners.clear();
+      for (const part of attached.values()) part.inner.form.dispose();
     },
   };
 
   // A record's starting values may already break a warning rule; nothing listens yet.
   state = { ...state, warnings: collectWarnings() };
   if (state.recordId == null) offerDraft();
-  return form;
+  return {
+    form,
+    take(values, how) {
+      if (how !== 'start') return writeValues({ ...initialValues(page.fields, today()), ...values }, {}, how === 'fresh');
+      baseline = startFrom({ ...initialValues(page.fields, today()), ...structuredCopy(values) });
+      const start = syncParts(structuredCopy(baseline), 'start');
+      set({ values: start, dirty: [], errors: {}, warnings: withValues(start, collectWarnings), warning: null, warningField: null });
+    },
+    errorsNow: () => collectErrors(),
+    show(errors) {
+      if (JSON.stringify(errors) !== JSON.stringify(state.errors)) set({ errors });
+    },
+  };
+}
+
+/** The problems found inside a saved form, by its own fields' names. */
+function inside(errors: Readonly<Record<string, string>>, name: string): Record<string, string> {
+  const found: Record<string, string> = {};
+  for (const [key, message] of Object.entries(errors)) if (key.startsWith(`${name}.`)) found[key.slice(name.length + 1)] = message;
+  return found;
 }
 
 /** A field no one types in: read-only by its definition, or worked out from others. */
@@ -981,6 +1122,8 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
       } else if (node.type === 'section') {
         add(node, parent, 'other', { invisible: node.invisible, readonly: node.readonly });
         walk(node.children, node.id);
+      } else if (node.type === 'form') {
+        add(node, parent, 'form', { invisible: node.invisible, readonly: node.readonly });
       } else {
         add(node, parent, 'other', { invisible: node.invisible });
       }
