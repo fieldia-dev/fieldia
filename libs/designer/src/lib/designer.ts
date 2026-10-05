@@ -271,8 +271,12 @@ export interface Designer extends HeaderCommands, ListCommands {
   setOther(id: string, on: boolean): boolean;
   /** How the field's widget shows it, such as the words at a scale's ends; `null` or nothing takes a setting away. */
   setWidgetOptions(id: string, patch: Record<string, string | number | boolean | null>): boolean;
-  /** Which kinds of file a file upload takes (media types, such as image/*), and the largest, in bytes. */
-  setFileRules(id: string, rules: { accept?: string[]; maxSize?: number | null }): boolean;
+  /**
+   * Which kinds of file a file upload takes (media types, such as image/*), and
+   * the largest, in bytes; whether it, or an image, takes several files, and as
+   * few and as many as it takes. `null` lifts a limit; one file again lifts both counts.
+   */
+  setFileRules(id: string, rules: { accept?: string[]; maxSize?: number | null; multiple?: boolean; minFiles?: number | null; maxFiles?: number | null }): boolean;
   /**
    * Drop a part where it goes, as one edit: a part on the page, by its id, or
    * a new one from the toolbox. Returns its id, and picks it.
@@ -1140,8 +1144,9 @@ export function createDesigner(options: {
 
     setFileRules(id, rules) {
       return apply((draft) => {
-        const field = fieldOfType(draft, id, ['binary'], 'Only a file upload takes files', (label) => `The files ${label} takes come from the model`);
+        const field = fieldOfType(draft, id, ['binary', 'image'], 'Only a file upload takes files', (label) => `The files ${label} takes come from the model`);
         if (rules.accept !== undefined) {
+          if (field.type === 'image') throw new Refusal('An image takes images only');
           if (rules.accept.length) field.accept = [...rules.accept];
           else delete field.accept;
         }
@@ -1150,6 +1155,22 @@ export function createDesigner(options: {
           else if (!Number.isInteger(rules.maxSize) || rules.maxSize <= 0) throw new Refusal('The largest file is a size in bytes, more than nothing');
           else field.maxSize = rules.maxSize;
         }
+        if (rules.multiple === true) field.multiple = true;
+        else if (rules.multiple === false) {
+          delete field.multiple;
+          delete field.minFiles;
+          delete field.maxFiles;
+        }
+        const counts = [['minFiles', 0, 'At least is a whole number of files'], ['maxFiles', 1, 'At most is a whole number of files, one or more']] as const;
+        for (const [key, least, refusal] of counts) {
+          const count = rules[key];
+          if (count === undefined) continue;
+          if (count !== null && !field.multiple) throw new Refusal('Turn on More than one file first');
+          if (count === null) delete field[key];
+          else if (!Number.isInteger(count) || count < least) throw new Refusal(refusal);
+          else field[key] = count;
+        }
+        if ((field.minFiles ?? 0) > (field.maxFiles ?? Infinity)) throw new Refusal('At least cannot be more than at most');
       });
     },
 
