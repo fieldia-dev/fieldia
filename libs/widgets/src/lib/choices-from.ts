@@ -1,5 +1,5 @@
 import { fill, type Field, type Option } from '@fieldia/core';
-import { WIDGET_LABELS } from './labels';
+import { wordsFor } from './kind-parts';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
 /**
@@ -10,7 +10,7 @@ import type { Widget, WidgetContext, WidgetFactory } from './widgets';
  */
 export function listChoices(factory: WidgetFactory, context: WidgetContext): Widget {
   const { form, name, document: doc } = context;
-  const words = context.labels ?? WIDGET_LABELS[context.locale ?? 'en'];
+  const words = wordsFor(context.labels, context.locale);
   const box = doc.createElement('div');
   const note = doc.createElement('div');
   const retry = doc.createElement('button');
