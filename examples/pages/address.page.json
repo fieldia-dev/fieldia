@@ -1,0 +1,61 @@
+{
+  "fieldia": "0.1",
+  "id": "address",
+  "title": "Address",
+  "description": "A postal address, made once and placed in any form that asks for one.",
+  "data": { "kind": "responses" },
+  "fields": {
+    "street": { "type": "char", "label": "Street and number", "required": true },
+    "line2": { "type": "char", "label": "Building, floor or flat" },
+    "city": { "type": "char", "label": "City", "required": true },
+    "postcode": { "type": "char", "label": "Postcode" },
+    "country": {
+      "type": "selection",
+      "label": "Country",
+      "default": "EG",
+      "options": [
+        { "value": "EG", "label": "Egypt" },
+        { "value": "AE", "label": "United Arab Emirates" },
+        { "value": "SA", "label": "Saudi Arabia" }
+      ]
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "address",
+    "children": [
+      {
+        "type": "section",
+        "id": "address-parts",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "street", "field": "street", "colspan": 2 },
+          { "type": "field", "id": "line2", "field": "line2", "colspan": 2 },
+          { "type": "field", "id": "city", "field": "city" },
+          {
+            "type": "field",
+            "id": "postcode",
+            "field": "postcode",
+            "validate": [{ "pattern": "^[0-9]{5}$", "message": "A postcode is five figures" }]
+          },
+          { "type": "field", "id": "country", "field": "country" }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Address": "العنوان",
+      "A postal address, made once and placed in any form that asks for one.": "عنوان بريدي، يُصمَّم مرة ويوضع في أي نموذج يطلبه.",
+      "Street and number": "الشارع والرقم",
+      "Building, floor or flat": "المبنى أو الطابق أو الشقة",
+      "City": "المدينة",
+      "Postcode": "الرمز البريدي",
+      "A postcode is five figures": "الرمز البريدي خمسة أرقام",
+      "Country": "الدولة",
+      "Egypt": "مصر",
+      "United Arab Emirates": "الإمارات العربية المتحدة",
+      "Saudi Arabia": "السعودية"
+    }
+  }
+}
