@@ -150,6 +150,11 @@ export const APP_LISTS = [
   { name: 'countries', label: 'Countries delivered to' },
   { name: 'cities', label: 'Cities of the country' },
 ];
+/** The same lists, named in Arabic, for the designer demos in Arabic (`?locale=ar`). */
+export const APP_LISTS_AR = [
+  { name: 'countries', label: 'دول التوصيل' },
+  { name: 'cities', label: 'مدن الدولة' },
+];
 const CURRENCIES: Record<number, string> = { 1: 'EGP', 2: 'JOD', 3: 'SAR' };
 
 /** A customer to edit, and the records its relations point to. Sample data. */
