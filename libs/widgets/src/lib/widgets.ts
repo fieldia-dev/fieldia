@@ -33,7 +33,7 @@ import { addressWidget } from './address';
 import { cardsWidget } from './cards';
 import { clearSelection, fillIn, setAttr, setText } from './kind-parts';
 import { shownOptions } from './shuffle';
-import { counted, grower } from './limits';
+import { bounds, counted, grower } from './limits';
 import { currencySymbol } from './units';
 import { drawIcon } from './icons';
 import { listChoices } from './choices-from';
@@ -150,6 +150,7 @@ function textWidget(inputType: string): WidgetFactory {
     // A person's own email, phone or web address, the browser may offer.
     const input = make(document, 'input', { id, type: inputType, class: 'fd-input', autocomplete: /^(email|tel|url)$/.test(inputType) ? inputType : 'off' });
     if (field.type === 'char' && field.size !== undefined) input.maxLength = field.size;
+    if (inputType === 'time') bounds(input, field, node);
     if (node.placeholder) input.placeholder = node.placeholder;
     input.addEventListener('input', () => form.setValue(name, input.value === '' ? null : input.value));
     return counted({
@@ -457,8 +458,9 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
 }
 
 const dateWidget: WidgetFactory = (context) => {
-  const { form, name, id, document, node } = context;
+  const { form, name, field, id, document, node } = context;
   const input = make(document, 'input', { id, type: 'date', class: 'fd-input fd-date' });
+  bounds(input, field, node);
   input.addEventListener('input', () => form.setValue(name, input.value || null));
   const widget: Widget = {
     element: input,
@@ -477,8 +479,9 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 /** Shown in local time, stored as an ISO instant in UTC. */
 const dateTimeWidget: WidgetFactory = (context) => {
-  const { form, name, id, document, node } = context;
+  const { form, name, field, id, document, node } = context;
   const input = make(document, 'input', { id, type: 'datetime-local', class: 'fd-input fd-datetime' });
+  bounds(input, field, node);
   const local = (iso: Value | undefined) => {
     if (typeof iso !== 'string' || !iso) return '';
     const d = new Date(iso);
@@ -542,6 +545,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'char.phone': textWidget('tel'),
   'char.url': textWidget('url'),
   'char.password': textWidget('password'),
+  'char.time': textWidget('time'),
   'char.tags': charTagsWidget,
   text: textareaWidget,
   integer: numberWidget,

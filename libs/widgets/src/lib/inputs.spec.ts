@@ -201,3 +201,32 @@ describe('a scale coloured as NPS', () => {
     expect(mountKind({ type: 'integer', min: 1, max: 5 }, { widget: 'scale', options: { nps: true } }).el.querySelector('.fd-nps')).toBeNull();
   });
 });
+
+describe('a date’s, a date and time’s and a time’s limits on the input', () => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const day = (offset: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+
+  it('gives a date’s picker its earliest and latest day, fixed or counted from today', () => {
+    const date = input(mountKind({ type: 'date', min: 'today', max: 'today+30' }).el);
+    expect([date.min, date.max]).toEqual([day(0), day(30)]);
+    const fixed = input(mountKind({ type: 'date', min: '2026-03-02' }).el);
+    expect([fixed.min, fixed.max]).toEqual(['2026-03-02', '']);
+  });
+
+  it('gives a date and time’s picker the whole of its first and last day, and its minutes’ step', () => {
+    const at = input(mountKind({ type: 'datetime', min: 'today', max: '2030-01-31' }, { options: { step: 15 } }).el);
+    expect([at.min, at.max, at.step]).toEqual([`${day(0)}T00:00`, '2030-01-31T23:59', '900']);
+  });
+
+  it('is a time box for a time of day, its earliest, latest and step from the page', () => {
+    const { el, form } = mountKind({ type: 'char' }, { widget: 'time', options: { min: '09:00', max: '17:30', step: 30 } });
+    const time = input(el);
+    expect([time.type, time.min, time.max, time.step]).toEqual(['time', '09:00', '17:30', '1800']);
+    typeInto(time, '10:30');
+    expect(form.getState().values['x']).toBe('10:30');
+  });
+});

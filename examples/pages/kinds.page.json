@@ -51,6 +51,13 @@
         "desk": {"type": "boolean", "label": "Needs a desk"}
       }
     },
+    "move_day": {"type": "date", "label": "Which day shall we move your things?", "help": "A working day in the next two months.", "min": "today", "max": "today+60", "days": [7, 1, 2, 3, 4]},
+    "arrival": {"type": "char", "label": "What time will you arrive on your first day?", "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"},
+    "mobile": {"type": "char", "label": "A mobile number we can call on the day"},
+    "boxes": {"type": "float", "label": "Roughly how heavy are your boxes?", "min": 0, "max": 200, "digits": [5, 1]},
+    "mood": {"type": "integer", "label": "How do you feel about the move?", "min": 1, "max": 5},
+    "recommend": {"type": "integer", "label": "How likely are you to recommend working here to a friend?", "min": 0, "max": 10},
+    "wishes": {"type": "text", "label": "Anything else the movers should know?", "size": 300},
     "kitchen_floor": {"type": "selection", "label": "Quick check: which floor is the kitchen on?",
       "options": [
         {"value": "ground", "label": "The ground floor", "score": 0},
@@ -70,7 +77,7 @@
         "children": [
           {"type": "field", "id": "q-name", "field": "name"},
           {"type": "field", "id": "q-days", "field": "office_days", "widget": "slider"},
-          {"type": "field", "id": "q-commute", "field": "commute", "widget": "slider", "options": {"step": 0.5}},
+          {"type": "field", "id": "q-commute", "field": "commute", "widget": "slider", "options": {"step": 0.5, "startLabel": "Next door", "endLabel": "Three hours"}},
           {"type": "field", "id": "q-rooms", "field": "rooms", "widget": "tags"},
           {"type": "field", "id": "q-address", "field": "badge_address", "widget": "address", "options": {"parts": ["street", "city", "postcode"]}}
         ]
@@ -84,6 +91,20 @@
           {"type": "field", "id": "q-kitchen", "field": "kitchen", "widget": "image-choice"},
           {"type": "field", "id": "q-priorities", "field": "priorities", "widget": "ranking", "options": {"shuffle": true}},
           {"type": "field", "id": "q-movers", "field": "movers", "widget": "cards", "options": {"max": 4, "itemLabel": "Person", "addLabel": "Add a person"}}
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-day",
+        "title": "Moving day",
+        "children": [
+          {"type": "field", "id": "q-move-day", "field": "move_day"},
+          {"type": "field", "id": "q-arrival", "field": "arrival", "widget": "time", "options": {"min": "07:00", "max": "11:00", "step": 15}},
+          {"type": "field", "id": "q-mobile", "field": "mobile", "widget": "phone", "placeholder": "+20 100 123 4567"},
+          {"type": "field", "id": "q-boxes", "field": "boxes", "options": {"suffix": "kg"}},
+          {"type": "field", "id": "q-mood", "field": "mood", "widget": "rating", "options": {"icon": "heart", "startLabel": "Worried", "endLabel": "Can’t wait"}},
+          {"type": "field", "id": "q-recommend", "field": "recommend", "widget": "scale", "options": {"nps": true, "startLabel": "Not at all likely", "endLabel": "Extremely likely"}},
+          {"type": "field", "id": "q-wishes", "field": "wishes", "options": {"rows": 2}}
         ]
       },
       {

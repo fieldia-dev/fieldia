@@ -1,4 +1,4 @@
-import type { FieldNode } from '@fieldia/core';
+import { dayOf, type Field, type FieldNode } from '@fieldia/core';
 import { fillIn, maker, setHidden, setText, wordsFor } from './kind-parts';
 import type { Widget, WidgetContext } from './widgets';
 
@@ -7,7 +7,8 @@ import type { Widget, WidgetContext } from './widgets';
  * against its field's most, under it — "12 / 100", in the warning colour from
  * nine tenths on, and how many are left said to a screen reader once typing
  * pauses — for a page's own field, not a table's cell; and a paragraph's rows,
- * growing as people type unless the page says not to (`autoGrow: false`).
+ * growing as people type unless the page says not to (`autoGrow: false`);
+ * a date's, a date and time's or a time's earliest and latest on its input.
  */
 export function counted(widget: Widget, { form, name, field, document, labels, locale }: WidgetContext, box: HTMLInputElement | HTMLTextAreaElement): Widget {
   const size = field.type === 'char' || field.type === 'text' ? field.size : undefined;
@@ -42,4 +43,20 @@ export function grower(area: HTMLTextAreaElement, node: FieldNode): () => void {
     // Its height takes its borders too: what scrolls, and the borders round it.
     if (area.scrollHeight) area.style.height = `${area.scrollHeight + area.offsetHeight - area.clientHeight}px`;
   };
+}
+
+/**
+ * A date's or a date and time's earliest and latest day (the field's `min`
+ * and `max`, counted from today where they say so), or a time's (the node's
+ * `min` and `max`, "09:00"), on its input for the browser's picker to keep;
+ * and the node's `step` in minutes.
+ */
+export function bounds(input: HTMLInputElement, field: Field, node: FieldNode): void {
+  const options = node.options ?? {};
+  const time = field.type === 'char';
+  const limits = time ? [options['min'], options['max']] : 'min' in field ? [field.min, field.max] : [];
+  limits.forEach((limit, i) => {
+    if (typeof limit === 'string') input[i ? 'max' : 'min'] = time ? limit : dayOf(limit) + (field.type === 'datetime' ? (i ? 'T23:59' : 'T00:00') : '');
+  });
+  if (typeof options['step'] === 'number') input.step = String(options['step'] * 60);
 }
