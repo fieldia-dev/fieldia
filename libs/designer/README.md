@@ -89,6 +89,36 @@ so. Nothing typed there is kept in the page or makes an undo step, and it
 lasts while the field stays picked. A field with no rules shows no sample:
 Add a rule is the invitation.
 
+## Each kind of part's look
+
+Under the page's look (its accent, font, spacing, corners, labels and colours),
+the Look tab — the Look sheet, in the survey editor — has **Each kind of
+part**, as SurveyJS and Vueform theme each kind of component: pick text boxes,
+choices, groups, buttons or tables, and set the few things the skins draw on
+it. The canvas wears each as it is set (a survey's cards draw a text answer's
+line in the text boxes' look), and Try it shows the form as people will see it.
+
+| Kind | Background | Border | Corners | Text size | Accent |
+| --- | --- | --- | --- | --- | --- |
+| Text boxes (text, numbers, dates, dropdowns) | ✓ | ✓ | ✓ | ✓ | the box being typed in, the day picked |
+| Choices (rings, ticks, a scale's points, Yes and No, pictures, a ranking) | the boxes among them | ✓ | ✓ | ✓ | what is picked |
+| Groups (sections, cards, a repeating group's cards) | ✓ | ✓ | ✓ | | |
+| Buttons (Send, Next, Save, Add another) | | | ✓ | ✓ | their colour |
+| Tables (lines, a matrix's grid) | the heading row | the lines | | ✓ | |
+
+Each change is one undo step; a run of colours tried in the picker is one, as
+typing is. A choice pressed again, or a colour's ×, goes back to the page's;
+“As the page” gives a whole kind back. A colour words could not be read on is
+drawn lighter or darker, just as far as it has to be, as the page's accent is
+(the panel shows it as picked): a ground stays light on a light page and dark
+on a dark one, and an accent reads on the page and on every ground given. A
+border is drawn as given. With the underline skin, which draws no card round a
+group, a group given a background or a border is drawn as a card.
+
+It is Advanced's: Simple has no Look tab, keeping the look as it is. A preset
+is a whole look, as a SurveyJS theme is: put on, it gives each kind back to the
+page (Undo brings them back). A look of your own carries each kind's look.
+
 ## What an app adds
 
 ### Kinds of its own
@@ -170,8 +200,8 @@ createDesigner({ page, assistant }); // or mountSurveyEditor(host, { designer, a
 The Look tab (the Look sheet, in the survey editor) starts with Fieldia's
 presets. Once a look is your own, "Save this look…" names it in a box on the
 page, and it shows under "Your looks", to put on any other page as a preset is:
-its accent, font, spacing, corners and colours, as one undo step. Where labels
-sit is the layout's, so a look never carries it. Each look is renamed or
+its accent, font, spacing, corners and colours, and each kind of part's look, as
+one undo step. Where labels sit is the layout's, so a look never carries it. Each look is renamed or
 removed from the menu on its tile; a removal leaves Undo at hand.
 
 Without a store of the app's, looks are kept in this browser
@@ -187,7 +217,7 @@ const looks: LookStore = {
   async list() {
     const reply = await fetch('/api/workspace/looks');
     if (!reply.ok) throw new Error('The looks could not be fetched'); // said in the editor
-    return reply.json(); // [{ id, name, look: { accent, font, density, corners, scheme } }]
+    return reply.json(); // [{ id, name, look: { accent, font, density, corners, scheme, parts } }]
   },
   async save(look) {
     const reply = await fetch(`/api/workspace/looks/${look.id}`, { method: 'PUT', body: JSON.stringify(look) });

@@ -48,6 +48,20 @@ describe('a store in this browser', () => {
     expect(await createBrowserLookStore().list()).toEqual([]);
   });
 
+  it('reads each kind of part’s look well made: only the kinds and settings the format has, each a value it may be', async () => {
+    const parts = {
+      inputs: { background: '#fff7e6', corners: 'pointy', textSize: 'large', glow: true },
+      groups: { textSize: 'large' },
+      buttons: { accent: 'purple' },
+      labels: { accent: '#123456' },
+    };
+    window.localStorage.setItem('fieldia.designer.looks', JSON.stringify([{ id: 'cream', name: 'Cream', look: { accent: '#c4320a', parts } }, { id: 'bare', name: 'Bare', look: { parts: { groups: { textSize: 'large' } } } }]));
+    expect(await createBrowserLookStore().list()).toEqual([
+      { id: 'cream', name: 'Cream', look: { accent: '#c4320a', parts: { inputs: { background: '#fff7e6', textSize: 'large' } } } },
+      { id: 'bare', name: 'Bare', look: {} },
+    ]);
+  });
+
   it('keeps the looks in memory for the visit when the browser keeps nothing', async () => {
     const storage = Object.getPrototypeOf(window.localStorage) as Storage;
     const get = jest.spyOn(storage, 'getItem').mockImplementation(() => {
@@ -121,6 +135,20 @@ describe('a look put on the page', () => {
     expect(designer.getPage().look).toEqual({ labels: 'above', ...brand.look });
   });
 
+  // A look is look, not layout: each kind of part's goes with it, as SurveyJS's theme carries its components'.
+  it('puts on each kind of part’s look with it, and gives each kind it has none for back to the page; one undo step', () => {
+    const designer = createDesigner({ page: { ...blankPage('screen', 'Visit'), look: { labels: 'beside', parts: { tables: { border: '#cccccc' } } } } });
+    const cream = { accent: '#c4320a', parts: { inputs: { background: '#fff7e6', corners: 'round' as const } } };
+    expect(designer.useLook(cream)).toBe(true);
+    expect(designer.getPage().look).toEqual({ labels: 'beside', ...cream });
+    expect(designer.useLook(brand.look)).toBe(true);
+    expect(designer.getPage().look).toEqual({ labels: 'beside', ...brand.look });
+    designer.undo();
+    expect(designer.getPage().look).toEqual({ labels: 'beside', ...cream });
+    designer.undo();
+    expect(designer.getPage().look?.parts).toEqual({ tables: { border: '#cccccc' } });
+  });
+
   it('is refused, saying why, for a colour that is not one', () => {
     const designer = createDesigner({ page: blankPage('screen', 'Visit') });
     expect(designer.useLook({ accent: 'red' })).toBe(false);
@@ -135,6 +163,15 @@ describe('which look a page wears', () => {
     expect(sameLook({ accent: '#c4320a' }, { accent: '#c4320a', font: 'system' })).toBe(false);
     expect(sameLook({ scheme: 'dark' }, { scheme: 'dark' })).toBe(true);
     expect(sameLook(undefined, {})).toBe(true);
+  });
+
+  it('is the same look only with the same look for each kind of part, its colours in either case', () => {
+    const cream = { ...brand.look, parts: { inputs: { background: '#fff7e6', corners: 'round' as const } } };
+    expect(sameLook(cream, brand.look)).toBe(false);
+    expect(sameLook({ ...cream, parts: { inputs: { corners: 'round', background: '#FFF7E6' } } }, cream)).toBe(true);
+    expect(sameLook({ ...cream, parts: { inputs: { background: '#fff7e6' } } }, cream)).toBe(false);
+    expect(sameLook({ ...brand.look, parts: {} }, brand.look)).toBe(true);
+    expect(savedLookOf(cream, [brand])).toBeNull();
   });
 
   it('is found among the looks kept, by those values', () => {

@@ -131,6 +131,146 @@
             "dark",
             "auto"
           ]
+        },
+        "parts": {
+          "type": "object",
+          "properties": {
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "background": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "border": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "corners": {
+                  "type": "string",
+                  "enum": [
+                    "square",
+                    "soft",
+                    "round"
+                  ]
+                },
+                "textSize": {
+                  "type": "string",
+                  "enum": [
+                    "small",
+                    "large"
+                  ]
+                },
+                "accent": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                }
+              },
+              "additionalProperties": false
+            },
+            "choices": {
+              "type": "object",
+              "properties": {
+                "accent": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "background": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "border": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "corners": {
+                  "type": "string",
+                  "enum": [
+                    "square",
+                    "soft",
+                    "round"
+                  ]
+                },
+                "textSize": {
+                  "type": "string",
+                  "enum": [
+                    "small",
+                    "large"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            "groups": {
+              "type": "object",
+              "properties": {
+                "background": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "border": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "corners": {
+                  "type": "string",
+                  "enum": [
+                    "square",
+                    "soft",
+                    "round"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            "buttons": {
+              "type": "object",
+              "properties": {
+                "accent": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "corners": {
+                  "type": "string",
+                  "enum": [
+                    "square",
+                    "soft",
+                    "round"
+                  ]
+                },
+                "textSize": {
+                  "type": "string",
+                  "enum": [
+                    "small",
+                    "large"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            "tables": {
+              "type": "object",
+              "properties": {
+                "background": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "border": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$"
+                },
+                "textSize": {
+                  "type": "string",
+                  "enum": [
+                    "small",
+                    "large"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

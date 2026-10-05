@@ -138,14 +138,17 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // and copied; links searched in full and opened; a heading button; a picture's width, place, link and caption,
 // in four languages) add 10, to 291.7.
 // English alone in the one-tag script; the other languages as add-ons save 29.8, to 262.2.
-const BUDGET_KB = 263;
+// Each kind of part's own look (text boxes, choices, groups, buttons and tables: a ground, an edge,
+// corners, a size of words and an accent, each kept readable in either scheme) adds 4.8, to 267.
+const BUDGET_KB = 267;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
 // checked, a date's limits, a count of characters, units and symbols, rating looks and NPS) 2.8, to 85.1;
 // signatures' pens and undo, addresses' parts and countries, lines' and cards' moves and pictures' captions
 // 3.4, to 88.5. English alone, the other languages as add-ons (fieldia.ar.js, …) save 8, to 80.6.
-const GZIP_BUDGET_KB = 81;
+// Each kind of part's own look adds 1.2, to 81.8.
+const GZIP_BUDGET_KB = 82;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);

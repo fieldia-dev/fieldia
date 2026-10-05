@@ -1,7 +1,8 @@
-import type { ButtonNode, ColumnCount, ColumnsByWidth, ImageNode, LabelPlace, Page, PageLook, SectionNode, TextNode } from '@fieldia/core';
+import { PART_LOOKS, type ButtonNode, type ColumnCount, type ColumnsByWidth, type ImageNode, type LabelPlace, type Page, type PageLook, type PartLook, type PartLookKind, type SectionNode, type TextNode } from '@fieldia/core';
 import { columnsValue, setSpan, SPANNED } from './layout-ops';
 import { across, isSection, locate, nodeOf, rowsOf, spanOf, type Holder, type Part } from './layout-tree';
 import { fill, fromTwelfths, inTwelfths, isGroup, keepsFull, laidInTwelfths, resize, toTwelfths, TWELVE, twelfthsAhead } from './layout-twelfths';
+import { KIND_WORDS, settingWords } from './look-parts-words';
 import { Refusal } from './refusal';
 
 /**
@@ -20,6 +21,9 @@ export interface SectionLook {
 
 /** A change to the page's look; `null` takes a setting back. */
 export type LookPatch = { [K in keyof PageLook]?: PageLook[K] | null };
+
+/** A change to one kind of part's look; `null` takes a setting back to the page's. */
+export type PartLookPatch = { [K in keyof PartLook]?: PartLook[K] | null };
 
 const COUNTS: readonly number[] = [1, 2, 3, 4, TWELVE];
 
@@ -129,6 +133,36 @@ export function setLook(page: Page, change: LookPatch): void {
   patch(look, change);
   if (Object.keys(look).length) page.look = look as PageLook;
   else delete page.look;
+}
+
+const COLOUR = /^#[0-9a-fA-F]{6}$/;
+/** What each setting of a kind of part may be. */
+export const PART_VALUES: Record<keyof PartLook, (value: unknown) => boolean> = {
+  background: (value) => typeof value === 'string' && COLOUR.test(value),
+  border: (value) => typeof value === 'string' && COLOUR.test(value),
+  corners: (value) => value === 'square' || value === 'soft' || value === 'round',
+  textSize: (value) => value === 'small' || value === 'large',
+  accent: (value) => typeof value === 'string' && COLOUR.test(value),
+};
+
+const PART_REFUSALS: Partial<Record<keyof PartLook, string>> = { corners: 'Corners are square, soft or round', textSize: 'Text is small or large' };
+
+/** One kind of part's look: each setting given set, or taken back with `null`; `null` for the whole gives the kind back to the page's look. */
+export function setPartLook(page: Page, kind: PartLookKind, change: PartLookPatch | null): void {
+  const settings: readonly string[] | undefined = PART_LOOKS[kind];
+  if (!settings) throw new Refusal(`There is no kind of part “${kind}”`);
+  const parts: Record<string, Record<string, unknown>> = { ...page.look?.parts };
+  const part: Record<string, unknown> = { ...parts[kind] };
+  for (const [key, value] of Object.entries(change ?? {})) {
+    if (value === undefined) continue;
+    const setting = key as keyof PartLook;
+    if (!settings.includes(setting)) throw new Refusal(`${KIND_WORDS[kind]} have no ${settingWords(kind, setting).toLowerCase()} of their own`);
+    if (value !== null && !PART_VALUES[setting](value)) throw new Refusal(PART_REFUSALS[setting] ?? 'A colour is written #rrggbb, such as #1f7a4d');
+  }
+  patch(part, change ?? Object.fromEntries(Object.keys(part).map((key) => [key, null])));
+  if (Object.keys(part).length) parts[kind] = part;
+  else delete parts[kind];
+  setLook(page, { parts: Object.keys(parts).length ? parts : null });
 }
 
 /**

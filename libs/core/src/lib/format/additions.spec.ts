@@ -114,6 +114,30 @@ describe('the page’s look', () => {
   it('wants the accent as a #rrggbb colour', () => {
     expect(problems(base(sections(), undefined, { look: { accent: 'green' } }))).toEqual([expect.stringMatching(/accent/)]);
   });
+
+  // As SurveyJS's and Vueform's per-component theming: a few settings for each kind of part, over the page's.
+  it('takes a look for each kind of part: text boxes, choices, groups, buttons and tables', () => {
+    const parts = {
+      inputs: { background: '#fff7e6', border: '#c4320a', corners: 'round', textSize: 'large', accent: '#c4320a' },
+      choices: { background: '#f0f7ff', border: '#1677ff', corners: 'square', textSize: 'small', accent: '#1f7a4d' },
+      groups: { background: '#fbfaf7', border: '#d6cfc2', corners: 'soft' },
+      buttons: { accent: '#6941c6', corners: 'round', textSize: 'large' },
+      tables: { background: '#f5f5f5', border: '#cccccc', textSize: 'small' },
+    };
+    expect(problems(base(sections(), undefined, { look: { accent: '#1f7a4d', parts } }))).toEqual([]);
+    expect(problems(base(sections(), undefined, { look: { parts: { buttons: { accent: '#6941c6' } } } }))).toEqual([]);
+  });
+
+  it('refuses a setting a kind of part cannot draw, a kind it does not know, and a colour not #rrggbb', () => {
+    const look = (parts: unknown) => problems(base(sections(), undefined, { look: { parts } }));
+    // A group's words are its fields'; a button's ground is its accent; a table has no corners of its own.
+    expect(look({ groups: { textSize: 'large' } })).toEqual([expect.stringMatching(/look\.parts\.groups/)]);
+    expect(look({ buttons: { background: '#ffffff' } })).toEqual([expect.stringMatching(/look\.parts\.buttons/)]);
+    expect(look({ tables: { corners: 'round' } })).toEqual([expect.stringMatching(/look\.parts\.tables/)]);
+    expect(look({ labels: { accent: '#123456' } })).toEqual([expect.stringMatching(/look\.parts/)]);
+    expect(look({ inputs: { background: 'white' } })).toEqual([expect.stringMatching(/look\.parts\.inputs\.background/)]);
+    expect(look({ inputs: { textSize: 'huge' } })).toEqual([expect.stringMatching(/look\.parts\.inputs\.textSize/)]);
+  });
 });
 
 describe('answer rules', () => {

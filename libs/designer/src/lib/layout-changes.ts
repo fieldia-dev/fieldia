@@ -1,6 +1,7 @@
-import type { Page, PageLook, SectionNode, TabsNode } from '@fieldia/core';
+import { PART_LOOKS, type Page, type PageLook, type PartLook, type PartLookKind, type SectionNode, type TabsNode } from '@fieldia/core';
 import { across, andList, isSection, isWrapper, listOf, nameOf, rowsOf, seenAs, spanOf, type Holder, type Part } from './layout-tree';
 import { FOLD_WORDS, foldOf } from './group-fold';
+import { KIND_WORDS, settingWords } from './look-parts-words';
 import { inTwelfths, laidInTwelfths, rowShare, TWELVE } from './layout-twelfths';
 
 /**
@@ -275,12 +276,22 @@ const LOOK: { key: keyof PageLook; words: string; none: string; value?: Record<s
   { key: 'scheme', words: 'The colours', none: 'as the skin has them', value: { auto: 'as the reader’s system has them' } },
 ];
 
-/** The page's look, setting by setting: "The spacing: comfortable → compact". */
+/** The page's look, setting by setting: "The spacing: comfortable → compact"; then each kind of part's: "Text boxes, corners: as the page → round". */
 export function lookChanges(before: Page, after: Page): string[] {
-  return LOOK.flatMap(({ key, words, none, value }) => {
+  const page = LOOK.flatMap(({ key, words, none, value }) => {
     const [was, now] = [before.look?.[key], after.look?.[key]];
     if (was === now) return [];
     const say = (v: unknown) => (v === undefined ? none : key === 'labelWidth' ? `${v} px wide` : (value?.[String(v)] ?? String(v)));
     return [`${words}: ${say(was)} → ${say(now)}`];
   });
+  const partOf = (look: Page['look'], kind: string) => (look?.parts as Record<string, PartLook | undefined> | undefined)?.[kind];
+  const parts = Object.entries(PART_LOOKS).flatMap(([kind, settings]) =>
+    (settings as readonly (keyof PartLook)[]).flatMap((name) => {
+      const [was, now] = [partOf(before.look, kind)?.[name], partOf(after.look, kind)?.[name]];
+      if (was === now) return [];
+      const say = (v: string | undefined) => v ?? 'as the page';
+      return [`${KIND_WORDS[kind as PartLookKind]}, ${settingWords(kind as PartLookKind, name).toLowerCase()}: ${say(was)} → ${say(now)}`];
+    })
+  );
+  return [...page, ...parts];
 }

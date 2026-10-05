@@ -166,6 +166,16 @@ describe('words for a layout’s settings', () => {
       'The colours: as the skin has them → as the reader’s system has them',
     ]);
   });
+
+  it('each kind of part’s look', () => {
+    expect(words((d) => d.setPartLook('inputs', { background: '#fff7e6', corners: 'round' }))).toEqual(['Text boxes, background: as the page → #fff7e6', 'Text boxes, corners: as the page → round']);
+    expect(words((d) => d.setPartLook('buttons', { accent: '#6941c6', textSize: 'large' }))).toEqual(['Buttons, colour: as the page → #6941c6', 'Buttons, text size: as the page → large']);
+    const d = employeeDesigner();
+    d.setPartLook('tables', { background: '#eef2f7' });
+    const before = d.getPage();
+    d.setPartLook('tables', null);
+    expect(pageChanges(before, d.getPage())).toEqual(['Tables, heading row: #eef2f7 → as the page']);
+  });
 });
 
 describe('words for a page written by hand', () => {

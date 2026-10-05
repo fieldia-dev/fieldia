@@ -10,6 +10,7 @@ import {
   type LayoutNode,
   type Option,
   type OptionsFrom,
+  type PartLookKind,
   type Page,
   type PageLook,
   type SectionNode,
@@ -34,7 +35,7 @@ import * as ops from './layout-ops';
 import type { BlockKind, Drop, NewPart } from './layout-ops';
 import * as settings from './layout-settings';
 import * as twelfths from './layout-twelfths';
-import type { BlockPatch, LookPatch, SectionLook } from './layout-settings';
+import type { BlockPatch, LookPatch, PartLookPatch, SectionLook } from './layout-settings';
 import * as several from './layout-several';
 import type { EachChange } from './layout-several';
 import { allIds, containers, findContainer, findNode, findTab, firstSection, nextName, shownFields, type Container } from './page-tree';
@@ -74,7 +75,7 @@ export type { HeaderCommands, HeaderPartKind, HeaderPartPatch } from './header-c
 export type { ListActionPatch, ListCommands, ListOptionsPatch } from './list-commands';
 export { pageChanges, pageChecks, type CheckFix, type PageCheck } from './page-checks';
 export type { BlockKind, Drop, NewPart } from './layout-ops';
-export type { BlockPatch, LookPatch, SectionLook } from './layout-settings';
+export type { BlockPatch, LookPatch, PartLookPatch, SectionLook } from './layout-settings';
 export type { EachChange } from './layout-several';
 export type { Fold } from './group-fold';
 export type { JsonProblem, PageJsonResult } from './page-json';
@@ -330,6 +331,13 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setFieldLabels(id: string, place: LabelPlace | null): boolean;
   /** The page's look: colour, font, spacing, corners, labels, scheme; `null` takes a setting back. */
   setLook(patch: LookPatch): boolean;
+  /**
+   * One kind of part's look, over the page's: text boxes, choices, groups,
+   * buttons or tables, with the settings `PART_LOOKS` gives each. `null` takes
+   * a setting back, or the whole kind. Each change is one undo step; a run of
+   * colours tried, one after another, is one, as typing is.
+   */
+  setPartLook(kind: PartLookKind, patch: PartLookPatch | null): boolean;
   /** A block after `after`, or in `parent` at `index`, or at the end of the last container. Returns its id, and picks it. */
   addBlock(kind: BlockKind, where?: Where): string | false;
   /** A table of lines' columns, in order. */
@@ -1235,6 +1243,10 @@ export function createDesigner(options: {
     setSectionLook: (id, look) => apply((draft) => settings.setSectionLook(draft, id, look), `section-look:${id}:${Object.keys(look).join(',')}`),
     setFieldLabels: (id, place) => apply((draft) => settings.setFieldLabels(draft, id, place)),
     setLook: (patch) => apply((draft) => settings.setLook(draft, patch), `look:${Object.keys(patch).join(',')}`),
+    setPartLook: (kind, patch) => {
+      const colours = !!patch && Object.values(patch).every((value) => typeof value === 'string' && value.startsWith('#'));
+      return apply((draft) => settings.setPartLook(draft, kind, patch), colours ? `part-look:${kind}:${Object.keys(patch).join(',')}` : null);
+    },
     addBlock: (kind, where) => layoutEdit((draft) => ops.addBlock(draft, kind, where)),
 
     setLineColumns(id, columns) {

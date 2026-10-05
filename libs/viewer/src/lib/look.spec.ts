@@ -83,6 +83,104 @@ describe('the look on the form', () => {
   });
 });
 
+describe('a look for each kind of part', () => {
+  const root = () => document.createElement('form');
+  const token = (form: HTMLElement, name: string) => form.style.getPropertyValue(name);
+  /** The light scheme's words, and the dark one's: text, muted words, an error. */
+  const LIGHT_WORDS = ['#212529', '#636976', '#c63c3d'];
+  const DARK_WORDS = ['#e8eaed', '#a3a9b2', '#ff8a7a'];
+
+  it('names what each kind sets on the form, and hands each value over as a token of that kind', () => {
+    const form = root();
+    applyLook(form, {
+      parts: {
+        inputs: { background: '#fff7e6', border: '#c4320a', corners: 'round', textSize: 'large' },
+        groups: { corners: 'soft' },
+        buttons: { corners: 'square', textSize: 'small' },
+        tables: { border: '#cccccc' },
+      },
+    });
+    expect(form.getAttribute('data-inputs')?.split(' ').sort()).toEqual(['bg', 'border', 'radius', 'size']);
+    expect(form.getAttribute('data-groups')).toBe('radius');
+    expect(form.getAttribute('data-tables')).toBe('border');
+    expect(form.hasAttribute('data-choices')).toBe(false);
+    // A cream that reads already is kept as it is; an edge is drawn as given.
+    expect(token(form, '--fd-inputs-bg')).toBe('#fff7e6');
+    expect(token(form, '--fd-inputs-border')).toBe('#c4320a');
+    // Corners: a box's as the page's boxes, a group's as the page's cards.
+    expect(token(form, '--fd-inputs-radius')).toBe('12px');
+    expect(token(form, '--fd-groups-radius')).toBe('10px');
+    expect(token(form, '--fd-buttons-radius')).toBe('0px');
+    expect([token(form, '--fd-inputs-size'), token(form, '--fd-buttons-size')]).toEqual(['16px', '13px']);
+    // Nothing of the page's own look is set by it.
+    expect(form.hasAttribute('data-accent')).toBe(false);
+  });
+
+  // Never a ground the page's words cannot be read on: kept light on a light page, dark on a dark one.
+  it('moves a ground, only as far as it has to, until the page’s words and its accent read on it at 4.5:1', () => {
+    for (const given of ['#002855', '#c4320a', '#777777', '#ffd60a', '#1f7a4d', '#000000', '#ffffff', '#fff7e6']) {
+      for (const accent of [undefined, '#1677ff', '#6941c6']) {
+        const light = root();
+        applyLook(light, { accent, parts: { groups: { background: given } } });
+        const words = [...LIGHT_WORDS, accent ? accentShades(accent).accent : '#1365d9'];
+        expect(Math.min(...words.map((word) => contrast(word, token(light, '--fd-groups-bg'))))).toBeGreaterThanOrEqual(4.5);
+        const dark = root();
+        applyLook(dark, { accent, scheme: 'dark', parts: { groups: { background: given } } });
+        const darkWords = [...DARK_WORDS, accent ? accentShades(accent).dark : '#5aa2ff'];
+        expect(Math.min(...darkWords.map((word) => contrast(word, token(dark, '--fd-groups-bg'))))).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+    // No further than it has to be: a pale tint stays, navy stays navy on a dark page.
+    const pale = root();
+    applyLook(pale, { parts: { inputs: { background: '#f0f7ff' } } });
+    expect(token(pale, '--fd-inputs-bg')).toBe('#f0f7ff');
+    const navy = root();
+    applyLook(navy, { scheme: 'dark', parts: { groups: { background: '#002855' } } });
+    expect(token(navy, '--fd-groups-bg')).toBe('#002855');
+  });
+
+  it('moves a kind’s accent until words read in it and on it, on the page and on every ground the look gives', () => {
+    for (const given of ['#ffd60a', '#9ad0ff', '#1677ff', '#002855']) {
+      const light = root();
+      applyLook(light, { parts: { buttons: { accent: given }, groups: { background: '#e8f0ff' }, choices: { accent: given, background: '#fff7e6' } } });
+      for (const kind of ['buttons', 'choices']) {
+        const accent = token(light, `--fd-${kind}-accent`);
+        for (const ground of ['#ffffff', '#f2f3f5', token(light, '--fd-groups-bg'), token(light, '--fd-choices-bg')]) expect(contrast(accent, ground)).toBeGreaterThanOrEqual(4.5);
+        expect(contrast(accent, token(light, `--fd-${kind}-accent-text`))).toBeGreaterThanOrEqual(4.5);
+      }
+      const dark = root();
+      applyLook(dark, { scheme: 'dark', parts: { buttons: { accent: given }, groups: { background: '#e8f0ff' } } });
+      const accent = token(dark, '--fd-buttons-accent');
+      for (const ground of ['#1f2329', token(dark, '--fd-groups-bg')]) expect(contrast(accent, ground)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(accent, token(dark, '--fd-buttons-accent-text'))).toBeGreaterThanOrEqual(4.5);
+    }
+    // One that reads already is kept, and written on in white.
+    const green = root();
+    applyLook(green, { parts: { buttons: { accent: '#1f7a4d' } } });
+    expect([token(green, '--fd-buttons-accent'), token(green, '--fd-buttons-accent-text')]).toEqual(['#1f7a4d', '#ffffff']);
+    expect(green.getAttribute('data-buttons')).toBe('accent');
+  });
+
+  it('wears the light and the dark value as the reader’s system has it, when the page says auto', () => {
+    const form = root();
+    applyLook(form, { scheme: 'auto', parts: { inputs: { background: '#fff7e6', accent: '#ffd60a' } } });
+    const light = root();
+    applyLook(light, { parts: { inputs: { background: '#fff7e6', accent: '#ffd60a' } } });
+    const dark = root();
+    applyLook(dark, { scheme: 'dark', parts: { inputs: { background: '#fff7e6', accent: '#ffd60a' } } });
+    for (const name of ['--fd-inputs-bg', '--fd-inputs-accent', '--fd-inputs-accent-text']) expect(token(form, name)).toBe(`light-dark(${token(light, name)}, ${token(dark, name)})`);
+    expect(token(dark, '--fd-inputs-bg')).not.toBe('#fff7e6');
+  });
+
+  it('leaves the form as the skin draws it for a kind given nothing', () => {
+    for (const parts of [{}, { inputs: {} }, { buttons: { accent: undefined } }]) {
+      const form = root();
+      applyLook(form, { parts });
+      expect(form.getAttributeNames()).toEqual([]);
+    }
+  });
+});
+
 describe('a page with a look, mounted', () => {
   let handle: ViewerHandle | undefined;
   afterEach(() => {

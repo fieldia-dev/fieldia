@@ -33,7 +33,7 @@ describe('the survey designer’s Look', () => {
     opener.click();
     expect(opener.getAttribute('aria-expanded')).toBe('true');
     expect(sheet()).not.toBeNull();
-    expect([...(sheet() as HTMLElement).querySelectorAll('[data-setting]')].filter((r) => !(r as HTMLElement).hidden).map((r) => r.getAttribute('data-setting'))).toEqual(['Look presets', 'Accent colour', 'Font', 'Spacing', 'Corners', 'Labels', 'Colours']);
+    expect([...(sheet() as HTMLElement).querySelectorAll('[data-setting]')].filter((r) => !(r as HTMLElement).hidden).map((r) => r.getAttribute('data-setting'))).toEqual(['Look presets', 'Accent colour', 'Font', 'Spacing', 'Corners', 'Labels', 'Colours', 'Each kind of part']);
     expect(host.querySelector('.fd-designer-bar')?.contains(sheet())).toBe(false);
   });
 
