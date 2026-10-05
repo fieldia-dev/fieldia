@@ -135,7 +135,9 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
       };
       const least = count('At least', 'minFiles');
       const most = count('At most', 'maxFiles');
-      const counts = el('div', { class: 'fd-inline-row' }, word('At least', least), word('At most', most), el('span', { class: 'fd-inline-unit' }, 'files'));
+      // Each box with its word for what it counts, so the two never part on a narrow card.
+      const files = (text: string, box: HTMLElement) => el('label', { class: 'fd-inline-setting' }, el('span', {}, text), box, el('span', {}, 'files'));
+      const counts = el('div', { class: 'fd-inline-row' }, files('At least', least), files('At most', most));
       // How the chosen files show: as a list, or as thumbnails; what the kind shows anyway is kept as nothing.
       let shownAs = 'list';
       let usual = 'list';
