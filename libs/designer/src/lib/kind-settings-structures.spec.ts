@@ -154,3 +154,62 @@ describe('a table of lines’ settings', () => {
     expect(node()).not.toHaveProperty('optionalColumns');
   });
 });
+
+describe('a link’s settings', () => {
+  it('lets people create new records, or not', () => {
+    const { box, node } = openScreen('link');
+    const create = box('People can create new ones') as unknown as HTMLButtonElement;
+    expect(create.getAttribute('aria-checked')).toBe('true');
+    create.click();
+    expect(node().options).toEqual({ create: false });
+    expect(create.getAttribute('aria-checked')).toBe('false');
+    create.click();
+    expect(node().options).toBeUndefined();
+  });
+
+  it('offers only the records where a field has a value, a yes or no or a number as such', () => {
+    const { box, field, panel } = openScreen('links');
+    type(box('Only where'), 'active');
+    change(box('Only where'), 'active');
+    change(box('has the value'), 'true');
+    expect(field()).toEqual(expect.objectContaining({ filter: [{ field: 'active', op: '=', value: true }] }));
+    change(box('has the value', panel()), '3');
+    expect(field()).toEqual(expect.objectContaining({ filter: [{ field: 'active', op: '=', value: 3 }] }));
+    change(box('has the value'), 'gold');
+    expect(field()).toEqual(expect.objectContaining({ filter: [{ field: 'active', op: '=', value: 'gold' }] }));
+    expect(box('has the value', panel()).value).toBe('gold');
+    change(box('Only where'), '');
+    expect(field()).not.toHaveProperty('filter');
+  });
+
+  it('leaves a filter of its own as it is, and says so', () => {
+    const { card, field } = openScreen('link', (designer) => {
+      designer.setPageJson(designer.pageJson().replace('"relation": "contact"', '"relation": "contact", "filter": [{ "any": [{ "field": "a", "op": "=", "value": 1 }, { "field": "b", "op": "=", "value": 2 }] }]'));
+    });
+    expect(field()).toHaveProperty('filter');
+    expect(card().querySelector('.fd-help')?.textContent).toBe('Offers records by a filter of its own');
+    expect((card().querySelector('[aria-label="Only where"]') as HTMLElement).closest('[hidden]')).not.toBeNull();
+  });
+});
+
+describe('the structures’ edits, refused where they do not fit', () => {
+  it('adds up only numbers, and only in a table; filters only a link, and only the page’s own', () => {
+    const designer = createDesigner({ page: blankPage('screen', 'Visit'), model: { owner_id: { type: 'many2one', label: 'Owner', relation: 'user' } } });
+    const table = designer.addQuestion('lines', { parent: 'section-1' }) as string;
+    expect(designer.setLineTable(table, { totals: ['name'] })).toBe(false);
+    expect(designer.getState().issues).toEqual(['Only a column of numbers adds up']);
+    const text = designer.addQuestion('short-answer', { parent: 'section-1' }) as string;
+    expect(designer.setLineTable(text, { totals: [] })).toBe(false);
+    expect(designer.setLinkFilter(text, { field: 'active', value: true })).toBe(false);
+    expect(designer.getState().issues).toEqual(['Only a link or links offer records']);
+    const owner = designer.addModelField('owner_id', { parent: 'section-1' }) as string;
+    expect(designer.setLinkFilter(owner, { field: 'active', value: true })).toBe(false);
+    expect(designer.getState().issues).toEqual(['The records Owner offers come from the model']);
+    const link = designer.addQuestion('link', { parent: 'section-1' }) as string;
+    expect(designer.setLinkFilter(link, { field: ' ', value: 1 })).toBe(false);
+    // Undone as one edit.
+    designer.setLinkFilter(link, { field: 'active', value: true });
+    designer.undo();
+    expect(Object.values(designer.getPage().fields).some((f) => 'filter' in f)).toBe(false);
+  });
+});

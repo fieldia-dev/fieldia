@@ -192,8 +192,39 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
     };
   }
 
+  /** Whether a link makes new records from a typed name, and the records it offers: only where one of their fields has a value. */
+  function link(): StructurePart {
+    const create = toggle('People can create new ones', (on) => widget({ create: on ? null : false }));
+    const where = textBox('Only where', 'active');
+    const value = textBox('has the value', 'true');
+    // Saved once typed and left: "true" and "false" are yes and no, a number a number.
+    const save = () => {
+      const typed = value.value.trim();
+      designer.setLinkFilter(id, where.value.trim() ? { field: where.value, value: typed === 'true' ? true : typed === 'false' ? false : typed !== '' && Number.isFinite(Number(typed)) ? Number(typed) : typed } : null);
+    };
+    where.addEventListener('change', save);
+    value.addEventListener('change', save);
+    const simple = row(word('Only where', where), word('has the value', value));
+    const own = el('span', { class: 'fd-help' }, 'Offers records by a filter of its own');
+    return {
+      element: el('div', { class: 'fd-kind-block' }, create.element, simple, own),
+      refresh(page, node) {
+        create.button.setAttribute('aria-checked', String(option(node, 'create') !== false));
+        const def = page.fields[node.field];
+        const filter = def.type === 'many2one' || def.type === 'many2many' ? (def.filter ?? []) : [];
+        const one = filter.length === 1 && 'op' in filter[0] && filter[0].op === '=' && filter[0].valueFrom === undefined ? filter[0] : null;
+        // A filter the boxes cannot show is left as it is.
+        simple.hidden = filter.length > 0 && !one;
+        own.hidden = !simple.hidden;
+        show(where, one?.field);
+        show(value, one ? String(one.value) : '');
+      },
+    };
+  }
+
   const parts: StructurePart[] = [];
   if (kind === 'signature') parts.push(signature());
+  if (kind === 'link' || kind === 'links') parts.push(link());
   if (kind === 'lines') parts.push(table());
   if (kind === 'address') parts.push(address());
   return parts;
