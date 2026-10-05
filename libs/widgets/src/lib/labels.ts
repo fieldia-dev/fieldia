@@ -61,6 +61,31 @@ export interface WidgetLabels {
   replace: string;
   removeFile: string;
   dropHere: string;
+  /**
+   * Several files: the picker's words, an image field's, and the drop zone's;
+   * the limits said before anyone tries (`{size}`, `{max}`); how many there are
+   * (`{n}`); why some were not added (`{name}`); removing one, asked first.
+   */
+  addFiles: string;
+  addPhotos: string;
+  dropThem: string;
+  upToSize: string;
+  upToEach: string;
+  upToFiles: string;
+  fileCount: string;
+  oneFile: string;
+  fileCountOf: string;
+  tooMany: string;
+  alreadyAdded: string;
+  removeAsk: string;
+  keep: string;
+  /** A file opened to look at: going through them, which one of how many (`{n}` of `{total}`), and what has no preview. */
+  previous: string;
+  next: string;
+  download: string;
+  close: string;
+  fileAt: string;
+  noPreview: string;
   invalidJson: string;
   /** A signature: the pad, the words on it while it is blank, the box to type a name in instead, and wiping it. */
   signaturePad: string;
@@ -137,6 +162,25 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     replace: 'Replace',
     removeFile: 'Remove',
     dropHere: 'or drop it here',
+    addFiles: 'Add files',
+    addPhotos: 'Add photos',
+    dropThem: 'or drop them here',
+    upToSize: 'up to {size}',
+    upToEach: 'up to {size} each',
+    upToFiles: 'up to {max} files',
+    fileCount: '{n} files',
+    oneFile: '1 file',
+    fileCountOf: '{n} of {max} files',
+    tooMany: 'Up to {max} files: {n} not added',
+    alreadyAdded: '{name}: already added',
+    removeAsk: 'Remove {name}?',
+    keep: 'Keep',
+    previous: 'Previous',
+    next: 'Next',
+    download: 'Download',
+    close: 'Close',
+    fileAt: '{n} of {total}',
+    noPreview: 'No preview for this kind of file',
     invalidJson: 'Not valid JSON',
     signaturePad: 'Signature pad: draw your signature',
     signHere: 'Sign here',
@@ -205,6 +249,25 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     replace: 'استبدال',
     removeFile: 'إزالة',
     dropHere: 'أو أفلته هنا',
+    addFiles: 'إضافة ملفات',
+    addPhotos: 'إضافة صور',
+    dropThem: 'أو أفلتها هنا',
+    upToSize: 'حتى {size}',
+    upToEach: 'حتى {size} لكل ملف',
+    upToFiles: 'بحد أقصى {max} من الملفات',
+    fileCount: 'عدد الملفات: {n}',
+    oneFile: 'ملف واحد',
+    fileCountOf: 'الملفات: {n} من {max}',
+    tooMany: 'بحد أقصى {max} من الملفات: لم يُضف {n} منها',
+    alreadyAdded: '{name}: مضاف من قبل',
+    removeAsk: 'إزالة {name}؟',
+    keep: 'إبقاء',
+    previous: 'السابق',
+    next: 'التالي',
+    download: 'تنزيل',
+    close: 'إغلاق',
+    fileAt: '{n} من {total}',
+    noPreview: 'لا معاينة لهذا النوع من الملفات',
     invalidJson: 'ليس JSON صالحًا',
     signaturePad: 'لوحة التوقيع: ارسم توقيعك',
     signHere: 'وقّع هنا',
@@ -273,6 +336,25 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     replace: 'Ersetzen',
     removeFile: 'Entfernen',
     dropHere: 'oder hier ablegen',
+    addFiles: 'Dateien hinzufügen',
+    addPhotos: 'Fotos hinzufügen',
+    dropThem: 'oder hier ablegen',
+    upToSize: 'bis {size}',
+    upToEach: 'bis {size} je Datei',
+    upToFiles: 'bis zu {max} Dateien',
+    fileCount: '{n} Dateien',
+    oneFile: '1 Datei',
+    fileCountOf: '{n} von {max} Dateien',
+    tooMany: 'Höchstens {max} Dateien: {n} nicht hinzugefügt',
+    alreadyAdded: '{name}: schon hinzugefügt',
+    removeAsk: '{name} entfernen?',
+    keep: 'Behalten',
+    previous: 'Zurück',
+    next: 'Weiter',
+    download: 'Herunterladen',
+    close: 'Schließen',
+    fileAt: '{n} von {total}',
+    noPreview: 'Keine Vorschau für diese Art von Datei',
     invalidJson: 'Kein gültiges JSON',
     signaturePad: 'Unterschriftenfeld: Unterschrift zeichnen',
     signHere: 'Hier unterschreiben',
@@ -341,6 +423,25 @@ export const WIDGET_LABELS: Record<Locale, WidgetLabels> = {
     replace: 'Remplacer',
     removeFile: 'Retirer',
     dropHere: 'ou déposez-le ici',
+    addFiles: 'Ajouter des fichiers',
+    addPhotos: 'Ajouter des photos',
+    dropThem: 'ou déposez-les ici',
+    upToSize: 'jusqu’à {size}',
+    upToEach: 'jusqu’à {size} par fichier',
+    upToFiles: 'jusqu’à {max} fichiers',
+    fileCount: '{n} fichiers',
+    oneFile: '1 fichier',
+    fileCountOf: '{n} fichiers sur {max}',
+    tooMany: '{max} fichiers au plus : {n} non ajouté(s)',
+    alreadyAdded: '{name} : déjà ajouté',
+    removeAsk: 'Retirer {name} ?',
+    keep: 'Garder',
+    previous: 'Précédent',
+    next: 'Suivant',
+    download: 'Télécharger',
+    close: 'Fermer',
+    fileAt: '{n} sur {total}',
+    noPreview: 'Pas d’aperçu pour ce type de fichier',
     invalidJson: 'JSON invalide',
     signaturePad: 'Zone de signature : dessinez votre signature',
     signHere: 'Signez ici',

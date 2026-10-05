@@ -497,7 +497,7 @@ export function summary(value: Value | undefined, field: Field): string {
     }
     case 'binary':
     case 'image':
-      return (value as FileValue).name;
+      return [value as FileValue | FileValue[]].flat().map((file) => file.name).join(', ');
     case 'html':
       return String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     default:

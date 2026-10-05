@@ -39,19 +39,21 @@ describe('file upload', () => {
     choose(input, new File(['hello'], 'contract.pdf', { type: 'application/pdf' }));
     await until(() => form.getState().values['x']);
     expect(form.getState().values['x']).toEqual({ name: 'contract.pdf', type: 'application/pdf', size: 5, data: 'aGVsbG8=' });
-    expect(el.querySelector('.fd-file-name')?.textContent).toBe('contract.pdf · 5 bytes');
+    expect([el.querySelector('.fd-file-name')?.getAttribute('title'), el.querySelector('.fd-file-size')?.textContent]).toEqual(['contract.pdf', '5 bytes']);
   });
 
   it('can be replaced and removed, unless readonly', async () => {
     const { form, el } = setup({ type: 'binary' });
     form.setValue('x', { name: 'a.txt', type: 'text/plain', size: 3, data: 'YWJj' });
-    const remove = [...el.querySelectorAll('button')].find((b) => b.textContent === 'Remove') as HTMLButtonElement;
-    remove.click();
+    expect([...el.querySelectorAll('button')].find((b) => b.textContent === 'Replace')?.hidden).toBe(false);
+    (el.querySelector('[aria-label="Remove a.txt"]') as HTMLButtonElement).click();
+    ([...el.querySelectorAll('.fd-file-confirm button')].find((b) => b.textContent === 'Remove') as HTMLButtonElement).click();
     expect(form.getState().values['x']).toBeNull();
     expect(el.querySelector('.fd-file-pick')?.textContent).toContain('Upload a file');
     const readonly = setup({ type: 'binary' }, true);
     readonly.form.setValue('x', { name: 'a.txt', type: 'text/plain', size: 3 });
-    expect([...readonly.el.querySelectorAll('button')].filter((b) => !b.hidden)).toEqual([]);
+    // Only the file itself, to open: nothing to replace or remove.
+    expect([...readonly.el.querySelectorAll('button')].filter((b) => !b.closest('[hidden]')).map((b) => b.className)).toEqual(['fd-file-open']);
   });
 
   it('takes a file dropped on it', async () => {
