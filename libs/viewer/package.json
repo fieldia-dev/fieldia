@@ -21,6 +21,9 @@
       "default": "./src/index.js"
     },
     "./bundle/fieldia.js": "./bundle/fieldia.js",
+    "./bundle/fieldia.ar.js": "./bundle/fieldia.ar.js",
+    "./bundle/fieldia.de.js": "./bundle/fieldia.de.js",
+    "./bundle/fieldia.fr.js": "./bundle/fieldia.fr.js",
     "./package.json": "./package.json"
   },
   "dependencies": {
