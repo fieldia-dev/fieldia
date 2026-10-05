@@ -1,5 +1,5 @@
 import { createDesigner } from './designer';
-import { spanAt, tradeAt, widthMarks, type WidthMarks } from './canvas-width';
+import { columnsIn, spanAt, tradeAt, widthMarks, type WidthMarks } from './canvas-width';
 import { employeePage, nodeOf, spot, watched } from './test-layout';
 
 /**
@@ -23,6 +23,15 @@ describe('spanAt: the columns an edge dragged to covers', () => {
   it('right to left, from the part’s right edge leftwards', () => {
     expect(spanAt({ ...grid, start: 340, x: 100, rtl: true })).toBe(2);
     expect(spanAt({ ...grid, start: 340, x: 280, rtl: true })).toBe(1);
+  });
+});
+
+describe('columnsIn: a grid’s columns as the browser gives them', () => {
+  it('a track each; a subgrid by its lines, one more than its columns, not by the words listing them', () => {
+    expect(columnsIn('100px 100px 100px')).toBe(3);
+    expect(columnsIn('subgrid [] [] []')).toBe(2);
+    expect(columnsIn('subgrid [] []')).toBe(1);
+    expect(columnsIn('')).toBe(1);
   });
 });
 

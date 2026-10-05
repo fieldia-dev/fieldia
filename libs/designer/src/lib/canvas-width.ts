@@ -33,6 +33,12 @@ export function tradeAt(at: { start: number; x: number; colW: number; gap: numbe
   return Math.max(1, Math.min(at.total - 1, Math.round((along + at.gap / 2) / (at.colW + at.gap))));
 }
 
+/** How many columns a grid's computed `grid-template-columns` lays out: a track each, or — a subgrid — its lines less one. */
+export function columnsIn(tracks: string): number {
+  if (tracks.startsWith('subgrid')) return Math.max(1, (tracks.match(/\[/g)?.length ?? 2) - 1);
+  return tracks.split(' ').filter(Boolean).length || 1;
+}
+
 export interface WidthMarksOptions {
   canvas: HTMLElement;
   /** What holds the page's own parts. */
@@ -68,7 +74,7 @@ export function widthMarks(options: WidthMarksOptions): WidthMarks {
       const style = doc.defaultView?.getComputedStyle(grid);
       // The columns the canvas gives the grid, which lays it out with as many; else as the browser laid it out.
       const given = Number(grid.style.getPropertyValue('--fd-cols'));
-      const cols = Number.isInteger(given) && given >= 1 ? given : (style?.gridTemplateColumns ?? '').split(' ').filter(Boolean).length || 1;
+      const cols = Number.isInteger(given) && given >= 1 ? given : columnsIn(style?.gridTemplateColumns ?? '');
       return { cols, gap: parseFloat(style?.columnGap ?? '') || 0 };
     });
 
