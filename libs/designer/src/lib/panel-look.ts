@@ -1,9 +1,9 @@
 import type { Page, PageLook, SectionNode } from '@fieldia/core';
-import { accentShades, applyLook } from '@fieldia/viewer';
+import { applyLook } from '@fieldia/viewer';
 import type { ElementFactory } from './chrome';
 import type { Designer, LookPatch } from './designer';
 import { isSection, nodeOf } from './layout-tree';
-import { LOOK_PRESETS, PRESET_KEYS, presetOf } from './look-presets';
+import { lookRow } from './look-row';
 import { onTab, segmented, setting, type Choice, type Segmented } from './panel-controls';
 
 /**
@@ -48,39 +48,9 @@ const CHOICES: { key: Key; name: string; choices: Choice<string>[]; hint?: strin
   { key: 'scheme', name: 'Colours', choices: [{ value: 'light', words: 'Light' }, { value: 'dark', words: 'Dark' }, { value: 'auto', words: 'Auto', title: 'As the reader’s system has it' }] },
 ];
 
-/**
- * Looks to start from, a tile each: its words in its font and accent, on its
- * scheme's surface. The one the page wears is pressed; a look that is none
- * of them is "Your own", and one with none of their settings is the skin's.
- */
-function lookPresets(el: ElementFactory, designer: Designer): LookSetting {
-  const own = el('span', { class: 'fd-look-own' });
-  const buttons = LOOK_PRESETS.map((preset) => {
-    const sample = el('span', { class: 'fd-look-preset-sample', 'aria-hidden': 'true', 'data-font': preset.look.font, 'data-scheme': preset.look.scheme }, 'Aa');
-    const shades = accentShades(preset.look.accent);
-    sample.style.setProperty('--fd-preset-accent', preset.look.scheme === 'dark' ? shades.dark : shades.accent);
-    const button = el('button', { type: 'button', class: 'fd-look-preset', 'data-preset': preset.id, 'aria-pressed': 'false' }, sample, el('span', { class: 'fd-look-preset-name' }, preset.name));
-    button.addEventListener('click', () => designer.setLookPreset(preset.id));
-    return button;
-  });
-  const row = setting(el, 'look', 'Look presets', el('div', { class: 'fd-look-presets', role: 'group', 'aria-label': 'Look presets' }, ...buttons, own), {
-    words: 'Start from',
-    hint: 'Sets the accent, font, spacing, corners and colours at once. Each stays yours to change.',
-  });
-  return {
-    rows: [row],
-    update(page) {
-      const worn = presetOf(page.look);
-      for (const button of buttons) button.setAttribute('aria-pressed', String(button.dataset['preset'] === worn?.id));
-      own.hidden = !!worn;
-      own.textContent = PRESET_KEYS.some((key) => page.look?.[key] !== undefined) ? 'Your own' : 'As the skin';
-    },
-  };
-}
-
 /** The page's look, setting by setting. Pressing what is pressed gives the setting back to the skin. */
 export function pageLookSettings(el: ElementFactory, designer: Designer): LookSetting {
-  const presets = lookPresets(el, designer);
+  const presets = lookRow(el, designer);
   // ---- the accent: a swatch, or any colour ----
   const swatches = segmented<string>(
     el,

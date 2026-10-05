@@ -144,3 +144,22 @@ describe('which look a page wears', () => {
     expect(savedLookOf(undefined, [night, brand])).toBeNull();
   });
 });
+
+describe('the looks every editor on the page shares', () => {
+  it('keep a look saved, or removed, while the store was still listing them', async () => {
+    const { looksHub } = await import('./look-hub');
+    const store = createMemoryLookStore([brand]);
+    let answer: (looks: SavedLook[]) => void = () => undefined;
+    store.list = () => new Promise((resolve) => (answer = resolve));
+    const hub = looksHub(store);
+    hub.ensure();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const night = { id: 'night-shift', name: 'Night shift', look: { scheme: 'dark' as const } };
+    await hub.save(night);
+    await hub.remove('brand');
+    // The answer the store gave from before both.
+    answer([brand]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(hub.looks).toEqual([night]);
+  });
+});
