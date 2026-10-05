@@ -9,7 +9,8 @@
 export const INPUTS_CSS = /* css */ `
 /* ---- inputs' details ------------------------------------------------------- */
 .fd-counted { display: grid; gap: 2px; min-width: 0; }
-.fd-count { justify-self: end; font-size: 12px; color: var(--fd-muted); font-variant-numeric: tabular-nums; }
+/* "12 / 100" reads so on a right-to-left page too. */
+.fd-count { justify-self: end; direction: ltr; unicode-bidi: isolate; font-size: 12px; color: var(--fd-muted); font-variant-numeric: tabular-nums; }
 .fd-count-near { color: var(--fd-warning); font-weight: 600; }
 /* A unit inside the number's box, at its start or end; the box keeps room for it. */
 .fd-number:not(.fd-currency-picked) { position: relative; display: block; }
@@ -31,4 +32,6 @@ export const INPUTS_CSS = /* css */ `
 .fd-nps button { background: var(--fd-tone-soft); border-color: var(--fd-tone); color: var(--fd-tone); font-weight: 600; }
 .fd-nps button.fd-on { background: var(--fd-tone); border-color: var(--fd-tone); color: var(--fd-surface); }
 .fd-nps [data-value="7"], .fd-nps [data-value="9"] { margin-inline-start: 8px; }
+/* A rating's or a scale's end words under its first and last points, not the field's edges. */
+.fd-choices-box > .fd-scale-box { justify-self: start; }
 `;
