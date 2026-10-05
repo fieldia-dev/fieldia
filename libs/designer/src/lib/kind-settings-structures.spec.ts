@@ -213,3 +213,17 @@ describe('the structures’ edits, refused where they do not fit', () => {
     expect(Object.values(designer.getPage().fields).some((f) => 'filter' in f)).toBe(false);
   });
 });
+
+describe('rich text’s settings', () => {
+  it('takes its formatting toolbar away, and gives it back', () => {
+    const { box, node, card } = openScreen('rich-text');
+    const bar = box('Formatting toolbar') as unknown as HTMLButtonElement;
+    expect(bar.getAttribute('aria-checked')).toBe('true');
+    expect(card().querySelector('.fd-richtext-bar')).not.toBeNull();
+    bar.click();
+    expect(node().options).toEqual({ toolbar: false });
+    expect(card().querySelector('.fd-richtext-bar')).toBeNull();
+    bar.click();
+    expect(node().options).toBeUndefined();
+  });
+});

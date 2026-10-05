@@ -225,6 +225,11 @@ export function structureSettings(el: ElementFactory, designer: Designer, id: st
   const parts: StructurePart[] = [];
   if (kind === 'signature') parts.push(signature());
   if (kind === 'link' || kind === 'links') parts.push(link());
+  // Rich text with its formatting toolbar, or plain of it.
+  if (kind === 'rich-text') {
+    const bar = toggle('Formatting toolbar', (on) => widget({ toolbar: on ? null : false }));
+    parts.push({ element: bar.element, refresh: (_page, node) => bar.button.setAttribute('aria-checked', String(option(node, 'toolbar') !== false)) });
+  }
   if (kind === 'lines') parts.push(table());
   if (kind === 'address') parts.push(address());
   return parts;
