@@ -24,7 +24,7 @@ export const OptionSchema = z
     score: z.number().optional(),
     /** What the picture shows, for people who cannot see it. */
     alt: z.string().optional(),
-    /** Goes alone, as "None of these": choosing it clears the others, and another clears it. */
+    /** Goes alone, as "None of these": choosing it clears the others, and another clears it — the widgets see to it. */
     exclusive: z.boolean().optional(),
     /** Keeps its place when the options are shuffled. */
     fixed: z.boolean().optional(),
@@ -225,7 +225,7 @@ const Matrix = z
     columns: z.array(OptionSchema).min(1),
     /** Several columns may be chosen in a row. */
     multiple: z.boolean().optional(),
-    /** Each column may be chosen in one row only, as a ranking in a grid. */
+    /** Each column may be chosen in one row only, as a ranking in a grid: picked in a row, it leaves the row that had it. */
     onePerColumn: z.boolean().optional(),
   })
   .strict();

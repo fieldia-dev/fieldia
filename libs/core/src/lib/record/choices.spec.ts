@@ -60,11 +60,9 @@ describe('“None of these”: an option that goes alone', () => {
     expect(FieldSchema.safeParse(F({ type: 'selection', options: [{ value: 'a', label: 'A', exclusive: 'yes' }] })).success).toBe(false);
   });
 
-  it('refuses it chosen with others, alone it is an answer', () => {
+  it('is the widgets’ to keep alone: a record holding it with others is still one of the options', () => {
     expect(checkValue(rooms(), ['none'], false)).toBeUndefined();
     expect(checkValue(rooms(), ['kitchen', 'gym'], false)).toBeUndefined();
-    expect(checkValue(rooms(), ['kitchen', 'none'], false)).toBe('“None of these” cannot be chosen with other answers');
-    expect(checkValue(rooms(), ['kitchen', 'none'], false, MESSAGES.de)).toBe('„None of these“ kann nicht zusammen mit anderen Antworten gewählt werden');
   });
 });
 
@@ -89,10 +87,8 @@ describe('a matrix that takes each column once', () => {
   it('is a matrix flag in the format', () => {
     expect(FieldSchema.safeParse(ranks).success).toBe(true);
   });
-  it('refuses a column chosen in two rows', () => {
+  it('takes an answer per row as any matrix does', () => {
     expect(checkValue(ranks, { a: 1, b: 2 }, true)).toBeUndefined();
-    expect(checkValue(ranks, { a: 1, b: 1 }, true)).toBe('Each column may be chosen in one row only');
-    expect(checkValue(ranks, { a: 1, b: 1 }, true, MESSAGES.ar)).toBe('يمكن اختيار كل عمود في صف واحد فقط');
   });
 });
 

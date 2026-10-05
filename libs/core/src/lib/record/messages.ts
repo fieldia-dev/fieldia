@@ -47,10 +47,8 @@ export interface Messages {
   holds: string;
   /** Joins the last two items of a list: "PDF or image". */
   or: string;
-  /** A tick box that must be ticked to go on; an option that goes alone (`{option}`, quoted), chosen with others; a matrix column chosen in two rows. */
+  /** A tick box that must be ticked to go on, as an "I agree" box. */
   tick: string;
-  alone: string;
-  matrixColumn: string;
 }
 
 export type Locale = 'en' | 'ar' | 'de' | 'fr';
@@ -92,8 +90,6 @@ export const MESSAGES: Record<Locale, Messages> = {
     holds: '{label} does not agree with the other answers',
     or: 'or',
     tick: 'Tick this box to go on',
-    alone: '“{option}” cannot be chosen with other answers',
-    matrixColumn: 'Each column may be chosen in one row only',
   },
   ar: {
     required: '{label} مطلوب',
@@ -131,8 +127,6 @@ export const MESSAGES: Record<Locale, Messages> = {
     holds: 'لا يتفق {label} مع الإجابات الأخرى',
     or: 'أو',
     tick: 'ضع علامة في هذا المربع للمتابعة',
-    alone: 'لا يمكن اختيار «{option}» مع إجابات أخرى',
-    matrixColumn: 'يمكن اختيار كل عمود في صف واحد فقط',
   },
   de: {
     required: '{label} ist erforderlich',
@@ -170,8 +164,6 @@ export const MESSAGES: Record<Locale, Messages> = {
     holds: '{label} passt nicht zu den anderen Antworten',
     or: 'oder',
     tick: 'Kreuzen Sie dieses Kästchen an, um fortzufahren',
-    alone: '„{option}“ kann nicht zusammen mit anderen Antworten gewählt werden',
-    matrixColumn: 'Jede Spalte darf nur in einer Zeile gewählt werden',
   },
   fr: {
     required: '{label} est obligatoire',
@@ -209,8 +201,6 @@ export const MESSAGES: Record<Locale, Messages> = {
     holds: '{label} ne concorde pas avec les autres réponses',
     or: 'ou',
     tick: 'Cochez cette case pour continuer',
-    alone: '« {option} » ne peut pas être choisi avec d’autres réponses',
-    matrixColumn: 'Chaque colonne ne peut être choisie que dans une seule ligne',
   },
 };
 
