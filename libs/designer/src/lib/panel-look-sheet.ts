@@ -31,6 +31,8 @@ export function lookSheet(options: { el: ElementFactory; designer: Designer; roo
   const show = (open: boolean) => {
     if (open) root.append(sheet);
     else sheet.remove();
+    // Drawn as it opens: what changed while it was away — a look saved in another editor — is shown.
+    if (open) draw();
     button.setAttribute('aria-expanded', String(open));
     // Under the bar, so the bar's buttons stay in reach.
     if (open) sheet.style.setProperty('--fd-sheet-top', `${Math.max(8, Math.round(bar.getBoundingClientRect().bottom + 8))}px`);

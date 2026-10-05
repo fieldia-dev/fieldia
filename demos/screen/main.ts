@@ -74,6 +74,7 @@ const first =
   start === 'blank' ? blankPage('screen', 'New screen') : start === 'sheet' ? blankPage('sheet', 'Customer') : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : start === 'big' ? pages['big'] : siteVisit();
 // The app's own kind, an IBAN, and the widget that draws it.
 const opened = timeFirstPaint('screen');
+// No `looks` given: the looks people save are kept in this browser, and offered by both designer demos.
 const designer = createDesigner({ page: first, store, model, lists: APP_LISTS, kinds: APP_KINDS });
 // The app's lists' choices, for Try it.
 const dataSource = sampleDataSource();
