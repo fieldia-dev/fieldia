@@ -87,10 +87,15 @@ test.describe('in the survey designer', () => {
     await expect(cards).toHaveAttribute('data-inputs', 'bg radius');
     const line = cards.locator('.fd-q-preview-short').first();
     expect(await drawn(line, 'background-color', 'border-top-left-radius')).toEqual({ 'background-color': rgb(CREAM), 'border-top-left-radius': '12px' });
+    const addQuestion = cards.locator('.fd-add-question').first();
+    const chrome = await drawn(addQuestion, 'font-size', 'color');
     await parts.pick('Buttons');
+    await parts.press('Buttons', 'Text size', 'Large');
     await parts.colour('Buttons', 'Colour').fill(PURPLE);
-    await expect(cards).toHaveAttribute('data-buttons', 'accent');
+    await expect(cards).toHaveAttribute('data-buttons', 'size accent');
     await expect(parts.row.getByRole('group', { name: 'Kind of part' }).locator('[data-own]')).toHaveText(['Text boxes', 'Buttons']);
+    // The designer's own buttons on the cards keep the page's look: the buttons' is the form's.
+    expect(await drawn(addQuestion, 'font-size', 'color')).toEqual(chrome);
     await shot(page, '01-survey-sheet');
 
     // Try it: the form wears them, as people will see it.
@@ -108,7 +113,7 @@ test.describe('in the survey designer', () => {
     // Undo takes the colour back, and only it: Try it shows the page's own button again.
     await page.getByRole('button', { name: 'Design', exact: true }).click();
     await page.getByRole('button', { name: 'Undo', exact: true }).click();
-    await expect(cards).not.toHaveAttribute('data-buttons', /./);
+    await expect(cards).toHaveAttribute('data-buttons', 'size');
     await expect(cards).toHaveAttribute('data-inputs', 'bg radius');
     await page.getByRole('button', { name: 'Try it', exact: true }).click();
     expect((await drawn(form.locator('.fd-button-primary').first(), 'background-color'))['background-color']).not.toBe(rgb(PURPLE));

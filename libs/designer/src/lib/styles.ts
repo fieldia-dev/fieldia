@@ -532,6 +532,12 @@ export const DESIGNER_CSS = /* css */ `
 .fd-q-preview-long { width: min(80%, 600px); }
 .fd-q-preview-date { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .fd-q-preview-date > .fd-dicon { width: 18px; height: 18px; flex: none; }
+/* On a canvas, the designer's own buttons and switches keep the page's look: each kind of part's own is the form's —
+   its answers' widgets, a button block, the buttons over a record. */
+.fd-look-worn.fd-form :is(.fd-button, .fd-switch):not(.fd-q-answer *, .fd-canvas-widget *, .fd-canvas-header-actions *, .fd-canvas-block) {
+  --fd-accent: inherit; --fd-accent-text: inherit; --fd-focus: inherit; --fd-buttons-radius: var(--fd-control-radius); --fd-buttons-size: 1em;
+}
+.fd-look-worn.fd-form .fd-button.fd-kind-upload { --fd-buttons-size: 13px; }
 /* The line wears the text boxes' own look, as the form's boxes will: their ground behind it, their edge for its line, their corners and size of words. */
 .fd-survey-canvas[data-inputs~=bg] :is(.fd-q-preview-short, .fd-q-preview-long) { background: var(--fd-inputs-bg); padding-inline: 8px; }
 .fd-survey-canvas[data-inputs~=border] :is(.fd-q-preview-short, .fd-q-preview-long) { border-block-end: 1px solid var(--fd-inputs-border); }
