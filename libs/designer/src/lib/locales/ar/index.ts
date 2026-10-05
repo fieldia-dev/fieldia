@@ -44,5 +44,7 @@ import { templates, assistant } from './templates';
  *   duplicate تكرار · delete حذف · remove إزالة · move نقل · copy نسخ · paste لصق
  *   model (the backend's) نموذج البيانات · record سجل · list قائمة · sheet ورقة
  *   desktop / tablet / phone سطح المكتب / جهاز لوحي / هاتف · width العرض
+ *   survey استبيان · canvas مساحة التصميم · filter عامل التصفية · grouping تجميع
+ *   cut قص · keyboard shortcuts اختصارات لوحة المفاتيح · pick (select) اختيار / المختار
  */
 export const ar: DesignerWords = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations, shortcuts, templates, assistant };
