@@ -62,9 +62,10 @@ function canonicalTag(text: string): string | null {
 }
 
 /** What a person typed to name a language, as its tag: a tag (`pt-br`), or a common language's name (`Arabic`). */
-export function languageTag(typed: string): string | null {
+export function languageTag(typed: string, words: DesignerWords = en): string | null {
   const text = typed.trim();
-  const named = Object.keys(COMMON_LANGUAGES).find((tag) => COMMON_LANGUAGES[tag].toLowerCase() === text.toLowerCase());
+  // By its English name always, as a CSV from anywhere names it; and by its name in the designer's words.
+  const named = Object.keys(COMMON_LANGUAGES).find((tag) => COMMON_LANGUAGES[tag].toLowerCase() === text.toLowerCase() || languageName(tag, words).toLowerCase() === text.toLowerCase());
   return named ?? canonicalTag(text);
 }
 
@@ -127,20 +128,20 @@ export function translationCommands({ apply, getPage }: TranslationCommandsDeps)
   /** The tag, written as tags are, or a refusal saying what a tag is. */
   function tagOf(typed: string): string {
     const tag = canonicalTag(typed.trim());
-    if (!tag) throw new Refusal(`“${typed.trim()}” is not a language tag, such as ar, es or pt-BR`);
+    if (!tag) throw new Refusal((w) => w.translations.notATag(typed.trim()));
     return tag;
   }
   /** The tag, written as tags are, for a language the page may be translated into. */
   function newLanguage(draft: Page, typed: string): string {
     const tag = tagOf(typed);
     const own = pageLanguage(draft);
-    if (tag === own) throw new Refusal(`The page is written in ${languageName(own)}: its words are the ${languageName(own)} already`);
+    if (tag === own) throw new Refusal((w) => w.translations.writtenIn(languageName(own, w)));
     return tag;
   }
   /** The words the language keeps, refusing a language the page has not got. */
   function keptIn(draft: Page, tag: string): Record<string, string> {
     const words = draft.translations?.[tag];
-    if (!words) throw new Refusal(`Add ${languageName(tag)} first`);
+    if (!words) throw new Refusal((w) => w.translations.addFirst(languageName(tag, w)));
     return words;
   }
   /** No language left: no translations at all. */
@@ -152,13 +153,13 @@ export function translationCommands({ apply, getPage }: TranslationCommandsDeps)
     addLanguage: (typed) =>
       apply((draft) => {
         const tag = newLanguage(draft, typed);
-        if (draft.translations?.[tag]) throw new Refusal(`The page has ${languageName(tag)} already`);
+        if (draft.translations?.[tag]) throw new Refusal((w) => w.translations.hasAlready(languageName(tag, w)));
         draft.translations = { ...draft.translations, [tag]: {} };
       }),
 
     removeLanguage: (tag) =>
       apply((draft) => {
-        if (!draft.translations?.[tag]) throw new Refusal(`The page has no ${languageName(tag)}`);
+        if (!draft.translations?.[tag]) throw new Refusal((w) => w.translations.hasNo(languageName(tag, w)));
         delete draft.translations[tag];
         tidy(draft);
       }),
@@ -172,7 +173,7 @@ export function translationCommands({ apply, getPage }: TranslationCommandsDeps)
         (draft) => {
           const kept = keptIn(draft, tag);
           if (next === undefined) delete kept[source];
-          else if (!pageWords(draft).includes(source)) throw new Refusal(`“${source}” is not on the page`);
+          else if (!pageWords(draft).includes(source)) throw new Refusal((w) => w.translations.notOnPage(source));
           else kept[source] = next;
         },
         `translation:${tag}:${source}`
@@ -192,7 +193,7 @@ export function translationCommands({ apply, getPage }: TranslationCommandsDeps)
             filled++;
           }
         }
-        if (!filled) throw new Refusal('None of these words is on the page');
+        if (!filled) throw new Refusal((w) => w.translations.noneOnPage);
       });
       return ok ? filled : false;
     },
@@ -202,7 +203,7 @@ export function translationCommands({ apply, getPage }: TranslationCommandsDeps)
       if (canonicalTag(typed.trim()) === pageLanguage(getPage())) return true;
       return apply((draft) => {
         const tag = tagOf(typed);
-        if (draft.translations?.[tag]) throw new Refusal(`The page keeps a translation into ${languageName(tag)}: remove ${languageName(tag)} first to write the page in it`);
+        if (draft.translations?.[tag]) throw new Refusal((w) => w.translations.keepsTranslation(languageName(tag, w)));
         // English is what a page is written in unless it says.
         if (tag === 'en') delete draft.language;
         else draft.language = tag;
@@ -219,7 +220,7 @@ export function translationCommands({ apply, getPage }: TranslationCommandsDeps)
             found = true;
           }
         }
-        if (!found) throw new Refusal('No language has those words');
+        if (!found) throw new Refusal((w) => w.translations.noLanguageHas);
       }),
   };
 }

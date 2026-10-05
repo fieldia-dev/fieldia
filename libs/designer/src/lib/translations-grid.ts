@@ -1,6 +1,7 @@
 import { isRightToLeft, type Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
+import type { DesignerWords } from './designer-words';
 import { languageName, languagesOf, pageLanguage, staleWords, translationProgress, wordsOf } from './translations';
 
 /**
@@ -33,10 +34,10 @@ export interface WordsGrid {
 }
 
 /** A language's own name for itself, such as العربية, when the browser knows it and it differs from the English. */
-function ownName(tag: string): string | null {
+function ownName(tag: string, words: DesignerWords): string | null {
   try {
     const name = new Intl.DisplayNames([tag], { type: 'language' }).of(tag);
-    return name && name !== tag && name !== languageName(tag) ? name : null;
+    return name && name !== tag && name !== languageName(tag, words) ? name : null;
   } catch {
     return null;
   }
@@ -46,17 +47,20 @@ const direction = (tag: string) => (isRightToLeft(tag) ? 'rtl' : 'ltr');
 
 export function wordsGrid(options: WordsGridOptions): WordsGrid {
   const { el, designer } = options;
+  const said = designer.words;
+  const w = said.translations;
+  const nameOf = (tag: string) => languageName(tag, said);
   /** Words in their language, running its way; the cell around them keeps the grid's direction, so its lines and its place hold. */
   const inLanguage = (tag: string, text: string) => el('div', { class: 'fd-words-text', lang: tag, dir: direction(tag) }, text);
   const head = el('thead');
   const rows = el('tbody');
-  const none = el('p', { class: 'fd-words-none', hidden: '' }, 'Every word is translated in every language.');
+  const none = el('p', { class: 'fd-words-none', hidden: '' }, w.allTranslated);
   // A region the keyboard can scroll (WCAG 2.1.1): wide grids scroll sideways, and a grid of the page's words alone has nothing to focus.
-  const element = el('div', { class: 'fd-words-scroll', role: 'region', 'aria-label': 'Words and their translations', tabindex: '0' }, el('table', { class: 'fd-words-table fd-words-grid' }, head, rows), none);
+  const element = el('div', { class: 'fd-words-scroll', role: 'region', 'aria-label': w.grid, tabindex: '0' }, el('table', { class: 'fd-words-table fd-words-grid' }, head, rows), none);
 
   const staleHead = el('thead');
   const staleRows = el('tbody');
-  const removeAll = el('button', { type: 'button', class: 'fd-button' }, 'Remove all');
+  const removeAll = el('button', { type: 'button', class: 'fd-button' }, w.removeAll);
   removeAll.addEventListener('click', () => designer.forgetWords(staleWords(designer.getPage())));
   const stale = el(
     'section',
@@ -64,11 +68,11 @@ export function wordsGrid(options: WordsGridOptions): WordsGrid {
     el(
       'div',
       { class: 'fd-words-stale-head' },
-      el('h3', { id: 'fd-words-stale-title', class: 'fd-words-stale-title' }, 'No longer on the page'),
-      el('p', { class: 'fd-words-stale-note' }, 'Translations kept for words the page no longer shows.'),
+      el('h3', { id: 'fd-words-stale-title', class: 'fd-words-stale-title' }, w.staleTitle),
+      el('p', { class: 'fd-words-stale-note' }, w.staleNote),
       removeAll
     ),
-    el('div', { class: 'fd-words-scroll', role: 'region', 'aria-label': 'Translations no longer on the page', tabindex: '0' }, el('table', { class: 'fd-words-table fd-words-stale-grid' }, staleHead, staleRows))
+    el('div', { class: 'fd-words-scroll', role: 'region', 'aria-label': w.staleGrid, tabindex: '0' }, el('table', { class: 'fd-words-table fd-words-stale-grid' }, staleHead, staleRows))
   );
 
   /** Cells by language and word, kept from one drawing to the next so the one typed in keeps its focus. */
@@ -84,7 +88,7 @@ export function wordsGrid(options: WordsGridOptions): WordsGrid {
     const key = `${tag}\n${word}`;
     let cell = cells.get(key);
     if (!cell) {
-      cell = el('textarea', { class: 'fd-words-cell', rows: '1', lang: tag, dir: direction(tag), 'data-lang': tag, 'data-word': word, 'aria-label': `${languageName(tag)} for “${word}”` });
+      cell = el('textarea', { class: 'fd-words-cell', rows: '1', lang: tag, dir: direction(tag), 'data-lang': tag, 'data-word': word, 'aria-label': w.cell(nameOf(tag), word) });
       const typed = cell;
       typed.addEventListener('input', () => {
         sent.set(typed, typed.value.trim() ? typed.value : '');
@@ -99,15 +103,15 @@ export function wordsGrid(options: WordsGridOptions): WordsGrid {
     const own = pageLanguage(page);
     progress.clear();
     const columns = languages.map((tag) => {
-      const remove = el('button', { type: 'button', class: 'fd-icon-button fd-icon-danger fd-words-remove', 'aria-label': `Remove ${languageName(tag)}`, title: `Remove ${languageName(tag)}` }, '×');
+      const remove = el('button', { type: 'button', class: 'fd-icon-button fd-icon-danger fd-words-remove', 'aria-label': w.remove(nameOf(tag)), title: w.remove(nameOf(tag)) }, '×');
       remove.addEventListener('click', () => options.onRemove(tag));
-      const native = ownName(tag);
+      const native = ownName(tag, said);
       const bar = el('span');
       const count = el('span', { class: 'fd-words-count' });
       const th = el(
         'th',
         { scope: 'col' },
-        el('div', { class: 'fd-words-head' }, el('span', { class: 'fd-words-lang' }, languageName(tag)), ...(native ? [el('span', { class: 'fd-words-native', lang: tag, dir: direction(tag) }, native)] : []), remove),
+        el('div', { class: 'fd-words-head' }, el('span', { class: 'fd-words-lang' }, nameOf(tag)), ...(native ? [el('span', { class: 'fd-words-native', lang: tag, dir: direction(tag) }, native)] : []), remove),
         el('div', { class: 'fd-words-progress' }, el('span', { class: 'fd-words-meter', 'aria-hidden': 'true' }, bar), count)
       );
       progress.set(tag, { th, bar, count });
@@ -115,9 +119,9 @@ export function wordsGrid(options: WordsGridOptions): WordsGrid {
     });
     const first = el(
       'th',
-      { scope: 'col', 'aria-label': `${languageName(own)}, the page’s own words` },
-      el('div', { class: 'fd-words-head' }, el('span', { class: 'fd-words-lang' }, languageName(own))),
-      el('div', { class: 'fd-words-own' }, 'The page’s own words')
+      { scope: 'col', 'aria-label': w.ownWordsHead(nameOf(own)) },
+      el('div', { class: 'fd-words-head' }, el('span', { class: 'fd-words-lang' }, nameOf(own))),
+      el('div', { class: 'fd-words-own' }, w.ownWords)
     );
     head.replaceChildren(el('tr', {}, first, ...columns));
   }
@@ -158,10 +162,10 @@ export function wordsGrid(options: WordsGridOptions): WordsGrid {
     stale.hidden = !words.length;
     if (key === staleShape) return;
     staleShape = key;
-    staleHead.replaceChildren(el('tr', {}, el('th', { scope: 'col' }, 'Words'), ...languages.map((tag) => el('th', { scope: 'col' }, languageName(tag))), el('th', { scope: 'col', class: 'fd-words-gone-remove' }, el('span', { class: 'fd-sr-only' }, 'Remove'))));
+    staleHead.replaceChildren(el('tr', {}, el('th', { scope: 'col' }, w.words), ...languages.map((tag) => el('th', { scope: 'col' }, nameOf(tag))), el('th', { scope: 'col', class: 'fd-words-gone-remove' }, el('span', { class: 'fd-sr-only' }, w.removeColumn))));
     staleRows.replaceChildren(
       ...words.map((word) => {
-        const remove = el('button', { type: 'button', class: 'fd-icon-button fd-icon-danger', 'aria-label': `Remove the translations of “${word}”`, title: 'Remove its translations' }, '×');
+        const remove = el('button', { type: 'button', class: 'fd-icon-button fd-icon-danger', 'aria-label': w.removeWord(word), title: w.removeItsTranslations }, '×');
         remove.addEventListener('click', () => designer.forgetWords([word]));
         return el(
           'tr',
@@ -227,9 +231,10 @@ export function wordsGrid(options: WordsGridOptions): WordsGrid {
       }
       for (const [tag, { th, bar, count }] of progress) {
         const { done, total } = translationProgress(page, tag);
-        const said = `${languageName(tag)}, ${done} of ${total} translated`;
-        if (th.getAttribute('aria-label') !== said) th.setAttribute('aria-label', said);
-        if (count.textContent !== `${done} of ${total}`) count.textContent = `${done} of ${total}`;
+        const label = w.progress(nameOf(tag), done, total);
+        if (th.getAttribute('aria-label') !== label) th.setAttribute('aria-label', label);
+        const short = w.progressCount(done, total);
+        if (count.textContent !== short) count.textContent = short;
         bar.style.width = `${total ? (done / total) * 100 : 0}%`;
       }
       drawStale(page);

@@ -20,6 +20,7 @@ import { outline, clipboard } from './outline';
 import { list } from './list';
 import { tryIt } from './try-it';
 import { json } from './json';
+import { translations } from './translations';
 
 /** The designer's words in English: the source every other language's table follows, area by area. */
-export const en = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json };
+export const en = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations };

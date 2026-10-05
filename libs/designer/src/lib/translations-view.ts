@@ -36,34 +36,35 @@ export interface TranslationsView {
 
 let views = 0;
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
 export function translationsView(options: TranslationsViewOptions): TranslationsView {
   const { el, doc, designer, root, body, modes } = options;
   const id = `fd-words-${++views}`;
+  const said = designer.words;
+  const w = said.translations;
+  const nameOf = (tag: string) => languageName(tag, said);
 
-  const toggle = el('button', { type: 'button', class: 'fd-mode-button', 'data-mode': 'translations', 'aria-pressed': 'false' }, designerIcon(doc, 'website'), 'Translations');
+  const toggle = el('button', { type: 'button', class: 'fd-mode-button', 'data-mode': 'translations', 'aria-pressed': 'false' }, designerIcon(doc, 'website'), w.title);
   modes.append(toggle);
-  modes.setAttribute('aria-label', 'Design, try or translate the page');
+  modes.setAttribute('aria-label', w.modes);
 
   // ---- the bar --------------------------------------------------------------
   // How many words, and the language they are written in: a picker, to say another.
   const count = el('span');
-  const own = el('select', { class: 'fd-words-own-language', 'aria-label': 'The page’s own language' });
+  const own = el('select', { class: 'fd-words-own-language', 'aria-label': w.ownLanguage });
   const after = el('span');
   const note = el('p', { class: 'fd-words-note' }, count, own, after);
   own.addEventListener('change', () => designer.setPageLanguage(own.value));
   const onlySwitch = el('button', { type: 'button', class: 'fd-switch', role: 'switch', 'aria-checked': 'false', 'aria-labelledby': `${id}-only` });
-  const only = el('div', { class: 'fd-words-filter' }, onlySwitch, el('span', { id: `${id}-only` }, 'Only words not translated'));
-  const addInput = el('input', { class: 'fd-input', list: `${id}-languages`, 'aria-label': 'Add a language', placeholder: 'Arabic, es, pt-BR…', autocomplete: 'off', spellcheck: 'false' });
-  const known = el('datalist', { id: `${id}-languages` }, ...Object.entries(COMMON_LANGUAGES).map(([tag, name]) => el('option', { value: name, label: tag })));
-  const add = el('form', { class: 'fd-words-add' }, addInput, known, el('button', { type: 'submit', class: 'fd-button' }, 'Add'));
-  const copy = el('button', { type: 'button', class: 'fd-button' }, 'Copy as CSV');
-  const paste = el('button', { type: 'button', class: 'fd-button' }, 'Paste CSV');
+  const only = el('div', { class: 'fd-words-filter' }, onlySwitch, el('span', { id: `${id}-only` }, w.onlyMissing));
+  const addInput = el('input', { class: 'fd-input', list: `${id}-languages`, 'aria-label': w.addLanguage, placeholder: w.addExample, autocomplete: 'off', spellcheck: 'false' });
+  const known = el('datalist', { id: `${id}-languages` }, ...Object.keys(COMMON_LANGUAGES).map((tag) => el('option', { value: nameOf(tag), label: tag })));
+  const add = el('form', { class: 'fd-words-add' }, addInput, known, el('button', { type: 'submit', class: 'fd-button' }, w.add));
+  const copy = el('button', { type: 'button', class: 'fd-button' }, w.copyCsv);
+  const paste = el('button', { type: 'button', class: 'fd-button' }, w.pasteCsv);
   const bar = el(
     'div',
     { class: 'fd-words-bar' },
-    el('div', { class: 'fd-words-heading' }, el('h2', { class: 'fd-words-title' }, 'Translations'), note),
+    el('div', { class: 'fd-words-heading' }, el('h2', { class: 'fd-words-title' }, w.title), note),
     only,
     add,
     el('div', { class: 'fd-words-actions' }, copy, paste)
@@ -72,37 +73,37 @@ export function translationsView(options: TranslationsViewOptions): Translations
   // ---- asking before a language goes, in the page ----------------------------
   const askText = el('p', { class: 'fd-words-ask' });
   const removeIt = el('button', { type: 'button', class: 'fd-button fd-button-danger' });
-  const keepIt = el('button', { type: 'button', class: 'fd-button' }, 'Keep it');
-  const confirm = el('div', { class: 'fd-words-confirm', role: 'group', 'aria-label': 'Remove a language', hidden: '' }, askText, el('div', { class: 'fd-words-buttons' }, removeIt, keepIt));
+  const keepIt = el('button', { type: 'button', class: 'fd-button' }, w.keepIt);
+  const confirm = el('div', { class: 'fd-words-confirm', role: 'group', 'aria-label': w.removeALanguage, hidden: '' }, askText, el('div', { class: 'fd-words-buttons' }, removeIt, keepIt));
   let removing: string | null = null;
 
   // ---- CSV in and out ------------------------------------------------------------
   const csvLabel = el('label', { for: `${id}-csv`, class: 'fd-words-csv-label' });
   const csvBox = el('textarea', { id: `${id}-csv`, class: 'fd-input fd-words-csv', rows: '6', spellcheck: 'false' });
   const csvProblem = el('p', { class: 'fd-words-problem', role: 'alert', hidden: '' });
-  const fill = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, 'Fill the translations');
-  const csvDone = el('button', { type: 'button', class: 'fd-button' }, 'Cancel');
+  const fill = el('button', { type: 'button', class: 'fd-button fd-button-primary' }, w.fill);
+  const csvDone = el('button', { type: 'button', class: 'fd-button' }, w.cancel);
   const csvPanel = el('div', { class: 'fd-words-paste', hidden: '' }, csvLabel, csvBox, csvProblem, el('div', { class: 'fd-words-buttons' }, fill, csvDone));
 
   const status = el('p', { class: 'fd-words-status', role: 'status' });
   const grid = wordsGrid({ el, doc, designer, onRemove: askRemove });
-  const element = el('section', { class: 'fd-words', 'aria-label': 'Translations', hidden: '' }, bar, confirm, csvPanel, status, grid.element, grid.stale);
+  const element = el('section', { class: 'fd-words', 'aria-label': w.title, hidden: '' }, bar, confirm, csvPanel, status, grid.element, grid.stale);
   root.append(element);
 
   const say = (words: string) => (status.textContent = words);
 
   function askRemove(tag: string) {
     const count = Object.keys(designer.getPage().translations?.[tag] ?? {}).length;
-    const name = languageName(tag);
+    const name = nameOf(tag);
     // Nothing translated yet: nothing to lose, nothing to ask.
     if (!count) {
-      if (designer.removeLanguage(tag)) say(`Removed ${name}.`);
+      if (designer.removeLanguage(tag)) say(w.removed(name));
       return;
     }
     removing = tag;
     say('');
-    askText.textContent = `Remove ${name}? ${count === 1 ? 'Its 1 translation goes' : `Its ${count} translations go`} with it.`;
-    removeIt.textContent = `Remove ${name}`;
+    askText.textContent = w.askRemove(name, count);
+    removeIt.textContent = w.remove(name);
     confirm.hidden = false;
     keepIt.focus();
   }
@@ -112,7 +113,7 @@ export function translationsView(options: TranslationsViewOptions): Translations
     if (focus) addInput.focus();
   }
   removeIt.addEventListener('click', () => {
-    if (removing && designer.removeLanguage(removing)) say(`Removed ${languageName(removing)}. Undo brings it back.`);
+    if (removing && designer.removeLanguage(removing)) say(w.removedUndo(nameOf(removing)));
     stopAsking(true);
   });
   keepIt.addEventListener('click', () => stopAsking(true));
@@ -126,10 +127,10 @@ export function translationsView(options: TranslationsViewOptions): Translations
     event.preventDefault();
     const typed = addInput.value;
     // A name it does not know goes to the designer as typed, which says why it cannot be added.
-    const tag = languageTag(typed) ?? typed;
+    const tag = languageTag(typed, said) ?? typed;
     if (!designer.addLanguage(tag)) return;
     addInput.value = '';
-    say(`Added ${languageName(tag)}.`);
+    say(w.added(nameOf(tag)));
     grid.focusLanguage(languagesOf(designer.getPage()).slice(-1)[0]);
   });
 
@@ -143,13 +144,11 @@ export function translationsView(options: TranslationsViewOptions): Translations
   function showCsv(mode: 'paste' | 'copy', text = '') {
     csvPanel.dataset['mode'] = mode;
     csvLabel.textContent =
-      mode === 'paste'
-        ? 'Paste a CSV: its first row names each column’s language (ar or Arabic), its first column holds the page’s words.'
-        : 'Copy this CSV (Ctrl+C or ⌘C), for a spreadsheet or a translator.';
+      mode === 'paste' ? w.pasteLabel : w.copyLabel;
     csvBox.value = text;
     csvBox.readOnly = mode === 'copy';
     fill.hidden = mode === 'copy';
-    csvDone.textContent = mode === 'copy' ? 'Done' : 'Cancel';
+    csvDone.textContent = mode === 'copy' ? w.done : w.cancel;
     csvProblem.hidden = true;
     csvPanel.hidden = false;
     csvBox.focus();
@@ -165,7 +164,7 @@ export function translationsView(options: TranslationsViewOptions): Translations
     const page = designer.getPage();
     const text = translationsCsv(page);
     const languages = languagesOf(page).length;
-    const copied = `Copied ${plural(wordsOf(page).length, 'word', 'words')}${languages ? ` in ${plural(languages, 'language', 'languages')}` : ''} as CSV.`;
+    const copied = w.copied(wordsOf(page).length, languages);
     const clipboard = doc.defaultView?.navigator.clipboard;
     if (!clipboard) return showCsv('copy', text);
     clipboard.writeText(text).then(
@@ -174,17 +173,16 @@ export function translationsView(options: TranslationsViewOptions): Translations
     );
   });
   fill.addEventListener('click', () => {
-    const read = readTranslationsCsv(csvBox.value, designer.getPage());
-    const problem = (words: string) => {
-      csvProblem.textContent = words;
+    const read = readTranslationsCsv(csvBox.value, designer.getPage(), said);
+    const problem = (text: string) => {
+      csvProblem.textContent = text;
       csvProblem.hidden = false;
     };
     if ('problem' in read) return problem(read.problem);
     const filled = designer.fillTranslations(read.words);
-    if (filled === false) return problem(designer.getState().issues[0] ?? 'Nothing could be filled');
+    if (filled === false) return problem(designer.getState().issues[0] ?? w.nothingFilled);
     hideCsv();
-    const left = read.notOnPage ? ` ${plural(read.notOnPage, 'word', 'words')} no longer on the page ${read.notOnPage === 1 ? 'was' : 'were'} left out.` : '';
-    say(`Filled ${plural(filled, 'translation', 'translations')}.${left}`);
+    say(w.filled(filled, read.notOnPage));
   });
 
   // ---- in place of the editor -----------------------------------------------------
@@ -225,12 +223,14 @@ export function translationsView(options: TranslationsViewOptions): Translations
     const words = wordsOf(page).length;
     const languages = languagesOf(page).length;
     const language = pageLanguage(page);
-    count.textContent = `${plural(words, 'word', 'words')}, written in `;
+    // The sentence as the words have it, the page's language picked where it names it.
+    const [before, rest = ''] = w.note(words, languages).split('{language}');
+    count.textContent = before;
     // The common languages by name, and the page's own when it is not one of them.
-    const offered = [...new Set([language, ...Object.keys(COMMON_LANGUAGES)])].sort((a, b) => languageName(a).localeCompare(languageName(b)));
-    if ([...own.options].map((o) => o.value).join() !== offered.join()) own.replaceChildren(...offered.map((tag) => el('option', { value: tag }, languageName(tag))));
+    const offered = [...new Set([language, ...Object.keys(COMMON_LANGUAGES)])].sort((a, b) => nameOf(a).localeCompare(nameOf(b), designer.locale ?? undefined));
+    if ([...own.options].map((o) => o.value).join() !== offered.join()) own.replaceChildren(...offered.map((tag) => el('option', { value: tag }, nameOf(tag))));
     own.value = language;
-    after.textContent = `.${languages ? '' : ' Add a language to translate them into it.'}`;
+    after.textContent = rest;
     only.hidden = !languages;
     grid.update(page);
   }
@@ -247,11 +247,11 @@ export function translationsView(options: TranslationsViewOptions): Translations
       return open;
     },
     items() {
-      const addOne = { label: 'Add a language', hint: 'Translations', run: () => (show(true), addInput.focus()) };
+      const addOne = { label: w.addLanguage, hint: w.title, run: () => (show(true), addInput.focus()) };
       // Try it in each language the page keeps: Try it, then the language picked there.
       const tries = languagesOf(designer.getPage()).map((tag) => ({
-        label: `Try it in ${languageName(tag)}`,
-        hint: 'Try it',
+        label: w.tryIn(nameOf(tag)),
+        hint: said.tryIt.tryIt,
         run() {
           modeButton('try')?.click();
           const picker = root.querySelector<HTMLSelectElement>('.fd-try-language select');
@@ -260,14 +260,14 @@ export function translationsView(options: TranslationsViewOptions): Translations
           picker.dispatchEvent(new Event('change', { bubbles: true }));
         },
       }));
-      if (!open) return [{ label: 'Translations', hint: 'the page’s words in other languages', run: () => show(true) }, addOne, ...tries];
+      if (!open) return [{ label: w.title, hint: w.pageWordsElsewhere, run: () => show(true) }, addOne, ...tries];
       return [
-        { label: 'Back to designing', hint: 'Design', run: () => show(false) },
+        { label: said.tryIt.backToDesigning, hint: said.tryIt.design, run: () => show(false) },
         addOne,
-        { label: 'Only words not translated', hint: 'Translations', run: () => onlySwitch.click() },
-        { label: 'Copy as CSV', hint: 'Translations', run: () => copy.click() },
-        { label: 'Paste CSV', hint: 'Translations', run: () => paste.click() },
-        ...languagesOf(designer.getPage()).map((tag) => ({ label: `Remove ${languageName(tag)}`, hint: 'Translations', run: () => askRemove(tag) })),
+        { label: w.onlyMissing, hint: w.title, run: () => onlySwitch.click() },
+        { label: w.copyCsv, hint: w.title, run: () => copy.click() },
+        { label: w.pasteCsv, hint: w.title, run: () => paste.click() },
+        ...languagesOf(designer.getPage()).map((tag) => ({ label: w.remove(nameOf(tag)), hint: w.title, run: () => askRemove(tag) })),
         ...tries,
       ];
     },

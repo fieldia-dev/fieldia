@@ -1,4 +1,6 @@
 import { pageWords, type Page } from '@fieldia/core';
+import type { DesignerWords } from './designer-words';
+import { en } from './locales/en';
 import { languagesOf, languageTag, pageLanguage } from './translations';
 
 /**
@@ -93,19 +95,20 @@ export type ReadCsv = { words: Record<string, Record<string, string>>; notOnPage
  * its first row names, by tag or name; the page's own language and unnamed
  * columns skipped. Words the page no longer has are left out, and counted.
  */
-export function readTranslationsCsv(text: string, page: Page): ReadCsv {
+export function readTranslationsCsv(text: string, page: Page, words: DesignerWords = en): ReadCsv {
+  const w = words.translations;
   const [head, ...rows] = parseCsv(text);
-  if (!head) return { problem: 'There is nothing to read: paste the CSV, its first row naming the languages' };
+  if (!head) return { problem: w.nothingToRead };
   const columns: [number, string][] = [];
   for (const [at, name] of head.entries()) {
     if (at === 0 || !name.trim()) continue;
-    const tag = languageTag(name);
-    if (!tag) return { problem: `“${name.trim()}” in the first row is not a language: name it by its tag or name, such as ar or Arabic` };
+    const tag = languageTag(name, words);
+    if (!tag) return { problem: w.notALanguage(name.trim()) };
     if (tag !== pageLanguage(page)) columns.push([at, tag]);
   }
-  if (!columns.length) return { problem: 'The first row names no language to fill: put a language’s tag or name over each column after the first, such as ar or Arabic' };
+  if (!columns.length) return { problem: w.noLanguageColumn };
   const shown = new Set(pageWords(page));
-  const words: Record<string, Record<string, string>> = {};
+  const found: Record<string, Record<string, string>> = {};
   let notOnPage = 0;
   for (const row of rows) {
     const source = row[0] ?? '';
@@ -115,7 +118,7 @@ export function readTranslationsCsv(text: string, page: Page): ReadCsv {
       notOnPage++;
       continue;
     }
-    for (const [at, tag] of given) (words[tag] ??= {})[source] = row[at];
+    for (const [at, tag] of given) (found[tag] ??= {})[source] = row[at];
   }
-  return { words, notOnPage };
+  return { words: found, notOnPage };
 }
