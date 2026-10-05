@@ -92,6 +92,46 @@ test.describe('the panel', () => {
     expect(problems).toEqual([]);
   });
 
+  test('a long tab scrolled: the search box and the tabs keep their room, and a long search scrolls inside the panel', async ({ page }) => {
+    const problems = watch(page);
+    await page.goto('/screen/');
+    await (await cardOf(page, 'Customer')).click();
+    await tab(page, 'Rules').click();
+    for (const kind of ['A length', 'An ending', 'A pattern']) {
+      await panel(page).getByRole('button', { name: 'Add a rule' }).click();
+      await page.getByRole('menuitem', { name: kind }).click();
+    }
+    const settings = panel(page).locator('.fd-insp-panels');
+    await settings.evaluate((box) => (box.scrollTop = box.scrollHeight));
+    const room = await page.evaluate(() => {
+      const box = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+      const tabs = box('.fd-properties [role="tablist"]');
+      const rules = [...document.querySelectorAll('.fd-properties [role="tab"]')].find((t) => t.textContent === 'Rules')!.getBoundingClientRect();
+      const hit = document.elementFromPoint(rules.left + rules.width / 2, rules.top + rules.height / 2);
+      return { searchBottom: box('.fd-insp-search').bottom, tabsTop: tabs.top, tabsBottom: tabs.bottom, settingsTop: box('.fd-insp-panels').top, rulesTabOnTop: hit?.textContent === 'Rules' };
+    });
+    expect(room.searchBottom, 'the search box stays above the tabs').toBeLessThanOrEqual(room.tabsTop + 0.5);
+    expect(room.tabsBottom, 'the tabs stay above the settings').toBeLessThanOrEqual(room.settingsTop + 0.5);
+    expect(room.rulesTabOnTop, 'nothing covers the Rules tab').toBe(true);
+    await check(page, 'long-tab-scrolled');
+    // A search that finds many settings scrolls within the panel, its box still in view.
+    const search = panel(page).getByRole('combobox', { name: 'Search settings' });
+    await search.click();
+    await page.keyboard.type('e');
+    const found = panel(page).getByRole('listbox', { name: 'Settings found' });
+    await expect(found).toBeVisible();
+    const fits = await page.evaluate(() => {
+      const aside = document.querySelector('.fd-properties')!.getBoundingClientRect();
+      const list = document.querySelector('.fd-insp-found')!;
+      const box = document.querySelector('.fd-insp-search-box')!.getBoundingClientRect();
+      return { listBottom: list.getBoundingClientRect().bottom, asideBottom: aside.bottom, boxTop: box.top, asideTop: aside.top };
+    });
+    expect(fits.listBottom).toBeLessThanOrEqual(fits.asideBottom + 0.5);
+    expect(fits.boxTop).toBeGreaterThanOrEqual(fits.asideTop);
+    await check(page, 'long-search');
+    expect(problems).toEqual([]);
+  });
+
   test('⌘K “accent”, changed, and worn by the canvas', async ({ page }) => {
     const problems = watch(page);
     await page.goto('/screen/');

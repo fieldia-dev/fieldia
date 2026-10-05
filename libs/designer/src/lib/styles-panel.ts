@@ -14,7 +14,9 @@ export const DESIGNER_PANEL_CSS = /* css */ `
 .fd-insp-icon { display: inline-flex; flex: none; }
 .fd-insp-icon > .fd-dicon { width: 13px; height: 13px; }
 .fd-insp-name { font-size: 15px; font-weight: 600; color: var(--fd-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fd-insp-top { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
+/* The search box keeps its room over a long tab; only a long list of what a search found gives way, and scrolls. */
+.fd-insp-top { flex: none; min-height: 0; display: flex; flex-direction: column; }
+.fd-insp-top:has(> .fd-insp-found:not([hidden])) { flex: 0 1 auto; }
 .fd-insp-top:empty { display: none; }
 /* Search the settings: a box under the head; what it finds, by tab, in place of the tabs. */
 .fd-insp-search { position: relative; flex: none; margin: 10px 14px 4px; }
