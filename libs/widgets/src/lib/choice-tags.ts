@@ -35,7 +35,7 @@ function combo({ form, name, field, id, document, labels, locale }: WidgetContex
     'aria-expanded': 'false',
     'aria-controls': listId,
     autocomplete: 'off',
-    placeholder: single ? undefined : words.search,
+    placeholder: words.search,
   });
   const list = make('ul', { id: listId, class: 'fd-listbox', role: 'listbox', hidden: '' });
   const chips = make('ul', { class: 'fd-chips' });

@@ -15,6 +15,11 @@ export const CHOICES_CSS = /* css */ `
 .fd-image-choices[data-size] { grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--fd-card, 130px)), 1fr)); }
 .fd-image-choices[data-fit="whole"] img { object-fit: contain; }
 .fd-image-choices-bare .fd-image-card-words { position: absolute; inset-block-start: 6px; inset-inline-start: 6px; padding: 0; font-size: 0; }
+/* A dropdown that searches: a chevron says it is one. */
+.fd-choice-search .fd-combo::after {
+  content: ""; position: absolute; inset-inline-end: 12px; width: 6px; height: 6px; margin-block-start: -4px; pointer-events: none;
+  border: solid var(--fd-muted); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg);
+}
 .fd-rank-pool { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 6px 10px; }
 .fd-rank-pick {
   min-height: 32px; padding: 4px 12px; font: inherit; color: inherit; cursor: pointer;
