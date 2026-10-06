@@ -1,6 +1,7 @@
 import type { FilterCondition, Fields, Option } from '../format/field';
 import type { JsonValue } from '../format/json';
 import type { RecordId, RelatedRecord, Values } from './values';
+import type { RunStop } from './run';
 
 /**
  * How Fieldia reaches data. Fieldia knows no backend: an app implements this
@@ -173,10 +174,13 @@ export type LinkOp =
  * `network` in a banner with Retry, and `other` beside Save with Retry.
  */
 export interface SaveProblem {
-  kind: 'fields' | 'rule' | 'network' | 'other';
+  /** `stopped`: a step of the page's `beforeSave` stopped it, with `reason` — no data source was asked. */
+  kind: 'fields' | 'rule' | 'network' | 'other' | 'stopped';
   message: string;
   /** For `fields`: a message for each field, by name. */
   fields?: Record<string, string>;
+  /** For `stopped`: why the step stopped. */
+  reason?: RunStop;
 }
 
 /** An error for a data source's save to throw when the backend refuses it. */

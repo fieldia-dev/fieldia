@@ -1,3 +1,4 @@
+import type { ActionStep } from '../format/actions';
 import type { Field, Fields, FilterItem, LineField, Option, OptionsFrom } from '../format/field';
 import type { JsonValue } from '../format/json';
 import type { ButtonNode, FieldNode, FormNode, LayoutNode, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
@@ -14,6 +15,7 @@ import { expressionEnv } from './env';
 import { MESSAGES, type Messages } from './messages';
 import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
+import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
   emptyValue,
   expressionContext,
@@ -84,15 +86,27 @@ export interface DraftStore {
   removeItem(key: string): void;
 }
 
-export interface ActionRequest {
-  /** The button or stat button pressed. */
-  id: string;
-  action: string;
-  params?: { [key: string]: JsonValue };
-  recordId: RecordId | null;
-  values: Values;
-  /** The records chosen in a list, when the button belongs to one. */
-  recordIds?: RecordId[];
+export type { ActionRequest } from './run';
+
+/** Whose change it was: a person's (in the UI), a step's, or the app's (`setValues`, or `setValue` told so). Only a person's runs the page's `change` steps. */
+export type ChangeBy = 'person' | 'step' | 'app';
+
+/** What a form tells the app, by event: `form.on(event, listener)`. */
+export interface FormEvents {
+  /** A field was written: by a person, a step or the app. Values worked out from it are not told. */
+  change: { field: string; value: Value; values: Readonly<Values>; by: ChangeBy };
+  /** A record was saved. */
+  save: { recordId: RecordId | null; values: Readonly<Values> };
+  /** A page of responses sent its answers: those sent. */
+  send: { values: Values };
+  /** The app answered a call: with nothing (undefined), or an `ActionResult`. */
+  action: { request: ActionRequest; result: ActionResult | undefined };
+  /** A run of steps ended — a button's, a moment's, `form.run`'s — and how. */
+  run: { id: string; steps: readonly ActionStep[]; result: RunResult };
+  /** A wizard's step was entered. */
+  step: { step: string };
+  /** The form has its values: loaded, or new. */
+  open: { recordId: RecordId | null; values: Readonly<Values> };
 }
 
 export interface FormOptions {
@@ -102,8 +116,17 @@ export interface FormOptions {
   recordId?: RecordId | null;
   /** Values to start with, on top of each field's default. */
   values?: Values;
-  /** What a button does. Fieldia hands the press over; the app decides. */
-  onAction?: (request: ActionRequest) => void | Promise<void>;
+  /**
+   * The app's own actions: a button's `action`, and each `call` step. Fieldia
+   * hands the request over and waits; the app may answer (`ActionResult`)
+   * with values to set, words to say, a page to open, or to stop. Nothing
+   * answered means go on.
+   */
+  onAction?: OnAction;
+  /** The UI the core cannot draw — pages opened, words said, questions asked — given by the viewer. */
+  host?: ActionHost;
+  /** How a question is asked when there is no host. Without either, a question goes on as though answered Yes. */
+  confirm?: (message: string) => boolean | Promise<boolean>;
   drafts?: { store: DraftStore; restore?: 'auto' | 'ask'; delayMs?: number };
   autosave?: { delayMs: number };
   scheduler?: Scheduler;
@@ -118,7 +141,10 @@ export interface Form {
   getState(): FormState;
   subscribe(listener: (state: FormState) => void): () => void;
   load(): Promise<void>;
-  setValue(name: string, value: Value): void;
+  /** Write a field: a person's change unless told otherwise, and only a person's runs the page's `change` steps. */
+  setValue(name: string, value: Value, how?: { by?: ChangeBy }): void;
+  /** Write several fields at once, worked out once: the app's change, never a person's. Throws for a field the page lacks. */
+  setValues(values: Values): void;
   node(id: string): NodeState;
   fieldReadonly(name: string): boolean;
   /** What a field would be told if the form were checked now, or null when it passes. Nothing is shown. */
@@ -166,11 +192,21 @@ export interface Form {
    * an optional one instead.
    */
   goTo(step: string): boolean;
-  /** Run a button; a list's button passes the records chosen in it. */
-  runAction(id: string, chosen?: { recordIds: RecordId[] }): Promise<void>;
+  /**
+   * Press a button: ask its `confirm` first, run its `steps`, then call its
+   * `action`, when it names one, as a final `call`. A list's button passes
+   * the records chosen in it, and every call of the run carries them.
+   */
+  runAction(id: string, chosen?: { recordIds: RecordId[] }): Promise<RunResult>;
+  /** Run steps on this form, as a button would: `context.id` is what their calls carry (`run` when left out). */
+  run(steps: readonly ActionStep[], context?: RunContext): Promise<RunResult>;
+  /** A tab was shown: the viewer says so, and the page's `show` steps for it run. */
+  shown(tab: string): void;
+  /** Listen to one of the form's events; returns what stops listening. */
+  on<E extends keyof FormEvents>(event: E, listener: (event: FormEvents[E]) => void): () => void;
   restoreDraft(): void;
   discardDraft(): void;
-  /** Resolves once every onchange, save and autosave started so far has finished. */
+  /** Resolves once every onchange, save, autosave and run of steps started so far has finished — a question still waiting for its answer included. */
   settled(): Promise<void>;
   /**
    * Give a saved form placed on this page (a `form` part, by its id) its page,
@@ -282,6 +318,14 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   let autosaveTimer: unknown = null;
   const pending = new Set<Promise<unknown>>();
   const listeners = new Set<(state: FormState) => void>();
+  /** The app's listeners, by event. */
+  const events = new Map<keyof FormEvents, Set<(event: never) => void>>();
+  /** The moments the run going to a step or tab right now was set off by: the `show` that entry runs knows them, and does not set them off again. */
+  let entering: readonly string[] = [];
+  /** Whether wizard steps entered are told: from once the form has opened and run its `open` steps. */
+  let showing = false;
+  /** The wizard step last told as entered. */
+  let told: string | null = null;
   let contextCache: { values: Values; context: Record<string, unknown>; env: ExpressionEnv } | null = null;
 
   /** The latest load of each field's choices: an answer to an older one is let go. */
@@ -297,6 +341,40 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     // Choices that change with a value that just changed are asked for again.
     if (state.values !== was) {
       for (const name in state.choices) if (fromList(name).dependsOn?.some((other) => was[other] !== state.values[other])) loadChoices(name);
+    }
+    if (showing && state.step !== told) tellStep(entering);
+  }
+
+  function emit<E extends keyof FormEvents>(event: E, payload: FormEvents[E]) {
+    const heard = events.get(event);
+    if (heard) for (const listener of [...heard]) (listener as (event: FormEvents[E]) => void)(payload);
+  }
+
+  /** A field written: told to the app, and — a person's change — the page's `change` steps for it run. */
+  function changed(field: string, by: ChangeBy) {
+    emit('change', { field, value: state.values[field], values: state.values, by });
+    const list = page.on?.change?.[field];
+    if (by === 'person' && list) void track(moment(`on.change.${field}`, list, [], true));
+  }
+
+  /** A wizard step entered: told to the app, and its `show` steps run. */
+  function tellStep(chain: readonly string[]) {
+    const step = state.step;
+    if (step === told || step === null) return;
+    told = step;
+    emit('step', { step });
+    const list = page.on?.show?.[step];
+    if (list) void track(moment(`on.show.${step}`, list, chain, true));
+  }
+
+  /** Do something while `chain` is the run's that does it, so a step or tab it enters knows. */
+  function inRun(chain: readonly string[], act: () => void) {
+    const was = entering;
+    entering = chain;
+    try {
+      act();
+    } finally {
+      entering = was;
     }
   }
 
@@ -626,11 +704,31 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     return shown;
   }
 
-  async function save(): Promise<boolean> {
+  async function save(chain: readonly string[] = []): Promise<boolean> {
+    return (await saving(chain)) === null;
+  }
+
+  /**
+   * Save, or send: null once done, or why not. The page's `beforeSave` steps
+   * run first — before its own check, so they may fill in what it asks for —
+   * and a stop keeps it unsaved; `afterSave` runs once it is saved.
+   */
+  async function saving(chain: readonly string[]): Promise<Stopped | null> {
+    if (page.on?.beforeSave) {
+      const before = await moment('on.beforeSave', page.on.beforeSave, chain, false);
+      if (!before.done) {
+        // A check's problems, or an inner save's, are shown already; any other stop is this save's problem.
+        if (before.reason !== 'check' && before.reason !== 'save') {
+          const problem: SaveProblem = { kind: 'stopped', reason: before.reason, message: before.message ?? '' };
+          set({ status: 'error', error: problem.message || null, saveProblem: problem });
+        }
+        return { reason: 'save', ...(before.message !== undefined ? { message: before.message } : {}) };
+      }
+    }
     const errors = collectErrors();
     if (Object.keys(errors).length) {
       set({ errors });
-      return false;
+      return { reason: 'save', message: Object.values(errors)[0] };
     }
     const source = options.dataSource;
     serverErrors = {};
@@ -638,10 +736,13 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     try {
       if (page.data.kind === 'responses') {
         if (!source?.submit) throw new Error('This page has no data source to send its answers to');
-        await source.submit({ pageId: page.id, values: shownValues() });
+        const sent = shownValues();
+        await source.submit({ pageId: page.id, values: sent });
         forgetDraft();
         set({ status: 'saved' });
-        return true;
+        emit('send', { values: sent });
+        void track(moment('on.afterSave', page.on?.afterSave, chain, false));
+        return null;
       }
       if (!source?.save) throw new Error('This page has no data source to save to');
       const result = await source.save({
@@ -655,14 +756,77 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       const values = syncParts(startFrom(result.values ? { ...(state.values as Values), ...result.values } : (state.values as Values)), 'start');
       baseline = structuredCopy(values);
       set({ status: 'saved', recordId: result.id, values, dirty: [], warnings: withValues(values, collectWarnings) });
-      return true;
+      emit('save', { recordId: state.recordId, values: state.values });
+      void track(moment('on.afterSave', page.on?.afterSave, chain, false));
+      return null;
     } catch (error) {
       const problem = saveProblemOf(error);
       const fields = problem.kind === 'fields' ? problem.fields ?? {} : {};
       serverErrors = Object.fromEntries(Object.entries(fields).map(([name, message]) => [name, { message, value: JSON.stringify(state.values[name] ?? null) }]));
       set({ status: 'error', error: problem.message, saveProblem: problem, errors: { ...fields } });
-      return false;
+      return { reason: 'save', message: problem.message };
     }
+  }
+
+  /** The form has its values: told to the app, its `open` steps run, then the wizard step it shows is told. */
+  async function opening() {
+    emit('open', { recordId: state.recordId, values: state.values });
+    await moment('on.open', page.on?.open, [], true);
+    showing = true;
+    tellStep([]);
+  }
+
+  /** Write fields — a step's or the app's — worked out once, and tell each. */
+  function write(written: Values, by: ChangeBy) {
+    const names = Object.keys(written);
+    names.forEach(fieldDef);
+    if (!names.length) return;
+    writeValues({ ...(state.values as Values), ...structuredCopy(written) });
+    for (const name of names) afterEdit(name);
+    for (const name of names) changed(name, by);
+  }
+
+  function addLine(field: string, values: Values, by: ChangeBy): string {
+    const def = lineField(field);
+    const key = `new-${++lineKeys}`;
+    const current = (state.values[field] as Line[] | null) ?? [];
+    const line: Line = { key, values: { ...initialValues(def.fields as Record<string, LineField>, today()), ...structuredCopy(values) } };
+    // A new line comes last, so it is numbered after the last.
+    if (def.sequenceField && line.values[def.sequenceField] == null) {
+      const numbers = current.map((l) => l.values[def.sequenceField as string]).filter((n): n is number => typeof n === 'number');
+      line.values[def.sequenceField] = numbers.length ? Math.max(...numbers) + 1 : 1;
+    }
+    const lines = [...current, line];
+    writeValues({ ...(state.values as Values), [field]: lines });
+    afterEdit(field);
+    changed(field, by);
+    return key;
+  }
+
+  /** Check the form, or only these fields, showing what is found as sending does. */
+  function check(names: readonly string[] | undefined): Stopped | null {
+    names?.forEach(fieldDef);
+    const all = collectErrors();
+    const found = names ? Object.fromEntries(Object.entries(all).filter(([key]) => names.some((name) => key === name || key.startsWith(`${name}.`)))) : all;
+    set({ errors: found });
+    const first = Object.values(found)[0];
+    return first === undefined ? null : { reason: 'check', message: first };
+  }
+
+  /** Go to a wizard's step for a run; undefined when the target is no step of it, but a tab. */
+  function goToStep(target: string, chain: readonly string[]): Stopped | null | undefined {
+    if (!steps.includes(target)) return undefined;
+    if (!form.steps().includes(target)) return { reason: 'cannot', message: `The step "${target}" does not apply now` };
+    let went = false;
+    inRun(chain, () => (went = form.goTo(target)));
+    return went ? null : { reason: 'check', message: Object.values(state.errors)[0] };
+  }
+
+  /** Run steps from the top — a button's, a moment's, the app's — and tell how it ended. */
+  async function runTop(list: readonly ActionStep[], scope: RunScope): Promise<RunResult> {
+    const result = await runner.runSteps(list, scope);
+    emit('run', { id: scope.id, steps: list, result });
+    return result;
   }
 
   /** The model a link field's new record belongs to, or null when it cannot make one. */
@@ -732,10 +896,31 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       baseline = syncParts(startFrom({ ...initialValues(fields, today()), ...loaded }), 'start');
       set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings) });
       offerDraft();
+      void track(opening());
     } catch (error) {
       set({ status: 'error', error: (error as Error).message });
     }
   }
+
+  const runner = createRunner({
+    fields,
+    values: () => state.values,
+    recordId: () => state.recordId,
+    reading,
+    today,
+    write: (values) => write(values, 'step'),
+    addLine: (field, values) => void addLine(field, values, 'step'),
+    check,
+    save: saving,
+    reset: () => form.reset(),
+    goTo: goToStep,
+    showing: inRun,
+    host: options.host,
+    confirm: options.confirm,
+    onAction: options.onAction,
+    answered: (request, result) => emit('action', { request, result }),
+  });
+  const moment = createMoments((key, list, chain) => runTop(list, { id: key, chain }));
 
   const form: Form = {
     page,
@@ -748,11 +933,14 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
 
     load: () => track(load()),
 
-    setValue(name, value) {
+    setValue(name, value, how) {
       fieldDef(name);
       writeValues({ ...(state.values as Values), [name]: structuredCopy(value) });
       afterEdit(name);
+      changed(name, how?.by ?? 'person');
     },
+
+    setValues: (values) => write(values, 'app'),
 
     node: nodeState,
 
@@ -790,21 +978,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
 
     changes,
 
-    addLine(field, values = {}) {
-      const def = lineField(field);
-      const key = `new-${++lineKeys}`;
-      const current = (state.values[field] as Line[] | null) ?? [];
-      const line: Line = { key, values: { ...initialValues(def.fields as Record<string, LineField>, today()), ...structuredCopy(values) } };
-      // A new line comes last, so it is numbered after the last.
-      if (def.sequenceField && line.values[def.sequenceField] == null) {
-        const numbers = current.map((l) => l.values[def.sequenceField as string]).filter((n): n is number => typeof n === 'number');
-        line.values[def.sequenceField] = numbers.length ? Math.max(...numbers) + 1 : 1;
-      }
-      const lines = [...current, line];
-      writeValues({ ...(state.values as Values), [field]: lines });
-      afterEdit(field);
-      return key;
-    },
+    addLine: (field, values = {}) => addLine(field, values, 'person'),
 
     updateLine(field, key, name, value) {
       const def = lineField(field);
@@ -814,6 +988,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       );
       writeValues({ ...(state.values as Values), [field]: lines });
       afterEdit(field);
+      changed(field, 'person');
     },
 
     moveLine(field, key, to) {
@@ -841,6 +1016,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       });
       writeValues({ ...(state.values as Values), [field]: renumbered });
       afterEdit(field);
+      changed(field, 'person');
     },
 
     removeLine(field, key) {
@@ -848,6 +1024,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       const lines = ((state.values[field] as Line[] | null) ?? []).filter((line) => line.key !== key);
       writeValues({ ...(state.values as Values), [field]: lines });
       afterEdit(field);
+      changed(field, 'person');
     },
 
     async search(field, query, limit = 8, options = {}) {
@@ -947,23 +1124,38 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     async runAction(id, chosen) {
       const node = index.get(id);
       if (!node || (node.kind !== 'button' && node.kind !== 'stat')) throw new Error(`The page has no button "${id}"`);
-      if (nodeState(id).invisible) return;
+      if (nodeState(id).invisible) return { done: false, reason: 'cannot', message: `The button "${id}" is hidden` };
       const source = node.source as ButtonNode | StatButton;
-      // Until steps run here, a button hands over only its app action's name, when it has one.
-      if (source.action === undefined) return;
-      const action = source.action;
-      await track(
-        Promise.resolve(
-          options.onAction?.({
-            id,
-            action,
-            ...('params' in source && source.params ? { params: source.params } : {}),
-            recordId: state.recordId,
-            values: structuredCopy(state.values as Values),
-            ...(chosen ? { recordIds: [...chosen.recordIds] } : {}),
-          })
-        )
+      // Its steps, then its app action as a final call.
+      const list: ActionStep[] = [...(source.steps ?? [])];
+      if (source.action !== undefined) list.push({ do: 'call', action: source.action, ...('params' in source && source.params ? { params: source.params } : {}) });
+      const scope: RunScope = { id, chain: [], ...(chosen ? { recordIds: [...chosen.recordIds] } : {}) };
+      const confirm = 'confirm' in source ? source.confirm : undefined;
+      return track(
+        (async (): Promise<RunResult> => {
+          if (confirm && !(await runner.ask(confirm))) {
+            const result: RunResult = { done: false, reason: 'no', message: confirm };
+            emit('run', { id, steps: list, result });
+            return result;
+          }
+          return runTop(list, scope);
+        })()
       );
+    },
+
+    run: (list, context = {}) => track(runTop(list, { id: context.id ?? 'run', chain: [], ...(context.recordIds ? { recordIds: [...context.recordIds] } : {}) })),
+
+    shown(tab) {
+      // A wizard's steps are told by the form itself, as they are entered.
+      if (steps.includes(tab)) return;
+      void track(moment(`on.show.${tab}`, page.on?.show?.[tab], entering, true));
+    },
+
+    on(event, listener) {
+      let heard = events.get(event);
+      if (!heard) events.set(event, (heard = new Set()));
+      heard.add(listener as (event: never) => void);
+      return () => void heard.delete(listener as (event: never) => void);
     },
 
     restoreDraft() {
@@ -992,10 +1184,24 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       const given = state.values[part.name];
       // A record of no model of its own: its links search and its lists load, but it never loads, saves, sends or recalculates alone.
       const made = innerForm(
-        { page: { ...inner, data: { kind: 'responses' } }, dataSource: options.dataSource, values: isRecord(given) ? given : {}, onAction: options.onAction, scheduler, messages, now: options.now },
+        {
+          page: { ...inner, data: { kind: 'responses' } },
+          dataSource: options.dataSource,
+          values: isRecord(given) ? given : {},
+          onAction: options.onAction,
+          host: options.host,
+          confirm: options.confirm,
+          scheduler,
+          messages,
+          now: options.now,
+        },
         chain
       );
       attached.set(id, { name: part.name, inner: made });
+      // A change inside it is told as a change of its answers here, whoever made it.
+      made.form.on('change', ({ by }) => {
+        if (!syncing) changed(part.name, by);
+      });
       // A change made inside it is a change of this form's: shown, kept in a draft, saved.
       made.form.subscribe((inside) => {
         if (syncing || inside.values === state.values[part.name]) return;
@@ -1016,6 +1222,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
       if (autosaveTimer !== null) scheduler.clearTimeout(autosaveTimer);
       listeners.clear();
+      events.clear();
       for (const part of attached.values()) part.inner.form.dispose();
     },
   };
@@ -1023,6 +1230,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   // A record's starting values may already break a warning rule; nothing listens yet.
   state = { ...state, warnings: collectWarnings() };
   if (state.recordId == null) offerDraft();
+  // A new form has its values now: it opens once whoever made it has had the chance to listen.
+  if (state.recordId == null) void track(Promise.resolve().then(opening));
   return {
     form,
     take(values, how) {

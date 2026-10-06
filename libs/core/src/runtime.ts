@@ -120,7 +120,10 @@ export {
   type Choices,
   type DraftStore,
   type ActionRequest,
+  type ChangeBy,
+  type FormEvents,
 } from './lib/record/form';
+export type { ActionHost, ActionResult, OnAction, OpenRequest, OpenResult, RunContext, RunResult, RunStop } from './lib/record/run';
 export { MESSAGES, fill, type Messages, type Locale } from './lib/record/messages';
 export { dayOf } from './lib/record/limits';
 export { ADDRESS_PARTS } from './lib/record/structures';
