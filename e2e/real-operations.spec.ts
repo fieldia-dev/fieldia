@@ -47,6 +47,8 @@ for (const variant of VARIANTS) {
       const { problems } = await open(page, variant, TASK);
       await expect.poll(() => value(page, 'name')).toBe('Fit acoustic ceiling panels, meeting rooms A and B');
       await expect(stage(page, 'In Progress').locator('xpath=ancestor-or-self::*[@aria-current="step"]')).toHaveCount(1);
+      // The stages are the task's project's, searched once its record has loaded.
+      await expect(page.locator('.fd-header .fd-statusbar li')).toHaveText(['New', 'In Progress', 'Client Review', 'Done', 'Cancelled']);
       // Stat buttons as Flectra shows them: the sub-tasks counted, no Parent Task on a task without a parent.
       await expect(page.locator('button[data-node="subtasks"] .fd-stat-value')).toHaveText('3');
       await expect(page.locator('button[data-node="action_open_parent_task"]')).toBeHidden();

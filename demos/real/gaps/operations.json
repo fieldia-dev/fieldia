@@ -4,7 +4,7 @@
     "Gap entries name what Fieldia would need; covered means the page does what Flectra does, the server's part done by the app's data source and action answers (demos/shared/real/operations.ts).",
     "size counts Flectra's view with the inherited views named: fields are the distinct field names in the form and its line subviews; conditions are invisible/readonly/required/column_invisible attributes holding an expression. built counts the Fieldia page: its own fields, its line fields apart.",
     "Two small pages back the transfer: real-backorder-confirmation (Flectra's Create Backorder? wizard) and real-picking-sign (the Sign widget's dialog), opened by steps.",
-    "Defects found on the way: the statusbar searches its steps once, before the record has loaded, so a filter with valueFrom finds none; the grid ignores a table node's addLabel option."
+    "Defects found on the way, since fixed: the statusbar searched its steps once, before the record had loaded, so a filter with valueFrom found none; the grid ignored a table node's addLabel option."
   ],
   "pages": [
     {
@@ -60,8 +60,9 @@
         },
         {
           "feature": "Stage domain [('project_ids', '=', project_id)]",
-          "status": "missing",
-          "needs": "a filter op meaning \"this list contains\" for a many2many on the related record; and a statusbar that searches its steps again when the filter's source changes (it searches once, before the record loads, so a valueFrom filter found nothing and was dropped)"
+          "status": "approximated",
+          "how": "a filter on the stage's project, valueFrom project_id: the statusbar searches its steps again once the record has loaded and whenever the project changes (shown in the e2e)",
+          "needs": "a filter op meaning \"this list contains\" for a many2many on the related record (a stage's project_ids)"
         },
         {
           "feature": "Personal Stage statusbar for private tasks (personal_stage_type_id, invisible when project_id)",

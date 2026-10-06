@@ -377,6 +377,50 @@ describe('statusbar', () => {
     expect(form.getState().values['phase_id']).toEqual({ id: 3, label: 'Build' });
   });
 
+  it('searches its steps again when a value its filter reads changes, as when the record loads', async () => {
+    const page = {
+      fieldia: '0.1',
+      id: 'tasks',
+      data: { kind: 'record', model: 'task' },
+      fields: {
+        project_id: { type: 'many2one', label: 'Project', relation: 'project' },
+        stage_id: { type: 'many2one', label: 'Stage', relation: 'stage', filter: [{ field: 'project_id', op: '=', valueFrom: 'project_id' }] },
+      },
+      layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n', field: 'stage_id', widget: 'statusbar' }] },
+    } as unknown as Page;
+    const office = { id: 1, label: 'Office' };
+    const dataSource = createMemoryDataSource({
+      records: {
+        task: { 5: { stage_id: { id: 11, label: 'Design' }, project_id: office } },
+        stage: { 10: { name: 'Brief', project_id: office }, 11: { name: 'Design', project_id: office }, 20: { name: 'Survey', project_id: { id: 2, label: 'Villa' } } },
+      },
+    });
+    const form = createForm({ page, dataSource, recordId: 5 });
+    const node = (page.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: 'stage_id', field: page.fields['stage_id'] as Field, node, id: 'fd-bar', document, labels: WIDGET_LABELS.en });
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values['stage_id'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    // Drawn before the record is there: its project is not known yet.
+    refresh();
+    await form.load();
+    await settle();
+    expect(steps(widget.element)).toEqual(['Brief', 'Design']);
+    form.setValue('project_id', { id: 2, label: 'Villa' });
+    await settle();
+    expect(steps(widget.element)).toEqual(['Survey', 'Design']);
+  });
+
+  it('keeps the focus on a step clicked, now the current one, after the bar is drawn again', () => {
+    const { form, el } = mountBar({ field: 'state', widget: 'statusbar', options: { clickable: true } });
+    const done = el.querySelectorAll('button')[2] as HTMLButtonElement;
+    done.focus();
+    done.click();
+    expect(form.getState().values['state']).toBe('done');
+    expect(document.activeElement?.textContent).toBe('Done');
+    expect(document.activeElement?.getAttribute('aria-current')).toBe('step');
+  });
+
   it('cannot be clicked when read-only', () => {
     const { el } = mountBar({ field: 'state', widget: 'statusbar', options: { clickable: true } }, true);
     const buttons = [...el.querySelectorAll('button')] as HTMLButtonElement[];
