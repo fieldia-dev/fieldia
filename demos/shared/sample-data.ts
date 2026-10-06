@@ -16,6 +16,7 @@ import signup from '../../examples/pages/signup.page.json';
 import survey from '../../examples/pages/survey.page.json';
 import big from '../../examples/pages/big.page.json';
 import { customPage } from './custom-page';
+import { real } from './real';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -36,6 +37,8 @@ export const pages: Record<string, Page> = {
   'quick-order': quickOrder as Page,
   // 500 fields, for timing: e2e/perf.spec.ts opens it; no card in the gallery (see e2e/demos-shell.spec.ts).
   big: big as Page,
+  // Sherkety ERP's own screens, rebuilt: one file per lane in shared/real/.
+  ...real.pages,
 };
 
 /**
@@ -116,13 +119,13 @@ const APP_CATALOG_FR: Record<string, string> = {
 };
 
 /** The pages records of other models open in, in a dialog: a customer from a link to it. */
-export const relatedPages: Record<string, Page> = { partner: customer as Page };
+export const relatedPages: Record<string, Page> = { partner: customer as Page, ...real.related };
 
 /** The app's saved forms, placed in other pages by their id: the Address form, twice in Delivery details. */
 export const savedForms: Record<string, Page> = { address: address as Page };
 
 /** The pages a step opens by their id: a new customer in a side panel, and a customer's record in the order's place. */
-export const openedPages: Record<string, Page> = { 'new-customer': newCustomer as Page, customer: customer as Page };
+export const openedPages: Record<string, Page> = { 'new-customer': newCustomer as Page, customer: customer as Page, ...real.opened };
 
 /**
  * The app's pages, as the viewer's `pages` asks for them: a linked record's
@@ -191,7 +194,7 @@ const CURRENCIES: Record<number, string> = { 1: 'EGP', 2: 'JOD', 3: 'SAR' };
 
 /** A customer to edit, and the records its relations point to. Sample data. */
 export function sampleDataSource() {
-  return createMemoryDataSource({
+  return createMemoryDataSource(withReal({
     lists: appLists,
     records: {
       partner: {
@@ -378,5 +381,22 @@ export function sampleDataSource() {
           Number(values['credit_limit']) > 100000 ? 'Above the 100,000 approval limit: a manager has to sign this off.' : null,
       },
     },
-  });
+  }));
+}
+
+/** The samples' data source options with the real lanes' beside them: a model's records, rules and lists added to, never replaced. */
+function withReal(options: Parameters<typeof createMemoryDataSource>[0] & object): Parameters<typeof createMemoryDataSource>[0] {
+  const merge = <T>(mine: Record<string, Record<string, T>> = {}, theirs: Record<string, Record<string, T>> = {}) => {
+    const all = { ...mine };
+    for (const [model, rows] of Object.entries(theirs)) all[model] = { ...all[model], ...rows };
+    return all;
+  };
+  return {
+    ...options,
+    records: merge(options.records, real.records),
+    onchange: merge(options.onchange, real.onchange),
+    warnings: merge(options.warnings, real.warnings),
+    lists: { ...options.lists, ...real.lists },
+    labelField: { ...options.labelField, ...real.labelField },
+  };
 }

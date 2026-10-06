@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { DEMOS, FEATURED } from '../demos/catalog.mjs';
 import { expectNoSidewaysScroll } from './support';
 
 /** fieldia.dev, as built into dist/site and served on its own port. */
@@ -77,8 +78,8 @@ test('the gallery shows every demo with its thumbnail, featured first, and each 
   const cards = page.locator('a.demo-card');
   const hrefs = [...new Set(await cards.evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).getAttribute('href') as string)))];
   // Every demo of the catalog, once each, and the four featured again at the top.
-  expect(hrefs.length).toBe(20);
-  await expect(cards).toHaveCount(24);
+  expect(hrefs.length).toBe(DEMOS.length);
+  await expect(cards).toHaveCount(DEMOS.length + FEATURED.length);
   for (const image of await page.locator('.demo-thumb img').all()) {
     await image.scrollIntoViewIfNeeded();
     await expect.poll(() => image.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(600);
