@@ -47,7 +47,7 @@ const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
 const clicked = (host: Element) => host.querySelector('[data-setting="When clicked"]') as HTMLElement;
 const sayings = (scope: Element) => [...scope.querySelectorAll<HTMLElement>('.fd-do-say')].filter((s) => !s.closest('[hidden]')).map((s) => s.textContent);
 const menuItems = () => [...document.querySelectorAll('.fd-menu .fd-menu-heading, .fd-menu .fd-menu-item')].map((e) => (e.classList.contains('fd-menu-heading') ? `# ${e.textContent}` : e.textContent));
-const pick = (label: string) => ([...document.querySelectorAll<HTMLButtonElement>('.fd-menu .fd-menu-item')].find((b) => b.textContent === label) as HTMLButtonElement).click();
+const pick_ = (label: string) => ([...document.querySelectorAll<HTMLButtonElement>('.fd-menu .fd-menu-item')].find((b) => b.textContent === label) as HTMLButtonElement).click();
 const pressed = (designer: Designer) => (designer.getPage().layout as unknown as { children: { children: ButtonNode[] }[] }).children[0].children.find((n) => n.id === 'new-customer') as ButtonNode;
 
 describe('When clicked, on a body button', () => {
@@ -89,7 +89,7 @@ describe('When clicked, on a body button', () => {
       '# The app',
       'Run one of the app’s actions',
     ]);
-    pick('Say something');
+    pick_('Say something');
     const words = field(clicked(host), 'Words') as HTMLInputElement;
     expect(document.activeElement).toBe(words);
     // Begun, not kept: nothing on the page yet.
@@ -110,7 +110,7 @@ describe('When clicked, on a body button', () => {
     designer.select('new-customer');
     const { host } = mount(designer, { mode: 'advanced' });
     button(clicked(host), 'Add a step')?.click();
-    pick('Open a page');
+    pick_('Open a page');
     await settled();
     const page = field(clicked(host), 'Page') as HTMLSelectElement;
     expect([...page.options].map((o) => o.textContent)).toEqual(['Pick…', 'Customer', 'Another page, by its id…']);
@@ -124,7 +124,7 @@ describe('When clicked, on a body button', () => {
     expect(pressed(designer).steps?.[1]).toEqual({ do: 'open', page: 'customer', as: 'panel', into: { customer: 'name' } });
     // Once it is saved: a step of its own, under it.
     button(clicked(host), 'Add a step once it’s saved')?.click();
-    pick('Say something');
+    pick_('Say something');
     type(field(clicked(host), 'Words'), 'Customer added');
     expect(pressed(designer).steps?.[1]).toEqual({ do: 'open', page: 'customer', as: 'panel', into: { customer: 'name' }, then: [{ do: 'say', message: 'Customer added' }] });
     expect(sayings(clicked(host))).toEqual(['Run the app’s action button', 'Open Customer in a panel, then put its answer in Customer', 'Say: Customer added']);
@@ -200,7 +200,7 @@ describe('When it changes, on a field’s Rules tab', () => {
     const changes = host.querySelector('[data-setting="When it changes"]') as HTMLElement;
     expect(changes.querySelector('.fd-prop-name')?.textContent).toBe('When it changes');
     button(changes, 'Add a step')?.click();
-    pick('Run one of the app’s actions');
+    pick_('Run one of the app’s actions');
     type(field(changes, 'The app’s action'), 'check_stock');
     expect(designer.getPage().on).toEqual({ change: { product: [{ do: 'call', action: 'check_stock' }] } });
   });
@@ -224,12 +224,37 @@ describe('the form’s moments, on the page’s Rules tab', () => {
     expect((moments.querySelectorAll('.fd-do-moment')[3] as HTMLElement).hidden).toBe(true);
     const before = moments.querySelectorAll('.fd-do')[1] as HTMLElement;
     button(before, 'Add a step')?.click();
-    pick('Check the form');
+    pick_('Check the form');
     button(before, 'Add a step')?.click();
-    pick('Ask Yes or No');
+    pick_('Ask Yes or No');
     type(field(before, 'Words'), 'Send the order?');
     expect(designer.getPage().on).toEqual({ beforeSave: [{ do: 'check' }, { do: 'ask', message: 'Send the order?' }] });
     expect(sayings(before)).toEqual(['Check the form', 'Ask: Send the order?']);
+  });
+});
+
+describe('a tab shown, on the page’s Rules tab', () => {
+  it('offers the tabs without steps, and gives the one picked a list of its own, written under its id', () => {
+    const designer = createDesigner({ page: blankPage('sheet', 'Customer') });
+    const tabsId = designer.addTabs() as string;
+    designer.addTab(tabsId, 'Invoices');
+    const tabs = (designer.getPage().layout as { children: { type: string; id: string; children?: { id: string }[] }[] }).children.find((n) => n.type === 'tabs') as { id: string; children: { id: string }[] };
+    designer.select(null);
+    const { host } = mount(designer, { mode: 'advanced' });
+    openTab(host, 'Rules');
+    const moments = host.querySelector('[data-setting="When…"]') as HTMLElement;
+    const pick = field(moments, 'Steps for a tab or step…') as HTMLSelectElement;
+    expect([...pick.options].map((o) => o.textContent)).toEqual(['Steps for a tab or step…', 'Tab 1', 'Invoices']);
+    choose(pick, tabs.children[1].id);
+    const shown = moments.querySelector('.fd-do-show') as HTMLElement;
+    expect(shown.querySelector('.fd-do-show-name')?.textContent).toBe('When Invoices is shown');
+    expect(document.activeElement?.textContent).toBe('Add a step');
+    button(shown, 'Add a step')?.click();
+    pick_('Say something');
+    type(field(shown, 'Words'), 'Your invoices');
+    expect(designer.getPage().on).toEqual({ show: { [tabs.children[1].id]: [{ do: 'say', message: 'Your invoices' }] } });
+    // The tab with steps is no longer offered.
+    expect([...(field(moments, 'Steps for a tab or step…') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['Steps for a tab or step…', 'Tab 1']);
   });
 });
 
