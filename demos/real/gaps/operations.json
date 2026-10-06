@@ -130,7 +130,7 @@
         {
           "feature": "Priority star in the title (priority_switch on a '0'/'1' selection)",
           "status": "approximated",
-          "how": "an integer from 1 to 1 with the rating widget: one star, but with a \"Clear selection\" link and 1/null instead of '1'/'0'. Needs: a star toggle widget for a selection or boolean"
+          "how": "an integer from 1 to 1 with the rating widget: one star that a second click takes away, with no \"Clear selection\" (shown in the e2e); 1/null instead of '1'/'0'. Needs: the star on a selection or boolean"
         },
         {
           "feature": "Title on one line with text widget, line_breaks False, placeholder",

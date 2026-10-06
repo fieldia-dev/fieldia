@@ -605,7 +605,7 @@
         {
           "feature": "payment_difference_handling radio without label",
           "status": "covered",
-          "how": "`widget: radio`, `labels: hidden`; made required so the radio has no Clear selection, which Flectra never shows"
+          "how": "`widget: radio`, `labels: hidden`, `clear: false`: no Clear selection, which Flectra never shows (shown in the e2e)"
         },
         { "feature": "Write-off block hidden when kept open or in early-discount mode", "status": "covered", "how": "the same condition on both fields" },
         {

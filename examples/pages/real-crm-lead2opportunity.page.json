@@ -33,7 +33,7 @@
     "type": "sections",
     "id": "convert",
     "children": [
-      { "type": "section", "id": "conversion", "style": "plain", "children": [{ "type": "field", "id": "f-name", "field": "name", "widget": "radio", "labels": "hidden" }] },
+      { "type": "section", "id": "conversion", "style": "plain", "children": [{ "type": "field", "id": "f-name", "field": "name", "widget": "radio", "labels": "hidden", "options": { "clear": false } }] },
       {
         "type": "section",
         "id": "assign",
@@ -59,7 +59,7 @@
         "style": "line",
         "invisible": "name != 'convert'",
         "children": [
-          { "type": "field", "id": "f-action", "field": "action", "widget": "radio", "labels": "hidden" },
+          { "type": "field", "id": "f-action", "field": "action", "widget": "radio", "labels": "hidden", "options": { "clear": false } },
           { "type": "field", "id": "f-partner", "field": "partner_id", "invisible": "action != 'exist'", "required": "action == 'exist'" }
         ]
       }

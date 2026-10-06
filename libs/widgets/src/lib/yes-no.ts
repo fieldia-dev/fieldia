@@ -32,7 +32,7 @@ export const yesNoWidget: WidgetFactory = ({ form, name, node, id, document, lab
   const clear = clearSelection(document, words, () => {
     form.setValue(name, null);
     buttons[0].focus();
-  });
+  }, node);
   return {
     element: make('div', { class: 'fd-choices-box' }, group, clear.button),
     focus: () => (buttons.find((b) => b.getAttribute('aria-checked') === 'true') ?? buttons[0]).focus(),

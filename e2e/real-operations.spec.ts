@@ -52,6 +52,14 @@ for (const variant of VARIANTS) {
       // Stat buttons as Flectra shows them: the sub-tasks counted, no Parent Task on a task without a parent.
       await expect(page.locator('button[data-node="subtasks"] .fd-stat-value')).toHaveText('3');
       await expect(page.locator('button[data-node="action_open_parent_task"]')).toBeHidden();
+      // The priority star toggles, as Flectra's: a second click takes it away, and no "Clear selection" shows.
+      const star = node(page, 'f-priority').getByRole('radio');
+      const priority = await value(page, 'priority');
+      await star.click();
+      expect(await value(page, 'priority')).toBe(priority === 1 ? null : 1);
+      await expect(node(page, 'f-priority').locator('.fd-choice-clear')).toBeHidden();
+      await star.click();
+      expect(await value(page, 'priority')).toBe(priority ?? null);
       if (variant === 'plain') await screen(page, 'real-task');
 
       // Timesheets: 17.5 hours logged; another 2.5 makes 20, and the hours under the grid follow.

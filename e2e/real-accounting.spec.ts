@@ -200,6 +200,8 @@ for (const variant of VARIANTS) {
       await page.getByRole('radio', { name: 'Mark as fully paid' }).check();
       await expect(node(page, 'f-writeoff-account')).toBeVisible();
       await expect(node(page, 'f-writeoff-label')).toBeVisible();
+      // Not required, yet no "Clear selection" under the radio, as Flectra has none (clear: false).
+      await expect(node(page, 'f-difference-handling').locator('.fd-choice-clear')).toBeHidden();
       if (variant === 'plain') await screen(page, 'real-register-payment');
 
       // Paid in EGP: the amount due worked out at the day's rate, the difference gone, and no manual rate.

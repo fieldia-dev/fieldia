@@ -301,6 +301,7 @@
                       {
                         "type": "field",
                         "id": "f-progression",
+                        "options": { "clear": false },
                         "field": "progression_mode",
                         "widget": "radio",
                         "invisible": "questions_layout == 'one_page' or survey_type == 'live_session'"

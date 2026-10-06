@@ -226,6 +226,13 @@ for (const variant of VARIANTS) {
       // Two stars of three: Normal.
       await node(page, 'f-priority').locator('button[data-value="2"]').click();
       expect(await value(page, 'priority')).toBe(2);
+      // No "Clear selection", as Flectra has none (clear: false): the star picked, clicked again, goes back to Very Low.
+      await expect(node(page, 'f-priority').locator('.fd-choice-clear')).toBeHidden();
+      await expect(node(page, 'f-type').locator('.fd-choice-clear')).toBeHidden();
+      await node(page, 'f-priority').locator('button[data-value="2"]').click();
+      expect(await value(page, 'priority')).toBeNull();
+      await node(page, 'f-priority').locator('button[data-value="2"]').click();
+      expect(await value(page, 'priority')).toBe(2);
       const duration = node(page, 'f-duration').locator('input');
       await duration.fill('3.75');
       await duration.press('Tab');

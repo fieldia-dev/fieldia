@@ -63,6 +63,7 @@ ${code(
     <tr><td>${c('tags')} on a ${c('char')}</td><td>${c('suggestions')} (a list of words), ${c('separator')} (${c('","')}), ${c('max')} (at most so many). Kept as ${c('"oak, glass"')}</td></tr>
     <tr><td>a ${c('char')} or ${c('text')} with a ${c('size')}</td><td>A count of characters under the box, ${c('"12 / 100"')}. A ${c('text')} takes ${c('rows')} (3) and grows as it is typed in unless ${c('autoGrow')} is ${c('false')}</td></tr>
     <tr><td>an ${c('integer')} or ${c('float')}</td><td>${c('prefix')}, ${c('suffix')}: a unit inside the box, before or after the number: ${c('"kg"')}, ${c('"°C"')}, ${c('"%"')}</td></tr>
+    <tr><td>${c('radio')}, ${c('rating')}, ${c('scale')}, ${c('buttons')} on a ${c('boolean')}, ${c('slider')}, pictures to pick</td><td>One answer that need not be given shows <em>Clear selection</em> once picked; ${c('clear')}: ${c('false')} leaves it out, as an ERP's radios and priority stars have none — a rating's star picked, clicked again, then takes the answer away. A rating of one star (${c('max')} 1, a priority) never shows it: its second click takes the star away</td></tr>
     <tr><td>${c('rating')}</td><td>${c('icon')}: ${c('"heart"')}, ${c('"thumb"')} or ${c('"number"')} instead of stars; ${c('startLabel')}, ${c('endLabel')}: words at each end</td></tr>
     <tr><td>${c('scale')}</td><td>${c('startLabel')}, ${c('endLabel')}; ${c('nps')}: ${c('true')} colours a 0 to 10 scale as NPS, 0–6, 7–8 and 9–10 apart</td></tr>
     <tr><td>${c('slider')}</td><td>${c('step')} (1), ${c('startLabel')}, ${c('endLabel')}</td></tr>

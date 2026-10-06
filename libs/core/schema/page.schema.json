@@ -2649,8 +2649,10 @@
                   },
                   "options": {
                     "type": "object",
-                    "propertyNames": {
-                      "type": "string"
+                    "properties": {
+                      "clear": {
+                        "type": "boolean"
+                      }
                     },
                     "additionalProperties": {
                       "$ref": "#/$defs/JsonValue"
@@ -2763,8 +2765,10 @@
                   },
                   "options": {
                     "type": "object",
-                    "propertyNames": {
-                      "type": "string"
+                    "properties": {
+                      "clear": {
+                        "type": "boolean"
+                      }
                     },
                     "additionalProperties": {
                       "$ref": "#/$defs/JsonValue"
@@ -3677,8 +3681,10 @@
             },
             "options": {
               "type": "object",
-              "propertyNames": {
-                "type": "string"
+              "properties": {
+                "clear": {
+                  "type": "boolean"
+                }
               },
               "additionalProperties": {
                 "$ref": "#/$defs/JsonValue"

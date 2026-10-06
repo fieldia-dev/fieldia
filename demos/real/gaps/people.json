@@ -891,8 +891,8 @@
         },
         {
           "feature": "Maintenance Type (radio)",
-          "status": "approximated",
-          "how": "radio; Fieldia adds a \"Clear selection\" link Flectra has not"
+          "status": "covered",
+          "how": "radio with `clear: false`: no \"Clear selection\", as in Flectra"
         },
         {
           "feature": "Team (required, no_create, no_open), Responsible (user_id relabelled), Scheduled Date",
@@ -922,7 +922,7 @@
         {
           "feature": "Priority (widget priority: three stars over a selection '0'..'3')",
           "status": "approximated",
-          "how": "an integer from 1 to 3 with the rating widget, cleared for Very Low; the value is a number, not Flectra's string key, and a \"Clear selection\" link shows — needs the rating widget on a selection"
+          "how": "an integer from 1 to 3 with the rating widget and `clear: false`: no \"Clear selection\", and the star picked, clicked again, goes back to Very Low, as Flectra's (shown in the e2e); the value is a number, not Flectra's string key — needs the rating widget on a selection"
         },
         {
           "feature": "Email cc (groups base.group_no_one: developer mode only)",

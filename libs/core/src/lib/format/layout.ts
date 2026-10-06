@@ -51,6 +51,18 @@ export interface AnswerRule {
   level?: 'error' | 'warning';
 }
 
+/** A field node's widget settings: the few every widget reads alike, and each widget's own. */
+export type WidgetOptions = {
+  /**
+   * False leaves out "Clear selection" under a single choice that need not be
+   * answered — a radio, a rating, a yes/no, a slider, pictures to pick from —
+   * as an ERP's radios and priority stars have none; a rating's star picked,
+   * clicked again, then takes the answer away. A rating of one star never
+   * shows it, and its second click takes the star away.
+   */
+  clear?: boolean;
+} & { [key: string]: JsonValue };
+
 export interface FieldNode {
   type: 'field';
   id: string;
@@ -62,7 +74,7 @@ export interface FieldNode {
    * Settings for the widget, as each widget documents them: a progress bar's
    * maximum, a label's prefix. An option whose name ends in "Field" names a field.
    */
-  options?: { [key: string]: JsonValue };
+  options?: WidgetOptions;
   placeholder?: string;
   help?: string;
   /** Grid columns this field spans inside a section. */
@@ -442,7 +454,7 @@ export const FieldNodeSchema = z.strictObject({
   field: fieldName,
   label: z.string().optional(),
   widget: z.string().min(1).optional(),
-  options: z.record(z.string(), JsonValueSchema).optional(),
+  options: z.object({ clear: z.boolean().optional() }).catchall(JsonValueSchema).optional(),
   placeholder: z.string().optional(),
   help: z.string().optional(),
   colspan: span,

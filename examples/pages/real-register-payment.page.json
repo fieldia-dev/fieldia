@@ -63,8 +63,7 @@
       "type": "selection",
       "label": "Payment Difference Handling",
       "options": [{ "value": "open", "label": "Keep open" }, { "value": "reconcile", "label": "Mark as fully paid" }],
-      "default": "open",
-      "required": true
+      "default": "open"
     },
     "writeoff_account_id": { "type": "many2one", "label": "Difference Account", "relation": "account.account", "filter": [{ "field": "deprecated", "op": "!=", "value": true }] },
     "writeoff_label": { "type": "char", "label": "Journal Item Label", "default": "Write-Off" },
@@ -167,7 +166,7 @@
             "invisible": "payment_difference == 0 or early_payment_discount_mode or not can_edit_wizard or (can_group_payments and not group_payment)",
             "children": [
               { "type": "field", "id": "f-payment-difference", "field": "payment_difference" },
-              { "type": "field", "id": "f-difference-handling", "field": "payment_difference_handling", "widget": "radio", "labels": "hidden" },
+              { "type": "field", "id": "f-difference-handling", "field": "payment_difference_handling", "widget": "radio", "labels": "hidden", "options": { "clear": false } },
               {
                 "type": "field",
                 "id": "f-writeoff-account",
