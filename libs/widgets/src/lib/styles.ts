@@ -468,7 +468,28 @@ button.fd-chip-label:hover { text-decoration: underline; }
 /* A saved form placed in another: a quiet line while its page comes, and words in a dashed box when it cannot be shown. */
 .fd-form-part-note { margin: 0; color: var(--fd-muted); font-size: 13px; }
 .fd-form-part-problem { padding: 10px 12px; border: 1px dashed var(--fd-border); border-radius: var(--fd-radius); }
-.fd-tablist { display: flex; gap: 2px; border-block-end: 1px solid var(--fd-border); overflow-x: auto; }
+.fd-tablist { display: flex; gap: 2px; border-block-end: 1px solid var(--fd-border); overflow-x: auto; scrollbar-width: none; }
+.fd-tablist::-webkit-scrollbar { display: none; }
+/* Too long for its room: the tabs fade out at an edge with more past it, under a button that scrolls them along. */
+.fd-tabbar { position: relative; min-width: 0; --fd-fade: to right; }
+[dir="rtl"] .fd-tabbar { --fd-fade: to left; }
+/* Nothing shows under a button (28px); the tabs fade in over the next 36. */
+.fd-tabbar[data-more="start"] > .fd-tablist { mask-image: linear-gradient(var(--fd-fade), transparent 28px, #000 64px); }
+.fd-tabbar[data-more="end"] > .fd-tablist { mask-image: linear-gradient(var(--fd-fade), #000 calc(100% - 64px), transparent calc(100% - 28px)); }
+.fd-tabbar[data-more="start end"] > .fd-tablist { mask-image: linear-gradient(var(--fd-fade), transparent 28px, #000 64px, #000 calc(100% - 64px), transparent calc(100% - 28px)); }
+.fd-tabs-scroll {
+  position: absolute; inset-block: 0 1px; z-index: 1; width: 28px; padding: 0; border: none; background: none; cursor: pointer;
+  color: var(--fd-muted); display: grid; place-items: center;
+}
+.fd-tabs-scroll[hidden] { display: none; }
+.fd-tabs-scroll:hover { color: var(--fd-accent); }
+.fd-tabs-scroll::before { content: ""; width: 7px; height: 7px; border: solid currentColor; border-width: 0 0 2px 2px; }
+.fd-tabs-before { inset-inline-start: 0; }
+.fd-tabs-after { inset-inline-end: 0; }
+.fd-tabs-before::before { transform: translateX(2px) rotate(45deg); }
+.fd-tabs-after::before { transform: translateX(-2px) rotate(-135deg); }
+[dir="rtl"] .fd-tabs-before::before { transform: translateX(-2px) rotate(-135deg); }
+[dir="rtl"] .fd-tabs-after::before { transform: translateX(2px) rotate(45deg); }
 .fd-tab {
   font: inherit; background: none; border: none; cursor: pointer; padding: 8px 14px; color: var(--fd-muted);
   border-block-end: 2px solid transparent; margin-block-end: -1px; white-space: nowrap;

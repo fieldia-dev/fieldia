@@ -38,8 +38,8 @@
       "wayfinding": {
         "flectra": "Flectra's notebook wraps its 15 tab labels onto a second line, so every tab is in sight; the smart buttons open each related list in its own view.",
         "fieldia": [
-          "The 15 tab labels sit on one line that scrolls sideways: 1,466 px of labels in a 974 px strip at a 1,440 px window, so Billing, Trust, Timesheets, Correspondence and Internal are out of sight, with no arrows, menu or fade to say there are more. At a phone's width 3½ tabs show.",
-          "A step's goTo opens a tab without scrolling the strip to it: after Close Case, the Outcome tab is open and its label is off to the right, unseen.",
+          "The 15 tab labels sit on one line that scrolls sideways: 1,466 px of labels in a 974 px strip at a 1,440 px window, so Billing, Trust, Timesheets, Correspondence and Internal are out of sight; but the tabs fade out at an edge with more past it, under a button that scrolls the strip along (right to left too, and at a phone's width, where 3 tabs show). Shown in the e2e.",
+          "A tab chosen however — a click, the arrow keys, Home or End, or a step's goTo — is scrolled into sight in the strip: after Close Case, the Outcome tab's label is in view.",
           "The stat buttons double as a way in: Hearings, Tasks, Expenses, Documents, POAs, Hours, Correspondence and Trust Balance open their tab (goTo).",
           "Help texts show under their fields (Flectra keeps them in a tooltip), so the header groups run to about 1,500 px and the tabs start below the fold of a 900 px window.",
           "Arrow keys, Home and End move along the tab strip, and a hidden tab (Outcome, Contract Reviews) leaves no gap."

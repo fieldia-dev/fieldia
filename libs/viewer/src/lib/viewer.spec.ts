@@ -708,6 +708,65 @@ describe('a record sheet', () => {
     expect(visible(tab('Contacts'))).toBe(false);
   });
 
+  it('scrolls a tab strip too long for its room: a fade and a button at each edge with more past it', async () => {
+    for (const dir of ['ltr', 'rtl'] as const) {
+      const { host, form } = sheet({ dir });
+      await form.settled();
+      const bar = host.querySelector('.fd-tabbar') as HTMLElement;
+      const list = bar.querySelector('[role=tablist]') as HTMLElement;
+      const [before, after] = [bar.querySelector('.fd-tabs-before') as HTMLButtonElement, bar.querySelector('.fd-tabs-after') as HTMLButtonElement];
+      // Not for the keyboard, which moves along the tabs with the arrows; nor read out.
+      for (const b of [before, after]) expect([b.tabIndex, b.getAttribute('aria-hidden')]).toEqual([-1, 'true']);
+      // Room for every tab: nothing more to either side.
+      expect([before.hidden, after.hidden, bar.dataset['more'] ?? '']).toEqual([true, true, '']);
+      // 600 wide in 300: more at the end; scrolled to the middle, at both; at the end, at the start alone.
+      let left = 0;
+      const scrolled: number[] = [];
+      Object.defineProperties(list, {
+        scrollWidth: { get: () => 600 },
+        clientWidth: { get: () => 300 },
+        scrollLeft: { get: () => left, set: (v: number) => (left = v) },
+      });
+      list.scrollBy = ((options: ScrollToOptions) => scrolled.push(options.left ?? 0)) as never;
+      const sign = dir === 'rtl' ? -1 : 1;
+      list.dispatchEvent(new Event('scroll'));
+      expect([before.hidden, after.hidden, bar.dataset['more']]).toEqual([true, false, 'end']);
+      left = sign * 150;
+      list.dispatchEvent(new Event('scroll'));
+      expect(bar.dataset['more']).toBe('start end');
+      left = sign * 300;
+      list.dispatchEvent(new Event('scroll'));
+      expect([before.hidden, after.hidden, bar.dataset['more']]).toEqual([false, true, 'start']);
+      // The buttons move a strip's width, less a tab's room, toward their own edge: the end is left, right to left.
+      before.click();
+      after.click();
+      expect(scrolled.map((n) => Math.sign(n))).toEqual([-sign, sign]);
+      handle?.destroy();
+    }
+  });
+
+  it('brings a tab into sight in its strip however it is chosen: a click, the keyboard or a step', async () => {
+    const { host, form, handle: viewer } = sheet();
+    await form.settled();
+    const list = host.querySelector('[role=tablist]') as HTMLElement;
+    let left = 0;
+    Object.defineProperties(list, { scrollWidth: { get: () => 600 }, clientWidth: { get: () => 200 }, scrollLeft: { get: () => left, set: (v: number) => (left = v) } });
+    list.getBoundingClientRect = () => ({ left: 0, right: 200, width: 200 }) as DOMRect;
+    // Each tab 150 wide, where the strip scrolled now puts it.
+    const tabs = [...list.querySelectorAll<HTMLElement>('[role=tab]')].filter((t) => !t.hidden);
+    tabs.forEach((t, i) => (t.getBoundingClientRect = () => ({ left: i * 150 - left, right: i * 150 + 150 - left, width: 150 }) as DOMRect));
+    const last = tabs[tabs.length - 1];
+    last.click();
+    expect(last.getBoundingClientRect().right).toBeLessThanOrEqual(200);
+    // Back to the first by the keyboard: in sight again.
+    tabs[tabs.length - 1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+    expect(tabs[0].getBoundingClientRect().left).toBeGreaterThanOrEqual(0);
+    // And a step that shows the last one.
+    await viewer.run([{ do: 'goTo', target: last.dataset['node'] as string }]);
+    expect(last.getBoundingClientRect().right).toBeLessThanOrEqual(200);
+    expect(last.getAttribute('aria-selected')).toBe('true');
+  });
+
   it('opens the first tab that is visible once the record loads, until someone picks one', async () => {
     const { host, form } = sheet();
     await form.settled();

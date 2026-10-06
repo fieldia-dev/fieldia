@@ -45,6 +45,7 @@ import { labelPlace, planSection, type Place } from './place';
 import { setAttr, setHidden, setText } from './dom';
 import { openPage } from './open';
 import { sayer } from './say';
+import { tabStrip } from './tab-strip';
 
 export type Skin = 'underline' | 'outlined';
 
@@ -520,19 +521,35 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         show(next.tab.id);
         next.button.focus();
       });
-      box.append(list, ...parts.map((p) => p.panel));
+      // Too long for its room, the strip scrolls; the tab chosen, however, comes into sight in it.
+      const strip = tabStrip(list, el);
+      cleanups.push(strip.destroy);
+      box.append(strip.element, ...parts.map((p) => p.panel));
+      let shownKey = '';
+      let revealed = '';
       watch(() => {
-        box.hidden = form.node(node.id).invisible;
+        setHidden(box, form.node(node.id).invisible);
         const shown = parts.filter((p) => !form.node(p.tab.id).invisible);
         const keep = picked !== null && shown.some((p) => p.tab.id === picked);
         if (keep) active = picked as string;
         else if (shown.length) active = shown[0].tab.id;
         for (const p of parts) {
           const selected = p.tab.id === active;
-          p.button.hidden = !shown.includes(p);
-          p.button.setAttribute('aria-selected', String(selected));
-          p.button.tabIndex = selected ? 0 : -1;
-          p.panel.hidden = !selected;
+          setHidden(p.button, !shown.includes(p));
+          setAttr(p.button, 'aria-selected', String(selected));
+          if (p.button.tabIndex !== (selected ? 0 : -1)) p.button.tabIndex = selected ? 0 : -1;
+          setHidden(p.panel, !selected);
+        }
+        // Measured only when it can have changed: the strip's tabs, or the one chosen.
+        const key = shown.map((p) => p.tab.id).join(' ');
+        if (key !== shownKey) {
+          shownKey = key;
+          strip.measure();
+        }
+        if (active !== revealed && list.clientWidth) {
+          revealed = active;
+          const chosen = parts.find((p) => p.tab.id === active);
+          if (chosen) strip.reveal(chosen.button);
         }
       });
       return box;
