@@ -85,7 +85,7 @@ test.describe('When… in the screen designer', () => {
     const pageBox = clicked(page).getByRole('combobox', { name: 'Page' });
     await expect(pageBox.locator('option')).toHaveText(['Pick…', 'Address', 'Visit follow-up', 'Customer', 'Another page, by its id…']);
     await pageBox.selectOption({ label: 'Customer' });
-    await clicked(page).getByRole('button', { name: 'In a panel' }).click();
+    await clicked(page).getByRole('button', { name: 'Panel, beside this form' }).click();
     await clicked(page).getByRole('button', { name: 'Add an answer' }).click();
     const answers = clicked(page).getByRole('group', { name: 'Its answers go to' });
     await answers.getByRole('combobox', { name: 'This form’s field' }).selectOption({ label: 'Customer' });
@@ -115,6 +115,26 @@ test.describe('When… in the screen designer', () => {
     // On the canvas, the button wears a mark: it does something.
     await expect(page.locator('.fd-canvas-block.fd-button', { hasText: 'New customer' })).toHaveAttribute('data-steps', /./);
     await look(page, 'new-customer-built');
+
+    // A check first: added at the end, then dragged by its grip above the page it opens, at a hand's speed.
+    await clicked(page).getByRole('button', { name: 'Add a step', exact: true }).click();
+    await menu(page).getByRole('menuitem', { name: 'Check the form' }).click();
+    await expect(sayings(clicked(page))).toHaveText(['Open Customer in a panel, then put its answer in Customer', 'Say as good news: Customer added', 'Check the form']);
+    const top = clicked(page).locator('.fd-do > .fd-do-holder > .fd-do-list > .fd-do-step');
+    const grip = top.nth(1).locator('> .fd-do-head > .fd-do-grip');
+    const target = await top.first().boundingBox();
+    const from = await grip.boundingBox();
+    if (!target || !from) throw new Error('nothing to drag');
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    const to = { x: from.x + from.width / 2, y: target.y + 4 };
+    const steps = Math.max(3, Math.ceil(Math.abs(to.y - from.y) / 50));
+    for (let i = 1; i <= steps; i++) await page.mouse.move(to.x, from.y + from.height / 2 + ((to.y - from.y - from.height / 2) * i) / steps);
+    await expect(clicked(page).locator('.fd-do-lifted')).toHaveCount(1);
+    await screen(page, 'designer-steps-dragging', { viewport: true });
+    await page.mouse.up();
+    await expect(sayings(clicked(page))).toHaveText(['Check the form', 'Open Customer in a panel, then put its answer in Customer', 'Say as good news: Customer added']);
+    expect(((await buttonOf(page, 'New customer'))?.['steps'] as { do: string }[]).map((step) => step.do)).toEqual(['check', 'open']);
     expect(problems).toEqual([]);
   });
 
@@ -135,7 +155,7 @@ test.describe('When… in the screen designer', () => {
     await pageBox.selectOption({ label: 'Customer' });
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
-    await expect(clicked(page).getByRole('button', { name: 'In a panel' })).toBeFocused();
+    await expect(clicked(page).getByRole('button', { name: 'Panel, beside this form' })).toBeFocused();
     await page.keyboard.press('Enter');
     const addAnswer = clicked(page).getByRole('button', { name: 'Add an answer' });
     await addAnswer.focus();
@@ -251,7 +271,7 @@ test.describe('When… in the screen designer', () => {
     await look(page, 'arabic-add-a-step');
     await menu(page).getByRole('menuitem', { name: 'فتح صفحة' }).click();
     await button.getByRole('combobox', { name: 'الصفحة' }).selectOption({ label: 'العميل' });
-    await button.getByRole('button', { name: 'في لوحة جانبية' }).click();
+    await button.getByRole('button', { name: 'لوحة، بجانب هذا النموذج' }).click();
     await button.getByRole('button', { name: 'إضافة إجابة' }).click();
     const answers = button.getByRole('group', { name: 'تذهب إجاباتها إلى' });
     await answers.getByRole('combobox', { name: 'حقل هذا النموذج' }).selectOption({ label: 'العميل' });
