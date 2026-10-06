@@ -1,0 +1,329 @@
+{
+  "fieldia": "0.1",
+  "id": "real-expense",
+  "title": "Expense",
+  "description": "Sherkety ERP's own multi-item expense (sherkety_expense: sherkety.expense, view_sherkety_expense_form): a shared header that cascades to every line, its own approval, and posting as an employee bill or company payments.",
+  "data": { "kind": "record", "model": "sherkety.expense" },
+  "maxWidth": "full",
+  "fields": {
+    "name": { "type": "char", "label": "Reference", "required": true, "readonly": true, "default": "New" },
+    "title": { "type": "char", "label": "Description", "required": true },
+    "company_id": { "type": "many2one", "label": "Company", "relation": "res.company", "required": true },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency", "required": true },
+    "employee_id": { "type": "many2one", "label": "Employee", "relation": "hr.employee", "required": true },
+    "user_id": { "type": "many2one", "label": "Approver", "relation": "res.users" },
+    "expense_date": { "type": "date", "label": "Date", "default": "today" },
+    "payment_mode": {
+      "type": "selection",
+      "label": "Paid By",
+      "required": true,
+      "default": "own_account",
+      "options": [{ "value": "own_account", "label": "Paid by Employee (to reimburse)" }, { "value": "company_account", "label": "Paid by Company" }]
+    },
+    "employee_journal_id": { "type": "many2one", "label": "Journal", "relation": "account.journal", "filter": [{ "field": "type", "op": "=", "value": "purchase" }] },
+    "payment_method_line_id": {
+      "type": "many2one",
+      "label": "Payment Method",
+      "relation": "account.payment.method.line",
+      "filter": [{ "field": "payment_type", "op": "=", "value": "outbound" }]
+    },
+    "accounting_date": { "type": "date", "label": "Accounting Date", "readonly": true },
+    "payment_state": {
+      "type": "selection",
+      "label": "Payment State",
+      "readonly": true,
+      "options": [
+        { "value": "not_paid", "label": "Not Paid" },
+        { "value": "in_payment", "label": "In Payment" },
+        { "value": "partial", "label": "Partially Paid" },
+        { "value": "paid", "label": "Paid" },
+        { "value": "reversed", "label": "Reversed" }
+      ]
+    },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "required": true,
+      "readonly": true,
+      "default": "draft",
+      "options": [
+        { "value": "draft", "label": "Draft" },
+        { "value": "submit", "label": "Submitted" },
+        { "value": "approve", "label": "Approved" },
+        { "value": "post", "label": "Posted" },
+        { "value": "done", "label": "Paid" },
+        { "value": "cancel", "label": "Refused" }
+      ]
+    },
+    "approval_state": {
+      "type": "selection",
+      "label": "Approval State",
+      "options": [{ "value": "submit", "label": "Submitted" }, { "value": "approve", "label": "Approved" }, { "value": "cancel", "label": "Refused" }]
+    },
+    "move_count": { "type": "integer", "label": "Entries", "readonly": true },
+    "analytic_precision": { "type": "integer", "label": "Analytic Precision", "readonly": true },
+    "header_vendor": { "type": "char", "label": "Vendor Name" },
+    "header_tax_ids": { "type": "many2many", "label": "Taxes", "relation": "account.tax", "filter": [{ "field": "type_tax_use", "op": "=", "value": "purchase" }] },
+    "header_account_id": {
+      "type": "many2one",
+      "label": "Expense Account",
+      "relation": "account.account",
+      "filter": [{ "field": "account_type", "op": "not in", "value": ["asset_receivable", "liability_payable", "asset_cash", "liability_credit_card"] }]
+    },
+    "header_analytic_distribution": { "type": "many2many", "label": "Analytic Distribution", "relation": "account.analytic.account" },
+    "line_ids": {
+      "type": "one2many",
+      "label": "Lines",
+      "relation": "sherkety.expense.line",
+      "sequenceField": "sequence",
+      "fields": {
+        "sequence": { "type": "integer", "label": "Sequence", "default": 10 },
+        "name": { "type": "char", "label": "Description", "required": true },
+        "product_id": { "type": "many2one", "label": "Category", "relation": "product.product", "filter": [{ "field": "can_be_expensed", "op": "=", "value": true }] },
+        "vendor": { "type": "char", "label": "Vendor", "help": "Merchant name; inherits the header, overridable per line." },
+        "date": { "type": "date", "label": "Date" },
+        "quantity": { "type": "float", "label": "Quantity", "required": true, "default": 1, "digits": [16, 2] },
+        "price_unit": { "type": "float", "label": "Unit Price", "digits": [16, 2] },
+        "tax_ids": { "type": "many2many", "label": "Taxes", "relation": "account.tax", "filter": [{ "field": "type_tax_use", "op": "=", "value": "purchase" }] },
+        "account_id": {
+          "type": "many2one",
+          "label": "Account",
+          "relation": "account.account",
+          "filter": [{ "field": "account_type", "op": "not in", "value": ["asset_receivable", "liability_payable", "asset_cash", "liability_credit_card"] }]
+        },
+        "analytic_distribution": { "type": "many2many", "label": "Analytic Distribution", "relation": "account.analytic.account" },
+        "untaxed_amount": { "type": "monetary", "label": "Untaxed Amount", "currencyField": "currency_id", "readonly": true },
+        "tax_amount": { "type": "monetary", "label": "Tax Amount", "currencyField": "currency_id", "readonly": true },
+        "total_amount": { "type": "monetary", "label": "Subtotal", "currencyField": "currency_id", "readonly": true },
+        "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency", "readonly": true }
+      }
+    },
+    "untaxed_amount": { "type": "monetary", "label": "Untaxed Amount", "currencyField": "currency_id", "readonly": true },
+    "tax_amount": { "type": "monetary", "label": "Tax Amount", "currencyField": "currency_id", "readonly": true },
+    "total_amount": { "type": "monetary", "label": "Total Amount", "currencyField": "currency_id", "readonly": true },
+    "amount_residual": { "type": "monetary", "label": "Amount Residual", "currencyField": "currency_id", "readonly": true },
+    "commercial_partner_id": { "type": "many2one", "label": "Employee's contact", "relation": "res.partner", "readonly": true },
+    "payment_amount": { "type": "monetary", "label": "Payment just registered: amount", "currencyField": "currency_id", "readonly": true },
+    "payment_handling": {
+      "type": "selection",
+      "label": "Payment just registered: difference",
+      "readonly": true,
+      "options": [{ "value": "open", "label": "Keep open" }, { "value": "reconcile", "label": "Mark as fully paid" }]
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "title", "subtitleField": "name", "placeholder": "e.g. Trip to Riyadh" },
+    "statusbar": { "field": "state", "visibleStates": ["draft", "submit", "approve", "post", "done"] },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "b-submit",
+        "label": "Submit",
+        "style": "primary",
+        "invisible": "state != 'draft'",
+        "steps": [{ "do": "check" }, { "do": "call", "action": "action_submit" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "b-approve",
+        "label": "Approve",
+        "style": "primary",
+        "invisible": "state != 'submit'",
+        "steps": [
+          { "do": "set", "field": "approval_state", "value": "'approve'" },
+          { "do": "set", "field": "state", "value": "'approve'" },
+          { "do": "save" },
+          { "do": "say", "message": "Expense approved", "tone": "success" }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "b-post",
+        "label": "Post",
+        "style": "primary",
+        "invisible": "state != 'approve'",
+        "steps": [{ "do": "call", "action": "action_post" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "b-register-payment",
+        "label": "Register Payment",
+        "style": "primary",
+        "invisible": "state != 'post' or payment_mode != 'own_account' or payment_state == 'paid'",
+        "steps": [
+          {
+            "do": "open",
+            "page": "real-register-payment",
+            "as": "dialog",
+            "title": "Register Payment",
+            "values": {
+              "partner_id": "commercial_partner_id",
+              "company_id": "company_id",
+              "company_currency_id": "currency_id",
+              "source_currency_id": "currency_id",
+              "source_amount_currency": "amount_residual",
+              "source_amount": "amount_residual",
+              "payment_type": "'outbound'",
+              "partner_type": "'supplier'",
+              "communication": "name",
+              "can_edit_wizard": "True",
+              "can_group_payments": "False"
+            },
+            "into": { "payment_amount": "amount", "payment_handling": "payment_difference_handling" },
+            "then": [{ "do": "call", "action": "expense_payment_registered" }, { "do": "save" }]
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "b-refuse",
+        "label": "Refuse",
+        "invisible": "state not in ['submit', 'approve']",
+        "steps": [
+          { "do": "set", "field": "approval_state", "value": "'cancel'" },
+          { "do": "set", "field": "state", "value": "'cancel'" },
+          { "do": "save" },
+          { "do": "say", "message": "Expense refused", "tone": "warning" }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "b-reset-draft",
+        "label": "Reset to Draft",
+        "invisible": "state not in ['post', 'cancel']",
+        "steps": [{ "do": "call", "action": "action_draft" }, { "do": "save" }]
+      }
+    ],
+    "statButtons": [{ "id": "s-entries", "label": "Entries", "field": "move_count", "icon": "file", "action": "action_open_moves", "invisible": "move_count == 0" }],
+    "ribbon": { "id": "r-paid", "label": "Paid", "tone": "success", "invisible": "payment_state != 'paid'" },
+    "children": [
+      {
+        "type": "section",
+        "id": "main",
+        "style": "plain",
+        "columns": { "wide": 2, "medium": 2 },
+        "children": [
+          {
+            "type": "section",
+            "id": "left",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-employee", "field": "employee_id", "readonly": "state != 'draft'" },
+              { "type": "field", "id": "f-approver", "field": "user_id", "readonly": "state in ['post', 'done']" },
+              { "type": "field", "id": "f-payment-mode", "field": "payment_mode", "readonly": "state != 'draft'" },
+              {
+                "type": "field",
+                "id": "f-journal",
+                "field": "employee_journal_id",
+                "invisible": "payment_mode != 'own_account'",
+                "readonly": "state != 'draft'"
+              },
+              {
+                "type": "field",
+                "id": "f-payment-method",
+                "field": "payment_method_line_id",
+                "invisible": "payment_mode != 'company_account'",
+                "required": "payment_mode == 'company_account'",
+                "readonly": "state != 'draft'"
+              }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "right",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-date", "field": "expense_date", "readonly": "state != 'draft'" },
+              { "type": "field", "id": "f-company", "field": "company_id", "readonly": "state != 'draft'" },
+              { "type": "field", "id": "f-currency", "field": "currency_id", "readonly": "state != 'draft'" },
+              { "type": "field", "id": "f-accounting-date", "field": "accounting_date", "invisible": "not accounting_date" },
+              { "type": "field", "id": "f-payment-state", "field": "payment_state", "invisible": "state not in ['post', 'done']" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "header_config",
+        "title": "Shared Configuration — applies to every line",
+        "style": "line",
+        "columns": { "wide": 2, "medium": 2 },
+        "children": [
+          {
+            "type": "section",
+            "id": "config_left",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-header-vendor", "field": "header_vendor", "placeholder": "e.g. Hilton Riyadh", "readonly": "state != 'draft'" },
+              {
+                "type": "field",
+                "id": "f-header-taxes",
+                "field": "header_tax_ids",
+                "widget": "tags",
+                "options": { "create": false },
+                "readonly": "state != 'draft'"
+              }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "config_right",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-header-account", "field": "header_account_id", "options": { "create": false }, "readonly": "state != 'draft'" },
+              { "type": "field", "id": "f-header-analytic", "field": "header_analytic_distribution", "widget": "tags", "readonly": "state != 'draft'" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "tabs",
+        "id": "notebook",
+        "children": [
+          {
+            "type": "tab",
+            "id": "lines",
+            "label": "Lines",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-lines",
+                "field": "line_ids",
+                "widget": "grid",
+                "labels": "hidden",
+                "readonly": "state != 'draft'",
+                "columns": ["name", "product_id", "vendor", "date", "quantity", "price_unit", "tax_ids", "account_id", "analytic_distribution", "total_amount"],
+                "optionalColumns": { "date": "show", "tax_ids": "show", "account_id": "hide", "analytic_distribution": "hide" }
+              },
+              {
+                "type": "section",
+                "id": "totals-row",
+                "style": "plain",
+                "columns": { "wide": 3, "medium": 3 },
+                "children": [
+                  { "type": "spacer", "id": "totals-room", "colspan": 2 },
+                  {
+                    "type": "section",
+                    "id": "oe_subtotal_footer",
+                    "style": "plain",
+                    "labels": "beside",
+                    "colspan": 1,
+                    "children": [
+                      { "type": "field", "id": "f-untaxed", "field": "untaxed_amount" },
+                      { "type": "field", "id": "f-tax", "field": "tax_amount" },
+                      { "type": "field", "id": "f-total", "field": "total_amount" },
+                      { "type": "field", "id": "f-residual", "field": "amount_residual", "invisible": "state not in ['post', 'done']" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" }
+  }
+}
