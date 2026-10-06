@@ -297,8 +297,13 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
       return;
     }
     const sentence = stepSentence(page, view.step, words, saved);
-    if (!designer.removeStep(place, view.path)) return;
+    // Closed first: the step that takes its place is drawn shut.
+    const wasOpen = openAt;
     openAt = null;
+    if (!designer.removeStep(place, view.path)) {
+      openAt = wasOpen;
+      return;
+    }
     removedAt = designer.getPage();
     // The app's names in it kept apart, as the sentence keeps them.
     statusWords.replaceChildren(...withCode(doc, w.removed(sentence), view.step.do === 'call' ? [view.step.action] : view.step.do === 'open' ? [view.step.page] : []));
