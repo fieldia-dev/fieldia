@@ -51,9 +51,14 @@ export function evaluate(ast: ASTNode, context: Record<string, unknown>, env: Ex
  * Evaluate binary operations
  */
 function evaluateBinaryOp(node: BinaryOpNode, context: Record<string, unknown>, env: ExpressionEnv): unknown {
+  const operator = node.operator.toLowerCase();
+  // As Python's: the value that decided, so `discount or 0` gives a number; the right side read only when needed.
+  if (operator === 'and' || operator === 'or') {
+    const first = normalize(evaluate(node.left, context, env));
+    return truthy(first) === (operator === 'or') ? first : normalize(evaluate(node.right, context, env));
+  }
   const left = normalize(evaluate(node.left, context, env));
   const right = normalize(evaluate(node.right, context, env));
-  const operator = node.operator.toLowerCase();
   const ordered = left !== null && right !== null;
 
   switch (operator) {
@@ -91,13 +96,6 @@ function evaluateBinaryOp(node: BinaryOpNode, context: Record<string, unknown>, 
     case '/':
     case '%':
       return arithmetic(operator, left, right);
-
-    // Logical operators (use truthiness)
-    case 'and':
-      return truthy(left) && truthy(right);
-
-    case 'or':
-      return truthy(left) || truthy(right);
 
     default:
       throw new Error(`Unknown binary operator: ${node.operator}`);

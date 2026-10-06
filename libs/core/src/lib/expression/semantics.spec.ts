@@ -1,5 +1,7 @@
 import { tokenize } from './tokenizer';
 import { evaluateModifier, isModifierValid } from './evaluateModifier';
+import { compileExpression } from './expression';
+import { compileModifier } from './modifier';
 
 /**
  * Where Fieldia's expressions deliberately differ from the React engine they
@@ -47,5 +49,32 @@ describe('expressions — Python truthiness, like the backends they come from', 
     expect(evaluateModifier('amount < 5', { amount: null })).toBe(false);
     expect(evaluateModifier('amount >= 0', { amount: undefined })).toBe(false);
     expect(evaluateModifier('amount <= 5', {})).toBe(false);
+  });
+});
+
+describe('expressions — and / or give back a value, as Python’s do', () => {
+  it('gives the first true value of an or, else the last', () => {
+    expect(compileExpression('discount or 0').evaluate({ discount: null })).toBe(0);
+    expect(compileExpression('discount or 0').evaluate({ discount: 15 })).toBe(15);
+    expect(compileExpression("note or ''").evaluate({ note: 'Call first' })).toBe('Call first');
+    expect(compileExpression('price * (100 - (discount or 0)) / 100').evaluate({ price: 200, discount: null })).toBe(200);
+  });
+
+  it('gives the first false value of an and, else the last', () => {
+    expect(compileExpression('qty and price').evaluate({ qty: 0, price: 5 })).toBe(0);
+    expect(compileExpression('qty and price').evaluate({ qty: 2, price: 5 })).toBe(5);
+  });
+
+  it('decides a condition as before: by whether the value is true', () => {
+    expect(compileModifier("not id or state == 'draft'").evaluate({ id: null, state: 'sale' })).toBe(true);
+    expect(compileModifier('partner_id and amount').evaluate({ partner_id: 4, amount: 0 })).toBe(false);
+  });
+});
+
+describe('a worked-out yes-or-no from and / or', () => {
+  it('stays a boolean', async () => {
+    const { fitTo } = await import('../record/compute');
+    expect(fitTo({ type: 'boolean', label: 'Ready' }, compileExpression('qty and price').evaluate({ qty: 2, price: 5 }))).toBe(true);
+    expect(fitTo({ type: 'boolean', label: 'Ready' }, compileExpression('qty and price').evaluate({ qty: 0, price: 5 }))).toBe(false);
   });
 });

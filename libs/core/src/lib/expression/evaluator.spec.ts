@@ -214,28 +214,28 @@ describe('evaluate', () => {
       expect(evaluate(astTrue, {})).toBe(true);
     });
 
-    it('should use truthiness for AND', () => {
+    it('gives the deciding value for AND, as Python does', () => {
       const ast: BinaryOpNode = {
         type: 'BinaryOp',
         operator: 'and',
         left: { type: 'Identifier', name: 'a' },
         right: { type: 'Identifier', name: 'b' },
       };
-      expect(evaluate(ast, { a: 1, b: 2 })).toBe(true);
-      expect(evaluate(ast, { a: 0, b: 1 })).toBe(false);
-      expect(evaluate(ast, { a: '', b: 'text' })).toBe(false);
+      expect(evaluate(ast, { a: 1, b: 2 })).toBe(2);
+      expect(evaluate(ast, { a: 0, b: 1 })).toBe(0);
+      expect(evaluate(ast, { a: '', b: 'text' })).toBe('');
     });
 
-    it('should use truthiness for OR', () => {
+    it('gives the deciding value for OR, as Python does', () => {
       const ast: BinaryOpNode = {
         type: 'BinaryOp',
         operator: 'or',
         left: { type: 'Identifier', name: 'a' },
         right: { type: 'Identifier', name: 'b' },
       };
-      expect(evaluate(ast, { a: 0, b: 1 })).toBe(true);
-      expect(evaluate(ast, { a: '', b: 0 })).toBe(false);
-      expect(evaluate(ast, { a: 'text', b: null })).toBe(true);
+      expect(evaluate(ast, { a: 0, b: 1 })).toBe(1);
+      expect(evaluate(ast, { a: '', b: 0 })).toBe(0);
+      expect(evaluate(ast, { a: 'text', b: null })).toBe('text');
     });
 
     it('should use truthiness for NOT', () => {
