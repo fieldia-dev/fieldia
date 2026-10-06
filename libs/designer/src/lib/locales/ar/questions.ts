@@ -221,6 +221,8 @@ export const questions: DesignerWords['questions'] = {
   files: 'ملفات',
   list: 'قائمة',
   thumbnails: 'صور مصغّرة',
+  cards: 'بطاقات',
+  peopleCanSwitch: 'يمكن للناس تبديل العرض',
   cameraOnPhones: 'الكاميرا في الهواتف',
   rearCamera: 'الكاميرا الخلفية',
   frontCamera: 'الكاميرا الأمامية',

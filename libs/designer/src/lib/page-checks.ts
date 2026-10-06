@@ -303,7 +303,7 @@ export function pageChanges(before: Page | null, after: Page, words: DesignerWor
     out.push(...fileChanges(name, was, p, words));
     out.push(...structureChanges(name, was, p, words));
     // How it shows, beyond what the files' own words and the inputs' said.
-    if (settings.unsaid.some((key) => !isFiles(p.field) || (key !== 'files' && key !== 'camera'))) out.push(w.showsChanged(name));
+    if (settings.unsaid.some((key) => !isFiles(p.field) || !['files', 'filesSwitch', 'camera'].includes(key))) out.push(w.showsChanged(name));
     const shows = whenItShows(name, was.node.invisible, p.node.invisible, survey, words);
     if (shows) out.push(shows);
     if (was.holder.id !== p.holder.id && !layout.said.has(p.node.id)) out.push(w.moved(name, placeName(after, p.holder, words)));
@@ -329,7 +329,7 @@ export function pageChanges(before: Page | null, after: Page, words: DesignerWor
 
 const isFiles = (field: Field) => field.type === 'binary' || field.type === 'image';
 
-/** A file upload's or an image's: the files it takes, how many, how the chosen ones show, a phone's camera. */
+/** A file upload's or an image's: the files it takes, how many, how the chosen ones show and whether people can switch, a phone's camera. */
 function fileChanges(name: string, was: { field: Field; node: FieldNode }, now: { field: Field; node: FieldNode }, words: DesignerWords): string[] {
   const w = words.changes;
   const [a, b] = [was.field, now.field];
@@ -342,8 +342,12 @@ function fileChanges(name: string, was: { field: Field; node: FieldNode }, now: 
     out.push(least !== undefined && most !== undefined ? w.filesFromTo(name, least, most) : most !== undefined ? w.filesUpTo(name, most) : least !== undefined ? w.filesAtLeast(name, least) : w.filesAny(name));
   }
   const option = (q: { node: FieldNode }, key: string) => q.node.options?.[key];
-  const shownAs = (q: { node: FieldNode; field: Field }) => option(q, 'files') ?? (q.field.type === 'image' ? 'thumbnails' : 'list');
-  if (shownAs(was) !== shownAs(now)) out.push(w.filesShownAs(name, shownAs(now) === 'thumbnails'));
+  const shownAs = (q: { node: FieldNode; field: Field }) => {
+    const as = option(q, 'files') ?? (q.field.type === 'image' ? 'thumbnails' : 'list');
+    return as === 'thumbnails' || as === 'cards' ? as : 'list';
+  };
+  if (shownAs(was) !== shownAs(now)) out.push(w.filesShownAs(name, shownAs(now)));
+  if (!option(was, 'filesSwitch') !== !option(now, 'filesSwitch')) out.push(w.filesSwitch(name, !!option(now, 'filesSwitch')));
   const camera = (q: { node: FieldNode }) => (option(q, 'camera') ? (option(q, 'camera') === 'user' ? 'front' : 'rear') : null);
   if (camera(was) !== camera(now)) out.push(camera(now) ? w.camera(name, camera(now) === 'front') : w.noCamera(name));
   return out;

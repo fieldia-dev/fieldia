@@ -219,8 +219,8 @@
         "collapsible": true,
         "children": [
           { "type": "field", "id": "f-contract", "field": "contract" },
-          { "type": "field", "id": "f-photo", "field": "photo" },
-          { "type": "field", "id": "f-documents", "field": "documents", "colspan": 2 }
+          { "type": "field", "id": "f-photo", "field": "photo", "options": { "files": "cards" } },
+          { "type": "field", "id": "f-documents", "field": "documents", "colspan": 2, "options": { "files": "cards", "filesSwitch": true } }
         ]
       },
       {

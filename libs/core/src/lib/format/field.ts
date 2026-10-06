@@ -184,8 +184,10 @@ const LineSelection = z.object({ ...selection, options: z.array(OptionSchema).mi
 /**
  * What a file or an image field takes: the largest file, and whether it holds
  * several — its value then a list of files, as few as `minFiles` and as many
- * as `maxFiles`. How they are shown, a list or thumbnails, and whether a phone
- * offers its camera, are the layout node's `options` (`files`, `camera`).
+ * as `maxFiles`. How they are shown — a list, thumbnails, or cards with each
+ * name under its picture — whether the person filling the form may switch
+ * between a list and the pictures, and whether a phone offers its camera, are
+ * the layout node's `options` (`files`, `filesSwitch`, `camera`).
  */
 const files = {
   /** Largest accepted file, in bytes. */

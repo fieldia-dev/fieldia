@@ -89,6 +89,11 @@ export interface WidgetLabels {
   close: string;
   fileAt: string;
   noPreview: string;
+  /** The switch over the files, when the page offers one: the files as a list, as cards, or as thumbnails. */
+  showFilesAs: string;
+  asList: string;
+  asCards: string;
+  asThumbnails: string;
   invalidJson: string;
   /** A signature: the pad, the words on it while it is blank, the box to type a name in instead, and wiping it. */
   signaturePad: string;
@@ -203,6 +208,10 @@ const en: WidgetLabels = {
   close: 'Close',
   fileAt: '{n} of {total}',
   noPreview: 'No preview for this kind of file',
+  showFilesAs: 'Show files as',
+  asList: 'List',
+  asCards: 'Cards',
+  asThumbnails: 'Thumbnails',
   invalidJson: 'Not valid JSON',
   signaturePad: 'Signature pad: draw your signature',
   signHere: 'Sign here',

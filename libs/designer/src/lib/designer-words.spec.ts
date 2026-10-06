@@ -58,6 +58,8 @@ const SAMPLES: Record<string, unknown[][]> = {
   'changes.renamedHeader': ['button', 'counter', 'badge'].map((kind) => [kind, 'س', 'ص']),
   'changes.drawn': ['card', 'plain', 'line', 'framed'].map((style) => ['س', style]),
   'changes.folds': ['no', 'open', 'folded'].map((fold) => ['س', fold]),
+  'changes.filesShownAs': ['list', 'thumbnails', 'cards'].map((as) => ['س', as]),
+  'changes.filesSwitch': [['س', true], ['س', false]],
   'questions.size': [[512], [1024 * 1024], [7.3 * 1024 * 1024], [2 * 1024 ** 3]],
   'outline.atEdgeOfPage': [[true, 'top'], [false, 'bottom']],
   'outline.atEdgeOfSurvey': [[true, 'top'], [false, 'bottom']],

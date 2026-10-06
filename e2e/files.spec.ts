@@ -1,89 +1,16 @@
 import { expect, test, type Page } from '@playwright/test';
-import { crc32, deflateSync } from 'node:zlib';
 import { axeFindings } from './a11y-support';
+import { dropOn, FILES } from './files-support';
 import { expectNoSidewaysScroll, node, open, screen } from './support';
 
 /**
  * Several files in one field, as a person uses them: real files chosen and
- * dropped, shown as a list and as thumbnails, refused with words when the field
- * cannot take them, and opened one by one in a viewer that the keys, the
- * pointer and a screen reader can all work — on a phone, right to left, in the
- * dark — and set up in the screen designer and tried there.
+ * dropped, shown as a list and as thumbnails (as cards, in file-cards.spec.ts),
+ * refused with words when the field cannot take them, and opened one by one in
+ * a viewer that the keys, the pointer and a screen reader can all work — on a
+ * phone, right to left, in the dark — and set up in the screen designer and
+ * tried there.
  */
-
-// ---- files, made here ---------------------------------------------------------
-
-/** A small landscape as a real PNG: sky, sun, ground — tinted so each one differs. */
-function png(width: number, height: number, tint = 0): Buffer {
-  const row = width * 3 + 1;
-  const raw = Buffer.alloc(row * height);
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const at = y * row + 1 + x * 3;
-      const sun = (x - width * 0.72) ** 2 + (y - height * 0.3) ** 2 < (height * 0.12) ** 2;
-      const ground = y > height * (0.62 + 0.08 * Math.sin((x / width) * 6 + tint));
-      const [r, g, b] = sun ? [250, 200, 70] : ground ? [70 + tint * 40, 130 - y / 8, 80] : [120 - y / 4, 170 - y / 6 + tint * 10, 230];
-      raw.set([r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v)))), at);
-    }
-  }
-  const chunk = (type: string, data: Buffer) => {
-    const typed = Buffer.concat([Buffer.from(type), data]);
-    const length = Buffer.alloc(4);
-    length.writeUInt32BE(data.length);
-    const check = Buffer.alloc(4);
-    check.writeUInt32BE(crc32(typed));
-    return Buffer.concat([length, typed, check]);
-  };
-  const header = Buffer.alloc(13);
-  header.writeUInt32BE(width, 0);
-  header.writeUInt32BE(height, 4);
-  header.set([8, 2, 0, 0, 0], 8);
-  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', header), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
-}
-
-/** A one-page PDF with a line of words on it, its cross-references counted. */
-function pdf(words: string): Buffer {
-  const content = `BT /F1 28 Tf 72 740 Td (${words}) Tj ET`;
-  const objects = [
-    '<</Type/Catalog/Pages 2 0 R>>',
-    '<</Type/Pages/Kids[3 0 R]/Count 1>>',
-    '<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>',
-    `<</Length ${content.length}>>stream\n${content}\nendstream`,
-    '<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>',
-  ];
-  let out = '%PDF-1.4\n';
-  const offsets = objects.map((body, i) => {
-    const at = out.length;
-    out += `${i + 1} 0 obj\n${body}\nendobj\n`;
-    return at;
-  });
-  const xref = out.length;
-  out += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('')}`;
-  out += `trailer\n<</Size ${objects.length + 1}/Root 1 0 R>>\nstartxref\n${xref}\n%%EOF\n`;
-  return Buffer.from(out, 'latin1');
-}
-
-type Made = { name: string; mimeType: string; buffer: Buffer };
-const FILES = {
-  photo: (name = 'Lobby, north side.png', tint = 0): Made => ({ name, mimeType: 'image/png', buffer: png(480, 300, tint) }),
-  quote: (): Made => ({ name: 'Quote for the 12th floor, revised again before signing.pdf', mimeType: 'application/pdf', buffer: pdf('Quote for the 12th floor') }),
-  notes: (): Made => ({ name: 'Snag list.txt', mimeType: 'text/plain', buffer: Buffer.from('Snag list, 12th floor\n\n1. Door to the meeting room sticks\n2. Two ceiling tiles cracked by the lift\n3. Paint missing behind the kitchen\n') }),
-  archive: (): Made => ({ name: 'Site photos, raw.zip', mimeType: 'application/zip', buffer: Buffer.from([0x50, 0x4b, 0x05, 0x06, ...new Array(18).fill(0)]) }),
-};
-
-/** Drop files on an element, as a person drags them from the desktop. */
-async function dropOn(page: Page, selector: string, files: Made[]) {
-  await page.evaluate(
-    ({ selector, files }) => {
-      const transfer = new DataTransfer();
-      for (const f of files) transfer.items.add(new File([Uint8Array.from(atob(f.data), (c) => c.charCodeAt(0))], f.name, { type: f.type }));
-      const target = document.querySelector(selector) as Element;
-      target.dispatchEvent(new DragEvent('dragover', { dataTransfer: transfer, bubbles: true, cancelable: true }));
-      target.dispatchEvent(new DragEvent('drop', { dataTransfer: transfer, bubbles: true, cancelable: true }));
-    },
-    { selector, files: files.map((f) => ({ name: f.name, type: f.mimeType, data: f.buffer.toString('base64') })) }
-  );
-}
 
 const values = (page: Page) => page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().values);
 const namesIn = async (page: Page, field: string) => ((await values(page))[field] as { name: string }[]).map((f) => f.name);
@@ -97,20 +24,22 @@ test.describe('several files in a form', () => {
     const { problems } = await open(page, 'plain', 'page=fields&skin=outlined');
     const documents = node(page, 'f-documents');
     await documents.scrollIntoViewIfNeeded();
-    // Two files the job already has; the limits said before anyone tries.
-    await expect(rows(page, 'f-documents')).toHaveCount(2);
-    await expect(documents.locator('.fd-file-count')).toHaveText('2 of 8 files');
+    // Four files the job already has, shown as cards until the person picks the list; the limits said before anyone tries.
+    await expect(rows(page, 'f-documents')).toHaveCount(4);
+    await documents.getByRole('group', { name: 'Show files as' }).getByRole('button', { name: 'List' }).click();
+    await expect(documents.locator('.fd-file')).toHaveClass(/fd-files-list/);
+    await expect(documents.locator('.fd-file-count')).toHaveText('4 of 8 files');
     await expect(documents.locator('.fd-file-limits')).toHaveText('up to 10 MB each · up to 8 files');
     await documents.locator('input[type=file]').setInputFiles([FILES.quote(), FILES.photo()]);
-    await expect(rows(page, 'f-documents')).toHaveCount(4);
+    await expect(rows(page, 'f-documents')).toHaveCount(6);
     await dropOn(page, '[data-node="f-documents"] .fd-file', [FILES.archive()]);
-    await expect(rows(page, 'f-documents')).toHaveCount(5);
-    expect(await namesIn(page, 'documents')).toEqual(['Site survey notes.txt', 'Floor plan, 12th floor.svg', 'Quote for the 12th floor, revised again before signing.pdf', 'Lobby, north side.png', 'Site photos, raw.zip']);
-    await expect(documents.locator('.fd-file-count')).toHaveText('5 of 8 files');
+    await expect(rows(page, 'f-documents')).toHaveCount(7);
+    expect(await namesIn(page, 'documents')).toEqual(['Site survey notes.txt', 'Floor plan, 12th floor.svg', 'Lift booking, confirmed.pdf', 'Budget, 12th floor.csv', 'Quote for the 12th floor, revised again before signing.pdf', 'Lobby, north side.png', 'Site photos, raw.zip']);
+    await expect(documents.locator('.fd-file-count')).toHaveText('7 of 8 files');
     // An icon by kind, a thumbnail for an image; a long name cut in the middle, its end kept.
-    await expect(documents.locator('.fd-file-icon')).toHaveText(['TXT', 'PDF', 'ZIP']);
+    await expect(documents.locator('.fd-file-icon')).toHaveText(['TXT', 'PDF', 'CSV', 'PDF', 'ZIP']);
     await expect(documents.locator('img.fd-file-thumb')).toHaveCount(2);
-    await expect(documents.locator('.fd-file-name').nth(2).locator('> span')).toHaveText('Quote for the 12th floor, revised again before si');
+    await expect(documents.locator('.fd-file-name').nth(4).locator('> span')).toHaveText('Quote for the 12th floor, revised again before si');
     await documents.screenshot({ path: 'test-results/screens/files-list.png' });
     expect(problems).toEqual([]);
   });
@@ -119,14 +48,14 @@ test.describe('several files in a form', () => {
     const { problems } = await open(page, 'plain', 'page=fields&skin=outlined');
     const documents = node(page, 'f-documents');
     await documents.locator('input[type=file]').setInputFiles([FILES.photo(), FILES.quote(), FILES.archive()]);
-    await expect(rows(page, 'f-documents')).toHaveCount(5);
+    await expect(rows(page, 'f-documents')).toHaveCount(7);
     const opener = documents.getByRole('button', { name: /^Lobby, north side\.png/ });
     await opener.click();
     const box = viewer(page);
     await expect(box).toBeVisible();
     await expect(box).toHaveAttribute('aria-modal', 'true');
     await expect(box.getByRole('heading')).toHaveText('Lobby, north side.png');
-    await expect(box).toContainText('3 of 5');
+    await expect(box).toContainText('5 of 7');
     const image = box.locator('img');
     await expect(image).toBeVisible();
     expect(await image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBe(480);
@@ -207,8 +136,13 @@ test.describe('several files in a form', () => {
   });
 
   test('shows photos as thumbnails, each opening, removed on hover and from the keys', async ({ page }) => {
-    const { problems } = await open(page, 'plain', 'page=fields&skin=outlined');
-    const photos = node(page, 'f-photo');
+    // The site visit's Photos, tried in the screen designer: thumbnails, as an image shows them unless its page says.
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+    await page.goto('/screen/');
+    await page.getByRole('button', { name: 'Try it' }).click();
+    const photos = page.locator('.fd-try [data-type="image"]');
+    await expect(photos.locator('.fd-file')).toHaveClass(/fd-files-thumbs/);
     await photos.locator('input[type=file]').setInputFiles([FILES.photo('Lobby.png', 0), FILES.photo('Kitchen.png', 1), FILES.photo('Terrace.png', 2)]);
     await expect(photos.locator('.fd-file-item')).toHaveCount(3);
     await expect(photos.locator('.fd-file-count')).toHaveText('3 of 6 files');
@@ -232,7 +166,7 @@ test.describe('several files in a form', () => {
   test('reads only: files to open and download, nothing to add or remove', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=fields&skin=outlined&readonly=1');
     const documents = node(page, 'f-documents');
-    await expect(documents.locator('.fd-file-item')).toHaveCount(2);
+    await expect(documents.locator('.fd-file-item')).toHaveCount(4);
     await expect(documents.locator('.fd-file-pick')).toBeHidden();
     await expect(documents.getByRole('button', { name: /^Remove/ })).toHaveCount(0);
     await documents.getByRole('button', { name: /^Floor plan/ }).click();
@@ -248,7 +182,7 @@ test.describe('several files in a form', () => {
     const { problems } = await open(page, 'plain', 'page=fields&skin=outlined');
     await node(page, 'f-photo').locator('input[type=file]').setInputFiles([FILES.photo('Lobby.png', 0), FILES.photo('Kitchen.png', 1), FILES.photo('Terrace.png', 2), FILES.photo('Roof.png', 1)]);
     await node(page, 'f-documents').locator('input[type=file]').setInputFiles([FILES.quote()]);
-    await expect(node(page, 'f-documents').locator('.fd-file-item')).toHaveCount(3);
+    await expect(node(page, 'f-documents').locator('.fd-file-item')).toHaveCount(5);
     await expectNoSidewaysScroll(page);
     await node(page, 'f-contract').scrollIntoViewIfNeeded();
     await screen(page, 'files-phone', { viewport: true });
@@ -258,8 +192,10 @@ test.describe('several files in a form', () => {
     expect(size.width).toBeLessThanOrEqual(390);
     await expectNoSidewaysScroll(page);
     await screen(page, 'files-phone-viewer', { viewport: true });
-    await page.keyboard.press('ArrowLeft');
-    await expect(box.getByRole('heading')).toHaveText('Floor plan, 12th floor.svg');
+    for (const back of ['Budget, 12th floor.csv', 'Lift booking, confirmed.pdf', 'Floor plan, 12th floor.svg']) {
+      await page.keyboard.press('ArrowLeft');
+      await expect(box.getByRole('heading')).toHaveText(back);
+    }
     await screen(page, 'files-phone-viewer-image', { viewport: true });
     expect(problems).toEqual([]);
   });
@@ -267,19 +203,20 @@ test.describe('several files in a form', () => {
   test('reads right to left in Arabic, the arrows mirrored', async ({ page }) => {
     const { problems } = await open(page, 'plain', 'page=fields&skin=outlined&locale=ar&dir=rtl');
     const documents = node(page, 'f-documents');
-    await expect(documents.locator('.fd-file-count')).toHaveText('الملفات: 2 من 8');
+    await expect(documents.locator('.fd-file-count')).toHaveText('الملفات: 4 من 8');
     await documents.locator('input[type=file]').setInputFiles([FILES.quote()]);
     await node(page, 'f-photo').locator('input[type=file]').setInputFiles([FILES.photo('Lobby.png', 0), FILES.photo('Kitchen.png', 1)]);
-    await expect(documents.locator('.fd-file-item')).toHaveCount(3);
+    await expect(documents.locator('.fd-file-item')).toHaveCount(5);
+    await documents.getByRole('group', { name: 'عرض الملفات' }).getByRole('button', { name: 'قائمة' }).click();
     // A Latin name keeps its own direction: its extension at its right end.
-    const name = documents.locator('.fd-file-name').nth(2);
+    const name = documents.locator('.fd-file-name').nth(4);
     const [start, end] = await name.evaluate((n) => [(n.firstElementChild as HTMLElement).getBoundingClientRect().x, (n.lastChild as Text).parentElement!.getBoundingClientRect().right]);
     expect(start).toBeLessThan(end);
     await documents.scrollIntoViewIfNeeded();
     await screen(page, 'files-rtl');
     await documents.getByRole('button', { name: /^Site survey notes/ }).click();
     const box = viewer(page);
-    await expect(box).toContainText('1 من 3');
+    await expect(box).toContainText('1 من 5');
     // Left is forward right to left.
     await page.keyboard.press('ArrowLeft');
     await expect(box.getByRole('heading')).toHaveText('Floor plan, 12th floor.svg');
@@ -294,7 +231,7 @@ test.describe('several files in a form', () => {
       const { problems } = await open(page, 'plain', `page=fields&skin=${skin}&scheme=dark`);
       await node(page, 'f-photo').locator('input[type=file]').setInputFiles([FILES.photo('Lobby.png', 0)]);
       await node(page, 'f-documents').locator('input[type=file]').setInputFiles([FILES.quote(), FILES.archive()]);
-      await expect(node(page, 'f-documents').locator('.fd-file-item')).toHaveCount(4);
+      await expect(node(page, 'f-documents').locator('.fd-file-item')).toHaveCount(6);
       await node(page, 'f-contract').scrollIntoViewIfNeeded();
       await screen(page, `files-dark-${skin}`, { viewport: true });
       expect(await axeFindings(page, `the files, dark, ${skin}`)).toEqual([]);

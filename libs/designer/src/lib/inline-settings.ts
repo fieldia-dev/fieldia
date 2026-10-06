@@ -138,7 +138,8 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
       // Each box with its word for what it counts, so the two never part on a narrow card.
       const files = (text: string, box: HTMLElement) => el('label', { class: 'fd-inline-setting' }, el('span', {}, text), box, el('span', {}, w.files));
       const counts = el('div', { class: 'fd-inline-row' }, files(w.atLeast, least), files(w.atMost, most));
-      // How the chosen files show: as a list, or as thumbnails; what the kind shows anyway is kept as nothing.
+      // How the chosen files show: as a list, as thumbnails or as cards; what the kind shows anyway is kept as nothing.
+      // And whether the person filling the form can switch them between a list and the pictures.
       let shownAs = 'list';
       let usual = 'list';
       const asChip = (value: string, words: string) => {
@@ -146,7 +147,9 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
         chip.addEventListener('click', () => value !== shownAs && designer.setWidgetOptions(id, { files: value === usual ? null : value }));
         return chip;
       };
-      const asChips = [asChip('list', w.list), asChip('thumbnails', w.thumbnails)];
+      const asChips = [asChip('list', w.list), asChip('thumbnails', w.thumbnails), asChip('cards', w.cards)];
+      const switchable = el('button', { type: 'button', class: 'fd-switch', role: 'switch', 'aria-checked': 'false', 'aria-label': w.peopleCanSwitch }) as HTMLButtonElement;
+      switchable.addEventListener('click', () => designer.setWidgetOptions(id, { filesSwitch: switchable.getAttribute('aria-checked') === 'true' ? null : true }));
       // A phone's camera, for an image: the rear one, or the front.
       const camera = select(w.cameraOnPhones, ['', 'environment', 'user']);
       [w.no, w.rearCamera, w.frontCamera].forEach((words, i) => (camera.options[i].textContent = words));
@@ -156,6 +159,7 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
         el('div', { class: 'fd-inline-row' }, word(w.largestFile, largest), el('span', { class: 'fd-inline-setting fd-inline-toggle' }, several, el('span', { 'aria-hidden': 'true' }, w.severalFiles))),
         counts,
         el('div', { class: 'fd-inline-row' }, el('span', {}, w.showFilesAs), el('div', { class: 'fd-inline-chips', role: 'group', 'aria-label': w.showFilesAs }, ...asChips)),
+        el('span', { class: 'fd-inline-setting fd-inline-toggle' }, switchable, el('span', { 'aria-hidden': 'true' }, w.peopleCanSwitch)),
         ...(kind === 'image' ? [word(w.cameraOnPhones, camera)] : [])
       );
       refresh = (page, node) => {
@@ -175,6 +179,7 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
         usual = def.type === 'image' ? 'thumbnails' : 'list';
         shownAs = String(node.options?.['files'] ?? usual);
         for (const chip of asChips) chip.setAttribute('aria-pressed', String(chip.dataset['choice'] === shownAs));
+        switchable.setAttribute('aria-checked', String(node.options?.['filesSwitch'] === true));
         const facing = node.options?.['camera'];
         camera.value = facing ? (facing === 'user' ? 'user' : 'environment') : '';
       };

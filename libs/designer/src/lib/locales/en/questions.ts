@@ -222,6 +222,9 @@ export const questions = {
   files: 'files',
   list: 'List',
   thumbnails: 'Thumbnails',
+  cards: 'Cards',
+  /** Whether the person filling the form may flip the files between a list and pictures. */
+  peopleCanSwitch: 'People can switch',
   cameraOnPhones: 'Camera on phones',
   rearCamera: 'Rear camera',
   frontCamera: 'Front camera',
