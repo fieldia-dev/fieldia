@@ -31,6 +31,12 @@ describe('what is wrong with a formula, and where', () => {
     expect(formulaProblem(order, 'qty * prise')).toMatchObject({ from: 7, to: 11 });
   });
 
+  it('reads the record’s id and the person, but only what the person has', () => {
+    expect(formulaProblem(order, "not id or 'sales.manager' in user.roles")).toBeNull();
+    expect(formulaProblem(order, 'user.id')).toBeNull();
+    expect(problemWords(formulaProblem(order, 'user.role'))).toBe('The person has an id, name or roles, not “role” at 1–9');
+  });
+
   it('names a function there is not', () => {
     const problem = formulaProblem(order, 'rond(price)');
     expect(problemWords(problem)).toMatch(/^Unknown function “rond” at 1–4/);

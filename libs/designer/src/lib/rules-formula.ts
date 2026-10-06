@@ -102,8 +102,15 @@ export function formulaProblem(page: Page, source: string, words: DesignerWords 
   // It reads: each name must be a field of the page.
   for (const [i, token] of tokens.entries()) {
     if (token.kind !== 'name' || calls(tokens, i)) continue;
-    const root = token.text.split('.')[0];
-    if (!Object.prototype.hasOwnProperty.call(page.fields, root)) return { words: w.unknownField(root), ...place(token) };
+    const [root, part] = token.text.split('.');
+    if (Object.prototype.hasOwnProperty.call(page.fields, root)) continue;
+    // What every formula on a record reads besides its fields: its id, and the person.
+    if (root === 'id') continue;
+    if (root === 'user') {
+      if (part !== undefined && !['id', 'name', 'roles'].includes(part)) return { words: w.personHas(part), ...place(token) };
+      continue;
+    }
+    return { words: w.unknownField(root), ...place(token) };
   }
   return null;
 }

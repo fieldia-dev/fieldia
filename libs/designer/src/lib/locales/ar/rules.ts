@@ -82,6 +82,7 @@ export const rules: DesignerWords['rules'] = {
   typeAFormula: 'اكتب صيغة',
   cannotBeIn: (sign) => `لا يمكن أن يكون ${q(sign)} في صيغة،`,
   unknownField: (name) => `حقل غير معروف ${q(name)}`,
+  personHas: (part) => `للشخص معرّف واسم وأدوار، لا ${q(part)}`,
   unknownFunction: (name) => `دالة غير معروفة ${q(name)}`,
   takes: (name, rest) => {
     // The formula reader's own words, said again in Arabic.

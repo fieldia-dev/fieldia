@@ -98,6 +98,7 @@ export const rules = {
   typeAFormula: 'Type a formula',
   cannotBeIn: (sign: string) => `“${sign}” cannot be in a formula,`,
   unknownField: (name: string) => `Unknown field “${name}”`,
+  personHas: (part: string) => `The person has an id, name or roles, not “${part}”`,
   unknownFunction: (name: string) => `Unknown function “${name}”`,
   /** A function given the wrong values, in the formula reader's own words after its name. */
   takes: (name: string, rest: string) => `“${name}”${rest},`,
