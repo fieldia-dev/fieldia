@@ -24,7 +24,7 @@ import addressPage from '../../examples/pages/address.page.json';
  * The store holds the app's saved forms, to place from the toolbox's “A saved
  * form”: Address, in two versions, and a Visit follow-up that places the site
  * visit itself — placing it in the site visit is refused. “Open it” opens a
- * saved form in the editor.
+ * saved form in the editor. A Customer page is there too, for a step to open.
  */
 const params = new URLSearchParams(location.search);
 const locale = params.get('locale') ?? undefined;
@@ -120,6 +120,17 @@ const followUp: Page = {
   layout: { type: 'sections', id: 'follow-up', children: [{ type: 'form', id: 'the-visit', page: 'site-visit', name: 'visit' }, { type: 'field', id: 'outcome', field: 'outcome' }] },
 };
 store.pages.set('follow-up', { draft: null, versions: [published(followUp, 1)] });
+// A customer, as a step opens one from a button: “New customer” opens it in a panel, its answer put back into this form.
+const customerPage: Page = {
+  fieldia: '0.1',
+  id: 'customer',
+  title: say('Customer', 'العميل'),
+  ...(arabic ? { language: 'ar' } : {}),
+  data: { kind: 'record', model: 'customer' },
+  fields: { name: customer['name'], phone: customer['phone'], email: customer['email'] },
+  layout: { type: 'sections', id: 'customer', children: [{ type: 'section', id: 'customer-parts', columns: 2, children: [{ type: 'field', id: 'name', field: 'name' }, { type: 'field', id: 'phone', field: 'phone' }, { type: 'field', id: 'email', field: 'email' }] }] },
+};
+store.pages.set('customer', { draft: null, versions: [published(customerPage, 1)] });
 const start = params.get('start');
 const model = start === 'sheet' || start === 'list' ? customer : undefined;
 const first =
