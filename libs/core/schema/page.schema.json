@@ -3513,6 +3513,13 @@
                 "minLength": 1
               }
             },
+            "filter": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/FilterItem"
+              }
+            },
             "into": {
               "type": "object",
               "propertyNames": {
@@ -3877,6 +3884,62 @@
           },
           "required": [
             "do"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "do": {
+              "type": "string",
+              "const": "reload"
+            },
+            "when": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            }
+          },
+          "required": [
+            "do"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "do": {
+              "type": "string",
+              "const": "openUrl"
+            },
+            "when": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            },
+            "url": {
+              "type": "string",
+              "minLength": 1
+            },
+            "newTab": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "do",
+            "url"
           ],
           "additionalProperties": false
         }

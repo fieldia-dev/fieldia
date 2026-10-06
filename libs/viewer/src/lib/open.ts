@@ -39,6 +39,7 @@ export async function openPage(opener: Opener, request: OpenRequest): Promise<Op
     form: undefined,
     recordId: request.recordId ?? null,
     values: request.values,
+    listFilter: request.filter,
     // What belongs to the page that opened it alone.
     drafts: undefined,
     autosave: undefined,

@@ -120,6 +120,8 @@ export class ReferenceCheck {
           if (step.side !== undefined && step.as !== 'panel') this.report(`${at}.side`, `a side is where a panel comes from; this opens ${step.as === 'page' ? 'in its place' : 'in a dialog'}`);
           if (step.record !== undefined) this.checkExpression(step.record, `${at}.record`, scope);
           for (const [name, value] of Object.entries(step.values ?? {})) this.checkExpression(value, `${at}.values.${name}`, scope);
+          // A list's records by this form's values: each valueFrom names one of its fields.
+          step.filter?.forEach((item, j) => this.checkFilterItem(item, `${at}.filter[${j}]`, scope));
           for (const [name, value] of Object.entries(step.into ?? {})) {
             this.need(name, `${at}.into.${name}`);
             try {
@@ -129,6 +131,9 @@ export class ReferenceCheck {
             }
           }
           if (step.then) this.checkSteps(step.then, `${at}.then`);
+          return;
+        case 'openUrl':
+          this.checkExpression(step.url, `${at}.url`, scope);
           return;
         default:
           return;
@@ -151,6 +156,13 @@ export class ReferenceCheck {
     if (has(scope, name)) return scope[name];
     this.report(path, `no field "${name}"`);
     return undefined;
+  }
+
+  /** A filter's conditions: groups nest, and each valueFrom inside them must name a field too. */
+  private checkFilterItem(item: FilterItem, at: string, scope: Scope): void {
+    if ('any' in item) return item.any.forEach((inner, i) => this.checkFilterItem(inner, `${at}.any[${i}]`, scope));
+    if ('all' in item) return item.all.forEach((inner, i) => this.checkFilterItem(inner, `${at}.all[${i}]`, scope));
+    if (item.valueFrom !== undefined) this.checkValueFrom(item.valueFrom, `${at}.valueFrom`, scope);
   }
 
   /** A filter's `valueFrom`: a field where it is used, the record's `id`, a part of `user`, or on a line a field of its record. */
@@ -299,15 +311,7 @@ export class ReferenceCheck {
         }
       }
       if ((def.type === 'many2one' || def.type === 'many2many') && def.filter) {
-        // Groups nest: each valueFrom inside them must name a field too.
-        const walk = (item: FilterItem, at: string): void => {
-          if ('any' in item) return item.any.forEach((inner, i) => walk(inner, `${at}.any[${i}]`));
-          if ('all' in item) return item.all.forEach((inner, i) => walk(inner, `${at}.all[${i}]`));
-          if (item.valueFrom !== undefined) this.checkValueFrom(item.valueFrom, `${at}.valueFrom`, { fields, lines });
-        };
-        def.filter.forEach((item, i) => {
-          walk(item, `${path}.filter[${i}]`);
-        });
+        def.filter.forEach((item, i) => this.checkFilterItem(item, `${path}.filter[${i}]`, { fields, lines }));
       }
       if (def.type === 'selection') def.optionsFrom?.dependsOn?.forEach((other, i) => this.need(other, `${path}.optionsFrom.dependsOn[${i}]`, fields));
       if (def.type === 'properties' && def.definitions) {

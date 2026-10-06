@@ -10,6 +10,7 @@ import {
   type Locale,
   type Page,
   type RecordId,
+  type ResolvedFilter,
   type RunResult,
   type SortOrder,
   type Value,
@@ -40,6 +41,8 @@ export interface ListContext {
   /** Where the list's favourite searches are kept. */
   preferences: PreferenceStore;
   onOpenRecord?: (id: RecordId) => void;
+  /** Conditions every search keeps: the records this list may show at all. */
+  fixedFilter?: ResolvedFilter[];
 }
 
 export interface ListView {
@@ -265,7 +268,7 @@ export function listView(context: ListContext): ListView {
     table.setAttribute('aria-busy', 'true');
     let drawn: HTMLTableRowElement[] = [];
     try {
-      const filter = facetsToFilter(facets, node);
+      const filter = [...(context.fixedFilter ?? []), ...facetsToFilter(facets, node)];
       const grouping = groupByFields(facets);
       const source = context.dataSource;
       if (grouping.length && source?.groups && source.list) {

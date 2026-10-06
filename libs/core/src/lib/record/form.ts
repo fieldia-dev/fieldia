@@ -1,6 +1,5 @@
 import type { ActionStep } from '../format/actions';
-import type { Field, Fields, FilterItem, LineField, Option, OptionsFrom } from '../format/field';
-import type { JsonValue } from '../format/json';
+import type { Field, Fields, LineField, Option, OptionsFrom } from '../format/field';
 import type { ButtonNode, FieldNode, FormNode, LayoutNode, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
@@ -13,6 +12,7 @@ import { compileSetWhen } from './set-when';
 import { checkRules, compileRules, type CompiledRule } from './rules';
 import { expressionEnv, lineContext, recordContext } from './env';
 import { firstValues, readLooseMap, readValueMap, type MapScope } from './value-map';
+import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
 import { MESSAGES, type Messages } from './messages';
 import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
@@ -938,13 +938,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     const source = options.dataSource;
     if (!source?.search) return [];
     // Every valueFrom, in groups too, becomes the value it names before the search goes out.
-    const resolve = (item: FilterItem): ResolvedFilter =>
-      'any' in item
-        ? { any: item.any.map(resolve) }
-        : 'all' in item
-          ? { all: item.all.map(resolve) }
-          : { field: item.field, op: item.op, value: (item.valueFrom !== undefined ? valueAt(ctx, item.valueFrom) : item.value ?? null) as JsonValue };
-    const filter: ResolvedFilter[] | undefined = def.type === 'reference' ? undefined : def.filter?.map(resolve);
+    const filter: ResolvedFilter[] | undefined = def.type === 'reference' || !def.filter ? undefined : resolveFilter(def.filter, ctx);
     const relation = def.type === 'reference' ? (model as string) : def.relation;
     return track(source.search({ model: relation, query, ...(filter ? { filter } : {}), limit }));
   }
@@ -964,7 +958,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     return (index.get(id)?.source as { optional?: boolean } | undefined)?.optional === true;
   }
 
-  async function load(): Promise<void> {
+  /** Load the record; `again`, as a step's reload: no draft offered, no `open` steps run a second time. */
+  async function load(again = false): Promise<void> {
     const source = options.dataSource;
     if (state.recordId == null || page.data.kind !== 'record') return;
     if (!source?.load) {
@@ -976,6 +971,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       const loaded = await source.load({ model: page.data.model, id: state.recordId, fields });
       baseline = syncParts(startFrom({ ...initialValues(fields, today()), ...loaded }), 'start');
       set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings) });
+      if (again) return;
       offerDraft();
       void track(opening());
     } catch (error) {
@@ -993,6 +989,11 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     addLine: (field, values) => void addLine(field, values, 'step'),
     check,
     save: saving,
+    async reload() {
+      if (state.recordId == null) return { reason: 'cannot', message: 'The record is not saved yet: there is nothing to load again' };
+      await load(true);
+      return state.status === 'error' ? { reason: 'cannot', message: state.error ?? 'The record could not be loaded again' } : null;
+    },
     reset: () => form.reset(),
     goTo: goToStep,
     showing: inRun,
@@ -1451,11 +1452,4 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     if (root.sidePanel) add(root.sidePanel, root.id, 'other', { invisible: root.sidePanel.invisible });
   }
   return index;
-}
-
-/** What a filter's `valueFrom` names in a context: a field, or a path such as `parent.company_id` or `user.id`. */
-function valueAt(context: Record<string, unknown>, path: string): unknown {
-  let at: unknown = context;
-  for (const part of path.split('.')) at = at === null || typeof at !== 'object' ? undefined : (at as Record<string, unknown>)[part];
-  return at ?? null;
 }

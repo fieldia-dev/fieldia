@@ -32,13 +32,15 @@ ${code(
 <table>
   <thead><tr><th>Step</th><th>What it does</th></tr></thead>
   <tbody>
-    <tr><td>${c('open')}</td><td>Another page by its id, from your ${c('pages')}: in a ${c('dialog')} (the default), a ${c('panel')} beside the form — from its ${c('side')}: the end of the line unless it says ${c('start')}, ${c('left')}, ${c('right')}, ${c('top')} or ${c('bottom')} — or in its ${c('page')}, this form's place, with Back. On a ${c('record')} or a new one with ${c('values')}; once saved, ${c('into')} sets this form's fields from its answers (${c('id')} is the record it saved) and ${c('then')} runs here. Closed without saving, the steps after it do not run.</td></tr>
+    <tr><td>${c('open')}</td><td>Another page by its id, from your ${c('pages')}: in a ${c('dialog')} (the default), a ${c('panel')} beside the form — from its ${c('side')}: the end of the line unless it says ${c('start')}, ${c('left')}, ${c('right')}, ${c('top')} or ${c('bottom')} — or in its ${c('page')}, this form's place, with Back. On a ${c('record')} or a new one with ${c('values')}; once saved, ${c('into')} sets this form's fields from its answers (${c('id')} is the record it saved) and ${c('then')} runs here. Closed without saving, the steps after it do not run. A list page shows only what its ${c('filter')} lets through, each ${c('valueFrom')} read from this form — this order's invoices, as a smart button opens them.</td></tr>
     <tr><td>${c('set')} · ${c('clear')} · ${c('addLine')}</td><td>A field from an expression, a field emptied, a line added to a table of lines.</td></tr>
     <tr><td>${c('check')} · ${c('save')} · ${c('reset')}</td><td>The form checked, or some fields of it; saved (a page of responses sends); put back as it was loaded.</td></tr>
     <tr><td>${c('goTo')}</td><td>A tab or a wizard's step, by its id.</td></tr>
     <tr><td>${c('say')} · ${c('ask')}</td><td>Words in a tone (${c('info')}, ${c('success')}, ${c('warning')}, ${c('danger')}, ${c('muted')}); a question, No stopping the steps after it.</td></tr>
     <tr><td>${c('call')}</td><td>One of your app's actions, by name, with ${c('params')}.</td></tr>
     <tr><td>${c('close')}</td><td>The dialog or panel this form was opened in, without saving it.</td></tr>
+    <tr><td>${c('openUrl')}</td><td>A web address, from an expression — ${c(`"'https://portal.example/orders/' + name"`)} — in a new tab, or this one with ${c('"newTab": false')}.</td></tr>
+    <tr><td>${c('reload')}</td><td>The record loaded again, as your data source now has it: after your app changed it on its server. Your app's answer can ask for it too, with ${c('reload: true')}.</td></tr>
   </tbody>
 </table>
 <p>Any step may run only ${c('when')} a condition holds. One that fails or is refused stops the rest: a check with problems, No to a question, a save refused, your app saying stop, a page closed unsaved. A button's ${c('confirm')} is asked first, once; its ${c('action')}, when it names one, runs last as a ${c('call')}.</p>
@@ -59,7 +61,7 @@ mountViewer(host, {
   },
 });`
 )}
-<p>Return nothing to go on. ${c('values')} are set as a ${c('set')} step sets them; ${c('say')} is said; ${c('open')} opens a page as an ${c('open')} step does; ${c('stop')} stops, its words said.</p>
+<p>Return nothing to go on. ${c('values')} are set as a ${c('set')} step sets them; ${c('say')} is said; ${c('open')} opens a page as an ${c('open')} step does; ${c('reload: true')} loads the record again first, as your server now has it; ${c('stop')} stops, its words said.</p>
 
 <h2 id="host">What the viewer draws</h2>
 <ul>

@@ -1,3 +1,4 @@
+import type { FilterItem } from '../format/field';
 import type { JsonValue } from '../format/json';
 import type { ResolvedFilter, ResolvedFilterCondition } from './data-source';
 import type { RelatedRecord, Values } from './values';
@@ -64,4 +65,21 @@ function meets(values: Values, condition: ResolvedFilterCondition): boolean {
       return (actual as number | string) >= low && (actual as number | string) <= high;
     }
   }
+}
+
+/** A filter as a search or a list receives it: each `valueFrom` — a field, or a path such as `parent.company_id` or `user.id` — replaced by its value in `context`. */
+export function resolveFilter(items: readonly FilterItem[], context: Readonly<Record<string, unknown>>): ResolvedFilter[] {
+  const resolve = (item: FilterItem): ResolvedFilter =>
+    'any' in item
+      ? { any: item.any.map(resolve) }
+      : 'all' in item
+        ? { all: item.all.map(resolve) }
+        : { field: item.field, op: item.op, value: (item.valueFrom !== undefined ? valueAt(context, item.valueFrom) : (item.value ?? null)) as JsonValue };
+  return items.map(resolve);
+}
+
+function valueAt(context: Readonly<Record<string, unknown>>, path: string): unknown {
+  let at: unknown = context;
+  for (const part of path.split('.')) at = at === null || typeof at !== 'object' ? undefined : (at as Record<string, unknown>)[part];
+  return at ?? null;
 }

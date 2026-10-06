@@ -6,6 +6,8 @@ import { compileExpression, type CompiledExpression, type ExpressionEnv } from '
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import { FIELD_NAME } from '../format/names';
 import { fitTo } from './compute';
+import type { ResolvedFilter } from './data-source';
+import { resolveFilter } from './filter';
 import { emptyValue, structuredCopy, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 
 /**
@@ -36,6 +38,8 @@ export interface ActionRequest {
  */
 export interface ActionResult {
   values?: Values;
+  /** The app changed the record on its server: it is loaded again before the steps go on. */
+  reload?: boolean;
   say?: string | { message: string; tone?: Tone };
   open?: Omit<OpenStep, 'do' | 'when'>;
   stop?: boolean | string;
@@ -59,6 +63,8 @@ export interface OpenRequest {
   recordId?: RecordId | null;
   /** What a new one starts with. */
   values?: Values;
+  /** On a list page, the records it shows: each `valueFrom` already read from the form that opened it. */
+  filter?: ResolvedFilter[];
 }
 
 /** How an opened page ended: saved (or sent), or closed without. */
@@ -85,6 +91,8 @@ export interface ActionHost {
   close?(): void;
   /** Show a tab by its id. The viewer then calls `form.shown(id)`, as for a tab a person picks. */
   show?(target: string): void;
+  /** Open a web address: in a new tab, or in this one. */
+  openUrl?(url: string, newTab: boolean): void;
 }
 
 /**
@@ -149,6 +157,8 @@ export interface RunForm {
   addLine(field: string, values: Values): void;
   check(fields: readonly string[] | undefined): Stopped | null;
   save(chain: readonly string[]): Promise<Stopped | null>;
+  /** Load the record again from its data source; a new record cannot be. */
+  reload(): Promise<Stopped | null>;
   reset(): void;
   /** Go to a wizard's step; `undefined` when the target is none of its steps (a tab). */
   goTo(target: string, chain: readonly string[]): Stopped | null | undefined;
@@ -261,6 +271,7 @@ export function createRunner(form: RunForm) {
       ...(step.title !== undefined ? { title: step.title } : {}),
       recordId: typeof record === 'number' || (typeof record === 'string' && record !== '') ? record : null,
       ...(step.values ? { values: readMap(step.values) } : {}),
+      ...(step.filter ? { filter: resolveFilter(step.filter, form.reading().context) } : {}),
     };
     let result: OpenResult;
     try {
@@ -322,6 +333,11 @@ export function createRunner(form: RunForm) {
     }
     form.answered(request, answer);
     if (!answer) return null;
+    // The server's record first, then what the app says over it.
+    if (answer.reload) {
+      const reloaded = await form.reload();
+      if (reloaded) return reloaded;
+    }
     if (answer.values) {
       const known: Values = {};
       for (const [name, value] of Object.entries(answer.values)) if (name in form.fields) known[name] = fit(form.fields[name], value);
@@ -392,6 +408,16 @@ export function createRunner(form: RunForm) {
         const close = form.host?.close;
         if (!close) return cannot('Nothing can close this form: it has no host, or was not opened in a dialog or panel');
         close.call(form.host);
+        return null;
+      }
+      case 'reload':
+        return form.reload();
+      case 'openUrl': {
+        const openUrl = form.host?.openUrl;
+        if (!openUrl) return cannot('Nothing can open a web address here: the form has no host that opens one');
+        const url = read(step.url, false);
+        if (typeof url !== 'string' || !url.trim()) return cannot(`"${step.url}" gives no address to open`);
+        openUrl.call(form.host, url.trim(), step.newTab ?? true);
         return null;
       }
     }

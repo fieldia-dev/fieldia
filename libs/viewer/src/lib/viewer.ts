@@ -17,6 +17,7 @@ import {
   type LayoutNode,
   type Page,
   type RecordId,
+  type ResolvedFilter,
   type SectionNode,
   type SectionsNode,
   type SheetNode,
@@ -122,6 +123,8 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   translate?: (text: string) => string;
   /** A list page: a row was opened, by a click or by Enter. The app shows the record. */
   onOpenRecord?: (id: RecordId) => void;
+  /** A list page: only the records these conditions let through, whatever is searched — the invoices of one order, opened from it. */
+  listFilter?: ResolvedFilter[];
   /**
    * What the page's steps ask of the screen, the viewer does itself: a page
    * opened (in a dialog, a side panel, or this form's place, with Back), words
@@ -216,6 +219,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const show = tabs.get(target);
       if (!show?.()) throw new Error(`No tab "${target}" can be shown here`);
     },
+    // A new tab opened apart from this page, or this one sent there.
+    openUrl: (url, newTab) => (newTab ? doc.defaultView?.open(url, '_blank', 'noopener,noreferrer') : doc.defaultView?.location.assign(url)),
     ...options.host,
   };
   const form = options.form ?? createForm({ ...options, page, host: actionHost, messages: options.messages ?? MESSAGES[locale] });
@@ -1078,6 +1083,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       icons: options.icons,
       preferences,
       onOpenRecord: options.onOpenRecord,
+      ...(options.listFilter ? { fixedFilter: options.listFilter } : {}),
     });
     cleanups.push(list.destroy);
     body = list.element;

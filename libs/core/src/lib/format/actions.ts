@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { FilterItemSchema, type FilterItem } from './field';
 import { JsonValueSchema, type JsonValue } from './json';
 import type { Modifier, Tone } from './layout';
 
@@ -32,7 +33,9 @@ export type PanelSide = 'end' | 'start' | 'right' | 'left' | 'top' | 'bottom';
 
 /**
  * Open another page: in a dialog over this form (the default), in a panel
- * beside it, or in its place. A panel comes from the `side` named, the end of
+ * beside it, or in its place. A list page shows only the records its
+ * `filter` lets through — each `valueFrom` read from this form — such as the
+ * invoices of this order, as Flectra's smart buttons open them. A panel comes from the `side` named, the end of
  * the line unless told. It starts on a record (`record`, an expression
  * giving its id) or a new one with `values`. Once it is saved or sent, `into`
  * sets this form's fields from its answers — each an expression over the
@@ -53,6 +56,8 @@ export interface OpenStep extends StepBase {
   record?: string;
   /** What the opened form starts with: its fields, each an expression over this form's values. */
   values?: ValueMap;
+  /** On a list page, the records it shows: conditions as a link's filter, `valueFrom` naming this form's fields. */
+  filter?: FilterItem[];
   /** This form's fields, each an expression over the opened form's values once it is saved or sent. */
   into?: ValueMap;
   then?: ActionStep[];
@@ -129,7 +134,19 @@ export interface CloseStep extends StepBase {
   do: 'close';
 }
 
-export type ActionStep = OpenStep | SetStep | ClearStep | AddLineStep | CheckStep | SaveStep | ResetStep | GoToStep | SayStep | AskStep | CallStep | CloseStep;
+/** Load the record again, as its data source now has it: after the app has changed it on its server. */
+export interface ReloadStep extends StepBase {
+  do: 'reload';
+}
+
+/** Open a web address, an expression: in a new tab unless `newTab` is false. Flectra's `act_url`. */
+export interface OpenUrlStep extends StepBase {
+  do: 'openUrl';
+  url: string;
+  newTab?: boolean;
+}
+
+export type ActionStep = OpenStep | SetStep | ClearStep | AddLineStep | CheckStep | SaveStep | ResetStep | GoToStep | SayStep | AskStep | CallStep | CloseStep | ReloadStep | OpenUrlStep;
 
 /**
  * The moments of a form that run steps. A change is a person's: values set by
@@ -166,6 +183,7 @@ export const OpenStepSchema = z.strictObject({
   title: z.string().optional(),
   record: expression.optional(),
   values: valueMap.optional(),
+  filter: z.array(FilterItemSchema).min(1).optional(),
   into: valueMap.optional(),
   get then(): z.ZodOptional<z.ZodArray<typeof ActionStepSchema>> {
     return steps().optional();
@@ -186,6 +204,8 @@ export const ActionStepSchema = z
     z.strictObject({ do: z.literal('ask'), when, message: z.string().min(1) }),
     z.strictObject({ do: z.literal('call'), when, action: name, params: z.record(z.string(), JsonValueSchema).optional() }),
     z.strictObject({ do: z.literal('close'), when }),
+    z.strictObject({ do: z.literal('reload'), when }),
+    z.strictObject({ do: z.literal('openUrl'), when, url: expression, newTab: z.boolean().optional() }),
   ])
   .meta({ id: 'ActionStep' });
 

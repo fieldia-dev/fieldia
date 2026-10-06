@@ -58,6 +58,8 @@ export type {
   AskStep,
   CallStep,
   CloseStep,
+  OpenUrlStep,
+  ReloadStep,
 } from './lib/format/actions';
 export { FORMAT_VERSION } from './lib/format/version';
 export type { Page, PageData, PageLook } from './lib/format/page';

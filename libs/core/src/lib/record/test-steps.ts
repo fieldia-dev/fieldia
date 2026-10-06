@@ -112,6 +112,7 @@ export function recordingHost(answers: { ask?: boolean[]; open?: OpenResult[] } 
     },
     close: () => void calls.push(['close']),
     show: (target) => void calls.push(['show', target]),
+    openUrl: (url, newTab) => void calls.push(['openUrl', url, newTab]),
   };
 }
 

@@ -108,6 +108,11 @@ runs them at its moments:
 - `goTo` a tab or a wizard step, `say` something in a tone, `ask` Yes or No.
 - `call` one of the app's own actions by name, with `params`; `close` the dialog
   or panel the form was opened in.
+- `openUrl` a web address an expression gives, in a new tab unless `newTab` is
+  false; `reload` the record from the data source after the app changed it —
+  an app's answer may ask for that with `reload: true`. An `open` of a list
+  page may give a `filter` — `valueFrom` reading this form — so it shows only
+  the records related to this one.
 
 Any step may run only `when` a condition holds. A step that fails or is refused
 stops the ones after it: a check that finds problems, No to a question, a save
