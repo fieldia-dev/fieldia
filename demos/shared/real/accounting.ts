@@ -161,11 +161,12 @@ const BANKS: Record<number, [string, number]> = {
 };
 const bank = (id: number) => link(id, BANKS[id][0]);
 
-const USERS: Record<number, string> = { 4101: 'Nour El-Sayed', 4102: 'Dina Mahmoud', 4103: 'Hany Fawzy' };
+// Users from 4151: the people lane's own users are 4101 and on.
+const USERS: Record<number, string> = { 4151: 'Nour El-Sayed', 4152: 'Dina Mahmoud', 4153: 'Hany Fawzy' };
 const user = (id: number) => link(id, USERS[id]);
 const EMPLOYEES: Record<number, { name: string; contact: number; manager: number }> = {
-  4101: { name: 'Omar Hassan', contact: 4105, manager: 4102 },
-  4102: { name: 'Mariam Adel', contact: 4108, manager: 4102 },
+  4101: { name: 'Omar Hassan', contact: 4105, manager: 4152 },
+  4102: { name: 'Mariam Adel', contact: 4108, manager: 4152 },
 };
 const employee = (id: number) => link(id, EMPLOYEES[id].name);
 const ANALYTIC: Record<number, string> = { 4101: 'Heliopolis rollout', 4102: 'Sales department', 4103: 'Operations', 4104: 'Riyadh trade fair 2026' };
@@ -504,7 +505,7 @@ const MOVES: Record<number, Values> = {
     invoice_date_due: '2026-11-05',
     payment_reference: null,
     journal_id: journal(4101),
-    invoice_user_id: user(4101),
+    invoice_user_id: user(4151),
     team_id: link(4102, 'Key Accounts'),
     fiscal_position_id: link(4101, 'Local Customers (Egypt)'),
     sale_order_count: 1,
@@ -539,7 +540,7 @@ const MOVES: Record<number, Values> = {
     payment_reference: 'INV/2026/00038',
     journal_id: journal(4101),
     currency_id: USD,
-    invoice_user_id: user(4101),
+    invoice_user_id: user(4151),
     team_id: link(4102, 'Key Accounts'),
     fiscal_position_id: link(4101, 'Local Customers (Egypt)'),
     invoice_incoterm_id: link(4104, 'DAP Delivered at Place'),
@@ -611,7 +612,7 @@ const MOVES: Record<number, Values> = {
     payment_reference: 'RINV/2026/00007',
     journal_id: journal(4101),
     reversed_entry_id: link(4107, 'INV/2026/00031'),
-    invoice_user_id: user(4101),
+    invoice_user_id: user(4151),
     amount_residual: 0,
     invoice_payment_ids: [{ key: 'p1', id: 41102, values: { date: '2026-09-28', journal_name: 'Bank — CIB', ref: 'RINV/2026/00007', amount: 7752, currency_id: EGP } }],
     invoice_line_ids: [
@@ -989,7 +990,7 @@ const EXPENSES: Record<number, Values> = {
     title: 'Riyadh trade fair, October 2026',
     employee_id: employee(4101),
     commercial_partner_id: partner(4105),
-    user_id: user(4102),
+    user_id: user(4152),
     expense_date: '2026-10-05',
     payment_mode: 'own_account',
     employee_journal_id: journal(4107),
@@ -1011,7 +1012,7 @@ const EXPENSES: Record<number, Values> = {
     title: 'Office internet, October 2026',
     employee_id: employee(4102),
     commercial_partner_id: partner(4108),
-    user_id: user(4102),
+    user_id: user(4152),
     expense_date: '2026-10-02',
     payment_mode: 'company_account',
     employee_journal_id: null,
