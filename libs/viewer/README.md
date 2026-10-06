@@ -53,6 +53,36 @@ be found, would be placed inside itself, or is not a page of sections or tabs
 says so in its place, in the page's language. The React, Vue and Angular
 bindings take `pages` too.
 
+## Pages in dialogs and side panels
+
+`openFormDialog` opens a page over the one shown — a new related record, a
+line to edit — and `openFormPanel` opens one in a side panel: full height at
+the inline-end edge (the left, right to left), the page behind dimmed but in
+sight, the whole screen on a phone. Both take `mountViewer`'s options and hand
+back `{ saved, recordId, values }`:
+
+```ts
+import { openFormDialog, openFormPanel } from '@fieldia/viewer';
+
+const task = await openFormDialog({ page: taskPage, dataSource, title: 'New task', size: 'medium' });
+
+const call = await openFormPanel({
+  page: callPage,
+  dataSource,
+  title: 'Log a call',
+  width: 'medium',        // 'narrow' | 'medium' | 'wide': about 420, 560 or 720 pixels
+  look: page.look,        // the opener's look, worn by the panel and the page in it
+});
+if (call.saved) console.log(call.recordId, call.values);
+```
+
+`mode: 'values'` checks the form and hands its values back without saving
+(the panel's button then says Done). Each keeps Tab inside it, gives the focus
+back where it came from, and closes on Escape — a panel asks "Discard your
+changes?" first when something was changed. A dialog opened from inside a
+panel sits above it; a panel opened from a panel stacks over it, the older one
+stepped back. A panel slides in only when the reader's system welcomes motion.
+
 ## Lists
 
 A page whose layout is a `list` shows its records as a table: pages, sorting,
