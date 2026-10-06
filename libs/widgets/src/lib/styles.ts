@@ -710,8 +710,41 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-dialog {
   background: var(--fd-surface); color: var(--fd-text); border-radius: max(var(--fd-radius), 6px); max-width: 420px; width: 100%;
   padding: 20px 22px; display: grid; gap: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); font-family: var(--fd-font);
+  /* An edge of its own: in the dark scheme a shadow is lost on the dimmed page, so the box would barely stand out. */
+  border: 1px solid var(--fd-edge, transparent);
 }
 .fd-dialog p { margin: 0; }
+/* Words a step says: toasts at the foot of the screen, one over another, each in its tone; over the page, under a dialog. */
+.fd-says {
+  position: fixed; inset-inline: 16px; inset-block-end: max(20px, env(safe-area-inset-bottom, 0px)); z-index: 990;
+  display: grid; justify-items: center; gap: 8px; pointer-events: none;
+}
+.fd-say {
+  --fd-tone: var(--fd-info); pointer-events: auto; display: flex; align-items: center; gap: 8px; max-width: 420px;
+  padding-block: 8px; padding-inline: 14px 6px; border: 1px solid var(--fd-border); border-inline-start: 4px solid var(--fd-tone);
+  border-radius: max(var(--fd-control-radius), 6px); background: var(--fd-surface); color: var(--fd-text);
+  box-shadow: 0 8px 24px rgba(15, 20, 25, 0.25); font-size: 13.5px;
+}
+.fd-say[data-tone="success"] { --fd-tone: var(--fd-success); }
+.fd-say[data-tone="warning"] { --fd-tone: var(--fd-warning); }
+.fd-say[data-tone="danger"] { --fd-tone: var(--fd-error); }
+.fd-say[data-tone="muted"] { --fd-tone: var(--fd-muted); }
+.fd-say > span { flex: 1 1 auto; min-width: 0; }
+.fd-say-close { border: none; background: none; color: var(--fd-muted); cursor: pointer; font: inherit; font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+.fd-say-close:hover { color: var(--fd-text); }
+.fd-say-close:focus-visible { outline: 2px solid var(--fd-focus); }
+/* A button whose steps are running: busy, a turning ring beside its words, not pressed again. */
+.fd-button[aria-busy="true"], .fd-stat[aria-busy="true"] { cursor: progress; }
+.fd-button[aria-busy="true"]::after {
+  content: ""; width: 0.85em; height: 0.85em; border: 2px solid currentColor; border-inline-end-color: transparent; border-radius: 50%;
+  animation: fd-spin 0.8s linear infinite;
+}
+@keyframes fd-spin { to { rotate: 1turn; } }
+/* A page opened in a form's place: Back over it, the way the page reads. */
+.fd-back { margin-block-end: 12px; }
+.fd-back::before { content: "←"; }
+.fd-back:dir(rtl)::before { content: "→"; }
+.fd-form[data-scheme] > .fd-back { margin: 12px 20px 0; }
 /* A page in a dialog: a head with its title and ×, a body that scrolls, a foot with Discard and Save & Close. */
 .fd-form-dialog {
   display: flex; flex-direction: column; width: 100%; max-height: min(90vh, 100%); min-height: 0;
@@ -759,7 +792,7 @@ button.fd-chip-label:hover { text-decoration: underline; }
 @media (max-width: 600px) { .fd-form-dialog.fd-form-panel { max-width: none; margin: 0; --fd-from: 0 100%; } }
 @media (prefers-reduced-motion: no-preference) { .fd-form-panel { animation: fd-slide 0.25s ease-out; transition: margin 0.2s; } }
 @keyframes fd-slide { from { translate: var(--fd-from, 100% 0); } }
-@media (prefers-reduced-motion: reduce) { .fd-form *, .fd-form *::before, .fd-form *::after { transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { .fd-form *, .fd-form *::before, .fd-form *::after { transition: none !important; } .fd-button[aria-busy="true"]::after { animation: none; } }
 `;
 
 /** Fieldia's whole stylesheet: the skins, then the layout over them, the inputs' details, the question kinds and the choices' details. */

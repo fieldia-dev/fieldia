@@ -90,6 +90,43 @@ describe('a list of records', () => {
     expect(bulk.hidden).toBe(true);
   });
 
+  it('asks a button’s question once, runs its steps with the records chosen, busy until done, then loads again', async () => {
+    const pressed: ActionRequest[] = [];
+    let release!: () => void;
+    const page = {
+      ...customers,
+      layout: {
+        ...(customers.layout as object),
+        actions: [{ type: 'button', id: 'archive', label: 'Archive', confirm: 'Archive them?', steps: [{ do: 'say', message: 'Archiving' }], action: 'archive' }],
+      },
+    } as Page;
+    const host = await mount(
+      {
+        onAction: (request) => {
+          pressed.push(request);
+          return new Promise<void>((done) => (release = done));
+        },
+      },
+      page
+    );
+    (host.querySelector('thead input[type=checkbox]') as HTMLInputElement).click();
+    const archive = button(host.querySelector('.fd-list-selection') as HTMLElement, 'Archive')!;
+    archive.click();
+    await until(() => document.querySelector('[role=alertdialog]'));
+    expect(document.querySelectorAll('[role=alertdialog]')).toHaveLength(1);
+    button(document.querySelector('[role=alertdialog]') as HTMLElement, 'OK')!.click();
+    await until(() => pressed.length);
+    expect(document.querySelector('[role=alertdialog]')).toBeNull();
+    expect(archive.getAttribute('aria-busy')).toBe('true');
+    archive.click();
+    expect(pressed).toHaveLength(1);
+    expect(pressed[0]).toEqual(expect.objectContaining({ id: 'archive', recordIds: [2, 1] }));
+    expect(host.querySelector('.fd-say')?.textContent).toContain('Archiving');
+    release();
+    await until(() => !archive.hasAttribute('aria-busy'));
+    expect(archive.hasAttribute('aria-busy')).toBe(false);
+  });
+
   it('starts with the list’s default filters, and says when nothing matches', async () => {
     const host = await mount({}, { ...customers, layout: { ...(customers.layout as object), defaultFilters: ['active'] } as Page['layout'] });
     expect(rows(host).map((r) => cells(r)[0])).toEqual(['Nile Traders', 'Petra Tours']);

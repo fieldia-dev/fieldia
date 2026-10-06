@@ -111,7 +111,13 @@ function openForm(options: FormDialogOptions, shape: string, panel = false): Pro
   under?.setAttribute('data-behind', '');
   container.append(backdrop);
 
-  const handle = mountViewer(body, { ...options, page: look && !options.page.look ? { ...options.page, look } : options.page, showActions: false });
+  // A host of its own, so its steps run here too: a `close` step closes it unsaved.
+  const handle = mountViewer(body, {
+    ...options,
+    page: look && !options.page.look ? { ...options.page, look } : options.page,
+    showActions: false,
+    host: { ...options.host, close: () => discard.click() },
+  });
   // A panel runs the way its page does, its language's way unless told: the inline end it sits at is the left, right to left.
   if (panel && handle.element.dir) backdrop.dir = handle.element.dir;
   let done = false;
@@ -210,9 +216,9 @@ function recalculate(form: ViewerHandle['form'], fields: Record<string, unknown>
       (next) => {
         if (closed() || JSON.stringify(form.getState().values) !== now) return; // a newer answer is on its way
         writing = true;
-        for (const [name, value] of Object.entries(next)) {
-          if (name in fields && JSON.stringify(values[name] ?? null) !== JSON.stringify(value ?? null)) form.setValue(name, value);
-        }
+        // The answer is the app's change, not a person's: the page's change steps do not run for it.
+        const changed = Object.fromEntries(Object.entries(next).filter(([name, value]) => name in fields && JSON.stringify(values[name] ?? null) !== JSON.stringify(value ?? null)));
+        if (Object.keys(changed).length) form.setValues(changed);
         writing = false;
         seen = JSON.stringify(form.getState().values);
       },

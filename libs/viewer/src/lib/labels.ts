@@ -97,6 +97,8 @@ export interface ViewerLabels {
   formInItself: string;
   formNotPlaceable: string;
   formBroken: string;
+  /** A page a step opens that the app has none of (`{page}`, its id). */
+  pageMissing: string;
 }
 
 /** English: always here, and the words a language leaves out. */
@@ -173,6 +175,7 @@ const en: ViewerLabels = {
   formInItself: 'The saved form “{page}” is not shown here: it would be placed inside itself ({chain}).',
   formNotPlaceable: 'The saved form “{page}” cannot be placed here: only a form of sections or tabs can.',
   formBroken: 'The saved form “{page}” cannot be shown.',
+  pageMissing: 'The page “{page}” cannot be found.',
 };
 
 /**
