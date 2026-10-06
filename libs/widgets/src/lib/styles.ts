@@ -734,7 +734,7 @@ button.fd-chip-label:hover { text-decoration: underline; }
 }
 @keyframes fd-spin { to { rotate: 1turn; } }
 /* A page opened in a form's place: Back over it, the way the page reads. */
-.fd-back { margin-block-end: 12px; }
+.fd-back { margin: 8px 12px; }
 .fd-back::before { content: "←"; }
 .fd-back:dir(rtl)::before { content: "→"; }
 .fd-form[data-scheme] > .fd-back { margin: 12px 20px 0; }
