@@ -9,6 +9,8 @@ export type { Field, Fields, LineField, LineKinds, Option, OptionsFrom, Property
 export type {
   Modifier,
   Roles,
+  CellRules,
+  ToneWhen,
   Tone,
   FieldNode,
   ButtonNode,
@@ -69,6 +71,7 @@ export type { PageIssue, PageValidation } from './lib/format/references';
 export { translatePage, localizePage, pageWords, isRightToLeft } from './lib/format/translate';
 export { compileModifier, type CompiledModifier } from './lib/expression/modifier';
 export { rolesAllow } from './lib/record/roles';
+export type { CellState, LineState } from './lib/record/cells';
 export { evaluateModifier, isModifierValid } from './lib/expression/evaluateModifier';
 export {
   emptyValue,
