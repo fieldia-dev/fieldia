@@ -1,14 +1,16 @@
-import type { ImageNode, Page, TextNode } from '@fieldia/core';
+import type { ButtonNode, ImageNode, Page, TextNode } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { locate } from './layout-tree';
 import { segmented, setting } from './panel-controls';
 import { formContent } from './panel-form';
+import { whenClicked } from './steps-panel';
 
 /**
  * A block's own settings, on the Content tab: a picture's address and the
  * words read out for it, its width, its place in its row, a link and a
- * caption; how words read (a heading, words, or a note), and a button's words. Words and a button's label are typed on the canvas too;
+ * caption; how words read (a heading, words, or a note); a button's words,
+ * what it does when clicked, its look and the question it asks first. Words and a button's label are typed on the canvas too;
  * here they are named, so they are found and reached by keyboard.
  */
 
@@ -104,11 +106,30 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
   if (kind === 'button') {
     const words = el('input', { class: 'fd-input', 'aria-label': w.buttonWords, autocomplete: 'off' }) as HTMLInputElement;
     words.addEventListener('input', () => designer.updateBlock(id, { label: words.value }));
+    // steps lane: what it does when clicked, how it looks, and the question it asks first — as a header's button has.
+    const clicked = whenClicked(el, designer, id);
+    const look = segmented<NonNullable<ButtonNode['style']>>(
+      el,
+      w.look,
+      (['secondary', 'primary', 'danger', 'link'] as const).map((value) => ({ value, words: w.buttonLooks[value] })),
+      (value) => value && designer.updateBlock(id, { style: value })
+    );
+    const asks = el('input', { class: 'fd-input', 'aria-label': w.asksFirst, placeholder: w.actsAtOnce, autocomplete: 'off' }) as HTMLInputElement;
+    asks.addEventListener('input', () => designer.updateBlock(id, { confirm: asks.value }));
     return {
-      rows: [setting(el, 'content', 'Button words', words, { words: w.buttonWords })],
+      rows: [
+        setting(el, 'content', 'Button words', words, { words: w.buttonWords }),
+        clicked.element,
+        setting(el, 'content', 'Look', look.element, { words: w.look }),
+        setting(el, 'content', 'Asks first', asks, { words: w.asksFirst }),
+      ],
       update(page) {
         const node = locate(page, id)?.node;
-        if (node?.type === 'button' && !focused(words)) words.value = node.label;
+        if (node?.type !== 'button') return;
+        if (!focused(words)) words.value = node.label;
+        clicked.update(page);
+        look.set(node.style ?? 'secondary');
+        if (!focused(asks)) asks.value = node.confirm ?? '';
       },
     };
   }

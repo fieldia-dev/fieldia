@@ -5,11 +5,12 @@ import { allSections } from './page-tree';
 import { setting } from './panel-controls';
 import { pageLookSettings } from './panel-look';
 import type { PropertiesView } from './screen-properties';
+import { formMoments } from './steps-panel';
 
 /**
  * Nothing picked: the screen itself — its description and a sheet's title
- * (Content), whether it is sections or a record sheet (Layout), and its look
- * (Look).
+ * (Content), whether it is sections or a record sheet (Layout), its look
+ * (Look), and what it does at its moments (Rules).
  */
 export function pageProperties(el: ElementFactory, designer: Designer): PropertiesView {
   const focused = (node: Element) => node.ownerDocument.activeElement === node;
@@ -22,6 +23,8 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   title.addEventListener('change', () => designer.setTitleField(title.value === '' ? null : title.value === CURRENT_TITLE ? ((designer.getPage().layout as SheetNode).title?.field ?? null) : title.value));
   const titleRow = setting(el, 'content', 'Title field', title, { hint: w.titleFieldHint, words: w.titleField });
   const look = pageLookSettings(el, designer);
+  // steps lane: what the form does at its moments — opened, saved or sent, a tab or step shown.
+  const moments = formMoments(el, designer);
   const element = el(
     'div',
     { class: 'fd-props' },
@@ -29,13 +32,15 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     titleRow,
     el('p', { class: 'fd-properties-hint' }, w.nothingPicked),
     setting(el, 'layout', 'Layout', layout, { hint: w.layoutHint, words: w.layout }),
-    ...look.rows
+    ...look.rows,
+    moments.element
   );
   return {
     element,
     update(page) {
       if (!focused(description)) description.value = page.description ?? '';
       look.update(page);
+      moments.update(page);
       const root = page.layout;
       layout.value = root.type === 'sheet' ? 'sheet' : 'sections';
       titleRow.hidden = root.type !== 'sheet';

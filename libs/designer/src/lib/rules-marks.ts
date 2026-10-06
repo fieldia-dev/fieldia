@@ -4,7 +4,8 @@ import type { Designer } from './designer';
 import { designerIcon } from './icons';
 import { openRules } from './rules-open';
 import { pageRules, type RuleKind } from './rules-words';
-import type { DesignerWords } from './designer-words';
+import { changeMarks, openSteps } from './steps-marks';
+import { findNode } from './page-tree';
 
 /**
  * Small marks on the canvas for a part with a rule: shown only sometimes,
@@ -15,11 +16,12 @@ import type { DesignerWords } from './designer-words';
  * while their rules stay the same.
  */
 
-type MarkKind = 'sometimes' | 'worked-out' | 'answer';
+type MarkKind = 'sometimes' | 'worked-out' | 'answer' | 'steps';
 
 interface Mark {
   kind: MarkKind;
-  rule: RuleKind;
+  /** The kind of rule it opens; none for steps, which open their own list. */
+  rule?: RuleKind;
   words: string;
   sentences: string[];
 }
@@ -33,10 +35,11 @@ const PLACES: { parts: string; into?: string }[] = [
 ];
 
 /** The marks in the order they stand. */
-const ORDER: MarkKind[] = ['sometimes', 'worked-out', 'answer'];
+const ORDER: MarkKind[] = ['sometimes', 'worked-out', 'answer', 'steps'];
 
 /** Each part's marks, in a mark's order: when it shows, what it holds, what it asks of an answer. */
-function marksOf(page: Page, words: DesignerWords): Map<string, Mark[]> {
+function marksOf(page: Page, designer: Designer): Map<string, Mark[]> {
+  const words = designer.words;
   const w = words.rulesUi;
   const out = new Map<string, Mark[]>();
   for (const rule of pageRules(page, words)) {
@@ -47,6 +50,12 @@ function marksOf(page: Page, words: DesignerWords): Map<string, Mark[]> {
     if (mark) mark.sentences.push(rule.sentence);
     else marks.push({ kind, rule: rule.kind, words: kind === 'answer' ? '' : w.marks[kind], sentences: [rule.sentence] });
     out.set(rule.part, marks);
+  }
+  // steps lane: a field whose change does something.
+  for (const [part, lines] of changeMarks(page, designer)) {
+    const marks = out.get(part) ?? [];
+    marks.push({ kind: 'steps', words: words.steps.count(lines.filter((line) => !line.startsWith(words.steps.nested(''))).length), sentences: [`${words.steps.whenItChanges}:`, ...lines] });
+    out.set(part, marks);
   }
   for (const marks of out.values()) {
     marks.sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
@@ -64,7 +73,7 @@ export function ruleMarks(container: HTMLElement, page: Page, designer: Designer
   const doc = container.ownerDocument;
   const el = elementFactory(doc);
   let marks = marksFor.get(page);
-  if (!marks) marksFor.set(page, (marks = marksOf(page, designer.words)));
+  if (!marks) marksFor.set(page, (marks = marksOf(page, designer)));
   const root = (container.closest('.fd-designer') as HTMLElement | null) ?? container;
   for (const place of PLACES) {
     for (const part of container.querySelectorAll<HTMLElement>(place.parts)) {
@@ -93,15 +102,17 @@ export function ruleMarks(container: HTMLElement, page: Page, designer: Designer
         ...own.map((mark) => {
           const tipId = `fd-rule-tip-${++tips}`;
           tipIds.push(tipId);
-          const icon = mark.kind === 'worked-out' ? el('span', { class: 'fd-rule-mark-fx', 'aria-hidden': 'true' }, 'ƒx') : designerIcon(doc, mark.kind === 'sometimes' ? 'when' : 'check');
+          const icon = mark.kind === 'worked-out' ? el('span', { class: 'fd-rule-mark-fx', 'aria-hidden': 'true' }, 'ƒx') : designerIcon(doc, mark.kind === 'sometimes' ? 'when' : mark.kind === 'steps' ? 'bolt' : 'check');
           const words = el('span', { class: 'fd-rule-mark-words' }, mark.words);
           const tip = el('span', { class: 'fd-rule-tip', role: 'tooltip', id: tipId }, mark.sentences.join('\n'));
           const button = inButton
             ? el('span', { class: 'fd-rule-mark', 'data-mark': mark.kind }, icon, words, tip)
-            : el('button', { type: 'button', class: 'fd-rule-mark', 'data-mark': mark.kind, 'aria-label': designer.words.rulesUi.openTheRules(designer.words.rulesUi.markNames[mark.kind]), 'aria-describedby': tipId }, icon, words, tip);
+            : el('button', { type: 'button', class: 'fd-rule-mark', 'data-mark': mark.kind, 'aria-label': mark.kind === 'steps' ? designer.words.steps.openTheSteps(designer.words.steps.markName) : designer.words.rulesUi.openTheRules(designer.words.rulesUi.markNames[mark.kind]), 'aria-describedby': tipId }, icon, words, tip);
           button.addEventListener('click', (event) => {
             event.stopPropagation();
-            openRules(root, designer, { part: id, kind: mark.rule });
+            const node = findNode(designer.getPage(), id)?.node;
+            if (mark.kind === 'steps' && node?.type === 'field') openSteps(root, designer, { change: node.field });
+            else openRules(root, designer, { part: id, kind: mark.rule });
           });
           return button;
         })

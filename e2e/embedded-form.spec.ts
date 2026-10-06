@@ -138,7 +138,7 @@ test.describe('placing a saved form in the screen designer', () => {
     await expect(tile.locator('xpath=ancestor::section[@data-group="More"]')).toHaveCount(1);
     await tile.click();
     const menu = page.getByRole('menu', { name: 'A saved form' });
-    await expect(menu.getByRole('menuitemradio')).toHaveText(['Address', 'Visit follow-up']);
+    await expect(menu.getByRole('menuitemradio')).toHaveText(['Address', 'Visit follow-up', 'Customer']);
     await menu.getByRole('menuitemradio', { name: 'Address' }).click();
 
     // Drawn as the form will draw it, in a frame naming the saved form and its version: its title, its fields.

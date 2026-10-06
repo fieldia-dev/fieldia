@@ -20,6 +20,7 @@ import { designerIcon } from './icons';
 import { inlineSettings, type InlineSettings } from './inline-settings';
 import { locate } from './layout-tree';
 import { ruleMarks } from './rules-marks';
+import { pressMarks } from './steps-marks';
 import { tabHolds } from './page-tree';
 import { sampleRows } from './samples';
 import { foldMark, type FoldMark } from './canvas-fold';
@@ -723,6 +724,8 @@ export function screenCanvas(options: ScreenCanvasOptions): ScreenCanvas {
       nextFrame(state);
       multi.update(state, mode === 'advanced');
       ruleMarks(element, page, designer);
+      // steps lane: a button that does something wears a mark.
+      pressMarks(element, page, designer);
     },
     visibleSections: () => [...visible],
     focus: (id, part, selectAll = false) => focusIn(id, part, selectAll),

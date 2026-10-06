@@ -66,6 +66,8 @@ const SAMPLES: Record<string, unknown[][]> = {
   'outline.columnsAt': [[3, 2, 1], [3, undefined, undefined]],
   'outline.tookOff': [['س'], [1], [2], [11]],
   'clipboard.pasted': [['س', 0], ['س', 1], ['س', 2], ['س', 3]],
+  'steps.open': ['dialog', 'panel', 'page'].map((as) => ['س', as]),
+  'steps.sayTone': ['success', 'warning', 'danger', 'muted'].map((tone) => ['س', tone]),
   'changes.lookValue': [['font', 'serif'], ['density', 'compact'], ['corners', 'round'], ['scheme', 'auto'], ['labels', 'beside'], ['labelWidth', 120], ['accent', null]],
 };
 const GENERIC: unknown[] = [0, 1, 2, 3, 11, 100, 'س', ['س', 'ص']];

@@ -69,7 +69,7 @@ describe('a list page, in Arabic', () => {
     expect([...host.querySelectorAll('.fd-column-bar button')].map((b) => b.getAttribute('aria-label'))).toEqual(['نقل إلى السابق', 'إزالة العمود']);
     const action = designer.addListAction('أرشفة') as string;
     designer.select(action);
-    expect(names(host)).toEqual(['النص', 'الإجراء', 'المظهر', 'يسأل أولًا']);
+    expect(names(host)).toEqual(['النص', 'عند النقر', 'المظهر', 'يسأل أولًا']);
     expect([...(field(host, 'المظهر') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['عادي', 'رئيسي', 'خطر', 'رابط']);
   });
 });

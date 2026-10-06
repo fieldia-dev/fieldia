@@ -25,6 +25,7 @@ import { shortcuts } from './shortcuts';
 import { templates, assistant } from './templates';
 import { partLooks } from './part-looks';
 import { savedForms } from './saved-forms';
+import { steps } from './steps';
 
 /** The designer's words in English: the source every other language's table follows, area by area. */
-export const en = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations, shortcuts, templates, assistant, partLooks, savedForms };
+export const en = { bar, kinds, defaults, toolbox, options, refusals, rules, parts, rulesUi, languages, changes, settingsChanges, checks, questions, layout, canvas, panel, looks, outline, clipboard, list, tryIt, json, translations, shortcuts, templates, assistant, partLooks, savedForms, steps };

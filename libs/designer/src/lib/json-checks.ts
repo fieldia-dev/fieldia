@@ -1,10 +1,12 @@
-import type { Page } from '@fieldia/core';
+import type { ActionStep, Page } from '@fieldia/core';
 import { conditionToHide, conditionToHold, type Condition } from './conditions';
 import { placeOf, pathTo, readJson, type Spot } from './json-text';
 import { fixCheck, pageChecks, type CheckFixer, type PageCheck } from './page-checks';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 import { readPage, type JsonProblem } from './page-json';
+import type { StepFix } from './steps-checks';
+import { holderOf, stepsAt, tidyThen, writeSteps } from './steps-places';
 
 /**
  * What the JSON view lists under the text as it is typed: each problem on
@@ -30,8 +32,22 @@ type Node = { id?: unknown; field?: unknown; label?: unknown; invisible?: unknow
 
 const isNode = (id: string) => (value: object) => (value as Node).id === id;
 
+/** steps lane: where a step's fix is written — on its part's steps, or under the page's `on` — dots between, as the text's places are named. */
+function stepsPath(value: unknown, action: StepFix): string | null {
+  const place = action.place;
+  const steps = action.kind === 'remove-step' ? action.path.map((i, n) => (n ? `then.${i}` : `${i}`)).join('.') : '';
+  const under = (at: string) => (steps ? `${at}.${steps}` : at);
+  if ('moment' in place) return under(`on.${place.moment}`);
+  if ('change' in place) return under(`on.change.${place.change}`);
+  if ('show' in place) return under(`on.show.${place.show}`);
+  const part = pathTo(value, isNode(place.press));
+  return part === null ? null : under(`${part}.steps`);
+}
+
 /** Where in the page a check points: the part it is about, and the key its fix would touch. */
 function checkPath(value: unknown, check: PageCheck): string {
+  const fixing = check.fix?.action;
+  if (fixing?.kind === 'remove-step' || fixing?.kind === 'remove-steps') return stepsPath(value, fixing) ?? '(page)';
   // Only the layout's parts have ids: the first part with this one is the one meant.
   const path = check.at === null ? null : pathTo(value, isNode(check.at));
   if (check.at === null || path === null) return '(page)';
@@ -151,6 +167,27 @@ function textFixer(draft: Page): CheckFixer {
       return true;
     },
     select: () => undefined,
+    // steps lane: a step taken away, or a place's, in the text's page.
+    removeStep(place, path) {
+      try {
+        const list = JSON.parse(JSON.stringify(stepsAt(draft, place))) as ActionStep[];
+        const holder = holderOf(list, path);
+        if (!holder?.[path[path.length - 1]]) return false;
+        holder.splice(path[path.length - 1], 1);
+        writeSteps(draft, place, tidyThen(list));
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    setSteps(place, steps) {
+      try {
+        writeSteps(draft, place, steps);
+        return true;
+      } catch {
+        return false;
+      }
+    },
   };
 }
 

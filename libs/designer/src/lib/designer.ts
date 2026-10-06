@@ -46,6 +46,8 @@ import { translationCommands } from './translations';
 import { pageJsonCommands, type PageJsonResult } from './page-json';
 import { rulesCommands, type AnswerRulePatch } from './rules-commands';
 import { keepWhatRulesRead } from './rules-reads';
+import { stepsCommands, type StepsCommands } from './steps-commands';
+import { forgetGoneTargets } from './steps-places';
 import * as clipboard from './clipboard-ops';
 import * as moves from './outline-moves';
 import { outlineRows } from './outline-rows';
@@ -84,6 +86,8 @@ export type { Fold } from './group-fold';
 export type { JsonProblem, PageJsonResult } from './page-json';
 export type { AnswerRulePatch } from './rules-commands';
 export type { FormPartPatch, SavedFormRef } from './saved-forms';
+export type { StepPatch, StepsCommands } from './steps-commands';
+export type { Moment, StepPath, StepsPlace } from './steps-places';
 export { createBrowserLookStore, createMemoryLookStore } from './look-store';
 export type { LookValues } from './look-presets';
 export { DESIGNER_WORDS, designerLocale, type DesignerLocale, type DesignerWords } from './designer-words';
@@ -263,7 +267,7 @@ export interface ModelField {
   field: Field;
 }
 
-export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, InputCommands, StructureCommands {
+export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, InputCommands, StructureCommands, StepsCommands {
   /** The designer's own words, in its language: English unless `locale` said another it speaks. */
   readonly words: DesignerWords;
   /**
@@ -659,6 +663,8 @@ export function createDesigner(options: {
     }
     // rules lane: a field a rule still reads keeps its definition, so the rule can be seen and put right.
     keepWhatRulesRead(page, draft);
+    // steps lane: a tab or step taken away takes the steps that go to it, and its own, with it.
+    forgetGoneTargets(draft);
     const checked = checkEdit(page, draft);
     if (!checked.ok) {
       issues = checked.issues.map((issue) => words.refusals.invalid(issue.path, issue.message));
@@ -1530,6 +1536,8 @@ export function createDesigner(options: {
       }, `form:${id}:${Object.keys(patch).join(',')}`),
     canOpenForm: () => typeof options.openForm === 'function',
     openForm: (id) => options.openForm?.(id),
+    // steps lane
+    ...stepsCommands({ apply, getPage: () => page }),
   };
   return designer;
 }

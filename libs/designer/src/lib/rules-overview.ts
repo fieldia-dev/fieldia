@@ -6,14 +6,18 @@ import type { FindItem } from './find-anything';
 import { designerIcon } from './icons';
 import { openRules } from './rules-open';
 import { pageRules, type RuleEntry, type RuleKind } from './rules-words';
+import { openSteps, savedPage } from './steps-marks';
+import { pageSteps, withCode, type StepsEntry, type StepsGroup } from './steps-words';
 
 /**
  * Every rule on the page in one place, in place of the editor, beside
  * Design, Try it and Translations: each rule a sentence, grouped by what it
  * does — where answers lead (a survey's pages shown only for some answers),
  * when parts show, when fields are required or read-only, values worked out
- * and set, and the rules answers keep. Words typed filter it; a rule clicked
- * goes back to designing with its part picked and its rules open.
+ * and set, and the rules answers keep — and what the page's parts do: its
+ * buttons when clicked, its fields when they change, its own moments, a step
+ * a line. Words typed filter it; a rule clicked goes back to designing with
+ * its part picked and its rules open, steps clicked with their list open.
  */
 
 export interface RulesOverviewOptions {
@@ -40,6 +44,8 @@ type GroupKey = 'branches' | RuleKind;
 
 /** The groups, in the order the view lists them; their titles are the designer's words (`rulesUi.groups`). */
 const GROUPS: GroupKey[] = ['branches', 'shows', 'required', 'readonly', 'compute', 'set', 'answer'];
+/** steps lane: what parts do, after the rules, in this order. */
+const STEP_GROUPS: StepsGroup[] = ['clicked', 'changes', 'moments'];
 
 /** The group a rule is listed under: a survey's page shown only sometimes is where answers lead. */
 function groupOf(page: Page, rule: RuleEntry): GroupKey {
@@ -102,6 +108,23 @@ export function rulesOverview(options: RulesOverviewOptions): RulesOverview {
     openRules(root, designer, { part: rule.part, kind: rule.kind, index: rule.index });
   }
 
+  /** A saved page a step opens, for its title, once the store has it. */
+  const saved = savedPage(designer);
+
+  /** Back to designing, the steps' part picked and their list open. */
+  function goToSteps(entry: StepsEntry) {
+    show(false);
+    openSteps(root, designer, entry.place);
+  }
+
+  function stepsItemOf(entry: StepsEntry): HTMLElement {
+    // The app's names — its actions, a page known by its id — kept apart as code.
+    const said = el('span', { class: 'fd-rules-item-say', dir: 'auto' }, ...withCode(doc, entry.lines.join('\n'), entry.codes));
+    const button = el('button', { type: 'button', class: 'fd-rules-item fd-rules-steps' }, el('span', { class: 'fd-rules-item-name', dir: 'auto' }, entry.name), said);
+    button.addEventListener('click', () => goToSteps(entry));
+    return el('li', {}, button);
+  }
+
   function itemOf(rule: RuleEntry): HTMLElement {
     const button = el('button', { type: 'button', class: 'fd-rules-item' }, el('span', { class: 'fd-rules-item-name', dir: 'auto' }, rule.name), el('span', { class: 'fd-rules-item-say', dir: 'auto' }, rule.sentence));
     if (!rule.part) button.setAttribute('aria-disabled', 'true');
@@ -112,11 +135,16 @@ export function rulesOverview(options: RulesOverviewOptions): RulesOverview {
   function render() {
     const page = designer.getPage();
     const rules = pageRules(page, designer.words);
+    const steps = pageSteps(page, designer.words, saved);
     // English words keep their order in a page right to left, on the page's side; the designer's own language runs its own way.
-    note.replaceChildren(el('span', { dir: designer.locale ? undefined : 'ltr' }, w.count(rules.length)));
+    note.replaceChildren(el('span', { dir: designer.locale ? undefined : 'ltr' }, steps.length ? designer.words.steps.countWith(rules.length, steps.length) : w.count(rules.length)));
     const words = filter.value.toLowerCase().split(/\s+/).filter(Boolean);
     const kept = rules.filter((rule) => {
       const text = `${rule.name} ${rule.sentence} ${w.groups[groupOf(page, rule)]}`.toLowerCase();
+      return words.every((word) => text.includes(word));
+    });
+    const keptSteps = steps.filter((entry) => {
+      const text = `${entry.name} ${entry.lines.join(' ')} ${designer.words.steps.groupNames[entry.group]}`.toLowerCase();
       return words.every((word) => text.includes(word));
     });
     groups.replaceChildren(
@@ -127,10 +155,16 @@ export function rulesOverview(options: RulesOverviewOptions): RulesOverview {
         const titleId = `${id}-${key}`;
         const map = key === 'branches' && !words.length ? branches(page) : null;
         return [el('section', { class: 'fd-rules-group', 'aria-labelledby': titleId }, el('h3', { class: 'fd-rules-group-title', id: titleId }, title), ...(map ? [map] : []), el('ul', { class: 'fd-rules-list' }, ...own.map(itemOf)))];
+      }),
+      ...STEP_GROUPS.flatMap((key) => {
+        const own = keptSteps.filter((entry) => entry.group === key);
+        if (!own.length) return [];
+        const titleId = `${id}-steps-${key}`;
+        return [el('section', { class: 'fd-rules-group', 'aria-labelledby': titleId }, el('h3', { class: 'fd-rules-group-title', id: titleId }, designer.words.steps.groupNames[key]), el('ul', { class: 'fd-rules-list' }, ...own.map(stepsItemOf)))];
       })
     );
-    empty.hidden = kept.length > 0;
-    empty.textContent = rules.length ? w.noRuleSays(filter.value.trim()) : w.noRules;
+    empty.hidden = kept.length + keptSteps.length > 0;
+    empty.textContent = rules.length || steps.length ? w.noRuleSays(filter.value.trim()) : w.noRules;
   }
 
   /** A survey's pages and where answers lead, as the map above the pages draws it. */
@@ -178,9 +212,12 @@ export function rulesOverview(options: RulesOverviewOptions): RulesOverview {
     },
     items() {
       const page = designer.getPage();
-      const each = pageRules(page, designer.words)
-        .filter((rule) => rule.part)
-        .map((rule) => ({ label: w.findRule(rule.name, rule.sentence), hint: w.groups[groupOf(page, rule)], run: () => go(rule) }));
+      const each = [
+        ...pageRules(page, designer.words)
+          .filter((rule) => rule.part)
+          .map((rule) => ({ label: w.findRule(rule.name, rule.sentence), hint: w.groups[groupOf(page, rule)], run: () => go(rule) })),
+        ...pageSteps(page, designer.words, saved).map((entry) => ({ label: designer.words.steps.findSteps(entry.name, entry.lines.join(' · ')), hint: designer.words.steps.groupNames[entry.group], run: () => goToSteps(entry) })),
+      ];
       if (!open) return [{ label: w.rules, hint: w.everyRule, icon: 'rules', run: () => show(true) }, ...each];
       return [{ label: w.backToDesigning, hint: w.design, run: () => show(false) }, { label: w.filter, hint: w.rules, run: () => filter.focus() }, ...each];
     },

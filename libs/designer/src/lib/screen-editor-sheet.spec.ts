@@ -175,7 +175,9 @@ describe('screen editor — a record’s header in the panel', () => {
     const id = sheet(designer).buttons?.[0].id as string;
     expect(panel().querySelector('.fd-panel-title')?.textContent).toBe('Button');
     type(field(panel(), 'Words'), 'Confirm');
-    type(field(panel(), 'Action'), 'confirm_order');
+    // Its app action is its one step: opened, its name typed.
+    (panel().querySelector('[data-setting="When clicked"] .fd-do-say') as HTMLButtonElement).click();
+    type(field(panel(), 'The app’s action'), 'confirm_order');
     choose(field(panel(), 'Look'), 'primary');
     type(field(panel(), 'Asks first'), 'Confirm this order?');
     expect(sheet(designer).buttons?.[0]).toMatchObject({ label: 'Confirm', action: 'confirm_order', style: 'primary', confirm: 'Confirm this order?' });

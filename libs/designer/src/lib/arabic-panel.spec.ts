@@ -22,7 +22,7 @@ describe('the panel, in Arabic', () => {
     const { panel, tabs } = visit();
     expect(panel.getAttribute('aria-label')).toBe('الخصائص');
     expect(panel.querySelector('.fd-panel-title')?.textContent).toBe('شاشة');
-    expect(tabs()).toEqual(['المحتوى', 'التخطيط', 'المظهر']);
+    expect(tabs()).toEqual(['المحتوى', 'التخطيط', 'المظهر', 'القواعد']);
     expect([...panel.querySelectorAll('.fd-properties-hint')].map((h) => h.textContent)).toContain('لم يُختر شيء، فهذه إعدادات الشاشة نفسها. اختر حقلًا أو قسمًا لتغييره.');
   });
 
