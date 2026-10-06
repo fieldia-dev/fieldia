@@ -1,0 +1,87 @@
+{
+  "fieldia": "0.1",
+  "id": "real-legal-case-close",
+  "title": "Close Case",
+  "data": { "kind": "responses" },
+  "maxWidth": "narrow",
+  "fields": {
+    "case_label": { "type": "char", "label": "Case", "readonly": true },
+    "outcome": {
+      "type": "selection",
+      "label": "Outcome",
+      "required": true,
+      "options": [
+        { "value": "won", "label": "Won" },
+        { "value": "lost", "label": "Lost" },
+        { "value": "settled", "label": "Settled" },
+        { "value": "withdrawn", "label": "Withdrawn" },
+        { "value": "dismissed", "label": "Dismissed" }
+      ]
+    },
+    "close_date": { "type": "date", "label": "Close Date", "required": true, "default": "today" },
+    "cancel_pending_tasks": { "type": "boolean", "label": "Cancel Pending Tasks", "default": true, "help": "Automatically cancel all pending tasks for this case." },
+    "fee_arrangement": {
+      "type": "selection",
+      "label": "Fee Arrangement",
+      "readonly": true,
+      "options": [
+        { "value": "hourly", "label": "Hourly" },
+        { "value": "flat", "label": "Flat Fee" },
+        { "value": "contingency", "label": "Contingency" },
+        { "value": "non_billable", "label": "Non-Billable" }
+      ]
+    },
+    "contingency_percent": { "type": "float", "label": "Contingency (%)", "readonly": true },
+    "actual_settlement": {
+      "type": "monetary",
+      "label": "Actual Settlement",
+      "currency": "EGP",
+      "help": "Final settlement / award amount actually obtained. Recorded on the case; the contingency fee is a percentage of it."
+    },
+    "contingency_fee_preview": { "type": "monetary", "label": "Contingency Fee", "currency": "EGP", "compute": "actual_settlement * contingency_percent / 100" },
+    "generate_contingency_invoice": {
+      "type": "boolean",
+      "label": "Generate Fee Invoice",
+      "default": true,
+      "help": "Create the contingency fee invoice (settlement x percentage) for the client when closing the case."
+    },
+    "close_reason": { "type": "text", "label": "Closing Notes", "required": true, "help": "Summary of the case outcome and any final disposition." }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "close",
+    "children": [
+      {
+        "type": "section",
+        "id": "g-close",
+        "style": "plain",
+        "children": [
+          { "type": "field", "id": "w-case", "field": "case_label" },
+          { "type": "field", "id": "w-outcome", "field": "outcome" },
+          { "type": "field", "id": "w-close-date", "field": "close_date" },
+          { "type": "field", "id": "w-cancel-tasks", "field": "cancel_pending_tasks" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "g-contingency",
+        "title": "Contingency Fee",
+        "style": "line",
+        "invisible": "fee_arrangement != 'contingency' or outcome not in ['won', 'settled']",
+        "children": [
+          { "type": "field", "id": "w-settlement", "field": "actual_settlement" },
+          { "type": "field", "id": "w-fee-preview", "field": "contingency_fee_preview" },
+          { "type": "field", "id": "w-invoice", "field": "generate_contingency_invoice" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "g-reason",
+        "style": "plain",
+        "children": [
+          { "type": "field", "id": "w-reason", "field": "close_reason", "placeholder": "Summary of the case outcome and any final disposition..." }
+        ]
+      }
+    ]
+  }
+}
