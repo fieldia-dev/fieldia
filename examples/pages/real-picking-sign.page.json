@@ -1,0 +1,26 @@
+{
+  "fieldia": "0.1",
+  "id": "real-picking-sign",
+  "title": "Sign",
+  "data": { "kind": "responses" },
+  "maxWidth": "narrow",
+  "fields": {
+    "full_name": { "type": "char", "label": "Full Name" },
+    "signature": { "type": "binary", "label": "Signature", "required": true, "accept": ["image/*"] }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "sign",
+    "children": [
+      {
+        "type": "section",
+        "id": "pad",
+        "style": "plain",
+        "children": [
+          { "type": "field", "id": "f-full-name", "field": "full_name" },
+          { "type": "field", "id": "f-signature", "field": "signature", "widget": "signature", "placeholder": "Sign here", "options": { "upload": true } }
+        ]
+      }
+    ]
+  }
+}

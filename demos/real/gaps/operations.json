@@ -1,1 +1,1003 @@
-{ "lane": "operations", "pages": [] }
+{
+  "lane": "operations",
+  "notes": [
+    "Gap entries name what Fieldia would need; covered means the page does what Flectra does, the server's part done by the app's data source and action answers (demos/shared/real/operations.ts).",
+    "size counts Flectra's view with the inherited views named: fields are the distinct field names in the form and its line subviews; conditions are invisible/readonly/required/column_invisible attributes holding an expression. built counts the Fieldia page: its own fields, its line fields apart.",
+    "Two small pages back the transfer: real-backorder-confirmation (Flectra's Create Backorder? wizard) and real-picking-sign (the Sign widget's dialog), opened by steps.",
+    "Defects found on the way: the statusbar searches its steps once, before the record has loaded, so a filter with valueFrom finds none; the grid ignores a table node's addLabel option."
+  ],
+  "pages": [
+    {
+      "id": "real-task",
+      "title": "Project task",
+      "flectra": {
+        "module": "project",
+        "model": "project.task",
+        "view": "view_task_form2",
+        "file": "addons/project/views/project_task_views.xml",
+        "inherited": [
+          "hr_timesheet.view_task_form2_inherited (Timesheets tab, allocated hours, hours footer, hour columns on sub-tasks)",
+          "sale_project.view_sale_project_inherit_form (Sales Order stat button, Sales Order Item, customer shown only when billable)",
+          "sale_timesheet.project_task_view_form_inherit_sale_timesheet and view_task_form2_inherit_sale_timesheet (so_line timesheet column, Remaining Hours on SO)",
+          "crm_project_link.view_task_form_crm_link (Source Opportunity)",
+          "project_timesheet_holidays.leave_task_form_view (timesheets read-only on a time-off task)",
+          "project_account.project_task_form_view_account_inherit (customer search context only: nothing to show)"
+        ]
+      },
+      "size": {
+        "fields": 96,
+        "tabs": 9,
+        "tables": 4,
+        "headerButtons": 3,
+        "smartButtons": 6,
+        "conditions": 97
+      },
+      "built": {
+        "fields": 79,
+        "lineFields": 32,
+        "tabs": 9,
+        "tables": 3,
+        "headerButtons": 3,
+        "statButtons": 8,
+        "badges": 3,
+        "conditions": 56
+      },
+      "features": [
+        {
+          "feature": "Stage statusbar, clickable (stage_id, widget statusbar_duration)",
+          "status": "covered",
+          "how": "sheet statusbar on a many2one: its steps are the stages found by the data source"
+        },
+        {
+          "feature": "statusbar_duration: the time spent in each stage",
+          "status": "missing",
+          "needs": "a statusbar option to show a duration per step from the app"
+        },
+        {
+          "feature": "Stages folded in the bar (fold_field)",
+          "status": "missing",
+          "needs": "a statusbar option naming a \"folded\" field of the related records: folded steps hidden unless current"
+        },
+        {
+          "feature": "Stage domain [('project_ids', '=', project_id)]",
+          "status": "missing",
+          "needs": "a filter op meaning \"this list contains\" for a many2many on the related record; and a statusbar that searches its steps again when the filter's source changes (it searches once, before the record loads, so a valueFrom filter found nothing and was dropped)"
+        },
+        {
+          "feature": "Personal Stage statusbar for private tasks (personal_stage_type_id, invisible when project_id)",
+          "status": "approximated",
+          "how": "a second statusbar as a field node with widget statusbar over the title, hidden by the same condition: only one statusbar can sit in the header"
+        },
+        {
+          "feature": "Approval status statusbar at the end of the header (approval_status, statusbar_visible to_approve,approved, class ms-auto)",
+          "status": "approximated",
+          "how": "three badges by the title (Waiting Approval, Approved, Changes Requested), each with its condition: a second statusbar cannot be placed in the header"
+        },
+        {
+          "feature": "Header button Mark Done / Send for Approval (action_send_for_approval)",
+          "status": "covered",
+          "how": "steps save, call, save; the app sets approval_status to_approve and says to whom, or stops when the project needs no approval"
+        },
+        {
+          "feature": "Header buttons Approve and Request Changes (manager group)",
+          "status": "approximated",
+          "how": "calls answered by the app; the group check is the app's, not the page's"
+        },
+        {
+          "feature": "Hidden state statusbar (state widget statusbar invisible=\"1\")",
+          "status": "covered",
+          "how": "nothing to draw"
+        },
+        {
+          "feature": "Stat button Sales Order (sale_project)",
+          "status": "covered",
+          "how": "stat button with condition, a call the app answers"
+        },
+        {
+          "feature": "Stat button Last Rating with a smiley chosen by rating_avg",
+          "status": "approximated",
+          "how": "three stat buttons (Satisfied, Okay, Dissatisfied), each with the threshold condition and its own icon; a stat button shows only a number, not rating_avg_text"
+        },
+        {
+          "feature": "Stat button Parent Task",
+          "status": "approximated",
+          "how": "an open step showing the parent in a dialog: a page cannot open itself in its own place"
+        },
+        {
+          "feature": "Stat button Recurring Tasks (recurring_count)",
+          "status": "covered"
+        },
+        {
+          "feature": "Stat button Sub-tasks with two counts (subtask_count and closed_subtask_count)",
+          "status": "approximated",
+          "how": "one count; it goes to the Sub-tasks tab (goTo) instead of opening a list. Needs: a stat button with a second value"
+        },
+        {
+          "feature": "Stat button Blocking Tasks (dependent_tasks_count)",
+          "status": "covered"
+        },
+        {
+          "feature": "Font Awesome icons on stat buttons (fa-smile-o, fa-tasks, fa-repeat…)",
+          "status": "approximated",
+          "how": "nearest of Fieldia's 32 icons; an app may add its own with the viewer's icons option"
+        },
+        {
+          "feature": "Archived ribbon (web_ribbon, invisible active)",
+          "status": "covered",
+          "how": "sheet ribbon"
+        },
+        {
+          "feature": "Priority star in the title (priority_switch on a '0'/'1' selection)",
+          "status": "approximated",
+          "how": "an integer from 1 to 1 with the rating widget: one star, but with a \"Clear selection\" link and 1/null instead of '1'/'0'. Needs: a star toggle widget for a selection or boolean"
+        },
+        {
+          "feature": "Title on one line with text widget, line_breaks False, placeholder",
+          "status": "covered",
+          "how": "sheet title with placeholder"
+        },
+        {
+          "feature": "State dropdown at the end of the title (project_task_state_selection: coloured icons)",
+          "status": "approximated",
+          "how": "a plain selection under the title; the coloured icon per state is missing"
+        },
+        {
+          "feature": "Project (widget project, domain on active and company)",
+          "status": "covered",
+          "how": "many2one with a filter on active; the company part ('=?' company_id) is the app's"
+        },
+        {
+          "feature": "Work Item Type, Milestone (placeholder, invisible), Epic (invisible unless a story)",
+          "status": "covered"
+        },
+        {
+          "feature": "Assignees many2many_avatar_user (no_open, no_quick_create)",
+          "status": "approximated",
+          "how": "tags without avatars; create false is kept, no_open is not. Needs: avatars on links, and a no-open option"
+        },
+        {
+          "feature": "Tags many2many_tags with color_field",
+          "status": "approximated",
+          "how": "tags without their colours. Needs: a colour field on the tags widget"
+        },
+        {
+          "feature": "Customer res_partner_many2one, invisible unless billable",
+          "status": "covered"
+        },
+        {
+          "feature": "Sales Order Item (two variants by group; placeholder Non-billable)",
+          "status": "approximated",
+          "how": "one link with the salesman's conditions"
+        },
+        {
+          "feature": "Source Opportunity (no_create)",
+          "status": "covered",
+          "how": "create false"
+        },
+        {
+          "feature": "Allocated Time with its inline \"(incl. … on Sub-tasks) (… %)\" on one line (timesheet_uom_no_toggle, float_time)",
+          "status": "approximated",
+          "how": "three parts in the group: the hours with an \"h\" suffix (days with a second node when encode_uom_in_days), sub-tasks' hours and progress as label widgets. Needs: HH:MM durations for floats (float_time), and inline text between fields in one row"
+        },
+        {
+          "feature": "Deadline with recurrence icon beside it (boolean_icon fa-repeat)",
+          "status": "approximated",
+          "how": "datetime, then a toggle under it"
+        },
+        {
+          "feature": "Deadline in red when overdue (decoration-danger)",
+          "status": "approximated",
+          "how": "a warning from the app when the deadline set is already past; the red is missing"
+        },
+        {
+          "feature": "Repeat Every row: interval, unit, type, until (required and invisible conditions)",
+          "status": "covered",
+          "how": "a plain section of four columns under a title, each with its required/invisible condition"
+        },
+        {
+          "feature": "Task properties (task_properties, definition from project_id.task_properties_definition, columns 2)",
+          "status": "approximated",
+          "how": "a properties field with fixed definitions; Flectra takes them from the project, and lays them in two columns"
+        },
+        {
+          "feature": "Description tab: html with collaborative and resizable options",
+          "status": "approximated",
+          "how": "html field; collaborative editing is missing"
+        },
+        {
+          "feature": "Timesheets tab (invisible unless allow_timesheets)",
+          "status": "covered"
+        },
+        {
+          "feature": "Inactive analytic account warning box in the tab",
+          "status": "approximated",
+          "how": "a note text with the same condition; a sheet alert cannot sit inside a tab"
+        },
+        {
+          "feature": "Timesheets editable list: date, employee (avatar), description, sales order item (optional hide), hours",
+          "status": "covered",
+          "how": "grid with columns, optional column, totals row; date defaults to today"
+        },
+        {
+          "feature": "Timesheet line read-only when readonly_timesheet; muted row",
+          "status": "missing",
+          "needs": "per-line readonly and row tone from a line field"
+        },
+        {
+          "feature": "Timesheet unit_amount in red above 24 h or below 0",
+          "status": "missing",
+          "needs": "cell decorations"
+        },
+        {
+          "feature": "Timesheets read-only on a time-off task (project_timesheet_holidays)",
+          "status": "covered",
+          "how": "readonly condition on the table node"
+        },
+        {
+          "feature": "Timesheets kanban mode on a phone (mode tree,kanban)",
+          "status": "missing",
+          "needs": "a card view of lines for small screens"
+        },
+        {
+          "feature": "Timesheet line form (form subview: Date, Employee, Description, Duration)",
+          "status": "approximated",
+          "how": "the grid's ↗ opens every line field in a dialog"
+        },
+        {
+          "feature": "Employee and SO line defaults on a new timesheet (context)",
+          "status": "approximated",
+          "how": "the app's onchange fills the first assignee's employee and the task's sales order item"
+        },
+        {
+          "feature": "Hours footer: Hours Spent, Hours Spent on Sub-tasks (link button), Total Hours, Remaining Hours, Remaining Hours on SO",
+          "status": "covered",
+          "how": "worked out in the page: effective_hours = sum(timesheet_ids, 'unit_amount'), sub-tasks' from their lines, total and remaining as expressions; each with its Flectra condition"
+        },
+        {
+          "feature": "Hours/Days labels switched by encode_uom_in_days; Remaining in red when negative",
+          "status": "approximated",
+          "how": "the same field placed twice with each label and opposite conditions; a note says \"Over the allocated time\" instead of red"
+        },
+        {
+          "feature": "Epic Details tab: epic colour (widget color), progress bar, stories list with handle, sum of story points",
+          "status": "approximated",
+          "how": "progressbar and the stories table with totals are covered; the colour is a #rrggbb text box. Needs: a colour widget"
+        },
+        {
+          "feature": "Story Details / Task Details / Bug Details tabs with Effort Points relabels and separators",
+          "status": "covered",
+          "how": "tabs with conditions, story_points placed with three labels, separators as line-style sections"
+        },
+        {
+          "feature": "Sub-tasks tab: editable list with handle, priority star, state icon, name with sub-task count, optional columns",
+          "status": "approximated",
+          "how": "grid with sequence handle, optional columns as Flectra has them and totals of the hour columns; priority is a tick box, state a plain choice, name plain"
+        },
+        {
+          "feature": "Sub-task columns hidden by the parent (column_invisible not parent.allow_milestones / allow_billable)",
+          "status": "missing",
+          "needs": "column conditions reading the parent record"
+        },
+        {
+          "feature": "Sub-task cells hidden by their line (invisible not allow_milestones, date_deadline hidden when done)",
+          "status": "missing",
+          "needs": "per-cell conditions"
+        },
+        {
+          "feature": "Sub-task rows muted when done or cancelled",
+          "status": "missing",
+          "needs": "row decorations"
+        },
+        {
+          "feature": "Sub-task hour columns: timesheet_uom widgets, sums, remaining in red/amber by progress, progress bar (project_task_progressbar)",
+          "status": "approximated",
+          "how": "numbers with totals; progress is a number. Needs: a progress bar and tones in a cell"
+        },
+        {
+          "feature": "Next Activity (list_activity) and My Deadline (remaining_days) columns",
+          "status": "approximated",
+          "how": "My Deadline as a date; Next Activity left out. Needs: an activity cell and a \"in 3 days\" date cell"
+        },
+        {
+          "feature": "open_form_view: a sub-task opens in its own task form",
+          "status": "approximated",
+          "how": "the grid's ↗ opens the line's fields in a dialog, not the task page (a related page is registered for project.task links)"
+        },
+        {
+          "feature": "New sub-task defaults (context default_project_id, user_ids, partner, milestone)",
+          "status": "approximated",
+          "how": "the app's onchange on child_ids fills them; closed sub-tasks are counted there too"
+        },
+        {
+          "feature": "Blocked By tab: an editable list of linked tasks (many2many with a tree)",
+          "status": "approximated",
+          "how": "tags. Needs: a many2many shown as a table with columns of the linked records"
+        },
+        {
+          "feature": "Extra Info tab (developer mode only: group_no_one)",
+          "status": "approximated",
+          "how": "shown to everyone"
+        },
+        {
+          "feature": "Working Time to Assign / to Close groups, hidden when zero",
+          "status": "covered",
+          "how": "line-style sections with conditions; float_time as a number with \"h\""
+        },
+        {
+          "feature": "Cover Image, Parent Task with no_create",
+          "status": "covered",
+          "how": "create false"
+        },
+        {
+          "feature": "Chatter: followers, activities, messages (oe_chatter)",
+          "status": "covered",
+          "how": "sidePanel slot \"chatter\" filled by @fieldia/chatter; the demo has no messages for this record because the shared sample chatter only knows partner:1"
+        },
+        {
+          "feature": "Access groups on fields, buttons, tabs and columns (groups=\"…\", \"!group\")",
+          "status": "missing",
+          "needs": "a way to show a part only to some roles: a condition on the person (e.g. user.groups) or a role list on a node; every group-gated part is shown to everyone here"
+        },
+        {
+          "feature": "context on fields and buttons (default_* for new lines and linked records, search_default_*, form_view_ref)",
+          "status": "approximated",
+          "how": "new lines get their defaults from the app's onchange; a link's context and view refs are lost"
+        },
+        {
+          "feature": "decoration-* on fields and list rows (danger/warning/success/muted/bf)",
+          "status": "missing",
+          "needs": "decorations: a tone for a field or a table row (and cell) while a condition holds"
+        },
+        {
+          "feature": "data-hotkey on header buttons (Alt+Q, Alt+V…)",
+          "status": "missing",
+          "needs": "a key for a button"
+        },
+        {
+          "feature": "js_class custom form controller",
+          "status": "missing",
+          "needs": "Flectra's own JS behaviour for this form (form-level hooks beyond steps)"
+        },
+        {
+          "feature": "Conditions written with tuples, e.g. state in ('a', 'b')",
+          "status": "approximated",
+          "how": "Fieldia's expressions take lists: every tuple rewritten as ['a', 'b']; tuples would let Flectra conditions be pasted unchanged"
+        },
+        {
+          "feature": "Conditions on the record id (not id, … and id)",
+          "status": "missing",
+          "needs": "the record's id readable in conditions (or a \"new record\" flag); \"not id\" parts were dropped"
+        },
+        {
+          "feature": "Field help shown as a tooltip on the label",
+          "status": "approximated",
+          "how": "Fieldia shows help as text under the field, which turned these long Flectra helps into noise: they were left out of the page (they stay in Flectra)"
+        },
+        {
+          "feature": "Technical invisible fields (invisible=\"1\") read by conditions",
+          "status": "covered",
+          "how": "declared in fields and never placed: they load, are read by conditions and saved when the app changes them"
+        },
+        {
+          "feature": "force_save on read-only fields",
+          "status": "covered",
+          "how": "a read-only field the app changes (onchange or an action's answer) is sent with the save"
+        },
+        {
+          "feature": "Header button methods (type=\"object\") on the server",
+          "status": "covered",
+          "how": "a call step, its name namespaced by model (\"project.task.<method>\") because a call carries no model and several lanes share one demo app; the steps save first and after, as Flectra saves before calling"
+        }
+      ],
+      "summary": {
+        "covered": 24,
+        "missing": 14,
+        "approximated": 32
+      }
+    },
+    {
+      "id": "real-transfer",
+      "title": "Warehouse receipt",
+      "flectra": {
+        "module": "stock",
+        "model": "stock.picking",
+        "view": "view_picking_form",
+        "file": "addons/stock/views/stock_picking_views.xml",
+        "inherited": [
+          "stock_account.stock_valuation_layer_picking (Valuation stat button, country_code)",
+          "stock_picking_batch.stock_picking_form_inherit (Batch stat button, Batch Transfer field)",
+          "mrp.view_picking_form_inherit_mrp (has_kits, Kit column)",
+          "sherkety_stock.view_picking_form_sk_onhand (On-Hand Now, On-Hand @ Doc Date, analytic distribution columns)",
+          "sherkety_stock_transfer.view_picking_form_sherkety_transfer_lock (demand and quantity locked on an inter-company transfer)"
+        ]
+      },
+      "size": {
+        "fields": 77,
+        "tabs": 3,
+        "tables": 2,
+        "headerButtons": 9,
+        "smartButtons": 9,
+        "conditions": 68
+      },
+      "built": {
+        "fields": 44,
+        "lineFields": 21,
+        "tabs": 3,
+        "tables": 2,
+        "headerButtons": 11,
+        "statButtons": 9,
+        "badges": 1,
+        "conditions": 46,
+        "dialogs": 2
+      },
+      "features": [
+        {
+          "feature": "Status statusbar, two variants by picking type (incoming: draft,assigned,done; others: draft,confirmed,assigned,done)",
+          "status": "approximated",
+          "how": "one header statusbar with the receipt's visible states: the header statusbar takes no condition and there is one per sheet"
+        },
+        {
+          "feature": "Mark as Todo (action_confirm)",
+          "status": "covered",
+          "how": "steps save, call, save; the app confirms and reserves: a receipt is Ready at once, every quantity its demand"
+        },
+        {
+          "feature": "Check Availability (action_assign, invisible not show_check_availability)",
+          "status": "covered"
+        },
+        {
+          "feature": "Validate, highlighted when Ready and plain otherwise (two buttons)",
+          "status": "covered",
+          "how": "two buttons with Flectra's conditions and styles"
+        },
+        {
+          "feature": "Validate with nothing processed: the UserError",
+          "status": "covered",
+          "how": "the app stops the steps with Flectra's words, said as a warning"
+        },
+        {
+          "feature": "Validate with less than the demand: Create Backorder? wizard (stock.backorder.confirmation) with Create Backorder / No Backorder / Discard",
+          "status": "approximated",
+          "how": "the app answers with an open of a dialog page (real-backorder-confirmation): a radio Create/No Backorder and Save & Close; into sets a technical field backorder_choice, then a call finishes the transfer. Needs: dialog pages with their own buttons, each running its steps, so a wizard's two choices are two buttons"
+        },
+        {
+          "feature": "Sign (widget signature, two variants, outgoing transfers only)",
+          "status": "approximated",
+          "how": "a button opening a dialog page with Fieldia's signature pad (real-picking-sign), the partner's name filled in, into the picking's signature, then saved; hidden on this receipt as in Flectra"
+        },
+        {
+          "feature": "Print (Picking Operations), Print (Delivery Slip), Print Labels",
+          "status": "approximated",
+          "how": "calls the app answers; rendering the PDF is the app's"
+        },
+        {
+          "feature": "Return (stock.return.picking wizard)",
+          "status": "approximated",
+          "how": "the app makes the return straight away and the Returns stat button counts it; the wizard's lines are not shown"
+        },
+        {
+          "feature": "Cancel with its confirmation",
+          "status": "covered",
+          "how": "confirm, then the call"
+        },
+        {
+          "feature": "Stat buttons Returns, Scraps, Packages, Traceability, Allocation, Operations, Detailed Operations, Batch, Valuation, with their conditions",
+          "status": "covered",
+          "how": "each a stat button with Flectra's condition (Operations' condition simplified to an equivalent); what they open is the app's"
+        },
+        {
+          "feature": "Stat button help tooltip (help=\"List view of operations\")",
+          "status": "missing",
+          "needs": "help on a stat button"
+        },
+        {
+          "feature": "Priority star and name in the title, both hidden while name is \"/\"",
+          "status": "approximated",
+          "how": "priority as a one-star rating over the title; the title cannot be hidden by a condition"
+        },
+        {
+          "feature": "Partner label by type: Delivery Address / Receive From / Contact",
+          "status": "approximated",
+          "how": "partner_id placed three times with each label and condition"
+        },
+        {
+          "feature": "Partner, dates, origin, owner read-only when done or cancelled",
+          "status": "covered",
+          "how": "readonly conditions"
+        },
+        {
+          "feature": "Operation type read-only \"state != 'draft' and id\"",
+          "status": "approximated",
+          "how": "the id part dropped"
+        },
+        {
+          "feature": "Operation type domain from context (restricted_picking_type_code)",
+          "status": "missing",
+          "needs": "filters reading the app's context"
+        },
+        {
+          "feature": "Source / destination locations by type, two variants by the multi-locations group",
+          "status": "approximated",
+          "how": "one of each with the type condition; groups missing"
+        },
+        {
+          "feature": "Back Order of (invisible unless set) and its link",
+          "status": "covered",
+          "how": "related page for stock.picking registered"
+        },
+        {
+          "feature": "Scheduled Date required \"id\" and coloured when late; rescheduling popover (json_popover)",
+          "status": "approximated",
+          "how": "always required; no colour; the popover is missing. Needs: a field popover the app fills"
+        },
+        {
+          "feature": "Deadline, Product Availability (outgoing only, coloured), Effective Date when done",
+          "status": "approximated",
+          "how": "conditions covered; the colours are missing"
+        },
+        {
+          "feature": "Assign Owner (incoming only)",
+          "status": "covered"
+        },
+        {
+          "feature": "Picking properties (definition from the operation type, columns 2)",
+          "status": "approximated",
+          "how": "fixed definitions"
+        },
+        {
+          "feature": "Operations editable list (move_ids_without_package, stock_move_one2many, add-label \"Add a Product\")",
+          "status": "approximated",
+          "how": "grid; the grid ignores the addLabel option (\"Add a line\"); the moves' details dialog of stock_move_one2many is missing"
+        },
+        {
+          "feature": "Columns: Product, Description, Date Scheduled, Deadline, Kit, Demand, Forecast, Quantity, Unit, On-Hand Now, On-Hand @ Doc Date, Analytic, Picked, Serial Numbers; optional show/hide as Flectra",
+          "status": "covered",
+          "how": "columns and optionalColumns"
+        },
+        {
+          "feature": "Product readonly once confirmed unless additional, or once it has move lines",
+          "status": "missing",
+          "needs": "per-cell readonly conditions"
+        },
+        {
+          "feature": "Demand readonly unless is_initial_demand_editable; and on an inter-company transfer (parent.sherkety_transfer_id)",
+          "status": "approximated",
+          "how": "a badge says the quantities are locked; the cells stay editable. Needs: cell readonly by the line and by the parent"
+        },
+        {
+          "feature": "Quantity column hidden in draft (column_invisible parent.state=='draft'); Forecast hidden unless an outgoing, confirmed transfer",
+          "status": "missing",
+          "needs": "column conditions reading the record; Forecast is an optional hidden column instead"
+        },
+        {
+          "feature": "Kit column only when the transfer has kits (mrp)",
+          "status": "approximated",
+          "how": "an optional hidden column"
+        },
+        {
+          "feature": "Quantity in red above the demand; on-hand at date in red below the demand (Sherkety)",
+          "status": "missing",
+          "needs": "cell decorations"
+        },
+        {
+          "feature": "Rows muted when scrapped, cancelled or done and locked",
+          "status": "missing",
+          "needs": "row decorations"
+        },
+        {
+          "feature": "Forecast widget (forecast_widget): availability text and date",
+          "status": "approximated",
+          "how": "a number"
+        },
+        {
+          "feature": "Analytic distribution widget (percentages per account)",
+          "status": "approximated",
+          "how": "a many2many of accounts: the percentages are lost. Needs: a distribution widget (accounts with shares)"
+        },
+        {
+          "feature": "Serial numbers: hidden per line without tracking, created only when the type allows (options create from parent.use_create_lots)",
+          "status": "missing",
+          "needs": "per-cell conditions and a create option reading the parent"
+        },
+        {
+          "feature": "Row buttons: Assign Serial Numbers, Forecast Report (two variants)",
+          "status": "missing",
+          "needs": "buttons in a table row, with conditions"
+        },
+        {
+          "feature": "Product → unit, description, on-hand (onchange)",
+          "status": "covered",
+          "how": "the app's onchange on the lines"
+        },
+        {
+          "feature": "Operation type → code and default locations (onchange)",
+          "status": "covered"
+        },
+        {
+          "feature": "Package levels table (entire packages), Put in Pack button",
+          "status": "approximated",
+          "how": "a small table and a button with Flectra's conditions; Flectra's package-level subview is richer"
+        },
+        {
+          "feature": "Moves table read-only when done and locked",
+          "status": "covered",
+          "how": "readonly condition on the table node"
+        },
+        {
+          "feature": "Additional Info tab: Shipping Policy (not for receipts), Responsible (avatar), Procurement Group (developer), Company (multi-company), Batch",
+          "status": "approximated",
+          "how": "all placed with their conditions; avatar and groups missing"
+        },
+        {
+          "feature": "Note tab (html, placeholder)",
+          "status": "covered"
+        },
+        {
+          "feature": "Phone width",
+          "status": "covered",
+          "how": "the page stacks and nothing scrolls sideways; the grid scrolls inside itself"
+        },
+        {
+          "feature": "Chatter: followers, activities, messages (oe_chatter)",
+          "status": "covered",
+          "how": "sidePanel slot \"chatter\" filled by @fieldia/chatter; the demo has no messages for this record because the shared sample chatter only knows partner:1"
+        },
+        {
+          "feature": "Access groups on fields, buttons, tabs and columns (groups=\"…\", \"!group\")",
+          "status": "missing",
+          "needs": "a way to show a part only to some roles: a condition on the person (e.g. user.groups) or a role list on a node; every group-gated part is shown to everyone here"
+        },
+        {
+          "feature": "context on fields and buttons (default_* for new lines and linked records, search_default_*, form_view_ref)",
+          "status": "approximated",
+          "how": "new lines get their defaults from the app's onchange; a link's context and view refs are lost"
+        },
+        {
+          "feature": "decoration-* on fields and list rows (danger/warning/success/muted/bf)",
+          "status": "missing",
+          "needs": "decorations: a tone for a field or a table row (and cell) while a condition holds"
+        },
+        {
+          "feature": "data-hotkey on header buttons (Alt+Q, Alt+V…)",
+          "status": "missing",
+          "needs": "a key for a button"
+        },
+        {
+          "feature": "js_class custom form controller",
+          "status": "missing",
+          "needs": "Flectra's own JS behaviour for this form (form-level hooks beyond steps)"
+        },
+        {
+          "feature": "Conditions written with tuples, e.g. state in ('a', 'b')",
+          "status": "approximated",
+          "how": "Fieldia's expressions take lists: every tuple rewritten as ['a', 'b']; tuples would let Flectra conditions be pasted unchanged"
+        },
+        {
+          "feature": "Conditions on the record id (not id, … and id)",
+          "status": "missing",
+          "needs": "the record's id readable in conditions (or a \"new record\" flag); \"not id\" parts were dropped"
+        },
+        {
+          "feature": "Field help shown as a tooltip on the label",
+          "status": "approximated",
+          "how": "Fieldia shows help as text under the field, which turned these long Flectra helps into noise: they were left out of the page (they stay in Flectra)"
+        },
+        {
+          "feature": "Technical invisible fields (invisible=\"1\") read by conditions",
+          "status": "covered",
+          "how": "declared in fields and never placed: they load, are read by conditions and saved when the app changes them"
+        },
+        {
+          "feature": "force_save on read-only fields",
+          "status": "covered",
+          "how": "a read-only field the app changes (onchange or an action's answer) is sent with the save"
+        },
+        {
+          "feature": "Header button methods (type=\"object\") on the server",
+          "status": "covered",
+          "how": "a call step, its name namespaced by model (\"stock.picking.<method>\") because a call carries no model and several lanes share one demo app; the steps save first and after, as Flectra saves before calling"
+        }
+      ],
+      "summary": {
+        "approximated": 22,
+        "covered": 19,
+        "missing": 13
+      }
+    },
+    {
+      "id": "real-manufacturing-order",
+      "title": "Manufacturing order",
+      "flectra": {
+        "module": "mrp",
+        "model": "mrp.production",
+        "view": "mrp_production_form_view",
+        "file": "addons/mrp/views/mrp_production_views.xml",
+        "inherited": [
+          "mrp_account.mrp_production_form_view_inherited (Valuation and Analytic Account stat buttons, analytic distribution)",
+          "sale_mrp.mrp_production_form_view_sale (Sale stat button)",
+          "purchase_mrp.mrp_production_form_view_purchase (Purchases stat button)",
+          "mrp.mrp_production_workorder_tree_editable_view (the Work Orders list, by tree_view_ref)"
+        ]
+      },
+      "size": {
+        "fields": 103,
+        "tabs": 4,
+        "tables": 4,
+        "headerButtons": 16,
+        "smartButtons": 14,
+        "conditions": 98
+      },
+      "built": {
+        "fields": 57,
+        "lineFields": 35,
+        "tabs": 4,
+        "tables": 3,
+        "headerButtons": 16,
+        "statButtons": 14,
+        "badges": 4,
+        "conditions": 63
+      },
+      "features": [
+        {
+          "feature": "State statusbar (draft, confirmed, done visible)",
+          "status": "covered",
+          "how": "header statusbar with visibleStates"
+        },
+        {
+          "feature": "Produce / Produce All, each twice: with components, and without them behind a confirmation",
+          "status": "covered",
+          "how": "four buttons with Flectra's conditions and confirm words; show_produce, show_produce_all and show_lock are worked out in the page from state and quantities"
+        },
+        {
+          "feature": "Produce All: consume, produce by-products, finish work orders, Done and locked",
+          "status": "covered",
+          "how": "the app's answer, then saved"
+        },
+        {
+          "feature": "Produce part of the quantity: backorder wizard (mrp.production.backorder)",
+          "status": "approximated",
+          "how": "the app makes the backorder at once and the Backorders stat button shows; the wizard is not shown"
+        },
+        {
+          "feature": "Consumption warning wizard (consumption warning / strict)",
+          "status": "missing",
+          "needs": "not built: would be a dialog page the app opens, as the transfer's backorder; and dialog pages need their own buttons"
+        },
+        {
+          "feature": "Confirm: reserve components, readiness, availability",
+          "status": "covered",
+          "how": "the app reserves from WH/Stock: 12 table legs of 16, so Not Available"
+        },
+        {
+          "feature": "Plan / Unplan",
+          "status": "covered",
+          "how": "the app gives each work order its start and end in sequence"
+        },
+        {
+          "feature": "Check availability / Unreserve",
+          "status": "covered"
+        },
+        {
+          "feature": "Scrap (stock.scrap wizard), Unbuild (mrp.unbuild wizard), Mass Produce (serial wizard), Print Labels",
+          "status": "approximated",
+          "how": "calls the app answers directly; the wizards are not shown"
+        },
+        {
+          "feature": "Lock / Unlock (manager group)",
+          "status": "covered",
+          "how": "set steps on is_locked, then save; the group is not checked"
+        },
+        {
+          "feature": "Cancel with confirmation",
+          "status": "covered"
+        },
+        {
+          "feature": "Stat buttons Allocation, Sale, Purchases, Child MO, Source MO, Backorders (< 2), Unbuilds, Scraps, Transfers, Traceability, Product Moves, Overview, Valuation, Analytic Account",
+          "status": "covered",
+          "how": "fourteen stat buttons with counts and conditions"
+        },
+        {
+          "feature": "\"MO Reference\" label over the title, priority star, name placeholder",
+          "status": "approximated",
+          "how": "the title takes no label; priority as a one-star rating"
+        },
+        {
+          "feature": "Product (readonly once confirmed, placeholder, domain on type)",
+          "status": "covered"
+        },
+        {
+          "feature": "Custom description (product_description_variants, hidden when empty)",
+          "status": "covered"
+        },
+        {
+          "feature": "Quantity row: qty_producing / product_qty unit \"To Produce\" on one line",
+          "status": "approximated",
+          "how": "three fields in a row; the \"/\" and \"To Produce\" words are labels"
+        },
+        {
+          "feature": "product_qty as a link that opens Change Quantity To Produce once confirmed",
+          "status": "approximated",
+          "how": "a separate link button; the wizard is the app's answer"
+        },
+        {
+          "feature": "Forecast Report buttons, red when forecasted_issue",
+          "status": "covered",
+          "how": "two buttons with opposite conditions, one in the danger style"
+        },
+        {
+          "feature": "Bill of Material, Generate BOM and Update BoM buttons",
+          "status": "covered"
+        },
+        {
+          "feature": "Lot/Serial to produce and the generate-serial button (tracked products only)",
+          "status": "covered"
+        },
+        {
+          "feature": "Scheduled Date / Start Date label by state; coloured when late; rescheduling popover",
+          "status": "approximated",
+          "how": "date_start placed twice with each label and condition; colour and popover missing"
+        },
+        {
+          "feature": "Component Status, coloured by readiness",
+          "status": "approximated",
+          "how": "the text, plus badges by the title: Components available / expected / not available"
+        },
+        {
+          "feature": "Responsible (many2one_avatar)",
+          "status": "approximated",
+          "how": "without the avatar"
+        },
+        {
+          "feature": "Finished moves table (move_finished_ids, invisible)",
+          "status": "approximated",
+          "how": "not declared: the app keeps finished moves"
+        },
+        {
+          "feature": "Components editable list (mrp_production_components_x2many)",
+          "status": "covered",
+          "how": "grid with Product, From, To Consume, Forecast, Quantity, Unit, Consumed, Lot/Serial; optional columns as Flectra"
+        },
+        {
+          "feature": "Components default order (is_done, manual_consumption desc, sequence)",
+          "status": "missing",
+          "needs": "a table order by line fields"
+        },
+        {
+          "feature": "Components deletable only in draft (options delete)",
+          "status": "missing",
+          "needs": "a per-line delete condition"
+        },
+        {
+          "feature": "Component domain excluding the produced product (parent.product_id)",
+          "status": "missing",
+          "needs": "line filters reading the parent record"
+        },
+        {
+          "feature": "To Consume shown two ways by parent.show_produce_all (mrp_should_consume: \"should / total\")",
+          "status": "approximated",
+          "how": "one column of the demand"
+        },
+        {
+          "feature": "Quantity: success/warning by consumption, mrp_consumed widget, hidden in draft",
+          "status": "missing",
+          "needs": "cell decorations and column conditions"
+        },
+        {
+          "feature": "Consumed and Lot/Serial columns hidden in draft or without lots",
+          "status": "missing",
+          "needs": "column conditions"
+        },
+        {
+          "feature": "Components table read-only when cancelled, or done and locked",
+          "status": "covered",
+          "how": "readonly condition on the node"
+        },
+        {
+          "feature": "Product, quantity and BoM changes rebuild and rescale components, by-products and work orders (onchange)",
+          "status": "covered",
+          "how": "the app's onchange on product_id, bom_id, product_qty and qty_producing"
+        },
+        {
+          "feature": "Work Orders tab (routings group) with the editable work-order list",
+          "status": "approximated",
+          "how": "grid: Operation, Work Center, Product, Quantity Remaining/Produced, Lot, Start, End, Expected and Real Duration with totals, Status; group not checked"
+        },
+        {
+          "feature": "Work-order durations as HH:MM (float_time) and a live timer (mrp_timer)",
+          "status": "missing",
+          "needs": "a duration widget and a timer"
+        },
+        {
+          "feature": "Work-order status badge with tones",
+          "status": "approximated",
+          "how": "plain text"
+        },
+        {
+          "feature": "Work-order row buttons Start, Pause, Done, Block, Unblock, open",
+          "status": "missing",
+          "needs": "buttons in table rows with per-line conditions"
+        },
+        {
+          "feature": "Work-order list header buttons on selected rows (Start, Pause, Done) and multi_edit",
+          "status": "missing",
+          "needs": "actions on selected lines of a table"
+        },
+        {
+          "feature": "By-Products tab (byproducts group): Product, To, To Produce, Produced, Unit, Cost Share, Lot/Serial; muted when done",
+          "status": "approximated",
+          "how": "grid with optional columns; tones missing; group not checked"
+        },
+        {
+          "feature": "Miscellaneous tab: operation type, locations (multi-locations group), source, deadline, analytic distribution, company",
+          "status": "approximated",
+          "how": "all placed with Flectra's conditions; distribution as account tags"
+        },
+        {
+          "feature": "Chatter: followers, activities, messages (oe_chatter)",
+          "status": "covered",
+          "how": "sidePanel slot \"chatter\" filled by @fieldia/chatter; the demo has no messages for this record because the shared sample chatter only knows partner:1"
+        },
+        {
+          "feature": "Access groups on fields, buttons, tabs and columns (groups=\"…\", \"!group\")",
+          "status": "missing",
+          "needs": "a way to show a part only to some roles: a condition on the person (e.g. user.groups) or a role list on a node; every group-gated part is shown to everyone here"
+        },
+        {
+          "feature": "context on fields and buttons (default_* for new lines and linked records, search_default_*, form_view_ref)",
+          "status": "approximated",
+          "how": "new lines get their defaults from the app's onchange; a link's context and view refs are lost"
+        },
+        {
+          "feature": "decoration-* on fields and list rows (danger/warning/success/muted/bf)",
+          "status": "missing",
+          "needs": "decorations: a tone for a field or a table row (and cell) while a condition holds"
+        },
+        {
+          "feature": "data-hotkey on header buttons (Alt+Q, Alt+V…)",
+          "status": "missing",
+          "needs": "a key for a button"
+        },
+        {
+          "feature": "js_class custom form controller",
+          "status": "missing",
+          "needs": "Flectra's own JS behaviour for this form (form-level hooks beyond steps)"
+        },
+        {
+          "feature": "Conditions written with tuples, e.g. state in ('a', 'b')",
+          "status": "approximated",
+          "how": "Fieldia's expressions take lists: every tuple rewritten as ['a', 'b']; tuples would let Flectra conditions be pasted unchanged"
+        },
+        {
+          "feature": "Conditions on the record id (not id, … and id)",
+          "status": "missing",
+          "needs": "the record's id readable in conditions (or a \"new record\" flag); \"not id\" parts were dropped"
+        },
+        {
+          "feature": "Field help shown as a tooltip on the label",
+          "status": "approximated",
+          "how": "Fieldia shows help as text under the field, which turned these long Flectra helps into noise: they were left out of the page (they stay in Flectra)"
+        },
+        {
+          "feature": "Technical invisible fields (invisible=\"1\") read by conditions",
+          "status": "covered",
+          "how": "declared in fields and never placed: they load, are read by conditions and saved when the app changes them"
+        },
+        {
+          "feature": "force_save on read-only fields",
+          "status": "covered",
+          "how": "a read-only field the app changes (onchange or an action's answer) is sent with the save"
+        },
+        {
+          "feature": "Header button methods (type=\"object\") on the server",
+          "status": "covered",
+          "how": "a call step, its name namespaced by model (\"mrp.production.<method>\") because a call carries no model and several lanes share one demo app; the steps save first and after, as Flectra saves before calling"
+        }
+      ],
+      "summary": {
+        "covered": 21,
+        "approximated": 17,
+        "missing": 14
+      }
+    }
+  ]
+}
