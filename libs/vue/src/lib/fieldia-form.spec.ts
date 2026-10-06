@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { mount } from '@vue/test-utils';
-import { createForm, createMemoryDataSource, type Form, type Page } from '@fieldia/core';
+import { createForm, createMemoryDataSource, type ActionRequest, type Form, type Page } from '@fieldia/core';
 import type { ViewerHandle } from '@fieldia/viewer';
 import { defineComponent, h, nextTick, ref, type PropType } from 'vue';
 import { FieldiaForm, useFormState } from './fieldia-form';
@@ -20,6 +20,23 @@ const custom: Page = {
     children: [
       { type: 'field', id: 'f-nickname', field: 'nickname', widget: 'shout' },
       { type: 'slot', id: 'note', name: 'note' },
+    ],
+  },
+};
+
+/** A product priced by the app, saved as a record. */
+const pricing: Page = {
+  fieldia: '0.1',
+  id: 'pricing',
+  data: { kind: 'record', model: 'shop.order' },
+  fields: { product: { type: 'char', label: 'Product' }, price: { type: 'float', label: 'Price' } },
+  layout: {
+    type: 'sections',
+    id: 'root',
+    children: [
+      { type: 'field', id: 'f-product', field: 'product' },
+      { type: 'field', id: 'f-price', field: 'price' },
+      { type: 'button', id: 'price', label: 'Price it', action: 'price' },
     ],
   },
 };
@@ -96,11 +113,46 @@ describe('<FieldiaForm> for Vue', () => {
     wrapper.unmount();
   });
 
-  it('passes button presses on as an action event', async () => {
-    const wrapper = mount(FieldiaForm, { props: { page: page('customer') }, attachTo: document.body });
+  it('passes button presses on to @action, and takes what it answers', async () => {
+    const pressed: ActionRequest[] = [];
+    const wrapper = mount(FieldiaForm, { props: { page: page('customer'), onAction: (request: ActionRequest) => void pressed.push(request) }, attachTo: document.body });
     await handleOf(wrapper)!.form.runAction('sales');
-    expect(wrapper.emitted('action')?.[0]?.[0]).toMatchObject({ action: 'open_sales' });
+    expect(pressed[0]).toMatchObject({ action: 'open_sales' });
     wrapper.unmount();
+    // Declared in a template as `@action`, an answer that sets a value.
+    const Parent = defineComponent({
+      setup: () => () => h(FieldiaForm, { page: pricing, dataSource: createMemoryDataSource(), onAction: () => ({ values: { price: 380 } }) }),
+    });
+    const parent = mount(Parent, { attachTo: document.body });
+    await parent.find('[data-node="price"]').trigger('click');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect((parent.find('[data-node="f-price"] input').element as HTMLInputElement).value).toBe('380.00');
+    parent.unmount();
+  });
+
+  it('emits the form’s events: change, run, save, send and step', async () => {
+    const wrapper = mount(FieldiaForm, { props: { page: pricing, dataSource: createMemoryDataSource(), onAction: () => ({ values: { price: 380 } }) }, attachTo: document.body });
+    const product = wrapper.find('[data-node="f-product"] input');
+    (product.element as HTMLInputElement).value = 'Desk lamp';
+    await product.trigger('input');
+    await wrapper.find('[data-node="price"]').trigger('click');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(wrapper.emitted('change')?.map(([event]) => [(event as { field: string }).field, (event as { by: string }).by])).toEqual([
+      ['product', 'person'],
+      ['price', 'step'],
+    ]);
+    expect(wrapper.emitted('run')?.[0]?.[0]).toMatchObject({ id: 'price', result: { done: true } });
+    await handleOf(wrapper)!.save();
+    expect(wrapper.emitted('save')?.[0]?.[0]).toMatchObject({ values: { product: 'Desk lamp', price: 380 } });
+    wrapper.unmount();
+    const sending = mount(FieldiaForm, { props: { page: { ...pricing, data: { kind: 'responses' } }, dataSource: createMemoryDataSource() }, attachTo: document.body });
+    await handleOf(sending)!.save();
+    expect(sending.emitted('send')?.[0]?.[0]).toEqual({ values: { product: null, price: null } });
+    sending.unmount();
+    const survey = mount(FieldiaForm, { props: { page: page('survey') }, attachTo: document.body });
+    await handleOf(survey)!.form.settled();
+    expect(survey.emitted('step')?.[0]?.[0]).toEqual({ step: 'step-about' });
+    survey.unmount();
   });
 
   it('passes a list’s opened row on as an openRecord event', async () => {
