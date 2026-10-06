@@ -1,0 +1,433 @@
+{
+  "fieldia": "0.1",
+  "id": "real-tender",
+  "title": "Tender Opportunity",
+  "description": "Sherkety ERP's own tender form (crm_tender, tender.opportunity, view_tender_opportunity_form): a bid in lots, its compliance checklist, team, money, competition, results, documents and timeline.",
+  "maxWidth": "full",
+  "data": { "kind": "record", "model": "tender.opportunity" },
+  "fields": {
+    "name": { "type": "char", "label": "Tender Name", "required": true },
+    "tender_number": { "type": "char", "label": "Tender Reference", "readonly": true, "default": "New" },
+    "state": {
+      "type": "selection",
+      "label": "State",
+      "required": true,
+      "options": [
+        { "value": "draft", "label": "Draft" },
+        { "value": "preparing", "label": "Preparing Bid" },
+        { "value": "review", "label": "Internal Review" },
+        { "value": "submitted", "label": "Submitted" },
+        { "value": "shortlisted", "label": "Shortlisted" },
+        { "value": "won", "label": "Won" },
+        { "value": "lost", "label": "Lost" },
+        { "value": "cancelled", "label": "Cancelled" }
+      ],
+      "default": "draft"
+    },
+    "client_id": { "type": "many2one", "label": "Client", "relation": "res.partner", "required": true },
+    "client_contact_id": {
+      "type": "many2one",
+      "label": "Contact Person",
+      "relation": "res.partner",
+      "filter": [{ "field": "parent_id", "op": "=", "valueFrom": "client_id" }]
+    },
+    "tender_type": {
+      "type": "selection",
+      "label": "Tender Type",
+      "required": true,
+      "options": [
+        { "value": "open", "label": "Open Tender" },
+        { "value": "selective", "label": "Selective/Limited Tender" },
+        { "value": "negotiated", "label": "Negotiated Tender" },
+        { "value": "framework", "label": "Framework Agreement" },
+        { "value": "two_stage", "label": "Two-Stage Tender" }
+      ],
+      "default": "open"
+    },
+    "sales_team_id": { "type": "many2one", "label": "Sales Team", "relation": "crm.team" },
+    "announcement_date": { "type": "date", "label": "Announcement Date" },
+    "clarification_deadline": { "type": "datetime", "label": "Clarification Deadline" },
+    "submission_deadline": { "type": "datetime", "label": "Submission Deadline", "required": true },
+    "opening_date": { "type": "datetime", "label": "Tender Opening Date" },
+    "award_date": { "type": "date", "label": "Expected Award Date" },
+    "days_until_submission": { "type": "integer", "label": "Days Until Submission", "readonly": true },
+    "deadline_status": {
+      "type": "selection",
+      "label": "Deadline Status",
+      "options": [
+        { "value": "plenty", "label": "Plenty of Time" },
+        { "value": "approaching", "label": "Approaching" },
+        { "value": "urgent", "label": "Urgent" },
+        { "value": "overdue", "label": "Overdue" }
+      ],
+      "compute": "if(days_until_submission < 0, 'overdue', if(days_until_submission <= 3, 'urgent', if(days_until_submission <= 7, 'approaching', 'plenty')))"
+    },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency", "required": true },
+    "lot_ids": {
+      "type": "one2many",
+      "label": "Tender Lots",
+      "relation": "tender.lot",
+      "sequenceField": "sequence",
+      "fields": {
+        "sequence": { "type": "integer", "label": "Sequence", "default": 10 },
+        "lot_number": { "type": "char", "label": "Lot Number" },
+        "name": { "type": "char", "label": "Lot Name", "required": true },
+        "participating": { "type": "boolean", "label": "We Are Bidding", "default": true },
+        "estimated_value": { "type": "monetary", "label": "Estimated Value", "currency": "EGP" },
+        "quotation_id": { "type": "many2one", "label": "Our Quote", "relation": "sale.order" },
+        "delivery_deadline": { "type": "date", "label": "Delivery Deadline" }
+      }
+    },
+    "lot_count": { "type": "integer", "label": "Lot Count", "compute": "count(lot_ids)" },
+    "requirement_ids": {
+      "type": "one2many",
+      "label": "Requirements",
+      "relation": "tender.requirement",
+      "sequenceField": "sequence",
+      "fields": {
+        "sequence": { "type": "integer", "label": "Sequence", "default": 10 },
+        "name": { "type": "char", "label": "Requirement", "required": true },
+        "requirement_type": {
+          "type": "selection",
+          "label": "Requirement Type",
+          "required": true,
+          "default": "technical",
+          "options": [
+            { "value": "technical", "label": "Technical Specification" },
+            { "value": "financial", "label": "Financial Requirement" },
+            { "value": "legal", "label": "Legal Document" },
+            { "value": "certification", "label": "Certification/License" },
+            { "value": "experience", "label": "Experience/References" },
+            { "value": "other", "label": "Other" }
+          ]
+        },
+        "mandatory": { "type": "boolean", "label": "Mandatory", "default": true },
+        "compliant": { "type": "boolean", "label": "Compliant" },
+        "responsible_id": { "type": "many2one", "label": "Responsible Person", "relation": "res.users" },
+        "evidence_count": { "type": "integer", "label": "Evidence Count", "readonly": true }
+      }
+    },
+    "compliance_percentage": { "type": "float", "label": "Compliance %", "readonly": true, "digits": [5, 2] },
+    "lead_id": { "type": "many2one", "label": "Bid Leader", "relation": "res.users" },
+    "team_member_ids": { "type": "many2many", "label": "Bid Team", "relation": "res.users" },
+    "estimated_value": { "type": "monetary", "label": "Estimated Value", "currencyField": "currency_id" },
+    "our_bid_amount": { "type": "monetary", "label": "Our Bid Amount", "currencyField": "currency_id", "readonly": true },
+    "profit_margin": { "type": "float", "label": "Expected Margin %", "digits": [5, 2] },
+    "bid_bond_required": { "type": "boolean", "label": "Bid Bond Required" },
+    "bid_bond_amount": { "type": "monetary", "label": "Bid Bond Amount", "currencyField": "currency_id" },
+    "bid_bond_document_id": { "type": "many2one", "label": "Bid Bond Document", "relation": "ir.attachment" },
+    "competitors_count": { "type": "integer", "label": "Number of Competitors", "min": 0 },
+    "win_probability": { "type": "float", "label": "Win Probability %", "digits": [5, 2], "min": 0, "max": 100, "default": 50 },
+    "competitor_ids": { "type": "many2many", "label": "Known Competitors", "relation": "res.partner" },
+    "loss_reason": {
+      "type": "selection",
+      "label": "Loss Reason",
+      "options": [
+        { "value": "price", "label": "Price Too High" },
+        { "value": "technical", "label": "Technical Non-Compliance" },
+        { "value": "experience", "label": "Insufficient Experience" },
+        { "value": "capacity", "label": "Insufficient Capacity" },
+        { "value": "other", "label": "Other" }
+      ]
+    },
+    "winning_amount": { "type": "monetary", "label": "Winning Bid Amount", "currencyField": "currency_id" },
+    "winning_competitor_id": { "type": "many2one", "label": "Winning Competitor", "relation": "res.partner" },
+    "loss_notes": { "type": "text", "label": "Loss Analysis" },
+    "document_ids": { "type": "binary", "label": "Tender Documents", "multiple": true, "maxSize": 20971520 },
+    "document_count": { "type": "integer", "label": "Document Count", "compute": "count(document_ids)" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "name", "subtitleField": "tender_number", "placeholder": "e.g., Government Procurement 2024" },
+    "statusbar": { "field": "state", "visibleStates": ["draft", "preparing", "review", "submitted", "won"] },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "submit-bid",
+        "label": "Submit Bid",
+        "style": "primary",
+        "invisible": "state != 'review'",
+        "steps": [
+          { "do": "check" },
+          { "do": "set", "field": "state", "value": "'submitted'" },
+          { "do": "save" },
+          { "do": "call", "action": "tender_submit" }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "mark-won",
+        "label": "Mark Won",
+        "style": "primary",
+        "invisible": "state not in ['submitted', 'shortlisted']",
+        "steps": [
+          { "do": "set", "field": "state", "value": "'won'" },
+          { "do": "save" },
+          { "do": "call", "action": "tender_mark_won" }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "mark-lost",
+        "label": "Mark Lost",
+        "invisible": "state not in ['submitted', 'shortlisted']",
+        "steps": [
+          {
+            "do": "open",
+            "page": "real-tender-loss",
+            "as": "dialog",
+            "title": "Loss Analysis",
+            "values": { "currency_id": "currency_id" },
+            "into": { "loss_reason": "loss_reason", "loss_notes": "loss_notes", "winning_amount": "winning_amount", "winning_competitor_id": "winning_competitor_id" },
+            "then": [
+              { "do": "set", "field": "state", "value": "'lost'" },
+              { "do": "save" },
+              { "do": "call", "action": "tender_mark_lost" }
+            ]
+          }
+        ]
+      }
+    ],
+    "statButtons": [
+      { "id": "stat-documents", "label": "Documents", "field": "document_count", "icon": "file", "steps": [{ "do": "goTo", "target": "tab-documents" }] },
+      { "id": "stat-lots", "label": "Lots", "field": "lot_count", "icon": "list", "steps": [{ "do": "goTo", "target": "tab-lots" }] }
+    ],
+    "badges": [
+      { "id": "badge-plenty", "label": "Plenty of Time", "tone": "success", "icon": "clock", "invisible": "deadline_status != 'plenty'" },
+      { "id": "badge-approaching", "label": "Approaching", "tone": "info", "icon": "clock", "invisible": "deadline_status != 'approaching'" },
+      { "id": "badge-urgent", "label": "Urgent", "tone": "warning", "icon": "warning", "invisible": "deadline_status != 'urgent'" },
+      { "id": "badge-overdue", "label": "Overdue", "tone": "danger", "icon": "warning", "invisible": "deadline_status != 'overdue'" }
+    ],
+    "children": [
+      {
+        "type": "section",
+        "id": "main",
+        "style": "plain",
+        "columns": { "wide": 2, "medium": 2 },
+        "children": [
+          {
+            "type": "section",
+            "id": "tender-info",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-client", "field": "client_id" },
+              { "type": "field", "id": "f-client-contact", "field": "client_contact_id" },
+              { "type": "field", "id": "f-tender-type", "field": "tender_type" },
+              { "type": "field", "id": "f-sales-team", "field": "sales_team_id" }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "deadline-info",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-submission-deadline", "field": "submission_deadline" },
+              { "type": "field", "id": "f-days-until", "field": "days_until_submission" },
+              { "type": "field", "id": "f-deadline-status", "field": "deadline_status" },
+              { "type": "field", "id": "f-opening-date", "field": "opening_date" },
+              { "type": "field", "id": "f-award-date", "field": "award_date" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "tabs",
+        "id": "notebook",
+        "children": [
+          {
+            "type": "tab",
+            "id": "tab-lots",
+            "label": "Lots",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-lots",
+                "field": "lot_ids",
+                "labels": "hidden",
+                "columns": ["lot_number", "name", "participating", "estimated_value", "quotation_id", "delivery_deadline"],
+                "options": { "addLabel": "Add a line" }
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-requirements",
+            "label": "Requirements",
+            "children": [
+              { "type": "field", "id": "f-compliance", "field": "compliance_percentage", "widget": "progressbar", "options": { "max": 100, "showPercent": true, "color": "auto" } },
+              {
+                "type": "field",
+                "id": "f-requirements",
+                "field": "requirement_ids",
+                "labels": "hidden",
+                "columns": ["name", "requirement_type", "mandatory", "compliant", "responsible_id", "evidence_count"],
+                "options": { "addLabel": "Add a line" }
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-team",
+            "label": "Bid Team",
+            "children": [
+              {
+                "type": "section",
+                "id": "team",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 2 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "team-left",
+                    "style": "plain",
+                    "children": [
+                      { "type": "field", "id": "f-bid-leader", "field": "lead_id" },
+                      { "type": "field", "id": "f-team-members", "field": "team_member_ids", "widget": "tags" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-financial",
+            "label": "Financial",
+            "children": [
+              {
+                "type": "section",
+                "id": "financial",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 2 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "financial-left",
+                    "style": "plain",
+                    "children": [
+                      { "type": "field", "id": "f-estimated-value", "field": "estimated_value" },
+                      { "type": "field", "id": "f-our-bid", "field": "our_bid_amount" },
+                      { "type": "field", "id": "f-margin", "field": "profit_margin", "options": { "suffix": "%" } }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "financial-right",
+                    "style": "plain",
+                    "children": [
+                      { "type": "field", "id": "f-bond-required", "field": "bid_bond_required" },
+                      { "type": "field", "id": "f-bond-amount", "field": "bid_bond_amount", "invisible": "not bid_bond_required" },
+                      { "type": "field", "id": "f-bond-document", "field": "bid_bond_document_id", "invisible": "not bid_bond_required" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-competition",
+            "label": "Competition",
+            "children": [
+              {
+                "type": "section",
+                "id": "competition",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 2 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "competition-left",
+                    "style": "plain",
+                    "children": [
+                      { "type": "field", "id": "f-competitors-count", "field": "competitors_count" },
+                      { "type": "field", "id": "f-win-probability", "field": "win_probability", "widget": "progressbar", "options": { "max": 100, "showPercent": true, "color": "auto" } }
+                    ]
+                  }
+                ]
+              },
+              { "type": "field", "id": "f-competitors", "field": "competitor_ids", "widget": "tags" }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-results",
+            "label": "Results",
+            "invisible": "state not in ['won', 'lost']",
+            "children": [
+              {
+                "type": "section",
+                "id": "results",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 2 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "results-won",
+                    "style": "plain",
+                    "invisible": "state != 'won'",
+                    "children": [{ "type": "field", "id": "f-winning-amount-ours", "field": "our_bid_amount", "label": "Winning Amount" }]
+                  },
+                  {
+                    "type": "section",
+                    "id": "results-lost",
+                    "style": "plain",
+                    "invisible": "state != 'lost'",
+                    "children": [
+                      { "type": "field", "id": "f-loss-reason", "field": "loss_reason" },
+                      { "type": "field", "id": "f-winning-amount", "field": "winning_amount" },
+                      { "type": "field", "id": "f-winning-competitor", "field": "winning_competitor_id" },
+                      { "type": "field", "id": "f-loss-notes", "field": "loss_notes" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-documents",
+            "label": "Documents",
+            "children": [{ "type": "field", "id": "f-documents", "field": "document_ids", "labels": "hidden" }]
+          },
+          {
+            "type": "tab",
+            "id": "tab-dates",
+            "label": "Timeline",
+            "children": [
+              {
+                "type": "section",
+                "id": "dates",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 2 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "dates-left",
+                    "style": "plain",
+                    "children": [
+                      { "type": "field", "id": "f-announcement", "field": "announcement_date" },
+                      { "type": "field", "id": "f-clarification", "field": "clarification_deadline" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "dates-right",
+                    "style": "plain",
+                    "children": [
+                      { "type": "field", "id": "f-timeline-submission", "field": "submission_deadline" },
+                      { "type": "field", "id": "f-timeline-opening", "field": "opening_date" },
+                      { "type": "field", "id": "f-timeline-award", "field": "award_date" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" }
+  }
+}
