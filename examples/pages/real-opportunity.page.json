@@ -1,0 +1,497 @@
+{
+  "fieldia": "0.1",
+  "id": "real-opportunity",
+  "title": "Opportunity",
+  "description": "Sherkety ERP's lead and opportunity form (crm.lead, crm.crm_lead_view_form) with what Sales adds to it (sale_crm): one page that is a lead or an opportunity.",
+  "maxWidth": "full",
+  "data": { "kind": "record", "model": "crm.lead" },
+  "fields": {
+    "name": { "type": "char", "label": "Opportunity", "required": true },
+    "type": {
+      "type": "selection",
+      "label": "Type",
+      "required": true,
+      "options": [
+        { "value": "lead", "label": "Lead" },
+        { "value": "opportunity", "label": "Opportunity" }
+      ],
+      "default": "opportunity"
+    },
+    "active": { "type": "boolean", "label": "Active", "default": true },
+    "stage_id": {
+      "type": "many2one",
+      "label": "Stage",
+      "relation": "crm.stage",
+      "filter": [{ "any": [{ "field": "team_id", "op": "=", "valueFrom": "team_id" }, { "field": "team_id", "op": "notset" }] }]
+    },
+    "priority": { "type": "integer", "label": "Priority", "min": 1, "max": 3 },
+    "company_currency": { "type": "many2one", "label": "Currency", "relation": "res.currency", "readonly": true },
+    "expected_revenue": { "type": "monetary", "label": "Expected Revenue", "currencyField": "company_currency" },
+    "probability": { "type": "float", "label": "Probability", "min": 0, "max": 100, "digits": [5, 2] },
+    "automated_probability": { "type": "float", "label": "Automated Probability", "readonly": true, "digits": [5, 2] },
+    "is_automated_probability": { "type": "boolean", "label": "Is automated probability?", "compute": "probability == automated_probability" },
+    "partner_id": {
+      "type": "many2one",
+      "label": "Customer",
+      "relation": "res.partner"
+    },
+    "is_partner_visible": { "type": "boolean", "label": "Is Partner Visible", "compute": "type == 'opportunity' or partner_id" },
+    "partner_name": { "type": "char", "label": "Company Name", "help": "The name of the future partner company that will be created while converting the lead into opportunity" },
+    "contact_name": { "type": "char", "label": "Contact Name" },
+    "title": { "type": "many2one", "label": "Title", "relation": "res.partner.title" },
+    "function": { "type": "char", "label": "Job Position" },
+    "email_from": { "type": "char", "label": "Email" },
+    "phone": { "type": "char", "label": "Phone" },
+    "mobile": { "type": "char", "label": "Mobile" },
+    "is_blacklisted": { "type": "boolean", "label": "Blacklist", "readonly": true },
+    "phone_blacklisted": { "type": "boolean", "label": "Blacklisted Phone is Phone", "readonly": true },
+    "mobile_blacklisted": { "type": "boolean", "label": "Blacklisted Phone Is Mobile", "readonly": true },
+    "partner_email_update": { "type": "boolean", "label": "Partner Email will Update", "readonly": true },
+    "partner_phone_update": { "type": "boolean", "label": "Partner Phone will Update", "readonly": true },
+    "website": { "type": "char", "label": "Website", "help": "Website of the contact" },
+    "lang_active_count": { "type": "integer", "label": "Lang Active Count", "readonly": true },
+    "lang_id": { "type": "many2one", "label": "Language", "relation": "res.lang" },
+    "street": { "type": "char", "label": "Street" },
+    "street2": { "type": "char", "label": "Street2" },
+    "city": { "type": "char", "label": "City" },
+    "state_id": {
+      "type": "many2one",
+      "label": "State",
+      "relation": "res.country.state",
+      "filter": [{ "field": "country_id", "op": "=", "valueFrom": "country_id" }]
+    },
+    "zip": { "type": "char", "label": "Zip" },
+    "country_id": { "type": "many2one", "label": "Country", "relation": "res.country" },
+    "lost_reason_id": { "type": "many2one", "label": "Lost Reason", "relation": "crm.lost.reason" },
+    "user_id": { "type": "many2one", "label": "Salesperson", "relation": "res.users" },
+    "team_id": { "type": "many2one", "label": "Sales Team", "relation": "crm.team" },
+    "date_deadline": { "type": "date", "label": "Expected Closing" },
+    "tag_ids": { "type": "many2many", "label": "Tags", "relation": "crm.tag" },
+    "lead_properties": {
+      "type": "properties",
+      "label": "Properties",
+      "definitions": [
+        {
+          "name": "unit_type",
+          "label": "Unit type",
+          "type": "selection",
+          "options": [
+            { "value": "apartment", "label": "Apartment" },
+            { "value": "duplex", "label": "Duplex" },
+            { "value": "penthouse", "label": "Penthouse" },
+            { "value": "villa", "label": "Villa" },
+            { "value": "office", "label": "Office" }
+          ]
+        },
+        { "name": "bedrooms", "label": "Bedrooms", "type": "integer" },
+        { "name": "financing_approved", "label": "Financing approved", "type": "boolean" },
+        { "name": "viewing_date", "label": "Site viewing", "type": "date" }
+      ]
+    },
+    "description": { "type": "html", "label": "Notes" },
+    "campaign_id": { "type": "many2one", "label": "Campaign", "relation": "utm.campaign" },
+    "medium_id": { "type": "many2one", "label": "Medium", "relation": "utm.medium" },
+    "source_id": { "type": "many2one", "label": "Source", "relation": "utm.source" },
+    "referred": { "type": "char", "label": "Referred By" },
+    "date_open": { "type": "datetime", "label": "Assignment Date", "readonly": true },
+    "date_closed": { "type": "datetime", "label": "Closed Date", "readonly": true },
+    "day_open": { "type": "float", "label": "Days to Assign", "readonly": true, "digits": [16, 2] },
+    "day_close": { "type": "float", "label": "Days to Close", "readonly": true, "digits": [16, 2] },
+    "meeting_display_label": { "type": "char", "label": "Meeting Display Label", "readonly": true },
+    "meeting_display_date": { "type": "date", "label": "Meeting Display Date", "readonly": true },
+    "duplicate_lead_count": { "type": "integer", "label": "Potential Duplicate Lead Count", "readonly": true },
+    "quotation_count": { "type": "integer", "label": "Number of Quotations", "readonly": true },
+    "sale_order_count": { "type": "integer", "label": "Number of Sale Orders", "readonly": true },
+    "sale_amount_total": { "type": "monetary", "label": "Sum of Orders", "currencyField": "company_currency", "readonly": true }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "placeholder": "e.g. Product Pricing",
+      "below": [
+        { "type": "field", "id": "f-expected-revenue", "field": "expected_revenue", "invisible": "type == 'lead'" },
+        { "type": "field", "id": "f-probability", "field": "probability", "options": { "suffix": "%" } },
+        { "type": "field", "id": "f-automated-probability", "field": "automated_probability", "widget": "label", "options": { "suffix": " %" }, "invisible": "is_automated_probability" }
+      ]
+    },
+    "statusbar": { "field": "stage_id", "clickable": true },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "new-quotation",
+        "label": "New Quotation",
+        "style": "primary",
+        "invisible": "type == 'lead' or probability == 0 and not active",
+        "steps": [{ "do": "save" }, { "do": "call", "action": "crm_lead_new_quotation" }]
+      },
+      {
+        "type": "button",
+        "id": "won",
+        "label": "Won",
+        "invisible": "not active or probability == 100 or type == 'lead'",
+        "steps": [{ "do": "save" }, { "do": "call", "action": "crm_lead_set_won" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "lost",
+        "label": "Lost",
+        "invisible": "type == 'lead' or not active and probability < 100",
+        "steps": [
+          {
+            "do": "open",
+            "page": "real-crm-lead-lost",
+            "as": "dialog",
+            "title": "Mark Lost",
+            "into": { "lost_reason_id": "lost_reason_id" },
+            "then": [
+              { "do": "set", "field": "active", "value": "False" },
+              { "do": "set", "field": "probability", "value": "0" },
+              { "do": "set", "field": "automated_probability", "value": "0" },
+              { "do": "save" },
+              { "do": "say", "message": "Marked as lost", "tone": "info" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "convert",
+        "label": "Convert to Opportunity",
+        "style": "primary",
+        "invisible": "type == 'opportunity' or not active",
+        "steps": [
+          {
+            "do": "open",
+            "page": "real-crm-lead2opportunity",
+            "as": "dialog",
+            "title": "Convert to opportunity",
+            "values": { "name": "'convert'", "user_id": "user_id", "team_id": "team_id", "partner_id": "partner_id", "action": "if(partner_id, 'exist', 'create')" },
+            "into": { "user_id": "user_id", "team_id": "team_id", "partner_id": "partner_id" },
+            "then": [
+              { "do": "set", "field": "type", "value": "'opportunity'" },
+              { "do": "call", "action": "crm_lead_convert" },
+              { "do": "save" },
+              { "do": "say", "message": "Converted to an opportunity", "tone": "success" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "restore",
+        "label": "Restore",
+        "invisible": "probability > 0 or active",
+        "steps": [
+          { "do": "set", "field": "active", "value": "True" },
+          { "do": "clear", "field": "lost_reason_id" },
+          { "do": "call", "action": "crm_lead_restore" },
+          { "do": "save" }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "lost-lead",
+        "label": "Lost",
+        "invisible": "type == 'opportunity' or probability == 0 and not active",
+        "steps": [
+          {
+            "do": "open",
+            "page": "real-crm-lead-lost",
+            "as": "dialog",
+            "title": "Mark Lost",
+            "into": { "lost_reason_id": "lost_reason_id" },
+            "then": [
+              { "do": "set", "field": "active", "value": "False" },
+              { "do": "set", "field": "probability", "value": "0" },
+              { "do": "set", "field": "automated_probability", "value": "0" },
+              { "do": "save" },
+              { "do": "say", "message": "Marked as lost", "tone": "info" }
+            ]
+          }
+        ]
+      }
+    ],
+    "statButtons": [
+      { "id": "stat-no-meeting", "label": "No Meeting", "icon": "calendar", "action": "crm_lead_schedule_meeting", "invisible": "type == 'lead' or meeting_display_label != 'No Meeting'" },
+      { "id": "stat-next-meeting", "label": "Next Meeting", "icon": "calendar", "action": "crm_lead_schedule_meeting", "invisible": "type == 'lead' or meeting_display_label != 'Next Meeting'" },
+      { "id": "stat-last-meeting", "label": "Last Meeting", "icon": "calendar", "action": "crm_lead_schedule_meeting", "invisible": "type == 'lead' or meeting_display_label != 'Last Meeting'" },
+      { "id": "stat-similar-lead", "label": "Similar Lead", "field": "duplicate_lead_count", "icon": "star", "action": "crm_lead_show_duplicates", "invisible": "duplicate_lead_count != 1" },
+      { "id": "stat-similar-leads", "label": "Similar Leads", "field": "duplicate_lead_count", "icon": "star", "action": "crm_lead_show_duplicates", "invisible": "duplicate_lead_count < 2" },
+      { "id": "stat-quotations", "label": "Quotations", "field": "quotation_count", "icon": "edit", "action": "crm_lead_view_quotations", "invisible": "type == 'lead'" },
+      { "id": "stat-orders", "label": "Orders", "field": "sale_amount_total", "icon": "money", "action": "crm_lead_view_orders", "invisible": "sale_order_count == 0 or type == 'lead'" }
+    ],
+    "ribbon": { "id": "ribbon-lost", "label": "Lost", "tone": "danger", "invisible": "probability > 0 or active" },
+    "badges": [{ "id": "badge-won", "label": "Won", "tone": "success", "icon": "check", "invisible": "probability < 100" }],
+    "children": [
+      {
+        "type": "button",
+        "id": "set-automated-probability",
+        "label": "Switch to automatic probability",
+        "icon": "settings",
+        "style": "link",
+        "invisible": "is_automated_probability",
+        "steps": [{ "do": "set", "field": "probability", "value": "automated_probability" }, { "do": "save" }]
+      },
+      {
+        "type": "section",
+        "id": "main",
+        "style": "plain",
+        "columns": { "wide": 2, "medium": 2 },
+        "children": [
+          {
+            "type": "section",
+            "id": "lead-partner",
+            "style": "plain",
+            "invisible": "type == 'opportunity'",
+            "children": [
+              { "type": "field", "id": "f-lead-partner", "field": "partner_id", "invisible": "not is_partner_visible" },
+              { "type": "field", "id": "f-lead-partner-name", "field": "partner_name" },
+              { "type": "text", "id": "t-lead-address", "text": "Address", "style": "note" },
+              {
+                "type": "section",
+                "id": "lead-address",
+                "style": "plain",
+                "columns": { "wide": 12, "medium": 12 },
+                "labels": "hidden",
+                "children": [
+                  { "type": "field", "id": "f-street", "field": "street", "placeholder": "Street...", "colspan": 12 },
+                  { "type": "field", "id": "f-street2", "field": "street2", "placeholder": "Street 2...", "colspan": 12 },
+                  { "type": "field", "id": "f-city", "field": "city", "placeholder": "City", "colspan": 5 },
+                  { "type": "field", "id": "f-state", "field": "state_id", "placeholder": "State", "colspan": 4 },
+                  { "type": "field", "id": "f-zip", "field": "zip", "placeholder": "ZIP", "colspan": 3 },
+                  { "type": "field", "id": "f-country", "field": "country_id", "placeholder": "Country", "colspan": 12, "options": { "create": false } }
+                ]
+              },
+              { "type": "field", "id": "f-lead-website", "field": "website", "widget": "url", "placeholder": "e.g. https://www.sherkety.net" },
+              { "type": "field", "id": "f-lead-lang", "field": "lang_id", "invisible": "lang_active_count <= 1", "options": { "create": false } }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "opportunity-partner",
+            "style": "plain",
+            "invisible": "type == 'lead'",
+            "children": [
+              { "type": "field", "id": "f-customer", "field": "partner_id", "label": "Customer" },
+              { "type": "button", "id": "opp-email-unblacklist", "label": "Unblacklist this email", "icon": "warning", "style": "danger", "action": "mail_action_blacklist_remove", "invisible": "not is_blacklisted" },
+              { "type": "field", "id": "f-email", "field": "email_from", "widget": "email" },
+              { "type": "text", "id": "t-email-update", "text": "By saving this change, the customer email will also be updated.", "style": "note", "invisible": "not partner_email_update" },
+              { "type": "button", "id": "opp-phone-unblacklist", "label": "Unblacklist this phone number", "icon": "warning", "style": "danger", "action": "phone_action_blacklist_remove", "invisible": "not phone_blacklisted" },
+              { "type": "field", "id": "f-phone", "field": "phone", "widget": "phone" },
+              { "type": "text", "id": "t-phone-update", "text": "By saving this change, the customer phone number will also be updated.", "style": "note", "invisible": "not partner_phone_update" },
+              { "type": "field", "id": "f-lost-reason", "field": "lost_reason_id", "invisible": "active" }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "lead-info",
+            "style": "plain",
+            "invisible": "type == 'opportunity'",
+            "children": [
+              {
+                "type": "section",
+                "id": "lead-contact-row",
+                "style": "plain",
+                "columns": { "wide": 12, "medium": 12 },
+                "children": [
+                  { "type": "field", "id": "f-lead-contact-name", "field": "contact_name", "colspan": 8 },
+                  { "type": "field", "id": "f-lead-title", "field": "title", "placeholder": "Title", "colspan": 4, "labels": "hidden" }
+                ]
+              },
+              { "type": "button", "id": "lead-email-unblacklist", "label": "Unblacklist this email", "icon": "warning", "style": "danger", "action": "mail_action_blacklist_remove", "invisible": "not is_blacklisted" },
+              { "type": "field", "id": "f-lead-email", "field": "email_from", "widget": "email" },
+              { "type": "text", "id": "t-lead-email-update", "text": "By saving this change, the customer email will also be updated.", "style": "note", "invisible": "not partner_email_update" },
+              { "type": "field", "id": "f-lead-function", "field": "function" },
+              { "type": "button", "id": "lead-phone-unblacklist", "label": "Unblacklist this phone number", "icon": "warning", "style": "danger", "action": "phone_action_blacklist_remove", "invisible": "not phone_blacklisted" },
+              { "type": "field", "id": "f-lead-phone", "field": "phone", "widget": "phone" },
+              { "type": "text", "id": "t-lead-phone-update", "text": "By saving this change, the customer phone number will also be updated.", "style": "note", "invisible": "not partner_phone_update" },
+              { "type": "button", "id": "lead-mobile-unblacklist", "label": "Unblacklist this mobile number", "icon": "warning", "style": "danger", "action": "phone_action_blacklist_remove", "invisible": "not mobile_blacklisted" },
+              { "type": "field", "id": "f-lead-mobile", "field": "mobile", "widget": "phone" }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "opportunity-owner",
+            "style": "plain",
+            "invisible": "type == 'lead'",
+            "children": [
+              { "type": "field", "id": "f-user", "field": "user_id" },
+              {
+                "type": "section",
+                "id": "closing-row",
+                "style": "plain",
+                "columns": { "wide": 12, "medium": 12 },
+                "children": [
+                  { "type": "field", "id": "f-date-deadline", "field": "date_deadline", "colspan": 8 },
+                  { "type": "field", "id": "f-priority", "field": "priority", "widget": "rating", "labels": "hidden", "colspan": 4 }
+                ]
+              },
+              { "type": "field", "id": "f-tags", "field": "tag_ids", "widget": "tags", "options": { "create": false } }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "lead-owner",
+            "style": "plain",
+            "invisible": "type == 'opportunity'",
+            "children": [
+              { "type": "field", "id": "f-lead-user", "field": "user_id" },
+              { "type": "field", "id": "f-lead-team", "field": "team_id", "options": { "create": false } }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "lead-priority",
+            "style": "plain",
+            "invisible": "type == 'opportunity'",
+            "children": [
+              { "type": "field", "id": "f-lead-priority", "field": "priority", "widget": "rating" },
+              { "type": "field", "id": "f-lead-tags", "field": "tag_ids", "widget": "tags", "options": { "create": false } }
+            ]
+          }
+        ]
+      },
+      { "type": "field", "id": "f-properties", "field": "lead_properties", "labels": "hidden" },
+      {
+        "type": "tabs",
+        "id": "notebook",
+        "children": [
+          {
+            "type": "tab",
+            "id": "tab-internal-notes",
+            "label": "Internal Notes",
+            "children": [{ "type": "field", "id": "f-description", "field": "description", "labels": "hidden", "placeholder": "Add a description..." }]
+          },
+          {
+            "type": "tab",
+            "id": "tab-extra",
+            "label": "Extra Info",
+            "invisible": "type == 'opportunity'",
+            "children": [
+              {
+                "type": "section",
+                "id": "extra",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 2 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "categorization",
+                    "title": "Marketing",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-extra-campaign", "field": "campaign_id" },
+                      { "type": "field", "id": "f-extra-medium", "field": "medium_id" },
+                      { "type": "field", "id": "f-extra-source", "field": "source_id" },
+                      { "type": "field", "id": "f-extra-referred", "field": "referred" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "analysis",
+                    "title": "Analysis",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-date-open", "field": "date_open" },
+                      { "type": "field", "id": "f-date-closed", "field": "date_closed" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-lead",
+            "label": "Extra Information",
+            "invisible": "type == 'lead'",
+            "children": [
+              {
+                "type": "section",
+                "id": "lead-page",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 2 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "contact-information",
+                    "title": "Contact Information",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-page-partner-name", "field": "partner_name" },
+                      { "type": "text", "id": "t-page-address", "text": "Address", "style": "note" },
+                      {
+                        "type": "section",
+                        "id": "page-address",
+                        "style": "plain",
+                        "columns": { "wide": 12, "medium": 12 },
+                        "labels": "hidden",
+                        "children": [
+                          { "type": "field", "id": "f-page-street", "field": "street", "placeholder": "Street...", "colspan": 12 },
+                          { "type": "field", "id": "f-page-street2", "field": "street2", "placeholder": "Street 2...", "colspan": 12 },
+                          { "type": "field", "id": "f-page-city", "field": "city", "placeholder": "City", "colspan": 5 },
+                          { "type": "field", "id": "f-page-state", "field": "state_id", "placeholder": "State", "colspan": 4 },
+                          { "type": "field", "id": "f-page-zip", "field": "zip", "placeholder": "ZIP", "colspan": 3 },
+                          { "type": "field", "id": "f-page-country", "field": "country_id", "placeholder": "Country", "colspan": 12, "options": { "create": false } }
+                        ]
+                      },
+                      { "type": "field", "id": "f-page-website", "field": "website", "widget": "url", "placeholder": "e.g. https://www.sherkety.net" },
+                      { "type": "field", "id": "f-page-lang", "field": "lang_id", "invisible": "lang_active_count <= 1", "options": { "create": false } }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "contact-person",
+                    "title": "Contact",
+                    "style": "line",
+                    "children": [
+                      {
+                        "type": "section",
+                        "id": "page-contact-row",
+                        "style": "plain",
+                        "columns": { "wide": 12, "medium": 12 },
+                        "children": [
+                          { "type": "field", "id": "f-page-contact-name", "field": "contact_name", "colspan": 8 },
+                          { "type": "field", "id": "f-page-title", "field": "title", "placeholder": "Title", "colspan": 4, "labels": "hidden" }
+                        ]
+                      },
+                      { "type": "field", "id": "f-page-function", "field": "function" },
+                      { "type": "button", "id": "page-mobile-unblacklist", "label": "Unblacklist this mobile number", "icon": "warning", "style": "danger", "action": "phone_action_blacklist_remove", "invisible": "not mobile_blacklisted" },
+                      { "type": "field", "id": "f-page-mobile", "field": "mobile", "widget": "phone" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "page-marketing",
+                    "title": "Marketing",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-campaign", "field": "campaign_id" },
+                      { "type": "field", "id": "f-medium", "field": "medium_id" },
+                      { "type": "field", "id": "f-source", "field": "source_id" },
+                      { "type": "field", "id": "f-referred", "field": "referred" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "tracking",
+                    "title": "Tracking",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-team", "field": "team_id", "options": { "create": false } },
+                      { "type": "field", "id": "f-day-open", "field": "day_open" },
+                      { "type": "field", "id": "f-day-close", "field": "day_close" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" }
+  }
+}

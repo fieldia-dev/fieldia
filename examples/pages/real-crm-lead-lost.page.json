@@ -1,0 +1,27 @@
+{
+  "fieldia": "0.1",
+  "id": "real-crm-lead-lost",
+  "title": "Lost Lead",
+  "description": "Why the lead or opportunity was lost (crm.lead.lost, crm.crm_lead_lost_view_form), opened in a dialog by Lost.",
+  "data": { "kind": "responses" },
+  "maxWidth": "medium",
+  "fields": {
+    "lost_reason_id": { "type": "many2one", "label": "Lost Reason", "relation": "crm.lost.reason" },
+    "lost_feedback": { "type": "html", "label": "Closing Note" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "lost",
+    "children": [
+      {
+        "type": "section",
+        "id": "lost-reason",
+        "style": "plain",
+        "children": [
+          { "type": "field", "id": "f-lost-reason", "field": "lost_reason_id", "options": { "create": false } },
+          { "type": "field", "id": "f-lost-feedback", "field": "lost_feedback", "placeholder": "What went wrong?" }
+        ]
+      }
+    ]
+  }
+}
