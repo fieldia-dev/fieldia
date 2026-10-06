@@ -78,7 +78,8 @@ export const steps: DesignerWords['steps'] = {
   pageId: 'معرّف الصفحة',
   pageIdPlaceholder: 'contact',
   opensIn: 'تُفتح',
-  as: { dialog: 'في مربع حوار', panel: 'في لوحة جانبية', page: 'مكان هذه الصفحة' },
+  /** Each in full, starting with its short words, as a screen reader's user says them. */
+  as: { dialog: 'حوار، فوق هذا النموذج', panel: 'لوحة، بجانب هذا النموذج', page: 'مكانها، بدل هذا النموذج' },
   asShort: { dialog: 'حوار', panel: 'لوحة', page: 'مكانها' },
   title: 'عنوانها',
   titlePlaceholder: 'عنوان الصفحة نفسه',
@@ -104,7 +105,7 @@ export const steps: DesignerWords['steps'] = {
   lineValues: 'قيمه',
   check: 'التحقق من',
   wholeForm: 'النموذج كله',
-  onlyFields: 'بعض الحقول فقط',
+  onlyFields: 'بعض الحقول',
   goToTarget: 'الانتقال إلى',
   words: 'النص',
   sayPlaceholder: 'أُضيف العميل',

@@ -141,6 +141,27 @@ describe('When clicked, on a body button', () => {
     expect(pressed(designer).steps?.[0]).toEqual({ do: 'call', action: 'button' });
   });
 
+  it('keeps what an opened page starts with as a map: its field picked, then a value typed, each its own undo step', async () => {
+    const { designer } = await order();
+    designer.addStep({ press: 'new-customer' }, { do: 'open', page: 'customer' });
+    designer.select('new-customer');
+    const { host } = mount(designer, { mode: 'advanced' });
+    await settled();
+    ([...clicked(host).querySelectorAll<HTMLButtonElement>('.fd-do-say')][1]).click();
+    button(clicked(host), 'Add a value')?.click();
+    const map = clicked(host).querySelector('[aria-label="It starts with"]') as HTMLElement;
+    // The opened page's fields, by their labels; the value's box named after the one picked.
+    expect([...(field(map, 'Its field') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['Pick…', 'Name', 'Phone']);
+    choose(field(map, 'Its field'), 'phone');
+    const value = field(map, 'Phone gets') as HTMLInputElement;
+    type(value, 'customer');
+    expect(pressed(designer).steps?.[1]).toEqual({ do: 'open', page: 'customer', values: { phone: 'customer' } });
+    type(value, "customer + ' (new)'");
+    expect(pressed(designer).steps?.[1]).toEqual({ do: 'open', page: 'customer', values: { phone: "customer + ' (new)'" } });
+    designer.undo();
+    expect(pressed(designer).steps?.[1]).toEqual({ do: 'open', page: 'customer' });
+  });
+
   it('moves a step with Alt and the arrows on its sentence, the cursor going with it', async () => {
     const { designer } = await order();
     designer.addStep({ press: 'new-customer' }, { do: 'check' });

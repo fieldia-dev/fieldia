@@ -194,7 +194,7 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
       },
       valueLabel: (name) => w.valueFrom(name),
       reads: () => ctx.page(),
-      commit: (map) => ctx.change({ values: map }, true),
+      commit: (map, typing) => ctx.change({ values: map }, typing),
     });
     // What comes back is read over the opened page's answers, and the record it saved.
     const answers = (): Page => {
@@ -213,7 +213,7 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
       },
       valueLabel: (name) => w.valueFrom(name),
       reads: answers,
-      commit: (map) => ctx.change({ into: map }, true),
+      commit: (map, typing) => ctx.change({ into: map }, typing),
     });
     parts.push(startsWith.element, into.element);
     updates.push((step) => {
@@ -256,7 +256,7 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
       names: lines,
       valueLabel: (name) => w.valueFrom(name),
       reads: () => ctx.page(),
-      commit: (map) => ctx.change({ values: map }, true),
+      commit: (map, typing) => ctx.change({ values: map }, typing),
     });
     parts.push(values.element);
     updates.push((step) => step.do === 'addLine' && values.update(step.values ?? {}));

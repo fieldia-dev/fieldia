@@ -33,7 +33,8 @@ export interface StepMapOptions {
   valueLabel: (name: string) => string;
   /** The page a value's formula reads, for its suggestions and its check. */
   reads(): Page;
-  commit(map: Record<string, string>): void;
+  /** The map, as one edit; `typing`: a run of typing in its boxes is one undo step. */
+  commit(map: Record<string, string>, typing: boolean): void;
 }
 
 export interface StepMap {
@@ -68,9 +69,9 @@ export function stepMap(el: ElementFactory, options: StepMapOptions): StepMap {
     }
     return map;
   }
-  const save = () => {
+  const save = (typing = false) => {
     const map = read();
-    if (JSON.stringify(map) !== JSON.stringify(kept)) options.commit(map);
+    if (JSON.stringify(map) !== JSON.stringify(kept)) options.commit(map, typing);
   };
 
   function row(name: string, value: string): Row {
@@ -79,7 +80,10 @@ export function stepMap(el: ElementFactory, options: StepMapOptions): StepMap {
       ? el('select', { class: 'fd-input fd-select', 'aria-label': options.nameLabel }, el('option', { value: '' }, w.pick), ...names.map((n) => el('option', { value: n.value }, n.label)))
       : el('input', { class: 'fd-input fd-answer-rule-code', 'aria-label': options.nameLabel, spellcheck: 'false', autocomplete: 'off' });
     nameBox.value = name;
-    nameBox.addEventListener(names ? 'change' : 'input', save);
+    nameBox.addEventListener(names ? 'change' : 'input', () => {
+      named();
+      save(!names);
+    });
     const values = options.values?.() ?? null;
     let box: FormulaBox | null = null;
     let pick: HTMLSelectElement | null = null;
@@ -88,7 +92,7 @@ export function stepMap(el: ElementFactory, options: StepMapOptions): StepMap {
     if (values) {
       pick = el('select', { class: 'fd-input fd-select', 'aria-label': valueLabel() }, el('option', { value: '' }, w.pick), ...values.map((v) => el('option', { value: v.value }, v.label)));
       pick.value = value;
-      pick.addEventListener('change', save);
+      pick.addEventListener('change', () => save());
     } else {
       box = formulaBox(el, {
         words: options.words,
@@ -97,7 +101,7 @@ export function stepMap(el: ElementFactory, options: StepMapOptions): StepMap {
         check: (_page, source) => formulaProblem(options.reads(), source, options.words),
         commit(source) {
           typed = source;
-          save();
+          save(true);
         },
       });
       box.update(options.reads(), value);
@@ -110,6 +114,8 @@ export function stepMap(el: ElementFactory, options: StepMapOptions): StepMap {
       add.focus();
     });
     remove.classList.add('fd-do-map-remove');
+    /** The value's box named after the name it is for, as the name changes. */
+    const named = () => (pick ?? box?.input)?.setAttribute('aria-label', valueLabel());
     const element = el('div', { class: 'fd-do-map-row' }, nameBox, ...(pick ? [pick] : box ? [box.element] : []), remove, ...(box ? [box.problem] : []));
     const made: Row = {
       element,
@@ -125,6 +131,7 @@ export function stepMap(el: ElementFactory, options: StepMapOptions): StepMap {
         }
         remove.setAttribute('aria-label', said(n));
         remove.title = said(n);
+        named();
       },
       focus: () => nameBox.focus(),
     };
