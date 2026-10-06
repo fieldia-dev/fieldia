@@ -193,6 +193,9 @@ async function steps(page: Page, look: (state: string, shot?: boolean, dialog?: 
   await clicked.locator('.fd-do-add').first().click();
   await page.locator('.fd-menu [data-item="open"]').click();
   await clicked.locator('select[aria-label="الصفحة"]').selectOption('customer-card');
+  // In a panel, so where it comes from is read too.
+  await clicked.getByRole('button', { name: 'لوحة، بجانب هذا النموذج' }).click();
+  await clicked.locator('select[aria-label="من جهة"]').selectOption('bottom');
   await clicked.getByRole('button', { name: 'إضافة قيمة' }).click();
   await clicked.getByRole('button', { name: 'إضافة إجابة' }).click();
   await clicked.getByRole('button', { name: 'فقط عندما…' }).last().click();
