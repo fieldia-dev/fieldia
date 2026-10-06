@@ -1,1 +1,774 @@
-{ "lane": "accounting", "pages": [] }
+{
+  "lane": "accounting",
+  "pages": [
+    {
+      "id": "real-invoice",
+      "title": "Account Entry (invoice, bill, credit note, receipt, journal entry)",
+      "flectra": { "module": "account", "model": "account.move", "view": "view_move_form", "file": "addons/account/views/account_move_views.xml" },
+      "inherited": [
+        {
+          "module": "account",
+          "view": "account_move_currency_views (view_move_form_currency)",
+          "adds": "Exchange Rate and Total in EGP under the totals; Currency Details tab"
+        },
+        { "module": "sherkety_manual_currency_rate", "view": "view_move_form_manual_rate", "adds": "Manual Exchange Rate under Amount Due" },
+        {
+          "module": "account_payment",
+          "view": "view_move_form_inherit_payment",
+          "adds": "Capture / Void Transaction; Payment Transaction smart button; Register Payment hidden while a transaction is authorised"
+        },
+        {
+          "module": "account_debit_note",
+          "view": "view_move_form_debit",
+          "adds": "Debit Notes smart button, Original Invoice Debited, Debit Note in the Action menu"
+        },
+        {
+          "module": "account_edi",
+          "view": "view_move_form_inherit",
+          "adds": "EDI cancellation buttons, four EDI alerts, Electronic invoicing state, EDI Documents tab"
+        },
+        {
+          "module": "account_distribution_extras",
+          "view": "view_move_form_distribution_extras",
+          "adds": "discounts 2–4 (percent, amount, overridden) and Net After Discounts on the lines"
+        },
+        { "module": "sale", "view": "account_invoice_form (sale)", "adds": "Sales Team, Marketing group (developer mode), Sale Orders smart button" },
+        {
+          "module": "purchase",
+          "view": "view_move_form_inherit_purchase",
+          "adds": "Auto-Complete from a purchase order, Purchase Order column, Purchases smart button"
+        }
+      ],
+      "notInherited": "account_asset, account_fleet, account_manufacturing_cost, account_peppol, hr_expense, legal, legal_billing, sale_channel, sale_timesheet, stock_catch_weight, stock_landed_costs, website_sale also extend this view; they are installed per customer and left out",
+      "size": { "fields": 145, "tabs": 6, "tables": 3, "headerButtons": 17, "smartButtons": 7, "alerts": 17, "ribbons": 5, "conditions": 261 },
+      "built": {
+        "fields": 95,
+        "lineFields": 51,
+        "fieldNodes": 68,
+        "tables": 4,
+        "tabs": 5,
+        "headerButtons": 17,
+        "smartButtons": 7,
+        "alerts": 16,
+        "ribbon": 1,
+        "badges": 4,
+        "conditions": 122
+      },
+      "samples": "record 4101 a customer invoice in draft (EGP, sections and a note), 4102 a USD invoice posted and partly paid, 4103 a vendor bill in draft that may repeat 4106, 4104 a journal entry in draft, 4105 a customer credit note paid",
+      "features": [
+        {
+          "feature": "One view for seven move types (entry, out/in invoice, out/in refund, out/in receipt)",
+          "status": "covered",
+          "how": "move_type held by each record; every condition reads it, so the same page is an invoice, a bill, a credit note or an entry"
+        },
+        {
+          "feature": "Statusbar state, statusbar_visible draft,posted",
+          "status": "covered",
+          "how": "`visibleStates: [draft, posted]`; Cancelled shows only when it is the state"
+        },
+        {
+          "feature": "Post (entries) / Confirm (others) with hide_post_button",
+          "status": "covered",
+          "how": "two header buttons; hide_post_button is a page `compute`: `state != 'draft' or (auto_post != 'no' and date > today())`; steps check, call action_post, save"
+        },
+        {
+          "feature": "action_post: number from the journal's sequence, checks, posted state",
+          "status": "covered",
+          "how": "the app's answer: INV/2026/00042, BILL/2026/10/0012, MISC/2026/10/0004…; stops with Flectra's words for a missing customer, no line, or an entry that does not balance"
+        },
+        { "feature": "Post's context validate_analytic", "status": "missing", "needs": "a context a button hands the server" },
+        {
+          "feature": "Send & Print, highlighted until sent, plain after",
+          "status": "approximated",
+          "how": "both buttons and their conditions; the app answers with the PDF attachment and words. The Send wizard (account.move.send: recipients, template, attachments) is not rebuilt"
+        },
+        {
+          "feature": "Register Payment (+ account_payment: hidden while a transaction is authorised)",
+          "status": "covered",
+          "how": "an open step to the Register Payment page as a dialog; into and then bring the payment back and reconcile it"
+        },
+        {
+          "feature": "Capture Transaction / Void Transaction (account_payment) with confirm",
+          "status": "covered",
+          "how": "buttons, conditions, `confirm`, the app's actions"
+        },
+        {
+          "feature": "Preview (opens the customer portal)",
+          "status": "approximated",
+          "how": "the app says the portal address",
+          "needs": "a step that opens a web address in a new tab"
+        },
+        {
+          "feature": "Reverse Entry (window action: account.move.reversal wizard)",
+          "status": "approximated",
+          "how": "an ask and the app's call; the reversal wizard (date, reason, journal) is not rebuilt"
+        },
+        { "feature": "Credit Note (action_reverse, the same wizard)", "status": "approximated", "how": "the app's call says what the wizard would make" },
+        {
+          "feature": "Cancel Entry / Cancel with `not id`",
+          "status": "covered",
+          "how": "an `id` field is declared and held by stored records, so a new record hides both"
+        },
+        {
+          "feature": "Reset to Draft (show_reset_to_draft_button)",
+          "status": "covered",
+          "how": "a page `compute` copying Flectra's: not hash-locked and (cancelled, or posted without a cancel request)"
+        },
+        { "feature": "Request Cancel (need_cancel_request)", "status": "covered", "how": "condition and the app's action" },
+        { "feature": "Request / Call off EDI Cancellation (account_edi)", "status": "covered", "how": "conditions on edi_show_* and the app's actions" },
+        { "feature": "Set as Checked", "status": "covered", "how": "steps alone: set to_check False, save, say" },
+        {
+          "feature": "groups on header buttons (account.group_account_invoice), on fields (multi-currency, multi-company, cash rounding, uom, analytic, developer mode)",
+          "status": "missing",
+          "needs": "permission groups on nodes: the page shows every part to everyone; delivery address, cash rounding, the second currency for non-accountants and the Marketing group are left out"
+        },
+        { "feature": "data-hotkey on every button (q, y, g, o, z, x, r, w, k)", "status": "missing", "needs": "named keyboard shortcuts for buttons" },
+        {
+          "feature": "Action (gear) menu: Debit Note (account_debit_note server action), Duplicate, Delete, Print invoice",
+          "status": "missing",
+          "needs": "a record's action menu with the app's actions and reports"
+        },
+        {
+          "feature": "Alert: possible duplicate bill, with a link button in its sentence",
+          "status": "approximated",
+          "how": "an alert, and the link button in a small section under the alerts",
+          "needs": "buttons inside an alert"
+        },
+        { "feature": "Alert: being sent in the background", "status": "covered", "how": "alert with condition" },
+        {
+          "feature": "Alert: tax lock date message (a field's words)",
+          "status": "approximated",
+          "how": "a fixed sentence in the alert and the message field shown under it",
+          "needs": "an alert whose words hold a field's value"
+        },
+        {
+          "feature": "Alerts: outstanding credits / debits (four, by type) with a link to the widget",
+          "status": "approximated",
+          "how": "four alerts with their conditions; the in-page link (#outstanding) is missing"
+        },
+        {
+          "feature": "Alerts: auto-posting at date / recurring, with the dates inside",
+          "status": "approximated",
+          "how": "fixed sentences; the next accounting date and the end date are shown as read-only fields under them"
+        },
+        {
+          "feature": "Alert: partner_credit_warning (the server's words)",
+          "status": "approximated",
+          "how": "a fixed alert plus the warning field shown; picking the customer also brings the data source's own warning beside the field"
+        },
+        {
+          "feature": "Alerts: inactive currency for a bill / an invoice, with a button inside",
+          "status": "approximated",
+          "how": "two alerts; the Activate button stands in the section under them"
+        },
+        {
+          "feature": "Alerts: four EDI states with fields and buttons inside (Process now, Force Cancel, See errors, Retry)",
+          "status": "approximated",
+          "how": "four alerts with fixed words; their buttons are left out"
+        },
+        {
+          "feature": "Smart buttons: 1 Payment, Reconciled Items, Cash Basis Entries (labels only)",
+          "status": "covered",
+          "how": "stat buttons with conditions; the app answers the press"
+        },
+        {
+          "feature": "Smart buttons with counts: Debit Notes, Sale Orders, Purchases (statinfo); Payment Transaction",
+          "status": "covered",
+          "how": "stat buttons showing their count fields"
+        },
+        {
+          "feature": "Smart buttons open lists of related records",
+          "status": "approximated",
+          "how": "the app's answer says what opens",
+          "needs": "an open step to a list page filtered by the record"
+        },
+        {
+          "feature": "An empty smart-button row while every button is hidden",
+          "status": "approximated",
+          "how": "Fieldia still draws the empty row (Flectra draws nothing)"
+        },
+        {
+          "feature": "Ribbons: Paid, In Payment, Partial, Reversed (danger), Invoicing App Legacy (with tooltip)",
+          "status": "approximated",
+          "how": "one ribbon (Paid) and four badges for the others",
+          "needs": "several ribbons chosen by conditions, and a ribbon's tooltip"
+        },
+        { "feature": "30+ invisible technical fields in the sheet", "status": "covered", "how": "declared, read by conditions, never placed" },
+        {
+          "feature": "Type over the title (move_type, read only, hidden for entries)",
+          "status": "approximated",
+          "how": "a field over the title; a read-only selection still draws as a greyed select with its arrow, not as words"
+        },
+        {
+          "feature": "Number title: placeholder Draft, readonly when not draft, invisible while '/' and never posted, a Draft span",
+          "status": "approximated",
+          "how": "the title field with placeholder Draft (drafts hold no number)",
+          "needs": "readonly and invisible conditions on a sheet's title"
+        },
+        {
+          "feature": "Highest-number warning with the number inside the sentence",
+          "status": "approximated",
+          "how": "the number as a field under the title with the advice as its help, shown on show_name_warning"
+        },
+        { "feature": "Customer / Vendor label by type", "status": "covered", "how": "partner_id placed twice, each with its label and condition" },
+        { "feature": "res_partner_many2one widget (address and VAT under the name)", "status": "approximated", "how": "a plain link" },
+        {
+          "feature": "Partner domain (company) and context res_partner_search_mode / show_address / default_is_company",
+          "status": "approximated",
+          "how": "no filter; the contexts are missing"
+        },
+        {
+          "feature": "no_quick_create on partner and payment terms",
+          "status": "approximated",
+          "how": "`create: false` (Create and edit… is not offered either)"
+        },
+        {
+          "feature": "Update Taxes and Accounts link button with icon, help and confirm",
+          "status": "covered",
+          "how": "link-style button, icon, `confirm`, condition on show_update_fpos (set by the onchange on the fiscal position)"
+        },
+        {
+          "feature": "quick_edit_total_amount (bills quick encoding)",
+          "status": "approximated",
+          "how": "field and conditions; the app keeps it on the total; creating a line from a typed total is not modelled"
+        },
+        { "feature": "Bill Reference / Reference / Customer Reference: one field, three labels and places", "status": "covered", "how": "three nodes on ref" },
+        { "feature": "tax_cash_basis_origin_move_id shown when set", "status": "covered", "how": "condition" },
+        {
+          "feature": "Auto-Complete: invoice_vendor_bill_id, replaced by purchase_vendor_bill_id for purchase users (placeholder, oe_edit_only, domain by partner)",
+          "status": "covered",
+          "how": "the purchase field: filter by commercial partner; picking P00027 fills a line through the onchange and empties the box, Purchases becomes 1"
+        },
+        { "feature": "Invoice Date / Bill Date label by type, readonly when posted", "status": "covered", "how": "two nodes on invoice_date" },
+        { "feature": "warn_future on the invoice date", "status": "approximated", "how": "a warning rule `holds: invoice_date <= today()`" },
+        {
+          "feature": "Accounting Date: hidden for customer documents unless quick edit or posted on another date",
+          "status": "covered",
+          "how": "the expression as written, `date != invoice_date` included"
+        },
+        { "feature": "Payment Reference readonly once hash-locked", "status": "covered", "how": "`readonly: inalterable_hash`" },
+        {
+          "feature": "Recipient Bank for bills, domain the bank partner, context default partner and trust",
+          "status": "covered",
+          "how": "filter `partner_id` valueFrom bank_partner_id (set by the onchange); the contexts are missing"
+        },
+        {
+          "feature": "Due Date or Payment terms: label switching, ' or ' between them, one row",
+          "status": "approximated",
+          "how": "two fields one above the other, each with its condition; the 'or' and the shared row are missing"
+        },
+        {
+          "feature": "Payment terms context example_date / example_amount (the schedule previewed in the list)",
+          "status": "missing",
+          "needs": "a link's search showing extra words per choice from the form's values"
+        },
+        { "feature": "Due date from the payment terms", "status": "covered", "how": "the onchange on invoice_date and invoice_payment_term_id" },
+        { "feature": "delivery_date when show_delivery_date", "status": "covered", "how": "condition" },
+        {
+          "feature": "Journal ' in ' Currency on one row; hidden when the action gives a default journal (context)",
+          "status": "approximated",
+          "how": "two rows, Journal and Currency, with their readonly conditions",
+          "needs": "conditions reading the action's context"
+        },
+        { "feature": "Electronic invoicing state (account_edi) after the journal", "status": "covered", "how": "condition" },
+        { "feature": "Invoice Lines tab hidden for entries", "status": "covered", "how": "tab condition" },
+        {
+          "feature": "invoice_line_ids: section_and_note_one2many, Add a line / Add a section / Add a note",
+          "status": "covered",
+          "how": "`lineKinds` with line_section and line_note, in the grid"
+        },
+        { "feature": "Lines readonly once posted", "status": "covered", "how": "`readonly: state != 'draft'` on the node" },
+        {
+          "feature": "Line defaults from the context (move type, journal, partner, currency, display_type product, quick_encoding_vals)",
+          "status": "approximated",
+          "how": "display_type defaults to product; the onchange gives each new line its currency, and its product its account, unit, price and taxes"
+        },
+        {
+          "feature": "mode tree,kanban and a form for phones",
+          "status": "approximated",
+          "how": "the grid at every width, and ↗ opens a line's every field in a dialog; the kanban card (image, product, amounts) is missing"
+        },
+        { "feature": "sequence handle", "status": "covered", "how": "`sequenceField`" },
+        {
+          "feature": "product_id: optional, many2one_barcode (scanner), domain sale_ok or purchase_ok by the context's move type",
+          "status": "approximated",
+          "how": "a plain link, optional",
+          "needs": "a filter that depends on a condition or on the context; scanning"
+        },
+        { "feature": "Label (section_and_note_text)", "status": "covered", "how": "the name column; sections and notes span the row" },
+        {
+          "feature": "account_id: required unless section/note, domain, context partner and move type",
+          "status": "covered",
+          "how": "required (sections and notes are never asked for it); filter not deprecated and not receivable/payable/off-balance"
+        },
+        {
+          "feature": "analytic_distribution widget (percentages per analytic account and plan)",
+          "status": "approximated",
+          "how": "a many2many of analytic accounts, as tags: no percentages, no plans"
+        },
+        {
+          "feature": "quantity, UoM (group uom, domain by the product's category)",
+          "status": "approximated",
+          "how": "both columns; the UoM is not limited to the product's category"
+        },
+        { "feature": "Price, Disc.% (optional hide)", "status": "covered", "how": "columns, Disc.% starting hidden" },
+        {
+          "feature": "Discounts 2–4: percent, amount, overridden; Net After Discounts (account_distribution_extras)",
+          "status": "covered",
+          "how": "ten optional hidden columns; the onchange cascades them and the subtotal is the net, as _compute_totals does"
+        },
+        {
+          "feature": "tax_ids tags, no_create, domain by parent.invoice_filter_type_domain / company / country",
+          "status": "approximated",
+          "how": "tags without the domain",
+          "needs": "a line's filter reading the parent record"
+        },
+        {
+          "feature": "Tax excl. / Tax incl. (column_invisible by parent.tax_calculation_rounding_method)",
+          "status": "approximated",
+          "how": "columns, Tax incl. starting hidden",
+          "needs": "hiding a column by the parent's values"
+        },
+        { "feature": "Purchase Order column (purchase), column_invisible unless a bill", "status": "approximated", "how": "an optional column, always offered" },
+        {
+          "feature": "Line subtotals, taxes and the move's totals as lines change",
+          "status": "covered",
+          "how": "the onchange on invoice_line_ids: as a quantity is typed the subtotal, taxes, totals and journal items follow"
+        },
+        {
+          "feature": "Terms and Conditions (narration html, placeholder, no label) beside the totals",
+          "status": "covered",
+          "how": "html field with hidden label in two thirds of the row"
+        },
+        {
+          "feature": "tax_totals widget: Untaxed Amount, one line per tax group, Total; tax amount editable on draft bills",
+          "status": "approximated",
+          "how": "three monetary fields; Taxes is editable on draft bills and the total and the tax item follow",
+          "needs": "a per-tax-group breakdown"
+        },
+        {
+          "feature": "invoice_payments_widget: each payment, its date and amount, with a popover (journal, Open, Unreconcile)",
+          "status": "approximated",
+          "how": "a read-only table (Paid on, Amount) the app fills",
+          "needs": "a popover per row and its buttons"
+        },
+        { "feature": "Amount Due (amount_residual) hidden in draft", "status": "covered", "how": "condition" },
+        {
+          "feature": "Exchange Rate, Total in EGP with its computed label (account currency view)",
+          "status": "approximated",
+          "how": "fields and conditions; the label is fixed in the page rather than worked out ('Total in EGP')"
+        },
+        {
+          "feature": "Manual Exchange Rate (sherkety_manual_currency_rate)",
+          "status": "covered",
+          "how": "field, readonly and invisible conditions; the onchange uses it for the EGP amounts"
+        },
+        {
+          "feature": "Outstanding credits widget: each credit with an Add button",
+          "status": "approximated",
+          "how": "a read-only table shown once posted",
+          "needs": "a button on each row of a table"
+        },
+        {
+          "feature": "oe_subtotal_footer layout (right aligned, separator above the total)",
+          "status": "approximated",
+          "how": "a third of the row, labels beside"
+        },
+        {
+          "feature": "Journal Items tab: line_ids, readonly unless draft",
+          "status": "approximated",
+          "how": "a grid, read only for invoices (their items are made from the lines) and editable for entries. Flectra lets a draft invoice's items be edited cell by cell"
+        },
+        {
+          "feature": "Journal items made from the invoice lines (product, tax, receivable/payable)",
+          "status": "covered",
+          "how": "the onchange makes them, in EGP with the amount in the invoice's currency, and keeps their ids"
+        },
+        {
+          "feature": "Per-cell conditions in journal items (invisible/readonly/required by display_type, parent.move_type)",
+          "status": "missing",
+          "needs": "conditions on a table's cells, read against the line and its parent"
+        },
+        { "feature": "decoration-muted for section and note rows", "status": "approximated", "how": "sections and notes drawn as headings" },
+        {
+          "feature": "Partner column only for entries (column_invisible parent.move_type)",
+          "status": "approximated",
+          "how": "an optional column, always offered"
+        },
+        {
+          "feature": "Due Date, Amount in Currency, Currency, Taxes, Discount Date, Discount Amount (optional hide)",
+          "status": "covered",
+          "how": "optional columns starting hidden"
+        },
+        { "feature": "Debit / Credit with sum Total Debit / Total Credit", "status": "covered", "how": "`totals: [debit, credit]`" },
+        {
+          "feature": "Tax Grids (tax_tag_ids, domain by country) and Invert Tags (developer mode)",
+          "status": "approximated",
+          "how": "tags and an optional column; the domain is missing"
+        },
+        {
+          "feature": "Cut-Off button on each income/expense item (action_automatic_entry)",
+          "status": "missing",
+          "needs": "a button on each row of a table, with its own condition"
+        },
+        { "feature": "Invoicing App Legacy note", "status": "covered", "how": "a text with its condition" },
+        {
+          "feature": "Currency Details tab (account, developer mode): transaction amounts, base amounts, rate, Refresh Exchange Rate",
+          "status": "covered",
+          "how": "three titled sections, read only, and a link button with an icon; shown for a foreign currency (not limited to developer mode)"
+        },
+        {
+          "feature": "Other Info (invoices): Invoice group — Customer Reference, Salesperson (avatar), Sales Team, Original Invoice Debited, Recipient Bank (company accounts), Payment QR-code, Delivery Date",
+          "status": "approximated",
+          "how": "every field with its condition; the salesperson's avatar is missing"
+        },
+        {
+          "feature": "Other Info: Accounting group — Company, Incoterm, location, Fiscal Position, Source Email (email widget), Auto-post, Auto-post until, To Check",
+          "status": "covered",
+          "how": "fields, conditions, `widget: email`"
+        },
+        {
+          "feature": "Marketing group (sale, developer mode): campaign, medium, source",
+          "status": "approximated",
+          "how": "left out: developer mode only, and groups are not in the format"
+        },
+        {
+          "feature": "Other Info (entries): Auto-post, Reversal of, Auto-post until, To Check, Fiscal Position, Company (required), internal note",
+          "status": "covered",
+          "how": "second tab with its condition; narration placed again with its own placeholder"
+        },
+        {
+          "feature": "EDI Documents tab (account_edi, developer mode) with a Download button per row and decoration-danger",
+          "status": "missing",
+          "needs": "buttons on table rows and row colours by a condition"
+        },
+        { "feature": "Attachment preview of a draft bill's PDF beside the form", "status": "missing", "needs": "a document preview area beside the sheet" },
+        {
+          "feature": "Chatter: followers, activities, messages (post_refresh)",
+          "status": "covered",
+          "how": "the sheet's side panel slot, filled by @fieldia/chatter; the sample conversations of this lane are empty (shared/sample-chatter.ts holds only the customer's)"
+        },
+        {
+          "feature": "Help tooltips (Payment Reference, Fiscal Position, Auto-post…)",
+          "status": "approximated",
+          "how": "left out: Fieldia shows help as words under a field, which crowds a dense sheet"
+        },
+        {
+          "feature": "Python tuples and context in expressions: `in ('a', 'b')`, `context.get(...)`, `parent.x`",
+          "status": "approximated",
+          "how": "tuples written as lists; context and parent are missing (see above)"
+        },
+        {
+          "feature": "Payment registered: residual, payment state, the payments list, outstanding credits",
+          "status": "approximated",
+          "how": "the app's answer to the open step's then; the sample marks a full payment Paid where Flectra 17 shows In Payment until the bank statement is matched"
+        },
+        { "feature": "js_class account_move_form", "status": "approximated", "how": "nothing to carry: its quick-edit behaviour is the app's" }
+      ]
+    },
+    {
+      "id": "real-register-payment",
+      "title": "Register Payment",
+      "flectra": {
+        "module": "account",
+        "model": "account.payment.register",
+        "view": "view_account_payment_register_form",
+        "file": "addons/account/wizard/account_payment_register_views.xml"
+      },
+      "inherited": [
+        { "module": "sherkety_manual_currency_rate", "view": "view_account_payment_register_form_manual_rate", "adds": "Manual Exchange Rate after the amount" },
+        {
+          "module": "account_distribution_extras",
+          "view": "view_account_payment_register_form_postdated_check",
+          "adds": "Check / Bill Number and Check Due Date for the Postdated Check method"
+        },
+        { "module": "account_payment", "view": "view_account_payment_register_form_inherit_payment", "adds": "Saved payment token for electronic methods" }
+      ],
+      "size": { "fields": 44, "tabs": 0, "tables": 0, "headerButtons": 0, "footerButtons": 3, "inlineButtons": 1, "smartButtons": 0, "conditions": 54 },
+      "built": { "fields": 39, "fieldNodes": 19, "buttons": 1, "conditions": 20, "moments": 2 },
+      "features": [
+        {
+          "feature": "Opened as a dialog from the invoice's Register Payment button (action_register_payment, target new)",
+          "status": "covered",
+          "how": "an `open` step on the invoice's (and the expense's) header button, `as: dialog`, page real-register-payment"
+        },
+        {
+          "feature": "Context from the invoice: the journal items to pay (active_ids), dont_redirect_to_payments, display_account_trust",
+          "status": "approximated",
+          "how": "the open step's `values` hand the wizard what default_get reads from those items: partner, payment and partner type, amounts in both currencies, source currency, memo; the line_ids themselves are not passed (no context in the format)"
+        },
+        {
+          "feature": "default_get and the precomputed journal, method, currency, amount, bank account",
+          "status": "covered",
+          "how": "the page's `on.open` calls payment_register_defaults; the app answers the journal (the bank in the invoice's currency), its first method for the payment type, the currency and the full amount, the bank account. A stored wizard keeps its own"
+        },
+        {
+          "feature": "16 invisible technical fields (can_edit_wizard, can_group_payments, early_payment_discount_mode, payment_type, partner_type, source_amount, source_amount_currency, source_currency_id, company_id, partner_id, country_code, show/require_partner_bank_account, company_currency_id, hide_writeoff_section, writeoff_is_exchange_account)",
+          "status": "covered",
+          "how": "declared as fields and never placed; conditions read them"
+        },
+        { "feature": "force_save on the invisible fields", "status": "covered", "how": "a new record sends every value it holds, so nothing is lost" },
+        { "feature": "line_ids (Journal items, many2many, invisible)", "status": "covered", "how": "declared, read only, not placed" },
+        {
+          "feature": "available_journal_ids: journal domain `id in available_journal_ids`",
+          "status": "approximated",
+          "how": "a fixed filter: bank and cash journals. Fieldia's filter cannot test a record's own id against a list held by the form (`id in <many2many>`)"
+        },
+        {
+          "feature": "available_payment_method_line_ids: method domain",
+          "status": "covered",
+          "how": "filter by journal and payment type, each `valueFrom` the form"
+        },
+        {
+          "feature": "available_partner_bank_ids / untrusted_bank_ids: bank account domain",
+          "status": "approximated",
+          "how": "filter by the partner; inbound the field is read only and the app sets the company's account, as Flectra does"
+        },
+        {
+          "feature": "Early Payment Discount alert with the amount inside the sentence",
+          "status": "approximated",
+          "how": "a framed section with a note and the amount as a read-only field; a sections page has no alerts, and words cannot hold a field"
+        },
+        {
+          "feature": "Untrusted bank accounts warning: two counts and a link button inside one sentence",
+          "status": "approximated",
+          "how": "a framed section with both counts as fields, a note and a link-style button calling action_open_untrusted_bank_accounts"
+        },
+        {
+          "feature": "Two-column group (group1 / group2) and group3 under them",
+          "status": "covered",
+          "how": "a plain section of two columns holding three plain sections; the QR spans both"
+        },
+        {
+          "feature": "journal_id required, no_open, no_create",
+          "status": "covered",
+          "how": "required on the node, `create: false`; no ↗ is offered as no page is given for account.journal (there is no per-node switch to hide it)"
+        },
+        {
+          "feature": "payment_method_line_id required, no_create, no_open, long tooltip",
+          "status": "approximated",
+          "how": "required, `create: false`; the tooltip is left out — Fieldia shows `help` as words under the field, not on hover"
+        },
+        {
+          "feature": "payment_token_id (account_payment) with its condition and no_create",
+          "status": "approximated",
+          "how": "field, condition and `create: false`; its domain (suitable_payment_token_ids) becomes a filter by partner"
+        },
+        {
+          "feature": "bill_no and due_date (account_distribution_extras): shown and required for a Postdated Check",
+          "status": "covered",
+          "how": "conditions on is_postdated_check, which the app's onchange works out from the method's code"
+        },
+        {
+          "feature": "partner_bank_id: invisible / readonly / required conditions",
+          "status": "covered",
+          "how": "the three expressions as written (parentheses kept)"
+        },
+        {
+          "feature": "partner_bank_id context display_account_trust (trust marks in the names)",
+          "status": "missing",
+          "needs": "a context for a link's search: what the server is told when it searches"
+        },
+        { "feature": "group_payment shown only when payments can be grouped", "status": "covered", "how": "condition on can_group_payments" },
+        {
+          "feature": "Amount and currency side by side (o_row amount_div), one label, one condition",
+          "status": "covered",
+          "how": "a monetary node with `pickCurrency: true`: the currency box beside the amount"
+        },
+        {
+          "feature": "currency_id required, no_create, group multi-currency",
+          "status": "approximated",
+          "how": "the currency box offered beside the amount; it cannot be marked required on its own, and groups are not in the format"
+        },
+        {
+          "feature": "Amount converted when the journal or currency changes (at the day's rate)",
+          "status": "covered",
+          "how": "the data source's onchange on journal_id and currency_id: amount and difference worked out again in the new currency"
+        },
+        {
+          "feature": "manual_currency_rate (sherkety_manual_currency_rate), hidden in the company's currency",
+          "status": "covered",
+          "how": "condition `currency_id == company_currency_id` (links compare by id)"
+        },
+        { "feature": "payment_date required, default today", "status": "covered", "how": "field `required`, `default: \"today\"`" },
+        { "feature": "communication (Memo) condition", "status": "covered", "how": "as written" },
+        {
+          "feature": "group3 hidden when there is no difference, in early-discount mode, or not editable",
+          "status": "covered",
+          "how": "one condition on the section"
+        },
+        {
+          "feature": "payment_difference (computed)",
+          "status": "covered",
+          "how": "read-only monetary set by the app's onchange on amount, date, rate and currency, as the compute does on the server"
+        },
+        {
+          "feature": "payment_difference_handling radio without label",
+          "status": "covered",
+          "how": "`widget: radio`, `labels: hidden`; made required so the radio has no Clear selection, which Flectra never shows"
+        },
+        { "feature": "Write-off block hidden when kept open or in early-discount mode", "status": "covered", "how": "the same condition on both fields" },
+        {
+          "feature": "writeoff_account_id labelled Post Difference In, no_create, required when marked fully paid",
+          "status": "covered",
+          "how": "label, `create: false`, required condition; domain deprecated = False as a filter"
+        },
+        {
+          "feature": "writeoff_label labelled Label, required, hidden for an exchange-difference account",
+          "status": "covered",
+          "how": "label, conditions; writeoff_is_exchange_account worked out by the onchange on the account"
+        },
+        { "feature": "oe_edit_only labels", "status": "approximated", "how": "always shown: a form here is always being edited" },
+        {
+          "feature": "qr_code (html, centred, both columns)",
+          "status": "approximated",
+          "how": "a read-only html field with no label over two columns when set; it cannot be centred"
+        },
+        {
+          "feature": "Footer: Create Payment / Create Payments (by total_payments_amount), Discard",
+          "status": "approximated",
+          "how": "the dialog's own Save & Close and Discard; the page's `afterSave` calls action_create_payments",
+          "needs": "footer buttons a page names, with conditions"
+        },
+        {
+          "feature": "action_create_payments: payments posted and reconciled, the invoice reloaded",
+          "status": "approximated",
+          "how": "`into` copies amount, currency, handling, date, journal and memo into helper fields of the invoice; its `then` calls the app to reconcile and saves",
+          "needs": "a step that reloads the opener's record after the server changed it"
+        },
+        {
+          "feature": "Words said as the payment is created",
+          "status": "approximated",
+          "how": "the dialog's afterSave answer is said, but the dialog has closed and the words are lost; the opener says them instead",
+          "needs": "a dialog's words handed to the page under it"
+        },
+        {
+          "feature": "data-hotkey q (create) and x (discard)",
+          "status": "approximated",
+          "how": "Ctrl+Enter saves and closes, Escape discards; no named hotkeys"
+        },
+        {
+          "feature": "Python tuples in conditions: `in ('a', 'b')`",
+          "status": "approximated",
+          "how": "written as lists `in ['a', 'b']`: Fieldia's expressions read lists only"
+        },
+        {
+          "feature": "The wizard shown alone (gallery)",
+          "status": "approximated",
+          "how": "a record page of model account.payment.register with a sample record; Save stands for Create Payment"
+        }
+      ]
+    },
+    {
+      "id": "real-expense",
+      "title": "Expense",
+      "flectra": {
+        "module": "sherkety_expense",
+        "model": "sherkety.expense",
+        "view": "view_sherkety_expense_form",
+        "file": "addons/sherkety_expense/views/sherkety_expense_views.xml"
+      },
+      "inherited": [],
+      "size": { "fields": 35, "tabs": 1, "tables": 1, "headerButtons": 6, "smartButtons": 1, "ribbons": 1, "conditions": 34 },
+      "built": { "fields": 28, "lineFields": 14, "fieldNodes": 19, "tables": 1, "tabs": 1, "headerButtons": 6, "smartButtons": 1, "ribbon": 1, "conditions": 27 },
+      "samples": "4101 a trip report in draft, paid by the employee; 4102 an internet bill approved, paid by the company",
+      "features": [
+        { "feature": "Statusbar draft, submit, approve, post, done (Refused shown when it is the state)", "status": "covered", "how": "`visibleStates`" },
+        {
+          "feature": "Submit: refuses an expense with no line, sets approval_state",
+          "status": "covered",
+          "how": "steps check, call action_submit (the app stops with 'Add at least one expense line before submitting.'), save"
+        },
+        { "feature": "Approve (team approver group)", "status": "covered", "how": "steps alone: set approval_state and state, save, say" },
+        {
+          "feature": "Post (all approver group): an employee bill, or company payments grouped by date and currency (Option B)",
+          "status": "covered",
+          "how": "the app's answer: the bill's number and amount, Entries 1, Posted; company-paid lines become paid entries and the expense Paid"
+        },
+        {
+          "feature": "Register Payment for an employee-paid expense: opens account.payment.register on its bills",
+          "status": "covered",
+          "how": "the same Register Payment page in a dialog, given the employee's contact (his bank account) and the amount due; into and then mark the expense paid"
+        },
+        { "feature": "Refuse (submit or approve)", "status": "covered", "how": "steps: set approval_state and state, save, say" },
+        { "feature": "Reset to Draft (manager): bills back to draft and removed", "status": "covered", "how": "the app's answer" },
+        { "feature": "groups on the header buttons (team approver, all approver, manager)", "status": "missing", "needs": "permission groups on buttons" },
+        {
+          "feature": "state computed from approval_state, the bills and their payment state",
+          "status": "approximated",
+          "how": "the steps and the app's answers set state directly; Fieldia's `compute` cannot read the server's bills"
+        },
+        {
+          "feature": "Entries smart button (move_count statinfo) opening the journal entries",
+          "status": "approximated",
+          "how": "a stat button with the count; the app's answer says what opens",
+          "needs": "opening a list of related records"
+        },
+        { "feature": "Paid ribbon (text-bg-success)", "status": "covered", "how": "ribbon, tone success, condition on payment_state" },
+        {
+          "feature": "Title: 'Description' label over an h1, placeholder e.g. Trip to Riyadh, readonly unless draft; the reference muted under it",
+          "status": "approximated",
+          "how": "title field with placeholder and the reference as its subtitle",
+          "needs": "a label over the title and a readonly condition on it; the reference draws large, not muted"
+        },
+        {
+          "feature": "Employee (readonly unless draft) and the approver worked out from the employee's manager",
+          "status": "covered",
+          "how": "onchange on employee_id sets the Approver and the employee's contact"
+        },
+        { "feature": "Approver readonly once posted or paid", "status": "covered", "how": "condition" },
+        { "feature": "Paid By selection, readonly unless draft", "status": "covered", "how": "selection and condition" },
+        {
+          "feature": "Journal for employee-paid, Payment Method for company-paid (required)",
+          "status": "covered",
+          "how": "conditions; filters on journal type and outbound methods"
+        },
+        {
+          "feature": "Date, Company (multi-company group), Currency (multi-currency group)",
+          "status": "approximated",
+          "how": "fields and conditions; shown to everyone (no groups)"
+        },
+        { "feature": "Accounting Date shown once set; Payment State shown once posted", "status": "covered", "how": "conditions" },
+        { "feature": "Read-only selections (Payment State)", "status": "approximated", "how": "drawn as a greyed select with its arrow rather than as words" },
+        { "feature": "Shared Configuration — applies to every line (titled group)", "status": "covered", "how": "a titled section, two plain columns" },
+        { "feature": "analytic_precision (invisible)", "status": "covered", "how": "declared, not placed" },
+        {
+          "feature": "Vendor Name with placeholder; Taxes tags no_create; Expense Account no_create; all readonly unless draft",
+          "status": "covered",
+          "how": "fields, placeholder, tags, `create: false`, conditions"
+        },
+        { "feature": "Analytic Distribution widget", "status": "approximated", "how": "a many2many of analytic accounts as tags: no percentages" },
+        {
+          "feature": "The header cascading to every line (vendor, date, taxes, account, analytic) and to new lines",
+          "status": "covered",
+          "how": "the data source's onchange on each header field and on line_ids"
+        },
+        {
+          "feature": "Lines tab: editable list readonly unless draft, handle, Description, Category (expensable products), Vendor, Date (optional), Quantity, Unit Price, Taxes (optional, purchase), Account (optional hide), Analytic (optional hide), Subtotal",
+          "status": "covered",
+          "how": "the grid with sequenceField, optional columns and filters"
+        },
+        {
+          "feature": "Category picked brings its expense account and taxes unless the header sets them",
+          "status": "covered",
+          "how": "onchange, following a category changed on a line"
+        },
+        {
+          "feature": "Prices include their taxes (force_price_include): untaxed and tax taken out of the receipt's amount",
+          "status": "covered",
+          "how": "onchange per line: total = quantity × price, untaxed = total ÷ (1 + rate)"
+        },
+        {
+          "feature": "Totals: Untaxed, Tax, Total (separator), Amount Residual once posted",
+          "status": "approximated",
+          "how": "a third of the row with labels beside; no separator line"
+        },
+        {
+          "feature": "Chatter with tracking (title, employee, paid by, state)",
+          "status": "approximated",
+          "how": "the chatter slot; Fieldia posts no tracking messages by itself, and this lane's sample conversation is empty"
+        }
+      ]
+    }
+  ]
+}
