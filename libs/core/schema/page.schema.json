@@ -3253,6 +3253,17 @@
                 "page"
               ]
             },
+            "side": {
+              "type": "string",
+              "enum": [
+                "end",
+                "start",
+                "right",
+                "left",
+                "top",
+                "bottom"
+              ]
+            },
             "title": {
               "type": "string"
             },

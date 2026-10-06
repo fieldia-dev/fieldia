@@ -1,4 +1,4 @@
-import type { ActionStep } from '../format/actions';
+import type { ActionStep, OpenStep } from '../format/actions';
 import { createForm, type ActionRequest } from './form';
 import type { ActionResult, OpenResult } from './run';
 import { orderPage, orderSource, recordingHost, wizardPage } from './test-steps';
@@ -254,6 +254,24 @@ describe('form.run — opening another page', () => {
     // A link set from the record it saved takes that record's name.
     expect(form.getState().values).toEqual(expect.objectContaining({ customer_id: { id: 9, label: 'Delta Foods' }, note: 'Customer from Cairo' }));
     expect(host.calls.at(-1)).toEqual(['say', 'Customer added', 'success']);
+  });
+
+  it('asks for a panel from the side the step names, the app’s answer too; a dialog or its place is asked with none', async () => {
+    const host = recordingHost({ open: [0, 1, 2, 3].map(() => ({ saved: true, recordId: 1, values: {} })) });
+    const form = createForm({ page: orderPage(), host, onAction: () => ({ open: { page: 'customer', as: 'panel', side: 'bottom' } }) });
+    await form.run([
+      { do: 'open', page: 'customer', as: 'panel', side: 'left' },
+      { do: 'call', action: 'pick' },
+      // Out of the format's reach, from code: the side is a panel's alone.
+      { do: 'open', page: 'customer', side: 'top' } as OpenStep,
+      { do: 'open', page: 'customer', as: 'panel' },
+    ]);
+    expect(host.opened).toEqual([
+      { page: 'customer', as: 'panel', side: 'left', recordId: null },
+      { page: 'customer', as: 'panel', side: 'bottom', recordId: null },
+      { page: 'customer', as: 'dialog', recordId: null },
+      { page: 'customer', as: 'panel', recordId: null },
+    ]);
   });
 
   it('opens a record by an expression, in a dialog unless told otherwise', async () => {

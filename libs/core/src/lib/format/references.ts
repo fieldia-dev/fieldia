@@ -116,6 +116,7 @@ export class ReferenceCheck {
           return;
         case 'open':
           if (step.page === this.page.id && step.as === 'page') this.report(`${at}.page`, 'a page cannot open itself in its own place');
+          if (step.side !== undefined && step.as !== 'panel') this.report(`${at}.side`, `a side is where a panel comes from; this opens ${step.as === 'page' ? 'in its place' : 'in a dialog'}`);
           if (step.record !== undefined) this.checkExpression(step.record, `${at}.record`, scope);
           for (const [name, value] of Object.entries(step.values ?? {})) this.checkExpression(value, `${at}.values.${name}`, scope);
           for (const [name, value] of Object.entries(step.into ?? {})) {

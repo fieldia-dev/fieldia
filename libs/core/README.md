@@ -97,8 +97,12 @@ runs them at its moments:
 
 - `open` another page in a `dialog` (the default), a `panel` beside this form,
   or in its `page`; on a `record` (an expression giving its id) or a new one with
-  `values`. Once it is saved or sent, `into` sets this form's fields from its
-  answers (`id` is the record it saved) and `then` runs here.
+  `values`. A panel comes from its `side`: `end` (the default: the end of the
+  line, the right or, right to left, the left) or `start`, as the page reads;
+  or `left`, `right`, `top` or `bottom`, whatever its direction — a side on a
+  dialog or a page in its place is refused. Once it is saved or sent, `into`
+  sets this form's fields from its answers (`id` is the record it saved) and
+  `then` runs here.
 - `set` a field from an expression, `clear` one, `addLine` to a table of lines.
 - `check` the form or some fields, `save` (a page of responses sends), `reset`.
 - `goTo` a tab or a wizard step, `say` something in a tone, `ask` Yes or No.
@@ -142,7 +146,7 @@ const form = createForm({
   page,
   dataSource,
   host: {
-    open: (request) => showPage(request), // { page, version?, as, title?, recordId, values? } → { saved, recordId?, values?, label? }
+    open: (request) => showPage(request), // { page, version?, as, side?, title?, recordId, values? } → { saved, recordId?, values?, label? }
     say: (message, tone) => toast(message, tone),
     ask: (message) => askYesOrNo(message), // Promise<boolean>
     close: () => panel.close(), // the dialog or panel this form was opened in
