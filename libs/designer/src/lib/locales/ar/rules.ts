@@ -125,6 +125,7 @@ export const rules: DesignerWords['rules'] = {
     holds: 'قاعدة بين الحقول',
   },
   computeFromModel: (label) => `طريقة حساب ${q(label)} تأتي من نموذج البيانات`,
+  notALineField: (name, table) => `${q(name)} ليس حقلًا في بنود ${q(table)}`,
   setFromModel: (label) => `ما يضبط ${q(label)} يأتي من نموذج البيانات`,
   cannotBeWorkedOut: (label, stored) => `${q(label)} من نوع: ${stored}، ولا يمكن حسابه من حقول أخرى`,
   cannotBeSet: (label, stored) => `${q(label)} من نوع: ${stored}، ولا يمكن ضبطه بقاعدة`,

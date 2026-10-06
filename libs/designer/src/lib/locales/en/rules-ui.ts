@@ -92,6 +92,12 @@ export const rulesUi = {
   typeAName: 'Type a field’s name, or @',
   functions: 'Functions',
   shownOnlyTo: 'Shown only to',
+  startsWith: 'Starts with',
+  startsWithPlaceholder: 'user — the person using it — or a formula',
+  startsWithHint: 'A new record’s first value, worked out once; people may change it. user is the person using the form.',
+  newLinesStartWith: 'New lines start with',
+  madeStartsWith: 'A record made from it starts with',
+  madeStartsWithHint: 'Besides the name typed, when Create and edit… or a name typed makes one. Its fields are the other page’s, typed by their names.',
   rolesPlaceholder: 'sales_team.group_sale_manager, !base.group_portal',
   rolesHint: 'People in any of these roles see it; ! before a role hides it from people in that one. Empty, everyone sees it. The app says who holds which — and its server still decides what they may do.',
   /** What each function does, with an example written as a formula is. */

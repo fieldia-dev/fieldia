@@ -134,6 +134,7 @@ export const rules = {
     holds: 'a rule across fields',
   },
   computeFromModel: (label: string) => `How “${label}” is worked out comes from the model`,
+  notALineField: (name: string, table: string) => `“${name}” is not a field of the lines of ${table}`,
   setFromModel: (label: string) => `What sets “${label}” comes from the model`,
   cannotBeWorkedOut: (label: string, stored: string) => `“${label}” holds ${stored}, which cannot be worked out from other fields`,
   cannotBeSet: (label: string, stored: string) => `“${label}” holds ${stored}, which cannot be set by a rule`,

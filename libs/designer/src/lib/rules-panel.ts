@@ -4,6 +4,7 @@ import type { Designer } from './designer';
 import { answerRulesEditor } from './rules-answers';
 import type { SampleOptions } from './rules-sample';
 import { setWhenSetting, workedOutSetting } from './rules-worked-out';
+import { defaultsSettings } from './rules-defaults';
 
 /**
  * A field's own rules on the panel's Rules tab, under when it shows and
@@ -24,10 +25,12 @@ export function fieldRules(el: ElementFactory, designer: Designer, id: string, s
   const workedOut = workedOutSetting(el, designer, id);
   const setWhen = setWhenSetting(el, designer, id);
   const answers = answerRulesEditor(el, designer, id, sampling);
+  const defaults = defaultsSettings(el, designer, id);
   return {
-    rows: [workedOut.element, setWhen.element, answers.element],
+    rows: [workedOut.element, ...defaults.rows, setWhen.element, answers.element],
     update(page) {
       workedOut.update(page);
+      defaults.update(page);
       setWhen.update(page);
       answers.update(page);
     },

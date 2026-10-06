@@ -455,6 +455,12 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   /** One answer rule changed: a value sets what it asks, `null` takes that away. Typing in one box is one undo step. */
   updateAnswerRule(id: string, index: number, patch: AnswerRulePatch): boolean;
   removeAnswerRule(id: string, index: number): boolean;
+  /** A field's first value on a new record (or line), worked out: `user` for the person using the form; `null` takes it away. Typing it is one undo step. */
+  setDefaultFrom(id: string, expression: string | null): boolean;
+  /** A table of lines: what each new line starts with, line field by line field, read from the record; `null` or none takes it away. */
+  setLineDefaults(id: string, values: Record<string, string> | null): boolean;
+  /** A link: what a record made from it starts with besides its name; `null` or none takes it away. */
+  setCreateValues(id: string, values: Record<string, string> | null): boolean;
   // extend lane
   /** The app's own kinds, as kinds, in the order the app gave them. */
   appKinds(): QuestionKind[];

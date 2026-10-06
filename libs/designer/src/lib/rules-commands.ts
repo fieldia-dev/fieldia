@@ -29,6 +29,12 @@ export interface RulesCommands {
   /** One rule changed: a value sets what it asks, `null` takes that away. Typing in one box is one undo step. */
   updateAnswerRule(id: string, index: number, patch: AnswerRulePatch): boolean;
   removeAnswerRule(id: string, index: number): boolean;
+  /** A field's first value on a new record (or line), worked out: `user` for the person using the form; `null` takes it away. Typing it is one undo step. */
+  setDefaultFrom(id: string, expression: string | null): boolean;
+  /** A table of lines: what each new line starts with, line field by line field, read from the record; `null` or none takes it away. */
+  setLineDefaults(id: string, values: Record<string, string> | null): boolean;
+  /** A link: what a record made from it starts with besides its name; `null` or none takes it away. */
+  setCreateValues(id: string, values: Record<string, string> | null): boolean;
 }
 
 export interface RulesCommandsDeps {
@@ -128,8 +134,64 @@ function setWhenBox(before: SetWhen[] | undefined, after: SetWhen[]): string | n
   return changed.length === 1 ? changed[0] : null;
 }
 
+/** A map kept as typed: names and formulas trimmed, empty ones left out; null when none is left. */
+function tidyMap(values: Record<string, string> | null): Record<string, string> | null {
+  const kept = Object.entries(values ?? {}).map(([name, source]) => [name.trim(), source.trim()] as const).filter(([name, source]) => name && source);
+  return kept.length ? Object.fromEntries(kept) : null;
+}
+
 export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps): RulesCommands {
   return {
+    setDefaultFrom(id, expression) {
+      return apply(
+        (draft) => {
+          const node = fieldNode(draft, id);
+          const field = draft.fields[node.field];
+          const source = expression?.trim() ?? '';
+          if (!source) {
+            delete field.defaultFrom;
+            return;
+          }
+          refuseFormula(draft, source);
+          field.defaultFrom = source;
+        },
+        expression?.trim() ? `default-from:${id}` : null
+      );
+    },
+
+    setLineDefaults(id, values) {
+      const map = tidyMap(values);
+      return apply((draft) => {
+        const node = fieldNode(draft, id);
+        const field = draft.fields[node.field];
+        if (field.type !== 'one2many') throw new Refusal((w) => w.refusals.noField(id));
+        if (!map) {
+          delete field.lineDefaults;
+          return;
+        }
+        for (const [name, source] of Object.entries(map)) {
+          if (!field.fields[name]) throw new Refusal((w) => w.rules.notALineField(name, labelOf(draft, node)));
+          refuseFormula(draft, source);
+        }
+        field.lineDefaults = map;
+      }, map ? `line-defaults:${id}` : null);
+    },
+
+    setCreateValues(id, values) {
+      const map = tidyMap(values);
+      return apply((draft) => {
+        const node = fieldNode(draft, id);
+        const field = draft.fields[node.field];
+        if (field.type !== 'many2one' && field.type !== 'many2many') throw new Refusal((w) => w.refusals.noField(id));
+        if (!map) {
+          delete field.createValues;
+          return;
+        }
+        for (const source of Object.values(map)) refuseFormula(draft, source);
+        field.createValues = map;
+      }, map ? `create-values:${id}` : null);
+    },
+
     setCompute(id, expression) {
       return apply(
         (draft) => {
