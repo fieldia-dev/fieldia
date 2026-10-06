@@ -1,0 +1,97 @@
+{
+  "fieldia": "0.1",
+  "id": "quick-order",
+  "title": "Order by phone",
+  "description": "Who is calling, their customer record — or a new one, made beside the order — what they order and how many. The shop checks the stock as a product is picked.",
+  "data": { "kind": "responses" },
+  "maxWidth": "medium",
+  "fields": {
+    "caller": { "type": "char", "label": "Who is calling", "help": "A new customer starts with this name." },
+    "customer_id": { "type": "many2one", "label": "Customer", "relation": "partner", "required": true },
+    "product": { "type": "many2one", "label": "Product", "relation": "product", "required": true },
+    "quantity": { "type": "integer", "label": "Quantity", "required": true, "min": 1, "default": 1 },
+    "price": { "type": "monetary", "label": "Price each", "currency": "EGP", "digits": [12, 2], "readonly": true, "help": "The shop’s price, given once the stock is checked." },
+    "total": { "type": "monetary", "label": "Total", "currency": "EGP", "digits": [12, 2], "compute": "quantity * price" },
+    "notes": { "type": "text", "label": "Notes for the warehouse" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "quick-order",
+    "children": [
+      {
+        "type": "section",
+        "id": "who",
+        "title": "Customer",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-caller", "field": "caller", "placeholder": "Nadia Farouk" },
+          { "type": "field", "id": "f-customer", "field": "customer_id" },
+          {
+            "type": "button",
+            "id": "new-customer",
+            "label": "New customer",
+            "icon": "user",
+            "steps": [
+              {
+                "do": "open",
+                "page": "new-customer",
+                "as": "panel",
+                "values": { "name": "caller" },
+                "into": { "customer_id": "id" },
+                "then": [{ "do": "say", "message": "Customer added", "tone": "success" }]
+              }
+            ]
+          },
+          {
+            "type": "button",
+            "id": "customer-page",
+            "label": "Customer’s page",
+            "style": "link",
+            "invisible": "not customer_id",
+            "steps": [{ "do": "open", "page": "customer", "as": "page", "record": "customer_id", "into": { "customer_id": "id" } }]
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "what",
+        "title": "What they order",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-product", "field": "product", "colspan": 2 },
+          { "type": "field", "id": "f-quantity", "field": "quantity" },
+          { "type": "field", "id": "f-price", "field": "price" },
+          { "type": "field", "id": "f-total", "field": "total" }
+        ]
+      },
+      { "type": "section", "id": "more", "children": [{ "type": "field", "id": "f-notes", "field": "notes" }] }
+    ]
+  },
+  "on": {
+    "change": { "product": [{ "do": "call", "action": "check_stock" }] },
+    "beforeSave": [{ "do": "check" }, { "do": "ask", "message": "Send the order?" }],
+    "afterSave": [{ "do": "say", "message": "Order sent", "tone": "success" }]
+  },
+  "translations": {
+    "ar": {
+      "Order by phone": "طلب بالهاتف",
+      "Who is calling, their customer record — or a new one, made beside the order — what they order and how many. The shop checks the stock as a product is picked.": "من المتصل، وسجله كعميل — أو سجل جديد يُنشأ بجانب الطلب — وماذا يطلب وكم. يتحقق المتجر من المخزون عند اختيار المنتج.",
+      "Who is calling": "من المتصل",
+      "A new customer starts with this name.": "يبدأ العميل الجديد بهذا الاسم.",
+      "Customer": "العميل",
+      "Product": "المنتج",
+      "Quantity": "الكمية",
+      "Price each": "سعر الوحدة",
+      "The shop’s price, given once the stock is checked.": "سعر المتجر، يُعطى بعد التحقق من المخزون.",
+      "Total": "الإجمالي",
+      "Notes for the warehouse": "ملاحظات للمستودع",
+      "Nadia Farouk": "نادية فاروق",
+      "New customer": "عميل جديد",
+      "Customer’s page": "صفحة العميل",
+      "Customer added": "أُضيف العميل",
+      "What they order": "ماذا يطلب",
+      "Send the order?": "إرسال الطلب؟",
+      "Order sent": "أُرسل الطلب"
+    }
+  }
+}

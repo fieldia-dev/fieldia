@@ -1,0 +1,37 @@
+{
+  "fieldia": "0.1",
+  "id": "new-customer",
+  "title": "New customer",
+  "data": { "kind": "record", "model": "partner" },
+  "fields": {
+    "name": { "type": "char", "label": "Name", "required": true },
+    "phone": { "type": "char", "label": "Phone" },
+    "email": { "type": "char", "label": "Email" },
+    "country_id": { "type": "many2one", "label": "Country", "relation": "country" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "new-customer-form",
+    "children": [
+      {
+        "type": "section",
+        "id": "contact",
+        "children": [
+          { "type": "field", "id": "c-name", "field": "name" },
+          { "type": "field", "id": "c-phone", "field": "phone", "widget": "phone", "placeholder": "+20 2 2345 6789" },
+          { "type": "field", "id": "c-email", "field": "email", "widget": "email" },
+          { "type": "field", "id": "c-country", "field": "country_id" }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "New customer": "عميل جديد",
+      "Name": "الاسم",
+      "Phone": "الهاتف",
+      "Email": "البريد الإلكتروني",
+      "Country": "الدولة"
+    }
+  }
+}

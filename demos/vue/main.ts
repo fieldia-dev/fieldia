@@ -8,6 +8,7 @@ import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
+import { answerAction } from '../shared/order-desk';
 
 /** The same demo again, mounted by Vue with render functions. */
 const params = new URLSearchParams(location.search);
@@ -85,9 +86,11 @@ createApp({
         widgets: { ...gridWidgets, ...codeWidgets },
         pages: appPages,
         ...optionsFromQuery(params),
+        // `@action` in a template: what it returns — here the shop's answers to the pages' steps — the form takes.
         onAction: (request: ActionRequest) => {
           actions.push(request.action);
           requests.push(request);
+          return answerAction(request, params.get('locale') ?? undefined);
         },
         onReady: (handle: ViewerHandle) => Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter } }),
       },

@@ -9,6 +9,8 @@ import layout from '../../examples/pages/layout.page.json';
 import lists from '../../examples/pages/lists.page.json';
 import customers from '../../examples/pages/customers.page.json';
 import order from '../../examples/pages/order.page.json';
+import quickOrder from '../../examples/pages/quick-order.page.json';
+import newCustomer from '../../examples/pages/new-customer.page.json';
 import rules from '../../examples/pages/rules.page.json';
 import signup from '../../examples/pages/signup.page.json';
 import survey from '../../examples/pages/survey.page.json';
@@ -30,6 +32,8 @@ export const pages: Record<string, Page> = {
   custom: customPage,
   // Places the saved Address form twice: see `savedForms`.
   delivery: delivery as Page,
+  // Its buttons and moments run steps: a page opened by its id (see `openedPages`), the app's answers (shared/order-desk.ts).
+  'quick-order': quickOrder as Page,
   // 500 fields, for timing: e2e/perf.spec.ts opens it; no card in the gallery (see e2e/demos-shell.spec.ts).
   big: big as Page,
 };
@@ -117,15 +121,20 @@ export const relatedPages: Record<string, Page> = { partner: customer as Page };
 /** The app's saved forms, placed in other pages by their id: the Address form, twice in Delivery details. */
 export const savedForms: Record<string, Page> = { address: address as Page };
 
+/** The pages a step opens by their id: a new customer in a side panel, and a customer's record in the order's place. */
+export const openedPages: Record<string, Page> = { 'new-customer': newCustomer as Page, customer: customer as Page };
+
 /**
  * The app's pages, as the viewer's `pages` asks for them: a linked record's
- * page at once, by its model; a saved form by its id a moment later, as an app
- * fetching it from its server would — its place shows a quiet placeholder
- * first. `?pagesDelay=` sets the moment, in ms.
+ * page at once, by its model; a saved form, or a page a step opens, by its id
+ * a moment later, as an app fetching it from its server would — a saved
+ * form's place shows a quiet placeholder first. `?pagesDelay=` sets the
+ * moment, in ms.
  */
 export function appPages(request: PageRequest): Page | null | Promise<Page | null> {
   if ('model' in request) return relatedPages[request.model] ?? null;
-  const found = savedForms[request.version === undefined ? request.id : `${request.id}@${request.version}`] ?? null;
+  const key = request.version === undefined ? request.id : `${request.id}@${request.version}`;
+  const found = savedForms[key] ?? openedPages[key] ?? null;
   const delay = Number(new URLSearchParams(location.search).get('pagesDelay') ?? 150);
   return new Promise((resolve) => setTimeout(() => resolve(found), delay));
 }

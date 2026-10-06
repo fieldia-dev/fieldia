@@ -187,6 +187,20 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'quick-order',
+    name: 'Order by phone, in steps',
+    category: 'behaviour',
+    query: 'page=quick-order&skin=outlined',
+    blurb: 'What the buttons and moments of a page do, written as steps: a new customer made in a side panel and set on the order, the stock checked by the app as a product is picked, a customer’s record opened in the order’s place, a question before the order is sent, and words after.',
+    howTo: [
+      'Type a name under “Who is calling” and press New customer: a side panel opens with the name in it. Save it: the customer is set on the order, and “Customer added” shows at the foot of the screen.',
+      'Pick a product: the app checks the stock, says how many are left, and gives the price; the total follows the quantity.',
+      'Pick the standing desk: the app says it is out of stock, and the price stays empty.',
+      'Press Customer’s page: the customer’s record takes the order’s place. Back brings the order back as it was.',
+      'Press Submit with a field empty: the form shows what is missing. Fill it in, submit again, and answer OK to “Send the order?”: “Order sent”.',
+    ],
+  },
+  {
     id: 'customer-locked',
     name: 'Read-only, then Edit',
     category: 'records',
