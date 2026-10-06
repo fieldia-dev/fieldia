@@ -1,1 +1,1307 @@
-{ "lane": "sales", "pages": [] }
+{
+  "lane": "sales",
+  "pages": [
+    {
+      "id": "real-sale-invoice-wizard",
+      "title": "Create invoices",
+      "flectra": {
+        "module": "sale",
+        "model": "sale.advance.payment.inv",
+        "view": "view_sale_advance_payment_inv",
+        "file": "addons/sale/wizard/sale_make_invoice_advance_views.xml"
+      },
+      "inherited": "none included (sale_timesheet's timesheet-period fields are left out: not in this lane's modules)",
+      "size": {
+        "fields": 16,
+        "tabs": 0,
+        "tables": 0,
+        "headerButtons": 2,
+        "smartButtons": 0,
+        "conditions": 13
+      },
+      "features": [
+        {
+          "feature": "Opened as a dialog (target=new) from the order's Create Invoice button",
+          "status": "covered",
+          "how": "open step, as: 'dialog', title 'Create invoices'"
+        },
+        {
+          "feature": "Defaults from the button's context (default_advance_payment_method = 'percentage' on the second Create Invoice)",
+          "status": "covered",
+          "how": "open step values: { advance_payment_method: \"'percentage'\" }"
+        },
+        {
+          "feature": "Defaults computed from active_ids: sale_order_ids, count, currency, amounts already invoiced and left to invoice",
+          "status": "approximated",
+          "how": "the opener's `values` expressions copy the order's own fields (currency_id, amount_invoiced, amount_to_invoice, amount_total)",
+          "needs": "the opener's record as a link in an expression (an `id` / `self` name), so sale_order_ids can be given; today no expression yields a link to the record itself"
+        },
+        {
+          "feature": "product_id: the company's down payment product, a compute on company_id",
+          "status": "covered",
+          "how": "on.open call answered by the app with values, only `when: 'not product_id'`"
+        },
+        {
+          "feature": "Technical fields kept invisible (display_draft_invoice_warning, has_down_payments, sale_order_ids, company_id, product_id, currency_id)",
+          "status": "covered",
+          "how": "declared in fields and not placed; conditions read them"
+        },
+        {
+          "feature": "Alert box (alert-warning) over the form: 'There are existing Draft Invoices…' with the link inline in the sentence",
+          "status": "approximated",
+          "how": "a framed section holding a text node and a link-style button, invisible 'not display_draft_invoice_warning'; the link sits under the sentence",
+          "needs": "alerts in a sections page (they exist only on a sheet), and an action link inside a sentence of text"
+        },
+        {
+          "feature": "Second paragraph invisible=\"advance_payment_method != 'delivered'\"",
+          "status": "covered",
+          "how": "text node with the same condition"
+        },
+        {
+          "feature": "count (Order Count) invisible=\"count == 1\"",
+          "status": "covered",
+          "how": "readonly integer with the condition"
+        },
+        {
+          "feature": "consolidated_billing with its help, invisible=\"count == 1\"",
+          "status": "covered",
+          "how": "boolean with help and the condition"
+        },
+        {
+          "feature": "advance_payment_method: widget radio, required, default 'delivered', invisible=\"count > 1\"",
+          "status": "covered",
+          "how": "selection with widget radio, required, default and the condition"
+        },
+        {
+          "feature": "group down_payment_specification invisible=\"advance_payment_method not in ('fixed', 'percentage')\"",
+          "status": "covered",
+          "how": "section invisible with `not in [...]`"
+        },
+        {
+          "feature": "One label row switching between fixed_amount and amount (`<label for>` + div)",
+          "status": "approximated",
+          "how": "two field nodes, each with its own label and invisible/required conditions; they never show together"
+        },
+        {
+          "feature": "fixed_amount monetary in currency_id, invisible/required by the choice",
+          "status": "covered",
+          "how": "monetary with currencyField and both conditions"
+        },
+        {
+          "feature": "amount with a '%' span after it",
+          "status": "covered",
+          "how": "float with options.suffix '%'"
+        },
+        {
+          "feature": "Warning icon (fa-warning, text-danger, title) when display_invoice_amount_warning",
+          "status": "approximated",
+          "how": "an answer rule of level warning (`holds`) under the amount, and the boolean worked out client-side with if(); it needs a helper field orders_amount_total that the opener fills",
+          "needs": "worked-out values across a many2many's records (sum of sale_order_ids.amount_total), or an icon with a title shown by a boolean field"
+        },
+        {
+          "feature": "deposit_account_id: options no_create, domain deprecated = False, invisible=\"product_id\"",
+          "status": "covered",
+          "how": "many2one with options.create false, a filter, and the condition"
+        },
+        {
+          "feature": "deposit_account_id groups=\"account.group_account_manager\"",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "Group invisible=\"not has_down_payments\": amount_invoiced and amount_to_invoice, readonly money with help",
+          "status": "covered",
+          "how": "section with the condition; readonly monetary fields with help"
+        },
+        {
+          "feature": "_check_amount_is_positive (UserError on create_invoices)",
+          "status": "covered",
+          "how": "answer rule min 0.01 with Flectra's message, and the app's stop on the call"
+        },
+        {
+          "feature": "Footer buttons: Create Draft Invoice (primary) and Cancel (special=cancel)",
+          "status": "approximated",
+          "how": "the dialog's own Save & Close runs beforeSave (check, then call create_invoices) and Discard closes it; standalone, the page's Save",
+          "needs": "a page's own footer buttons when it is opened in a dialog (label, style, steps), in place of Discard / Save & Close"
+        },
+        {
+          "feature": "data-hotkey q / x on the footer buttons",
+          "status": "missing",
+          "needs": "keyboard shortcuts on buttons (Flectra's data-hotkey: Alt+Q, Alt+X…)"
+        },
+        {
+          "feature": "create_invoices returns the invoice's window action (the new invoice opens)",
+          "status": "approximated",
+          "how": "the order's then-steps call sale_invoice_created: the invoice count and amounts follow and the invoice number is said; no invoice page is opened (none in this lane, though an open step could)"
+        },
+        {
+          "feature": "A down payment adds a 'Down Payments' section and line to the order",
+          "status": "approximated",
+          "how": "only the order's invoiced amounts and count change"
+        },
+        {
+          "feature": "A transient record, never kept",
+          "status": "approximated",
+          "how": "the memory data source saves a sale.advance.payment.inv record on Save & Close"
+        },
+        {
+          "feature": "Words said by the dialog's page while it saves (a toast from its beforeSave call) vanish as the dialog closes: toasts live inside the dialog's viewer",
+          "status": "missing",
+          "needs": "toasts of an opened page shown at the opener's (or the document's) level, so they outlive the dialog"
+        },
+        {
+          "feature": "Field help (sale.advance.payment.inv help strings)",
+          "status": "approximated",
+          "how": "shown as a paragraph under the field",
+          "needs": "help shown as a tooltip (?) beside the label, as Flectra does, instead of a paragraph under every field"
+        }
+      ],
+      "summary": {
+        "covered": 14,
+        "approximated": 9,
+        "missing": 3
+      }
+    },
+    {
+      "id": "real-sale-order",
+      "title": "Sales Order",
+      "flectra": {
+        "module": "sale",
+        "model": "sale.order",
+        "view": "view_order_form",
+        "file": "addons/sale/views/sale_order_views.xml"
+      },
+      "inherited": "sale_management (Optional Products tab, Quotation Template) and sale_stock (Delivery stat button, Delivery group: incoterm, incoterm location, shipping policy, delivery date / expected / effective date, delivery status; route and qty_at_date on lines). Not included: sale_margin, delivery, sale_project, website_sale and the groups-only parts listed below",
+      "size": {
+        "fields": 76,
+        "tabs": 3,
+        "tables": 2,
+        "headerButtons": 13,
+        "smartButtons": 2,
+        "conditions": 44
+      },
+      "features": [
+        {
+          "feature": "Statusbar state, statusbar_visible draft,sent,sale (not clickable); Cancelled shows only when current",
+          "status": "covered",
+          "how": "statusbar visibleStates; the current state always shows"
+        },
+        {
+          "feature": "Header fields kept invisible: locked, authorized_transaction_ids",
+          "status": "covered",
+          "how": "declared, not placed"
+        },
+        {
+          "feature": "Capture Transaction (oe_highlight) invisible=\"not authorized_transaction_ids\"",
+          "status": "covered",
+          "how": "primary button, call payment_action_capture"
+        },
+        {
+          "feature": "Void Transaction with confirm text",
+          "status": "covered",
+          "how": "button confirm + call payment_action_void"
+        },
+        {
+          "feature": "Create Invoice (primary) invisible=\"invoice_status != 'to invoice'\" opening the Create invoices action",
+          "status": "covered",
+          "how": "open step of real-sale-invoice-wizard as a dialog; then call + save"
+        },
+        {
+          "feature": "Create Invoice (secondary) with context default_advance_payment_method 'percentage', invisible=\"invoice_status != 'no' or state != 'sale'\"",
+          "status": "covered",
+          "how": "open step with values"
+        },
+        {
+          "feature": "Send by Email (primary in draft, secondary in sent/sale): opens the mail composer with the quotation template, marks the quotation sent",
+          "status": "approximated",
+          "how": "check, call action_quotation_send (answered: state sent, words said), save",
+          "needs": "a composer page could be opened by an open step; none is built here"
+        },
+        {
+          "feature": "Send PRO-FORMA Invoice ×2 (groups sale.group_proforma_sales, invisible on state and invoice_count)",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "Confirm ×2: primary when sent, secondary when draft; context validate_analytic",
+          "status": "covered",
+          "how": "check, call action_confirm (answered: state sale, order date, invoice status, delivery count), save"
+        },
+        {
+          "feature": "Unlock invisible=\"not locked\"",
+          "status": "covered",
+          "how": "set locked False, save"
+        },
+        {
+          "feature": "Preview: act_url to the customer portal",
+          "status": "approximated",
+          "how": "call answered with words naming the portal address",
+          "needs": "an open-a-web-address step (act_url)"
+        },
+        {
+          "feature": "Cancel invisible=\"state not in ['draft','sent','sale'] or not id or locked\"; a non-draft order opens the sale.order.cancel wizard (mail to the customer)",
+          "status": "approximated",
+          "how": "ask step when not draft, set state cancel, save; `not id` is dropped",
+          "needs": "the record's id (new or saved) in expressions"
+        },
+        {
+          "feature": "Set to Quotation (action_draft: state draft, signature cleared)",
+          "status": "approximated",
+          "how": "set state draft, save; the signature fields are not on this page"
+        },
+        {
+          "feature": "Lock invisible=\"locked or state != 'sale'\"",
+          "status": "covered",
+          "how": "set locked True, save"
+        },
+        {
+          "feature": "Unlock / Lock groups (sales_team.group_sale_manager, sale.group_auto_done_setting)",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "data-hotkey on every header button (q, g, w, x, shift+g, shift+v)",
+          "status": "missing",
+          "needs": "keyboard shortcuts on buttons (Flectra's data-hotkey: Alt+Q, Alt+X…)"
+        },
+        {
+          "feature": "Credit limit alert showing the partner_credit_warning text, invisible=\"partner_credit_warning == ''\"",
+          "status": "approximated",
+          "how": "sheet alert with a fixed sentence, invisible 'not partner_credit_warning'; the text is worked out by the data source's onchange",
+          "needs": "an alert whose message comes from a field (messageField)"
+        },
+        {
+          "feature": "Stat button Invoices (statinfo, invisible=\"invoice_count == 0\")",
+          "status": "covered",
+          "how": "statButton with field, icon and condition"
+        },
+        {
+          "feature": "Stat button Delivery (sale_stock, invisible=\"delivery_count == 0\")",
+          "status": "covered",
+          "how": "statButton with field, truck icon and condition"
+        },
+        {
+          "feature": "Stat buttons open the order's invoices / transfers as a list",
+          "status": "approximated",
+          "how": "call answered with words",
+          "needs": "an open step to a list page of another model filtered by a domain"
+        },
+        {
+          "feature": "Delivery stat button groups=\"stock.group_stock_user\"",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "Locked badge with a lock icon, invisible=\"not locked\"",
+          "status": "covered",
+          "how": "sheet badge"
+        },
+        {
+          "feature": "Title: name readonly in h1",
+          "status": "covered",
+          "how": "sheet title on a readonly char"
+        },
+        {
+          "feature": "partner_id required, placeholder, readonly=\"state in ['cancel', 'sale']\"",
+          "status": "covered",
+          "how": "many2one with placeholder and readonly condition"
+        },
+        {
+          "feature": "widget res_partner_many2one with show_address / show_vat: the customer's address and tax ID under the link",
+          "status": "missing",
+          "needs": "a link that shows details of the linked record under it (a second line from the record's fields)"
+        },
+        {
+          "feature": "partner_invoice_id, partner_shipping_id readonly=\"state == 'cancel' or locked\"",
+          "status": "covered",
+          "how": "many2one with readonly condition"
+        },
+        {
+          "feature": "Their context default_type invoice / delivery for Create and edit…",
+          "status": "approximated",
+          "how": "Create and edit opens the related page without those defaults",
+          "needs": "context defaults for a link's Create and edit…"
+        },
+        {
+          "feature": "Customer onchange: invoice and delivery addresses, pricelist, payment terms, fiscal position, salesperson, team, credit warning",
+          "status": "covered",
+          "how": "data source onchange on partner_id"
+        },
+        {
+          "feature": "sale_order_template_id (sale_management) no_create, readonly in cancel/sale; its onchange brings lines, optional products and terms",
+          "status": "covered",
+          "how": "many2one with create false; onchange on sale_order_template_id"
+        },
+        {
+          "feature": "validity_date invisible=\"state == 'sale'\", readonly in cancel/sale",
+          "status": "covered",
+          "how": "date with both conditions"
+        },
+        {
+          "feature": "date_order shown twice: 'Quotation Date' (debug mode, draft/sent) and 'Order Date' (sale/cancel)",
+          "status": "approximated",
+          "how": "one node labelled Order Date with invisible=\"state in ['draft', 'sent']\"; the debug-only row is left out"
+        },
+        {
+          "feature": "pricelist_id invisible=\"not has_active_pricelist\", no_create, readonly in cancel/sale",
+          "status": "covered",
+          "how": "many2one with conditions and options.create false"
+        },
+        {
+          "feature": "no_open on pricelist, payment terms, incoterm, product (no ↗ to the linked record)",
+          "status": "missing",
+          "needs": "an option to hide a link's ↗ (open) button"
+        },
+        {
+          "feature": "Update Prices: link button inline after the pricelist (o_row), confirm, invisible on show_update_pricelist and state",
+          "status": "approximated",
+          "how": "a link-style button with confirm and the condition, on its own row under the field",
+          "needs": "a button on a field's own row (field + button side by side)"
+        },
+        {
+          "feature": "Pricelist / fiscal position changed flags (show_update_pricelist, show_update_fpos)",
+          "status": "covered",
+          "how": "readonly booleans set by the data source's onchange"
+        },
+        {
+          "feature": "Hidden currency_id, company_id, tax_calculation_rounding_method",
+          "status": "covered",
+          "how": "declared, not placed"
+        },
+        {
+          "feature": "payment_term_id no_create",
+          "status": "covered",
+          "how": "many2one, options.create false"
+        },
+        {
+          "feature": "Order lines: section_and_note one2many, editable bottom, sequence handle",
+          "status": "covered",
+          "how": "one2many grid with lineKinds (line_section / line_note) and sequenceField"
+        },
+        {
+          "feature": "Order lines readonly=\"state == 'cancel' or locked\"",
+          "status": "covered",
+          "how": "readonly condition on the table's node"
+        },
+        {
+          "feature": "Control: Add a product / Add a section / Add a note",
+          "status": "approximated",
+          "how": "the grid's own add buttons; options.addLabel is not taken by the grid, so the first reads 'Add a line'",
+          "needs": "the grid honouring addLabel (and labels for its section and note buttons)"
+        },
+        {
+          "feature": "Catalog button in the lines' control row (action_add_from_catalog)",
+          "status": "approximated",
+          "how": "a link button under the grid, call answered with words",
+          "needs": "buttons in a table's control row, beside the add buttons"
+        },
+        {
+          "feature": "product_id required=\"not display_type\", domain sale_ok = True",
+          "status": "covered",
+          "how": "required line field (sections and notes are not asked) with a filter"
+        },
+        {
+          "feature": "product_id readonly=\"not product_updatable\", product_uom readonly=\"product_uom_readonly\", product_uom_qty readonly=\"is_downpayment\", qty_delivered readonly=\"qty_delivered_method != 'manual'\", price_unit / tax_id readonly=\"qty_invoiced > 0\", price_subtotal invisible=\"is_downpayment\"",
+          "status": "missing",
+          "needs": "conditions per line: readonly/invisible/required on a line field (or column) read against that line's own values"
+        },
+        {
+          "feature": "widget sol_product_many2one / product_template_id (product configurator, variant grid) on the product cell",
+          "status": "missing",
+          "needs": "a line field widget that opens a configurator dialog when a product with variants is picked"
+        },
+        {
+          "feature": "Product search context (partner, quantity, pricelist, uom) used for the price shown and set",
+          "status": "approximated",
+          "how": "the data source's onchange prices the line from the pricelist once a product is picked"
+        },
+        {
+          "feature": "name (Description) section_and_note_text, optional show",
+          "status": "covered",
+          "how": "text line field; sections and notes span the row; optionalColumns show"
+        },
+        {
+          "feature": "analytic_distribution widget (groups analytic.group_analytic_accounting), optional hide",
+          "status": "missing",
+          "needs": "an analytic distribution widget (accounts and percentages); also a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "product_uom_qty",
+          "status": "covered",
+          "how": "float column, edited in place; the line's subtotal and the order's totals follow"
+        },
+        {
+          "feature": "decoration-info / decoration-bf on quantities when invoice_status == 'to invoice'",
+          "status": "missing",
+          "needs": "line (row) and cell decorations by condition: decoration-info/-success/-warning/-danger/-bf"
+        },
+        {
+          "feature": "qty_delivered / qty_invoiced (Delivered / Invoiced) column_invisible=\"parent.state != 'sale'\", optional show",
+          "status": "approximated",
+          "how": "optional columns that start hidden; a person shows them",
+          "needs": "column visibility read against the parent record (column_invisible=\"parent.state != 'sale'\")"
+        },
+        {
+          "feature": "qty_at_date_widget (sale_stock): availability icon and forecast popover on each line",
+          "status": "missing",
+          "needs": "a cell widget per line with a popover of server data"
+        },
+        {
+          "feature": "product_uom (UoM) required not display_type, optional show",
+          "status": "covered",
+          "how": "many2one line column"
+        },
+        {
+          "feature": "customer_lead optional hide",
+          "status": "covered",
+          "how": "optionalColumns hide"
+        },
+        {
+          "feature": "customer_lead readonly=\"parent.state not in ['draft','sent','sale'] or is_downpayment\"",
+          "status": "missing",
+          "needs": "conditions per line: readonly/invisible/required on a line field (or column) read against that line's own values and the parent record"
+        },
+        {
+          "feature": "price_unit",
+          "status": "covered",
+          "how": "float column"
+        },
+        {
+          "feature": "tax_id many2many_tags in the line, no_create, domain type_tax_use = sale",
+          "status": "covered",
+          "how": "many2many line column with a filter"
+        },
+        {
+          "feature": "tax_id domain on parent.company_id and parent.tax_country_id",
+          "status": "missing",
+          "needs": "a line field's filter reading the parent record's values (valueFrom parent)"
+        },
+        {
+          "feature": "discount (Disc.%) optional show",
+          "status": "covered",
+          "how": "float column, optional"
+        },
+        {
+          "feature": "price_subtotal (Tax excl.) readonly",
+          "status": "covered",
+          "how": "monetary line column, worked out by the data source"
+        },
+        {
+          "feature": "price_total (Tax incl.) optional hide, column_invisible on parent.tax_calculation_rounding_method",
+          "status": "approximated",
+          "how": "optional column starting hidden",
+          "needs": "column visibility read against the parent record (column_invisible=\"parent.state != 'sale'\")"
+        },
+        {
+          "feature": "Line money in the order's currency (currency_id on the line)",
+          "status": "approximated",
+          "how": "line monetary fields with a fixed currency EGP",
+          "needs": "a line monetary taking its currency from the parent record's currency field"
+        },
+        {
+          "feature": "The line's own <form> (two groups, labels 'Delivered' / 'Invoiced' invisible on parent.state, lead time 'days', invoice_lines in debug)",
+          "status": "approximated",
+          "how": "the grid's ↗ opens every line field in a plain dialog",
+          "needs": "a layout for a line's dialog (a page for the line)"
+        },
+        {
+          "feature": "mode=\"tree,kanban\": lines as cards on a phone",
+          "status": "missing",
+          "needs": "a card view of a table's lines on narrow screens; the grid scrolls sideways inside itself on a phone"
+        },
+        {
+          "feature": "Line prices, taxes, subtotals and the order's totals (server compute)",
+          "status": "covered",
+          "how": "data source onchange on order_line"
+        },
+        {
+          "feature": "Product warning on a sales line (sale_line_warn = warning)",
+          "status": "covered",
+          "how": "data source warning on order_line, once per new line"
+        },
+        {
+          "feature": "limit=200 lines on the editable list",
+          "status": "approximated",
+          "how": "the grid stops growing at 15 lines and scrolls"
+        },
+        {
+          "feature": "11 columns beside the chatter: Flectra's list shrinks columns to fit",
+          "status": "approximated",
+          "how": "the grid keeps minimum column widths and scrolls sideways inside itself at 1280–1440 px",
+          "needs": "grid columns that shrink to fit (or wrap headers) before scrolling"
+        },
+        {
+          "feature": "Discount button (groups product.group_discount_per_so_line) opening the sale.order.discount wizard",
+          "status": "approximated",
+          "how": "button calling the app, answered with words",
+          "needs": "nothing new: the wizard could be another opened page; the button's group needs a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "note (Terms and conditions) html, nolabel, placeholder, in a group col=6 beside the totals",
+          "status": "covered",
+          "how": "html field, labels hidden, placeholder; a 12-twelfths section, 8 for the note and 4 for the totals"
+        },
+        {
+          "feature": "tax_totals widget account-tax-totals-field: untaxed amount, a row per tax group, total; tax amounts editable",
+          "status": "approximated",
+          "how": "three readonly monetary fields: Untaxed Amount, Taxes, Total",
+          "needs": "a totals widget fed by the server: one row per tax group, with editable tax amounts"
+        },
+        {
+          "feature": "Optional Products tab (sale_management) invisible=\"state not in ['draft','sent']\"",
+          "status": "covered",
+          "how": "tab with the condition"
+        },
+        {
+          "feature": "sale_order_option_ids editable bottom, readonly in cancel/sale: handle, product (domain sale_ok), description, quantity, UoM, unit price, discount",
+          "status": "covered",
+          "how": "second one2many grid with sequenceField, filter, optional columns and readonly condition"
+        },
+        {
+          "feature": "Option line button 'Add to order lines' (button_add_to_order, cart icon) invisible=\"is_present\"",
+          "status": "missing",
+          "needs": "buttons on each line of a table, with steps or an action and a condition per line"
+        },
+        {
+          "feature": "Option lines decoration-success=\"is_present == True\"",
+          "status": "missing",
+          "needs": "line (row) and cell decorations by condition: decoration-info/-success/-warning/-danger/-bf"
+        },
+        {
+          "feature": "Option product domain company_id = parent.company_id; kanban mode on mobile",
+          "status": "missing",
+          "needs": "line filters reading the parent; a card view of lines on a phone"
+        },
+        {
+          "feature": "Other Info: four titled groups in two columns (Sales, Invoicing, Delivery, Tracking)",
+          "status": "covered",
+          "how": "titled sections (style line) inside a two-column section"
+        },
+        {
+          "feature": "user_id widget many2one_avatar_user",
+          "status": "approximated",
+          "how": "a plain many2one",
+          "needs": "a user link with the person's avatar"
+        },
+        {
+          "feature": "team_id no_create",
+          "status": "covered",
+          "how": "many2one, create false"
+        },
+        {
+          "feature": "require_signature / require_payment readonly=\"state in ['cancel', 'sale']\"",
+          "status": "covered",
+          "how": "booleans with readonly conditions"
+        },
+        {
+          "feature": "'of' + prepayment_percent inline after Online payment, widget percentage, invisible=\"not require_payment\"",
+          "status": "approximated",
+          "how": "its own row, a number 0–100 with a % suffix (Flectra keeps 0–1 and the widget shows %)",
+          "needs": "a percentage widget (stores a fraction, shows per cent), and fields side by side on one row"
+        },
+        {
+          "feature": "reference readonly, invisible=\"not reference\"",
+          "status": "covered",
+          "how": "readonly char with the condition"
+        },
+        {
+          "feature": "client_order_ref",
+          "status": "covered",
+          "how": "char"
+        },
+        {
+          "feature": "tag_ids many2many_tags with color_field and no_create_edit",
+          "status": "approximated",
+          "how": "tags widget, create false; no colours",
+          "needs": "tag colours from a field of the tag record"
+        },
+        {
+          "feature": "fiscal_position_id + Update Taxes inline button (confirm, invisible on show_update_fpos and state)",
+          "status": "approximated",
+          "how": "many2one and a link button on its own row under it",
+          "needs": "a button on a field's own row"
+        },
+        {
+          "feature": "analytic_account_id (groups analytic), journal_id and invoice_status (base.group_no_one, debug mode), company_id (groups multi_company)",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user; debug mode is group base.group_no_one"
+        },
+        {
+          "feature": "Delivery (sale_stock): incoterm no_create, incoterm_location, picking_policy required readonly=\"state not in ['draft','sent']\"",
+          "status": "covered",
+          "how": "fields with options and conditions"
+        },
+        {
+          "feature": "warehouse_id (groups stock.group_stock_multi_warehouses), readonly=\"state == 'sale'\"",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "commitment_date readonly=\"state == 'cancel' or locked\"",
+          "status": "covered",
+          "how": "datetime with the condition"
+        },
+        {
+          "feature": "'Expected: <expected_date>' span inline after the delivery date, widget date, invisible=\"effective_date and commitment_date\"",
+          "status": "approximated",
+          "how": "its own readonly row labelled Expected, with the condition; shown with its time",
+          "needs": "a datetime shown as a date (widget date) and fields side by side on one row"
+        },
+        {
+          "feature": "effective_date invisible=\"not effective_date\"; delivery_status invisible=\"state != 'sale'\"",
+          "status": "covered",
+          "how": "readonly fields with conditions"
+        },
+        {
+          "feature": "json_popover widget stock_rescheduling_popover (late or rescheduled deliveries)",
+          "status": "missing",
+          "needs": "a popover widget with server data beside a field"
+        },
+        {
+          "feature": "Tracking: origin, campaign_id, medium_id, source_id",
+          "status": "covered",
+          "how": "char and many2one fields"
+        },
+        {
+          "feature": "Customer Signature tab (base.group_no_one, invisible without signature data): signed_by / signed_on readonly=\"signature\", signature widget image",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user (debug mode); the parts themselves exist (image field, conditions)"
+        },
+        {
+          "feature": "Chatter: followers, activities, messages",
+          "status": "covered",
+          "how": "sidePanel slot 'chatter' filled by @fieldia/chatter"
+        },
+        {
+          "feature": "Chatter beside the form on any screen",
+          "status": "approximated",
+          "how": "always beside the sheet; Flectra puts it under the sheet below its extra-large breakpoint",
+          "needs": "a side panel that drops under the sheet below a width"
+        },
+        {
+          "feature": "Field help (Flectra help= strings)",
+          "status": "approximated",
+          "how": "a paragraph under each field",
+          "needs": "help shown as a tooltip (?) beside the label, as Flectra does, instead of a paragraph under every field"
+        },
+        {
+          "feature": "Required fields checked before a button's server call (Flectra saves the record before running an object button)",
+          "status": "covered",
+          "how": "check step first in each button's steps, and on.beforeSave check"
+        }
+      ],
+      "summary": {
+        "covered": 49,
+        "approximated": 27,
+        "missing": 21
+      }
+    },
+    {
+      "id": "real-product",
+      "title": "Product",
+      "flectra": {
+        "module": "product",
+        "model": "product.template",
+        "view": "product_template_form_view (+ product_template_only_form_view, the form Sales › Products opens)",
+        "file": "addons/product/views/product_views.xml, addons/product/views/product_template_views.xml"
+      },
+      "inherited": "product_template_only_form_view (variants tab, internal reference, barcode, properties, Variants stat), sale (invoicing policy, re-invoice expenses, tooltips, Sales tab, Sold stat, warning when selling), purchase (Purchase tab: vendors, control policy, vendor taxes, description, warning; Purchased stat), account (customer taxes, tax string, Accounting tab), stock (Update Quantity, Replenish, On Hand / Forecasted / In-Out / Min-Max / reordering / lots stats, Operations, Logistics, Traceability, picking descriptions), sherkety_product_currency (currency boxes beside Sales Price and Cost). Not included: point_of_sale, website_sale, mrp, stock_account valuation, l10n_*",
+      "size": {
+        "fields": 75,
+        "tabs": 6,
+        "tables": 2,
+        "headerButtons": 3,
+        "smartButtons": 12,
+        "conditions": 42
+      },
+      "features": [
+        {
+          "feature": "Update Quantity invisible=\"type != 'product'\" (stock)",
+          "status": "covered",
+          "how": "header button, call"
+        },
+        {
+          "feature": "Replenish (opens the product.replenish wizard) invisible=\"type not in ['consu','product']\"",
+          "status": "approximated",
+          "how": "header button with the condition, call answered with words",
+          "needs": "nothing new: the wizard could be an opened page"
+        },
+        {
+          "feature": "Print Labels (opens the label layout wizard) invisible=\"detailed_type not in ['consu','product','combo']\"",
+          "status": "approximated",
+          "how": "header button with the condition, call answered with words"
+        },
+        {
+          "feature": "Header buttons' groups (stock.group_stock_manager, stock.group_stock_user)",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "Stat button Extra Prices / Extra Price: the words change with the count",
+          "status": "covered",
+          "how": "two stat buttons on the same field with opposite conditions (pricelist_item_count == 1)"
+        },
+        {
+          "feature": "Stat buttons Documents, Variants (invisible count <= 1), Reordering rules (count), Lot/Serial Numbers (words only, invisible tracking == 'none')",
+          "status": "covered",
+          "how": "statButtons with field, icon and condition; one without a field"
+        },
+        {
+          "feature": "Stat buttons Sold / Purchased / On Hand / Forecasted: the value followed by the unit (38 Units Sold)",
+          "status": "approximated",
+          "how": "the value alone",
+          "needs": "a stat button with a second field (the unit) or a suffix from a field"
+        },
+        {
+          "feature": "Stat buttons In: n / Out: n and Min: n / Max: n (two values each)",
+          "status": "approximated",
+          "how": "one value (Out, Min) under a label 'In / Out', 'Min / Max'",
+          "needs": "a stat button with two labelled values"
+        },
+        {
+          "feature": "Stat buttons' help tooltips ('Sold in the last 365 days') and groups (pricelist, variants, sales, purchase, stock user, lots)",
+          "status": "missing",
+          "needs": "a tooltip on a stat button; a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "Putaway Rules and Storage Capacities stat buttons (groups multi-locations, storage categories)",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "Ribbon Archived (web_ribbon, text-bg-danger) invisible=\"active\"",
+          "status": "covered",
+          "how": "sheet ribbon, tone danger"
+        },
+        {
+          "feature": "image_1920 widget image oe_avatar (preview image_128)",
+          "status": "covered",
+          "how": "title avatarField on an image field"
+        },
+        {
+          "feature": "'Product Name' label over the h1 name",
+          "status": "approximated",
+          "how": "the name's placeholder only (e.g. Cheese Burger); a sheet title takes no label",
+          "needs": "a label for the sheet's title field"
+        },
+        {
+          "feature": "priority widget priority (a star) beside the name; a selection '0'/'1'",
+          "status": "approximated",
+          "how": "an integer with widget rating, max 1, over the title; it shows 'Clear selection' under the star",
+          "needs": "a priority (star) widget on a selection field"
+        },
+        {
+          "feature": "name with placeholder, line_breaks false",
+          "status": "covered",
+          "how": "the title's char field and placeholder"
+        },
+        {
+          "feature": "sale_ok and purchase_ok ticks under the title",
+          "status": "covered",
+          "how": "title.below fields"
+        },
+        {
+          "feature": "General Information: detailed_type required with help; invoice_policy required (sale)",
+          "status": "covered",
+          "how": "selections with help"
+        },
+        {
+          "feature": "expense_policy widget radio invisible=\"not visible_expense_policy\"",
+          "status": "covered",
+          "how": "radio with the condition"
+        },
+        {
+          "feature": "product_tooltip: italic muted words from a compute, no label, invisible=\"type == 'service' and not sale_ok\"",
+          "status": "approximated",
+          "how": "a readonly text worked out in the page with if() on type, labels hidden; it shows as a box, not italic words",
+          "needs": "a text node whose words come from a field or an expression"
+        },
+        {
+          "feature": "Sale's two italic notes ('You can invoice them before they are delivered.' / 'Invoice after delivery…') with conditions on type and invoice_policy",
+          "status": "approximated",
+          "how": "text nodes (style note) with the same conditions; drawn as a grey box"
+        },
+        {
+          "feature": "uom_id, uom_po_id no_create (groups uom.group_uom)",
+          "status": "covered",
+          "how": "many2one, create false"
+        },
+        {
+          "feature": "list_price monetary in currency_id (field_digits)",
+          "status": "covered",
+          "how": "monetary with currencyField"
+        },
+        {
+          "feature": "Sherkety: a currency box beside Sales Price and Cost (sherkety_product_currency)",
+          "status": "covered",
+          "how": "options.pickCurrency on both amounts"
+        },
+        {
+          "feature": "tax_string '(= 48,735.00 EGP Incl. Taxes)' inline after the price",
+          "status": "approximated",
+          "how": "a readonly char on its own row, labels hidden, worked out by the data source's onchange",
+          "needs": "fields side by side on one row"
+        },
+        {
+          "feature": "taxes_id many2many_tags (context search defaults)",
+          "status": "covered",
+          "how": "tags widget with a filter on type_tax_use"
+        },
+        {
+          "feature": "standard_price monetary in cost_currency_id, invisible=\"id and product_variant_count != 1 and not is_product_variant\"",
+          "status": "approximated",
+          "how": "the condition without `id`",
+          "needs": "the record's id in expressions"
+        },
+        {
+          "feature": "'per <uom_name>' after the cost (groups uom)",
+          "status": "missing",
+          "needs": "a suffix taken from a field on a number box (suffixField, as the label widget has)"
+        },
+        {
+          "feature": "categ_id, default_code invisible=\"product_variant_count > 1\"",
+          "status": "covered",
+          "how": "fields with the condition"
+        },
+        {
+          "feature": "barcode invisible=\"product_variant_count > 1 or (product_variant_count == 0 and valid_product_template_attribute_line_ids)\"",
+          "status": "approximated",
+          "how": "the first half of the condition"
+        },
+        {
+          "feature": "product_tag_ids many2many_tags; Configure tags link button (action, icon oi-arrow-right)",
+          "status": "covered",
+          "how": "tags widget; link-style button calling the app"
+        },
+        {
+          "feature": "company_id (groups base.group_multi_company)",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "product_properties (Properties, columns=2) defined by the category",
+          "status": "approximated",
+          "how": "a properties field with definitions written in the page; one column",
+          "needs": "property definitions read from a linked record (categ_id.product_properties_definition), and columns for properties"
+        },
+        {
+          "feature": "Internal Notes group: description, nolabel, placeholder",
+          "status": "covered",
+          "how": "titled section, html field, labels hidden, placeholder"
+        },
+        {
+          "feature": "Attributes & Variants tab: attribute_line_ids editable, sequence handle",
+          "status": "covered",
+          "how": "one2many table with sequenceField"
+        },
+        {
+          "feature": "attribute_id readonly=\"id\" on saved lines",
+          "status": "missing",
+          "needs": "conditions per line: readonly/invisible/required on a line field (or column) read against that line's own values"
+        },
+        {
+          "feature": "value_ids many2many_tags in the line with color_field, no_create_edit, context default_attribute_id",
+          "status": "approximated",
+          "how": "many2many line column; no colours, any value can be picked",
+          "needs": "a line field's filter reading another field of the same line (values of the line's attribute)"
+        },
+        {
+          "feature": "Configure button on each attribute line (action_open_attribute_values)",
+          "status": "missing",
+          "needs": "buttons on each line of a table, with steps or an action and a condition per line"
+        },
+        {
+          "feature": "Attribute lines decoration-info=\"value_count <= 1\"",
+          "status": "missing",
+          "needs": "line (row) and cell decorations by condition: decoration-info/-success/-warning/-danger/-bf"
+        },
+        {
+          "feature": "Warning paragraph (oe_edit_only)",
+          "status": "approximated",
+          "how": "a note text, always shown",
+          "needs": "parts shown only while editing"
+        },
+        {
+          "feature": "Variants tab groups=\"product.group_product_variant\"",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "Sales tab invisible=\"not sale_ok\" (sale removes the '1 or')",
+          "status": "covered",
+          "how": "tab with the condition"
+        },
+        {
+          "feature": "Sales Description (description_sale, nolabel, placeholder)",
+          "status": "covered",
+          "how": "titled section, text field"
+        },
+        {
+          "feature": "Warning when Selling: sale_line_warn; sale_line_warn_msg invisible / readonly=\"sale_line_warn == 'no-message'\", required=\"sale_line_warn != 'no-message'\"",
+          "status": "covered",
+          "how": "selection and text with the three conditions"
+        },
+        {
+          "feature": "Warning when Selling groups (sales_team.group_sale_salesman, sale.group_warning_sale)",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "Purchase tab invisible=\"not purchase_ok\" (purchase)",
+          "status": "covered",
+          "how": "tab with the condition"
+        },
+        {
+          "feature": "seller_ids (tree_view_ref purchase.product_supplierinfo_tree_view2) invisible=\"product_variant_count > 1\"",
+          "status": "approximated",
+          "how": "a table of vendors: vendor, vendor product code, quantity, price, currency, lead time; columns chosen by hand from the vendor tree",
+          "needs": "naming another view for a table's columns (tree_view_ref)"
+        },
+        {
+          "feature": "variant_seller_ids for products with variants",
+          "status": "approximated",
+          "how": "left out: this product has one variant"
+        },
+        {
+          "feature": "Vendor Bills: supplier_taxes_id tags, purchase_method radio",
+          "status": "covered",
+          "how": "tags and radio widgets"
+        },
+        {
+          "feature": "Purchase Description and Warning when Purchasing (same three conditions)",
+          "status": "covered",
+          "how": "titled sections and conditions"
+        },
+        {
+          "feature": "Vendor Bills groups (purchase.group_purchase_manager), Purchase tab group, warning group",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "Inventory tab invisible=\"type == 'service'\"",
+          "status": "covered",
+          "how": "tab with the condition"
+        },
+        {
+          "feature": "Operations: route_ids many2many_checkboxes invisible=\"not has_available_route_ids or type == 'service'\"; View Diagram link button; route_from_categ_ids tags invisible when empty",
+          "status": "covered",
+          "how": "many2many checkboxes, link button calling the app, tags with condition"
+        },
+        {
+          "feature": "Logistics group invisible=\"type not in ['product','consu']\"; sale_delay with ' days' after it, invisible=\"not sale_ok\"",
+          "status": "covered",
+          "how": "titled section with condition; integer with suffix"
+        },
+        {
+          "feature": "responsible_id many2one_avatar_user",
+          "status": "approximated",
+          "how": "a plain many2one",
+          "needs": "a user link with the person's avatar"
+        },
+        {
+          "feature": "weight + weight_uom_name, volume + volume_uom_name inline",
+          "status": "approximated",
+          "how": "a fixed suffix kg / m³ in the box",
+          "needs": "a suffix taken from a field on a number box"
+        },
+        {
+          "feature": "Traceability group invisible=\"type == 'consu'\": tracking radio invisible=\"type == 'service'\"",
+          "status": "covered",
+          "how": "section and radio with conditions"
+        },
+        {
+          "feature": "Traceability groups (stock.group_production_lot); Counterpart Locations (base.group_no_one); Description for Internal Transfers (multi-locations); Packaging table (product.group_stock_packaging)",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "Description for Receipts / for Delivery Orders",
+          "status": "covered",
+          "how": "titled sections with text fields, placeholders"
+        },
+        {
+          "feature": "Accounting tab: income and expense accounts under Receivables / Payables",
+          "status": "covered",
+          "how": "tab with two titled sections"
+        },
+        {
+          "feature": "Accounting tab groups (account.group_account_readonly, account.group_account_invoice)",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "type worked out from detailed_type; show_on_hand / show_forecasted buttons flags",
+          "status": "covered",
+          "how": "compute expressions in the page"
+        },
+        {
+          "feature": "Onchange: a type other than storable resets tracking; tax string follows price and taxes",
+          "status": "covered",
+          "how": "data source onchange"
+        },
+        {
+          "feature": "Chatter",
+          "status": "covered",
+          "how": "sidePanel chatter slot"
+        },
+        {
+          "feature": "Field help",
+          "status": "approximated",
+          "how": "a paragraph under each field",
+          "needs": "help shown as a tooltip (?) beside the label, as Flectra does, instead of a paragraph under every field"
+        }
+      ],
+      "summary": {
+        "covered": 32,
+        "approximated": 19,
+        "missing": 13
+      }
+    },
+    {
+      "id": "real-sale-contract",
+      "title": "Contract",
+      "flectra": {
+        "module": "sale_contract",
+        "model": "sale.contract",
+        "view": "view_sale_contract_form",
+        "file": "addons/sale_contract/views/sale_contract_views.xml"
+      },
+      "inherited": "none inherit this view. Its two wizards are built as opened pages: real-contract-termination (contract.termination.wizard, wizards/contract_termination_wizard_views.xml) and real-contract-renewal (contract.renewal.wizard, wizards/contract_renewal_wizard_views.xml)",
+      "size": {
+        "fields": 50,
+        "tabs": 6,
+        "tables": 2,
+        "headerButtons": 3,
+        "smartButtons": 4,
+        "conditions": 14,
+        "wizards": {
+          "real-contract-termination": {
+            "fields": 4,
+            "conditions": 0
+          },
+          "real-contract-renewal": {
+            "fields": 10,
+            "conditions": 1
+          }
+        }
+      },
+      "features": [
+        {
+          "feature": "Activate (oe_highlight) invisible=\"state != 'draft'\"",
+          "status": "covered",
+          "how": "primary button: check, call action_activate (answered: active, next escalation date, words), save"
+        },
+        {
+          "feature": "Terminate invisible=\"state not in ('active','renewal_due')\" opening the termination wizard (target new)",
+          "status": "covered",
+          "how": "open step of real-contract-termination as a dialog; into: termination date and reason; then: set state terminated, save, go to the Terms tab, say"
+        },
+        {
+          "feature": "Renew opening the renewal wizard, its defaults worked out on the server (the day after the end date, the same duration, the value, the escalation)",
+          "status": "covered",
+          "how": "call action_renew answered by the app with an open of real-contract-renewal and its values; then: call, save (state completed)"
+        },
+        {
+          "feature": "The renewal creates a new draft contract",
+          "status": "approximated",
+          "how": "the app says so; the new contract is not opened"
+        },
+        {
+          "feature": "Buttons' groups (sale_contract.group_contract_manager / group_contract_user)",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "Statusbar draft, active, completed (renewal_due, terminated shown when current)",
+          "status": "covered",
+          "how": "statusbar visibleStates"
+        },
+        {
+          "feature": "Hidden company_id, currency_id",
+          "status": "covered",
+          "how": "declared, not placed"
+        },
+        {
+          "feature": "Stat buttons Milestones and Amendments open their records' lists (tree, form, calendar, gantt)",
+          "status": "approximated",
+          "how": "goTo steps to the Milestones and Amendments tabs",
+          "needs": "an open step to a list page of another model filtered by a domain"
+        },
+        {
+          "feature": "Stat buttons Invoices and Documents (invisible when 0)",
+          "status": "approximated",
+          "how": "statButtons with conditions, calls answered with words"
+        },
+        {
+          "feature": "milestone_count, amendment_count (computes)",
+          "status": "covered",
+          "how": "count() over the lines, worked out in the page"
+        },
+        {
+          "feature": "Title: name with placeholder (label oe_edit_only), contract_number readonly in h3",
+          "status": "covered",
+          "how": "sheet title with placeholder and subtitleField"
+        },
+        {
+          "feature": "Pill badge '<days_until_expiry> days until expiry' invisible=\"state not in ('active','renewal_due')\"",
+          "status": "approximated",
+          "how": "a readonly label-widget field with suffix ' days until expiry' under the title",
+          "needs": "a badge whose words include a field's value"
+        },
+        {
+          "feature": "partner_id required; partner_contact_id domain parent_id = partner_id",
+          "status": "covered",
+          "how": "many2one with filter valueFrom partner_id; the contact is cleared when the customer changes (onchange)"
+        },
+        {
+          "feature": "contract_type required, default one_time; user_id Contract Manager",
+          "status": "covered",
+          "how": "selection and many2one"
+        },
+        {
+          "feature": "company_id groups base.group_multi_company",
+          "status": "missing",
+          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+        },
+        {
+          "feature": "start_date required, end_date, duration_months (stored compute), contract_value monetary required, notice_period_days default 30",
+          "status": "covered",
+          "how": "fields; duration and days to expiry by the data source's onchange"
+        },
+        {
+          "feature": "Source group: tender_id, opportunity_id",
+          "status": "covered",
+          "how": "titled section"
+        },
+        {
+          "feature": "Milestones tab: milestone_ids editable bottom with a sequence handle",
+          "status": "covered",
+          "how": "one2many table with sequenceField"
+        },
+        {
+          "feature": "Milestone columns: name, due date, amount, responsible, state; days_until_due kept invisible",
+          "status": "covered",
+          "how": "line fields as columns; days_until_due declared, not a column"
+        },
+        {
+          "feature": "Milestone amount in the contract's currency (related currency_id)",
+          "status": "approximated",
+          "how": "a fixed currency EGP on the line field",
+          "needs": "a line monetary taking its currency from the parent record"
+        },
+        {
+          "feature": "responsible_id many2one_avatar_user",
+          "status": "approximated",
+          "how": "a plain many2one",
+          "needs": "a user link with the person's avatar"
+        },
+        {
+          "feature": "state widget badge in the line",
+          "status": "approximated",
+          "how": "a select",
+          "needs": "a badge widget for a selection, in lines too"
+        },
+        {
+          "feature": "decoration-danger=\"state == 'pending' and days_until_due < 0\", decoration-warning=\"state == 'pending' and days_until_due <= 7\"",
+          "status": "missing",
+          "needs": "line (row) and cell decorations by condition: decoration-info/-success/-warning/-danger/-bf"
+        },
+        {
+          "feature": "Row buttons Complete (invisible state != 'in_progress') and Invoice (invisible state != 'completed')",
+          "status": "missing",
+          "needs": "buttons on each line of a table, with steps or an action and a condition per line"
+        },
+        {
+          "feature": "milestone_completion_percentage widget progressbar in the subtotal footer (server compute: completed, invoiced or paid over all)",
+          "status": "approximated",
+          "how": "a progressbar worked out in the page from a helper line field done = if(state in [...], 1, 0): sum(milestone_ids, 'done') * 100 / count(milestone_ids)",
+          "needs": "a count of lines that meet a condition (countWhere) so no helper field is needed"
+        },
+        {
+          "feature": "Price Escalation tab invisible=\"contract_type != 'framework'\": has_escalation; type, rate, next date invisible=\"not has_escalation\"; formula invisible=\"escalation_type != 'custom'\"",
+          "status": "covered",
+          "how": "tab and fields with the same conditions"
+        },
+        {
+          "feature": "SLA Performance tab invisible=\"contract_type != 'sla'\": sla_target, sla_actual (readonly), penalty_amount",
+          "status": "covered",
+          "how": "tab with the condition"
+        },
+        {
+          "feature": "Amendments tab: a read-only list (each line opens the amendment's own form)",
+          "status": "approximated",
+          "how": "a table of lines edited in place; number, value change and status are readonly",
+          "needs": "a read-only table whose lines open their own record page"
+        },
+        {
+          "feature": "Amendments decoration-info / -success / -danger by state; state widget badge",
+          "status": "missing",
+          "needs": "line (row) and cell decorations by condition: decoration-info/-success/-warning/-danger/-bf; a badge widget"
+        },
+        {
+          "feature": "value_change optional show",
+          "status": "covered",
+          "how": "optionalColumns"
+        },
+        {
+          "feature": "Scope of Work tab (html, placeholder); Terms & Conditions tab (html, placeholder)",
+          "status": "covered",
+          "how": "tabs with html fields"
+        },
+        {
+          "feature": "Termination Details group invisible=\"state != 'terminated'\" (termination_date, termination_reason nolabel)",
+          "status": "covered",
+          "how": "titled section with the condition"
+        },
+        {
+          "feature": "Chatter",
+          "status": "covered",
+          "how": "sidePanel chatter slot"
+        },
+        {
+          "feature": "Termination wizard: termination_date required default today, notify_customer default true, separator 'Termination Reason', reason required with placeholder",
+          "status": "covered",
+          "how": "a sections page: date default today, boolean, titled section, text; required checked before Save & Close"
+        },
+        {
+          "feature": "Termination wizard footer: Terminate Contract (primary) / Cancel",
+          "status": "approximated",
+          "how": "the dialog's Save & Close / Discard",
+          "needs": "a page's own footer buttons when it is opened in a dialog (label, style, steps), in place of Discard / Save & Close"
+        },
+        {
+          "feature": "Renewal wizard: two groups (dates and duration / keep terms and value), separator Price Escalation, escalation_rate invisible=\"not apply_escalation\"",
+          "status": "covered",
+          "how": "a sections page with two columns and a titled section"
+        },
+        {
+          "feature": "Renewal onchanges: duration from the dates; the new value from the escalation",
+          "status": "covered",
+          "how": "data source onchange on the wizard's model"
+        },
+        {
+          "feature": "Renewal reads the contract through contract_id (value, currency)",
+          "status": "approximated",
+          "how": "a helper readonly contract_value filled by the opener's values",
+          "needs": "the opener's record as a link, its fields readable in the opened page"
+        },
+        {
+          "feature": "Renewal UserError when the end is not after the start",
+          "status": "covered",
+          "how": "the app's stop on the beforeSave call"
+        },
+        {
+          "feature": "Renewal footer: Create Renewed Contract / Cancel",
+          "status": "approximated",
+          "how": "Save & Close / Discard",
+          "needs": "a page's own footer buttons when it is opened in a dialog (label, style, steps), in place of Discard / Save & Close"
+        }
+      ],
+      "summary": {
+        "covered": 23,
+        "approximated": 12,
+        "missing": 5
+      }
+    }
+  ]
+}
