@@ -12,7 +12,7 @@ import type { RealLane } from './lane';
  * Economic Court, and a client-satisfaction survey, as sample records; the
  * server's onchange and the case's buttons answered as Flectra's Python does.
  *
- * Ids of linked records start at 7000, so they never meet another lane's.
+ * Ids of linked records start at 7000 (contacts and users at 9000: the CRM lane's are 7001 and on), so they never meet another lane's.
  */
 
 // ---------------------------------------------------------------------------
@@ -44,21 +44,21 @@ const egp = (n: number) => `${n.toLocaleString('en', { minimumFractionDigits: 2,
 const link = (id: number, label: string): RelatedRecord => ({ id, label });
 
 const P = {
-  nileMills: link(7001, 'Nile Cotton Mills S.A.E.'),
-  nileExport: link(7002, 'Nile Cotton Export Co.'),
-  delta: link(7003, 'Delta Logistics & Shipping S.A.E.'),
-  hany: link(7004, 'Hany Mansour'),
-  rana: link(7005, 'Rana Adel'),
-  court: link(7006, 'Cairo Economic Court'),
-  shazly: link(7007, 'El-Shazly & Partners (counsel for Delta)'),
-  expert: link(7008, 'Dr. Mahmoud Fawzy (court expert)'),
-  misrInsurance: link(7009, 'Misr Insurance Co.'),
+  nileMills: link(9001, 'Nile Cotton Mills S.A.E.'),
+  nileExport: link(9002, 'Nile Cotton Export Co.'),
+  delta: link(9003, 'Delta Logistics & Shipping S.A.E.'),
+  hany: link(9004, 'Hany Mansour'),
+  rana: link(9005, 'Rana Adel'),
+  court: link(9006, 'Cairo Economic Court'),
+  shazly: link(9007, 'El-Shazly & Partners (counsel for Delta)'),
+  expert: link(9008, 'Dr. Mahmoud Fawzy (court expert)'),
+  misrInsurance: link(9009, 'Misr Insurance Co.'),
 };
 const U = {
-  hany: link(7101, 'Hany Mansour'),
-  rana: link(7102, 'Rana Adel'),
-  omar: link(7103, 'Omar Saeed'),
-  laila: link(7104, 'Laila Hassan'),
+  hany: link(9101, 'Hany Mansour'),
+  rana: link(9102, 'Rana Adel'),
+  omar: link(9103, 'Omar Saeed'),
+  laila: link(9104, 'Laila Hassan'),
 };
 const E = { hany: link(7201, 'Hany Mansour'), rana: link(7202, 'Rana Adel'), omar: link(7203, 'Omar Saeed') };
 const COMPANY = link(7301, 'Sherkety Legal');
@@ -714,10 +714,10 @@ export const lane: RealLane = {
       ...named(labels(P)),
       [P.hany.id]: { name: P.hany.label, is_attorney: true },
       [P.rana.id]: { name: P.rana.label, is_attorney: true },
-      7010: { name: 'Giza Spinning & Weaving Co.' },
-      7011: { name: 'Sara Hamdy' },
+      9010: { name: 'Giza Spinning & Weaving Co.' },
+      9011: { name: 'Sara Hamdy' },
     },
-    'res.users': { ...named(labels(U)), 7105: { name: 'Portal: Nile Cotton Mills', share: true } },
+    'res.users': { ...named(labels(U)), 9105: { name: 'Portal: Nile Cotton Mills', share: true } },
     'hr.employee': named(labels(E)),
     'res.company': { 7301: { name: 'Sherkety Legal' }, 7302: { name: 'Sherkety Legal — Alexandria', parent_id: COMPANY }, 7303: { name: 'Sherkety Legal — Cairo', parent_id: COMPANY } },
     'res.currency': { 7401: { name: 'EGP' } },
