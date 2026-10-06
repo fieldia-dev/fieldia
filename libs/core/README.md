@@ -113,5 +113,115 @@ rule's), `beforeSave` (a step that stops keeps it unsaved), `afterSave` and
 `show` (by tab or wizard step id). A button may still name only an `action`,
 handed to the app as before.
 
+### Running steps
+
+A press runs with `form.runAction(id)`: the button's `confirm` asked first,
+then its `steps`, then its `action`, when it names one, as a final `call`.
+The app runs its own with `form.run(steps, { id })`. Each run ends with a
+`RunResult`:
+
+```ts
+const result = await form.run([{ do: 'check' }, { do: 'save' }]);
+// { done: true }
+// { done: false, stoppedAt: 0, step: { do: 'check' }, reason: 'check', message: 'Email is required' }
+```
+
+- `reason` is why it stopped: `check` (problems found, and shown), `no` (a
+  question answered No), `save` (refused: the first problem, or the backend's
+  words), `app` (the app said stop, or threw — `error` holds what), `closed`
+  (a page opened and closed without saving), `cannot` (it cannot run here: no
+  host to open with, a field the page lacks).
+- `stoppedAt` is its place among the steps run — for a step of an `open`'s
+  `then`, the open step's; for a button's `action`, one past its steps; none
+  when the `confirm` was answered No — and `step` is the step itself.
+
+What the core cannot draw it asks of a host, which the viewer gives:
+
+```ts
+const form = createForm({
+  page,
+  dataSource,
+  host: {
+    open: (request) => showPage(request), // { page, version?, as, title?, recordId, values? } → { saved, recordId?, values?, label? }
+    say: (message, tone) => toast(message, tone),
+    ask: (message) => askYesOrNo(message), // Promise<boolean>
+    close: () => panel.close(), // the dialog or panel this form was opened in
+    show: (tab) => tabs.pick(tab), // and the viewer calls form.shown(tab), as for a tab picked by hand
+  },
+});
+```
+
+Without a host, `say` says nothing, `ask` asks the form's `confirm` option — or
+goes on as though answered Yes, so a form run from code is never held by a
+question — and `open`, `close` and a `goTo` of a tab stop with `cannot`.
+
+An `open` step reads `record` and `values` against this form; a field named
+alone goes whole, a link with its name. Once the page is saved, `into` reads
+the opened form's values, `id` being the record it saved; a link set to that
+record is named by the host's `label` (its page's title field), else the
+values' `display_name`, else their `name`, else the id.
+
+### The app's actions
+
+`onAction` gets each `call`: `{ id, action, params, recordId, values, recordIds }`.
+`id` is the button's, or the moment's (`on.open`, `on.change.<field>`,
+`on.beforeSave`, `on.afterSave`, `on.show.<id>`), or what `form.run` was
+given (`run` when nothing); `recordIds` are the records chosen in a list, for
+every call of that run. Fieldia waits for the answer, which may be an
+`ActionResult`:
+
+```ts
+onAction: async ({ action, values }) => {
+  if (action === 'price') return { values: { price: await priceOf(values.product_id) }, say: 'Priced' };
+  if (action === 'reserve' && !(await inStock(values))) return { stop: 'Out of stock' };
+  if (action === 'pick') return { open: { page: 'customer', as: 'panel', into: { customer_id: 'id' } } };
+},
+```
+
+`values` are set as a `set` step sets them (a link may be given by its id);
+`say` is said, as words or `{ message, tone }`; `open` runs as an `open` step;
+`stop` stops the steps after it, and its words, if any, are said as a
+warning. Nothing answered means go on: an `onAction` that returns nothing
+works as it always did.
+
+### The moments
+
+- `open` runs once the form has its values: as soon as a new one is made, and
+  after each `load()` of a record.
+- `change` runs for a person's change only — `setValue(name, value)`, and a
+  table's lines added, edited, moved or removed. `setValue(name, value, { by: 'app' })`,
+  `setValues(values)`, steps, worked-out values, `setWhen` and the data
+  source's onchange never run it, so steps never chase each other round.
+- `beforeSave` runs before the save's own check, so it can fill in what is
+  asked for. A stop keeps it unsaved: `save()` gives false; a check's
+  problems show as the save's own would; any other stop leaves
+  `status: 'error'` and `saveProblem: { kind: 'stopped', reason, message }`.
+- `afterSave` runs once saved or sent.
+- `show` runs as a wizard's step is entered — the first once `open` has run —
+  and as the viewer calls `form.shown(tabId)` for a tab.
+
+Each moment runs one at a time. Set off again while it runs, `open`, `change`
+and `show` run once more after it, with the values as they are then, however
+often they were set off meanwhile. `beforeSave` and `afterSave` do not run
+again: a save made meanwhile — a step of their own, or the app saving inside a
+call — goes ahead without them, so nothing waits on itself. A moment set off
+by its own run, as a `show` whose `goTo` leads back, does not run.
+
+### Events
+
+```ts
+const off = form.on('change', ({ field, value, values, by }) => {}); // by: 'person' | 'step' | 'app'
+form.on('save', ({ recordId, values }) => {});
+form.on('send', ({ values }) => {}); // a page of responses: the answers sent
+form.on('action', ({ request, result }) => {}); // the app answered a call
+form.on('run', ({ id, steps, result }) => {}); // a run ended
+form.on('step', ({ step }) => {}); // a wizard's step entered
+form.on('open', ({ recordId, values }) => {});
+off();
+```
+
+`subscribe` still hears every change of the form's state; `settled()` now
+waits for runs too, a question still unanswered among them.
+
 To show a page, use [`@fieldia/viewer`](https://www.npmjs.com/package/@fieldia/viewer)
 or a framework binding. MIT licensed.
