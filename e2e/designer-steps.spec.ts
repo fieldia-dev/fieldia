@@ -110,7 +110,7 @@ test.describe('When… in the screen designer', () => {
       id: expect.any(String),
       label: 'New customer',
       style: 'secondary',
-      steps: [{ do: 'open', page: 'customer', as: 'panel', into: { [await nameOf(page, 'Customer')]: 'name' }, then: [{ do: 'say', message: 'Customer added', tone: 'success' }] }],
+      steps: [{ do: 'open', page: 'customer-card', as: 'panel', into: { [await nameOf(page, 'Customer')]: 'name' }, then: [{ do: 'say', message: 'Customer added', tone: 'success' }] }],
     });
     // On the canvas, the button wears a mark: it does something.
     await expect(page.locator('.fd-canvas-block.fd-button', { hasText: 'New customer' })).toHaveAttribute('data-steps', /./);

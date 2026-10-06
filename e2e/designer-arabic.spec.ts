@@ -192,7 +192,7 @@ async function steps(page: Page, look: (state: string, shot?: boolean, dialog?: 
   await clicked.locator('.fd-do-remove').first().click();
   await clicked.locator('.fd-do-add').first().click();
   await page.locator('.fd-menu [data-item="open"]').click();
-  await clicked.locator('select[aria-label="الصفحة"]').selectOption('customer');
+  await clicked.locator('select[aria-label="الصفحة"]').selectOption('customer-card');
   await clicked.getByRole('button', { name: 'إضافة قيمة' }).click();
   await clicked.getByRole('button', { name: 'إضافة إجابة' }).click();
   await clicked.getByRole('button', { name: 'فقط عندما…' }).last().click();

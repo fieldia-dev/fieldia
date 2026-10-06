@@ -123,14 +123,15 @@ store.pages.set('follow-up', { draft: null, versions: [published(followUp, 1)] }
 // A customer, as a step opens one from a button: “New customer” opens it in a panel, its answer put back into this form.
 const customerPage: Page = {
   fieldia: '0.1',
-  id: 'customer',
+  // Not the customer sheet's own id (`?start=sheet`): a page of its own.
+  id: 'customer-card',
   title: say('Customer', 'العميل'),
   ...(arabic ? { language: 'ar' } : {}),
   data: { kind: 'record', model: 'customer' },
   fields: { name: customer['name'], phone: customer['phone'], email: customer['email'] },
-  layout: { type: 'sections', id: 'customer', children: [{ type: 'section', id: 'customer-parts', columns: 2, children: [{ type: 'field', id: 'name', field: 'name' }, { type: 'field', id: 'phone', field: 'phone' }, { type: 'field', id: 'email', field: 'email' }] }] },
+  layout: { type: 'sections', id: 'customer-card', children: [{ type: 'section', id: 'customer-parts', columns: 2, children: [{ type: 'field', id: 'name', field: 'name' }, { type: 'field', id: 'phone', field: 'phone' }, { type: 'field', id: 'email', field: 'email' }] }] },
 };
-store.pages.set('customer', { draft: null, versions: [published(customerPage, 1)] });
+store.pages.set('customer-card', { draft: null, versions: [published(customerPage, 1)] });
 const start = params.get('start');
 const model = start === 'sheet' || start === 'list' ? customer : undefined;
 const first =
