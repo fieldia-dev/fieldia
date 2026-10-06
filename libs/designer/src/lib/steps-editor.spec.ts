@@ -233,3 +233,16 @@ describe('the steps editor in Arabic', () => {
     expect(said.filter((word) => !['Customer', 'Name', 'Order', 'Product', 'Price', 'Quantity'].includes(word))).toEqual([]);
   });
 });
+
+describe('Try it, with steps', () => {
+  it('draws the page as it is, its steps and moments with it: running them is the form’s', async () => {
+    const { designer } = await order();
+    designer.addStep({ press: 'new-customer' }, { do: 'say', message: 'Customer added' });
+    designer.addStep({ moment: 'beforeSave' }, { do: 'check' });
+    const { host } = mount(designer, { mode: 'advanced' });
+    (host.querySelector('.fd-designer-bar [data-mode="try"]') as HTMLButtonElement).click();
+    const tried = host.querySelector('.fd-try-frame form.fd-form') as HTMLFormElement;
+    expect([...tried.querySelectorAll('button')].map((b) => b.textContent)).toContain('New customer');
+    expect(designer.getPage().on).toEqual({ beforeSave: [{ do: 'check' }] });
+  });
+});
