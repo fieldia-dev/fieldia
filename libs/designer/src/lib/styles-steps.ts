@@ -55,7 +55,7 @@ export const DESIGNER_STEPS_CSS = /* css */ `
 .fd-do-map-add { justify-self: start; padding-inline: 0; min-height: 26px; }
 /* ---- where they are set ---- */
 .fd-do-setting { justify-items: stretch; }
-.fd-prop.fd-do-moments { display: grid; gap: 16px; }
+.fd-properties .fd-prop.fd-do-moments { display: grid; gap: 18px; }
 .fd-do-moments > .fd-prop-name { margin-block-end: -6px; }
 .fd-do-moment { display: grid; gap: 6px; min-width: 0; }
 .fd-do-moment[hidden] { display: none; }

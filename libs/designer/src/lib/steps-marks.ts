@@ -15,7 +15,7 @@ import { fieldPlace, pageSteps } from './steps-words';
 
 /** Each button on the canvas that has steps: marked, its steps said; one that has none, not. */
 export function pressMarks(container: HTMLElement, page: Page, designer: Designer): void {
-  const lines = new Map(pageSteps(page, designer.words).filter((entry) => 'press' in entry.place).map((entry) => [(entry.place as { press: string }).press, entry.lines]));
+  const lines = new Map(pageSteps(page, designer.words, savedPage(designer)).filter((entry) => 'press' in entry.place).map((entry) => [(entry.place as { press: string }).press, entry.lines]));
   for (const part of container.querySelectorAll<HTMLElement>('.fd-canvas-block.fd-button[data-node], .fd-canvas-part[data-part]')) {
     const id = part.dataset['node'] ?? part.dataset['part'] ?? '';
     const said = lines.get(id);
@@ -39,10 +39,18 @@ export function pressMarks(container: HTMLElement, page: Page, designer: Designe
   }
 }
 
+/** A saved page a step opens, for its title, once the app's store has it: asked for as it is first said. */
+export const savedPage =
+  (designer: Designer) =>
+  (id: string): Page | null | undefined => {
+    const found = designer.savedForm(id);
+    return found === undefined ? undefined : (found?.page ?? null);
+  };
+
 /** The fields whose change runs steps, by the part each shows at, with their steps said: for the rules' marks. */
 export function changeMarks(page: Page, designer: Designer): Map<string, string[]> {
   const out = new Map<string, string[]>();
-  for (const entry of pageSteps(page, designer.words)) {
+  for (const entry of pageSteps(page, designer.words, savedPage(designer))) {
     if (!('change' in entry.place)) continue;
     const part = fieldPlace(page, entry.place.change);
     if (part) out.set(part, entry.lines);

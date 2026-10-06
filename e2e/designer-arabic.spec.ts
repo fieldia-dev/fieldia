@@ -172,6 +172,52 @@ async function lookAndSavedForm(page: Page, look: (state: string, shot?: boolean
   await screen(page, `arabic-${page.viewportSize()?.width === 390 ? 'screen-phone' : 'screen-desktop'}-saved-form-frame`, { viewport: true });
 }
 
+/**
+ * What a part does: a header button's When clicked — its Add a step menu, a
+ * step said, the app's action it began with taken away, a step that opens a
+ * page open with its maps — a field's When it changes, the page's moments,
+ * and the Rules view listing them.
+ */
+async function steps(page: Page, look: (state: string, shot?: boolean, dialog?: boolean) => Promise<void>) {
+  await page.locator('body').click({ position: { x: 2, y: 2 } });
+  await page.keyboard.press('Escape');
+  await page.locator('.fd-canvas-header-actions .fd-canvas-part').first().click();
+  const clicked = page.locator('.fd-properties [data-setting="When clicked"]');
+  await expect(clicked.locator('.fd-prop-name')).toHaveText('عند النقر');
+  await clicked.locator('.fd-do-add').first().click();
+  await expect(page.locator('.fd-menu')).toBeVisible();
+  await look('steps menu', true, true);
+  await page.locator('.fd-menu [data-item="say"]').click();
+  await page.keyboard.type('تم الإرسال');
+  await clicked.locator('.fd-do-remove').first().click();
+  await clicked.locator('.fd-do-add').first().click();
+  await page.locator('.fd-menu [data-item="open"]').click();
+  await clicked.locator('select[aria-label="الصفحة"]').selectOption('customer');
+  await clicked.getByRole('button', { name: 'إضافة قيمة' }).click();
+  await clicked.getByRole('button', { name: 'إضافة إجابة' }).click();
+  await clicked.getByRole('button', { name: 'فقط عندما…' }).last().click();
+  await look('steps open step', true);
+  await page.locator('.fd-canvas-field').first().click();
+  await page.locator('.fd-properties [role="tab"][data-tab="rules"]').click();
+  const changes = page.locator('.fd-properties [data-setting="When it changes"]');
+  await changes.locator('.fd-do-add').click();
+  await page.locator('.fd-menu [data-item="check"]').click();
+  await changes.scrollIntoViewIfNeeded();
+  await look('steps when it changes', true);
+  await page.locator('body').click({ position: { x: 2, y: 2 } });
+  await page.keyboard.press('Escape');
+  await page.locator('.fd-properties [role="tab"][data-tab="rules"]').click();
+  const before = page.locator('.fd-properties [data-setting="When…"] .fd-do').nth(1);
+  await before.locator('.fd-do-add').click();
+  await page.locator('.fd-menu [data-item="ask"]').click();
+  await page.keyboard.type('هل تحفظ العميل؟');
+  await look('steps moments', true);
+  await page.locator('.fd-mode [data-mode="rules"]').click();
+  await expect(page.locator('.fd-rules-steps')).toHaveCount(3);
+  await look('steps rules view', true);
+  await page.locator('.fd-mode [data-mode="design"]').click();
+}
+
 const RUNS: Run[] = [
   {
     name: 'survey',
@@ -207,6 +253,7 @@ const RUNS: Run[] = [
       await page.getByRole('button', { name: 'إضافة زر' }).first().click();
       await page.keyboard.press('Escape');
     },
+    more: steps,
   },
   { name: 'list', url: '/screen/?locale=ar&dir=rtl&start=list', part: '.fd-list-table th[data-node]' },
   { name: 'blank screen', url: '/screen/?locale=ar&dir=rtl&start=blank', part: '.fd-canvas-section' },

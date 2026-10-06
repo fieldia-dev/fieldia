@@ -6,7 +6,7 @@ import type { FindItem } from './find-anything';
 import { designerIcon } from './icons';
 import { openRules } from './rules-open';
 import { pageRules, type RuleEntry, type RuleKind } from './rules-words';
-import { openSteps } from './steps-marks';
+import { openSteps, savedPage } from './steps-marks';
 import { pageSteps, withCode, type StepsEntry, type StepsGroup } from './steps-words';
 
 /**
@@ -109,10 +109,7 @@ export function rulesOverview(options: RulesOverviewOptions): RulesOverview {
   }
 
   /** A saved page a step opens, for its title, once the store has it. */
-  const saved = (id: string) => {
-    const found = designer.savedForm(id);
-    return found === undefined ? undefined : (found?.page ?? null);
-  };
+  const saved = savedPage(designer);
 
   /** Back to designing, the steps' part picked and their list open. */
   function goToSteps(entry: StepsEntry) {

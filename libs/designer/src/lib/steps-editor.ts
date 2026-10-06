@@ -300,7 +300,8 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
     if (!designer.removeStep(place, view.path)) return;
     openAt = null;
     removedAt = designer.getPage();
-    statusWords.textContent = w.removed(sentence);
+    // The app's names in it kept apart, as the sentence keeps them.
+    statusWords.replaceChildren(...withCode(doc, w.removed(sentence), view.step.do === 'call' ? [view.step.action] : view.step.do === 'open' ? [view.step.page] : []));
     status.hidden = false;
     undo.focus();
   }
