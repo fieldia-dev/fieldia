@@ -347,7 +347,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const help = helpText && helpWay !== 'tooltip' ? el('div', { class: 'fd-help', id: `${id}-help` }, helpText) : null;
       const tip = helpText && helpWay !== 'below' ? helpTip(`${id}-tip`, helpText, fill(labels.helpFor, { label: labelText })) : null;
       // In the label, as Flectra's: a press on it does not move into the box. A label out of sight keeps it after the box.
-      if (tip) (labelsAt === 'hidden' ? widget.element.after(tip.element) : label.append(tip.element));
+      if (tip && labelsAt === 'hidden') widget.element.after(tip.element);
+      else if (tip) label.append(tip.element);
       // Not an alert of its own: a refused save is announced once, naming every field to look at.
       const error = el('div', { class: 'fd-error', id: `${id}-error`, hidden: '' });
       // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
