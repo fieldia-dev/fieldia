@@ -8,7 +8,7 @@
  *   node tools/release.mjs verify             after publishing: the same checks on what npm serves
  *
  * Build first: `npx nx run-many -t build`. A package marked `"private": true`
- * (the designer, until it is decided) is never packed or published.
+ * is never packed or published.
  *
  * The token is read from the environment and written only into a throwaway
  * npmrc under tmp/, as a reference npm expands itself — never into a command
@@ -88,6 +88,7 @@ const EXPECT = {
   '@fieldia/react': ['FieldiaForm', 'useFormState'],
   '@fieldia/vue': ['FieldiaForm', 'useFormState'],
   '@fieldia/angular': ['FieldiaFormComponent', 'FieldiaSlotDirective', 'formState'],
+  '@fieldia/designer': ['createDesigner', 'blankPage', 'createMemoryPageStore', 'mountScreenEditor', 'mountSurveyEditor'],
 };
 const names = packages.map((p) => p.manifest.name);
 const esmOnly = new Set(['@fieldia/angular']);
@@ -134,13 +135,16 @@ import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
 import { chatterSlot, createMemoryChatter, type ChatterSource } from '@fieldia/chatter';
 import type { FieldiaFormProps } from '@fieldia/react';
+import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor, type Designer } from '@fieldia/designer';
 declare const page: Page;
 declare const host: HTMLElement;
 const form = createForm({ page, dataSource: createMemoryDataSource() });
 const source: ChatterSource = createMemoryChatter({ me: { id: 1, name: 'Sara' } });
 const viewer: ViewerHandle = mountViewer(host, { page, form, skin: 'outlined', widgets: { ...gridWidgets, ...codeWidgets }, slots: { chatter: chatterSlot({ source }) } });
 const props: FieldiaFormProps = { page, skin: 'underline' };
-export { viewer, props };
+const designer: Designer = createDesigner({ page: blankPage('screen', 'Site visit'), store: createMemoryPageStore() });
+mountScreenEditor(host, { designer });
+export { viewer, props, designer };
 `
 );
 writeFileSync(

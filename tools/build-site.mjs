@@ -1,8 +1,7 @@
 /**
  * Build fieldia.dev into dist/site: the docs pages from site/pages, the script
  * bundle the front page's live form runs on, the example pages, the framework
- * demos, and the designer's — a preview to try on the site, while
- * @fieldia/designer itself stays off npm (all built first by
+ * demos, and the designer's, to try on the site (all built first by
  * tools/build-demos.mjs).
  */
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';

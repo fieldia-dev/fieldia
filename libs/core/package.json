@@ -1,6 +1,6 @@
 {
   "name": "@fieldia/core",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Headless form model for Fieldia: the page format, modifiers, validation and record state. No DOM.",
   "license": "MIT",
   "homepage": "https://fieldia.dev",

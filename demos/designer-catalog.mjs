@@ -1,7 +1,7 @@
 /**
  * The designer's starting points, for fieldia.dev's Designer page and its
  * thumbnails: each opens the designer itself, on a page to build. Kept apart
- * from the demo gallery's catalog: the designer is a preview, not on npm.
+ * from the demo gallery's catalog: its own page on the site.
  */
 export const DESIGNER_DEMOS = [
   {

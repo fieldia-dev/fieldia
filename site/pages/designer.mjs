@@ -15,13 +15,14 @@ function card(demo) {
 export default {
   path: '/designer/',
   title: 'Designer',
-  description: 'Fieldia’s designer, to try: build surveys the Google Forms way, record pages and lists of records, without writing a page by hand. A preview — not on npm yet.',
+  description: 'Fieldia’s designer, to try: build surveys the Google Forms way, record pages and lists of records, without writing a page by hand. On npm as @fieldia/designer, MIT licensed.',
   body: `
 <header class="gallery-hero">
   <h1>The designer</h1>
   <p class="lead"><b>Build a page by pointing at it.</b> Questions as cards, the Google Forms way; a record’s page in the viewer’s own grid, fields dropped where a gap opens; a list of records by its columns. Pick anything to type its words where it stands; check it, publish it, and open an earlier version again. Nothing you do here is saved.</p>
   <div class="chips">
-    <span class="chip"><b>Preview</b> — not on npm yet</span>
+    <span class="chip"><code>npm install @fieldia/designer</code></span>
+    <span class="chip">MIT licensed</span>
     <span class="chip">⌘K finds anything</span>
     <a class="chip chip-link" href="/demos/">The demos →</a>
   </div>

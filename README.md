@@ -25,7 +25,7 @@ and save through a small data-source interface that your app implements.
 | `@fieldia/core` | Headless. The page format, modifiers, validation, record state, the data-source interface. **No DOM.** | on npm |
 | `@fieldia/widgets` | The field inputs, in plain DOM, with two skins (`underline`, `outlined`) | on npm |
 | `@fieldia/viewer` | Framework-neutral mount — render a saved page and fill it in | on npm |
-| `@fieldia/designer` | Authoring: an editing model with undo and versions, the survey editor, and the screen editor — the page drawn as the viewer draws it, edited where it stands | built, not on npm yet |
+| `@fieldia/designer` | Authoring: an editing model with undo and versions, the survey editor, and the screen editor — the page drawn as the viewer draws it, edited where it stands | on npm |
 | `@fieldia/angular` · `react` · `vue` | Thin bindings over the viewer | on npm |
 
 ### The screen editor

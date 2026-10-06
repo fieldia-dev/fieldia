@@ -9,7 +9,9 @@ backend model's fields first; a field's label, help and options typed in place
 and the rest set from a bar on it; fields dragged within and between sections
 and into tabs).
 
-Not published to npm yet.
+```sh
+npm install @fieldia/designer
+```
 
 ```ts
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor, mountSurveyEditor } from '@fieldia/designer';
