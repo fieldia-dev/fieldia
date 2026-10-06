@@ -32,7 +32,7 @@ const daysUntil = (when: unknown) => (typeof when === 'string' && when ? Math.fl
 const EGYPT = link(7401, 'Egypt');
 const CAIRO = link(7411, 'Cairo');
 const GIZA = link(7412, 'Giza');
-const EGP = link(7451, 'EGP');
+const EGP = link(7461, 'EGP'); // the demos' one EGP
 const SALMA = link(7101, 'Salma Nabil');
 const KARIM = link(7102, 'Karim Fathy');
 const MONA = link(7103, 'Mona Adel');
@@ -579,7 +579,7 @@ export const lane: RealLane = {
       7415: { name: 'Riyadh', country_id: link(7402, 'Saudi Arabia') },
       7416: { name: 'Dubai', country_id: link(7403, 'United Arab Emirates') },
     },
-    'res.currency': { 7451: { name: 'EGP' }, 7452: { name: 'USD' } },
+    'res.currency': { 7461: { name: 'EGP' }, 7462: { name: 'USD' } },
     'res.partner.title': { 7631: { name: 'Mister' }, 7632: { name: 'Madam' }, 7633: { name: 'Doctor' }, 7634: { name: 'Engineer' }, 7635: { name: 'Professor' } },
     'res.partner.category': { 7621: { name: 'Real estate' }, 7622: { name: 'Key account' }, 7623: { name: 'Government' }, 7624: { name: 'Supplier' }, 7625: { name: 'Contractor' } },
     'res.partner.industry': { 7641: { name: 'Real Estate' }, 7642: { name: 'Construction' }, 7643: { name: 'Public Administration' } },

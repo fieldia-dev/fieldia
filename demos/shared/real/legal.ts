@@ -62,7 +62,7 @@ const U = {
 };
 const E = { hany: link(7201, 'Hany Mansour'), rana: link(7202, 'Rana Adel'), omar: link(7203, 'Omar Saeed') };
 const COMPANY = link(7301, 'Sherkety Legal');
-const EGP = link(7401, 'EGP');
+const EGP = link(7461, 'EGP'); // the demos' one EGP
 const ROLE = {
   plaintiff: link(7501, 'Plaintiff'),
   defendant: link(7502, 'Defendant'),
@@ -720,7 +720,7 @@ export const lane: RealLane = {
     'res.users': { ...named(labels(U)), 9105: { name: 'Portal: Nile Cotton Mills', share: true } },
     'hr.employee': named(labels(E)),
     'res.company': { 7301: { name: 'Sherkety Legal' }, 7302: { name: 'Sherkety Legal — Alexandria', parent_id: COMPANY }, 7303: { name: 'Sherkety Legal — Cairo', parent_id: COMPANY } },
-    'res.currency': { 7401: { name: 'EGP' } },
+    'res.currency': { 7461: { name: 'EGP' } },
     'legal.party.role': named(labels(ROLE)),
     'legal.matter.type': named(labels(MATTER)),
     // A stage serves one matter type here, or every one: a many2many's "contains" has no filter (see the gap log).

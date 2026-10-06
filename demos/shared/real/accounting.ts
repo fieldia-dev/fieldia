@@ -15,8 +15,9 @@ import type { RealLane } from './lane';
  */
 
 const link = (id: number | string, label: string): RelatedRecord => ({ id, label });
-const EGP = link('EGP', 'EGP');
-const USD = link('USD', 'USD');
+// The demos' one set of currencies, shared by every lane (as one database has): EGP 7461, USD 7462, EUR 7463.
+const EGP = link(7461, 'EGP');
+const USD = link(7462, 'USD');
 /** EGP for one USD, the day's rate in the samples. */
 const USD_RATE = 48.5;
 const COMPANY = link(4101, 'Zamalek Office Supplies S.A.E.');
@@ -25,6 +26,8 @@ const TODAY = '2026-10-06';
 const round = (n: number) => Math.round(n * 100) / 100;
 const num = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : 0);
 const idOf = (value: unknown) => (value && typeof value === 'object' && 'id' in value ? (value as RelatedRecord).id : null);
+/** A currency's code: its name, as every lane names it. */
+const codeOf = (value: unknown) => (value && typeof value === 'object' && 'label' in value ? (value as RelatedRecord).label : null);
 const links = (value: unknown) => (Array.isArray(value) ? (value as RelatedRecord[]) : []);
 const money = (amount: number, currency: string) => `${currency} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const addDays = (day: string, days: number) => {
@@ -188,7 +191,7 @@ const isAccountLine = (line: Line) => !['line_section', 'line_note'].includes(St
 
 /** EGP for one unit of the move's currency: its manual rate, else the day's. */
 function rateOf(values: Values): number {
-  if (idOf(values['currency_id']) !== 'USD') return 1;
+  if (codeOf(values['currency_id']) !== 'USD') return 1;
   return num(values['manual_currency_rate']) || USD_RATE;
 }
 
@@ -651,7 +654,7 @@ MOVES[4107] = stored(4107, { ...MOVES[4105], id: 4107, name: 'INV/2026/00031', m
 /** An amount in one currency, in another, through EGP. */
 function convert(amount: number, from: unknown, to: unknown, manualRate = 0): number {
   const egpPer = (code: unknown) => (code === 'USD' ? manualRate || USD_RATE : 1);
-  return round((amount * egpPer(idOf(from))) / egpPer(idOf(to)));
+  return round((amount * egpPer(codeOf(from))) / egpPer(codeOf(to)));
 }
 
 /** The whole amount due, in the wizard's currency, and what is left once `amount` is paid. */
@@ -707,7 +710,7 @@ function writeoffPicked(values: Values): Values {
 /** default_get: the journal to pay through (the bank in the invoice's currency), its first method, the amount due. */
 function paymentDefaults(values: Values): ActionResult | undefined {
   if (values['journal_id']) return undefined; // a stored wizard keeps its own
-  const usd = idOf(values['source_currency_id']) === 'USD';
+  const usd = codeOf(values['source_currency_id']) === 'USD';
   const journalId = usd ? 4105 : 4103;
   const next = { ...values, journal_id: journal(journalId) };
   return {
@@ -732,7 +735,7 @@ let paymentNumber = 31;
 function createPayments(values: Values): ActionResult {
   const found = JOURNALS[Number(idOf(values['journal_id']))];
   const name = `P${found?.code ?? 'BNK1'}/2026/${String(paymentNumber++).padStart(5, '0')}`;
-  const amount = money(num(values['amount']), String(idOf(values['currency_id']) ?? 'EGP'));
+  const amount = money(num(values['amount']), String(codeOf(values['currency_id']) ?? 'EGP'));
   const check = values['is_postdated_check'] ? `, check ${values['bill_no']} due ${values['due_date']}` : '';
   return { say: { message: `Payment ${name} of ${amount} posted${check}`, tone: 'success' } };
 }
@@ -743,7 +746,7 @@ function reconcilePayment(values: Values): ActionResult {
   const residual = values['payment_handling'] === 'reconcile' ? 0 : Math.max(0, round(num(values['amount_residual']) - paid));
   const lines = (values['invoice_payment_ids'] as Line[] | null) ?? [];
   const found = JOURNALS[Number(idOf(values['payment_journal_id']))];
-  const code = String(idOf(values['currency_id']) ?? 'EGP');
+  const code = String(codeOf(values['currency_id']) ?? 'EGP');
   const left = residual > 0 ? `: ${money(residual, code)} left to pay` : ': paid in full';
   return {
     // Said here, by the invoice: words the dialog said as it closed would be lost with it.
@@ -952,7 +955,7 @@ function expenseAction(request: ActionRequest): ActionResult | undefined {
       const bill = `BILL/2026/10/${String(billNumber++).padStart(4, '0')}`;
       return {
         values: { move_count: 1, payment_state: 'not_paid', amount_residual: total, accounting_date: day, state: 'post' },
-        say: { message: `${bill} posted: ${money(total, String(idOf(v['currency_id']) ?? 'EGP'))} to reimburse to ${(v['employee_id'] as RelatedRecord | null)?.label ?? 'the employee'}`, tone: 'success' },
+        say: { message: `${bill} posted: ${money(total, String(codeOf(v['currency_id']) ?? 'EGP'))} to reimburse to ${(v['employee_id'] as RelatedRecord | null)?.label ?? 'the employee'}`, tone: 'success' },
       };
     }
     case 'expense_payment_registered': {
@@ -961,7 +964,7 @@ function expenseAction(request: ActionRequest): ActionResult | undefined {
       const paid = residual <= 0;
       return {
         values: { amount_residual: residual, payment_state: paid ? 'paid' : 'partial', state: paid ? 'done' : 'post', payment_amount: null, payment_handling: null },
-        say: { message: paid ? `${(v['employee_id'] as RelatedRecord | null)?.label ?? 'The employee'} is reimbursed in full` : `${money(residual, String(idOf(v['currency_id']) ?? 'EGP'))} left to reimburse`, tone: 'success' },
+        say: { message: paid ? `${(v['employee_id'] as RelatedRecord | null)?.label ?? 'The employee'} is reimbursed in full` : `${money(residual, String(codeOf(v['currency_id']) ?? 'EGP'))} left to reimburse`, tone: 'success' },
       };
     }
     case 'action_draft':
@@ -1081,7 +1084,7 @@ export const lane: RealLane = {
     'account.move': MOVES,
     'account.payment.register': { 4101: WIZARD },
     'sherkety.expense': EXPENSES,
-    'res.currency': { EGP: { name: 'EGP' }, USD: { name: 'USD' } },
+    'res.currency': { 7461: { name: 'EGP' }, 7462: { name: 'USD' } },
     'res.company': { 4101: { name: COMPANY.label, currency_id: EGP } },
     'res.partner': rows(PARTNERS, (p) => ({ name: p.name, is_company: p.is_company, email: p.email ?? null })),
     'res.partner.bank': rows(BANKS, ([name, owner]) => ({ name, partner_id: partner(owner) })),
@@ -1150,7 +1153,8 @@ export const lane: RealLane = {
   },
   action(request) {
     const v = request.values;
-    if ('move_type' in v) return later(invoiceAction(request));
+    // An invoice's own pair: a transfer has a move_type too (its shipping policy).
+    if ('move_type' in v && 'invoice_line_ids' in v) return later(invoiceAction(request));
     if ('payment_difference_handling' in v && 'source_amount_currency' in v) {
       if (request.action === 'payment_register_defaults') return later(paymentDefaults(v), 50);
       if (request.action === 'action_create_payments') return later(createPayments(v));
