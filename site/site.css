@@ -127,7 +127,7 @@ tr:last-child td { border-bottom: none; }
 .gallery-body { padding: 8px max(16px, calc((100% - 1240px) / 2)) 60px; }
 .gallery-section { margin-top: 30px; }
 .gallery-section h2 { margin: 0; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: 14px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
-.gallery-section h2 .count { margin-left: 6px; color: var(--ink); opacity: 0.5; }
+.gallery-section h2 .count { margin-left: 6px; color: var(--muted); }
 .gallery-section.featured h2 { color: var(--brand); }
 .gallery-section.featured h2 .count { opacity: 1; color: var(--muted); font-size: 12px; }
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 272px), 1fr)); gap: 14px; margin-top: 14px; }
