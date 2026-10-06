@@ -57,9 +57,9 @@ bindings take `pages` too.
 
 `openFormDialog` opens a page over the one shown — a new related record, a
 line to edit — and `openFormPanel` opens one in a side panel: full height at
-the inline-end edge (the left, right to left), the page behind dimmed but in
-sight, the whole screen on a phone. Both take `mountViewer`'s options and hand
-back `{ saved, recordId, values }`:
+the inline-end edge (the left, right to left) unless its `side` names another,
+the page behind dimmed but in sight, the whole screen on a phone. Both take
+`mountViewer`'s options and hand back `{ saved, recordId, values }`:
 
 ```ts
 import { openFormDialog, openFormPanel } from '@fieldia/viewer';
@@ -74,14 +74,27 @@ const call = await openFormPanel({
   look: page.look,        // the opener's look, worn by the panel and the page in it
 });
 if (call.saved) console.log(call.recordId, call.values);
+
+// From another edge: the whole width along the top, 40 in a hundred of the screen tall.
+await openFormPanel({ page: callPage, dataSource, title: 'Log a call', side: 'top', height: 'short' });
 ```
+
+`side` is where it comes from: `'end'` (the default: the end of the line, the
+right, or the left right to left) or `'start'`, as the page reads; or
+`'left'`, `'right'`, `'top'` or `'bottom'` of the screen, whatever the page's
+direction. At the left or right `width` is how deep it is; at the top or
+bottom it runs the whole width and `height` says how tall — `'short'`,
+`'medium'` (the default) or `'tall'`, about 40, 60 or 85 in a hundred of the
+screen. On a phone every side fills the screen: the top slides down from
+above, the rest up from below.
 
 `mode: 'values'` checks the form and hands its values back without saving
 (the panel's button then says Done). Each keeps Tab inside it, gives the focus
 back where it came from, and closes on Escape — a panel asks "Discard your
 changes?" first when something was changed. A dialog opened from inside a
 panel sits above it; a panel opened from a panel stacks over it, the older one
-stepped back. A panel slides in only when the reader's system welcomes motion.
+stepped back from its own edge. A panel slides in from its edge only when the
+reader's system welcomes motion.
 
 ## What a page's steps ask of the screen
 
@@ -89,7 +102,8 @@ A page's buttons and moments run steps (see `@fieldia/core`'s “What a press or
 a moment does”). The viewer is their host: it draws what they ask for.
 
 - **A page opened** is found through `pages` by `{ id, version }` and opened in
-  a dialog, a side panel, or this form's place with Back over it — with the same
+  a dialog, a side panel (from the step's `side`), or this form's place with
+  Back over it — with the same
   data source, pages, language, skin, look and `onAction`. Saved, its record
   comes back (named by its page's title field, else `name`) for the step's
   `into` and `then`; closed unsaved — Discard, ×, Escape, Back — the steps after

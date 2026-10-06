@@ -32,7 +32,7 @@ ${code(
 <table>
   <thead><tr><th>Step</th><th>What it does</th></tr></thead>
   <tbody>
-    <tr><td>${c('open')}</td><td>Another page by its id, from your ${c('pages')}: in a ${c('dialog')} (the default), a ${c('panel')} beside the form, or in its ${c('page')} — this form's place, with Back. On a ${c('record')} or a new one with ${c('values')}; once saved, ${c('into')} sets this form's fields from its answers (${c('id')} is the record it saved) and ${c('then')} runs here. Closed without saving, the steps after it do not run.</td></tr>
+    <tr><td>${c('open')}</td><td>Another page by its id, from your ${c('pages')}: in a ${c('dialog')} (the default), a ${c('panel')} beside the form — from its ${c('side')}: the end of the line unless it says ${c('start')}, ${c('left')}, ${c('right')}, ${c('top')} or ${c('bottom')} — or in its ${c('page')}, this form's place, with Back. On a ${c('record')} or a new one with ${c('values')}; once saved, ${c('into')} sets this form's fields from its answers (${c('id')} is the record it saved) and ${c('then')} runs here. Closed without saving, the steps after it do not run.</td></tr>
     <tr><td>${c('set')} · ${c('clear')} · ${c('addLine')}</td><td>A field from an expression, a field emptied, a line added to a table of lines.</td></tr>
     <tr><td>${c('check')} · ${c('save')} · ${c('reset')}</td><td>The form checked, or some fields of it; saved (a page of responses sends); put back as it was loaded.</td></tr>
     <tr><td>${c('goTo')}</td><td>A tab or a wizard's step, by its id.</td></tr>

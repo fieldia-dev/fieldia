@@ -154,7 +154,7 @@ const picked = await openSearchDialog({ title: 'Customer', search: (query, limit
 )}
 <p>${c('openFormDialog')} takes every option ${c('mountViewer')} does. In ${c('"values"')} mode a ${c('recompute(values)')} option recalculates the values as they change, and the dialog shows what comes back.</p>
 <h3 id="side-panels">Side panels</h3>
-<p>${c('openFormPanel')} opens a page in a panel instead: full height at the inline-end edge (the left, right to left), the page behind dimmed but still in sight, and the whole screen on a phone. It takes the dialog's options, with ${c('width')} in place of ${c('size')}, and hands back the same result.</p>
+<p>${c('openFormPanel')} opens a page in a panel instead: full height at the inline-end edge (the left, right to left) unless it names another side, the page behind dimmed but still in sight, and the whole screen on a phone. It takes the dialog's options, with ${c('side')}, ${c('width')} and ${c('height')} in place of ${c('size')}, and hands back the same result.</p>
 ${code(
   'ts',
   `
@@ -165,9 +165,13 @@ const { saved, recordId, values } = await openFormPanel({
   title: 'Log a call',
   width: 'medium',          // 'narrow' | 'medium' | 'wide': about 420, 560 or 720 pixels
   look: page.look,          // the opener's accent, scheme, corners and font
-});`
+});
+
+// From another edge: the whole width along the top, 40 in a hundred of the screen tall.
+await openFormPanel({ page: callPage, dataSource, title: 'Log a call', side: 'top', height: 'short' });`
 )}
-<p>Its foot has Discard and Save &amp; Close, or Discard and Done in ${c('"values"')} mode. Escape and × ask “Discard your changes?” first when something was changed; Discard does not ask. A dialog opened from inside it, such as a link's Create and edit…, sits above it; a panel opened from it stacks over it, the older one stepped back; each gives the focus back as it closes. It slides in only when the reader's system welcomes motion. Try it on <a href="/demos/plain/?page=fields&amp;skin=outlined">Every field</a> in JavaScript: “Log a call in a side panel”, over the form.</p>
+<p>${c('side')} is the edge it comes from: ${c("'end'")} (the default: the end of the line, the right, or the left right to left) or ${c("'start'")}, as the page reads; or ${c("'left'")}, ${c("'right'")}, ${c("'top'")} or ${c("'bottom'")} of the screen, whatever the page's direction. At the left or right, ${c('width')} is how deep it is; at the top or bottom it runs the whole width, and ${c('height')} says how tall: ${c("'short'")}, ${c("'medium'")} (the default) or ${c("'tall'")}, about 40, 60 or 85 in a hundred of the screen. On a phone every side fills the screen, the top sliding down from above and the rest up from below. A page's step opens one with ${c('"as": "panel"')} and the same ${c('"side"')}.</p>
+<p>Its foot has Discard and Save &amp; Close, or Discard and Done in ${c('"values"')} mode. Escape and × ask “Discard your changes?” first when something was changed; Discard does not ask. A dialog opened from inside it, such as a link's Create and edit…, sits above it; a panel opened from it stacks over it, the older one stepped back from its own edge; each gives the focus back as it closes. It slides in from its edge only when the reader's system welcomes motion. Try it on <a href="/demos/plain/?page=fields&amp;skin=outlined">Every field</a> in JavaScript: “Log a call in a side panel”, over the form, from the right, left, top or bottom.</p>
 
 <h2 id="lines">Tables of lines</h2>
 <p>A ${c('one2many')} declares the fields of each line; the node's ${c('columns')} says which show as columns. Lines are added, edited and removed in place, and saved as ${c('create')}, ${c('update')} and ${c('delete')} operations — see <a href="/data/#changes">what a save sends</a>.</p>
