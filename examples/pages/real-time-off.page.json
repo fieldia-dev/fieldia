@@ -1,0 +1,1187 @@
+{
+  "fieldia": "0.1",
+  "id": "real-time-off",
+  "title": "Time Off Request",
+  "description": "Sherkety ERP, hr_holidays: hr.leave, hr_leave_view_form as an approver opens it (hr_leave_view_form_manager), with hr_holidays_attendance's extra hours.",
+  "data": {
+    "kind": "record",
+    "model": "hr.leave"
+  },
+  "maxWidth": "wide",
+  "look": {
+    "labels": "beside",
+    "labelWidth": 150
+  },
+  "fields": {
+    "active": {
+      "type": "boolean",
+      "label": "Active",
+      "readonly": true,
+      "default": true
+    },
+    "can_reset": {
+      "type": "boolean",
+      "label": "Can reset",
+      "readonly": true
+    },
+    "can_approve": {
+      "type": "boolean",
+      "label": "Can Approve",
+      "readonly": true
+    },
+    "can_cancel": {
+      "type": "boolean",
+      "label": "Can Cancel",
+      "readonly": true
+    },
+    "has_mandatory_day": {
+      "type": "boolean",
+      "label": "Has a mandatory day",
+      "readonly": true
+    },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "default": "confirm",
+      "options": [
+        {
+          "value": "draft",
+          "label": "To Submit"
+        },
+        {
+          "value": "confirm",
+          "label": "To Approve"
+        },
+        {
+          "value": "refuse",
+          "label": "Refused"
+        },
+        {
+          "value": "validate1",
+          "label": "Second Approval"
+        },
+        {
+          "value": "validate",
+          "label": "Approved"
+        }
+      ]
+    },
+    "tz_mismatch": {
+      "type": "boolean",
+      "label": "Timezone mismatch",
+      "readonly": true
+    },
+    "tz": {
+      "type": "char",
+      "label": "Timezone",
+      "readonly": true
+    },
+    "holiday_type": {
+      "type": "selection",
+      "label": "Allocation Mode",
+      "required": true,
+      "default": "employee",
+      "options": [
+        {
+          "value": "employee",
+          "label": "By Employee"
+        },
+        {
+          "value": "company",
+          "label": "By Company"
+        },
+        {
+          "value": "department",
+          "label": "By Department"
+        },
+        {
+          "value": "category",
+          "label": "By Employee Tag"
+        }
+      ]
+    },
+    "leave_type_request_unit": {
+      "type": "selection",
+      "label": "Take Time Off in",
+      "readonly": true,
+      "options": [
+        {
+          "value": "day",
+          "label": "Day"
+        },
+        {
+          "value": "half_day",
+          "label": "Half Day"
+        },
+        {
+          "value": "hour",
+          "label": "Hours"
+        }
+      ]
+    },
+    "validation_type": {
+      "type": "selection",
+      "label": "Validation Type",
+      "readonly": true,
+      "options": [
+        {
+          "value": "no_validation",
+          "label": "No Validation"
+        },
+        {
+          "value": "hr",
+          "label": "By Time Off Officer"
+        },
+        {
+          "value": "manager",
+          "label": "By Employee's Approver"
+        },
+        {
+          "value": "both",
+          "label": "By Employee's Approver and Time Off Officer"
+        }
+      ]
+    },
+    "display_name": {
+      "type": "char",
+      "label": "Display Name",
+      "readonly": true
+    },
+    "is_user_only_responsible": {
+      "type": "boolean",
+      "label": "Only responsible",
+      "readonly": true
+    },
+    "mode_company_id": {
+      "type": "many2one",
+      "label": "Company",
+      "relation": "res.company"
+    },
+    "category_id": {
+      "type": "many2one",
+      "label": "Employee Tag",
+      "relation": "hr.employee.category"
+    },
+    "department_id": {
+      "type": "many2one",
+      "label": "Department",
+      "relation": "hr.department"
+    },
+    "multi_employee": {
+      "type": "boolean",
+      "label": "Several employees",
+      "readonly": true
+    },
+    "employee_id": {
+      "type": "many2one",
+      "label": "Employee",
+      "relation": "hr.employee"
+    },
+    "employee_ids": {
+      "type": "many2many",
+      "label": "Employees",
+      "relation": "hr.employee"
+    },
+    "employee_company_id": {
+      "type": "many2one",
+      "label": "Employee Company",
+      "relation": "res.company",
+      "readonly": true
+    },
+    "leave_type_increases_duration": {
+      "type": "boolean",
+      "label": "Whole days only",
+      "readonly": true
+    },
+    "holiday_status_id": {
+      "type": "many2one",
+      "label": "Time Off Type",
+      "relation": "hr.leave.type",
+      "required": true,
+      "filter": [
+        {
+          "any": [
+            {
+              "field": "requires_allocation",
+              "op": "=",
+              "value": "no"
+            },
+            {
+              "all": [
+                {
+                  "field": "has_valid_allocation",
+                  "op": "=",
+                  "value": true
+                },
+                {
+                  "any": [
+                    {
+                      "field": "allows_negative",
+                      "op": "=",
+                      "value": true
+                    },
+                    {
+                      "all": [
+                        {
+                          "field": "virtual_remaining_leaves",
+                          "op": ">",
+                          "value": 0
+                        },
+                        {
+                          "field": "allows_negative",
+                          "op": "=",
+                          "value": false
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "date_from": {
+      "type": "datetime",
+      "label": "Start Date",
+      "readonly": true
+    },
+    "date_to": {
+      "type": "datetime",
+      "label": "End Date",
+      "readonly": true
+    },
+    "request_date_from": {
+      "type": "date",
+      "label": "Request Start Date"
+    },
+    "request_date_to": {
+      "type": "date",
+      "label": "Request End Date"
+    },
+    "request_date_from_period": {
+      "type": "selection",
+      "label": "Date Period Start",
+      "default": "am",
+      "options": [
+        {
+          "value": "am",
+          "label": "Morning"
+        },
+        {
+          "value": "pm",
+          "label": "Afternoon"
+        }
+      ]
+    },
+    "request_unit_half": {
+      "type": "boolean",
+      "label": "Half Day"
+    },
+    "request_unit_hours": {
+      "type": "boolean",
+      "label": "Custom Hours"
+    },
+    "request_hour_from": {
+      "type": "selection",
+      "label": "Hour from",
+      "options": [
+        {
+          "value": "0",
+          "label": "12:00 AM"
+        },
+        {
+          "value": "0.5",
+          "label": "12:30 AM"
+        },
+        {
+          "value": "1",
+          "label": "1:00 AM"
+        },
+        {
+          "value": "1.5",
+          "label": "1:30 AM"
+        },
+        {
+          "value": "2",
+          "label": "2:00 AM"
+        },
+        {
+          "value": "2.5",
+          "label": "2:30 AM"
+        },
+        {
+          "value": "3",
+          "label": "3:00 AM"
+        },
+        {
+          "value": "3.5",
+          "label": "3:30 AM"
+        },
+        {
+          "value": "4",
+          "label": "4:00 AM"
+        },
+        {
+          "value": "4.5",
+          "label": "4:30 AM"
+        },
+        {
+          "value": "5",
+          "label": "5:00 AM"
+        },
+        {
+          "value": "5.5",
+          "label": "5:30 AM"
+        },
+        {
+          "value": "6",
+          "label": "6:00 AM"
+        },
+        {
+          "value": "6.5",
+          "label": "6:30 AM"
+        },
+        {
+          "value": "7",
+          "label": "7:00 AM"
+        },
+        {
+          "value": "7.5",
+          "label": "7:30 AM"
+        },
+        {
+          "value": "8",
+          "label": "8:00 AM"
+        },
+        {
+          "value": "8.5",
+          "label": "8:30 AM"
+        },
+        {
+          "value": "9",
+          "label": "9:00 AM"
+        },
+        {
+          "value": "9.5",
+          "label": "9:30 AM"
+        },
+        {
+          "value": "10",
+          "label": "10:00 AM"
+        },
+        {
+          "value": "10.5",
+          "label": "10:30 AM"
+        },
+        {
+          "value": "11",
+          "label": "11:00 AM"
+        },
+        {
+          "value": "11.5",
+          "label": "11:30 AM"
+        },
+        {
+          "value": "12",
+          "label": "12:00 PM"
+        },
+        {
+          "value": "12.5",
+          "label": "12:30 PM"
+        },
+        {
+          "value": "13",
+          "label": "1:00 PM"
+        },
+        {
+          "value": "13.5",
+          "label": "1:30 PM"
+        },
+        {
+          "value": "14",
+          "label": "2:00 PM"
+        },
+        {
+          "value": "14.5",
+          "label": "2:30 PM"
+        },
+        {
+          "value": "15",
+          "label": "3:00 PM"
+        },
+        {
+          "value": "15.5",
+          "label": "3:30 PM"
+        },
+        {
+          "value": "16",
+          "label": "4:00 PM"
+        },
+        {
+          "value": "16.5",
+          "label": "4:30 PM"
+        },
+        {
+          "value": "17",
+          "label": "5:00 PM"
+        },
+        {
+          "value": "17.5",
+          "label": "5:30 PM"
+        },
+        {
+          "value": "18",
+          "label": "6:00 PM"
+        },
+        {
+          "value": "18.5",
+          "label": "6:30 PM"
+        },
+        {
+          "value": "19",
+          "label": "7:00 PM"
+        },
+        {
+          "value": "19.5",
+          "label": "7:30 PM"
+        },
+        {
+          "value": "20",
+          "label": "8:00 PM"
+        },
+        {
+          "value": "20.5",
+          "label": "8:30 PM"
+        },
+        {
+          "value": "21",
+          "label": "9:00 PM"
+        },
+        {
+          "value": "21.5",
+          "label": "9:30 PM"
+        },
+        {
+          "value": "22",
+          "label": "10:00 PM"
+        },
+        {
+          "value": "22.5",
+          "label": "10:30 PM"
+        },
+        {
+          "value": "23",
+          "label": "11:00 PM"
+        },
+        {
+          "value": "23.5",
+          "label": "11:30 PM"
+        }
+      ]
+    },
+    "request_hour_to": {
+      "type": "selection",
+      "label": "Hour to",
+      "options": [
+        {
+          "value": "0",
+          "label": "12:00 AM"
+        },
+        {
+          "value": "0.5",
+          "label": "12:30 AM"
+        },
+        {
+          "value": "1",
+          "label": "1:00 AM"
+        },
+        {
+          "value": "1.5",
+          "label": "1:30 AM"
+        },
+        {
+          "value": "2",
+          "label": "2:00 AM"
+        },
+        {
+          "value": "2.5",
+          "label": "2:30 AM"
+        },
+        {
+          "value": "3",
+          "label": "3:00 AM"
+        },
+        {
+          "value": "3.5",
+          "label": "3:30 AM"
+        },
+        {
+          "value": "4",
+          "label": "4:00 AM"
+        },
+        {
+          "value": "4.5",
+          "label": "4:30 AM"
+        },
+        {
+          "value": "5",
+          "label": "5:00 AM"
+        },
+        {
+          "value": "5.5",
+          "label": "5:30 AM"
+        },
+        {
+          "value": "6",
+          "label": "6:00 AM"
+        },
+        {
+          "value": "6.5",
+          "label": "6:30 AM"
+        },
+        {
+          "value": "7",
+          "label": "7:00 AM"
+        },
+        {
+          "value": "7.5",
+          "label": "7:30 AM"
+        },
+        {
+          "value": "8",
+          "label": "8:00 AM"
+        },
+        {
+          "value": "8.5",
+          "label": "8:30 AM"
+        },
+        {
+          "value": "9",
+          "label": "9:00 AM"
+        },
+        {
+          "value": "9.5",
+          "label": "9:30 AM"
+        },
+        {
+          "value": "10",
+          "label": "10:00 AM"
+        },
+        {
+          "value": "10.5",
+          "label": "10:30 AM"
+        },
+        {
+          "value": "11",
+          "label": "11:00 AM"
+        },
+        {
+          "value": "11.5",
+          "label": "11:30 AM"
+        },
+        {
+          "value": "12",
+          "label": "12:00 PM"
+        },
+        {
+          "value": "12.5",
+          "label": "12:30 PM"
+        },
+        {
+          "value": "13",
+          "label": "1:00 PM"
+        },
+        {
+          "value": "13.5",
+          "label": "1:30 PM"
+        },
+        {
+          "value": "14",
+          "label": "2:00 PM"
+        },
+        {
+          "value": "14.5",
+          "label": "2:30 PM"
+        },
+        {
+          "value": "15",
+          "label": "3:00 PM"
+        },
+        {
+          "value": "15.5",
+          "label": "3:30 PM"
+        },
+        {
+          "value": "16",
+          "label": "4:00 PM"
+        },
+        {
+          "value": "16.5",
+          "label": "4:30 PM"
+        },
+        {
+          "value": "17",
+          "label": "5:00 PM"
+        },
+        {
+          "value": "17.5",
+          "label": "5:30 PM"
+        },
+        {
+          "value": "18",
+          "label": "6:00 PM"
+        },
+        {
+          "value": "18.5",
+          "label": "6:30 PM"
+        },
+        {
+          "value": "19",
+          "label": "7:00 PM"
+        },
+        {
+          "value": "19.5",
+          "label": "7:30 PM"
+        },
+        {
+          "value": "20",
+          "label": "8:00 PM"
+        },
+        {
+          "value": "20.5",
+          "label": "8:30 PM"
+        },
+        {
+          "value": "21",
+          "label": "9:00 PM"
+        },
+        {
+          "value": "21.5",
+          "label": "9:30 PM"
+        },
+        {
+          "value": "22",
+          "label": "10:00 PM"
+        },
+        {
+          "value": "22.5",
+          "label": "10:30 PM"
+        },
+        {
+          "value": "23",
+          "label": "11:00 PM"
+        },
+        {
+          "value": "23.5",
+          "label": "11:30 PM"
+        }
+      ]
+    },
+    "number_of_days_display": {
+      "type": "float",
+      "label": "Duration in days",
+      "readonly": true,
+      "digits": [
+        6,
+        2
+      ]
+    },
+    "number_of_hours_display": {
+      "type": "float",
+      "label": "Duration in hours",
+      "readonly": true,
+      "digits": [
+        6,
+        2
+      ]
+    },
+    "number_of_hours_text": {
+      "type": "char",
+      "label": "Duration in hours",
+      "readonly": true
+    },
+    "overtime_deductible": {
+      "type": "boolean",
+      "label": "Deducted from extra hours",
+      "readonly": true
+    },
+    "employee_overtime": {
+      "type": "float",
+      "label": "Extra Hours Available",
+      "readonly": true,
+      "digits": [
+        6,
+        2
+      ]
+    },
+    "name": {
+      "type": "text",
+      "label": "Description"
+    },
+    "user_id": {
+      "type": "many2one",
+      "label": "User",
+      "relation": "res.users",
+      "readonly": true
+    },
+    "leave_type_support_document": {
+      "type": "boolean",
+      "label": "Supporting Document needed",
+      "readonly": true
+    },
+    "supported_attachment_ids": {
+      "type": "binary",
+      "label": "Attach File",
+      "multiple": true
+    },
+    "first_approver_id": {
+      "type": "many2one",
+      "label": "First Approval",
+      "relation": "hr.employee",
+      "readonly": true
+    },
+    "second_approver_id": {
+      "type": "many2one",
+      "label": "Second Approval",
+      "relation": "hr.employee",
+      "readonly": true
+    },
+    "leave_stats": {
+      "type": "html",
+      "label": "Time off of the employee and the department",
+      "readonly": true
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "statusbar": {
+      "field": "state",
+      "visibleStates": [
+        "confirm",
+        "validate"
+      ]
+    },
+    "ribbon": {
+      "id": "ribbon-canceled",
+      "label": "Canceled",
+      "tone": "danger",
+      "invisible": "active"
+    },
+    "alerts": [
+      {
+        "id": "tz-employee",
+        "tone": "info",
+        "message": "The employee has a different timezone than yours! Here dates and times are displayed in the employee's timezone.",
+        "invisible": "not request_unit_hours or not tz_mismatch or holiday_type == 'category' or holiday_type != 'employee'"
+      },
+      {
+        "id": "tz-department",
+        "tone": "info",
+        "message": "The department's company has a different timezone than yours! Here dates and times are displayed in the company's timezone.",
+        "invisible": "not request_unit_hours or not tz_mismatch or holiday_type == 'category' or holiday_type != 'department'"
+      },
+      {
+        "id": "tz-company",
+        "tone": "info",
+        "message": "The company has a different timezone than yours! Here dates and times are displayed in the company's timezone.",
+        "invisible": "not request_unit_hours or not tz_mismatch or holiday_type == 'category' or holiday_type != 'company'"
+      }
+    ],
+    "buttons": [
+      {
+        "type": "button",
+        "id": "action_confirm",
+        "label": "Confirm",
+        "style": "primary",
+        "invisible": "state != 'draft' or not active",
+        "steps": [
+          {
+            "do": "set",
+            "field": "state",
+            "value": "'confirm'"
+          },
+          {
+            "do": "set",
+            "when": "validation_type == 'no_validation'",
+            "field": "state",
+            "value": "'validate'"
+          },
+          {
+            "do": "save"
+          },
+          {
+            "do": "say",
+            "when": "state == 'confirm'",
+            "message": "Sent to the approver.",
+            "tone": "success"
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "action_approve",
+        "label": "Approve",
+        "style": "primary",
+        "invisible": "not active or not can_approve or state != 'confirm'",
+        "steps": [
+          {
+            "do": "set",
+            "when": "validation_type == 'both'",
+            "field": "state",
+            "value": "'validate1'"
+          },
+          {
+            "do": "set",
+            "when": "validation_type != 'both'",
+            "field": "state",
+            "value": "'validate'"
+          },
+          {
+            "do": "call",
+            "action": "leave_approved"
+          },
+          {
+            "do": "save"
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "action_validate",
+        "label": "Validate",
+        "style": "primary",
+        "invisible": "state != 'validate1'",
+        "steps": [
+          {
+            "do": "set",
+            "field": "state",
+            "value": "'validate'"
+          },
+          {
+            "do": "call",
+            "action": "leave_approved"
+          },
+          {
+            "do": "save"
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "action_refuse",
+        "label": "Refuse",
+        "invisible": "not active or not can_approve or state not in ['confirm', 'validate1', 'validate']",
+        "steps": [
+          {
+            "do": "call",
+            "action": "leave_refused"
+          },
+          {
+            "do": "set",
+            "field": "state",
+            "value": "'refuse'"
+          },
+          {
+            "do": "save"
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "action_cancel",
+        "label": "Cancel",
+        "invisible": "not active or not can_cancel",
+        "steps": [
+          {
+            "do": "open",
+            "page": "real-time-off-cancel",
+            "as": "dialog",
+            "title": "Cancel Time Off",
+            "then": [
+              {
+                "do": "call",
+                "action": "leave_cancelled"
+              },
+              {
+                "do": "save"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "action_draft",
+        "label": "Mark as Draft",
+        "invisible": "not can_reset or state not in ['confirm', 'refuse']",
+        "steps": [
+          {
+            "do": "set",
+            "field": "state",
+            "value": "'draft'"
+          },
+          {
+            "do": "clear",
+            "field": "first_approver_id"
+          },
+          {
+            "do": "clear",
+            "field": "second_approver_id"
+          },
+          {
+            "do": "save"
+          }
+        ]
+      }
+    ],
+    "children": [
+      {
+        "type": "section",
+        "id": "col_left",
+        "style": "plain",
+        "columns": {
+          "wide": 12,
+          "medium": 12
+        },
+        "children": [
+          {
+            "type": "field",
+            "id": "f-display-name",
+            "field": "display_name",
+            "labels": "hidden",
+            "colspan": 12,
+            "invisible": "not holiday_status_id"
+          },
+          {
+            "type": "field",
+            "id": "f-mode",
+            "field": "holiday_type",
+            "label": "Mode",
+            "colspan": 12,
+            "readonly": "state not in ['confirm', 'draft']"
+          },
+          {
+            "type": "field",
+            "id": "f-mode-company",
+            "field": "mode_company_id",
+            "label": "Company",
+            "colspan": 12,
+            "invisible": "holiday_type != 'company'",
+            "readonly": "state not in ['confirm', 'draft']",
+            "required": "holiday_type == 'company'"
+          },
+          {
+            "type": "field",
+            "id": "f-category",
+            "field": "category_id",
+            "colspan": 12,
+            "invisible": "holiday_type != 'category'",
+            "readonly": "state not in ['confirm', 'draft']",
+            "required": "holiday_type == 'category'"
+          },
+          {
+            "type": "field",
+            "id": "f-department",
+            "field": "department_id",
+            "colspan": 12,
+            "invisible": "holiday_type != 'department'",
+            "readonly": "state in ['cancel', 'refuse', 'validate', 'validate1']",
+            "required": "holiday_type == 'department'"
+          },
+          {
+            "type": "field",
+            "id": "f-employee",
+            "field": "employee_id",
+            "colspan": 12,
+            "invisible": "holiday_type != 'employee' or state != 'validate' or not employee_id",
+            "readonly": "state in ['cancel', 'refuse', 'validate', 'validate1']"
+          },
+          {
+            "type": "field",
+            "id": "f-employees",
+            "field": "employee_ids",
+            "widget": "tags",
+            "colspan": 12,
+            "invisible": "holiday_type != 'employee' or (state == 'validate' and employee_id)",
+            "readonly": "state in ['cancel', 'refuse', 'validate', 'validate1']",
+            "required": "holiday_type == 'employee' and state in ['draft', 'cancel', 'refuse']"
+          },
+          {
+            "type": "field",
+            "id": "f-type",
+            "field": "holiday_status_id",
+            "colspan": 12,
+            "options": {
+              "create": false
+            },
+            "readonly": "state in ['cancel', 'refuse', 'validate', 'validate1']"
+          },
+          {
+            "type": "field",
+            "id": "f-date",
+            "field": "request_date_from",
+            "label": "Date",
+            "colspan": 8,
+            "invisible": "not request_unit_half and not request_unit_hours",
+            "readonly": "state not in ['draft', 'confirm']"
+          },
+          {
+            "type": "field",
+            "id": "f-period",
+            "field": "request_date_from_period",
+            "labels": "hidden",
+            "colspan": 4,
+            "invisible": "not request_unit_half",
+            "required": "request_unit_half",
+            "readonly": "state not in ['draft', 'confirm']"
+          },
+          {
+            "type": "field",
+            "id": "f-dates-from",
+            "field": "request_date_from",
+            "label": "Dates",
+            "colspan": 8,
+            "invisible": "request_unit_half or request_unit_hours",
+            "readonly": "state not in ['draft', 'confirm']",
+            "required": "not date_from or not date_to"
+          },
+          {
+            "type": "field",
+            "id": "f-dates-to",
+            "field": "request_date_to",
+            "labels": "hidden",
+            "colspan": 4,
+            "invisible": "request_unit_half or request_unit_hours",
+            "readonly": "state not in ['draft', 'confirm']",
+            "required": "not date_from or not date_to",
+            "validate": [
+              {
+                "holds": "request_date_to >= request_date_from",
+                "message": "The start date must be before or equal to the end date."
+              }
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-half",
+            "field": "request_unit_half",
+            "colspan": 6,
+            "invisible": "leave_type_request_unit == 'day'",
+            "readonly": "state not in ['draft', 'confirm']"
+          },
+          {
+            "type": "field",
+            "id": "f-hours",
+            "field": "request_unit_hours",
+            "colspan": 6,
+            "invisible": "leave_type_request_unit != 'hour'",
+            "readonly": "state not in ['draft', 'confirm']"
+          },
+          {
+            "type": "field",
+            "id": "f-hour-from",
+            "field": "request_hour_from",
+            "label": "From",
+            "colspan": 6,
+            "invisible": "not request_unit_hours",
+            "readonly": "state == 'validate'",
+            "required": "request_unit_hours"
+          },
+          {
+            "type": "field",
+            "id": "f-hour-to",
+            "field": "request_hour_to",
+            "label": "To",
+            "colspan": 6,
+            "invisible": "not request_unit_hours",
+            "readonly": "state == 'validate'",
+            "required": "request_unit_hours"
+          },
+          {
+            "type": "field",
+            "id": "f-duration-days",
+            "field": "number_of_days_display",
+            "label": "Duration",
+            "colspan": 8,
+            "options": {
+              "suffix": "Days"
+            },
+            "invisible": "request_unit_half or request_unit_hours"
+          },
+          {
+            "type": "field",
+            "id": "f-duration-hours-beside",
+            "field": "number_of_hours_text",
+            "labels": "hidden",
+            "colspan": 4,
+            "invisible": "leave_type_request_unit != 'hour' or request_unit_half or request_unit_hours"
+          },
+          {
+            "type": "field",
+            "id": "f-duration-hours",
+            "field": "number_of_hours_text",
+            "label": "Duration",
+            "colspan": 12,
+            "invisible": "leave_type_request_unit != 'hour' or not (request_unit_half or request_unit_hours)"
+          },
+          {
+            "type": "field",
+            "id": "f-overtime",
+            "field": "employee_overtime",
+            "colspan": 12,
+            "options": {
+              "suffix": "hours"
+            },
+            "invisible": "not employee_id or not overtime_deductible or employee_overtime <= 0"
+          },
+          {
+            "type": "field",
+            "id": "f-name",
+            "field": "name",
+            "colspan": 12,
+            "placeholder": "Add a description..."
+          },
+          {
+            "type": "field",
+            "id": "f-document",
+            "field": "supported_attachment_ids",
+            "label": "Supporting Document",
+            "colspan": 12,
+            "invisible": "not leave_type_support_document or state not in ['draft', 'confirm', 'validate1']"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "col_right",
+        "style": "plain",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-stats",
+            "field": "leave_stats",
+            "labels": "hidden",
+            "options": {
+              "toolbar": false
+            }
+          }
+        ]
+      },
+      {
+        "type": "text",
+        "id": "duration_warning",
+        "style": "note",
+        "text": "You can only take this time off in whole days, so if your schedule has half days, it won't be used efficiently.",
+        "invisible": "not leave_type_increases_duration"
+      }
+    ],
+    "sidePanel": {
+      "type": "slot",
+      "id": "chatter",
+      "name": "chatter"
+    }
+  }
+}

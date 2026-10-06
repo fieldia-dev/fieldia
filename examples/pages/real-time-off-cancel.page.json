@@ -1,0 +1,22 @@
+{
+  "fieldia": "0.1",
+  "id": "real-time-off-cancel",
+  "title": "Cancel Time Off",
+  "data": { "kind": "record", "model": "hr.holidays.cancel.leave" },
+  "maxWidth": "narrow",
+  "fields": {
+    "reason": { "type": "text", "label": "Reason", "required": true }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "wizard",
+    "children": [
+      {
+        "type": "section",
+        "id": "g-reason",
+        "style": "plain",
+        "children": [{ "type": "field", "id": "f-reason", "field": "reason", "placeholder": "Provide a reason to delete an approved time off" }]
+      }
+    ]
+  }
+}
