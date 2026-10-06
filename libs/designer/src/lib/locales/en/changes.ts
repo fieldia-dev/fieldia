@@ -49,7 +49,8 @@ export const changes = {
   filesUpTo: (name: string, most: number) => `“${name}”: up to ${most} files`,
   filesAtLeast: (name: string, least: number) => `“${name}”: at least ${least} files`,
   filesAny: (name: string) => `“${name}”: any number of files`,
-  filesShownAs: (name: string, thumbnails: boolean) => `“${name}”: chosen files shown as ${thumbnails ? 'thumbnails' : 'a list'}`,
+  filesShownAs: (name: string, as: 'list' | 'thumbnails' | 'cards') => `“${name}”: chosen files shown as ${as === 'list' ? 'a list' : as}`,
+  filesSwitch: (name: string, on: boolean) => `“${name}”: people can ${on ? '' : 'no longer '}switch how chosen files show`,
   camera: (name: string, front: boolean) => `“${name}”: phones offer the ${front ? 'front' : 'rear'} camera`,
   noCamera: (name: string) => `“${name}”: phones no longer offer the camera`,
   // ---- a sheet's header, a list

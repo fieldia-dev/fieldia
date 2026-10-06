@@ -1,12 +1,15 @@
 import { validatePage, type Field, type FieldNode, type Page, type SectionNode } from '@fieldia/core';
 import { blankPage, createDesigner, pageChanges } from './designer';
+import { ar } from './locales/ar';
 import { choose, mount, type } from './test-editor';
 
 /**
  * A file upload or an image that takes several files: "More than one file",
- * then as few and as many as it takes, how the chosen files show, and — for an
- * image — a phone's camera. Set on the field's card and in the side panel, the
- * same controls in both; said in words when the page is published.
+ * then as few and as many as it takes, how the chosen files show — a list,
+ * thumbnails or cards, and whether people can switch — and, for an image, a
+ * phone's camera. Set on the field's card and in the side panel, the same
+ * controls in both; said in words when the page is published, in English and
+ * in Arabic.
  */
 
 const nodes = (page: Page) => (page.layout as unknown as { children: SectionNode[] }).children.flatMap((s) => s.children as FieldNode[]);
@@ -75,6 +78,9 @@ describe('several files, on the designer', () => {
     expect(said(() => designer.setFileRules(id, { minFiles: 2 }))).toEqual(['“Documents”: from 2 to 5 files']);
     expect(said(() => designer.setFileRules(id, { minFiles: null, maxFiles: null }))).toEqual(['“Documents”: any number of files']);
     expect(said(() => designer.setWidgetOptions(id, { files: 'thumbnails' }))).toEqual(['“Documents”: chosen files shown as thumbnails']);
+    expect(said(() => designer.setWidgetOptions(id, { files: 'cards' }))).toEqual(['“Documents”: chosen files shown as cards']);
+    expect(said(() => designer.setWidgetOptions(id, { filesSwitch: true }))).toEqual(['“Documents”: people can switch how chosen files show']);
+    expect(said(() => designer.setWidgetOptions(id, { files: null, filesSwitch: null }))).toEqual(['“Documents”: chosen files shown as a list', '“Documents”: people can no longer switch how chosen files show']);
     expect(said(() => designer.setFileRules(id, { multiple: false }))).toEqual(['“Documents” takes one file again']);
     const photos = made('image');
     const before = photos.page();
@@ -131,16 +137,34 @@ describe('several files, on the card and in the side panel', () => {
     expect(card(host).querySelector('.fd-file-pick')?.textContent).toContain('Add files');
   });
 
-  it('shows chosen files as a list or as thumbnails', () => {
+  it('shows chosen files as a list, as thumbnails or as cards', () => {
     const { id, host, page } = picked();
     const group = named(panel(host), 'Show chosen files as')[0];
     const choice = (words: string) => [...group.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === words) as HTMLButtonElement;
+    expect([...group.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['List', 'Thumbnails', 'Cards']);
     expect(choice('List').getAttribute('aria-pressed')).toBe('true');
     choice('Thumbnails').click();
     expect(nodeOf(page(), id).options).toEqual({ files: 'thumbnails' });
     expect(card(host).querySelector('.fd-file')?.classList.contains('fd-files-thumbs')).toBe(true);
+    choice('Cards').click();
+    expect(nodeOf(page(), id).options).toEqual({ files: 'cards' });
+    expect(choice('Cards').getAttribute('aria-pressed')).toBe('true');
+    expect(card(host).querySelector('.fd-file')?.classList.contains('fd-files-cards')).toBe(true);
     // Back to how a file upload shows them anyway: nothing kept.
     choice('List').click();
+    expect(nodeOf(page(), id).options).toBeUndefined();
+  });
+
+  it('lets people switch how the files show, once in the panel and on the card', () => {
+    const { id, host, page } = picked('image');
+    const switches = named<HTMLButtonElement>(panel(host), 'People can switch');
+    expect(switches).toHaveLength(1);
+    expect([switches[0].getAttribute('role'), switches[0].getAttribute('aria-checked')]).toEqual(['switch', 'false']);
+    switches[0].click();
+    expect(nodeOf(page(), id).options).toEqual({ filesSwitch: true });
+    expect(named<HTMLButtonElement>(card(host), 'People can switch')[0].getAttribute('aria-checked')).toBe('true');
+    // Off: nothing kept.
+    named<HTMLButtonElement>(card(host), 'People can switch')[0].click();
     expect(nodeOf(page(), id).options).toBeUndefined();
   });
 
@@ -173,5 +197,26 @@ describe('several files, on the card and in the side panel', () => {
     designer.setFileRules(id, { maxSize: 2 * 1048576 });
     const largest = named<HTMLSelectElement>(panel(host), 'Largest file')[0];
     expect([largest.value, largest.selectedOptions[0].textContent]).toEqual(['2097152', '2 MB']);
+  });
+});
+
+describe('how the files show, in Arabic', () => {
+  const q = (name: string) => `«⁨${name}⁩»`;
+  it('offers a list, thumbnails and cards, and people switching, in Arabic', () => {
+    const designer = createDesigner({ page: blankPage('screen', 'زيارة', { locale: 'ar' }), locale: 'ar' });
+    const id = designer.addQuestion('file', { parent: 'section-1' }) as string;
+    designer.updateQuestion(id, { label: 'المستندات' });
+    const { host } = mount(designer, { mode: 'simple' });
+    designer.select(id);
+    const panel = host.querySelector('.fd-properties') as HTMLElement;
+    const group = panel.querySelector('[aria-label="عرض الملفات المختارة بشكل"]') as HTMLElement;
+    expect([...group.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['قائمة', 'صور مصغّرة', 'بطاقات']);
+    expect(panel.querySelector('[role="switch"][aria-label="يمكن للناس تبديل العرض"]')).not.toBeNull();
+    const before = designer.getPage();
+    designer.setWidgetOptions(id, { files: 'cards', filesSwitch: true });
+    expect(pageChanges(before, designer.getPage(), ar)).toEqual([`${q('المستندات')}: تُعرض الملفات المختارة بطاقاتٍ`, `${q('المستندات')}: يمكن للناس تبديل طريقة عرض الملفات المختارة`]);
+    const after = designer.getPage();
+    designer.setWidgetOptions(id, { filesSwitch: null });
+    expect(pageChanges(after, designer.getPage(), ar)).toEqual([`${q('المستندات')}: لم يعد بإمكان الناس تبديل طريقة عرض الملفات المختارة`]);
   });
 });
