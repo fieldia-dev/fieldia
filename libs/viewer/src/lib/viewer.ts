@@ -311,11 +311,11 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const watch = (update: Updater) => updaters.push(scope.root ? update : () => update(form.getState()));
 
 
-    /** A field with its label, help and messages. `labels` is where labels sit where it is put; the title's own fields take none. */
-    function fieldItem(node: FieldNode, labels?: LabelPlace): HTMLElement {
+    /** A field with its label, help and messages. `place` is where labels sit where it is put; the title's own fields take none. */
+    function fieldItem(node: FieldNode, place?: LabelPlace): HTMLElement {
       const def = page.fields[node.field];
       const id = uid(node.id);
-      const labelsAt = labelPlace(node, def.type, labels);
+      const labelsAt = labelPlace(node, def.type, place);
       const wrapper = el('div', { class: 'fd-field', 'data-node': node.id, 'data-field': node.field, 'data-path': scope.path + node.field, 'data-type': def.type, 'data-labels': labelsAt });
       if (node.colspan) wrapper.style.setProperty('--fd-span', String(node.colspan));
       const labelText = node.label ?? def.label;
@@ -342,7 +342,12 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         label.addEventListener('click', () => widget.focus());
       }
       const helpText = node.help ?? def.help;
-      const help = helpText ? el('div', { class: 'fd-help', id: `${id}-help` }, helpText) : null;
+      // Under the field, behind a (?) by its label, or both: the field's own way, else the page's.
+      const helpWay = node.helpShown ?? page.look?.helpShown ?? 'below';
+      const help = helpText && helpWay !== 'tooltip' ? el('div', { class: 'fd-help', id: `${id}-help` }, helpText) : null;
+      const tip = helpText && helpWay !== 'below' ? helpTip(`${id}-tip`, helpText, fill(labels.helpFor, { label: labelText })) : null;
+      // In the label, as Flectra's: a press on it does not move into the box. A label out of sight keeps it after the box.
+      if (tip) (labelsAt === 'hidden' ? widget.element.after(tip.element) : label.append(tip.element));
       // Not an alert of its own: a refused save is announced once, naming every field to look at.
       const error = el('div', { class: 'fd-error', id: `${id}-error`, hidden: '' });
       // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
@@ -388,11 +393,39 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
           readonly: shown.readonly || locked || scope.locked(),
           required: shown.required,
           invalid: !!message,
-          describedBy: [help?.id, message ? error.id : undefined, warned ? warning.id : undefined].filter(Boolean).join(' ') || undefined,
+          describedBy: [help?.id ?? tip?.bubble.id, message ? error.id : undefined, warned ? warning.id : undefined].filter(Boolean).join(' ') || undefined,
         });
       };
       watch(update);
       return wrapper;
+    }
+
+    /** A (?) that shows a field's help in a bubble: on hover, on focus, or kept open by a press — a tap — and gone with Escape. */
+    function helpTip(bubbleId: string, text: string, name: string): { element: HTMLElement; bubble: HTMLElement } {
+      const bubble = el('span', { class: 'fd-help-bubble', role: 'tooltip', id: bubbleId, hidden: '' }, text);
+      const button = el('button', { type: 'button', class: 'fd-help-tip', 'aria-label': name, 'aria-expanded': 'false', 'aria-controls': bubbleId }, '?');
+      let kept = false;
+      const show = (open: boolean) => {
+        bubble.hidden = !open;
+        button.setAttribute('aria-expanded', String(open));
+      };
+      button.addEventListener('mouseenter', () => show(true));
+      button.addEventListener('mouseleave', () => show(kept));
+      button.addEventListener('focus', () => show(true));
+      button.addEventListener('blur', () => ((kept = false), show(false)));
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        kept = !kept;
+        show(kept);
+      });
+      button.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || bubble.hidden) return;
+        // Escape closes the bubble, not the dialog the form is in.
+        event.stopPropagation();
+        kept = false;
+        show(false);
+      });
+      return { element: el('span', { class: 'fd-help-tip-wrap' }, button, bubble), bubble };
     }
 
     function hideWhen(element: HTMLElement, id: string) {

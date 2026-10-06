@@ -26,6 +26,7 @@ export const de: ViewerLabels = {
   close: 'Schließen',
   discardChanges: 'Ihre Änderungen verwerfen?',
   dismiss: 'Ausblenden',
+  helpFor: 'Hilfe zu {label}',
   retry: 'Erneut versuchen',
   notSaved: 'Nicht gespeichert',
   notSent: 'Nicht gesendet',

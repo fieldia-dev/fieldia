@@ -130,6 +130,12 @@ const SKINS_CSS = /* css */ `
 .fd-form[data-fd-skin="outlined"] .fd-field.fd-required > .fd-label::after { content: ""; }
 .fd-form[data-fd-skin="outlined"] .fd-field.fd-required > .fd-label::before { content: "* "; color: var(--fd-error); }
 .fd-help { color: var(--fd-muted); font-size: 12.5px; }
+/* A field's help behind a (?) by its label: a bubble on hover, focus or a tap. */
+.fd-help-tip-wrap { position: relative; display: inline-flex; vertical-align: 0.05em; margin-inline-start: 6px; }
+.fd-help-tip { all: unset; box-sizing: border-box; display: inline-grid; place-items: center; width: 16px; height: 16px; border: 1px solid var(--fd-border); border-radius: 50%; color: var(--fd-muted); font-size: 11px; font-weight: 600; line-height: 1; cursor: help; }
+.fd-help-tip:hover, .fd-help-tip[aria-expanded="true"] { color: var(--fd-accent); border-color: var(--fd-accent); }
+.fd-help-tip:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
+.fd-help-bubble { position: absolute; inset-block-start: calc(100% + 6px); inset-inline-start: -8px; z-index: 30; width: max-content; max-width: min(280px, 70vw); padding: 6px 9px; border-radius: 6px; background: var(--fd-text); color: var(--fd-surface); font-size: 12.5px; font-weight: 400; line-height: 1.4; white-space: normal; box-shadow: 0 6px 18px rgb(0 0 0 / 0.18); }
 /*
  * A page's words run the way they are written — a sentence left in English on
  * an Arabic page keeps its full stop at its end — and line up with the form.

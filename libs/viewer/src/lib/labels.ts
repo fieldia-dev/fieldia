@@ -33,6 +33,8 @@ export interface ViewerLabels {
   discardChanges: string;
   /** The × on an alert that may be dismissed. */
   dismiss: string;
+  /** The (?) beside a label that shows its help: its name, as a screen reader says it. */
+  helpFor: string;
   /** Saving again after a save failed. */
   retry: string;
   notSaved: string;
@@ -127,6 +129,7 @@ const en: ViewerLabels = {
   close: 'Close',
   discardChanges: 'Discard your changes?',
   dismiss: 'Dismiss',
+  helpFor: 'Help for {label}',
   retry: 'Retry',
   notSaved: 'Not saved',
   notSent: 'Not sent',

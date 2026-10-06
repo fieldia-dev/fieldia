@@ -26,6 +26,7 @@ export const ar: ViewerLabels = {
   close: 'إغلاق',
   discardChanges: 'هل تريد تجاهل تعديلاتك؟',
   dismiss: 'إخفاء',
+  helpFor: 'مساعدة حول {label}',
   retry: 'أعد المحاولة',
   notSaved: 'لم يُحفظ',
   notSent: 'لم يُرسل',
