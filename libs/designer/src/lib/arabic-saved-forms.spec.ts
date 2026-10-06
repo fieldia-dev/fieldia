@@ -8,6 +8,10 @@ import { mount, openTab, tile } from './test-editor';
 /** Each kind of part's look, and a saved form placed in another, with the designer in Arabic: the Look tab, the tile, the frame, the panel, the checks and what is refused. */
 
 const q = (name: string) => `«⁨${name}⁩»`;
+// Like the English saved-form tests: each mounts the whole screen editor and draws the saved forms with
+// the viewer, so each is given room on a loaded machine.
+jest.setTimeout(20_000);
+
 const settle = async () => {
   for (let i = 0; i < 6; i++) await new Promise((resolve) => setTimeout(resolve, 0));
 };
