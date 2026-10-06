@@ -720,19 +720,12 @@ button.fd-chip-label:hover { text-decoration: underline; }
   display: grid; justify-items: center; gap: 8px; pointer-events: none;
 }
 .fd-say {
-  --fd-tone: var(--fd-info); pointer-events: auto; display: flex; align-items: center; gap: 8px; max-width: 420px;
+  pointer-events: auto; display: flex; align-items: center; gap: 8px; max-width: 420px;
   padding-block: 8px; padding-inline: 14px 6px; border: 1px solid var(--fd-border); border-inline-start: 4px solid var(--fd-tone);
   border-radius: max(var(--fd-control-radius), 6px); background: var(--fd-surface); color: var(--fd-text);
   box-shadow: 0 8px 24px rgba(15, 20, 25, 0.25); font-size: 13.5px;
 }
-.fd-say[data-tone="success"] { --fd-tone: var(--fd-success); }
-.fd-say[data-tone="warning"] { --fd-tone: var(--fd-warning); }
-.fd-say[data-tone="danger"] { --fd-tone: var(--fd-error); }
-.fd-say[data-tone="muted"] { --fd-tone: var(--fd-muted); }
 .fd-say > span { flex: 1 1 auto; min-width: 0; }
-.fd-say-close { border: none; background: none; color: var(--fd-muted); cursor: pointer; font: inherit; font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
-.fd-say-close:hover { color: var(--fd-text); }
-.fd-say-close:focus-visible { outline: 2px solid var(--fd-focus); }
 /* A button whose steps are running: busy, a turning ring beside its words, not pressed again. */
 .fd-button[aria-busy="true"], .fd-stat[aria-busy="true"] { cursor: progress; }
 .fd-button[aria-busy="true"]::after {

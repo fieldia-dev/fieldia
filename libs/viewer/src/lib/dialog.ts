@@ -48,6 +48,9 @@ export interface FormPanelOptions extends Omit<FormDialogOptions, 'size'> {
 
 let dialogs = 0;
 
+/** The first box to type or choose in, where a page opened takes the focus. */
+export const FIRST_FIELD = 'input:not([type="hidden"]), select, textarea, [contenteditable="true"]';
+
 /** The dialogs' way to make an element of a document: a tag, its attributes, and its words. */
 const maker =
   (doc: Document) =>
@@ -124,7 +127,7 @@ function openForm(options: FormDialogOptions, shape: string, panel = false): Pro
   if (options.recompute) recalculate(handle.form, options.page.fields, options.recompute, () => done);
 
   // Into the dialog: its first field, once the record is in, or the dialog itself meanwhile.
-  const firstField = () => body.querySelector<HTMLElement>('input:not([type="hidden"]), select, textarea, [contenteditable="true"]');
+  const firstField = () => body.querySelector<HTMLElement>(FIRST_FIELD);
   (firstField() ?? box).focus();
   void handle.form.settled().then(() => {
     if (doc.activeElement === box || !box.contains(doc.activeElement)) firstField()?.focus();

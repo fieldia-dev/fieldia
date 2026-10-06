@@ -1,5 +1,5 @@
 import type { OpenRequest, OpenResult, Page, Values } from '@fieldia/core';
-import { openFormDialog, openFormPanel, type FormDialogResult } from './dialog';
+import { FIRST_FIELD, openFormDialog, openFormPanel, type FormDialogResult } from './dialog';
 import { findPage, nameFieldOf } from './related';
 import { mountViewer, type ViewerOptions } from './viewer';
 
@@ -17,9 +17,6 @@ export interface Opener {
   /** Why a page cannot be opened: the app has none by that id. */
   missing(page: string): string;
 }
-
-/** The first box to type or choose in, where a page opened takes the focus. */
-const FIRST = 'input:not([type="hidden"]), select, textarea, [contenteditable="true"]';
 
 /**
  * Open a page as a step asks, for the viewer's host: the app's own way first
@@ -89,6 +86,6 @@ function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResu
     const leave = () => void opened.form.settled().then(() => end(true));
     opened.on('save', leave);
     opened.on('send', leave);
-    (opened.element.querySelector<HTMLElement>(FIRST) ?? back).focus();
+    (opened.element.querySelector<HTMLElement>(FIRST_FIELD) ?? back).focus();
   });
 }
