@@ -385,9 +385,8 @@
         },
         {
           "feature": "Control: Add a product / Add a section / Add a note",
-          "status": "approximated",
-          "how": "the grid's own add buttons; options.addLabel is not taken by the grid, so the first reads 'Add a line'",
-          "needs": "the grid honouring addLabel (and labels for its section and note buttons)"
+          "status": "covered",
+          "how": "the grid's add buttons named by the node: addLabel \"Add a product\"; Add a section and Add a note are the defaults (addSectionLabel, addNoteLabel would rename them)"
         },
         {
           "feature": "Catalog button in the lines' control row (action_add_from_catalog)",

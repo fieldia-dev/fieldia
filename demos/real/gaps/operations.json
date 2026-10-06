@@ -548,7 +548,7 @@
         {
           "feature": "Operations editable list (move_ids_without_package, stock_move_one2many, add-label \"Add a Product\")",
           "status": "approximated",
-          "how": "grid; the grid ignores the addLabel option (\"Add a line\"); the moves' details dialog of stock_move_one2many is missing"
+          "how": "grid, its add button \"Add a Product\" (addLabel); the moves' details dialog of stock_move_one2many is missing"
         },
         {
           "feature": "Columns: Product, Description, Date Scheduled, Deadline, Kit, Demand, Forecast, Quantity, Unit, On-Hand Now, On-Hand @ Doc Date, Analytic, Picked, Serial Numbers; optional show/hide as Flectra",

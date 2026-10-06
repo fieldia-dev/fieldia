@@ -758,10 +758,15 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     button.addEventListener('click', () => addAndEdit(values));
     adds.append(button);
   };
-  addButton(labels.addLine, {}, 'line');
+  // The buttons' words, as the plain table takes them from the node's options.
+  const words = (key: string) => {
+    const said = node.options?.[key];
+    return typeof said === 'string' && said.trim() ? said : null;
+  };
+  addButton(words('addLabel') ?? labels.addLine, {}, 'line');
   if (kinds) {
-    addButton(labels.addSection, { [kinds.field]: kinds.section ?? 'section' }, 'section');
-    addButton(labels.addNote, { [kinds.field]: kinds.note ?? 'note' }, 'note');
+    addButton(words('addSectionLabel') ?? labels.addSection, { [kinds.field]: kinds.section ?? 'section' }, 'section');
+    addButton(words('addNoteLabel') ?? labels.addNote, { [kinds.field]: kinds.note ?? 'note' }, 'note');
   }
 
   // A focused cell that has no editor still answers keys: Space ticks yes/no,

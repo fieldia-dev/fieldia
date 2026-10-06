@@ -212,6 +212,14 @@ describe('one2many lines with sections and notes', () => {
     expect([...widget.element.querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['', 'Product', 'Description', '']);
   });
 
+  it('names its add buttons as the page says: a line, a section and a note', () => {
+    const named = JSON.parse(JSON.stringify(sectioned)) as Page & { layout: { children: FieldNode[] } };
+    named.layout.children[0] = { ...named.layout.children[0], options: { addLabel: 'Add a product', addSectionLabel: 'Add a heading', addNoteLabel: 'Add a remark' } };
+    const form = createForm({ page: named });
+    const widget = createWidget({ form, name: 'line_ids', field: named.fields['line_ids'] as Field, node: named.layout.children[0], id: 'fd-lines', document, labels: WIDGET_LABELS.en });
+    expect([...widget.element.querySelectorAll('.fd-lines-add')].map((b) => b.textContent)).toEqual(['+ Add a product', '+ Add a heading', '+ Add a remark']);
+  });
+
   it('offers no section or note buttons to lines without kinds', () => {
     const { el } = mount();
     expect(el.querySelectorAll('.fd-lines-add')).toHaveLength(1);

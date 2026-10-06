@@ -105,6 +105,8 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-partner-outgoing')).toBeHidden();
       await expect(node(page, 'f-location')).toBeHidden();
       await expect(cell(page, 'f-moves', 2, 'product_uom_qty')).toHaveText('16.00');
+      // The grid's add button in the page's words, as Flectra's.
+      await expect(node(page, 'f-moves').locator('.fd-lines-add')).toHaveText(['+ Add a Product']);
       if (variant === 'plain') await screen(page, 'real-transfer');
 
       await page.getByRole('button', { name: 'Mark as Todo' }).click();

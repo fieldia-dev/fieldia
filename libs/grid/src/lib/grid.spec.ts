@@ -427,6 +427,13 @@ describe('the grid with sections and notes', () => {
     expect(box.querySelector('.ag-row[row-index="2"]')?.classList.contains('fd-grid-note')).toBe(true);
   });
 
+  it('names its add buttons as the page says: a line, a section and a note', async () => {
+    const named = JSON.parse(JSON.stringify(sectioned));
+    named.layout.children[0].children[1].options = { addLabel: 'Add a product', addSectionLabel: 'Add a heading', addNoteLabel: 'Add a remark' };
+    const { box } = await mount(named, withKinds);
+    expect([...box.querySelectorAll('.fd-lines-add')].map((b) => b.textContent)).toEqual(['+ Add a product', '+ Add a heading', '+ Add a remark']);
+  });
+
   it('adds a section from its button and edits its heading in place', async () => {
     const { box, form, api } = await mount(sectioned, withKinds);
     expect([...box.querySelectorAll('.fd-lines-add')].map((b) => b.textContent)).toEqual(['+ Add a line', '+ Add a section', '+ Add a note']);

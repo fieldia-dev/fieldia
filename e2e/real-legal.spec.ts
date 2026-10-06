@@ -264,7 +264,9 @@ for (const variant of VARIANTS) {
       if (variant === 'plain') await screen(page, 'real-survey');
 
       // A question added at the end, typed in its cell.
-      await node(page, 'f-questions').getByRole('button', { name: 'Add a line' }).click();
+      // Named as Flectra names them: Add a question, Add a section.
+      await expect(node(page, 'f-questions').locator('.fd-lines-add')).toHaveText(['+ Add a question', '+ Add a section', '+ Add a note']);
+      await node(page, 'f-questions').getByRole('button', { name: 'Add a question' }).click();
       await expect(gridEditor(page, 'f-questions')).toBeFocused();
       await page.keyboard.type('Would you recommend us to a colleague?');
       // Done typing, the person clicks away: the line is kept.
