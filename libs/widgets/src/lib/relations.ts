@@ -43,6 +43,8 @@ function combobox(options: {
   create?: (text: string) => Promise<RelatedRecord>;
   /** How many found records the list shows; a search may find one more, to tell there are others. */
   shown?: number;
+  /** The empty box's words: the page's own, else "Search…". */
+  placeholder?: string;
   /** Further choices at the end of the list: each acts on the typed text and may hand back a record to pick. */
   more?: (typed: string, overflow: boolean) => { label: string; act: (typed: string) => Promise<RelatedRecord | null> }[];
 }): Combobox {
@@ -54,7 +56,7 @@ function combobox(options: {
   input.setAttribute('aria-autocomplete', 'list');
   input.setAttribute('aria-expanded', 'false');
   input.setAttribute('aria-controls', listId);
-  input.placeholder = labels.search;
+  input.placeholder = options.placeholder || labels.search;
   const list = doc.createElement('ul');
   list.id = listId;
   list.className = 'fd-listbox';
@@ -246,6 +248,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
     pick: (record) => form.setValue(name, record),
     onCommitEmpty: () => form.setValue(name, null),
     create: creator(form, name, node),
+    placeholder: node.placeholder,
     // With dialogs: make a record in its own page, or pick from a full list when the short one has no room.
     more: (typed, overflow) => {
       if (!dialogs || readonly) return [];
@@ -326,6 +329,7 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
       if (records.length) form.setValue(name, records.slice(0, -1));
     },
     create: creator(form, name, node),
+    placeholder: node.placeholder,
     // With dialogs: pick from a full list when the short one has no room.
     more: (_typed, overflow) => (dialogs && overflow ? [{ label: labels.searchMore, act: () => dialogs.searchMore({ title: field.label, search: (query, limit) => form.search(name, query, limit) }) }] : []),
   });
@@ -419,6 +423,7 @@ export const charTagsWidget: WidgetFactory = ({ form, name, node, id, document, 
     document,
     id,
     labels,
+    placeholder: node.placeholder,
     search: async (query) => {
       const taken = new Set(current().map((t) => t.toLowerCase()));
       const wanted = query.trim().toLowerCase();
@@ -547,6 +552,7 @@ export const referenceWidget: WidgetFactory = (context: WidgetContext) => {
     document,
     id,
     labels,
+    placeholder: context.node.placeholder,
     search: (query) => (model ? form.search(name, query, 8, { model }) : Promise.resolve([])),
     pick: (record) => form.setValue(name, { model, id: record.id, label: record.label }),
     onCommitEmpty: () => form.setValue(name, null),

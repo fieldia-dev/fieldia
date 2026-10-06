@@ -13,6 +13,29 @@ describe('what the browser may fill in', () => {
   });
 });
 
+describe('the page’s placeholder', () => {
+  it('is shown by a link and by tags, instead of “Search…”', () => {
+    const box = (el: HTMLElement) => el.querySelector('input') as HTMLInputElement;
+    expect(box(mountKind({ type: 'many2one', relation: 'partner' }).el).placeholder).toBe('Search…');
+    expect(box(mountKind({ type: 'many2one', relation: 'partner' }, { placeholder: 'Company Name…' }).el).placeholder).toBe('Company Name…');
+    expect(box(mountKind({ type: 'many2many', relation: 'tag' }, { placeholder: 'e.g. VIP' }).el).placeholder).toBe('e.g. VIP');
+  });
+
+  it('is shown by a formatted text while it is empty and can be typed in', () => {
+    const { el, form, refresh } = mountKind({ type: 'html' }, { placeholder: 'Internal notes…' });
+    const area = el.querySelector('.fd-richtext') as HTMLElement;
+    expect(area.getAttribute('data-placeholder')).toBe('Internal notes…');
+    expect(area.getAttribute('aria-placeholder')).toBe('Internal notes…');
+    expect(area.classList.contains('fd-blank')).toBe(true);
+    form.setValue('x', '<p>Gate code 4411</p>');
+    expect(area.classList.contains('fd-blank')).toBe(false);
+    form.setValue('x', null);
+    refresh({ readonly: true });
+    // Read-only and empty, it draws nothing: the stylesheet shows the words only where it can be typed in.
+    expect(area.getAttribute('contenteditable')).toBe('false');
+  });
+});
+
 describe('an empty date', () => {
   it('is marked blank, so read-only it draws no mask; with a value it is not', () => {
     for (const type of ['date', 'datetime']) {

@@ -936,8 +936,8 @@
         },
         {
           "feature": "Notes tab: description html, placeholder \"Internal Notes\"",
-          "status": "approximated",
-          "how": "html field; the editor shows no placeholder"
+          "status": "covered",
+          "how": "html field showing the node's placeholder while empty"
         },
         {
           "feature": "Instructions tab: PDF / Google Slide / Text (radio, no label)",

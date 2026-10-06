@@ -78,6 +78,10 @@ for (const variant of VARIANTS) {
       const { problems } = await open(page, variant, 'page=real-contact&record=7002&skin=underline');
       await expect(node(page, 'f-parent').getByRole('combobox')).toHaveValue('Nile Crest Developments');
       await expect(node(page, 'f-function')).toBeVisible();
+      // The page's placeholders, on its links, tags and notes as on its text boxes.
+      await expect(node(page, 'f-parent').getByRole('combobox')).toHaveAttribute('placeholder', 'Company Name...');
+      await expect(node(page, 'f-title').getByRole('combobox')).toHaveAttribute('placeholder', 'e.g. Mister');
+      await expect(node(page, 'f-tags').getByRole('combobox')).toHaveAttribute('placeholder', 'e.g. "B2B", "VIP", "Consulting", ...');
       await expect(node(page, 'f-street').locator('input')).toHaveValue('Plot 112, South 90th Street');
       await expect(node(page, 'f-street').locator('input')).not.toBeEditable();
       await expect(node(page, 'f-vat').locator('input')).not.toBeEditable();
@@ -87,6 +91,11 @@ for (const variant of VARIANTS) {
       await tab(page, 'tab-sales-purchases').click();
       await expect(node(page, 'f-pricelist')).toBeHidden();
       await expect(node(page, 't-parent-pricelists')).toBeVisible();
+      await tab(page, 'tab-internal-notes').click();
+      const notes = node(page, 'f-comment').locator('.fd-richtext');
+      await expect(notes).toHaveText('');
+      expect(await notes.evaluate((el) => getComputedStyle(el, '::before').content)).toBe('"Internal notes..."');
+      if (variant === 'plain') await screen(page, 'real-crm-contact-person-notes');
       if (variant === 'plain') {
         await page.setViewportSize(PHONE);
         await expectNoSidewaysScroll(page);

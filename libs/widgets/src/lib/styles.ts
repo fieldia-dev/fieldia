@@ -435,6 +435,7 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-richtext-tool svg circle { fill: currentColor; stroke: none; }
 .fd-link-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; border: 1px solid var(--fd-border); border-block-end: none; background: var(--fd-surface); }
 .fd-link-row > .fd-input { flex: 1 1 200px; min-width: 0; }
+.fd-richtext.fd-blank[contenteditable="true"]::before { content: attr(data-placeholder); position: absolute; color: var(--fd-muted); opacity: 0.8; pointer-events: none; }
 .fd-richtext[contenteditable="false"] { background: transparent; border-color: transparent; padding-inline: 0; min-height: 0; }
 .fd-richtext p { margin: 0 0 6px; }
 .fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; min-height: 96px; }
