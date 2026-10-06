@@ -83,6 +83,57 @@ changes?" first when something was changed. A dialog opened from inside a
 panel sits above it; a panel opened from a panel stacks over it, the older one
 stepped back. A panel slides in only when the reader's system welcomes motion.
 
+## What a page's steps ask of the screen
+
+A page's buttons and moments run steps (see `@fieldia/core`'s “What a press or
+a moment does”). The viewer is their host: it draws what they ask for.
+
+- **A page opened** is found through `pages` by `{ id, version }` and opened in
+  a dialog, a side panel, or this form's place with Back over it — with the same
+  data source, pages, language, skin, look and `onAction`. Saved, its record
+  comes back (named by its page's title field, else `name`) for the step's
+  `into` and `then`; closed unsaved — Discard, ×, Escape, Back — the steps after
+  it stop. A page opened in place gives way back to the form once saved; Back
+  returns to the form as it was. A page your `pages` has none of stops the
+  steps with “The page “…” cannot be found.”, said as a toast. Each page opened
+  has a host of its own, so its steps run there, and a `close` step closes it
+  unsaved.
+- **Words said** are toasts at the foot of the screen, in their tone: one over
+  another, read out by a polite live region, going after a few seconds (not
+  while pointed at or focused), or with their ×. Your app's `stop` words come
+  as a warning; a step that cannot run here, or your `onAction` throwing, is
+  said too.
+- **A question** is the viewer's own box (Cancel, OK) or your `confirm`. A
+  button's `confirm` is asked once, by the form. Escape answers No and leaves
+  a dialog or panel under it open.
+- **A tab** a `goTo` names is shown, and `form.shown(tab)` runs its `show`
+  steps — as for a tab a person picks.
+- **A button** whose steps run is busy (`aria-busy`, a turning ring) and is not
+  run twice; a `check` or `save` that stops it takes the focus to the first
+  problem, as Save does.
+
+Do any of it your own way; what you leave out stays the viewer's:
+
+```ts
+const viewer = mountViewer(element, {
+  page,
+  dataSource,
+  pages,
+  onAction: async ({ action, values }) => {
+    if (action === 'check_stock') return { values: { price: await priceOf(values.product) }, say: 'In stock' };
+  },
+  host: { say: (message, tone) => myToasts.show(message, tone) },   // a Partial<ActionHost>
+  onOpen: (request) => (request.as === 'page' ? router.open(request) : undefined), // undefined: the viewer opens it
+});
+
+viewer.on('change', ({ field, value, by }) => {});   // and save, send, action, run, step, open
+viewer.setValues({ price: 380 });                    // the app's change: no change steps run for it
+await viewer.run([{ do: 'check' }, { do: 'save' }]); // steps, as a button would run them
+```
+
+A form made elsewhere and handed in as `form` keeps the host it was made with
+(`createForm({ host })`): the viewer gives its own only to a form it makes.
+
 ## Lists
 
 A page whose layout is a `list` shows its records as a table: pages, sorting,
@@ -94,7 +145,7 @@ page's buttons reach `onAction` with the chosen `recordIds`. See
 ## With no build step
 
 This package carries a `<script>` bundle that sets the global `Fieldia`
-(core, widgets and viewer; about 83 KB gzipped):
+(core, widgets and viewer; about 90 KB gzipped):
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@fieldia/viewer/bundle/fieldia.js"></script>

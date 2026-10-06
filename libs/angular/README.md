@@ -30,4 +30,25 @@ Custom fields can be Angular components (`fieldTypes`), slot content goes in
 as a signal. The viewer's options are inputs of the same names, but for the
 app's translator: `[translator]`, because a `[translate]` binding goes to the
 element's own HTML attribute. A list page opens a row through the
-`(openRecord)` output. MIT licensed.
+`(openRecord)` output.
+
+The form's events are outputs: `(fieldChange)` — not `(change)`, which on a
+component's element would hear its boxes' own change events too — `(save)`,
+`(send)`, `(step)` and `(run)`. An output cannot answer, so the app's answer to
+a button or a `call` step is the `[answer]` input; `(action)` still tells every
+call:
+
+```ts
+@Component({
+  imports: [FieldiaFormComponent],
+  template: `<fieldia-form [page]="page" [dataSource]="dataSource" [pages]="pages"
+    [answer]="answer" (fieldChange)="changed($event)" (save)="saved($event)" (run)="ran($event)" />`,
+})
+export class OrderComponent {
+  readonly answer = async ({ action, values }: ActionRequest) =>
+    action === 'check_stock' ? { values: { price: await priceOf(values['product']) } } : undefined;
+}
+```
+
+The viewer's `host` and `onOpen` are `[actionHost]` and `[openPage]`; the
+handle from `(ready)` has `on`, `setValues` and `run`. MIT licensed.

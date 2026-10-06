@@ -23,4 +23,25 @@ const dataSource = createMemoryDataSource();
 
 Custom fields can be Vue components (`fieldTypes`), slot content goes in named
 slots, and `useFormState(form)` gives you a form's state as a ref. A list page
-opens a row through the `@open-record` event. MIT licensed.
+opens a row through the `@open-record` event.
+
+The form's events are emitted — `change`, `save`, `send`, `step`, `run` — and
+`@action`'s handler may answer a button or a `call` step (it is the `onAction`
+prop, so what it returns comes back):
+
+```vue
+<FieldiaForm
+  :page="page"
+  :data-source="dataSource"
+  :pages="pages"
+  @action="({ action, values }) => (action === 'check_stock' ? { values: { price: priceOf(values.product) } } : undefined)"
+  @change="({ field, value, by }) => {}"
+  @save="({ recordId, values }) => {}"
+  @send="({ values }) => {}"
+  @step="({ step }) => {}"
+  @run="({ id, result }) => {}"
+/>
+```
+
+`host` and `on-open` are the viewer's own options (see `@fieldia/viewer`); the
+handle from `@ready` has `on`, `setValues` and `run`. MIT licensed.

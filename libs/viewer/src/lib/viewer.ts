@@ -77,7 +77,7 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   /** Labels that win over the language's defaults. */
   labels?: Partial<ViewerLabels>;
   dir?: 'ltr' | 'rtl';
-  /** How to ask before a button with `confirm` runs. Defaults to a small dialog. */
+  /** How a question is asked: a button's `confirm`, and an `ask` step. Defaults to the viewer's own small box. */
   confirm?: (message: string) => Promise<boolean>;
   /** Where a person's choices about the page's look are kept, such as a table's columns. The browser's storage by default. */
   preferences?: PreferenceStore;

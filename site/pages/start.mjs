@@ -118,7 +118,7 @@ export class SignupComponent {
 )}
 
 <h2 id="script">A script tag</h2>
-<p>For a page with no build step at all. The bundle holds what runs a form — the core, the fields and the viewer — in about 83 KB gzipped, with its own words in English. It checks a page with ${c('Fieldia.checkPage')} as it shows it; the full ${c('validatePage')} is in ${c('@fieldia/core')}, for where pages are made.</p>
+<p>For a page with no build step at all. The bundle holds what runs a form — the core, the fields and the viewer — in about 90 KB gzipped, with its own words in English. It checks a page with ${c('Fieldia.checkPage')} as it shows it; the full ${c('validatePage')} is in ${c('@fieldia/core')}, for where pages are made.</p>
 ${code(
   'html',
   `
