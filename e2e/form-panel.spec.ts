@@ -248,17 +248,42 @@ test('axe finds nothing on the panel, nor with a dialog over it', async ({ page 
   expect(await axeFindings(page, 'dialog over the panel')).toEqual([]);
 });
 
-test('it slides in only when motion is welcome', async ({ page }) => {
+/** Where the panel's slide starts: its animation held at the first frame, then let finish. */
+const slideStart = (panel: Locator) =>
+  panel.evaluate((el) => {
+    const slides = el.getAnimations();
+    if (slides.length !== 1 || (slides[0] as CSSAnimation).animationName !== 'fd-slide') return null;
+    slides[0].pause();
+    slides[0].currentTime = 0;
+    const { x, y } = el.getBoundingClientRect();
+    slides[0].finish();
+    return { x: Math.round(x), y: Math.round(y) };
+  });
+
+test('it slides in only when motion is welcome: from the right, from the left right to left, from below on a phone', async ({ page }) => {
   await page.setViewportSize(WIDE);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await open(page, 'plain', 'page=fields&skin=outlined');
   await opener(page).click();
-  const panel = page.getByRole('dialog', { name: 'Log a call' });
+  let panel = page.getByRole('dialog', { name: 'Log a call' });
+  await expect(panel).toBeVisible();
   expect(await panel.evaluate((el) => el.getAnimations().length)).toBe(0);
   await page.keyboard.press('Escape');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+  // Just past the right edge, as wide as itself.
   await opener(page).click();
-  expect(await panel.evaluate((el) => el.getAnimations().map((a) => (a as CSSAnimation).animationName))).toEqual(['fd-slide']);
+  expect(await slideStart(panel)).toEqual({ x: WIDE.width, y: 0 });
+  await page.keyboard.press('Escape');
+  // Right to left: just past the left edge.
+  await open(page, 'plain', 'page=fields&skin=outlined&locale=ar&dir=rtl');
+  await opener(page).click();
+  panel = page.getByRole('dialog', { name: 'تسجيل مكالمة' });
+  expect(await slideStart(panel)).toEqual({ x: -560, y: 0 });
+  await page.keyboard.press('Escape');
+  // A phone: from below the screen, in Arabic too.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await opener(page).click();
+  expect(await slideStart(panel)).toEqual({ x: 0, y: 844 });
 });
 
 test('from the one-tag script: a panel opened from a panel stacks over it, the older one stepped back, and the focus comes back through both', async ({ page }) => {
