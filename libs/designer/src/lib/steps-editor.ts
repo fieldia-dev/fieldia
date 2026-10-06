@@ -7,7 +7,7 @@ import type { SavedFormRef } from './saved-forms';
 import { SETTABLE, stepProblem, type StepPatch } from './steps-commands';
 import { showTargets, stepAt, stepsAt, type StepPath, type StepsPlace } from './steps-places';
 import { newStep, stepSettings } from './steps-settings';
-import { stepSentence } from './steps-words';
+import { stepSentence, withCode } from './steps-words';
 
 /**
  * What a press, a change or a moment does, as a list of steps a person reads
@@ -96,7 +96,7 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
     top.add.focus();
   });
 
-  /** The app's saved pages: asked for once, the first time a step that opens one is shown. */
+  /** The app's saved pages to open: asked for once, as the editor is first drawn. */
   function listPages() {
     if (asked || !designer.canPlaceForms()) return;
     asked = true;
@@ -254,9 +254,7 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
   /** The app's names in a sentence — an action, a page known only by its id — kept apart, as code. */
   function markCode(say: HTMLElement, step: ActionStep) {
     const name = step.do === 'call' ? step.action : step.do === 'open' && !saved(step.page) ? step.page : '';
-    const text = say.textContent ?? '';
-    const at = name ? text.indexOf(name) : -1;
-    if (at !== -1) say.replaceChildren(text.slice(0, at), el('code', { class: 'fd-do-code' }, name), text.slice(at + name.length));
+    if (name) say.replaceChildren(...withCode(doc, say.textContent ?? '', [name]));
   }
 
   /** A step changed: kept when it can be, else what is wrong said under it. A step begun is kept once it reads. */
@@ -384,7 +382,8 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
   function draw() {
     shown = [];
     const steps = stepsAt(page, place);
-    if (steps.some((s) => s.do === 'open') || draft?.step.do === 'open') listPages();
+    // The app's pages, asked for at once, so a step that opens one offers them as it begins.
+    listPages();
     drawList(top, steps, null);
     // One step begun at a time: Add a step waits while one is.
     top.add.hidden = !!draft && draft.under === null;

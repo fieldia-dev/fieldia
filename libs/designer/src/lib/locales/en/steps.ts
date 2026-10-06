@@ -90,8 +90,8 @@ export const steps = {
   opensIn: 'Opens',
   as: { dialog: 'In a dialog', panel: 'In a panel', page: 'In its place' },
   asShort: { dialog: 'Dialog', panel: 'Panel', page: 'Its place' },
-  title: 'Words over it',
-  titlePlaceholder: 'Its own title',
+  title: 'Its title',
+  titlePlaceholder: 'The page’s own title',
   record: 'On a record',
   recordPlaceholder: 'Empty for a new one',
   startsWith: 'It starts with',
@@ -109,7 +109,7 @@ export const steps = {
   field: 'Field',
   setTo: 'To',
   setToPlaceholder: 'Quantity × 12.5 — type a field’s name, or @',
-  expressionPlaceholder: 'Type a field’s name, or @',
+  expressionPlaceholder: 'A field, or @',
   table: 'Table of lines',
   lineValues: 'Its values',
   check: 'Check',
@@ -134,7 +134,10 @@ export const steps = {
   needsValue: 'Type the value it sets.',
   // ---- the Rules view
   groupNames: { clicked: 'When clicked', changes: 'When it changes', moments: 'At the form’s moments' },
-  countWith: (rules: number, places: number) => `${plural('en', rules, { one: '# rule', other: '# rules' })}, and steps in ${plural('en', places, { one: '# place', other: '# places' })}, on this page.`,
+  countWith: (rules: number, places: number) => {
+    const where = plural('en', places, { one: '# place', other: '# places' });
+    return rules ? `${plural('en', rules, { one: '# rule', other: '# rules' })}, and steps in ${where}, on this page.` : `Steps in ${where} on this page, and no rules.`;
+  },
   findSteps: (name: string, sentence: string) => `Steps: ${name} — ${sentence}`,
   // ---- checks
   namesGone: (name: string, sentence: string, gone: readonly string[]) => `“${name}”: “${sentence}” names ${and(gone)}, which ${gone.length === 1 ? 'is' : 'are'} no longer on the page.`,

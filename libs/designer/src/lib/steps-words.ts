@@ -116,6 +116,8 @@ export interface StepsEntry {
   lines: string[];
   /** The fields its steps name or read. */
   reads: string[];
+  /** The app's own names in its lines — its actions, a page known only by its id — to keep apart as code. */
+  codes: string[];
 }
 
 /** Every list of steps on the page, in reading order, said. */
@@ -124,8 +126,29 @@ export function pageSteps(page: Page, words: DesignerWords = en, saved?: SavedPa
     const group: StepsGroup = 'press' in place ? 'clicked' : 'change' in place ? 'changes' : 'moments';
     const part = 'press' in place ? place.press : 'change' in place ? fieldPlace(page, place.change) : null;
     const reads = [...new Set(eachStep(steps).flatMap(({ step }) => [...fieldsNamed(step), ...fieldsRead(step)]))];
-    return { place, group, part, name: placeName(page, place, words), lines: stepsLines(page, steps, words, saved), reads };
+    const codes = [...new Set(eachStep(steps).flatMap(({ step }) => (step.do === 'call' ? [step.action] : step.do === 'open' && !saved?.(step.page) ? [step.page] : [])))];
+    return { place, group, part, name: placeName(page, place, words), lines: stepsLines(page, steps, words, saved), reads, codes };
   });
+}
+
+/** Words with the app's names in them kept apart as code: each name, where it stands as a word, in a `code` of its own. */
+export function withCode(doc: Document, text: string, codes: readonly string[]): Node[] {
+  const names = codes.filter(Boolean).sort((a, b) => b.length - a.length);
+  if (!names.length) return [doc.createTextNode(text)];
+  const escaped = names.map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const pattern = new RegExp(`(?<![\\w-])(${escaped.join('|')})(?![\\w-])`, 'g');
+  const out: Node[] = [];
+  let at = 0;
+  for (const match of text.matchAll(pattern)) {
+    if (match.index > at) out.push(doc.createTextNode(text.slice(at, match.index)));
+    const code = doc.createElement('code');
+    code.className = 'fd-do-code';
+    code.textContent = match[0];
+    out.push(code);
+    at = match.index + match[0].length;
+  }
+  if (at < text.length) out.push(doc.createTextNode(text.slice(at)));
+  return out;
 }
 
 /** Where a field is on the page, by its part's id: the first place it shows; null when it is not on it. */

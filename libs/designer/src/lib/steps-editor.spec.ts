@@ -97,7 +97,7 @@ describe('When clicked, on a body button', () => {
     type(words, 'Customer added');
     expect(pressed(designer).steps).toEqual([{ do: 'call', action: 'button' }, { do: 'say', message: 'Customer added' }]);
     expect(document.activeElement).toBe(words);
-    (clicked(host).querySelector('[data-choice="success"]') as HTMLButtonElement).click();
+    choose(field(clicked(host), 'Tone'), 'success');
     expect(sayings(clicked(host))).toEqual(['Run the app’s action button', 'Say as good news: Customer added']);
     // Typing, then a tone: two undo steps, and the step begun is gone with the first.
     designer.undo();

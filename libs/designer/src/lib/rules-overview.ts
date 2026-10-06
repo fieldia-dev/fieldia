@@ -7,7 +7,7 @@ import { designerIcon } from './icons';
 import { openRules } from './rules-open';
 import { pageRules, type RuleEntry, type RuleKind } from './rules-words';
 import { openSteps } from './steps-marks';
-import { pageSteps, type StepsEntry, type StepsGroup } from './steps-words';
+import { pageSteps, withCode, type StepsEntry, type StepsGroup } from './steps-words';
 
 /**
  * Every rule on the page in one place, in place of the editor, beside
@@ -121,7 +121,9 @@ export function rulesOverview(options: RulesOverviewOptions): RulesOverview {
   }
 
   function stepsItemOf(entry: StepsEntry): HTMLElement {
-    const button = el('button', { type: 'button', class: 'fd-rules-item fd-rules-steps' }, el('span', { class: 'fd-rules-item-name', dir: 'auto' }, entry.name), el('span', { class: 'fd-rules-item-say', dir: 'auto' }, entry.lines.join('\n')));
+    // The app's names — its actions, a page known by its id — kept apart as code.
+    const said = el('span', { class: 'fd-rules-item-say', dir: 'auto' }, ...withCode(doc, entry.lines.join('\n'), entry.codes));
+    const button = el('button', { type: 'button', class: 'fd-rules-item fd-rules-steps' }, el('span', { class: 'fd-rules-item-name', dir: 'auto' }, entry.name), said);
     button.addEventListener('click', () => goToSteps(entry));
     return el('li', {}, button);
   }

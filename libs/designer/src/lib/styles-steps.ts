@@ -20,6 +20,9 @@ export const DESIGNER_STEPS_CSS = /* css */ `
 .fd-do-grip:not([hidden]) + .fd-do-say { padding-inline-start: 4px; }
 .fd-do-lifted { box-shadow: 0 8px 20px rgba(15, 20, 25, 0.16); position: relative; z-index: 2; }
 .fd-do-lifted .fd-do-grip { cursor: grabbing; }
+/* A step's sentence focused: the step's own box is ringed, not a ring drawn inside it. */
+.fd-do-say:focus-visible { outline: none; }
+.fd-do-step:has(> .fd-do-head > .fd-do-say:focus-visible) { border-color: var(--fd-focus); box-shadow: 0 0 0 1px var(--fd-focus); }
 .fd-do-begun > .fd-do-head .fd-do-say { color: var(--fd-muted); font-style: italic; }
 .fd-do-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; padding: 0 3px; border-radius: 3px; background: var(--fd-page); }
 .fd-do-add { justify-self: start; padding-inline: 0; min-height: 28px; display: inline-flex; align-items: center; gap: 6px; }
@@ -52,7 +55,8 @@ export const DESIGNER_STEPS_CSS = /* css */ `
 .fd-do-map-add { justify-self: start; padding-inline: 0; min-height: 26px; }
 /* ---- where they are set ---- */
 .fd-do-setting { justify-items: stretch; }
-.fd-do-moments { display: grid; gap: 14px; }
+.fd-prop.fd-do-moments { display: grid; gap: 16px; }
+.fd-do-moments > .fd-prop-name { margin-block-end: -6px; }
 .fd-do-moment { display: grid; gap: 6px; min-width: 0; }
 .fd-do-moment[hidden] { display: none; }
 .fd-do-moment-name, .fd-do-show-name { font-size: 12.5px; font-weight: 600; color: var(--fd-text); }

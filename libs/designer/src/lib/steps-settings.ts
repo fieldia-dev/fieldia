@@ -136,14 +136,14 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
     }
     case 'say': {
       text(w.words, 'message', w.sayPlaceholder);
-      const tone = segmented<Tone>(
-        el,
-        w.tone,
-        (['info', 'success', 'warning', 'danger', 'muted'] as const).map((value) => ({ value, words: w.tones[value] })),
-        (value) => value && ctx.change({ tone: value === 'info' ? null : value })
-      );
-      parts.push(row(el, w.tone, tone.element));
-      updates.push((step) => tone.set(step.do === 'say' ? (step.tone ?? 'info') : 'info'));
+      // Five tones do not sit side by side in a narrow panel: a list of them.
+      const tone = select(el, w.tone);
+      tone.append(...(['info', 'success', 'warning', 'danger', 'muted'] as const).map((value) => el('option', { value }, w.tones[value])));
+      tone.addEventListener('change', () => ctx.change({ tone: tone.value === 'info' ? null : (tone.value as Tone) }));
+      parts.push(row(el, w.tone, tone));
+      updates.push((step) => {
+        if (!focused(tone)) tone.value = step.do === 'say' ? (step.tone ?? 'info') : 'info';
+      });
       break;
     }
     case 'ask':
@@ -230,7 +230,10 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
       // A page the list has not got is typed by its id.
       another = another || (!!step.page && !known);
       if (!focused(page)) page.value = another || !listed ? ANOTHER : step.page;
+      // The list come while its id box had the cursor: the list takes it.
+      const typing = focused(byId);
       byId.hidden = !!listed && !another;
+      if (typing && byId.hidden) page.focus();
       if (!focused(byId)) byId.value = known ? '' : step.page;
       as.set(step.as ?? 'dialog');
       startsWith.update(step.values ?? {});
@@ -329,7 +332,10 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
       for (const update of updates) update(step);
     },
     focusFirst() {
-      (first ?? element.querySelector<HTMLElement>('button, input, select'))?.focus();
+      // The first control on show: an open step's page list waits for the app's list of pages.
+      const shown = (control: HTMLElement) => !control.closest('[hidden]');
+      const controls = [...(first ? [first] : []), ...element.querySelectorAll<HTMLElement>('select, input, button')];
+      controls.find(shown)?.focus();
     },
   };
 }

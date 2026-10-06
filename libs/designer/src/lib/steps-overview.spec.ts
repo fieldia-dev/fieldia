@@ -57,6 +57,15 @@ describe('the Rules view, with what parts do', () => {
       ['At the form’s moments', 'Before it’s saved or sent: Check the form\nAsk: Send the order?'],
     ]);
     expect(view().querySelector('.fd-rules-note')?.textContent).toBe('1 rule, and steps in 3 places, on this page.');
+    // The app's names kept apart as code: its action, and a page the app's list has not got, by its id.
+    expect([...view().querySelectorAll('.fd-rules-steps code')].map((c) => c.textContent)).toEqual(['customer', 'check_stock']);
+  });
+
+  it('says the count without rules when there are none', () => {
+    const { designer, view, toggle } = screen();
+    designer.setCondition('f-customer', null);
+    toggle().click();
+    expect(view().querySelector('.fd-rules-note')?.textContent).toBe('Steps in 3 places on this page, and no rules.');
   });
 
   it('filters steps by their words too', () => {
