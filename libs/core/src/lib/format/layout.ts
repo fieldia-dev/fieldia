@@ -305,6 +305,13 @@ export interface SectionsNode {
   type: 'sections';
   id: string;
   children: LayoutNode[];
+  /**
+   * The page's own buttons at its foot: in a dialog or panel, in place of
+   * Save & Close and Discard — Flectra's wizard footer, such as Mark as Lost
+   * and Cancel. A press runs its steps: one whose steps saved closes the
+   * dialog with its answers, a `close` step without.
+   */
+  footer?: ButtonNode[];
 }
 
 export interface StatButton {
@@ -382,6 +389,13 @@ export interface SheetNode {
   badges?: Badge[];
   children: LayoutNode[];
   sidePanel?: SlotNode;
+  /**
+   * The page's own buttons at its foot: in a dialog or panel, in place of
+   * Save & Close and Discard — Flectra's wizard footer, such as Mark as Lost
+   * and Cancel. A press runs its steps: one whose steps saved closes the
+   * dialog with its answers, a `close` step without.
+   */
+  footer?: ButtonNode[];
 }
 
 /** A named filter in a list's search bar, such as "Active" or "Big accounts". */
@@ -622,6 +636,7 @@ export const SectionsNodeSchema = z.strictObject({
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);
   },
+  footer: z.array(ButtonNodeSchema).min(1).optional(),
 }).meta({ id: 'SectionsNode' });
 
 export const StatButtonSchema = z.strictObject({
@@ -670,6 +685,7 @@ export const SheetNodeSchema = z.strictObject({
     return z.array(LayoutNodeSchema);
   },
   sidePanel: SlotNodeSchema.optional(),
+  footer: z.array(ButtonNodeSchema).min(1).optional(),
 }).meta({ id: 'SheetNode' });
 
 export const ListNodeSchema = z.strictObject({

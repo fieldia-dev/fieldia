@@ -1428,6 +1428,7 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     }
   } else if (root.type === 'sections') {
     walk(root.children, root.id);
+    for (const button of root.footer ?? []) add(button, root.id, 'button', { invisible: button.invisible });
   } else if (root.type === 'list') {
     // A list holds no fields of its own record: only the buttons for what is selected.
     for (const button of root.actions ?? []) add(button, root.id, 'button', { invisible: button.invisible });
@@ -1441,7 +1442,7 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     shown('#subtitle', root.title?.subtitleField);
     shown('#avatar', root.title?.avatarField);
     shown('#statusbar', root.statusbar?.field);
-    for (const button of root.buttons ?? []) add(button, root.id, 'button', { invisible: button.invisible });
+    for (const button of [...(root.buttons ?? []), ...(root.footer ?? [])]) add(button, root.id, 'button', { invisible: button.invisible });
     for (const stat of root.statButtons ?? []) add(stat, root.id, 'stat', { invisible: stat.invisible });
     if (root.ribbon) add(root.ribbon, root.id, 'other', { invisible: root.ribbon.invisible });
     for (const alert of root.alerts ?? []) add(alert, root.id, 'other', { invisible: alert.invisible });

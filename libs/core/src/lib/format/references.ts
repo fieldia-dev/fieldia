@@ -356,9 +356,19 @@ export class ReferenceCheck {
     }
   }
 
+  /** A page's own buttons at its foot: buttons as any. */
+  private walkFooter(footer: ButtonNode[] | undefined, path: string) {
+    footer?.forEach((button, i) => {
+      this.claim(button.id, `${path}.footer[${i}]`);
+      this.checkModifiers(button, `${path}.footer[${i}]`);
+      this.checkPress(button, `${path}.footer[${i}]`);
+    });
+  }
+
   private walkRoot(root: RootLayout, path: string) {
     if (root.type === 'tabs') return this.walkNode(root, path);
     this.claim(root.id, path);
+    if (root.type === 'sheet' || root.type === 'sections') this.walkFooter(root.footer, path);
     if (root.type === 'sheet') return this.walkSheet(root, path);
     if (root.type === 'sections') return this.walkChildren(root.children, path);
     if (root.type === 'list') return this.walkList(root, path);
