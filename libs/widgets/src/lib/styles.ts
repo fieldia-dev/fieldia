@@ -357,25 +357,46 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-file-confirm:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
 .fd-file-note:empty { display: none; }
 .fd-file-note { color: var(--fd-warning); }
+/* Over the files: how many, and the switch between a list and pictures, at the end. */
+.fd-file-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; justify-self: stretch; }
+.fd-file-views { display: flex; gap: 2px; margin-inline-start: auto; padding: 2px; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); background: var(--fd-page); }
+.fd-file-views button {
+  display: flex; align-items: center; gap: 6px; min-height: 28px; padding: 2px 10px; font: inherit; font-size: 13px; color: var(--fd-muted); cursor: pointer;
+  border: none; border-radius: calc(var(--fd-control-radius) - 2px); background: none;
+}
+.fd-file-views [aria-pressed="true"] { color: var(--fd-text); background: var(--fd-surface); box-shadow: 0 0 0 1px var(--fd-border); }
 /* Thumbnails: tiles in a row that wraps, the picker the last of them. */
 .fd-files-thumbs { display: flex; flex-wrap: wrap; align-items: flex-start; }
-.fd-files-thumbs > * { flex-basis: 100%; order: 2; }
-.fd-files-thumbs > .fd-files { display: contents; }
-.fd-files-thumbs .fd-file-item, .fd-image-pick { flex: none; width: 96px; height: 96px; order: 0; }
-.fd-files-thumbs > .fd-file-count { order: -1; }
+.fd-files-thumbs > * { flex-basis: 100%; }
+:is(.fd-files-thumbs, .fd-files-cards) > .fd-files { display: contents; }
+.fd-files-thumbs .fd-file-item, .fd-image-pick { flex: none; width: 96px; height: 96px; }
 .fd-files-thumbs .fd-file-open { height: 100%; padding: 6px; flex-direction: column; justify-content: center; gap: 4px; overflow: hidden; font-size: 12px; }
-.fd-files-thumbs .fd-file-thumb { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; }
+:is(.fd-files-thumbs, .fd-files-cards) .fd-file-thumb { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; }
 .fd-files-thumbs .fd-file-name { flex: none; max-width: 100%; }
 .fd-files-thumbs .fd-file-size, .fd-files-thumbs .fd-file-thumb ~ * { display: none; }
-.fd-files-thumbs .fd-file-remove {
+:is(.fd-files-thumbs, .fd-files-cards) .fd-file-remove {
   position: absolute; inset-block-start: 4px; inset-inline-end: 4px; width: 26px; height: 26px; font-size: 17px;
   background: rgba(15, 20, 25, 0.62); color: #fff; opacity: 0;
 }
 .fd-file-item:is(:hover, :focus-within) .fd-file-remove { opacity: 1; }
+/* A screen with no pointer to hover with shows each tile's remove. */
+@media (hover: none) { .fd-file-item .fd-file-remove { opacity: 1; } }
 .fd-image-pick {
-  order: 1; display: grid; place-content: center; justify-items: center; gap: 2px; padding: 6px; text-align: center; font-size: 12px;
+  display: grid; place-content: center; justify-items: center; gap: 2px; padding: 6px; text-align: center; font-size: 12px;
   border: 1px dashed var(--fd-border-strong); border-radius: var(--fd-control-radius); background: var(--fd-page);
 }
+/* Cards: a picture over each file's name, in two lines at most, and its size; as many to a row as fit. */
+.fd-files-cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 130px), 1fr)); }
+.fd-files-cards > * { grid-column: 1 / -1; }
+.fd-files-cards > .fd-image-pick { grid-column: auto; justify-self: stretch; width: auto; height: auto; min-height: 96px; }
+.fd-files-cards .fd-file-item { justify-self: stretch; align-items: stretch; }
+.fd-files-cards .fd-file-open { flex-direction: column; align-items: stretch; gap: 2px; padding: 0 0 8px; overflow: hidden; }
+/* The picture fills its box; with none, the kind's page, large, on the box's ground. */
+.fd-file-picture { position: relative; display: grid; place-items: center; aspect-ratio: 4 / 3; margin-block-end: 6px; background: var(--fd-page); border-block-end: 1px solid var(--fd-border); }
+.fd-file-picture .fd-file-icon { width: 44px; height: 56px; padding-block-end: 8px; font-size: 12px; }
+.fd-files-cards :is(.fd-file-name, .fd-file-size) { padding-inline: 8px; }
+.fd-files-cards .fd-file-name { flex: none; flex-wrap: wrap; font-size: 13px; line-height: 1.35; }
+.fd-files-cards .fd-file-name > span { max-width: 100%; }
 .fd-image-pick .fd-button { border: none; background: none; color: var(--fd-accent); padding: 0; min-height: 0; font-size: 13px; }
 /* A file open to look at: its name and tools over it, the image whole, a PDF or text filling the box. */
 .fd-file-viewer { max-width: 1000px; height: min(88vh, 100%); background: var(--fd-surface); }

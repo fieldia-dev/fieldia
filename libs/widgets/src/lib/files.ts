@@ -1,5 +1,6 @@
 import { describeTypes, fileProblem, fill, formatBytes, MESSAGES, type Field, type FileValue } from '@fieldia/core';
 import { keepTabIn } from './focus-trap';
+import { drawIcon } from './icons';
 import { askFirst, describeState, maker, rightToLeft, setHidden, setText, wordsFor, type Make } from './kind-parts';
 import type { WidgetFactory } from './widgets';
 
@@ -10,9 +11,11 @@ import type { WidgetFactory } from './widgets';
  * drop zone take many, each joining the list up to `maxFiles`, and a file of
  * a kind the field does not take, too large, already there, or past the most
  * is not added — the widget says which and why. The limits are said before
- * anyone tries. Files show as a list or as thumbnails (`options.files`); one
- * opens in a dialog that goes through them all. `options.camera` has a phone
- * offer its camera, the rear one, or the front with "user".
+ * anyone tries. Files show as a list, as thumbnails, or as cards — a picture
+ * over each one's name and size (`options.files`); `options.filesSwitch` lets
+ * the person flip them between a list and the pictures. One opens in a dialog
+ * that goes through them all. `options.camera` has a phone offer its camera,
+ * the rear one, or the front with "user".
  */
 
 type FileField = Extract<Field, { type: 'binary' | 'image' }>;
@@ -39,11 +42,31 @@ const asText = (file: FileValue) => /^text\/|json|xml|csv/.test(file.type);
 const source = (file: FileValue) => (file.data ? `data:${file.type};base64,${file.data}` : (file.url ?? ''));
 const bytes = (data: string) => Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
 const icon = (make: Make, file: FileValue) => make('span', { class: 'fd-file-icon', 'data-kind': kindOf(file), 'aria-hidden': 'true' }, extension(file.name) || '?');
+/** The pictures' ways in the switch: cards, a picture over a line of words; thumbnails, pictures alone. A list has the list's icon. */
+const VIEWS = {
+  cards: '<path d="M3 3h8v8H3zM13 3h8v8h-8zM3 15h8M13 15h8M3 19h5M13 19h5"/>',
+  thumbnails: '<path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/>',
+};
 /** A name cut in the middle where it must be: its start may end in an ellipsis, its last characters — the extension — stay. */
 const named = (make: Make, name: string) => make('span', { class: 'fd-file-name', dir: 'auto', title: name }, make('span', {}, name.slice(0, -9)), name.slice(-9));
+/**
+ * A card's name, in two lines at most: in halves, parted at the space nearest
+ * the middle, side by side while they fit. Longer, the first ends in an
+ * ellipsis on its line and the second starts with one on the next, so its
+ * end — the extension — stays. The second reads in its own direction, inside
+ * a box of the other, which is what puts its ellipsis at its start.
+ */
+function namedOnCard(make: Make, name: string) {
+  const half = name.length / 2;
+  // A space further than a quarter of the name from the middle is not taken.
+  let [at, off] = [Math.round(half), half / 2];
+  for (let i = name.indexOf(' '); i >= 0; i = name.indexOf(' ', i + 1)) if (Math.abs(i + 1 - half) < off) [at, off] = [i + 1, Math.abs(i + 1 - half)];
+  const rtl = /^\P{L}*[\p{sc=Arabic}\p{sc=Hebrew}]/u.test(name);
+  return make('span', { class: 'fd-file-name', dir: rtl ? 'rtl' : 'ltr', title: name }, make('span', {}, name.slice(0, at)), make('span', { dir: rtl ? 'ltr' : 'rtl' }, make('bdi', {}, name.slice(at))));
+}
 
 function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
-  return ({ form, name, field: def, node, id, document: doc, labels, locale = 'en' }) => {
+  return ({ form, name, field: def, node, id, document: doc, labels, locale = 'en', preferences }) => {
     const field = def as FileField;
     const words = wordsFor(labels, locale);
     const messages = MESSAGES[locale] ?? MESSAGES.en;
@@ -51,10 +74,15 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
     const several = field.multiple === true;
     const most = several ? (field.maxFiles ?? Infinity) : 1;
     const image = kind === 'image';
-    const thumbs = (node.options?.['files'] ?? (image ? 'thumbnails' : 'list')) === 'thumbnails';
+    // How the files show: the page's way, or with a switch the person's — a list, or the page's pictures, cards unless it says thumbnails.
+    const own = String(node.options?.['files'] ?? (image ? 'thumbnails' : 'list'));
+    const pictures = own === 'thumbnails' ? own : 'cards';
+    const switchable = node.options?.['filesSwitch'] === true;
+    const kept = `${form.page.id}.${node.id}.files`;
+    const chosen = switchable ? preferences?.get(kept) : null;
     const camera = node.options?.['camera'];
     const accept = field.type === 'binary' ? field.accept : ['image/*'];
-    const element = make('div', { class: `fd-file fd-file-${kind} fd-files-${thumbs ? 'thumbs' : 'list'}` });
+    const element = make('div');
     const input = make('input', { type: 'file', id, class: 'fd-sr-only', accept: accept?.join(','), capture: camera ? (camera === 'user' ? 'user' : 'environment') : undefined });
     input.multiple = several;
 
@@ -64,10 +92,10 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
       field.maxSize ? fill(several ? words.upToEach : words.upToSize, { size: formatBytes(field.maxSize) }) : '',
       several && field.maxFiles ? fill(words.upToFiles, { max: field.maxFiles }) : '',
     ].filter(Boolean);
-    // A tile among the thumbnails, a drop zone over the list.
+    // A tile after the pictures, a drop zone over the list.
     const pick = make(
       'label',
-      { class: `fd-file-pick${thumbs ? ' fd-image-pick' : ''}`, for: id },
+      { class: 'fd-file-pick', for: id },
       make('span', { class: 'fd-button' }, several ? (image ? words.addPhotos : words.addFiles) : image ? words.uploadImage : words.upload),
       make('span', { class: 'fd-help' }, several ? words.dropThem : words.dropHere)
     );
@@ -80,7 +108,28 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
     const confirm = askFirst(make, words);
     // Why files were not added, and one removed: said politely, and shown.
     const note = make('div', { class: 'fd-help fd-file-note', role: 'status' });
-    element.append(input, pick, ...(limits.length ? [limited] : []), ...(count ? [count] : []), list, replace, confirm.element, note);
+    const way = (as: string, words: string) => {
+      const button = make('button', { type: 'button', 'data-view': as }, drawIcon(doc, as, VIEWS) as SVGSVGElement, words);
+      button.addEventListener('click', () => (showAs(as), preferences?.set(kept, as)));
+      return button;
+    };
+    const switcher = switchable ? make('div', { class: 'fd-file-views', role: 'group', 'aria-label': words.showFilesAs }, way('list', words.asList), way(pictures, pictures === 'cards' ? words.asCards : words.asThumbnails)) : null;
+    // Over the files: how many there are, and the switch.
+    const bar = count || switcher ? make('div', { class: 'fd-file-bar' }, ...(count ? [count] : []), ...(switcher ? [switcher] : [])) : null;
+    const top = [input, pick, ...(limits.length ? [limited] : [])];
+    element.append(...(bar ? [bar] : []), list, replace, confirm.element, note);
+    let display = own;
+    function showAs(as: string) {
+      display = as;
+      const tiles = as !== 'list';
+      element.className = `fd-file fd-file-${kind} fd-files-${as === 'thumbnails' ? 'thumbs' : as}`;
+      pick.classList.toggle('fd-image-pick', tiles);
+      // A list has its drop zone over the files; pictures end with the add tile, after the last of them as the keys go too.
+      if (tiles) list.after(...top);
+      else (bar ?? list).before(...top);
+      switcher?.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset['view'] === as)));
+      draw();
+    }
 
     let readonly = false;
     let files: FileValue[] = [];
@@ -134,6 +183,28 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
         (list.querySelectorAll<HTMLElement>('.fd-file-remove')[remove ? Math.min(at, files.length - 1) : at] ?? (pick.hidden ? replace : input)).focus();
       });
     });
+
+    /** The files, each opening, and each with × to remove it unless the field reads only. */
+    function draw() {
+      list.replaceChildren(
+        ...files.map((file, at) =>
+          make(
+            'li',
+            { class: 'fd-file-item' },
+            make(
+              'button',
+              // Named whole: the name's two parts would be read as two words.
+              { type: 'button', class: 'fd-file-open', 'data-at': String(at), 'aria-haspopup': 'dialog', 'aria-label': `${file.name}, ${formatBytes(file.size)}` },
+              ...[kindOf(file) === 'image' && source(file) ? make('img', { class: 'fd-file-thumb', src: source(file), alt: '' }) : icon(make, file)].map((picture) => (display === 'cards' ? make('span', { class: 'fd-file-picture' }, picture) : picture)),
+              (display === 'cards' ? namedOnCard : named)(make, file.name),
+              make('span', { class: 'fd-file-size' }, formatBytes(file.size))
+            ),
+            ...(readonly ? [] : [make('button', { type: 'button', class: 'fd-file-remove', 'data-at': String(at), 'aria-label': fill(words.remove, { name: file.name }) }, '×')])
+          )
+        )
+      );
+    }
+    showAs(chosen === 'list' || chosen === pictures ? chosen : own === pictures ? own : 'list');
 
     /** A file open in a dialog, the arrows and Previous and Next going through them all. */
     function view(at: number, opener: HTMLElement) {
@@ -214,28 +285,13 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
         input.disabled = readonly;
         input.hidden = pick.hidden;
         setHidden(replace, several || !files.length || readonly);
+        if (bar) setHidden(bar, !files.length);
         if (count) setText(count, !files.length ? '' : several && field.maxFiles ? fill(words.fileCountOf, { n: files.length, max: field.maxFiles }) : files.length === 1 ? words.oneFile : fill(words.fileCount, { n: files.length }));
         describeState(input, state);
         if (shown === value && list.dataset['readonly'] === String(readonly)) return;
         shown = value;
         list.dataset['readonly'] = String(readonly);
-        list.replaceChildren(
-          ...files.map((file, at) =>
-            make(
-              'li',
-              { class: 'fd-file-item' },
-              make(
-                'button',
-                // Named whole: the name's two parts would be read as two words.
-                { type: 'button', class: 'fd-file-open', 'data-at': String(at), 'aria-haspopup': 'dialog', 'aria-label': `${file.name}, ${formatBytes(file.size)}` },
-                kindOf(file) === 'image' && source(file) ? make('img', { class: 'fd-file-thumb', src: source(file), alt: '' }) : icon(make, file),
-                named(make, file.name),
-                make('span', { class: 'fd-file-size' }, formatBytes(file.size))
-              ),
-              ...(readonly ? [] : [make('button', { type: 'button', class: 'fd-file-remove', 'data-at': String(at), 'aria-label': fill(words.remove, { name: file.name }) }, '×')])
-            )
-          )
-        );
+        draw();
       },
     };
   };
