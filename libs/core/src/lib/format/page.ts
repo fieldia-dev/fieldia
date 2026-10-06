@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { PageEventsSchema, type PageEvents } from './actions';
 import { FieldsSchema, type Fields } from './field';
 import { RootLayoutSchema, type RootLayout } from './layout';
 import { PART_LOOKS, type PartLook, type PartsLook } from './part-look';
@@ -56,6 +57,8 @@ export interface Page {
    * Words with no translation show as written. See `localizePage`.
    */
   translations?: { [locale: string]: { [text: string]: string } };
+  /** What the form does at its moments — opened, a field changed, before and after saving, a step shown: steps, as data. */
+  on?: PageEvents;
 }
 
 export const PageDataSchema = z.discriminatedUnion('kind', [
@@ -104,6 +107,7 @@ export const PageSchema = z
       .optional(),
     language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/).optional(),
     translations: z.record(z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/), z.record(z.string(), z.string())).optional(),
+    on: PageEventsSchema.optional(),
   })
   .meta({
     title: 'Fieldia page',

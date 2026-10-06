@@ -949,11 +949,14 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       if (!node || (node.kind !== 'button' && node.kind !== 'stat')) throw new Error(`The page has no button "${id}"`);
       if (nodeState(id).invisible) return;
       const source = node.source as ButtonNode | StatButton;
+      // Until steps run here, a button hands over only its app action's name, when it has one.
+      if (source.action === undefined) return;
+      const action = source.action;
       await track(
         Promise.resolve(
           options.onAction?.({
             id,
-            action: source.action,
+            action,
             ...('params' in source && source.params ? { params: source.params } : {}),
             recordId: state.recordId,
             values: structuredCopy(state.values as Values),

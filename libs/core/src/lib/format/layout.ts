@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import { FIELD_NAME, FilterItemSchema, type FilterItem } from './field';
+import { ActionStepsSchema, type ActionStep } from './actions';
 import { JsonValueSchema, type JsonValue } from './json';
 
 /**
@@ -87,8 +88,13 @@ export interface ButtonNode {
   type: 'button';
   id: string;
   label: string;
-  /** The action's name. The app decides what it does. */
-  action: string;
+  /**
+   * What a press does: steps, in order (see `ActionStep`). A button with only
+   * an `action` hands its name to the app, as a `call` step would.
+   */
+  steps?: ActionStep[];
+  /** The app's action's name, run after the steps. The app decides what it does. A button has steps, an action, or both. */
+  action?: string;
   params?: { [key: string]: JsonValue };
   style?: 'primary' | 'secondary' | 'danger' | 'link';
   /** Ask before running the action. */
@@ -284,7 +290,9 @@ export interface SectionsNode {
 export interface StatButton {
   id: string;
   label: string;
-  action: string;
+  /** What a press does, as a button's. */
+  steps?: ActionStep[];
+  action?: string;
   /** A numeric field shown on the button, such as a count of invoices. */
   field?: string;
   icon?: string;
@@ -453,7 +461,8 @@ export const ButtonNodeSchema = z.strictObject({
   type: z.literal('button'),
   id,
   label: z.string(),
-  action: z.string().min(1),
+  steps: ActionStepsSchema.optional(),
+  action: z.string().min(1).optional(),
   params: z.record(z.string(), JsonValueSchema).optional(),
   style: z.enum(['primary', 'secondary', 'danger', 'link']).optional(),
   confirm: z.string().optional(),
@@ -591,7 +600,8 @@ export const SectionsNodeSchema = z.strictObject({
 export const StatButtonSchema = z.strictObject({
   id,
   label: z.string(),
-  action: z.string().min(1),
+  steps: ActionStepsSchema.optional(),
+  action: z.string().min(1).optional(),
   field: fieldName.optional(),
   icon: z.string().optional(),
   invisible,

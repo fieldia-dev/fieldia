@@ -76,5 +76,42 @@ its field), sends only the copies on show, tells `home_address` as changed when
 anything inside changes, and loads, puts back and saves the nested answers. A
 data source sees each copy's answers as one JSON value under its name.
 
+## What a press or a moment does
+
+A button — in the body, a record's header, a stat button or a list's actions —
+runs `steps`, in order, each plain data and never code; and the page's `on`
+runs them at its moments:
+
+```json
+{ "type": "button", "id": "new-customer", "label": "New customer", "steps": [
+  { "do": "open", "page": "customer", "as": "panel", "values": { "name": "customer_name" },
+    "into": { "customer_id": "id" }, "then": [{ "do": "say", "message": "Customer added", "tone": "success" }] }
+] }
+
+"on": {
+  "change": { "product": [{ "do": "call", "action": "check_stock" }] },
+  "beforeSave": [{ "do": "check" }, { "do": "ask", "message": "Send the order?" }],
+  "afterSave": [{ "do": "say", "message": "Order sent", "tone": "success" }]
+}
+```
+
+- `open` another page in a `dialog` (the default), a `panel` beside this form,
+  or in its `page`; on a `record` (an expression giving its id) or a new one with
+  `values`. Once it is saved or sent, `into` sets this form's fields from its
+  answers (`id` is the record it saved) and `then` runs here.
+- `set` a field from an expression, `clear` one, `addLine` to a table of lines.
+- `check` the form or some fields, `save` (a page of responses sends), `reset`.
+- `goTo` a tab or a wizard step, `say` something in a tone, `ask` Yes or No.
+- `call` one of the app's own actions by name, with `params`; `close` the dialog
+  or panel the form was opened in.
+
+Any step may run only `when` a condition holds. A step that fails or is refused
+stops the ones after it: a check that finds problems, No to a question, a save
+that cannot be made, the app saying stop, a page closed without saving. The
+moments are `open`, `change` (by field: a person's change, never a step's or a
+rule's), `beforeSave` (a step that stops keeps it unsaved), `afterSave` and
+`show` (by tab or wizard step id). A button may still name only an `action`,
+handed to the app as before.
+
 To show a page, use [`@fieldia/viewer`](https://www.npmjs.com/package/@fieldia/viewer)
 or a framework binding. MIT licensed.

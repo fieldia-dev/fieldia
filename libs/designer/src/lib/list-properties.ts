@@ -336,7 +336,7 @@ export function listActionProperties(el: ElementFactory, designer: Designer, id:
       const button = listOf(page).actions?.find((a) => a.id === id);
       if (!button) return;
       if (!focused(words)) words.value = button.label;
-      if (!focused(action)) action.value = button.action;
+      if (!focused(action)) action.value = button.action ?? '';
       look.value = button.style ?? 'secondary';
       if (!focused(asks)) asks.value = button.confirm ?? '';
     },

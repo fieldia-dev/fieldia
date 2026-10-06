@@ -40,6 +40,23 @@ export type {
   FormNode,
 } from './lib/format/layout';
 export { wideColumns } from './lib/format/columns';
+export type {
+  ActionStep,
+  PageEvents,
+  ValueMap,
+  OpenStep,
+  SetStep,
+  ClearStep,
+  AddLineStep,
+  CheckStep,
+  SaveStep,
+  ResetStep,
+  GoToStep,
+  SayStep,
+  AskStep,
+  CallStep,
+  CloseStep,
+} from './lib/format/actions';
 export { FORMAT_VERSION } from './lib/format/version';
 export type { Page, PageData, PageLook } from './lib/format/page';
 export { PART_LOOKS, type PartLook, type PartLookKind, type PartsLook } from './lib/format/part-look';

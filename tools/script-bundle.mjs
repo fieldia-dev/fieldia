@@ -142,7 +142,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // corners, a size of words and an accent, each kept readable in either scheme) adds 4.8, to 267.
 // A saved form placed in another — the part checked, its answers nested under its name and checked by
 // its own page, drawn in place from the app's pages, said in words when it cannot be — adds 6, to 273.
-const BUDGET_KB = 273;
+// A page's steps and moments checked as it is shown — the fields each step names, its expressions, the
+// tabs and wizard steps it goes to — add 2.3, to 275.3.
+const BUDGET_KB = 276;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time

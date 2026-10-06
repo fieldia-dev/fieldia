@@ -1,5 +1,6 @@
+import type { ActionStep, PageEvents } from './actions';
 import type { Field, Fields, FilterItem, LineField, LineKinds } from './field';
-import type { FieldNode, FormNode, LayoutNode, ListNode, RootLayout, SheetNode, TabsNode } from './layout';
+import type { ButtonNode, FieldNode, FormNode, LayoutNode, ListNode, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
 import type { Page } from './page';
 import { compileModifier } from '../expression/modifier';
 import { compileExpression } from '../expression/expression';
@@ -38,13 +39,99 @@ export class ReferenceCheck {
   private readonly ids = new Map<string, string>();
   /** Where the answers of each saved form placed here go, by name: the path of the part that took it first. */
   private readonly formNames = new Map<string, string>();
+  /** The ids of the tabs and wizard steps a step can go to, and where each goTo and show names one. */
+  private readonly places = new Set<string>();
+  private readonly goingTo: { target: string; path: string }[] = [];
 
   constructor(private readonly page: Page) {}
 
   run(): PageIssue[] {
     this.checkFields(this.page.fields, 'fields');
     this.walkRoot(this.page.layout, 'layout');
+    if (this.page.on) this.checkEvents(this.page.on, 'on');
+    for (const { target, path } of this.goingTo) {
+      if (!this.places.has(target)) this.report(path, `no tab or wizard step "${target}" on this page`);
+    }
     return this.issues;
+  }
+
+  /** The form's moments: their steps checked, a change named by a field, a step or tab shown by its id. */
+  private checkEvents(on: PageEvents, path: string) {
+    for (const moment of ['open', 'beforeSave', 'afterSave'] as const) {
+      const steps = on[moment];
+      if (steps) this.checkSteps(steps, `${path}.${moment}`);
+    }
+    for (const [field, steps] of Object.entries(on.change ?? {})) {
+      this.need(field, `${path}.change.${field}`);
+      this.checkSteps(steps, `${path}.change.${field}`);
+    }
+    for (const [target, steps] of Object.entries(on.show ?? {})) {
+      this.goingTo.push({ target, path: `${path}.show.${target}` });
+      this.checkSteps(steps, `${path}.show.${target}`);
+    }
+  }
+
+  /** A press: steps, an app action, or both — and its steps checked. */
+  private checkPress(button: ButtonNode | StatButton, path: string) {
+    if (!button.steps && button.action === undefined) this.report(path, 'a button needs steps, an action, or both');
+    if (button.steps) this.checkSteps(button.steps, `${path}.steps`);
+  }
+
+  /**
+   * Steps, each against this page: the fields it sets, empties, checks or adds
+   * a line to are this page's; its expressions read; a step it goes to is a
+   * tab or a wizard step here. The opened page's own fields are not known
+   * here: what it starts with is named freely, and what comes back is read
+   * as an expression.
+   */
+  private checkSteps(steps: ActionStep[], path: string) {
+    const scope: Scope = { fields: this.page.fields };
+    steps.forEach((step, i) => {
+      const at = `${path}[${i}]`;
+      this.checkModifiers(step, at, ['when']);
+      switch (step.do) {
+        case 'set': {
+          const def = this.need(step.field, `${at}.field`);
+          if (def && !EXPRESSIBLE.has(def.type)) this.report(`${at}.field`, `a ${def.type} cannot be set from an expression; ${EXPRESSIBLE_WORDS}`);
+          this.checkExpression(step.value, `${at}.value`, scope);
+          return;
+        }
+        case 'clear':
+          this.need(step.field, `${at}.field`);
+          return;
+        case 'addLine': {
+          const def = this.need(step.field, `${at}.field`);
+          if (def && def.type !== 'one2many') return this.report(`${at}.field`, `"${step.field}" is a ${def.type}; a line is added to a one2many`);
+          for (const [name, value] of Object.entries(step.values ?? {})) {
+            if (def?.type === 'one2many' && !has(def.fields, name)) this.report(`${at}.values.${name}`, `"${name}" is not a field of the lines of "${step.field}"`);
+            this.checkExpression(value, `${at}.values.${name}`, scope);
+          }
+          return;
+        }
+        case 'check':
+          step.fields?.forEach((field, j) => this.need(field, `${at}.fields[${j}]`));
+          return;
+        case 'goTo':
+          this.goingTo.push({ target: step.target, path: `${at}.target` });
+          return;
+        case 'open':
+          if (step.page === this.page.id && step.as === 'page') this.report(`${at}.page`, 'a page cannot open itself in its own place');
+          if (step.record !== undefined) this.checkExpression(step.record, `${at}.record`, scope);
+          for (const [name, value] of Object.entries(step.values ?? {})) this.checkExpression(value, `${at}.values.${name}`, scope);
+          for (const [name, value] of Object.entries(step.into ?? {})) {
+            this.need(name, `${at}.into.${name}`);
+            try {
+              compileExpression(value);
+            } catch (error) {
+              this.report(`${at}.into.${name}`, `cannot read "${value}": ${(error as Error).message}`);
+            }
+          }
+          if (step.then) this.checkSteps(step.then, `${at}.then`);
+          return;
+        default:
+          return;
+      }
+    });
   }
 
   private report(path: string, message: string) {
@@ -216,6 +303,7 @@ export class ReferenceCheck {
     if (root.type === 'list') return this.walkList(root, path);
     root.children.forEach((step, i) => {
       const stepPath = `${path}.children[${i}]`;
+      this.places.add(step.id);
       this.claim(step.id, stepPath);
       this.checkModifiers(step, stepPath);
       this.walkChildren(step.children, stepPath);
@@ -244,7 +332,10 @@ export class ReferenceCheck {
     list.defaultFilters?.forEach((id, i) => {
       if (!named.has(id)) this.report(`${path}.defaultFilters[${i}]`, `no filter "${id}" in this list`);
     });
-    list.actions?.forEach((button, i) => this.claim(button.id, `${path}.actions[${i}]`));
+    list.actions?.forEach((button, i) => {
+      this.claim(button.id, `${path}.actions[${i}]`);
+      this.checkPress(button, `${path}.actions[${i}]`);
+    });
   }
 
   private walkChildren(children: LayoutNode[], path: string) {
@@ -265,6 +356,8 @@ export class ReferenceCheck {
         return this.walkTabs(node, path);
       case 'form':
         return this.checkFormNode(node, path);
+      case 'button':
+        return this.checkPress(node, path);
       default:
         return;
     }
@@ -286,6 +379,7 @@ export class ReferenceCheck {
   private walkTabs(node: TabsNode, path: string) {
     node.children.forEach((tab, i) => {
       const tabPath = `${path}.children[${i}]`;
+      this.places.add(tab.id);
       this.claim(tab.id, tabPath);
       this.checkModifiers(tab, tabPath);
       this.walkChildren(tab.children, tabPath);
@@ -316,10 +410,12 @@ export class ReferenceCheck {
     sheet.buttons?.forEach((button, i) => {
       this.claim(button.id, `${path}.buttons[${i}]`);
       this.checkModifiers(button, `${path}.buttons[${i}]`);
+      this.checkPress(button, `${path}.buttons[${i}]`);
     });
     sheet.statButtons?.forEach((stat, i) => {
       this.claim(stat.id, `${path}.statButtons[${i}]`);
       this.checkModifiers(stat, `${path}.statButtons[${i}]`);
+      this.checkPress(stat, `${path}.statButtons[${i}]`);
       if (stat.field !== undefined) this.need(stat.field, `${path}.statButtons[${i}].field`);
     });
     if (sheet.ribbon) {

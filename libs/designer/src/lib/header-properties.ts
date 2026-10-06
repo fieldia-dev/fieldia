@@ -74,7 +74,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
       const { kind, part, index, list } = found;
       if (!focused(words)) words.value = part.label;
       actionRow.hidden = kind === 'badge';
-      if (kind !== 'badge' && !focused(action)) action.value = (part as ButtonNode).action;
+      if (kind !== 'badge' && !focused(action)) action.value = (part as ButtonNode).action ?? '';
       lookRow.hidden = asksRow.hidden = kind !== 'button';
       if (kind === 'button') {
         look.value = (part as ButtonNode).style ?? 'secondary';
