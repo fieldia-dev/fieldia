@@ -169,7 +169,7 @@ ${code(
 { "type": "field", "id": "discount", "field": "discount",
   "readonly": "state in ('done', 'cancel') or not is_company" }`
 )}
-<p>Expressions read like Python: ${c('==')} ${c('!=')} ${c('<')} ${c('>')} ${c('<=')} ${c('>=')}, ${c('in')} and ${c('not in')} with a list, ${c('and')} ${c('or')} ${c('not')}, ${c('True')} ${c('False')} ${c('None')}, numbers and quoted strings. An empty value is false. Conditions are checked again on every change, and a hidden field's value is left out of what is saved or submitted.</p>
+<p>Expressions read like Python: ${c('==')} ${c('!=')} ${c('<')} ${c('>')} ${c('<=')} ${c('>=')}, ${c('in')} and ${c('not in')} with a list — ${c("['draft', 'sent']")}, or Python’s tuple ${c("('draft', 'sent')")} as Flectra writes it — ${c('and')} ${c('or')} ${c('not')}, ${c('True')} ${c('False')} ${c('None')}, numbers and quoted strings. An empty value is false. Conditions are checked again on every change, and a hidden field's value is left out of what is saved or submitted.</p>
 <p>A section's ${c('readonly')} locks every field inside it, sections within it too: a blocked customer's whole credit section, say.</p>
 <p>A condition that names a field the page does not have is refused when the page is checked, not when someone fills it in.</p>
 

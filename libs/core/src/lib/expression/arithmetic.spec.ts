@@ -75,10 +75,12 @@ describe('arithmetic: + - * / % with the usual precedence', () => {
   });
 
   it('refuses an expression that cannot be read, saying so when it is read', () => {
-    for (const source of ['1 +', '* 2', '(1 + 2', '1 2', '(1, 2)', '1 , 2', '+', 'a +* b']) {
+    for (const source of ['1 +', '* 2', '(1 + 2', '1 2', '1 , 2', '+', 'a +* b']) {
       expect(() => compileExpression(source)).toThrow();
       expect(isModifierValid(source)).toBe(false);
     }
+    // A comma in parentheses is Python's tuple: a list of values.
+    expect(compileExpression('(1, 2)').evaluate({})).toEqual([1, 2]);
   });
 });
 

@@ -203,6 +203,22 @@ export class ExpressionParser {
   }
 
   /**
+   * Python's tuple, `('draft', 'sent')` or `('cancel',)`, as Flectra writes
+   * the values `in` compares with: read as the list `['draft', 'sent']`. Like
+   * a list, it holds values, not expressions.
+   * tuple: '(' value ',' (value (',' value)*)? ','? ')'
+   */
+  private parseTuple(first: ASTNode): ASTNode {
+    const items = [first];
+    while (this.match('COMMA')) {
+      if (this.peek()?.type === 'PAREN' && this.peek()?.value === ')') break;
+      items.push(this.parseOr());
+    }
+    this.consume('PAREN', ')', 'Expected "," or ")" in a tuple');
+    return { type: 'Literal', value: items.map(tupleValue) };
+  }
+
+  /**
    * A function's name, then its values in parentheses, separated by commas.
    * call: name '(' (or_expr (',' or_expr)*)? ')'
    */
@@ -226,12 +242,14 @@ export class ExpressionParser {
 
   /**
    * Parse value expressions (highest precedence)
-   * value: '(' or_expr ')' | literal | call | identifier
+   * value: '(' or_expr ')' | tuple | literal | call | identifier
    */
   private parseValue(): ASTNode {
-    // Parenthesized expression
+    // Parenthesized expression, or a tuple
     if (this.match('PAREN', '(')) {
+      if (this.match('PAREN', ')')) return { type: 'Literal', value: [] };
       const expr = this.parseOr();
+      if (this.check('COMMA')) return this.parseTuple(expr);
       this.consume('PAREN', ')', 'Expected closing parenthesis');
       return expr;
     }
@@ -384,6 +402,13 @@ export class ExpressionParser {
  * Parse a list literal string into an array
  * Example: "['draft', 'sent']" -> ['draft', 'sent']
  */
+/** A tuple's item as a value: a literal, or a number with a minus sign. */
+function tupleValue(node: ASTNode): unknown {
+  if (node.type === 'Literal') return node.value;
+  if (node.type === 'UnaryOp' && node.operator === '-' && node.operand.type === 'Literal' && typeof node.operand.value === 'number') return -node.operand.value;
+  throw new Error("a tuple holds values such as 'draft' or 3, not expressions");
+}
+
 function parseListLiteral(listStr: string): unknown[] {
   try {
     // Remove brackets
