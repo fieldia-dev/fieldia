@@ -72,7 +72,7 @@ for (const variant of VARIANTS) {
 
       // Sub-tasks: a fourth one, which takes the task's project and customer.
       await page.getByRole('tab', { name: 'Sub-tasks' }).click();
-      await node(page, 'f-subtasks').getByRole('button', { name: /Add a line/ }).click();
+      await node(page, 'f-subtasks').getByRole('button', { name: 'Add a sub-task' }).click();
       await expect(node(page, 'f-subtasks').locator('.ag-row[row-index="3"]')).toBeVisible();
       // A whole line is edited at once here: a click outside the grid keeps it.
       await typeIn(page, 'f-subtasks', 3, 'name', 'Snag walk, both rooms', '');
