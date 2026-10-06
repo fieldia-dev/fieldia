@@ -1,0 +1,394 @@
+{
+  "fieldia": "0.1",
+  "id": "real-transfer",
+  "title": "Transfer",
+  "description": "Sherkety ERP's transfer form (stock.picking, view_picking_form), with what stock_account, stock_picking_batch, mrp, sherkety_stock and sherkety_stock_transfer add to it.",
+  "data": { "kind": "record", "model": "stock.picking" },
+  "fields": {
+    "name": { "type": "char", "label": "Reference", "default": "/", "readonly": true },
+    "priority": { "type": "integer", "label": "Priority", "min": 1, "max": 1 },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "readonly": true,
+      "default": "draft",
+      "options": [
+        { "value": "draft", "label": "Draft" },
+        { "value": "waiting", "label": "Waiting Another Operation" },
+        { "value": "confirmed", "label": "Waiting" },
+        { "value": "assigned", "label": "Ready" },
+        { "value": "done", "label": "Done" },
+        { "value": "cancel", "label": "Cancelled" }
+      ]
+    },
+    "is_locked": { "type": "boolean", "label": "Is Locked", "default": true },
+    "show_check_availability": { "type": "boolean", "label": "Show Check Availability", "readonly": true },
+    "show_lots_text": { "type": "boolean", "label": "Show Lots Text", "readonly": true },
+    "picking_type_code": {
+      "type": "selection",
+      "label": "Type of Operation",
+      "readonly": true,
+      "options": [
+        { "value": "incoming", "label": "Receipt" },
+        { "value": "outgoing", "label": "Delivery" },
+        { "value": "internal", "label": "Internal Transfer" }
+      ]
+    },
+    "hide_picking_type": { "type": "boolean", "label": "Hide Picking Type", "readonly": true },
+    "show_allocation": { "type": "boolean", "label": "Show Allocation", "readonly": true },
+    "show_reserved": { "type": "boolean", "label": "Show Reserved", "readonly": true },
+    "move_line_exist": { "type": "boolean", "label": "Has Pack Operations", "readonly": true },
+    "has_packages": { "type": "boolean", "label": "Has Packages", "readonly": true },
+    "picking_type_entire_packs": { "type": "boolean", "label": "Move Entire Packages", "readonly": true },
+    "use_create_lots": { "type": "boolean", "label": "Create New Lots/Serial Numbers", "readonly": true },
+    "has_kits": { "type": "boolean", "label": "Has Kits", "readonly": true },
+    "has_scrap_move": { "type": "boolean", "label": "Has Scrap Moves", "readonly": true },
+    "has_tracking": { "type": "boolean", "label": "Has Tracking", "readonly": true },
+    "country_code": { "type": "char", "label": "Country Code", "readonly": true },
+    "company_id": { "type": "many2one", "label": "Company", "relation": "res.company", "readonly": true },
+    "sherkety_transfer_id": { "type": "many2one", "label": "Inter-company Transfer", "relation": "sherkety.stock.transfer", "readonly": true },
+    "return_count": { "type": "integer", "label": "# Returns", "readonly": true },
+    "batch_id": { "type": "many2one", "label": "Batch Transfer", "relation": "stock.picking.batch", "readonly": true },
+
+    "partner_id": { "type": "many2one", "label": "Contact", "relation": "res.partner" },
+    "picking_type_id": { "type": "many2one", "label": "Operation Type", "relation": "stock.picking.type", "required": true },
+    "location_id": { "type": "many2one", "label": "Source Location", "relation": "stock.location", "required": true },
+    "location_dest_id": { "type": "many2one", "label": "Destination Location", "relation": "stock.location", "required": true },
+    "backorder_id": { "type": "many2one", "label": "Back Order of", "relation": "stock.picking", "readonly": true },
+    "scheduled_date": { "type": "datetime", "label": "Scheduled Date", "required": true },
+    "json_popover": { "type": "char", "label": "JSON data for the popover widget", "readonly": true },
+    "date_deadline": { "type": "datetime", "label": "Deadline", "readonly": true },
+    "products_availability_state": {
+      "type": "selection",
+      "label": "Products Availability State",
+      "readonly": true,
+      "options": [
+        { "value": "available", "label": "Available" },
+        { "value": "expected", "label": "Expected" },
+        { "value": "late", "label": "Late" }
+      ]
+    },
+    "products_availability": { "type": "char", "label": "Product Availability", "readonly": true },
+    "date_done": { "type": "datetime", "label": "Date of Transfer", "readonly": true },
+    "origin": { "type": "char", "label": "Source Document" },
+    "owner_id": { "type": "many2one", "label": "Assign Owner", "relation": "res.partner" },
+    "picking_properties": {
+      "type": "properties",
+      "label": "Properties",
+      "definitions": [
+        { "name": "truck_plate", "label": "Truck plate", "type": "char" },
+        { "name": "driver", "label": "Driver", "type": "char" },
+        { "name": "inspected", "label": "Quality inspected", "type": "boolean" },
+        { "name": "dock", "label": "Dock", "type": "selection", "options": [{ "value": "d1", "label": "Dock 1" }, { "value": "d2", "label": "Dock 2" }] }
+      ]
+    },
+    "move_ids_without_package": {
+      "type": "one2many",
+      "label": "Operations",
+      "relation": "stock.move",
+      "fields": {
+        "state": {
+          "type": "selection",
+          "label": "Status",
+          "readonly": true,
+          "options": [
+            { "value": "draft", "label": "New" },
+            { "value": "waiting", "label": "Waiting Another Move" },
+            { "value": "confirmed", "label": "Waiting Availability" },
+            { "value": "partially_available", "label": "Partially Available" },
+            { "value": "assigned", "label": "Available" },
+            { "value": "done", "label": "Done" },
+            { "value": "cancel", "label": "Cancelled" }
+          ]
+        },
+        "product_id": { "type": "many2one", "label": "Product", "relation": "product.product", "required": true },
+        "description_picking": { "type": "text", "label": "Description" },
+        "date": { "type": "datetime", "label": "Date Scheduled" },
+        "date_deadline": { "type": "datetime", "label": "Deadline", "readonly": true },
+        "description_bom_line": { "type": "char", "label": "Kit", "readonly": true },
+        "product_uom_qty": { "type": "float", "label": "Demand", "digits": [16, 2], "min": 0 },
+        "forecast_availability": { "type": "float", "label": "Forecast", "digits": [16, 2], "readonly": true },
+        "quantity": { "type": "float", "label": "Quantity", "digits": [16, 2], "min": 0 },
+        "product_uom": { "type": "many2one", "label": "Unit", "relation": "uom.uom", "required": true },
+        "qty_on_hand_now": { "type": "float", "label": "On-Hand Now", "digits": [16, 2], "readonly": true },
+        "qty_on_hand_at_date": { "type": "float", "label": "On-Hand @ Doc Date", "digits": [16, 2], "readonly": true },
+        "analytic_distribution": { "type": "many2many", "label": "Analytic", "relation": "account.analytic.account" },
+        "picked": { "type": "boolean", "label": "Picked" },
+        "lot_ids": { "type": "many2many", "label": "Serial Numbers", "relation": "stock.lot" },
+        "scrapped": { "type": "boolean", "label": "Scrapped", "readonly": true },
+        "additional": { "type": "boolean", "label": "Whether the move was added after the picking's confirmation", "readonly": true },
+        "has_tracking": {
+          "type": "selection",
+          "label": "Product with Tracking",
+          "readonly": true,
+          "options": [
+            { "value": "serial", "label": "By Unique Serial Number" },
+            { "value": "lot", "label": "By Lots" },
+            { "value": "none", "label": "No Tracking" }
+          ]
+        }
+      }
+    },
+    "package_level_ids": {
+      "type": "one2many",
+      "label": "Packages",
+      "relation": "stock.package_level",
+      "fields": {
+        "package_id": { "type": "many2one", "label": "Package", "relation": "stock.quant.package", "required": true },
+        "location_dest_id": { "type": "many2one", "label": "To", "relation": "stock.location" },
+        "is_done": { "type": "boolean", "label": "Done" }
+      }
+    },
+    "move_type": {
+      "type": "selection",
+      "label": "Shipping Policy",
+      "required": true,
+      "default": "direct",
+      "options": [
+        { "value": "direct", "label": "As soon as possible" },
+        { "value": "one", "label": "When all products are ready" }
+      ]
+    },
+    "user_id": { "type": "many2one", "label": "Responsible", "relation": "res.users", "filter": [{ "field": "share", "op": "=", "value": false }] },
+    "group_id": { "type": "many2one", "label": "Procurement Group", "relation": "procurement.group", "readonly": true },
+    "note": { "type": "html", "label": "Notes" },
+    "signature": { "type": "binary", "label": "Signature", "accept": ["image/*"] },
+    "backorder_choice": {
+      "type": "selection",
+      "label": "Backorder",
+      "options": [
+        { "value": "create", "label": "Create Backorder" },
+        { "value": "none", "label": "No Backorder" }
+      ]
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "statusbar": { "field": "state", "visibleStates": ["draft", "assigned", "done"] },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "action_confirm",
+        "label": "Mark as Todo",
+        "style": "primary",
+        "invisible": "state != 'draft'",
+        "steps": [{ "do": "save" }, { "do": "call", "action": "stock.picking.action_confirm" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "action_assign",
+        "label": "Check Availability",
+        "style": "primary",
+        "invisible": "not show_check_availability",
+        "steps": [{ "do": "save" }, { "do": "call", "action": "stock.picking.action_assign" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "button_validate",
+        "label": "Validate",
+        "style": "primary",
+        "invisible": "state in ['draft', 'confirmed', 'done', 'cancel']",
+        "steps": [{ "do": "save" }, { "do": "call", "action": "stock.picking.button_validate" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "button_validate_secondary",
+        "label": "Validate",
+        "style": "secondary",
+        "invisible": "state in ['waiting', 'assigned', 'done', 'cancel']",
+        "steps": [{ "do": "save" }, { "do": "call", "action": "stock.picking.button_validate" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "sign_done",
+        "label": "Sign",
+        "style": "primary",
+        "icon": "edit",
+        "invisible": "picking_type_code != 'outgoing' or state != 'done'",
+        "steps": [{ "do": "open", "page": "real-picking-sign", "as": "dialog", "values": { "full_name": "partner_id" }, "into": { "signature": "signature" }, "then": [{ "do": "save" }] }]
+      },
+      {
+        "type": "button",
+        "id": "sign",
+        "label": "Sign",
+        "icon": "edit",
+        "invisible": "picking_type_code != 'outgoing' or state == 'done'",
+        "steps": [{ "do": "open", "page": "real-picking-sign", "as": "dialog", "values": { "full_name": "partner_id" }, "into": { "signature": "signature" }, "then": [{ "do": "save" }] }]
+      },
+      { "type": "button", "id": "do_print_picking", "label": "Print", "invisible": "state != 'assigned'", "action": "stock.picking.do_print_picking" },
+      { "type": "button", "id": "action_open_label_type", "label": "Print Labels", "action": "stock.picking.action_open_label_type" },
+      { "type": "button", "id": "action_report_delivery", "label": "Print", "invisible": "state != 'done'", "action": "stock.picking.action_report_delivery" },
+      {
+        "type": "button",
+        "id": "act_stock_return_picking",
+        "label": "Return",
+        "invisible": "state != 'done'",
+        "steps": [{ "do": "call", "action": "stock.picking.act_stock_return_picking" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "action_cancel",
+        "label": "Cancel",
+        "invisible": "state not in ['assigned', 'confirmed', 'draft', 'waiting']",
+        "confirm": "Are you sure you want to cancel this transfer?",
+        "steps": [{ "do": "save" }, { "do": "call", "action": "stock.picking.action_cancel" }, { "do": "save" }]
+      }
+    ],
+    "statButtons": [
+      { "id": "action_see_returns", "label": "Returns", "icon": "receipt", "field": "return_count", "action": "stock.picking.action_see_returns", "invisible": "return_count == 0" },
+      { "id": "action_see_move_scrap", "label": "Scraps", "icon": "warning", "action": "stock.picking.action_see_move_scrap", "invisible": "not has_scrap_move" },
+      { "id": "action_see_packages", "label": "Packages", "icon": "box", "action": "stock.picking.action_see_packages", "invisible": "not has_packages" },
+      { "id": "action_stock_report", "label": "Traceability", "icon": "link", "action": "stock.picking.action_stock_report", "invisible": "state != 'done' or not has_tracking" },
+      { "id": "action_view_reception_report", "label": "Allocation", "icon": "list", "action": "stock.picking.action_view_reception_report", "invisible": "not show_allocation" },
+      { "id": "action_picking_move_tree", "label": "Operations", "icon": "layers", "action": "stock.picking.action_picking_move_tree", "invisible": "is_locked or state == 'done'" },
+      { "id": "action_detailed_operations", "label": "Detailed Operations", "icon": "list", "action": "stock.picking.action_detailed_operations" },
+      { "id": "action_view_batch", "label": "Batch", "icon": "truck", "action": "stock.picking.action_view_batch", "invisible": "not batch_id" },
+      { "id": "action_view_stock_valuation_layers", "label": "Valuation", "icon": "money", "action": "stock.picking.action_view_stock_valuation_layers", "invisible": "state != 'done'" }
+    ],
+    "badges": [
+      { "id": "b-transfer-lock", "label": "Inter-company transfer: quantities locked", "tone": "muted", "icon": "lock", "invisible": "not sherkety_transfer_id" }
+    ],
+    "title": {
+      "field": "name",
+      "above": [{ "type": "field", "id": "f-priority", "field": "priority", "widget": "rating", "labels": "hidden" }]
+    },
+    "children": [
+      {
+        "type": "section",
+        "id": "main-groups",
+        "columns": { "wide": 2, "medium": 2 },
+        "children": [
+          {
+            "type": "section",
+            "id": "group-left",
+            "children": [
+              { "type": "field", "id": "f-partner-outgoing", "field": "partner_id", "label": "Delivery Address", "readonly": "state in ['cancel', 'done']", "invisible": "picking_type_code != 'outgoing'" },
+              { "type": "field", "id": "f-partner-incoming", "field": "partner_id", "label": "Receive From", "readonly": "state in ['cancel', 'done']", "invisible": "picking_type_code != 'incoming'" },
+              { "type": "field", "id": "f-partner", "field": "partner_id", "label": "Contact", "readonly": "state in ['cancel', 'done']", "invisible": "picking_type_code in ['incoming', 'outgoing']" },
+              { "type": "field", "id": "f-picking-type", "field": "picking_type_id", "invisible": "hide_picking_type", "readonly": "state != 'draft'" },
+              { "type": "field", "id": "f-location", "field": "location_id", "options": { "create": false }, "invisible": "picking_type_code == 'incoming'", "readonly": "state == 'done'" },
+              { "type": "field", "id": "f-location-dest", "field": "location_dest_id", "options": { "create": false }, "invisible": "picking_type_code == 'outgoing'", "readonly": "state == 'done'" },
+              { "type": "field", "id": "f-backorder", "field": "backorder_id", "invisible": "not backorder_id" }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "group-right",
+            "children": [
+              { "type": "field", "id": "f-scheduled", "field": "scheduled_date", "readonly": "state in ['cancel', 'done']" },
+              { "type": "field", "id": "f-deadline", "field": "date_deadline", "invisible": "state in ['done', 'cancel'] or not date_deadline" },
+              { "type": "field", "id": "f-availability", "field": "products_availability", "invisible": "picking_type_code != 'outgoing' or state not in ['confirmed', 'waiting', 'assigned']" },
+              { "type": "field", "id": "f-date-done", "field": "date_done", "label": "Effective Date", "invisible": "state != 'done'" },
+              { "type": "field", "id": "f-origin", "field": "origin", "placeholder": "e.g. PO0032", "readonly": "state in ['cancel', 'done']" },
+              { "type": "field", "id": "f-owner", "field": "owner_id", "invisible": "picking_type_code != 'incoming'", "readonly": "state in ['cancel', 'done']" }
+            ]
+          }
+        ]
+      },
+      { "type": "field", "id": "f-properties", "field": "picking_properties", "labels": "hidden" },
+      {
+        "type": "tabs",
+        "id": "notebook",
+        "children": [
+          {
+            "type": "tab",
+            "id": "operations",
+            "label": "Operations",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-moves",
+                "field": "move_ids_without_package",
+                "widget": "grid",
+                "labels": "hidden",
+                "columns": [
+                  "product_id",
+                  "description_picking",
+                  "date",
+                  "date_deadline",
+                  "description_bom_line",
+                  "product_uom_qty",
+                  "forecast_availability",
+                  "quantity",
+                  "product_uom",
+                  "qty_on_hand_now",
+                  "qty_on_hand_at_date",
+                  "analytic_distribution",
+                  "picked",
+                  "lot_ids"
+                ],
+                "optionalColumns": {
+                  "description_picking": "hide",
+                  "date": "hide",
+                  "date_deadline": "hide",
+                  "description_bom_line": "hide",
+                  "forecast_availability": "hide",
+                  "qty_on_hand_now": "show",
+                  "qty_on_hand_at_date": "show",
+                  "analytic_distribution": "show",
+                  "picked": "hide",
+                  "lot_ids": "hide"
+                },
+                "readonly": "state == 'done' and is_locked",
+                "options": { "addLabel": "Add a Product" }
+              },
+              {
+                "type": "field",
+                "id": "f-package-levels",
+                "field": "package_level_ids",
+                "columns": ["package_id", "location_dest_id", "is_done"],
+                "invisible": "not picking_type_entire_packs",
+                "readonly": "state == 'done'"
+              },
+              {
+                "type": "section",
+                "id": "pack-row",
+                "style": "plain",
+                "columns": 4,
+                "children": [
+                  { "type": "spacer", "id": "pack-spacer", "colspan": 3 },
+                  { "type": "button", "id": "action_put_in_pack", "label": "Put in Pack", "icon": "box", "action": "stock.picking.action_put_in_pack", "invisible": "state in ['draft', 'done', 'cancel']" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "extra",
+            "label": "Additional Info",
+            "children": [
+              {
+                "type": "section",
+                "id": "extra-groups",
+                "columns": { "wide": 2, "medium": 2 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "other_infos",
+                    "title": "Other Information",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-move-type", "field": "move_type", "invisible": "picking_type_code == 'incoming'", "readonly": "state in ['cancel', 'done']" },
+                      { "type": "field", "id": "f-user", "field": "user_id", "readonly": "state in ['cancel', 'done']" },
+                      { "type": "field", "id": "f-group", "field": "group_id" },
+                      { "type": "field", "id": "f-company", "field": "company_id", "options": { "create": false } },
+                      { "type": "field", "id": "f-batch", "field": "batch_id", "options": { "create": false } }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "note",
+            "label": "Note",
+            "children": [{ "type": "field", "id": "f-note", "field": "note", "label": "Note", "labels": "hidden", "placeholder": "Add an internal note that will be printed on the Picking Operations sheet" }]
+          }
+        ]
+      }
+    ],
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" }
+  }
+}

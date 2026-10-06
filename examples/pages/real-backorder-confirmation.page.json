@@ -1,0 +1,37 @@
+{
+  "fieldia": "0.1",
+  "id": "real-backorder-confirmation",
+  "title": "Create Backorder?",
+  "data": { "kind": "responses" },
+  "maxWidth": "narrow",
+  "fields": {
+    "pickings": { "type": "char", "label": "Transfer", "readonly": true },
+    "choice": {
+      "type": "selection",
+      "label": "What becomes of the rest",
+      "required": true,
+      "default": "create",
+      "options": [
+        { "value": "create", "label": "Create Backorder" },
+        { "value": "none", "label": "No Backorder" }
+      ]
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "wizard",
+    "children": [
+      {
+        "type": "section",
+        "id": "explain",
+        "style": "plain",
+        "children": [
+          { "type": "text", "id": "less", "style": "paragraph", "text": "You have processed less products than the initial demand." },
+          { "type": "text", "id": "create-help", "style": "note", "text": "Create a backorder if you expect to process the remaining products later. Do not create a backorder if you will not process the remaining products." },
+          { "type": "field", "id": "f-pickings", "field": "pickings" },
+          { "type": "field", "id": "f-choice", "field": "choice", "widget": "radio" }
+        ]
+      }
+    ]
+  }
+}
