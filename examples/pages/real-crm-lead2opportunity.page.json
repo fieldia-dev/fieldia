@@ -2,7 +2,6 @@
   "fieldia": "0.1",
   "id": "real-crm-lead2opportunity",
   "title": "Convert to Opportunity",
-  "description": "Turn a lead into an opportunity (crm.lead2opportunity.partner, crm.view_crm_lead2opportunity_partner), opened in a dialog by Convert to Opportunity.",
   "data": { "kind": "responses" },
   "maxWidth": "medium",
   "fields": {

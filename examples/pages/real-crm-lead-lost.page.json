@@ -2,7 +2,6 @@
   "fieldia": "0.1",
   "id": "real-crm-lead-lost",
   "title": "Lost Lead",
-  "description": "Why the lead or opportunity was lost (crm.lead.lost, crm.crm_lead_lost_view_form), opened in a dialog by Lost.",
   "data": { "kind": "responses" },
   "maxWidth": "medium",
   "fields": {

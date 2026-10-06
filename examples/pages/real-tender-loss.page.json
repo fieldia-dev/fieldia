@@ -2,7 +2,6 @@
   "fieldia": "0.1",
   "id": "real-tender-loss",
   "title": "Tender Loss Analysis",
-  "description": "Why a tender was lost (tender.loss.wizard, crm_tender.view_tender_loss_wizard_form), opened in a dialog by Mark Lost.",
   "data": { "kind": "responses" },
   "maxWidth": "medium",
   "fields": {
