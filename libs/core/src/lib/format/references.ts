@@ -55,14 +55,14 @@ export class ReferenceCheck {
     return this.issues;
   }
 
-  /** The form's moments: their steps checked, a change named by a field, a step or tab shown by its id. */
+  /** The form's moments: their steps checked, a change named by a field (or a saved form placed here, by its answers' name), a step or tab shown by its id. */
   private checkEvents(on: PageEvents, path: string) {
     for (const moment of ['open', 'beforeSave', 'afterSave'] as const) {
       const steps = on[moment];
       if (steps) this.checkSteps(steps, `${path}.${moment}`);
     }
     for (const [field, steps] of Object.entries(on.change ?? {})) {
-      this.need(field, `${path}.change.${field}`);
+      if (!this.formNames.has(field)) this.need(field, `${path}.change.${field}`);
       this.checkSteps(steps, `${path}.change.${field}`);
     }
     for (const [target, steps] of Object.entries(on.show ?? {})) {

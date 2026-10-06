@@ -1,4 +1,4 @@
-import type { Field, FieldNode, Form, FormState, Value } from '@fieldia/core';
+import type { Field, FieldNode, Form, FormEvents, FormState, Value } from '@fieldia/core';
 import { mountViewer, type SlotRenderer, type ViewerHandle, type ViewerOptions } from '@fieldia/viewer';
 import type { WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
@@ -56,7 +56,20 @@ export interface FieldiaFormProps extends Omit<ViewerOptions, 'slots'> {
   style?: CSSProperties;
   /** Called once per mount with the viewer's handle. */
   onReady?: (handle: ViewerHandle) => void;
+  /** A field was written — `by` a person, a step or the app. */
+  onChange?: (event: FormEvents['change']) => void;
+  /** A record was saved. */
+  onSave?: (event: FormEvents['save']) => void;
+  /** A page of responses sent its answers. */
+  onSend?: (event: FormEvents['send']) => void;
+  /** A wizard's step was entered. */
+  onStep?: (event: FormEvents['step']) => void;
+  /** A run of steps ended — a button's, a moment's — and how. */
+  onRun?: (event: FormEvents['run']) => void;
 }
+
+/** The form's events a prop hears, by the prop's name. */
+const EVENTS = { onChange: 'change', onSave: 'save', onSend: 'send', onStep: 'step', onRun: 'run' } as const;
 
 /** A form's state as React state: the component re-renders on every change. */
 export function useFormState(form: Form): FormState {
@@ -170,15 +183,22 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       };
     }
 
-    const { fieldTypes: _fields, slots: _slots, className: _class, style: _style, onReady: _ready, ...options } = latest.current;
+    const { fieldTypes: _fields, slots: _slots, className: _class, style: _style, onReady: _ready, onChange: _change, onSave: _save, onSend: _send, onStep: _step, onRun: _run, ...options } = latest.current;
     const mounted = mountViewer(element, {
       ...options,
       widgets,
       slots,
+      // The newest handler; what it answers — values, words, a page, a stop — the form takes.
       onAction: (request) => latest.current.onAction?.(request),
       // The newest handler, as for actions; rows look openable only when there is one.
       onOpenRecord: options.onOpenRecord && ((id) => latest.current.onOpenRecord?.(id)),
+      // A page a step opens: the newest way of the app's, else the viewer's.
+      onOpen: (request) => latest.current.onOpen?.(request),
     });
+    // Each event through the newest handler, as for actions.
+    for (const [prop, event] of Object.entries(EVENTS) as [keyof typeof EVENTS, keyof FormEvents][]) {
+      mounted.on(event, (payload) => (latest.current[prop] as ((event: unknown) => void) | undefined)?.(payload));
+    }
     setHandle(mounted);
     setPortals(found);
     latest.current.onReady?.(mounted);

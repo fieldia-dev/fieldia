@@ -5,8 +5,11 @@ import {
   localizePage,
   translatePage,
   wideColumns,
+  type ActionHost,
+  type ActionStep,
   type ButtonNode,
   type FieldNode,
+  type FormEvents,
   type Form,
   type FormOptions,
   type FormState,
@@ -27,6 +30,11 @@ import {
   type WizardNode,
   type LabelPlace,
   type Locale,
+  type OpenRequest,
+  type OpenResult,
+  type RunContext,
+  type RunResult,
+  type Values,
   MESSAGES,
 } from '@fieldia/core';
 import { browserPreferences, createWidget, drawIcon, installStyles, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
@@ -35,6 +43,8 @@ import { listView } from './list';
 import { applyLook } from './look';
 import { labelPlace, planSection, type Place } from './place';
 import { setAttr, setHidden, setText } from './dom';
+import { openPage } from './open';
+import { sayer } from './say';
 
 export type Skin = 'underline' | 'outlined';
 
@@ -46,7 +56,7 @@ export type { PageFinder, PageRequest } from './related';
 /** Fill a slot with the app's own content. Return a function to clean up. */
 export type SlotRenderer = (element: HTMLElement, context: { form: Form; name: string }) => void | (() => void);
 
-export interface ViewerOptions extends Omit<FormOptions, 'page'> {
+export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   page: Page;
   /** A form made elsewhere, to share one record between two views. */
   form?: Form;
@@ -67,7 +77,7 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
   /** Labels that win over the language's defaults. */
   labels?: Partial<ViewerLabels>;
   dir?: 'ltr' | 'rtl';
-  /** How to ask before a button with `confirm` runs. Defaults to a small dialog. */
+  /** How a question is asked: a button's `confirm`, and an `ask` step. Defaults to the viewer's own small box. */
   confirm?: (message: string) => Promise<boolean>;
   /** Where a person's choices about the page's look are kept, such as a table's columns. The browser's storage by default. */
   preferences?: PreferenceStore;
@@ -112,6 +122,18 @@ export interface ViewerOptions extends Omit<FormOptions, 'page'> {
   translate?: (text: string) => string;
   /** A list page: a row was opened, by a click or by Enter. The app shows the record. */
   onOpenRecord?: (id: RecordId) => void;
+  /**
+   * What the page's steps ask of the screen, the viewer does itself: a page
+   * opened (in a dialog, a side panel, or this form's place, with Back), words
+   * said (a toast), a question asked (its own box, or `confirm`), a tab shown.
+   * Give any of these to do it your own way; the rest stay the viewer's.
+   */
+  host?: Partial<ActionHost>;
+  /**
+   * A page a step opens: answer with how it ended to open it your own way —
+   * your router, your own dialog — or with undefined to let the viewer open it.
+   */
+  onOpen?: (request: OpenRequest) => Promise<OpenResult> | undefined;
 }
 
 export interface ViewerHandle {
@@ -125,6 +147,12 @@ export interface ViewerHandle {
   /** Lock or unlock the whole form. */
   setReadonly(readonly: boolean): void;
   isReadonly(): boolean;
+  /** Listen to one of the form's events — change, save, send, action, run, step, open; returns what stops listening. */
+  on<E extends keyof FormEvents>(event: E, listener: (event: FormEvents[E]) => void): () => void;
+  /** Write several fields at once, as the app: the page's change steps do not run for it. */
+  setValues(values: Values): void;
+  /** Run steps on the form, as a button would. */
+  run(steps: readonly ActionStep[], context?: RunContext): Promise<RunResult>;
   destroy(): void;
 }
 
@@ -173,8 +201,24 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   const preferences = options.preferences ?? browserPreferences();
   const dialogs = pageDialogs(options);
   const ownsForm = !options.form;
-  const form = options.form ?? createForm({ ...options, page, messages: options.messages ?? MESSAGES[locale] });
   const labels: ViewerLabels = { ...VIEWER_LABELS[locale], ...options.labels };
+  /**
+   * What the page's steps ask of the screen: a page opened, words said, a
+   * question asked, a tab shown — the viewer's own, under the app's. A form
+   * made elsewhere (`form`) keeps the host it was made with.
+   */
+  const actionHost: ActionHost = {
+    open: (request) =>
+      openPage({ options, place: host, root, title: (other) => shownAs(other).title || other.id, back: labels.back, missing: (id) => fill(labels.pageMissing, { page: id }) }, request),
+    say: (message, tone) => say(message, tone),
+    ask: (message) => confirm(message),
+    show: (target) => {
+      const show = tabs.get(target);
+      if (!show?.()) throw new Error(`No tab "${target}" can be shown here`);
+    },
+    ...options.host,
+  };
+  const form = options.form ?? createForm({ ...options, page, host: actionHost, messages: options.messages ?? MESSAGES[locale] });
   const widgetLabels = WIDGET_LABELS[locale];
   const dir = options.dir ?? (tag && isRightToLeft(tag) ? 'rtl' : undefined);
   const prefix = `fd${++mounts}`;
@@ -208,6 +252,30 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': options.skin ?? 'underline', dir, lang: tag, 'data-max-width': page.maxWidth });
   applyLook(root, page.look);
   const confirm = options.confirm ?? dialogConfirm;
+  const say = sayer(root, el, labels.dismiss);
+  /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
+  const tabs = new Map<string, () => boolean>();
+
+  /**
+   * A press runs its steps one run at a time: the button busy meanwhile, and
+   * not pressed again. A check or a save that stops it takes the focus to the
+   * first problem, and says which fields, as Save does.
+   */
+  async function press(button: HTMLElement, run: () => Promise<RunResult>) {
+    if (button.hasAttribute('aria-busy')) return;
+    button.setAttribute('aria-busy', 'true');
+    button.setAttribute('aria-disabled', 'true');
+    try {
+      const { reason } = await run();
+      if (reason === 'check' || reason === 'save') {
+        if (!form.getState().saveProblem) announce(checkText(form.getState()));
+        focusFirstProblem();
+      }
+    } finally {
+      button.removeAttribute('aria-busy');
+      button.removeAttribute('aria-disabled');
+    }
+  }
 
   // ---- the parts -------------------------------------------------------
 
@@ -329,10 +397,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     function buttonItem(node: ButtonNode): HTMLElement {
       const button = el('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, ...withIcon(node.icon, node.label));
       spans(button, node.colspan);
-      button.addEventListener('click', async () => {
-        if (node.confirm && !(await confirm(node.confirm))) return;
-        await form.runAction(node.id);
-      });
+      // Its confirmation, then its steps: the form asks, through the viewer.
+      button.addEventListener('click', () => void press(button, () => form.runAction(node.id)));
       hideWhen(button, node.id);
       return button;
     }
@@ -426,16 +492,20 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       // a tab hidden while the record loads must not leave its neighbour open.
       let picked: string | null = null;
       let active = node.children[0].id;
+      /** A tab shown, by a person or a step: the page's steps for it run. */
+      const show = (tab: string) => {
+        picked = active = tab;
+        renderNow();
+        form.shown(tab);
+      };
       const parts = node.children.map((tab) => {
         const tabId = uid(`${tab.id}-tab`);
         const panelId = uid(`${tab.id}-panel`);
         const button = el('button', { type: 'button', class: 'fd-tab', role: 'tab', id: tabId, 'aria-controls': panelId, 'data-node': tab.id }, ...withIcon(tab.icon, tab.label));
         // A tab's parts sit where the tabs do: on the page, or in the box round them.
         const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId }, grid(tab.children, 1, { columns: 1, onPage: place.onPage, labels: place.labels }));
-        button.addEventListener('click', () => {
-          picked = active = tab.id;
-          renderNow();
-        });
+        button.addEventListener('click', () => show(tab.id));
+        if (!tabs.has(tab.id)) tabs.set(tab.id, () => !form.node(tab.id).invisible && (show(tab.id), true));
         list.append(button);
         return { tab, button, panel };
       });
@@ -447,8 +517,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         event.preventDefault();
         const rtl = root.getAttribute('dir') === 'rtl' && (event.key === 'ArrowRight' || event.key === 'ArrowLeft');
         const next = shown[(at + (rtl ? -move : move) + shown.length) % shown.length];
-        picked = active = next.tab.id;
-        renderNow();
+        show(next.tab.id);
         next.button.focus();
       });
       box.append(list, ...parts.map((p) => p.panel));
@@ -898,7 +967,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         const icon = drawIcon(doc, stat.icon, options.icons);
         const words = el('span', { class: 'fd-stat-words' }, value, el('span', { class: 'fd-stat-label' }, stat.label));
         const button = el('button', { type: 'button', class: 'fd-stat', 'data-node': stat.id }, ...(icon ? [icon, words] : [words]));
-        button.addEventListener('click', () => void form.runAction(stat.id));
+        button.addEventListener('click', () => void press(button, () => form.runAction(stat.id)));
         updaters.push((state) => {
           button.hidden = form.node(stat.id).invisible;
           const count = stat.field ? state.values[stat.field] : null;
@@ -1003,7 +1072,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       labels,
       locale,
       fill,
-      confirm,
+      press,
       withIcon,
       uid,
       icons: options.icons,
@@ -1106,9 +1175,13 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       };
       cancel.addEventListener('click', () => close(false));
       ok.addEventListener('click', () => close(true));
+      // Its keys are its own: Escape answers No here, and closes no dialog or panel under it.
       backdrop.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') close(false);
-        else keepTabIn(dialog, event);
+        event.stopPropagation();
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          close(false);
+        } else keepTabIn(dialog, event);
       });
       root.append(backdrop);
       ok.focus();
@@ -1123,6 +1196,12 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
 
   host.append(root);
   const unsubscribe = form.subscribe(render);
+  // A run that could not go on says why: a step that cannot run here, or what the app threw. A stop with words the form says itself.
+  cleanups.push(
+    form.on('run', ({ result }) => {
+      if (result.reason === 'cannot' || (result.reason === 'app' && result.error !== undefined)) actionHost.say(result.message ?? '', result.reason === 'app' ? 'danger' : 'warning');
+    })
+  );
   render(form.getState());
   mounted = true;
   if (form.getState().status === 'idle') void form.load();
@@ -1149,6 +1228,13 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       render(form.getState());
     },
     isReadonly: () => locked,
+    on: (event, listener) => {
+      const off = form.on(event, listener);
+      cleanups.push(off);
+      return off;
+    },
+    setValues: (values) => form.setValues(values),
+    run: (steps, context) => form.run(steps, context),
     destroy() {
       gone = true;
       unsubscribe();

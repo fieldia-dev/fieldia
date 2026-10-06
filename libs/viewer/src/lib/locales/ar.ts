@@ -74,4 +74,5 @@ export const ar: ViewerLabels = {
   formInItself: 'لا يُعرض النموذج المحفوظ «{page}» هنا: سيوضع داخل نفسه ({chain}).',
   formNotPlaceable: 'لا يمكن وضع النموذج المحفوظ «{page}» هنا: يوضع في نموذج آخر ما كان من أقسام أو تبويبات فقط.',
   formBroken: 'لا يمكن عرض النموذج المحفوظ «{page}».',
+  pageMissing: 'تعذّر العثور على الصفحة «{page}».',
 };

@@ -127,6 +127,21 @@ describe('a form in a dialog', () => {
     expect((await result).values).toEqual({ qty: 5, price: 100, subtotal: 500 });
   });
 
+  it('writes what comes back as the app’s change, not a person’s: the page’s change steps do not run for it', async () => {
+    const calls: string[] = [];
+    const watched: Page = { ...linePage, on: { change: { subtotal: [{ do: 'call', action: 'subtotal_typed' }], qty: [{ do: 'call', action: 'qty_typed' }] } } };
+    const recompute = async (values: Values): Promise<Values> => ({ ...values, subtotal: Number(values['qty']) * Number(values['price']) });
+    const result = openFormDialog({ page: watched, title: 'Order line', mode: 'values', values: { qty: 2, price: 100, subtotal: 200 }, recompute, onAction: ({ action }) => void calls.push(action) });
+    await flush();
+    typeIn(field('values-qty'), '5');
+    await flush();
+    await flush();
+    expect(field('values-subtotal').value).toBe('500.00');
+    expect(calls).toEqual(['qty_typed']);
+    button('Save & Close').click();
+    expect((await result).values['subtotal']).toBe(500);
+  });
+
   it('drops an answer for values that have changed since', async () => {
     const pending: { qty: unknown; answer: () => void }[] = [];
     const recompute = (values: Values) =>

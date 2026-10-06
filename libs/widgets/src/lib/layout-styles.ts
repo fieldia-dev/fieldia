@@ -118,6 +118,7 @@ fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
   --fd-warning-soft: rgba(242, 181, 92, 0.13);
   --fd-info: #7db7ff;
   --fd-info-soft: rgba(90, 162, 255, 0.14);
+  --fd-edge: #59616c;
 }
 /* Auto follows the reader's system: the same dark tokens, when it is dark. */
 @media (prefers-color-scheme: dark) {
@@ -141,6 +142,7 @@ fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
     --fd-warning-soft: rgba(242, 181, 92, 0.13);
     --fd-info: #7db7ff;
     --fd-info-soft: rgba(90, 162, 255, 0.14);
+    --fd-edge: #59616c;
   }
 }
 

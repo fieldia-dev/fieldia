@@ -8,6 +8,7 @@ import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
 import { panelBar } from '../shared/panel-demo';
+import { answerAction } from '../shared/order-desk';
 import { timeFirstPaint } from '../shared/timing';
 
 /**
@@ -56,6 +57,8 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
   onAction: (request) => {
     actions.push(request.action);
     requests.push(request);
+    // The shop's answers to the pages' steps: the stock checked for "Order by phone".
+    return answerAction(request, params.get('locale') ?? undefined);
   },
   widgets: { 'char.shout': shoutWidget, ...gridWidgets, ...codeWidgets },
   pages: appPages,

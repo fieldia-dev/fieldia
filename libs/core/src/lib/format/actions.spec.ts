@@ -149,6 +149,15 @@ describe('the form’s moments', () => {
     ]);
   });
 
+  it('a change inside a saved form placed here, named by the part’s name, as its answers are', () => {
+    const placed = { type: 'form', id: 'home', page: 'address', name: 'home_address' };
+    const on = { change: { home_address: [{ do: 'call', action: 'price_delivery' }] } };
+    expect(problems(order({ layout: [placed], on }))).toEqual([]);
+    expect(quick(order({ layout: [placed], on }))).toEqual([]);
+    // The part's id is no name of its answers.
+    expect(quick(order({ layout: [placed], on: { change: { home: [{ do: 'save' }] } } }))).toEqual(['on.change.home: no field "home"']);
+  });
+
   it('refuses a moment the format does not have', () => {
     expect(problems(order({ on: { hover: [{ do: 'save' }] } }))).not.toEqual([]);
   });

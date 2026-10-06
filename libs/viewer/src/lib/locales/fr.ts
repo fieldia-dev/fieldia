@@ -74,4 +74,5 @@ export const fr: ViewerLabels = {
   formInItself: 'Le formulaire enregistré « {page} » n’est pas affiché ici : il serait placé dans lui-même ({chain}).',
   formNotPlaceable: 'Le formulaire enregistré « {page} » ne peut pas être placé ici : seul un formulaire de sections ou d’onglets le peut.',
   formBroken: 'Le formulaire enregistré « {page} » ne peut pas être affiché.',
+  pageMissing: 'La page « {page} » est introuvable.',
 };

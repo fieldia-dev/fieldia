@@ -88,6 +88,46 @@ class ListHostComponent {
   readonly opened: RecordId[] = [];
 }
 
+/** A product priced by the app, saved as a record. */
+const pricing: Page = {
+  fieldia: '0.1',
+  id: 'pricing',
+  data: { kind: 'record', model: 'shop.order' },
+  fields: { product: { type: 'char', label: 'Product' }, price: { type: 'float', label: 'Price' } },
+  layout: {
+    type: 'sections',
+    id: 'root',
+    children: [
+      { type: 'field', id: 'f-product', field: 'product' },
+      { type: 'field', id: 'f-price', field: 'price' },
+      { type: 'button', id: 'price', label: 'Price it', action: 'price' },
+    ],
+  },
+};
+
+@Component({
+  imports: [FieldiaFormComponent],
+  template: `<fieldia-form
+    [page]="page"
+    [dataSource]="dataSource"
+    [answer]="answer"
+    (action)="heard.push('action ' + $event.action)"
+    (fieldChange)="heard.push('change ' + $event.field + ' by ' + $event.by)"
+    (run)="heard.push('run ' + $event.id + ' ' + $event.result.done)"
+    (save)="heard.push('save ' + $event.values['price'])"
+    (send)="heard.push('send')"
+    (step)="heard.push('step ' + $event.step)"
+    (ready)="handle = $event"
+  />`,
+})
+class EventsHostComponent {
+  page: Page = pricing;
+  readonly dataSource = createMemoryDataSource();
+  readonly heard: string[] = [];
+  handle!: ViewerHandle;
+  readonly answer = (request: ActionRequest) => (request.action === 'price' ? { values: { price: 380 } } : undefined);
+}
+
 async function setup(start: Page = custom) {
   const fixture = TestBed.createComponent(HostComponent);
   fixture.componentInstance.page.set(start);
@@ -141,6 +181,40 @@ describe('<fieldia-form> for Angular', () => {
     const { host, handle } = await setup(page('customer'));
     await handle().form.runAction('sales');
     expect(host.actions[0]).toMatchObject({ action: 'open_sales' });
+  });
+
+  it('takes what the app answers through [answer], and tells the form’s events as outputs', async () => {
+    const fixture = TestBed.createComponent(EventsHostComponent);
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    const host = fixture.componentInstance;
+    const product = el.querySelector('[data-node="f-product"] input') as HTMLInputElement;
+    product.value = 'Desk lamp';
+    product.dispatchEvent(new Event('input', { bubbles: true }));
+    // A box's own change event is not the form's: it is not heard as one.
+    product.dispatchEvent(new Event('change', { bubbles: true }));
+    (el.querySelector('[data-node="price"]') as HTMLButtonElement).click();
+    await host.handle.form.settled();
+    expect((el.querySelector('[data-node="f-price"] input') as HTMLInputElement).value).toBe('380.00');
+    await host.handle.save();
+    expect(host.heard).toEqual(['change product by person', 'action price', 'change price by step', 'run price true', 'save 380']);
+  });
+
+  it('tells a response sent and a wizard step entered', async () => {
+    const fixture = TestBed.createComponent(EventsHostComponent);
+    fixture.componentInstance.page = page('survey');
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    const host = fixture.componentInstance;
+    await host.handle.form.settled();
+    expect(host.heard).toEqual(['step step-about']);
+    const sending = TestBed.createComponent(EventsHostComponent);
+    sending.componentInstance.page = { ...pricing, data: { kind: 'responses' } };
+    sending.autoDetectChanges();
+    await sending.whenStable();
+    await sending.componentInstance.handle.save();
+    expect(sending.componentInstance.heard).toEqual(['send']);
   });
 
   it('passes a list’s opened row on as an openRecord output', async () => {

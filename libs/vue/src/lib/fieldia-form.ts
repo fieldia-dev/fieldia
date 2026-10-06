@@ -1,4 +1,4 @@
-import type { ActionRequest, DataSource, DraftStore, Field, FieldNode, Form, FormState, Locale, Page, RecordId, Scheduler, Value, Values } from '@fieldia/core';
+import type { DataSource, DraftStore, Field, FieldNode, Form, FormEvents, FormState, Locale, OnAction, Page, RecordId, Scheduler, Value, Values } from '@fieldia/core';
 import { mountViewer, type Skin, type SlotRenderer, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import type { PreferenceStore, WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
@@ -54,6 +54,9 @@ interface Portal {
   render: () => VNodeChild;
 }
 
+/** The form's events, each emitted under its own name. */
+const EVENTS = ['change', 'save', 'send', 'step', 'run'] as const;
+
 const EMPTY_STATE: WidgetState = { value: undefined, values: {}, readonly: false, required: false, invalid: false };
 
 export const FieldiaForm = defineComponent({
@@ -85,12 +88,31 @@ export const FieldiaForm = defineComponent({
     readonly: { type: Boolean, default: false },
     editSwitch: { type: Boolean, default: false },
     translate: { type: Function as PropType<ViewerOptions['translate']>, default: undefined },
+    /**
+     * A button's app action, or a `call` step: `@action="…"` as before, and what
+     * it returns — values, words, a page to open, a stop — the form takes. A
+     * prop rather than an event, so its answer comes back.
+     */
+    onAction: { type: Function as PropType<OnAction>, default: undefined },
+    /** Your own way to open a page a step asks for; undefined lets the viewer open it. */
+    onOpen: { type: Function as PropType<ViewerOptions['onOpen']>, default: undefined },
+    /** Any of the viewer's host done your own way: words said, a question asked, a page opened, a tab shown. */
+    host: { type: Object as PropType<ViewerOptions['host']>, default: undefined },
   },
   emits: {
     ready: (_handle: ViewerHandle) => true,
-    action: (_request: ActionRequest) => true,
     /** A list's row was opened: the app shows the record. */
     openRecord: (_id: RecordId) => true,
+    /** A field was written — `by` a person, a step or the app. */
+    change: (_event: FormEvents['change']) => true,
+    /** A record was saved. */
+    save: (_event: FormEvents['save']) => true,
+    /** A page of responses sent its answers. */
+    send: (_event: FormEvents['send']) => true,
+    /** A wizard's step was entered. */
+    step: (_event: FormEvents['step']) => true,
+    /** A run of steps ended — a button's, a moment's — and how. */
+    run: (_event: FormEvents['run']) => true,
   },
   setup(props, { slots, emit, expose }) {
     const host = ref<HTMLElement>();
@@ -169,9 +191,12 @@ export const FieldiaForm = defineComponent({
         readonly: props.readonly,
         editSwitch: props.editSwitch,
         translate: props.translate,
-        onAction: (request) => emit('action', request),
+        onAction: (request) => props.onAction?.(request),
+        onOpen: props.onOpen,
+        host: props.host ? toRaw(props.host) : undefined,
         onOpenRecord: (id) => emit('openRecord', id),
       });
+      for (const event of EVENTS) handle.on(event, (payload) => (emit as (event: string, payload: unknown) => void)(event, payload));
       portals.value = found;
       emit('ready', handle);
     }

@@ -13,6 +13,7 @@ import type { ActionRequest, Form, FormState, Locale, RecordId, Value } from '@f
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
+import { answerAction } from '../shared/order-desk';
 
 const params = new URLSearchParams(location.search);
 const page = pageFromQuery(params);
@@ -102,6 +103,7 @@ class NoteComponent implements OnInit {
     [translator]="options.translate"
     (ready)="ready($event)"
     (action)="pressed($event)"
+    [answer]="answer"
     (openRecord)="open($event)"
   >
     <ng-template fieldiaSlot="chatter" let-form><demo-chatter [form]="form" /></ng-template>
@@ -126,6 +128,8 @@ class DemoComponent {
     actions.push(request.action);
     requests.push(request);
   }
+  /** The shop's answers to the pages' steps: the stock checked for "Order by phone". An output cannot answer, so this is an input. */
+  readonly answer = (request: ActionRequest) => answerAction(request, this.locale);
   open(id: RecordId) {
     openRecord(params, id);
   }

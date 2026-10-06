@@ -10,6 +10,7 @@ import {
   type Locale,
   type Page,
   type RecordId,
+  type RunResult,
   type SortOrder,
   type Value,
 } from '@fieldia/core';
@@ -31,7 +32,8 @@ export interface ListContext {
   labels: ViewerLabels;
   locale: Locale;
   fill: (template: string, values: Record<string, string | number>) => string;
-  confirm: (message: string) => Promise<boolean>;
+  /** Run a button's steps, the button busy until they are done. */
+  press: (button: HTMLElement, run: () => Promise<RunResult>) => Promise<void>;
   withIcon: (icon: string | undefined, text: string) => (Node | string)[];
   uid: (id: string) => string;
   icons?: IconSet;
@@ -166,11 +168,14 @@ export function listView(context: ListContext): ListView {
   const clear = el('button', { type: 'button', class: 'fd-button fd-button-link' }, labels.clearSelection);
   const buttons = (node.actions ?? []).map((action: ButtonNode) => {
     const button = el('button', { type: 'button', class: `fd-button fd-button-${action.style ?? 'secondary'}`, 'data-node': action.id }, ...context.withIcon(action.icon, action.label));
-    button.addEventListener('click', async () => {
-      if (action.confirm && !(await context.confirm(action.confirm))) return;
-      await form.runAction(action.id, { recordIds: [...chosen] });
-      await load();
-    });
+    // Its confirmation, then its steps with the records chosen; then the records again, as they are now.
+    button.addEventListener('click', () =>
+      void context.press(button, async () => {
+        const result = await form.runAction(action.id, { recordIds: [...chosen] });
+        await load();
+        return result;
+      })
+    );
     return button;
   });
   const selection = el('div', { class: 'fd-list-selection', hidden: '' }, count, ...buttons, clear);

@@ -4,7 +4,7 @@ import { expectNoSidewaysScroll } from './support';
 /** fieldia.dev, as built into dist/site and served on its own port. */
 /** `SITE_URL=https://fieldia.dev npx playwright test e2e/site.spec.ts` runs the same checks on the live site. */
 const SITE = process.env['SITE_URL'] ?? `http://127.0.0.1:${process.env['FIELDIA_SITE_PORT'] ?? 4322}`;
-const PAGES = ['/', '/start/', '/pages/', '/fields/', '/data/', '/behaviour/', '/lists/', '/chatter/', '/look/', '/demos/', '/designer/', '/accessibility/'];
+const PAGES = ['/', '/start/', '/pages/', '/fields/', '/data/', '/behaviour/', '/actions/', '/lists/', '/chatter/', '/look/', '/demos/', '/designer/', '/accessibility/'];
 
 function watch(page: Page) {
   const problems: string[] = [];
@@ -77,8 +77,8 @@ test('the gallery shows every demo with its thumbnail, featured first, and each 
   const cards = page.locator('a.demo-card');
   const hrefs = [...new Set(await cards.evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).getAttribute('href') as string)))];
   // Every demo of the catalog, once each, and the four featured again at the top.
-  expect(hrefs.length).toBe(19);
-  await expect(cards).toHaveCount(23);
+  expect(hrefs.length).toBe(20);
+  await expect(cards).toHaveCount(24);
   for (const image of await page.locator('.demo-thumb img').all()) {
     await image.scrollIntoViewIfNeeded();
     await expect.poll(() => image.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(600);

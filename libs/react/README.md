@@ -21,4 +21,24 @@ export function Customer() {
 
 Custom fields and slot content can be React components (`fieldTypes`, `slots`);
 `useFormState(form)` gives you a form's state as React state. A list page opens
-a row through `onOpenRecord`. MIT licensed.
+a row through `onOpenRecord`.
+
+The form's events are props, each read anew on every render without mounting
+again; `onAction` may answer a button or a `call` step:
+
+```tsx
+<FieldiaForm
+  page={page}
+  dataSource={dataSource}
+  pages={pages}
+  onAction={async ({ action, values }) => (action === 'check_stock' ? { values: { price: await priceOf(values.product) } } : undefined)}
+  onChange={({ field, value, by }) => {}}   // by: 'person' | 'step' | 'app'
+  onSave={({ recordId, values }) => {}}
+  onSend={({ values }) => {}}
+  onStep={({ step }) => {}}
+  onRun={({ id, result }) => {}}
+/>
+```
+
+`host` and `onOpen` are the viewer's own options (see `@fieldia/viewer`); the
+handle from `ref` or `onReady` has `on`, `setValues` and `run`. MIT licensed.

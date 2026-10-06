@@ -316,4 +316,27 @@ describe('events for the app', () => {
     inner.setValue('street', '12 Nile Street');
     expect(changes).toEqual([['home_address', 'person', { street: '12 Nile Street' }]]);
   });
+
+  it('runs the page’s change steps for a saved form placed here, named by its answers’ name', async () => {
+    const address: Page = {
+      fieldia: '0.1',
+      id: 'address',
+      data: { kind: 'responses' },
+      fields: { street: { type: 'char', label: 'Street' } },
+      layout: { type: 'sections', id: 'root', children: [{ type: 'section', id: 's', children: [{ type: 'field', id: 'street', field: 'street' }] }] },
+    };
+    const outer = createForm({
+      page: {
+        fieldia: '0.1',
+        id: 'delivery',
+        data: { kind: 'responses' },
+        fields: { note: { type: 'char', label: 'Note' } },
+        layout: { type: 'sections', id: 'root', children: [{ type: 'form', id: 'home', page: 'address', name: 'home_address' }] },
+        on: { change: { home_address: [{ do: 'set', field: 'note', value: "'Address changed'" }] } },
+      },
+    });
+    outer.embed('home', address).setValue('street', '12 Nile Street');
+    await outer.settled();
+    expect(outer.getState().values['note']).toBe('Address changed');
+  });
 });
