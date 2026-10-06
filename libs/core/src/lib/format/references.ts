@@ -2,6 +2,7 @@ import type { ActionStep, PageEvents } from './actions';
 import type { Field, Fields, FilterItem, LineField, LineKinds } from './field';
 import type { ButtonNode, FieldNode, FormNode, LayoutNode, ListNode, RootLayout, SheetNode, StatButton, TabsNode } from './layout';
 import type { Page } from './page';
+import { BUILT_IN_NAMES, USER_PARTS } from '../expression/built-ins';
 import { compileModifier } from '../expression/modifier';
 import { compileExpression } from '../expression/expression';
 import { dependencyOrder } from '../expression/order';
@@ -157,21 +158,33 @@ export class ReferenceCheck {
     for (const key of keys) {
       const value = (owner as Record<string, unknown>)[key];
       if (typeof value !== 'string') continue;
-      let fields: readonly string[];
+      let compiled: ReturnType<typeof compileModifier>;
       try {
-        fields = compileModifier(value).fields;
+        compiled = compileModifier(value);
       } catch (error) {
         this.report(`${path}.${key}`, `cannot read "${value}": ${(error as Error).message}`);
         continue;
       }
-      this.checkReads(value, fields, `${path}.${key}`, scope);
+      this.checkReads(value, compiled, `${path}.${key}`, scope);
     }
   }
 
-  /** Each name an expression reads must be a field where it is worked out. */
-  private checkReads(source: string, fields: readonly string[], path: string, scope: Scope) {
-    for (const name of fields) {
+  /**
+   * Each name an expression reads must be a field where it is worked out, or
+   * on a record what every expression there reads: its `id`, and `user` with
+   * the person's `id`, `name` or `roles`.
+   */
+  private checkReads(source: string, reads: { fields: readonly string[]; paths: readonly string[] }, path: string, scope: Scope) {
+    for (const name of reads.fields) {
       if (has(scope.fields, name)) continue;
+      if (scope.lines === undefined && (BUILT_IN_NAMES as readonly string[]).includes(name)) {
+        if (name !== 'user') continue;
+        for (const read of reads.paths) {
+          const part = read.split('.')[1];
+          if (read.startsWith('user.') && !(USER_PARTS as readonly string[]).includes(part)) this.report(path, `"${source}" reads "${read}": the person has an id, name or roles`);
+        }
+        continue;
+      }
       const where = scope.lines === undefined ? 'of this page' : `of the lines of "${scope.lines}"`;
       this.report(path, `"${source}" reads "${name}", which is not a field ${where}`);
     }
@@ -190,7 +203,7 @@ export class ReferenceCheck {
       this.report(path, `cannot read "${source}": ${(error as Error).message}`);
       return null;
     }
-    this.checkReads(source, compiled.fields, path, scope);
+    this.checkReads(source, compiled, path, scope);
     for (const sum of compiled.sums) {
       if (!has(scope.fields, sum.lines)) continue;
       const lines = scope.fields[sum.lines];

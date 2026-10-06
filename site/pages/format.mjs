@@ -171,6 +171,10 @@ ${code(
 )}
 <p>Expressions read like Python: ${c('==')} ${c('!=')} ${c('<')} ${c('>')} ${c('<=')} ${c('>=')}, ${c('in')} and ${c('not in')} with a list — ${c("['draft', 'sent']")}, or Python’s tuple ${c("('draft', 'sent')")} as Flectra writes it — ${c('and')} ${c('or')} ${c('not')}, ${c('True')} ${c('False')} ${c('None')}, numbers and quoted strings. An empty value is false. Conditions are checked again on every change, and a hidden field's value is left out of what is saved or submitted.</p>
 <p>A section's ${c('readonly')} locks every field inside it, sections within it too: a blocked customer's whole credit section, say.</p>
+<p>Besides the page's fields, a condition reads ${c('id')}, the record's id — empty while it is new, so ${c('not id')} hides what only a saved record can do — and ${c('user')}, the person the app says is using the form: ${c('user.id')}, ${c('user.name')} and ${c('user.roles')}. A page's own field of the same name comes first.</p>
+<p>${c('roles')} shows a part only to people holding one of them, as Flectra's ${c('groups=')}; a role written with ${c('!')} hides it from people who hold that one. Any part takes them — a field, a section, a tab, a button, a stat button. The app names the person with the form's ${c('user')} option, ${c("{ id, name, roles }")}; without it they hold no role. Roles decide what a page shows, not what someone may do: the app's server checks that.</p>
+${code('json', `{ "type": "button", "id": "lock", "label": "Lock", "action": "action_lock",
+  "roles": ["sales_team.group_sale_manager"], "invisible": "not id" }`)}
 <p>A condition that names a field the page does not have is refused when the page is checked, not when someone fills it in.</p>
 
 <h2 id="checking">Checking a page</h2>

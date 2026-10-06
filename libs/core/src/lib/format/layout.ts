@@ -15,6 +15,14 @@ import { JsonValueSchema, type JsonValue } from './json';
 /** `true`, `false`, or an expression evaluated against the record's values. */
 export type Modifier = boolean | string;
 
+/**
+ * The roles a part is shown to, as Flectra's `groups=`: people holding any of
+ * them see it; a role written `!sales.manager` hides it from people holding
+ * that one. The app names the person's roles (the form's `user`). What a
+ * page shows is not what a person may do: the app's server enforces that.
+ */
+export type Roles = string[];
+
 export type Tone = 'info' | 'success' | 'warning' | 'danger' | 'muted';
 
 /** Where a field's label sits: above its box, beside it, or inside it as the placeholder (still read out by screen readers). */
@@ -80,6 +88,7 @@ export interface FieldNode {
   /** Rules the answer must keep. */
   validate?: AnswerRule[];
   invisible?: Modifier;
+  roles?: Roles;
   readonly?: Modifier;
   required?: Modifier;
 }
@@ -103,6 +112,7 @@ export interface ButtonNode {
   /** Grid columns it spans inside a section. */
   colspan?: number;
   invisible?: Modifier;
+  roles?: Roles;
 }
 
 export interface TextNode {
@@ -113,6 +123,7 @@ export interface TextNode {
   /** Grid columns it spans inside a section. */
   colspan?: number;
   invisible?: Modifier;
+  roles?: Roles;
 }
 
 /** A line across the whole row, between parts. */
@@ -120,6 +131,7 @@ export interface DividerNode {
   type: 'divider';
   id: string;
   invisible?: Modifier;
+  roles?: Roles;
 }
 
 /** Empty room: in a section with columns, an empty cell. */
@@ -128,6 +140,7 @@ export interface SpacerNode {
   id: string;
   colspan?: number;
   invisible?: Modifier;
+  roles?: Roles;
 }
 
 /** A picture between parts, such as a logo. */
@@ -148,6 +161,7 @@ export interface ImageNode {
   caption?: string;
   colspan?: number;
   invisible?: Modifier;
+  roles?: Roles;
 }
 
 /**
@@ -173,6 +187,7 @@ export interface FormNode {
   /** Grid columns it spans inside a section. */
   colspan?: number;
   invisible?: Modifier;
+  roles?: Roles;
   /** Every field inside is read-only while this holds. */
   readonly?: Modifier;
 }
@@ -183,6 +198,7 @@ export interface SlotNode {
   id: string;
   name: string;
   invisible?: Modifier;
+  roles?: Roles;
 }
 
 /** A group's columns: one to four for an even grid, or twelve for rows each divided its own way (twelfths). */
@@ -233,6 +249,7 @@ export interface SectionNode {
    */
   rows?: 'full' | 'gaps';
   invisible?: Modifier;
+  roles?: Roles;
   /** Every field inside is read-only while this holds. */
   readonly?: Modifier;
   children: LayoutNode[];
@@ -244,6 +261,7 @@ export interface TabNode {
   label: string;
   icon?: string;
   invisible?: Modifier;
+  roles?: Roles;
   children: LayoutNode[];
 }
 
@@ -253,6 +271,7 @@ export interface TabsNode {
   /** Grid columns it spans inside a section. */
   colspan?: number;
   invisible?: Modifier;
+  roles?: Roles;
   children: TabNode[];
 }
 
@@ -266,6 +285,7 @@ export interface StepNode {
   /** Can be skipped: its answers are then left out, and its required fields not asked for. */
   optional?: boolean;
   invisible?: Modifier;
+  roles?: Roles;
   children: LayoutNode[];
 }
 
@@ -297,6 +317,7 @@ export interface StatButton {
   field?: string;
   icon?: string;
   invisible?: Modifier;
+  roles?: Roles;
 }
 
 export interface Ribbon {
@@ -304,6 +325,7 @@ export interface Ribbon {
   label: string;
   tone?: Tone;
   invisible?: Modifier;
+  roles?: Roles;
 }
 
 export interface Alert {
@@ -313,6 +335,7 @@ export interface Alert {
   /** Has a × that hides it until the page opens again. */
   dismissible?: boolean;
   invisible?: Modifier;
+  roles?: Roles;
 }
 
 /** A small label by the title, such as "Locked" or "VIP". */
@@ -322,6 +345,7 @@ export interface Badge {
   tone?: Tone;
   icon?: string;
   invisible?: Modifier;
+  roles?: Roles;
 }
 
 export interface SheetTitle {
@@ -411,6 +435,9 @@ const fieldName = z.string().regex(FIELD_NAME);
 const tone = z.enum(['info', 'success', 'warning', 'danger', 'muted']);
 const columnCount = z.int().min(1).max(12) as unknown as z.ZodType<ColumnCount>;
 const invisible = ModifierSchema.optional();
+/** A role's name, `!` before it to hide the part from people holding it. */
+export const RolesSchema = z.array(z.string().regex(/^!?[A-Za-z0-9_][A-Za-z0-9_.:-]*$/, 'a role is a name such as sales_team.group_sale_manager, with ! before it to hide the part from people holding it')).min(1).meta({ id: 'Roles' });
+const roles = RolesSchema.optional();
 const span = z.int().min(1).max(12).optional();
 const labelPlace = z.enum(['above', 'beside', 'hidden']);
 
@@ -452,7 +479,7 @@ export const FieldNodeSchema = z.strictObject({
   editMode: z.enum(['cell', 'row']).optional(),
   labels: labelPlace.optional(),
   validate: z.array(AnswerRuleSchema).min(1).optional(),
-  invisible,
+  invisible, roles,
   readonly: ModifierSchema.optional(),
   required: ModifierSchema.optional(),
 });
@@ -468,7 +495,7 @@ export const ButtonNodeSchema = z.strictObject({
   confirm: z.string().optional(),
   icon: z.string().optional(),
   colspan: span,
-  invisible,
+  invisible, roles,
 });
 
 export const TextNodeSchema = z.strictObject({
@@ -477,12 +504,12 @@ export const TextNodeSchema = z.strictObject({
   text: z.string(),
   style: z.enum(['heading', 'paragraph', 'note']).optional(),
   colspan: span,
-  invisible,
+  invisible, roles,
 });
 
-export const DividerNodeSchema = z.strictObject({ type: z.literal('divider'), id, invisible });
+export const DividerNodeSchema = z.strictObject({ type: z.literal('divider'), id, invisible, roles });
 
-export const SpacerNodeSchema = z.strictObject({ type: z.literal('spacer'), id, colspan: span, invisible });
+export const SpacerNodeSchema = z.strictObject({ type: z.literal('spacer'), id, colspan: span, invisible, roles });
 
 export const ImageNodeSchema = z.strictObject({
   type: z.literal('image'),
@@ -494,10 +521,10 @@ export const ImageNodeSchema = z.strictObject({
   href: z.string().regex(/^(https?:\/\/|mailto:)\S+$/i, 'a link is a web address, https://…, or a mail address, mailto:…').optional(),
   caption: z.string().optional(),
   colspan: span,
-  invisible,
+  invisible, roles,
 });
 
-export const SlotNodeSchema = z.strictObject({ type: z.literal('slot'), id, name: z.string().min(1), invisible });
+export const SlotNodeSchema = z.strictObject({ type: z.literal('slot'), id, name: z.string().min(1), invisible, roles });
 
 export const FormNodeSchema = z.strictObject({
   type: z.literal('form'),
@@ -507,7 +534,7 @@ export const FormNodeSchema = z.strictObject({
   name: fieldName,
   title: z.string().optional(),
   colspan: span,
-  invisible,
+  invisible, roles,
   readonly: ModifierSchema.optional(),
 });
 
@@ -525,7 +552,7 @@ export const SectionNodeSchema = z.strictObject({
   labels: labelPlace.optional(),
   labelWidth: z.int().min(60).max(320).optional(),
   rows: z.enum(['full', 'gaps']).optional(),
-  invisible,
+  invisible, roles,
   readonly: ModifierSchema.optional(),
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);
@@ -537,7 +564,7 @@ export const TabNodeSchema = z.strictObject({
   id,
   label: z.string(),
   icon: z.string().optional(),
-  invisible,
+  invisible, roles,
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);
   },
@@ -547,7 +574,7 @@ export const TabsNodeSchema = z.strictObject({
   type: z.literal('tabs'),
   id,
   colspan: span,
-  invisible,
+  invisible, roles,
   children: z.array(TabNodeSchema).min(1),
 }).meta({ id: 'TabsNode' });
 
@@ -573,7 +600,7 @@ export const StepNodeSchema = z.strictObject({
   description: z.string().optional(),
   icon: z.string().min(1).optional(),
   optional: z.boolean().optional(),
-  invisible,
+  invisible, roles,
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);
   },
@@ -604,14 +631,14 @@ export const StatButtonSchema = z.strictObject({
   action: z.string().min(1).optional(),
   field: fieldName.optional(),
   icon: z.string().optional(),
-  invisible,
+  invisible, roles,
 });
 
-export const RibbonSchema = z.strictObject({ id, label: z.string(), tone: tone.optional(), invisible });
+export const RibbonSchema = z.strictObject({ id, label: z.string(), tone: tone.optional(), invisible, roles });
 
-export const AlertSchema = z.strictObject({ id, message: z.string(), tone: tone.optional(), dismissible: z.boolean().optional(), invisible });
+export const AlertSchema = z.strictObject({ id, message: z.string(), tone: tone.optional(), dismissible: z.boolean().optional(), invisible, roles });
 
-export const BadgeSchema = z.strictObject({ id, label: z.string(), tone: tone.optional(), icon: z.string().min(1).optional(), invisible });
+export const BadgeSchema = z.strictObject({ id, label: z.string(), tone: tone.optional(), icon: z.string().min(1).optional(), invisible, roles });
 
 export const SheetNodeSchema = z.strictObject({
   type: z.literal('sheet'),

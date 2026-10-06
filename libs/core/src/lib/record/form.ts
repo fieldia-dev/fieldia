@@ -11,7 +11,8 @@ import { checkInput } from './inputs';
 import { compileComputed } from './compute';
 import { compileSetWhen } from './set-when';
 import { checkRules, compileRules, type CompiledRule } from './rules';
-import { expressionEnv } from './env';
+import { builtIns, expressionEnv } from './env';
+import { rolesAllow } from './roles';
 import { MESSAGES, type Messages } from './messages';
 import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
@@ -134,6 +135,20 @@ export interface FormOptions {
   messages?: Messages;
   /** The clock, for `today()` and for dates that must be past or future. The computer's own when left out. */
   now?: () => Date;
+  /**
+   * The person using the form: conditions read it as `user` (`user.id`,
+   * `user.name`, `user.roles`), and a part with `roles` shows only to people
+   * in them. Left out, the person has no id and no roles.
+   */
+  user?: FormUser;
+}
+
+/** The person using a form, as the app knows them. */
+export interface FormUser {
+  id: RecordId | null;
+  name?: string;
+  /** The roles they hold, by the names the page's `roles` use: Flectra's groups, such as `sales_team.group_sale_manager`. */
+  roles?: readonly string[];
 }
 
 export interface Form {
@@ -232,6 +247,8 @@ interface IndexedNode {
   invisible: CompiledModifier;
   readonly: CompiledModifier;
   required: CompiledModifier;
+  /** The roles it is shown to, when it names any. */
+  roles?: readonly string[];
   source: LayoutNode | StepNode | ButtonNode | StatButton | RootLayout | { id: string; invisible?: Modifier };
 }
 
@@ -326,7 +343,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   let showing = false;
   /** The wizard step last told as entered. */
   let told: string | null = null;
-  let contextCache: { values: Values; context: Record<string, unknown>; env: ExpressionEnv } | null = null;
+  let contextCache: { values: Values; recordId: RecordId | null; context: Record<string, unknown>; env: ExpressionEnv } | null = null;
+  const userRoles: readonly string[] = [...(options.user?.roles ?? [])];
 
   /** The latest load of each field's choices: an answer to an older one is let go. */
   const choiceLoads: Record<string, number> = {};
@@ -410,11 +428,12 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     return promise;
   }
 
-  /** The values as expressions read them, and what else they read: the lines' rows, today. */
+  /** The values as expressions read them, and what else they read: the record's id, the person, the lines' rows, today. */
   function reading(): { context: Record<string, unknown>; env: ExpressionEnv } {
-    if (contextCache?.values !== state.values) {
+    if (contextCache?.values !== state.values || contextCache.recordId !== state.recordId) {
       const values = state.values as Values;
-      contextCache = { values, context: expressionContext(values, page.fields), env: expressionEnv(values, page.fields, today) };
+      const context = { ...builtIns(page.fields, state.recordId, options.user), ...expressionContext(values, page.fields) };
+      contextCache = { values, recordId: state.recordId, context, env: expressionEnv(values, page.fields, today) };
     }
     return contextCache;
   }
@@ -435,9 +454,10 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     const node = index.get(id);
     if (!node) throw new Error(`The page has no element "${id}"`);
     const { context: ctx, env } = reading();
-    let invisible = node.invisible.evaluate(ctx, env);
+    const hidden = (at: IndexedNode | undefined) => (at ? !rolesAllow(at.roles, userRoles) || at.invisible.evaluate(ctx, env) : false);
+    let invisible = hidden(node);
     for (let parent = node.parent; !invisible && parent; parent = index.get(parent)?.parent ?? null) {
-      invisible = index.get(parent)?.invisible.evaluate(ctx, env) ?? false;
+      invisible = hidden(index.get(parent));
     }
     // A section read-only right now makes everything inside it read-only too.
     let readonly = node.readonly.evaluate(ctx, env);
@@ -1296,11 +1316,13 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     kind: IndexedNode['kind'],
     modifiers: { invisible?: Modifier; readonly?: Modifier; required?: Modifier; field?: string }
   ) => {
+    const roles = (source as { roles?: readonly string[] }).roles;
     index.set(source.id, {
       id: source.id,
       parent,
       kind,
       field: modifiers.field,
+      ...(roles?.length ? { roles } : {}),
       invisible: compileModifier(modifiers.invisible),
       readonly: compileModifier(modifiers.readonly),
       required: compileModifier(modifiers.required),

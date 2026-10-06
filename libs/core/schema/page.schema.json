@@ -2722,6 +2722,9 @@
                   "invisible": {
                     "$ref": "#/$defs/Modifier"
                   },
+                  "roles": {
+                    "$ref": "#/$defs/Roles"
+                  },
                   "readonly": {
                     "$ref": "#/$defs/Modifier"
                   },
@@ -2836,6 +2839,9 @@
                   "invisible": {
                     "$ref": "#/$defs/Modifier"
                   },
+                  "roles": {
+                    "$ref": "#/$defs/Roles"
+                  },
                   "readonly": {
                     "$ref": "#/$defs/Modifier"
                   },
@@ -2947,6 +2953,9 @@
               },
               "invisible": {
                 "$ref": "#/$defs/Modifier"
+              },
+              "roles": {
+                "$ref": "#/$defs/Roles"
               }
             },
             "required": [
@@ -2989,6 +2998,9 @@
               },
               "invisible": {
                 "$ref": "#/$defs/Modifier"
+              },
+              "roles": {
+                "$ref": "#/$defs/Roles"
               }
             },
             "required": [
@@ -3020,6 +3032,9 @@
             },
             "invisible": {
               "$ref": "#/$defs/Modifier"
+            },
+            "roles": {
+              "$ref": "#/$defs/Roles"
             }
           },
           "required": [
@@ -3055,6 +3070,9 @@
               },
               "invisible": {
                 "$ref": "#/$defs/Modifier"
+              },
+              "roles": {
+                "$ref": "#/$defs/Roles"
               }
             },
             "required": [
@@ -3092,6 +3110,9 @@
               },
               "invisible": {
                 "$ref": "#/$defs/Modifier"
+              },
+              "roles": {
+                "$ref": "#/$defs/Roles"
               }
             },
             "required": [
@@ -3124,6 +3145,9 @@
             },
             "invisible": {
               "$ref": "#/$defs/Modifier"
+            },
+            "roles": {
+              "$ref": "#/$defs/Roles"
             }
           },
           "required": [
@@ -3215,6 +3239,14 @@
           "minLength": 1
         }
       ]
+    },
+    "Roles": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^!?[A-Za-z0-9_][A-Za-z0-9_.:-]*$"
+      }
     },
     "ActionStep": {
       "oneOf": [
@@ -3750,6 +3782,9 @@
             "invisible": {
               "$ref": "#/$defs/Modifier"
             },
+            "roles": {
+              "$ref": "#/$defs/Roles"
+            },
             "readonly": {
               "$ref": "#/$defs/Modifier"
             },
@@ -3820,6 +3855,9 @@
             },
             "invisible": {
               "$ref": "#/$defs/Modifier"
+            },
+            "roles": {
+              "$ref": "#/$defs/Roles"
             }
           },
           "required": [
@@ -3858,6 +3896,9 @@
             },
             "invisible": {
               "$ref": "#/$defs/Modifier"
+            },
+            "roles": {
+              "$ref": "#/$defs/Roles"
             }
           },
           "required": [
@@ -3884,6 +3925,9 @@
             },
             "invisible": {
               "$ref": "#/$defs/Modifier"
+            },
+            "roles": {
+              "$ref": "#/$defs/Roles"
             }
           },
           "required": [
@@ -3912,6 +3956,9 @@
             },
             "invisible": {
               "$ref": "#/$defs/Modifier"
+            },
+            "roles": {
+              "$ref": "#/$defs/Roles"
             }
           },
           "required": [
@@ -3938,6 +3985,9 @@
             },
             "invisible": {
               "$ref": "#/$defs/Modifier"
+            },
+            "roles": {
+              "$ref": "#/$defs/Roles"
             }
           },
           "required": [
@@ -4004,6 +4054,9 @@
             },
             "invisible": {
               "$ref": "#/$defs/Modifier"
+            },
+            "roles": {
+              "$ref": "#/$defs/Roles"
             }
           },
           "required": [
@@ -4048,6 +4101,9 @@
             },
             "invisible": {
               "$ref": "#/$defs/Modifier"
+            },
+            "roles": {
+              "$ref": "#/$defs/Roles"
             },
             "readonly": {
               "$ref": "#/$defs/Modifier"
@@ -4160,6 +4216,9 @@
         "invisible": {
           "$ref": "#/$defs/Modifier"
         },
+        "roles": {
+          "$ref": "#/$defs/Roles"
+        },
         "readonly": {
           "$ref": "#/$defs/Modifier"
         },
@@ -4196,6 +4255,9 @@
         "invisible": {
           "$ref": "#/$defs/Modifier"
         },
+        "roles": {
+          "$ref": "#/$defs/Roles"
+        },
         "children": {
           "minItems": 1,
           "type": "array",
@@ -4230,6 +4292,9 @@
         },
         "invisible": {
           "$ref": "#/$defs/Modifier"
+        },
+        "roles": {
+          "$ref": "#/$defs/Roles"
         },
         "children": {
           "type": "array",
@@ -4338,6 +4403,9 @@
         },
         "invisible": {
           "$ref": "#/$defs/Modifier"
+        },
+        "roles": {
+          "$ref": "#/$defs/Roles"
         },
         "children": {
           "type": "array",
@@ -4504,6 +4572,9 @@
               },
               "invisible": {
                 "$ref": "#/$defs/Modifier"
+              },
+              "roles": {
+                "$ref": "#/$defs/Roles"
               }
             },
             "required": [

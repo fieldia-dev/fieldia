@@ -8,6 +8,7 @@ export { FIELD_NAME, FIELD_TYPES, type FieldType } from './lib/format/names';
 export type { Field, Fields, LineField, LineKinds, Option, OptionsFrom, PropertyDefinition, FilterCondition, FilterItem, SetWhen } from './lib/format/field';
 export type {
   Modifier,
+  Roles,
   Tone,
   FieldNode,
   ButtonNode,
@@ -65,6 +66,7 @@ export { checkPage } from './lib/format/check-page';
 export type { PageIssue, PageValidation } from './lib/format/references';
 export { translatePage, localizePage, pageWords, isRightToLeft } from './lib/format/translate';
 export { compileModifier, type CompiledModifier } from './lib/expression/modifier';
+export { rolesAllow } from './lib/record/roles';
 export { evaluateModifier, isModifierValid } from './lib/expression/evaluateModifier';
 export {
   emptyValue,
@@ -115,6 +117,7 @@ export {
   createForm,
   type Form,
   type FormOptions,
+  type FormUser,
   type FormState,
   type FormStatus,
   type NodeState,

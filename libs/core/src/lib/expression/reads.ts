@@ -30,6 +30,15 @@ export function fieldsRead(ast: ASTNode): string[] {
   return names;
 }
 
+/** The names an expression reads, whole — `partner_id.country_id`, `user.roles` — once each, in order of appearance. */
+export function pathsRead(ast: ASTNode): string[] {
+  const paths: string[] = [];
+  walk(ast, (node) => {
+    if (node.type === 'Identifier' && !paths.includes(node.name)) paths.push(node.name);
+  });
+  return paths;
+}
+
 /** The line fields an expression adds up, as `sum(lines, 'subtotal')` names them. */
 export function sumsRead(ast: ASTNode): { lines: string; field: string }[] {
   const sums: { lines: string; field: string }[] = [];

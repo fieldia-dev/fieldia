@@ -1,6 +1,20 @@
 import type { Field, LineField } from '../format/field';
 import type { ExpressionEnv } from '../expression/functions';
-import { expressionContext, lineKind, type Line, type Values } from './values';
+import { expressionContext, lineKind, type Line, type RecordId, type Values } from './values';
+
+/**
+ * What expressions read besides a record's fields: `id`, the record's id
+ * (null while it is new), and `user`, the person using the form (`id`,
+ * `name`, `roles`). A page's own field of the same name comes first.
+ */
+export function builtIns(fields: Record<string, unknown>, recordId: RecordId | null, user: { id: RecordId | null; name?: string; roles?: readonly string[] } | undefined): Record<string, unknown> {
+  const names: Record<string, unknown> = {
+    id: recordId ?? null,
+    user: { id: user?.id ?? null, name: user?.name ?? null, roles: [...(user?.roles ?? [])] },
+  };
+  for (const name of Object.keys(names)) if (name in fields) delete names[name];
+  return names;
+}
 
 /**
  * What an expression on a record is worked out with besides its values: the

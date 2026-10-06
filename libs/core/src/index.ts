@@ -9,7 +9,7 @@ export {
   FilterConditionSchema,
   FilterItemSchema,
 } from './lib/format/field';
-export { ModifierSchema, LayoutNodeSchema, RootLayoutSchema, ListNodeSchema } from './lib/format/layout';
+export { ModifierSchema, RolesSchema, LayoutNodeSchema, RootLayoutSchema, ListNodeSchema } from './lib/format/layout';
 export { PageSchema } from './lib/format/page';
 export { ActionStepSchema, PageEventsSchema } from './lib/format/actions';
 export { validatePage } from './lib/format/validate';

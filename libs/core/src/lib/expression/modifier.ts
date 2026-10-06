@@ -2,7 +2,7 @@ import type { Modifier } from '../format/layout';
 import { evaluate, truthy } from './evaluator';
 import type { ExpressionEnv } from './functions';
 import { ExpressionParser } from './parser';
-import { fieldsRead } from './reads';
+import { fieldsRead, pathsRead } from './reads';
 import { tokenize } from './tokenizer';
 
 /** A modifier read once, ready to evaluate against a record's values. */
@@ -10,6 +10,8 @@ export interface CompiledModifier {
   readonly source: Modifier | undefined;
   /** The fields it reads, by their first name, in order of appearance. */
   readonly fields: readonly string[];
+  /** The names it reads, whole: `user.roles`, `partner_id.country_id`. */
+  readonly paths: readonly string[];
   /** Whether it holds for these values; `env` gives `sum` and `count` the lines, and `today()` its day. */
   evaluate(values: Readonly<Record<string, unknown>>, env?: ExpressionEnv): boolean;
 }
@@ -22,12 +24,13 @@ export interface CompiledModifier {
 export function compileModifier(modifier: Modifier | undefined): CompiledModifier {
   if (typeof modifier !== 'string') {
     const value = modifier === true;
-    return { source: modifier, fields: [], evaluate: () => value };
+    return { source: modifier, fields: [], paths: [], evaluate: () => value };
   }
   const ast = new ExpressionParser(tokenize(modifier)).parse();
   return {
     source: modifier,
     fields: fieldsRead(ast),
+    paths: pathsRead(ast),
     evaluate(values, env) {
       try {
         return truthy(evaluate(ast, values, env));
