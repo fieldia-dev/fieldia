@@ -26,10 +26,13 @@ export const real = {
   warnings: byModel((lane) => lane.warnings) as NonNullable<MemoryDataSourceOptions['warnings']>,
   lists: Object.assign({}, ...LANES.map((lane) => lane.lists ?? {})) as NonNullable<MemoryDataSourceOptions['lists']>,
   labelField: Object.assign({}, ...LANES.map((lane) => lane.labelField ?? {})) as NonNullable<MemoryDataSourceOptions['labelField']>,
-  /** The first lane that knows the action answers it. */
-  action(request: ActionRequest, locale?: string): ActionResult | undefined | Promise<ActionResult | undefined> {
+  /**
+   * The first lane that knows the action answers it. A lane may answer later,
+   * and "later, nothing" is not knowing it either: the next lane is asked.
+   */
+  async action(request: ActionRequest, locale?: string): Promise<ActionResult | undefined> {
     for (const lane of LANES) {
-      const answer = lane.action?.(request, locale);
+      const answer = await lane.action?.(request, locale);
       if (answer !== undefined) return answer;
     }
     return undefined;
