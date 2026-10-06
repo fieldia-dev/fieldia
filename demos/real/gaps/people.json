@@ -846,8 +846,8 @@
         },
         {
           "feature": "Keyboard after a stage is clicked (Flectra: Alt+S saves from anywhere)",
-          "status": "missing",
-          "needs": "clicking a statusbar step redraws the bar and the focus falls to <body>, so Ctrl+Enter no longer saves until a field is focused again (checked in the browser); needs the clicked step to keep the focus, or the save keys heard on the whole page"
+          "status": "covered",
+          "how": "the step clicked keeps the focus as the bar is drawn again, so Ctrl+Enter saves (shown in the e2e)"
         },
         {
           "feature": "Stage statusbar invisible=\"archive\"",

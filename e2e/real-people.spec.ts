@@ -235,7 +235,9 @@ for (const variant of VARIANTS) {
       await page.locator('.fd-header .fd-statusbar').getByRole('button', { name: 'Repaired' }).click();
       await expect(current(page)).toHaveText('Repaired');
       await expect(node(page, 'f-close-date')).toBeVisible();
-      await page.locator('.fd-header').getByRole('button', { name: 'Save' }).click();
+      // The step clicked keeps the focus, so the keys still save: Ctrl+Enter, as Flectra's Alt+S.
+      await expect(page.locator('.fd-header .fd-statusbar').getByRole('button', { name: 'Repaired' })).toBeFocused();
+      await page.keyboard.press('ControlOrMeta+Enter');
       await settled(page);
       const saved = await stored(page, 'maintenance.request', 4371);
       expect(saved.priority).toBe(2);
