@@ -202,6 +202,9 @@ const SKINS_CSS = /* css */ `
 /* A whole form locked reads as a record: plain values in either skin, no boxes, and no prompts to type. */
 .fd-form[data-readonly] .fd-input[readonly] { background: transparent; border-color: transparent; padding-inline: 0; color: var(--fd-text); }
 .fd-form[data-readonly] .fd-input::placeholder { color: transparent; }
+/* Nothing to read in a read-only box draws nothing, in either skin: no prompt to type, and no date's dd.mm.yyyy or its calendar. */
+.fd-input[readonly]::placeholder, .fd-form .fd-input.fd-blank[readonly] { color: transparent; }
+.fd-blank[readonly]::-webkit-calendar-picker-indicator { display: none; }
 .fd-form[data-readonly] select.fd-input:disabled { appearance: none; background: transparent; border-color: transparent; padding-inline: 0; color: var(--fd-text); opacity: 1; }
 .fd-input[aria-invalid="true"] { border-color: var(--fd-error); }
 .fd-form[data-fd-skin="outlined"] .fd-input[aria-invalid="true"]:focus { box-shadow: 0 0 0 2px rgba(255, 38, 5, 0.06); }

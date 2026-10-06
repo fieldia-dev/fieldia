@@ -274,3 +274,25 @@ test('the people pages at a phone’s width: nothing scrolls sideways', async ({
   await open(page, 'plain', 'page=real-time-off&record=4171&skin=underline');
   await screen(page, 'real-time-off-phone');
 });
+
+test('an empty read-only field draws empty: no “Search…”, no date mask', async ({ page }) => {
+  await page.setViewportSize(WIDE);
+  const { problems } = await open(page, 'plain', 'page=real-clinic-appointment&record=4001&skin=underline');
+  const link = node(page, 'f-deposit-payment').locator('input');
+  const date = node(page, 'f-arrival').locator('input');
+  await expect(link).toHaveJSProperty('readOnly', true);
+  await expect(link).toHaveValue('');
+  await expect(date).toHaveJSProperty('readOnly', true);
+  await expect(date).toHaveValue('');
+  const transparent = 'rgba(0, 0, 0, 0)';
+  expect(await link.evaluate((el) => getComputedStyle(el, '::placeholder').color)).toBe(transparent);
+  // The date's dd.mm.yyyy is drawn in the box's own colour.
+  expect(await date.evaluate((el) => getComputedStyle(el).color)).toBe(transparent);
+  await screen(page, 'real-clinic-appointment-empty-read-only');
+  // A read-only date with a value keeps its look.
+  const set = node(page, 'f-stop').locator('input');
+  await expect(set).toHaveJSProperty('readOnly', true);
+  await expect(set).not.toHaveValue('');
+  expect(await set.evaluate((el) => getComputedStyle(el).color)).not.toBe(transparent);
+  expect(problems).toEqual([]);
+});

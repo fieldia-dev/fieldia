@@ -488,6 +488,8 @@ const dateWidget: WidgetFactory = (context) => {
       const text = textOf(state.value);
       if (input.value !== text) input.value = text;
       if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
+      // Empty, its mask is no answer: read-only, it is not drawn.
+      input.classList.toggle('fd-blank', !text);
       describe(input, state);
     },
   };
@@ -518,6 +520,7 @@ const dateTimeWidget: WidgetFactory = (context) => {
       const text = local(state.value);
       if (input.value !== text) input.value = text;
       if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
+      input.classList.toggle('fd-blank', !text);
       describe(input, state);
     },
   };

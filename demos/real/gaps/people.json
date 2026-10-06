@@ -211,7 +211,7 @@
         {
           "feature": "Read-only fields shown as text",
           "status": "approximated",
-          "how": "an empty read-only link still draws \"Search…\", an empty read-only date its dd.mm.yyyy mask, a read-only selection a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+          "how": "an empty read-only field draws empty, as Flectra's (no \"Search…\", no dd.mm.yyyy mask: shown in the e2e); but a read-only selection is a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
         },
         {
           "feature": "Object buttons save the record first, run the method, then reload it",
@@ -476,7 +476,7 @@
         {
           "feature": "Read-only fields shown as text",
           "status": "approximated",
-          "how": "an empty read-only link still draws \"Search…\", an empty read-only date its dd.mm.yyyy mask, a read-only selection a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+          "how": "an empty read-only field draws empty, as Flectra's (no \"Search…\", no dd.mm.yyyy mask: shown in the e2e); but a read-only selection is a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
         },
         {
           "feature": "Object buttons save the record first, run the method, then reload it",
@@ -769,7 +769,7 @@
         {
           "feature": "Read-only fields shown as text",
           "status": "approximated",
-          "how": "an empty read-only link still draws \"Search…\", an empty read-only date its dd.mm.yyyy mask, a read-only selection a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+          "how": "an empty read-only field draws empty, as Flectra's (no \"Search…\", no dd.mm.yyyy mask: shown in the e2e); but a read-only selection is a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
         },
         {
           "feature": "Object buttons save the record first, run the method, then reload it",
@@ -997,7 +997,7 @@
         {
           "feature": "Read-only fields shown as text",
           "status": "approximated",
-          "how": "an empty read-only link still draws \"Search…\", an empty read-only date its dd.mm.yyyy mask, a read-only selection a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+          "how": "an empty read-only field draws empty, as Flectra's (no \"Search…\", no dd.mm.yyyy mask: shown in the e2e); but a read-only selection is a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
         },
         {
           "feature": "Object buttons save the record first, run the method, then reload it",

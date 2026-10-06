@@ -13,6 +13,17 @@ describe('what the browser may fill in', () => {
   });
 });
 
+describe('an empty date', () => {
+  it('is marked blank, so read-only it draws no mask; with a value it is not', () => {
+    for (const type of ['date', 'datetime']) {
+      const { el, form } = mountKind({ type });
+      expect(el.classList.contains('fd-blank')).toBe(true);
+      form.setValue('x', type === 'date' ? '2026-10-07' : '2026-10-07T09:30:00.000Z');
+      expect(el.classList.contains('fd-blank')).toBe(false);
+    }
+  });
+});
+
 describe('a rating', () => {
   it('names each point in the page’s language', () => {
     for (const [locale, name] of [['en', '3 of 5'], ['ar', '3 من 5'], ['de', '3 von 5'], ['fr', '3 sur 5']] as const) {
