@@ -1,1 +1,1030 @@
-{ "lane": "people", "pages": [] }
+{
+  "lane": "people",
+  "pages": [
+    {
+      "id": "real-clinic-appointment",
+      "title": "Clinic appointment",
+      "flectra": {
+        "module": "clinic_aesthetic",
+        "model": "clinic.appointment",
+        "view": "view_appointment_form",
+        "file": "addons/clinic_aesthetic/views/clinic_appointment_views.xml",
+        "inherited": [
+          "clinic_finance.view_appointment_form_finance (addons/clinic_finance/views/clinic_finance_views.xml): Register Deposit, deposit payment, forfeit, no-show fee invoice",
+          "clinic_kpi.view_appointment_form_no_show_risk (addons/clinic_kpi/views/clinic_no_show_risk_views.xml): Suggest Mitigation (AI), risk score, risk band, AI suggestion"
+        ]
+      },
+      "size": {
+        "fields": 26,
+        "chatterFields": 3,
+        "tabs": 0,
+        "tables": 0,
+        "headerButtons": 9,
+        "smartButtons": 0,
+        "conditions": 14
+      },
+      "built": {
+        "fields": 27,
+        "conditions": 14,
+        "headerButtons": 9,
+        "smartButtons": 0,
+        "tabs": 0,
+        "tables": 0,
+        "stepsRun": 20
+      },
+      "features": [
+        {
+          "feature": "Reference as the title (name, readonly h1, \"New\" until the sequence APT-00412 gives it)",
+          "status": "covered",
+          "how": "sheet title on a read-only char with default \"New\""
+        },
+        {
+          "feature": "Status statusbar, statusbar_visible=\"booked,confirmed,arrived,in_progress,done\"",
+          "status": "covered",
+          "how": "statusbar with visibleStates; No Show and Cancelled show only while current, as in Flectra; not clickable, as in Flectra"
+        },
+        {
+          "feature": "Confirm (oe_highlight, invisible state != booked): auto-assigns free resources, then confirmed",
+          "status": "covered",
+          "how": "steps: call clinic_auto_assign_resources (the app answers resource_ids), set state, save"
+        },
+        {
+          "feature": "Check In (invisible state not in booked/confirmed): arrived now, default flow stage",
+          "status": "covered",
+          "how": "call clinic_check_in: the app answers state, arrival_time (now — expressions have today() but no now()) and stage_id; then save"
+        },
+        {
+          "feature": "Take to Room (invisible state != arrived): in progress, seen now, first in-room stage",
+          "status": "covered",
+          "how": "call clinic_take_to_room, save; the wait in minutes worked out by the app"
+        },
+        {
+          "feature": "Open Session (invisible state not in arrived/in_progress): creates the treatment session and opens its form",
+          "status": "approximated",
+          "how": "call clinic_open_session answers session_id, state and a message; Flectra then navigates to the session's charting form — an `open` with as \"page\" would do it, but no session page was built (another model, out of this page)"
+        },
+        {
+          "feature": "Done (invisible state not in in_progress/arrived)",
+          "status": "covered",
+          "how": "set state, save"
+        },
+        {
+          "feature": "No Show (invisible state in done/no_show/cancelled), with clinic_finance's _apply_no_show_charge",
+          "status": "covered",
+          "how": "set state, call clinic_no_show_charge (deposit forfeited, or a fee invoice raised), save"
+        },
+        {
+          "feature": "Cancel, refused without a reason (UserError \"Set a cancellation reason before cancelling.\")",
+          "status": "covered",
+          "how": "call clinic_cancel answers stop with Flectra's own words (shown as a warning, steps stop) or the state and the late-cancellation charge; then save"
+        },
+        {
+          "feature": "Suggest Mitigation (AI) from clinic_kpi, placed before Cancel, invisible when the band is low",
+          "status": "covered",
+          "how": "call clinic_ai_mitigation answers no_show_mitigation (a line in Egyptian Arabic, as the AI service gives it)"
+        },
+        {
+          "feature": "Register Deposit from clinic_finance (oe_highlight, invisible \"not deposit_amount or deposit_payment_id\")",
+          "status": "covered",
+          "how": "call clinic_register_deposit (refused for a non-positive amount), save"
+        },
+        {
+          "feature": "Header group in two columns: patient, provider, service, resources | start, duration, end, deposit…",
+          "status": "covered",
+          "how": "a plain two-column section holding two plain sections"
+        },
+        {
+          "feature": "Patient: required, domain is_patient = True, no_create",
+          "status": "covered",
+          "how": "many2one with filter is_patient = true and options.create false"
+        },
+        {
+          "feature": "Service: domain is_treatment = True",
+          "status": "covered",
+          "how": "filter on the product"
+        },
+        {
+          "feature": "Resources: many2many_tags",
+          "status": "covered",
+          "how": "many2many with the tags widget"
+        },
+        {
+          "feature": "Duration (min): computed from the service's default duration, still editable",
+          "status": "covered",
+          "how": "onchange on service_id sets duration (30 when the service has none)"
+        },
+        {
+          "feature": "End: computed start + duration, read-only",
+          "status": "covered",
+          "how": "onchange on start and duration; the expression language has no date arithmetic, so it is the app's"
+        },
+        {
+          "feature": "Deposit: a plain float",
+          "status": "covered",
+          "how": "float with two digits"
+        },
+        {
+          "feature": "Deposit Payment (readonly), Deposit Forfeited (invisible unless set), No-show Fee Invoice (invisible unless set)",
+          "status": "covered",
+          "how": "read-only fields with invisible conditions"
+        },
+        {
+          "feature": "No-show Risk score and band, stored computes over patient history, lead time and deposit",
+          "status": "covered",
+          "how": "the app's onchange works them out as patient, start or deposit change (Flectra recomputes on save); typing a deposit drops the score"
+        },
+        {
+          "feature": "Risk Band widget=\"badge\" with decoration-danger/warning/success by value",
+          "status": "missing",
+          "needs": "shown as a read-only selection; needs a badge widget for a selection with a tone per value"
+        },
+        {
+          "feature": "AI Mitigation Suggestion: readonly, invisible when empty",
+          "status": "covered",
+          "how": "read-only text, invisible condition"
+        },
+        {
+          "feature": "Check-in group (string=\"Check-in\") and Cancellation group",
+          "status": "covered",
+          "how": "titled sections, style \"line\", side by side"
+        },
+        {
+          "feature": "Flow Stage, with the state following the stage on write (waiting = arrived, past reception = in progress)",
+          "status": "covered",
+          "how": "onchange on stage_id sets state and, for a numbing stage, numbing_ready_time; Flectra does it in write(), so here it shows before saving"
+        },
+        {
+          "feature": "stage_is_numbing (related, invisible) driving Numbing Ready At's visibility",
+          "status": "covered",
+          "how": "a page field not placed in the layout, filled by the onchange, read by the condition"
+        },
+        {
+          "feature": "Arrival Time, Seen Time (model readonly), Wait (min), Room (computed from resources)",
+          "status": "covered",
+          "how": "read-only fields; Room by the onchange on resource_ids; wait by the actions' answers"
+        },
+        {
+          "feature": "Datetimes stored in UTC and shown in the user's timezone",
+          "status": "approximated",
+          "how": "datetimes are kept as local \"YYYY-MM-DDTHH:MM\" strings; the app converts"
+        },
+        {
+          "feature": "Cancellation Reason required when state == cancelled",
+          "status": "covered",
+          "how": "required modifier on the node"
+        },
+        {
+          "feature": "Session (readonly link)",
+          "status": "covered",
+          "how": "read-only many2one"
+        },
+        {
+          "feature": "Resource and provider double-booking constraints (ValidationError)",
+          "status": "covered",
+          "how": "the app's save refusal; not demonstrated (memory data source)"
+        },
+        {
+          "feature": "The chatter: followers, activities, messages (oe_chatter)",
+          "status": "covered",
+          "how": "the sheet's sidePanel slot \"chatter\", which the demos fill with @fieldia/chatter; the conversation itself is the app's (the demo's memory chatter has no messages for these records)"
+        },
+        {
+          "feature": "Field tracking posted to the chatter (tracking=True)",
+          "status": "covered",
+          "how": "the app's: its save posts the tracking messages; not demonstrated in the memory chatter"
+        },
+        {
+          "feature": "Help texts as a tooltip on the label",
+          "status": "approximated",
+          "how": "left out: Fieldia prints `help` under the field, which on a dense Flectra sheet doubles its height; needs `help` shown as a tooltip (a ? by the label) as an option"
+        },
+        {
+          "feature": "Labels beside values in <group>s",
+          "status": "covered",
+          "how": "look.labels \"beside\", labelWidth 150"
+        },
+        {
+          "feature": "Conditions written with tuples: `state in ('a', 'b')`",
+          "status": "approximated",
+          "how": "refused by the parser (\"Expected closing parenthesis\") and written as lists `['a', 'b']`; Flectra's views use tuples throughout, and site/pages/format.mjs shows a tuple in its own example, so a pasted condition fails. Needs tuple literals in the expression language"
+        },
+        {
+          "feature": "Read-only fields shown as text",
+          "status": "approximated",
+          "how": "an empty read-only link still draws \"Search…\", an empty read-only date its dd.mm.yyyy mask, a read-only selection a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+        },
+        {
+          "feature": "Object buttons save the record first, run the method, then reload it",
+          "status": "approximated",
+          "how": "steps: the method's effect (set steps, or a `call` the app answers with values), then `save`; the order differs (Flectra saves before the method) but the record ends the same"
+        },
+        {
+          "feature": "A server refusal on save (ValidationError / UserError from constraints)",
+          "status": "covered",
+          "how": "the data source's save may refuse with the backend's words, which the form shows; the memory data source of the demos does not check clinic.appointment's constraints"
+        },
+        {
+          "feature": "Record menu (gear): Archive, Duplicate, Delete; record pager; breadcrumbs",
+          "status": "missing",
+          "needs": "Fieldia draws one record without the action menu, the 1/12 pager or breadcrumbs; needs a record toolbar the app can fill (Archive, Duplicate, Delete, Print) and a pager"
+        },
+        {
+          "feature": "groups= on fields, buttons and pages",
+          "status": "approximated",
+          "how": "Fieldia has no user groups: the page here is the one a manager sees; needs `groups`-like conditions on the person (e.g. a `user.groups` value in expressions) or the app handing a page per role"
+        }
+      ],
+      "summary": {
+        "covered": 31,
+        "approximated": 7,
+        "missing": 2
+      }
+    },
+    {
+      "id": "real-time-off",
+      "title": "Time Off Request",
+      "flectra": {
+        "module": "hr_holidays",
+        "model": "hr.leave",
+        "view": "hr_leave_view_form",
+        "file": "addons/hr_holidays/views/hr_leave_views.xml",
+        "inherited": [
+          "hr_holidays.hr_leave_view_form_manager (same file, mode primary): what an approver opens from Management — title, Mode, Company, Employee Tag, Department, Employee(s), the stats column",
+          "hr_holidays_attendance.hr_leave_view_form (addons/hr_holidays_attendance/views/hr_leave_views.xml, auto-installed with attendance): Extra Hours Available",
+          "wizard hr_holidays_cancel_leave_form (addons/hr_holidays/wizard/hr_holidays_cancel_leave_views.xml) behind Cancel: page real-time-off-cancel"
+        ]
+      },
+      "size": {
+        "fields": 38,
+        "chatterFields": 3,
+        "tabs": 0,
+        "tables": 0,
+        "headerButtons": 6,
+        "smartButtons": 0,
+        "conditions": 66,
+        "conditionsBaseView": 50
+      },
+      "built": {
+        "fields": 43,
+        "conditions": 58,
+        "headerButtons": 6,
+        "smartButtons": 0,
+        "tabs": 0,
+        "tables": 0,
+        "stepsRun": 19
+      },
+      "builtWizard": {
+        "fields": 1,
+        "conditions": 0,
+        "headerButtons": 0,
+        "smartButtons": 0,
+        "tabs": 0,
+        "tables": 0,
+        "stepsRun": 0
+      },
+      "features": [
+        {
+          "feature": "Invisible helper fields read by the conditions (active, can_reset, can_approve, can_cancel, has_mandatory_day, tz_mismatch, holiday_type, leave_type_request_unit, leave_type_support_document, leave_type_increases_duration, user_id, employee_company_id…)",
+          "status": "covered",
+          "how": "page fields not placed in the layout, loaded with the record and refreshed by the onchange"
+        },
+        {
+          "feature": "Confirm (invisible \"id == False or state != draft or not active\"), validated at once for a no-validation type",
+          "status": "approximated",
+          "how": "steps: set state confirm, set validate when validation_type == no_validation, save, say; `id == False` dropped — needs the record id (new or stored) in expressions"
+        },
+        {
+          "feature": "Approve (invisible \"not active or not can_approve or state != confirm\"): first approval when the type needs two, else approved",
+          "status": "covered",
+          "how": "set state validate1 when validation_type == both, else validate; call leave_approved (approver, message); save"
+        },
+        {
+          "feature": "Validate (invisible state != validate1, groups hr_holidays_user)",
+          "status": "approximated",
+          "how": "set, call, save; the group is not checked (see groups)"
+        },
+        {
+          "feature": "Refuse (invisible \"not active or not can_approve or state not in (confirm, validate1, validate)\")",
+          "status": "covered",
+          "how": "call leave_refused (approver, the employee told), set state refuse, save"
+        },
+        {
+          "feature": "Cancel (invisible \"not active or not can_cancel\"): opens hr.holidays.cancel.leave, a required reason, then archives the leave",
+          "status": "covered",
+          "how": "open real-time-off-cancel in a dialog; once saved, call leave_cancelled (active false) and save; the Canceled ribbon follows"
+        },
+        {
+          "feature": "The cancel wizard's own buttons: \"Delete Time Off\" (primary) and \"Discard\"",
+          "status": "approximated",
+          "how": "the dialog's Save & Close and Discard; needs a page's own words for its dialog buttons"
+        },
+        {
+          "feature": "Mark as Draft (invisible \"not can_reset or state not in (confirm, refuse)\")",
+          "status": "covered",
+          "how": "set state draft, clear both approvers, save"
+        },
+        {
+          "feature": "Status statusbar, statusbar_visible=\"confirm,validate\", invisible=\"not active\"",
+          "status": "approximated",
+          "how": "statusbar with visibleStates (To Submit, Refused and Second Approval show while current); the statusbar cannot be hidden — needs `invisible` on the sheet's statusbar"
+        },
+        {
+          "feature": "Canceled ribbon (web_ribbon, invisible=\"active\")",
+          "status": "covered",
+          "how": "sheet ribbon with tone danger"
+        },
+        {
+          "feature": "Timezone alert in three wordings by holiday_type, with the timezone field inside the sentence",
+          "status": "approximated",
+          "how": "three sheet alerts with Flectra's conditions; the (tz) value cannot sit inside an alert's words — needs field values in alert/text words"
+        },
+        {
+          "feature": "Title div: display_name (\"Salma Adel on Paid Time Off: 3.00 days (10/11/2026 - 10/13/2026)\"), shown once a type is chosen",
+          "status": "approximated",
+          "how": "a read-only char at the head of the form with Flectra's condition; the sheet title would cut it (a read-only title is an input), and it is still cut at a phone's width"
+        },
+        {
+          "feature": "Mode (holiday_type, label \"Mode\"), Company / Employee Tag / Department by mode, each invisible, readonly and required by its condition",
+          "status": "covered",
+          "how": "field nodes with the three modifiers each, as written in hr_leave_view_form_manager"
+        },
+        {
+          "feature": "Employee (many2one_avatar_user) shown once approved; Employees (many2many_tags_avatar) before",
+          "status": "approximated",
+          "how": "Flectra's conditions kept; avatars missing — needs a person's picture on a link and on tags"
+        },
+        {
+          "feature": "Time Off Type: domain \"requires_allocation = no OR (has_valid_allocation AND (allows_negative OR (virtual_remaining_leaves > 0 AND NOT allows_negative)))\"",
+          "status": "covered",
+          "how": "filter with any/all groups, the same tree; Hajj Leave (no valid allocation) stays off the list"
+        },
+        {
+          "feature": "Time Off Type's remaining allocation in its name (\"Paid Time Off (12.5 remaining out of 21 days)\") for the chosen employee (context employee_id)",
+          "status": "approximated",
+          "how": "labelField display_name on hr.leave.type gives the name with the remaining days; it does not change with the employee — needs the form's values handed to a link's search (Flectra's context)"
+        },
+        {
+          "feature": "Time Off Type options no_create, no_open",
+          "status": "covered",
+          "how": "options.create false; no ↗ since no page is given for hr.leave.type"
+        },
+        {
+          "feature": "\"Date\" (half day or hours) vs \"Dates\" (full days) label on the same field",
+          "status": "covered",
+          "how": "the same field placed twice, each node with its label and condition"
+        },
+        {
+          "feature": "daterange widget: one box from → to, with a range picker",
+          "status": "approximated",
+          "how": "two date boxes side by side (twelfths 8/4) and an answer rule request_date_to >= request_date_from; needs a date range widget over two fields"
+        },
+        {
+          "feature": "Morning / Afternoon (request_date_from_period), invisible and required with Half Day",
+          "status": "covered",
+          "how": "selection beside the date, labels hidden"
+        },
+        {
+          "feature": "Half Day and Custom Hours, shown by the type's unit, one or the other",
+          "status": "covered",
+          "how": "boolean nodes with Flectra's conditions; the onchange unticks the other and clears both on a new type (_compute_request_unit_half/_hours)"
+        },
+        {
+          "feature": "Half day or custom hours: the end date follows the start",
+          "status": "covered",
+          "how": "the onchange sets request_date_to = request_date_from"
+        },
+        {
+          "feature": "From / To hours: selections of 48 half-hours, required and shown with Custom Hours, readonly once approved",
+          "status": "covered",
+          "how": "selections with the 48 options; with that many they draw as a searchable box rather than Flectra's dropdown"
+        },
+        {
+          "feature": "Duration: days with \"Days\" after, and \"(16 Hours)\" beside for an hours type; hidden for a half day of a day-based type",
+          "status": "covered",
+          "how": "number_of_days_display (suffix \"Days\") and number_of_hours_text placed twice (beside the days, or alone under \"Duration\"), conditions combined from the nested divs"
+        },
+        {
+          "feature": "Duration by the employee's working schedule (Sunday to Thursday here) and public holidays",
+          "status": "covered",
+          "how": "the app's onchange counts working days; 8 hours a day"
+        },
+        {
+          "feature": "Extra Hours Available (hr_holidays_attendance), float_time, green, invisible unless the type deducts overtime and there is some",
+          "status": "approximated",
+          "how": "float with the suffix \"hours\" (6.50, not 06:30) and Flectra's condition; needs a float_time (hh:mm) widget and a text tone"
+        },
+        {
+          "feature": "Description (text, placeholder \"Add a description...\")",
+          "status": "covered",
+          "how": "text node with the placeholder"
+        },
+        {
+          "feature": "Supporting Document (many2many_binary), by the type and state",
+          "status": "covered",
+          "how": "binary with multiple, invisible condition; a doctor's note PDF on record 4173"
+        },
+        {
+          "feature": "Warning \"You can only take this time off in whole days…\" at the foot of the sheet (alert-warning)",
+          "status": "approximated",
+          "how": "a note text with its condition; needs a tone on a body text or an alert placed in the body"
+        },
+        {
+          "feature": "Right column: the hr_leave_stats widget — the employee's time off this year by type, and the department's absences",
+          "status": "approximated",
+          "how": "a read-only html field the app fills on each change, under the form rather than beside it; html keeps text structure only, so lines rather than its table; needs a slot the app fills with the form's values, or the two-column split"
+        },
+        {
+          "feature": "Two columns (col-md-6) for the form and the stats",
+          "status": "approximated",
+          "how": "stacked: a twelfths split nested in a section that itself stacks at the form's medium width (the chatter beside it) cannot keep 7/5; laid flat instead so the dates row keeps its split"
+        },
+        {
+          "feature": "Attachment preview pane beside the form (o_attachment_preview)",
+          "status": "missing",
+          "needs": "needs a preview of the record's attachments beside the sheet"
+        },
+        {
+          "feature": "Approvers recorded (first_approver_id, second_approver_id), not on the form",
+          "status": "covered",
+          "how": "hidden page fields set by the actions' answers and saved"
+        },
+        {
+          "feature": "The chatter: followers, activities, messages (oe_chatter)",
+          "status": "covered",
+          "how": "the sheet's sidePanel slot \"chatter\", which the demos fill with @fieldia/chatter; the conversation itself is the app's (the demo's memory chatter has no messages for these records)"
+        },
+        {
+          "feature": "Field tracking posted to the chatter (tracking=True)",
+          "status": "covered",
+          "how": "the app's: its save posts the tracking messages; not demonstrated in the memory chatter"
+        },
+        {
+          "feature": "Help texts as a tooltip on the label",
+          "status": "approximated",
+          "how": "left out: Fieldia prints `help` under the field, which on a dense Flectra sheet doubles its height; needs `help` shown as a tooltip (a ? by the label) as an option"
+        },
+        {
+          "feature": "Labels beside values in <group>s",
+          "status": "covered",
+          "how": "look.labels \"beside\", labelWidth 150"
+        },
+        {
+          "feature": "Conditions written with tuples: `state in ('a', 'b')`",
+          "status": "approximated",
+          "how": "refused by the parser (\"Expected closing parenthesis\") and written as lists `['a', 'b']`; Flectra's views use tuples throughout, and site/pages/format.mjs shows a tuple in its own example, so a pasted condition fails. Needs tuple literals in the expression language"
+        },
+        {
+          "feature": "Read-only fields shown as text",
+          "status": "approximated",
+          "how": "an empty read-only link still draws \"Search…\", an empty read-only date its dd.mm.yyyy mask, a read-only selection a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+        },
+        {
+          "feature": "Object buttons save the record first, run the method, then reload it",
+          "status": "approximated",
+          "how": "steps: the method's effect (set steps, or a `call` the app answers with values), then `save`; the order differs (Flectra saves before the method) but the record ends the same"
+        },
+        {
+          "feature": "A server refusal on save (ValidationError / UserError from constraints)",
+          "status": "covered",
+          "how": "the data source's save may refuse with the backend's words, which the form shows; the memory data source of the demos does not check hr.leave's constraints"
+        },
+        {
+          "feature": "Record menu (gear): Archive, Duplicate, Delete; record pager; breadcrumbs",
+          "status": "missing",
+          "needs": "Fieldia draws one record without the action menu, the 1/12 pager or breadcrumbs; needs a record toolbar the app can fill (Archive, Duplicate, Delete, Print) and a pager"
+        },
+        {
+          "feature": "groups= on fields, buttons and pages",
+          "status": "approximated",
+          "how": "Fieldia has no user groups: the page here is the one a manager sees; needs `groups`-like conditions on the person (e.g. a `user.groups` value in expressions) or the app handing a page per role"
+        }
+      ],
+      "summary": {
+        "covered": 23,
+        "approximated": 18,
+        "missing": 2
+      }
+    },
+    {
+      "id": "real-employee",
+      "title": "Employee",
+      "flectra": {
+        "module": "hr",
+        "model": "hr.employee",
+        "view": "view_employee_form",
+        "file": "addons/hr/views/hr_employee_views.xml",
+        "inherited": [
+          "hr_holidays.view_employee_form_leave_inherit (addons/hr_holidays/views/hr_views.xml): Approvers group with Time Off approver, Off Till and Time Off smart buttons",
+          "hr_skills (auto-installed; addons/hr_skills/views/hr_views.xml): the Resume tab with resume lines and skills",
+          "hr_org_chart (auto-installed; addons/hr_org_chart/views/hr_views.xml): Org Chart smart button and the organization chart column",
+          "hr_maintenance (auto-installed with maintenance; addons/hr_maintenance/views/hr_views.xml): Equipment smart button",
+          "plan wizard mail.activity.schedule (addons/mail/wizard/mail_activity_schedule_views.xml) behind Launch Plan: page real-employee-plan",
+          "not included: hr_contract, hr_payroll, hr_attendance, hr_expense, hr_fleet, hr_homeworking, hr_work_entry, legal (not auto-installed)"
+        ]
+      },
+      "size": {
+        "fields": 82,
+        "chatterFields": 3,
+        "tabs": 4,
+        "tables": 3,
+        "headerButtons": 1,
+        "smartButtons": 4,
+        "conditions": 19,
+        "conditionsBaseView": 12
+      },
+      "built": {
+        "fields": 72,
+        "conditions": 13,
+        "headerButtons": 1,
+        "smartButtons": 4,
+        "tabs": 4,
+        "tables": 3,
+        "stepsRun": 5
+      },
+      "builtWizard": {
+        "fields": 6,
+        "conditions": 3,
+        "headerButtons": 0,
+        "smartButtons": 0,
+        "tabs": 0,
+        "tables": 0,
+        "stepsRun": 0
+      },
+      "features": [
+        {
+          "feature": "Name (required, placeholder \"Employee's Name\") as h1, Job Title as h2",
+          "status": "covered",
+          "how": "sheet title with placeholder, subtitleField job_title"
+        },
+        {
+          "feature": "Photo (image widget, zoom, preview_image avatar_128) at the right of the title",
+          "status": "approximated",
+          "how": "avatarField image_1920 with Replace; no zoom on hover, no separate small preview"
+        },
+        {
+          "feature": "Tags under the title (many2many_tags, color_field, no_create_edit)",
+          "status": "approximated",
+          "how": "title.below with the tags widget and create false; tags have no colours — needs color_field on tags"
+        },
+        {
+          "feature": "Archived ribbon (invisible active)",
+          "status": "covered",
+          "how": "sheet ribbon"
+        },
+        {
+          "feature": "Presence icon (hr_presence_status) by hr_icon_display",
+          "status": "approximated",
+          "how": "sheet badges (Present, Absent, On time off) with conditions on hr_icon_display"
+        },
+        {
+          "feature": "Chat icon by the name (hr_employee_chat, context chat_icon)",
+          "status": "missing",
+          "needs": "needs a way to open a chat with the record's user beside its name"
+        },
+        {
+          "feature": "Launch Plan (type action, invisible not active): mail.activity.schedule in plan mode",
+          "status": "covered",
+          "how": "open real-employee-plan in a dialog: plan (filtered on res_model hr.employee, no create), plan date, on-demand assignee by plan, the plan summary worked out by the app's onchange; then call employee_plan_launched"
+        },
+        {
+          "feature": "Plan wizard footer: Schedule / Cancel",
+          "status": "approximated",
+          "how": "the dialog's Save & Close / Discard (see the dialog button words)"
+        },
+        {
+          "feature": "Smart button Off Till <date>, with a plane icon green or amber by presence",
+          "status": "approximated",
+          "how": "stat button with the date field and invisible \"not is_absent\"; one icon, no colour by value; opens the time off request in place (a calendar dashboard in Flectra)"
+        },
+        {
+          "feature": "Smart button Time Off \"12.5/21 Days\", or only \"Time Off\" when no allocation",
+          "status": "approximated",
+          "how": "stat button on one char field the app joins from the two (allocation_remaining_display, allocation_display); needs a stat button that shows several fields or a template"
+        },
+        {
+          "feature": "Smart button Org Chart (invisible \"not parent_id and not child_ids\"), opening the hierarchy view",
+          "status": "approximated",
+          "how": "stat button with the same condition (an empty table reads as false); it shows the Work Information tab, where the chart column is"
+        },
+        {
+          "feature": "Smart button Equipment (statinfo on equipment_count, groups equipment manager), opening the employee's equipment",
+          "status": "approximated",
+          "how": "stat button on the count, call employee_equipment answers with the list in words; a list page of maintenance.equipment filtered on the employee was not built"
+        },
+        {
+          "feature": "Work Mobile, Work Phone (phone), Work Email (email)",
+          "status": "covered",
+          "how": "phone and email widgets"
+        },
+        {
+          "feature": "Primary Company and Companies (many2many_tags, color_field), groups multi_company",
+          "status": "approximated",
+          "how": "shown; no tag colours; no group"
+        },
+        {
+          "feature": "Department, Job Position, Manager and Coach (many2one_avatar_user)",
+          "status": "approximated",
+          "how": "many2one links without avatars"
+        },
+        {
+          "feature": "Manager follows the department, the coach follows the manager (_compute_parent_id, _compute_coach); job title follows the job",
+          "status": "covered",
+          "how": "the app's onchange on department_id, parent_id and job_id"
+        },
+        {
+          "feature": "Employee properties (properties field, definitions on the company, columns=\"2\")",
+          "status": "approximated",
+          "how": "a properties field with the definitions written in the page (scrubs size, locker, licence, BLS expiry) shown one per row; Flectra keeps the definitions on the company and lets people add one from the form — needs definitions from the app and adding one in place"
+        },
+        {
+          "feature": "Notebook: Resume, Work Information, Private Information, HR Settings",
+          "status": "covered",
+          "how": "tabs"
+        },
+        {
+          "feature": "Resume lines (resume_one2many): a timeline grouped by line type",
+          "status": "approximated",
+          "how": "a table with type, name, dates, description (optional column), sections and notes by display_type; needs a grouped timeline widget for lines"
+        },
+        {
+          "feature": "Skills (skills_one2many): grouped by skill type, level shown as a progress bar",
+          "status": "approximated",
+          "how": "a table; level_progress as a number — needs a widget per column (progressbar in a line)"
+        },
+        {
+          "feature": "Location: Work Address (show_address, highlight_first_line), Work Location filtered by the address (context default_address_id)",
+          "status": "approximated",
+          "how": "many2one; work_location_id filtered with valueFrom address_id and cleared by the onchange when the address changes; the address shows its name only, not its lines"
+        },
+        {
+          "feature": "Approvers group made visible by hr_holidays, Time Off approver (leave_manager_id)",
+          "status": "covered",
+          "how": "titled section with the field"
+        },
+        {
+          "feature": "Departure group (invisible active): reason (no create/edit/open), additional information (html), date",
+          "status": "covered",
+          "how": "section with invisible \"active\""
+        },
+        {
+          "feature": "Schedule: Working Hours, Timezone required=\"id\"",
+          "status": "approximated",
+          "how": "timezone always required (no record id in expressions) and six of Flectra's ~600 timezones"
+        },
+        {
+          "feature": "Organization chart column (hr_org_chart widget: manager chain above, colleagues and subordinates below)",
+          "status": "approximated",
+          "how": "a titled column: the manager link and a read-only table of direct subordinates; needs an org chart widget"
+        },
+        {
+          "feature": "Private address block (o_address_format: street, street 2, city, state, zip, country with placeholders)",
+          "status": "covered",
+          "how": "twelfths: street and street 2 full rows, city/state/zip 5/4/3, country, labels hidden except the first; state filtered by country (domain =?) and cleared by the onchange"
+        },
+        {
+          "feature": "Private Email, Phone, Bank Account (context default_partner_id, readonly=\"not id\"), Language, Home-Work Distance with \"Km\", Private Car Plate",
+          "status": "approximated",
+          "how": "all placed; Km as the number's suffix; the bank account is not read-only on a new employee (no id in expressions)"
+        },
+        {
+          "feature": "Family Status: spouse name and birthdate invisible unless married or cohabitant",
+          "status": "covered",
+          "how": "invisible \"marital not in ['married', 'cohabitant']\""
+        },
+        {
+          "feature": "Emergency: contact name and phone (o_force_ltr)",
+          "status": "covered",
+          "how": "phone widget"
+        },
+        {
+          "feature": "Education, then a \"Work Permit\" separator with visa and permit numbers and dates",
+          "status": "covered",
+          "how": "a heading text node as the separator"
+        },
+        {
+          "feature": "Work Permit upload (work_permit_upload widget with filename field)",
+          "status": "approximated",
+          "how": "a binary field; the file name is kept in the file value rather than in work_permit_name"
+        },
+        {
+          "feature": "Citizenship: nationality (no create/open), identification, SSN, passport, gender, birthday, place and country of birth",
+          "status": "covered",
+          "how": "fields; birthday limited to the past (max today)"
+        },
+        {
+          "feature": "HR Settings: Employee Type, Related User (many2one_avatar_user, domain on companies and share, context default_create_employee_id)",
+          "status": "approximated",
+          "how": "many2one without avatar or domain on the user's companies"
+        },
+        {
+          "feature": "PIN Code",
+          "status": "covered",
+          "how": "char with the password widget and a digits pattern"
+        },
+        {
+          "feature": "Badge ID with Generate (object button, invisible barcode) and Print Badge (report action, invisible not barcode) on its row",
+          "status": "approximated",
+          "how": "buttons inside the section next to the field: Generate calls employee_generate_barcode (041 + nine digits); Print Badge only says so — needs a report/download answer for an action"
+        },
+        {
+          "feature": "Payroll and Application Settings groups (invisible=\"1\" extension points)",
+          "status": "covered",
+          "how": "left out: empty without payroll"
+        },
+        {
+          "feature": "Company change warning (\"To avoid multi company issues…\")",
+          "status": "covered",
+          "how": "the data source's warnings per field (not set in this demo)"
+        },
+        {
+          "feature": "js_class hr_employee_form: Archive opens the departure wizard",
+          "status": "missing",
+          "needs": "needs the record menu (Archive) and a step from it"
+        },
+        {
+          "feature": "The chatter: followers, activities, messages (oe_chatter)",
+          "status": "covered",
+          "how": "the sheet's sidePanel slot \"chatter\", which the demos fill with @fieldia/chatter; the conversation itself is the app's (the demo's memory chatter has no messages for these records)"
+        },
+        {
+          "feature": "Field tracking posted to the chatter (tracking=True)",
+          "status": "covered",
+          "how": "the app's: its save posts the tracking messages; not demonstrated in the memory chatter"
+        },
+        {
+          "feature": "Help texts as a tooltip on the label",
+          "status": "approximated",
+          "how": "left out: Fieldia prints `help` under the field, which on a dense Flectra sheet doubles its height; needs `help` shown as a tooltip (a ? by the label) as an option"
+        },
+        {
+          "feature": "Labels beside values in <group>s",
+          "status": "covered",
+          "how": "look.labels \"beside\", labelWidth 150"
+        },
+        {
+          "feature": "Conditions written with tuples: `state in ('a', 'b')`",
+          "status": "approximated",
+          "how": "refused by the parser (\"Expected closing parenthesis\") and written as lists `['a', 'b']`; Flectra's views use tuples throughout, and site/pages/format.mjs shows a tuple in its own example, so a pasted condition fails. Needs tuple literals in the expression language"
+        },
+        {
+          "feature": "Read-only fields shown as text",
+          "status": "approximated",
+          "how": "an empty read-only link still draws \"Search…\", an empty read-only date its dd.mm.yyyy mask, a read-only selection a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+        },
+        {
+          "feature": "Object buttons save the record first, run the method, then reload it",
+          "status": "approximated",
+          "how": "steps: the method's effect (set steps, or a `call` the app answers with values), then `save`; the order differs (Flectra saves before the method) but the record ends the same"
+        },
+        {
+          "feature": "A server refusal on save (ValidationError / UserError from constraints)",
+          "status": "covered",
+          "how": "the data source's save may refuse with the backend's words, which the form shows; the memory data source of the demos does not check hr.employee's constraints"
+        },
+        {
+          "feature": "Record menu (gear): Archive, Duplicate, Delete; record pager; breadcrumbs",
+          "status": "missing",
+          "needs": "Fieldia draws one record without the action menu, the 1/12 pager or breadcrumbs; needs a record toolbar the app can fill (Archive, Duplicate, Delete, Print) and a pager"
+        },
+        {
+          "feature": "groups= on fields, buttons and pages",
+          "status": "approximated",
+          "how": "Fieldia has no user groups: the page here is the one a manager sees; needs `groups`-like conditions on the person (e.g. a `user.groups` value in expressions) or the app handing a page per role"
+        }
+      ],
+      "summary": {
+        "covered": 20,
+        "approximated": 25,
+        "missing": 3
+      }
+    },
+    {
+      "id": "real-maintenance-request",
+      "title": "Maintenance Request",
+      "flectra": {
+        "module": "maintenance",
+        "model": "maintenance.request",
+        "view": "hr_equipment_request_view_form",
+        "file": "addons/maintenance/views/maintenance_views.xml",
+        "inherited": [
+          "hr_maintenance.maintenance_request_view_form_inherit_hr (addons/hr_maintenance/views/maintenance_views.xml, auto-installed): Created By (employee) in place of the hidden owner"
+        ]
+      },
+      "size": {
+        "fields": 28,
+        "chatterFields": 3,
+        "tabs": 2,
+        "tables": 0,
+        "headerButtons": 2,
+        "smartButtons": 0,
+        "conditions": 20
+      },
+      "built": {
+        "fields": 27,
+        "conditions": 19,
+        "headerButtons": 2,
+        "smartButtons": 0,
+        "tabs": 2,
+        "tables": 0,
+        "stepsRun": 6
+      },
+      "features": [
+        {
+          "feature": "Cancel (archive_equipment_request, invisible archive): archived, recurrence stopped",
+          "status": "covered",
+          "how": "set archive, set recurring_maintenance false, save"
+        },
+        {
+          "feature": "Reopen Request (reset_equipment_request, invisible not archive): back in the first stage",
+          "status": "covered",
+          "how": "set archive false, call maintenance_first_stage (the app answers the stage), save"
+        },
+        {
+          "feature": "Stage statusbar, clickable, on a many2one (stages looked up)",
+          "status": "covered",
+          "how": "statusbar on stage_id with clickable; its steps are the stages the link may point to"
+        },
+        {
+          "feature": "Keyboard after a stage is clicked (Flectra: Alt+S saves from anywhere)",
+          "status": "missing",
+          "needs": "clicking a statusbar step redraws the bar and the focus falls to <body>, so Ctrl+Enter no longer saves until a field is focused again (checked in the browser); needs the clicked step to keep the focus, or the save keys heard on the whole page"
+        },
+        {
+          "feature": "Stage statusbar invisible=\"archive\"",
+          "status": "missing",
+          "needs": "needs `invisible` on the sheet's statusbar"
+        },
+        {
+          "feature": "Canceled badge (text-bg-warning, float-end) when archived",
+          "status": "covered",
+          "how": "sheet badge, tone warning, invisible \"not archive\""
+        },
+        {
+          "feature": "Kanban state (state_selection: a grey, red or green dot with a menu)",
+          "status": "approximated",
+          "how": "a plain selection over the title (title.above); needs a state-dot widget for a selection"
+        },
+        {
+          "feature": "Title with a \"Request\" label above and placeholder \"e.g. Screen not working\"",
+          "status": "approximated",
+          "how": "sheet title with the placeholder; no label over a title"
+        },
+        {
+          "feature": "Created By (hr_maintenance employee_id, many2one_avatar_employee, no_create_edit, no_open)",
+          "status": "approximated",
+          "how": "many2one with create false; no avatar"
+        },
+        {
+          "feature": "Equipment, with its category (related, groups manager, invisible not equipment), team and technician following it",
+          "status": "covered",
+          "how": "the app's onchange on equipment_id (_compute_maintenance_team_id, _compute_user_id); category read-only with Flectra's condition"
+        },
+        {
+          "feature": "Equipment's context defaults for a new one (default_company_id, default_category_id)",
+          "status": "approximated",
+          "how": "Create and edit… would open with the typed name only; needs defaults handed to a link's new record"
+        },
+        {
+          "feature": "Request Date (readonly), Close Date (readonly, invisible not done; done related to the stage)",
+          "status": "covered",
+          "how": "done is a page field the stage's onchange fills; close date set to today on a closing stage"
+        },
+        {
+          "feature": "Maintenance Type (radio)",
+          "status": "approximated",
+          "how": "radio; Fieldia adds a \"Clear selection\" link Flectra has not"
+        },
+        {
+          "feature": "Team (required, no_create, no_open), Responsible (user_id relabelled), Scheduled Date",
+          "status": "covered",
+          "how": "fields with the label override"
+        },
+        {
+          "feature": "Duration with widget float_time and \"hours\" after",
+          "status": "approximated",
+          "how": "a float with the suffix \"hours\", 2.50 rather than 02:30; needs a float_time (hh:mm) widget"
+        },
+        {
+          "feature": "Recurrent (label and box hidden for corrective)",
+          "status": "covered",
+          "how": "boolean with invisible \"maintenance_type == 'corrective'\"; the onchange unticks it when corrective"
+        },
+        {
+          "feature": "Repeat Every / unit / Until / End Date on one row (d-flex), required while recurrent, End Date only for \"until\"",
+          "status": "approximated",
+          "how": "one field per row with Flectra's conditions: twelfths inside one column of a two-column group overflow the column by about 11 px and put labels above — needs twelfths that fit a nested column"
+        },
+        {
+          "feature": "Repeat interval at least 1 (constraint)",
+          "status": "covered",
+          "how": "integer min 1"
+        },
+        {
+          "feature": "Priority (widget priority: three stars over a selection '0'..'3')",
+          "status": "approximated",
+          "how": "an integer from 1 to 3 with the rating widget, cleared for Very Low; the value is a number, not Flectra's string key, and a \"Clear selection\" link shows — needs the rating widget on a selection"
+        },
+        {
+          "feature": "Email cc (groups base.group_no_one: developer mode only)",
+          "status": "missing",
+          "needs": "left out: no developer mode or groups"
+        },
+        {
+          "feature": "Company (multi company, no_create)",
+          "status": "covered",
+          "how": "many2one with create false"
+        },
+        {
+          "feature": "Notes tab: description html, placeholder \"Internal Notes\"",
+          "status": "approximated",
+          "how": "html field; the editor shows no placeholder"
+        },
+        {
+          "feature": "Instructions tab: PDF / Google Slide / Text (radio, no label)",
+          "status": "covered",
+          "how": "radio with labels hidden, each instruction field shown and required by its condition"
+        },
+        {
+          "feature": "Instruction PDF shown inline (widget pdf_viewer)",
+          "status": "approximated",
+          "how": "a binary accepting PDFs, shown as a file card that opens in the viewer; needs an inline PDF preview"
+        },
+        {
+          "feature": "Google Slide embedded (widget embed_viewer)",
+          "status": "approximated",
+          "how": "a url field; needs an embedded viewer for a link"
+        },
+        {
+          "feature": "Instruction text (html, placeholder \"Your instructions\")",
+          "status": "covered",
+          "how": "html field"
+        },
+        {
+          "feature": "write(): a new stage resets the kanban state; a closing stage closes it, and a recurrent preventive request is copied to its next date",
+          "status": "covered",
+          "how": "onchange for the kanban state and close date; the next occurrence is the app's save"
+        },
+        {
+          "feature": "Activity scheduled on the scheduled date for the technician",
+          "status": "covered",
+          "how": "the app's chatter; not demonstrated"
+        },
+        {
+          "feature": "The chatter: followers, activities, messages (oe_chatter)",
+          "status": "covered",
+          "how": "the sheet's sidePanel slot \"chatter\", which the demos fill with @fieldia/chatter; the conversation itself is the app's (the demo's memory chatter has no messages for these records)"
+        },
+        {
+          "feature": "Field tracking posted to the chatter (tracking=True)",
+          "status": "covered",
+          "how": "the app's: its save posts the tracking messages; not demonstrated in the memory chatter"
+        },
+        {
+          "feature": "Help texts as a tooltip on the label",
+          "status": "approximated",
+          "how": "left out: Fieldia prints `help` under the field, which on a dense Flectra sheet doubles its height; needs `help` shown as a tooltip (a ? by the label) as an option"
+        },
+        {
+          "feature": "Labels beside values in <group>s",
+          "status": "covered",
+          "how": "look.labels \"beside\", labelWidth 150"
+        },
+        {
+          "feature": "Conditions written with tuples: `state in ('a', 'b')`",
+          "status": "approximated",
+          "how": "refused by the parser (\"Expected closing parenthesis\") and written as lists `['a', 'b']`; Flectra's views use tuples throughout, and site/pages/format.mjs shows a tuple in its own example, so a pasted condition fails. Needs tuple literals in the expression language"
+        },
+        {
+          "feature": "Read-only fields shown as text",
+          "status": "approximated",
+          "how": "an empty read-only link still draws \"Search…\", an empty read-only date its dd.mm.yyyy mask, a read-only selection a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+        },
+        {
+          "feature": "Object buttons save the record first, run the method, then reload it",
+          "status": "approximated",
+          "how": "steps: the method's effect (set steps, or a `call` the app answers with values), then `save`; the order differs (Flectra saves before the method) but the record ends the same"
+        },
+        {
+          "feature": "A server refusal on save (ValidationError / UserError from constraints)",
+          "status": "covered",
+          "how": "the data source's save may refuse with the backend's words, which the form shows; the memory data source of the demos does not check maintenance.request's constraints"
+        },
+        {
+          "feature": "Record menu (gear): Archive, Duplicate, Delete; record pager; breadcrumbs",
+          "status": "missing",
+          "needs": "Fieldia draws one record without the action menu, the 1/12 pager or breadcrumbs; needs a record toolbar the app can fill (Archive, Duplicate, Delete, Print) and a pager"
+        },
+        {
+          "feature": "groups= on fields, buttons and pages",
+          "status": "approximated",
+          "how": "Fieldia has no user groups: the page here is the one a manager sees; needs `groups`-like conditions on the person (e.g. a `user.groups` value in expressions) or the app handing a page per role"
+        }
+      ],
+      "summary": {
+        "covered": 18,
+        "approximated": 16,
+        "missing": 4
+      }
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "fieldia": "0.1",
+  "id": "real-employee-plan",
+  "title": "Launch Plan",
+  "data": { "kind": "record", "model": "mail.activity.schedule" },
+  "maxWidth": "medium",
+  "fields": {
+    "employee_name": { "type": "char", "label": "Employee", "readonly": true },
+    "plan_id": { "type": "many2one", "label": "Plan", "relation": "mail.activity.plan", "required": true, "filter": [{ "field": "res_model", "op": "=", "value": "hr.employee" }] },
+    "plan_date_deadline": { "type": "date", "label": "Plan Date", "default": "today" },
+    "plan_has_user_on_demand": { "type": "boolean", "label": "Has on demand responsible", "readonly": true },
+    "plan_on_demand_user_id": { "type": "many2one", "label": "Assigned To", "relation": "res.users" },
+    "plan_assignation_summary": { "type": "html", "label": "Plan summary", "readonly": true }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "wizard",
+    "children": [
+      {
+        "type": "section",
+        "id": "g-plan",
+        "style": "plain",
+        "children": [
+          { "type": "field", "id": "f-employee", "field": "employee_name", "invisible": true },
+          { "type": "field", "id": "f-plan", "field": "plan_id", "options": { "create": false } }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "g-plan-details",
+        "style": "plain",
+        "columns": { "wide": 2, "medium": 1 },
+        "invisible": "not plan_id",
+        "children": [
+          {
+            "type": "section",
+            "id": "g-plan-dates",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-plan-date", "field": "plan_date_deadline" },
+              { "type": "field", "id": "f-on-demand", "field": "plan_on_demand_user_id", "invisible": "not plan_has_user_on_demand", "required": "plan_has_user_on_demand" }
+            ]
+          },
+          { "type": "field", "id": "f-summary", "field": "plan_assignation_summary", "labels": "above", "label": "Plan summary", "options": { "toolbar": false } }
+        ]
+      }
+    ]
+  }
+}
