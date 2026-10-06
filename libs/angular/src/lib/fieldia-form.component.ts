@@ -23,7 +23,7 @@ import {
   type Signal,
   type Type,
 } from '@angular/core';
-import type { ActionRequest, DataSource, DraftStore, Form, FormState, Locale, Page, RecordId, Scheduler, Value, Values } from '@fieldia/core';
+import type { ActionRequest, DataSource, DraftStore, Form, FormEvents, FormState, Locale, OnAction, Page, RecordId, Scheduler, Value, Values } from '@fieldia/core';
 import { mountViewer, type Skin, type SlotRenderer, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import type { PreferenceStore, WidgetFactory, WidgetState } from '@fieldia/widgets';
 
@@ -109,11 +109,36 @@ export class FieldiaFormComponent implements OnDestroy {
    * HTML `translate` attribute, never to an input.
    */
   readonly translator = input<ViewerOptions['translate']>(undefined);
+  /**
+   * The app's answer to a button's action or a `call` step: what `onAction` is
+   * in the other bindings. What it returns — values, words, a page to open, a
+   * stop — the form takes; an output cannot hand an answer back. The `action`
+   * output still tells every call.
+   */
+  readonly answer = input<OnAction | undefined>(undefined);
+  /** Your own way to open a page a step asks for (the viewer's `onOpen`); undefined lets the viewer open it. */
+  readonly openPage = input<ViewerOptions['onOpen']>(undefined);
+  /** Any of the viewer's host done your own way (the viewer's `host`): words said, a question asked, a page opened, a tab shown. */
+  readonly actionHost = input<ViewerOptions['host']>(undefined);
 
   readonly ready = output<ViewerHandle>();
   readonly action = output<ActionRequest>();
   /** A list's row was opened: the app shows the record. */
   readonly openRecord = output<RecordId>();
+  /**
+   * A field was written — `by` a person, a step or the app. Not `change`: on a
+   * component's element Angular hears the inputs' own change events under that
+   * name too.
+   */
+  readonly fieldChange = output<FormEvents['change']>();
+  /** A record was saved. */
+  readonly save = output<FormEvents['save']>();
+  /** A page of responses sent its answers. */
+  readonly send = output<FormEvents['send']>();
+  /** A wizard's step was entered. */
+  readonly step = output<FormEvents['step']>();
+  /** A run of steps ended — a button's, a moment's — and how. */
+  readonly run = output<FormEvents['run']>();
 
   private readonly slotTemplates = contentChildren(FieldiaSlotDirective);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -223,10 +248,21 @@ export class FieldiaFormComponent implements OnDestroy {
       readonly: this.readonly(),
       editSwitch: this.editSwitch(),
       translate: this.translator(),
-      onAction: (request) => this.action.emit(request),
+      onAction: (request) => {
+        this.action.emit(request);
+        return this.answer()?.(request);
+      },
+      onOpen: (request) => this.openPage()?.(request),
+      host: this.actionHost(),
       onOpenRecord: (id) => this.openRecord.emit(id),
     });
-    this.ready.emit(this.handle);
+    const handle = this.handle;
+    handle.on('change', (event) => this.fieldChange.emit(event));
+    handle.on('save', (event) => this.save.emit(event));
+    handle.on('send', (event) => this.send.emit(event));
+    handle.on('step', (event) => this.step.emit(event));
+    handle.on('run', (event) => this.run.emit(event));
+    this.ready.emit(handle);
   }
 
   private unmount() {
