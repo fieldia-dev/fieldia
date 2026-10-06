@@ -48,6 +48,16 @@ export interface FormPanelOptions extends Omit<FormDialogOptions, 'size'> {
 
 let dialogs = 0;
 
+/** The dialogs' way to make an element of a document: a tag, its attributes, and its words. */
+const maker =
+  (doc: Document) =>
+  <K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, text?: string) => {
+    const element = doc.createElement(tag);
+    for (const [name, value] of Object.entries(attrs)) element.setAttribute(name, value);
+    if (text !== undefined) element.textContent = text;
+    return element;
+  };
+
 export function openFormDialog(options: FormDialogOptions): Promise<FormDialogResult> {
   return openForm(options, `fd-size-${options.size ?? 'medium'}`);
 }
@@ -71,12 +81,7 @@ function openForm(options: FormDialogOptions, shape: string, panel = false): Pro
   const opener = doc.activeElement instanceof doc.defaultView!.HTMLElement ? (doc.activeElement as HTMLElement) : null;
   const labels = { ...VIEWER_LABELS[ownLocale(options.locale)], ...options.labels };
   const id = `fd-dialog-${++dialogs}`;
-  const make = <K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, text?: string) => {
-    const element = doc.createElement(tag);
-    for (const [name, value] of Object.entries(attrs)) element.setAttribute(name, value);
-    if (text !== undefined) element.textContent = text;
-    return element;
-  };
+  const make = maker(doc);
 
   const title = make('h2', { id: `${id}-title`, class: 'fd-form-dialog-title' }, options.title);
   const closeButton = make('button', { type: 'button', class: 'fd-dialog-close', 'aria-label': labels.close }, '×');
@@ -100,8 +105,6 @@ function openForm(options: FormDialogOptions, shape: string, panel = false): Pro
   box.firstElementChild?.append(title, closeButton);
   box.lastElementChild?.append(discard, saveClose);
   const backdrop = make('div', { class: `fd-dialog-backdrop fd-form-dialog-backdrop${panel ? ' fd-form-panel-backdrop' : ''}` });
-  // A panel's backdrop runs its way too: the inline end it holds the panel at is the left, right to left.
-  if (panel && options.dir) backdrop.setAttribute('dir', options.dir);
   backdrop.append(box);
   // The panel this one opens over steps back while it is open.
   const under = panel ? [...doc.querySelectorAll('.fd-form-panel')].pop() : undefined;
@@ -109,6 +112,8 @@ function openForm(options: FormDialogOptions, shape: string, panel = false): Pro
   container.append(backdrop);
 
   const handle = mountViewer(body, { ...options, page: look && !options.page.look ? { ...options.page, look } : options.page, showActions: false });
+  // A panel runs the way its page does, its language's way unless told: the inline end it sits at is the left, right to left.
+  if (panel && handle.element.dir) backdrop.dir = handle.element.dir;
   let done = false;
   if (options.recompute) recalculate(handle.form, options.page.fields, options.recompute, () => done);
 
@@ -243,12 +248,7 @@ export function openSearchDialog(options: SearchDialogOptions): Promise<RelatedR
   const labels = VIEWER_LABELS[locale];
   const words = WIDGET_LABELS[locale];
   const id = `fd-dialog-${++dialogs}`;
-  const make = <K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, text?: string) => {
-    const element = doc.createElement(tag);
-    for (const [name, value] of Object.entries(attrs)) element.setAttribute(name, value);
-    if (text !== undefined) element.textContent = text;
-    return element;
-  };
+  const make = maker(doc);
   const title = make('h2', { id: `${id}-title`, class: 'fd-form-dialog-title' }, options.title);
   const closeButton = make('button', { type: 'button', class: 'fd-dialog-close', 'aria-label': labels.close }, '×');
   const query = make('input', { type: 'search', class: 'fd-input', 'aria-label': words.search, placeholder: words.search, 'aria-controls': `${id}-list`, autocomplete: 'off' });

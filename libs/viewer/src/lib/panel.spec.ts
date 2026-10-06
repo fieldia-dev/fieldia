@@ -237,6 +237,16 @@ describe('a form in a side panel', () => {
     expect(panel()?.parentElement?.getAttribute('dir')).toBe('rtl');
   });
 
+  it('runs right to left in a language written so, with no direction given, as the page in it does', async () => {
+    void openFormPanel({ page: page('customer'), dataSource: customerSource(), recordId: 1, title: 'Nile Traders', locale: 'ar' });
+    await flush();
+    expect(panel()?.parentElement?.getAttribute('dir')).toBe('rtl');
+    document.body.replaceChildren();
+    void openFormPanel({ page: page('customer'), dataSource: customerSource(), recordId: 1, title: 'Nile Traders', locale: 'ar', dir: 'ltr' });
+    await flush();
+    expect(panel()?.parentElement?.getAttribute('dir')).toBe('ltr');
+  });
+
   it('wears the look of the page that opened it, and so does the page inside it', async () => {
     const look = { accent: '#1f7a4d', scheme: 'dark', corners: 'round' } as const;
     void openFormPanel({ page: page('customer'), dataSource: customerSource(), recordId: 1, title: 'Nile Traders', look, skin: 'outlined' });

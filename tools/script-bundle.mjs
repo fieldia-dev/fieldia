@@ -145,7 +145,7 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // A page's steps and moments checked as it is shown — the fields each step names, its expressions, the
 // tabs and wizard steps it goes to — add 2.3, to 275.3.
 // A page in a side panel — the dialog's own code at the screen's edge, a width, Done for values, a question
-// before Escape or × drops changes, panels stacked one stepped back, and its slide in — adds 1.7, to 277.
+// before Escape or × drops changes, panels stacked one stepped back, and its slide in — adds 1.6, to 276.9.
 const BUDGET_KB = 277;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
