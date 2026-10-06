@@ -35,7 +35,10 @@ export function stepSentence(page: Page, step: ActionStep, words: DesignerWords 
       const record = step.record ? w.onRecord(formula(step.record)) : '';
       const values = Object.keys(step.values ?? {}).map((name) => other?.fields[name]?.label || name);
       const into = Object.keys(step.into ?? {}).map(field);
-      const head = `${opened}${record}${values.length ? w.startingWith(values) : ''}`;
+      // A list opened on some records: the first condition in words, the rest counted.
+      const [first, ...more] = step.filter ?? [];
+      const only = first && 'op' in first && first.op === '=' && first.valueFrom ? w.onlyThose(other?.fields[first.field]?.label || first.field, first.valueFrom === 'id' ? w.theRecordItself : field(first.valueFrom)) + (more.length ? w.moreConditions(more.length) : '') : '';
+      const head = `${opened}${record}${only}${values.length ? w.startingWith(values) : ''}`;
       return `${whenOf(page, head, step.when, words)}${into.length ? w.thenPut(into) : ''}`;
     }
     case 'set':
@@ -72,6 +75,12 @@ export function stepSentence(page: Page, step: ActionStep, words: DesignerWords 
     }
     case 'close':
       said = w.close;
+      break;
+    case 'openUrl':
+      said = w.openUrl(formula(step.url), step.newTab !== false);
+      break;
+    case 'reload':
+      said = w.reload;
       break;
   }
   return whenOf(page, said, step.when, words);

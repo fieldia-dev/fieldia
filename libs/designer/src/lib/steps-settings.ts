@@ -93,7 +93,7 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
     return box;
   };
   /** A formula over this page's fields. */
-  const formula = (label: string, key: 'value' | 'record', placeholder: string, optional = false) => {
+  const formula = (label: string, key: 'value' | 'record' | 'url', placeholder: string, optional = false) => {
     const box = formulaBox(el, {
       words,
       label,
@@ -154,6 +154,20 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
       parts.push(el('p', { class: 'fd-properties-hint fd-set-hint' }, w.actionHint));
       break;
     }
+    case 'openUrl': {
+      formula(w.address, 'url', w.addressPlaceholder);
+      // A new tab is the default, so only "no" is written.
+      const newTab = el('input', { type: 'checkbox', class: 'fd-check' }) as HTMLInputElement;
+      newTab.addEventListener('change', () => ctx.change({ newTab: newTab.checked ? null : false }));
+      parts.push(el('label', { class: 'fd-prop-check' }, newTab, w.inNewTab));
+      updates.push((step) => {
+        newTab.checked = step.do !== 'openUrl' || step.newTab !== false;
+      });
+      break;
+    }
+    case 'reload':
+      parts.push(el('p', { class: 'fd-properties-hint fd-set-hint' }, w.reloadHint));
+      break;
     default:
       break;
   }
@@ -222,7 +236,38 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
       reads: answers,
       commit: (map, typing) => ctx.change({ into: map }, typing),
     });
-    parts.push(startsWith.element, into.element);
+    // A list opened on some records only: its field against one of this form's, or its id. Further conditions are kept as written.
+    const its = select(el, w.onlyRecords);
+    const ours = select(el, w.isThisForms);
+    const simpleFirst = (step: OpenStep) => {
+      const first = step.filter?.[0];
+      return first && 'op' in first && first.op === '=' && first.valueFrom !== undefined ? first : null;
+    };
+    const commitOnly = () => {
+      if (current.do !== 'open') return;
+      const rest = simpleFirst(current) ? (current.filter ?? []).slice(1) : (current.filter ?? []);
+      const filter = its.value && ours.value ? [{ field: its.value, op: '=' as const, valueFrom: ours.value }, ...rest] : rest;
+      ctx.change({ filter: filter.length ? filter : null });
+    };
+    its.addEventListener('change', commitOnly);
+    ours.addEventListener('change', commitOnly);
+    const onlyMore = el('p', { class: 'fd-properties-hint fd-set-hint' });
+    const onlyRow = row(el, w.onlyRecords, its, el('span', { class: 'fd-prop-between' }, w.isThisForms), ours, onlyMore);
+    parts.push(onlyRow, startsWith.element, into.element);
+    updates.push((step) => {
+      if (step.do !== 'open') return;
+      const other = opened();
+      onlyRow.hidden = !(other?.layout.type === 'list' || step.filter?.length);
+      if (onlyRow.hidden) return;
+      const first = simpleFirst(step);
+      fill(el, its, [{ value: '', label: w.anyRecord }, ...Object.entries(other?.fields ?? {}).map(choiceOf)]);
+      fill(el, ours, [{ value: 'id', label: w.theRecordItself }, ...fieldsOf()]);
+      if (!focused(its)) its.value = first?.field ?? '';
+      if (!focused(ours)) ours.value = first?.valueFrom ?? 'id';
+      const more = (step.filter?.length ?? 0) - (first ? 1 : 0);
+      onlyMore.textContent = more ? w.moreConditions(more).trim() : '';
+      onlyMore.hidden = !more;
+    });
     updates.push((step) => {
       if (step.do !== 'open') return;
       const listed = ctx.listed();
@@ -374,6 +419,8 @@ export function newStep(page: Page, kind: ActionStep['do']): ActionStep {
       return { do: 'ask', message: '' };
     case 'call':
       return { do: 'call', action: '' };
+    case 'openUrl':
+      return { do: 'openUrl', url: '' };
     default:
       return { do: kind } as ActionStep;
   }

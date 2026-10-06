@@ -125,3 +125,23 @@ describe('every list of steps on the page', () => {
     expect(pageSteps(plain)).toEqual([]);
   });
 });
+
+describe('steps that leave the form, in words', () => {
+  const invoices: Page = { ...blankPage('screen', 'Invoices'), id: 'invoices', title: 'Invoices', fields: { partner: { type: 'char', label: 'Customer' } }, layout: { type: 'list', id: 'list', columns: ['partner'] } };
+  const lists = (id: string) => (id === 'invoices' ? invoices : undefined);
+  const list = (words = en): string =>
+    stepSentence(page, { do: 'open', page: 'invoices', as: 'page', filter: [{ field: 'partner', op: '=', valueFrom: 'customer' }, { field: 'state', op: '!=', value: 'cancel' }] }, words, lists);
+
+  it('says a web address, a reload, and a list opened on some records, in English', () => {
+    expect(say({ do: 'openUrl', url: "'https://portal.example/' + customer" })).toBe('Open the web address “https://portal.example/” + Customer');
+    expect(say({ do: 'openUrl', url: "'/help'", newTab: false })).toBe('Open the web address “/help”, in this tab');
+    expect(say({ do: 'reload' })).toBe('Load the record again, as the app’s server has it');
+    expect(list()).toBe('Open Invoices in its place, only those whose Customer is this form’s Customer and 1 more condition');
+  });
+
+  it('says them in Arabic', () => {
+    expect(say({ do: 'reload' }, ar)).toBe('حمّل السجل من جديد، كما هو على خادم التطبيق');
+    expect(say({ do: 'openUrl', url: "'/help'", newTab: false }, ar)).toMatch(/^افتح عنوان الويب .*، في هذا التبويب$/);
+    expect(list(ar)).toMatch(/فقط وشرط آخر$/);
+  });
+});

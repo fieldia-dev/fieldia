@@ -1,4 +1,4 @@
-import type { ActionStep, AddLineStep, CallStep, CheckStep, GoToStep, OpenStep, Page, SayStep, SetStep } from '@fieldia/core';
+import type { ActionStep, AddLineStep, CallStep, CheckStep, GoToStep, OpenStep, OpenUrlStep, Page, SayStep, SetStep } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 import { Refusal } from './refusal';
@@ -15,7 +15,7 @@ import { holderOf, placeIsThere, placeKey, showTargets, stepAt, stepsAt, tidyThe
  */
 
 /** Everything a step of any kind may say, but what kind it is. */
-type StepFields = Omit<OpenStep, 'do'> & Omit<SetStep, 'do'> & Omit<AddLineStep, 'do'> & Omit<CheckStep, 'do'> & Omit<GoToStep, 'do'> & Omit<SayStep, 'do'> & Omit<CallStep, 'do'>;
+type StepFields = Omit<OpenStep, 'do'> & Omit<SetStep, 'do'> & Omit<AddLineStep, 'do'> & Omit<CheckStep, 'do'> & Omit<GoToStep, 'do'> & Omit<SayStep, 'do'> & Omit<CallStep, 'do'> & Omit<OpenUrlStep, 'do'>;
 
 /** A change to a step: a value sets it, `null` takes it away. */
 export type StepPatch = { [K in keyof StepFields]?: StepFields[K] | null };
@@ -117,6 +117,8 @@ export function stepProblem(page: Page, step: ActionStep, words: DesignerWords =
       return step.message?.trim() ? null : w.needsWords;
     case 'call':
       return step.action?.trim() ? null : w.needsAction;
+    case 'openUrl':
+      return step.url?.trim() ? formula(step.url) : w.needsAddress;
     default:
       return null;
   }

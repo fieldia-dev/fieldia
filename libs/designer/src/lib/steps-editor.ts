@@ -33,11 +33,11 @@ type Kind = ActionStep['do'];
 
 /** "Add a step"'s groups, in order, and the kinds in each. */
 const GROUPS: { group: 'open' | 'values' | 'check' | 'talk' | 'app'; kinds: Kind[] }[] = [
-  { group: 'open', kinds: ['open', 'goTo', 'close'] },
+  { group: 'open', kinds: ['open', 'openUrl', 'goTo', 'close'] },
   { group: 'values', kinds: ['set', 'clear', 'addLine'] },
   { group: 'check', kinds: ['check', 'save', 'reset'] },
   { group: 'talk', kinds: ['say', 'ask'] },
-  { group: 'app', kinds: ['call'] },
+  { group: 'app', kinds: ['call', 'reload'] },
 ];
 
 const keyOf = (path: StepPath | null) => (path ?? []).join('.');
@@ -130,6 +130,8 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
       clear: fields.length > 0,
       addLine: fields.some((def) => def.type === 'one2many'),
       goTo: showTargets(page).length > 0,
+      // A record is loaded again; a survey's answers are not.
+      reload: page.data.kind === 'record',
     };
     const items: MenuItem[] = GROUPS.flatMap(({ group, kinds }) =>
       kinds.filter((kind) => fits[kind] !== false).map((kind, i) => ({ id: kind, label: w.kinds[kind], ...(i === 0 ? { heading: w.groups[group] } : {}) }))

@@ -30,6 +30,8 @@ export const steps = {
   kinds: {
     open: 'Open a page',
     close: 'Close the dialog or panel',
+    openUrl: 'Open a web address',
+    reload: 'Load the record again',
     set: 'Set a field',
     clear: 'Empty a field',
     addLine: 'Add a line to a table',
@@ -60,6 +62,9 @@ export const steps = {
     as === 'panel' ? `Open ${page} in a panel${side && side !== 'end' ? ` from the ${side === 'start' ? 'start of the line' : side}` : ''}` : as === 'page' ? `Open ${page} in its place` : `Open ${page} in a dialog`,
   onRecord: (record: string) => `, on the record ${record}`,
   startingWith: (names: readonly string[]) => `, starting with ${and(names)}`,
+  /** A list opened with only some records: "…, only those whose Customer is this form’s Customer". */
+  onlyThose: (its: string, ours: string) => `, only those whose ${its} is this form’s ${ours}`,
+  moreConditions: (n: number) => plural('en', n, { one: ' and # more condition', other: ' and # more conditions' }),
   thenPut: (fields: readonly string[]) => `, then put its ${fields.length > 1 ? 'answers' : 'answer'} in ${and(fields)}`,
   set: (field: string, value: string) => `Set ${field} to ${value}`,
   clear: (field: string) => `Empty ${field}`,
@@ -78,6 +83,8 @@ export const steps = {
   call: (action: string) => `Run the app’s action ${action}`,
   callWith: (action: string, n: number) => `Run the app’s action ${action}, with ${plural('en', n, { one: '# value', other: '# values' })}`,
   close: 'Close the dialog or panel it was opened in',
+  openUrl: (address: string, newTab: boolean) => `Open the web address ${address}${newTab ? '' : ', in this tab'}`,
+  reload: 'Load the record again, as the app’s server has it',
   /** A step that runs only when a condition holds. */
   when: (sentence: string, condition: string) => `${sentence} when ${condition}`,
   never: (sentence: string) => `${sentence} — never, for now`,
@@ -145,6 +152,15 @@ export const steps = {
   needsPage: 'Pick the page it opens, or type its id.',
   needsWords: 'Type what it says.',
   needsAction: 'Type the action’s name.',
+  needsAddress: 'Type the address it opens.',
+  address: 'Address',
+  addressPlaceholder: "'https://' + website — type a field’s name, or @",
+  inNewTab: 'In a new tab',
+  reloadHint: 'After the app changed the record on its server — say, a run of its action: the form shows it as it is now.',
+  onlyRecords: 'Only the records whose',
+  isThisForms: 'is this form’s',
+  anyRecord: 'Any record',
+  theRecordItself: 'The record itself',
   needsValue: 'Type the value it sets.',
   // ---- the Rules view
   groupNames: { clicked: 'When clicked', changes: 'When it changes', moments: 'At the form’s moments' },

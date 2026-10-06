@@ -75,6 +75,7 @@ describe('When clicked, on a body button', () => {
     expect(menuItems()).toEqual([
       '# Open and close',
       'Open a page',
+      'Open a web address',
       'Close the dialog or panel',
       '# Values',
       'Set a field',
@@ -88,6 +89,7 @@ describe('When clicked, on a body button', () => {
       'Ask Yes or No',
       '# The app',
       'Run one of the app’s actions',
+      'Load the record again',
     ]);
     pick_('Say something');
     const words = field(clicked(host), 'Words') as HTMLInputElement;
@@ -160,6 +162,24 @@ describe('When clicked, on a body button', () => {
     expect(pressed(designer).steps?.[1]).toEqual({ do: 'open', page: 'customer', values: { phone: "customer + ' (new)'" } });
     designer.undo();
     expect(pressed(designer).steps?.[1]).toEqual({ do: 'open', page: 'customer' });
+  });
+
+  it('opens a web address worked out from the form, in a new tab unless that is unticked', async () => {
+    const { designer } = await order();
+    designer.select('new-customer');
+    const { host } = mount(designer, { mode: 'advanced' });
+    button(clicked(host), 'Add a step')?.click();
+    pick_('Open a web address');
+    const address = field(clicked(host), 'Address') as HTMLInputElement;
+    expect(document.activeElement).toBe(address);
+    type(address, "'https://portal.example/' + customer");
+    address.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(pressed(designer).steps?.at(-1)).toEqual({ do: 'openUrl', url: "'https://portal.example/' + customer" });
+    const newTab = [...clicked(host).querySelectorAll('label')].find((l) => l.textContent === 'In a new tab')?.querySelector('input') as HTMLInputElement;
+    expect(newTab.checked).toBe(true);
+    newTab.click();
+    expect(pressed(designer).steps?.at(-1)).toEqual({ do: 'openUrl', url: "'https://portal.example/' + customer", newTab: false });
+    expect(sayings(clicked(host)).at(-1)).toBe('Open the web address “https://portal.example/” + Customer, in this tab');
   });
 
   it('moves a step with Alt and the arrows on its sentence, the cursor going with it', async () => {
