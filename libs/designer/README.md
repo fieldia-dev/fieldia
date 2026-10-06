@@ -89,6 +89,54 @@ so. Nothing typed there is kept in the page or makes an undo step, and it
 lasts while the field stays picked. A field with no rules shows no sample:
 Add a rule is the invitation.
 
+## When…: what a press or a moment does
+
+A button — in the body, a record's header, a counter, a list's buttons — has
+**When clicked** on its panel: a list of steps, each read as a sentence
+(“Open Customer in a panel, then put its answer in Customer”, “Set Price to
+Quantity × 12.5 when Quantity > 0”, “Ask: Send the order?”, “Run the app’s
+action check_stock”), opened in place to its settings. A field's Rules tab has
+**When it changes** (Advanced), and the screen's own Rules tab has **When…**:
+when the form opens, before it's saved or sent, after, and when a tab or step
+is shown. The page keeps them as the format's steps (`steps` on a button,
+`on` on the page), so the viewer runs what the designer wrote.
+
+- **Add a step** offers the kinds that fit the page, grouped plainly: Open and
+  close · Values · Check and save · Talk to the person · The app. A step that
+  needs words, a value or a page waits, begun, until it has them; one that
+  needs nothing is kept at once.
+- Each step's settings: fields picked from the page's by their labels;
+  formulas — a value set, when it runs — typed in the rules' formula box, the
+  fields suggested; for a page opened, the app's saved pages to pick from
+  (`PageStore.list()`, else its id typed), a dialog, a panel or its place,
+  what it starts with and where its answers go (two small maps), and the steps
+  run once it is saved, under it. **Only when…** runs any step only when a
+  condition holds.
+- A step moves by its grip or by Alt+↑ / Alt+↓ on its sentence, and is removed
+  with Undo at hand. Each change is one undo step; a run of typing in one box
+  is one.
+- A button that only names an app action shows it as that one step, “Run the
+  app’s action …”, and a list that is one plain `call` is written back as the
+  `action`: a button the designer did not change keeps its shape. A button
+  always does something: its only step stays, and says why.
+
+The Rules view lists what parts do after the rules, a step a line, and goes to
+it; the canvas marks a button that does something, and a field whose change
+does, among its rules' marks; Checks names a step whose field has left the
+page, and on a page written by hand says the format's problems by part and
+step — each with its fix where there is one. A field a step still names keeps
+its definition until the step goes, as a rule's does; a tab taken away takes
+the steps that go to it. Try it hands the page over as it is: running the
+steps is the form's.
+
+```ts
+designer.addStep({ press: 'new-customer' }, { do: 'open', page: 'customer', as: 'panel', into: { customer: 'name' } });
+designer.addStep({ press: 'new-customer' }, { do: 'say', message: 'Customer added', tone: 'success' }, { then: [1] });
+designer.addStep({ change: 'product' }, { do: 'call', action: 'check_stock' });
+designer.addStep({ moment: 'beforeSave' }, { do: 'check' });
+designer.moveStep({ moment: 'beforeSave' }, [0], 1); // or updateStep, removeStep, setSteps
+```
+
 ## Each kind of part's look
 
 Under the page's look (its accent, font, spacing, corners, labels and colours),
