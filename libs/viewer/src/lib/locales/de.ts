@@ -24,6 +24,7 @@ export const de: ViewerLabels = {
   loading: 'Wird geladen…',
   saveClose: 'Speichern und schließen',
   close: 'Schließen',
+  discardChanges: 'Ihre Änderungen verwerfen?',
   dismiss: 'Ausblenden',
   retry: 'Erneut versuchen',
   notSaved: 'Nicht gespeichert',

@@ -722,8 +722,10 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-form-dialog.fd-size-small { max-width: 440px; }
 .fd-form-dialog.fd-size-medium { max-width: 760px; }
 .fd-form-dialog.fd-size-large { max-width: 1080px; }
-.fd-form-dialog-backdrop:has(> .fd-size-full) { padding: 0; }
-.fd-form-dialog.fd-size-full { max-width: none; max-height: none; height: 100%; border-radius: 0; }
+/* A dialog of the full size, and a panel (below): the whole height, square, nothing round it. */
+.fd-form-dialog-backdrop:has(> .fd-size-full), .fd-form-panel-backdrop { padding: 0; }
+.fd-form-dialog:is(.fd-size-full, .fd-form-panel) { max-height: none; height: 100%; border-radius: 0; }
+.fd-size-full { max-width: none; }
 .fd-form-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-block-end: 1px solid var(--fd-border); background: var(--fd-surface); }
 .fd-form-dialog-title { margin: 0; font-size: 16px; font-weight: 600; }
 .fd-dialog-close { border: none; background: none; cursor: pointer; font-size: 22px; line-height: 1; padding: 2px 8px; border-radius: 4px; color: var(--fd-muted); }
@@ -744,6 +746,19 @@ button.fd-chip-label:hover { text-decoration: underline; }
 /* A page with no sheet of its own sits on the dialog's surface, clear of its edges. */
 .fd-form-dialog-body:not(:has(.fd-sheet-layout)) { background: var(--fd-surface); padding: 16px 20px 20px; }
 .fd-form-dialog-foot { padding: 12px 16px; border-block-start: 1px solid var(--fd-border); background: var(--fd-surface); margin: 0; }
+/* A page in a side panel: at the inline-end edge, the page behind dimmed, sliding in from that edge; on a phone, the whole screen, from below. */
+.fd-form-panel-backdrop { justify-items: end; }
+.fd-form-panel { max-width: 560px; position: relative; }
+/* Its question before changes are dropped sits over the panel, not over the page. */
+.fd-form-panel > .fd-dialog-backdrop { position: absolute; }
+.fd-width-narrow { max-width: 420px; }
+.fd-width-wide { max-width: 720px; }
+.fd-form-panel:dir(rtl) { --fd-from: -100% 0; }
+/* A panel opened from another: the older one steps back, its edge still in sight. */
+.fd-form-panel[data-behind] { margin-inline-end: 48px; }
+@media (max-width: 600px) { .fd-form-dialog.fd-form-panel { max-width: none; margin: 0; --fd-from: 0 100%; } }
+@media (prefers-reduced-motion: no-preference) { .fd-form-panel { animation: fd-slide 0.25s ease-out; transition: margin 0.2s; } }
+@keyframes fd-slide { from { translate: var(--fd-from, 100% 0); } }
 @media (prefers-reduced-motion: reduce) { .fd-form *, .fd-form *::before, .fd-form *::after { transition: none !important; } }
 `;
 
