@@ -1,5 +1,5 @@
 import type { ActionRequest, Locale } from '@fieldia/core';
-import { mountViewer, type Skin } from '@fieldia/viewer';
+import { mountViewer, type FormDialogResult, type Skin } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
@@ -7,6 +7,7 @@ import { clicked, greeting, shout } from '../shared/custom-page';
 import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
+import { panelBar } from '../shared/panel-demo';
 import { timeFirstPaint } from '../shared/timing';
 
 /**
@@ -82,4 +83,14 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
 });
 opened();
 
-Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter } });
+/** What each side panel handed back. */
+const panelResults: FormDialogResult[] = [];
+// "Every field" has a bar over it: a call logged beside the page, in a side panel, its look and language the page's.
+if (name === 'fields') {
+  const skin = (params.get('skin') as Skin) ?? 'underline';
+  const locale = (params.get('locale') as Locale | null) ?? undefined;
+  const dir = params.get('dir') === 'rtl' ? 'rtl' : undefined;
+  document.getElementById('app')?.before(panelBar({ dataSource, pages: appPages, skin, locale, dir, look: page.look }, panelResults));
+}
+
+Object.assign(window, { fieldiaDemo: { handle, dataSource, actions, requests, chatter, panelResults } });
