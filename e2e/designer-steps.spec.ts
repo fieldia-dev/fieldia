@@ -258,6 +258,38 @@ test.describe('When… in the screen designer', () => {
     expect(problems).toEqual([]);
   });
 
+  test('a step’s field taken away: the check says so, and its fix takes the step away', async ({ page }) => {
+    const problems = watch(page);
+    await page.goto('/screen/');
+    await page.locator('.fd-canvas-field').first().click();
+    await addField(page, 'short-answer', 'Product');
+    await panel(page).getByRole('tab', { name: 'Rules', exact: true }).click();
+    const changes = panel(page).locator('[data-setting="When it changes"]');
+    await changes.getByRole('button', { name: 'Add a step' }).click();
+    await menu(page).getByRole('menuitem', { name: 'Run one of the app’s actions' }).click();
+    await page.keyboard.type('check_stock');
+    // Product taken away: its change steps stay, kept with its definition, and Checks says they never run.
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.keyboard.press('Escape');
+    await page.locator('.fd-canvas-field', { hasText: 'Product' }).click();
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.keyboard.press('Delete');
+    await expect(page.locator('.fd-canvas-field', { hasText: 'Product' })).toHaveCount(0);
+    const checks = page.locator('.fd-designer-bar [data-checks]');
+    await checks.click();
+    const list = page.getByRole('dialog', { name: 'Checks before publishing' });
+    const gone = list.locator('.fd-check').filter({ hasText: '“Product” is no longer on the page, so its steps when it changes never run.' });
+    await expect(gone).toBeVisible();
+    await page.waitForTimeout(150);
+    await screen(page, 'designer-steps-check', { viewport: true });
+    await gone.getByRole('button', { name: 'Remove the steps' }).click();
+    expect((await built(page))['on']).toBeUndefined();
+    await checks.click();
+    await expect(list.locator('.fd-check').filter({ hasText: 'Product' })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    expect(problems).toEqual([]);
+  });
+
   test('right to left, in Arabic: the steps editor in Arabic, its sentences running right to left', async ({ page }) => {
     const problems = watch(page);
     await page.goto('/screen/?locale=ar&dir=rtl');
