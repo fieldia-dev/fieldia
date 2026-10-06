@@ -73,7 +73,8 @@ export function panelBar(options: Omit<FormPanelOptions, 'page' | 'title'>, resu
   said.className = 'demo-panel-result';
   bar.append(open, said);
   open.addEventListener('click', async () => {
-    const title = callPage.translations?.[options.locale ?? 'en']?.[callPage.title] ?? callPage.title;
+    // The panel's title in the page's language, from the page's own words.
+    const title = callPage.translations?.[options.locale ?? 'en']?.['Log a call'] ?? 'Log a call';
     const result = await openFormPanel({ ...options, page: callPage, title, recordId: null });
     results.push(result);
     said.textContent = result.saved ? `Saved call ${result.recordId}: ${String(result.values['name'])}` : 'Closed without saving';
