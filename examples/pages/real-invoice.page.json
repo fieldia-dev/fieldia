@@ -1,0 +1,1205 @@
+{
+  "fieldia": "0.1",
+  "id": "real-invoice",
+  "title": "Account Entry",
+  "description": "Sherkety ERP's invoice, bill, credit note and journal entry: one page (account.move, view_move_form) whose type decides what shows. With what account (currency), sherkety_manual_currency_rate, account_payment, account_debit_note, account_edi, account_distribution_extras, sale and purchase add to it.",
+  "data": { "kind": "record", "model": "account.move" },
+  "maxWidth": "full",
+  "fields": {
+    "id": { "type": "integer", "label": "ID", "readonly": true },
+    "name": { "type": "char", "label": "Number" },
+    "highest_name": { "type": "char", "label": "The current highest number", "readonly": true },
+    "show_name_warning": { "type": "boolean", "label": "Show Name Warning" },
+    "posted_before": { "type": "boolean", "label": "Posted Before" },
+    "move_type": {
+      "type": "selection",
+      "label": "Type",
+      "readonly": true,
+      "default": "entry",
+      "options": [
+        { "value": "entry", "label": "Journal Entry" },
+        { "value": "out_invoice", "label": "Customer Invoice" },
+        { "value": "out_refund", "label": "Customer Credit Note" },
+        { "value": "in_invoice", "label": "Vendor Bill" },
+        { "value": "in_refund", "label": "Vendor Credit Note" },
+        { "value": "out_receipt", "label": "Sales Receipt" },
+        { "value": "in_receipt", "label": "Purchase Receipt" }
+      ]
+    },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "readonly": true,
+      "default": "draft",
+      "options": [{ "value": "draft", "label": "Draft" }, { "value": "posted", "label": "Posted" }, { "value": "cancel", "label": "Cancelled" }]
+    },
+    "payment_state": {
+      "type": "selection",
+      "label": "Payment Status",
+      "readonly": true,
+      "options": [
+        { "value": "not_paid", "label": "Not Paid" },
+        { "value": "in_payment", "label": "In Payment" },
+        { "value": "paid", "label": "Paid" },
+        { "value": "partial", "label": "Partially Paid" },
+        { "value": "reversed", "label": "Reversed" },
+        { "value": "invoicing_legacy", "label": "Invoicing App Legacy" }
+      ]
+    },
+    "hide_post_button": { "type": "boolean", "label": "Hide Post Button", "compute": "state != 'draft' or (auto_post != 'no' and date > today())" },
+    "show_reset_to_draft_button": {
+      "type": "boolean",
+      "label": "Show Reset To Draft Button",
+      "compute": "not restrict_mode_hash_table and (state == 'cancel' or (state == 'posted' and not need_cancel_request))"
+    },
+    "restrict_mode_hash_table": { "type": "boolean", "label": "Lock Posted Entries with Hash" },
+    "inalterable_hash": { "type": "char", "label": "Inalterability Hash", "readonly": true },
+    "need_cancel_request": { "type": "boolean", "label": "Need Cancel Request" },
+    "is_being_sent": { "type": "boolean", "label": "Is Being Sent" },
+    "invoice_pdf_report_id": { "type": "many2one", "label": "PDF Attachment", "relation": "ir.attachment", "readonly": true },
+    "duplicated_ref_ids": { "type": "many2many", "label": "Duplicated Ref", "relation": "account.move", "readonly": true },
+    "tax_lock_date_message": { "type": "char", "label": "Tax Lock Date Message", "readonly": true },
+    "partner_credit_warning": { "type": "text", "label": "Partner Credit Warning", "readonly": true },
+    "display_inactive_currency_warning": { "type": "boolean", "label": "Display Inactive Currency Warning" },
+    "invoice_has_outstanding": { "type": "boolean", "label": "Invoice Has Outstanding" },
+    "show_update_fpos": { "type": "boolean", "label": "Has Fiscal Position Changed" },
+    "quick_edit_mode": { "type": "boolean", "label": "Quick Edit Mode" },
+    "show_delivery_date": { "type": "boolean", "label": "Show Delivery Date" },
+    "display_qr_code": { "type": "boolean", "label": "Display QR-code" },
+    "has_reconciled_entries": { "type": "boolean", "label": "Has Reconciled Entries" },
+    "payment_id": { "type": "many2one", "label": "Payment", "relation": "account.payment", "readonly": true },
+    "tax_cash_basis_created_move_ids": { "type": "many2many", "label": "Cash Basis Entries", "relation": "account.move", "readonly": true },
+    "authorized_transaction_ids": { "type": "many2many", "label": "Authorized Transactions", "relation": "payment.transaction", "readonly": true },
+    "transaction_ids": { "type": "many2many", "label": "Transactions", "relation": "payment.transaction", "readonly": true },
+    "debit_note_count": { "type": "integer", "label": "Debit Notes", "readonly": true },
+    "sale_order_count": { "type": "integer", "label": "Sale Orders", "readonly": true },
+    "purchase_order_count": { "type": "integer", "label": "Purchases", "readonly": true },
+    "edi_state": {
+      "type": "selection",
+      "label": "Electronic invoicing",
+      "readonly": true,
+      "options": [
+        { "value": "to_send", "label": "To Send" },
+        { "value": "sent", "label": "Sent" },
+        { "value": "to_cancel", "label": "To Cancel" },
+        { "value": "cancelled", "label": "Cancelled" }
+      ]
+    },
+    "edi_show_cancel_button": { "type": "boolean", "label": "Edi Show Cancel Button" },
+    "edi_show_abandon_cancel_button": { "type": "boolean", "label": "Edi Show Abandon Cancel Button" },
+    "edi_show_force_cancel_button": { "type": "boolean", "label": "Edi Show Force Cancel Button" },
+    "edi_error_count": { "type": "integer", "label": "Edi Error Count", "readonly": true },
+    "edi_blocking_level": {
+      "type": "selection",
+      "label": "Edi Blocking Level",
+      "readonly": true,
+      "options": [{ "value": "info", "label": "Info" }, { "value": "warning", "label": "Warning" }, { "value": "error", "label": "Error" }]
+    },
+    "edi_error_message": { "type": "html", "label": "Edi Error Message", "readonly": true },
+    "edi_web_services_to_process": { "type": "text", "label": "Edi Web Services To Process", "readonly": true },
+    "tax_calculation_rounding_method": {
+      "type": "selection",
+      "label": "Tax calculation rounding method",
+      "readonly": true,
+      "options": [{ "value": "round_per_line", "label": "Round per Line" }, { "value": "round_globally", "label": "Round Globally" }]
+    },
+    "partner_id": { "type": "many2one", "label": "Partner", "relation": "res.partner", "filter": [{ "field": "is_company", "op": "=", "value": true }] },
+    "commercial_partner_id": { "type": "many2one", "label": "Commercial Entity", "relation": "res.partner", "readonly": true },
+    "bank_partner_id": { "type": "many2one", "label": "Bank Partner", "relation": "res.partner", "readonly": true },
+    "quick_edit_total_amount": { "type": "monetary", "label": "Total (Tax inc.)", "currencyField": "currency_id" },
+    "ref": { "type": "char", "label": "Reference" },
+    "tax_cash_basis_origin_move_id": { "type": "many2one", "label": "Cash Basis Origin", "relation": "account.move", "readonly": true },
+    "invoice_vendor_bill_id": {
+      "type": "many2one",
+      "label": "Vendor Bill",
+      "relation": "account.move",
+      "filter": [{ "field": "move_type", "op": "=", "value": "in_invoice" }, { "field": "partner_id", "op": "=", "valueFrom": "partner_id" }]
+    },
+    "purchase_id": { "type": "many2one", "label": "Purchase Order", "relation": "purchase.order" },
+    "purchase_vendor_bill_id": {
+      "type": "many2one",
+      "label": "Auto-complete",
+      "relation": "purchase.bill.union",
+      "filter": [{ "field": "partner_id", "op": "=", "valueFrom": "commercial_partner_id" }]
+    },
+    "invoice_date": { "type": "date", "label": "Invoice/Bill Date" },
+    "date": { "type": "date", "label": "Date", "required": true },
+    "payment_reference": { "type": "char", "label": "Payment Reference" },
+    "partner_bank_id": {
+      "type": "many2one",
+      "label": "Recipient Bank",
+      "relation": "res.partner.bank",
+      "filter": [{ "field": "partner_id", "op": "=", "valueFrom": "bank_partner_id" }]
+    },
+    "invoice_date_due": { "type": "date", "label": "Due Date" },
+    "invoice_payment_term_id": { "type": "many2one", "label": "Payment Terms", "relation": "account.payment.term" },
+    "delivery_date": { "type": "date", "label": "Delivery Date" },
+    "journal_id": { "type": "many2one", "label": "Journal", "relation": "account.journal", "required": true },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency", "required": true },
+    "company_id": { "type": "many2one", "label": "Company", "relation": "res.company" },
+    "company_currency_id": { "type": "many2one", "label": "Company Currency", "relation": "res.currency", "readonly": true },
+    "invoice_line_ids": {
+      "type": "one2many",
+      "label": "Invoice lines",
+      "relation": "account.move.line",
+      "lineKinds": { "field": "display_type", "text": "name", "section": "line_section", "note": "line_note" },
+      "sequenceField": "sequence",
+      "fields": {
+        "sequence": { "type": "integer", "label": "Sequence" },
+        "display_type": {
+          "type": "selection",
+          "label": "Display Type",
+          "default": "product",
+          "options": [{ "value": "product", "label": "Product" }, { "value": "line_section", "label": "Section" }, { "value": "line_note", "label": "Note" }]
+        },
+        "product_id": { "type": "many2one", "label": "Product", "relation": "product.product" },
+        "name": { "type": "char", "label": "Label" },
+        "account_id": {
+          "type": "many2one",
+          "label": "Account",
+          "relation": "account.account",
+          "required": true,
+          "filter": [
+            { "field": "deprecated", "op": "!=", "value": true },
+            { "field": "account_type", "op": "not in", "value": ["asset_receivable", "liability_payable", "off_balance"] }
+          ]
+        },
+        "analytic_distribution": { "type": "many2many", "label": "Analytic", "relation": "account.analytic.account" },
+        "quantity": { "type": "float", "label": "Quantity", "digits": [16, 2], "default": 1 },
+        "product_uom_id": { "type": "many2one", "label": "UoM", "relation": "uom.uom" },
+        "price_unit": { "type": "float", "label": "Price", "digits": [16, 2] },
+        "discount": { "type": "float", "label": "Disc.%", "digits": [5, 2] },
+        "discount_2_pct": { "type": "float", "label": "Discount 2 %", "digits": [5, 2] },
+        "discount_2_amount": { "type": "monetary", "label": "Discount 2 Amount", "currencyField": "currency_id" },
+        "discount_2_overridden": { "type": "boolean", "label": "Discount 2 Overridden" },
+        "discount_3_pct": { "type": "float", "label": "Discount 3 %", "digits": [5, 2] },
+        "discount_3_amount": { "type": "monetary", "label": "Discount 3 Amount", "currencyField": "currency_id" },
+        "discount_3_overridden": { "type": "boolean", "label": "Discount 3 Overridden" },
+        "discount_4_pct": { "type": "float", "label": "Discount 4 %", "digits": [5, 2] },
+        "discount_4_amount": { "type": "monetary", "label": "Discount 4 Amount", "currencyField": "currency_id" },
+        "discount_4_overridden": { "type": "boolean", "label": "Discount 4 Overridden" },
+        "price_subtotal_after_discounts": { "type": "monetary", "label": "Net After Discounts", "currencyField": "currency_id", "readonly": true },
+        "tax_ids": { "type": "many2many", "label": "Taxes", "relation": "account.tax" },
+        "price_subtotal": { "type": "monetary", "label": "Tax excl.", "currencyField": "currency_id", "readonly": true },
+        "price_total": { "type": "monetary", "label": "Tax incl.", "currencyField": "currency_id", "readonly": true },
+        "purchase_order_id": { "type": "many2one", "label": "Purchase Order", "relation": "purchase.order", "readonly": true },
+        "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency", "readonly": true }
+      }
+    },
+    "narration": { "type": "html", "label": "Terms and Conditions" },
+    "amount_untaxed": { "type": "monetary", "label": "Untaxed Amount", "currencyField": "currency_id", "readonly": true },
+    "amount_tax": { "type": "monetary", "label": "Tax", "currencyField": "currency_id" },
+    "amount_total": { "type": "monetary", "label": "Total", "currencyField": "currency_id", "readonly": true },
+    "invoice_payment_ids": {
+      "type": "one2many",
+      "label": "Payments",
+      "relation": "account.partial.reconcile",
+      "readonly": true,
+      "fields": {
+        "date": { "type": "date", "label": "Paid on" },
+        "journal_name": { "type": "char", "label": "Journal" },
+        "ref": { "type": "char", "label": "Memo" },
+        "amount": { "type": "monetary", "label": "Amount", "currencyField": "currency_id" },
+        "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency" }
+      }
+    },
+    "amount_residual": { "type": "monetary", "label": "Amount Due", "currencyField": "currency_id", "readonly": true },
+    "exchange_rate_used": { "type": "float", "label": "Exchange Rate", "digits": [12, 6], "readonly": true },
+    "exchange_rate_date": { "type": "date", "label": "Exchange Rate Date", "readonly": true },
+    "amount_untaxed_base": { "type": "monetary", "label": "Untaxed Amount (Base Currency)", "currencyField": "company_currency_id", "readonly": true },
+    "amount_tax_base": { "type": "monetary", "label": "Tax (Base Currency)", "currencyField": "company_currency_id", "readonly": true },
+    "amount_total_base": { "type": "monetary", "label": "Total in EGP", "currencyField": "company_currency_id", "readonly": true },
+    "manual_currency_rate": { "type": "float", "label": "Manual Exchange Rate", "digits": [12, 6], "min": 0 },
+    "outstanding_ids": {
+      "type": "one2many",
+      "label": "Outstanding credits",
+      "relation": "account.move.line",
+      "readonly": true,
+      "fields": {
+        "ref": { "type": "char", "label": "Reference" },
+        "date": { "type": "date", "label": "Date" },
+        "amount": { "type": "monetary", "label": "Amount", "currencyField": "currency_id" },
+        "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency" }
+      }
+    },
+    "line_ids": {
+      "type": "one2many",
+      "label": "Journal Items",
+      "relation": "account.move.line",
+      "lineKinds": { "field": "display_type", "text": "name", "section": "line_section", "note": "line_note" },
+      "sequenceField": "sequence",
+      "fields": {
+        "sequence": { "type": "integer", "label": "Sequence" },
+        "display_type": {
+          "type": "selection",
+          "label": "Display Type",
+          "default": "product",
+          "options": [
+            { "value": "product", "label": "Product" },
+            { "value": "cogs", "label": "Cost of Goods Sold" },
+            { "value": "tax", "label": "Tax" },
+            { "value": "discount", "label": "Discount" },
+            { "value": "rounding", "label": "Rounding" },
+            { "value": "payment_term", "label": "Payment Term" },
+            { "value": "line_section", "label": "Section" },
+            { "value": "line_note", "label": "Note" },
+            { "value": "epd", "label": "Early Payment Discount" }
+          ]
+        },
+        "account_id": {
+          "type": "many2one",
+          "label": "Account",
+          "relation": "account.account",
+          "required": true,
+          "filter": [{ "field": "deprecated", "op": "!=", "value": true }]
+        },
+        "partner_id": { "type": "many2one", "label": "Partner", "relation": "res.partner" },
+        "name": { "type": "char", "label": "Label" },
+        "analytic_distribution": { "type": "many2many", "label": "Analytic", "relation": "account.analytic.account" },
+        "date_maturity": { "type": "date", "label": "Due Date" },
+        "amount_currency": { "type": "monetary", "label": "Amount in Currency", "currencyField": "currency_id" },
+        "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency" },
+        "tax_ids": { "type": "many2many", "label": "Taxes", "relation": "account.tax" },
+        "debit": { "type": "monetary", "label": "Debit", "currencyField": "company_currency_id" },
+        "credit": { "type": "monetary", "label": "Credit", "currencyField": "company_currency_id" },
+        "discount_date": { "type": "date", "label": "Discount Date" },
+        "discount_amount_currency": { "type": "monetary", "label": "Discount Amount", "currencyField": "currency_id" },
+        "tax_tag_ids": { "type": "many2many", "label": "Tax Grids", "relation": "account.account.tag" },
+        "tax_tag_invert": { "type": "boolean", "label": "Invert Tags" },
+        "company_currency_id": { "type": "many2one", "label": "Company Currency", "relation": "res.currency", "readonly": true }
+      }
+    },
+    "invoice_user_id": { "type": "many2one", "label": "Salesperson", "relation": "res.users", "filter": [{ "field": "share", "op": "!=", "value": true }] },
+    "team_id": { "type": "many2one", "label": "Sales Team", "relation": "crm.team" },
+    "invoice_origin": { "type": "char", "label": "Source Document", "readonly": true },
+    "debit_origin_id": { "type": "many2one", "label": "Original Invoice Debited", "relation": "account.move", "readonly": true },
+    "qr_code_method": { "type": "selection", "label": "Payment QR-code", "options": [{ "value": "emv_qr", "label": "EMV Merchant-Presented QR-code" }] },
+    "invoice_incoterm_id": { "type": "many2one", "label": "Incoterm", "relation": "account.incoterms" },
+    "incoterm_location": { "type": "char", "label": "Incoterm Location" },
+    "fiscal_position_id": { "type": "many2one", "label": "Fiscal Position", "relation": "account.fiscal.position" },
+    "invoice_source_email": { "type": "char", "label": "Source Email" },
+    "auto_post": {
+      "type": "selection",
+      "label": "Auto-post",
+      "required": true,
+      "default": "no",
+      "options": [
+        { "value": "no", "label": "No" },
+        { "value": "at_date", "label": "At Date" },
+        { "value": "monthly", "label": "Monthly" },
+        { "value": "quarterly", "label": "Quarterly" },
+        { "value": "yearly", "label": "Yearly" }
+      ]
+    },
+    "auto_post_until": { "type": "date", "label": "Auto-post until" },
+    "to_check": { "type": "boolean", "label": "To Check" },
+    "reversed_entry_id": { "type": "many2one", "label": "Reversal of", "relation": "account.move", "readonly": true },
+    "payment_amount": { "type": "monetary", "label": "Payment just registered: amount", "currencyField": "payment_currency_id", "readonly": true },
+    "payment_currency_id": { "type": "many2one", "label": "Payment just registered: currency", "relation": "res.currency", "readonly": true },
+    "payment_handling": {
+      "type": "selection",
+      "label": "Payment just registered: difference",
+      "readonly": true,
+      "options": [{ "value": "open", "label": "Keep open" }, { "value": "reconcile", "label": "Mark as fully paid" }]
+    },
+    "payment_paid_on": { "type": "date", "label": "Payment just registered: date", "readonly": true },
+    "payment_journal_id": { "type": "many2one", "label": "Payment just registered: journal", "relation": "account.journal", "readonly": true },
+    "payment_memo": { "type": "char", "label": "Payment just registered: memo", "readonly": true }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "placeholder": "Draft",
+      "above": [{ "type": "field", "id": "f-move-type", "field": "move_type", "labels": "hidden", "readonly": true, "invisible": "move_type == 'entry'" }],
+      "below": [
+        {
+          "type": "field",
+          "id": "f-highest-name",
+          "field": "highest_name",
+          "help": "You might want to put a higher number here.",
+          "invisible": "not show_name_warning"
+        }
+      ]
+    },
+    "statusbar": { "field": "state", "visibleStates": ["draft", "posted"] },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "b-post",
+        "label": "Post",
+        "style": "primary",
+        "invisible": "hide_post_button or move_type != 'entry'",
+        "steps": [{ "do": "check" }, { "do": "call", "action": "action_post" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "b-confirm",
+        "label": "Confirm",
+        "style": "primary",
+        "invisible": "hide_post_button or move_type == 'entry' or display_inactive_currency_warning",
+        "steps": [{ "do": "check" }, { "do": "call", "action": "action_post" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "b-send-print-first",
+        "label": "Send & Print",
+        "style": "primary",
+        "invisible": "state != 'posted' or is_being_sent or invoice_pdf_report_id or move_type not in ['out_invoice', 'out_refund']",
+        "steps": [{ "do": "call", "action": "action_invoice_sent" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "b-send-print",
+        "label": "Send & Print",
+        "invisible": "state != 'posted' or (not is_being_sent and not invoice_pdf_report_id) or move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund']",
+        "steps": [{ "do": "call", "action": "action_invoice_sent" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "b-register-payment",
+        "label": "Register Payment",
+        "style": "primary",
+        "invisible": "state != 'posted' or payment_state not in ['not_paid', 'partial'] or move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'] or authorized_transaction_ids",
+        "steps": [
+          {
+            "do": "open",
+            "page": "real-register-payment",
+            "as": "dialog",
+            "title": "Register Payment",
+            "values": {
+              "partner_id": "commercial_partner_id",
+              "company_id": "company_id",
+              "company_currency_id": "company_currency_id",
+              "source_currency_id": "currency_id",
+              "source_amount_currency": "amount_residual",
+              "source_amount": "round(amount_residual * exchange_rate_used, 2)",
+              "payment_type": "if(move_type in ['out_invoice', 'in_refund', 'out_receipt'], 'inbound', 'outbound')",
+              "partner_type": "if(move_type in ['out_invoice', 'out_refund', 'out_receipt'], 'customer', 'supplier')",
+              "communication": "if(payment_reference, payment_reference, name)",
+              "can_edit_wizard": "True",
+              "can_group_payments": "False"
+            },
+            "into": {
+              "payment_amount": "amount",
+              "payment_currency_id": "currency_id",
+              "payment_handling": "payment_difference_handling",
+              "payment_paid_on": "payment_date",
+              "payment_journal_id": "journal_id",
+              "payment_memo": "communication"
+            },
+            "then": [{ "do": "call", "action": "reconcile_payment" }, { "do": "save" }]
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "b-capture",
+        "label": "Capture Transaction",
+        "style": "primary",
+        "invisible": "move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund'] or state != 'posted' or not authorized_transaction_ids",
+        "action": "payment_action_capture"
+      },
+      {
+        "type": "button",
+        "id": "b-void",
+        "label": "Void Transaction",
+        "confirm": "Are you sure you want to void the authorized transaction? This action can't be undone.",
+        "invisible": "move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund'] or state != 'posted' or not authorized_transaction_ids",
+        "action": "payment_action_void"
+      },
+      {
+        "type": "button",
+        "id": "b-preview",
+        "label": "Preview",
+        "invisible": "move_type not in ['out_invoice', 'out_refund'] or state == 'cancel'",
+        "action": "preview_invoice"
+      },
+      {
+        "type": "button",
+        "id": "b-reverse-entry",
+        "label": "Reverse Entry",
+        "invisible": "move_type != 'entry' or state != 'posted' or payment_state == 'reversed'",
+        "steps": [
+          { "do": "ask", "message": "Reverse this entry? A reversal is posted on today's date." },
+          { "do": "call", "action": "action_reverse_entry" },
+          { "do": "save" }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "b-credit-note",
+        "label": "Credit Note",
+        "invisible": "move_type not in ['out_invoice', 'in_invoice'] or state != 'posted'",
+        "action": "action_reverse"
+      },
+      {
+        "type": "button",
+        "id": "b-cancel-entry",
+        "label": "Cancel Entry",
+        "invisible": "not id or state != 'draft' or move_type != 'entry'",
+        "steps": [{ "do": "call", "action": "button_cancel" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "b-cancel",
+        "label": "Cancel",
+        "invisible": "not id or state != 'draft' or move_type == 'entry'",
+        "steps": [{ "do": "call", "action": "button_cancel" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "b-edi-request-cancel",
+        "label": "Request EDI Cancellation",
+        "invisible": "not edi_show_cancel_button",
+        "action": "button_cancel_posted_moves"
+      },
+      {
+        "type": "button",
+        "id": "b-edi-call-off",
+        "label": "Call off EDI Cancellation",
+        "invisible": "not edi_show_abandon_cancel_button",
+        "action": "button_abandon_cancel_posted_posted_moves"
+      },
+      {
+        "type": "button",
+        "id": "b-reset-draft",
+        "label": "Reset to Draft",
+        "invisible": "not show_reset_to_draft_button",
+        "steps": [{ "do": "call", "action": "button_draft" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "b-request-cancel",
+        "label": "Request Cancel",
+        "invisible": "state != 'posted' or show_reset_to_draft_button or not need_cancel_request",
+        "action": "button_request_cancel"
+      },
+      {
+        "type": "button",
+        "id": "b-set-checked",
+        "label": "Set as Checked",
+        "invisible": "not to_check",
+        "steps": [{ "do": "set", "field": "to_check", "value": "False" }, { "do": "save" }, { "do": "say", "message": "Marked as checked", "tone": "success" }]
+      }
+    ],
+    "statButtons": [
+      {
+        "id": "s-payment",
+        "label": "1 Payment",
+        "icon": "list",
+        "action": "action_open_business_doc",
+        "invisible": "move_type != 'entry' or not id or not payment_id"
+      },
+      {
+        "id": "s-reconciled",
+        "label": "Reconciled Items",
+        "icon": "list",
+        "action": "open_reconcile_view",
+        "invisible": "move_type != 'entry' or not id or not has_reconciled_entries"
+      },
+      {
+        "id": "s-caba",
+        "label": "Cash Basis Entries",
+        "icon": "money",
+        "action": "open_created_caba_entries",
+        "invisible": "not tax_cash_basis_created_move_ids"
+      },
+      {
+        "id": "s-debit-notes",
+        "label": "Debit Notes",
+        "field": "debit_note_count",
+        "icon": "receipt",
+        "action": "action_view_debit_notes",
+        "invisible": "debit_note_count == 0"
+      },
+      {
+        "id": "s-transactions",
+        "label": "Payment Transaction",
+        "icon": "money",
+        "action": "action_view_payment_transactions",
+        "invisible": "not transaction_ids"
+      },
+      {
+        "id": "s-sale-orders",
+        "label": "Sale Orders",
+        "field": "sale_order_count",
+        "icon": "edit",
+        "action": "action_view_source_sale_orders",
+        "invisible": "sale_order_count == 0 or move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt']"
+      },
+      {
+        "id": "s-purchases",
+        "label": "Purchases",
+        "field": "purchase_order_count",
+        "icon": "edit",
+        "action": "action_view_source_purchase_orders",
+        "invisible": "purchase_order_count == 0 or move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt']"
+      }
+    ],
+    "ribbon": {
+      "id": "r-paid",
+      "label": "Paid",
+      "tone": "success",
+      "invisible": "payment_state != 'paid' or move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt']"
+    },
+    "badges": [
+      {
+        "id": "b-in-payment",
+        "label": "In Payment",
+        "tone": "info",
+        "invisible": "payment_state != 'in_payment' or move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt']"
+      },
+      {
+        "id": "b-partial",
+        "label": "Partial",
+        "tone": "warning",
+        "invisible": "payment_state != 'partial' or move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt']"
+      },
+      { "id": "b-reversed", "label": "Reversed", "tone": "danger", "invisible": "payment_state != 'reversed'" },
+      { "id": "b-legacy", "label": "Invoicing App Legacy", "tone": "info", "invisible": "payment_state != 'invoicing_legacy'" }
+    ],
+    "alerts": [
+      {
+        "id": "a-edi-to-process",
+        "message": "The invoice will soon be sent to the tax authority's e-invoicing service.",
+        "tone": "info",
+        "invisible": "not edi_web_services_to_process or state == 'draft'"
+      },
+      {
+        "id": "a-edi-error",
+        "message": "The tax authority's e-invoicing service refused this invoice: see the errors on the EDI Documents tab.",
+        "tone": "danger",
+        "invisible": "edi_error_count == 0 or edi_blocking_level != 'error'"
+      },
+      {
+        "id": "a-edi-warning",
+        "message": "The e-invoicing service warned about this invoice.",
+        "tone": "warning",
+        "invisible": "edi_error_count == 0 or edi_blocking_level != 'warning'"
+      },
+      {
+        "id": "a-edi-info",
+        "message": "The e-invoicing service has a message about this invoice.",
+        "tone": "info",
+        "invisible": "edi_error_count == 0 or edi_blocking_level != 'info'"
+      },
+      {
+        "id": "a-duplicate",
+        "message": "Warning: this bill might be a duplicate of one of those bills.",
+        "tone": "warning",
+        "invisible": "state != 'draft' or not duplicated_ref_ids"
+      },
+      { "id": "a-being-sent", "message": "This invoice is being sent in the background.", "tone": "info", "invisible": "not is_being_sent" },
+      {
+        "id": "a-tax-lock",
+        "message": "The tax lock date has passed: this entry's taxes will be reported in the next open period.",
+        "tone": "warning",
+        "invisible": "state != 'draft' or not tax_lock_date_message"
+      },
+      {
+        "id": "a-outstanding-customer",
+        "message": "You have outstanding credits for this customer. You can allocate them to mark this invoice as paid.",
+        "tone": "info",
+        "invisible": "move_type not in ['out_invoice', 'out_receipt'] or not invoice_has_outstanding or payment_state not in ['not_paid', 'partial']"
+      },
+      {
+        "id": "a-outstanding-vendor",
+        "message": "You have outstanding debits for this vendor. You can allocate them to mark this bill as paid.",
+        "tone": "info",
+        "invisible": "move_type not in ['in_invoice', 'in_receipt'] or not invoice_has_outstanding or payment_state not in ['not_paid', 'partial']"
+      },
+      {
+        "id": "a-outstanding-customer-refund",
+        "message": "You have outstanding debits for this customer. You can allocate them to mark this credit note as paid.",
+        "tone": "info",
+        "invisible": "move_type != 'out_refund' or not invoice_has_outstanding or payment_state not in ['not_paid', 'partial']"
+      },
+      {
+        "id": "a-outstanding-vendor-refund",
+        "message": "You have outstanding credits for this vendor. You can allocate them to mark this credit note as paid.",
+        "tone": "info",
+        "invisible": "move_type != 'in_refund' or not invoice_has_outstanding or payment_state not in ['not_paid', 'partial']"
+      },
+      {
+        "id": "a-auto-post-at-date",
+        "message": "This move is configured to be posted automatically at the accounting date.",
+        "tone": "info",
+        "invisible": "state != 'draft' or auto_post != 'at_date'"
+      },
+      {
+        "id": "a-auto-post-recurring",
+        "message": "Recurring auto-posting is enabled: it is posted on each accounting date until the end date.",
+        "tone": "info",
+        "invisible": "state != 'draft' or auto_post == 'no' or auto_post == 'at_date'"
+      },
+      { "id": "a-credit-limit", "message": "This customer has reached its credit limit.", "tone": "warning", "invisible": "not partner_credit_warning" },
+      {
+        "id": "a-inactive-currency-bill",
+        "message": "In order to validate this bill, you must activate the currency of the bill. The journal entries need to be computed by Flectra before being posted in your company's currency.",
+        "tone": "warning",
+        "invisible": "not display_inactive_currency_warning or move_type not in ['in_invoice', 'in_refund', 'in_receipt']"
+      },
+      {
+        "id": "a-inactive-currency-invoice",
+        "message": "In order to validate this invoice, you must activate the currency of the invoice. The journal entries need to be computed by Flectra before being posted in your company's currency.",
+        "tone": "warning",
+        "invisible": "not display_inactive_currency_warning or move_type not in ['out_invoice', 'out_refund', 'out_receipt']"
+      }
+    ],
+    "children": [
+      {
+        "type": "section",
+        "id": "alert-fields",
+        "style": "plain",
+        "columns": 2,
+        "invisible": "not ((state == 'draft' and tax_lock_date_message) or partner_credit_warning or (state == 'draft' and auto_post != 'no') or (state == 'draft' and duplicated_ref_ids) or display_inactive_currency_warning)",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-tax-lock-message",
+            "field": "tax_lock_date_message",
+            "labels": "hidden",
+            "colspan": 2,
+            "invisible": "state != 'draft' or not tax_lock_date_message"
+          },
+          {
+            "type": "field",
+            "id": "f-credit-warning",
+            "field": "partner_credit_warning",
+            "labels": "hidden",
+            "colspan": 2,
+            "invisible": "not partner_credit_warning"
+          },
+          {
+            "type": "field",
+            "id": "f-auto-post-date",
+            "field": "date",
+            "label": "Next accounting date",
+            "readonly": true,
+            "invisible": "state != 'draft' or auto_post == 'no'"
+          },
+          {
+            "type": "field",
+            "id": "f-auto-post-until-alert",
+            "field": "auto_post_until",
+            "label": "The recurrence will end on (included)",
+            "readonly": true,
+            "invisible": "state != 'draft' or auto_post in ['no', 'at_date'] or not auto_post_until"
+          },
+          {
+            "type": "button",
+            "id": "b-activate-currency",
+            "label": "Activate the currency",
+            "style": "link",
+            "action": "action_activate_currency",
+            "invisible": "not display_inactive_currency_warning"
+          },
+          {
+            "type": "button",
+            "id": "b-open-duplicates",
+            "label": "Open the possible duplicates",
+            "style": "link",
+            "action": "open_duplicated_ref_bill_view",
+            "invisible": "state != 'draft' or not duplicated_ref_ids"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "header",
+        "style": "plain",
+        "columns": { "wide": 2, "medium": 2 },
+        "children": [
+          {
+            "type": "section",
+            "id": "header_left_group",
+            "style": "plain",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-customer",
+                "field": "partner_id",
+                "label": "Customer",
+                "options": { "create": false },
+                "invisible": "move_type not in ['out_invoice', 'out_refund', 'out_receipt']",
+                "readonly": "state != 'draft'"
+              },
+              {
+                "type": "field",
+                "id": "f-vendor",
+                "field": "partner_id",
+                "label": "Vendor",
+                "options": { "create": false },
+                "invisible": "move_type not in ['in_invoice', 'in_refund', 'in_receipt']",
+                "readonly": "state != 'draft'"
+              },
+              {
+                "type": "button",
+                "id": "b-update-fpos",
+                "label": "Update Taxes and Accounts",
+                "style": "link",
+                "icon": "settings",
+                "confirm": "This will update all taxes and accounts based on the currently selected fiscal position.",
+                "invisible": "not show_update_fpos or state in ['cancel', 'posted']",
+                "action": "action_update_fpos_values"
+              },
+              {
+                "type": "field",
+                "id": "f-quick-edit-total",
+                "field": "quick_edit_total_amount",
+                "invisible": "move_type == 'entry' or not quick_edit_mode",
+                "readonly": "state != 'draft'"
+              },
+              {
+                "type": "field",
+                "id": "f-bill-ref",
+                "field": "ref",
+                "label": "Bill Reference",
+                "invisible": "move_type not in ['in_invoice', 'in_receipt', 'in_refund']"
+              },
+              {
+                "type": "field",
+                "id": "f-ref",
+                "field": "ref",
+                "invisible": "move_type in ['in_invoice', 'in_receipt', 'in_refund', 'out_invoice', 'out_refund']"
+              },
+              { "type": "field", "id": "f-caba-origin", "field": "tax_cash_basis_origin_move_id", "invisible": "not tax_cash_basis_origin_move_id" },
+              {
+                "type": "field",
+                "id": "f-auto-complete",
+                "field": "purchase_vendor_bill_id",
+                "label": "Auto-Complete",
+                "placeholder": "Select a purchase order or an old bill",
+                "options": { "create": false },
+                "invisible": "state != 'draft' or move_type != 'in_invoice'",
+                "readonly": "state != 'draft'"
+              }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "header_right_group",
+            "style": "plain",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-invoice-date",
+                "field": "invoice_date",
+                "label": "Invoice Date",
+                "invisible": "move_type not in ['out_invoice', 'out_refund', 'out_receipt']",
+                "readonly": "state != 'draft'",
+                "validate": [{ "holds": "invoice_date <= today()", "level": "warning", "message": "This date is in the future." }]
+              },
+              {
+                "type": "field",
+                "id": "f-bill-date",
+                "field": "invoice_date",
+                "label": "Bill Date",
+                "invisible": "move_type not in ['in_invoice', 'in_refund', 'in_receipt']",
+                "readonly": "state != 'draft'",
+                "validate": [{ "holds": "invoice_date <= today()", "level": "warning", "message": "This date is in the future." }]
+              },
+              {
+                "type": "field",
+                "id": "f-accounting-date",
+                "field": "date",
+                "label": "Accounting Date",
+                "invisible": "move_type in ['out_invoice', 'out_refund', 'out_receipt'] and not quick_edit_mode and not (state == 'posted' and date != invoice_date)",
+                "readonly": "state != 'draft'"
+              },
+              {
+                "type": "field",
+                "id": "f-payment-reference",
+                "field": "payment_reference",
+                "invisible": "move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt']",
+                "readonly": "inalterable_hash"
+              },
+              {
+                "type": "field",
+                "id": "f-partner-bank",
+                "field": "partner_bank_id",
+                "invisible": "move_type not in ['in_invoice', 'in_refund', 'in_receipt']",
+                "readonly": "state != 'draft'"
+              },
+              {
+                "type": "field",
+                "id": "f-due-date",
+                "field": "invoice_date_due",
+                "placeholder": "Date",
+                "invisible": "move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'] or invoice_payment_term_id",
+                "readonly": "state in ['cancel', 'posted']"
+              },
+              {
+                "type": "field",
+                "id": "f-payment-terms",
+                "field": "invoice_payment_term_id",
+                "label": "Payment terms",
+                "placeholder": "Payment Terms",
+                "readonly": "state in ['cancel', 'posted']",
+                "invisible": "move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt']"
+              },
+              { "type": "field", "id": "f-delivery-date", "field": "delivery_date", "invisible": "not show_delivery_date", "readonly": "state != 'draft'" },
+              {
+                "type": "field",
+                "id": "f-journal",
+                "field": "journal_id",
+                "options": { "create": false },
+                "readonly": "posted_before and name not in [False, '', '/']"
+              },
+              {
+                "type": "field",
+                "id": "f-currency",
+                "field": "currency_id",
+                "options": { "create": false },
+                "invisible": "move_type == 'entry'",
+                "readonly": "state != 'draft'"
+              },
+              { "type": "field", "id": "f-edi-state", "field": "edi_state", "invisible": "not edi_state or state == 'draft'" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "tabs",
+        "id": "notebook",
+        "children": [
+          {
+            "type": "tab",
+            "id": "invoice_tab",
+            "label": "Invoice Lines",
+            "invisible": "move_type == 'entry'",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-invoice-lines",
+                "field": "invoice_line_ids",
+                "widget": "grid",
+                "labels": "hidden",
+                "readonly": "state != 'draft'",
+                "columns": [
+                  "product_id",
+                  "name",
+                  "account_id",
+                  "analytic_distribution",
+                  "quantity",
+                  "product_uom_id",
+                  "price_unit",
+                  "discount",
+                  "discount_2_pct",
+                  "discount_2_amount",
+                  "discount_2_overridden",
+                  "discount_3_pct",
+                  "discount_3_amount",
+                  "discount_3_overridden",
+                  "discount_4_pct",
+                  "discount_4_amount",
+                  "discount_4_overridden",
+                  "price_subtotal_after_discounts",
+                  "tax_ids",
+                  "price_subtotal",
+                  "price_total",
+                  "purchase_order_id"
+                ],
+                "optionalColumns": {
+                  "product_id": "show",
+                  "name": "show",
+                  "analytic_distribution": "show",
+                  "quantity": "show",
+                  "product_uom_id": "show",
+                  "discount": "hide",
+                  "discount_2_pct": "hide",
+                  "discount_2_amount": "hide",
+                  "discount_2_overridden": "hide",
+                  "discount_3_pct": "hide",
+                  "discount_3_amount": "hide",
+                  "discount_3_overridden": "hide",
+                  "discount_4_pct": "hide",
+                  "discount_4_amount": "hide",
+                  "discount_4_overridden": "hide",
+                  "price_subtotal_after_discounts": "hide",
+                  "tax_ids": "show",
+                  "price_total": "hide",
+                  "purchase_order_id": "hide"
+                }
+              },
+              {
+                "type": "section",
+                "id": "oe_invoice_lines_tab",
+                "style": "plain",
+                "columns": { "wide": 3, "medium": 3 },
+                "children": [
+                  { "type": "field", "id": "f-narration", "field": "narration", "labels": "hidden", "placeholder": "Terms and Conditions", "colspan": 2 },
+                  {
+                    "type": "section",
+                    "id": "oe_subtotal_footer",
+                    "style": "plain",
+                    "labels": "beside",
+                    "invisible": "move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'] or payment_state == 'invoicing_legacy'",
+                    "children": [
+                      { "type": "field", "id": "f-amount-untaxed", "field": "amount_untaxed" },
+                      {
+                        "type": "field",
+                        "id": "f-amount-tax",
+                        "field": "amount_tax",
+                        "readonly": "state != 'draft' or (move_type not in ['in_invoice', 'in_refund', 'in_receipt'] and not quick_edit_mode)",
+                        "label": "Taxes"
+                      },
+                      { "type": "field", "id": "f-amount-total", "field": "amount_total" },
+                      {
+                        "type": "field",
+                        "id": "f-payments",
+                        "field": "invoice_payment_ids",
+                        "labels": "hidden",
+                        "columns": ["date", "amount"],
+                        "invisible": "not invoice_payment_ids"
+                      },
+                      { "type": "field", "id": "f-amount-residual", "field": "amount_residual", "invisible": "state == 'draft'" },
+                      { "type": "field", "id": "f-exchange-rate", "field": "exchange_rate_used", "invisible": "currency_id == company_currency_id" },
+                      { "type": "field", "id": "f-amount-total-base", "field": "amount_total_base", "invisible": "currency_id == company_currency_id" },
+                      {
+                        "type": "field",
+                        "id": "f-manual-rate",
+                        "field": "manual_currency_rate",
+                        "readonly": "state != 'draft'",
+                        "invisible": "currency_id == company_currency_id"
+                      },
+                      {
+                        "type": "field",
+                        "id": "f-outstanding",
+                        "field": "outstanding_ids",
+                        "columns": ["ref", "amount"],
+                        "invisible": "state != 'posted' or not outstanding_ids"
+                      }
+                    ],
+                    "colspan": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "aml_tab",
+            "label": "Journal Items",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-journal-items",
+                "field": "line_ids",
+                "widget": "grid",
+                "labels": "hidden",
+                "invisible": "payment_state == 'invoicing_legacy' and move_type != 'entry'",
+                "readonly": "state != 'draft' or move_type != 'entry'",
+                "columns": [
+                  "account_id",
+                  "partner_id",
+                  "name",
+                  "analytic_distribution",
+                  "date_maturity",
+                  "amount_currency",
+                  "currency_id",
+                  "tax_ids",
+                  "debit",
+                  "credit",
+                  "discount_date",
+                  "discount_amount_currency",
+                  "tax_tag_ids",
+                  "tax_tag_invert"
+                ],
+                "optionalColumns": {
+                  "partner_id": "show",
+                  "name": "show",
+                  "analytic_distribution": "show",
+                  "date_maturity": "hide",
+                  "amount_currency": "hide",
+                  "currency_id": "hide",
+                  "tax_ids": "hide",
+                  "discount_date": "hide",
+                  "discount_amount_currency": "hide",
+                  "tax_tag_ids": "show",
+                  "tax_tag_invert": "hide"
+                },
+                "totals": ["debit", "credit"]
+              },
+              {
+                "type": "text",
+                "id": "t-legacy",
+                "text": "This entry has been generated through the Invoicing app, before installing Accounting. Its balance has been imported separately.",
+                "style": "note",
+                "invisible": "payment_state != 'invoicing_legacy' or move_type == 'entry'"
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "currency_details",
+            "label": "Currency Details",
+            "invisible": "currency_id == company_currency_id",
+            "children": [
+              {
+                "type": "section",
+                "id": "currency-amounts",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 2 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "transaction-currency",
+                    "title": "Transaction Currency",
+                    "style": "line",
+                    "readonly": true,
+                    "children": [
+                      { "type": "field", "id": "f-cd-currency", "field": "currency_id" },
+                      { "type": "field", "id": "f-cd-untaxed", "field": "amount_untaxed" },
+                      { "type": "field", "id": "f-cd-tax", "field": "amount_tax", "label": "Tax" },
+                      { "type": "field", "id": "f-cd-total", "field": "amount_total" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "base-currency",
+                    "title": "Company Base Currency",
+                    "style": "line",
+                    "readonly": true,
+                    "children": [
+                      { "type": "field", "id": "f-cd-company-currency", "field": "company_currency_id" },
+                      { "type": "field", "id": "f-cd-untaxed-base", "field": "amount_untaxed_base" },
+                      { "type": "field", "id": "f-cd-tax-base", "field": "amount_tax_base" },
+                      { "type": "field", "id": "f-cd-total-base", "field": "amount_total_base", "label": "Total (Base Currency)" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "rate-info",
+                    "title": "Exchange Rate Info",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-cd-rate", "field": "exchange_rate_used" },
+                      { "type": "field", "id": "f-cd-rate-date", "field": "exchange_rate_date" },
+                      {
+                        "type": "button",
+                        "id": "b-refresh-rate",
+                        "label": "Refresh Exchange Rate",
+                        "style": "link",
+                        "icon": "clock",
+                        "invisible": "state != 'draft'",
+                        "action": "action_refresh_exchange_rate"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "other_tab",
+            "label": "Other Info",
+            "invisible": "move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund']",
+            "children": [
+              {
+                "type": "section",
+                "id": "other_tab_group",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 2 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "sale_info_group",
+                    "title": "Invoice",
+                    "style": "line",
+                    "invisible": "move_type not in ['out_invoice', 'out_refund']",
+                    "children": [
+                      { "type": "field", "id": "f-customer-ref", "field": "ref", "label": "Customer Reference" },
+                      { "type": "field", "id": "f-salesperson", "field": "invoice_user_id" },
+                      { "type": "field", "id": "f-team", "field": "team_id" },
+                      { "type": "field", "id": "f-debit-origin", "field": "debit_origin_id", "invisible": "not debit_origin_id" },
+                      { "type": "field", "id": "f-company-bank", "field": "partner_bank_id", "readonly": "state != 'draft'" },
+                      { "type": "field", "id": "f-qr-method", "field": "qr_code_method", "invisible": "not display_qr_code" },
+                      { "type": "field", "id": "f-other-delivery-date", "field": "delivery_date", "readonly": "state != 'draft'" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "accounting_info_group",
+                    "title": "Accounting",
+                    "style": "line",
+                    "invisible": "move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund']",
+                    "children": [
+                      { "type": "field", "id": "f-company", "field": "company_id" },
+                      { "type": "field", "id": "f-incoterm", "field": "invoice_incoterm_id" },
+                      { "type": "field", "id": "f-incoterm-location", "field": "incoterm_location" },
+                      { "type": "field", "id": "f-fiscal-position", "field": "fiscal_position_id", "readonly": "state in ['cancel', 'posted']" },
+                      {
+                        "type": "field",
+                        "id": "f-source-email",
+                        "field": "invoice_source_email",
+                        "widget": "email",
+                        "invisible": "move_type not in ['in_invoice', 'in_refund'] or not invoice_source_email"
+                      },
+                      { "type": "field", "id": "f-auto-post", "field": "auto_post", "readonly": "state != 'draft'" },
+                      {
+                        "type": "field",
+                        "id": "f-auto-post-until",
+                        "field": "auto_post_until",
+                        "invisible": "auto_post in ['no', 'at_date']",
+                        "readonly": "state != 'draft'"
+                      },
+                      { "type": "field", "id": "f-to-check", "field": "to_check" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "other_tab_entry",
+            "label": "Other Info",
+            "invisible": "move_type != 'entry'",
+            "children": [
+              {
+                "type": "section",
+                "id": "other_tab_entry_group",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 2 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "misc_group",
+                    "style": "plain",
+                    "children": [
+                      { "type": "field", "id": "f-entry-auto-post", "field": "auto_post", "invisible": "move_type != 'entry'", "readonly": "state != 'draft'" },
+                      { "type": "field", "id": "f-entry-reversed", "field": "reversed_entry_id", "invisible": "move_type != 'entry' or not reversed_entry_id" },
+                      {
+                        "type": "field",
+                        "id": "f-entry-auto-post-until",
+                        "field": "auto_post_until",
+                        "invisible": "auto_post in ['no', 'at_date']",
+                        "readonly": "state != 'draft'"
+                      },
+                      { "type": "field", "id": "f-entry-to-check", "field": "to_check", "invisible": "move_type != 'entry'" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "entry-fiscal",
+                    "style": "plain",
+                    "children": [
+                      { "type": "field", "id": "f-entry-fiscal-position", "field": "fiscal_position_id", "readonly": "state in ['cancel', 'posted']" },
+                      { "type": "field", "id": "f-entry-company", "field": "company_id", "required": true }
+                    ]
+                  }
+                ]
+              },
+              { "type": "field", "id": "f-internal-note", "field": "narration", "labels": "hidden", "placeholder": "Add an internal note..." }
+            ]
+          }
+        ]
+      }
+    ],
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" }
+  }
+}
