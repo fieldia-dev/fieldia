@@ -246,7 +246,7 @@ test.describe('When… in the screen designer', () => {
     await expect(json).toHaveValue(/"beforeSave": \[\n\s+\{\n\s+"do": "check"\n\s+\},\n\s+\{\n\s+"do": "ask",\n\s+"message": "Send the order\?"/);
     await expect(json).toHaveValue(/"action": "check_stock"/);
     // Its end in view, where the page's moments are.
-    await json.evaluate((box) => (box.scrollTop = box.scrollHeight));
+    await page.locator('.fd-json-code').evaluate((code) => (code.scrollTop = code.scrollHeight));
     await look(page, 'json');
     await page.locator('.fd-mode [data-mode="design"]').click();
 
