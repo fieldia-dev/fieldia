@@ -8,7 +8,7 @@ import { expectNoSidewaysScroll, node, open, screen } from './support';
  * of the "Every field" demo — and the switch that lets the person filling the
  * form flip Documents between cards and a list: with real files chosen, by the
  * pointer and by the keys alone, right to left in Arabic, on a phone, in the
- * dark and in both skins.
+ * dark and in both skins, and set in the screen designer by the mouse.
  */
 
 const viewer = (page: Page) => page.getByRole('dialog');
@@ -288,5 +288,49 @@ test.describe('files as cards', () => {
       expect(await axeFindings(page, `files as cards, ${query}`)).toEqual([]);
       expect(problems).toEqual([]);
     }
+  });
+});
+
+test.describe('cards in the screen designer', () => {
+  test('Cards and People can switch, set by the mouse — then tried', async ({ page }) => {
+    const problems: string[] = [];
+    page.on('pageerror', (error) => problems.push(error.message));
+    await page.goto('/screen/');
+    const id = await page.evaluate(() => {
+      const { designer } = (window as any).fieldiaDesigner;
+      const added = designer.addQuestion('file', { parent: 'section-1' });
+      designer.updateQuestion(added, { label: 'Handover papers' });
+      designer.select(added);
+      return added;
+    });
+    const panel = page.locator('.fd-properties');
+    await panel.getByRole('switch', { name: 'More than one file' }).click();
+    const shownAs = panel.getByRole('group', { name: 'Show chosen files as' });
+    await expect(shownAs.getByRole('button')).toHaveText(['List', 'Thumbnails', 'Cards']);
+    await shownAs.getByRole('button', { name: 'Cards' }).click();
+    await panel.getByRole('switch', { name: 'People can switch' }).click();
+    const options = () => page.evaluate((id) => {
+      const built = (window as any).fieldiaDesigner.designer.getPage();
+      return built.layout.children[0].children.find((n: { id: string }) => n.id === id).options;
+    }, id);
+    expect(await options()).toEqual({ files: 'cards', filesSwitch: true });
+    // The card on the canvas says the same, and shows the files as cards.
+    const card = page.locator('.fd-canvas-field.fd-editing');
+    await expect(card.getByRole('group', { name: 'Show chosen files as' }).getByRole('button', { name: 'Cards' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(card.getByRole('switch', { name: 'People can switch' })).toHaveAttribute('aria-checked', 'true');
+    await expect(card.locator('.fd-file')).toHaveClass(/fd-files-cards/);
+    await card.scrollIntoViewIfNeeded();
+    await screen(page, 'file-cards-designer', { viewport: true });
+
+    await page.getByRole('button', { name: 'Try it' }).click();
+    const papers = page.locator('.fd-try [data-type="binary"]');
+    await papers.locator('input[type=file]').setInputFiles([FILES.quote(), FILES.photo('Keys, handed over.png', 1)]);
+    await expect(papers.locator('.fd-file-item')).toHaveCount(2);
+    await expect(papers.locator('.fd-file')).toHaveClass(/fd-files-cards/);
+    await papers.scrollIntoViewIfNeeded();
+    await screen(page, 'file-cards-designer-try-it', { viewport: true });
+    await switcher(papers).getByRole('button', { name: 'List' }).click();
+    await expect(papers.locator('.fd-file')).toHaveClass(/fd-files-list/);
+    expect(problems).toEqual([]);
   });
 });
