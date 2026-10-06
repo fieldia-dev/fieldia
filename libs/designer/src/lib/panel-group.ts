@@ -9,6 +9,7 @@ import { columnsSetting, labelsSetting, rowsSetting, widthSetting } from './pane
 import { groupStyleSetting } from './panel-look';
 import { foldSetting } from './panel-fold';
 import { movers, type PropertiesView } from './screen-properties';
+import { rolesSetting } from './roles-setting';
 
 /**
  * A group's settings, on the panel's tabs: its title, whether it folds by
@@ -36,6 +37,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
   const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, w.showOnlyWhen);
   showWhen.addEventListener('click', () => when.start());
   const noRules = el('p', { class: 'fd-properties-hint', hidden: '' }, w.noRulesGroup);
+  const roles = rolesSetting(el, designer, id);
   const element = el(
     'div',
     { class: 'fd-props' },
@@ -47,7 +49,8 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
     ...labels.rows,
     ...width.rows,
     ...style.rows,
-    onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, w.whenItShows), when.element, showWhen, noRules), 'rules', 'When it shows')
+    onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, w.whenItShows), when.element, showWhen, noRules), 'rules', 'When it shows'),
+    roles.element
   );
   return {
     element,
@@ -62,6 +65,7 @@ export function groupProperties(el: ElementFactory, designer: Designer, id: stri
       remove.hidden = !holder || holder.children.length === 1;
       const outside = allSections(page).flatMap((s) => s.children.filter((n): n is FieldNode => n.type === 'field' && !contains(page, id, n.id) && choicesOf(page.fields[n.field]) !== null));
       when.update(page, outside, section.invisible);
+      roles.update(page);
       showWhen.hidden = !when.element.hidden || !when.canStart();
       noRules.hidden = !when.element.hidden || when.canStart();
     },

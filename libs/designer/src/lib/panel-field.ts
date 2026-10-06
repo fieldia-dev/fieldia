@@ -13,6 +13,7 @@ import { fieldRules } from './rules-panel';
 import { whenItChanges } from './steps-panel';
 import type { SampleOptions } from './rules-sample';
 import type { PropertiesView } from './screen-properties';
+import { rolesSetting } from './roles-setting';
 
 /**
  * A field's settings, on the panel's tabs: its words and how it is shown
@@ -84,6 +85,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, w.showOnlyWhen);
   showWhen.addEventListener('click', () => when.start());
   const noRules = el('p', { class: 'fd-properties-hint', hidden: '' }, w.noRulesField);
+  const roles = rolesSetting(el, designer, id);
   const whenBox = onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, w.whenItShows), when.element, showWhen, noRules), 'rules', 'When it shows');
   // Worked out from others, set when, and the rules its answer keeps.
   const own = fieldRules(el, designer, id, sampling);
@@ -113,6 +115,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('div', { class: 'fd-q-required-row' }, el('label', { class: 'fd-q-required' }, required, el('span', {}, w.required)), requiredOnly), requiredWhen.element), 'rules', 'Required'),
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, readonlyWhen.element, readonlyOnly), 'rules', 'Read-only'),
     whenBox,
+    roles.element,
     ...own.rows,
     changes.element,
     setting(el, 'data', 'Field name', name, { hint: nameHint, words: w.fieldName }),
@@ -163,6 +166,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       readonlyWhen.update(page, others, found.node.readonly);
       readonlyOnly.hidden = !readonlyWhen.element.hidden || !readonlyWhen.canStart();
       when.update(page, others, found.node.invisible);
+      roles.update(page);
       showWhen.hidden = !when.element.hidden || !when.canStart();
       noRules.hidden = !when.element.hidden || when.canStart();
       own.update(page);

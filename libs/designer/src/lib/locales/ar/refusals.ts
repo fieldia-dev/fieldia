@@ -5,6 +5,7 @@ const q = quoteAr;
 
 export const refusals: DesignerWords['refusals'] = {
   noElement: (id) => `لا يوجد عنصر ${q(id)}`,
+  notARole: (role) => `${q(role)} ليس اسم دور: حروف وأرقام ونقاط وشرطات سفلية، وقبله ! لإخفاء الجزء عمّن يحمله`,
   noElementOnSheet: (id) => `لا يوجد عنصر ${q(id)} في الورقة`,
   noStepOrSection: (id) => `لا توجد صفحة أو قسم ${q(id)}`,
   noQuestion: (id) => `لا يوجد سؤال ${q(id)}`,

@@ -6,6 +6,7 @@ import { findHeaderPart } from './header-commands';
 import { allSections } from './page-tree';
 import { whenClicked } from './steps-panel';
 import type { PropertiesView } from './screen-properties';
+import { rolesSetting } from './roles-setting';
 
 /**
  * The panel for a part of a record's header: a button, a counter or a badge
@@ -47,6 +48,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   const when = conditionEditor(el, designer, id, 'question');
   const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, w.showOnlyWhen);
   showWhen.addEventListener('click', () => when.start());
+  const roles = rolesSetting(el, designer, id, { tabbed: false });
   const left = el('button', { type: 'button', class: 'fd-button' }, w.moveLeft);
   const right = el('button', { type: 'button', class: 'fd-button' }, w.moveRight);
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.delete);
@@ -63,6 +65,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
     countRow,
     toneRow,
     el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, w.whenItShows), when.element, showWhen),
+    roles.element,
     el('div', { class: 'fd-props-actions' }, left, right, remove)
   );
 
@@ -89,6 +92,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
       toneRow.hidden = kind !== 'badge';
       if (kind === 'badge') tone.value = (part as { tone?: string }).tone ?? 'muted';
       when.update(page, testable(page), part.invisible);
+      roles.update(page);
       showWhen.hidden = !when.element.hidden || !when.canStart();
       left.hidden = index === 0;
       right.hidden = index === list.length - 1;

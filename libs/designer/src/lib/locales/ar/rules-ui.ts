@@ -82,6 +82,9 @@ export const rulesUi: DesignerWords['rulesUi'] = {
   workedOutFrom: 'محسوب من',
   typeAName: 'اكتب اسم حقل، أو @',
   functions: 'الدوال',
+  shownOnlyTo: 'يظهر فقط لـ',
+  rolesPlaceholder: 'أسماء الأدوار، تفصلها فواصل',
+  rolesHint: 'يراه من يحمل أيًّا من هذه الأدوار؛ وعلامة ! قبل الدور تخفيه عمّن يحمله. إن كان فارغًا يراه الجميع. التطبيق يحدد من يحمل أيّ دور — وخادمه هو من يقرر ما يُسمح لهم بفعله.',
   functionTips: {
     round: 'التقريب إلى عدد من المنازل العشرية: round(price * qty, 2)',
     min: 'أصغر القيم: min(price, 100)',

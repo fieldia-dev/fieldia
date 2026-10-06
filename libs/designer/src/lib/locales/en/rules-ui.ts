@@ -91,6 +91,9 @@ export const rulesUi = {
   workedOutFrom: 'Worked out from',
   typeAName: 'Type a field’s name, or @',
   functions: 'Functions',
+  shownOnlyTo: 'Shown only to',
+  rolesPlaceholder: 'sales_team.group_sale_manager, !base.group_portal',
+  rolesHint: 'People in any of these roles see it; ! before a role hides it from people in that one. Empty, everyone sees it. The app says who holds which — and its server still decides what they may do.',
   /** What each function does, with an example written as a formula is. */
   functionTips: {
     round: 'Rounded to so many decimals: round(price * qty, 2)',

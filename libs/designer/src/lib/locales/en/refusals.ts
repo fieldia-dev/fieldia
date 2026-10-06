@@ -6,6 +6,7 @@
 export const refusals = {
   // ---- parts that are not there (an app's code asked for them by id)
   noElement: (id: string) => `There is no element "${id}"`,
+  notARole: (role: string) => `“${role}” is not a role’s name: letters, digits, dots and underscores, with ! before it to hide the part from people holding it`,
   noElementOnSheet: (id: string) => `There is no element "${id}" on the sheet`,
   noStepOrSection: (id: string) => `There is no step or section "${id}"`,
   noQuestion: (id: string) => `There is no question "${id}"`,

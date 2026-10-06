@@ -71,6 +71,9 @@ import { answersName, formParts, freeFieldName, refuseCycle, savedFormsCache, up
  * field from the model keeps what it holds, and only changes editor.
  */
 
+
+/** A role's name, as the format takes it: `!` before it to hide a part from people holding it. */
+const ROLE = /^!?[A-Za-z0-9_][A-Za-z0-9_.:-]*$/;
 export { columnKind, kindFits, kindName, kindOfField, kindsFor, QUESTION_KINDS, SCREEN_KINDS, storedAs } from './kinds';
 export type { LineColumn, QuestionKind } from './kinds';
 export type { AppKind, AppKindContext, AppKindPreviewContext, AppKindSettings } from './app-kinds';
@@ -321,6 +324,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
    * rules, always shows it.
    */
   setCondition(id: string, condition: Condition | { field: string; equals: string | number | boolean } | null): boolean;
+  /** The roles a part shows to (Flectra's groups=), `!` before one hiding it from people holding it; null shows it to everyone. */
+  setRoles(id: string, roles: string[] | null): boolean;
   /**
    * A field required, or read-only, only when a rule holds; `null` for no
    * rule. A field always required becomes required only then; a field the
@@ -1164,6 +1169,17 @@ export function createDesigner(options: {
         const own = found?.node.type === 'field' ? found.node.field : null;
         if (own && rules.rules.some((rule) => rule.field === own)) throw new Refusal((w) => w.refusals.questionOwnAnswer);
         target.invisible = conditionToHide(rules);
+      });
+    },
+
+    setRoles(id, roles) {
+      return apply((draft) => {
+        const target = (findContainer(draft, id) ?? findNode(draft, id)?.node ?? findHeaderPart(draft, id)?.part) as { roles?: string[] } | null | undefined;
+        if (!target) throw new Refusal((w) => w.refusals.noElement(id));
+        const wrong = roles?.find((role) => !ROLE.test(role));
+        if (wrong !== undefined) throw new Refusal((w) => w.refusals.notARole(wrong));
+        if (roles?.length) target.roles = [...new Set(roles)];
+        else delete target.roles;
       });
     },
 
