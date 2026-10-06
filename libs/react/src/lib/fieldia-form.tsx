@@ -147,6 +147,8 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
   const fieldKeys = Object.keys(props.fieldTypes ?? {}).join('|');
   const slotKeys = Object.keys(props.slots ?? {}).join('|');
   const labelsKey = JSON.stringify(props.labels ?? {});
+  // A different person may see different parts: the form is made again for them.
+  const userKey = JSON.stringify(props.user ?? null);
 
   useEffect(() => {
     const element = host.current;
@@ -207,7 +209,7 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       setHandle(null);
       setPortals([]);
     };
-  }, [props.page, props.form, props.dataSource, props.recordId, props.dir, labelsKey, fieldKeys, slotKeys]);
+  }, [props.page, props.form, props.dataSource, props.recordId, userKey, props.dir, labelsKey, fieldKeys, slotKeys]);
 
   useEffect(() => {
     handle?.setSkin(props.skin ?? 'underline');

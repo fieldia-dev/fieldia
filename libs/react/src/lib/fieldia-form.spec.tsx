@@ -77,6 +77,14 @@ describe('<FieldiaForm>', () => {
     expect(part.querySelector('[data-node="street"] .fd-label')?.textContent).toBe('Street and number');
   });
 
+  it('hands the form the person using it: parts shown to their roles, again when they change', () => {
+    const lock: Page = { ...pricing, layout: { type: 'sections', id: 'root', children: [{ type: 'button', id: 'lock', label: 'Lock', action: 'lock', roles: ['sales.manager'] }] } };
+    const { rerender } = render(<FieldiaForm page={lock} user={{ id: 4, roles: ['sales.user'] }} />);
+    expect(screen.queryByRole('button', { name: 'Lock' })).toBeNull();
+    rerender(<FieldiaForm page={lock} user={{ id: 5, roles: ['sales.manager'] }} />);
+    expect(screen.getByRole('button', { name: 'Lock' })).toBeDefined();
+  });
+
   it('switches skin without mounting again', () => {
     let mounts = 0;
     const survey = page('survey');

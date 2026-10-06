@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Component, DestroyRef, inject, input, signal, type OnInit, type Signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { createMemoryDataSource, type ActionRequest, type Form, type FormState, type Page, type RecordId, type Value } from '@fieldia/core';
+import { createMemoryDataSource, type ActionRequest, type Form, type FormState, type FormUser, type Page, type RecordId, type Value } from '@fieldia/core';
 import type { ViewerHandle } from '@fieldia/viewer';
 import { FieldiaFormComponent, FieldiaSlotDirective, formState } from './fieldia-form.component';
 
@@ -128,6 +128,15 @@ class EventsHostComponent {
   readonly answer = (request: ActionRequest) => (request.action === 'price' ? { values: { price: 380 } } : undefined);
 }
 
+@Component({
+  imports: [FieldiaFormComponent],
+  template: `<fieldia-form [page]="page" [user]="user()" />`,
+})
+class PersonHostComponent {
+  readonly page: Page = { fieldia: '0.1', id: 'lock', data: { kind: 'record', model: 'sale.order' }, fields: {}, layout: { type: 'sections', id: 'root', children: [{ type: 'button', id: 'lock', label: 'Lock', action: 'lock', roles: ['sales.manager'] }] } };
+  readonly user = signal<FormUser>({ id: 4, roles: ['sales.user'] });
+}
+
 async function setup(start: Page = custom) {
   const fixture = TestBed.createComponent(HostComponent);
   fixture.componentInstance.page.set(start);
@@ -142,6 +151,18 @@ describe('<fieldia-form> for Angular', () => {
     const { el } = await setup(page('survey'));
     expect(el.querySelector('fieldia-form .fd-form')).not.toBeNull();
     expect([...el.querySelectorAll('button')].some((b) => b.textContent?.trim() === 'Next')).toBe(true);
+  });
+
+  it('hands the form the person using it: parts shown to their roles, again when they change', async () => {
+    const fixture = TestBed.createComponent(PersonHostComponent);
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    const lock = () => [...el.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Lock' && !b.closest('[hidden]'));
+    expect(lock()).toBeUndefined();
+    fixture.componentInstance.user.set({ id: 5, roles: ['sales.manager'] });
+    await fixture.whenStable();
+    expect(lock()).toBeDefined();
   });
 
   it('switches skin without mounting again', async () => {

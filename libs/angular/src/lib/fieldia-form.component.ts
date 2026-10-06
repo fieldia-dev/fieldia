@@ -23,7 +23,7 @@ import {
   type Signal,
   type Type,
 } from '@angular/core';
-import type { ActionRequest, DataSource, DraftStore, Form, FormEvents, FormState, Locale, OnAction, Page, RecordId, Scheduler, Value, Values } from '@fieldia/core';
+import type { ActionRequest, DataSource, DraftStore, Form, FormEvents, FormState, FormUser, Locale, OnAction, Page, RecordId, Scheduler, Value, Values } from '@fieldia/core';
 import { mountViewer, type Skin, type SlotRenderer, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import type { PreferenceStore, WidgetFactory, WidgetState } from '@fieldia/widgets';
 
@@ -75,6 +75,8 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly form = input<Form | undefined>(undefined);
   readonly dataSource = input<DataSource | undefined>(undefined);
   readonly recordId = input<RecordId | null>(null);
+  /** The person using the form: what `user` reads, and the roles that show parts. */
+  readonly user = input<FormUser | undefined>(undefined);
   readonly values = input<Values | undefined>(undefined);
   readonly skin = input<Skin>('underline');
   readonly dir = input<'ltr' | 'rtl' | undefined>(undefined);
@@ -158,6 +160,7 @@ export class FieldiaFormComponent implements OnDestroy {
         form: this.form(),
         dataSource: this.dataSource(),
         recordId: this.recordId(),
+        user: this.user(),
         dir: this.dir(),
         locale: this.locale(),
         labels: this.labels(),
@@ -182,7 +185,7 @@ export class FieldiaFormComponent implements OnDestroy {
     this.unmount();
   }
 
-  private mount(options: { page: Page; form?: Form; dataSource?: DataSource; recordId: RecordId | null; dir?: 'ltr' | 'rtl'; locale?: Locale; labels?: Partial<ViewerLabels>; fieldTypes?: Record<string, Type<unknown>> }) {
+  private mount(options: { page: Page; form?: Form; dataSource?: DataSource; recordId: RecordId | null; user?: FormUser; dir?: 'ltr' | 'rtl'; locale?: Locale; labels?: Partial<ViewerLabels>; fieldTypes?: Record<string, Type<unknown>> }) {
     this.unmount();
     const widgets: Record<string, WidgetFactory> = { ...this.widgets() };
     for (const [key, type] of Object.entries(options.fieldTypes ?? {})) {
@@ -227,6 +230,7 @@ export class FieldiaFormComponent implements OnDestroy {
       form: options.form,
       dataSource: options.dataSource,
       recordId: options.recordId,
+      user: options.user,
       values: this.values(),
       skin: this.skin(),
       dir: options.dir,
