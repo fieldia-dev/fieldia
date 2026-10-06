@@ -102,7 +102,8 @@ export function writeSteps(draft: Page, place: StepsPlace, steps: ActionStep[]):
     }
     return;
   }
-  if (!placeIsThere(draft, place)) throw new Refusal((w) => w.steps.noPlace);
+  // A place gone may still lose its steps: a field's change once the field has gone.
+  if (steps.length && !placeIsThere(draft, place)) throw new Refusal((w) => w.steps.noPlace);
   const on: PageEvents = draft.on ?? {};
   if ('moment' in place) {
     if (steps.length) on[place.moment] = steps;

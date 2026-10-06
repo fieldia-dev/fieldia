@@ -132,7 +132,16 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
     const items: MenuItem[] = GROUPS.flatMap(({ group, kinds }) =>
       kinds.filter((kind) => fits[kind] !== false).map((kind, i) => ({ id: kind, label: w.kinds[kind], ...(i === 0 ? { heading: w.groups[group] } : {}) }))
     );
-    openMenu({ el, anchor, title: under ? w.addThen : w.addAStep, actions: true, items, onPick: (kind) => begin(kind as Kind, under) });
+    // Its groups' headings say what it holds: no title over them, and a little closer, so the whole list fits in view.
+    const menu = openMenu({ el, anchor, actions: true, items, onPick: (kind) => begin(kind as Kind, under) }).element;
+    menu.setAttribute('aria-label', under ? w.addThen : w.addAStep);
+    menu.classList.add('fd-do-menu');
+    const r = anchor.getBoundingClientRect();
+    const room = doc.defaultView?.innerHeight ?? 800;
+    const below = r.bottom + 6;
+    const above = r.top - menu.offsetHeight - 6;
+    const top = below + menu.offsetHeight <= room - 8 || above < 8 ? below : above;
+    menu.style.top = `${Math.max(8, Math.min(top, room - menu.offsetHeight - 8))}px`;
   }
 
   /** A new step: kept at once when it needs nothing more, else begun here, open, its first box in hand. */
@@ -167,7 +176,9 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
   function rowView(kind: Kind, begun: boolean): RowView {
     const bodyId = `${base}-${++rowsMade}`;
     const grip = el('span', { class: 'fd-do-grip', 'aria-hidden': 'true', title: w.grip }, designerIcon(doc, 'grip'));
-    const say = el('button', { type: 'button', class: 'fd-answer-rule-say fd-do-say', 'aria-expanded': 'false', 'aria-controls': bodyId });
+    // The sentence in one piece of its own: the arrow before it, the words wrapping as words, an action's name among them.
+    const sentence = el('span', { class: 'fd-do-words' });
+    const say = el('button', { type: 'button', class: 'fd-answer-rule-say fd-do-say', 'aria-expanded': 'false', 'aria-controls': bodyId }, sentence);
     const remove = iconButton(el, w.removeNew, '×', () => removeRow(view));
     remove.classList.add('fd-answer-rule-remove', 'fd-do-remove');
     const problem = el('p', { class: 'fd-answer-rule-problem', role: 'alert', hidden: '' });
@@ -214,10 +225,9 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
       update(step, path, count) {
         view.step = step;
         view.path = path;
-        const n = path[path.length - 1] + 1;
-        say.textContent = view.begun ? w.kinds[kind] : stepSentence(page, step, words, saved);
-        if (!view.begun) markCode(say, step);
-        remove.setAttribute('aria-label', view.begun ? w.removeNew : w.removeStep(n));
+        sentence.textContent = view.begun ? w.kinds[kind] : stepSentence(page, step, words, saved);
+        if (!view.begun) markCode(sentence, step);
+        remove.setAttribute('aria-label', view.begun ? w.removeNew : w.removeStep(path.map((i) => i + 1).join('.')));
         remove.title = remove.getAttribute('aria-label') as string;
         grip.hidden = view.begun || count < 2;
         settings.update(step);

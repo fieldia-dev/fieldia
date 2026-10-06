@@ -42,7 +42,7 @@ export const steps = {
   },
   /** A step by its place, for a screen reader: "Step 2 of 3". */
   stepOf: (n: number, count: number) => `Step ${n} of ${count}`,
-  removeStep: (n: number) => `Remove step ${n}`,
+  removeStep: (n: string) => `Remove step ${n}`,
   removeNew: 'Remove this new step',
   grip: 'Drag to move it, or press Alt+↑ or Alt+↓',
   moved: (n: number, count: number) => `Moved: step ${n} of ${count}.`,
@@ -89,10 +89,11 @@ export const steps = {
   pageIdPlaceholder: 'contact',
   opensIn: 'Opens',
   as: { dialog: 'In a dialog', panel: 'In a panel', page: 'In its place' },
+  asShort: { dialog: 'Dialog', panel: 'Panel', page: 'Its place' },
   title: 'Words over it',
   titlePlaceholder: 'Its own title',
   record: 'On a record',
-  recordPlaceholder: 'A new one — or a field holding its id',
+  recordPlaceholder: 'Empty for a new one',
   startsWith: 'It starts with',
   answersGo: 'Its answers go to',
   itsField: 'Its field',
@@ -140,7 +141,9 @@ export const steps = {
   changeGone: (field: string) => `“${field}” is no longer on the page, so its steps when it changes never run.`,
   removeTheStep: 'Remove the step',
   removeTheSteps: 'Remove the steps',
-  stepWrong: (name: string, n: number, problem: string) => `“${name}”, step ${n}: ${problem}.`,
+  /** On a page written by hand: a step the page's own check finds wrong, and where. */
+  stepWrong: (name: string, n: string, problem: string) => `“${name}”, step ${n}: ${problem}.`,
+  placeWrong: (name: string, problem: string) => `“${name}”: ${problem}.`,
   // ---- refusals
   noPlace: 'There is nothing here to give steps to.',
   noStep: (n: number) => `There is no step ${n} here.`,

@@ -31,6 +31,12 @@ export const DESIGNER_STEPS_CSS = /* css */ `
 .fd-do-when[hidden], .fd-do-when-start[hidden] { display: none; }
 .fd-do-fields { display: grid; gap: 4px; padding-block-start: 4px; }
 .fd-do-fields[hidden] { display: none; }
+/* "Add a step": its groups closer together, so the whole list fits in view. */
+.fd-menu.fd-do-menu { max-height: calc(100vh - 16px); }
+.fd-do-menu .fd-menu-item { padding-block: 5px; }
+.fd-do-menu .fd-menu-heading { padding-block-start: 8px; }
+.fd-do-menu .fd-menu-heading:first-child { padding-block-start: 4px; }
+.fd-do-words { min-width: 0; }
 /* ---- the steps once a page is saved: under the step that opened it, a line on one side ---- */
 .fd-do-then { margin: 0 12px 10px; margin-inline-start: 22px; padding-inline-start: 10px; border-inline-start: 2px solid var(--fd-border); }
 .fd-do-then[hidden] { display: none; }
@@ -58,6 +64,8 @@ export const DESIGNER_STEPS_CSS = /* css */ `
 .fd-do-show-pick { justify-self: start; max-width: 100%; }
 .fd-do-show-pick[hidden] { display: none; }
 .fd-do-keeps[hidden], .fd-do-status[hidden] { display: none; }
+/* ---- the Rules view: a step a line ---- */
+.fd-rules-steps .fd-rules-item-say { white-space: pre-line; }
 /* ---- on the canvas: a button that does something wears a small bolt after its words ---- */
 .fd-canvas-block.fd-button[data-steps]::after, .fd-canvas-part.fd-button[data-steps]::after, .fd-canvas-part.fd-stat[data-steps] .fd-stat-label::after {
   content: ""; display: inline-block; width: 0.8em; height: 0.8em; margin-inline-start: 6px; vertical-align: -0.05em; background: currentColor; opacity: 0.75;

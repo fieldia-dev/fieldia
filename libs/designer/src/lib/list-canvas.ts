@@ -10,6 +10,7 @@ import { kindOfField } from './kinds';
 import { canBeColumn, columnId } from './list-commands';
 import { openMenu } from './menu';
 import { sampleRows } from './samples';
+import { pressMarks } from './steps-marks';
 
 /**
  * A list page on the canvas, drawn the way the viewer draws it: the search
@@ -276,6 +277,8 @@ export function listCanvas(options: ListCanvasOptions): ListCanvas {
       chosen.textContent = said.selected.replace('{n}', '2');
       pagerText.textContent = said.range.replace('{from}', '1').replace('{to}', String(Math.min(size, TOTAL))).replace('{total}', String(TOTAL));
       drawActions(list, selected);
+      // steps lane: a button that does something wears a mark.
+      pressMarks(actions, page, designer);
       drawTable(page, list, selected);
     },
     destroy() {

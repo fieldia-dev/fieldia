@@ -13,6 +13,7 @@ import { isDefaultOption, isUntitled, type DesignerWords } from './designer-word
 import { en } from './locales/en';
 import { kindName } from './kinds';
 import { formChecks, SAID_BY_FORM_CHECKS, type SavedFormsCache } from './saved-forms';
+import { fixStepCheck, stepChanges, stepChecks, type StepFix, type StepFixer } from './steps-checks';
 
 /**
  * Before a page is published: what people would trip over, each with a fix
@@ -23,7 +24,7 @@ import { formChecks, SAID_BY_FORM_CHECKS, type SavedFormsCache } from './saved-f
  * fields on show, so it is required only when shown, as it should be.
  */
 
-export type CheckFix = { kind: 'go'; id: string; part: 'label' | 'options' } | { kind: 'remove'; id: string } | { kind: 'drop-rule'; id: string; rule: number } | RuleFix;
+export type CheckFix = { kind: 'go'; id: string; part: 'label' | 'options' } | { kind: 'remove'; id: string } | { kind: 'drop-rule'; id: string; rule: number } | RuleFix | StepFix;
 
 export interface PageCheck {
   /** The element it is about, or null for the page. */
@@ -81,11 +82,13 @@ export function pageChecks(page: Page, options: { valid?: boolean; words?: Desig
   const found: PageCheck[] = [];
   const checked = options.valid ? null : validatePage(page);
   const rules = ruleChecks(page, words);
-  // A page written by hand can be wrong in ways the designer would never let it be; what the rules' checks — and the saved forms' — say in words is not said again.
+  // steps lane: what the page's parts do — on a page written by hand, the page's own check said by part and step.
+  const doing = stepChecks(page, checked && !checked.ok ? checked.issues : [], words);
+  // A page written by hand can be wrong in ways the designer would never let it be; what the rules' checks — and the saved forms', and the steps' — say in words is not said again.
   if (checked && !checked.ok) {
-    for (const issue of checked.issues) if (!rules.covers(issue.path) && !SAID_BY_FORM_CHECKS.test(issue.message)) found.push({ at: null, severity: 'must', text: w.invalid(issue.path, issue.message) });
+    for (const issue of checked.issues) if (!rules.covers(issue.path) && !doing.covers(issue.path) && !SAID_BY_FORM_CHECKS.test(issue.message)) found.push({ at: null, severity: 'must', text: w.invalid(issue.path, issue.message) });
   }
-  found.push(...rules.checks);
+  found.push(...rules.checks, ...doing.checks);
   // embed lane: saved forms placed in the page that cannot be found, would hold it, or would mix their answers.
   found.push(...formChecks(page, options.forms ?? null, words));
   const survey = page.data.kind === 'responses';
@@ -182,7 +185,7 @@ export function pageChecks(page: Page, options: { valid?: boolean; words?: Desig
 }
 
 /** What a check's fix needs of the designer. */
-export interface CheckFixer extends RuleFixer {
+export interface CheckFixer extends RuleFixer, StepFixer {
   getPage(): Page;
   removeNode(id: string): boolean;
   setCondition(id: string, condition: Condition | null): boolean;
@@ -212,6 +215,7 @@ export function fixCheck(designer: CheckFixer, check: PageCheck): boolean {
   }
   if (action.kind === 'remove') return designer.removeNode(action.id);
   if (action.kind === 'remove-rule') return fixRuleCheck(designer, action);
+  if (action.kind === 'remove-step' || action.kind === 'remove-steps') return fixStepCheck(designer, action);
   const target = withRules(designer.getPage()).find((t) => t.id === action.id);
   const condition = readCondition(target?.invisible);
   if (!condition || condition === 'custom') return false;
@@ -317,6 +321,7 @@ export function pageChanges(before: Page | null, after: Page, words: DesignerWor
 
   out.push(...headerChanges(before, after, words), ...listChanges(before, after, words));
   out.push(...ruleChanges(before, after, words));
+  out.push(...stepChanges(before, after, words));
   out.push(...translationChanges(before, after, words));
   // Something changed that has no words of its own here: say so rather than nothing.
   return out.length ? out : [w.other];

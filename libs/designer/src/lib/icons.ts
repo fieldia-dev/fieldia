@@ -66,6 +66,8 @@ const SHAPES: Record<string, string> = {
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
   play: '<path d="M7 5l12 7-12 7z"/>',
+  // steps lane: a part that does something.
+  bolt: '<path d="M13 3L5 13.5h6.5L10.5 21 19 10.5h-6.5z"/>',
   desktop: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/>',
   tablet: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/>',
   device: '<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>',

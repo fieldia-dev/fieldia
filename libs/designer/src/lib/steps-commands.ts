@@ -126,10 +126,11 @@ export function stepsCommands({ apply, getPage }: StepsCommandsDeps): StepsComma
   /** Change a place's list, as one edit: refused when the place is gone, a step is not one, or a button is left with nothing to do. */
   const change = (place: StepsPlace, edit: (list: ActionStep[], draft: Page) => void, merge: string | null = null) =>
     apply((draft) => {
-      if (!placeIsThere(draft, place)) throw new Refusal((w) => w.steps.noPlace);
       const list = JSON.parse(JSON.stringify(stepsAt(draft, place))) as ActionStep[];
       edit(list, draft);
       tidyThen(list);
+      // A place no longer there may only lose its steps.
+      if (list.length && !placeIsThere(draft, place)) throw new Refusal((w) => w.steps.noPlace);
       writeSteps(draft, place, list);
     }, merge);
   /** A step that cannot be kept is refused, saying why. */

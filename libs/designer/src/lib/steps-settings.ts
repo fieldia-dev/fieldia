@@ -176,7 +176,7 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
     const as = segmented<'dialog' | 'panel' | 'page'>(
       el,
       w.opensIn,
-      (['dialog', 'panel', 'page'] as const).map((value) => ({ value, words: w.as[value] })),
+      (['dialog', 'panel', 'page'] as const).map((value) => ({ value, words: w.asShort[value], label: w.as[value] })),
       (value) => value && ctx.change({ as: value === 'dialog' ? null : value })
     );
     parts.push(row(el, w.opensIn, as.element));
