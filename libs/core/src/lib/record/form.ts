@@ -12,6 +12,7 @@ import { compileComputed } from './compute';
 import { compileSetWhen } from './set-when';
 import { checkRules, compileRules, type CompiledRule } from './rules';
 import { expressionEnv, lineContext, recordContext } from './env';
+import { firstValues, readLooseMap, readValueMap, type MapScope } from './value-map';
 import { rolesAllow } from './roles';
 import { MESSAGES, type Messages } from './messages';
 import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
@@ -190,11 +191,13 @@ export interface Form {
   searchLine(field: string, key: string, subfield: string, query: string, limit?: number): Promise<RelatedRecord[]>;
   /** Whether a link field can make a record from a typed name: the data source must be able to. */
   canCreate(field: string): boolean;
-  /** Make a record from a typed name, for the link field to point to. */
+  /** Make a record from a typed name, for the link field to point to, with what its `createValues` hand on. */
   quickCreate(field: string, name: string): Promise<RelatedRecord>;
-  /** The same, for a link inside a one2many's lines. */
+  /** The same, for a link inside a one2many's lines; with the line's key, its `createValues` are read on that line. */
   canCreateLine(field: string, subfield: string): boolean;
-  quickCreateLine(field: string, subfield: string, name: string): Promise<RelatedRecord>;
+  quickCreateLine(field: string, subfield: string, name: string, key?: string): Promise<RelatedRecord>;
+  /** What a record made from a link starts with besides its name: its `createValues`, read now — on a line, on that line. */
+  createValues(field: string, line?: { lines: string; key: string }): Values;
   steps(): string[];
   next(): boolean;
   back(): boolean;
@@ -310,7 +313,57 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   /** True while answers are handed to an inner form: what it says back then is no change of its own. */
   let syncing = false;
 
-  let baseline: Values = computed.apply({ ...initialValues(fields, today()), ...structuredCopy(options.values ?? {}) });
+  /** A new record's values: each field's default, then those worked out from `defaultFrom`, then what the form is given. */
+  function startingValues(): Values {
+    const values = initialValues(fields, today());
+    if (options.recordId == null) {
+      const about = { recordId: null, user: options.user };
+      Object.assign(values, firstValues(page.fields, mapScope(values, page.fields, recordContext(values, page.fields, about), expressionEnv(values, page.fields, today))));
+    }
+    return { ...values, ...structuredCopy(options.values ?? {}) };
+  }
+
+  /** The name this form knows a record by, from a link to the same model it holds. */
+  function knownLabel(relation: string, id: RecordId): string | undefined {
+    const values = (started ? state.values : {}) as Values;
+    for (const [name, def] of Object.entries(page.fields)) {
+      if ((def.type !== 'many2one' && def.type !== 'many2many') || def.relation !== relation) continue;
+      const held = values[name];
+      const found = ((Array.isArray(held) ? held : held ? [held] : []) as RelatedRecord[]).find((record) => record?.id === id);
+      if (found) return found.label;
+    }
+    return undefined;
+  }
+
+  function mapScope(values: Values, scopeFields: Record<string, Field | LineField>, context: Record<string, unknown>, env: ExpressionEnv, parent?: MapScope['parent']): MapScope {
+    return { values, fields: scopeFields, context, env, ...(parent ? { parent } : {}), ...(options.user ? { user: options.user } : {}), labelOf: knownLabel };
+  }
+
+  /** Where a value map on the record is read. */
+  function recordScope(): MapScope {
+    const { context, env } = reading();
+    return mapScope(state.values as Values, page.fields, context, env);
+  }
+
+  /** Where a value map on one line is read: the line, with its record as `parent`. */
+  function lineScope(field: string, values: Values): MapScope {
+    const def = lineField(field);
+    const lineFields = def.fields as Record<string, LineField>;
+    return mapScope(values, lineFields, lineContext(values, lineFields, reading().context), { today }, { values: state.values as Values, fields: page.fields });
+  }
+
+  function createValuesOf(field: string, line?: { lines: string; key: string }): Values {
+    if (!line) {
+      const def = fieldDef(field);
+      return def.type === 'many2one' || def.type === 'many2many' ? (def.createValues ? readLooseMap(def.createValues, recordScope()) : {}) : {};
+    }
+    const found = ((state.values[line.lines] as Line[] | null) ?? []).find((l) => l.key === line.key);
+    const sub = lineField(line.lines).fields[field];
+    if (!found || !sub || (sub.type !== 'many2one' && sub.type !== 'many2many') || !sub.createValues) return {};
+    return readLooseMap(sub.createValues, lineScope(line.lines, found.values));
+  }
+
+  let baseline: Values = computed.apply(startingValues());
   /** The setWhen conditions holding for the values as they last settled: one starts to hold only against these. */
   let holding = setWhen.holding(baseline);
   let state: FormState = {
@@ -813,7 +866,12 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     const def = lineField(field);
     const key = `new-${++lineKeys}`;
     const current = (state.values[field] as Line[] | null) ?? [];
-    const line: Line = { key, values: { ...initialValues(def.fields as Record<string, LineField>, today()), ...structuredCopy(values) } };
+    // Each line field's default, then what is worked out from its defaultFrom, then the record's lineDefaults, then what the line is given.
+    const lineFields = def.fields as Record<string, LineField>;
+    const start = initialValues(lineFields, today());
+    Object.assign(start, firstValues(lineFields, lineScope(field, start)));
+    if (def.lineDefaults) Object.assign(start, readValueMap(def.lineDefaults, lineFields, recordScope()));
+    const line: Line = { key, values: { ...start, ...structuredCopy(values) } };
     // A new line comes last, so it is numbered after the last.
     if (def.sequenceField && line.values[def.sequenceField] == null) {
       const numbers = current.map((l) => l.values[def.sequenceField as string]).filter((n): n is number => typeof n === 'number');
@@ -858,11 +916,11 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     return def.type === 'many2one' || def.type === 'many2many' ? def.relation : null;
   }
 
-  async function runCreate(def: Field | LineField | undefined, name: string, typed: string): Promise<RelatedRecord> {
+  async function runCreate(def: Field | LineField | undefined, name: string, typed: string, values: Values = {}): Promise<RelatedRecord> {
     const model = creatable(def);
     const source = options.dataSource;
     if (!model || !source?.create) throw new Error(`"${name}" cannot make records: its data source has no create, or it is not a link`);
-    return track(source.create({ model, name: typed.trim() }));
+    return track(source.create({ model, name: typed.trim(), ...(Object.keys(values).length ? { values } : {}) }));
   }
 
   async function runSearch(
@@ -1078,9 +1136,10 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     },
 
     canCreate: (field) => creatable(page.fields[field]) !== null,
-    quickCreate: (field, typed) => runCreate(page.fields[field], field, typed),
+    quickCreate: (field, typed) => runCreate(page.fields[field], field, typed, page.fields[field] ? createValuesOf(field) : {}),
     canCreateLine: (field, subfield) => creatable(lineField(field).fields[subfield]) !== null,
-    quickCreateLine: (field, subfield, typed) => runCreate(lineField(field).fields[subfield], subfield, typed),
+    quickCreateLine: (field, subfield, typed, key) => runCreate(lineField(field).fields[subfield], subfield, typed, key ? createValuesOf(subfield, { lines: field, key }) : {}),
+    createValues: (field, line) => createValuesOf(field, line),
 
     steps: () => steps.filter((id) => !nodeState(id).invisible),
 

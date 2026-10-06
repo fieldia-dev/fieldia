@@ -88,7 +88,7 @@ export function pageDialogs(options: ViewerOptions): WidgetDialogs {
         page: related,
         dataSource: options.dataSource,
         recordId: request.recordId ?? null,
-        values: request.name && nameField ? { [nameField]: request.name } : undefined,
+        values: request.name || request.values ? { ...(request.values ?? {}), ...(request.name && nameField ? { [nameField]: request.name } : {}) } : undefined,
         title: request.title,
         size: 'large',
       });

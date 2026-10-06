@@ -73,7 +73,7 @@ export interface WidgetDialogs {
    * A record in a dialog: an existing one (`recordId`) or a new one, whose name
    * starts as `name`. Resolves with the record once saved, or null.
    */
-  openRecord(model: string, request: { recordId?: RecordId; name?: string; title: string }): Promise<RelatedRecord | null>;
+  openRecord(model: string, request: { recordId?: RecordId; name?: string; title: string; values?: Values }): Promise<RelatedRecord | null>;
   /** Pick a record from a searchable list. */
   searchMore(request: { title: string; search(query: string, limit: number): Promise<RelatedRecord[]> }): Promise<RelatedRecord | null>;
   /**

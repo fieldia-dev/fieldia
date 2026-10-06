@@ -286,6 +286,18 @@ export class ReferenceCheck {
           );
         }
       }
+      // A first value worked out, and what a record made from a link starts with: read where this field is.
+      if (def.defaultFrom !== undefined) this.checkExpression(def.defaultFrom, `${path}.defaultFrom`, { fields, lines });
+      if ((def.type === 'many2one' || def.type === 'many2many') && def.createValues) {
+        for (const [key, source] of Object.entries(def.createValues)) this.checkExpression(source, `${path}.createValues.${key}`, { fields, lines });
+      }
+      // A new line's values: fields of its lines, read from the record.
+      if (def.type === 'one2many' && def.lineDefaults) {
+        for (const [key, source] of Object.entries(def.lineDefaults)) {
+          if (!has(def.fields, key)) this.report(`${path}.lineDefaults.${key}`, `"${key}" is not a field of the lines of "${name}"`);
+          else this.checkExpression(source, `${path}.lineDefaults.${key}`, { fields: this.page.fields });
+        }
+      }
       if ((def.type === 'many2one' || def.type === 'many2many') && def.filter) {
         // Groups nest: each valueFrom inside them must name a field too.
         const walk = (item: FilterItem, at: string): void => {

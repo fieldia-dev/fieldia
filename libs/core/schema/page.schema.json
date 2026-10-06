@@ -334,6 +334,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -382,6 +386,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -427,6 +435,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -466,6 +478,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",
@@ -512,6 +528,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",
@@ -576,6 +596,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",
@@ -649,6 +673,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -688,6 +716,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",
@@ -746,6 +778,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -802,6 +838,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",
@@ -875,6 +915,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",
@@ -962,6 +1006,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -1042,6 +1090,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -1061,6 +1113,17 @@
               "type": "array",
               "items": {
                 "$ref": "#/$defs/FilterItem"
+              }
+            },
+            "createValues": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1
               }
             }
           },
@@ -1093,6 +1156,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -1112,6 +1179,17 @@
               "type": "array",
               "items": {
                 "$ref": "#/$defs/FilterItem"
+              }
+            },
+            "createValues": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1
               }
             }
           },
@@ -1144,6 +1222,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -1175,6 +1257,17 @@
             "sequenceField": {
               "type": "string",
               "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "lineDefaults": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           },
           "required": [
@@ -1206,6 +1299,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",
@@ -1255,6 +1352,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -1301,6 +1402,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -1340,6 +1445,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",
@@ -1601,6 +1710,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -1649,6 +1762,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -1694,6 +1811,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -1733,6 +1854,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",
@@ -1779,6 +1904,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",
@@ -1843,6 +1972,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",
@@ -1916,6 +2049,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -1955,6 +2092,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",
@@ -2013,6 +2154,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -2069,6 +2214,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",
@@ -2129,6 +2278,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",
@@ -2216,6 +2369,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -2296,6 +2453,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -2315,6 +2476,17 @@
               "type": "array",
               "items": {
                 "$ref": "#/$defs/FilterItem"
+              }
+            },
+            "createValues": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1
               }
             }
           },
@@ -2347,6 +2519,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -2366,6 +2542,17 @@
               "type": "array",
               "items": {
                 "$ref": "#/$defs/FilterItem"
+              }
+            },
+            "createValues": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1
               }
             }
           },
@@ -2397,6 +2584,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",
@@ -2446,6 +2637,10 @@
             "default": {
               "$ref": "#/$defs/JsonValue"
             },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
+            },
             "compute": {
               "type": "string",
               "minLength": 1
@@ -2491,6 +2686,10 @@
             },
             "default": {
               "$ref": "#/$defs/JsonValue"
+            },
+            "defaultFrom": {
+              "type": "string",
+              "minLength": 1
             },
             "compute": {
               "type": "string",

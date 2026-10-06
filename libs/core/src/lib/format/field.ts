@@ -98,6 +98,12 @@ const common = {
   required: z.boolean().optional(),
   readonly: z.boolean().optional(),
   default: JsonValueSchema.optional(),
+  /**
+   * A new record's — or a new line's — first value, worked out: an expression
+   * over its values, where a field named alone is taken whole and `user` is
+   * the person using the form, as a link. On a line, `parent` is its record.
+   */
+  defaultFrom: z.string().min(1).optional(),
   /** An expression for a value worked out from other fields, such as `price * qty`. The field shows it and cannot be edited. */
   compute: z.string().min(1).optional(),
   /** Values to set when a condition starts to hold, in order. */
@@ -108,6 +114,15 @@ const size = z.int().positive().optional();
 const digits = z.tuple([z.int().positive(), z.int().nonnegative()]).optional();
 const relation = z.string().min(1);
 const filter = z.array(FilterItemSchema).optional();
+/** Fields and what each starts with: an expression, a field named alone taken whole. */
+const valueMap = z.record(z.string().regex(FIELD_NAME), z.string().min(1));
+/**
+ * What a record made from a link starts with besides its name — by Create
+ * and edit…, or made at once from what was typed: each an expression over
+ * this record's values (on a line, the line's, with `parent`), as Flectra's
+ * `context="{'default_…': …}"`.
+ */
+const createValues = valueMap.optional();
 
 const Char = z.object({ type: z.literal('char'), ...common, size, pattern: z.string().optional() }).strict();
 const Text = z.object({ type: z.literal('text'), ...common, size }).strict();
@@ -226,8 +241,8 @@ const Binary = withFileRules(
 );
 /** Images only: an image field takes no list of kinds. */
 const Image = withFileRules(z.object({ type: z.literal('image'), ...common, ...files }).strict());
-const Many2one = z.object({ type: z.literal('many2one'), ...common, relation, filter }).strict();
-const Many2many = z.object({ type: z.literal('many2many'), ...common, relation, filter }).strict();
+const Many2one = z.object({ type: z.literal('many2one'), ...common, relation, filter, createValues }).strict();
+const Many2many = z.object({ type: z.literal('many2many'), ...common, relation, filter, createValues }).strict();
 const Reference = z
   .object({ type: z.literal('reference'), ...common, models: z.array(OptionSchema).min(1) })
   .strict();
@@ -317,6 +332,8 @@ const One2many = z
      * are numbered again.
      */
     sequenceField: z.string().regex(FIELD_NAME).optional(),
+    /** What a new line starts with: each line field from an expression over the record, a field named alone taken whole. */
+    lineDefaults: valueMap.optional(),
   })
   .strict();
 

@@ -40,6 +40,8 @@ export interface CreateRequest {
   model: string;
   /** What the person typed: the new record's name. */
   name: string;
+  /** What else it starts with, from the link's `createValues`: links as `{ id, label }`. */
+  values?: Values;
 }
 
 export interface LoadRequest {

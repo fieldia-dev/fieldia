@@ -1125,6 +1125,29 @@ describe('related records in dialogs', () => {
     viewer.destroy();
   });
 
+  it('starts the new client with what the link hands on, as Flectra’s context defaults', async () => {
+    const withDefaults = page('fields');
+    (withDefaults.fields['client_id'] as { createValues?: Record<string, string> }).createValues = { email: "'projects@' + name + '.example'" };
+    const dataSource = people();
+    const host = document.createElement('div');
+    document.body.replaceChildren(host);
+    const viewer = mountViewer(host, { page: withDefaults, dataSource, recordId: 1, relatedPages: { partner: page('customer') } });
+    await viewer.form.settled();
+    const client = at(host, 'f-client').querySelector('input') as HTMLInputElement;
+    client.focus();
+    client.value = 'Hilton Cairo';
+    client.dispatchEvent(new Event('input', { bubbles: true }));
+    await settle();
+    ([...at(host, 'f-client').querySelectorAll('[role="option"]')].find((o) => o.textContent === 'Create and edit…') as HTMLElement).click();
+    await settle();
+    expect((formDialog()?.querySelector('[data-node="#title"] input') as HTMLInputElement).value).toBe('Hilton Cairo');
+    expect((formDialog()?.querySelector('[data-node="f-email"] input') as HTMLInputElement).value).toBe('projects@Fit-out.example');
+    ([...(formDialog()?.querySelectorAll('.fd-form-dialog-foot button') ?? [])].find((b) => b.textContent === 'Save & Close') as HTMLButtonElement).click();
+    await settle();
+    expect(dataSource.records['partner'][2]).toEqual(expect.objectContaining({ name: 'Hilton Cairo', email: 'projects@Fit-out.example' }));
+    viewer.destroy();
+  });
+
   it('opens the linked client, and a new name it is saved with follows back', async () => {
     const { host, viewer, dataSource } = await mountProject();
     (at(host, 'f-client').querySelector('button[aria-label="Open Nile Traders"]') as HTMLButtonElement).click();

@@ -187,7 +187,7 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       await pause();
       const rows = table(request.model);
       const id = Object.keys(rows).reduce((top, key) => Math.max(top, Number(key) || 0), 0) + 1;
-      rows[String(id)] = { name: request.name };
+      rows[String(id)] = { ...structuredCopy(request.values ?? {}), name: request.name };
       return { id, label: request.name };
     },
 

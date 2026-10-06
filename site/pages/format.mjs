@@ -55,6 +55,7 @@ ${code(
 }`
 )}
 <p>Every field has a ${c('type')} and a ${c('label')}, and may have ${c('help')}, ${c('required')}, ${c('readonly')} and a ${c('default')}. Each type adds its own options — ${c('options')} for a selection, ${c('relation')} for a link to another record, ${c('min')} and ${c('max')} for a number. <a href="/fields/">Fields</a> lists them all.</p>
+<p>A value can also start from the record, as Flectra's ${c(`context="{'default_…': …}"`)} does. ${c('defaultFrom')} works out a new record's or line's first value — ${c('"defaultFrom": "user"')} starts it with the person using the form, as a link. A one2many's ${c('lineDefaults')} give each new line its values from the record — ${c('{ "project_id": "project_id" }')}, a field named alone taken whole — and a link's ${c('createValues')} what a record made from it starts with, by Create and edit… or at once from what was typed.</p>
 
 <h2 id="layout">layout: how it is arranged</h2>
 <p>A page's layout is one of five kinds:</p>

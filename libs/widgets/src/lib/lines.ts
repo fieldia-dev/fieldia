@@ -44,7 +44,8 @@ export function lineForm(form: Form, field: string, key: string): Form {
     setValue: (name: string, value: Value) => form.updateLine(field, key, name, value),
     search: (name: string, query: string, limit?: number) => form.searchLine(field, key, name, query, limit),
     canCreate: (name: string) => form.canCreateLine(field, name),
-    quickCreate: (name: string, text: string) => form.quickCreateLine(field, name, text),
+    quickCreate: (name: string, text: string) => form.quickCreateLine(field, name, text, key),
+    createValues: (name: string) => form.createValues(name, { lines: field, key }),
   };
 }
 

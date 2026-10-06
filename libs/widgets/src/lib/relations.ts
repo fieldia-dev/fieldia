@@ -251,7 +251,14 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
       if (!dialogs || readonly) return [];
       const choices: { label: string; act: (text: string) => Promise<RelatedRecord | null> }[] = [];
       if (typed && canOpen && node.options?.['create'] !== false) {
-        choices.push({ label: labels.createAndEdit, act: (text) => dialogs.openRecord(relation, { name: text, title: field.label }) });
+        // The new record starts with the name typed and what the link hands on.
+        choices.push({
+          label: labels.createAndEdit,
+          act: (text) => {
+            const values = form.createValues(name);
+            return dialogs.openRecord(relation, { name: text, title: field.label, ...(Object.keys(values).length ? { values } : {}) });
+          },
+        });
       }
       if (overflow) choices.push({ label: labels.searchMore, act: () => dialogs.searchMore({ title: field.label, search: (query, limit) => form.search(name, query, limit) }) });
       return choices;
