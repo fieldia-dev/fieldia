@@ -70,6 +70,8 @@ for (const variant of VARIANTS) {
       await expect.poll(() => shown(page, 'f-amount-total')).toContain('58,117.20');
       // A draft has no number yet, and no Register Payment.
       await expect(page.getByRole('button', { name: 'Register Payment' })).toHaveCount(0);
+      // One stat button shown: Sale Orders.
+      await expect(page.locator('.fd-stats')).toBeVisible();
 
       // A desk added: its price comes from the product, and the taxes and totals follow.
       await addLine(page, 'f-invoice-lines', 6, 'desk', 'Office desk 140 × 70');
@@ -150,6 +152,8 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-vendor')).toBeVisible();
       await expect(node(page, 'f-customer')).toBeHidden();
       await expect(node(page, 'f-bill-date')).toBeVisible();
+      // Every stat button hidden by its condition: no empty row of them, as in Flectra.
+      await expect(page.locator('.fd-stats')).toBeHidden();
       await expect(page.getByText('Warning: this bill might be a duplicate of one of those bills.')).toBeVisible();
       await page.getByRole('button', { name: 'Set as Checked', exact: true }).click();
       await expect(toast(page, 'Marked as checked')).toBeVisible();

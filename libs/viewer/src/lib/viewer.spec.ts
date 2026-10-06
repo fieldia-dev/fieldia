@@ -832,6 +832,17 @@ describe('the parts of a sheet', () => {
     expect(follows(title, at(host, 't-website'))).toBe(true);
   });
 
+  it('draws no row of stat buttons while every one is hidden, and brings it back when one shows', () => {
+    const { host, form } = mountCustomer((layout) => {
+      for (const stat of layout.statButtons) stat.invisible = 'not is_company';
+    });
+    const stats = host.querySelector('.fd-stats') as HTMLElement;
+    form.setValue('is_company', false);
+    expect(stats.hidden).toBe(true);
+    form.setValue('is_company', true);
+    expect(stats.hidden).toBe(false);
+  });
+
   it('puts the statusbar under the title when asked, leaving the header its buttons', () => {
     const { host } = mountCustomer((layout) => {
       layout.statusbar.position = 'title';

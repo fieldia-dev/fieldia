@@ -184,8 +184,8 @@
         },
         {
           "feature": "An empty smart-button row while every button is hidden",
-          "status": "approximated",
-          "how": "Fieldia still draws the empty row (Flectra draws nothing)"
+          "status": "covered",
+          "how": "no row is drawn while every stat button is hidden, as in Flectra (the bill, shown in the e2e)"
         },
         {
           "feature": "Ribbons: Paid, In Payment, Partial, Reversed (danger), Invoicing App Legacy (with tooltip)",

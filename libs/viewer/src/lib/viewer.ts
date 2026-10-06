@@ -975,6 +975,10 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         });
         stats.append(button);
       }
+      // No empty row while every button is hidden, as with the badges.
+      updaters.push(() => {
+        stats.hidden = [...stats.children].every((stat) => (stat as HTMLElement).hidden);
+      });
       card.append(stats);
     }
     for (const alert of node.alerts ?? []) {
