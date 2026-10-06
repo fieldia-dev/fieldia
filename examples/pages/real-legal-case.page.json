@@ -1,0 +1,1359 @@
+{
+  "fieldia": "0.1",
+  "id": "real-legal-case",
+  "title": "Legal case",
+  "description": "Sherkety ERP's case record (legal.case, view_legal_case_form), with what legal_crm, legal_billing and legal_trust add to it.",
+  "data": { "kind": "record", "model": "legal.case" },
+  "maxWidth": "full",
+  "look": { "density": "compact" },
+  "fields": {
+    "case_number": { "type": "char", "label": "Case Number", "readonly": true, "default": "New" },
+    "name": { "type": "char", "label": "Case Title", "required": true },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "required": true,
+      "default": "draft",
+      "options": [
+        { "value": "draft", "label": "Draft" },
+        { "value": "open", "label": "Open" },
+        { "value": "on_hold", "label": "On Hold" },
+        { "value": "closed", "label": "Closed" }
+      ]
+    },
+    "outcome": {
+      "type": "selection",
+      "label": "Outcome",
+      "readonly": true,
+      "options": [
+        { "value": "won", "label": "Won" },
+        { "value": "lost", "label": "Lost" },
+        { "value": "settled", "label": "Settled" },
+        { "value": "withdrawn", "label": "Withdrawn" },
+        { "value": "dismissed", "label": "Dismissed" }
+      ]
+    },
+    "close_reason": { "type": "text", "label": "Closing Notes", "readonly": true },
+    "my_timer_running": { "type": "boolean", "label": "My Timer Running", "readonly": true },
+    "company_id": { "type": "many2one", "label": "Company", "relation": "res.company", "required": true },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency", "readonly": true },
+
+    "hearing_count": { "type": "integer", "label": "Hearings", "readonly": true },
+    "task_count": { "type": "integer", "label": "Tasks", "readonly": true },
+    "expense_total": { "type": "monetary", "label": "Total Expenses", "currencyField": "currency_id", "readonly": true },
+    "document_count": { "type": "integer", "label": "Documents", "readonly": true },
+    "poa_count": { "type": "integer", "label": "POAs", "readonly": true },
+    "total_billable_hours": { "type": "float", "label": "Billable Hours", "readonly": true, "digits": [16, 2] },
+    "correspondence_count": { "type": "integer", "label": "Correspondence", "readonly": true },
+    "conflict_check_count": { "type": "integer", "label": "Conflict Checks", "readonly": true },
+    "invoice_count": { "type": "integer", "label": "Invoices", "readonly": true },
+    "lead_id": { "type": "many2one", "label": "Source Opportunity", "relation": "crm.lead", "readonly": true },
+    "payment_plan_count": { "type": "integer", "label": "Payment Plans", "readonly": true },
+
+    "matter_type_id": {
+      "type": "many2one",
+      "label": "Matter Type",
+      "relation": "legal.matter.type",
+      "help": "Configuration bundle applied to the case: default case type, jurisdiction, tags, rate, team, stage set and custom fields. Defaults only fill fields that are still empty."
+    },
+    "stage_id": {
+      "type": "many2one",
+      "label": "Stage",
+      "relation": "legal.case.stage",
+      "filter": [{ "any": [{ "field": "matter_type_ids", "op": "notset" }, { "field": "matter_type_ids", "op": "=", "valueFrom": "matter_type_id" }] }]
+    },
+    "case_type": {
+      "type": "selection",
+      "label": "Case Type",
+      "required": true,
+      "default": "litigation",
+      "options": [
+        { "value": "litigation", "label": "Litigation" },
+        { "value": "arbitration", "label": "Arbitration" },
+        { "value": "mediation", "label": "Mediation" },
+        { "value": "advisory", "label": "Advisory" },
+        { "value": "regulatory", "label": "Regulatory" },
+        { "value": "corporate", "label": "Corporate" },
+        { "value": "contract_review", "label": "Contract Review" },
+        { "value": "ip", "label": "Intellectual Property" },
+        { "value": "labor", "label": "Labor & Employment" },
+        { "value": "real_estate", "label": "Real Estate" },
+        { "value": "criminal", "label": "Criminal" },
+        { "value": "other", "label": "Other" }
+      ]
+    },
+    "category_id": { "type": "many2one", "label": "Category", "relation": "legal.case.category" },
+    "court_name": { "type": "char", "label": "Court Name" },
+    "court_reference": { "type": "char", "label": "Court File Number" },
+    "jurisdiction_id": {
+      "type": "many2one",
+      "label": "Jurisdiction",
+      "relation": "legal.jurisdiction",
+      "help": "Defaults to the jurisdiction matching the case company's country, when one exists."
+    },
+    "priority": {
+      "type": "selection",
+      "label": "Priority",
+      "default": "1",
+      "options": [
+        { "value": "0", "label": "Low" },
+        { "value": "1", "label": "Normal" },
+        { "value": "2", "label": "High" },
+        { "value": "3", "label": "Urgent" }
+      ]
+    },
+    "risk_level": {
+      "type": "selection",
+      "label": "Risk Level",
+      "default": "low",
+      "options": [
+        { "value": "low", "label": "Low" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "high", "label": "High" },
+        { "value": "critical", "label": "Critical" }
+      ]
+    },
+    "partner_id": { "type": "many2one", "label": "Client / Company", "relation": "res.partner" },
+    "partner_ids": {
+      "type": "many2many",
+      "label": "Co-Clients",
+      "relation": "res.partner",
+      "help": "Additional clients represented in this matter beside the primary client. The primary client stays the invoicing default."
+    },
+    "opposing_party_id": {
+      "type": "many2one",
+      "label": "Opposing Party",
+      "relation": "res.partner",
+      "help": "Kept in sync with an 'Opposing Party' row in the Parties tab."
+    },
+    "responsible_attorney_id": { "type": "many2one", "label": "Responsible Attorney", "relation": "res.users" },
+    "assigned_team_ids": { "type": "many2many", "label": "Assigned Team", "relation": "res.users" },
+    "branch_id": {
+      "type": "many2one",
+      "label": "Branch",
+      "relation": "res.company",
+      "help": "Specific branch this case relates to.",
+      "filter": [{ "field": "parent_id", "op": "=", "valueFrom": "company_id" }]
+    },
+    "case_properties": {
+      "type": "properties",
+      "label": "Properties",
+      "definitions": [
+        { "name": "contract_value", "label": "Contract value (EGP)", "type": "float" },
+        { "name": "contract_date", "label": "Contract signed on", "type": "date" },
+        {
+          "name": "claim_basis",
+          "label": "Basis of the claim",
+          "type": "selection",
+          "options": [
+            { "value": "breach", "label": "Breach of contract" },
+            { "value": "late_delivery", "label": "Late delivery" },
+            { "value": "non_payment", "label": "Non-payment" },
+            { "value": "defects", "label": "Defective goods" }
+          ]
+        },
+        { "name": "expert_appointed", "label": "Court expert appointed", "type": "boolean" },
+        { "name": "expert_name", "label": "Expert", "type": "char" }
+      ]
+    },
+
+    "date_opened": { "type": "date", "label": "Date Opened", "default": "today" },
+    "date_filed": { "type": "date", "label": "Date Filed" },
+    "deadline": { "type": "date", "label": "Key Deadline" },
+    "sol_date": {
+      "type": "date",
+      "label": "Statute of Limitations",
+      "help": "Deadline after which the claim prescribes. Suggested from the limitation rules when the case type changes and the date is still empty."
+    },
+    "sol_rule_id": {
+      "type": "many2one",
+      "label": "Limitation Rule",
+      "relation": "legal.limitation.rule",
+      "help": "Statute-of-limitations rule this case's SOL date was suggested from. Informational — the date is always overridable."
+    },
+    "next_hearing_date": { "type": "datetime", "label": "Next Hearing", "readonly": true },
+    "days_since_opened": { "type": "integer", "label": "Days Since Opened", "readonly": true },
+    "date_closed": { "type": "date", "label": "Date Closed", "readonly": true },
+
+    "estimated_value": { "type": "monetary", "label": "Amount at Stake", "currencyField": "currency_id" },
+    "total_billed_amount": { "type": "monetary", "label": "Billed Amount", "currencyField": "currency_id", "readonly": true },
+    "overdue_task_count": { "type": "integer", "label": "Overdue Tasks", "readonly": true },
+
+    "description": { "type": "html", "label": "Description" },
+
+    "party_ids": {
+      "type": "one2many",
+      "label": "Parties",
+      "relation": "legal.case.party",
+      "fields": {
+        "partner_id": { "type": "many2one", "label": "Party", "relation": "res.partner", "required": true },
+        "role_id": { "type": "many2one", "label": "Role", "relation": "legal.party.role", "required": true },
+        "is_primary": { "type": "boolean", "label": "Primary Party" },
+        "notes": { "type": "text", "label": "Notes" }
+      }
+    },
+    "hearing_ids": {
+      "type": "one2many",
+      "label": "Hearings",
+      "relation": "legal.hearing",
+      "fields": {
+        "name": { "type": "char", "label": "Hearing Title", "required": true },
+        "hearing_type": {
+          "type": "selection",
+          "label": "Hearing Type",
+          "required": true,
+          "default": "initial",
+          "options": [
+            { "value": "initial", "label": "Initial Hearing" },
+            { "value": "preliminary", "label": "Preliminary Hearing" },
+            { "value": "trial", "label": "Trial" },
+            { "value": "appeal", "label": "Appeal" },
+            { "value": "mediation", "label": "Mediation Session" },
+            { "value": "arbitration", "label": "Arbitration Session" },
+            { "value": "deposition", "label": "Deposition" },
+            { "value": "motion", "label": "Motion Hearing" },
+            { "value": "settlement_conference", "label": "Settlement Conference" },
+            { "value": "other", "label": "Other" }
+          ]
+        },
+        "date_time": { "type": "datetime", "label": "Date & Time", "required": true },
+        "duration": { "type": "float", "label": "Duration (Hours)", "default": 2, "digits": [6, 2] },
+        "location": { "type": "char", "label": "Location", "help": "Court address or room number." },
+        "judge_name": { "type": "char", "label": "Judge" },
+        "state": {
+          "type": "selection",
+          "label": "Status",
+          "required": true,
+          "default": "scheduled",
+          "options": [
+            { "value": "scheduled", "label": "Scheduled" },
+            { "value": "in_progress", "label": "In Progress" },
+            { "value": "completed", "label": "Completed" },
+            { "value": "cancelled", "label": "Cancelled" }
+          ]
+        },
+        "result": {
+          "type": "selection",
+          "label": "Result",
+          "options": [
+            { "value": "adjourned", "label": "Adjourned" },
+            { "value": "favorable", "label": "Favorable" },
+            { "value": "unfavorable", "label": "Unfavorable" },
+            { "value": "partial", "label": "Partially Favorable" },
+            { "value": "dismissed", "label": "Dismissed" },
+            { "value": "settled", "label": "Settled" },
+            { "value": "pending", "label": "Pending Decision" }
+          ]
+        },
+        "reminder_days": { "type": "integer", "label": "Reminder (Days Before)", "default": 3 }
+      }
+    },
+    "task_ids": {
+      "type": "one2many",
+      "label": "Tasks",
+      "relation": "legal.task",
+      "fields": {
+        "name": { "type": "char", "label": "Task", "required": true },
+        "task_type": {
+          "type": "selection",
+          "label": "Type",
+          "default": "other",
+          "options": [
+            { "value": "filing", "label": "Court Filing" },
+            { "value": "research", "label": "Legal Research" },
+            { "value": "document_preparation", "label": "Document Preparation" },
+            { "value": "client_meeting", "label": "Client Meeting" },
+            { "value": "court_appearance", "label": "Court Appearance" },
+            { "value": "correspondence", "label": "Correspondence" },
+            { "value": "review", "label": "Document Review" },
+            { "value": "compliance_check", "label": "Compliance Check" },
+            { "value": "other", "label": "Other" }
+          ]
+        },
+        "assigned_to_id": { "type": "many2one", "label": "Assigned To", "relation": "res.users" },
+        "due_date": { "type": "date", "label": "Due Date", "required": true },
+        "is_statutory": { "type": "boolean", "label": "Statutory Deadline", "help": "If checked, this deadline is imposed by law and cannot be extended." },
+        "is_overdue": { "type": "boolean", "label": "Overdue", "compute": "state in ['pending', 'in_progress'] and due_date and due_date < today()" },
+        "priority": {
+          "type": "selection",
+          "label": "Priority",
+          "default": "1",
+          "options": [
+            { "value": "0", "label": "Low" },
+            { "value": "1", "label": "Normal" },
+            { "value": "2", "label": "High" },
+            { "value": "3", "label": "Urgent" }
+          ]
+        },
+        "state": {
+          "type": "selection",
+          "label": "Status",
+          "required": true,
+          "default": "pending",
+          "options": [
+            { "value": "pending", "label": "Pending" },
+            { "value": "in_progress", "label": "In Progress" },
+            { "value": "completed", "label": "Completed" },
+            { "value": "cancelled", "label": "Cancelled" }
+          ]
+        }
+      }
+    },
+    "expense_ids": {
+      "type": "one2many",
+      "label": "Expenses",
+      "relation": "legal.expense",
+      "fields": {
+        "date": { "type": "date", "label": "Date", "required": true, "default": "today" },
+        "name": { "type": "char", "label": "Description", "required": true },
+        "expense_type": {
+          "type": "selection",
+          "label": "Type",
+          "required": true,
+          "default": "other",
+          "options": [
+            { "value": "attorney_fees", "label": "Attorney Fees" },
+            { "value": "court_fees", "label": "Court Fees" },
+            { "value": "expert_fees", "label": "Expert Fees" },
+            { "value": "travel", "label": "Travel" },
+            { "value": "filing", "label": "Filing Fees" },
+            { "value": "research", "label": "Research" },
+            { "value": "copying", "label": "Copying / Printing" },
+            { "value": "other", "label": "Other" }
+          ]
+        },
+        "employee_id": { "type": "many2one", "label": "Staff Member", "relation": "res.users" },
+        "hours": { "type": "float", "label": "Hours", "digits": [16, 2] },
+        "amount": { "type": "monetary", "label": "Amount", "currency": "EGP", "required": true },
+        "is_billable": { "type": "boolean", "label": "Billable", "default": true },
+        "state": {
+          "type": "selection",
+          "label": "Status",
+          "required": true,
+          "default": "draft",
+          "options": [
+            { "value": "draft", "label": "Draft" },
+            { "value": "approved", "label": "Approved" },
+            { "value": "invoiced", "label": "Invoiced" },
+            { "value": "paid", "label": "Paid" }
+          ]
+        }
+      }
+    },
+    "document_ids": { "type": "binary", "label": "Documents", "multiple": true },
+    "compliance_ids": {
+      "type": "one2many",
+      "label": "Related Compliance",
+      "relation": "legal.compliance",
+      "fields": {
+        "name": { "type": "char", "label": "Requirement", "required": true },
+        "regulation_reference": { "type": "char", "label": "Regulation Reference", "help": "Law, regulation, or standard number." },
+        "state": {
+          "type": "selection",
+          "label": "Status",
+          "required": true,
+          "default": "active",
+          "options": [
+            { "value": "active", "label": "Active" },
+            { "value": "under_review", "label": "Under Review" },
+            { "value": "compliant", "label": "Compliant" },
+            { "value": "non_compliant", "label": "Non-Compliant" },
+            { "value": "archived", "label": "Archived" }
+          ]
+        },
+        "risk_level": {
+          "type": "selection",
+          "label": "Risk Level",
+          "default": "low",
+          "options": [
+            { "value": "low", "label": "Low" },
+            { "value": "medium", "label": "Medium" },
+            { "value": "high", "label": "High" },
+            { "value": "critical", "label": "Critical" }
+          ]
+        },
+        "review_date": { "type": "date", "label": "Next Review Date" }
+      }
+    },
+    "contract_review_ids": {
+      "type": "one2many",
+      "label": "Contract Reviews",
+      "relation": "legal.contract.review",
+      "fields": {
+        "name": { "type": "char", "label": "Review Reference", "readonly": true },
+        "review_type": {
+          "type": "selection",
+          "label": "Review Type",
+          "required": true,
+          "options": [
+            { "value": "new_contract", "label": "New Contract" },
+            { "value": "amendment", "label": "Amendment" },
+            { "value": "renewal", "label": "Renewal" },
+            { "value": "termination", "label": "Termination Review" },
+            { "value": "compliance_check", "label": "Compliance Check" }
+          ]
+        },
+        "reviewer_id": { "type": "many2one", "label": "Legal Reviewer", "relation": "res.users" },
+        "risk_assessment": {
+          "type": "selection",
+          "label": "Risk Assessment",
+          "options": [
+            { "value": "low", "label": "Low Risk" },
+            { "value": "medium", "label": "Medium Risk" },
+            { "value": "high", "label": "High Risk" },
+            { "value": "critical", "label": "Critical Risk" }
+          ]
+        },
+        "state": {
+          "type": "selection",
+          "label": "Status",
+          "required": true,
+          "default": "requested",
+          "options": [
+            { "value": "requested", "label": "Requested" },
+            { "value": "in_review", "label": "In Review" },
+            { "value": "completed", "label": "Review Completed" },
+            { "value": "approved", "label": "Approved" },
+            { "value": "rejected", "label": "Rejected" }
+          ]
+        }
+      }
+    },
+    "poa_ids": {
+      "type": "one2many",
+      "label": "Powers of Attorney",
+      "relation": "legal.poa",
+      "fields": {
+        "name": { "type": "char", "label": "Reference", "readonly": true },
+        "grantor_id": { "type": "many2one", "label": "Grantor", "relation": "res.partner", "required": true },
+        "grantee_id": {
+          "type": "many2one",
+          "label": "Attorney-in-Fact",
+          "relation": "res.partner",
+          "required": true,
+          "help": "The attorney receiving the power (الوكيل).",
+          "filter": [{ "field": "is_attorney", "op": "=", "value": true }]
+        },
+        "poa_type": {
+          "type": "selection",
+          "label": "Type",
+          "required": true,
+          "options": [
+            { "value": "general", "label": "General" },
+            { "value": "special", "label": "Special" },
+            { "value": "court", "label": "Court / Litigation" }
+          ]
+        },
+        "issue_date": { "type": "date", "label": "Issue Date", "default": "today" },
+        "expiry_date": { "type": "date", "label": "Expiry Date" },
+        "is_notarized": { "type": "boolean", "label": "Notarized" },
+        "state": {
+          "type": "selection",
+          "label": "Status",
+          "required": true,
+          "default": "draft",
+          "options": [
+            { "value": "draft", "label": "Draft" },
+            { "value": "active", "label": "Active" },
+            { "value": "expired", "label": "Expired" },
+            { "value": "renewed", "label": "Renewed" },
+            { "value": "revoked", "label": "Revoked" }
+          ]
+        }
+      }
+    },
+
+    "fee_arrangement": {
+      "type": "selection",
+      "label": "Fee Arrangement",
+      "required": true,
+      "default": "hourly",
+      "help": "Hourly: time entries bill at the rate ladder. Flat Fee: per-stage fixed fees; time is tracked for information only. Contingency: a percentage of the settlement, invoiced when the case closes won/settled. Non-Billable: nothing is ever billed.",
+      "options": [
+        { "value": "hourly", "label": "Hourly" },
+        { "value": "flat", "label": "Flat Fee" },
+        { "value": "contingency", "label": "Contingency" },
+        { "value": "non_billable", "label": "Non-Billable" }
+      ]
+    },
+    "hourly_rate": {
+      "type": "monetary",
+      "label": "Matter Rate",
+      "currencyField": "currency_id",
+      "help": "Negotiated hourly billing rate for this matter. Overrides the client and employee rates for new time entries."
+    },
+    "flat_fee_amount": {
+      "type": "monetary",
+      "label": "Flat Fee Amount",
+      "currencyField": "currency_id",
+      "help": "Agreed total flat fee for the matter (informational; the invoiced amounts come from the per-stage flat fee lines)."
+    },
+    "fee_recipient_id": {
+      "type": "many2one",
+      "label": "Fee Credit",
+      "relation": "hr.employee",
+      "help": "Employee credited with originating this flat-fee matter (origination credit, used in reporting)."
+    },
+    "contingency_percent": { "type": "float", "label": "Contingency (%)", "help": "Percentage of the actual settlement billed as the fee." },
+    "expected_settlement": { "type": "monetary", "label": "Expected Settlement", "currencyField": "currency_id" },
+    "actual_settlement": {
+      "type": "monetary",
+      "label": "Actual Settlement",
+      "currencyField": "currency_id",
+      "readonly": true,
+      "help": "Recorded by the Close Case wizard when the case is won or settled."
+    },
+    "contingency_fee": { "type": "monetary", "label": "Contingency Fee", "currencyField": "currency_id", "compute": "actual_settlement * contingency_percent / 100" },
+    "analytic_account_id": {
+      "type": "many2one",
+      "label": "Analytic Account",
+      "relation": "account.analytic.account",
+      "readonly": true,
+      "help": "Automatically created with the case. Every cost and revenue of the case (time, expenses, invoices) is booked on it."
+    },
+    "payment_profile_id": {
+      "type": "many2one",
+      "label": "Payment Profile",
+      "relation": "legal.payment.profile",
+      "help": "Interest & grace terms for this matter's invoices. Overrides the client's default profile.",
+      "filter": [{ "field": "company_id", "op": "=", "valueFrom": "company_id" }]
+    },
+    "budget_fees": { "type": "monetary", "label": "Fee Budget", "currencyField": "currency_id", "help": "Budgeted fees for the matter. 0 = no budget." },
+    "budget_expenses": { "type": "monetary", "label": "Expense Budget", "currencyField": "currency_id", "help": "Budgeted expenses for the matter. 0 = no budget." },
+    "budget_total": { "type": "monetary", "label": "Total Budget", "currencyField": "currency_id", "compute": "budget_fees + budget_expenses" },
+    "budget_consumed_fees": { "type": "monetary", "label": "Consumed Fees", "currencyField": "currency_id", "readonly": true, "help": "Billable amount of all billable time entries." },
+    "budget_consumed_expenses": { "type": "monetary", "label": "Consumed Expenses", "currencyField": "currency_id", "readonly": true, "help": "Total of all non-draft expenses." },
+    "budget_progress": {
+      "type": "float",
+      "label": "Budget Progress (%)",
+      "digits": [6, 1],
+      "compute": "if(budget_total > 0, (budget_consumed_fees + budget_consumed_expenses) / budget_total * 100, 0)"
+    },
+    "budget_threshold": {
+      "type": "integer",
+      "label": "Budget Alert Threshold (%)",
+      "default": 80,
+      "help": "Alert the notified users when the budget consumption crosses this percentage (and again at 100%)."
+    },
+    "budget_notify_user_ids": {
+      "type": "many2many",
+      "label": "Budget Alert Recipients",
+      "relation": "res.users",
+      "help": "Users alerted when the budget threshold is crossed. Defaults to the responsible attorney when empty."
+    },
+    "flat_fee_line_ids": {
+      "type": "one2many",
+      "label": "Flat Fee Schedule",
+      "relation": "legal.case.flat_fee_line",
+      "fields": {
+        "stage_id": { "type": "many2one", "label": "Trigger Stage", "relation": "legal.case.stage", "required": true, "help": "The fee becomes invoiceable when the case enters this stage." },
+        "description": { "type": "char", "label": "Description", "required": true },
+        "amount": { "type": "monetary", "label": "Amount", "currency": "EGP", "required": true },
+        "state": {
+          "type": "selection",
+          "label": "Status",
+          "required": true,
+          "default": "pending",
+          "readonly": true,
+          "options": [
+            { "value": "pending", "label": "Pending" },
+            { "value": "invoiceable", "label": "Invoiceable" },
+            { "value": "invoiced", "label": "Invoiced" }
+          ]
+        },
+        "invoice_id": { "type": "many2one", "label": "Invoice", "relation": "account.move", "readonly": true }
+      }
+    },
+    "split_billing": {
+      "type": "boolean",
+      "label": "Split Billing",
+      "help": "Divide every invoice of this matter across several payers by percentage. The number of payers is not capped."
+    },
+    "split_line_ids": {
+      "type": "one2many",
+      "label": "Split Payers",
+      "relation": "legal.case.split_line",
+      "fields": {
+        "partner_id": { "type": "many2one", "label": "Payer", "relation": "res.partner", "required": true, "help": "Any contact may be a payer — including the primary client." },
+        "percent": { "type": "float", "label": "Share (%)", "required": true, "min": 0, "max": 100, "digits": [6, 2] }
+      }
+    },
+
+    "trust_transaction_ids": {
+      "type": "one2many",
+      "label": "Trust Transactions",
+      "relation": "legal.trust.transaction",
+      "readonly": true,
+      "fields": {
+        "name": { "type": "char", "label": "Reference" },
+        "date": { "type": "date", "label": "Date" },
+        "transaction_type": {
+          "type": "selection",
+          "label": "Type",
+          "options": [
+            { "value": "deposit", "label": "Deposit" },
+            { "value": "disbursement", "label": "Disbursement" },
+            { "value": "office_transfer", "label": "Trust to Office Transfer" },
+            { "value": "matter_transfer", "label": "Matter Transfer" },
+            { "value": "refund", "label": "Refund" }
+          ]
+        },
+        "method": {
+          "type": "selection",
+          "label": "Method",
+          "options": [
+            { "value": "cash", "label": "Cash" },
+            { "value": "bank_transfer", "label": "Bank Transfer" },
+            { "value": "cheque", "label": "Cheque" }
+          ]
+        },
+        "reference": { "type": "char", "label": "Cheque / Transfer Ref." },
+        "amount": { "type": "monetary", "label": "Amount", "currency": "EGP" },
+        "state": {
+          "type": "selection",
+          "label": "Status",
+          "options": [
+            { "value": "draft", "label": "Draft" },
+            { "value": "pending_clearance", "label": "Pending Clearance" },
+            { "value": "cleared", "label": "Cleared" },
+            { "value": "cancelled", "label": "Cancelled" }
+          ]
+        }
+      }
+    },
+    "trust_balance": { "type": "monetary", "label": "Trust Balance", "currencyField": "currency_id", "readonly": true, "help": "Cleared trust funds allocated to this matter." },
+    "trust_available": {
+      "type": "monetary",
+      "label": "Available Trust Funds",
+      "currencyField": "currency_id",
+      "readonly": true,
+      "help": "Cleared minus protected (held) funds — what can actually be spent or transferred."
+    },
+    "trust_pending": { "type": "monetary", "label": "Pending Clearance", "currencyField": "currency_id", "readonly": true, "help": "Cheque deposits not yet cleared." },
+    "trust_protected": { "type": "monetary", "label": "Protected Funds", "currencyField": "currency_id", "readonly": true, "help": "Active holds earmarked on this matter." },
+    "evergreen_enabled": {
+      "type": "boolean",
+      "label": "Evergreen Retainer",
+      "help": "Automatically ask the client for a trust top-up (deposit request with the firm's bank details) whenever the available matter balance falls below the minimum."
+    },
+    "trust_minimum": {
+      "type": "monetary",
+      "label": "Trust Minimum",
+      "currencyField": "currency_id",
+      "help": "Threshold: when the available trust funds of this matter fall below this amount, a deposit request is due."
+    },
+    "trust_replenish_to": {
+      "type": "monetary",
+      "label": "Replenish To",
+      "currencyField": "currency_id",
+      "help": "Target balance the client is asked to top the matter back up to (must be at least the minimum)."
+    },
+    "trust_last_request_date": {
+      "type": "date",
+      "label": "Last Deposit Request",
+      "readonly": true,
+      "help": "Date the latest deposit request was sent (cron or manual). Automatic requests respect the company cooldown from this date."
+    },
+    "trust_below_minimum": { "type": "boolean", "label": "Trust Below Minimum", "readonly": true, "help": "Available trust funds are below the matter's minimum." },
+    "trust_deposit_needed": {
+      "type": "monetary",
+      "label": "Top-Up Needed",
+      "currencyField": "currency_id",
+      "readonly": true,
+      "help": "Replenish-to target minus the available funds — the amount the client is asked to deposit."
+    },
+    "deposit_amount": { "type": "monetary", "label": "Deposited amount", "currencyField": "currency_id" },
+    "deposit_method": {
+      "type": "selection",
+      "label": "Deposit method",
+      "options": [
+        { "value": "cash", "label": "Cash" },
+        { "value": "bank_transfer", "label": "Bank Transfer" },
+        { "value": "cheque", "label": "Cheque" }
+      ]
+    },
+    "deposit_reference": { "type": "char", "label": "Deposit reference" },
+    "deposit_date": { "type": "date", "label": "Deposit date" },
+    "close_cancel_pending_tasks": { "type": "boolean", "label": "Cancel pending tasks on close" },
+
+    "timesheet_ids": {
+      "type": "one2many",
+      "label": "Timesheets",
+      "relation": "account.analytic.line",
+      "fields": {
+        "date": { "type": "date", "label": "Date", "required": true, "default": "today" },
+        "employee_id": { "type": "many2one", "label": "Employee", "relation": "hr.employee" },
+        "shortcode": { "type": "char", "label": "Shortcode", "help": "Type an activity shortcode (e.g. DRAFT) to apply its category; the code clears itself once applied." },
+        "activity_category_id": { "type": "many2one", "label": "Activity Category", "relation": "legal.activity.category" },
+        "name": { "type": "char", "label": "Work Description" },
+        "legal_task_id": { "type": "many2one", "label": "Legal Task", "relation": "legal.task" },
+        "unit_amount": { "type": "float", "label": "Hours", "digits": [16, 2] },
+        "hourly_rate": { "type": "monetary", "label": "Hourly Rate", "currency": "EGP" },
+        "flat_fee_amount": { "type": "monetary", "label": "Flat Fee", "currency": "EGP" },
+        "billable_amount": {
+          "type": "monetary",
+          "label": "Billable Amount",
+          "currency": "EGP",
+          "compute": "if(is_billable, if(flat_fee_amount, flat_fee_amount, unit_amount * hourly_rate), 0)"
+        },
+        "is_billable": { "type": "boolean", "label": "Billable", "default": true },
+        "state": {
+          "type": "selection",
+          "label": "Status",
+          "default": "draft",
+          "options": [
+            { "value": "draft", "label": "Draft" },
+            { "value": "approved", "label": "Approved" },
+            { "value": "invoiced", "label": "Invoiced" }
+          ]
+        }
+      }
+    },
+    "correspondence_ids": {
+      "type": "one2many",
+      "label": "Correspondence",
+      "relation": "legal.correspondence",
+      "fields": {
+        "name": { "type": "char", "label": "Reference", "readonly": true },
+        "correspondence_type": {
+          "type": "selection",
+          "label": "Type",
+          "required": true,
+          "options": [
+            { "value": "notice", "label": "Official Notice" },
+            { "value": "court_filing", "label": "Court Filing" },
+            { "value": "legal_memo", "label": "Legal Memo" },
+            { "value": "judgment", "label": "Judgment" },
+            { "value": "client_letter", "label": "Client Letter" },
+            { "value": "opposing_letter", "label": "Opposing Party Letter" },
+            { "value": "regulatory", "label": "Regulatory Correspondence" },
+            { "value": "internal_memo", "label": "Internal Memo" }
+          ]
+        },
+        "direction": {
+          "type": "selection",
+          "label": "Direction",
+          "required": true,
+          "default": "outgoing",
+          "options": [
+            { "value": "incoming", "label": "Incoming" },
+            { "value": "outgoing", "label": "Outgoing" }
+          ]
+        },
+        "subject": { "type": "char", "label": "Subject", "required": true },
+        "sender_id": { "type": "many2one", "label": "Sender", "relation": "res.partner" },
+        "recipient_id": { "type": "many2one", "label": "Recipient", "relation": "res.partner" },
+        "date_sent": { "type": "date", "label": "Date Sent" },
+        "delivery_status": {
+          "type": "selection",
+          "label": "Delivery Status",
+          "default": "pending",
+          "options": [
+            { "value": "pending", "label": "Pending" },
+            { "value": "in_transit", "label": "In Transit" },
+            { "value": "delivered", "label": "Delivered" },
+            { "value": "returned", "label": "Returned" },
+            { "value": "failed", "label": "Failed" }
+          ]
+        },
+        "state": {
+          "type": "selection",
+          "label": "Status",
+          "required": true,
+          "default": "draft",
+          "options": [
+            { "value": "draft", "label": "Draft" },
+            { "value": "sent", "label": "Sent" },
+            { "value": "delivered", "label": "Delivered" },
+            { "value": "awaiting_response", "label": "Awaiting Response" },
+            { "value": "responded", "label": "Responded" },
+            { "value": "closed", "label": "Closed" }
+          ]
+        }
+      }
+    },
+
+    "notes": { "type": "text", "label": "Internal Notes" },
+    "tag_ids": { "type": "many2many", "label": "Tags", "relation": "legal.tag" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "case_number", "subtitleField": "name" },
+    "statusbar": { "field": "state", "visibleStates": ["draft", "open", "on_hold", "closed"] },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "b-open",
+        "label": "Start Work",
+        "style": "primary",
+        "invisible": "state != 'draft'",
+        "steps": [{ "do": "check" }, { "do": "call", "action": "legal.case.action_open" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "b-hold",
+        "label": "Put On Hold",
+        "style": "secondary",
+        "invisible": "state != 'open'",
+        "steps": [{ "do": "set", "field": "state", "value": "'on_hold'" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "b-resume",
+        "label": "Resume",
+        "style": "primary",
+        "invisible": "state != 'on_hold'",
+        "steps": [{ "do": "set", "field": "state", "value": "'open'" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "b-close",
+        "label": "Close Case",
+        "style": "primary",
+        "invisible": "state not in ['open', 'on_hold']",
+        "steps": [
+          { "do": "check" },
+          {
+            "do": "open",
+            "page": "real-legal-case-close",
+            "as": "dialog",
+            "title": "Close Case",
+            "values": {
+              "case_label": "case_number + ' — ' + name",
+              "fee_arrangement": "fee_arrangement",
+              "contingency_percent": "contingency_percent",
+              "actual_settlement": "if(actual_settlement, actual_settlement, expected_settlement)"
+            },
+            "into": {
+              "state": "'closed'",
+              "outcome": "outcome",
+              "close_reason": "close_reason",
+              "date_closed": "close_date",
+              "close_cancel_pending_tasks": "cancel_pending_tasks",
+              "actual_settlement": "if(fee_arrangement == 'contingency' and outcome in ['won', 'settled'], actual_settlement, None)"
+            },
+            "then": [
+              { "do": "call", "action": "legal.case.close_case_done", "params": {} },
+              { "do": "save" },
+              { "do": "goTo", "target": "tab-outcome" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "b-reopen",
+        "label": "Reopen",
+        "style": "secondary",
+        "invisible": "state != 'closed'",
+        "steps": [
+          { "do": "set", "field": "state", "value": "'open'" },
+          { "do": "clear", "field": "date_closed" },
+          { "do": "clear", "field": "close_reason" },
+          { "do": "clear", "field": "outcome" },
+          { "do": "save" }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "b-timer-start",
+        "label": "Start Timer",
+        "style": "secondary",
+        "icon": "clock",
+        "invisible": "my_timer_running",
+        "action": "legal.case.action_start_timer"
+      },
+      {
+        "type": "button",
+        "id": "b-timer-stop",
+        "label": "Stop Timer & Log",
+        "style": "danger",
+        "icon": "clock",
+        "invisible": "not my_timer_running",
+        "action": "legal.case.action_stop_timer"
+      }
+    ],
+    "statButtons": [
+      { "id": "s-hearings", "label": "Hearings", "field": "hearing_count", "icon": "calendar", "steps": [{ "do": "goTo", "target": "tab-hearings" }] },
+      { "id": "s-tasks", "label": "Tasks", "field": "task_count", "icon": "check", "steps": [{ "do": "goTo", "target": "tab-tasks" }] },
+      { "id": "s-expenses", "label": "Expenses", "field": "expense_total", "icon": "money", "steps": [{ "do": "goTo", "target": "tab-expenses" }] },
+      { "id": "s-documents", "label": "Documents", "field": "document_count", "icon": "file", "steps": [{ "do": "goTo", "target": "tab-documents" }] },
+      { "id": "s-poas", "label": "POAs", "field": "poa_count", "icon": "edit", "steps": [{ "do": "goTo", "target": "tab-poas" }] },
+      { "id": "s-hours", "label": "Hours", "field": "total_billable_hours", "icon": "clock", "steps": [{ "do": "goTo", "target": "tab-timesheets" }] },
+      { "id": "s-correspondence", "label": "Correspondence", "field": "correspondence_count", "icon": "mail", "steps": [{ "do": "goTo", "target": "tab-correspondence" }] },
+      { "id": "s-conflicts", "label": "Conflict Checks", "field": "conflict_check_count", "icon": "search", "action": "legal.case.action_view_conflict_checks" },
+      { "id": "s-invoices", "label": "Invoices", "field": "invoice_count", "icon": "receipt", "action": "legal.case.action_view_invoices", "invisible": "invoice_count == 0" },
+      { "id": "s-lead", "label": "Source Lead", "icon": "thumb", "action": "legal.case.action_view_source_lead", "invisible": "not lead_id" },
+      { "id": "s-payment-plans", "label": "Payment Plans", "field": "payment_plan_count", "icon": "list", "action": "legal.case.action_view_payment_plans", "invisible": "payment_plan_count == 0" },
+      { "id": "s-trust", "label": "Trust Balance", "field": "trust_balance", "icon": "building", "steps": [{ "do": "goTo", "target": "tab-trust" }] }
+    ],
+    "badges": [
+      { "id": "r-won", "label": "Won", "tone": "success", "invisible": "outcome != 'won'" },
+      { "id": "r-lost", "label": "Lost", "tone": "danger", "invisible": "outcome != 'lost'" },
+      { "id": "r-settled", "label": "Settled", "tone": "info", "invisible": "outcome != 'settled'" },
+      { "id": "r-withdrawn", "label": "Withdrawn", "tone": "warning", "invisible": "outcome != 'withdrawn'" }
+    ],
+    "children": [
+      {
+        "type": "section",
+        "id": "g-top",
+        "style": "plain",
+        "columns": { "wide": 2, "medium": 2, "narrow": 1 },
+        "children": [
+          {
+            "type": "section",
+            "id": "case_info",
+            "title": "Case Information",
+            "style": "line",
+            "children": [
+              { "type": "field", "id": "f-matter-type", "field": "matter_type_id" },
+              { "type": "field", "id": "f-stage", "field": "stage_id" },
+              { "type": "field", "id": "f-case-type", "field": "case_type" },
+              { "type": "field", "id": "f-category", "field": "category_id" },
+              { "type": "field", "id": "f-court-name", "field": "court_name" },
+              { "type": "field", "id": "f-court-ref", "field": "court_reference" },
+              { "type": "field", "id": "f-jurisdiction", "field": "jurisdiction_id" },
+              { "type": "field", "id": "f-priority", "field": "priority", "widget": "radio" },
+              { "type": "field", "id": "f-risk", "field": "risk_level" }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "parties_info",
+            "title": "Parties & Assignment",
+            "style": "line",
+            "children": [
+              { "type": "field", "id": "f-partner", "field": "partner_id" },
+              {
+                "type": "field",
+                "id": "f-co-clients",
+                "field": "partner_ids",
+                "widget": "tags",
+                "validate": [{ "holds": "not partner_id or partner_id not in partner_ids", "message": "The primary client cannot also be listed as a co-client." }]
+              },
+              { "type": "field", "id": "f-opposing", "field": "opposing_party_id" },
+              { "type": "field", "id": "f-attorney", "field": "responsible_attorney_id" },
+              { "type": "field", "id": "f-team", "field": "assigned_team_ids", "widget": "tags" },
+              { "type": "field", "id": "f-branch", "field": "branch_id" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "case_properties_group",
+        "style": "plain",
+        "invisible": "not matter_type_id",
+        "children": [{ "type": "field", "id": "f-properties", "field": "case_properties" }]
+      },
+      {
+        "type": "section",
+        "id": "g-dates-money",
+        "style": "plain",
+        "columns": { "wide": 2, "medium": 2, "narrow": 1 },
+        "children": [
+          {
+            "type": "section",
+            "id": "dates",
+            "title": "Dates",
+            "style": "line",
+            "children": [
+              { "type": "field", "id": "f-date-opened", "field": "date_opened" },
+              { "type": "field", "id": "f-date-filed", "field": "date_filed" },
+              { "type": "field", "id": "f-deadline", "field": "deadline" },
+              { "type": "field", "id": "f-sol-date", "field": "sol_date" },
+              { "type": "field", "id": "f-sol-rule", "field": "sol_rule_id", "options": { "create": false }, "invisible": "not sol_date and not sol_rule_id" },
+              { "type": "field", "id": "f-next-hearing", "field": "next_hearing_date" },
+              { "type": "field", "id": "f-days-open", "field": "days_since_opened" },
+              { "type": "field", "id": "f-date-closed", "field": "date_closed", "invisible": "state != 'closed'" }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "financial",
+            "title": "Financial",
+            "style": "line",
+            "children": [
+              { "type": "field", "id": "f-estimated", "field": "estimated_value" },
+              { "type": "field", "id": "f-expense-total", "field": "expense_total" },
+              { "type": "field", "id": "f-billable-hours", "field": "total_billable_hours" },
+              { "type": "field", "id": "f-billed", "field": "total_billed_amount" },
+              { "type": "field", "id": "f-overdue", "field": "overdue_task_count" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "tabs",
+        "id": "notebook",
+        "children": [
+          {
+            "type": "tab",
+            "id": "tab-description",
+            "label": "Description",
+            "children": [{ "type": "field", "id": "f-description", "field": "description", "labels": "hidden" }]
+          },
+          {
+            "type": "tab",
+            "id": "tab-parties",
+            "label": "Parties",
+            "children": [
+              { "type": "field", "id": "f-parties", "field": "party_ids", "widget": "grid", "labels": "hidden", "columns": ["partner_id", "role_id", "is_primary", "notes"] }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-hearings",
+            "label": "Hearings",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-hearings",
+                "field": "hearing_ids",
+                "widget": "grid",
+                "labels": "hidden",
+                "columns": ["name", "hearing_type", "date_time", "location", "state", "result"]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-tasks",
+            "label": "Tasks & Deadlines",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-tasks",
+                "field": "task_ids",
+                "widget": "grid",
+                "labels": "hidden",
+                "columns": ["name", "task_type", "assigned_to_id", "due_date", "is_statutory", "priority", "state"]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-expenses",
+            "label": "Expenses",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-expenses",
+                "field": "expense_ids",
+                "widget": "grid",
+                "labels": "hidden",
+                "columns": ["date", "name", "expense_type", "employee_id", "hours", "amount", "is_billable", "state"],
+                "totals": ["amount"]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-documents",
+            "label": "Documents",
+            "children": [{ "type": "field", "id": "f-documents", "field": "document_ids", "labels": "hidden", "options": { "files": "list" } }]
+          },
+          {
+            "type": "tab",
+            "id": "tab-compliance",
+            "label": "Compliance",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-compliance",
+                "field": "compliance_ids",
+                "widget": "grid",
+                "labels": "hidden",
+                "columns": ["name", "regulation_reference", "state", "risk_level", "review_date"]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-contract-reviews",
+            "label": "Contract Reviews",
+            "invisible": "not contract_review_ids",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-contract-reviews",
+                "field": "contract_review_ids",
+                "widget": "grid",
+                "labels": "hidden",
+                "columns": ["name", "review_type", "reviewer_id", "risk_assessment", "state"]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-poas",
+            "label": "Powers of Attorney",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-poas",
+                "field": "poa_ids",
+                "widget": "grid",
+                "labels": "hidden",
+                "columns": ["name", "grantor_id", "grantee_id", "poa_type", "issue_date", "expiry_date", "is_notarized", "state"]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-billing",
+            "label": "Billing",
+            "children": [
+              {
+                "type": "section",
+                "id": "g-billing",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 2, "narrow": 1 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "fee_arrangement_group",
+                    "title": "Fee Arrangement",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-fee-arrangement", "field": "fee_arrangement", "widget": "radio" },
+                      { "type": "field", "id": "f-hourly-rate", "field": "hourly_rate", "invisible": "fee_arrangement in ['flat', 'non_billable']" },
+                      { "type": "field", "id": "f-flat-fee", "field": "flat_fee_amount", "invisible": "fee_arrangement != 'flat'" },
+                      { "type": "field", "id": "f-fee-recipient", "field": "fee_recipient_id", "invisible": "fee_arrangement != 'flat'" },
+                      { "type": "field", "id": "f-contingency-pct", "field": "contingency_percent", "invisible": "fee_arrangement != 'contingency'", "options": { "suffix": "%" } },
+                      { "type": "field", "id": "f-expected-settlement", "field": "expected_settlement", "invisible": "fee_arrangement != 'contingency'" },
+                      { "type": "field", "id": "f-actual-settlement", "field": "actual_settlement", "invisible": "fee_arrangement != 'contingency'" },
+                      { "type": "field", "id": "f-contingency-fee", "field": "contingency_fee", "invisible": "fee_arrangement != 'contingency'" },
+                      { "type": "field", "id": "f-analytic", "field": "analytic_account_id" },
+                      { "type": "field", "id": "f-payment-profile", "field": "payment_profile_id" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "budget_group",
+                    "title": "Budget",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-budget-fees", "field": "budget_fees" },
+                      { "type": "field", "id": "f-budget-expenses", "field": "budget_expenses" },
+                      { "type": "field", "id": "f-budget-total", "field": "budget_total" },
+                      { "type": "field", "id": "f-consumed-fees", "field": "budget_consumed_fees", "invisible": "budget_total == 0" },
+                      { "type": "field", "id": "f-consumed-expenses", "field": "budget_consumed_expenses", "invisible": "budget_total == 0" },
+                      { "type": "field", "id": "f-budget-progress", "field": "budget_progress", "widget": "progressbar", "invisible": "budget_total == 0", "options": { "max": 100, "showPercent": true } },
+                      { "type": "field", "id": "f-budget-threshold", "field": "budget_threshold", "options": { "suffix": "%" } },
+                      { "type": "field", "id": "f-budget-notify", "field": "budget_notify_user_ids", "widget": "tags" }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "id": "g-flat-fee-schedule",
+                "title": "Flat Fee Schedule",
+                "style": "line",
+                "invisible": "fee_arrangement != 'flat'",
+                "children": [
+                  {
+                    "type": "field",
+                    "id": "f-flat-fee-lines",
+                    "field": "flat_fee_line_ids",
+                    "widget": "grid",
+                    "labels": "hidden",
+                    "columns": ["stage_id", "description", "amount", "state", "invoice_id"],
+                    "totals": ["amount"],
+                    "optionalColumns": { "invoice_id": "hide" }
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "id": "split_billing_group",
+                "title": "Split Billing",
+                "style": "line",
+                "children": [
+                  { "type": "field", "id": "f-split-billing", "field": "split_billing" },
+                  {
+                    "type": "field",
+                    "id": "f-split-lines",
+                    "field": "split_line_ids",
+                    "widget": "grid",
+                    "labels": "hidden",
+                    "invisible": "not split_billing",
+                    "columns": ["partner_id", "percent"],
+                    "totals": ["percent"],
+                    "validate": [
+                      {
+                        "holds": "sum(split_line_ids, 'percent') == 100",
+                        "when": "split_billing and split_line_ids",
+                        "message": "The payer shares must add up to 100%."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-trust",
+            "label": "Trust",
+            "children": [
+              {
+                "type": "text",
+                "id": "t-trust-below",
+                "style": "note",
+                "text": "Trust funds below minimum: the available balance is under this matter's agreed retainer minimum. Ask the client for the top-up below to replenish the retainer.",
+                "invisible": "not trust_below_minimum"
+              },
+              { "type": "field", "id": "f-trust-needed", "field": "trust_deposit_needed", "invisible": "not trust_below_minimum" },
+              {
+                "type": "section",
+                "id": "g-trust",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 2, "narrow": 1 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "g-matter-ledger",
+                    "title": "Matter Ledger",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-trust-available", "field": "trust_available" },
+                      { "type": "field", "id": "f-trust-pending", "field": "trust_pending" },
+                      { "type": "field", "id": "f-trust-protected", "field": "trust_protected" },
+                      { "type": "field", "id": "f-trust-balance", "field": "trust_balance" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "g-trust-actions",
+                    "style": "plain",
+                    "children": [
+                      {
+                        "type": "button",
+                        "id": "b-trust-deposit",
+                        "label": "Deposit",
+                        "style": "primary",
+                        "icon": "money",
+                        "steps": [
+                          {
+                            "do": "open",
+                            "page": "real-legal-trust-deposit",
+                            "as": "dialog",
+                            "title": "Trust Deposit",
+                            "values": { "client": "partner_id", "matter": "case_number + ' — ' + name", "amount": "if(trust_deposit_needed > 0, trust_deposit_needed, None)" },
+                            "into": { "deposit_amount": "amount", "deposit_method": "method", "deposit_reference": "reference", "deposit_date": "date" },
+                            "then": [{ "do": "call", "action": "legal.case.record_trust_deposit" }]
+                          }
+                        ]
+                      },
+                      { "type": "button", "id": "b-trust-pay", "label": "Pay Invoice from Trust", "style": "secondary", "action": "legal.case.action_pay_invoice_from_trust" },
+                      { "type": "button", "id": "b-trust-transfer", "label": "Transfer", "style": "secondary", "action": "legal.case.action_trust_transfer" },
+                      {
+                        "type": "button",
+                        "id": "b-trust-request",
+                        "label": "Request Deposit",
+                        "style": "secondary",
+                        "action": "legal.case.action_request_trust_deposit",
+                        "confirm": "Send a trust deposit request to the client now (bank details + amount needed)? The manual request ignores the automatic-request cooldown."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "id": "g-evergreen",
+                "title": "Evergreen Retainer",
+                "style": "line",
+                "columns": { "wide": 2, "medium": 2, "narrow": 1 },
+                "children": [
+                  { "type": "field", "id": "f-evergreen", "field": "evergreen_enabled" },
+                  { "type": "field", "id": "f-trust-last-request", "field": "trust_last_request_date" },
+                  { "type": "field", "id": "f-trust-minimum", "field": "trust_minimum", "invisible": "not evergreen_enabled", "required": "evergreen_enabled", "validate": [{ "min": 0.01, "when": "evergreen_enabled", "message": "The evergreen retainer needs a positive trust minimum." }] },
+                  {
+                    "type": "field",
+                    "id": "f-trust-replenish",
+                    "field": "trust_replenish_to",
+                    "invisible": "not evergreen_enabled",
+                    "validate": [{ "holds": "trust_replenish_to >= trust_minimum", "when": "evergreen_enabled", "message": "The replenish-to target must be at least the trust minimum." }]
+                  }
+                ]
+              },
+              {
+                "type": "field",
+                "id": "f-trust-transactions",
+                "field": "trust_transaction_ids",
+                "widget": "grid",
+                "labels": "hidden",
+                "columns": ["name", "date", "transaction_type", "method", "reference", "amount", "state"],
+                "totals": ["amount"]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-timesheets",
+            "label": "Timesheets",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-timesheets",
+                "field": "timesheet_ids",
+                "widget": "grid",
+                "labels": "hidden",
+                "columns": ["date", "employee_id", "shortcode", "activity_category_id", "name", "legal_task_id", "unit_amount", "hourly_rate", "billable_amount", "is_billable", "state"],
+                "totals": ["unit_amount", "billable_amount"],
+                "optionalColumns": { "shortcode": "show", "activity_category_id": "show", "legal_task_id": "hide" }
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-correspondence",
+            "label": "Correspondence",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-correspondence",
+                "field": "correspondence_ids",
+                "widget": "grid",
+                "labels": "hidden",
+                "columns": ["name", "correspondence_type", "direction", "subject", "sender_id", "recipient_id", "date_sent", "delivery_status", "state"],
+                "optionalColumns": { "delivery_status": "show" }
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-outcome",
+            "label": "Outcome",
+            "invisible": "state != 'closed'",
+            "children": [
+              {
+                "type": "section",
+                "id": "g-outcome",
+                "style": "plain",
+                "children": [
+                  { "type": "field", "id": "f-outcome", "field": "outcome" },
+                  { "type": "field", "id": "f-close-reason", "field": "close_reason" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-internal",
+            "label": "Internal",
+            "children": [
+              { "type": "field", "id": "f-notes", "field": "notes", "labels": "hidden", "placeholder": "Internal notes..." },
+              { "type": "field", "id": "f-tags", "field": "tag_ids", "widget": "tags" }
+            ]
+          }
+        ]
+      }
+    ],
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" }
+  }
+}

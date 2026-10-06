@@ -1,0 +1,78 @@
+{
+  "fieldia": "0.1",
+  "id": "real-legal-trust-deposit",
+  "title": "Trust Deposit",
+  "data": { "kind": "responses" },
+  "maxWidth": "medium",
+  "fields": {
+    "transaction_type": {
+      "type": "selection",
+      "label": "Type",
+      "readonly": true,
+      "default": "deposit",
+      "options": [
+        { "value": "deposit", "label": "Deposit" },
+        { "value": "disbursement", "label": "Disbursement" },
+        { "value": "office_transfer", "label": "Trust to Office Transfer" },
+        { "value": "matter_transfer", "label": "Matter Transfer" },
+        { "value": "refund", "label": "Refund" }
+      ]
+    },
+    "client": { "type": "many2one", "label": "Client", "relation": "res.partner", "readonly": true },
+    "matter": { "type": "char", "label": "Matter", "readonly": true },
+    "amount": { "type": "monetary", "label": "Amount", "currency": "EGP", "required": true, "min": 0.01 },
+    "date": { "type": "date", "label": "Date", "required": true, "default": "today" },
+    "trust_account_id": { "type": "many2one", "label": "Trust Account", "relation": "legal.trust.account" },
+    "method": {
+      "type": "selection",
+      "label": "Method",
+      "required": true,
+      "options": [
+        { "value": "cash", "label": "Cash" },
+        { "value": "bank_transfer", "label": "Bank Transfer" },
+        { "value": "cheque", "label": "Cheque" }
+      ]
+    },
+    "reference": { "type": "char", "label": "Cheque / Transfer Ref." },
+    "received_by_id": { "type": "many2one", "label": "Received By", "relation": "res.users" },
+    "memo": { "type": "char", "label": "Memo" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "deposit",
+    "children": [
+      {
+        "type": "section",
+        "id": "g-deposit",
+        "style": "plain",
+        "columns": { "wide": 2, "medium": 2, "narrow": 1 },
+        "children": [
+          {
+            "type": "section",
+            "id": "g-deposit-left",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "d-type", "field": "transaction_type" },
+              { "type": "field", "id": "d-client", "field": "client" },
+              { "type": "field", "id": "d-matter", "field": "matter" },
+              { "type": "field", "id": "d-amount", "field": "amount" },
+              { "type": "field", "id": "d-date", "field": "date" }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "g-deposit-right",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "d-account", "field": "trust_account_id" },
+              { "type": "field", "id": "d-method", "field": "method", "widget": "radio" },
+              { "type": "field", "id": "d-reference", "field": "reference" },
+              { "type": "field", "id": "d-received-by", "field": "received_by_id" },
+              { "type": "field", "id": "d-memo", "field": "memo" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
