@@ -1,6 +1,7 @@
 import type { Page } from '@fieldia/core';
 import { shownFields } from './page-tree';
 import { fieldsReadBy } from './rules-formula';
+import { fieldsStepsNeed } from './steps-places';
 
 /**
  * Which fields the page's rules read: its conditions (when a part shows, is
@@ -35,6 +36,8 @@ export function fieldsRulesRead(page: Page): Set<string> {
     }
   };
   walk(page.layout);
+  // steps lane: what a press, a change or a moment sets, names or reads.
+  for (const name of fieldsStepsNeed(page)) read.add(name);
   return read;
 }
 
