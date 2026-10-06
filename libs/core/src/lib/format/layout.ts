@@ -83,6 +83,14 @@ export interface FieldNode {
   optionalColumns?: { [column: string]: 'show' | 'hide' };
   /** For one2many shown as a grid: edit one cell at a time (the default), or a whole line at once. */
   editMode?: 'cell' | 'row';
+  /** For one2many: what each column's cells do, line by line — Flectra's conditions and decorations in a list. */
+  cells?: { [column: string]: CellRules };
+  /** For one2many: each line's tone while a condition on it holds, the first that holds — Flectra's decoration-* on a list. */
+  rowTones?: ToneWhen[];
+  /** For one2many: each line's words in bold while this holds on it — Flectra's decoration-bf. */
+  rowBold?: Modifier;
+  /** For one2many: buttons on each line, each shown by a condition on it; a press runs its steps with the line. */
+  rowButtons?: ButtonNode[];
   /** Where the label sits, when not where its group or the page puts labels. */
   labels?: LabelPlace;
   /** Rules the answer must keep. */
@@ -91,6 +99,32 @@ export interface FieldNode {
   roles?: Roles;
   readonly?: Modifier;
   required?: Modifier;
+}
+
+/** A tone while a condition holds. */
+export interface ToneWhen {
+  tone: Tone;
+  when: Modifier;
+}
+
+/**
+ * A column's cells in a table of lines. `invisible`, `readonly`, `required`,
+ * `tones` and `bold` are read on each line — its fields, with its record as
+ * `parent` — and `hidden` once on the record, hiding the whole column, as
+ * Flectra's `column_invisible`.
+ */
+export interface CellRules {
+  invisible?: Modifier;
+  readonly?: Modifier;
+  required?: Modifier;
+  hidden?: Modifier;
+  /** The cell's tone while a condition holds, the first that holds. */
+  tones?: ToneWhen[];
+  bold?: Modifier;
+  /** A choice drawn as a coloured pill, toned by `tones`: Flectra's widget="badge". */
+  badge?: boolean;
+  /** How wide the column is, in characters of its text. */
+  width?: number;
 }
 
 export interface ButtonNode {
@@ -455,6 +489,21 @@ const roles = RolesSchema.optional();
 const span = z.int().min(1).max(12).optional();
 const labelPlace = z.enum(['above', 'beside', 'hidden']);
 
+export const ToneWhenSchema = z.strictObject({ tone, when: ModifierSchema }).meta({ id: 'ToneWhen' });
+
+export const CellRulesSchema = z
+  .strictObject({
+    invisible: ModifierSchema.optional(),
+    readonly: ModifierSchema.optional(),
+    required: ModifierSchema.optional(),
+    hidden: ModifierSchema.optional(),
+    tones: z.array(ToneWhenSchema).min(1).optional(),
+    bold: ModifierSchema.optional(),
+    badge: z.boolean().optional(),
+    width: z.int().min(1).max(200).optional(),
+  })
+  .meta({ id: 'CellRules' });
+
 export const AnswerRuleSchema = z
   .strictObject({
     minLength: z.int().min(0).optional(),
@@ -490,6 +539,12 @@ export const FieldNodeSchema = z.strictObject({
   columns: z.array(fieldName).min(1).optional(),
   totals: z.array(fieldName).min(1).optional(),
   optionalColumns: z.record(fieldName, z.enum(['show', 'hide'])).optional(),
+  cells: z.record(fieldName, CellRulesSchema).optional(),
+  rowTones: z.array(ToneWhenSchema).min(1).optional(),
+  rowBold: ModifierSchema.optional(),
+  get rowButtons(): z.ZodOptional<z.ZodArray<typeof ButtonNodeSchema>> {
+    return z.array(ButtonNodeSchema).min(1).optional();
+  },
   editMode: z.enum(['cell', 'row']).optional(),
   labels: labelPlace.optional(),
   validate: z.array(AnswerRuleSchema).min(1).optional(),

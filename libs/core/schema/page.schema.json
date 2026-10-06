@@ -2896,6 +2896,98 @@
                       ]
                     }
                   },
+                  "cells": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                    },
+                    "additionalProperties": {
+                      "$ref": "#/$defs/CellRules"
+                    }
+                  },
+                  "rowTones": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ToneWhen"
+                    }
+                  },
+                  "rowBold": {
+                    "$ref": "#/$defs/Modifier"
+                  },
+                  "rowButtons": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "button"
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "steps": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ActionStep"
+                          }
+                        },
+                        "action": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "params": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "$ref": "#/$defs/JsonValue"
+                          }
+                        },
+                        "style": {
+                          "type": "string",
+                          "enum": [
+                            "primary",
+                            "secondary",
+                            "danger",
+                            "link"
+                          ]
+                        },
+                        "confirm": {
+                          "type": "string"
+                        },
+                        "icon": {
+                          "type": "string"
+                        },
+                        "colspan": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 12
+                        },
+                        "invisible": {
+                          "$ref": "#/$defs/Modifier"
+                        },
+                        "roles": {
+                          "$ref": "#/$defs/Roles"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id",
+                        "label"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
                   "editMode": {
                     "type": "string",
                     "enum": [
@@ -3011,6 +3103,98 @@
                         "show",
                         "hide"
                       ]
+                    }
+                  },
+                  "cells": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                    },
+                    "additionalProperties": {
+                      "$ref": "#/$defs/CellRules"
+                    }
+                  },
+                  "rowTones": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ToneWhen"
+                    }
+                  },
+                  "rowBold": {
+                    "$ref": "#/$defs/Modifier"
+                  },
+                  "rowButtons": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "button"
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "steps": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ActionStep"
+                          }
+                        },
+                        "action": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "params": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "$ref": "#/$defs/JsonValue"
+                          }
+                        },
+                        "style": {
+                          "type": "string",
+                          "enum": [
+                            "primary",
+                            "secondary",
+                            "danger",
+                            "link"
+                          ]
+                        },
+                        "confirm": {
+                          "type": "string"
+                        },
+                        "icon": {
+                          "type": "string"
+                        },
+                        "colspan": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 12
+                        },
+                        "invisible": {
+                          "$ref": "#/$defs/Modifier"
+                        },
+                        "roles": {
+                          "$ref": "#/$defs/Roles"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id",
+                        "label"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "editMode": {
@@ -3436,66 +3620,38 @@
       ],
       "additionalProperties": false
     },
-    "AnswerRule": {
+    "CellRules": {
       "type": "object",
       "properties": {
-        "minLength": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        },
-        "maxLength": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 9007199254740991
-        },
-        "pattern": {
-          "type": "string",
-          "minLength": 1
-        },
-        "endsWith": {
-          "type": "string",
-          "minLength": 1
-        },
-        "min": {
-          "type": "number"
-        },
-        "max": {
-          "type": "number"
-        },
-        "atLeast": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 9007199254740991
-        },
-        "atMost": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 9007199254740991
-        },
-        "date": {
-          "type": "string",
-          "enum": [
-            "past",
-            "future"
-          ]
-        },
-        "holds": {
-          "type": "string",
-          "minLength": 1
-        },
-        "when": {
+        "invisible": {
           "$ref": "#/$defs/Modifier"
         },
-        "message": {
-          "type": "string"
+        "readonly": {
+          "$ref": "#/$defs/Modifier"
         },
-        "level": {
-          "type": "string",
-          "enum": [
-            "error",
-            "warning"
-          ]
+        "required": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "hidden": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "tones": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToneWhen"
+          }
+        },
+        "bold": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "badge": {
+          "type": "boolean"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
         }
       },
       "additionalProperties": false
@@ -3511,13 +3667,28 @@
         }
       ]
     },
-    "Roles": {
-      "minItems": 1,
-      "type": "array",
-      "items": {
-        "type": "string",
-        "pattern": "^!?[A-Za-z0-9_][A-Za-z0-9_.:-]*$"
-      }
+    "ToneWhen": {
+      "type": "object",
+      "properties": {
+        "tone": {
+          "type": "string",
+          "enum": [
+            "info",
+            "success",
+            "warning",
+            "danger",
+            "muted"
+          ]
+        },
+        "when": {
+          "$ref": "#/$defs/Modifier"
+        }
+      },
+      "required": [
+        "tone",
+        "when"
+      ],
+      "additionalProperties": false
     },
     "ActionStep": {
       "oneOf": [
@@ -4017,6 +4188,78 @@
         }
       ]
     },
+    "Roles": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^!?[A-Za-z0-9_][A-Za-z0-9_.:-]*$"
+      }
+    },
+    "AnswerRule": {
+      "type": "object",
+      "properties": {
+        "minLength": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "pattern": {
+          "type": "string",
+          "minLength": 1
+        },
+        "endsWith": {
+          "type": "string",
+          "minLength": 1
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "atLeast": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "atMost": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "date": {
+          "type": "string",
+          "enum": [
+            "past",
+            "future"
+          ]
+        },
+        "holds": {
+          "type": "string",
+          "minLength": 1
+        },
+        "when": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "message": {
+          "type": "string"
+        },
+        "level": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "LayoutNode": {
       "oneOf": [
         {
@@ -4089,6 +4332,98 @@
                   "show",
                   "hide"
                 ]
+              }
+            },
+            "cells": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/CellRules"
+              }
+            },
+            "rowTones": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ToneWhen"
+              }
+            },
+            "rowBold": {
+              "$ref": "#/$defs/Modifier"
+            },
+            "rowButtons": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "button"
+                  },
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "steps": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ActionStep"
+                    }
+                  },
+                  "action": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "params": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "$ref": "#/$defs/JsonValue"
+                    }
+                  },
+                  "style": {
+                    "type": "string",
+                    "enum": [
+                      "primary",
+                      "secondary",
+                      "danger",
+                      "link"
+                    ]
+                  },
+                  "confirm": {
+                    "type": "string"
+                  },
+                  "icon": {
+                    "type": "string"
+                  },
+                  "colspan": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 12
+                  },
+                  "invisible": {
+                    "$ref": "#/$defs/Modifier"
+                  },
+                  "roles": {
+                    "$ref": "#/$defs/Roles"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "label"
+                ],
+                "additionalProperties": false
               }
             },
             "editMode": {

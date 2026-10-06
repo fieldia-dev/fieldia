@@ -14,6 +14,7 @@ import { expressionEnv, lineContext, recordContext } from './env';
 import { firstValues, readLooseMap, readValueMap, type MapScope } from './value-map';
 import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
+import { compileTable, type CompiledTable, type LineState } from './cells';
 import { MESSAGES, type Messages } from './messages';
 import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
@@ -215,6 +216,12 @@ export interface Form {
    * the records chosen in it, and every call of the run carries them.
    */
   runAction(id: string, chosen?: { recordIds: RecordId[] }): Promise<RunResult>;
+  /** A table's line as its rules have it now — its tone, each ruled column's cells, which of its buttons show — by the table's field node. */
+  lineState(nodeId: string, key: string): LineState;
+  /** Whether a table's column is hidden now by its `hidden` rule, read on the record. */
+  columnHidden(nodeId: string, column: string): boolean;
+  /** Press a button on a table's line: its steps, then its action, each call carrying the line. Hidden on that line, it does not run. */
+  runRowAction(nodeId: string, buttonId: string, key: string): Promise<RunResult>;
   /** Run steps on this form, as a button would: `context.id` is what their calls carry (`run` when left out). */
   run(steps: readonly ActionStep[], context?: RunContext): Promise<RunResult>;
   /** A tab was shown: the viewer says so, and the page's `show` steps for it run. */
@@ -292,6 +299,13 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     const rules = (node.source as { validate?: FieldNode['validate'] }).validate;
     if (node.kind === 'field' && rules) nodeRules.set(node.id, compileRules(rules));
   }
+  /** Tables of lines with rules of their own, by their field node: each read once. */
+  const tables = new Map<string, { field: string; compiled: CompiledTable }>();
+  for (const node of index.values()) {
+    const source = node.source as FieldNode;
+    if (node.kind !== 'field' || page.fields[source.field]?.type !== 'one2many') continue;
+    if (source.cells || source.rowTones || source.rowBold !== undefined || source.rowButtons) tables.set(node.id, { field: source.field, compiled: compileTable(source) });
+  }
   /** Whether any rule only warns: without one, there are never warnings to look for. */
   const warns = [...nodeRules.values()].some((rules) => rules.some((compiled) => compiled.rule.level === 'warning'));
   const steps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
@@ -350,6 +364,24 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     const def = lineField(field);
     const lineFields = def.fields as Record<string, LineField>;
     return mapScope(values, lineFields, lineContext(values, lineFields, reading().context), { today }, { values: state.values as Values, fields: page.fields });
+  }
+
+  function tableOf(nodeId: string) {
+    const table = tables.get(nodeId);
+    if (table) return table;
+    const node = index.get(nodeId);
+    if (node?.kind !== 'field' || page.fields[node.field as string]?.type !== 'one2many') throw new Error(`"${nodeId}" is not a table of lines`);
+    return null;
+  }
+
+  /** A line of a table as its rules have it now; none, plain. */
+  function lineStateOf(nodeId: string, key: string): LineState {
+    const table = tableOf(nodeId);
+    if (!table) return { tone: null, bold: false, cells: {}, buttons: {} };
+    const line = ((state.values[table.field] as Line[] | null) ?? []).find((l) => l.key === key);
+    if (!line) throw new Error(`"${table.field}" has no line "${key}"`);
+    const def = lineField(table.field);
+    return table.compiled.line(lineContext(line.values, def.fields as Record<string, LineField>, reading().context), { today }, userRoles);
   }
 
   function createValuesOf(field: string, line?: { lines: string; key: string }): Values {
@@ -603,9 +635,13 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
         for (const line of (state.values[name] as Line[] | null) ?? []) {
           // A section or note answers only for its text, never for what an item needs.
           const kind = lineKind(def, line.values);
+          // The table's own rules: a cell its line hides asks nothing, one it requires asks for a value.
+          const ruled = tables.has(node.id) ? lineStateOf(node.id, line.key).cells : {};
           for (const [sub, subDef] of Object.entries(def.fields)) {
             if (kind && sub !== def.lineKinds?.text) continue;
-            const lineMessage = checkValue(subDef, line.values[sub], subDef.required === true, messages, today());
+            const cell = ruled[sub];
+            if (cell?.invisible || (tables.has(node.id) && tables.get(node.id)!.compiled.hidden(sub, reading().context, reading().env))) continue;
+            const lineMessage = checkValue(subDef, line.values[sub], subDef.required === true || cell?.required === true, messages, today());
             if (lineMessage) errors[`${name}.${line.key}.${sub}`] = lineMessage;
           }
         }
@@ -1226,6 +1262,22 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       );
     },
 
+    lineState: (nodeId, key) => lineStateOf(nodeId, key),
+    columnHidden(nodeId, column) {
+      const table = tableOf(nodeId);
+      const { context, env } = reading();
+      return table ? table.compiled.hidden(column, context, env) : false;
+    },
+    async runRowAction(nodeId, buttonId, key) {
+      const table = tableOf(nodeId);
+      const button = table?.compiled.buttons.find((b) => b.id === buttonId);
+      if (!table || !button) throw new Error(`The table "${nodeId}" has no button "${buttonId}"`);
+      if (!lineStateOf(nodeId, key).buttons[buttonId]) return { done: false, reason: 'cannot', message: `The button "${buttonId}" is hidden on this line` };
+      const line = ((state.values[table.field] as Line[] | null) ?? []).find((l) => l.key === key) as Line;
+      const list: ActionStep[] = [...(button.steps ?? [])];
+      if (button.action !== undefined) list.push({ do: 'call', action: button.action, ...(button.params ? { params: button.params } : {}) });
+      return track(runTop(list, { id: buttonId, chain: [], line: { field: table.field, key, values: structuredCopy(line.values) } }));
+    },
     run: (list, context = {}) => track(runTop(list, { id: context.id ?? 'run', chain: [], ...(context.recordIds ? { recordIds: [...context.recordIds] } : {}) })),
 
     shown(tab) {

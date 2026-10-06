@@ -28,6 +28,8 @@ export interface ActionRequest {
   values: Values;
   /** The records chosen in a list, when the button belongs to one. */
   recordIds?: RecordId[];
+  /** The line a button on a table's line was pressed on: the table's field, the line's key and values. */
+  line?: { field: string; key: string; values: Values };
 }
 
 /**
@@ -141,6 +143,7 @@ export interface Stopped {
 export interface RunScope {
   id: string;
   recordIds?: RecordId[];
+  line?: { field: string; key: string; values: Values };
   chain: readonly string[];
 }
 
@@ -323,6 +326,7 @@ export function createRunner(form: RunForm) {
       recordId: form.recordId(),
       values: structuredCopy(form.values() as Values),
       ...(scope.recordIds ? { recordIds: [...scope.recordIds] } : {}),
+      ...(scope.line ? { line: structuredCopy(scope.line) } : {}),
     };
     if (!form.onAction) return null;
     let answer: ActionResult | undefined;
