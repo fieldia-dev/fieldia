@@ -96,7 +96,7 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
     top.add.focus();
   });
 
-  /** The app's saved pages to open: asked for once, as the editor is first drawn. */
+  /** The app's saved pages to open: asked for once — as Add a step opens, or a step that opens one is drawn. */
   function listPages() {
     if (asked || !designer.canPlaceForms()) return;
     asked = true;
@@ -122,6 +122,8 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
 
   /** "Add a step": the kinds that fit the page, in their groups. */
   function addMenu(anchor: HTMLButtonElement, under: StepPath | null) {
+    // Asked for now, so a step that opens a page offers them as it begins.
+    listPages();
     const fields = Object.values(page.fields);
     const fits: Partial<Record<Kind, boolean>> = {
       set: fields.some((def) => SETTABLE.has(def.type)),
@@ -388,8 +390,8 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
   function draw() {
     shown = [];
     const steps = stepsAt(page, place);
-    // The app's pages, asked for at once, so a step that opens one offers them as it begins.
-    listPages();
+    // The app's pages, asked for once a step opens one: a list with none never asks.
+    if (steps.some((step) => step.do === 'open') || draft?.step.do === 'open') listPages();
     drawList(top, steps, null);
     // One step begun at a time: Add a step waits while one is.
     top.add.hidden = !!draft && draft.under === null;
