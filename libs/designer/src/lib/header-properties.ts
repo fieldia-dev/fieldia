@@ -4,6 +4,7 @@ import { choicesOf, conditionEditor } from './condition-editor';
 import type { Designer } from './designer';
 import { findHeaderPart } from './header-commands';
 import { allSections } from './page-tree';
+import { whenClicked } from './steps-panel';
 import type { PropertiesView } from './screen-properties';
 
 /**
@@ -29,9 +30,8 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   const w = designer.words.panel;
   const words = el('input', { class: 'fd-input', 'aria-label': w.words }) as HTMLInputElement;
   words.addEventListener('input', () => designer.updateHeaderPart(id, { label: words.value }));
-  const action = el('input', { class: 'fd-input', 'aria-label': w.action, placeholder: 'confirm' }) as HTMLInputElement;
-  action.addEventListener('input', () => action.value.trim() && designer.updateHeaderPart(id, { action: action.value }));
-  const actionRow = el('div', { class: 'fd-prop' }, prop(el, w.action, action), el('p', { class: 'fd-properties-hint' }, w.actionHint));
+  // steps lane: what a button or a counter does when clicked, its app action one of the steps.
+  const pressed = findHeaderPart(designer.getPage(), id)?.kind !== 'badge' ? whenClicked(el, designer, id) : null;
   const look = select(el, w.look, [['secondary', w.buttonLooks.secondary], ['primary', w.buttonLooks.primary], ['danger', w.buttonLooks.danger], ['link', w.buttonLooks.link]]);
   look.addEventListener('change', () => designer.updateHeaderPart(id, { style: look.value as ButtonNode['style'] }));
   const lookRow = prop(el, w.look, look);
@@ -57,7 +57,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
     'div',
     { class: 'fd-props' },
     prop(el, w.words, words),
-    actionRow,
+    ...(pressed ? [pressed.element] : []),
     lookRow,
     asksRow,
     countRow,
@@ -73,8 +73,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
       if (!found) return;
       const { kind, part, index, list } = found;
       if (!focused(words)) words.value = part.label;
-      actionRow.hidden = kind === 'badge';
-      if (kind !== 'badge' && !focused(action)) action.value = (part as ButtonNode).action ?? '';
+      pressed?.update(page);
       lookRow.hidden = asksRow.hidden = kind !== 'button';
       if (kind === 'button') {
         look.value = (part as ButtonNode).style ?? 'secondary';

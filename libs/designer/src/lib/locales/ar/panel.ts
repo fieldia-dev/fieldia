@@ -62,6 +62,11 @@ const NAMES: Record<string, string> = {
   Version: 'الإصدار',
   'Answers go under': 'تُحفظ الإجابات تحت',
   'Open it': 'فتح النموذج',
+  'When clicked': 'عند النقر',
+  'When it changes': 'عندما يتغيّر',
+  'When…': 'عندما…',
+  Look: 'المظهر',
+  'Asks first': 'يسأل أولًا',
 };
 
 export const panel: DesignerWords['panel'] = {

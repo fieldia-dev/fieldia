@@ -9,7 +9,7 @@ import { employeeDesigner } from './test-layout';
 describe('which tabs apply', () => {
   it('gives each kind of part the tabs the approved mockup gives it', () => {
     const cases: [PartKind, string[]][] = [
-      ['page', ['Content', 'Layout', 'Look']],
+      ['page', ['Content', 'Layout', 'Look', 'Rules']],
       ['group', ['Content', 'Layout', 'Look', 'Rules']],
       ['field', ['Content', 'Layout', 'Rules', 'Data']],
       ['arrangement', ['Layout']],

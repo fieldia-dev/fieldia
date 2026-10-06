@@ -177,21 +177,27 @@ export interface BlockPatch {
   align?: ImageNode['align'] | null;
   href?: string;
   caption?: string;
+  /** A button's question before it acts; empty asks nothing. */
+  confirm?: string;
 }
 
 export function updateBlock(page: Page, id: string, patch: BlockPatch): void {
   const node = locate(page, id)?.node;
   if (!node) throw new Refusal((w) => w.layout.noPart(id));
   if (node.type === 'text') {
-    if (patch.label !== undefined || patch.src !== undefined || patch.alt !== undefined || patch.caption !== undefined) throw new Refusal((w) => w.layout.wordsNotLabel);
+    if (patch.label !== undefined || patch.src !== undefined || patch.alt !== undefined || patch.caption !== undefined || patch.confirm !== undefined) throw new Refusal((w) => w.layout.wordsNotLabel);
     if (patch.text !== undefined) node.text = patch.text;
     if (patch.style !== undefined) node.style = patch.style as TextNode['style'];
   } else if (node.type === 'button') {
     if (patch.text !== undefined || patch.src !== undefined || patch.alt !== undefined) throw new Refusal((w) => w.layout.buttonNotText);
     if (patch.label !== undefined) node.label = patch.label;
     if (patch.style !== undefined) node.style = patch.style as ButtonNode['style'];
+    if (patch.confirm !== undefined) {
+      if (patch.confirm.trim()) node.confirm = patch.confirm;
+      else delete node.confirm;
+    }
   } else if (node.type === 'image') {
-    if (patch.text !== undefined || patch.label !== undefined) throw new Refusal((w) => w.layout.pictureWords);
+    if (patch.text !== undefined || patch.label !== undefined || patch.confirm !== undefined) throw new Refusal((w) => w.layout.pictureWords);
     if (patch.src !== undefined) {
       if (!patch.src.trim()) throw new Refusal((w) => w.layout.pictureAddress);
       node.src = patch.src.trim();

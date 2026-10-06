@@ -5,6 +5,7 @@ import type { DesignerWords } from './designer-words';
 import { storedAs } from './kinds';
 import { openMenu } from './menu';
 import type { PropertiesView } from './screen-properties';
+import { whenClicked } from './steps-panel';
 
 /**
  * The panels of a list page: the list's own — the rows a page holds, its
@@ -313,8 +314,8 @@ export function listActionProperties(el: ElementFactory, designer: Designer, id:
   const p = designer.words.panel;
   const words = el('input', { class: 'fd-input', 'aria-label': w.words }) as HTMLInputElement;
   words.addEventListener('input', () => designer.updateListAction(id, { label: words.value }));
-  const action = el('input', { class: 'fd-input', 'aria-label': p.action, placeholder: 'archive' }) as HTMLInputElement;
-  action.addEventListener('input', () => action.value.trim() && designer.updateListAction(id, { action: action.value }));
+  // steps lane: what it does when clicked, its app action one of the steps.
+  const pressed = whenClicked(el, designer, id);
   const look = select(el, w.look, [['secondary', p.buttonLooks.secondary], ['primary', p.buttonLooks.primary], ['danger', p.buttonLooks.danger], ['link', p.buttonLooks.link]]);
   look.addEventListener('change', () => designer.updateListAction(id, { style: look.value as ButtonNode['style'] }));
   const asks = el('input', { class: 'fd-input', 'aria-label': p.asksFirst, placeholder: p.actsAtOnce }) as HTMLInputElement;
@@ -325,7 +326,7 @@ export function listActionProperties(el: ElementFactory, designer: Designer, id:
     'div',
     { class: 'fd-props' },
     prop(el, w.words, words),
-    el('div', { class: 'fd-prop' }, prop(el, p.action, action), el('p', { class: 'fd-properties-hint' }, w.actionHint)),
+    pressed.element,
     prop(el, w.look, look),
     prop(el, p.asksFirst, asks),
     el('div', { class: 'fd-props-actions' }, remove)
@@ -336,7 +337,7 @@ export function listActionProperties(el: ElementFactory, designer: Designer, id:
       const button = listOf(page).actions?.find((a) => a.id === id);
       if (!button) return;
       if (!focused(words)) words.value = button.label;
-      if (!focused(action)) action.value = button.action ?? '';
+      pressed.update(page);
       look.value = button.style ?? 'secondary';
       if (!focused(asks)) asks.value = button.confirm ?? '';
     },

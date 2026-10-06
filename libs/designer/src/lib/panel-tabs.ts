@@ -48,7 +48,8 @@ export function tabsFor(kind: PartKind, mode: 'simple' | 'advanced' = 'advanced'
   if (mode === 'simple' && kind !== 'several') return kind === 'field' ? ['content', 'rules'] : kind === 'page' ? ['content', 'layout'] : ['content'];
   switch (kind) {
     case 'page':
-      return ['content', 'layout', 'look'];
+      // steps lane: the form's own moments are its rules.
+      return ['content', 'layout', 'look', 'rules'];
     case 'group':
       return ['content', 'layout', 'look', 'rules'];
     case 'field':

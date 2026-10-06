@@ -10,13 +10,14 @@ import { onTab, setting } from './panel-controls';
 import { labelsSetting, widthSetting } from './panel-layout';
 import { allSections, findField, sectionLabel } from './page-tree';
 import { fieldRules } from './rules-panel';
+import { whenItChanges } from './steps-panel';
 import type { SampleOptions } from './rules-sample';
 import type { PropertiesView } from './screen-properties';
 
 /**
  * A field's settings, on the panel's tabs: its words and how it is shown
  * (Content), how wide it is and where it sits (Layout), when it shows and
- * must be answered (Rules), and what it is stored as (Data).
+ * must be answered and what its change does (Rules), and what it is stored as (Data).
  */
 
 /** The kinds whose empty box shows words of their own. */
@@ -86,6 +87,8 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const whenBox = onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, w.whenItShows), when.element, showWhen, noRules), 'rules', 'When it shows');
   // Worked out from others, set when, and the rules its answer keeps.
   const own = fieldRules(el, designer, id, sampling);
+  // steps lane: what a person's change of it does.
+  const changes = whenItChanges(el, designer, id);
 
   // ---- Data: what it is stored under and as ----
   const name = el('code', { class: 'fd-insp-code' });
@@ -111,6 +114,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, readonlyWhen.element, readonlyOnly), 'rules', 'Read-only'),
     whenBox,
     ...own.rows,
+    changes.element,
     setting(el, 'data', 'Field name', name, { hint: nameHint, words: w.fieldName }),
     setting(el, 'data', 'Stored as', stored, { hint: fromModelNote, words: w.storedAs })
   );
@@ -162,6 +166,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       showWhen.hidden = !when.element.hidden || !when.canStart();
       noRules.hidden = !when.element.hidden || when.canStart();
       own.update(page);
+      changes.update(page);
 
       // Data.
       name.textContent = found.node.field;

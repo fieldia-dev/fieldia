@@ -29,7 +29,7 @@ function screenEditor() {
 describe('the Look tab — the page', () => {
   it('is the page’s, with nothing picked', () => {
     const { host, panel } = screenEditor();
-    expect([...panel.querySelectorAll('[role="tab"]')].map((t) => t.textContent)).toEqual(['Content', 'Layout', 'Look']);
+    expect([...panel.querySelectorAll('[role="tab"]')].map((t) => t.textContent)).toEqual(['Content', 'Layout', 'Look', 'Rules']);
     openTab(host, 'Look');
     expect([...panel.querySelectorAll('[role="tabpanel"]:not([hidden]) [data-setting]')].map((r) => r.getAttribute('data-setting'))).toEqual(['Look presets', 'Accent colour', 'Font', 'Spacing', 'Corners', 'Labels', 'Label width', 'Colours', 'Each kind of part']);
   });
