@@ -9,6 +9,8 @@
 
 import type { ASTNode, BinaryOpNode, CallNode, UnaryOpNode } from './parser';
 import { FUNCTIONS, type ExpressionEnv } from './functions';
+import { ExpressionParser } from './parser';
+import { tokenize } from './tokenizer';
 import { arithmetic, negate, truthy } from './operations';
 
 export { truthy } from './operations';
@@ -125,7 +127,15 @@ function evaluateUnaryOp(node: UnaryOpNode, context: Record<string, unknown>, en
 function evaluateCall(node: CallNode, context: Record<string, unknown>, env: ExpressionEnv): unknown {
   const fn = FUNCTIONS.get(node.name);
   if (!fn) throw new Error(`Unknown function: ${node.name}`);
-  return fn.call({ args: node.args, value: (arg) => evaluate(arg, context, env), env });
+  return fn.call({ args: node.args, value: (arg) => evaluate(arg, context, env), env, holds: (condition, row) => truthy(evaluate(conditionAst(condition), row as Record<string, unknown>, env)) });
+}
+
+/** Conditions on lines, as `count` and `sum` take them in quotes: each read once. */
+const conditions = new Map<string, ASTNode>();
+function conditionAst(source: string): ASTNode {
+  let ast = conditions.get(source);
+  if (!ast) conditions.set(source, (ast = new ExpressionParser(tokenize(source)).parse()));
+  return ast;
 }
 
 /** What `<` and `>` order: numbers with numbers, strings with strings. */

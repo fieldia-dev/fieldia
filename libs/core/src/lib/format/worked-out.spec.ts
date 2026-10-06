@@ -82,6 +82,17 @@ describe('worked-out values, checked as the page is read', () => {
     ]);
   });
 
+  it('reads a count’s or a sum’s condition on the lines, and keeps it to their fields', () => {
+    const requirements = lines({ state: { type: 'char', label: 'State' }, amount: num('Amount') });
+    expect(issues({ requirement_ids: requirements, done: num('Done', { compute: `count(requirement_ids, "state == 'done'")` }) })).toEqual([]);
+    expect(issues({ requirement_ids: requirements, paid: num('Paid', { compute: `sum(requirement_ids, 'amount', "colour == 'red'")` }) })).toEqual([
+      `fields.paid.compute: "colour == 'red'" reads "colour", which is not a field of the lines of "requirement_ids"`,
+    ]);
+    expect(issues({ requirement_ids: requirements, done: num('Done', { compute: `count(requirement_ids, "state ==")` }) })).toEqual([
+      `fields.done.compute: cannot read the condition "state ==": Unexpected token: EOF`,
+    ]);
+  });
+
   it('names the fields that are worked out from each other', () => {
     expect(issues({ a: num('A', { compute: 'b + 1' }), b: num('B', { compute: 'a * 2' }), c: num('C', { compute: 'a' }) })).toEqual([
       'fields.a.compute: "a" and "b" are worked out from each other: a → b → a',

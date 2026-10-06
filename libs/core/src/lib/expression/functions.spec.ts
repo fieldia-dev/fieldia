@@ -120,6 +120,44 @@ describe('sum(lines, field) and count(lines)', () => {
   });
 });
 
+describe('count(lines, condition) and sum(lines, field, condition)', () => {
+  const env: ExpressionEnv = {
+    lines: () => [
+      { name: 'Site visit', state: 'done', mandatory: true, amount: 100 },
+      { name: 'Bank letter', state: 'open', mandatory: true, amount: 40 },
+      { name: 'Samples', state: 'done', mandatory: false, amount: null },
+    ],
+  };
+
+  it('count and add up only the lines where the condition holds', () => {
+    expect(value(`count(requirement_ids, "state == 'done'")`, {}, env)).toBe(2);
+    expect(value(`count(requirement_ids, "mandatory and state != 'done'")`, {}, env)).toBe(1);
+    expect(value(`sum(requirement_ids, 'amount', "state == 'done'")`, {}, env)).toBe(100);
+    // A share of the lines, as the tender's compliance per cent.
+    expect(value(`round(100 * count(requirement_ids, "state == 'done'") / count(requirement_ids))`, {}, env)).toBe(67);
+  });
+
+  it('take the condition in quotes, and refuse anything else', () => {
+    expect(() => compileExpression('count(requirement_ids, state)')).toThrow(/condition, in quotes/);
+    expect(() => compileExpression(`sum(requirement_ids, 'amount', done)`)).toThrow(/condition, in quotes/);
+  });
+});
+
+describe('days(from, to)', () => {
+  it('counts the days from one date to another, datetimes by their day', () => {
+    expect(value("days('2026-10-01', '2026-10-07')")).toBe(6);
+    expect(value("days('2026-10-07', '2026-10-01')")).toBe(-6);
+    expect(value('days(date_opened, today())', { date_opened: '2026-09-07T09:30' }, { today: () => '2026-10-07' })).toBe(30);
+    // Across the clocks going back in October.
+    expect(value("days('2026-10-24', '2026-11-02')")).toBe(9);
+  });
+
+  it('gives null when either day is missing or not a date', () => {
+    expect(value('days(due, today())', { due: null })).toBeNull();
+    expect(value("days('soon', '2026-10-07')")).toBeNull();
+  });
+});
+
 describe('if(condition, then, otherwise)', () => {
   it('picks a value by a condition, with Python’s idea of true', () => {
     expect(value("if(qty > 10, 'bulk', 'single')", { qty: 12 })).toBe('bulk');

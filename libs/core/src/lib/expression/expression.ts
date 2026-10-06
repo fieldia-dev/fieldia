@@ -1,7 +1,7 @@
 import { evaluate } from './evaluator';
 import type { ExpressionEnv } from './functions';
 import { ExpressionParser } from './parser';
-import { fieldsRead, pathsRead, sumsRead } from './reads';
+import { fieldsRead, pathsRead, sumsRead, wheresRead } from './reads';
 import { tokenize } from './tokenizer';
 
 export type { ExpressionEnv } from './functions';
@@ -13,6 +13,8 @@ export interface CompiledExpression {
   readonly fields: readonly string[];
   /** The names it reads, whole: `user.roles`, `partner_id.country_id`. */
   readonly paths: readonly string[];
+  /** The conditions on lines it counts or adds up by. */
+  readonly wheres: readonly { lines: string; condition: string }[];
   /** The line fields it adds up, as `sum(lines, 'subtotal')` names them. */
   readonly sums: readonly { lines: string; field: string }[];
   /** The value, or null when it cannot be worked out. Never throws. */
@@ -30,6 +32,7 @@ export function compileExpression(source: string): CompiledExpression {
     source,
     fields: fieldsRead(ast),
     paths: pathsRead(ast),
+    wheres: wheresRead(ast),
     sums: sumsRead(ast),
     evaluate(values, env = {}) {
       try {

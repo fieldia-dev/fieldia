@@ -189,7 +189,20 @@ export class ReferenceCheck {
    * on a record what every expression there reads: its `id`, and `user` with
    * the person's `id`, `name` or `roles`.
    */
-  private checkReads(source: string, reads: { fields: readonly string[]; paths: readonly string[] }, path: string, scope: Scope) {
+  private checkReads(source: string, reads: { fields: readonly string[]; paths: readonly string[]; wheres: readonly { lines: string; condition: string }[] }, path: string, scope: Scope) {
+    // A count's or a sum's condition reads the fields of the lines it is on.
+    for (const where of reads.wheres) {
+      const lines = scope.fields[where.lines];
+      if (lines?.type !== 'one2many') continue;
+      let fields: readonly string[];
+      try {
+        fields = compileModifier(where.condition).fields;
+      } catch (error) {
+        this.report(path, `cannot read the condition "${where.condition}": ${(error as Error).message}`);
+        continue;
+      }
+      for (const name of fields) if (!has(lines.fields, name)) this.report(path, `"${where.condition}" reads "${name}", which is not a field of the lines of "${where.lines}"`);
+    }
     for (const name of reads.fields) {
       if (has(scope.fields, name)) continue;
       // A record's expressions read its id and the person; a line's, the person and the record it is on.

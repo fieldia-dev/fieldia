@@ -22,12 +22,15 @@ const WORKED_OUT = new Set(['char', 'text', 'integer', 'float', 'monetary']);
 const SET = new Set([...WORKED_OUT, 'selection', 'boolean', 'date', 'datetime']);
 
 /** The functions offered, with where the cursor goes: the first value to type. */
-const FUNCTIONS: { name: 'round' | 'min' | 'max' | 'if' | 'abs'; text: string; back: number }[] = [
+const FUNCTIONS: { name: 'round' | 'min' | 'max' | 'if' | 'abs' | 'sum' | 'count' | 'days'; text: string; back: number }[] = [
   { name: 'round', text: 'round(, 2)', back: 4 },
   { name: 'min', text: 'min(, )', back: 3 },
   { name: 'max', text: 'max(, )', back: 3 },
   { name: 'if', text: 'if(, , )', back: 5 },
   { name: 'abs', text: 'abs()', back: 1 },
+  { name: 'sum', text: "sum(, '')", back: 5 },
+  { name: 'count', text: 'count()', back: 1 },
+  { name: 'days', text: 'days(, today())', back: 10 },
 ];
 
 interface Own {

@@ -39,6 +39,17 @@ export function pathsRead(ast: ASTNode): string[] {
   return paths;
 }
 
+/** The conditions on lines an expression counts or adds up by: `count(lines, "…")`, `sum(lines, 'x', "…")`. */
+export function wheresRead(ast: ASTNode): { lines: string; condition: string }[] {
+  const wheres: { lines: string; condition: string }[] = [];
+  walk(ast, (node) => {
+    if (node.type !== 'Call' || (node.name !== 'count' && node.name !== 'sum')) return;
+    const [lines, condition] = node.name === 'count' ? [node.args[0], node.args[1]] : [node.args[0], node.args[2]];
+    if (lines.type === 'Identifier' && condition?.type === 'Literal' && typeof condition.value === 'string') wheres.push({ lines: lines.name, condition: condition.value });
+  });
+  return wheres;
+}
+
 /** The line fields an expression adds up, as `sum(lines, 'subtotal')` names them. */
 export function sumsRead(ast: ASTNode): { lines: string; field: string }[] {
   const sums: { lines: string; field: string }[] = [];

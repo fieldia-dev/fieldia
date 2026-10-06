@@ -23,6 +23,8 @@ interface Call {
   args: readonly ASTNode[];
   value(node: ASTNode): unknown;
   env: ExpressionEnv;
+  /** Whether a condition, written in quotes, holds for one line's values. */
+  holds(condition: string, row: Readonly<Record<string, unknown>>): boolean;
 }
 
 interface ExpressionFunction {
@@ -44,6 +46,27 @@ function listOf(call: Call): unknown {
   const first = call.args[0];
   const rows = first.type === 'Identifier' ? call.env.lines?.(first.name) : undefined;
   return rows ?? call.value(first);
+}
+
+/** A condition given in quotes as the value at `at`: refused when it is anything else. */
+function conditionAt(args: readonly ASTNode[], at: number, name: string, example: string): string | undefined {
+  const arg = args[at];
+  return arg && !(arg.type === 'Literal' && typeof arg.value === 'string') ? `${name} takes a condition, in quotes, on the lines: ${example}` : undefined;
+}
+
+/** The rows a function counts or adds up, only those where the condition at `at` holds when there is one. */
+function rowsWhere(call: Call, list: unknown[], at: number): unknown[] {
+  const condition = call.args[at];
+  if (condition?.type !== 'Literal' || typeof condition.value !== 'string') return list;
+  const source = condition.value;
+  return list.filter((row) => row !== null && typeof row === 'object' && call.holds(source, row as Record<string, unknown>));
+}
+
+/** A day from a date or a datetime, as days since 1970: null when it is not one. */
+function dayNumber(value: unknown): number | null {
+  if (typeof value !== 'string') return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  return match ? Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])) / 86_400_000 : null;
 }
 
 /** The smallest or largest of the values, lists opened: empty ones left out, numbers or text but not both. */
@@ -99,13 +122,13 @@ export const FUNCTIONS: ReadonlyMap<string, ExpressionFunction> = new Map<string
   [
     'sum',
     {
-      takes: [1, 2],
+      takes: [1, 3],
       check(args) {
         const field = args[1];
         if (field && !(field.type === 'Literal' && typeof field.value === 'string')) {
           return "sum takes the name of a field, in quotes, after the lines: sum(lines, 'subtotal')";
         }
-        return undefined;
+        return conditionAt(args, 2, 'sum', `sum(lines, 'amount', "state == 'done'")`);
       },
       call(call) {
         const list = listOf(call);
@@ -113,7 +136,7 @@ export const FUNCTIONS: ReadonlyMap<string, ExpressionFunction> = new Map<string
         if (!Array.isArray(list)) return null;
         const field = call.args[1]?.type === 'Literal' ? (call.args[1].value as string) : undefined;
         let total = 0;
-        for (const item of list) {
+        for (const item of rowsWhere(call, list, 2)) {
           const n = field === undefined ? item : (item as Record<string, unknown> | null)?.[field];
           if (isNumber(n)) total += n;
         }
@@ -124,11 +147,24 @@ export const FUNCTIONS: ReadonlyMap<string, ExpressionFunction> = new Map<string
   [
     'count',
     {
-      takes: [1, 1],
+      takes: [1, 2],
+      check: (args) => conditionAt(args, 1, 'count', `count(lines, "state == 'done'")`),
       call(call) {
         const list = listOf(call);
         if (list === null || list === undefined) return 0;
-        return Array.isArray(list) ? list.length : null;
+        return Array.isArray(list) ? rowsWhere(call, list, 1).length : null;
+      },
+    },
+  ],
+  [
+    'days',
+    {
+      takes: [2, 2],
+      // From one day to another: negative when the second comes first. A datetime counts by its day.
+      call({ args, value }) {
+        const from = dayNumber(value(args[0]));
+        const to = dayNumber(value(args[1]));
+        return from === null || to === null ? null : to - from;
       },
     },
   ],
