@@ -29,6 +29,8 @@ export interface ViewerLabels {
   /** A form in a dialog: the button that saves it and closes the dialog, and the × that closes it. */
   saveClose: string;
   close: string;
+  /** A form in a side panel: what it asks before Escape or × drops the changes made in it. */
+  discardChanges: string;
   /** The × on an alert that may be dismissed. */
   dismiss: string;
   /** Saving again after a save failed. */
@@ -121,6 +123,7 @@ const en: ViewerLabels = {
   loading: 'Loading…',
   saveClose: 'Save & Close',
   close: 'Close',
+  discardChanges: 'Discard your changes?',
   dismiss: 'Dismiss',
   retry: 'Retry',
   notSaved: 'Not saved',

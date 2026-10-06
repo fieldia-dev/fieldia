@@ -24,6 +24,7 @@ export const ar: ViewerLabels = {
   loading: 'جارٍ التحميل…',
   saveClose: 'حفظ وإغلاق',
   close: 'إغلاق',
+  discardChanges: 'هل تريد تجاهل تعديلاتك؟',
   dismiss: 'إخفاء',
   retry: 'أعد المحاولة',
   notSaved: 'لم يُحفظ',

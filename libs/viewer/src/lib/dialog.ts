@@ -10,6 +10,7 @@ import { mountViewer, VIEWER_LABELS, type Skin, type ViewerHandle, type ViewerOp
  * dialog saves (Save & Close) or closes without saving (Discard, ×, Escape);
  * the page's own Save and Discard stay hidden. The focus moves into the dialog,
  * Tab stays inside it, and the focus goes back where it was when it closes.
+ * A side panel (`openFormPanel`) is the same box at the edge of the screen.
  */
 
 export interface FormDialogOptions extends ViewerOptions {
@@ -33,15 +34,38 @@ export interface FormDialogOptions extends ViewerOptions {
 }
 
 export interface FormDialogResult {
-  /** True when Save & Close was pressed and the form accepted. */
+  /** True when Save & Close (Done, in a panel in "values" mode) was pressed and the form accepted. */
   saved: boolean;
   recordId: RecordId | null;
   values: Values;
 }
 
+/** A page in a side panel: the dialog's options, with a width in place of its size. */
+export interface FormPanelOptions extends Omit<FormDialogOptions, 'size'> {
+  /** About 420, 560 (the default) or 720 pixels wide on a wide screen; the whole screen on a phone. */
+  width?: 'narrow' | 'medium' | 'wide';
+}
+
 let dialogs = 0;
 
 export function openFormDialog(options: FormDialogOptions): Promise<FormDialogResult> {
+  return openForm(options, `fd-size-${options.size ?? 'medium'}`);
+}
+
+/**
+ * A page in a side panel: the dialog's twin, at full height along the
+ * inline-end edge (the left, right to left), the page behind dimmed but in
+ * sight; a full-screen sheet on a phone. It saves, or in "values" mode hands
+ * back its values with Done, as the dialog does; Escape and × ask first when
+ * there are changes to lose. A dialog opened from it sits above it, and a
+ * panel opened from it stacks over it, this one stepped back.
+ */
+export function openFormPanel(options: FormPanelOptions): Promise<FormDialogResult> {
+  return openForm(options, `fd-form-panel fd-width-${options.width ?? 'medium'}`, true);
+}
+
+/** A dialog or a panel: a page in a box with a head, a body that scrolls and a foot; `shape` is the box's own classes. */
+function openForm(options: FormDialogOptions, shape: string, panel = false): Promise<FormDialogResult> {
   const doc = options.container?.ownerDocument ?? document;
   const container = options.container ?? doc.body;
   const opener = doc.activeElement instanceof doc.defaultView!.HTMLElement ? (doc.activeElement as HTMLElement) : null;
@@ -58,10 +82,10 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
   const closeButton = make('button', { type: 'button', class: 'fd-dialog-close', 'aria-label': labels.close }, '×');
   const body = make('div', { class: 'fd-form-dialog-body' });
   const discard = make('button', { type: 'button', class: 'fd-button' }, labels.discard);
-  const saveClose = make('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.saveClose);
+  const saveClose = make('button', { type: 'button', class: 'fd-button fd-button-primary' }, panel && options.mode === 'values' ? labels.done : labels.saveClose);
   const box = make('div', {
     // Its own tokens and skin: the dialog sits outside the page that opened it.
-    class: `fd-theme fd-form-dialog fd-size-${options.size ?? 'medium'}`,
+    class: `fd-theme fd-form-dialog ${shape}`,
     'data-fd-skin': options.skin ?? 'underline',
     role: 'dialog',
     'aria-modal': 'true',
@@ -75,8 +99,13 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
   box.append(make('div', { class: 'fd-form-dialog-head' }), body, make('div', { class: 'fd-actions fd-actions-end fd-form-dialog-foot' }));
   box.firstElementChild?.append(title, closeButton);
   box.lastElementChild?.append(discard, saveClose);
-  const backdrop = make('div', { class: 'fd-dialog-backdrop fd-form-dialog-backdrop' });
+  const backdrop = make('div', { class: `fd-dialog-backdrop fd-form-dialog-backdrop${panel ? ' fd-form-panel-backdrop' : ''}` });
+  // A panel's backdrop runs its way too: the inline end it holds the panel at is the left, right to left.
+  if (panel && options.dir) backdrop.setAttribute('dir', options.dir);
   backdrop.append(box);
+  // The panel this one opens over steps back while it is open.
+  const under = panel ? [...doc.querySelectorAll('.fd-form-panel')].pop() : undefined;
+  under?.setAttribute('data-behind', '');
   container.append(backdrop);
 
   const handle = mountViewer(body, { ...options, page: look && !options.page.look ? { ...options.page, look } : options.page, showActions: false });
@@ -99,8 +128,41 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
       const result: FormDialogResult = { saved, recordId: state.recordId ?? null, values: state.values as Values };
       handle.destroy();
       backdrop.remove();
+      under?.removeAttribute('data-behind');
       opener?.focus();
       resolve(result);
+    };
+    /** "Discard your changes?" over the panel, the focus on Cancel; true for Discard. Its keys are its own. */
+    const ask = () =>
+      new Promise<boolean>((answer) => {
+        const was = doc.activeElement as HTMLElement | null;
+        const text = make('p', { id: `${id}-ask` }, labels.discardChanges);
+        const no = make('button', { type: 'button', class: 'fd-button' }, labels.cancel);
+        const yes = make('button', { type: 'button', class: 'fd-button fd-button-primary' }, labels.discard);
+        const buttons = make('div', { class: 'fd-actions fd-actions-end' });
+        const question = make('div', { class: 'fd-dialog', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': text.id });
+        const shade = make('div', { class: 'fd-dialog-backdrop' });
+        buttons.append(no, yes);
+        question.append(text, buttons);
+        shade.append(question);
+        const end = (discarding: boolean) => {
+          shade.remove();
+          was?.focus();
+          answer(discarding);
+        };
+        no.addEventListener('click', () => end(false));
+        yes.addEventListener('click', () => end(true));
+        shade.addEventListener('keydown', (event) => {
+          event.stopPropagation();
+          if (event.key === 'Escape') end(false);
+          else keepTabIn(question, event);
+        });
+        box.append(shade);
+        no.focus();
+      });
+    /** Escape and ×: a panel with changes in it asks first; a dialog closes at once, as it always has. */
+    const leave = async () => {
+      if (!panel || !handle.form.getState().dirty.length || (await ask())) close(false);
     };
     saveClose.addEventListener('click', async () => {
       saveClose.disabled = true;
@@ -109,7 +171,7 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
       if (accepted) close(true);
     });
     discard.addEventListener('click', () => close(false));
-    closeButton.addEventListener('click', () => close(false));
+    closeButton.addEventListener('click', leave);
     box.addEventListener('keydown', (event) => {
       // Ctrl+Enter is Save & Close from wherever the cursor is, even after a field used the Enter
       // (a tag box adding its tag), taking what is still being typed. The grid keeps its own keys.
@@ -124,7 +186,7 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
       if (event.defaultPrevented) return;
       if (event.key === 'Escape') {
         event.preventDefault();
-        close(false);
+        void leave();
       } else keepTabIn(box, event);
     });
   });
