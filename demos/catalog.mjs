@@ -80,6 +80,7 @@ export const DEMOS = [
       'Open the calendar of the start date: it shows the weeks’ numbers.',
       'Add tags to a field of tags, and a new one by its name.',
       'Format text in the rich text box with its toolbar.',
+      'Add files to Documents: each shows as a card, its name under its picture. Switch them to a list with the buttons over them.',
     ],
   },
   {
