@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createForm, createMemoryDataSource, type Page, type RecordId } from '@fieldia/core';
 import type { ViewerHandle } from '@fieldia/viewer';
 import { createRef, useState } from 'react';
@@ -20,6 +20,23 @@ const custom: Page = {
     children: [
       { type: 'field', id: 'f-nickname', field: 'nickname', widget: 'shout' },
       { type: 'slot', id: 'note', name: 'note' },
+    ],
+  },
+};
+
+/** A product priced by the app, saved as a record. */
+const pricing: Page = {
+  fieldia: '0.1',
+  id: 'pricing',
+  data: { kind: 'record', model: 'shop.order' },
+  fields: { product: { type: 'char', label: 'Product' }, price: { type: 'float', label: 'Price' } },
+  layout: {
+    type: 'sections',
+    id: 'root',
+    children: [
+      { type: 'field', id: 'f-product', field: 'product' },
+      { type: 'field', id: 'f-price', field: 'price' },
+      { type: 'button', id: 'price', label: 'Price it', action: 'price' },
     ],
   },
 };
@@ -124,6 +141,60 @@ describe('<FieldiaForm>', () => {
     fireEvent.click(screen.getByText('Delta Foods'));
     expect(first).toEqual([7]);
     expect(second).toEqual([7]);
+  });
+
+  it('tells the app the form’s events, through the newest handlers, and takes what onAction answers', async () => {
+    const heard: string[] = [];
+    const dataSource = createMemoryDataSource();
+    const { rerender } = render(
+      <FieldiaForm
+        page={pricing}
+        dataSource={dataSource}
+        onChange={({ field, by }) => heard.push(`old change ${field} by ${by}`)}
+      />
+    );
+    rerender(
+      <FieldiaForm
+        page={pricing}
+        dataSource={dataSource}
+        onAction={({ action }) => (action === 'price' ? { values: { price: 380 }, say: 'Priced' } : undefined)}
+        onChange={({ field, by }) => heard.push(`change ${field} by ${by}`)}
+        onRun={({ id, result }) => heard.push(`run ${id} ${result.done ? 'done' : result.reason}`)}
+        onSave={({ values }) => heard.push(`save ${values['price']}`)}
+      />
+    );
+    fireEvent.input(document.querySelector('[data-node="f-product"] input') as HTMLInputElement, { target: { value: 'Desk lamp' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Price it' }));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect((document.querySelector('[data-node="f-price"] input') as HTMLInputElement).value).toBe('380.00');
+    expect(document.querySelector('.fd-say')?.textContent).toContain('Priced');
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(heard).toEqual(['change product by person', 'change price by step', 'run price done', 'save 380']);
+  });
+
+  it('tells the app a response sent and a wizard step entered', async () => {
+    const sent: unknown[] = [];
+    const steps: string[] = [];
+    render(<FieldiaForm page={page('survey')} dataSource={createMemoryDataSource()} onSend={({ values }) => sent.push(values)} onStep={({ step }) => steps.push(step)} />);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    fireEvent.input(document.querySelector('[data-node="q-name"] input') as HTMLInputElement, { target: { value: 'Sara' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(steps).toEqual(['step-about', 'step-usage']);
+    cleanup();
+    render(<FieldiaForm page={{ ...pricing, data: { kind: 'responses' } }} dataSource={createMemoryDataSource()} onSend={({ values }) => sent.push(values)} />);
+    fireEvent.input(document.querySelector('[data-node="f-product"] input') as HTMLInputElement, { target: { value: 'Desk lamp' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(sent).toEqual([{ product: 'Desk lamp', price: null }]);
   });
 
   it('cleans up when it unmounts', () => {
