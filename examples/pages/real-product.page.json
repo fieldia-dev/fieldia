@@ -1,0 +1,543 @@
+{
+  "fieldia": "0.1",
+  "id": "real-product",
+  "title": "Product",
+  "data": { "kind": "record", "model": "product.template" },
+  "fields": {
+    "name": { "type": "char", "label": "Product Name", "required": true },
+    "priority": { "type": "integer", "label": "Favorite", "max": 1, "default": 0 },
+    "image_1920": { "type": "image", "label": "Image" },
+    "active": { "type": "boolean", "label": "Active", "default": true },
+    "sale_ok": { "type": "boolean", "label": "Can be Sold", "default": true },
+    "purchase_ok": { "type": "boolean", "label": "Can be Purchased", "default": true },
+    "product_variant_count": { "type": "integer", "label": "# Product Variants", "readonly": true, "default": 1 },
+    "is_product_variant": { "type": "boolean", "label": "Is a product variant", "readonly": true },
+    "detailed_type": {
+      "type": "selection",
+      "label": "Product Type",
+      "required": true,
+      "default": "consu",
+      "help": "A storable product is a product for which you manage stock. The Inventory app has to be installed.\nA consumable product is a product for which stock is not managed.\nA service is a non-material product you provide.",
+      "options": [
+        { "value": "consu", "label": "Consumable" },
+        { "value": "service", "label": "Service" },
+        { "value": "product", "label": "Storable Product" }
+      ]
+    },
+    "type": {
+      "type": "selection",
+      "label": "Type",
+      "compute": "detailed_type",
+      "options": [
+        { "value": "consu", "label": "Consumable" },
+        { "value": "service", "label": "Service" },
+        { "value": "product", "label": "Storable Product" }
+      ]
+    },
+    "invoice_policy": {
+      "type": "selection",
+      "label": "Invoicing Policy",
+      "required": true,
+      "default": "order",
+      "help": "Ordered Quantity: Invoice quantities ordered by the customer.\nDelivered Quantity: Invoice quantities delivered to the customer.",
+      "options": [
+        { "value": "order", "label": "Ordered quantities" },
+        { "value": "delivery", "label": "Delivered quantities" }
+      ]
+    },
+    "visible_expense_policy": { "type": "boolean", "label": "Re-Invoice Policy visible", "readonly": true },
+    "expense_policy": {
+      "type": "selection",
+      "label": "Re-Invoice Expenses",
+      "default": "no",
+      "help": "Validated expenses, vendor bills, or stock pickings (set up to track costs) can be invoiced to the customer at either cost or sales price.",
+      "options": [
+        { "value": "no", "label": "No" },
+        { "value": "cost", "label": "At cost" },
+        { "value": "sales_price", "label": "Sales price" }
+      ]
+    },
+    "product_tooltip": {
+      "type": "text",
+      "label": "Product Tooltip",
+      "compute": "if(type == 'consu', 'Consumables are physical products for which you don’t manage the inventory level: they are always available.', if(type == 'product', 'Storable products are physical items for which you manage the inventory level.', ''))"
+    },
+    "uom_id": { "type": "many2one", "label": "Unit of Measure", "relation": "uom.uom", "required": true, "help": "Default unit of measure used for all stock operations." },
+    "uom_po_id": { "type": "many2one", "label": "Purchase UoM", "relation": "uom.uom", "required": true, "help": "Default unit of measure used for purchase orders. It must be in the same category as the default unit of measure." },
+    "uom_name": { "type": "char", "label": "Unit of Measure Name", "readonly": true },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency" },
+    "cost_currency_id": { "type": "many2one", "label": "Cost Currency", "relation": "res.currency" },
+    "list_price": { "type": "monetary", "label": "Sales Price", "currencyField": "currency_id", "default": 1, "help": "Price at which the product is sold to customers." },
+    "tax_string": { "type": "char", "label": "Tax String", "readonly": true },
+    "taxes_id": {
+      "type": "many2many",
+      "label": "Customer Taxes",
+      "relation": "account.tax",
+      "help": "Default taxes used when selling the product.",
+      "filter": [{ "field": "type_tax_use", "op": "=", "value": "sale" }]
+    },
+    "standard_price": {
+      "type": "monetary",
+      "label": "Cost",
+      "currencyField": "cost_currency_id",
+      "help": "Value of the product (automatically computed in AVCO).\nUsed to value the product when the purchase cost is not known (e.g. inventory adjustment).\nUsed to compute margins on sale orders."
+    },
+    "categ_id": { "type": "many2one", "label": "Product Category", "relation": "product.category", "required": true },
+    "default_code": { "type": "char", "label": "Internal Reference" },
+    "barcode": { "type": "char", "label": "Barcode" },
+    "product_tag_ids": { "type": "many2many", "label": "Product Template Tags", "relation": "product.tag" },
+    "product_properties": {
+      "type": "properties",
+      "label": "Properties",
+      "definitions": [
+        { "name": "mdd_class", "label": "Medical device class", "type": "selection", "options": [{ "value": "I", "label": "Class I" }, { "value": "IIa", "label": "Class IIa" }, { "value": "IIb", "label": "Class IIb" }, { "value": "III", "label": "Class III" }] },
+        { "name": "eda_registration", "label": "EDA registration no.", "type": "char" },
+        { "name": "warranty_months", "label": "Warranty (months)", "type": "integer" },
+        { "name": "needs_biomedical_signoff", "label": "Biomedical engineer signs the handover", "type": "boolean" }
+      ]
+    },
+    "description": { "type": "html", "label": "Description" },
+    "attribute_line_ids": {
+      "type": "one2many",
+      "label": "Product Attributes",
+      "relation": "product.template.attribute.line",
+      "sequenceField": "sequence",
+      "fields": {
+        "sequence": { "type": "integer", "label": "Sequence" },
+        "attribute_id": { "type": "many2one", "label": "Attribute", "relation": "product.attribute", "required": true },
+        "value_ids": { "type": "many2many", "label": "Values", "relation": "product.attribute.value", "required": true },
+        "value_count": { "type": "integer", "label": "Value Count", "readonly": true }
+      }
+    },
+    "description_sale": { "type": "text", "label": "Sales Description", "help": "A description of the Product that you want to communicate to your customers. This description will be copied to every Sales Order, Delivery Order and Customer Invoice/Credit Note" },
+    "sale_line_warn": {
+      "type": "selection",
+      "label": "Warning",
+      "required": true,
+      "default": "no-message",
+      "help": "Selecting the \"Warning\" option will notify user with the message, Selecting \"Blocking Message\" will throw an exception with the message and block the flow. The Message has to be written in the next field.",
+      "options": [
+        { "value": "no-message", "label": "No Message" },
+        { "value": "warning", "label": "Warning" },
+        { "value": "block", "label": "Blocking Message" }
+      ]
+    },
+    "sale_line_warn_msg": { "type": "text", "label": "Message" },
+    "seller_ids": {
+      "type": "one2many",
+      "label": "Vendors",
+      "relation": "product.supplierinfo",
+      "sequenceField": "sequence",
+      "fields": {
+        "sequence": { "type": "integer", "label": "Sequence" },
+        "partner_id": { "type": "many2one", "label": "Vendor", "relation": "res.partner", "required": true },
+        "product_code": { "type": "char", "label": "Vendor Product Code" },
+        "min_qty": { "type": "float", "label": "Quantity", "digits": [16, 2] },
+        "price": { "type": "float", "label": "Price", "digits": [16, 2] },
+        "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency", "required": true },
+        "delay": { "type": "integer", "label": "Delivery Lead Time" }
+      }
+    },
+    "supplier_taxes_id": {
+      "type": "many2many",
+      "label": "Vendor Taxes",
+      "relation": "account.tax",
+      "help": "Default taxes used when buying the product.",
+      "filter": [{ "field": "type_tax_use", "op": "=", "value": "purchase" }]
+    },
+    "purchase_method": {
+      "type": "selection",
+      "label": "Control Policy",
+      "default": "receive",
+      "help": "On ordered quantities: Control bills based on ordered quantities.\nOn received quantities: Control bills based on received quantities.",
+      "options": [
+        { "value": "purchase", "label": "On ordered quantities" },
+        { "value": "receive", "label": "On received quantities" }
+      ]
+    },
+    "description_purchase": { "type": "text", "label": "Purchase Description" },
+    "purchase_line_warn": {
+      "type": "selection",
+      "label": "Purchase Order Line Warning",
+      "required": true,
+      "default": "no-message",
+      "options": [
+        { "value": "no-message", "label": "No Message" },
+        { "value": "warning", "label": "Warning" },
+        { "value": "block", "label": "Blocking Message" }
+      ]
+    },
+    "purchase_line_warn_msg": { "type": "text", "label": "Message for Purchase Order Line" },
+    "has_available_route_ids": { "type": "boolean", "label": "Routes can be selected on this product", "readonly": true },
+    "route_ids": { "type": "many2many", "label": "Routes", "relation": "stock.route", "help": "Depending on the modules installed, this will allow you to define the route of the product: whether it will be bought, manufactured, replenished on order, etc." },
+    "route_from_categ_ids": { "type": "many2many", "label": "Category Routes", "relation": "stock.route", "readonly": true },
+    "responsible_id": { "type": "many2one", "label": "Responsible", "relation": "res.users", "help": "This user will be responsible of the next activities related to logistic operations for this product." },
+    "weight": { "type": "float", "label": "Weight", "digits": [16, 2] },
+    "volume": { "type": "float", "label": "Volume", "digits": [16, 3] },
+    "sale_delay": { "type": "integer", "label": "Customer Lead Time", "help": "Delivery lead time, in days. It's the number of days, promised to the customer, between the confirmation of the sales order and the delivery." },
+    "tracking": {
+      "type": "selection",
+      "label": "Tracking",
+      "required": true,
+      "default": "none",
+      "help": "Ensure the traceability of a storable product in your warehouse.",
+      "options": [
+        { "value": "serial", "label": "By Unique Serial Number" },
+        { "value": "lot", "label": "By Lots" },
+        { "value": "none", "label": "No Tracking" }
+      ]
+    },
+    "description_pickingin": { "type": "text", "label": "Description on Receptions" },
+    "description_pickingout": { "type": "text", "label": "Description on Delivery Orders" },
+    "property_account_income_id": { "type": "many2one", "label": "Income Account", "relation": "account.account", "help": "Keep this field empty to use the default value from the product category." },
+    "property_account_expense_id": { "type": "many2one", "label": "Expense Account", "relation": "account.account", "help": "Keep this field empty to use the default value from the product category. If anglo-saxon accounting with automated valuation method is configured, the expense account on the product category will be used." },
+    "pricelist_item_count": { "type": "integer", "label": "Number of price rules", "readonly": true },
+    "product_document_count": { "type": "integer", "label": "Documents Count", "readonly": true },
+    "sales_count": { "type": "float", "label": "Sold", "readonly": true, "digits": [16, 0] },
+    "purchased_product_qty": { "type": "float", "label": "Purchased", "readonly": true, "digits": [16, 0] },
+    "qty_available": { "type": "float", "label": "Quantity On Hand", "readonly": true, "digits": [16, 0] },
+    "virtual_available": { "type": "float", "label": "Forecasted Quantity", "readonly": true, "digits": [16, 0] },
+    "nbr_moves_in": { "type": "integer", "label": "Incoming", "readonly": true },
+    "nbr_moves_out": { "type": "integer", "label": "Outgoing", "readonly": true },
+    "nbr_reordering_rules": { "type": "integer", "label": "Reordering Rules", "readonly": true },
+    "reordering_min_qty": { "type": "float", "label": "Min", "readonly": true, "digits": [16, 0] },
+    "reordering_max_qty": { "type": "float", "label": "Max", "readonly": true, "digits": [16, 0] },
+    "show_on_hand_qty_status_button": { "type": "boolean", "label": "Show On Hand", "compute": "type == 'product'" },
+    "show_forecasted_qty_status_button": { "type": "boolean", "label": "Show Forecasted", "compute": "type == 'product'" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "avatarField": "image_1920",
+      "placeholder": "e.g. Cheese Burger",
+      "above": [{ "type": "field", "id": "f-priority", "field": "priority", "widget": "rating", "labels": "hidden" }],
+      "below": [
+        { "type": "field", "id": "f-sale-ok", "field": "sale_ok" },
+        { "type": "field", "id": "f-purchase-ok", "field": "purchase_ok" }
+      ]
+    },
+    "buttons": [
+      { "type": "button", "id": "action_update_quantity_on_hand", "label": "Update Quantity", "invisible": "type != 'product'", "action": "action_update_quantity_on_hand" },
+      { "type": "button", "id": "action_product_replenish", "label": "Replenish", "invisible": "type not in ['consu', 'product']", "action": "action_product_replenish" },
+      { "type": "button", "id": "action_open_label_layout", "label": "Print Labels", "invisible": "detailed_type not in ['consu', 'product', 'combo']", "action": "action_open_label_layout" }
+    ],
+    "statButtons": [
+      { "id": "open_pricelist_rules", "label": "Extra Prices", "field": "pricelist_item_count", "icon": "list", "invisible": "pricelist_item_count == 1", "action": "open_pricelist_rules" },
+      { "id": "open_pricelist_rule", "label": "Extra Price", "field": "pricelist_item_count", "icon": "list", "invisible": "pricelist_item_count != 1", "action": "open_pricelist_rules" },
+      { "id": "action_open_documents", "label": "Documents", "field": "product_document_count", "icon": "file", "action": "action_open_documents" },
+      { "id": "product_variant_action", "label": "Variants", "field": "product_variant_count", "icon": "layers", "invisible": "product_variant_count <= 1", "action": "product_variant_action" },
+      { "id": "action_view_sales", "label": "Sold", "field": "sales_count", "icon": "chart", "invisible": "not sale_ok", "action": "action_view_sales" },
+      { "id": "action_view_po", "label": "Purchased", "field": "purchased_product_qty", "icon": "cart", "invisible": "not purchase_ok", "action": "action_view_po" },
+      { "id": "action_update_quantity_on_hand_stat", "label": "On Hand", "field": "qty_available", "icon": "box", "invisible": "not show_on_hand_qty_status_button", "action": "action_update_quantity_on_hand" },
+      { "id": "action_product_tmpl_forecast_report", "label": "Forecasted", "field": "virtual_available", "icon": "chart", "invisible": "not show_forecasted_qty_status_button", "action": "action_product_tmpl_forecast_report" },
+      { "id": "action_view_stock_move_lines", "label": "In / Out", "field": "nbr_moves_out", "icon": "truck", "invisible": "type not in ['product', 'consu']", "action": "action_view_stock_move_lines" },
+      { "id": "action_view_orderpoints_minmax", "label": "Min / Max", "field": "reordering_min_qty", "icon": "settings", "invisible": "type != 'product' or nbr_reordering_rules != 1", "action": "action_view_orderpoints" },
+      { "id": "action_view_orderpoints", "label": "Reordering Rules", "field": "nbr_reordering_rules", "icon": "settings", "invisible": "type != 'product' or nbr_reordering_rules == 1", "action": "action_view_orderpoints" },
+      { "id": "action_open_product_lot", "label": "Lot/Serial Numbers", "icon": "list", "invisible": "tracking == 'none'", "action": "action_open_product_lot" }
+    ],
+    "ribbon": { "id": "archived", "label": "Archived", "tone": "danger", "invisible": "active" },
+    "children": [
+      {
+        "type": "tabs",
+        "id": "notebook",
+        "children": [
+          {
+            "type": "tab",
+            "id": "general_information",
+            "label": "General Information",
+            "children": [
+              {
+                "type": "section",
+                "id": "general-groups",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 2 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "group_general",
+                    "style": "plain",
+                    "children": [
+                      { "type": "field", "id": "f-detailed-type", "field": "detailed_type" },
+                      { "type": "field", "id": "f-invoice-policy", "field": "invoice_policy" },
+                      { "type": "field", "id": "f-expense-policy", "field": "expense_policy", "widget": "radio", "invisible": "not visible_expense_policy" },
+                      { "type": "field", "id": "f-tooltip", "field": "product_tooltip", "labels": "hidden", "invisible": "(type == 'service' and not sale_ok) or not product_tooltip" },
+                      {
+                        "type": "text",
+                        "id": "t-invoice-before-delivery",
+                        "text": "You can invoice them before they are delivered.",
+                        "style": "note",
+                        "invisible": "type not in ['product', 'consu'] or invoice_policy != 'order'"
+                      },
+                      {
+                        "type": "text",
+                        "id": "t-invoice-after-delivery",
+                        "text": "Invoice after delivery, based on quantities delivered, not ordered.",
+                        "style": "note",
+                        "invisible": "type not in ['product', 'consu'] or invoice_policy != 'delivery'"
+                      },
+                      { "type": "field", "id": "f-uom", "field": "uom_id", "options": { "create": false } },
+                      { "type": "field", "id": "f-uom-po", "field": "uom_po_id", "options": { "create": false } }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "group_standard_price",
+                    "style": "plain",
+                    "children": [
+                      { "type": "field", "id": "f-list-price", "field": "list_price", "options": { "pickCurrency": true } },
+                      { "type": "field", "id": "f-tax-string", "field": "tax_string", "labels": "hidden", "invisible": "not tax_string" },
+                      { "type": "field", "id": "f-taxes", "field": "taxes_id", "widget": "tags" },
+                      {
+                        "type": "field",
+                        "id": "f-standard-price",
+                        "field": "standard_price",
+                        "options": { "pickCurrency": true },
+                        "invisible": "product_variant_count != 1 and not is_product_variant"
+                      },
+                      { "type": "field", "id": "f-categ", "field": "categ_id" },
+                      { "type": "field", "id": "f-default-code", "field": "default_code", "invisible": "product_variant_count > 1" },
+                      { "type": "field", "id": "f-barcode", "field": "barcode", "invisible": "product_variant_count > 1" },
+                      { "type": "field", "id": "f-product-tags", "field": "product_tag_ids", "widget": "tags" },
+                      { "type": "button", "id": "product_tag_action", "label": "Configure tags", "style": "link", "icon": "tag", "action": "product_tag_action" }
+                    ]
+                  }
+                ]
+              },
+              { "type": "field", "id": "f-properties", "field": "product_properties" },
+              {
+                "type": "section",
+                "id": "internal-notes",
+                "title": "Internal Notes",
+                "style": "line",
+                "children": [{ "type": "field", "id": "f-description", "field": "description", "labels": "hidden", "placeholder": "This note is only for internal purposes." }]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "variants",
+            "label": "Attributes & Variants",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-attribute-lines",
+                "field": "attribute_line_ids",
+                "columns": ["attribute_id", "value_ids"],
+                "options": { "addLabel": "Add a line" }
+              },
+              {
+                "type": "text",
+                "id": "t-variants-warning",
+                "text": "Warning: adding or deleting attributes will delete and recreate existing variants and lead to the loss of their possible customizations.",
+                "style": "note"
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "sales",
+            "label": "Sales",
+            "invisible": "not sale_ok",
+            "children": [
+              {
+                "type": "section",
+                "id": "description",
+                "title": "Sales Description",
+                "style": "line",
+                "children": [{ "type": "field", "id": "f-description-sale", "field": "description_sale", "labels": "hidden", "placeholder": "This note is added to sales orders and invoices." }]
+              },
+              {
+                "type": "section",
+                "id": "sale-warning",
+                "title": "Warning when Selling this Product",
+                "style": "line",
+                "children": [
+                  { "type": "field", "id": "f-sale-line-warn", "field": "sale_line_warn" },
+                  {
+                    "type": "field",
+                    "id": "f-sale-line-warn-msg",
+                    "field": "sale_line_warn_msg",
+                    "placeholder": "Type a message...",
+                    "invisible": "sale_line_warn == 'no-message'",
+                    "readonly": "sale_line_warn == 'no-message'",
+                    "required": "sale_line_warn != 'no-message'"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "purchase",
+            "label": "Purchase",
+            "invisible": "not purchase_ok",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-sellers",
+                "field": "seller_ids",
+                "labels": "hidden",
+                "columns": ["partner_id", "product_code", "min_qty", "price", "currency_id", "delay"],
+                "invisible": "product_variant_count > 1",
+                "options": { "addLabel": "Add a line" }
+              },
+              {
+                "type": "section",
+                "id": "purchase-groups",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 1 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "bill",
+                    "title": "Vendor Bills",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-supplier-taxes", "field": "supplier_taxes_id", "widget": "tags" },
+                      { "type": "field", "id": "f-purchase-method", "field": "purchase_method", "widget": "radio" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "purchase-texts",
+                    "style": "plain",
+                    "children": [
+                      {
+                        "type": "section",
+                        "id": "purchase-description",
+                        "title": "Purchase Description",
+                        "style": "line",
+                        "children": [{ "type": "field", "id": "f-description-purchase", "field": "description_purchase", "labels": "hidden", "placeholder": "This note is added to purchase orders." }]
+                      },
+                      {
+                        "type": "section",
+                        "id": "purchase-warning",
+                        "title": "Warning when Purchasing this Product",
+                        "style": "line",
+                        "children": [
+                          { "type": "field", "id": "f-purchase-line-warn", "field": "purchase_line_warn", "labels": "hidden" },
+                          {
+                            "type": "field",
+                            "id": "f-purchase-line-warn-msg",
+                            "field": "purchase_line_warn_msg",
+                            "labels": "hidden",
+                            "placeholder": "Type a message...",
+                            "invisible": "purchase_line_warn == 'no-message'",
+                            "readonly": "purchase_line_warn == 'no-message'",
+                            "required": "purchase_line_warn != 'no-message'"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "inventory",
+            "label": "Inventory",
+            "invisible": "type == 'service'",
+            "children": [
+              {
+                "type": "section",
+                "id": "inventory-groups",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 1 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "operations",
+                    "title": "Operations",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-routes", "field": "route_ids", "widget": "checkboxes", "invisible": "not has_available_route_ids or type == 'service'" },
+                      { "type": "button", "id": "view_diagram", "label": "View Diagram", "style": "link", "icon": "link", "invisible": "type not in ['product', 'consu']", "action": "action_open_routes" },
+                      { "type": "field", "id": "f-routes-categ", "field": "route_from_categ_ids", "widget": "tags", "invisible": "not route_from_categ_ids" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "group_lots_and_weight",
+                    "title": "Logistics",
+                    "style": "line",
+                    "invisible": "type not in ['product', 'consu']",
+                    "children": [
+                      { "type": "field", "id": "f-responsible", "field": "responsible_id" },
+                      { "type": "field", "id": "f-weight", "field": "weight", "options": { "suffix": "kg" }, "invisible": "product_variant_count > 1 and not is_product_variant" },
+                      { "type": "field", "id": "f-volume", "field": "volume", "options": { "suffix": "m³" }, "invisible": "product_variant_count > 1 and not is_product_variant" },
+                      { "type": "field", "id": "f-sale-delay", "field": "sale_delay", "options": { "suffix": "days" }, "invisible": "not sale_ok" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "traceability",
+                    "title": "Traceability",
+                    "style": "line",
+                    "invisible": "type == 'consu'",
+                    "children": [{ "type": "field", "id": "f-tracking", "field": "tracking", "widget": "radio", "invisible": "type == 'service'" }]
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "id": "picking-descriptions",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 1 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "description-receipts",
+                    "title": "Description for Receipts",
+                    "style": "line",
+                    "children": [{ "type": "field", "id": "f-description-in", "field": "description_pickingin", "labels": "hidden", "placeholder": "This note is added to receipt orders (e.g. where to store the product in the warehouse)." }]
+                  },
+                  {
+                    "type": "section",
+                    "id": "description-deliveries",
+                    "title": "Description for Delivery Orders",
+                    "style": "line",
+                    "children": [{ "type": "field", "id": "f-description-out", "field": "description_pickingout", "labels": "hidden", "placeholder": "This note is added to delivery orders." }]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "invoicing",
+            "label": "Accounting",
+            "children": [
+              {
+                "type": "section",
+                "id": "properties",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 1 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "receivables",
+                    "title": "Receivables",
+                    "style": "line",
+                    "children": [{ "type": "field", "id": "f-income-account", "field": "property_account_income_id" }]
+                  },
+                  {
+                    "type": "section",
+                    "id": "payables",
+                    "title": "Payables",
+                    "style": "line",
+                    "children": [{ "type": "field", "id": "f-expense-account", "field": "property_account_expense_id" }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "fieldia": "0.1",
+  "id": "real-contract-renewal",
+  "title": "Renew Contract",
+  "data": { "kind": "record", "model": "contract.renewal.wizard" },
+  "maxWidth": "medium",
+  "fields": {
+    "contract_id": { "type": "many2one", "label": "Contract", "relation": "sale.contract" },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency" },
+    "contract_value": { "type": "monetary", "label": "Current Contract Value", "currencyField": "currency_id", "readonly": true },
+    "new_start_date": { "type": "date", "label": "New Start Date", "required": true },
+    "new_end_date": { "type": "date", "label": "New End Date", "required": true },
+    "duration_months": { "type": "integer", "label": "Duration (Months)", "readonly": true },
+    "keep_terms": { "type": "boolean", "label": "Keep Existing Terms", "default": true },
+    "new_value": { "type": "monetary", "label": "New Contract Value", "currencyField": "currency_id" },
+    "apply_escalation": { "type": "boolean", "label": "Apply Price Escalation" },
+    "escalation_rate": { "type": "float", "label": "Escalation Rate %", "digits": [5, 2] }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "wizard",
+    "children": [
+      {
+        "type": "section",
+        "id": "renewal",
+        "style": "plain",
+        "columns": { "wide": 2, "medium": 2 },
+        "children": [
+          {
+            "type": "section",
+            "id": "renewal-dates",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-new-start", "field": "new_start_date" },
+              { "type": "field", "id": "f-new-end", "field": "new_end_date" },
+              { "type": "field", "id": "f-duration", "field": "duration_months" }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "renewal-terms",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-keep-terms", "field": "keep_terms" },
+              { "type": "field", "id": "f-new-value", "field": "new_value" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "escalation",
+        "title": "Price Escalation",
+        "style": "line",
+        "columns": { "wide": 2, "medium": 2 },
+        "children": [
+          { "type": "field", "id": "f-apply-escalation", "field": "apply_escalation" },
+          { "type": "field", "id": "f-escalation-rate", "field": "escalation_rate", "invisible": "not apply_escalation" }
+        ]
+      }
+    ]
+  },
+  "on": {
+    "beforeSave": [{ "do": "check" }, { "do": "call", "action": "contract_renewal_confirm" }]
+  }
+}

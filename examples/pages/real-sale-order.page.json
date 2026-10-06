@@ -1,0 +1,567 @@
+{
+  "fieldia": "0.1",
+  "id": "real-sale-order",
+  "title": "Sales Order",
+  "data": { "kind": "record", "model": "sale.order" },
+  "maxWidth": "full",
+  "fields": {
+    "name": { "type": "char", "label": "Order Reference", "required": true, "readonly": true, "default": "New" },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "readonly": true,
+      "default": "draft",
+      "options": [
+        { "value": "draft", "label": "Quotation" },
+        { "value": "sent", "label": "Quotation Sent" },
+        { "value": "sale", "label": "Sales Order" },
+        { "value": "cancel", "label": "Cancelled" }
+      ]
+    },
+    "locked": { "type": "boolean", "label": "Locked", "help": "Locked orders cannot be modified.", "default": false },
+    "authorized_transaction_ids": { "type": "many2many", "label": "Authorized Transactions", "relation": "payment.transaction", "readonly": true },
+    "invoice_status": {
+      "type": "selection",
+      "label": "Invoice Status",
+      "readonly": true,
+      "options": [
+        { "value": "upselling", "label": "Upselling Opportunity" },
+        { "value": "invoiced", "label": "Fully Invoiced" },
+        { "value": "to invoice", "label": "To Invoice" },
+        { "value": "no", "label": "Nothing to Invoice" }
+      ]
+    },
+    "invoice_count": { "type": "integer", "label": "Invoice Count", "readonly": true, "default": 0 },
+    "delivery_count": { "type": "integer", "label": "Delivery Orders", "readonly": true, "default": 0 },
+    "partner_credit_warning": { "type": "text", "label": "Partner Credit Warning", "readonly": true },
+    "partner_id": { "type": "many2one", "label": "Customer", "relation": "res.partner", "required": true },
+    "partner_invoice_id": { "type": "many2one", "label": "Invoice Address", "relation": "res.partner", "required": true },
+    "partner_shipping_id": { "type": "many2one", "label": "Delivery Address", "relation": "res.partner", "required": true },
+    "sale_order_template_id": { "type": "many2one", "label": "Quotation Template", "relation": "sale.order.template" },
+    "validity_date": { "type": "date", "label": "Expiration" },
+    "date_order": { "type": "datetime", "label": "Order Date", "required": true },
+    "has_active_pricelist": { "type": "boolean", "label": "Has Active Pricelist", "readonly": true },
+    "show_update_pricelist": { "type": "boolean", "label": "Has Pricelist Changed", "readonly": true },
+    "pricelist_id": { "type": "many2one", "label": "Pricelist", "relation": "product.pricelist" },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency", "readonly": true },
+    "company_id": { "type": "many2one", "label": "Company", "relation": "res.company", "readonly": true },
+    "tax_calculation_rounding_method": {
+      "type": "selection",
+      "label": "Tax calculation rounding method",
+      "readonly": true,
+      "options": [
+        { "value": "round_per_line", "label": "Round per Line" },
+        { "value": "round_globally", "label": "Round Globally" }
+      ]
+    },
+    "payment_term_id": { "type": "many2one", "label": "Payment Terms", "relation": "account.payment.term" },
+    "order_line": {
+      "type": "one2many",
+      "label": "Order Lines",
+      "relation": "sale.order.line",
+      "lineKinds": { "field": "display_type", "text": "name", "section": "line_section", "note": "line_note" },
+      "sequenceField": "sequence",
+      "fields": {
+        "sequence": { "type": "integer", "label": "Sequence" },
+        "display_type": {
+          "type": "selection",
+          "label": "Display Type",
+          "options": [
+            { "value": "line_section", "label": "Section" },
+            { "value": "line_note", "label": "Note" }
+          ]
+        },
+        "product_id": {
+          "type": "many2one",
+          "label": "Product",
+          "relation": "product.product",
+          "required": true,
+          "filter": [{ "field": "sale_ok", "op": "=", "value": true }]
+        },
+        "name": { "type": "text", "label": "Description" },
+        "product_uom_qty": { "type": "float", "label": "Quantity", "digits": [16, 2], "default": 1 },
+        "qty_delivered": { "type": "float", "label": "Delivered", "digits": [16, 2] },
+        "qty_invoiced": { "type": "float", "label": "Invoiced", "digits": [16, 2], "readonly": true },
+        "product_uom": { "type": "many2one", "label": "UoM", "relation": "uom.uom", "required": true },
+        "customer_lead": { "type": "float", "label": "Lead Time", "digits": [16, 0] },
+        "price_unit": { "type": "float", "label": "Unit Price", "digits": [16, 2] },
+        "tax_id": {
+          "type": "many2many",
+          "label": "Taxes",
+          "relation": "account.tax",
+          "filter": [{ "field": "type_tax_use", "op": "=", "value": "sale" }]
+        },
+        "discount": { "type": "float", "label": "Disc.%", "digits": [16, 2] },
+        "price_subtotal": { "type": "monetary", "label": "Tax excl.", "currency": "EGP", "readonly": true },
+        "price_tax": { "type": "float", "label": "Total Tax", "readonly": true },
+        "price_total": { "type": "monetary", "label": "Tax incl.", "currency": "EGP", "readonly": true },
+        "is_downpayment": { "type": "boolean", "label": "Is a down payment" },
+        "qty_delivered_method": {
+          "type": "selection",
+          "label": "Method to update delivered qty",
+          "options": [
+            { "value": "manual", "label": "Manual" },
+            { "value": "analytic", "label": "Analytic From Expenses" },
+            { "value": "stock_move", "label": "Stock Moves" }
+          ]
+        },
+        "invoice_status": {
+          "type": "selection",
+          "label": "Invoice Status",
+          "options": [
+            { "value": "upselling", "label": "Upselling Opportunity" },
+            { "value": "invoiced", "label": "Fully Invoiced" },
+            { "value": "to invoice", "label": "To Invoice" },
+            { "value": "no", "label": "Nothing to Invoice" }
+          ]
+        }
+      }
+    },
+    "sale_order_option_ids": {
+      "type": "one2many",
+      "label": "Optional Products Lines",
+      "relation": "sale.order.option",
+      "sequenceField": "sequence",
+      "fields": {
+        "sequence": { "type": "integer", "label": "Sequence" },
+        "product_id": {
+          "type": "many2one",
+          "label": "Product",
+          "relation": "product.product",
+          "required": true,
+          "filter": [{ "field": "sale_ok", "op": "=", "value": true }]
+        },
+        "name": { "type": "text", "label": "Description", "required": true },
+        "quantity": { "type": "float", "label": "Quantity", "digits": [16, 2], "required": true, "default": 1 },
+        "uom_id": { "type": "many2one", "label": "UoM", "relation": "uom.uom", "required": true },
+        "price_unit": { "type": "float", "label": "Unit Price", "digits": [16, 2], "required": true },
+        "discount": { "type": "float", "label": "Disc.%", "digits": [16, 2] },
+        "is_present": { "type": "boolean", "label": "Present on Quotation", "readonly": true }
+      }
+    },
+    "note": { "type": "html", "label": "Terms and conditions" },
+    "amount_untaxed": { "type": "monetary", "label": "Untaxed Amount", "currencyField": "currency_id", "readonly": true },
+    "amount_tax": { "type": "monetary", "label": "Taxes", "currencyField": "currency_id", "readonly": true },
+    "amount_total": { "type": "monetary", "label": "Total", "currencyField": "currency_id", "readonly": true },
+    "amount_invoiced": { "type": "monetary", "label": "Already invoiced", "currencyField": "currency_id", "readonly": true },
+    "amount_to_invoice": { "type": "monetary", "label": "Amount to invoice", "currencyField": "currency_id", "readonly": true },
+    "user_id": { "type": "many2one", "label": "Salesperson", "relation": "res.users" },
+    "team_id": { "type": "many2one", "label": "Sales Team", "relation": "crm.team" },
+    "require_signature": { "type": "boolean", "label": "Online signature", "help": "Request a online signature from the customer to confirm the order." },
+    "require_payment": { "type": "boolean", "label": "Online payment", "help": "Request a online payment from the customer to confirm the order." },
+    "prepayment_percent": { "type": "float", "label": "Prepayment percentage", "help": "The percentage of the amount needed that must be paid by the customer to confirm the order.", "min": 0, "max": 100, "digits": [5, 0] },
+    "reference": { "type": "char", "label": "Payment Ref.", "readonly": true, "help": "The payment communication of this sale order." },
+    "client_order_ref": { "type": "char", "label": "Customer Reference" },
+    "tag_ids": { "type": "many2many", "label": "Tags", "relation": "crm.tag" },
+    "show_update_fpos": { "type": "boolean", "label": "Has Fiscal Position Changed", "readonly": true },
+    "fiscal_position_id": {
+      "type": "many2one",
+      "label": "Fiscal Position",
+      "relation": "account.fiscal.position",
+      "help": "Fiscal positions are used to adapt taxes and accounts for particular customers or sales orders/invoices. The default value comes from the customer."
+    },
+    "incoterm": { "type": "many2one", "label": "Incoterm", "relation": "account.incoterms", "help": "International Commercial Terms are a series of predefined commercial terms used in international transactions." },
+    "incoterm_location": { "type": "char", "label": "Incoterm Location" },
+    "picking_policy": {
+      "type": "selection",
+      "label": "Shipping Policy",
+      "required": true,
+      "default": "direct",
+      "help": "If you deliver all products at once, the delivery order will be scheduled based on the greatest product lead time. Otherwise, it will be based on the shortest.",
+      "options": [
+        { "value": "direct", "label": "As soon as possible" },
+        { "value": "one", "label": "When all products are ready" }
+      ]
+    },
+    "commitment_date": {
+      "type": "datetime",
+      "label": "Delivery Date",
+      "help": "This is the delivery date promised to the customer. If set, the delivery order will be scheduled based on this date rather than product lead times."
+    },
+    "expected_date": {
+      "type": "datetime",
+      "label": "Expected Date",
+      "readonly": true,
+      "help": "Delivery date you can promise to the customer, computed from the minimum lead time of the order lines in case of Service products. In case of shipping, the shipping policy of the order will be taken into account to either use the minimum or maximum lead time of the order lines."
+    },
+    "effective_date": { "type": "datetime", "label": "Effective Date", "readonly": true, "help": "Completion date of the first delivery order." },
+    "delivery_status": {
+      "type": "selection",
+      "label": "Delivery Status",
+      "readonly": true,
+      "options": [
+        { "value": "pending", "label": "Not Delivered" },
+        { "value": "started", "label": "Started" },
+        { "value": "partial", "label": "Partially Delivered" },
+        { "value": "full", "label": "Fully Delivered" }
+      ]
+    },
+    "origin": { "type": "char", "label": "Source Document", "help": "Reference of the document that generated this sales order request" },
+    "campaign_id": { "type": "many2one", "label": "Campaign", "relation": "utm.campaign" },
+    "medium_id": { "type": "many2one", "label": "Medium", "relation": "utm.medium" },
+    "source_id": { "type": "many2one", "label": "Source", "relation": "utm.source" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "name" },
+    "statusbar": { "field": "state", "visibleStates": ["draft", "sent", "sale"] },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "payment-action-capture",
+        "label": "Capture Transaction",
+        "style": "primary",
+        "invisible": "not authorized_transaction_ids",
+        "action": "payment_action_capture"
+      },
+      {
+        "type": "button",
+        "id": "payment-action-void",
+        "label": "Void Transaction",
+        "confirm": "Are you sure you want to void the authorized transaction? This action can't be undone.",
+        "invisible": "not authorized_transaction_ids",
+        "action": "payment_action_void"
+      },
+      {
+        "type": "button",
+        "id": "create_invoice",
+        "label": "Create Invoice",
+        "style": "primary",
+        "invisible": "invoice_status != 'to invoice'",
+        "steps": [
+          {
+            "do": "open",
+            "page": "real-sale-invoice-wizard",
+            "as": "dialog",
+            "title": "Create invoices",
+            "values": {
+              "count": "1",
+              "currency_id": "currency_id",
+              "orders_amount_total": "amount_total",
+              "amount_invoiced": "amount_invoiced",
+              "amount_to_invoice": "amount_to_invoice",
+              "has_down_payments": "amount_invoiced > 0",
+              "display_draft_invoice_warning": "invoice_count > 0"
+            },
+            "then": [{ "do": "call", "action": "sale_invoice_created" }, { "do": "save" }]
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "create_invoice_percentage",
+        "label": "Create Invoice",
+        "invisible": "invoice_status != 'no' or state != 'sale'",
+        "steps": [
+          {
+            "do": "open",
+            "page": "real-sale-invoice-wizard",
+            "as": "dialog",
+            "title": "Create invoices",
+            "values": {
+              "advance_payment_method": "'percentage'",
+              "count": "1",
+              "currency_id": "currency_id",
+              "orders_amount_total": "amount_total",
+              "amount_invoiced": "amount_invoiced",
+              "amount_to_invoice": "amount_to_invoice",
+              "has_down_payments": "amount_invoiced > 0",
+              "display_draft_invoice_warning": "invoice_count > 0"
+            },
+            "then": [{ "do": "call", "action": "sale_invoice_created" }, { "do": "save" }]
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "send_by_email_primary",
+        "label": "Send by Email",
+        "style": "primary",
+        "invisible": "state != 'draft'",
+        "steps": [{ "do": "check" }, { "do": "call", "action": "action_quotation_send" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "action_confirm",
+        "label": "Confirm",
+        "style": "primary",
+        "invisible": "state != 'sent'",
+        "steps": [{ "do": "check" }, { "do": "call", "action": "action_confirm" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "action_confirm_draft",
+        "label": "Confirm",
+        "invisible": "state != 'draft'",
+        "steps": [{ "do": "check" }, { "do": "call", "action": "action_confirm" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "send_by_email",
+        "label": "Send by Email",
+        "invisible": "state not in ['sent', 'sale']",
+        "steps": [{ "do": "check" }, { "do": "call", "action": "action_quotation_send" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "action_unlock",
+        "label": "Unlock",
+        "invisible": "not locked",
+        "steps": [{ "do": "set", "field": "locked", "value": "False" }, { "do": "save" }]
+      },
+      { "type": "button", "id": "action_preview_sale_order", "label": "Preview", "action": "action_preview_sale_order" },
+      {
+        "type": "button",
+        "id": "action_cancel",
+        "label": "Cancel",
+        "invisible": "state not in ['draft', 'sent', 'sale'] or locked",
+        "steps": [
+          { "do": "ask", "when": "state != 'draft'", "message": "Cancel this order? Its draft invoices are cancelled with it, and the customer can be told by email." },
+          { "do": "set", "field": "state", "value": "'cancel'" },
+          { "do": "save" }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "action_draft",
+        "label": "Set to Quotation",
+        "invisible": "state != 'cancel'",
+        "steps": [{ "do": "set", "field": "state", "value": "'draft'" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "action_lock",
+        "label": "Lock",
+        "invisible": "locked or state != 'sale'",
+        "steps": [{ "do": "set", "field": "locked", "value": "True" }, { "do": "save" }]
+      }
+    ],
+    "statButtons": [
+      { "id": "action_view_delivery", "label": "Delivery", "field": "delivery_count", "icon": "truck", "invisible": "delivery_count == 0", "action": "action_view_delivery" },
+      { "id": "action_view_invoice", "label": "Invoices", "field": "invoice_count", "icon": "edit", "invisible": "invoice_count == 0", "action": "action_view_invoice" }
+    ],
+    "badges": [{ "id": "b-locked", "label": "Locked", "tone": "muted", "icon": "lock", "invisible": "not locked" }],
+    "alerts": [
+      {
+        "id": "partner-credit-warning",
+        "message": "This customer is over the credit limit set on their record: confirming adds to what they already owe.",
+        "tone": "warning",
+        "invisible": "not partner_credit_warning"
+      }
+    ],
+    "children": [
+      {
+        "type": "section",
+        "id": "sale_header",
+        "columns": { "wide": 2, "medium": 2 },
+        "style": "plain",
+        "children": [
+          {
+            "type": "section",
+            "id": "partner_details",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-partner", "field": "partner_id", "placeholder": "Type to find a customer...", "readonly": "state in ['cancel', 'sale']" },
+              { "type": "field", "id": "f-partner-invoice", "field": "partner_invoice_id", "readonly": "state == 'cancel' or locked" },
+              { "type": "field", "id": "f-partner-shipping", "field": "partner_shipping_id", "readonly": "state == 'cancel' or locked" },
+              { "type": "field", "id": "f-template", "field": "sale_order_template_id", "options": { "create": false }, "readonly": "state in ['cancel', 'sale']" }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "order_details",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-validity", "field": "validity_date", "invisible": "state == 'sale'", "readonly": "state in ['cancel', 'sale']" },
+              { "type": "field", "id": "f-date-order", "field": "date_order", "label": "Order Date", "invisible": "state in ['draft', 'sent']", "readonly": "state in ['cancel', 'sale']" },
+              { "type": "field", "id": "f-pricelist", "field": "pricelist_id", "options": { "create": false }, "invisible": "not has_active_pricelist", "readonly": "state in ['cancel', 'sale']" },
+              {
+                "type": "button",
+                "id": "action_update_prices",
+                "label": "Update Prices",
+                "style": "link",
+                "icon": "money",
+                "confirm": "This will update the unit price of all products based on the new pricelist.",
+                "invisible": "not has_active_pricelist or not show_update_pricelist or state in ['sale', 'cancel']",
+                "action": "action_update_prices"
+              },
+              { "type": "field", "id": "f-payment-term", "field": "payment_term_id", "options": { "create": false } }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "tabs",
+        "id": "notebook",
+        "children": [
+          {
+            "type": "tab",
+            "id": "order_lines",
+            "label": "Order Lines",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-order-line",
+                "field": "order_line",
+                "widget": "grid",
+                "readonly": "state == 'cancel' or locked",
+                "columns": ["product_id", "name", "product_uom_qty", "qty_delivered", "qty_invoiced", "product_uom", "customer_lead", "price_unit", "tax_id", "discount", "price_subtotal", "price_total"],
+                "optionalColumns": {
+                  "name": "show",
+                  "qty_delivered": "hide",
+                  "qty_invoiced": "hide",
+                  "product_uom": "show",
+                  "customer_lead": "hide",
+                  "tax_id": "show",
+                  "discount": "show",
+                  "price_total": "hide"
+                },
+                "options": { "addLabel": "Add a product" }
+              },
+              {
+                "type": "section",
+                "id": "so_button_below_order_lines",
+                "style": "plain",
+                "columns": { "wide": 4, "medium": 4 },
+                "children": [
+                  { "type": "spacer", "id": "sp-below-lines", "colspan": 2 },
+                  { "type": "button", "id": "action_add_from_catalog", "label": "Catalog", "style": "link", "icon": "list", "action": "action_add_from_catalog", "invisible": "state == 'cancel' or locked" },
+                  { "type": "button", "id": "action_open_discount_wizard", "label": "Discount", "icon": "tag", "action": "action_open_discount_wizard", "invisible": "state == 'cancel' or locked" }
+                ]
+              },
+              {
+                "type": "section",
+                "id": "note_group",
+                "style": "plain",
+                "columns": { "wide": 12, "medium": 12 },
+                "children": [
+                  { "type": "field", "id": "f-note", "field": "note", "labels": "hidden", "placeholder": "Terms and conditions...", "colspan": 8 },
+                  {
+                    "type": "section",
+                    "id": "sale_total",
+                    "style": "card",
+                    "labels": "beside",
+                    "colspan": 4,
+                    "children": [
+                      { "type": "field", "id": "f-amount-untaxed", "field": "amount_untaxed" },
+                      { "type": "field", "id": "f-amount-tax", "field": "amount_tax" },
+                      { "type": "field", "id": "f-amount-total", "field": "amount_total" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "optional_products",
+            "label": "Optional Products",
+            "invisible": "state not in ['draft', 'sent']",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-options",
+                "field": "sale_order_option_ids",
+                "widget": "grid",
+                "readonly": "state in ['cancel', 'sale']",
+                "columns": ["product_id", "name", "quantity", "uom_id", "price_unit", "discount"],
+                "optionalColumns": { "name": "show", "uom_id": "show", "discount": "show" },
+                "options": { "addLabel": "Add a product" }
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "other_information",
+            "label": "Other Info",
+            "children": [
+              {
+                "type": "section",
+                "id": "other-groups",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 1 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "sales_person",
+                    "title": "Sales",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-user", "field": "user_id" },
+                      { "type": "field", "id": "f-team", "field": "team_id", "options": { "create": false } },
+                      { "type": "field", "id": "f-require-signature", "field": "require_signature", "readonly": "state in ['cancel', 'sale']" },
+                      { "type": "field", "id": "f-require-payment", "field": "require_payment", "readonly": "state in ['cancel', 'sale']" },
+                      {
+                        "type": "field",
+                        "id": "f-prepayment",
+                        "field": "prepayment_percent",
+                        "options": { "suffix": "%" },
+                        "readonly": "state in ['cancel', 'sale']",
+                        "invisible": "not require_payment",
+                        "validate": [{ "min": 1, "message": "Prepayment percentage must be a valid percentage." }]
+                      },
+                      { "type": "field", "id": "f-reference", "field": "reference", "invisible": "not reference" },
+                      { "type": "field", "id": "f-client-ref", "field": "client_order_ref" },
+                      { "type": "field", "id": "f-tags", "field": "tag_ids", "widget": "tags", "options": { "create": false } }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "sale_info",
+                    "title": "Invoicing",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-fiscal-position", "field": "fiscal_position_id", "options": { "create": false } },
+                      {
+                        "type": "button",
+                        "id": "action_update_taxes",
+                        "label": "Update Taxes",
+                        "style": "link",
+                        "icon": "receipt",
+                        "confirm": "This will update all taxes based on the currently selected fiscal position.",
+                        "invisible": "not show_update_fpos or state in ['sale', 'cancel']",
+                        "action": "action_update_taxes"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "sale_shipping",
+                    "title": "Delivery",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-incoterm", "field": "incoterm", "options": { "create": false } },
+                      { "type": "field", "id": "f-incoterm-location", "field": "incoterm_location" },
+                      { "type": "field", "id": "f-picking-policy", "field": "picking_policy", "readonly": "state not in ['draft', 'sent']" },
+                      { "type": "field", "id": "f-commitment-date", "field": "commitment_date", "readonly": "state == 'cancel' or locked" },
+                      { "type": "field", "id": "f-expected-date", "field": "expected_date", "label": "Expected", "invisible": "effective_date and commitment_date" },
+                      { "type": "field", "id": "f-effective-date", "field": "effective_date", "invisible": "not effective_date" },
+                      { "type": "field", "id": "f-delivery-status", "field": "delivery_status", "invisible": "state != 'sale'" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "sale_reporting",
+                    "title": "Tracking",
+                    "style": "line",
+                    "children": [
+                      { "type": "field", "id": "f-origin", "field": "origin" },
+                      { "type": "field", "id": "f-campaign", "field": "campaign_id" },
+                      { "type": "field", "id": "f-medium", "field": "medium_id" },
+                      { "type": "field", "id": "f-source", "field": "source_id" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" }
+  },
+  "on": {
+    "beforeSave": [{ "do": "check" }]
+  }
+}
