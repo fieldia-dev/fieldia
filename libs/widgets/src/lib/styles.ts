@@ -739,9 +739,9 @@ button.fd-chip-label:hover { text-decoration: underline; }
   border: 1px solid var(--fd-edge, transparent);
 }
 .fd-dialog p { margin: 0; }
-/* Words a step says: toasts at the foot of the screen, one over another, each in its tone; over the page, under a dialog. */
+/* Words a step says: toasts at the foot of the screen, one over another, each in its tone; over the page and over a dialog or panel, whose own words they are too. */
 .fd-says {
-  position: fixed; inset-inline: 16px; inset-block-end: max(20px, env(safe-area-inset-bottom, 0px)); z-index: 990;
+  position: fixed; inset-inline: 16px; inset-block-end: max(20px, env(safe-area-inset-bottom, 0px)); z-index: 1100;
   display: grid; justify-items: center; gap: 8px; pointer-events: none;
 }
 .fd-say {

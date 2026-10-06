@@ -199,7 +199,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   };
   const locale = ownLocale(tag);
   const preferences = options.preferences ?? browserPreferences();
-  const dialogs = pageDialogs(options);
+  const dialogs = pageDialogs(options, (message, tone) => actionHost.say(message, tone));
   const ownsForm = !options.form;
   const labels: ViewerLabels = { ...VIEWER_LABELS[locale], ...options.labels };
   /**
@@ -209,7 +209,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
    */
   const actionHost: ActionHost = {
     open: (request) =>
-      openPage({ options, place: host, root, title: (other) => shownAs(other).title || other.id, back: labels.back, missing: (id) => fill(labels.pageMissing, { page: id }) }, request),
+      openPage({ options, place: host, root, title: (other) => shownAs(other).title || other.id, back: labels.back, missing: (id) => fill(labels.pageMissing, { page: id }), say: (message, tone) => actionHost.say(message, tone) }, request),
     say: (message, tone) => say(message, tone),
     ask: (message) => confirm(message),
     show: (target) => {

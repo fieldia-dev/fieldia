@@ -362,7 +362,7 @@ describe('a page opened', () => {
     expect(runs).toEqual([expect.objectContaining({ done: false, reason: 'closed' })]);
   });
 
-  it('gives the page opened a host of its own: its steps say, open further, and close it unsaved', async () => {
+  it('gives the page opened a host of its own: its words said by the page that opened it, open further, and close it unsaved', async () => {
     const inside = newCustomer([
       button('hello', 'Hello', [{ do: 'say', message: 'Hello from the panel' }]),
       button('leave', 'Leave', [{ do: 'close' }]),
@@ -372,11 +372,16 @@ describe('a page opened', () => {
     await until(panel);
     press('Hello', panel() as HTMLElement);
     await until(() => toasts().length);
-    expect((panel() as HTMLElement).contains(toasts()[0])).toBe(true);
+    // Said where the opener says its own, so they show over the panel and outlive it.
+    expect((panel() as HTMLElement).contains(toasts()[0])).toBe(false);
+    expect(host.contains(toasts()[0])).toBe(true);
+    // A screen reader hears them inside the modal panel too, unseen.
+    expect((panel() as HTMLElement).querySelector('.fd-says-echo')?.textContent).toBe('Hello from the panel');
     press('Leave', panel() as HTMLElement);
     await until(() => !panel());
     await viewer.form.settled();
     expect(viewer.form.getState().values['customer_id']).toBeNull();
+    expect(toasts().map((t) => t.firstChild?.textContent)).toEqual(['Hello from the panel']);
   });
 
   it('in its place: this form steps aside for it, and Back brings it back as it was, the run stopped', async () => {

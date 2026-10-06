@@ -119,8 +119,13 @@ for (const variant of VARIANTS) {
       if (variant === 'plain') await screen(page, 'real-invoice-payment-difference', { viewport: true });
       await dialog.getByRole('radio', { name: 'Keep open' }).check();
       await expect(dialog.locator('[data-node="f-writeoff-account"]')).toBeHidden();
+      // Words said show over the dialog: the toasts sit above its backdrop.
+      const layer = (selector: string) => page.locator(selector).first().evaluate((el) => Number(getComputedStyle(el).zIndex));
+      expect(await layer('.fd-says')).toBeGreaterThan(await layer('.fd-dialog-backdrop'));
       await dialog.getByRole('button', { name: 'Save & Close' }).click();
       await expect(dialog).toBeHidden();
+      // The dialog's own words, said as it saved, outlive it: the page under it says them.
+      await expect(toast(page, /^Payment P\S+ of EGP 50,000\.00 posted/)).toBeVisible();
       await expect(toast(page, 'Payment of EGP 50,000.00 registered: EGP 22,253.20 left to pay')).toBeVisible();
       await expect.poll(() => value(page, 'payment_state')).toBe('partial');
       await expect.poll(() => value(page, 'amount_residual')).toBe(22253.2);

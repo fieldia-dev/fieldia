@@ -1,4 +1,4 @@
-import type { OpenRequest, OpenResult, Page, Values } from '@fieldia/core';
+import type { OpenRequest, OpenResult, Page, Tone, Values } from '@fieldia/core';
 import { FIRST_FIELD, openFormDialog, openFormPanel, type FormDialogResult } from './dialog';
 import { findPage, nameFieldOf } from './related';
 import { mountViewer, type ViewerOptions } from './viewer';
@@ -16,6 +16,8 @@ export interface Opener {
   back: string;
   /** Why a page cannot be opened: the app has none by that id. */
   missing(page: string): string;
+  /** Words said as this viewer says them: a page opened over it says its own here, so they show over it and outlive it. */
+  say(message: string, tone: Tone): void;
 }
 
 /**
@@ -47,10 +49,12 @@ export async function openPage(opener: Opener, request: OpenRequest): Promise<Op
     saveStatus: undefined,
   };
   const title = request.title ?? opener.title(found);
+  // Over this form, its words are this form's: a page in its place has this form's place, and its own.
+  const over: ViewerOptions = { ...shared, host: { ...options.host, say: opener.say } };
   const result =
     request.as === 'page' ? await inPlace(opener, shared)
-    : request.as === 'panel' ? await openFormPanel({ ...shared, title, side: request.side })
-    : await openFormDialog({ ...shared, title, size: found.layout.type === 'sheet' ? 'large' : 'medium' });
+    : request.as === 'panel' ? await openFormPanel({ ...over, title, side: request.side })
+    : await openFormDialog({ ...over, title, size: found.layout.type === 'sheet' ? 'large' : 'medium' });
   const name = nameFieldOf(found);
   const label = name ? result.values[name] : undefined;
   return { ...result, ...(typeof label === 'string' && label ? { label } : {}) };

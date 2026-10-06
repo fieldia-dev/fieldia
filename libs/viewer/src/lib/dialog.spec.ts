@@ -286,6 +286,18 @@ describe('a dialog in the look of the page that opened it', () => {
     expect(worn(dialog() as HTMLElement)).toEqual({ scheme: 'dark', corners: 'round', density: 'compact', font: 'serif' });
   });
 
+  it('has a linked record’s page say its words through the page whose field opens it', async () => {
+    const said: string[] = [];
+    const inside: Page = { ...page('customer'), layout: { type: 'sections', children: [{ type: 'section', id: 's', children: [{ type: 'button', id: 'hi', label: 'Hi', steps: [{ do: 'say', message: 'Hello from the record' }] }] }] } as never };
+    const dialogs = pageDialogs({ page: page('customer'), dataSource: customerSource(), relatedPages: { partner: inside } }, (message) => said.push(message));
+    void dialogs.openRecord('partner', { title: 'Nile Traders', recordId: 1 });
+    await flush();
+    ([...(dialog() as HTMLElement).querySelectorAll('button')].find((b) => b.textContent === 'Hi') as HTMLButtonElement).click();
+    await flush();
+    expect(said).toEqual(['Hello from the record']);
+    expect((dialog() as HTMLElement).querySelector('.fd-say')).toBeNull();
+  });
+
   it('is handed the look by the page whose field opens it', async () => {
     const opening: Page = { ...page('customer'), look };
     const dialogs = pageDialogs({ page: opening, dataSource: customerSource(), relatedPages: { partner: page('customer') } });

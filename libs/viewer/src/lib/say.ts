@@ -11,7 +11,9 @@ const MOST = 4;
  * Words a step says, as toasts at the foot of the screen: each in its tone,
  * one over another, in a polite live region inside the form — so they wear its
  * skin, scheme and direction. Each goes by itself after a moment, but not
- * while the pointer or the focus is on it, and at once with its ×.
+ * while the pointer or the focus is on it, and at once with its ×. They show
+ * over a dialog or panel too, and while a modal one is open, a screen reader —
+ * which hears only inside it — is told them there as well, unseen.
  */
 export function sayer(root: HTMLElement, el: El, dismiss: string): (message: string, tone: Tone) => void {
   // There before anything is said, so a screen reader hears what comes into it.
@@ -39,6 +41,20 @@ export function sayer(root: HTMLElement, el: El, dismiss: string): (message: str
     toast.addEventListener('focusout', wait);
     region.append(toast);
     while (region.children.length > MOST) region.firstElementChild?.remove();
+    echo(region, el, message);
     wait();
   };
+}
+
+/** The words again, unseen, in a live region of the topmost modal dialog the region is not in. */
+function echo(region: HTMLElement, el: El, message: string) {
+  const modals = [...region.ownerDocument.querySelectorAll<HTMLElement>('[aria-modal="true"]')].filter((m) => !m.contains(region));
+  const top = modals[modals.length - 1];
+  if (!top) return;
+  let heard = top.querySelector<HTMLElement>(':scope > .fd-says-echo');
+  if (!heard) {
+    heard = el('div', { class: 'fd-says-echo fd-sr-only', role: 'status', 'aria-live': 'polite' });
+    top.append(heard);
+  }
+  heard.textContent = message;
 }

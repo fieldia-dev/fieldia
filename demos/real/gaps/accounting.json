@@ -638,9 +638,8 @@
         },
         {
           "feature": "Words said as the payment is created",
-          "status": "approximated",
-          "how": "the dialog's afterSave answer is said, but the dialog has closed and the words are lost; the opener says them instead",
-          "needs": "a dialog's words handed to the page under it"
+          "status": "covered",
+          "how": "the dialog's afterSave answer is said through the invoice under it, so it outlives the dialog (shown in the e2e), then the invoice's own"
         },
         {
           "feature": "data-hotkey q (create) and x (discard)",
