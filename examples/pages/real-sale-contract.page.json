@@ -1,0 +1,392 @@
+{
+  "fieldia": "0.1",
+  "id": "real-sale-contract",
+  "title": "Contract",
+  "data": { "kind": "record", "model": "sale.contract" },
+  "fields": {
+    "name": { "type": "char", "label": "Contract Name", "required": true },
+    "contract_number": { "type": "char", "label": "Contract Number", "readonly": true, "default": "New" },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "readonly": true,
+      "default": "draft",
+      "options": [
+        { "value": "draft", "label": "Draft" },
+        { "value": "sent", "label": "Sent for Signature" },
+        { "value": "active", "label": "Active" },
+        { "value": "renewal_due", "label": "Renewal Due" },
+        { "value": "completed", "label": "Completed" },
+        { "value": "terminated", "label": "Terminated" }
+      ]
+    },
+    "company_id": { "type": "many2one", "label": "Company", "relation": "res.company", "required": true },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency", "required": true },
+    "partner_id": { "type": "many2one", "label": "Customer", "relation": "res.partner", "required": true },
+    "partner_contact_id": {
+      "type": "many2one",
+      "label": "Contact Person",
+      "relation": "res.partner",
+      "filter": [{ "field": "parent_id", "op": "=", "valueFrom": "partner_id" }]
+    },
+    "contract_type": {
+      "type": "selection",
+      "label": "Contract Type",
+      "required": true,
+      "default": "one_time",
+      "options": [
+        { "value": "one_time", "label": "One-Time Project" },
+        { "value": "framework", "label": "Framework Agreement" },
+        { "value": "sla", "label": "Service Level Agreement" }
+      ]
+    },
+    "user_id": { "type": "many2one", "label": "Contract Manager", "relation": "res.users" },
+    "start_date": { "type": "date", "label": "Start Date", "required": true },
+    "end_date": { "type": "date", "label": "End Date" },
+    "duration_months": { "type": "integer", "label": "Duration (Months)", "readonly": true },
+    "days_until_expiry": { "type": "integer", "label": "Days Until Expiry", "readonly": true },
+    "contract_value": { "type": "monetary", "label": "Total Contract Value", "currencyField": "currency_id", "required": true },
+    "notice_period_days": { "type": "integer", "label": "Notice Period (Days)", "default": 30 },
+    "tender_id": { "type": "many2one", "label": "Source Tender", "relation": "tender.opportunity" },
+    "opportunity_id": { "type": "many2one", "label": "Source Opportunity", "relation": "crm.lead" },
+    "milestone_count": { "type": "integer", "label": "Milestone Count", "compute": "count(milestone_ids)" },
+    "invoice_count": { "type": "integer", "label": "Invoice Count", "readonly": true },
+    "amendment_count": { "type": "integer", "label": "Amendment Count", "compute": "count(amendment_ids)" },
+    "document_count": { "type": "integer", "label": "Document Count", "readonly": true },
+    "milestone_ids": {
+      "type": "one2many",
+      "label": "Milestones",
+      "relation": "contract.milestone",
+      "sequenceField": "sequence",
+      "fields": {
+        "sequence": { "type": "integer", "label": "Sequence", "default": 10 },
+        "name": { "type": "char", "label": "Milestone Name", "required": true },
+        "due_date": { "type": "date", "label": "Due Date", "required": true },
+        "days_until_due": { "type": "integer", "label": "Days Until Due", "readonly": true },
+        "amount": { "type": "monetary", "label": "Milestone Value", "currency": "EGP", "required": true },
+        "responsible_id": { "type": "many2one", "label": "Responsible Person", "relation": "res.users" },
+        "state": {
+          "type": "selection",
+          "label": "Status",
+          "default": "pending",
+          "options": [
+            { "value": "pending", "label": "Pending" },
+            { "value": "in_progress", "label": "In Progress" },
+            { "value": "completed", "label": "Completed" },
+            { "value": "invoiced", "label": "Invoiced" },
+            { "value": "paid", "label": "Paid" }
+          ]
+        },
+        "done": { "type": "integer", "label": "Done", "compute": "if(state in ['completed', 'invoiced', 'paid'], 1, 0)" }
+      }
+    },
+    "milestone_completion_percentage": {
+      "type": "float",
+      "label": "Milestone Completion %",
+      "digits": [5, 0],
+      "compute": "if(count(milestone_ids) > 0, round(sum(milestone_ids, 'done') * 100 / count(milestone_ids)), 0)"
+    },
+    "has_escalation": { "type": "boolean", "label": "Price Escalation Clause" },
+    "escalation_type": {
+      "type": "selection",
+      "label": "Escalation Type",
+      "default": "fixed",
+      "options": [
+        { "value": "fixed", "label": "Fixed Percentage" },
+        { "value": "cpi", "label": "CPI-Linked" },
+        { "value": "custom", "label": "Custom Formula" }
+      ]
+    },
+    "escalation_rate": { "type": "float", "label": "Annual Escalation %", "digits": [5, 2] },
+    "escalation_formula": { "type": "char", "label": "Escalation Formula", "help": "Custom formula for price escalation" },
+    "next_escalation_date": { "type": "date", "label": "Next Escalation Date" },
+    "sla_target": { "type": "float", "label": "SLA Target %", "digits": [5, 2] },
+    "sla_actual": { "type": "float", "label": "Actual Performance %", "digits": [5, 2], "readonly": true },
+    "penalty_amount": { "type": "monetary", "label": "Total Penalties", "currencyField": "currency_id", "readonly": true },
+    "amendment_ids": {
+      "type": "one2many",
+      "label": "Amendments",
+      "relation": "contract.amendment",
+      "fields": {
+        "amendment_number": { "type": "char", "label": "Amendment Number", "readonly": true },
+        "name": { "type": "char", "label": "Amendment Title", "required": true },
+        "amendment_type": {
+          "type": "selection",
+          "label": "Amendment Type",
+          "options": [
+            { "value": "price_change", "label": "Price Change" },
+            { "value": "scope_change", "label": "Scope Change" },
+            { "value": "duration_extension", "label": "Duration Extension" },
+            { "value": "terms_modification", "label": "Terms Modification" },
+            { "value": "other", "label": "Other" }
+          ]
+        },
+        "amendment_date": { "type": "date", "label": "Amendment Date", "required": true, "default": "today" },
+        "value_change": { "type": "monetary", "label": "Value Change", "currency": "EGP", "readonly": true },
+        "state": {
+          "type": "selection",
+          "label": "Status",
+          "readonly": true,
+          "default": "draft",
+          "options": [
+            { "value": "draft", "label": "Draft" },
+            { "value": "pending_approval", "label": "Pending Approval" },
+            { "value": "approved", "label": "Approved" },
+            { "value": "rejected", "label": "Rejected" }
+          ]
+        }
+      }
+    },
+    "contract_scope": { "type": "html", "label": "Scope of Work" },
+    "contract_terms": { "type": "html", "label": "Terms & Conditions" },
+    "termination_date": { "type": "date", "label": "Termination Date" },
+    "termination_reason": { "type": "text", "label": "Termination Reason" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "placeholder": "e.g., IT Infrastructure Support 2024",
+      "subtitleField": "contract_number",
+      "below": [
+        {
+          "type": "field",
+          "id": "f-days-until-expiry",
+          "field": "days_until_expiry",
+          "widget": "label",
+          "labels": "hidden",
+          "options": { "suffix": " days until expiry" },
+          "invisible": "state not in ['active', 'renewal_due']"
+        }
+      ]
+    },
+    "statusbar": { "field": "state", "visibleStates": ["draft", "active", "completed"] },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "action_activate",
+        "label": "Activate",
+        "style": "primary",
+        "invisible": "state != 'draft'",
+        "steps": [{ "do": "check" }, { "do": "call", "action": "action_activate" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "action_terminate",
+        "label": "Terminate",
+        "invisible": "state not in ['active', 'renewal_due']",
+        "steps": [
+          {
+            "do": "open",
+            "page": "real-contract-termination",
+            "as": "dialog",
+            "title": "Terminate Contract",
+            "into": { "termination_date": "termination_date", "termination_reason": "termination_reason" },
+            "then": [
+              { "do": "set", "field": "state", "value": "'terminated'" },
+              { "do": "save" },
+              { "do": "goTo", "target": "terms" },
+              { "do": "say", "message": "Contract terminated", "tone": "warning" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "action_renew",
+        "label": "Renew",
+        "invisible": "state not in ['active', 'renewal_due']",
+        "steps": [{ "do": "call", "action": "action_renew" }]
+      }
+    ],
+    "statButtons": [
+      { "id": "action_view_milestones", "label": "Milestones", "field": "milestone_count", "icon": "check", "steps": [{ "do": "goTo", "target": "milestones" }] },
+      { "id": "action_view_invoices", "label": "Invoices", "field": "invoice_count", "icon": "receipt", "invisible": "invoice_count == 0", "action": "action_view_invoices" },
+      { "id": "action_view_amendments", "label": "Amendments", "field": "amendment_count", "icon": "edit", "invisible": "amendment_count == 0", "steps": [{ "do": "goTo", "target": "amendments" }] },
+      { "id": "action_view_documents", "label": "Documents", "field": "document_count", "icon": "file", "invisible": "document_count == 0", "action": "action_view_documents" }
+    ],
+    "children": [
+      {
+        "type": "section",
+        "id": "contract-header",
+        "style": "plain",
+        "columns": { "wide": 2, "medium": 2 },
+        "children": [
+          {
+            "type": "section",
+            "id": "contract_details",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-partner", "field": "partner_id" },
+              { "type": "field", "id": "f-partner-contact", "field": "partner_contact_id" },
+              { "type": "field", "id": "f-contract-type", "field": "contract_type" },
+              { "type": "field", "id": "f-user", "field": "user_id" }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "dates_financial",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-start-date", "field": "start_date" },
+              { "type": "field", "id": "f-end-date", "field": "end_date" },
+              { "type": "field", "id": "f-duration", "field": "duration_months" },
+              { "type": "field", "id": "f-contract-value", "field": "contract_value" },
+              { "type": "field", "id": "f-notice-period", "field": "notice_period_days" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "source",
+        "title": "Source",
+        "style": "line",
+        "columns": { "wide": 2, "medium": 1 },
+        "children": [
+          { "type": "field", "id": "f-tender", "field": "tender_id" },
+          { "type": "field", "id": "f-opportunity", "field": "opportunity_id" }
+        ]
+      },
+      {
+        "type": "tabs",
+        "id": "notebook",
+        "children": [
+          {
+            "type": "tab",
+            "id": "milestones",
+            "label": "Milestones",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-milestones",
+                "field": "milestone_ids",
+                "labels": "hidden",
+                "columns": ["name", "due_date", "amount", "responsible_id", "state"],
+                "options": { "addLabel": "Add a line" }
+              },
+              {
+                "type": "section",
+                "id": "completion",
+                "style": "plain",
+                "columns": 2,
+                "children": [
+                  { "type": "spacer", "id": "sp-completion" },
+                  { "type": "field", "id": "f-completion", "field": "milestone_completion_percentage", "widget": "progressbar", "options": { "showPercent": true, "color": "auto" } }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "escalation",
+            "label": "Price Escalation",
+            "invisible": "contract_type != 'framework'",
+            "children": [
+              {
+                "type": "section",
+                "id": "escalation-groups",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 2 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "escalation-left",
+                    "style": "plain",
+                    "children": [
+                      { "type": "field", "id": "f-has-escalation", "field": "has_escalation" },
+                      { "type": "field", "id": "f-escalation-type", "field": "escalation_type", "invisible": "not has_escalation" },
+                      { "type": "field", "id": "f-escalation-rate", "field": "escalation_rate", "invisible": "not has_escalation" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "escalation-right",
+                    "style": "plain",
+                    "children": [
+                      { "type": "field", "id": "f-escalation-formula", "field": "escalation_formula", "invisible": "escalation_type != 'custom'" },
+                      { "type": "field", "id": "f-next-escalation", "field": "next_escalation_date", "invisible": "not has_escalation" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "sla",
+            "label": "SLA Performance",
+            "invisible": "contract_type != 'sla'",
+            "children": [
+              {
+                "type": "section",
+                "id": "sla-groups",
+                "style": "plain",
+                "columns": { "wide": 2, "medium": 2 },
+                "children": [
+                  {
+                    "type": "section",
+                    "id": "sla-left",
+                    "style": "plain",
+                    "children": [
+                      { "type": "field", "id": "f-sla-target", "field": "sla_target" },
+                      { "type": "field", "id": "f-sla-actual", "field": "sla_actual" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "sla-right",
+                    "style": "plain",
+                    "children": [{ "type": "field", "id": "f-penalty", "field": "penalty_amount" }]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "amendments",
+            "label": "Amendments",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-amendments",
+                "field": "amendment_ids",
+                "labels": "hidden",
+                "columns": ["amendment_number", "name", "amendment_type", "amendment_date", "value_change", "state"],
+                "optionalColumns": { "value_change": "show" }
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "scope",
+            "label": "Scope of Work",
+            "children": [{ "type": "field", "id": "f-scope", "field": "contract_scope", "labels": "hidden", "placeholder": "Describe the scope of work..." }]
+          },
+          {
+            "type": "tab",
+            "id": "terms",
+            "label": "Terms & Conditions",
+            "children": [
+              { "type": "field", "id": "f-terms", "field": "contract_terms", "labels": "hidden", "placeholder": "Enter contract terms and conditions..." },
+              {
+                "type": "section",
+                "id": "termination",
+                "title": "Termination Details",
+                "style": "line",
+                "invisible": "state != 'terminated'",
+                "children": [
+                  { "type": "field", "id": "f-termination-date", "field": "termination_date" },
+                  { "type": "field", "id": "f-termination-reason", "field": "termination_reason", "labels": "hidden" }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "fieldia": "0.1",
+  "id": "real-contract-termination",
+  "title": "Terminate Contract",
+  "data": { "kind": "record", "model": "contract.termination.wizard" },
+  "maxWidth": "narrow",
+  "fields": {
+    "contract_id": { "type": "many2one", "label": "Contract", "relation": "sale.contract" },
+    "termination_date": { "type": "date", "label": "Termination Date", "required": true, "default": "today" },
+    "notify_customer": { "type": "boolean", "label": "Notify Customer", "default": true },
+    "termination_reason": { "type": "text", "label": "Termination Reason", "required": true }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "wizard",
+    "children": [
+      {
+        "type": "section",
+        "id": "main",
+        "style": "plain",
+        "labels": "beside",
+        "children": [
+          { "type": "field", "id": "f-termination-date", "field": "termination_date" },
+          { "type": "field", "id": "f-notify-customer", "field": "notify_customer" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "reason",
+        "title": "Termination Reason",
+        "style": "line",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-termination-reason",
+            "field": "termination_reason",
+            "labels": "hidden",
+            "placeholder": "Please provide a detailed reason for contract termination..."
+          }
+        ]
+      }
+    ]
+  },
+  "on": {
+    "beforeSave": [{ "do": "check" }, { "do": "call", "action": "contract_termination_confirm" }]
+  }
+}
