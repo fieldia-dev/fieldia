@@ -1536,7 +1536,7 @@
         },
         "valueFrom": {
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^((parent|user)\\.)?[A-Za-z_][A-Za-z0-9_]*$"
         }
       },
       "required": [

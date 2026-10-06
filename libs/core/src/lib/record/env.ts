@@ -21,6 +21,28 @@ export function builtIns(fields: Record<string, unknown>, recordId: RecordId | n
  * rows of each one2many for `sum` and `count` — the items, not the sections
  * and notes between them — and today's date for `today()`.
  */
+/** The record's id and the person, for what is worked out away from the form. */
+export interface About {
+  recordId: RecordId | null;
+  user?: { id: RecordId | null; name?: string; roles?: readonly string[] };
+}
+
+/** The record as expressions read it: its values, its `id` and `user`. What a line reads as `parent`. */
+export function recordContext(values: Values, fields: Record<string, Field | LineField>, about: About): Record<string, unknown> {
+  return { ...builtIns(fields, about.recordId, about.user), ...expressionContext(values, fields) };
+}
+
+/**
+ * A line as its expressions read it: its values, `parent` — the record it is
+ * on, as that record's expressions read it — and `user`. A line field of the
+ * same name comes first.
+ */
+export function lineContext(values: Values, fields: Record<string, LineField>, parent: Record<string, unknown>): Record<string, unknown> {
+  const names: Record<string, unknown> = { parent, user: parent['user'] ?? builtIns({}, null, undefined)['user'] };
+  for (const name of Object.keys(names)) if (name in fields) delete names[name];
+  return { ...names, ...expressionContext(values, fields) };
+}
+
 export function expressionEnv(values: Values, fields: Record<string, Field | LineField>, today: () => string): ExpressionEnv {
   const rows = new Map<string, Record<string, unknown>[]>();
   return {

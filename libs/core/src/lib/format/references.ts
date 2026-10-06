@@ -153,6 +153,21 @@ export class ReferenceCheck {
     return undefined;
   }
 
+  /** A filter's `valueFrom`: a field where it is used, the record's `id`, a part of `user`, or on a line a field of its record. */
+  private checkValueFrom(name: string, path: string, scope: Scope) {
+    const [root, part] = name.split('.');
+    if (part === undefined) {
+      if (has(scope.fields, name) || (name === 'id' && scope.lines === undefined)) return;
+      this.need(name, path, scope.fields);
+    } else if (root === 'user') {
+      if (!(USER_PARTS as readonly string[]).includes(part)) this.report(path, `"${name}": the person has an id, name or roles`);
+    } else if (scope.lines === undefined) {
+      this.report(path, `"${name}": only a line's filter reads parent, the record it is on`);
+    } else if (!has(this.page.fields, part) && part !== 'id') {
+      this.report(path, `"${name}": "${part}" is not a field of this page`);
+    }
+  }
+
   /** Every modifier on `owner` must read, and read only fields of this page (or of its line). */
   private checkModifiers(owner: object, path: string, keys: readonly string[] = ['invisible'], scope: Scope = { fields: this.page.fields }) {
     for (const key of keys) {
@@ -177,11 +192,14 @@ export class ReferenceCheck {
   private checkReads(source: string, reads: { fields: readonly string[]; paths: readonly string[] }, path: string, scope: Scope) {
     for (const name of reads.fields) {
       if (has(scope.fields, name)) continue;
-      if (scope.lines === undefined && (BUILT_IN_NAMES as readonly string[]).includes(name)) {
-        if (name !== 'user') continue;
+      // A record's expressions read its id and the person; a line's, the person and the record it is on.
+      const builtIn = scope.lines === undefined ? (BUILT_IN_NAMES as readonly string[]).includes(name) : name === 'user' || name === 'parent';
+      if (builtIn) {
         for (const read of reads.paths) {
-          const part = read.split('.')[1];
-          if (read.startsWith('user.') && !(USER_PARTS as readonly string[]).includes(part)) this.report(path, `"${source}" reads "${read}": the person has an id, name or roles`);
+          const [root, part] = read.split('.');
+          if (root !== name || part === undefined) continue;
+          if (name === 'user' && !(USER_PARTS as readonly string[]).includes(part)) this.report(path, `"${source}" reads "${read}": the person has an id, name or roles`);
+          if (name === 'parent' && !has(this.page.fields, part) && !(BUILT_IN_NAMES as readonly string[]).includes(part)) this.report(path, `"${source}" reads "${read}": "${part}" is not a field of this page`);
         }
         continue;
       }
@@ -260,7 +278,7 @@ export class ReferenceCheck {
         const walk = (item: FilterItem, at: string): void => {
           if ('any' in item) return item.any.forEach((inner, i) => walk(inner, `${at}.any[${i}]`));
           if ('all' in item) return item.all.forEach((inner, i) => walk(inner, `${at}.all[${i}]`));
-          if (item.valueFrom !== undefined) this.need(item.valueFrom, `${at}.valueFrom`, fields);
+          if (item.valueFrom !== undefined) this.checkValueFrom(item.valueFrom, `${at}.valueFrom`, { fields, lines });
         };
         def.filter.forEach((item, i) => {
           walk(item, `${path}.filter[${i}]`);

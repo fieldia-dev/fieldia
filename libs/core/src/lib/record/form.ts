@@ -11,7 +11,7 @@ import { checkInput } from './inputs';
 import { compileComputed } from './compute';
 import { compileSetWhen } from './set-when';
 import { checkRules, compileRules, type CompiledRule } from './rules';
-import { builtIns, expressionEnv } from './env';
+import { expressionEnv, lineContext, recordContext } from './env';
 import { rolesAllow } from './roles';
 import { MESSAGES, type Messages } from './messages';
 import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
@@ -19,7 +19,6 @@ import { hostScheduler, type Scheduler } from './scheduler';
 import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
   emptyValue,
-  expressionContext,
   initialValues,
   isEmpty,
   lineKind,
@@ -295,8 +294,11 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   const steps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
   const draftKey = () => `fieldia:draft:${page.id}:${state.recordId ?? 'new'}`;
   const today = () => localDay(options.now?.() ?? new Date());
-  const computed = compileComputed(page, today);
-  const setWhen = compileSetWhen(page, today);
+  // The record's id and the person, as worked-out values read them: the id is the one asked for until the form has its state.
+  let started = false;
+  const about = () => ({ recordId: started ? state.recordId : (options.recordId ?? null), user: options.user });
+  const computed = compileComputed(page, today, about);
+  const setWhen = compileSetWhen(page, today, about);
   /** The saved forms placed on the page, by the part's id: each one's answers sit under its name, as JSON. */
   const parts = new Map<string, FormNode>();
   for (const node of index.values()) if (node.kind === 'form') parts.set(node.id, node.source as FormNode);
@@ -327,6 +329,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     saveProblem: null,
     choices: {},
   };
+  started = true;
   /** Field errors a refused save brought, each kept until its field changes from the value it was refused with. */
   let serverErrors: Record<string, { message: string; value: string }> = {};
   let lineKeys = 0;
@@ -432,7 +435,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   function reading(): { context: Record<string, unknown>; env: ExpressionEnv } {
     if (contextCache?.values !== state.values || contextCache.recordId !== state.recordId) {
       const values = state.values as Values;
-      const context = { ...builtIns(page.fields, state.recordId, options.user), ...expressionContext(values, page.fields) };
+      const context = recordContext(values, page.fields, about());
       contextCache = { values, recordId: state.recordId, context, env: expressionEnv(values, page.fields, today) };
     }
     return contextCache;
@@ -882,7 +885,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
         ? { any: item.any.map(resolve) }
         : 'all' in item
           ? { all: item.all.map(resolve) }
-          : { field: item.field, op: item.op, value: (item.valueFrom !== undefined ? ctx[item.valueFrom] ?? null : item.value ?? null) as JsonValue };
+          : { field: item.field, op: item.op, value: (item.valueFrom !== undefined ? valueAt(ctx, item.valueFrom) : item.value ?? null) as JsonValue };
     const filter: ResolvedFilter[] | undefined = def.type === 'reference' ? undefined : def.filter?.map(resolve);
     const relation = def.type === 'reference' ? (model as string) : def.relation;
     return track(source.search({ model: relation, query, ...(filter ? { filter } : {}), limit }));
@@ -1056,13 +1059,13 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       const lines = (state.values[field] as Line[] | null) ?? [];
       const line = lines.find((l) => l.key === key);
       if (!line) throw new Error(`"${field}" has no line "${key}"`);
-      const merged = computed.line(field, { ...line.values, ...values });
+      const merged = computed.line(field, { ...line.values, ...values }, state.values as Values);
       const source = options.dataSource;
       if (!source?.onchange || page.data.kind !== 'record') return merged;
       const changed = lines.map((l) => (l.key === key ? { ...l, values: merged } : l));
       const result = await source.onchange({ model: page.data.model, id: state.recordId, changed: field, values: structuredCopy({ ...(state.values as Values), [field]: changed }) });
       const after = ((result.values?.[field] as Line[] | undefined) ?? []).find((l) => l.key === key);
-      return after ? computed.line(field, { ...merged, ...after.values }) : merged;
+      return after ? computed.line(field, { ...merged, ...after.values }, state.values as Values) : merged;
     },
 
     async searchLine(field, key, subfield, query, limit = 8) {
@@ -1071,7 +1074,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       if (!sub) throw new Error(`The lines of "${field}" have no field "${subfield}"`);
       const line = ((state.values[field] as Line[] | null) ?? []).find((l) => l.key === key);
       if (!line) throw new Error(`"${field}" has no line "${key}"`);
-      return runSearch(sub, subfield, expressionContext(line.values, def.fields as Record<string, LineField>), query, limit);
+      return runSearch(sub, subfield, lineContext(line.values, def.fields as Record<string, LineField>, context()), query, limit);
     },
 
     canCreate: (field) => creatable(page.fields[field]) !== null,
@@ -1389,4 +1392,11 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     if (root.sidePanel) add(root.sidePanel, root.id, 'other', { invisible: root.sidePanel.invisible });
   }
   return index;
+}
+
+/** What a filter's `valueFrom` names in a context: a field, or a path such as `parent.company_id` or `user.id`. */
+function valueAt(context: Record<string, unknown>, path: string): unknown {
+  let at: unknown = context;
+  for (const part of path.split('.')) at = at === null || typeof at !== 'object' ? undefined : (at as Record<string, unknown>)[part];
+  return at ?? null;
 }

@@ -3,7 +3,7 @@ import type { Page } from '../format/page';
 import { compileExpression, type CompiledExpression, type ExpressionEnv } from '../expression/expression';
 import { isNumber, roundTo, truthy } from '../expression/operations';
 import { dependencyOrder } from '../expression/order';
-import { expressionEnv } from './env';
+import { expressionEnv, lineContext, recordContext, type About } from './env';
 import { expressionContext, lineKind, sameValue, type Line, type Value, type Values } from './values';
 
 /**
@@ -16,8 +16,8 @@ import { expressionContext, lineKind, sameValue, type Line, type Value, type Val
 export interface Computed {
   /** The values with every worked-out field brought up to date. */
   apply(values: Values): Values;
-  /** One line of a one2many with its worked-out fields brought up to date. */
-  line(field: string, values: Values): Values;
+  /** One line of a one2many on the record `values`, with its worked-out fields brought up to date. */
+  line(field: string, line: Values, values: Values): Values;
 }
 
 type Step = [name: string, expression: CompiledExpression, def: Field | LineField];
@@ -57,8 +57,8 @@ export function fitTo(def: Field | LineField, value: unknown): Value {
   }
 }
 
-/** Read every `compute` of a page once. `today` is the day `today()` gives. */
-export function compileComputed(page: Page, today: () => string): Computed {
+/** Read every `compute` of a page once. `today` is the day `today()` gives; `about`, the record's id and the person, as lines read them on `parent`. */
+export function compileComputed(page: Page, today: () => string, about: () => About = () => ({ recordId: null })): Computed {
   const own = steps(page.fields);
   const lineSteps = new Map<string, { def: Extract<Field, { type: 'one2many' }>; steps: Step[] }>();
   for (const [name, def] of Object.entries(page.fields)) {
@@ -69,10 +69,10 @@ export function compileComputed(page: Page, today: () => string): Computed {
   // Lines hold no lines of their own: inside one, only today() needs the env.
   const lineEnv: ExpressionEnv = { today };
 
-  /** Work out the steps on these values, writing each change into a copy. */
-  function run(values: Values, list: Step[], fields: Record<string, Field | LineField>, env: ExpressionEnv): Values {
+  /** Work out the steps on these values, writing each change into a copy; `read` gives the values as expressions read them. */
+  function run(values: Values, list: Step[], fields: Record<string, Field | LineField>, env: ExpressionEnv, read: (values: Values) => Record<string, unknown>): Values {
     let next = values;
-    const context = expressionContext(values, fields);
+    const context = read(values);
     for (const [name, expression, def] of list) {
       const value = fitTo(def, expression.evaluate(context, env));
       if (sameValue(value, next[name])) continue;
@@ -83,23 +83,24 @@ export function compileComputed(page: Page, today: () => string): Computed {
     return next;
   }
 
-  function line(field: string, values: Values): Values {
+  function line(field: string, values: Values, parent: Record<string, unknown>): Values {
     const found = lineSteps.get(field);
     // A section or a note has nothing to work out.
     if (!found || lineKind(found.def, values) !== null) return values;
-    return run(values, found.steps, found.def.fields, lineEnv);
+    return run(values, found.steps, found.def.fields, lineEnv, (v) => lineContext(v, found.def.fields, parent));
   }
 
   return {
-    line,
+    line: (field, values, record) => line(field, values, recordContext(record, page.fields, about())),
     apply(values) {
       let next = values;
+      const parent = lineSteps.size ? recordContext(values, page.fields, about()) : {};
       for (const field of lineSteps.keys()) {
         const current = next[field];
         if (!Array.isArray(current)) continue;
         let changed = false;
         const updated = (current as Line[]).map((l) => {
-          const worked = line(field, l.values);
+          const worked = line(field, l.values, parent);
           if (worked === l.values) return l;
           changed = true;
           return { ...l, values: worked };
@@ -107,7 +108,7 @@ export function compileComputed(page: Page, today: () => string): Computed {
         if (changed) next = { ...next, [field]: updated };
       }
       if (!own.length) return next;
-      return run(next, own, page.fields, expressionEnv(next, page.fields, today));
+      return run(next, own, page.fields, expressionEnv(next, page.fields, today), (v) => recordContext(v, page.fields, about()));
     },
   };
 }

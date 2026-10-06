@@ -37,16 +37,20 @@ export type Option = z.infer<typeof OptionSchema>;
 /**
  * One condition limiting which records a relation may point to. `valueFrom`
  * compares against another field of the record being edited, so a region list
- * can follow the chosen country. `like` finds text inside; `ilike`,
+ * can follow the chosen country — or its `id`, the person (`user.id`), or on a
+ * line the record it is on (`parent.company_id`). `like` finds text inside; `ilike`,
  * `startswith` and `endswith` whatever the case; `set` and `notset` take no
  * value; `between` takes `[low, high]`, both ends included.
  */
+/** What a filter's `valueFrom` may name: a field, `parent.` and a field of the record a line is on, or `user.` and a part of the person. */
+const VALUE_FROM = /^((parent|user)\.)?[A-Za-z_][A-Za-z0-9_]*$/;
+
 export const FilterConditionSchema = z
   .object({
     field: z.string().min(1),
     op: z.enum(['=', '!=', '<', '>', '<=', '>=', 'in', 'not in', 'like', 'ilike', 'startswith', 'endswith', 'set', 'notset', 'between']),
     value: JsonValueSchema.optional(),
-    valueFrom: z.string().regex(FIELD_NAME).optional(),
+    valueFrom: z.string().regex(VALUE_FROM).optional(),
   })
   .strict()
   .refine((c) => (c.op === 'set' || c.op === 'notset' ? c.value === undefined && c.valueFrom === undefined : (c.value === undefined) !== (c.valueFrom === undefined)), {
