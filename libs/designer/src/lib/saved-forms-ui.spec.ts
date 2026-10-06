@@ -27,6 +27,10 @@ const contact: Page = {
   layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'name', field: 'name' }, { type: 'form', id: 'visit', page: 'site-visit', name: 'visit' }] },
 };
 
+// Each test mounts the whole screen editor and draws the saved forms with the viewer, the heaviest
+// of the designer's tests (about half a second each alone): given room on a loaded machine.
+jest.setTimeout(20_000);
+
 const settle = async () => {
   for (let i = 0; i < 6; i++) await new Promise((resolve) => setTimeout(resolve, 0));
 };
