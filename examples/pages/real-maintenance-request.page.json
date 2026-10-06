@@ -1,0 +1,507 @@
+{
+  "fieldia": "0.1",
+  "id": "real-maintenance-request",
+  "title": "Maintenance Request",
+  "description": "Sherkety ERP, maintenance: maintenance.request, hr_equipment_request_view_form, with hr_maintenance's Created By.",
+  "data": {
+    "kind": "record",
+    "model": "maintenance.request"
+  },
+  "maxWidth": "wide",
+  "look": {
+    "labels": "beside",
+    "labelWidth": 150
+  },
+  "fields": {
+    "company_id": {
+      "type": "many2one",
+      "label": "Company",
+      "relation": "res.company",
+      "required": true
+    },
+    "category_id": {
+      "type": "many2one",
+      "label": "Category",
+      "relation": "maintenance.equipment.category",
+      "readonly": true
+    },
+    "name": {
+      "type": "char",
+      "label": "Subjects",
+      "required": true
+    },
+    "kanban_state": {
+      "type": "selection",
+      "label": "Kanban State",
+      "required": true,
+      "default": "normal",
+      "options": [
+        {
+          "value": "normal",
+          "label": "In Progress"
+        },
+        {
+          "value": "blocked",
+          "label": "Blocked"
+        },
+        {
+          "value": "done",
+          "label": "Ready for next stage"
+        }
+      ]
+    },
+    "stage_id": {
+      "type": "many2one",
+      "label": "Stage",
+      "relation": "maintenance.stage"
+    },
+    "archive": {
+      "type": "boolean",
+      "label": "Archive",
+      "readonly": true
+    },
+    "done": {
+      "type": "boolean",
+      "label": "Request Done",
+      "readonly": true
+    },
+    "employee_id": {
+      "type": "many2one",
+      "label": "Employee",
+      "relation": "hr.employee"
+    },
+    "equipment_id": {
+      "type": "many2one",
+      "label": "Equipment",
+      "relation": "maintenance.equipment"
+    },
+    "request_date": {
+      "type": "date",
+      "label": "Request Date",
+      "default": "today"
+    },
+    "close_date": {
+      "type": "date",
+      "label": "Close Date"
+    },
+    "maintenance_type": {
+      "type": "selection",
+      "label": "Maintenance Type",
+      "default": "corrective",
+      "options": [
+        {
+          "value": "corrective",
+          "label": "Corrective"
+        },
+        {
+          "value": "preventive",
+          "label": "Preventive"
+        }
+      ]
+    },
+    "maintenance_team_id": {
+      "type": "many2one",
+      "label": "Team",
+      "relation": "maintenance.team",
+      "required": true
+    },
+    "user_id": {
+      "type": "many2one",
+      "label": "Technician",
+      "relation": "res.users"
+    },
+    "schedule_date": {
+      "type": "datetime",
+      "label": "Scheduled Date"
+    },
+    "duration": {
+      "type": "float",
+      "label": "Duration",
+      "min": 0,
+      "digits": [
+        6,
+        2
+      ]
+    },
+    "recurring_maintenance": {
+      "type": "boolean",
+      "label": "Recurrent"
+    },
+    "repeat_interval": {
+      "type": "integer",
+      "label": "Repeat Every",
+      "default": 1,
+      "min": 1
+    },
+    "repeat_unit": {
+      "type": "selection",
+      "label": "Repeat Unit",
+      "default": "week",
+      "options": [
+        {
+          "value": "day",
+          "label": "Days"
+        },
+        {
+          "value": "week",
+          "label": "Weeks"
+        },
+        {
+          "value": "month",
+          "label": "Months"
+        },
+        {
+          "value": "year",
+          "label": "Years"
+        }
+      ]
+    },
+    "repeat_type": {
+      "type": "selection",
+      "label": "Until",
+      "default": "forever",
+      "options": [
+        {
+          "value": "forever",
+          "label": "Forever"
+        },
+        {
+          "value": "until",
+          "label": "Until"
+        }
+      ]
+    },
+    "repeat_until": {
+      "type": "date",
+      "label": "End Date"
+    },
+    "priority": {
+      "type": "integer",
+      "label": "Priority",
+      "min": 1,
+      "max": 3
+    },
+    "description": {
+      "type": "html",
+      "label": "Description"
+    },
+    "instruction_type": {
+      "type": "selection",
+      "label": "Instruction",
+      "default": "text",
+      "options": [
+        {
+          "value": "pdf",
+          "label": "PDF"
+        },
+        {
+          "value": "google_slide",
+          "label": "Google Slide"
+        },
+        {
+          "value": "text",
+          "label": "Text"
+        }
+      ]
+    },
+    "instruction_pdf": {
+      "type": "binary",
+      "label": "PDF",
+      "accept": [
+        "application/pdf"
+      ]
+    },
+    "instruction_google_slide": {
+      "type": "char",
+      "label": "Google Slide"
+    },
+    "instruction_text": {
+      "type": "html",
+      "label": "Text"
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "placeholder": "e.g. Screen not working",
+      "above": [
+        {
+          "type": "field",
+          "id": "f-kanban-state",
+          "field": "kanban_state",
+          "labels": "hidden"
+        }
+      ]
+    },
+    "statusbar": {
+      "field": "stage_id",
+      "clickable": true
+    },
+    "badges": [
+      {
+        "id": "badge-canceled",
+        "label": "Canceled",
+        "tone": "warning",
+        "invisible": "not archive"
+      }
+    ],
+    "buttons": [
+      {
+        "type": "button",
+        "id": "archive_equipment_request",
+        "label": "Cancel",
+        "invisible": "archive",
+        "steps": [
+          {
+            "do": "set",
+            "field": "archive",
+            "value": "True"
+          },
+          {
+            "do": "set",
+            "field": "recurring_maintenance",
+            "value": "False"
+          },
+          {
+            "do": "save"
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "reset_equipment_request",
+        "label": "Reopen Request",
+        "invisible": "not archive",
+        "steps": [
+          {
+            "do": "set",
+            "field": "archive",
+            "value": "False"
+          },
+          {
+            "do": "call",
+            "action": "maintenance_first_stage"
+          },
+          {
+            "do": "save"
+          }
+        ]
+      }
+    ],
+    "children": [
+      {
+        "type": "section",
+        "id": "g-main",
+        "style": "plain",
+        "columns": {
+          "wide": 2,
+          "medium": 2
+        },
+        "children": [
+          {
+            "type": "section",
+            "id": "g-main-left",
+            "style": "plain",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-employee",
+                "field": "employee_id",
+                "label": "Created By",
+                "options": {
+                  "create": false
+                }
+              },
+              {
+                "type": "field",
+                "id": "f-equipment",
+                "field": "equipment_id"
+              },
+              {
+                "type": "field",
+                "id": "f-category",
+                "field": "category_id",
+                "invisible": "not equipment_id"
+              },
+              {
+                "type": "field",
+                "id": "f-request-date",
+                "field": "request_date",
+                "readonly": true
+              },
+              {
+                "type": "field",
+                "id": "f-close-date",
+                "field": "close_date",
+                "readonly": true,
+                "invisible": "not done"
+              },
+              {
+                "type": "field",
+                "id": "f-type",
+                "field": "maintenance_type",
+                "widget": "radio"
+              }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "g-main-right",
+            "style": "plain",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-team",
+                "field": "maintenance_team_id",
+                "options": {
+                  "create": false
+                }
+              },
+              {
+                "type": "field",
+                "id": "f-responsible",
+                "field": "user_id",
+                "label": "Responsible"
+              },
+              {
+                "type": "field",
+                "id": "f-schedule",
+                "field": "schedule_date"
+              },
+              {
+                "type": "field",
+                "id": "f-duration",
+                "field": "duration",
+                "options": {
+                  "suffix": "hours"
+                }
+              },
+              {
+                "type": "field",
+                "id": "f-recurring",
+                "field": "recurring_maintenance",
+                "invisible": "maintenance_type == 'corrective'"
+              },
+              {
+                "type": "field",
+                "id": "f-repeat-interval",
+                "field": "repeat_interval",
+                "invisible": "not recurring_maintenance",
+                "required": "recurring_maintenance"
+              },
+              {
+                "type": "field",
+                "id": "f-repeat-unit",
+                "field": "repeat_unit",
+                "invisible": "not recurring_maintenance",
+                "required": "recurring_maintenance"
+              },
+              {
+                "type": "field",
+                "id": "f-repeat-type",
+                "field": "repeat_type",
+                "invisible": "not recurring_maintenance",
+                "required": "recurring_maintenance"
+              },
+              {
+                "type": "field",
+                "id": "f-repeat-until",
+                "field": "repeat_until",
+                "invisible": "not recurring_maintenance or repeat_type != 'until'",
+                "required": "repeat_type == 'until'"
+              },
+              {
+                "type": "field",
+                "id": "f-priority",
+                "field": "priority",
+                "widget": "rating"
+              },
+              {
+                "type": "field",
+                "id": "f-company",
+                "field": "company_id",
+                "options": {
+                  "create": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "tabs",
+        "id": "notebook",
+        "children": [
+          {
+            "type": "tab",
+            "id": "tab-notes",
+            "label": "Notes",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-description",
+                "field": "description",
+                "labels": "hidden",
+                "placeholder": "Internal Notes"
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-instructions",
+            "label": "Instructions",
+            "children": [
+              {
+                "type": "section",
+                "id": "g-instructions",
+                "style": "plain",
+                "labels": "hidden",
+                "children": [
+                  {
+                    "type": "field",
+                    "id": "f-instruction-type",
+                    "field": "instruction_type",
+                    "widget": "radio"
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-instruction-pdf",
+                    "field": "instruction_pdf",
+                    "invisible": "instruction_type != 'pdf'",
+                    "required": "instruction_type == 'pdf'",
+                    "options": {
+                      "files": "cards"
+                    }
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-instruction-slide",
+                    "field": "instruction_google_slide",
+                    "widget": "url",
+                    "placeholder": "Google Slide Link",
+                    "invisible": "instruction_type != 'google_slide'",
+                    "required": "instruction_type == 'google_slide'"
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-instruction-text",
+                    "field": "instruction_text",
+                    "placeholder": "Your instructions",
+                    "invisible": "instruction_type != 'text'"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "sidePanel": {
+      "type": "slot",
+      "id": "chatter",
+      "name": "chatter"
+    }
+  }
+}
