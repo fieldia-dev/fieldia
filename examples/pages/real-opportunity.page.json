@@ -324,8 +324,8 @@
                 "style": "plain",
                 "columns": { "wide": 12, "medium": 12 },
                 "children": [
-                  { "type": "field", "id": "f-date-deadline", "field": "date_deadline", "colspan": 8 },
-                  { "type": "field", "id": "f-priority", "field": "priority", "widget": "rating", "labels": "hidden", "colspan": 4, "options": { "clear": false } }
+                  { "type": "field", "id": "f-date-deadline", "field": "date_deadline", "colspan": 7 },
+                  { "type": "field", "id": "f-priority", "field": "priority", "widget": "rating", "labels": "hidden", "colspan": 5, "options": { "clear": false } }
                 ]
               },
               { "type": "field", "id": "f-tags", "field": "tag_ids", "widget": "tags", "options": { "create": false } }

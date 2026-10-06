@@ -911,8 +911,8 @@
         },
         {
           "feature": "Repeat Every / unit / Until / End Date on one row (d-flex), required while recurrent, End Date only for \"until\"",
-          "status": "approximated",
-          "how": "one field per row with Flectra's conditions: twelfths inside one column of a two-column group overflow the column by about 11 px and put labels above — needs twelfths that fit a nested column"
+          "status": "covered",
+          "how": "a row of twelfths (2/5/5) in the right-hand column: \"Repeat Every\" with the column's labels, the number, unit and Forever/Until in the values' room, fitting at every width (shown in the e2e); End Date on a row of its own under it, only for \"until\""
         },
         {
           "feature": "Repeat interval at least 1 (constraint)",

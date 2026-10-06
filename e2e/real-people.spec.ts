@@ -263,6 +263,44 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-repeat-until')).toBeVisible();
       expect(problems).toEqual([]);
     });
+
+    test('maintenance request: Repeat Every on one row in its column, its label with the others, at any width', async ({ page }) => {
+      const box = async (selector: string) => (await page.locator(selector).first().boundingBox())!;
+      for (const [width, look] of [[1440, ''], [1100, ''], [900, ''], [1440, '&locale=ar&dir=rtl'], [390, '']] as const) {
+        await page.setViewportSize({ width, height: 900 });
+        const { problems } = await open(page, variant, `page=real-maintenance-request&record=4372&skin=underline${look}`);
+        await expect(node(page, 'g-repeat')).toBeVisible();
+        const column = await box('[data-node="g-main-right"]');
+        const parts = await Promise.all(['f-repeat-interval', 'f-repeat-unit', 'f-repeat-type'].map((id) => box(`[data-node="${id}"] :is(input, select)`)));
+        // Inside the column, every part: nothing past either edge.
+        for (const part of parts) {
+          expect(part.x).toBeGreaterThanOrEqual(column.x - 1);
+          expect(part.x + part.width).toBeLessThanOrEqual(column.x + column.width + 1);
+        }
+        const label = await box('[data-node="f-repeat-interval"] .fd-label');
+        const team = await box('[data-node="f-team"] .fd-label');
+        const teamValue = await box('[data-node="f-team"] input');
+        if (width === 390) {
+          // A phone: the label above, the parts one under another.
+          expect(label.y + label.height).toBeLessThanOrEqual(parts[0].y + 1);
+          expect(parts[1].y).toBeGreaterThan(parts[0].y);
+        } else {
+          // One row, in the values' room, its label where the column's labels are.
+          expect(new Set(parts.map((p) => Math.round(p.y))).size).toBe(1);
+          expect(Math.abs(label.x - team.x)).toBeLessThan(2);
+          const rtl = look.includes('rtl');
+          const valueEdge = rtl ? teamValue.x + teamValue.width : teamValue.x;
+          const first = rtl ? parts[0].x + parts[0].width : parts[0].x;
+          expect(Math.abs(first - valueEdge)).toBeLessThan(2);
+          // Level with its boxes, as the column's other labels are with theirs.
+          const level = (l: { y: number; height: number }, b: { y: number; height: number }) => Math.abs(l.y + l.height / 2 - (b.y + b.height / 2));
+          expect(Math.abs(level(label, parts[0]) - level(team, teamValue))).toBeLessThan(3);
+        }
+        if (variant === 'plain') await screen(page, `real-maintenance-repeat-${width}${look.replace(/[&=]/g, '-')}`);
+        await expectNoSidewaysScroll(page);
+        expect(problems).toEqual([]);
+      }
+    });
   });
 }
 

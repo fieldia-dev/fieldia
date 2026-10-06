@@ -428,6 +428,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const box = el('div', { class: 'fd-grid' });
       if (columns !== null) {
         box.style.setProperty('--fd-columns', String(wideColumns(columns)));
+        // Twelfths: eleven gaps between them, which shrink in a narrow column rather than push past it.
+        if (wideColumns(columns) === 12) box.setAttribute('data-twelfths', '');
         // Counts given for the narrower widths replace the skin's own stacking there.
         if (typeof columns === 'object') {
           for (const width of ['medium', 'narrow'] as const) {
@@ -442,6 +444,20 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       return box;
     }
 
+    /**
+     * A row of twelfths led by a field whose label sits beside it, as Flectra's
+     * `<label/><div class="o_row">`: that label goes with the labels round it,
+     * and the parts share the room their values have.
+     */
+    function labelledRow(node: SectionNode, plan: ReturnType<typeof planSection>): 'skin' | 'beside' | null {
+      const [first] = node.children;
+      if (!plan.arrangement || plan.at === 'tracks' || wideColumns(node.columns) !== 12 || node.children.length < 2 || first?.type !== 'field') return null;
+      const type = page.fields[first.field]?.type;
+      const where = type ? labelPlace(first, type, plan.inner.labels) : 'hidden';
+      // The skin's place: beside in the underline skin, above in the outlined one, as the stylesheet says.
+      return where === undefined ? 'skin' : where === 'beside' ? 'beside' : null;
+    }
+
     function sectionItem(node: SectionNode, place: Place): HTMLElement {
       const plan = planSection(node, place);
       // An arrangement is no group to name, and a fieldset cannot lay its parts on the columns round it.
@@ -453,6 +469,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         'data-on-page': plan.style === 'card' && place.onPage ? '' : undefined,
       });
       spans(section, node.colspan);
+      const row = labelledRow(node, plan);
+      if (row) section.setAttribute('data-row', row);
       if (node.labelWidth) section.style.setProperty('--fd-label-width', `${node.labelWidth}px`);
       const description = node.description ? el('p', { class: 'fd-section-description' }, node.description) : null;
       const content = grid(node.children, plan.at === 'tracks' ? null : node.columns, plan.inner);

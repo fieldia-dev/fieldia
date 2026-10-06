@@ -122,6 +122,9 @@ const SKINS_CSS = /* css */ `
   align-items: start;
 }
 .fd-grid > * { grid-column: span min(var(--fd-span, 1), var(--fd-cols)); }
+/* Twelfths keep the page's gap while it takes under half their width, so they line up with the columns
+   round them; in a narrow column it shrinks with them instead of pushing past its edge. */
+.fd-grid[data-twelfths] { column-gap: min(var(--fd-gap-x), 100% / 24); }
 .fd-field { display: grid; gap: 4px; min-width: 0; }
 .fd-label { font-weight: var(--fd-label-weight); color: var(--fd-text); }
 /* The ✓ of a field filled in right, by its label. */
@@ -157,6 +160,18 @@ const SKINS_CSS = /* css */ `
 .fd-form[data-fd-skin="underline"] .fd-field[data-type="one2many"] { grid-template-columns: minmax(0, 1fr); }
 .fd-form[data-fd-skin="underline"] .fd-field[data-type="one2many"] > * { grid-column: 1 !important; }
 .fd-form[data-fd-skin="underline"] .fd-field:where(:not([data-labels])) > :not(.fd-label) { grid-column: 2; }
+/* A row of twelfths led by a field with its label beside — the skin's (data-row="skin") or the page's
+   ("beside") — Flectra's o_row: that label sits with the labels round it, the parts share the values' room. */
+.fd-form[data-fd-skin="underline"] .fd-section[data-row="skin"] { --fd-row-label: var(--fd-label-width, 11em); --fd-row-gap: 12px; --fd-row-place: absolute; --fd-row-drop: max(0px, calc((var(--fd-control-height, 30px) - 1.45em) / 2)); }
+.fd-form .fd-section[data-row="beside"] { --fd-row-label: var(--fd-label-width, 140px); --fd-row-gap: 14px; --fd-row-place: absolute; --fd-row-drop: max(0px, calc((var(--fd-control-height, 30px) - 1.45em) / 2)); }
+.fd-form .fd-section[data-row] { padding-inline-start: calc(var(--fd-row-label, 0px) + var(--fd-row-gap, 0px)); }
+.fd-form .fd-section[data-row] > .fd-grid > .fd-field:first-child { grid-template-columns: minmax(0, 1fr); position: relative; }
+.fd-form .fd-section[data-row] > .fd-grid > .fd-field:first-child > :not(.fd-label) { grid-column: 1; }
+.fd-form .fd-section[data-row] > .fd-grid > .fd-field:first-child > .fd-label {
+  /* Out of the field's own box, back over the row's room for it — where the row has one. */
+  position: var(--fd-row-place, static); inset-inline-start: calc(-1 * (var(--fd-row-label, 0px) + var(--fd-row-gap, 0px))); inset-block-start: 0;
+  width: var(--fd-row-label, auto); padding-block-start: var(--fd-row-drop, 0px);
+}
 /* A label beside every value needs room twice over: the underline skin stacks its columns sooner. */
 @container (max-width: 760px) {
   .fd-form[data-fd-skin="underline"] .fd-grid { --fd-cols: 1; }
@@ -168,6 +183,9 @@ const SKINS_CSS = /* css */ `
 }
 @container (max-width: 520px) {
   .fd-grid { --fd-cols: 1; }
+  /* Labels go above here: a row's first one too, the parts stacked under it. */
+  .fd-form .fd-section.fd-section[data-row] { --fd-row-label: auto; --fd-row-gap: 0px; --fd-row-place: static; --fd-row-drop: 0px; }
+  .fd-form .fd-section[data-row] { padding-inline-start: 0; }
   .fd-form[data-fd-skin="underline"] .fd-field:where(:not([data-labels])) { grid-template-columns: minmax(0, 1fr); }
   .fd-form[data-fd-skin="underline"] .fd-field:where(:not([data-labels])) > * { grid-column: 1 !important; }
   /* The narrow count, or one column when only the medium one was given. */
