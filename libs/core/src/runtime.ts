@@ -10,6 +10,7 @@ export type {
   Modifier,
   Roles,
   CellRules,
+  HelpShown,
   ToneWhen,
   Tone,
   FieldNode,

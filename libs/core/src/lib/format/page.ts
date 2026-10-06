@@ -1,7 +1,7 @@
 import * as z from 'zod';
 import { PageEventsSchema, type PageEvents } from './actions';
 import { FieldsSchema, type Fields } from './field';
-import { RootLayoutSchema, type RootLayout } from './layout';
+import { HelpShownSchema, RootLayoutSchema, type HelpShown, type RootLayout } from './layout';
 import { PART_LOOKS, type PartLook, type PartsLook } from './part-look';
 
 import { FORMAT_VERSION } from './version';
@@ -29,6 +29,12 @@ export interface PageLook {
   labels?: 'above' | 'beside' | 'hidden';
   /** How wide labels set beside their boxes are, in pixels. */
   labelWidth?: number;
+  /**
+   * Where a field's help shows across the page, unless a field says otherwise:
+   * as words under it (the default), behind a (?) beside its label — Flectra's
+   * tooltip, which keeps a dense sheet short — or both.
+   */
+  helpShown?: HelpShown;
   /** Light, dark, or as the reader's system has it. */
   scheme?: 'light' | 'dark' | 'auto';
   /** A look for each kind of part, over the page's: text boxes, choices, groups, buttons, tables. See `PART_LOOKS`. */
@@ -101,6 +107,7 @@ export const PageSchema = z
         corners: CORNERS.optional(),
         labels: z.enum(['above', 'beside', 'hidden']).optional(),
         labelWidth: z.int().min(60).max(320).optional(),
+        helpShown: HelpShownSchema.optional(),
         scheme: z.enum(['light', 'dark', 'auto']).optional(),
         parts: PartsLookSchema.optional(),
       })

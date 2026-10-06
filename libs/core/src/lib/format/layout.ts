@@ -23,6 +23,10 @@ export type Modifier = boolean | string;
  */
 export type Roles = string[];
 
+/** Where a field's help shows: as words under it, behind a (?) beside its label, or both. */
+export type HelpShown = 'below' | 'tooltip' | 'both';
+export const HelpShownSchema = z.enum(['below', 'tooltip', 'both']).meta({ id: 'HelpShown' });
+
 export type Tone = 'info' | 'success' | 'warning' | 'danger' | 'muted';
 
 /** Where a field's label sits: above its box, beside it, or inside it as the placeholder (still read out by screen readers). */
@@ -93,6 +97,8 @@ export interface FieldNode {
   rowButtons?: ButtonNode[];
   /** Where the label sits, when not where its group or the page puts labels. */
   labels?: LabelPlace;
+  /** Where its help shows, when not where the page shows help: under it, behind a (?) by its label, or both. */
+  helpShown?: HelpShown;
   /** Rules the answer must keep. */
   validate?: AnswerRule[];
   invisible?: Modifier;
@@ -547,6 +553,7 @@ export const FieldNodeSchema = z.strictObject({
   },
   editMode: z.enum(['cell', 'row']).optional(),
   labels: labelPlace.optional(),
+  helpShown: HelpShownSchema.optional(),
   validate: z.array(AnswerRuleSchema).min(1).optional(),
   invisible, roles,
   readonly: ModifierSchema.optional(),
