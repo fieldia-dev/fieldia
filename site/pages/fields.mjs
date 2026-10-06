@@ -15,8 +15,8 @@ const ROWS = [
   ['many2many', 'Links to several records', 'tags, checkboxes', 'relation, filter'],
   ['one2many', 'A table of lines that belong to this record', '', 'relation, fields; columns on the node'],
   ['reference', 'A link to a record of one of several models', '', 'models'],
-  ['binary', 'A file, uploaded or dropped; several with multiple, each opening in a viewer', '', 'accept, maxSize, multiple, minFiles, maxFiles'],
-  ['image', 'An image, with a preview; several with multiple', '', 'maxSize, multiple, minFiles, maxFiles'],
+  ['binary', 'A file, uploaded or dropped; several with multiple, as a list, thumbnails or cards, each opening in a viewer', '', 'accept, maxSize, multiple, minFiles, maxFiles'],
+  ['image', 'An image, with a preview; several with multiple, as thumbnails, cards or a list', '', 'maxSize, multiple, minFiles, maxFiles'],
   ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code)', ''],
   ['properties', 'Extra values, each edited with the field for its type', '', 'definitions'],
 ];
@@ -70,7 +70,7 @@ ${code(
     <tr><td>${c('statusbar')}</td><td>${c('clickable')}, ${c('visibleStates')}. On a ${c('many2one')} its steps are the records the link may point to</td></tr>
     <tr><td>a ${c('monetary')} field</td><td>The currency's symbol inside the box, where the page's language writes it; ${c('symbol')}: ${c('"before"')} or ${c('"after"')} puts it there instead; ${c('pickCurrency')}: a currency box beside the amount</td></tr>
     <tr><td>a ${c('date')} or ${c('datetime')}</td><td>${c('weekNumbers')}: a calendar beside the date, with ISO week numbers; on a ${c('datetime')}, ${c('step')} in minutes</td></tr>
-    <tr><td>a ${c('binary')} or ${c('image')} field</td><td>${c('files')}: ${c('"list"')} (a file's default) or ${c('"thumbnails"')} (an image's); ${c('camera')}: ${c('true')} has a phone offer its rear camera, ${c('"user"')} its front one</td></tr>
+    <tr><td>a ${c('binary')} or ${c('image')} field</td><td>${c('files')}: ${c('"list"')} (a file's default), ${c('"thumbnails"')} (an image's) or ${c('"cards"')}: a picture over each file's name and size, the name in two lines at most, cut in the middle so its extension stays; ${c('filesSwitch')}: ${c('true')} puts List and Cards (or Thumbnails, when the page shows thumbnails) over the files, for the person filling the form to choose, kept with the page's preferences; ${c('camera')}: ${c('true')} has a phone offer its rear camera, ${c('"user"')} its front one</td></tr>
     <tr><td>an ${c('html')} field</td><td>${c('toolbar')}: ${c('false')} leaves the formatting toolbar off. The toolbar's Heading makes a heading in one press</td></tr>
     <tr><td>a ${c('many2one')} or ${c('many2many')}</td><td>${c('create')}: ${c('false')} never offers to make a record from what was typed. With dialogs, both end their list with Search more… when it has no room, and open a linked record — a ${c('many2many')} from its tag</td></tr>
     <tr><td>${c('signature')} on a ${c('binary')}</td><td>${c('color')} (${c('"#1b2a5c"')}) and ${c('penWidth')} (3): the pen; the node's ${c('placeholder')}: words on the blank pad; ${c('footerLabel')}: words kept under it; ${c('upload')}: ${c('true')} lets a picture of a signature be uploaded. Undo takes the last stroke away; a typed name is kept as the value's ${c('text')}</td></tr>

@@ -2,7 +2,8 @@
 
 The field inputs of [Fieldia](https://fieldia.dev), in plain DOM: text, numbers,
 choices, ratings and scales, dates, many2one search pickers, tags, tables of
-lines, file and image uploads, formatted text and JSON. Two skins, chosen per
+lines, file and image uploads (as a list, thumbnails, or cards with each name
+under its picture), formatted text and JSON. Two skins, chosen per
 form with `data-fd-skin`:
 
 - `underline` — labels beside values, quiet underlined inputs (a business sheet)
