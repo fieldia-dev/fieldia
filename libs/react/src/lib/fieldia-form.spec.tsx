@@ -177,6 +177,22 @@ describe('<FieldiaForm>', () => {
     expect(heard).toEqual(['change product by person', 'change price by step', 'run price done', 'save 380']);
   });
 
+  it('opens a page a step asks for through the newest onOpen, without mounting again', async () => {
+    const asked: string[] = [];
+    const ref = createRef<ViewerHandle | null>();
+    const into = { customer_id: 'id' };
+    const withCustomer: Page = { ...pricing, fields: { ...pricing.fields, customer_id: { type: 'many2one', label: 'Customer', relation: 'partner' } } };
+    const { rerender } = render(<FieldiaForm ref={ref} page={withCustomer} onOpen={() => undefined} />);
+    rerender(<FieldiaForm ref={ref} page={withCustomer} onOpen={(request) => (asked.push(request.page), Promise.resolve({ saved: true, recordId: 4, values: { name: 'Delta Foods' } }))} />);
+    let result: unknown;
+    await act(async () => {
+      result = await ref.current?.run([{ do: 'open', page: 'customer', as: 'page', into }]);
+    });
+    expect(result).toEqual({ done: true });
+    expect(asked).toEqual(['customer']);
+    expect(ref.current?.form.getState().values['customer_id']).toEqual({ id: 4, label: 'Delta Foods' });
+  });
+
   it('tells the app a response sent and a wizard step entered', async () => {
     const sent: unknown[] = [];
     const steps: string[] = [];

@@ -192,6 +192,8 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       onAction: (request) => latest.current.onAction?.(request),
       // The newest handler, as for actions; rows look openable only when there is one.
       onOpenRecord: options.onOpenRecord && ((id) => latest.current.onOpenRecord?.(id)),
+      // A page a step opens: the newest way of the app's, else the viewer's.
+      onOpen: (request) => latest.current.onOpen?.(request),
     });
     // Each event through the newest handler, as for actions.
     for (const [prop, event] of Object.entries(EVENTS) as [keyof typeof EVENTS, keyof FormEvents][]) {
