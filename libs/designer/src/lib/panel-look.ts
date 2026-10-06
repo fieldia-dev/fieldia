@@ -31,13 +31,14 @@ export const SWATCHES: readonly [string, string][] = [
   ['#0e7c86', 'Teal'],
 ];
 
-type Key = 'font' | 'density' | 'corners' | 'labels' | 'scheme';
+type Key = 'font' | 'density' | 'corners' | 'labels' | 'helpShown' | 'scheme';
 /** The look's choices of a few, by their key, in the order they stand: their names and words are the designer's. */
 const CHOICES: { key: Key; name: string; values: string[] }[] = [
   { key: 'font', name: 'Font', values: ['system', 'serif', 'rounded'] },
   { key: 'density', name: 'Spacing', values: ['compact', 'comfortable', 'roomy'] },
   { key: 'corners', name: 'Corners', values: ['square', 'soft', 'round'] },
   { key: 'labels', name: 'Labels', values: ['above', 'beside', 'hidden'] },
+  { key: 'helpShown', name: 'Help', values: ['below', 'tooltip', 'both'] },
   { key: 'scheme', name: 'Colours', values: ['light', 'dark', 'auto'] },
 ];
 
@@ -52,12 +53,14 @@ function lookChoice(w: DesignerWords['panel'], key: Key, value: string): Choice<
       return { value, words: w.cornerKinds[value as keyof typeof w.cornerKinds] };
     case 'labels':
       return value === 'hidden' ? { value, words: w.inTheBox, title: w.inBoxTitle } : { value, words: value === 'above' ? w.above : w.beside };
+    case 'helpShown':
+      return { value, words: w.helpWays[value as keyof typeof w.helpWays] };
     default:
       return value === 'auto' ? { value, words: w.schemes.auto, title: w.schemeAutoTitle } : { value, words: w.schemes[value as 'light' | 'dark'] };
   }
 }
-const lookName = (w: DesignerWords['panel'], key: Key) => ({ font: w.font, density: w.spacing, corners: w.corners, labels: w.labels, scheme: w.colours })[key];
-const lookHint = (w: DesignerWords['panel'], key: Key) => (key === 'density' ? w.spacingHint : key === 'labels' ? w.labelsHint : undefined);
+const lookName = (w: DesignerWords['panel'], key: Key) => ({ font: w.font, density: w.spacing, corners: w.corners, labels: w.labels, helpShown: w.help, scheme: w.colours })[key];
+const lookHint = (w: DesignerWords['panel'], key: Key) => (key === 'density' ? w.spacingHint : key === 'labels' ? w.labelsHint : key === 'helpShown' ? w.helpShownHint : undefined);
 
 /** The page's look, setting by setting. Pressing what is pressed gives the setting back to the skin. */
 export function pageLookSettings(el: ElementFactory, designer: Designer): LookSetting {

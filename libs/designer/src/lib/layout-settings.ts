@@ -1,4 +1,4 @@
-import { PART_LOOKS, type ButtonNode, type ColumnCount, type ColumnsByWidth, type ImageNode, type LabelPlace, type Page, type PageLook, type PartLook, type PartLookKind, type SectionNode, type TextNode } from '@fieldia/core';
+import { PART_LOOKS, type ButtonNode, type ColumnCount, type ColumnsByWidth, type HelpShown, type ImageNode, type LabelPlace, type Page, type PageLook, type PartLook, type PartLookKind, type SectionNode, type TextNode } from '@fieldia/core';
 import { columnsValue, setSpan, SPANNED } from './layout-ops';
 import { across, isSection, locate, nodeOf, rowsOf, spanOf, type Holder, type Part } from './layout-tree';
 import { fill, fromTwelfths, inTwelfths, isGroup, keepsFull, laidInTwelfths, resize, toTwelfths, TWELVE, twelfthsAhead } from './layout-twelfths';
@@ -121,6 +121,14 @@ export function setFieldLabels(page: Page, id: string, place: LabelPlace | null)
   if (at?.node.type !== 'field') throw new Refusal((w) => w.layout.noField(id));
   if (place) at.node.labels = place;
   else delete at.node.labels;
+}
+
+/** Where one field's help shows; `null` for where the page shows help. */
+export function setFieldHelpShown(page: Page, id: string, shown: HelpShown | null): void {
+  const at = locate(page, id);
+  if (at?.node.type !== 'field') throw new Refusal((w) => w.layout.noField(id));
+  if (shown) at.node.helpShown = shown;
+  else delete at.node.helpShown;
 }
 
 /** The page's look: its colour, font, spacing, corners, labels and scheme. */

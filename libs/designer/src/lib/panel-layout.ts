@@ -1,4 +1,4 @@
-import { wideColumns, type ColumnCount, type LabelPlace, type Page, type SectionNode } from '@fieldia/core';
+import { wideColumns, type ColumnCount, type HelpShown, type LabelPlace, type Page, type SectionNode } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { across, colsOf, isSection, isWrapper, locate, nameOf, nodeOf, onTracks, sharesOneCell, spanOf, type Part } from './layout-tree';
@@ -212,13 +212,24 @@ export function labelsSetting(el: ElementFactory, designer: Designer, id: string
   const notSet = place.element.querySelector('[data-choice="around"] .fd-seg-words') as HTMLElement;
   const rows = [setting(el, 'layout', 'Labels', place.element, what === 'field' ? { words: w.label, hint: w.labelInBox } : { words: w.labelsInside })];
   if (what === 'field') {
+    // Where its help shows: as the page has it, or its own way.
+    const help = segmented<string>(
+      el,
+      w.help,
+      [{ value: AROUND, words: w.asPage }, ...(['below', 'tooltip', 'both'] as const).map((value) => ({ value, words: w.helpWays[value] }))],
+      (value) => designer.setFieldHelpShown(id, value === AROUND || value === null ? null : (value as HelpShown))
+    );
+    const helpRow = setting(el, 'layout', 'Help', help.element, { words: w.help });
     return {
-      rows,
+      rows: [...rows, helpRow],
       update(page) {
-        const node = locate(page, id)?.node as { labels?: LabelPlace } | undefined;
+        const node = locate(page, id)?.node as { labels?: LabelPlace; helpShown?: HelpShown; help?: string; field?: string } | undefined;
         if (!node) return;
         notSet.textContent = aroundWords(page, id, designer.words);
         place.set(node.labels ?? AROUND);
+        // Only a field with help has anywhere to show it.
+        helpRow.hidden = !(node.help || (node.field && page.fields[node.field]?.help));
+        help.set(node.helpShown ?? AROUND);
       },
     };
   }

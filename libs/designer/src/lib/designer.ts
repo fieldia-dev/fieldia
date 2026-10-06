@@ -12,6 +12,7 @@ import {
   type Option,
   type OptionsFrom,
   type PartLookKind,
+  type HelpShown,
   type Page,
   type PageLook,
   type SectionNode,
@@ -378,6 +379,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setSectionLook(id: string, look: SectionLook): boolean;
   /** Where one field's label sits; `null` for where its group or the page puts labels. */
   setFieldLabels(id: string, place: LabelPlace | null): boolean;
+  /** Where one field's help shows — under it, behind a (?), or both; `null` for where the page shows help. */
+  setFieldHelpShown(id: string, shown: HelpShown | null): boolean;
   /** The page's look: colour, font, spacing, corners, labels, scheme; `null` takes a setting back. */
   setLook(patch: LookPatch): boolean;
   /**
@@ -1356,6 +1359,7 @@ export function createDesigner(options: {
     },
     setSectionLook: (id, look) => apply((draft) => settings.setSectionLook(draft, id, look), `section-look:${id}:${Object.keys(look).join(',')}`),
     setFieldLabels: (id, place) => apply((draft) => settings.setFieldLabels(draft, id, place)),
+    setFieldHelpShown: (id, shown) => apply((draft) => settings.setFieldHelpShown(draft, id, shown)),
     setLook: (patch) => apply((draft) => settings.setLook(draft, patch), `look:${Object.keys(patch).join(',')}`),
     setPartLook: (kind, patch) => {
       const colours = !!patch && Object.values(patch).every((value) => typeof value === 'string' && value.startsWith('#'));
