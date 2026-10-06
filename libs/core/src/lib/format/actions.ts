@@ -23,8 +23,17 @@ interface StepBase {
 }
 
 /**
+ * The edge a panel comes from: the end of the line (the default: the right,
+ * or the left in a page written right to left) or its start, as the page
+ * reads; or the left, right, top or bottom of the screen, whatever the page's
+ * direction. A panel at the top or bottom runs the whole width.
+ */
+export type PanelSide = 'end' | 'start' | 'right' | 'left' | 'top' | 'bottom';
+
+/**
  * Open another page: in a dialog over this form (the default), in a panel
- * beside it, or in its place. It starts on a record (`record`, an expression
+ * beside it, or in its place. A panel comes from the `side` named, the end of
+ * the line unless told. It starts on a record (`record`, an expression
  * giving its id) or a new one with `values`. Once it is saved or sent, `into`
  * sets this form's fields from its answers — each an expression over the
  * opened form's values, where `id` is the record it saved — and `then` runs
@@ -37,6 +46,8 @@ export interface OpenStep extends StepBase {
   /** One published version; left out, the latest. */
   version?: number;
   as?: 'dialog' | 'panel' | 'page';
+  /** Where a panel comes from (`as: 'panel'` alone): the end of the line unless told. */
+  side?: PanelSide;
   /** The words over it; left out, the page's own title. */
   title?: string;
   record?: string;
@@ -151,6 +162,7 @@ export const OpenStepSchema = z.strictObject({
   page: name,
   version: z.int().min(1).optional(),
   as: z.enum(['dialog', 'panel', 'page']).optional(),
+  side: z.enum(['end', 'start', 'right', 'left', 'top', 'bottom']).optional(),
   title: z.string().optional(),
   record: expression.optional(),
   values: valueMap.optional(),

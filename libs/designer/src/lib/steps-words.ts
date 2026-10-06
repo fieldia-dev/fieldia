@@ -8,8 +8,8 @@ import { setValueInWords } from './rules-words';
 import { eachStep, everyPlace, fieldsNamed, fieldsRead, pressOf, showTargets, type StepsPlace } from './steps-places';
 
 /**
- * Steps as a person reads them: "Open Customer in a panel, then put its
- * answer in Customer", "Set Price to Quantity × 12.5 when Quantity > 0",
+ * Steps as a person reads them: "Open Customer in a panel from the left, then
+ * put its answer in Customer", "Set Price to Quantity × 12.5 when Quantity > 0",
  * "Ask: Send the order?", "Run the app’s action check_stock". Fields by their
  * labels, formulas in words, a page opened by its title where the app's saved
  * pages give one. The steps editor, the Rules view, the marks on the canvas
@@ -31,7 +31,7 @@ export function stepSentence(page: Page, step: ActionStep, words: DesignerWords 
     case 'open': {
       // The condition before what comes back, so it reads as the page's: "Open Customer in a panel when VIP is Yes, then …".
       const other = saved(step.page);
-      const opened = w.open(shownTitle(other, page.language) || w.unknownPage(step.page), step.as ?? 'dialog');
+      const opened = w.open(shownTitle(other, page.language) || w.unknownPage(step.page), step.as ?? 'dialog', step.side);
       const record = step.record ? w.onRecord(formula(step.record)) : '';
       const values = Object.keys(step.values ?? {}).map((name) => other?.fields[name]?.label || name);
       const into = Object.keys(step.into ?? {}).map(field);

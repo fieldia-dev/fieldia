@@ -772,17 +772,27 @@ button.fd-chip-label:hover { text-decoration: underline; }
 /* A page with no sheet of its own sits on the dialog's surface, clear of its edges. */
 .fd-form-dialog-body:not(:has(.fd-sheet-layout)) { background: var(--fd-surface); padding: 16px 20px 20px; }
 .fd-form-dialog-foot { padding: 12px 16px; border-block-start: 1px solid var(--fd-border); background: var(--fd-surface); margin: 0; }
-/* A page in a side panel: at the inline-end edge, the page behind dimmed, sliding in from that edge; on a phone, the whole screen, from below. */
+/* A page in a side panel: at the inline-end edge unless it names another, the page behind dimmed, sliding in from its edge; on a phone, the whole screen. */
 .fd-form-panel-backdrop { justify-items: end; }
 .fd-form-panel { max-width: 560px; position: relative; }
 /* Its question before changes are dropped sits over the panel, not over the page. */
 .fd-form-panel > .fd-dialog-backdrop { position: absolute; }
 .fd-width-narrow { max-width: 420px; }
 .fd-width-wide { max-width: 720px; }
-.fd-form-panel:dir(rtl) { --fd-from: -100% 0; }
-/* A panel opened from another: the older one steps back, its edge still in sight. */
-.fd-form-panel[data-behind] { margin-inline-end: 48px; }
-@media (max-width: 600px) { .fd-form-dialog.fd-form-panel { max-width: none; margin: 0; --fd-from: 0 100%; } }
+/* The other edges: the start of the line as the page reads; the left, right, top or bottom whatever it reads, the top and bottom the whole width.
+   Each says where its slide starts (--fd-from) and which edge it steps back from (--fd-back): the right unless told. */
+.fd-form-panel[data-side="start"] { justify-self: start; }
+.fd-form-panel[data-side="left"] { justify-self: left; }
+.fd-form-panel[data-side="right"] { justify-self: right; }
+.fd-form-panel[data-side="top"] { align-self: start; --fd-from: 0 -100%; --fd-back: 48px 0 0; }
+.fd-form-panel[data-side="bottom"] { align-self: end; --fd-from: 0 100%; --fd-back: 0 0 48px; }
+.fd-form-panel[data-side="end"]:dir(rtl), .fd-form-panel[data-side="start"]:dir(ltr), .fd-form-panel[data-side="left"] { --fd-from: -100% 0; --fd-back: 0 0 0 48px; }
+.fd-form-panel:is([data-side="top"], [data-side="bottom"]) { max-width: none; height: 60%; }
+.fd-form-panel.fd-height-short { height: 40%; }
+.fd-form-panel.fd-height-tall { height: 85%; }
+/* A panel opened from another: the older one steps back from its own edge, still in sight. */
+.fd-form-panel[data-behind] { margin: var(--fd-back, 0 48px 0 0); }
+@media (max-width: 600px) { .fd-form-dialog.fd-form-panel[data-side] { max-width: none; height: 100%; margin: 0; --fd-from: 0 100%; } .fd-form-dialog.fd-form-panel[data-side="top"] { --fd-from: 0 -100%; } }
 @media (prefers-reduced-motion: no-preference) { .fd-form-panel { animation: fd-slide 0.25s ease-out; transition: margin 0.2s; } }
 @keyframes fd-slide { from { translate: var(--fd-from, 100% 0); } }
 @media (prefers-reduced-motion: reduce) { .fd-form *, .fd-form *::before, .fd-form *::after { transition: none !important; } .fd-button[aria-busy="true"]::after { animation: none; } }

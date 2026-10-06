@@ -138,6 +138,45 @@ test.describe('When… in the screen designer', () => {
     expect(problems).toEqual([]);
   });
 
+  test('a panel from a side: From shows once it opens in a panel, its sentence says the side, and a dialog drops it', async ({ page }) => {
+    const problems = watch(page);
+    await page.goto('/screen/');
+    await expect(page.locator('.fd-designer-bar')).toBeVisible();
+    await page.locator('.fd-canvas-field').first().click();
+    await addButton(page, 'New customer');
+    await clicked(page).getByRole('button', { name: 'Add a step' }).click();
+    await menu(page).getByRole('menuitem', { name: 'Open a page' }).click();
+    await clicked(page).getByRole('combobox', { name: 'Page' }).selectOption({ label: 'Customer' });
+    const from = clicked(page).getByRole('combobox', { name: 'From' });
+    // A dialog comes from nowhere.
+    await expect(from).toBeHidden();
+    await clicked(page).getByRole('button', { name: 'Panel, beside this form' }).click();
+    await expect(from).toBeVisible();
+    await expect(from.locator('option')).toHaveText(['The end of the line', 'The left', 'The right', 'The top', 'The bottom']);
+    await expect(from).toHaveValue('');
+    await expect(clicked(page).getByText('The right, or the left on a page that reads right to left.')).toBeVisible();
+    await screen(page, 'designer-steps-open-step-from-end', { viewport: true });
+    await from.selectOption({ label: 'The left' });
+    await expect(sayings(clicked(page)).nth(1)).toHaveText('Open Customer in a panel from the left');
+    expect(((await buttonOf(page, 'New customer'))?.['steps'] as unknown[])[1]).toEqual({ do: 'open', page: 'customer-card', as: 'panel', side: 'left' });
+    // The list fits the panel's width, its words whole.
+    const [list, row] = [(await from.boundingBox())!, (await from.locator('xpath=..').boundingBox())!];
+    expect(list.x + list.width).toBeLessThanOrEqual(row.x + row.width + 1);
+    await look(page, 'open-step-from');
+    await from.selectOption({ label: 'The bottom' });
+    await expect(clicked(page).getByText('The whole width of the screen.')).toBeVisible();
+    await expect(sayings(clicked(page)).nth(1)).toHaveText('Open Customer in a panel from the bottom');
+    // A dialog drops the side; the end of the line writes none.
+    await clicked(page).getByRole('button', { name: 'Dialog, over this form' }).click();
+    await expect(from).toBeHidden();
+    await expect(sayings(clicked(page)).nth(1)).toHaveText('Open Customer in a dialog');
+    expect(((await buttonOf(page, 'New customer'))?.['steps'] as unknown[])[1]).toEqual({ do: 'open', page: 'customer-card' });
+    await clicked(page).getByRole('button', { name: 'Panel, beside this form' }).click();
+    await expect(from).toHaveValue('');
+    await expect(sayings(clicked(page)).nth(1)).toHaveText('Open Customer in a panel');
+    expect(problems).toEqual([]);
+  });
+
   test('the same, by keyboard: the menu by its arrows, a step closed with Escape, moved with Alt+↓, removed, and Undo', async ({ page }) => {
     const problems = watch(page);
     await page.goto('/screen/');
@@ -304,6 +343,11 @@ test.describe('When… in the screen designer', () => {
     await menu(page).getByRole('menuitem', { name: 'فتح صفحة' }).click();
     await button.getByRole('combobox', { name: 'الصفحة' }).selectOption({ label: 'العميل' });
     await button.getByRole('button', { name: 'لوحة، بجانب هذا النموذج' }).click();
+    // From the top, said so in Arabic; then back to the end of the line.
+    await button.getByRole('combobox', { name: 'من جهة' }).selectOption({ label: 'الأعلى' });
+    await expect(sayings(button).nth(1)).toHaveText('افتح «\u2068العميل\u2069» في لوحة من الأعلى');
+    await look(page, 'arabic-open-from');
+    await button.getByRole('combobox', { name: 'من جهة' }).selectOption({ index: 0 });
     await button.getByRole('button', { name: 'إضافة إجابة' }).click();
     const answers = button.getByRole('group', { name: 'تذهب إجاباتها إلى' });
     await answers.getByRole('combobox', { name: 'حقل هذا النموذج' }).selectOption({ label: 'العميل' });

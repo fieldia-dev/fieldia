@@ -258,15 +258,78 @@ describe('a tab shown, on the page’s Rules tab', () => {
   });
 });
 
+describe('an open step’s panel: the side it comes from', () => {
+  it('offers From once it opens in a panel — the end of the line unless another is picked — said in its sentence, and dropped with the panel', async () => {
+    const { designer } = await order();
+    designer.select('new-customer');
+    const { host } = mount(designer, { mode: 'advanced' });
+    button(clicked(host), 'Add a step')?.click();
+    pick_('Open a page');
+    await settled();
+    choose(field(clicked(host), 'Page') as HTMLSelectElement, 'customer');
+    const from = () => clicked(host).querySelector('select[aria-label="From"]') as HTMLSelectElement;
+    // A dialog, or its place, comes from nowhere: no From.
+    expect(from().closest('[hidden]')).not.toBeNull();
+    (clicked(host).querySelector('[data-choice="panel"]') as HTMLButtonElement).click();
+    expect(from().closest('[hidden]')).toBeNull();
+    // Plainly: the end of the line first, unset; then the screen's four edges — what each means said under it.
+    expect([...from().options].map((o) => [o.value, o.textContent])).toEqual([
+      ['', 'The end of the line'],
+      ['left', 'The left'],
+      ['right', 'The right'],
+      ['top', 'The top'],
+      ['bottom', 'The bottom'],
+    ]);
+    const hint = () => (from().parentElement?.querySelector('.fd-properties-hint') as HTMLElement);
+    expect(from().value).toBe('');
+    expect([hint().hidden, hint().textContent]).toEqual([false, 'The right, or the left on a page that reads right to left.']);
+    choose(from(), 'left');
+    expect(pressed(designer).steps?.[1]).toEqual({ do: 'open', page: 'customer', as: 'panel', side: 'left' });
+    expect(sayings(clicked(host))[1]).toBe('Open Customer in a panel from the left');
+    expect(hint().hidden).toBe(true);
+    choose(from(), 'top');
+    expect(sayings(clicked(host))[1]).toBe('Open Customer in a panel from the top');
+    expect([hint().hidden, hint().textContent]).toEqual([false, 'The whole width of the screen.']);
+    // Back to the end of the line: nothing written.
+    choose(from(), '');
+    expect(pressed(designer).steps?.[1]).toEqual({ do: 'open', page: 'customer', as: 'panel' });
+    // A side goes with the panel: a dialog drops it.
+    choose(from(), 'bottom');
+    (clicked(host).querySelector('[data-choice="dialog"]') as HTMLButtonElement).click();
+    expect(pressed(designer).steps?.[1]).toEqual({ do: 'open', page: 'customer' });
+    expect(from().closest('[hidden]')).not.toBeNull();
+    // One undo step each: the dialog undone gives back the panel from the bottom.
+    designer.undo();
+    expect(pressed(designer).steps?.[1]).toEqual({ do: 'open', page: 'customer', as: 'panel', side: 'bottom' });
+    expect(from().value).toBe('bottom');
+  });
+
+  it('shows a page’s own start of the line as it is, offered only there', async () => {
+    const { designer } = await order();
+    designer.addStep({ press: 'new-customer' }, { do: 'open', page: 'customer', as: 'panel', side: 'start' });
+    designer.select('new-customer');
+    const { host } = mount(designer, { mode: 'advanced' });
+    await settled();
+    ([...clicked(host).querySelectorAll<HTMLButtonElement>('.fd-do-say')][1]).click();
+    const from = field(clicked(host), 'From') as HTMLSelectElement;
+    expect(from.value).toBe('start');
+    expect(from.selectedOptions[0].textContent).toBe('The start of the line');
+    expect(from.parentElement?.querySelector('.fd-properties-hint')?.textContent).toBe('The left, or the right on a page that reads right to left.');
+    choose(from, 'right');
+    expect([...from.options].map((o) => o.value)).toEqual(['', 'left', 'right', 'top', 'bottom']);
+  });
+});
+
 describe('the steps editor in Arabic', () => {
   it('says its words in Arabic, the app’s names apart as code', async () => {
     const { designer } = await order('ar');
-    designer.addStep({ press: 'new-customer' }, { do: 'open', page: 'customer', as: 'panel', into: { customer: 'name' }, then: [{ do: 'say', message: 'تمت الإضافة' }] });
+    designer.addStep({ press: 'new-customer' }, { do: 'open', page: 'customer', as: 'panel', side: 'top', into: { customer: 'name' }, then: [{ do: 'say', message: 'تمت الإضافة' }] });
     designer.select('new-customer');
     const { host } = mount(designer, { mode: 'advanced' });
     await settled();
     const steps = clicked(host);
     expect(steps.querySelector('.fd-prop-name')?.textContent).toBe('عند النقر');
+    expect(sayings(steps)[1]).toBe('افتح «⁨Customer⁩» في لوحة من الأعلى، ثم ضع إجابتها في «⁨Customer⁩»');
     ([...steps.querySelectorAll<HTMLButtonElement>('.fd-do-say')][1]).click();
     button(steps, 'إضافة خطوة')?.click();
     const said = [steps, ...document.querySelectorAll('.fd-menu')].flatMap((scope) => {
@@ -277,6 +340,11 @@ describe('the steps editor in Arabic', () => {
     });
     // Customer and Name are the page's own words, written so.
     expect(said.filter((word) => !['Customer', 'Name', 'Order', 'Product', 'Price', 'Quantity'].includes(word))).toEqual([]);
+    // Where its panel comes from, each choice in Arabic.
+    const from = field(steps, 'من جهة') as HTMLSelectElement;
+    expect(from.value).toBe('top');
+    expect([...from.options].map((o) => o.textContent)).toEqual(['نهاية السطر', 'اليسار', 'اليمين', 'الأعلى', 'الأسفل']);
+    expect(from.parentElement?.querySelector('.fd-properties-hint')?.textContent).toBe('بعرض الشاشة كله.');
   });
 });
 

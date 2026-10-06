@@ -151,7 +151,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // The viewer as the host of a page's steps — a page opened in a dialog, a panel or in the form's place with
 // Back, words said as toasts, a button busy while its steps run, a tab shown for a step, and the app's own
 // host and onOpen over it — adds 4.2, to 289.3.
-const BUDGET_KB = 290;
+// A panel from any side — the start or end of the line, or the left, right, top or bottom whatever the page
+// reads, a height for the top and bottom, each sliding in and stepping back from its own edge — adds 1, to 290.2.
+const BUDGET_KB = 290.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -161,7 +163,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // Each kind of part's own look adds 1.2, to 81.8; a saved form placed in another, its answers nested
 // and checked inside it, 2.3, to 84.1; a page's steps checked, 0.6, to 84.7; the steps run, the moments
 // and the events an app hears, 3, to 87.7; a page in a side panel, 0.5, to 88.2; the viewer as the host
-// of the steps (pages opened, toasts, busy buttons, tabs shown), 1.7, to 89.5.
+// of the steps (pages opened, toasts, busy buttons, tabs shown), 1.7, to 89.5; a panel from any side, 0.3, to 89.8.
 const GZIP_BUDGET_KB = 90;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);

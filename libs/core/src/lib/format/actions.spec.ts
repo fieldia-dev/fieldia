@@ -125,6 +125,29 @@ describe('a button’s steps', () => {
     expect(problems(order({ layout: [button([{ do: 'open', page: 'customer', as: 'drawer' }])] }))).not.toEqual([]);
     expect(problems(order({ layout: [button([])] }))).not.toEqual([]);
   });
+
+  it('opens a panel from a side: the end or start of the line, or the left, right, top or bottom of the screen', () => {
+    const sides = ['end', 'start', 'right', 'left', 'top', 'bottom'].map((side) => ({ do: 'open', page: 'customer', as: 'panel', side }));
+    expect(problems(order({ layout: [button(sides)] }))).toEqual([]);
+    expect(quick(order({ layout: [button(sides)] }))).toEqual([]);
+    expect(problems(order({ layout: [button([{ do: 'open', page: 'customer', as: 'panel', side: 'middle' }])] }))).not.toEqual([]);
+  });
+
+  it('says a side belongs to a panel: a dialog or a page in its place has none, in the quick check too', () => {
+    const steps = button([
+      { do: 'open', page: 'customer', side: 'left' },
+      { do: 'open', page: 'customer', as: 'dialog', side: 'top' },
+      { do: 'open', page: 'catalogue', as: 'page', side: 'end' },
+    ]);
+    const at = 'layout.children[0].children[2].steps';
+    const said = [
+      `${at}[0].side: a side is where a panel comes from; this opens in a dialog`,
+      `${at}[1].side: a side is where a panel comes from; this opens in a dialog`,
+      `${at}[2].side: a side is where a panel comes from; this opens in its place`,
+    ];
+    expect(problems(order({ layout: [steps] }))).toEqual(said);
+    expect(quick(order({ layout: [steps] }))).toEqual(said);
+  });
 });
 
 describe('the form’s moments', () => {

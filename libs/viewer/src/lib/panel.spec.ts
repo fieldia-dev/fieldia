@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createMemoryDataSource, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, type Page, type PanelSide, type Values } from '@fieldia/core';
+import { FIELDIA_CSS } from '@fieldia/widgets';
 import { openFormDialog, openFormPanel } from './dialog';
 
 /**
@@ -305,6 +306,139 @@ describe('panels stacked with dialogs and with each other', () => {
     button('Discard', older).click();
     await first;
     expect(document.activeElement).toBe(opener);
+  });
+});
+
+/**
+ * What the stylesheet gives a selector, as written there — in the rules for a
+ * phone's width with `phone` — by each property: `{ 'justify-self': 'left' }`.
+ * The places themselves are measured in the browser (e2e/form-panel-sides).
+ */
+function declared(selector: string, phone = false): Record<string, string> {
+  const all = FIELDIA_CSS.replace(/\/\*[\s\S]*?\*\//g, '');
+  const css = phone ? all.slice(all.indexOf('@media (max-width: 600px) { .fd-form-dialog.fd-form-panel')) : all;
+  const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(([, selectors]) => selectors.split(/,(?![^(]*\))/).map((one) => one.trim()).includes(selector));
+  return Object.fromEntries(rules.flatMap(([, , body]) => body.split(';').map((d) => d.split(/:(.*)/s).map((part) => part.trim())).filter(([name]) => name)));
+}
+
+describe('a panel from each side', () => {
+  const open = (side?: PanelSide, more: { width?: 'narrow' | 'wide'; height?: 'short' | 'tall'; dir?: 'ltr' | 'rtl' } = {}) =>
+    openFormPanel({ page: page('customer'), dataSource: customerSource(), recordId: 1, title: 'Nile Traders', ...(side ? { side } : {}), ...more });
+
+  it('comes from the end of the line unless told, as it always has: medium wide, no height of its own', async () => {
+    void open();
+    await flush();
+    expect(panel()?.getAttribute('data-side')).toBe('end');
+    expect(panel()?.classList.contains('fd-width-medium')).toBe(true);
+    expect([...(panel()?.classList ?? [])].filter((c) => c.startsWith('fd-height'))).toEqual([]);
+  });
+
+  it.each(['end', 'start', 'right', 'left'] as const)('from the %s: the whole height, as deep as its width', async (side) => {
+    void open(side, { width: 'wide', height: 'tall' });
+    await flush();
+    const box = panel() as HTMLElement;
+    expect(box.getAttribute('data-side')).toBe(side);
+    expect(box.classList.contains('fd-width-wide')).toBe(true);
+    // A height is a top or bottom panel's alone.
+    expect([...box.classList].filter((c) => c.startsWith('fd-height'))).toEqual([]);
+  });
+
+  it.each(['top', 'bottom'] as const)('from the %s: the whole width, as tall as its height, medium unless told', async (side) => {
+    void open(side, { width: 'wide' });
+    await flush();
+    expect(panel()?.getAttribute('data-side')).toBe(side);
+    expect(panel()?.classList.contains('fd-height-medium')).toBe(true);
+    // A width is a side panel's depth: here the panel runs the whole width.
+    expect([...(panel()?.classList ?? [])].filter((c) => c.startsWith('fd-width'))).toEqual([]);
+    document.body.replaceChildren();
+    void open(side, { height: 'short' });
+    await flush();
+    expect(panel()?.classList.contains('fd-height-short')).toBe(true);
+    document.body.replaceChildren();
+    void open(side, { height: 'tall' });
+    await flush();
+    expect(panel()?.classList.contains('fd-height-tall')).toBe(true);
+  });
+
+  it('keeps its head, its foot, the focus inside, and asking before Escape drops changes, from any side', async () => {
+    const result = open('top');
+    await flush();
+    const box = panel() as HTMLElement;
+    expect(box.getAttribute('role')).toBe('dialog');
+    expect(box.contains(document.activeElement)).toBe(true);
+    expect([...box.querySelectorAll('.fd-form-dialog-foot button')].map((b) => b.textContent)).toEqual(['Discard', 'Save & Close']);
+    typeIn(nameBox(), 'Someone else');
+    press(nameBox(), 'Escape');
+    await flush();
+    expect(question()).not.toBeNull();
+    answer('Discard').click();
+    expect((await result).saved).toBe(false);
+    expect(document.activeElement).toBe(opener);
+  });
+
+  it('sits at its edge: the start and end of the line as the page reads, the left, right, top and bottom of the screen whatever it reads', () => {
+    // The backdrop holds a panel at the end of the line; each other side places itself.
+    expect(declared('.fd-form-panel-backdrop')['justify-items']).toBe('end');
+    expect(declared('.fd-form-panel[data-side="start"]')['justify-self']).toBe('start');
+    expect(declared('.fd-form-panel[data-side="left"]')['justify-self']).toBe('left');
+    expect(declared('.fd-form-panel[data-side="right"]')['justify-self']).toBe('right');
+    expect(declared('.fd-form-panel[data-side="top"]')['align-self']).toBe('start');
+    expect(declared('.fd-form-panel[data-side="bottom"]')['align-self']).toBe('end');
+    // Top and bottom: the whole width, 40, 60 (unless told) or 85 in a hundred of the screen's height.
+    expect(declared('.fd-form-panel:is([data-side="top"], [data-side="bottom"])')).toEqual({ 'max-width': 'none', height: '60%' });
+    expect(['short', 'tall'].map((h) => declared(`.fd-form-panel.fd-height-${h}`)['height'])).toEqual(['40%', '85%']);
+  });
+
+  it('slides in from its own edge: the end and start of the line flip right to left, the screen’s edges do not', () => {
+    // Unset, it starts just past the right: the end of the line, left to right; and the start, right to left.
+    expect(FIELDIA_CSS).toContain('translate: var(--fd-from, 100% 0)');
+    for (const leftward of ['[data-side="end"]:dir(rtl)', '[data-side="start"]:dir(ltr)', '[data-side="left"]']) expect(declared(`.fd-form-panel${leftward}`)['--fd-from']).toBe('-100% 0');
+    expect(declared('.fd-form-panel[data-side="right"]')['--fd-from']).toBeUndefined();
+    expect(declared('.fd-form-panel[data-side="top"]')['--fd-from']).toBe('0 -100%');
+    expect(declared('.fd-form-panel[data-side="bottom"]')['--fd-from']).toBe('0 100%');
+  });
+
+  it.each([
+    ['ltr', 'end'],
+    ['rtl', 'end'],
+    ['rtl', 'start'],
+    ['rtl', 'left'],
+    ['rtl', 'right'],
+  ] as const)('runs %s from the %s: the backdrop too, so the line’s ends are the page’s', async (dir, side) => {
+    void open(side, { dir });
+    await flush();
+    expect(panel()?.parentElement?.getAttribute('dir')).toBe(dir);
+    expect(panel()?.getAttribute('data-side')).toBe(side);
+  });
+
+  it('on a phone fills the screen from any side: from below, but from above for the top', () => {
+    const phone = declared('.fd-form-dialog.fd-form-panel[data-side]', true);
+    expect([phone['max-width'], phone['height'], phone['margin'], phone['--fd-from']]).toEqual(['none', '100%', '0', '0 100%']);
+    expect(declared('.fd-form-dialog.fd-form-panel[data-side="top"]', true)['--fd-from']).toBe('0 -100%');
+  });
+
+  it('a panel over a panel steps the older one back from its own edge, and back again as it closes', async () => {
+    void open('left');
+    await flush();
+    const older = panel() as HTMLElement;
+    const newer = open('bottom');
+    await flush();
+    expect(older.hasAttribute('data-behind')).toBe(true);
+    expect(older.getAttribute('data-side')).toBe('left');
+    button('Discard').click();
+    await newer;
+    expect(older.hasAttribute('data-behind')).toBe(false);
+    // Stepped back from the edge it came from: the right unless told; the left, the top or the bottom as its side says.
+    expect(declared('.fd-form-panel[data-behind]')).toEqual({ margin: 'var(--fd-back, 0 48px 0 0)' });
+    const back = (selector: string) => declared(`.fd-form-panel${selector}`)['--fd-back'];
+    expect(['[data-side="end"]:dir(rtl)', '[data-side="start"]:dir(ltr)', '[data-side="left"]', '[data-side="top"]', '[data-side="bottom"]'].map(back)).toEqual([
+      '0 0 0 48px',
+      '0 0 0 48px',
+      '0 0 0 48px',
+      '48px 0 0',
+      '0 0 48px',
+    ]);
+    expect(back('[data-side="right"]')).toBeUndefined();
   });
 });
 

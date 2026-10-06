@@ -1,4 +1,4 @@
-import type { ActionStep, OpenStep, ValueMap } from '../format/actions';
+import type { ActionStep, OpenStep, PanelSide, ValueMap } from '../format/actions';
 import type { Field, LineField } from '../format/field';
 import type { JsonValue } from '../format/json';
 import type { Modifier, Tone } from '../format/layout';
@@ -51,6 +51,8 @@ export interface OpenRequest {
   /** One published version; left out, the latest. */
   version?: number;
   as: 'dialog' | 'panel' | 'page';
+  /** Where a panel comes from, when its step names a side: the end of the line unless told. */
+  side?: PanelSide;
   /** The words over it; left out, the page's own title. */
   title?: string;
   /** The record to open; null for a new one. */
@@ -255,6 +257,7 @@ export function createRunner(form: RunForm) {
       page: step.page,
       ...(step.version !== undefined ? { version: step.version } : {}),
       as: step.as ?? 'dialog',
+      ...(step.side && step.as === 'panel' ? { side: step.side } : {}),
       ...(step.title !== undefined ? { title: step.title } : {}),
       recordId: typeof record === 'number' || (typeof record === 'string' && record !== '') ? record : null,
       ...(step.values ? { values: readMap(step.values) } : {}),

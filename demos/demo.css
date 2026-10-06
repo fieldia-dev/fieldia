@@ -10,6 +10,19 @@ html, body { margin: 0; background: #f7f8fa; color: #1f2933; font: 14px/1.45 sys
 .demo-links { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-inline-start: auto; }
 .demo-links a { color: #0b5cad; text-decoration: none; }
 .demo-links a[aria-current="page"] { font-weight: 700; text-decoration: underline; }
+/* The side panel's edge, beside its button: radios drawn as segments in Fieldia's tokens, the one picked filled. */
+.demo-sides { display: inline-flex; align-items: center; }
+.demo-sides-words { margin-inline-end: 8px; color: var(--fd-muted); }
+.demo-sides label {
+  position: relative; padding: 6px 12px; border: 1px solid var(--fd-border); background: var(--fd-surface);
+  color: var(--fd-text); font-size: 13px; line-height: 20px; cursor: pointer;
+}
+.demo-sides label + label { margin-inline-start: -1px; }
+.demo-sides label:nth-child(2) { border-start-start-radius: var(--fd-control-radius); border-end-start-radius: var(--fd-control-radius); }
+.demo-sides label:last-child { border-start-end-radius: var(--fd-control-radius); border-end-end-radius: var(--fd-control-radius); }
+.demo-sides input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.demo-sides label:has(:checked) { z-index: 1; background: var(--fd-accent); border-color: var(--fd-accent); color: var(--fd-accent-text); }
+.demo-sides label:has(:focus-visible) { z-index: 2; outline: 2px solid var(--fd-focus); outline-offset: 2px; }
 #app { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; }
 #app:has(.fd-sheet-page) { padding: 0 0 48px; max-width: none; }
 #app:has(.fd-wizard) { max-width: 760px; }

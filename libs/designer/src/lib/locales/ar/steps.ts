@@ -50,7 +50,11 @@ export const steps: DesignerWords['steps'] = {
   count: (n) => stepsCount(n),
   markName: 'يفعل شيئًا',
   openTheSteps: (name) => `${name}: فتح ما يفعله`,
-  open: (page, as) => (as === 'panel' ? `افتح ${q(page)} في لوحة جانبية` : as === 'page' ? `افتح ${q(page)} مكان هذه الصفحة` : `افتح ${q(page)} في مربع حوار`),
+  // A side panel from the start of the line, the left or the right; a panel (not a side one) from the top or the bottom.
+  open: (page, as, side) =>
+    as !== 'panel' ? (as === 'page' ? `افتح ${q(page)} مكان هذه الصفحة` : `افتح ${q(page)} في مربع حوار`)
+    : side === 'top' || side === 'bottom' ? `افتح ${q(page)} في لوحة من ${side === 'top' ? 'الأعلى' : 'الأسفل'}`
+    : `افتح ${q(page)} في لوحة جانبية${side && side !== 'end' ? ` من ${{ start: 'بداية السطر', left: 'اليسار', right: 'اليمين' }[side]}` : ''}`,
   onRecord: (record) => `، على السجل ${record}`,
   startingWith: (names) => `، مبتدئةً بـ${and(names)}`,
   thenPut: (fields) => `، ثم ضع ${fields.length > 1 ? 'إجاباتها' : 'إجابتها'} في ${and(fields)}`,
@@ -81,6 +85,14 @@ export const steps: DesignerWords['steps'] = {
   /** Each in full, starting with its short words, as a screen reader's user says them. */
   as: { dialog: 'حوار، فوق هذا النموذج', panel: 'لوحة، بجانب هذا النموذج', page: 'مكانها، بدل هذا النموذج' },
   asShort: { dialog: 'حوار', panel: 'لوحة', page: 'مكانها' },
+  from: 'من جهة',
+  sides: { end: 'نهاية السطر', start: 'بداية السطر', left: 'اليسار', right: 'اليمين', top: 'الأعلى', bottom: 'الأسفل' },
+  sideHints: {
+    end: 'اليمين، أو اليسار في صفحة تُقرأ من اليمين إلى اليسار.',
+    start: 'اليسار، أو اليمين في صفحة تُقرأ من اليمين إلى اليسار.',
+    top: 'بعرض الشاشة كله.',
+    bottom: 'بعرض الشاشة كله.',
+  },
   title: 'عنوانها',
   titlePlaceholder: 'عنوان الصفحة نفسه',
   record: 'على سجل',

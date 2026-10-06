@@ -21,7 +21,8 @@ export interface Opener {
 /**
  * Open a page as a step asks, for the viewer's host: the app's own way first
  * (`onOpen`), else found through `pages` and opened in a dialog, a side panel
- * or this form's place — with the same data source, pages, words and look.
+ * (from the side the step names) or this form's place — with the same data
+ * source, pages, words and look.
  * Resolves with how it ended; the saved record named by its page's title field.
  */
 export async function openPage(opener: Opener, request: OpenRequest): Promise<OpenResult> {
@@ -48,7 +49,7 @@ export async function openPage(opener: Opener, request: OpenRequest): Promise<Op
   const title = request.title ?? opener.title(found);
   const result =
     request.as === 'page' ? await inPlace(opener, shared)
-    : request.as === 'panel' ? await openFormPanel({ ...shared, title })
+    : request.as === 'panel' ? await openFormPanel({ ...shared, title, side: request.side })
     : await openFormDialog({ ...shared, title, size: found.layout.type === 'sheet' ? 'large' : 'medium' });
   const name = nameFieldOf(found);
   const label = name ? result.values[name] : undefined;

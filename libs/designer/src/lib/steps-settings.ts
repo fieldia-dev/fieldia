@@ -1,4 +1,4 @@
-import type { ActionStep, Field, OpenStep, Page, Tone } from '@fieldia/core';
+import type { ActionStep, Field, OpenStep, Page, PanelSide, Tone } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { DesignerWords } from './designer-words';
 import { segmented } from './panel-controls';
@@ -12,7 +12,7 @@ import { showTargets } from './steps-places';
 
 /**
  * A step's settings, opened in place under its sentence: for each kind only
- * what it takes — the page it opens and how, what that page starts with and
+ * what it takes — the page it opens and how (a panel, from which side), what that page starts with and
  * where its answers go; the field a value is set in and the value; what is
  * said or asked; the app's action — and, for every kind, "Only when…". The
  * page's fields are picked by their labels; formulas are typed in the rules'
@@ -173,13 +173,20 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
     byId.addEventListener('input', () => byId.value.trim() && ctx.change({ page: byId.value.trim() }, true));
     parts.push(row(el, w.page, page, byId));
     firstIs(page);
+    // A side is a panel's alone: a dialog or its place drops it.
     const as = segmented<'dialog' | 'panel' | 'page'>(
       el,
       w.opensIn,
       (['dialog', 'panel', 'page'] as const).map((value) => ({ value, words: w.asShort[value], label: w.as[value] })),
-      (value) => value && ctx.change({ as: value === 'dialog' ? null : value })
+      (value) => value && ctx.change(value === 'panel' ? { as: value } : { as: value === 'dialog' ? null : value, side: null })
     );
     parts.push(row(el, w.opensIn, as.element));
+    // Where a panel comes from: five do not sit side by side in a narrow panel, so a list; the end of the line is unset.
+    const from = select(el, w.from);
+    from.addEventListener('change', () => ctx.change({ side: (from.value || null) as PanelSide | null }));
+    const fromHint = el('p', { class: 'fd-properties-hint fd-set-hint' });
+    const fromRow = row(el, w.from, from, fromHint);
+    parts.push(fromRow);
     text(w.title, 'title', w.titlePlaceholder);
     formula(w.record, 'record', w.recordPlaceholder, true);
     const opened = () => (current.do === 'open' ? ctx.saved(current.page) : null);
@@ -236,6 +243,13 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
       if (typing && byId.hidden) page.focus();
       if (!focused(byId)) byId.value = known ? '' : step.page;
       as.set(step.as ?? 'dialog');
+      fromRow.hidden = step.as !== 'panel';
+      // The start of the line is offered only to a page that already has it.
+      const sides: PanelSide[] = ['end', ...(step.side === 'start' ? (['start'] as const) : []), 'left', 'right', 'top', 'bottom'];
+      fill(el, from, sides.map((side) => ({ value: side === 'end' ? '' : side, label: w.sides[side] })));
+      if (!focused(from)) from.value = step.side && step.side !== 'end' ? step.side : '';
+      fromHint.textContent = w.sideHints[step.side ?? 'end'] ?? '';
+      fromHint.hidden = !fromHint.textContent;
       startsWith.update(step.values ?? {});
       into.update(step.into ?? {});
     });

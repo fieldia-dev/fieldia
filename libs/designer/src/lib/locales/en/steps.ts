@@ -1,3 +1,4 @@
+import type { PanelSide } from '@fieldia/core';
 import { listOf, plural } from '../speak';
 
 const and = (items: readonly string[]) => listOf('en', items, 'and');
@@ -54,7 +55,9 @@ export const steps = {
   markName: 'Does something',
   openTheSteps: (name: string) => `${name}: open what it does`,
   // ---- sentences
-  open: (page: string, as: 'dialog' | 'panel' | 'page') => (as === 'panel' ? `Open ${page} in a panel` : as === 'page' ? `Open ${page} in its place` : `Open ${page} in a dialog`),
+  /** A panel from the end of the line, the default, says no side. */
+  open: (page: string, as: 'dialog' | 'panel' | 'page', side?: PanelSide) =>
+    as === 'panel' ? `Open ${page} in a panel${side && side !== 'end' ? ` from the ${side === 'start' ? 'start of the line' : side}` : ''}` : as === 'page' ? `Open ${page} in its place` : `Open ${page} in a dialog`,
   onRecord: (record: string) => `, on the record ${record}`,
   startingWith: (names: readonly string[]) => `, starting with ${and(names)}`,
   thenPut: (fields: readonly string[]) => `, then put its ${fields.length > 1 ? 'answers' : 'answer'} in ${and(fields)}`,
@@ -91,6 +94,16 @@ export const steps = {
   /** Each in full, starting with its short words, as a screen reader's user says them. */
   as: { dialog: 'Dialog, over this form', panel: 'Panel, beside this form', page: 'Its place, instead of this form' },
   asShort: { dialog: 'Dialog', panel: 'Panel', page: 'Its place' },
+  /** Where a panel comes from: the end of the line (unset), then the screen's edges; the start of the line only for a page that has it. */
+  from: 'From',
+  sides: { end: 'The end of the line', start: 'The start of the line', left: 'The left', right: 'The right', top: 'The top', bottom: 'The bottom' },
+  /** Under the list, for the side picked: what it means on the screen. The left and the right say it already. */
+  sideHints: {
+    end: 'The right, or the left on a page that reads right to left.',
+    start: 'The left, or the right on a page that reads right to left.',
+    top: 'The whole width of the screen.',
+    bottom: 'The whole width of the screen.',
+  } as Partial<Record<PanelSide, string>>,
   title: 'Its title',
   titlePlaceholder: 'The page’s own title',
   record: 'On a record',

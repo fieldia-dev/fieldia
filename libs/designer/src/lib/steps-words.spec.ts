@@ -63,6 +63,20 @@ describe('a step in words, in English', () => {
     expect(say({ do: 'open', page: 'customer', as: 'panel', when: "state == 'draft'", into: { customer: 'name' } })).toBe('Open Customer in a panel when Status is Draft, then put its answer in Customer');
   });
 
+  it('says the side a panel comes from, unless it is the end of the line', () => {
+    const from = (side?: string) => say({ do: 'open', page: 'customer', as: 'panel', ...(side ? { side } : {}), into: { customer: 'name' } } as ActionStep);
+    expect([from(), from('end'), from('start'), from('left'), from('right'), from('top'), from('bottom')]).toEqual([
+      'Open Customer in a panel, then put its answer in Customer',
+      'Open Customer in a panel, then put its answer in Customer',
+      'Open Customer in a panel from the start of the line, then put its answer in Customer',
+      'Open Customer in a panel from the left, then put its answer in Customer',
+      'Open Customer in a panel from the right, then put its answer in Customer',
+      'Open Customer in a panel from the top, then put its answer in Customer',
+      'Open Customer in a panel from the bottom, then put its answer in Customer',
+    ]);
+    expect(say({ do: 'open', page: 'customer', as: 'panel', side: 'left', when: "state == 'draft'" })).toBe('Open Customer in a panel from the left when Status is Draft');
+  });
+
   it('says a list a line a step, the steps once a page is saved under the step that opened it', () => {
     const steps = (page.layout as { children: { children: { id: string; steps?: ActionStep[] }[] }[] }).children[0].children[2].steps as ActionStep[];
     expect(stepsLines(page, steps, en, saved)).toEqual(['Open Customer in a panel, then put its answer in Customer', '↳ Say as good news: Customer added']);
@@ -77,6 +91,19 @@ describe('a step in words, in Arabic', () => {
     expect(say({ do: 'call', action: 'check_stock' }, ar)).toBe('شغّل إجراء التطبيق ⁦check_stock⁩');
     expect(say({ do: 'check' }, ar)).toBe('تحقّق من النموذج');
     expect(say({ do: 'say', message: 'تمت الإضافة', tone: 'success' }, ar)).toBe('قل بشرى: تمت الإضافة');
+  });
+
+  it('says the side a panel comes from: a side panel from the left or right, a panel from the top or bottom', () => {
+    const from = (side?: string) => say({ do: 'open', page: 'customer', as: 'panel', ...(side ? { side } : {}) } as ActionStep, ar);
+    expect([from(), from('end'), from('start'), from('left'), from('right'), from('top'), from('bottom')]).toEqual([
+      'افتح «⁨Customer⁩» في لوحة جانبية',
+      'افتح «⁨Customer⁩» في لوحة جانبية',
+      'افتح «⁨Customer⁩» في لوحة جانبية من بداية السطر',
+      'افتح «⁨Customer⁩» في لوحة جانبية من اليسار',
+      'افتح «⁨Customer⁩» في لوحة جانبية من اليمين',
+      'افتح «⁨Customer⁩» في لوحة من الأعلى',
+      'افتح «⁨Customer⁩» في لوحة من الأسفل',
+    ]);
   });
 });
 

@@ -45,6 +45,7 @@ export type {
   PageEvents,
   ValueMap,
   OpenStep,
+  PanelSide,
   SetStep,
   ClearStep,
   AddLineStep,
