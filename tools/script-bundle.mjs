@@ -144,7 +144,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // its own page, drawn in place from the app's pages, said in words when it cannot be — adds 6, to 273.
 // A page's steps and moments checked as it is shown — the fields each step names, its expressions, the
 // tabs and wizard steps it goes to — add 2.3, to 275.3.
-const BUDGET_KB = 276;
+// The steps run — each kind, a page opened and its answers taken back, the app's answers, the moments one
+// at a time, a person's change told from a step's, and the events an app hears — add 8.2, to 283.5.
+const BUDGET_KB = 284;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -152,8 +154,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // signatures' pens and undo, addresses' parts and countries, lines' and cards' moves and pictures' captions
 // 3.4, to 88.5. English alone, the other languages as add-ons (fieldia.ar.js, …) save 8, to 80.6.
 // Each kind of part's own look adds 1.2, to 81.8; a saved form placed in another, its answers nested
-// and checked inside it, 2.3, to 84.1.
-const GZIP_BUDGET_KB = 85;
+// and checked inside it, 2.3, to 84.1; a page's steps checked, 0.6, to 84.7; the steps run, the moments
+// and the events an app hears, 3, to 87.7.
+const GZIP_BUDGET_KB = 88;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
