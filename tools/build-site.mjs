@@ -45,6 +45,8 @@ for (const locale of ['ar', 'de', 'fr']) cpSync(BUNDLE.replace(/\.js$/, `.${loca
 cpSync(join(WORKSPACE, 'examples/pages'), join(OUT, 'examples'), { recursive: true });
 for (const file of ['demo.css', 'shell.css', 'shell.mjs', 'catalog.mjs', 'logo.svg']) cpSync(join(DEMOS, file), join(OUT, 'demos', file));
 cpSync(join(DEMOS, 'thumbs'), join(OUT, 'demos/thumbs'), { recursive: true });
+// The catalog imports the real pages' cards from here: without it the shell cannot load.
+cpSync(join(DEMOS, 'real'), join(OUT, 'demos/real'), { recursive: true });
 for (const demo of PUBLIC_DEMOS) cpSync(join(DEMOS, demo), join(OUT, 'demos', demo), { recursive: true });
 
 console.log(`site: ${[...paths].join(' ')} → dist/site`);
