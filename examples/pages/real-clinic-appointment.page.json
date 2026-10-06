@@ -1,0 +1,259 @@
+{
+  "fieldia": "0.1",
+  "id": "real-clinic-appointment",
+  "title": "Appointment",
+  "description": "Sherkety ERP, clinic_aesthetic: clinic.appointment, view_appointment_form, with clinic_finance (deposit) and clinic_kpi (no-show risk) on it.",
+  "data": { "kind": "record", "model": "clinic.appointment" },
+  "maxWidth": "wide",
+  "look": { "labels": "beside", "labelWidth": 150 },
+  "fields": {
+    "name": { "type": "char", "label": "Reference", "required": true, "readonly": true, "default": "New" },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "required": true,
+      "default": "booked",
+      "options": [
+        { "value": "booked", "label": "Booked" },
+        { "value": "confirmed", "label": "Confirmed" },
+        { "value": "arrived", "label": "Arrived" },
+        { "value": "in_progress", "label": "In Progress" },
+        { "value": "done", "label": "Done" },
+        { "value": "no_show", "label": "No Show" },
+        { "value": "cancelled", "label": "Cancelled" }
+      ]
+    },
+    "patient_id": {
+      "type": "many2one",
+      "label": "Patient",
+      "relation": "res.partner",
+      "required": true,
+      "filter": [{ "field": "is_patient", "op": "=", "value": true }]
+    },
+    "company_id": { "type": "many2one", "label": "Branch", "relation": "res.company", "required": true },
+    "provider_id": { "type": "many2one", "label": "Provider", "relation": "res.users", "required": true },
+    "service_id": {
+      "type": "many2one",
+      "label": "Service",
+      "relation": "product.product",
+      "filter": [{ "field": "is_treatment", "op": "=", "value": true }]
+    },
+    "resource_ids": { "type": "many2many", "label": "Resources", "relation": "clinic.resource" },
+    "start": { "type": "datetime", "label": "Start", "required": true },
+    "duration": { "type": "float", "label": "Duration (min)", "digits": [6, 0] },
+    "stop": { "type": "datetime", "label": "End", "readonly": true },
+    "deposit_amount": { "type": "float", "label": "Deposit", "digits": [12, 2] },
+    "deposit_payment_id": {
+      "type": "many2one",
+      "label": "Deposit Payment",
+      "relation": "account.payment",
+      "readonly": true
+    },
+    "deposit_forfeited": {
+      "type": "boolean",
+      "label": "Deposit Forfeited",
+      "readonly": true
+    },
+    "no_show_fee_invoice_id": {
+      "type": "many2one",
+      "label": "No-show Fee Invoice",
+      "relation": "account.move",
+      "readonly": true
+    },
+    "no_show_risk_score": {
+      "type": "integer",
+      "label": "No-show Risk",
+      "readonly": true
+    },
+    "no_show_risk_band": {
+      "type": "selection",
+      "label": "Risk Band",
+      "readonly": true,
+      "options": [
+        { "value": "low", "label": "Low" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "high", "label": "High" }
+      ]
+    },
+    "no_show_mitigation": {
+      "type": "text",
+      "label": "AI Mitigation Suggestion",
+      "readonly": true
+    },
+    "is_walk_in": { "type": "boolean", "label": "Walk-in" },
+    "stage_id": {
+      "type": "many2one",
+      "label": "Flow Stage",
+      "relation": "clinic.queue.stage"
+    },
+    "stage_is_numbing": { "type": "boolean", "label": "Is a numbing stage", "readonly": true },
+    "arrival_time": { "type": "datetime", "label": "Arrival Time", "readonly": true },
+    "seen_time": { "type": "datetime", "label": "Seen Time", "readonly": true },
+    "wait_minutes": { "type": "float", "label": "Wait (min)", "readonly": true, "digits": [6, 0] },
+    "queue_room": { "type": "char", "label": "Room", "readonly": true },
+    "numbing_ready_time": {
+      "type": "datetime",
+      "label": "Numbing Ready At",
+      "readonly": true
+    },
+    "cancel_reason_id": { "type": "many2one", "label": "Cancellation Reason", "relation": "clinic.cancel.reason" },
+    "session_id": { "type": "many2one", "label": "Session", "relation": "clinic.treatment.session", "readonly": true }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "name" },
+    "statusbar": { "field": "state", "visibleStates": ["booked", "confirmed", "arrived", "in_progress", "done"] },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "action_confirm",
+        "label": "Confirm",
+        "style": "primary",
+        "invisible": "state != 'booked'",
+        "steps": [
+          { "do": "call", "action": "clinic_auto_assign_resources" },
+          { "do": "set", "field": "state", "value": "'confirmed'" },
+          { "do": "save" }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "action_check_in",
+        "label": "Check In",
+        "style": "primary",
+        "invisible": "state not in ['booked', 'confirmed']",
+        "steps": [{ "do": "call", "action": "clinic_check_in" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "action_start",
+        "label": "Take to Room",
+        "invisible": "state != 'arrived'",
+        "steps": [{ "do": "call", "action": "clinic_take_to_room" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "action_create_session",
+        "label": "Open Session",
+        "invisible": "state not in ['arrived', 'in_progress']",
+        "steps": [{ "do": "call", "action": "clinic_open_session" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "action_done",
+        "label": "Done",
+        "invisible": "state not in ['in_progress', 'arrived']",
+        "steps": [
+          { "do": "set", "field": "state", "value": "'done'" },
+          { "do": "save" }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "action_no_show",
+        "label": "No Show",
+        "invisible": "state in ['done', 'no_show', 'cancelled']",
+        "steps": [
+          { "do": "set", "field": "state", "value": "'no_show'" },
+          { "do": "call", "action": "clinic_no_show_charge" },
+          { "do": "save" }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "action_ai_mitigation",
+        "label": "Suggest Mitigation (AI)",
+        "invisible": "no_show_risk_band == 'low'",
+        "steps": [{ "do": "call", "action": "clinic_ai_mitigation" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "action_cancel",
+        "label": "Cancel",
+        "invisible": "state in ['done', 'no_show', 'cancelled']",
+        "steps": [{ "do": "call", "action": "clinic_cancel" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "action_register_deposit",
+        "label": "Register Deposit",
+        "style": "primary",
+        "invisible": "not deposit_amount or deposit_payment_id",
+        "steps": [{ "do": "call", "action": "clinic_register_deposit" }, { "do": "save" }]
+      }
+    ],
+    "children": [
+      {
+        "type": "section",
+        "id": "g-main",
+        "style": "plain",
+        "columns": { "wide": 2, "medium": 2 },
+        "children": [
+          {
+            "type": "section",
+            "id": "g-main-left",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-patient", "field": "patient_id", "options": { "create": false } },
+              { "type": "field", "id": "f-provider", "field": "provider_id" },
+              { "type": "field", "id": "f-service", "field": "service_id" },
+              { "type": "field", "id": "f-resources", "field": "resource_ids", "widget": "tags" }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "g-main-right",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-start", "field": "start" },
+              { "type": "field", "id": "f-duration", "field": "duration" },
+              { "type": "field", "id": "f-stop", "field": "stop", "readonly": true },
+              { "type": "field", "id": "f-deposit", "field": "deposit_amount" },
+              { "type": "field", "id": "f-deposit-payment", "field": "deposit_payment_id", "readonly": true },
+              { "type": "field", "id": "f-deposit-forfeited", "field": "deposit_forfeited", "readonly": true, "invisible": "not deposit_forfeited" },
+              { "type": "field", "id": "f-fee-invoice", "field": "no_show_fee_invoice_id", "readonly": true, "invisible": "not no_show_fee_invoice_id" },
+              { "type": "field", "id": "f-risk-score", "field": "no_show_risk_score" },
+              { "type": "field", "id": "f-risk-band", "field": "no_show_risk_band" },
+              { "type": "field", "id": "f-mitigation", "field": "no_show_mitigation", "readonly": true, "invisible": "not no_show_mitigation" }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "g-flow",
+        "style": "plain",
+        "columns": { "wide": 2, "medium": 2 },
+        "children": [
+          {
+            "type": "section",
+            "id": "g-check-in",
+            "title": "Check-in",
+            "style": "line",
+            "children": [
+              { "type": "field", "id": "f-walk-in", "field": "is_walk_in" },
+              { "type": "field", "id": "f-stage", "field": "stage_id" },
+              { "type": "field", "id": "f-arrival", "field": "arrival_time" },
+              { "type": "field", "id": "f-seen", "field": "seen_time" },
+              { "type": "field", "id": "f-wait", "field": "wait_minutes", "readonly": true },
+              { "type": "field", "id": "f-room", "field": "queue_room", "readonly": true },
+              { "type": "field", "id": "f-numbing-ready", "field": "numbing_ready_time", "readonly": true, "invisible": "not stage_is_numbing" }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "g-cancellation",
+            "title": "Cancellation",
+            "style": "line",
+            "children": [
+              { "type": "field", "id": "f-cancel-reason", "field": "cancel_reason_id", "required": "state == 'cancelled'" },
+              { "type": "field", "id": "f-session", "field": "session_id", "readonly": true }
+            ]
+          }
+        ]
+      }
+    ],
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" }
+  }
+}
