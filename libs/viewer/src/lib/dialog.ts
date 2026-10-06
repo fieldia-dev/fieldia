@@ -1,4 +1,4 @@
-import type { PageLook, RecordId, RelatedRecord, Values } from '@fieldia/core';
+import type { PageLook, PanelSide, RecordId, RelatedRecord, Values } from '@fieldia/core';
 import { WIDGET_LABELS } from '@fieldia/widgets';
 import { ownLocale } from './labels';
 import { keepTabIn } from './focus-trap';
@@ -40,10 +40,18 @@ export interface FormDialogResult {
   values: Values;
 }
 
-/** A page in a side panel: the dialog's options, with a width in place of its size. */
+/** A page in a side panel: the dialog's options, with the edge it comes from and its depth in place of a size. */
 export interface FormPanelOptions extends Omit<FormDialogOptions, 'size'> {
-  /** About 420, 560 (the default) or 720 pixels wide on a wide screen; the whole screen on a phone. */
+  /**
+   * The edge it comes from: `end` (the default: the end of the line, the right,
+   * or the left right to left) or `start`, as the page reads; or `left`,
+   * `right`, `top` or `bottom` of the screen, whatever the page's direction.
+   */
+  side?: PanelSide;
+  /** A panel at the end, start, left or right: about 420, 560 (the default) or 720 pixels wide on a wide screen; the whole screen on a phone. */
   width?: 'narrow' | 'medium' | 'wide';
+  /** A panel at the top or bottom, the whole width: about 40, 60 (the default) or 85 in a hundred of the screen's height; the whole screen on a phone. */
+  height?: 'short' | 'medium' | 'tall';
 }
 
 let dialogs = 0;
@@ -67,18 +75,22 @@ export function openFormDialog(options: FormDialogOptions): Promise<FormDialogRe
 
 /**
  * A page in a side panel: the dialog's twin, at full height along the
- * inline-end edge (the left, right to left), the page behind dimmed but in
- * sight; a full-screen sheet on a phone. It saves, or in "values" mode hands
- * back its values with Done, as the dialog does; Escape and × ask first when
- * there are changes to lose. A dialog opened from it sits above it, and a
- * panel opened from it stacks over it, this one stepped back.
+ * inline-end edge (the left, right to left) unless it names another `side` —
+ * the whole width along the top or the bottom — the page behind dimmed but in
+ * sight; a full-screen sheet on a phone, from above for the top, from below
+ * for the rest. It saves, or in "values" mode hands back its values with
+ * Done, as the dialog does; Escape and × ask first when there are changes to
+ * lose. A dialog opened from it sits above it, and a panel opened from it
+ * stacks over it, this one stepped back from its own edge.
  */
 export function openFormPanel(options: FormPanelOptions): Promise<FormDialogResult> {
-  return openForm(options, `fd-form-panel fd-width-${options.width ?? 'medium'}`, true);
+  const side = options.side ?? 'end';
+  return openForm(options, `fd-form-panel ${side === 'top' || side === 'bottom' ? `fd-height-${options.height ?? 'medium'}` : `fd-width-${options.width ?? 'medium'}`}`, side);
 }
 
-/** A dialog or a panel: a page in a box with a head, a body that scrolls and a foot; `shape` is the box's own classes. */
-function openForm(options: FormDialogOptions, shape: string, panel = false): Promise<FormDialogResult> {
+/** A dialog or a panel (from its side): a page in a box with a head, a body that scrolls and a foot; `shape` is the box's own classes. */
+function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): Promise<FormDialogResult> {
+  const panel = !!side;
   const doc = options.container?.ownerDocument ?? document;
   const container = options.container ?? doc.body;
   const opener = doc.activeElement instanceof doc.defaultView!.HTMLElement ? (doc.activeElement as HTMLElement) : null;
@@ -100,6 +112,7 @@ function openForm(options: FormDialogOptions, shape: string, panel = false): Pro
     'aria-labelledby': title.id,
     tabindex: '-1',
   });
+  if (side) box.setAttribute('data-side', side);
   if (options.dir) box.setAttribute('dir', options.dir);
   // One look for the box and the page in it: the page's own, else the opener's.
   const look = options.page.look ?? options.look;

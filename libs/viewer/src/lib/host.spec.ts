@@ -324,6 +324,21 @@ describe('a page opened', () => {
     expect(toasts().map((t) => t.firstChild?.textContent)).toEqual(['Customer added']);
   });
 
+  it('in a panel from the side the step names, the end of the line unless it names one', async () => {
+    const viewer = mount(opening('panel', { side: 'bottom' }), { pages: { 'new-customer': newCustomer() } });
+    press('New customer');
+    await until(panel);
+    expect(panel()?.getAttribute('data-side')).toBe('bottom');
+    expect(panel()?.classList.contains('fd-height-medium')).toBe(true);
+    press('Discard', panel() as HTMLElement);
+    await viewer.form.settled();
+    viewer.destroy();
+    mount(opening('panel'), { pages: { 'new-customer': newCustomer() } });
+    press('New customer');
+    await until(panel);
+    expect(panel()?.getAttribute('data-side')).toBe('end');
+  });
+
   it('in a dialog by default, of the page’s own title unless the step gives one', async () => {
     const viewer = mount(opening('dialog', { title: 'Add a customer' }), { pages: { 'new-customer': newCustomer() } });
     press('New customer');
