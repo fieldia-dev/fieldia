@@ -183,7 +183,8 @@ describe('pictures', () => {
     const svg = new File(['<svg xmlns="http://www.w3.org/2000/svg"/>'], 'desk.svg', { type: 'image/svg+xml' });
     Object.defineProperty(file, 'files', { value: [svg], configurable: true });
     file.dispatchEvent(new Event('change'));
-    await new Promise((done) => setTimeout(done, 20));
+    // The file is read in its own time: wait for the picture to arrive, not for a guess at how long it takes.
+    for (let waited = 0; options(field())[0].image === undefined && waited < 3000; waited += 10) await new Promise((done) => setTimeout(done, 10));
     expect(options(field())[0].image).toMatch(/^data:image\/svg\+xml;base64,/);
   });
 });
