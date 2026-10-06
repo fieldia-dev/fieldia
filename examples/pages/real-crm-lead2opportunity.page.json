@@ -1,0 +1,68 @@
+{
+  "fieldia": "0.1",
+  "id": "real-crm-lead2opportunity",
+  "title": "Convert to Opportunity",
+  "data": { "kind": "responses" },
+  "maxWidth": "medium",
+  "fields": {
+    "name": {
+      "type": "selection",
+      "label": "Conversion Action",
+      "options": [
+        { "value": "convert", "label": "Convert to opportunity" },
+        { "value": "merge", "label": "Merge with existing opportunities" }
+      ],
+      "default": "convert"
+    },
+    "user_id": { "type": "many2one", "label": "Salesperson", "relation": "res.users" },
+    "team_id": { "type": "many2one", "label": "Sales Team", "relation": "crm.team" },
+    "duplicated_lead_ids": { "type": "many2many", "label": "Opportunities", "relation": "crm.lead" },
+    "action": {
+      "type": "selection",
+      "label": "Related Customer",
+      "options": [
+        { "value": "create", "label": "Create a new customer" },
+        { "value": "exist", "label": "Link to an existing customer" },
+        { "value": "nothing", "label": "Do not link to a customer" }
+      ],
+      "default": "create"
+    },
+    "partner_id": { "type": "many2one", "label": "Customer", "relation": "res.partner" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "convert",
+    "children": [
+      { "type": "section", "id": "conversion", "style": "plain", "children": [{ "type": "field", "id": "f-name", "field": "name", "widget": "radio", "labels": "hidden" }] },
+      {
+        "type": "section",
+        "id": "assign",
+        "title": "Assign this opportunity to",
+        "style": "line",
+        "children": [
+          { "type": "field", "id": "f-user", "field": "user_id" },
+          { "type": "field", "id": "f-team", "field": "team_id", "options": { "create": false } }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "opportunities",
+        "title": "Opportunities",
+        "style": "line",
+        "invisible": "name != 'merge'",
+        "children": [{ "type": "field", "id": "f-duplicates", "field": "duplicated_lead_ids", "widget": "tags", "labels": "hidden" }]
+      },
+      {
+        "type": "section",
+        "id": "customer",
+        "title": "Customer",
+        "style": "line",
+        "invisible": "name != 'convert'",
+        "children": [
+          { "type": "field", "id": "f-action", "field": "action", "widget": "radio", "labels": "hidden" },
+          { "type": "field", "id": "f-partner", "field": "partner_id", "invisible": "action != 'exist'", "required": "action == 'exist'" }
+        ]
+      }
+    ]
+  }
+}

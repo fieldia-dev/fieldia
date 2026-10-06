@@ -1,0 +1,80 @@
+{
+  "fieldia": "0.1",
+  "id": "real-tender-loss",
+  "title": "Tender Loss Analysis",
+  "data": { "kind": "responses" },
+  "maxWidth": "medium",
+  "fields": {
+    "loss_reason": {
+      "type": "selection",
+      "label": "Loss Reason",
+      "required": true,
+      "options": [
+        { "value": "price", "label": "Price Too High" },
+        { "value": "technical", "label": "Technical Non-Compliance" },
+        { "value": "experience", "label": "Insufficient Experience" },
+        { "value": "capacity", "label": "Insufficient Capacity" },
+        { "value": "other", "label": "Other" }
+      ]
+    },
+    "loss_notes": { "type": "text", "label": "Loss Analysis", "required": true, "help": "Detailed analysis of why we lost" },
+    "winning_competitor_id": { "type": "many2one", "label": "Winning Competitor", "relation": "res.partner" },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency", "readonly": true },
+    "winning_amount": { "type": "monetary", "label": "Winning Bid Amount", "currencyField": "currency_id" },
+    "lessons_learned": { "type": "text", "label": "Lessons Learned", "help": "Key takeaways for future tenders" },
+    "create_followup_opportunity": { "type": "boolean", "label": "Create Follow-up Opportunity", "default": false, "help": "Create a new opportunity to stay engaged with the client" },
+    "followup_date": { "type": "date", "label": "Follow-up Date" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "loss",
+    "children": [
+      { "type": "section", "id": "reason", "style": "plain", "children": [{ "type": "field", "id": "f-loss-reason", "field": "loss_reason" }] },
+      {
+        "type": "section",
+        "id": "analysis",
+        "title": "Loss Analysis",
+        "style": "line",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-loss-notes",
+            "field": "loss_notes",
+            "labels": "hidden",
+            "placeholder": "Please provide a detailed analysis of why we lost this tender. Include:\n- What were the key factors?\n- What could we have done differently?\n- Lessons learned for future tenders...",
+            "options": { "rows": 5 }
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "winner",
+        "title": "Winning Competitor Information",
+        "style": "line",
+        "columns": { "wide": 2, "medium": 2 },
+        "children": [
+          { "type": "field", "id": "f-winning-competitor", "field": "winning_competitor_id" },
+          { "type": "field", "id": "f-winning-amount", "field": "winning_amount" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "lessons",
+        "title": "Lessons Learned",
+        "style": "line",
+        "children": [{ "type": "field", "id": "f-lessons", "field": "lessons_learned", "labels": "hidden", "placeholder": "Key takeaways that will help us in future tenders..." }]
+      },
+      {
+        "type": "section",
+        "id": "followup",
+        "title": "Follow-up Actions",
+        "style": "line",
+        "columns": { "wide": 2, "medium": 2 },
+        "children": [
+          { "type": "field", "id": "f-create-followup", "field": "create_followup_opportunity" },
+          { "type": "field", "id": "f-followup-date", "field": "followup_date", "invisible": "not create_followup_opportunity" }
+        ]
+      }
+    ]
+  }
+}
