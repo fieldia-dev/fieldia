@@ -112,7 +112,8 @@ describe('pageWords', () => {
     for (const name of examples) {
       const page = example(name);
       expect({ name, words: new Set(pageWords(page)) }).toEqual({ name, words: translated(page) });
-      expect(pageWords(page).length).toBeGreaterThan(3);
+      // A one-field dialog has few words (the time-off cancel: its title, the reason and its help), but never none.
+      expect(pageWords(page).length).toBeGreaterThan(0);
     }
   });
 

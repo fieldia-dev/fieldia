@@ -47,6 +47,37 @@ describe('translatePage', () => {
     expect((fields.fields['approver_id'] as any).filter).toEqual((page('fields').fields['approver_id'] as any).filter);
   });
 
+  it('leaves maps by field name alone, even where a field is called as a word key is', () => {
+    // A column, a step's values and a call's params named `description` or `title` are names, not words.
+    const named: Page = {
+      ...page('customer'),
+      layout: {
+        type: 'sheet',
+        children: [{ type: 'table', field: 'contact_ids', optionalColumns: { description: 'hide', title: 'show' } }],
+        buttons: [
+          {
+            id: 'log',
+            label: 'Log',
+            steps: [
+              { do: 'open', page: 'note', values: { description: 'name' }, into: { title: 'subject' } },
+              { do: 'addLine', field: 'contact_ids', values: { label: "'Main'" } },
+              { do: 'call', action: 'log', params: { message: 'kept', title: 'kept' } },
+              { do: 'say', message: 'Logged' },
+            ],
+          },
+        ],
+      } as any,
+    };
+    const after = translatePage(named, marked).layout as any;
+    expect(after.children[0].optionalColumns).toEqual({ description: 'hide', title: 'show' });
+    const steps = after.buttons[0].steps;
+    expect(steps[0]).toMatchObject({ values: { description: 'name' }, into: { title: 'subject' } });
+    expect(steps[1].values).toEqual({ label: "'Main'" });
+    expect(steps[2].params).toEqual({ message: 'kept', title: 'kept' });
+    expect(steps[3].message).toBe('«Logged»');
+    expect(after.buttons[0].label).toBe('«Log»');
+  });
+
   it('gives back a new page and leaves the one it was given alone', () => {
     const before = page('signup');
     const copy = JSON.stringify(before);

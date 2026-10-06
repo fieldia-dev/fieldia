@@ -10,9 +10,11 @@ const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'placeholder
 /**
  * Parts that hold names or data, never words to translate: which line fields
  * mark sections and notes, a link's filter, a default value, what the page's
- * data is, and the page's translations themselves.
+ * data is, and the page's translations themselves; and the maps by field name
+ * — a table's optional columns, a step's values and answers, a call's params —
+ * where a field may well be called `description` or `title`.
  */
-const NOT_TEXT = new Set(['lineKinds', 'filter', 'default', 'data', 'translations']);
+const NOT_TEXT = new Set(['lineKinds', 'filter', 'default', 'data', 'translations', 'optionalColumns', 'values', 'into', 'params']);
 
 /**
  * Every word a person reads in `value` passed through `text`, the rest copied
