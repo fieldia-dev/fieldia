@@ -81,6 +81,100 @@
           ]
         }
       }
+    },
+    "currency_id": {
+      "type": "many2one",
+      "label": "Currency",
+      "relation": "res.currency"
+    },
+    "operation_ids": {
+      "type": "one2many",
+      "label": "Operations",
+      "relation": "mrp.workorder",
+      "sequenceField": "sequence",
+      "lineKinds": {
+        "field": "kind",
+        "text": "name"
+      },
+      "fields": {
+        "sequence": {
+          "type": "integer",
+          "label": "Sequence"
+        },
+        "kind": {
+          "type": "selection",
+          "label": "Line type",
+          "options": [
+            {
+              "value": "section",
+              "label": "Section"
+            },
+            {
+              "value": "note",
+              "label": "Note"
+            }
+          ]
+        },
+        "name": {
+          "type": "char",
+          "label": "Operation",
+          "required": true
+        },
+        "planned": {
+          "type": "float",
+          "label": "Planned hours"
+        },
+        "spent": {
+          "type": "float",
+          "label": "Hours spent"
+        },
+        "cost": {
+          "type": "monetary",
+          "label": "Cost",
+          "currencyField": "parent.currency_id"
+        },
+        "state": {
+          "type": "selection",
+          "label": "Status",
+          "options": [
+            {
+              "value": "ready",
+              "label": "Ready"
+            },
+            {
+              "value": "progress",
+              "label": "In progress"
+            },
+            {
+              "value": "blocked",
+              "label": "Blocked"
+            },
+            {
+              "value": "done",
+              "label": "Done"
+            }
+          ]
+        },
+        "operator": {
+          "type": "char",
+          "label": "Operator"
+        }
+      }
+    },
+    "payer_ids": {
+      "type": "one2many",
+      "label": "Cost split",
+      "relation": "mrp.cost.split",
+      "fields": {
+        "payer": {
+          "type": "char",
+          "label": "Payer"
+        },
+        "share": {
+          "type": "float",
+          "label": "Share %"
+        }
+      }
     }
   },
   "layout": {
@@ -162,6 +256,118 @@
       },
       {
         "type": "section",
+        "id": "s-ops",
+        "title": "Operations",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-currency",
+            "field": "currency_id",
+            "colspan": 4,
+            "hideOn": [
+              "narrow"
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-ops",
+            "field": "operation_ids",
+            "widget": "grid",
+            "cards": "narrow",
+            "columns": [
+              "name",
+              "planned",
+              "spent",
+              "cost",
+              "state",
+              "operator"
+            ],
+            "totals": [
+              "planned",
+              "spent",
+              "cost"
+            ],
+            "options": {
+              "copy": true
+            },
+            "cells": {
+              "spent": {
+                "tones": [
+                  {
+                    "tone": "danger",
+                    "when": "spent > planned"
+                  }
+                ],
+                "bold": "spent > planned"
+              },
+              "state": {
+                "badge": true,
+                "tones": [
+                  {
+                    "tone": "success",
+                    "when": "state == 'done'"
+                  },
+                  {
+                    "tone": "info",
+                    "when": "state == 'progress'"
+                  },
+                  {
+                    "tone": "danger",
+                    "when": "state == 'blocked'"
+                  }
+                ]
+              },
+              "operator": {
+                "invisible": "state == 'ready'",
+                "hidden": "state == 'draft'"
+              }
+            },
+            "rowTones": [
+              {
+                "tone": "muted",
+                "when": "state == 'done'"
+              }
+            ],
+            "rowButtons": [
+              {
+                "type": "button",
+                "id": "op-start",
+                "label": "Start",
+                "icon": "clock",
+                "invisible": "state != 'ready'",
+                "action": "button_start"
+              }
+            ],
+            "selectedButtons": [
+              {
+                "type": "button",
+                "id": "ops-start",
+                "label": "Start",
+                "action": "button_start"
+              },
+              {
+                "type": "button",
+                "id": "ops-done",
+                "label": "Mark done",
+                "action": "button_finish",
+                "confirm": "Mark the chosen operations done?"
+              }
+            ],
+            "controlButtons": [
+              {
+                "type": "button",
+                "id": "ops-catalog",
+                "label": "Catalog",
+                "icon": "list",
+                "action": "action_add_from_catalog",
+                "invisible": "state == 'done'"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "section",
         "id": "s-checks",
         "title": "Quality checks",
         "children": [
@@ -174,6 +380,28 @@
               "name",
               "state"
             ]
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-split",
+        "title": "Cost split",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-split",
+            "field": "payer_ids",
+            "cards": "narrow",
+            "fit": "content",
+            "validate": [
+              {
+                "distinct": "payer"
+              }
+            ],
+            "options": {
+              "copy": true
+            }
           }
         ]
       }

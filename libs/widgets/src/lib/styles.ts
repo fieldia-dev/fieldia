@@ -374,9 +374,8 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-links-table td { vertical-align: middle; }
 .fd-links-table .fd-value-text { padding-block: 4px; }
 /* Columns as wide as they hold (fit: content), the widest taking what is left. */
+.fd-lines[data-fit="content"] .fd-lines-table { width: auto; max-width: 100%; }
 .fd-lines[data-fit="content"] .fd-lines-table td { min-width: 0; }
-.fd-lines[data-fit="content"] .fd-lines-table th { width: 1px; }
-.fd-lines[data-fit="content"] .fd-lines-table :is(input.fd-input, select.fd-input) { min-width: 6ch; }
 /* Lines as cards (cards: narrow on a phone, or always): each a box, every cell its column's label above its value. */
 .fd-lines[data-cards] { container: fd-lines / inline-size; }
 @container fd-lines (max-width: 520px) {
