@@ -243,6 +243,7 @@ describe('parts on one line, and a label over the title', () => {
   it('refuses columns, folding and a frame on a line', () => {
     expect(both(sheet({}, [row({ columns: 2 })])).join('\n')).toMatch(/children\[0\]\.columns: parts on one line take no columns/);
     expect(both(sheet({}, [row({ collapsible: true })])).join('\n')).toMatch(/children\[0\]\.collapsible: a line of parts does not fold/);
+    expect(both(sheet({}, [{ ...row(), children: [{ type: 'section', id: 'inner', children: [] }] }])).join('\n')).toMatch(/children\[0\]\.children\[0\]: a line of parts holds fields, words and buttons; a section needs a row of its own/);
   });
 
   it('takes a label over the title, as Flectra’s “Product Name” over the h1, and hands it to a translator', async () => {

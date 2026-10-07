@@ -137,6 +137,7 @@ const STYLES: [NonNullable<SectionNode['style']>, string, string][] = [
   ['plain', 'Plain', '<path d="M9 11h14M9 17h26M9 21h20" stroke="currentColor" opacity=".7"/>'],
   ['line', 'Line', '<path d="M6 9h16M6 13h32" stroke="currentColor"/><path d="M6 19h26" stroke="currentColor" opacity=".5"/>'],
   ['framed', 'Framed', '<rect x="4" y="7" width="36" height="19" rx="2" fill="none" stroke="currentColor"/><path d="M8 7h12" stroke="var(--fd-surface)" stroke-width="3"/><path d="M9 7h10" stroke="currentColor"/>'],
+  ['inline', 'One line', '<path d="M4 15h7" stroke="currentColor" opacity=".7"/><rect x="13" y="11" width="9" height="8" rx="1.5" fill="none" stroke="currentColor"/><path d="M24 15h4" stroke="currentColor" opacity=".7"/><rect x="30" y="11" width="10" height="8" rx="1.5" fill="none" stroke="currentColor"/>'],
 ];
 
 /** How a group is drawn: a card, plain, a line under its title, or a frame with the title on it. */

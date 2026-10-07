@@ -103,7 +103,7 @@ export const changes: DesignerWords['changes'] = {
     return `${name}: ${smaller.length ? `${n(wide)} على سطح المكتب، ${smaller.join('، ')}` : n(wide)}`;
   },
   gaps: (name, gaps) => `${name}: ${gaps ? 'قد تترك الصفوف فراغات' : 'تبقى الصفوف ممتلئة'}`,
-  drawn: (name, style) => `${name}: ${{ card: 'يُرسم بطاقةً', plain: 'يُرسم دون إطار', line: 'يُرسم بخط تحت عنوانه', framed: 'يُرسم في إطار، وعنوانه عليه' }[style]}`,
+  drawn: (name, style) => `${name}: ${{ card: 'يُرسم بطاقةً', plain: 'يُرسم دون إطار', line: 'يُرسم بخط تحت عنوانه', framed: 'يُرسم في إطار، وعنوانه عليه', inline: 'يُرسم في سطر واحد، وعنوانه تسميته' }[style]}`,
   folds: (name, fold) => `${name}: ${{ no: 'لم يعد يُطوى', open: 'يُطوى بعنوانه، ويبدأ مفتوحًا', folded: 'يُطوى بعنوانه، ويبدأ مطويًا' }[fold]}`,
   labels: (name, place) => `${name}: التسميات ${LABELS[place] ?? 'حيث تضعها الصفحة'}`,
   labelWidth: (name, px) => `${name}: التسميات ${px ? `بعرض ${px} بكسل` : 'بالعرض الذي تجعله الصفحة'}`,

@@ -59,6 +59,7 @@ export const layout = {
   noField: (id: string) => `There is no field “${id}”`,
   colour: 'A colour is written #rrggbb, such as #1f7a4d',
   wordsNotLabel: 'Words have text, not a label',
+  lineHoldsParts: 'A line holds fields, words and buttons: take the groups and tabs out of it first',
   onlyAlertColour: 'Only words in an alert’s box have a colour',
   buttonNotText: 'A button has a label, not text',
   pictureWords: 'A picture has an address and a description',

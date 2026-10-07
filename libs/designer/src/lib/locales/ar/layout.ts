@@ -53,6 +53,7 @@ export const layout: DesignerWords['layout'] = {
   noField: (id) => `لا يوجد حقل ${q(id)}`,
   colour: 'يُكتب اللون بالصيغة #rrggbb، مثل #1f7a4d',
   wordsNotLabel: 'للنص كلمات، لا تسمية',
+  lineHoldsParts: 'السطر يحمل حقولًا ونصوصًا وأزرارًا: أخرج المجموعات وعلامات التبويب منه أولًا',
   onlyAlertColour: 'النص في مربع التنبيه وحده له لون',
   buttonNotText: 'للزر تسمية، لا نص',
   pictureWords: 'للصورة عنوان ووصف',

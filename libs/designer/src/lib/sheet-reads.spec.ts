@@ -342,3 +342,48 @@ describe('how a link shows its record', () => {
     expect(nodeOf(designer.getPage(), id).options).toEqual({ colors: true });
   });
 });
+
+describe('parts on one line, and words over the title', () => {
+  function lined() {
+    const page = sheet();
+    const main = (page.layout as SheetNode).children[0] as { children: unknown[] };
+    main.children.push({ type: 'section', id: 'price', title: 'Price', columns: 2, children: [{ type: 'field', id: 'f-p', field: 'hours' }, { type: 'text', id: 't-at', text: 'at' }, { type: 'button', id: 'b-up', label: 'Update', action: 'update' }] });
+    return createDesigner({ page });
+  }
+  const section = (designer: ReturnType<typeof createDesigner>, id: string) =>
+    ((designer.getPage().layout as SheetNode).children[0] as { children: { id: string; style?: string; columns?: unknown }[] }).children.find((n) => n.id === id);
+
+  it('draws a group on one line from its Look, dropping its columns, one undo step', () => {
+    const designer = lined();
+    designer.select('price');
+    const { host } = mount(designer, { mode: 'advanced' });
+    openTab(host, 'Look');
+    pick(host, 'Style', 'One line');
+    expect(section(designer, 'price')).toMatchObject({ style: 'inline' });
+    expect(section(designer, 'price')?.columns).toBeUndefined();
+    designer.undo();
+    expect(section(designer, 'price')).toMatchObject({ columns: 2 });
+  });
+
+  it('refuses a line holding a group', () => {
+    const designer = createDesigner({ page: sheet() });
+    expect(designer.setSectionLook('main', { style: 'inline' })).toBe(true);
+    const page = sheet();
+    ((page.layout as SheetNode).children[0] as { children: unknown[] }).children.push({ type: 'section', id: 'inner', children: [] });
+    const other = createDesigner({ page });
+    expect(other.setSectionLook('main', { style: 'inline' })).toBe(false);
+    expect(other.getState().issues.join(' ')).toMatch(/A line holds fields, words and buttons/);
+  });
+
+  it('puts words over the title from the screen’s own settings', () => {
+    const designer = createDesigner({ page: sheet() });
+    const { host } = mount(designer, { mode: 'advanced' });
+    const box = field(host, 'Words over the title') as HTMLInputElement;
+    box.value = 'Invoice number';
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    expect((designer.getPage().layout as SheetNode).title?.label).toBe('Invoice number');
+    box.value = '';
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    expect((designer.getPage().layout as SheetNode).title?.label).toBeUndefined();
+  });
+});

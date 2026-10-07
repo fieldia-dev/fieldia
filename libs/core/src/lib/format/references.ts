@@ -433,6 +433,11 @@ export class ReferenceCheck {
         if (node.collapsed && !node.collapsible) this.report(path, 'collapsed needs collapsible: true');
         if (node.style === 'inline' && node.columns !== undefined) this.report(`${path}.columns`, 'parts on one line take no columns: each is as wide as it needs');
         if (node.style === 'inline' && node.collapsible) this.report(`${path}.collapsible`, 'a line of parts does not fold: its title is its label');
+        if (node.style === 'inline') {
+          node.children.forEach((child, i) => {
+            if (!['field', 'text', 'button', 'spacer'].includes(child.type)) this.report(`${path}.children[${i}]`, `a line of parts holds fields, words and buttons; a ${child.type} needs a row of its own`);
+          });
+        }
         return this.walkChildren(node.children, path);
       case 'tabs':
         return this.walkTabs(node, path);

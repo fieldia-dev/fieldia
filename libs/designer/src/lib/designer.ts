@@ -314,6 +314,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setLayoutKind(kind: 'sections' | 'sheet'): boolean;
   /** A sheet's title: a text field taken out of its section, or `null` to put it back first in the first section. */
   setTitleField(nodeId: string | null): boolean;
+  /** Small words over a sheet's title, as Flectra's "Product Name" over the name; empty for none. */
+  setTitleLabel(label: string): boolean;
   /** Tabs on a sheet, after `after` or at the end: one tab, with a section. Returns the tabs' id. */
   addTabs(where?: { after?: string }): string | false;
   /** One more tab, with a section. Returns its id. */
@@ -1088,6 +1090,16 @@ export function createDesigner(options: {
         }
         draft.layout = { type: 'sections', id: rootId, children: root.children };
       });
+    },
+
+    setTitleLabel(label) {
+      return apply((draft) => {
+        const root = draft.layout as SheetNode;
+        if (root.type !== 'sheet') throw new Refusal((w) => w.refusals.onlySheetHasTitle);
+        if (!root.title) throw new Refusal((w) => w.refusals.titleLabelNeedsTitle);
+        if (label.trim()) root.title.label = label;
+        else delete root.title.label;
+      }, 'title-label');
     },
 
     setTitleField(nodeId) {

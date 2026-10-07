@@ -56,7 +56,7 @@ const SAMPLES: Record<string, unknown[][]> = {
   'changes.addedHeader': ['button', 'counter', 'badge', 'ribbon', 'alert'].map((kind) => [kind, 'س']),
   'changes.removedHeader': ['button', 'counter', 'badge', 'ribbon', 'alert'].map((kind) => [kind, 'س']),
   'changes.renamedHeader': ['button', 'counter', 'badge', 'ribbon', 'alert'].map((kind) => [kind, 'س', 'ص']),
-  'changes.drawn': ['card', 'plain', 'line', 'framed'].map((style) => ['س', style]),
+  'changes.drawn': ['card', 'plain', 'line', 'framed', 'inline'].map((style) => ['س', style]),
   'changes.folds': ['no', 'open', 'folded'].map((fold) => ['س', fold]),
   'changes.filesShownAs': ['list', 'thumbnails', 'cards'].map((as) => ['س', as]),
   'changes.filesSwitch': [['س', true], ['س', false]],

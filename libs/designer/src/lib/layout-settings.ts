@@ -113,6 +113,11 @@ export function setSectionLook(page: Page, id: string, look: SectionLook): void 
   if (!isSection(section)) throw new Refusal((w) => w.layout.noGroup(id));
   if (!labelWidthOk(look.labelWidth)) throw new Refusal((w) => w.layout.labelWidth);
   if (look.rows !== undefined && !isGroup(section)) throw new Refusal((w) => w.layout.onlyGroupRows);
+  // On one line: fields, words and buttons only, as wide as they need — no columns, rows or folding.
+  if (look.style === 'inline') {
+    if (section.children.some((child) => !['field', 'text', 'button', 'spacer'].includes(child.type))) throw new Refusal((w) => w.layout.lineHoldsParts);
+    for (const key of ['columns', 'rows', 'collapsible', 'collapsed'] as const) delete section[key];
+  }
   patch(section as unknown as Record<string, unknown>, { style: look.style, labels: look.labels, labelWidth: look.labelWidth, rows: look.rows }, { style: 'card', rows: 'full' });
 }
 

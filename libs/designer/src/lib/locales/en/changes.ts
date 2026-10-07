@@ -107,8 +107,8 @@ export const changes = {
     return `${name}: ${smaller.length ? `${n(wide)} on a desktop, ${smaller.join(', ')}` : n(wide)}`;
   },
   gaps: (name: string, gaps: boolean) => `${name}: ${gaps ? 'rows may leave gaps' : 'rows kept full'}`,
-  drawn: (name: string, style: 'card' | 'plain' | 'line' | 'framed') =>
-    `${name}: drawn ${{ card: 'as a card', plain: 'plain, with no box', line: 'with a line under its title', framed: 'in a frame, its title on it' }[style]}`,
+  drawn: (name: string, style: 'card' | 'plain' | 'line' | 'framed' | 'inline') =>
+    `${name}: drawn ${{ card: 'as a card', plain: 'plain, with no box', line: 'with a line under its title', framed: 'in a frame, its title on it', inline: 'on one line, its title its label' }[style]}`,
   folds: (name: string, fold: 'no' | 'open' | 'folded') => `${name}: ${{ no: 'no longer folds', open: 'folds by its title, starting open', folded: 'folds by its title, starting folded' }[fold]}`,
   labels: (name: string, place: string) => `${name}: labels ${LABELS[place] ?? 'where the page puts them'}`,
   labelWidth: (name: string, px: number) => `${name}: labels ${px ? `${px} px wide` : 'as wide as the page has them'}`,

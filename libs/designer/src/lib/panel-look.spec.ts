@@ -100,7 +100,7 @@ describe('the Look tab — a group', () => {
     const panel = host.querySelector('.fd-properties [role="tabpanel"]:not([hidden])') as HTMLElement;
     const style = panel.querySelector('[role="group"][aria-label="Style"]') as HTMLElement;
     const chips = () => [...style.querySelectorAll('button')];
-    expect(chips().map((b) => b.textContent)).toEqual(['Card', 'Plain', 'Line', 'Framed']);
+    expect(chips().map((b) => b.textContent)).toEqual(['Card', 'Plain', 'Line', 'Framed', 'One line']);
     expect(chips().every((b) => b.querySelector('svg'))).toBe(true);
     expect(chips().find((b) => b.getAttribute('aria-pressed') === 'true')?.textContent).toBe('Card');
     chips()[3].click();

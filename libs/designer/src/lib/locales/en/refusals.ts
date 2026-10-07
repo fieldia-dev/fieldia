@@ -104,6 +104,7 @@ export const refusals = {
   hotkeyBrowser: (key: string) => `${key} is the browser’s own: pick another key`,
   onlyButtonKey: 'Only a button has a key',
   alwaysHidden: 'It is hidden always: show it first, then say when',
+  titleLabelNeedsTitle: 'Words over the title need a title field first',
   megabytes: (n: number) => `${n} MB`,
   // ---- kinds' own settings
   matrixNoPictures: 'A matrix’s columns have no pictures',
