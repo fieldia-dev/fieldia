@@ -186,7 +186,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // as parent, its own lines held in it), a placeholder by condition, a field focused as the record opens, a
 // table's order, a line kept from deletion, the app's context in conditions and filters, a stat button's
 // help, a distribution's words in a cell, a column for some roles, a calendar's pick announced — add 6, to 422.4.
-const BUDGET_KB = 423;
+// What using the real pages showed: a line that follows the pointer as it is dragged, lists that float over the page
+// where no table or cell clips them, tables' columns sized by their values and cells quiet until worked in — add 4.4, to 426.8.
+const BUDGET_KB = 427;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -207,7 +209,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // what sits around a record (breadcrumbs, gear menu, pager, the record's own steps and posts, the attachment beside it), 5.9 more, to 125.9.
 // Phase 26's last ten (a line's own form, placeholders by condition, focus on open, order, a line kept, context,
 // a stat button's help, a distribution's words, a column's roles, a calendar's pick), 2.2 more, to 128.2.
-const GZIP_BUDGET_KB = 128.7;
+// what using the real pages showed (a dragged line following the pointer, floating lists, columns by their values), 1.5 more, to 129.7.
+const GZIP_BUDGET_KB = 130.2;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
