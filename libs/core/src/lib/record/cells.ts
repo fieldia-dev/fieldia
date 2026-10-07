@@ -18,6 +18,8 @@ export interface LineState {
   bold: boolean;
   cells: Record<string, CellState>;
   buttons: Record<string, boolean>;
+  /** Whether the line may be deleted now, by the table's `lineDelete`; always, without one. */
+  deletable: boolean;
 }
 
 interface CompiledTone {
@@ -75,12 +77,13 @@ export function compileTable(node: FieldNode): CompiledTable {
   }
   const rowTones = tonesOf(node.rowTones);
   const rowBold = compileModifier(node.rowBold);
+  const lineDelete = node.lineDelete === undefined ? null : compileModifier(node.lineDelete);
   const buttons = node.rowButtons ?? [];
   const shown = buttons.map((button) => ({ id: button.id, roles: button.roles, invisible: compileModifier(button.invisible) }));
   return {
     buttons,
     line(context, env, roles) {
-      const state: LineState = { tone: toneNow(rowTones, context, env), bold: rowBold.evaluate(context, env), cells: {}, buttons: {} };
+      const state: LineState = { tone: toneNow(rowTones, context, env), bold: rowBold.evaluate(context, env), cells: {}, buttons: {}, deletable: lineDelete?.evaluate(context, env) ?? true };
       for (const [column, cell] of cells) {
         state.cells[column] = {
           invisible: cell.invisible.evaluate(context, env),

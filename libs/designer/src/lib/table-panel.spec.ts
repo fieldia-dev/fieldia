@@ -116,6 +116,19 @@ describe('a table’s own rules, in the panel', () => {
     expect(field(ar.row('Line rules'), 'العمود يظهر فقط لـ')).toBeDefined();
   });
 
+  it('lets lines be deleted only while a condition on them holds', () => {
+    const { host, row, node, designer } = screen('f-moves');
+    openTab(host, 'Rules');
+    type(field(row('Line rules'), 'Lines deleted only when'), "parent.state == 'draft' or not id");
+    expect(node('f-moves').lineDelete).toBe("parent.state == 'draft' or not id");
+    expect(designer.setLineDelete('f-moves', 'stat == 1')).toBe(false);
+    type(field(row('Line rules'), 'Lines deleted only when'), '');
+    expect(node('f-moves').lineDelete).toBeUndefined();
+    const ar = screen('f-moves', 'ar');
+    openTab(ar.host, 'القواعد');
+    expect(field(ar.row('Line rules'), 'تُحذف البنود فقط عندما')).toBeDefined();
+  });
+
   it('says what is wrong with a line’s condition under its box, and keeps the page as it was', () => {
     const { host, row, node } = screen('f-moves');
     openTab(host, 'Rules');

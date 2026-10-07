@@ -99,6 +99,26 @@ describe('the grid by a table’s own rules', () => {
     expect((await show(['stock.group_stock_manager'])).getColumn('demand')?.isVisible()).toBe(true);
   });
 
+  it('hides the × of a line its table keeps (lineDelete), and refuses its Enter too', async () => {
+    const page = JSON.parse(JSON.stringify(transfer));
+    page.layout.children[1].lineDelete = "parent.state == 'draft' or scrapped";
+    const host = document.createElement('div');
+    document.body.replaceChildren(host);
+    handle = mountViewer(host, { page, widgets: gridWidgets, values: { state: 'assigned', move_ids: moves } as never });
+    await frames();
+    const grid = host.querySelector('[data-node="f-moves"] .fd-grid-lines') as HTMLElement;
+    const cross = (key: string) => cell(grid, key, '__delete').querySelector('.fd-line-delete') as HTMLButtonElement;
+    expect(cross('a').hidden).toBe(true);
+    expect(cross('b').hidden).toBe(false);
+    const api = gridApiOf(grid)!;
+    api.setFocusedCell(0, '__delete');
+    (grid.querySelector('.ag-row[row-index="0"] .ag-cell[col-id="__delete"]') as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect((handle.form.getState().values['move_ids'] as unknown[]).length).toBe(2);
+    handle.form.setValue('state', 'draft');
+    await frames();
+    expect(cross('a').hidden).toBe(false);
+  });
+
   it('locks a cell by its line and its record, again when the record changes', async () => {
     const { api } = await mount('draft');
     const editable = (key: string, column: string) => api.getColumn(column)!.isCellEditable(api.getRowNode(key)!);

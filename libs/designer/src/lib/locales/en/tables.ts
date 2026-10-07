@@ -21,6 +21,8 @@ export const tables = {
   removeTone: (n: number) => `Remove tone ${n}`,
   // ---- a table's lines and columns
   linesTone: 'Lines’ tones',
+  /** A line's × only while a condition on it holds: Flectra's options delete. */
+  deletedOnlyWhen: 'Lines deleted only when',
   linesHint: 'A line’s condition reads its own fields, and the record as parent: parent.state.',
   column: 'Column',
   hiddenOnLineWhen: 'Blank on a line when',

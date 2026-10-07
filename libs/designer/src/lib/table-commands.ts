@@ -67,6 +67,8 @@ export interface TableCommands {
   setRowTones(id: string, tones: ToneWhen[] | null): boolean;
   /** The lines in bold while a condition on the line holds. */
   setRowBold(id: string, when: string | null): boolean;
+  /** A line deleted only while a condition on it holds (`lineDelete`); `null` lets every line go. */
+  setLineDelete(id: string, when: string | null): boolean;
   /** A table's buttons in one place; `null` or none takes them away. A button kept keeps its id and steps. */
   setTableButtons(id: string, place: TableButtonPlace, buttons: TableButton[] | null): boolean;
   /** How a table's lines open, show on a phone, size their columns, and whether a line can be copied. */
@@ -210,6 +212,15 @@ export function tableCommands({ apply }: TableCommandsDeps): TableCommands {
         if (said) refuseCondition(linePage(draft, def), said);
         put(node, 'rowBold', said);
       }, `row-bold:${id}`);
+    },
+
+    setLineDelete(id, when) {
+      return apply((draft) => {
+        const { node, def } = table(draft, id);
+        const said = when?.trim() || undefined;
+        if (said) refuseCondition(linePage(draft, def), said);
+        put(node, 'lineDelete', said);
+      }, `line-delete:${id}`);
     },
 
     setTableButtons(id, place, buttons) {

@@ -105,7 +105,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   // Optional columns the page starts hidden stay out of the plain table.
   const heads = new Map<string, HTMLTableCellElement>();
   // The table's own rules, read by the form line by line; a table with none asks nothing.
-  const ruled = !!(node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons);
+  const ruled = !!(node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons || node.lineDelete !== undefined);
   const columns = (node.columns ?? Object.keys(def.fields)).filter(
     (column) => def.fields[column] && column !== kinds?.field && column !== def.sequenceField && node.optionalColumns?.[column] !== 'hide'
   );
@@ -424,7 +424,9 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
           rows.set(line.key, row);
         }
         if (body.children[index] !== row.element) body.insertBefore(row.element, body.children[index] ?? null);
-        row.remove.hidden = readonly || current.length <= min;
+        const now = ruled ? form.lineState(node.id, line.key) : null;
+        // A line the table keeps (lineDelete) shows no ×.
+        row.remove.hidden = readonly || current.length <= min || now?.deletable === false;
         row.grip.hidden = readonly;
         // Named by where it is now: it moves.
         const lineName = fillIn(labels.lineN, { n: index + 1 });
@@ -436,7 +438,6 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
         }
         if (readonly) row.remove.remove();
         else if (!row.remove.isConnected) row.element.lastElementChild?.append(row.remove);
-        const now = ruled ? form.lineState(node.id, line.key) : null;
         setData(row.element, 'tone', now?.tone);
         row.element.classList.toggle('fd-line-bold', !!now?.bold);
         // A line's buttons act on the saved line, so a read-only table keeps them, as the grid and Flectra's lists do.

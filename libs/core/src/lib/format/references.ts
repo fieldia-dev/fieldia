@@ -617,8 +617,11 @@ export class ReferenceCheck {
       this.report(`${path}.editMode`, `editMode only applies to one2many fields; "${node.field}" is a ${def.type}`);
     }
     // A table's own rules: a cell's read on its line (with parent), a column's `hidden` on the record.
-    if (def && (node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons)) {
-      if (def.type !== 'one2many') this.report(path, `cells, rowTones, rowBold and rowButtons only apply to one2many fields; "${node.field}" is a ${def.type}`);
+    if (def && node.lineDelete !== undefined && def.type !== 'one2many') this.report(`${path}.lineDelete`, `lineDelete only applies to one2many fields; "${node.field}" is a ${def.type}`);
+    if (def && (node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons || node.lineDelete !== undefined)) {
+      if (def.type !== 'one2many') {
+        if (node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons) this.report(path, `cells, rowTones, rowBold and rowButtons only apply to one2many fields; "${node.field}" is a ${def.type}`);
+      }
       else {
         const line: Scope = { fields: def.fields, lines: node.field };
         for (const [column, rules] of Object.entries(node.cells ?? {})) {
@@ -635,7 +638,7 @@ export class ReferenceCheck {
           }
         }
         node.rowTones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.rowTones[${i}]`, ['when'], line));
-        this.checkModifiers(node, path, ['rowBold'], line);
+        this.checkModifiers(node, path, ['rowBold', 'lineDelete'], line);
         node.rowButtons?.forEach((button, i) => {
           this.claim(button.id, `${path}.rowButtons[${i}]`);
           this.checkModifiers(button, `${path}.rowButtons[${i}]`, ['invisible'], line);

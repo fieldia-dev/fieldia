@@ -157,3 +157,39 @@ describe('a column shown only to some roles', () => {
     expect(validatePage(bad)).toMatchObject({ ok: false });
   });
 });
+
+describe('a line deleted only while a condition on it holds', () => {
+  const page = JSON.parse(JSON.stringify(transfer)) as Page & { layout: { children: Record<string, unknown>[] } };
+  // Flectra's mrp: components deletable only while the order is a draft — or a line not saved yet, taken back.
+  page.layout.children[1]['lineDelete'] = "parent.state == 'draft' or not id";
+  const saved = [{ key: 'a', id: 41, values: lines[0].values }, { key: 'n', values: lines[1].values }];
+  const open = (state: string) => createForm({ page, values: { state, move_ids: saved } as never });
+
+  it('says so of each line, read on it with its record as parent', () => {
+    expect(validatePage(page)).toMatchObject({ ok: true });
+    expect(open('draft').lineState('f-moves', 'a').deletable).toBe(true);
+    const ready = open('assigned');
+    expect(ready.lineState('f-moves', 'a').deletable).toBe(false);
+    expect(ready.lineState('f-moves', 'n').deletable).toBe(true);
+  });
+
+  it('refuses removeLine for a line it keeps, and lets the others go', () => {
+    const ready = open('assigned');
+    expect(() => ready.removeLine('move_ids', 'a')).toThrow(/cannot be deleted/);
+    expect((ready.getState().values['move_ids'] as unknown[]).length).toBe(2);
+    ready.removeLine('move_ids', 'n');
+    expect((ready.getState().values['move_ids'] as unknown[]).length).toBe(1);
+    const draft = open('draft');
+    draft.removeLine('move_ids', 'a');
+    expect((draft.getState().values['move_ids'] as unknown[]).length).toBe(1);
+  });
+
+  it('is a line’s condition, checked as one, and only for a table', () => {
+    const bad = JSON.parse(JSON.stringify(page));
+    bad.layout.children[1].lineDelete = 'nope';
+    expect(validatePage(bad)).toMatchObject({ ok: false, issues: [{ path: 'layout.children[1].lineDelete', message: '"nope" reads "nope", which is not a field of the lines of "move_ids"' }] });
+    const notTable = JSON.parse(JSON.stringify(page));
+    notTable.layout.children[0].lineDelete = 'True';
+    expect(validatePage(notTable)).toMatchObject({ ok: false, issues: [{ path: 'layout.children[0].lineDelete' }] });
+  });
+});

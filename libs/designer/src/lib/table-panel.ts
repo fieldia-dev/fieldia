@@ -107,6 +107,7 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
   const lineScope = () => (lines ? linePage(page, lines) : page);
   const rowTones = toneList(lineScope, () => node?.rowTones ?? [], (tones) => designer.setRowTones(id, tones));
   const rowBold = whenBox(w.boldWhen, lineScope, (source) => designer.setRowBold(id, source));
+  const lineDelete = whenBox(w.deletedOnlyWhen, lineScope, (source) => designer.setLineDelete(id, source));
   const column = el('select', { class: 'fd-input fd-select fd-table-column', 'aria-label': w.column }) as HTMLSelectElement;
   const current = () => column.value;
   const rule = (key: CellRule, label: string) => {
@@ -154,6 +155,7 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
       el('span', { class: 'fd-answer-rule-word' }, w.linesTone),
       rowTones.element,
       rowBold.element,
+      lineDelete.element,
       el('p', { class: 'fd-properties-hint fd-set-hint' }, w.linesHint),
       columnBox
     ),
@@ -276,6 +278,7 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
       if (lines) {
         rowTones.draw();
         rowBold.show(typeof node.rowBold === 'string' ? node.rowBold : undefined);
+        lineDelete.show(typeof node.lineDelete === 'string' ? node.lineDelete : undefined);
         const names = Object.keys(lines.fields).filter((name) => name !== lines!.sequenceField && name !== lines!.lineKinds?.field);
         const key = JSON.stringify(names.map((name) => [name, lines!.fields[name].label]));
         if (column.dataset['drawn'] !== key) {

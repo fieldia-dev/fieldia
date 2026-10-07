@@ -18,6 +18,7 @@ export const tables: DesignerWords['tables'] = {
   whenPlaceholder: 'الكمية > المطلوب — اكتب اسم حقل، أو @',
   removeTone: (n) => `إزالة اللون ${n}`,
   linesTone: 'ألوان البنود',
+  deletedOnlyWhen: 'تُحذف البنود فقط عندما',
   linesHint: 'شرط البند يقرأ حقوله، وحقول السجل الذي هو فيه أيضًا.',
   column: 'العمود',
   hiddenOnLineWhen: 'فارغ في البند عندما',

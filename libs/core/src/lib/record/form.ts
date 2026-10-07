@@ -369,7 +369,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   for (const node of index.values()) {
     const source = node.source as FieldNode;
     if (node.kind !== 'field' || page.fields[source.field]?.type !== 'one2many') continue;
-    if (source.cells || source.rowTones || source.rowBold !== undefined || source.rowButtons) tables.set(node.id, { field: source.field, compiled: compileTable(source) });
+    if (source.cells || source.rowTones || source.rowBold !== undefined || source.rowButtons || source.lineDelete !== undefined) tables.set(node.id, { field: source.field, compiled: compileTable(source) });
   }
   /** Field nodes whose value takes a tone or bold, by id: each read once. */
   const fieldTones = new Map<string, ReturnType<typeof compileFieldTone>>();
@@ -450,7 +450,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   /** A line of a table as its rules have it now; none, plain. */
   function lineStateOf(nodeId: string, key: string): LineState {
     const table = tableOf(nodeId);
-    if (!table) return { tone: null, bold: false, cells: {}, buttons: {} };
+    if (!table) return { tone: null, bold: false, cells: {}, buttons: {}, deletable: true };
     const line = ((state.values[table.field] as Line[] | null) ?? []).find((l) => l.key === key);
     if (!line) throw new Error(`"${table.field}" has no line "${key}"`);
     const def = lineField(table.field);
@@ -1337,6 +1337,13 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
 
     removeLine(field, key) {
       lineField(field);
+      // A table that keeps this line (its lineDelete does not hold on it) refuses, wherever the call comes from.
+      for (const [nodeId, table] of tables) {
+        if (table.field !== field || (index.get(nodeId)?.source as FieldNode).lineDelete === undefined) continue;
+        if (((state.values[field] as Line[] | null) ?? []).some((line) => line.key === key) && !lineStateOf(nodeId, key).deletable) {
+          throw new Error(`The line "${key}" of "${field}" cannot be deleted now: its table's lineDelete does not hold on it`);
+        }
+      }
       const lines = ((state.values[field] as Line[] | null) ?? []).filter((line) => line.key !== key);
       writeValues({ ...(state.values as Values), [field]: lines });
       afterEdit(field);

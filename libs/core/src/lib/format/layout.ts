@@ -124,6 +124,14 @@ export interface FieldNode {
   /** For one2many: buttons on each line, each shown by a condition on it; a press runs its steps with the line. */
   rowButtons?: ButtonNode[];
   /**
+   * For one2many: a line may be deleted only while this holds on it — its
+   * fields, its own `id` (empty until saved), its record as `parent` — as
+   * Flectra's `options="{'delete': …}"`: `"parent.state == 'draft' or not
+   * id"`. Its × is hidden on a line it keeps, and the form refuses to remove
+   * that line. Every line may be deleted when left out.
+   */
+  lineDelete?: Modifier;
+  /**
    * For one2many: buttons for the lines chosen in the table — Flectra's list
    * header buttons, such as Start and Done on the work orders ticked. Each is
    * shown by a condition on the record; a press runs with the chosen lines,
@@ -778,6 +786,7 @@ export const FieldNodeSchema = z.strictObject({
   cells: z.record(fieldName, CellRulesSchema).optional(),
   rowTones: z.array(ToneWhenSchema).min(1).optional(),
   rowBold: ModifierSchema.optional(),
+  lineDelete: ModifierSchema.optional(),
   get rowButtons(): z.ZodOptional<z.ZodArray<typeof ButtonNodeSchema>> {
     return z.array(ButtonNodeSchema).min(1).optional();
   },

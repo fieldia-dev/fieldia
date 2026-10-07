@@ -3595,6 +3595,9 @@
                   "rowBold": {
                     "$ref": "#/$defs/Modifier"
                   },
+                  "lineDelete": {
+                    "$ref": "#/$defs/Modifier"
+                  },
                   "rowButtons": {
                     "minItems": 1,
                     "type": "array",
@@ -4022,6 +4025,9 @@
                     }
                   },
                   "rowBold": {
+                    "$ref": "#/$defs/Modifier"
+                  },
+                  "lineDelete": {
                     "$ref": "#/$defs/Modifier"
                   },
                   "rowButtons": {
@@ -4453,6 +4459,9 @@
                   "rowBold": {
                     "$ref": "#/$defs/Modifier"
                   },
+                  "lineDelete": {
+                    "$ref": "#/$defs/Modifier"
+                  },
                   "rowButtons": {
                     "minItems": 1,
                     "type": "array",
@@ -4880,6 +4889,9 @@
                     }
                   },
                   "rowBold": {
+                    "$ref": "#/$defs/Modifier"
+                  },
+                  "lineDelete": {
                     "$ref": "#/$defs/Modifier"
                   },
                   "rowButtons": {
@@ -6741,6 +6753,9 @@
               }
             },
             "rowBold": {
+              "$ref": "#/$defs/Modifier"
+            },
+            "lineDelete": {
               "$ref": "#/$defs/Modifier"
             },
             "rowButtons": {

@@ -149,7 +149,8 @@ export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, docume
         if (list.children[index] !== card.element) list.insertBefore(card.element, list.children[index] ?? null);
         card.title.textContent = titleOf(index + 1);
         card.remove.setAttribute('aria-label', fillIn(words.remove, { name: card.title.textContent }));
-        card.remove.hidden = readonly || current.length <= min;
+        // A card the table keeps (lineDelete) shows no ×.
+        card.remove.hidden = readonly || current.length <= min || (node.lineDelete !== undefined && !form.lineState(node.id, line.key).deletable);
         for (const [button, word] of card.tools) {
           button.setAttribute('aria-label', fillIn(words[word], { label: card.title.textContent, name: card.title.textContent }));
           button.hidden = readonly || (word === 'moveUp' ? index === 0 : word === 'moveDown' ? index === current.length - 1 : current.length >= max);

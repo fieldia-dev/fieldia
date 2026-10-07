@@ -250,23 +250,28 @@ class DrawnRenderer implements ICellRendererComp<Line> {
   }
 }
 
-/** The delete button at the end of each line. */
+/** The delete button at the end of each line: hidden on a line the table keeps (`lineDelete`). */
 class DeleteRenderer implements ICellRendererComp<Line> {
   private button!: HTMLButtonElement;
-  init(params: ICellRendererParams<Line> & { cell: CellContext }) {
+  private params!: ICellRendererParams<Line> & { cell: CellContext; deletable(key: string): boolean };
+  init(params: ICellRendererParams<Line> & { cell: CellContext; deletable(key: string): boolean }) {
     this.button = document.createElement('button');
     this.button.type = 'button';
     this.button.className = 'fd-line-delete';
     this.button.textContent = '×';
     this.button.setAttribute('aria-label', params.cell.labels.deleteLine);
     this.button.addEventListener('click', () => {
-      if (params.data) params.cell.form.removeLine(params.cell.field, params.data.key);
+      const key = this.params.data?.key;
+      if (key && this.params.deletable(key)) this.params.cell.form.removeLine(this.params.cell.field, key);
     });
+    this.refresh(params);
   }
   getGui() {
     return this.button;
   }
-  refresh() {
+  refresh(params: ICellRendererParams<Line> & { cell: CellContext; deletable(key: string): boolean }) {
+    this.params = params;
+    this.button.hidden = !params.data || !params.deletable(params.data.key);
     return true;
   }
 }
@@ -608,8 +613,10 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const lineStart = rtl ? 'right' : 'left';
   const lineEnd = rtl ? 'left' : 'right';
   // The table's own rules, read by the form for each line as the form changes; a table with none asks nothing.
-  const ruled = !!(node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons);
+  const ruled = !!(node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons || node.lineDelete !== undefined);
   let lineStates = new Map<string, LineState>();
+  /** Whether a line may be deleted now: always, unless the table's lineDelete keeps it. */
+  const deletable = (key: string) => node.lineDelete === undefined || (lineStates.get(key) ?? form.lineState(node.id, key)).deletable;
   const ruleOf = (line: Line | undefined, column: string) => (line ? lineStates.get(line.key)?.cells[column] : undefined);
   /** Columns hidden by the record now. */
   let ruleHidden = new Set<string>();
@@ -738,7 +745,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const before = cancelling.get(key);
     if (!before) return void fresh.delete(key);
     cancelling.delete(key);
-    if (fresh.delete(key)) return form.removeLine(name, key);
+    // A line added a moment ago is taken back, unless the table keeps it: then it stays, as it was begun.
+    if (fresh.delete(key)) return deletable(key) ? form.removeLine(name, key) : undefined;
     const current = lines();
     if (current.some((l) => l.key === key)) form.setValue(name, current.map((l) => (l.key === key ? { ...l, values: before } : l)));
   };
@@ -1002,7 +1010,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     resizable: false,
     sortable: false,
     suppressMovable: true,
-    cellRendererSelector: (p) => (p.node.rowPinned ? undefined : { component: DeleteRenderer, params: { cell } }),
+    cellRendererSelector: (p) => (p.node.rowPinned ? undefined : { component: DeleteRenderer, params: { cell, deletable } }),
     suppressKeyboardEvent: keys,
   });
 
@@ -1266,7 +1274,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         button.addEventListener('click', () => void pressed(button, () => form.runRowAction(node.id, own.id, line.key)));
         tools.append(button);
       }
-      if (!readonly) {
+      if (!readonly && deletable(line.key)) {
         const remove = document.createElement('button');
         remove.type = 'button';
         remove.className = 'fd-line-delete';
@@ -1332,7 +1340,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       form.updateLine(name, line.key, column, line.values[column] !== true);
     } else if (column === '__delete') {
       event.preventDefault();
-      form.removeLine(name, line.key);
+      if (deletable(line.key)) form.removeLine(name, line.key);
     }
   });
 

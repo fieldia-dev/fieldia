@@ -92,6 +92,22 @@ describe('a plain table by its own rules', () => {
     expect(heads(draw(['stock.group_stock_manager']))).toEqual(['', 'Product', 'Demand', 'Quantity', 'Lot', '']);
   });
 
+  it('hides the × of a line its table keeps (lineDelete), and shows it once the record allows', () => {
+    const page = JSON.parse(JSON.stringify(transfer)) as Page;
+    (page.layout as { children: FieldNode[] }).children[1].lineDelete = "parent.state == 'draft' or scrapped";
+    const form = createForm({ page, values: { state: 'assigned', move_ids: moves } as never });
+    const node = (page.layout as { children: FieldNode[] }).children[1];
+    const widget = createWidget({ form, name: 'move_ids', field: page.fields['move_ids'] as Field, node, id: 'fd-moves', document, labels: WIDGET_LABELS.en });
+    const refresh = () => widget.update({ value: form.getState().values['move_ids'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    const cross = (key: string) => row(widget.element, key).querySelector('.fd-line-delete') as HTMLButtonElement;
+    expect(cross('a').hidden).toBe(true);
+    expect(cross('b').hidden).toBe(false);
+    form.setValue('state', 'draft');
+    expect(cross('a').hidden).toBe(false);
+  });
+
   it('locks, blanks and requires each cell by its own line, with the record as parent', () => {
     const { form, el } = mount('draft');
     expect((cell(el, 'a', 'product').querySelector('input') as HTMLInputElement).readOnly).toBe(false);
