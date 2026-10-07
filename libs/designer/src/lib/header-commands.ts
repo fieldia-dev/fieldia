@@ -50,6 +50,8 @@ export interface HeaderPartPatch {
   secondField?: string;
   /** Words for a counter's second value, which then shows under the first; empty for none. */
   secondLabel?: string;
+  /** A counter's help: its tooltip, read out as its description; empty for none. */
+  help?: string;
   icon?: string;
   /** An item of the gear menu: one of the record's own it is (empty for none), and whether it goes under Print. */
   builtin?: MenuItem['builtin'] | '';
@@ -218,7 +220,7 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
     },
 
     updateHeaderPart(id, patch) {
-      const typing = Object.keys(patch).length === 1 && ('label' in patch || 'action' in patch || 'confirm' in patch || 'tooltip' in patch || 'unit' in patch || 'secondLabel' in patch);
+      const typing = Object.keys(patch).length === 1 && ('label' in patch || 'action' in patch || 'confirm' in patch || 'tooltip' in patch || 'unit' in patch || 'secondLabel' in patch || 'help' in patch);
       return apply(
         (draft) => {
           const { kind, part } = partOf(draft, id);
@@ -315,6 +317,11 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
               stat[key] = name;
             }
             prune(draft);
+          }
+          if (patch.help !== undefined) {
+            if (kind !== 'stat') throw new Refusal((w) => w.refusals.onlyCounterSecond);
+            if (patch.help.trim()) (part as StatButton).help = patch.help;
+            else delete (part as StatButton).help;
           }
           for (const key of ['unit', 'secondLabel'] as const) {
             const words = patch[key];

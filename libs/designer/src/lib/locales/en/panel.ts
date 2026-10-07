@@ -276,6 +276,8 @@ export const panel = {
   actsAtOnce: 'Nothing: it acts at once',
   numberFrom: 'Number from',
   unitWords: 'Words after the value',
+  /** A counter's help: its tooltip, and what a screen reader says of it. */
+  counterHelp: 'Help, on pointing at it',
   unitFrom: 'Words after it from a field',
   labelFrom: 'Its words from a field',
   secondFrom: 'Second value from',

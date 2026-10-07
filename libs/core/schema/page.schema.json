@@ -5439,6 +5439,9 @@
               "icon": {
                 "type": "string"
               },
+              "help": {
+                "type": "string"
+              },
               "invisible": {
                 "$ref": "#/$defs/Modifier"
               },

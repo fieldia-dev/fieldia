@@ -72,7 +72,10 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   const secondField = fieldSelect(w.secondFrom, 'secondField');
   const secondLabel = el('input', { class: 'fd-input', 'aria-label': w.secondWords, placeholder: w.secondWordsHint }) as HTMLInputElement;
   secondLabel.addEventListener('input', () => designer.updateHeaderPart(id, { secondLabel: secondLabel.value }));
-  const statRows = [prop(el, w.unitWords, unit), prop(el, w.unitFrom, unitField), prop(el, w.labelFrom, labelField), prop(el, w.secondFrom, secondField), prop(el, w.secondWords, secondLabel)];
+  // A counter's help, as Flectra's help= on a smart button: its tooltip and its description.
+  const statHelp = el('input', { class: 'fd-input', 'aria-label': w.counterHelp, placeholder: w.optional }) as HTMLInputElement;
+  statHelp.addEventListener('input', () => designer.updateHeaderPart(id, { help: statHelp.value }));
+  const statRows = [prop(el, w.counterHelp, statHelp), prop(el, w.unitWords, unit), prop(el, w.unitFrom, unitField), prop(el, w.labelFrom, labelField), prop(el, w.secondFrom, secondField), prop(el, w.secondWords, secondLabel)];
   const tone = select(el, w.tone, [['muted', w.tones.muted], ['info', w.tones.info], ['success', w.tones.success], ['warning', w.tones.warning], ['danger', w.tones.danger]]);
   tone.addEventListener('change', () => designer.updateHeaderPart(id, { tone: tone.value as Tone }));
   const toneRow = prop(el, w.tone, tone);
@@ -177,6 +180,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
         secondField.replaceChildren(...options(counted));
         secondField.value = stat.secondField ?? '';
         if (!focused(unit)) unit.value = stat.unit ?? '';
+        if (!focused(statHelp)) statHelp.value = stat.help ?? '';
         if (!focused(secondLabel)) secondLabel.value = stat.secondLabel ?? '';
         (secondLabel.closest('.fd-prop') as HTMLElement).hidden = !stat.secondField;
       }

@@ -514,6 +514,8 @@ export interface StatButton {
   /** The second value's words; with them, `label` is the first value's. */
   secondLabel?: string;
   icon?: string;
+  /** Words on what it shows, as Flectra's help= on a smart button: its tooltip, and read out as its description. */
+  help?: string;
   invisible?: Modifier;
   roles?: Roles;
 }
@@ -982,6 +984,7 @@ export const StatButtonSchema = z.strictObject({
   secondField: fieldName.optional(),
   secondLabel: z.string().optional(),
   icon: z.string().optional(),
+  help: z.string().optional(),
   invisible, roles,
 });
 

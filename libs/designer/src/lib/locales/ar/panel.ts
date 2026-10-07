@@ -346,6 +346,7 @@ export const panel: DesignerWords['panel'] = {
   actsAtOnce: 'لا شيء: ينفّذ فورًا',
   numberFrom: 'الرقم من',
   unitWords: 'نص بعد القيمة',
+  counterHelp: 'مساعدة عند الإشارة إليه',
   unitFrom: 'النص بعدها من حقل',
   labelFrom: 'نصه من حقل',
   secondFrom: 'القيمة الثانية من',

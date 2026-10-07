@@ -191,6 +191,18 @@ describe('stat buttons that say more', () => {
     expect(stat()?.secondLabel).toBeUndefined();
   });
 
+  it('takes help, its tooltip, as Flectra’s help= on a smart button — a counter’s only', () => {
+    const designer = createDesigner({ page: sheet() });
+    const id = designer.addHeaderPart('stat', 'Operations') as string;
+    const { host } = mount(designer, { mode: 'advanced' });
+    const help = field(host, 'Help, on pointing at it') as HTMLInputElement;
+    help.value = 'List view of operations';
+    help.dispatchEvent(new Event('input', { bubbles: true }));
+    expect((designer.getPage().layout as SheetNode).statButtons?.find((s) => s.id === id)?.help).toBe('List view of operations');
+    const button = designer.addHeaderPart('button', 'Validate') as string;
+    expect(designer.updateHeaderPart(button, { help: 'x' })).toBe(false);
+  });
+
   it('refuses a value that is no number, amount, date or words, and second words with no second value', () => {
     const designer = createDesigner({ page: sheet() });
     const id = designer.addHeaderPart('stat', 'Tags') as string;

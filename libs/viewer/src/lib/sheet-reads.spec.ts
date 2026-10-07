@@ -673,3 +673,32 @@ describe('parts on one line, and a label over the title', () => {
     expect(label.htmlFor).toBe((host.querySelector('[data-node="#title"] input') as HTMLInputElement).id);
   });
 });
+
+describe('a stat button’s help', () => {
+  it('is its tooltip and its accessible description, as Flectra’s help= on a smart button', () => {
+    const page = {
+      fieldia: '0.1',
+      id: 'transfer',
+      data: { kind: 'record', model: 'stock.picking' },
+      fields: { name: { type: 'char', label: 'Reference' } },
+      layout: {
+        type: 'sheet',
+        id: 'sheet',
+        statButtons: [
+          { id: 'operations', label: 'Operations', icon: 'list', action: 'action_view_moves', help: 'List view of operations' },
+          { id: 'returns', label: 'Returns', action: 'action_returns' },
+        ],
+        children: [{ type: 'field', id: 'f-name', field: 'name' }],
+      },
+    } as unknown as Page;
+    const { at } = mount(page);
+    const operations = at('operations');
+    expect(operations.title).toBe('List view of operations');
+    const described = document.getElementById(operations.getAttribute('aria-describedby') as string);
+    expect(described?.textContent).toBe('List view of operations');
+    // The help describes it; its name stays its words.
+    expect(operations.textContent).not.toContain('List view');
+    expect(at('returns').hasAttribute('title')).toBe(false);
+    expect(at('returns').hasAttribute('aria-describedby')).toBe(false);
+  });
+});

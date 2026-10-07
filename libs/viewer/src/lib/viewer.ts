@@ -1272,7 +1272,10 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         const words = second
           ? el('span', { class: 'fd-stat-words fd-stat-pair' }, el('span', { class: 'fd-stat-row' }, label, value), el('span', { class: 'fd-stat-row' }, second.label, second.value))
           : el('span', { class: 'fd-stat-words' }, value, label);
-        const button = el('button', { type: 'button', class: 'fd-stat', 'data-node': stat.id }, ...(icon ? [icon, words] : [words]));
+        // Its help, as Flectra's help=: its tooltip, and its description for a screen reader — never its name.
+        const helpId = stat.help ? uid(`${stat.id}-help`) : undefined;
+        const button = el('button', { type: 'button', class: 'fd-stat', 'data-node': stat.id, title: stat.help || undefined, 'aria-describedby': helpId }, ...(icon ? [icon, words] : [words]));
+        if (helpId) stats.append(el('span', { class: 'fd-sr-only', id: helpId }, stat.help as string));
         button.addEventListener('click', () => void press(button, () => form.runAction(stat.id)));
         updaters.push((state) => {
           button.hidden = form.node(stat.id).invisible;
@@ -1290,7 +1293,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       }
       // No empty row while every button is hidden, as with the badges.
       updaters.push(() => {
-        stats.hidden = [...stats.children].every((stat) => (stat as HTMLElement).hidden);
+        stats.hidden = [...stats.querySelectorAll<HTMLElement>(':scope > .fd-stat')].every((stat) => stat.hidden);
       });
       card.append(stats);
     }
