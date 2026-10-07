@@ -294,7 +294,7 @@ describe('the attachment beside the sheet', () => {
     const host = await mount({ page: withPreview({}), recordId: 2 });
     await until(() => !preview(host).hidden);
     expect(preview(host).getAttribute('aria-label')).toBe('Attachment: contract.pdf');
-    expect(preview(host).querySelector('iframe')?.getAttribute('src')).toBe('/contract.pdf');
+    expect(preview(host).querySelector('iframe')?.getAttribute('src')).toBe('/contract.pdf#view=FitH&navpanes=0');
     expect(preview(host).querySelector('a.fd-attachment-open')?.getAttribute('href')).toBe('/contract.pdf');
     expect(preview(host).querySelector('.fd-attachment-count')?.textContent).toBe('1 / 2');
     (preview(host).querySelector('[aria-label="Next attachment"]') as HTMLButtonElement).click();
@@ -317,7 +317,7 @@ describe('the attachment beside the sheet', () => {
     handle?.form.setValue('cv', [{ name: 'cv.pdf', type: 'application/pdf', size: 3, data: 'JVBERg==' }]);
     expect(preview(host).hidden).toBe(false);
     expect(preview(host).querySelector('.fd-attachment-name')?.textContent).toBe('cv.pdf');
-    expect(preview(host).querySelector('iframe')?.getAttribute('src')).toBe('blob:1');
+    expect(preview(host).querySelector('iframe')?.getAttribute('src')).toBe('blob:1#view=FitH&navpanes=0');
   });
 });
 

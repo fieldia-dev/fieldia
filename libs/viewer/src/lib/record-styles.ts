@@ -20,6 +20,7 @@ export const RECORD_STYLES = /* css */ `
 .fd-record-gear { display: inline-flex; align-items: center; gap: 6px; }
 .fd-record-gear svg { width: 16px; height: 16px; flex: none; }
 .fd-record-menu { position: absolute; z-index: 40; inset-block-start: calc(100% + 4px); inset-inline-start: 0; display: grid; min-width: 220px; max-width: min(320px, 90vw); padding: 4px; box-sizing: border-box; background: var(--fd-surface); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 4px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16); }
+.fd-record-menu[data-end] { inset-inline-start: auto; inset-inline-end: 0; }
 .fd-record-menu[hidden], .fd-record-menu [hidden] { display: none; }
 .fd-record-menu [role="group"] { display: grid; }
 .fd-record-menu-heading { padding: 6px 12px 2px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fd-muted); }
@@ -34,8 +35,7 @@ export const RECORD_STYLES = /* css */ `
 .fd-record-pager-text { padding-inline-end: 6px; font-variant-numeric: tabular-nums; color: var(--fd-muted); white-space: nowrap; }
 .fd-record-step { min-width: 34px; padding-inline: 8px; font-size: 18px; line-height: 1; }
 .fd-record-step[aria-disabled="true"] { opacity: 0.5; cursor: default; }
-/* The arrows point the way the page reads. */
-[dir="rtl"] .fd-record-arrow { display: inline-block; transform: scaleX(-1); }
+/* ‹ and › are mirrored by the browser itself in a page read right to left: they point the way it reads. */
 @container fd-form (max-width: 520px) {
   .fd-record-bar { padding-inline: 12px; gap: 6px 8px; }
   /* On a phone the gear says nothing more than its picture, and the trail folds to the page before this one, a way back. */
@@ -43,7 +43,6 @@ export const RECORD_STYLES = /* css */ `
   .fd-breadcrumbs ol { flex-wrap: nowrap; font-size: 15px; }
   .fd-breadcrumbs li:not(:nth-last-child(-n + 2)) { display: none; }
   .fd-breadcrumbs li:nth-last-child(2)::before { content: "‹"; padding-inline: 0 6px; font-size: 20px; color: var(--fd-accent); }
-  [dir="rtl"] .fd-breadcrumbs li:nth-last-child(2)::before { content: "›"; }
 }
 
 /* The attachment beside the sheet: the sheet and its side panel in the first column, the file in the second. */
@@ -56,7 +55,7 @@ export const RECORD_STYLES = /* css */ `
 .fd-attachment-body { display: grid; min-height: 0; background: var(--fd-page); }
 .fd-attachment-body > iframe { width: 100%; height: 100%; min-height: 70vh; border: 0; background: #fff; }
 .fd-attachment-body > img { display: block; max-width: 100%; max-height: 80vh; margin: auto; object-fit: contain; }
-.fd-sheet-layout.fd-has-preview:has(> .fd-attachment-preview:not([hidden])) { max-width: none; grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr); }
+.fd-sheet-layout.fd-has-preview:has(> .fd-attachment-preview:not([hidden])) { max-width: none; grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr); grid-template-rows: auto 1fr; }
 .fd-sheet-layout.fd-has-preview:has(> .fd-attachment-preview:not([hidden])) > :is(.fd-card, .fd-side) { grid-column: 1; }
 .fd-sheet-layout.fd-has-preview > .fd-attachment-preview { grid-column: 2; grid-row: 1 / span 2; position: sticky; top: 8px; height: calc(100vh - 16px); max-height: 1200px; }
 @container (max-width: 1000px) {

@@ -311,7 +311,8 @@ export function fileShown(doc: Document, file: FileValue): { element: HTMLElemen
   if (kind !== 'image' && kind !== 'pdf') return null;
   const url = file.data ? URL.createObjectURL(new Blob([bytes(file.data)], { type: file.type })) : source(file);
   const element = doc.createElement(kind === 'image' ? 'img' : 'iframe');
-  element.setAttribute('src', url);
+  // A PDF fills the width, without the viewer's page list beside it: there is room for the page alone.
+  element.setAttribute('src', kind === 'pdf' ? `${url}#view=FitH&navpanes=0` : url);
   element.setAttribute(kind === 'image' ? 'alt' : 'title', file.name);
   element.setAttribute('data-kind', kind);
   return { element, url, free: () => void (url.startsWith('blob:') && URL.revokeObjectURL(url)) };

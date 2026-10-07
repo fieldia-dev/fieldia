@@ -31,7 +31,7 @@ const filesOf = (value: unknown): FileValue[] => (Array.isArray(value) ? (value 
 export function attachmentPreview(context: PreviewContext): { element: HTMLElement; update(state: FormState): void; destroy(): void } {
   const { el, form, labels, node } = context;
   const name = el('span', { class: 'fd-attachment-name', dir: 'auto' });
-  const count = el('span', { class: 'fd-attachment-count' });
+  const count = el('span', { class: 'fd-attachment-count', dir: 'ltr' });
   const previous = el('button', { type: 'button', class: 'fd-button fd-record-step', 'aria-label': labels.previousAttachment }, el('span', { 'aria-hidden': 'true', class: 'fd-record-arrow' }, '‹'));
   const next = el('button', { type: 'button', class: 'fd-button fd-record-step', 'aria-label': labels.nextAttachment }, el('span', { 'aria-hidden': 'true', class: 'fd-record-arrow' }, '›'));
   const open = el('a', { class: 'fd-button fd-button-link fd-attachment-open', target: '_blank', rel: 'noopener' }, labels.openAttachment);

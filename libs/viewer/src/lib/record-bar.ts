@@ -141,6 +141,10 @@ function gearMenu(context: RecordBarContext, items: readonly MenuItem[], updater
   function open(at: 'first' | 'last') {
     if (!menu.hidden) return;
     menu.hidden = false;
+    // From the gear's start, unless that runs past the screen's edge: then from its end.
+    menu.removeAttribute('data-end');
+    const box = menu.getBoundingClientRect();
+    if (box.right > doc.documentElement.clientWidth - 4 || box.left < 4) menu.setAttribute('data-end', '');
     gear.setAttribute('aria-expanded', 'true');
     doc.addEventListener('pointerdown', onOutside, true);
     const items = shown();
@@ -201,7 +205,8 @@ function pager(context: RecordBarContext, given: readonly RecordId[] | RecordPag
     if (ids) return ids.findIndex((other) => same(other, id));
     return same(placed, id) ? at : -1;
   };
-  const text = el('span', { class: 'fd-record-pager-text' });
+  // "3 / 42" reads left to right in every language, as numbers do.
+  const text = el('span', { class: 'fd-record-pager-text', dir: 'ltr' });
   const previous = el('button', { type: 'button', class: 'fd-button fd-record-step', 'aria-label': labels.previousRecord }, el('span', { 'aria-hidden': 'true', class: 'fd-record-arrow' }, '‹'));
   const next = el('button', { type: 'button', class: 'fd-button fd-record-step', 'aria-label': labels.nextRecord }, el('span', { 'aria-hidden': 'true', class: 'fd-record-arrow' }, '›'));
   hotkeyOn(previous, 'p', labels.previousRecord);
