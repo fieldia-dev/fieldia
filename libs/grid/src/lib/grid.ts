@@ -16,7 +16,7 @@ import {
 } from 'ag-grid-community';
 import { fill, isRightToLeft, lineKind, type ButtonNode, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
-import { createWidget, displayValue, drawIcon, kindTextField, lineForm, WIDGET_LABELS, type WidgetDialogs, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
+import { createWidget, currencyOf, displayValue, drawIcon, kindTextField, lineForm, WIDGET_LABELS, type WidgetDialogs, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
 
 /**
  * A one2many as a spreadsheet, on AG Grid. Each cell is edited with the same
@@ -34,6 +34,14 @@ const apis = new WeakMap<HTMLElement, GridApi<Line>>();
 /** The AG Grid API behind a grid's element, for an app that needs more than the page describes. */
 export function gridApiOf(element: HTMLElement): GridApi<Line> | undefined {
   return apis.get(element);
+}
+
+/** A line's money in its record's currency (`parent.…`), as a field of its own: in that currency, fixed. */
+function ownCurrency(sub: LineField, parent: Values): LineField {
+  if (sub.type !== 'monetary' || !sub.currencyField?.startsWith('parent.')) return sub;
+  const { currencyField: _, ...rest } = sub;
+  const code = currencyOf(sub, {}, parent);
+  return /^[A-Z]{3}$/.test(code ?? '') ? { ...rest, currency: code as string } : rest;
 }
 
 /** Everything a cell needs, handed to AG Grid's editors and renderers. */
@@ -319,7 +327,7 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
       // A cell the form found wrong stays marked while it is fixed.
       const invalid = !!cell.form.getState().errors[`${cell.field}.${key}.${column}`];
       this.box.classList.toggle('fd-grid-editor-invalid', invalid);
-      this.widget.update({ value: line?.values[column], values: line?.values ?? {}, readonly: false, required: def.required === true, invalid });
+      this.widget.update({ value: line?.values[column], values: line?.values ?? {}, parent: cell.form.getState().values, readonly: false, required: def.required === true, invalid });
     };
     show();
     this.leave = cell.form.subscribe(show);
@@ -461,6 +469,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const ruleOf = (line: Line | undefined, column: string) => (line ? lineStates.get(line.key)?.cells[column] : undefined);
   /** Columns hidden by the record now. */
   let ruleHidden = new Set<string>();
+  /** The record's fields its money takes its currency from (`parent.currency_id`), and their values when last drawn. */
+  const parentCurrencies = [...new Set(Object.values(def.fields).flatMap((sub) => (sub.type === 'monetary' && sub.currencyField?.startsWith('parent.') ? [sub.currencyField.slice('parent.'.length)] : [])))];
+  let currencyShown = '';
   // Columns a person may hide or show, and where their choices (and widths, and order) are kept.
   const optional = node.optionalColumns ?? {};
   const optionalIds = columns.filter((column) => column in optional);
@@ -601,7 +612,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
           : // Hidden by its line, the cell stays, blank, so the column lines up.
             ruleOf(p.data, column)?.invisible
             ? ''
-            : displayValue(sub, p.value as Value, p.data?.values ?? {}, locale),
+            : displayValue(sub, p.value as Value, p.data?.values ?? {}, locale, form.getState().values),
       type: numeric ? 'rightAligned' : undefined,
       // A section or note runs across every column but the delete button.
       colSpan: (p) => (kindOf(p.data) && spans(p.api) ? spanWidth(p.api) : 1),
@@ -667,7 +678,12 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   // With dialogs, a line can be opened to see and edit every one of its fields at once.
   const openLine = async (line: Line) => {
     if (!dialogs) return;
-    const fields = Object.fromEntries(Object.entries(def.fields).filter(([key]) => key !== kinds?.field && key !== sequence)) as Record<string, Field>;
+    // Money in the record's currency is in that currency in the dialog too, which has no record round it.
+    const fields = Object.fromEntries(
+      Object.entries(def.fields)
+        .filter(([key]) => key !== kinds?.field && key !== sequence)
+        .map(([key, sub]) => [key, ownCurrency(sub, form.getState().values)])
+    ) as Record<string, Field>;
     // The dialog shows what the onchange makes of the line as it is edited; the line itself waits for Save & Close.
     const values = await dialogs.editValues({ title: def.label, fields, values: line.values, readonly, recompute: (edited) => form.previewLine(name, line.key, edited) });
     if (!values) return;
@@ -988,6 +1004,14 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         api.setGridOption('rowData', current);
         fitHeight(current.length);
         if (totals.length) api.setGridOption('pinnedBottomRowData', [totalsRow(current)]);
+      }
+      // Money in the record's currency: its cells written again once that currency changes.
+      if (parentCurrencies.length) {
+        const now = JSON.stringify(parentCurrencies.map((field) => state.values[field] ?? null));
+        if (now !== currencyShown) {
+          currencyShown = now;
+          api.refreshCells({ force: true, suppressFlash: true });
+        }
       }
       // The table's own rules as the form has them now: redrawn only when they changed.
       if (ruled) {
