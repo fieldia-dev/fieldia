@@ -1,4 +1,4 @@
-import type { FilterCondition, Fields, Option } from '../format/field';
+import type { FilterCondition, Fields, Option, PropertyDefinition } from '../format/field';
 import type { JsonValue } from '../format/json';
 import type { RecordId, RelatedRecord, Values } from './values';
 import type { RunStop } from './run';
@@ -27,6 +27,10 @@ export interface DataSource {
   groups?(request: GroupRequest): Promise<Group[]>;
   /** The choices of one of the app's lists, for a selection with `optionsFrom`. */
   options?(request: OptionsRequest): Promise<Option[]>;
+  /** The definitions of a properties field with `definitionsFrom`: those the linked record keeps. */
+  definitions?(request: OptionsRequest): Promise<PropertyDefinition[]>;
+  /** Keep a properties field's definitions, a property added in place among them, on the record they come from. */
+  saveDefinitions?(request: OptionsRequest & { definitions: PropertyDefinition[] }): Promise<void>;
 }
 
 export interface OptionsRequest {

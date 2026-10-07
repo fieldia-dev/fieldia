@@ -1,4 +1,4 @@
-import type { Field, Fields, Option } from '../format/field';
+import type { Field, Fields, Option, PropertyDefinition } from '../format/field';
 import type { JsonValue } from '../format/json';
 import type {
   DataSource,
@@ -34,6 +34,13 @@ export interface MemoryDataSourceOptions {
   labelField?: Record<string, string>;
   /** The app's lists of choices, by name: the choices, or a function of the form's values giving them. */
   lists?: Record<string, Option[] | ((values: Values) => Option[] | Promise<Option[]>)>;
+  /**
+   * Properties' definitions kept on linked records, by the list's name: a
+   * function of the form's values giving them — those of the record the link
+   * points to. A property added in place is kept with the record's own, by
+   * the definitions the app gave for that record.
+   */
+  definitions?: Record<string, (values: Values) => PropertyDefinition[]>;
   /** Answer after this long, so a demo shows its loading states. */
   delayMs?: number;
   scheduler?: Scheduler;
@@ -54,6 +61,8 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   const records = structuredCopy(options.records ?? {});
   const responses: SubmitRequest[] = [];
   const calls: MemoryDataSource['calls'] = [];
+  /** Properties added in place, by the list and the definitions the app gave for the record they were added to. */
+  const addedDefinitions = new Map<string, PropertyDefinition[]>();
   let lineIds = 1000;
 
   const pause = () => (options.delayMs ? wait(options.delayMs, options.scheduler) : Promise.resolve());
@@ -206,6 +215,24 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       const list = options.lists?.[request.list];
       if (!list) throw new Error(`No list "${request.list}"`);
       return structuredCopy(typeof list === 'function' ? await list(request.values) : list);
+    },
+
+    async definitions(request: OptionsRequest): Promise<PropertyDefinition[]> {
+      calls.push({ method: 'definitions', request });
+      await pause();
+      const given = options.definitions?.[request.list];
+      if (!given) throw new Error(`No definitions "${request.list}"`);
+      // Those added in place, kept for the same answer the app gives.
+      const own = given(request.values);
+      const added = addedDefinitions.get(`${request.list}:${JSON.stringify(own)}`) ?? [];
+      return structuredCopy([...own, ...added.filter((d) => !own.some((o) => o.name === d.name))]);
+    },
+
+    async saveDefinitions(request: OptionsRequest & { definitions: PropertyDefinition[] }): Promise<void> {
+      calls.push({ method: 'saveDefinitions', request });
+      await pause();
+      const own = options.definitions?.[request.list]?.(request.values) ?? [];
+      addedDefinitions.set(`${request.list}:${JSON.stringify(own)}`, structuredCopy(request.definitions.filter((d) => !own.some((o) => o.name === d.name))));
     },
   };
 }

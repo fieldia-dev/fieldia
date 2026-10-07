@@ -1385,6 +1385,9 @@
               "items": {
                 "$ref": "#/$defs/PropertyDefinition"
               }
+            },
+            "definitionsFrom": {
+              "$ref": "#/$defs/DefinitionsFrom"
             }
           },
           "required": [
@@ -3297,6 +3300,9 @@
               "items": {
                 "$ref": "#/$defs/PropertyDefinition"
               }
+            },
+            "definitionsFrom": {
+              "$ref": "#/$defs/DefinitionsFrom"
             }
           },
           "required": [
@@ -3385,6 +3391,27 @@
         "name",
         "label",
         "type"
+      ],
+      "additionalProperties": false
+    },
+    "DefinitionsFrom": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dependsOn": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          }
+        }
+      },
+      "required": [
+        "list"
       ],
       "additionalProperties": false
     },

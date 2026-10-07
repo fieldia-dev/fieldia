@@ -1,5 +1,5 @@
 import type { ActionStep } from '../format/actions';
-import type { Field, Fields, LineField, Option, OptionsFrom } from '../format/field';
+import type { DefinitionsFrom, Field, Fields, LineField, Option, OptionsFrom, PropertyDefinition } from '../format/field';
 import type { ButtonNode, FieldNode, FormNode, LayoutNode, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
@@ -63,6 +63,17 @@ export interface FormState {
   readonly saveProblem: SaveProblem | null;
   /** The choices loaded from the app's lists, by field: those of a selection with `optionsFrom`, once asked for. */
   readonly choices: Readonly<Record<string, Choices>>;
+  /** The definitions loaded for a properties field with `definitionsFrom`, by field, once asked for. */
+  readonly definitions: Readonly<Record<string, Definitions>>;
+}
+
+/** A properties field's definitions from the app, as they load. */
+export interface Definitions {
+  /** The definitions last loaded: null until the first load ends well. */
+  readonly definitions: PropertyDefinition[] | null;
+  readonly loading?: boolean;
+  /** Why the last load failed. */
+  readonly error?: string;
 }
 
 /** A field's choices from one of the app's lists, as they load. */
@@ -186,6 +197,14 @@ export interface Form {
    * when a field they change with changes; the latest answer wins.
    */
   loadChoices(field: string): void;
+  /**
+   * Load, or load again, the definitions of a properties field whose
+   * definitions come from a linked record (`definitionsFrom`). Once loaded,
+   * they load again by themselves when a field they change with changes.
+   */
+  loadDefinitions(field: string): void;
+  /** A property added in place to such a field: kept in its definitions, and handed to the data source's `saveDefinitions`. */
+  addDefinition(field: string, definition: PropertyDefinition): Promise<void>;
   /**
    * Records a many2one, many2many or reference may point to. A reference needs
    * `options.model`, and so does structured data naming records of a model (a
@@ -438,6 +457,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     skipped: [],
     saveProblem: null,
     choices: {},
+    definitions: {},
   };
   started = true;
   /** Field errors a refused save brought, each kept until its field changes from the value it was refused with. */
@@ -472,6 +492,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     // Choices that change with a value that just changed are asked for again.
     if (state.values !== was) {
       for (const name in state.choices) if (fromList(name).dependsOn?.some((other) => was[other] !== state.values[other])) loadChoices(name);
+      for (const name in state.definitions) if (fromRecord(name).dependsOn?.some((other) => was[other] !== state.values[other])) loadDefinitions(name);
     }
     if (showing && state.step !== told) tellStep(entering);
   }
@@ -525,6 +546,32 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
         (error) => put({ options: shown, error: (error as Error).message ?? String(error) })
       )
     );
+  }
+
+  const fromRecord = (name: string) => (page.fields[name] as Extract<Field, { type: 'properties' }>).definitionsFrom as DefinitionsFrom;
+  const definitionLoads: Record<string, number> = {};
+
+  function loadDefinitions(name: string) {
+    const { list } = fromRecord(name);
+    const load = (definitionLoads[name] = (definitionLoads[name] ?? 0) + 1);
+    const put = (definitions: Definitions) => load === definitionLoads[name] && set({ definitions: { ...state.definitions, [name]: definitions } });
+    // What was shown stays while the next ones load.
+    const shown = state.definitions[name]?.definitions ?? null;
+    put({ definitions: shown, loading: true });
+    const source = options.dataSource;
+    void track(
+      (source?.definitions ? source.definitions({ list, values: structuredCopy(state.values as Values) }) : Promise.reject(new Error(`No definitions "${list}"`))).then(
+        (loaded) => put({ definitions: loaded }),
+        (error) => put({ definitions: shown, error: (error as Error).message ?? String(error) })
+      )
+    );
+  }
+
+  async function addDefinition(name: string, definition: PropertyDefinition) {
+    const { list } = fromRecord(name);
+    const definitions = [...(state.definitions[name]?.definitions ?? []), definition];
+    set({ definitions: { ...state.definitions, [name]: { definitions } } });
+    await track(options.dataSource?.saveDefinitions?.({ list, values: structuredCopy(state.values as Values), definitions }) ?? Promise.resolve());
   }
 
   /** A field as its value is checked: a list's choices are those loaded, and until they are, any choice may be one. */
@@ -1109,6 +1156,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     fieldReadonly: (name) => lockedField(fieldDef(name)),
 
     loadChoices,
+    loadDefinitions,
+    addDefinition,
 
     problem(name) {
       fieldDef(name);

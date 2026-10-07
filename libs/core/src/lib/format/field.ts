@@ -286,12 +286,32 @@ export const PropertyDefinitionSchema = z
 
 export type PropertyDefinition = z.infer<typeof PropertyDefinitionSchema>;
 
+/**
+ * Properties whose definitions a linked record keeps — Flectra's
+ * `definition_record`: a task's properties are its project's. The app gives
+ * them through the data source's `definitions`, by the list's name, when the
+ * form shows the field and again when a field named in `dependsOn` (the link)
+ * changes; a property added in place goes back through `saveDefinitions`.
+ */
+export const DefinitionsFromSchema = z
+  .object({
+    list: z.string().min(1),
+    /** The fields the definitions change with, such as the link to the record that keeps them. */
+    dependsOn: z.array(z.string().regex(FIELD_NAME)).min(1).optional(),
+  })
+  .strict()
+  .meta({ id: 'DefinitionsFrom' });
+
+export type DefinitionsFrom = z.infer<typeof DefinitionsFromSchema>;
+
 const Properties = z
   .object({
     type: z.literal('properties'),
     ...common,
     /** The properties a record may have. Left out, each property is worked out from its value. */
     definitions: z.array(PropertyDefinitionSchema).optional(),
+    /** Definitions the app gives, from the record a link points to: the page's own `definitions` are then left out. */
+    definitionsFrom: DefinitionsFromSchema.optional(),
   })
   .strict();
 const Json = z.object({ type: z.literal('json'), ...common }).strict();
