@@ -1,8 +1,8 @@
-import type { Alert, Badge, ButtonNode, FieldNode, Form, Page, Ribbon, SheetNode, StatButton } from '@fieldia/core';
+import type { Alert, Badge, ButtonNode, FieldNode, Form, MenuItem, Page, Ribbon, SheetNode, StatButton } from '@fieldia/core';
 import { createWidget, type Widget } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer, HeaderPartKind } from './designer';
-import { wordsOf, type HeaderPart } from './header-commands';
+import { wordsOf, type HeaderPart, type MenuItemKind } from './header-commands';
 import { designerIcon } from './icons';
 import { openMenu } from './menu';
 import { setHidden } from './writes';
@@ -14,7 +14,10 @@ import { widgetWords } from './chrome-language';
  * badges on it. A part is picked by a click and its words typed where they
  * stand, a small bar on it moving or taking it away; a quiet "Add …" after
  * each kind adds one. The status steps are the real widget, from a field
- * picked in a menu of the fields that can be steps.
+ * picked in a menu of the fields that can be steps. Over them, the record's
+ * gear menu: its items in a row, each picked and typed in the same way, and
+ * "Add to the gear menu" offering the record's own items, the app's action,
+ * or a report under Print.
  */
 
 export interface CanvasHeader {
@@ -33,27 +36,47 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
   const { el, doc, designer } = options;
   const w = designer.words.canvas;
   const d = designer.words.defaults;
-  const NEW_WORDS: Record<HeaderPartKind, string> = { button: d.newButton, stat: d.counter, badge: d.badge, ribbon: d.ribbon, alert: d.alert };
-  const ADD_WORDS: Record<HeaderPartKind | 'statusbar', string> = { button: w.addButton, statusbar: w.addStatus, stat: w.addCounter, badge: w.addBadge, ribbon: w.addRibbon, alert: w.addAlert };
+  const NEW_WORDS: Record<HeaderPartKind, string> = { button: d.newButton, stat: d.counter, badge: d.badge, ribbon: d.ribbon, alert: d.alert, menu: d.newMenuAction };
+  const ADD_WORDS: Record<HeaderPartKind | 'statusbar', string> = { button: w.addButton, statusbar: w.addStatus, stat: w.addCounter, badge: w.addBadge, ribbon: w.addRibbon, alert: w.addAlert, menu: w.addMenuItem };
   const adder = (kind: HeaderPartKind | 'statusbar') => {
     const button = el('button', { type: 'button', class: 'fd-canvas-add-part', 'data-add-part': kind }, designerIcon(doc, 'plus'), ADD_WORDS[kind]);
-    button.addEventListener('click', () => (kind === 'statusbar' ? pickStatusField(button) : add(kind)));
+    button.addEventListener('click', () => (kind === 'statusbar' ? pickStatusField(button) : kind === 'menu' ? pickMenuItem(button) : add(kind)));
     return button;
   };
+  /** An item of the gear menu's words: its own, or the built-in's in the designer's language. */
+  const itemWords = (part: HeaderPart) => wordsOf(part) || ((part as MenuItem).builtin ? w.menuKinds[(part as MenuItem).builtin as NonNullable<MenuItem['builtin']>] : '');
   const actions = el('div', { class: 'fd-actions fd-canvas-header-actions' });
   const steps = el('div', { class: 'fd-canvas-header-steps' });
-  const top = el('div', { class: 'fd-header fd-canvas-header', hidden: '' }, actions, steps);
+  // The gear menu over the record, its items in a row after its gear.
+  const menuItems = el('div', { class: 'fd-canvas-menu-items' });
+  const menuRow = el('div', { class: 'fd-canvas-menu', role: 'group', 'aria-label': w.gearMenu }, el('span', { class: 'fd-canvas-menu-gear', 'aria-hidden': 'true' }, designerIcon(doc, 'more')), menuItems);
+  const top = el('div', { class: 'fd-header fd-canvas-header', hidden: '' }, menuRow, actions, steps);
   const stats = el('div', { class: 'fd-stats fd-canvas-stats' });
   const badges = el('div', { class: 'fd-badges fd-canvas-badges' });
   // The ribbons, each a chip in its colour beside the badges (the viewer shows the first whose condition holds, in the card's corner),
   // and the alerts as the viewer draws them: a row of their own only once there is one, so a sheet without keeps its height.
   const alerts = el('div', { class: 'fd-canvas-alerts' });
   const card = el('div', { class: 'fd-canvas-header-card', hidden: '' }, stats, alerts, badges);
-  const adders = { button: adder('button'), statusbar: adder('statusbar'), stat: adder('stat'), badge: adder('badge'), ribbon: adder('ribbon'), alert: adder('alert') };
+  const adders = { button: adder('button'), statusbar: adder('statusbar'), stat: adder('stat'), badge: adder('badge'), ribbon: adder('ribbon'), alert: adder('alert'), menu: adder('menu') };
 
   function add(kind: HeaderPartKind) {
     const created = designer.addHeaderPart(kind, NEW_WORDS[kind]);
     if (created) focus(created);
+  }
+  function pickMenuItem(anchor: HTMLElement) {
+    const kinds: MenuItemKind[] = ['archive', 'unarchive', 'duplicate', 'delete', 'action', 'print'];
+    openMenu({
+      el,
+      anchor,
+      title: w.addMenuItem,
+      actions: true,
+      items: kinds.map((kind) => ({ id: kind, label: w.menuKinds[kind], divider: kind === 'action' })),
+      note: w.menuNote,
+      onPick: (kind) => {
+        const made = designer.addMenuItem(kind as MenuItemKind, kind === 'action' ? d.newMenuAction : kind === 'print' ? d.newReport : undefined);
+        if (made) focus(made);
+      },
+    });
   }
   function pickStatusField(anchor: HTMLElement) {
     const page = designer.getPage();
@@ -87,6 +110,7 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     if (kind === 'stat') return 'fd-stat';
     if (kind === 'ribbon') return `fd-badge fd-canvas-ribbon fd-tone-${(part as Ribbon).tone ?? 'muted'}`;
     if (kind === 'alert') return `fd-alert fd-tone-${(part as Alert).tone ?? 'info'}`;
+    if (kind === 'menu') return `fd-badge fd-canvas-menu-item${(part as MenuItem).group === 'print' ? ' fd-canvas-menu-print' : ''}`;
     return `fd-badge fd-tone-${(part as Badge).tone ?? 'muted'}`;
   }
 
@@ -98,7 +122,7 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
       const value = el('span', { class: 'fd-stat-value' }, [count ? '12' : '', unit ?? ''].filter(Boolean).join(' '));
       element.append(el('span', { class: 'fd-stat-words' }, value, el('span', { class: 'fd-stat-label' }, wordsOf(part))));
       if (count) element.title = w.shows(page.fields[count]?.label ?? count);
-    } else element.append(wordsOf(part));
+    } else element.append(kind === 'menu' ? itemWords(part) : wordsOf(part));
     const pick = () => {
       designer.select(part.id);
       focus(part.id, false);
@@ -115,7 +139,7 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
   }
 
   function openPart(kind: HeaderPartKind, part: HeaderPart): PartView {
-    const input = el('input', { class: 'fd-part-input', 'aria-label': w.words, autocomplete: 'off', size: String(Math.max(4, wordsOf(part).length + 1)) }) as HTMLInputElement;
+    const input = el('input', { class: 'fd-part-input', 'aria-label': w.words, autocomplete: 'off', size: String(Math.max(4, itemWords(part).length + 1)), placeholder: kind === 'menu' ? itemWords(part) : undefined }) as HTMLInputElement;
     input.addEventListener('input', () => {
       input.size = Math.max(4, input.value.length + 1);
       designer.updateHeaderPart(part.id, { label: input.value });
@@ -133,7 +157,7 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     };
     const left = tool(w.moveLeft, 'left', () => designer.moveHeaderPart(part.id, -1));
     const right = tool(w.moveRight, 'right', () => designer.moveHeaderPart(part.id, 1));
-    const bar = el('div', { class: 'fd-field-bar fd-part-bar', role: 'toolbar', 'aria-label': wordsOf(part) }, left, right, tool(w.delete, 'delete', () => designer.removeHeaderPart(part.id)));
+    const bar = el('div', { class: 'fd-field-bar fd-part-bar', role: 'toolbar', 'aria-label': itemWords(part) }, left, right, tool(w.delete, 'delete', () => designer.removeHeaderPart(part.id)));
     const words = kind === 'stat' ? el('span', { class: 'fd-stat-words' }, el('span', { class: 'fd-stat-value' }, (part as StatButton).field ? '12' : ''), input) : input;
     const element = el('span', { class: `${looks(kind, part)} fd-canvas-part fd-editing`, 'data-part': part.id }, bar, words);
     return { element, key: '', input, left, right };
@@ -152,6 +176,8 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     const shown = view as PartView;
     shown.key = key;
     if (shown.input && doc.activeElement !== shown.input) shown.input.value = wordsOf(part);
+    // A built-in item's own words stand in while it has none, as the record's own it now is.
+    if (shown.input && kind === 'menu') shown.input.placeholder = itemWords(part);
     if (shown.input) shown.element.className = `${looks(kind, part)} fd-canvas-part fd-editing`;
     if (shown.left) shown.left.hidden = index === 0;
     if (shown.right) shown.right.hidden = index === count - 1;
@@ -221,6 +247,7 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
           live.add(part.id);
           return drawPart(kind, part, i, all.length, page, selected);
         });
+      arrange(menuItems, [...row('menu', root.toolbar?.menu), adders.menu]);
       arrange(actions, [...row('button', root.buttons), adders.button]);
       statusPart.classList.toggle('fd-editing', selected === '#statusbar');
       arrange(steps, [root.statusbar ? drawSteps(root, page, form) : adders.statusbar]);

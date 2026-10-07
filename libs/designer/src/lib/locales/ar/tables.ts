@@ -46,6 +46,7 @@ export const tables: DesignerWords['tables'] = {
   columnWidths: 'عرض الأعمدة',
   shareWidth: 'تتقاسم العرض',
   fitContent: 'بعرض محتواها',
+  shrinkToFit: 'تتقلص لتتسع، وتلتف عناوينها (في الشبكة)',
   copyLine: 'نسخ بند',
   widths: { narrow: 'الهاتف', medium: 'الجهاز اللوحي', wide: 'الشاشة العريضة' },
   hiddenOnHint: 'مخفي ما دام النموذج بهذا العرض: الهاتف حتى 520 بكسل، واللوحي حتى 760 بكسل.',

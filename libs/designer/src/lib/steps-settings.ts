@@ -168,6 +168,25 @@ export function stepSettings(el: ElementFactory, kind: ActionStep['do'], ctx: St
     case 'reload':
       parts.push(el('p', { class: 'fd-properties-hint fd-set-hint' }, w.reloadHint));
       break;
+    case 'archive':
+    case 'unarchive':
+    case 'duplicate':
+    case 'delete':
+      parts.push(el('p', { class: 'fd-properties-hint fd-set-hint' }, w.recordHint));
+      break;
+    case 'post': {
+      text(w.words, 'message', w.postPlaceholder);
+      parts.push(el('p', { class: 'fd-properties-hint fd-set-hint' }, w.postHint));
+      // A note unless it goes to the followers: only "message" is written.
+      const kind = select(el, w.postAs);
+      kind.append(...(['note', 'message'] as const).map((value) => el('option', { value }, w.postKinds[value])));
+      kind.addEventListener('change', () => ctx.change({ kind: kind.value === 'message' ? 'message' : null }));
+      parts.push(row(el, w.postAs, kind));
+      updates.push((step) => {
+        if (!focused(kind)) kind.value = step.do === 'post' ? (step.kind ?? 'note') : 'note';
+      });
+      break;
+    }
     default:
       break;
   }
@@ -421,6 +440,8 @@ export function newStep(page: Page, kind: ActionStep['do']): ActionStep {
       return { do: 'call', action: '' };
     case 'openUrl':
       return { do: 'openUrl', url: '' };
+    case 'post':
+      return { do: 'post', message: '' };
     default:
       return { do: kind } as ActionStep;
   }

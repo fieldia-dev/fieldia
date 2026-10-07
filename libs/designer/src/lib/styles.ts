@@ -375,6 +375,13 @@ export const DESIGNER_CSS = /* css */ `
 /* A record's header on the canvas: the viewer's own parts, picked by a click, with a quiet way to add each kind. */
 .fd-canvas-header { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; padding: 6px 0 12px; border-block-end: 1px solid var(--fd-border); }
 .fd-canvas-header-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+/* The record's gear menu over the header: its items in a row after the gear, a report under Print dashed. */
+.fd-canvas-menu { flex-basis: 100%; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.fd-canvas-menu-gear { display: inline-flex; color: var(--fd-muted); }
+.fd-canvas-menu-gear .fd-dicon { width: 16px; height: 16px; }
+.fd-canvas-menu-items { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.fd-canvas-menu-item { font: inherit; font-size: 12.5px; }
+.fd-canvas-menu-print { border-style: dashed; }
 .fd-canvas-header-card { display: grid; gap: 10px; justify-items: stretch; }
 /* Not at the card's edge here, as the viewer's are: no reaching out to it. */
 .fd-canvas .fd-canvas-stats { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; margin: 0; border-block-end: 0; }

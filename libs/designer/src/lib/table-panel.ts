@@ -213,7 +213,7 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
   };
   const opens = select(w.lineOpens, [['', w.opensFields], ['record', w.opensRecord]], (value) => designer.setTableShape(id, { lineOpens: value ? 'record' : null }));
   const phone = select(w.onAPhone, [['', w.rows], ['narrow', w.cardsOnPhone], ['always', w.cardsAlways]], (value) => designer.setTableShape(id, { cards: (value || null) as 'narrow' | 'always' | null }));
-  const fit = select(w.columnWidths, [['', w.shareWidth], ['content', w.fitContent]], (value) => designer.setTableShape(id, { fit: value ? 'content' : null }));
+  const fit = select(w.columnWidths, [['', w.shareWidth], ['content', w.fitContent], ['shrink', w.shrinkToFit]], (value) => designer.setTableShape(id, { fit: (value || null) as 'content' | 'shrink' | null }));
   const copy = el('input', { type: 'checkbox', class: 'fd-checkbox', 'aria-label': w.copyLine }) as HTMLInputElement;
   copy.addEventListener('change', () => designer.setTableShape(id, { copy: copy.checked || null }));
   const field = (label: string, control: HTMLElement) => el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, label), control);

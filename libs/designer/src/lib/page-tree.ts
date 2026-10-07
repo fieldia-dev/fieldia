@@ -112,6 +112,8 @@ export function shownFields(page: Page): Set<string> {
       if (typeof part['message'] === 'string') for (const name of valuesIn(part['message'])) shown.add(name);
     }
     for (const node of [...(title?.above ?? []), ...(title?.below ?? [])]) shown.add(node.field);
+    // The file the attachment beside the sheet shows.
+    if (root.attachmentPreview?.field) shown.add(root.attachmentPreview.field);
   }
   // A list names its fields in its columns, order, search, filters and groupings.
   if (root.type === 'list') {
@@ -155,5 +157,5 @@ export function tabHolds(tab: TabNode, id: string | null): boolean {
 /** A sheet's own parts outside its sections, each with an id: buttons, stat buttons, badges, alerts and their buttons, ribbons. */
 export function sheetParts(root: SheetNode): { id: string }[] {
   const alerts = root.alerts ?? [];
-  return [...(root.buttons ?? []), ...(root.statButtons ?? []), ...(root.badges ?? []), ...alerts, ...alerts.flatMap((a) => a.buttons ?? []), ...(root.ribbon ? [root.ribbon] : []), ...(root.ribbons ?? [])];
+  return [...(root.buttons ?? []), ...(root.statButtons ?? []), ...(root.badges ?? []), ...alerts, ...alerts.flatMap((a) => a.buttons ?? []), ...(root.ribbon ? [root.ribbon] : []), ...(root.ribbons ?? []), ...(root.toolbar?.menu ?? [])];
 }
