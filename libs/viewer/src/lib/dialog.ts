@@ -119,7 +119,10 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
   applyLook(box, look);
   box.append(make('div', { class: 'fd-form-dialog-head' }), body, make('div', { class: 'fd-actions fd-actions-end fd-form-dialog-foot' }));
   box.firstElementChild?.append(title, closeButton);
-  box.lastElementChild?.append(discard, saveClose);
+  // A page's own buttons at its foot, as a wizard's, stand in place of Discard and Save & Close.
+  const footer = options.page.layout.type === 'sections' || options.page.layout.type === 'sheet' ? (options.page.layout.footer ?? []) : [];
+  const own = footer.map((node) => ({ node, button: make('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, node.label) }));
+  box.lastElementChild?.append(...(own.length ? own.map((b) => b.button) : [discard, saveClose]));
   const backdrop = make('div', { class: `fd-dialog-backdrop fd-form-dialog-backdrop${panel ? ' fd-form-panel-backdrop' : ''}` });
   backdrop.append(box);
   // The panel this one opens over steps back while it is open.
@@ -198,6 +201,30 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
       if (accepted) close(true);
     });
     discard.addEventListener('click', () => close(false));
+    // A footer button runs its steps; once they saved or sent, the dialog closes with the answers.
+    let saved = false;
+    handle.on('save', () => (saved = true));
+    handle.on('send', () => (saved = true));
+    const shown = () => {
+      for (const { node, button } of own) button.hidden = handle.form.node(node.id).invisible;
+    };
+    if (own.length) {
+      shown();
+      handle.form.subscribe(shown);
+    }
+    for (const { node, button } of own) {
+      button.addEventListener('click', async () => {
+        if (button.hasAttribute('aria-busy')) return;
+        button.setAttribute('aria-busy', 'true');
+        saved = false;
+        const result = await handle.form.runAction(node.id);
+        button.removeAttribute('aria-busy');
+        if (done) return;
+        if (saved) close(true);
+        // A check or a save that stopped them shows its problems, as Save & Close does.
+        else if (result.reason === 'check' || result.reason === 'save') handle.check();
+      });
+    }
     closeButton.addEventListener('click', leave);
     box.addEventListener('keydown', (event) => {
       // Ctrl+Enter is Save & Close from wherever the cursor is, even after a field used the Enter
@@ -206,7 +233,9 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
         if ((event.target as Element).closest('.ag-root-wrapper')) return;
         event.preventDefault();
         doc.activeElement?.dispatchEvent(new Event('change', { bubbles: true }));
-        saveClose.click();
+        // With buttons of its own, the page's primary one; else Save & Close.
+        if (own.length) own.find(({ node, button }) => node.style === 'primary' && !button.hidden)?.button.click();
+        else saveClose.click();
         return;
       }
       // A key a field used itself (Escape closing a list) is not the dialog's.

@@ -957,8 +957,19 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
 
   // ---- the four page layouts ---------------------------------------------------
 
-  function sectionsLayout(node: { id: string; children: LayoutNode[] }): HTMLElement {
+  /**
+   * A page's own buttons at its foot, as a wizard's, in place of its Save and
+   * Discard; null when it has none, or when a dialog round it draws them.
+   */
+  function pageFooter(footer: ButtonNode[] | undefined): HTMLElement | null {
+    if (!footer?.length || options.showActions === false) return null;
+    return el('div', { class: 'fd-actions fd-actions-end fd-page-footer' }, status, ...footer.map(buttonItem));
+  }
+
+  function sectionsLayout(node: { id: string; children: LayoutNode[]; footer?: ButtonNode[] }): HTMLElement {
     const box = el('div', { class: 'fd-sections', 'data-node': node.id }, ...node.children.map((child) => item(child, top(true))));
+    const own = pageFooter(node.footer);
+    if (own) return el('div', {}, box, own);
     const action = el('button', { type: 'submit', class: 'fd-button fd-button-primary' }, page.data.kind === 'responses' ? labels.submit : labels.save);
     const actions = el('div', { class: 'fd-actions fd-actions-end' }, status, action);
     if (page.data.kind === 'record') {
@@ -1064,7 +1075,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     // Save and Discard lead the header bar, or close the sheet when the page puts them at its foot.
     const atFoot = page.actionsPosition === 'bottom';
     const foot = el('div', { class: 'fd-actions fd-actions-end fd-sheet-foot' });
-    if (options.showActions === false) actions.append(...(node.buttons ?? []).map(buttonItem));
+    const own = pageFooter(node.footer);
+    if (options.showActions === false || own) actions.append(...(node.buttons ?? []).map(buttonItem));
     else if (atFoot) {
       actions.append(...(node.buttons ?? []).map(buttonItem));
       foot.append(status, discard, save);
@@ -1153,6 +1165,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     }
     if (node.statusbar && underTitle) card.append(el('div', { class: 'fd-title-statusbar' }, statusbar(node.statusbar)));
     card.append(grid(node.children, 1, top(false)));
+    if (own) card.append(own);
     if (atFoot && options.showActions !== false) {
       card.append(foot);
       updaters.push((state) => {
