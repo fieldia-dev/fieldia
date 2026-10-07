@@ -310,3 +310,24 @@ describe('a dialog in the look of the page that opened it', () => {
     expect((dialog() as HTMLElement).getAttribute('data-scheme')).toBe('dark');
   });
 });
+
+describe('a dialog a page opens reads what the page does', () => {
+  it('hands a linked record’s page the person and the values the app passed in', async () => {
+    const related: Page = {
+      fieldia: '0.1',
+      id: 'partner',
+      data: { kind: 'record', model: 'partner' },
+      fields: { name: { type: 'char', label: 'Name' }, vat: { type: 'char', label: 'Tax ID' } },
+      layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-name', field: 'name' }, { type: 'field', id: 'f-vat', field: 'vat', invisible: "context.partner_kind != 'company'" }] },
+    };
+    const opener: Page = { fieldia: '0.1', id: 'order', data: { kind: 'record', model: 'sale.order' }, fields: {}, layout: { type: 'sections', id: 'root', children: [] } };
+    const dialogs = pageDialogs({ page: opener, pages: { partner: related }, context: { partner_kind: 'company' }, user: { id: 4 } });
+    void dialogs.openRecord('partner', { title: 'New partner' });
+    await flush();
+    expect((dialog()?.querySelector('[data-node="f-vat"]') as HTMLElement).hidden).toBe(false);
+    button('Discard').click();
+    void pageDialogs({ page: opener, pages: { partner: related } }).openRecord('partner', { title: 'New partner' });
+    await flush();
+    expect((dialog()?.querySelector('[data-node="f-vat"]') as HTMLElement).hidden).toBe(true);
+  });
+});

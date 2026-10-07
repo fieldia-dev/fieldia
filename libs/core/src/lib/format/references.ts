@@ -182,6 +182,8 @@ export class ReferenceCheck {
       this.need(name, path, scope.fields);
     } else if (root === 'user') {
       if (!(USER_PARTS as readonly string[]).includes(part)) this.report(path, `"${name}": the person has an id, name or roles`);
+    } else if (root === 'context') {
+      // The app's values: any name it passes in.
     } else if (scope.lines === undefined) {
       this.report(path, `"${name}": only a line's filter reads parent, the record it is on`);
     } else if (!has(this.page.fields, part) && part !== 'id') {
@@ -227,7 +229,7 @@ export class ReferenceCheck {
     for (const name of reads.fields) {
       if (has(scope.fields, name)) continue;
       // A record's expressions read its id and the person; a line's, its own id, the person and the record it is on.
-      const builtIn = scope.lines === undefined ? (BUILT_IN_NAMES as readonly string[]).includes(name) : name === 'user' || name === 'parent' || name === 'id';
+      const builtIn = scope.lines === undefined ? (BUILT_IN_NAMES as readonly string[]).includes(name) : name === 'user' || name === 'parent' || name === 'id' || name === 'context';
       if (builtIn) {
         for (const read of reads.paths) {
           const [root, part] = read.split('.');

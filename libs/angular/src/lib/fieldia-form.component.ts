@@ -77,6 +77,8 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly recordId = input<RecordId | null>(null);
   /** The person using the form: what `user` reads, and the roles that show parts. */
   readonly user = input<FormUser | undefined>(undefined);
+  /** Values the app passes in, as Flectra's context: what conditions and filters read as `context`. */
+  readonly context = input<ViewerOptions['context']>(undefined);
   readonly values = input<Values | undefined>(undefined);
   readonly skin = input<Skin>('underline');
   readonly dir = input<'ltr' | 'rtl' | undefined>(undefined);
@@ -171,6 +173,7 @@ export class FieldiaFormComponent implements OnDestroy {
         dataSource: this.dataSource(),
         recordId: this.recordId(),
         user: this.user(),
+        context: this.context(),
         dir: this.dir(),
         locale: this.locale(),
         labels: this.labels(),
@@ -195,7 +198,7 @@ export class FieldiaFormComponent implements OnDestroy {
     this.unmount();
   }
 
-  private mount(options: { page: Page; form?: Form; dataSource?: DataSource; recordId: RecordId | null; user?: FormUser; dir?: 'ltr' | 'rtl'; locale?: Locale; labels?: Partial<ViewerLabels>; fieldTypes?: Record<string, Type<unknown>> }) {
+  private mount(options: { page: Page; form?: Form; dataSource?: DataSource; recordId: RecordId | null; user?: FormUser; context?: ViewerOptions['context']; dir?: 'ltr' | 'rtl'; locale?: Locale; labels?: Partial<ViewerLabels>; fieldTypes?: Record<string, Type<unknown>> }) {
     this.unmount();
     const widgets: Record<string, WidgetFactory> = { ...this.widgets() };
     for (const [key, type] of Object.entries(options.fieldTypes ?? {})) {
@@ -241,6 +244,7 @@ export class FieldiaFormComponent implements OnDestroy {
       dataSource: options.dataSource,
       recordId: options.recordId,
       user: options.user,
+      context: options.context,
       values: this.values(),
       skin: this.skin(),
       dir: options.dir,

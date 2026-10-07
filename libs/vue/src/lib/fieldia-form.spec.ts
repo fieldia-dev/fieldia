@@ -99,6 +99,17 @@ describe('<FieldiaForm> for Vue', () => {
     wrapper.unmount();
   });
 
+  it('hands the form the values the app passes in, as context, again when they change', async () => {
+    const lock: Page = { fieldia: '0.1', id: 'lock', data: { kind: 'record', model: 'sale.order' }, fields: {}, layout: { type: 'sections', id: 'root', children: [{ type: 'button', id: 'lock', label: 'Lock', action: 'lock', invisible: "context.code != 'incoming'" }] } };
+    const shown = (wrapper: ReturnType<typeof mount>) => wrapper.findAll('button').some((b) => b.text() === 'Lock' && b.isVisible());
+    const wrapper = mount(FieldiaForm, { props: { page: lock, context: { code: 'outgoing' } }, attachTo: document.body });
+    expect(shown(wrapper)).toBe(false);
+    await wrapper.setProps({ context: { code: 'incoming' } });
+    await nextTick();
+    expect(shown(wrapper)).toBe(true);
+    wrapper.unmount();
+  });
+
   it('switches skin without mounting again', async () => {
     const wrapper = mount(FieldiaForm, { props: { page: page('survey'), skin: 'underline' }, attachTo: document.body });
     await wrapper.setProps({ skin: 'outlined' });

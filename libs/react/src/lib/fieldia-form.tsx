@@ -157,6 +157,8 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
   const labelsKey = JSON.stringify(props.labels ?? {});
   // A different person may see different parts: the form is made again for them.
   const userKey = JSON.stringify(props.user ?? null);
+  // Other values from the app (its context) may filter and show other things: made again for them too.
+  const contextKey = JSON.stringify(props.context ?? null);
 
   useEffect(() => {
     const element = host.current;
@@ -217,7 +219,7 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       setHandle(null);
       setPortals([]);
     };
-  }, [props.page, props.form, props.dataSource, props.recordId, userKey, props.dir, labelsKey, fieldKeys, slotKeys]);
+  }, [props.page, props.form, props.dataSource, props.recordId, userKey, contextKey, props.dir, labelsKey, fieldKeys, slotKeys]);
 
   useEffect(() => {
     handle?.setSkin(props.skin ?? 'underline');

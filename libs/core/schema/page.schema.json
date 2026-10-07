@@ -1690,7 +1690,7 @@
         },
         "valueFrom": {
           "type": "string",
-          "pattern": "^((parent|user)\\.)?[A-Za-z_][A-Za-z0-9_]*$"
+          "pattern": "^((parent|user|context)\\.)?[A-Za-z_][A-Za-z0-9_]*$"
         }
       },
       "required": [

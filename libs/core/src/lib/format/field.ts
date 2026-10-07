@@ -37,8 +37,9 @@ export type Option = z.infer<typeof OptionSchema>;
 /**
  * One condition limiting which records a relation may point to. `valueFrom`
  * compares against another field of the record being edited, so a region list
- * can follow the chosen country — or its `id`, the person (`user.id`), or on a
- * line the record it is on (`parent.company_id`). `like` finds text inside; `ilike`,
+ * can follow the chosen country — or its `id`, the person (`user.id`), a value
+ * the app passes in (`context.restricted_picking_type_code`, as Flectra's
+ * context), or on a line the record it is on (`parent.company_id`). `like` finds text inside; `ilike`,
  * `startswith` and `endswith` whatever the case; `set` and `notset` take no
  * value; `between` takes `[low, high]`, both ends included. `contains` holds
  * when a record's list of links (a many2many) holds the value, or one of a
@@ -47,8 +48,8 @@ export type Option = z.infer<typeof OptionSchema>;
  * filter while it is empty (nothing, false, empty text or an empty list), as
  * Flectra's `=?`: "this company, if the record has one".
  */
-/** What a filter's `valueFrom` may name: a field, `parent.` and a field of the record a line is on, or `user.` and a part of the person. */
-const VALUE_FROM = /^((parent|user)\.)?[A-Za-z_][A-Za-z0-9_]*$/;
+/** What a filter's `valueFrom` may name: a field, `parent.` and a field of the record a line is on, `user.` and a part of the person, or `context.` and a value the app passes in. */
+const VALUE_FROM = /^((parent|user|context)\.)?[A-Za-z_][A-Za-z0-9_]*$/;
 
 export const FilterConditionSchema = z
   .object({

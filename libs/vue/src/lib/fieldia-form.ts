@@ -68,6 +68,8 @@ export const FieldiaForm = defineComponent({
     recordId: { type: [String, Number] as PropType<RecordId | null>, default: null },
     /** The person using the form: what `user` reads, and the roles that show parts. */
     user: { type: Object as PropType<FormUser>, default: undefined },
+    /** Values the app passes in, as Flectra's context: what conditions and filters read as `context`. */
+    context: { type: Object as PropType<ViewerOptions['context']>, default: undefined },
     values: { type: Object as PropType<Values>, default: undefined },
     skin: { type: String as PropType<Skin>, default: 'underline' },
     dir: { type: String as PropType<'ltr' | 'rtl'>, default: undefined },
@@ -182,6 +184,7 @@ export const FieldiaForm = defineComponent({
         dataSource: props.dataSource,
         recordId: props.recordId,
         user: props.user,
+        context: props.context ? toRaw(props.context) : undefined,
         values: props.values,
         skin: props.skin,
         dir: props.dir,
@@ -226,7 +229,7 @@ export const FieldiaForm = defineComponent({
     onMounted(mount);
     onBeforeUnmount(unmount);
     watch(
-      () => [props.page, props.form, props.dataSource, props.recordId, JSON.stringify(props.user ?? null), props.dir, props.locale, JSON.stringify(props.labels ?? {})],
+      () => [props.page, props.form, props.dataSource, props.recordId, JSON.stringify(props.user ?? null), JSON.stringify(props.context ?? null), props.dir, props.locale, JSON.stringify(props.labels ?? {})],
       () => {
         unmount();
         mount();

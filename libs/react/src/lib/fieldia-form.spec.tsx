@@ -98,6 +98,14 @@ describe('<FieldiaForm>', () => {
     expect(screen.getByRole('button', { name: 'Lock' })).toBeDefined();
   });
 
+  it('hands the form the values the app passes in, as context, again when they change', () => {
+    const lock: Page = { ...pricing, layout: { type: 'sections', id: 'root', children: [{ type: 'button', id: 'lock', label: 'Lock', action: 'lock', invisible: "context.code != 'incoming'" }] } };
+    const { rerender } = render(<FieldiaForm page={lock} context={{ code: 'outgoing' }} />);
+    expect(screen.queryByRole('button', { name: 'Lock' })).toBeNull();
+    rerender(<FieldiaForm page={lock} context={{ code: 'incoming' }} />);
+    expect(screen.getByRole('button', { name: 'Lock' })).toBeDefined();
+  });
+
   it('switches skin without mounting again', () => {
     let mounts = 0;
     const survey = page('survey');

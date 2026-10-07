@@ -104,8 +104,8 @@ export function formulaProblem(page: Page, source: string, words: DesignerWords 
     if (token.kind !== 'name' || calls(tokens, i)) continue;
     const [root, part] = token.text.split('.');
     if (Object.prototype.hasOwnProperty.call(page.fields, root)) continue;
-    // What every formula on a record reads besides its fields: its id, and the person.
-    if (root === 'id') continue;
+    // What every formula on a record reads besides its fields: its id, the values the app passes in, and the person.
+    if (root === 'id' || root === 'context') continue;
     if (root === 'user') {
       if (part !== undefined && !['id', 'name', 'roles'].includes(part)) return { words: w.personHas(part), ...place(token) };
       continue;

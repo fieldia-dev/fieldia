@@ -37,6 +37,11 @@ describe('what is wrong with a formula, and where', () => {
     expect(problemWords(formulaProblem(order, 'user.role'))).toBe('The person has an id, name or roles, not “role” at 1–9');
   });
 
+  it('reads the values the app passes in, as context', () => {
+    expect(formulaProblem(order, "context.restricted_picking_type_code == 'incoming'")).toBeNull();
+    expect(formulaProblem(order, 'contxt.code')).toMatchObject({ from: 1 });
+  });
+
   it('names a function there is not', () => {
     const problem = formulaProblem(order, 'rond(price)');
     expect(problemWords(problem)).toMatch(/^Unknown function “rond” at 1–4/);

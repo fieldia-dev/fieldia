@@ -2,6 +2,7 @@ import type { ActionStep } from '../format/actions';
 import type { DefinitionsFrom, Field, Fields, LineField, Option, OptionsFrom, PropertyDefinition } from '../format/field';
 import type { ButtonNode, FieldNode, FormNode, LayoutNode, MenuItem, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
+import type { JsonValue } from '../format/json';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import type { ExpressionEnv } from '../expression/functions';
 import { localDay } from '../expression/functions';
@@ -166,6 +167,14 @@ export interface FormOptions {
   user?: FormUser;
   /** Whether the record starts being edited, as conditions read `editing`; true unless said. A view locking it says so with `setEditing`. */
   editing?: boolean;
+  /**
+   * Values the app passes in, as Flectra's context: read by conditions and
+   * expressions as `context.name`, and by a filter's `valueFrom:
+   * "context.name"` — a transfer opened from Receipts restricting its
+   * operation types. They are the app's, never the page's: nothing saves
+   * them, and a page's field of that name comes first.
+   */
+  context?: Readonly<Record<string, JsonValue>>;
 }
 
 /** The person using a form, as the app knows them. */
@@ -403,7 +412,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   // The record's id and the person, as worked-out values read them: the id is the one asked for until the form has its state.
   let started = false;
   let editing = options.editing !== false;
-  const about = () => ({ recordId: started ? state.recordId : (options.recordId ?? null), user: options.user, editing });
+  const about = () => ({ recordId: started ? state.recordId : (options.recordId ?? null), user: options.user, editing, context: options.context });
   const computed = compileComputed(page, today, about);
   const setWhen = compileSetWhen(page, today, about);
   /** The saved forms placed on the page, by the part's id: each one's answers sit under its name, as JSON. */
@@ -422,7 +431,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   function startingValues(isNew = options.recordId == null, given = true): Values {
     const values = initialValues(fields, today());
     if (isNew) {
-      const about = { recordId: null, user: options.user };
+      const about = { recordId: null, user: options.user, context: options.context };
       Object.assign(values, firstValues(page.fields, mapScope(values, page.fields, recordContext(values, page.fields, about), expressionEnv(values, page.fields, today))));
     }
     return given ? ordered({ ...values, ...structuredCopy(options.values ?? {}) }) : values;

@@ -1,19 +1,28 @@
 import type { Field, LineField } from '../format/field';
 import type { ExpressionEnv } from '../expression/functions';
+import type { JsonValue } from '../format/json';
 import { expressionContext, lineKind, type Line, type RecordId, type Values } from './values';
 
 /**
  * What expressions read besides a record's fields: `id`, the record's id
  * (null while it is new), `user`, the person using the form (`id`, `name`,
- * `roles`), and `editing`, whether the record is being edited — false while
+ * `roles`), `editing`, whether the record is being edited — false while
  * a view shows it locked, to be read, as Flectra's oe_edit_only and
- * oe_read_only. A page's own field of the same name comes first.
+ * oe_read_only — and `context`, the values the app passes in, as Flectra's
+ * context. A page's own field of the same name comes first.
  */
-export function builtIns(fields: Record<string, unknown>, recordId: RecordId | null, user: { id: RecordId | null; name?: string; roles?: readonly string[] } | undefined, editing = true): Record<string, unknown> {
+export function builtIns(
+  fields: Record<string, unknown>,
+  recordId: RecordId | null,
+  user: { id: RecordId | null; name?: string; roles?: readonly string[] } | undefined,
+  editing = true,
+  context: Readonly<Record<string, JsonValue>> = {}
+): Record<string, unknown> {
   const names: Record<string, unknown> = {
     id: recordId ?? null,
     user: { id: user?.id ?? null, name: user?.name ?? null, roles: [...(user?.roles ?? [])] },
     editing,
+    context,
   };
   for (const name of Object.keys(names)) if (name in fields) delete names[name];
   return names;
@@ -30,11 +39,13 @@ export interface About {
   user?: { id: RecordId | null; name?: string; roles?: readonly string[] };
   /** Whether the record is being edited; true unless said. */
   editing?: boolean;
+  /** The values the app passes in (the form's `context`). */
+  context?: Readonly<Record<string, JsonValue>>;
 }
 
 /** The record as expressions read it: its values, its `id` and `user`. What a line reads as `parent`. */
 export function recordContext(values: Values, fields: Record<string, Field | LineField>, about: About): Record<string, unknown> {
-  return { ...builtIns(fields, about.recordId, about.user, about.editing), ...expressionContext(values, fields) };
+  return { ...builtIns(fields, about.recordId, about.user, about.editing, about.context), ...expressionContext(values, fields) };
 }
 
 /**
@@ -44,7 +55,8 @@ export function recordContext(values: Values, fields: Record<string, Field | Lin
  */
 export function lineContext(values: Values, fields: Record<string, LineField>, parent: Record<string, unknown>, id: RecordId | null = null): Record<string, unknown> {
   // The line's own id, empty until it is saved: Flectra's readonly="id" on a saved line.
-  const names: Record<string, unknown> = { parent, user: parent['user'] ?? builtIns({}, null, undefined)['user'], id };
+  // The app's values a line reads are its record's.
+  const names: Record<string, unknown> = { parent, user: parent['user'] ?? builtIns({}, null, undefined)['user'], id, context: parent['context'] ?? {} };
   for (const name of Object.keys(names)) if (name in fields) delete names[name];
   return { ...names, ...expressionContext(values, fields) };
 }

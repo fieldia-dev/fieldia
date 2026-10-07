@@ -162,6 +162,15 @@ class PersonHostComponent {
   readonly user = signal<FormUser>({ id: 4, roles: ['sales.user'] });
 }
 
+@Component({
+  imports: [FieldiaFormComponent],
+  template: `<fieldia-form [page]="page" [context]="context()" />`,
+})
+class ContextHostComponent {
+  readonly page: Page = { fieldia: '0.1', id: 'lock', data: { kind: 'record', model: 'sale.order' }, fields: {}, layout: { type: 'sections', id: 'root', children: [{ type: 'button', id: 'lock', label: 'Lock', action: 'lock', invisible: "context.code != 'incoming'" }] } };
+  readonly context = signal<Record<string, string>>({ code: 'outgoing' });
+}
+
 async function setup(start: Page = custom) {
   const fixture = TestBed.createComponent(HostComponent);
   fixture.componentInstance.page.set(start);
@@ -186,6 +195,18 @@ describe('<fieldia-form> for Angular', () => {
     const lock = () => [...el.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Lock' && !b.closest('[hidden]'));
     expect(lock()).toBeUndefined();
     fixture.componentInstance.user.set({ id: 5, roles: ['sales.manager'] });
+    await fixture.whenStable();
+    expect(lock()).toBeDefined();
+  });
+
+  it('hands the form the values the app passes in, as context, again when they change', async () => {
+    const fixture = TestBed.createComponent(ContextHostComponent);
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    const lock = () => [...el.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Lock' && !b.closest('[hidden]'));
+    expect(lock()).toBeUndefined();
+    fixture.componentInstance.context.set({ code: 'incoming' });
     await fixture.whenStable();
     expect(lock()).toBeDefined();
   });
