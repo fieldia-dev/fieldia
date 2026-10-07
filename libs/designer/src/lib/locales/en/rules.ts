@@ -21,6 +21,7 @@ export const rules = {
     past: 'A date in the past',
     future: 'A date in the future',
     across: 'A rule across fields',
+    distinct: 'No value twice in a column',
   },
   /** The patterns people pick by name. */
   patterns: { letters: 'Letters only', digits: 'Digits only', lettersAndDigits: 'Letters and digits only' },
@@ -57,6 +58,8 @@ export const rules = {
   future: 'A date in the future',
   mustFuture: 'Must be a date in the future',
   mustHold: (formula: string) => `Must hold: ${formula}`,
+  distinct: (column: string) => `No ${column} twice`,
+  mustDistinct: (column: string) => `Must have each ${column} once`,
   /** A rule's asks said as one: "At least 2 letters, ends with .com". */
   joinAsks: (asks: readonly string[]) => [asks[0], ...asks.slice(1).map(lower)].join(', '),
   onlyWarns: 'only warns',
@@ -134,6 +137,7 @@ export const rules = {
     atMost: 'how many are ticked',
     date: 'a date in the past or the future',
     holds: 'a rule across fields',
+    distinct: 'no value twice in a column',
   },
   computeFromModel: (label: string) => `How “${label}” is worked out comes from the model`,
   notALineField: (name: string, table: string) => `“${name}” is not a field of the lines of ${table}`,

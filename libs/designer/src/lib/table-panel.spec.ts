@@ -104,3 +104,18 @@ describe('a table’s own rules, in the panel', () => {
     expect(field(row('Line rules'), 'العمود')).toBeDefined();
   });
 });
+
+describe('no value twice in a column, as an answer rule', () => {
+  it('is offered for a table, kept once its column is chosen, and said in words', async () => {
+    const { host, row, node, panel } = screen('f-moves');
+    openTab(host, 'Rules');
+    (button(row('Answer rules'), 'Add a rule') as HTMLButtonElement).click();
+    const item = [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find((i) => i.textContent === 'No value twice in a column');
+    expect(item).toBeDefined();
+    item!.click();
+    expect(node('f-moves').validate).toBeUndefined();
+    choose(field(row('Answer rules'), 'Column'), 'product');
+    expect(node('f-moves').validate).toEqual([{ distinct: 'product' }]);
+    expect(panel().querySelector('.fd-answer-rule-say')?.textContent).toBe('No Product twice');
+  });
+});

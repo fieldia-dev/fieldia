@@ -16,7 +16,7 @@ import { en } from './locales/en';
 // ---- answer rules -------------------------------------------------------------------------------
 
 /** What a rule can ask of an answer, in the order a rule is checked. */
-export const ASKS = ['minLength', 'maxLength', 'pattern', 'endsWith', 'min', 'max', 'atLeast', 'atMost', 'date', 'holds'] as const;
+export const ASKS = ['minLength', 'maxLength', 'pattern', 'endsWith', 'min', 'max', 'atLeast', 'atMost', 'date', 'distinct', 'holds'] as const;
 export type Ask = (typeof ASKS)[number];
 
 /** What a rule asks for, in order: nothing when it only has a message, a level or a condition. */
@@ -41,6 +41,7 @@ const FITS: Record<Ask, (field: Field) => boolean> = {
   atMost: (f) => (f.type === 'selection' && f.multiple === true) || f.type === 'many2many',
   date: (f) => f.type === 'date' || f.type === 'datetime',
   holds: (f) => ACROSS.includes(f.type),
+  distinct: (f) => f.type === 'one2many',
 };
 
 /** The asks of a rule its field cannot be checked by: a length of a number. */
@@ -50,7 +51,7 @@ export function asksNotFitting(field: Field, rule: AnswerRule): Ask[] {
 
 /** A kind of rule as "Add a rule" offers it, and the rule it starts as; none for one begun empty and kept once it reads. */
 export interface AnswerRuleKind {
-  id: 'length' | 'ending' | 'pattern' | 'range' | 'count' | 'past' | 'future' | 'across';
+  id: 'length' | 'ending' | 'pattern' | 'range' | 'count' | 'past' | 'future' | 'across' | 'distinct';
   /** Its name in English; `words.rules.kinds[id]` in the designer's language. */
   label: string;
   start: AnswerRule | null;
@@ -66,6 +67,7 @@ const KINDS: AnswerRuleKind[] = [
   { id: 'past', label: 'A date in the past', start: { date: 'past' }, fits: FITS.date },
   { id: 'future', label: 'A date in the future', start: { date: 'future' }, fits: FITS.date },
   { id: 'across', label: 'A rule across fields', start: null, fits: FITS.holds },
+  { id: 'distinct', label: 'No value twice in a column', start: null, fits: FITS.distinct },
 ];
 
 export const answerRuleKinds = (): readonly AnswerRuleKind[] => KINDS;
@@ -103,6 +105,12 @@ function askWords(page: Page, rule: AnswerRule, words: DesignerWords): { say: st
   else if (atLeast !== undefined) out.push({ say: w.tickAtLeast(atLeast), must: w.mustTickAtLeast(atLeast) });
   else if (atMost !== undefined) out.push({ say: w.tickAtMost(atMost), must: w.mustTickAtMost(atMost) });
   if (rule.date !== undefined) out.push(rule.date === 'past' ? { say: w.past, must: w.mustPast } : { say: w.future, must: w.mustFuture });
+  if (rule.distinct) {
+    // The column by its label, in the table that has it.
+    const table = Object.values(page.fields).find((f): f is Extract<Field, { type: 'one2many' }> => f.type === 'one2many' && !!f.fields[rule.distinct as string]);
+    const column = table?.fields[rule.distinct].label ?? rule.distinct;
+    out.push({ say: w.distinct(column), must: w.mustDistinct(column) });
+  }
   if (rule.holds !== undefined) {
     const say = w.mustHold(rule.holds.trim() ? formulaInWords(page, rule.holds, words) : '…');
     out.push({ say, must: say });

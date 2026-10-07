@@ -35,7 +35,7 @@ export interface AnswerRulesEditor {
 }
 
 /** The groups of asks a rule's settings show, in order. */
-type Group = 'length' | 'pattern' | 'ending' | 'range' | 'count' | 'date' | 'across';
+type Group = 'length' | 'pattern' | 'ending' | 'range' | 'count' | 'date' | 'distinct' | 'across';
 
 function groupsOf(rule: AnswerRule): Group[] {
   const asks = new Set(ruleAsks(rule));
@@ -46,6 +46,7 @@ function groupsOf(rule: AnswerRule): Group[] {
   if (asks.has('min') || asks.has('max')) groups.push('range');
   if (asks.has('atLeast') || asks.has('atMost')) groups.push('count');
   if (asks.has('date')) groups.push('date');
+  if (asks.has('distinct')) groups.push('distinct');
   if (asks.has('holds')) groups.push('across');
   return groups;
 }
@@ -76,7 +77,7 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
   /** The rule to open once it is drawn: one just added. */
   let openNext: number | null = null;
   /** A rule across fields begun with Add a rule, not kept until its formula reads. */
-  let drafting = false;
+  let drafting: AnswerRule | null = null;
 
   const node = (): FieldNode | null => {
     const found = findNode(page, id)?.node;
@@ -98,7 +99,8 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
         if (!kind) return;
         openNext = node()?.validate?.length ?? 0;
         if (!kind.start) {
-          drafting = true;
+          // Kept once it reads: a formula typed, or a column chosen.
+          drafting = kind.id === 'distinct' ? { distinct: '' } : { holds: '' };
           draw();
           views[openNext]?.focusFirst();
           openNext = null;
@@ -147,8 +149,9 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
       if (index < (own.validate?.length ?? 0)) designer.updateAnswerRule(id, index, patch);
       else {
         // Kept now: drawn from the page from here on, so it is no longer drafted.
-        drafting = false;
-        if (!designer.addAnswerRule(id, next)) drafting = true;
+        const begun = drafting;
+        drafting = null;
+        if (!designer.addAnswerRule(id, next)) drafting = begun;
       }
     };
     const box = (label: string, attrs: Record<string, string>, read: (input: HTMLInputElement) => AnswerRulePatch) => {
@@ -201,6 +204,19 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
         return said;
       },
     });
+    // No value twice in a column: the table's columns, by their labels.
+    const ownDef = (() => {
+      const own = node();
+      const def = own ? page.fields[own.field] : undefined;
+      return def?.type === 'one2many' ? def : null;
+    })();
+    const column = el(
+      'select',
+      { class: 'fd-input fd-select', 'aria-label': words.tables.column },
+      el('option', { value: '' }, w.choose),
+      ...Object.entries(ownDef?.fields ?? {}).filter(([name]) => name !== ownDef?.sequenceField && name !== ownDef?.lineKinds?.field).map(([name, f]) => el('option', { value: name }, f.label))
+    ) as HTMLSelectElement;
+    column.addEventListener('change', () => column.value && change({ distinct: column.value }));
     const when = segmented(el, w.allowedDates, [{ value: 'past', words: w.inThePast }, { value: 'future', words: w.inTheFuture }], (value) => value && change({ date: value }));
     const groups: Record<Group, HTMLElement> = {
       length: pair(shortest, longest, ['minLength', 'maxLength']),
@@ -209,6 +225,7 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
       range: pair(atLeast, atMost, ['min', 'max']),
       count: pair(tickLeast, tickMost, ['atLeast', 'atMost']),
       date: el('div', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.allowed), when.element),
+      distinct: el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, words.tables.column), column),
       across: el('div', { class: 'fd-answer-rule-field fd-answer-rule-across' }, el('span', { class: 'fd-answer-rule-word' }, w.mustHold), holds.element, holds.problem, holds.result),
     };
     const shown = groupsOf(rule);
@@ -242,7 +259,7 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
     remove.addEventListener('click', () => {
       if (index >= (node()?.validate?.length ?? 0)) {
         // Begun and never kept: it goes, and the page is as it was.
-        drafting = false;
+        drafting = null;
         draw();
         add.focus();
         return;
@@ -292,6 +309,7 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
       pattern.row.hidden = looks.value !== '';
       set(pattern.input, next.pattern);
       when.set(next.date);
+      if (!focused(column)) column.value = next.distinct ?? '';
       level.set(next.level === 'warning' ? 'warning' : 'error');
       set(message.input, next.message);
       holds.update(page, next.holds ?? '');
@@ -319,10 +337,10 @@ export function answerRulesEditor(el: ElementFactory, designer: Designer, id: st
     const own = node();
     if (!own) return;
     const def = page.fields[own.field];
-    const rules: AnswerRule[] = [...(own.validate ?? []), ...(drafting ? [{ holds: '' }] : [])];
+    const rules: AnswerRule[] = [...(own.validate ?? []), ...(drafting ? [drafting] : [])];
     const fits = def ? kindsFitting(def).length > 0 : false;
     element.hidden = !fits && !rules.length;
-    add.hidden = !fits || drafting;
+    add.hidden = !fits || !!drafting;
     // A rule whose asks changed is drawn again; the rest are patched, so the box being typed in keeps its cursor.
     views = rules.map((rule, i) => {
       const was = views[i];

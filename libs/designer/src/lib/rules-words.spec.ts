@@ -126,9 +126,9 @@ describe('the rules that fit a field', () => {
     expect(ids(fields['vip'])).toEqual([]);
   });
 
-  it('starts each kind with a rule that reads; a rule across fields starts empty, kept once its formula reads', () => {
+  it('starts each kind with a rule that reads; a rule across fields and a column with no value twice start empty, kept once they read', () => {
     for (const kind of answerRuleKinds()) if (kind.start) expect(say(kind.start)).not.toBe('');
-    expect(answerRuleKinds().filter((kind) => !kind.start).map((kind) => kind.id)).toEqual(['across']);
+    expect(answerRuleKinds().filter((kind) => !kind.start).map((kind) => kind.id)).toEqual(['across', 'distinct']);
   });
 });
 
