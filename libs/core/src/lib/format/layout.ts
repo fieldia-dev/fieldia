@@ -186,6 +186,15 @@ export interface CellRules {
   bold?: Modifier;
   /** A choice drawn as a coloured pill, toned by `tones`: Flectra's widget="badge". */
   badge?: boolean;
+  /**
+   * How its cells are shown, as a field node's `widget` — Flectra's widget= on
+   * a list's column: a `progressbar`, `priority` stars, a `duration` as HH:MM,
+   * a `percentage`, a state `dot`. Text widgets are typed into as the field's
+   * box is; drawn ones (bars, stars, dots) are used in the cell itself.
+   */
+  widget?: string;
+  /** Its widget's settings, as a field node's `options`; one ending in "Field" names a field of the line. */
+  options?: WidgetOptions;
   /** How wide the column is, in characters of its text. */
   width?: number;
 }
@@ -582,6 +591,8 @@ export const CellRulesSchema = z
     tones: z.array(ToneWhenSchema).min(1).optional(),
     bold: ModifierSchema.optional(),
     badge: z.boolean().optional(),
+    widget: z.string().min(1).optional(),
+    options: z.object({ clear: z.boolean().optional() }).catchall(JsonValueSchema).optional(),
     width: z.int().min(1).max(200).optional(),
   })
   .meta({ id: 'CellRules' });

@@ -573,6 +573,10 @@ export class ReferenceCheck {
           this.checkModifiers(rules, `${path}.cells.${column}`, ['invisible', 'readonly', 'required', 'bold'], line);
           this.checkModifiers(rules, `${path}.cells.${column}`, ['hidden']);
           rules.tones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.cells.${column}.tones[${i}]`, ['when'], line));
+          // Its widget's options that point at a field: one of the line's.
+          for (const [key, value] of Object.entries(rules.options ?? {})) {
+            if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.cells.${column}.options.${key}`, def.fields);
+          }
         }
         node.rowTones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.rowTones[${i}]`, ['when'], line));
         this.checkModifiers(node, path, ['rowBold'], line);

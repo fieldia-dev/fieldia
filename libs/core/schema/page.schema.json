@@ -4719,6 +4719,21 @@
         "badge": {
           "type": "boolean"
         },
+        "widget": {
+          "type": "string",
+          "minLength": 1
+        },
+        "options": {
+          "type": "object",
+          "properties": {
+            "clear": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
         "width": {
           "type": "integer",
           "minimum": 1,
