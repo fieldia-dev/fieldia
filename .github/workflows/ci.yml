@@ -51,13 +51,21 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-      # Chromium and the system packages it needs. An apt mirror can stall for good (twice on 7 Oct,
-      # each eating a shard's 20 minutes): each try has 4 minutes, and a stalled one is tried again.
+      # Chromium and the system packages it needs. An apt mirror can stall for good (three times on
+      # 7 Oct): apt gives up on a silent mirror after 30 s and retries; each try has 4 minutes; and a
+      # try cut off mid-apt leaves its lock and half-set packages, so the next one clears them first.
       - name: Install Chromium for Playwright
         run: |
+          printf 'Acquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAcquire::Retries "3";\n' | sudo tee /etc/apt/apt.conf.d/99fieldia-timeouts > /dev/null
           for try in 1 2 3; do
+            if [ "$try" -gt 1 ]; then
+              sudo pkill -9 -x apt-get || true
+              sudo pkill -9 -x dpkg || true
+              sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
+              sudo dpkg --configure -a || true
+            fi
             timeout 240 npx playwright install --with-deps chromium && exit 0
-            echo "Install try $try stalled or failed; trying again."
+            echo "Install try $try stalled or failed."
           done
           exit 1
       # Each demo mounts the same pages through a different framework; every
