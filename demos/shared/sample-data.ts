@@ -17,6 +17,7 @@ import survey from '../../examples/pages/survey.page.json';
 import big from '../../examples/pages/big.page.json';
 import reading from '../../examples/pages/reading.page.json';
 import { customPage } from './custom-page';
+import { BILLS, billAttachments, billNavigation, vendorBill } from './vendor-bill';
 import { real } from './real';
 import { businessData, businessPage } from './business';
 
@@ -43,6 +44,8 @@ export const pages: Record<string, Page> = {
   big: big as Page,
   // How a dense sheet reads, as Flectra's: values as words, formatted stat buttons, links with pictures, lines, alerts, keys, ribbons.
   reading: reading as Page,
+  // What sits around a record: the gear menu, the pager and breadcrumbs, the PDF beside it (shared/vendor-bill.ts).
+  'vendor-bill': vendorBill,
   // Sherkety ERP's own screens, rebuilt: one file per lane in shared/real/.
   ...real.pages,
 };
@@ -90,6 +93,8 @@ export function openRecord(params: URLSearchParams, id: string | number): void {
  * sign-up in French through an app's own catalog.
  */
 export function optionsFromQuery(params: URLSearchParams): {
+  records?: (string | number)[];
+  breadcrumbs?: { label: string; href?: string }[];
   keys?: { enterMovesToNext: boolean };
   showValid?: boolean;
   saveStatus?: 'inline' | 'toast' | 'bar';
@@ -99,6 +104,8 @@ export function optionsFromQuery(params: URLSearchParams): {
 } {
   const saveStatus = params.get('saveStatus');
   return {
+    // The vendor bill has the records round it and the trail to it, as an app gives them.
+    ...(params.get('page') === 'vendor-bill' ? billNavigation() : {}),
     ...(params.get('translate') === 'fr' ? { translate: (text: string) => APP_CATALOG_FR[text] ?? text } : {}),
     ...(params.get('readonly') === '1' ? { readonly: true } : {}),
     ...(params.get('editSwitch') === '1' ? { editSwitch: true } : {}),
@@ -202,10 +209,12 @@ const CURRENCIES: Record<number, string> = { 1: 'EGP', 2: 'JOD', 3: 'SAR' };
 export function sampleDataSource() {
   return createMemoryDataSource(withReal({
     lists: appLists,
+    attachments: billAttachments(),
     // What links show of their records besides their names: an address, a picture, a colour.
     shows: { 'reading.partner': { details: ['street', 'city', 'vat'] }, 'reading.user': { avatar: 'image' }, 'reading.tag': { color: 'color' } },
     records: {
       ...READING,
+      'account.move': BILLS,
       partner: {
         1: {
           name: 'Nile Traders',

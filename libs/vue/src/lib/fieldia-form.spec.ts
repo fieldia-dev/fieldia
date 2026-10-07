@@ -65,6 +65,19 @@ const Note = defineComponent({
   },
 });
 
+/** Two employees over a sheet with a gear menu, for the pager, the trail and the record's events. */
+const staffPage: Page = {
+  fieldia: '0.1',
+  id: 'staff',
+  data: { kind: 'record', model: 'hr.employee' },
+  fields: { name: { type: 'char', label: 'Name' } },
+  layout: { type: 'sheet', id: 'sheet', title: { field: 'name' }, toolbar: { menu: [{ id: 'm-dup', builtin: 'duplicate' }] }, children: [] },
+};
+const staff = () => createMemoryDataSource({ records: { 'hr.employee': { 1: { name: 'Mona Adel' }, 2: { name: 'Karim Fathy' } } } });
+const waitFor = async (check: () => unknown) => {
+  for (let waited = 0; !check() && waited < 2000; waited += 10) await new Promise((resolve) => setTimeout(resolve, 10));
+};
+
 const handleOf = (wrapper: { emitted: (e: string) => unknown[][] | undefined }) => (wrapper.emitted('ready')?.[0]?.[0] ?? null) as ViewerHandle | null;
 
 describe('<FieldiaForm> for Vue', () => {
@@ -139,6 +152,16 @@ describe('<FieldiaForm> for Vue', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect((parent.find('[data-node="f-price"] input').element as HTMLInputElement).value).toBe('380.00');
     parent.unmount();
+  });
+
+  it('draws the pager and the breadcrumbs it is given, and emits each record the form shows', async () => {
+    const wrapper = mount(FieldiaForm, { props: { page: staffPage, dataSource: staff(), recordId: 1, records: [1, 2], breadcrumbs: [{ label: 'Employees' }] }, attachTo: document.body });
+    await waitFor(() => wrapper.find('.fd-crumb-current').exists() && wrapper.find('.fd-crumb-current').text() === 'Mona Adel');
+    expect(wrapper.find('.fd-record-pager-text').text()).toBe('1 / 2');
+    await wrapper.find('[aria-label="Next record"]').trigger('click');
+    await waitFor(() => wrapper.emitted('record')?.length === 2);
+    expect(wrapper.emitted('record')?.map(([event]) => (event as { recordId: unknown }).recordId)).toEqual([1, 2]);
+    wrapper.unmount();
   });
 
   it('emits the form’s events: change, run, save, send and step', async () => {

@@ -82,6 +82,15 @@ export function stepSentence(page: Page, step: ActionStep, words: DesignerWords 
     case 'reload':
       said = w.reload;
       break;
+    case 'archive':
+    case 'unarchive':
+    case 'duplicate':
+    case 'delete':
+      said = w[step.do];
+      break;
+    case 'post':
+      said = w.post(step.message, step.kind ?? 'note');
+      break;
   }
   return whenOf(page, said, step.when, words);
 }
@@ -105,7 +114,11 @@ export function stepsLines(page: Page, steps: readonly ActionStep[], words: Desi
 /** A place's name as a person knows it: a button's words, a field's label, a moment, a tab shown. */
 export function placeName(page: Page, place: StepsPlace, words: DesignerWords = en): string {
   const w = words.steps;
-  if ('press' in place) return pressOf(page, place.press)?.label ?? place.press;
+  if ('press' in place) {
+    const press = pressOf(page, place.press);
+    const builtin = press && 'builtin' in press ? press.builtin : undefined;
+    return press?.label ?? (builtin ? words.canvas.menuKinds[builtin] : place.press);
+  }
   if ('change' in place) return labelOf(page, place.change);
   if ('moment' in place) return w.momentNames[place.moment];
   return w.whenShown(showTargets(page).find((t) => t.id === place.show)?.label || place.show);

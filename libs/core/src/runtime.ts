@@ -30,6 +30,9 @@ export type {
   Ribbon,
   Alert,
   Badge,
+  MenuItem,
+  RecordToolbar,
+  AttachmentPreview,
   ColumnCount,
   ColumnsByWidth,
   LayoutNode,
@@ -65,6 +68,11 @@ export type {
   CloseStep,
   OpenUrlStep,
   ReloadStep,
+  ArchiveStep,
+  UnarchiveStep,
+  DuplicateStep,
+  DeleteStep,
+  PostStep,
 } from './lib/format/actions';
 export { FORMAT_VERSION } from './lib/format/version';
 export type { Page, PageData, PageLook } from './lib/format/page';
@@ -117,6 +125,8 @@ export type {
   GroupRequest,
   Group,
   OptionsRequest,
+  RecordRequest,
+  ArchiveRequest,
 } from './lib/record/data-source';
 export { saveRefused, saveProblemOf } from './lib/record/data-source';
 export { matchesFilter } from './lib/record/filter';
@@ -138,7 +148,7 @@ export {
   type ChangeBy,
   type FormEvents,
 } from './lib/record/form';
-export type { ActionHost, ActionResult, ChosenLines, OnAction, OpenRequest, OpenResult, RunContext, RunResult, RunStop } from './lib/record/run';
+export type { ActionHost, ActionResult, ChosenLines, OnAction, OpenRequest, OpenResult, PostedMessage, RunContext, RunResult, RunStop } from './lib/record/run';
 export { MESSAGES, fill, type Messages, type Locale } from './lib/record/messages';
 export { dayOf } from './lib/record/limits';
 export { ADDRESS_PARTS } from './lib/record/structures';

@@ -54,6 +54,7 @@ export const tables = {
   columnWidths: 'Column widths',
   shareWidth: 'Share the width',
   fitContent: 'As wide as they hold',
+  shrinkToFit: 'Shrink to fit, headers wrapping (a grid)',
   copyLine: 'Copy a line',
   // ---- widths a part is hidden at
   widths: { narrow: 'Phone', medium: 'Tablet', wide: 'Wide screen' } as Record<'narrow' | 'medium' | 'wide', string>,

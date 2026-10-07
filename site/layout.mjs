@@ -7,6 +7,7 @@ export const DOCS = [
   { path: '/data/', title: 'Data sources' },
   { path: '/behaviour/', title: 'Behaviour' },
   { path: '/actions/', title: 'Actions and events' },
+  { path: '/record/', title: 'Around a record' },
   { path: '/lists/', title: 'Lists and search' },
   { path: '/chatter/', title: 'Chatter' },
   { path: '/look/', title: 'Skins and languages' },

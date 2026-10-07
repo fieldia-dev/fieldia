@@ -1,0 +1,78 @@
+{
+  "fieldia": "0.1",
+  "id": "vendor-bill",
+  "title": "Vendor bill",
+  "data": { "kind": "record", "model": "account.move" },
+  "fields": {
+    "name": { "type": "char", "label": "Number", "readonly": true },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        { "value": "draft", "label": "Draft" },
+        { "value": "posted", "label": "Posted" },
+        { "value": "cancel", "label": "Cancelled" }
+      ]
+    },
+    "active": { "type": "boolean", "label": "Active" },
+    "partner_id": { "type": "many2one", "label": "Vendor", "relation": "partner", "required": true },
+    "ref": { "type": "char", "label": "Bill reference" },
+    "invoice_date": { "type": "date", "label": "Bill date" },
+    "invoice_date_due": { "type": "date", "label": "Due date" },
+    "payment_reference": { "type": "char", "label": "Payment reference" },
+    "amount_untaxed": { "type": "monetary", "label": "Untaxed amount", "currency": "EGP" },
+    "amount_tax": { "type": "monetary", "label": "VAT 14%", "currency": "EGP", "compute": "amount_untaxed * 0.14" },
+    "amount_total": { "type": "monetary", "label": "Total", "currency": "EGP", "compute": "amount_untaxed + amount_tax" },
+    "narration": { "type": "text", "label": "Terms and conditions" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "name", "label": "Vendor bill" },
+    "statusbar": { "field": "state", "visibleStates": ["draft", "posted"] },
+    "buttons": [
+      { "type": "button", "id": "b-post", "label": "Confirm", "style": "primary", "steps": [{ "do": "set", "field": "state", "value": "'posted'" }, { "do": "save" }, { "do": "post", "message": "Bill confirmed: {amount_total}" }], "invisible": "state != 'draft'" },
+      { "type": "button", "id": "b-draft", "label": "Reset to draft", "steps": [{ "do": "set", "field": "state", "value": "'draft'" }, { "do": "save" }], "invisible": "state != 'posted'" }
+    ],
+    "ribbons": [{ "id": "r-archived", "label": "Archived", "tone": "danger", "invisible": "active != False" }],
+    "toolbar": {
+      "menu": [
+        { "id": "m-print-bill", "label": "Vendor bill", "group": "print", "icon": "file", "action": "print_bill" },
+        { "id": "m-debit-note", "label": "Debit Note", "action": "action_debit_note", "invisible": "state != 'posted'" },
+        { "id": "m-archive", "builtin": "archive" },
+        { "id": "m-unarchive", "builtin": "unarchive" },
+        { "id": "m-duplicate", "builtin": "duplicate" },
+        { "id": "m-delete", "builtin": "delete", "invisible": "state == 'posted'" }
+      ]
+    },
+    "attachmentPreview": {},
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" },
+    "sidePanelBeside": "always",
+    "children": [
+      {
+        "type": "section",
+        "id": "s-main",
+        "columns": { "wide": 2, "medium": 1 },
+        "children": [
+          { "type": "field", "id": "f-partner", "field": "partner_id", "readonly": "state != 'draft'" },
+          { "type": "field", "id": "f-date", "field": "invoice_date", "readonly": "state != 'draft'" },
+          { "type": "field", "id": "f-ref", "field": "ref" },
+          { "type": "field", "id": "f-due", "field": "invoice_date_due" },
+          { "type": "field", "id": "f-payment-ref", "field": "payment_reference" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-amounts",
+        "title": "Amounts",
+        "columns": 1,
+        "children": [
+          { "type": "field", "id": "f-untaxed", "field": "amount_untaxed", "readonly": "state != 'draft'" },
+          { "type": "field", "id": "f-tax", "field": "amount_tax" },
+          { "type": "field", "id": "f-total", "field": "amount_total" }
+        ]
+      },
+      { "type": "field", "id": "f-narration", "field": "narration", "labels": "hidden", "placeholder": "Terms and conditions" }
+    ]
+  }
+}

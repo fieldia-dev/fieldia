@@ -810,6 +810,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       ...(node.cells?.[column]?.width ? { width: node.cells[column].width! * 8 + 32, flex: 0 } : {}),
       // Columns as wide as what they hold (fit: content), sized once the lines are drawn.
       ...(node.fit === 'content' && !node.cells?.[column]?.width ? { flex: undefined, minWidth: 64 } : {}),
+      // Columns that shrink to fit (fit: shrink), as Flectra's list beside a chatter: narrower before the table scrolls, headers wrapping.
+      ...(node.fit === 'shrink' ? { minWidth: wide ? 72 : sub.type === 'monetary' ? 80 : 48, wrapHeaderText: true, autoHeaderHeight: true } : {}),
       editable: (p) => {
         if (readonly || p.node.rowPinned) return false;
         if (kindOf(p.data)) return spans(p.api);

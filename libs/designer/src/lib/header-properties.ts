@@ -1,19 +1,22 @@
-import type { Alert, ButtonNode, FieldNode, Page, Ribbon, SheetNode, StatButton, Tone } from '@fieldia/core';
+import type { Alert, ButtonNode, FieldNode, MenuItem, Page, Ribbon, SheetNode, StatButton, Tone } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { choicesOf, conditionEditor } from './condition-editor';
 import type { Designer } from './designer';
 import { findHeaderPart, wordsOf } from './header-commands';
 import { allSections } from './page-tree';
 import { whenClicked } from './steps-panel';
+import { setting } from './panel-controls';
 import type { PropertiesView } from './screen-properties';
 import { rolesSetting } from './roles-setting';
 import { hotkeyShown } from './hotkey-setting';
 import { shownWhileSetting } from './shown-while';
 
 /**
- * The panel for a part of a record's header: a button, a counter or a badge
- * — its words, what it does, how it looks and when it shows — and for the
- * status steps: which field, whether a step can be clicked, and where they sit.
+ * The panel for a part of a record's header: a button, a counter, a badge or
+ * an item of the gear menu — its words, what it does, how it looks and when
+ * it shows (an item: whether it is one of the record's own, and whether it
+ * goes under Print) — and for the status steps: which field, whether a step
+ * can be clicked, and where they sit.
  */
 
 const prop = (el: ElementFactory, text: string, control: HTMLElement) => el('label', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, text), control);
@@ -35,7 +38,14 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   words.addEventListener('input', () => designer.updateHeaderPart(id, { label: words.value }));
   // steps lane: what a button or a counter does when clicked, its app action one of the steps.
   const kindNow = findHeaderPart(designer.getPage(), id)?.kind;
-  const pressed = kindNow === 'button' || kindNow === 'stat' ? whenClicked(el, designer, id) : null;
+  const pressed = kindNow === 'button' || kindNow === 'stat' || kindNow === 'menu' ? whenClicked(el, designer, id) : null;
+  // An item of the gear menu: one of the record's own, and the group it is in.
+  const builtin = select(el, w.builtin, (['none', 'archive', 'unarchive', 'duplicate', 'delete'] as const).map((value) => [value, w.builtins[value]]));
+  builtin.addEventListener('change', () => designer.updateHeaderPart(id, { builtin: builtin.value === 'none' ? '' : (builtin.value as NonNullable<MenuItem['builtin']>) }));
+  const builtinRow = setting(el, 'content', 'The record’s own', builtin, { hint: w.builtinHint, words: w.builtin });
+  const group = select(el, w.menuGroup, [['actions', w.menuGroups.actions], ['print', w.menuGroups.print]]);
+  group.addEventListener('change', () => designer.updateHeaderPart(id, { group: group.value as 'actions' | 'print' }));
+  const groupRow = setting(el, 'content', 'Under', group, { words: w.menuGroup });
   const look = select(el, w.look, [['secondary', w.buttonLooks.secondary], ['primary', w.buttonLooks.primary], ['danger', w.buttonLooks.danger], ['link', w.buttonLooks.link]]);
   look.addEventListener('change', () => designer.updateHeaderPart(id, { style: look.value as ButtonNode['style'] }));
   const lookRow = prop(el, w.look, look);
@@ -106,6 +116,8 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
     'div',
     { class: 'fd-props' },
     prop(el, w.words, words),
+    builtinRow,
+    groupRow,
     ...(pressed ? [pressed.element] : []),
     lookRow,
     asksRow,
@@ -132,7 +144,17 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
       const { kind, part, index, list } = found;
       if (!focused(words)) words.value = wordsOf(part);
       pressed?.update(page);
-      lookRow.hidden = asksRow.hidden = hotkeyRow.hidden = kind !== 'button';
+      lookRow.hidden = hotkeyRow.hidden = kind !== 'button';
+      asksRow.hidden = kind !== 'button' && kind !== 'menu';
+      builtinRow.hidden = groupRow.hidden = kind !== 'menu';
+      if (kind === 'menu') {
+        const item = part as MenuItem;
+        builtin.value = item.builtin ?? 'none';
+        group.value = item.group ?? 'actions';
+        // A built-in's own words stand in while it has none, and its question while it asks none of its own.
+        words.placeholder = item.builtin ? designer.words.canvas.menuKinds[item.builtin] : '';
+        if (!focused(asks)) asks.value = item.confirm ?? '';
+      }
       if (kind === 'button') {
         look.value = (part as ButtonNode).style ?? 'secondary';
         if (!focused(asks)) asks.value = (part as ButtonNode).confirm ?? '';

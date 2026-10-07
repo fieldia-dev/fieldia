@@ -50,5 +50,7 @@ export const de: Messages = {
   minLines: 'Fügen Sie {label} mindestens {min} hinzu',
   maxLines: 'Zu viele in {label}: höchstens {max}',
   addressParts: 'Straße und Hausnummer|Adresszeile 2|Ort|Bundesland oder Region|Postleitzahl|Land',
+  archiveConfirm: 'Möchten Sie diesen Datensatz wirklich archivieren?',
+  deleteConfirm: 'Möchten Sie diesen Datensatz wirklich löschen?',
   locale: 'de',
 };

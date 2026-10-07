@@ -145,8 +145,13 @@ export interface FieldNode {
    * there), or always.
    */
   cards?: 'narrow' | 'always';
-  /** For one2many: columns as wide as what they hold (`content`), as Flectra sizes a list's, rather than sharing the table's width. */
-  fit?: 'content';
+  /**
+   * For one2many: columns as wide as what they hold (`content`), as Flectra
+   * sizes a list's, rather than sharing the table's width; or, in a grid,
+   * columns that shrink to fit the table's width (`shrink`), their headers
+   * wrapping, before it scrolls — many columns beside a chatter.
+   */
+  fit?: 'content' | 'shrink';
   /** Where the label sits, when not where its group or the page puts labels. */
   labels?: LabelPlace;
   /** Where its help shows, when not where the page shows help: under it, behind a (?) by its label, or both. */
@@ -559,6 +564,65 @@ export interface Statusbar {
   roles?: Roles;
 }
 
+/**
+ * An item of a record's gear menu, as Flectra's Action and Print menus: a
+ * press runs its steps, then its `action`, as a button's. A built-in one
+ * (`builtin`) needs neither: it archives, brings back, duplicates or deletes
+ * the record, in the page's own words, asking first before it archives or
+ * deletes. Given steps or an action of its own, it runs those instead — an
+ * Archive that opens a departure wizard.
+ */
+export interface MenuItem {
+  id: string;
+  /** Its words; a built-in's own, in the page's language, when left out. */
+  label?: string;
+  /**
+   * One of the record's own: `archive` (shown while the record's `active` is
+   * not false), `unarchive` (shown while it is), `duplicate` or `delete`.
+   */
+  builtin?: 'archive' | 'unarchive' | 'duplicate' | 'delete';
+  /** Under Print, as Flectra's reports, or among the actions (the default). */
+  group?: 'actions' | 'print';
+  steps?: ActionStep[];
+  /** The app's action's name, run after the steps, such as a server action (Debit Note). */
+  action?: string;
+  params?: { [key: string]: JsonValue };
+  /** Ask before running it. */
+  confirm?: string;
+  icon?: string;
+  invisible?: Modifier;
+  roles?: Roles;
+}
+
+/**
+ * What sits over a record, around its sheet: the gear menu the page fills,
+ * and the pager and the breadcrumbs the app fills — they show when the app
+ * gives the records round this one (the viewer's `records`) and the trail to
+ * it (`breadcrumbs`), unless the page turns them off. In a dialog only the
+ * menu shows; on a phone the menu folds into its gear.
+ */
+export interface RecordToolbar {
+  menu?: MenuItem[];
+  /** False keeps the pager away even when the app gives the records round this one. */
+  pager?: boolean;
+  /** False keeps the breadcrumbs away even when the app gives the trail. */
+  breadcrumbs?: boolean;
+}
+
+/**
+ * The record's main attachment beside its sheet, as Flectra's
+ * o_attachment_preview: a PDF in the browser's own viewer, or a picture —
+ * beside the sheet on a wide form, under it on a narrow one. From a file
+ * field of the page, or — without one — the record's attachments as the data
+ * source gives them (`attachments`), the first a PDF or a picture.
+ */
+export interface AttachmentPreview {
+  /** A file field (binary or image) whose file shows; its first, when it holds several. */
+  field?: string;
+  invisible?: Modifier;
+  roles?: Roles;
+}
+
 /** The record layout: a header with a statusbar and buttons, then the sheet itself. */
 export interface SheetNode {
   type: 'sheet';
@@ -574,6 +638,16 @@ export interface SheetNode {
   badges?: Badge[];
   children: LayoutNode[];
   sidePanel?: SlotNode;
+  /**
+   * Where the side panel stays beside the sheet: on a wide form (the
+   * default: from 1000px), or `always` — the sheet narrower, its columns
+   * stacking in it as they need — going under it only on a phone.
+   */
+  sidePanelBeside?: 'wide' | 'always';
+  /** The gear menu, and whether the pager and breadcrumbs the app gives show. */
+  toolbar?: RecordToolbar;
+  /** The record's main attachment, a PDF or a picture, beside the sheet. */
+  attachmentPreview?: AttachmentPreview;
   /**
    * The page's own buttons at its foot: in a dialog or panel, in place of
    * Save & Close and Discard — Flectra's wizard footer, such as Mark as Lost
@@ -708,7 +782,7 @@ export const FieldNodeSchema = z.strictObject({
   },
   lineOpens: z.enum(['fields', 'record']).optional(),
   cards: z.enum(['narrow', 'always']).optional(),
-  fit: z.literal('content').optional(),
+  fit: z.enum(['content', 'shrink']).optional(),
   editMode: z.enum(['cell', 'row']).optional(),
   labels: labelPlace.optional(),
   helpShown: HelpShownSchema.optional(),
@@ -891,6 +965,22 @@ export const AlertSchema = z.strictObject({
   roles,
 });
 
+export const MenuItemSchema = z
+  .strictObject({
+    id,
+    label: z.string().optional(),
+    builtin: z.enum(['archive', 'unarchive', 'duplicate', 'delete']).optional(),
+    group: z.enum(['actions', 'print']).optional(),
+    steps: ActionStepsSchema.optional(),
+    action: z.string().min(1).optional(),
+    params: z.record(z.string(), JsonValueSchema).optional(),
+    confirm: z.string().optional(),
+    icon: z.string().optional(),
+    invisible,
+    roles,
+  })
+  .meta({ id: 'MenuItem' });
+
 export const BadgeSchema = z.strictObject({ id, label: z.string(), tone: tone.optional(), icon: z.string().min(1).optional(), invisible, roles });
 
 export const SheetNodeSchema = z.strictObject({
@@ -932,6 +1022,15 @@ export const SheetNodeSchema = z.strictObject({
     return z.array(LayoutNodeSchema);
   },
   sidePanel: SlotNodeSchema.optional(),
+  sidePanelBeside: z.enum(['wide', 'always']).optional(),
+  toolbar: z
+    .strictObject({
+      menu: z.array(MenuItemSchema).min(1).optional(),
+      pager: z.boolean().optional(),
+      breadcrumbs: z.boolean().optional(),
+    })
+    .optional(),
+  attachmentPreview: z.strictObject({ field: fieldName.optional(), invisible, roles }).optional(),
   footer: z.array(ButtonNodeSchema).min(1).optional(),
 }).meta({ id: 'SheetNode' });
 

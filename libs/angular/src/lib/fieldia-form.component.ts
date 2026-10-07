@@ -122,6 +122,10 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly openPage = input<ViewerOptions['onOpen']>(undefined);
   /** Any of the viewer's host done your own way (the viewer's `host`): words said, a question asked, a page opened, a tab shown. */
   readonly actionHost = input<ViewerOptions['host']>(undefined);
+  /** The records round this one, for the pager over it: their ids, or how many, where this one is, and the id at a place. */
+  readonly records = input<ViewerOptions['records']>(undefined);
+  /** The trail to this record, for the breadcrumbs over it. */
+  readonly breadcrumbs = input<ViewerOptions['breadcrumbs']>(undefined);
 
   readonly ready = output<ViewerHandle>();
   readonly action = output<ActionRequest>();
@@ -141,6 +145,12 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly step = output<FormEvents['step']>();
   /** A run of steps ended — a button's, a moment's — and how. */
   readonly run = output<FormEvents['run']>();
+  /** The form has its values: a record loaded — the pager moved on, a copy shown — or a new one. */
+  readonly record = output<FormEvents['open']>();
+  /** The record was archived or brought back, copied, or deleted, by a step such as the gear menu's. */
+  readonly archive = output<FormEvents['archive']>();
+  readonly duplicate = output<FormEvents['duplicate']>();
+  readonly delete = output<FormEvents['delete']>();
 
   private readonly slotTemplates = contentChildren(FieldiaSlotDirective);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -259,6 +269,8 @@ export class FieldiaFormComponent implements OnDestroy {
       onOpen: (request) => this.openPage()?.(request),
       host: this.actionHost(),
       onOpenRecord: (id) => this.openRecord.emit(id),
+      records: this.records(),
+      breadcrumbs: this.breadcrumbs(),
     });
     const handle = this.handle;
     handle.on('change', (event) => this.fieldChange.emit(event));
@@ -266,6 +278,10 @@ export class FieldiaFormComponent implements OnDestroy {
     handle.on('send', (event) => this.send.emit(event));
     handle.on('step', (event) => this.step.emit(event));
     handle.on('run', (event) => this.run.emit(event));
+    handle.on('open', (event) => this.record.emit(event));
+    handle.on('archive', (event) => this.archive.emit(event));
+    handle.on('duplicate', (event) => this.duplicate.emit(event));
+    handle.on('delete', (event) => this.delete.emit(event));
     this.ready.emit(handle);
   }
 

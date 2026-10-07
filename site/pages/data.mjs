@@ -22,6 +22,10 @@ interface DataSource {
   options?(request: OptionsRequest): Promise<Option[]>;      // a selection's choices from the app
   definitions?(request: OptionsRequest): Promise<PropertyDefinition[]>;  // properties a linked record keeps
   saveDefinitions?(request: OptionsRequest & { definitions }): Promise<void>; // one added in place
+  archive?(request: ArchiveRequest): Promise<void>;          // archive a record, or bring it back
+  copy?(request: RecordRequest): Promise<SaveResult>;        // duplicate it: the copy's id
+  delete?(request: RecordRequest): Promise<void>;            // delete it
+  attachments?(request: RecordRequest): Promise<FileValue[]>; // its files, the main one first
 }`
 )}
 
@@ -39,6 +43,8 @@ interface DataSource {
     <tr><td>${c('groups')}</td><td>A list is grouped by a field</td><td>Group By</td></tr>
     <tr><td>${c('definitions')}</td><td>A properties field with ${c('definitionsFrom')} is shown, and again when the link it follows changes</td><td>Properties a linked record defines — see <a href="/fields/#business">business widgets</a></td></tr>
     <tr><td>${c('saveDefinitions')}</td><td>Someone adds a property in place</td><td>Keeping it on that record</td></tr>
+    <tr><td>${c('archive')} · ${c('copy')} · ${c('delete')}</td><td>The gear menu's Archive, Unarchive, Duplicate or Delete, or those steps, run</td><td>The record's own operations — without one, your app's action of the step's name is called. See <a href="/record/#toolbar">Around a record</a></td></tr>
+    <tr><td>${c('attachments')}</td><td>A sheet that shows the record's attachment beside it opens a record</td><td>The PDF or picture beside the sheet</td></tr>
   </tbody>
 </table>
 </div>

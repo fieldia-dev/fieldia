@@ -20,6 +20,8 @@ export const defaults = {
   done: 'Done',
   newButton: 'New button',
   counter: 'Counter',
+  newMenuAction: 'New action',
+  newReport: 'Report',
   badge: 'Badge',
   ribbon: 'Ribbon',
   alert: 'Something to know about this record.',

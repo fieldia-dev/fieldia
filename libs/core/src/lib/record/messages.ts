@@ -70,6 +70,9 @@ export interface Messages {
   maxLines: string;
   /** An address's parts, as its boxes name them, for one that must be filled: street, line 2, city, region, postcode, country. */
   addressParts: string;
+  /** What a record's gear menu asks before its built-in Archive and Delete run. */
+  archiveConfirm: string;
+  deleteConfirm: string;
   /** The language the days in these messages are written in, as Intl reads it. */
   locale: string;
 }
@@ -126,6 +129,8 @@ const en: Messages = {
   minLines: 'Add at least {min} to {label}',
   maxLines: 'Too many in {label}: at most {max}',
   addressParts: 'Street address|Address line 2|City|State or region|Postcode|Country',
+  archiveConfirm: 'Are you sure that you want to archive this record?',
+  deleteConfirm: 'Are you sure you want to delete this record?',
   locale: 'en',
 };
 

@@ -108,6 +108,9 @@ describe('a table’s buttons and its shape', () => {
     const { designer, node } = sheet();
     designer.setTableShape('f-moves', { lineOpens: 'record', cards: 'narrow', fit: 'content', copy: true });
     expect(node('f-moves')).toMatchObject({ lineOpens: 'record', cards: 'narrow', fit: 'content', options: { copy: true } });
+    // A grid beside a chatter: columns that shrink to fit before it scrolls.
+    designer.setTableShape('f-moves', { fit: 'shrink' });
+    expect(node('f-moves').fit).toBe('shrink');
     designer.setTableShape('f-moves', { lineOpens: null, cards: null, fit: null, copy: null });
     expect(node('f-moves').lineOpens).toBeUndefined();
     expect(node('f-moves').options).toBeUndefined();

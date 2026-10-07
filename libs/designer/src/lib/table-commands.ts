@@ -46,7 +46,7 @@ export interface TableButton {
 export interface TableShape {
   lineOpens?: 'fields' | 'record' | null;
   cards?: 'narrow' | 'always' | null;
-  fit?: 'content' | null;
+  fit?: 'content' | 'shrink' | null;
   /** A ⧉ on each line that puts a copy of it after it (the widget's `copy`). */
   copy?: boolean | null;
 }

@@ -1,4 +1,4 @@
-import type { Alert, Badge, ButtonNode, Field, Page, Ribbon, SheetNode, StatButton, Tone } from '@fieldia/core';
+import type { Alert, Badge, ButtonNode, Field, MenuItem, Page, Ribbon, SheetNode, StatButton, Tone } from '@fieldia/core';
 import { storedAs } from './kinds';
 import { allIds, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
@@ -11,13 +11,16 @@ import { hotkeyFrom } from './hotkey-setting';
  * the canvas, moved among its kind, and shown only for some records.
  */
 
-export type HeaderPartKind = 'button' | 'stat' | 'badge' | 'ribbon' | 'alert';
+export type HeaderPartKind = 'button' | 'stat' | 'badge' | 'ribbon' | 'alert' | 'menu';
 
-/** A part of a sheet's header or card: a button, a counter, a badge, a ribbon or an alert. */
-export type HeaderPart = ButtonNode | StatButton | Badge | Ribbon | Alert;
+/** A part of a sheet's header or card: a button, a counter, a badge, a ribbon, an alert, or an item of the gear menu over it. */
+export type HeaderPart = ButtonNode | StatButton | Badge | Ribbon | Alert | MenuItem;
 
-/** A part's words: an alert's message, any other's label. */
-export const wordsOf = (part: HeaderPart): string => ('message' in part ? part.message : part.label);
+/** A part's words: an alert's message, any other's label; a built-in item of the gear menu with none of its own, none. */
+export const wordsOf = (part: HeaderPart): string => ('message' in part ? part.message : (part.label ?? ''));
+
+/** What a new item of the gear menu is: one of the record's own, the app's action, or a report under Print. */
+export type MenuItemKind = NonNullable<MenuItem['builtin']> | 'action' | 'print';
 
 export interface HeaderPartPatch {
   label?: string;
@@ -48,6 +51,9 @@ export interface HeaderPartPatch {
   /** Words for a counter's second value, which then shows under the first; empty for none. */
   secondLabel?: string;
   icon?: string;
+  /** An item of the gear menu: one of the record's own it is (empty for none), and whether it goes under Print. */
+  builtin?: MenuItem['builtin'] | '';
+  group?: 'actions' | 'print';
 }
 
 /** How the status steps behave: clicked, where they sit, the time spent per step, folded stages, a click that saves. */
@@ -75,6 +81,18 @@ export interface HeaderCommands {
   /** An alert's button's words, or the action it runs. */
   updateAlertButton(alert: string, button: string, patch: { label?: string; action?: string }): boolean;
   removeAlertButton(alert: string, button: string): boolean;
+  /**
+   * An item at the end of the gear menu over the record: one of the record's
+   * own (Archive, Unarchive, Duplicate, Delete) in the page's words, or the
+   * app's action, or a report under Print, with these words. Returns its id, picked.
+   */
+  addMenuItem(kind: MenuItemKind, label?: string): string | false;
+  /** Whether the pager and the breadcrumbs the app gives show over the record: true takes the page's "no" away. */
+  setRecordToolbar(patch: { pager?: boolean; breadcrumbs?: boolean }): boolean;
+  /** The record's attachment beside the sheet: null for none, '' for the app's attachments, or a file field's name. */
+  setAttachmentPreview(field: string | null): boolean;
+  /** Where the side panel stays beside the sheet: on a wide form, or always. */
+  setSidePanelBeside(where: 'wide' | 'always'): boolean;
 }
 
 /** The lists a header part sits in, by kind, as the sheet names them. */
@@ -87,8 +105,11 @@ const LISTS = { button: 'buttons', stat: 'statButtons', badge: 'badges', ribbon:
 export function findHeaderPart(page: Page, id: string): { kind: HeaderPartKind; list: HeaderPart[]; index: number; part: HeaderPart } | null {
   const root = page.layout;
   if (root.type !== 'sheet') return null;
+  const menu = root.toolbar?.menu ?? [];
+  const item = menu.findIndex((p) => p.id === id);
+  if (item !== -1) return { kind: 'menu', list: menu, index: item, part: menu[item] };
   if (root.ribbon?.id === id) return { kind: 'ribbon', list: [root.ribbon, ...(root.ribbons ?? [])], index: 0, part: root.ribbon };
-  for (const kind of Object.keys(LISTS) as HeaderPartKind[]) {
+  for (const kind of Object.keys(LISTS) as (keyof typeof LISTS)[]) {
     const list = (root[LISTS[kind]] ?? []) as HeaderPart[];
     const index = list.findIndex((p) => p.id === id);
     if (index !== -1) return { kind, list: kind === 'ribbon' && root.ribbon ? [root.ribbon, ...list] : list, index: kind === 'ribbon' && root.ribbon ? index + 1 : index, part: list[index] };
@@ -205,17 +226,38 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
             if (kind === 'alert') (part as Alert).message = patch.label;
             else (part as Exclude<HeaderPart, Alert>).label = patch.label;
           }
+          if (patch.label !== undefined && kind === 'menu' && !patch.label.trim()) {
+            // A built-in item's words may go: its own come back, in the page's language.
+            if (!(part as MenuItem).builtin) throw new Refusal((w) => w.refusals.menuNeedsWords);
+            delete (part as MenuItem).label;
+          }
           if (patch.action !== undefined) {
             if (kind === 'badge' || kind === 'ribbon' || kind === 'alert') throw new Refusal((w) => w.refusals.badgeNoAction);
             if (!patch.action.trim()) throw new Refusal((w) => (kind === 'stat' ? w.refusals.counterAction : w.refusals.buttonAction));
             (part as ButtonNode | StatButton).action = patch.action.trim();
+          }
+          if (patch.builtin !== undefined) {
+            if (kind !== 'menu') throw new Refusal((w) => w.refusals.onlyMenuBuiltin);
+            const item = part as MenuItem;
+            if (patch.builtin) item.builtin = patch.builtin;
+            else {
+              if (!item.label?.trim()) throw new Refusal((w) => w.refusals.menuNeedsWords);
+              delete item.builtin;
+              // Its own steps or action, else the app's action of its words.
+              if (!item.steps && item.action === undefined) item.action = actionName(item.label);
+            }
+          }
+          if (patch.group !== undefined) {
+            if (kind !== 'menu') throw new Refusal((w) => w.refusals.onlyMenuGroup);
+            if (patch.group === 'print') (part as MenuItem).group = 'print';
+            else delete (part as MenuItem).group;
           }
           if (patch.style !== undefined) {
             if (kind !== 'button') throw new Refusal((w) => w.refusals.onlyButtonStyle);
             (part as ButtonNode).style = patch.style;
           }
           if (patch.confirm !== undefined) {
-            if (kind !== 'button') throw new Refusal((w) => w.refusals.onlyButtonAsks);
+            if (kind !== 'button' && kind !== 'menu') throw new Refusal((w) => w.refusals.onlyButtonAsks);
             if (patch.confirm.trim()) (part as ButtonNode).confirm = patch.confirm;
             else delete (part as ButtonNode).confirm;
           }
@@ -309,7 +351,11 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
         const { kind, list, index } = partOf(draft, id);
         list.splice(index, 1);
         const root = draft.layout as SheetNode;
-        if (!list.length) delete root[LISTS[kind]];
+        if (kind === 'menu') {
+          // The menu and the toolbar go with their last item, the pager's and the trail's settings staying.
+          if (!list.length && root.toolbar) delete root.toolbar.menu;
+          if (root.toolbar && !Object.keys(root.toolbar).length) delete root.toolbar;
+        } else if (!list.length) delete root[LISTS[kind]];
         prune(draft);
       });
     },
@@ -341,6 +387,64 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
         },
         typing ? `alert-button:${Object.keys(patch)[0]}:${buttonId}` : null
       );
+    },
+
+    addMenuItem(kind, label) {
+      let created = '';
+      const ok = apply((draft) => {
+        const root = sheetOf(draft);
+        const ids = allIds(draft);
+        created = nextName((id) => ids.has(id), kind === 'action' || kind === 'print' ? 'menu' : `menu-${kind}`, '-');
+        const words = (label ?? '').trim();
+        let item: MenuItem;
+        if (kind === 'action' || kind === 'print') {
+          if (!words) throw new Refusal((w) => w.refusals.menuNeedsWords);
+          item = { id: created, label: words, ...(kind === 'print' ? { group: 'print' as const } : {}), action: actionName(words) };
+        } else item = { id: created, ...(words ? { label: words } : {}), builtin: kind };
+        root.toolbar = { ...root.toolbar, menu: [...(root.toolbar?.menu ?? []), item] };
+      });
+      if (!ok) return false;
+      context.select(created);
+      return created;
+    },
+
+    setRecordToolbar(patch) {
+      return apply((draft) => {
+        const root = sheetOf(draft);
+        const toolbar = { ...root.toolbar };
+        // Shown is how it is unless said: only a "no" is written.
+        for (const key of ['pager', 'breadcrumbs'] as const) {
+          if (patch[key] === undefined) continue;
+          if (patch[key]) delete toolbar[key];
+          else toolbar[key] = false;
+        }
+        if (Object.keys(toolbar).length) root.toolbar = toolbar;
+        else delete root.toolbar;
+      });
+    },
+
+    setAttachmentPreview(field) {
+      return apply((draft) => {
+        const root = sheetOf(draft);
+        if (field === null) delete root.attachmentPreview;
+        else if (!field) root.attachmentPreview = { ...root.attachmentPreview, field: undefined };
+        else {
+          const def = fieldFor(draft, field);
+          if (def.type !== 'binary' && def.type !== 'image') throw new Refusal((w) => w.refusals.previewNeedsFile(def.label, storedAs(def, w)));
+          root.attachmentPreview = { ...root.attachmentPreview, field };
+        }
+        if (root.attachmentPreview?.field === undefined && root.attachmentPreview) delete root.attachmentPreview.field;
+        prune(draft);
+      });
+    },
+
+    setSidePanelBeside(where) {
+      return apply((draft) => {
+        const root = sheetOf(draft);
+        if (!root.sidePanel) throw new Refusal((w) => w.refusals.noSidePanel);
+        if (where === 'always') root.sidePanelBeside = 'always';
+        else delete root.sidePanelBeside;
+      });
     },
 
     removeAlertButton(alertId, buttonId) {

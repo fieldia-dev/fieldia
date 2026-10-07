@@ -101,6 +101,29 @@ export interface ViewerLabels {
   formBroken: string;
   /** A page a step opens that the app has none of (`{page}`, its id). */
   pageMissing: string;
+  /**
+   * Over a record: the gear menu (`actions`, its `print` group and its
+   * built-in items), the trail to it (`breadcrumbs`, a new record's crumb
+   * `newRecord`), and the pager (`records`, `recordAt` with `{n}` and
+   * `{total}`, its buttons).
+   */
+  actions: string;
+  print: string;
+  archive: string;
+  unarchive: string;
+  duplicate: string;
+  delete: string;
+  breadcrumbs: string;
+  newRecord: string;
+  records: string;
+  recordAt: string;
+  previousRecord: string;
+  nextRecord: string;
+  /** The record's main attachment beside it (`{name}`, the file's): its name, Open, and the buttons through several. */
+  attachment: string;
+  openAttachment: string;
+  previousAttachment: string;
+  nextAttachment: string;
 }
 
 /** English: always here, and the words a language leaves out. */
@@ -179,6 +202,22 @@ const en: ViewerLabels = {
   formNotPlaceable: 'The saved form “{page}” cannot be placed here: only a form of sections or tabs can.',
   formBroken: 'The saved form “{page}” cannot be shown.',
   pageMissing: 'The page “{page}” cannot be found.',
+  actions: 'Actions',
+  print: 'Print',
+  archive: 'Archive',
+  unarchive: 'Unarchive',
+  duplicate: 'Duplicate',
+  delete: 'Delete',
+  breadcrumbs: 'Breadcrumbs',
+  newRecord: 'New',
+  records: 'Records',
+  recordAt: '{n} / {total}',
+  previousRecord: 'Previous record',
+  nextRecord: 'Next record',
+  attachment: 'Attachment: {name}',
+  openAttachment: 'Open',
+  previousAttachment: 'Previous attachment',
+  nextAttachment: 'Next attachment',
 };
 
 /**

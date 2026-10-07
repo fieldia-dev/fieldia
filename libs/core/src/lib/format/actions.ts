@@ -146,7 +146,72 @@ export interface OpenUrlStep extends StepBase {
   newTab?: boolean;
 }
 
-export type ActionStep = OpenStep | SetStep | ClearStep | AddLineStep | CheckStep | SaveStep | ResetStep | GoToStep | SayStep | AskStep | CallStep | CloseStep | ReloadStep | OpenUrlStep;
+/**
+ * Archive the record, as Flectra's Archive: through the data source's
+ * `archive`, or — without one — the app's action named "archive". The record
+ * is then loaded again, so a ribbon or a condition on `active` follows. A
+ * new record cannot be.
+ */
+export interface ArchiveStep extends StepBase {
+  do: 'archive';
+}
+
+/** Bring an archived record back: the data source's `archive` told so, or the app's action "unarchive". */
+export interface UnarchiveStep extends StepBase {
+  do: 'unarchive';
+}
+
+/**
+ * Copy the record and show the copy, as Flectra's Duplicate: changes not
+ * saved yet are saved first, then the data source's `copy` makes it — or,
+ * without one, the app's action "duplicate", answering with the copy's id
+ * (`record`).
+ */
+export interface DuplicateStep extends StepBase {
+  do: 'duplicate';
+}
+
+/**
+ * Delete the record: the data source's `delete`, or the app's action
+ * "delete". The form then shows the next record of its pager, or goes back
+ * along its breadcrumbs, or starts a new record.
+ */
+export interface DeleteStep extends StepBase {
+  do: 'delete';
+}
+
+/**
+ * Post a message about the record in its conversation — the chatter beside
+ * it, or, in a page opened over a record, that record's — as Flectra posts a
+ * closing note: the words, each `{field}` showing that field's value. A note
+ * for the team unless it is a `message` its followers get.
+ */
+export interface PostStep extends StepBase {
+  do: 'post';
+  message: string;
+  kind?: 'note' | 'message';
+}
+
+export type ActionStep =
+  | OpenStep
+  | SetStep
+  | ClearStep
+  | AddLineStep
+  | CheckStep
+  | SaveStep
+  | ResetStep
+  | GoToStep
+  | SayStep
+  | AskStep
+  | CallStep
+  | CloseStep
+  | ReloadStep
+  | OpenUrlStep
+  | ArchiveStep
+  | UnarchiveStep
+  | DuplicateStep
+  | DeleteStep
+  | PostStep;
 
 /**
  * The moments of a form that run steps. A change is a person's: values set by
@@ -206,6 +271,11 @@ export const ActionStepSchema = z
     z.strictObject({ do: z.literal('close'), when }),
     z.strictObject({ do: z.literal('reload'), when }),
     z.strictObject({ do: z.literal('openUrl'), when, url: expression, newTab: z.boolean().optional() }),
+    z.strictObject({ do: z.literal('archive'), when }),
+    z.strictObject({ do: z.literal('unarchive'), when }),
+    z.strictObject({ do: z.literal('duplicate'), when }),
+    z.strictObject({ do: z.literal('delete'), when }),
+    z.strictObject({ do: z.literal('post'), when, message: z.string().min(1), kind: z.enum(['note', 'message']).optional() }),
   ])
   .meta({ id: 'ActionStep' });
 

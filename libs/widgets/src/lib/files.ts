@@ -299,3 +299,21 @@ function fileWidget(kind: 'binary' | 'image'): WidgetFactory {
 
 export const binaryWidget = fileWidget('binary');
 export const imageWidget = fileWidget('image');
+
+/**
+ * A file as a file opened in its dialog shows it: a picture, or a PDF in the
+ * browser's own viewer — what a sheet's attachment preview shows beside it.
+ * Null for any other kind. `free` lets go of the address made for a file
+ * held as data.
+ */
+export function fileShown(doc: Document, file: FileValue): { element: HTMLElement; url: string; free(): void } | null {
+  const kind = kindOf(file);
+  if (kind !== 'image' && kind !== 'pdf') return null;
+  const url = file.data ? URL.createObjectURL(new Blob([bytes(file.data)], { type: file.type })) : source(file);
+  const element = doc.createElement(kind === 'image' ? 'img' : 'iframe');
+  // A PDF fills the width, without the viewer's page list beside it: there is room for the page alone.
+  element.setAttribute('src', kind === 'pdf' ? `${url}#view=FitH&navpanes=0` : url);
+  element.setAttribute(kind === 'image' ? 'alt' : 'title', file.name);
+  element.setAttribute('data-kind', kind);
+  return { element, url, free: () => void (url.startsWith('blob:') && URL.revokeObjectURL(url)) };
+}

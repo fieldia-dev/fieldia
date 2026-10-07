@@ -32,11 +32,12 @@ export interface StepsEditor {
 type Kind = ActionStep['do'];
 
 /** "Add a step"'s groups, in order, and the kinds in each. */
-const GROUPS: { group: 'open' | 'values' | 'check' | 'talk' | 'app'; kinds: Kind[] }[] = [
+const GROUPS: { group: 'open' | 'values' | 'check' | 'talk' | 'record' | 'app'; kinds: Kind[] }[] = [
   { group: 'open', kinds: ['open', 'openUrl', 'goTo', 'close'] },
   { group: 'values', kinds: ['set', 'clear', 'addLine'] },
   { group: 'check', kinds: ['check', 'save', 'reset'] },
-  { group: 'talk', kinds: ['say', 'ask'] },
+  { group: 'talk', kinds: ['say', 'ask', 'post'] },
+  { group: 'record', kinds: ['archive', 'unarchive', 'duplicate', 'delete'] },
   { group: 'app', kinds: ['call', 'reload'] },
 ];
 
@@ -132,6 +133,12 @@ export function stepsEditor(el: ElementFactory, designer: Designer, place: Steps
       goTo: showTargets(page).length > 0,
       // A record is loaded again; a survey's answers are not.
       reload: page.data.kind === 'record',
+      // A record archives, copies, deletes and has a conversation; a survey's answers do not.
+      archive: page.data.kind === 'record',
+      unarchive: page.data.kind === 'record',
+      duplicate: page.data.kind === 'record',
+      delete: page.data.kind === 'record',
+      post: page.data.kind === 'record',
     };
     const items: MenuItem[] = GROUPS.flatMap(({ group, kinds }) =>
       kinds.filter((kind) => fits[kind] !== false).map((kind, i) => ({ id: kind, label: w.kinds[kind], ...(i === 0 ? { heading: w.groups[group] } : {}) }))

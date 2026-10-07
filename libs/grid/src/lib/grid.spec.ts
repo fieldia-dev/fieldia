@@ -487,3 +487,20 @@ describe('the grid with sections and notes', () => {
     expect(area.rows).toBe(1);
   });
 });
+
+describe('a grid whose columns shrink to fit (fit: shrink)', () => {
+  it('lets its columns go narrower, sharing the width, and wraps their headers before it scrolls', async () => {
+    const shrinking = JSON.parse(JSON.stringify(order)) as Page & { layout: any };
+    shrinking.layout.children[0].children[1].fit = 'shrink';
+    const { api } = await mount(shrinking);
+    const product = api?.getColumnDef('product_id');
+    const price = api?.getColumnDef('price');
+    expect(product).toEqual(expect.objectContaining({ minWidth: 72, wrapHeaderText: true, autoHeaderHeight: true }));
+    expect(product?.flex).toBeGreaterThan(0);
+    expect(price?.minWidth).toBe(80);
+    const { api: plain } = await mount();
+    expect(plain?.getColumnDef('product_id')).toEqual(expect.objectContaining({ minWidth: 140 }));
+    expect(plain?.getColumnDef('product_id')?.wrapHeaderText).toBeFalsy();
+  });
+});
+

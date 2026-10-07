@@ -1,4 +1,4 @@
-import type { ActionStep, ButtonNode, CallStep, Page, PageEvents, StatButton } from '@fieldia/core';
+import type { ActionStep, ButtonNode, CallStep, MenuItem, Page, PageEvents, StatButton } from '@fieldia/core';
 import { findHeaderPart } from './header-commands';
 import { locate } from './layout-tree';
 import { containers, tabsNodes } from './page-tree';
@@ -35,19 +35,19 @@ export function placeKey(place: StepsPlace): string {
 
 export const samePlace = (a: StepsPlace, b: StepsPlace) => placeKey(a) === placeKey(b);
 
-/** A button anywhere on the page, by its id: in the body, a record's header (a button or a counter), or a list's. */
-export function pressOf(page: Page, id: string): ButtonNode | StatButton | null {
+/** A button anywhere on the page, by its id: in the body, a record's header (a button, a counter, an item of its gear menu), or a list's. */
+export function pressOf(page: Page, id: string): ButtonNode | StatButton | MenuItem | null {
   const node = locate(page, id)?.node;
   if (node?.type === 'button') return node;
   const header = findHeaderPart(page, id);
-  if (header && header.kind !== 'badge') return header.part as ButtonNode | StatButton;
+  if (header && header.kind !== 'badge') return header.part as ButtonNode | StatButton | MenuItem;
   const root = page.layout;
   if (root.type === 'list') return root.actions?.find((a) => a.id === id) ?? null;
   return null;
 }
 
 /** A press's app action, as the `call` step it is run as. */
-function actionStep(press: ButtonNode | StatButton): CallStep | null {
+function actionStep(press: ButtonNode | StatButton | MenuItem): CallStep | null {
   if (press.action === undefined) return null;
   const params = (press as ButtonNode).params;
   return { do: 'call', action: press.action, ...(params ? { params } : {}) };
@@ -59,7 +59,10 @@ export function stepsAt(page: Page, place: StepsPlace): ActionStep[] {
     const press = pressOf(page, place.press);
     if (!press) return [];
     const call = actionStep(press);
-    return [...(press.steps ?? []), ...(call ? [call] : [])];
+    const own = [...(press.steps ?? []), ...(call ? [call] : [])];
+    // A built-in item of the gear menu with nothing of its own shows the step it runs.
+    const builtin = 'builtin' in press ? press.builtin : undefined;
+    return !own.length && builtin ? [{ do: builtin }] : own;
   }
   const on = page.on;
   if (!on) return [];
@@ -86,7 +89,15 @@ export function writeSteps(draft: Page, place: StepsPlace, steps: ActionStep[]):
   if ('press' in place) {
     const press = pressOf(draft, place.press);
     if (!press) throw new Refusal((w) => w.steps.noPlace);
-    if (!steps.length) throw new Refusal((w) => w.steps.needsSomething(press.label));
+    // A built-in item left with its own step alone, or none, runs its built-in again, asking first as it does.
+    const builtin = 'builtin' in press ? press.builtin : undefined;
+    if (builtin && (!steps.length || (steps.length === 1 && steps[0].do === builtin && steps[0].when === undefined))) {
+      delete press.steps;
+      delete press.action;
+      delete (press as MenuItem).params;
+      return;
+    }
+    if (!steps.length) throw new Refusal((w) => w.steps.needsSomething(press.label ?? ''));
     // A counter takes no params with its action: a call with some stays a step.
     const only = steps.length === 1 && steps[0].do === 'call' && steps[0].when === undefined && (!steps[0].params || 'type' in press) ? steps[0] : null;
     // Each key that stays keeps its place in the button, as the JSON shows it.
@@ -171,7 +182,7 @@ export function everyPlace(page: Page): { place: StepsPlace; steps: ActionStep[]
     if (part.steps?.length) out.push({ place: { press: part.id }, steps: stepsAt(page, { press: part.id }) });
   };
   const root = page.layout;
-  if (root.type === 'sheet') [...(root.buttons ?? []), ...(root.statButtons ?? [])].forEach(press);
+  if (root.type === 'sheet') [...(root.buttons ?? []), ...(root.statButtons ?? []), ...(root.toolbar?.menu ?? [])].forEach(press);
   if (root.type === 'list') (root.actions ?? []).forEach(press);
   for (const c of containers(page)) for (const node of c.children) if (node.type === 'button') press(node);
   const on = page.on ?? {};

@@ -16,6 +16,8 @@ export const defaults: DesignerWords['defaults'] = {
   done: 'منجز',
   newButton: 'زر جديد',
   counter: 'عدّاد',
+  newMenuAction: 'إجراء جديد',
+  newReport: 'تقرير',
   badge: 'شارة',
   ribbon: 'شريط',
   alert: 'أمر ينبغي معرفته عن هذا السجل.',

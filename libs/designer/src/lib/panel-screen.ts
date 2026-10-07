@@ -87,7 +87,7 @@ export function headOf(page: Page, kind: PartKind, picked: readonly string[], fr
     }
     case 'header': {
       const part = findHeaderPart(page, id);
-      const kinds = { button: h.button, stat: h.counter, badge: h.badge, ribbon: h.ribbon, alert: h.alert } as const;
+      const kinds = { button: h.button, stat: h.counter, badge: h.badge, ribbon: h.ribbon, alert: h.alert, menu: h.menuItem } as const;
       return { icon: 'play', kind: part ? kinds[part.kind] : h.button, name: part ? wordsOf(part.part) : '' };
     }
     case 'statusbar': {

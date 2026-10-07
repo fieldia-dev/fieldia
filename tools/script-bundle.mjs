@@ -178,7 +178,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // hours as HH:MM, a per cent, a live timer, a range of dates on its own calendar, tag colours, a value to copy,
 // a PDF or a page shown inline, an analytic distribution, tax totals, payments, properties from a linked record
 // added to in place, a column drawn by its own widget — and their stylesheet add 40.1 more, to 395.6.
-const BUDGET_KB = 396.5;
+// What sits around a record — the bar over it with the breadcrumbs, a gear menu that is a real menu and the
+// pager the app fills, the record's own steps (archive, duplicate, delete, a post in its conversation) and
+// another record shown in place, the attachment beside the sheet in the browser's own PDF viewer, and the
+// side panel kept beside it (5.3 of it the stylesheet) — add 20.3 more, to 415.9.
+const BUDGET_KB = 417;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -196,7 +200,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // how a dense sheet reads (values as words, ribbons, alerts, stat buttons, statusbar, keys, links, lines), 6 more, to 108.1.
 // the business widgets (stars, a state's dot, HH:MM, per cents, a timer, a range of dates, colours, copy, a PDF and
 // a page inline, a distribution, tax totals, payments, linked properties, a column's own widget), 11.9 more, to 120.
-const GZIP_BUDGET_KB = 120.5;
+// what sits around a record (breadcrumbs, gear menu, pager, the record's own steps and posts, the attachment beside it), 5.9 more, to 125.9.
+const GZIP_BUDGET_KB = 126.5;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -214,7 +219,9 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // A statusbar's More and the time spent in a step, two words in each, add a little more to each.
 // The business widgets' words — twelve colours' names, copy, a distribution's, tax totals', payments', a property
 // added in place — add about 2 to Arabic's and 0.8 to German's and French's.
-const ADD_ON_BUDGET_KB = { ar: [21.3, 4.5], de: [9.1, 3.9], fr: [9.2, 3.9] };
+// What sits around a record — the gear menu's and its built-ins' words, the trail, the pager, the attachment,
+// and what Archive and Delete ask — eighteen words in each, a little more again.
+const ADD_ON_BUDGET_KB = { ar: [22.6, 4.7], de: [9.7, 4.1], fr: [9.8, 4.0] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

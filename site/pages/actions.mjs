@@ -41,6 +41,8 @@ ${code(
     <tr><td>${c('close')}</td><td>The dialog or panel this form was opened in, without saving it.</td></tr>
     <tr><td>${c('openUrl')}</td><td>A web address, from an expression — ${c(`"'/orders/' + name"`)} — in a new tab, or this one with ${c('"newTab": false')}.</td></tr>
     <tr><td>${c('reload')}</td><td>The record loaded again, as your data source now has it: after your app changed it on its server. Your app's answer can ask for it too, with ${c('reload: true')}.</td></tr>
+    <tr><td>${c('archive')} · ${c('unarchive')} · ${c('duplicate')} · ${c('delete')}</td><td>The record's own operations, through your data source's ${c('archive')}, ${c('copy')} and ${c('delete')}, else your app's action of the same name. A copy is shown once made, what changed saved first; a record deleted gives way to the pager's next — see <a href="/record/">Around a record</a>.</td></tr>
+    <tr><td>${c('post')}</td><td>Words in the record's conversation, each ${c('{field}')} showing its value: a note, or with ${c('"kind": "message"')} a message to its followers. In a page opened over a record, in that record's.</td></tr>
   </tbody>
 </table>
 <p>Any step may run only ${c('when')} a condition holds. One that fails or is refused stops the rest: a check with problems, No to a question, a save refused, your app saying stop, a page closed unsaved. A button's ${c('confirm')} is asked first, once; its ${c('action')}, when it names one, runs last as a ${c('call')}.</p>
@@ -61,7 +63,7 @@ mountViewer(host, {
   },
 });`
 )}
-<p>Return nothing to go on. ${c('values')} are set as a ${c('set')} step sets them; ${c('say')} is said; ${c('open')} opens a page as an ${c('open')} step does; ${c('reload: true')} loads the record again first, as your server now has it; ${c('stop')} stops, its words said.</p>
+<p>Return nothing to go on. ${c('values')} are set as a ${c('set')} step sets them; ${c('say')} is said; ${c('post')} is posted in the record's conversation; ${c('record')} shows another record in the form's place — the copy your server made, a credit note; ${c('open')} opens a page as an ${c('open')} step does; ${c('reload: true')} loads the record again first, as your server now has it; ${c('stop')} stops, its words said.</p>
 
 <h2 id="host">What the viewer draws</h2>
 <ul>

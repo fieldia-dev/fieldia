@@ -159,6 +159,12 @@ export const refusals = {
   counterNumber: (label: string, stored: string) => `A counter shows a number, an amount, a date or words; ${label} holds ${stored}`,
   onlyCounterSecond: 'Only a counter shows a second value, a unit or words from a field under its value',
   secondWordsNeedValue: 'Words for a second value need the second value first',
+  // ---- around a record: the gear menu, the attachment beside it, the side panel
+  onlyMenuBuiltin: 'Only an item of the gear menu archives, duplicates or deletes the record itself',
+  onlyMenuGroup: 'Only an item of the gear menu goes under Print',
+  menuNeedsWords: 'An item of the gear menu needs words, unless it is one of the record’s own (Archive, Duplicate, Delete)',
+  previewNeedsFile: (label: string, stored: string) => `The attachment beside the sheet comes from a file or a picture; ${label} holds ${stored}`,
+  noSidePanel: 'The sheet has no side panel to keep beside it',
   // ---- a list
   onlyListColumns: 'Only a list has columns',
   columnAlready: (label: string) => `${label} is a column already`,

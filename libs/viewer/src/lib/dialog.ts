@@ -137,6 +137,9 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
     ...options,
     page: look && !options.page.look ? { ...options.page, look } : options.page,
     showActions: false,
+    // A dialog has no pager or breadcrumbs: they belong to the record under it.
+    records: undefined,
+    breadcrumbs: undefined,
     host: { ...options.host, close: () => discard.click() },
   });
   // A panel runs the way its page does, its language's way unless told: the inline end it sits at is the left, right to left.

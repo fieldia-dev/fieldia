@@ -18,10 +18,12 @@ import type {
   CreateRequest,
   SubmitRequest,
   SubmitResult,
+  ArchiveRequest,
+  RecordRequest,
 } from './data-source';
 import { matchesFilter } from './filter';
 import { wait, type Scheduler } from './scheduler';
-import { structuredCopy, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
+import { structuredCopy, type FileValue, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 
 export interface MemoryDataSourceOptions {
   /** Records by model, then by id. */
@@ -49,6 +51,10 @@ export interface MemoryDataSourceOptions {
    * the definitions the app gave for that record.
    */
   definitions?: Record<string, (values: Values) => PropertyDefinition[]>;
+  /** Each record's attachments, its main one first, by `model:id`: what a sheet's attachment preview shows. */
+  attachments?: Record<string, FileValue[]>;
+  /** The words after a copy's name, as a backend's copy adds them: " (copy)" unless said. */
+  copySuffix?: string;
   /** Answer after this long, so a demo shows its loading states. */
   delayMs?: number;
   scheduler?: Scheduler;
@@ -238,6 +244,46 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       await pause();
       responses.push(structuredCopy(request));
       return { id: responses.length };
+    },
+
+    async archive(request: ArchiveRequest): Promise<void> {
+      calls.push({ method: 'archive', request });
+      await pause();
+      const stored = table(request.model)[String(request.id)];
+      if (!stored) throw new Error(`No ${request.model} record with id ${request.id}`);
+      stored['active'] = !request.archive;
+    },
+
+    async copy(request: RecordRequest): Promise<SaveResult> {
+      calls.push({ method: 'copy', request });
+      await pause();
+      const stored = table(request.model)[String(request.id)];
+      if (!stored) throw new Error(`No ${request.model} record with id ${request.id}`);
+      const id = nextId(request.model);
+      const copy = structuredCopy(stored);
+      const name = options.labelField?.[request.model] ?? 'name';
+      if (typeof copy[name] === 'string') copy[name] = `${copy[name]}${options.copySuffix ?? ' (copy)'}`;
+      // Its lines are its own: new lines, with new ids.
+      for (const [key, value] of Object.entries(copy)) {
+        if (Array.isArray(value) && value.every((line) => line && typeof line === 'object' && 'key' in line && 'values' in line)) {
+          copy[key] = (value as Line[]).map((line) => ({ ...line, id: ++lineIds }));
+        }
+      }
+      table(request.model)[String(id)] = copy;
+      return { id, values: structuredCopy(copy) };
+    },
+
+    async delete(request: RecordRequest): Promise<void> {
+      calls.push({ method: 'delete', request });
+      await pause();
+      if (!table(request.model)[String(request.id)]) throw new Error(`No ${request.model} record with id ${request.id}`);
+      delete table(request.model)[String(request.id)];
+    },
+
+    async attachments(request: RecordRequest): Promise<FileValue[]> {
+      calls.push({ method: 'attachments', request });
+      await pause();
+      return structuredCopy(options.attachments?.[`${request.model}:${request.id}`] ?? []);
     },
 
     async options(request: OptionsRequest): Promise<Option[]> {
