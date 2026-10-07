@@ -248,6 +248,38 @@ mountViewer(host, { page, dataSource, widgets: gridWidgets });
   <li><strong>A line in a dialog.</strong> ↗ at the end of a line opens all of its fields, the hidden columns too, in a dialog. Its links search the page's data source, and the page's ${c('onchange')} runs as it is edited, so a subtotal follows its quantity there. Save &amp; Close writes the line back; Discard leaves it as it was.</li>
 </ul>
 
+<h2 id="table-rules">A table's own rules</h2>
+<p>Each line of a table can be read on its own, as Flectra's editable lists do. Under ${c('cells')}, a column's ${c('invisible')}, ${c('readonly')} and ${c('required')} are conditions on its line — its fields, with the record it is on as ${c('parent')} — and its ${c('hidden')} a condition on the record that hides the whole column, as ${c('column_invisible')} does. A cell its line hides stays, blank, so the column still lines up; one its line requires stops a save until it has a value.</p>
+${code(
+  'json',
+  `
+{
+  "type": "field", "id": "moves", "field": "move_ids", "widget": "grid",
+  "cells": {
+    "product_id": { "readonly": "parent.state != 'draft'" },
+    "quantity": {
+      "hidden": "state == 'draft'",
+      "tones": [{ "tone": "danger", "when": "quantity > product_uom_qty" }],
+      "bold": "quantity > 0"
+    },
+    "lot_id": { "invisible": "not has_tracking", "required": "has_tracking and parent.state == 'assigned'" },
+    "state": { "badge": true, "tones": [{ "tone": "success", "when": "state == 'done'" }] }
+  },
+  "rowTones": [{ "tone": "muted", "when": "scrapped" }],
+  "rowButtons": [
+    { "type": "button", "id": "serials", "label": "Assign serial numbers", "icon": "list",
+      "invisible": "not has_tracking", "action": "action_assign_serial" }
+  ]
+}`
+)}
+<ul>
+  <li><strong>Tones.</strong> A line's ${c('rowTones')} and a cell's ${c('tones')} take the first that holds — ${c('info')}, ${c('success')}, ${c('warning')}, ${c('danger')} or ${c('muted')}, Flectra's ${c('decoration-*')} — and ${c('rowBold')} or a cell's ${c('bold')} its ${c('decoration-bf')}. Their colours are the theme's, readable in light and dark.</li>
+  <li><strong>Badges.</strong> A choice with ${c('"badge": true')} shows as a pill in its tone, in the grid, as ${c('widget="badge"')}.</li>
+  <li><strong>Buttons on a line</strong> are shown by their own condition on it. A press runs their steps, and each call your app answers carries the line: ${c('{ field, key, values }')}.</li>
+  <li><strong>Width.</strong> A cell's ${c('width')} is the column's, in characters.</li>
+</ul>
+<p>Both the plain table and the grid draw them; the form reads them, so your own widget can too, with ${c('form.lineState(node, key)')} and ${c('form.columnHidden(node, column)')}.</p>
+
 <h2 id="code">JSON in a code editor</h2>
 <p>${c('@fieldia/code')} shows a ${c('json')} field in CodeMirror, bundled with the package, so it works offline and loads only where it is used. Valid JSON reaches the form as it is typed; text that is not valid is said so, and the last good value stays.</p>
 ${code(
