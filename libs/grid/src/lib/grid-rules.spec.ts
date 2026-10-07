@@ -159,5 +159,9 @@ describe('the grid’s money in its record’s currency', () => {
     handle.form.setValue('currency_id', { id: 2, label: 'USD' });
     await frames();
     expect(prices()).toEqual(['$1,200.00', '$1,200.00']);
+    // Opened in its dialog, which has no record round it, the line's money keeps the record's currency.
+    (grid.querySelector('button[aria-label="Open line"]') as HTMLButtonElement).click();
+    await frames();
+    expect(document.querySelector('.fd-form-dialog [data-node="values-price"] .fd-currency')?.textContent).toBe('$');
   });
 });
