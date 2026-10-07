@@ -57,6 +57,8 @@ ${code(
 <h2 id="help">Where help shows</h2>
 <p>A field's ${c('help')} shows as words under it, or behind a (?) beside its label, as Flectra shows it — shorter on a busy sheet — or both. The page sets its way in ${c('look.helpShown')}, and any field may have its own ${c('helpShown')}: ${c('below')} (the default), ${c('tooltip')} or ${c('both')}. The (?) opens on hover, on focus or with a tap, and Escape closes it; the box stays described by the help, so a screen reader still says it. In the designer it is Help, on the Look tab for the page and under a field's Layout.</p>
 ${code('json', `{ "look": { "helpShown": "tooltip" } }`)}
+<p id="read-only-words">A read-only field shows as its value's words with ${c('look.readonlyShown')}: ${c('"text"')}, as Flectra draws it — a choice by its label with no arrow, an amount with its currency, a date as people write it, a link by its record's name (a link that opens it, where the app can show it), a mail, phone or web address as a link to it, and long words wrapped rather than cut at the box's edge; empty, it draws nothing. A whole form locked by the Edit switch reads the same way. ${c('"box"')}, the default, keeps the greyed boxes. Yes or no boxes, tables, tags, files and the like keep their own look either way. In the designer it is Read-only fields, on the Look tab.</p>
+${code('json', `{ "look": { "readonlyShown": "text" } }`)}
 
 <h2 id="languages">Four languages</h2>
 <p>Fieldia's own words — Save, Next, validation messages, “Step 2 of 3”, the upload and search prompts — come in English, Arabic, German and French:</p>
