@@ -106,4 +106,9 @@ export const ar: WidgetLabels = {
   keepOrder: 'أبقِ هذا الترتيب',
   ofMax: '{n} من {max}',
   charactersLeft: 'الأحرف المتبقية: {n}',
+  colourNames: 'بلا لون|أحمر|برتقالي|أصفر|سماوي|أرجواني|لوزي|أزرق مخضر|أزرق|توتي|أخضر|بنفسجي',
+  copyValue: 'نسخ',
+  copied: 'تم النسخ',
+  noDocument: 'لا يوجد مستند بعد',
+  openInNewTab: 'فتح في علامة تبويب جديدة',
 };

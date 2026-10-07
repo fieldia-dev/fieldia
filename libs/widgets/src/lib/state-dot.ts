@@ -1,5 +1,6 @@
 import type { Tone, Value } from '@fieldia/core';
 import { describeState, maker, setAttr, setText } from './kind-parts';
+import { popup } from './popup';
 import type { WidgetFactory } from './widgets';
 
 /**
@@ -37,35 +38,23 @@ export const stateDotWidget: WidgetFactory = ({ form, name, field, node, id, doc
   const element = make('span', { class: 'fd-dot-box' }, button, ...(words ? [words] : []), menu);
 
   const current = () => options.findIndex((option) => option.value === form.getState().values[name]);
-  function open(at = Math.max(0, current())) {
-    menu.hidden = false;
-    button.setAttribute('aria-expanded', 'true');
-    // In a form, it floats over the page from the dot, so a table's cell or a folded part does not clip it.
-    const host = element.closest<HTMLElement>('.fd-form');
-    if (host) {
-      host.append(menu);
-      const [b, h] = [button.getBoundingClientRect(), host.getBoundingClientRect()];
-      const rtl = getComputedStyle(element).direction === 'rtl';
-      Object.assign(menu.style, { position: 'absolute', top: `${b.bottom - h.top + 4}px`, insetInlineStart: rtl ? `${h.right - b.right}px` : `${b.left - h.left}px` });
-    }
-    items[at]?.focus();
-    document.addEventListener('pointerdown', outside, true);
-  }
-  function close(refocus: boolean) {
-    if (menu.hidden) return;
-    menu.hidden = true;
-    button.setAttribute('aria-expanded', 'false');
-    if (menu.parentElement !== element) element.append(menu);
-    document.removeEventListener('pointerdown', outside, true);
+  let refocus = false;
+  const floating = popup(element, button, menu, () => {
     if (refocus) button.focus();
+    refocus = false;
+  });
+  function open(at = Math.max(0, current())) {
+    floating.open();
+    items[at]?.focus();
+  }
+  function close(focusBack: boolean) {
+    refocus = focusBack;
+    floating.close();
   }
   function pick(at: number) {
     form.setValue(name, options[at].value);
     close(true);
   }
-  const outside = (event: Event) => {
-    if (!menu.contains(event.target as Node) && !button.contains(event.target as Node)) close(false);
-  };
   button.addEventListener('click', () => (menu.hidden ? open() : close(true)));
   button.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Enter' && event.key !== ' ') return;

@@ -45,6 +45,7 @@ import { layOut, limiter } from './choice-rules';
 import { durationWidget, percentageWidget } from './duration';
 import { priorityWidget } from './priority';
 import { stateDotWidget } from './state-dot';
+import { colourWidget } from './colour';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -611,6 +612,9 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'selection.priority': priorityWidget,
   // A grey, red or green dot with a menu of the states: Flectra's state_selection.
   'selection.dot': stateDotWidget,
+  // A tag colour from Flectra's twelve (0 none … 11), or a colour as #rrggbb.
+  'integer.color': colourWidget,
+  'char.color': colourWidget,
   selection: selectWidget,
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),

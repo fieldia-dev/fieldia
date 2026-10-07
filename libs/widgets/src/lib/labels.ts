@@ -141,6 +141,14 @@ export interface WidgetLabels {
   ofMax: string;
   /** How many more characters a box with a most takes, said to a screen reader once typing pauses. */
   charactersLeft: string;
+  /** Flectra's twelve tag colours, kept by their number from 0 (none) to 11, split by |. */
+  colourNames: string;
+  /** The button that copies a value, and what it says once it has. */
+  copyValue: string;
+  copied: string;
+  /** A document shown inline, while there is none; a page shown inline, opened in a tab of its own. */
+  noDocument: string;
+  openInNewTab: string;
 }
 
 /** English: always here, and the words a language leaves out. */
@@ -249,6 +257,11 @@ const en: WidgetLabels = {
   keepOrder: 'Keep this order',
   ofMax: '{n} of {max}',
   charactersLeft: 'Characters left: {n}',
+  colourNames: 'No colour|Red|Orange|Yellow|Cyan|Purple|Almond|Teal|Blue|Raspberry|Green|Violet',
+  copyValue: 'Copy',
+  copied: 'Copied',
+  noDocument: 'No document yet',
+  openInNewTab: 'Open in a new tab',
 };
 
 /**

@@ -39,4 +39,13 @@ export const BUSINESS_CSS = /* css */ `
 .fd-dot-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 4px; cursor: pointer; white-space: nowrap; font-size: 14px; }
 .fd-dot-item:hover, .fd-dot-item:focus { background: var(--fd-accent-soft); outline: none; }
 .fd-dot-item[aria-checked="true"] { font-weight: 600; }
+/* A colour: a swatch of it, and a palette of Flectra's twelve under it; none is a crossed-out square. */
+.fd-colour-box { position: relative; display: inline-flex; align-items: center; gap: 8px; }
+.fd-colour-button, .fd-colour { width: 24px; height: 24px; padding: 0; border: 1px solid var(--fd-border-strong); border-radius: 4px; background: var(--fd-swatch, transparent); cursor: pointer; }
+.fd-colour-button:disabled { cursor: default; }
+.fd-colour-none, .fd-colour[data-colour="0"] { background: linear-gradient(to top right, transparent calc(50% - 1px), var(--fd-error) calc(50% - 1px), var(--fd-error) calc(50% + 1px), transparent calc(50% + 1px)); }
+.fd-colour-palette { position: absolute; top: calc(100% + 4px); inset-inline-start: 0; z-index: 30; display: grid; grid-template-columns: repeat(6, 24px); gap: 6px; padding: 8px; background: var(--fd-surface); border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 6px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16); }
+.fd-colour[aria-checked="true"] { box-shadow: 0 0 0 2px var(--fd-surface), 0 0 0 4px var(--fd-accent); }
+.fd-colour-input { width: 44px; height: 30px; padding: 2px; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); background: var(--fd-surface); }
+.fd-colour-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; color: var(--fd-muted); }
 `;

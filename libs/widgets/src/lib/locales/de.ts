@@ -106,4 +106,9 @@ export const de: WidgetLabels = {
   keepOrder: 'Diese Reihenfolge behalten',
   ofMax: '{n} von {max}',
   charactersLeft: 'Noch {n} Zeichen',
+  colourNames: 'Keine Farbe|Rot|Orange|Gelb|Cyan|Lila|Mandel|Petrol|Blau|Himbeere|Grün|Violett',
+  copyValue: 'Kopieren',
+  copied: 'Kopiert',
+  noDocument: 'Noch kein Dokument',
+  openInNewTab: 'In neuem Tab öffnen',
 };
