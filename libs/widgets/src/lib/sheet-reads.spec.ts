@@ -7,21 +7,21 @@ describe('a choice as a badge', () => {
 
   it('shows the chosen option’s words in a pill toned by the value, and nothing when none is chosen', () => {
     const { el, form } = mountKind(risk, { widget: 'badge', options: { tones: { high: 'danger', medium: 'warning', low: 'success' } } });
-    expect(el.classList.contains('fd-badge')).toBe(true);
+    expect(el.classList.contains('fd-value-badge')).toBe(true);
     expect(el.hidden).toBe(true);
     form.setValue('x', 'high');
     expect(el.hidden).toBe(false);
     expect(el.textContent).toBe('High');
-    expect(el.className).toContain('fd-tone-danger');
+    expect(el.dataset['tone']).toBe('danger');
     form.setValue('x', 'low');
-    expect(el.className).toContain('fd-tone-success');
-    expect(el.className).not.toContain('fd-tone-danger');
+    expect(el.dataset['tone']).toBe('success');
   });
 
-  it('is muted for a value given no tone', () => {
+  it('takes the tone of the part it sits in for a value given none — grey when there is none either', () => {
     const { el, form } = mountKind(risk, { widget: 'badge' });
     form.setValue('x', 'medium');
-    expect(el.className).toContain('fd-tone-muted');
+    expect(el.dataset['tone']).toBeUndefined();
+    expect(el.textContent).toBe('Medium');
   });
 });
 
