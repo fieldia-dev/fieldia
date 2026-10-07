@@ -1,9 +1,10 @@
-import type { ActionRequest, ActionResult, Line, Page, RelatedRecord, Values } from '@fieldia/core';
+import type { ActionRequest, ActionResult, Line, Page, PropertyDefinition, RelatedRecord, Values } from '@fieldia/core';
 import task from '../../../examples/pages/real-task.page.json';
 import transfer from '../../../examples/pages/real-transfer.page.json';
 import manufacturingOrder from '../../../examples/pages/real-manufacturing-order.page.json';
 import backorderConfirmation from '../../../examples/pages/real-backorder-confirmation.page.json';
 import pickingSign from '../../../examples/pages/real-picking-sign.page.json';
+import taskList from '../../../examples/pages/real-task-list.page.json';
 import type { RealLane } from './lane';
 
 /**
@@ -145,9 +146,11 @@ const linesOf = (values: Values, field: string) => ((values[field] as Line[] | n
 const TASK_ID = 5201;
 const taskRecord: Values = {
   name: 'Fit acoustic ceiling panels, meeting rooms A and B',
-  priority: 1,
+  priority: '1',
   state: '01_in_progress',
   stage_id: STAGES.progress,
+  // The time spent in each stage so far, in seconds, by the stage's id (statusbar_duration).
+  duration_tracking: { 5191: 2 * 86400 + 3 * 3600, 5192: 3 * 86400 + 5 * 3600 },
   personal_stage_type_id: null,
   approval_required: true,
   approval_status: 'none',
@@ -298,7 +301,7 @@ const otherTasks: Record<number, Values> = {
   5202: { name: 'Fix the suspension grid, room A', project_id: PROJECTS.niletowers, parent_id: link(TASK_ID, taskRecord['name'] as string), work_item_type: 'task', state: '1_done', active: true, stage_id: STAGES.done },
   5203: { name: 'Fix the suspension grid, room B', project_id: PROJECTS.niletowers, parent_id: link(TASK_ID, taskRecord['name'] as string), work_item_type: 'task', state: '01_in_progress', active: true, stage_id: STAGES.progress },
   5204: { name: 'Fit the tiles and edge trims, both rooms', project_id: PROJECTS.niletowers, parent_id: link(TASK_ID, taskRecord['name'] as string), work_item_type: 'task', state: '04_waiting_normal', active: true, stage_id: STAGES.new },
-  5205: { name: 'Electrical first fix, meeting rooms', project_id: PROJECTS.niletowers, work_item_type: 'task', state: '1_done', active: true, stage_id: STAGES.done, user_ids: [USERS.mona] },
+  5205: { name: 'Electrical first fix, meeting rooms', project_id: PROJECTS.niletowers, work_item_type: 'task', state: '1_done', active: true, stage_id: STAGES.done, user_ids: [USERS.mona], date_deadline: '2026-10-02T16:00' },
   5206: { name: 'Meeting rooms', project_id: PROJECTS.niletowers, work_item_type: 'epic', state: '01_in_progress', active: true, stage_id: STAGES.progress },
   5207: { name: 'Snag walk with the client', project_id: PROJECTS.niletowers, work_item_type: 'task', state: '01_in_progress', active: true, stage_id: STAGES.new, depend_on_ids: [link(TASK_ID, taskRecord['name'] as string)] },
 };
@@ -926,6 +929,49 @@ function productionAction(request: ActionRequest): ActionResult | undefined {
 // The lane.
 // ---------------------------------------------------------------------------
 
+/** The person using the demo: a project manager and salesman with the timesheet, rating, recurrence and dependency groups — not developer mode. */
+const OPERATIONS_USER = {
+  id: 5102,
+  name: 'Mona Adel',
+  roles: [
+    'base.group_user',
+    'base.group_multi_company',
+    'project.group_project_manager',
+    'project.group_project_rating',
+    'project.group_project_recurring_tasks',
+    'project.group_project_task_dependencies',
+    'hr_timesheet.group_hr_timesheet_user',
+    'sales_team.group_sale_salesman',
+    'analytic.group_analytic_accounting',
+    'stock.group_stock_manager',
+    'stock.group_stock_multi_locations',
+    'stock.group_production_lot',
+    'stock.group_tracking_lot',
+    'mrp.group_mrp_routings',
+    'mrp.group_mrp_byproducts',
+    'mrp.group_mrp_manager',
+  ],
+};
+
+/** The properties each project keeps for its tasks (project.project task_properties_definition). */
+const TASK_PROPERTIES: Record<number, PropertyDefinition[]> = {
+  5181: [
+    { name: 'site_zone', label: 'Site zone', type: 'selection', options: [{ value: 'a', label: 'Meeting room A' }, { value: 'b', label: 'Meeting room B' }, { value: 'open', label: 'Open plan' }] },
+    { name: 'permit_needed', label: 'Building permit needed', type: 'boolean' },
+    { name: 'lift_slot', label: 'Freight lift slot', type: 'char' },
+    { name: 'panels', label: 'Panels to fit', type: 'integer' },
+  ],
+  5182: [{ name: 'floor', label: 'Floor', type: 'integer' }],
+};
+
+/** A person's initials on a colour, as a link's picture. */
+const FACES = ['#1d4ed8', '#047857', '#b45309', '#7c3aed', '#be185d', '#0e7490'];
+function face(name: string, colour: string): string {
+  const initials = name.split(' ').map((word) => word[0]).join('').slice(0, 2);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="${colour}"/><text x="32" y="41" font-family="sans-serif" font-size="26" font-weight="700" fill="#fff" text-anchor="middle">${initials}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 /** An answer comes after a moment, as one from a server does. */
 const ANSWER_MS = 250;
 
@@ -939,7 +985,23 @@ export const lane: RealLane = {
     'real-task': task as Page,
     'real-backorder-confirmation': backorderConfirmation as Page,
     'real-picking-sign': pickingSign as Page,
+    // The task's Sub-tasks button lists them.
+    'real-task-list': taskList as Page,
   },
+  users: {
+    'real-task': OPERATIONS_USER,
+    'real-transfer': OPERATIONS_USER,
+    'real-manufacturing-order': OPERATIONS_USER,
+  },
+  navigation: {
+    'real-task': { records: [TASK_ID, 5205, 5207], breadcrumbs: [{ label: 'Nile Towers 12th floor fit-out', href: '#tasks' }] },
+  },
+  shows: {
+    'res.users': { avatar: 'image_128' },
+    'project.tags': { color: 'color' },
+    'project.task.type': { folded: 'fold' },
+  },
+  definitions: { task_properties: (values) => TASK_PROPERTIES[idOf(values['project_id']) ?? 0] ?? [] },
   related: { 'project.task': task as Page, 'stock.picking': transfer as Page },
   records: {
     'project.task': { [TASK_ID]: taskRecord, ...otherTasks },
@@ -948,19 +1010,19 @@ export const lane: RealLane = {
       5182: { name: PROJECTS.hq.label, active: true },
     },
     'project.task.type': {
-      5191: { name: 'New', project_id: PROJECTS.niletowers },
-      5192: { name: 'In Progress', project_id: PROJECTS.niletowers },
-      5193: { name: 'Client Review', project_id: PROJECTS.niletowers },
-      5194: { name: 'Done', project_id: PROJECTS.niletowers },
-      5195: { name: 'Cancelled', project_id: PROJECTS.niletowers },
+      5191: { name: 'New', project_ids: [PROJECTS.niletowers], fold: false },
+      5192: { name: 'In Progress', project_ids: [PROJECTS.niletowers, PROJECTS.hq], fold: false },
+      5193: { name: 'Client Review', project_ids: [PROJECTS.niletowers], fold: false },
+      5194: { name: 'Done', project_ids: [PROJECTS.niletowers, PROJECTS.hq], fold: true },
+      5195: { name: 'Cancelled', project_ids: [PROJECTS.niletowers, PROJECTS.hq], fold: true },
     },
     'project.milestone': {
       5241: { name: 'Meeting rooms handed over', project_id: PROJECTS.niletowers },
       5242: { name: 'Open plan handed over', project_id: PROJECTS.niletowers },
     },
-    'project.tags': { 5251: { name: 'Ceilings' }, 5252: { name: 'Acoustics' }, 5253: { name: 'Snag list' } },
+    'project.tags': { 5251: { name: 'Ceilings', color: 4 }, 5252: { name: 'Acoustics', color: 10 }, 5253: { name: 'Snag list', color: 1 } },
     'project.task.recurrence': {},
-    'res.users': Object.fromEntries(Object.values(USERS).map((user) => [user.id, { name: user.label, share: false }])),
+    'res.users': Object.fromEntries(Object.values(USERS).map((user, i) => [user.id, { name: user.label, share: false, image_128: face(user.label, FACES[i % FACES.length]) }])),
     'hr.employee': Object.fromEntries(Object.values(EMPLOYEES).map((employee) => [employee.id, { name: employee.label }])),
     'res.partner': {
       5121: { name: PARTNERS.niletowers.label },

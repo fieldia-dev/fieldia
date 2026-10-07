@@ -47,33 +47,37 @@ for (const variant of VARIANTS) {
       const { problems } = await open(page, variant, TASK);
       await expect.poll(() => value(page, 'name')).toBe('Fit acoustic ceiling panels, meeting rooms A and B');
       await expect(stage(page, 'In Progress').locator('xpath=ancestor-or-self::*[@aria-current="step"]')).toHaveCount(1);
-      // The stages are the task's project's, searched once its record has loaded.
-      await expect(page.locator('.fd-header .fd-statusbar li')).toHaveText(['New', 'In Progress', 'Client Review', 'Done', 'Cancelled']);
+      // The stages are the task's project's (its project_ids contain it), searched once its record has loaded;
+      // Done and Cancelled are folded under ⋯, and each step says how long the task stood in it.
+      await expect(page.locator('.fd-header .fd-statusbar')).toContainText('Client Review');
+      await expect(stage(page, 'Done')).toBeHidden();
+      await expect(page.locator('.fd-header .fd-statusbar')).toContainText(/In Progress\s*3d/);
       // Stat buttons as Flectra shows them: the sub-tasks counted, no Parent Task on a task without a parent.
-      await expect(page.locator('button[data-node="subtasks"] .fd-stat-value')).toHaveText('3');
+      await expect(page.locator('button[data-node="subtasks"] .fd-stat-value').first()).toHaveText('3');
       await expect(page.locator('button[data-node="action_open_parent_task"]')).toBeHidden();
       // The priority star toggles, as Flectra's: a second click takes it away, and no "Clear selection" shows.
       const star = node(page, 'f-priority').getByRole('radio');
       const priority = await value(page, 'priority');
       await star.click();
-      expect(await value(page, 'priority')).toBe(priority === 1 ? null : 1);
+      expect(await value(page, 'priority')).toBe(priority === '1' ? '0' : '1');
       await expect(node(page, 'f-priority').locator('.fd-choice-clear')).toBeHidden();
       await star.click();
-      expect(await value(page, 'priority')).toBe(priority ?? null);
+      expect(await value(page, 'priority')).toBe(priority);
       if (variant === 'plain') await screen(page, 'real-task');
 
       // Timesheets: 17.5 hours logged; another 2.5 makes 20, and the hours under the grid follow.
       await page.getByRole('tab', { name: 'Timesheets' }).click();
-      await expect(node(page, 'f-effective').getByText('17.50 h')).toBeVisible();
+      // Hours as Flectra's float_time.
+      await expect(node(page, 'f-effective')).toContainText('17:30');
       await node(page, 'f-timesheets').getByRole('button', { name: /Add a line/ }).click();
       await expect(node(page, 'f-timesheets').locator('.ag-row[row-index="3"]')).toBeVisible();
       // Enter or Tab past the last cell would start another line: a click outside the grid keeps this one.
       await typeIn(page, 'f-timesheets', 3, 'name', 'Fit the edge trims, room A', 'Tab');
       await typeIn(page, 'f-timesheets', 3, 'unit_amount', '2.5', '');
       await page.getByRole('tab', { name: 'Timesheets' }).click();
-      await expect(node(page, 'f-effective').getByText('20.00 h')).toBeVisible();
-      await expect(node(page, 'f-total-hours').getByText('30.50 h')).toBeVisible();
-      await expect(node(page, 'f-remaining').getByText('9.50 h')).toBeVisible();
+      await expect(node(page, 'f-effective')).toContainText('20:00');
+      await expect(node(page, 'f-total-hours')).toContainText('30:30');
+      await expect(node(page, 'f-remaining')).toContainText('09:30');
       // The app's onchange gave the line its employee: the first assignee.
       await expect.poll(async () => (await lineValues(page, 'timesheet_ids'))[3]?.['employee_id']).toMatchObject({ label: 'Karim Fathy' });
       if (variant === 'plain') await screen(page, 'real-task-timesheets');
@@ -86,7 +90,7 @@ for (const variant of VARIANTS) {
       await typeIn(page, 'f-subtasks', 3, 'name', 'Snag walk, both rooms', '');
       await page.getByRole('tab', { name: 'Sub-tasks' }).click();
       await expect.poll(async () => (await lineValues(page, 'child_ids'))[3]).toMatchObject({ name: 'Snag walk, both rooms', project_id: { label: 'Nile Towers 12th floor fit-out' }, state: '01_in_progress' });
-      await expect(page.locator('button[data-node="subtasks"] .fd-stat-value')).toHaveText('4');
+      await expect(page.locator('button[data-node="subtasks"] .fd-stat-value').first()).toHaveText('4');
 
       // Saved: both new lines reach the data source.
       await page.keyboard.press('ControlOrMeta+Enter');
@@ -101,6 +105,60 @@ for (const variant of VARIANTS) {
       await expect(page.locator('[data-node="b-approval-waiting"]')).toBeVisible();
       await settled(page);
       expect(await value(page, 'approval_status')).toBe('to_approve');
+      expect(problems).toEqual([]);
+    });
+
+    test('project task: Flectra’s decorations, groups and lists', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      let { problems } = await open(page, variant, TASK);
+      await expect.poll(() => value(page, 'name')).toBe('Fit acoustic ceiling panels, meeting rooms A and B');
+      // Sub-tasks with the closed ones under them, as Flectra's two counts; the tags in their colours, the assignees with faces.
+      await expect(page.locator('button[data-node="subtasks"]')).toContainText('Closed');
+      await expect(node(page, 'f-tags').locator('[data-color]')).toHaveCount(2);
+      await expect(node(page, 'f-users').locator('.fd-link-avatar')).toHaveCount(2);
+      // Allocated time on one line: 40:00 (incl. 28:00 on Sub-tasks).
+      await expect(node(page, 'f-allocated').locator('input')).toHaveValue('40:00');
+      await expect(node(page, 'allocated-row')).toContainText('28:00');
+      // Developer-mode Extra Info is not this person's (base.group_no_one).
+      await expect(page.getByRole('tab', { name: 'Extra Info' })).toHaveCount(0);
+
+      // Timesheets: more than 24 hours in a line is red, as Flectra's decoration.
+      await page.getByRole('tab', { name: 'Timesheets' }).click();
+      await typeIn(page, 'f-timesheets', 0, 'unit_amount', '25', '');
+      await page.getByRole('tab', { name: 'Timesheets' }).click();
+      await expect(cell(page, 'f-timesheets', 0, 'unit_amount')).toHaveClass(/fd-tone-danger/);
+      await expect(cell(page, 'f-timesheets', 0, 'unit_amount')).toHaveText('25:00');
+
+      // Sub-tasks: a closed one is muted; Blocked By lists the linked tasks in columns.
+      await page.getByRole('tab', { name: 'Sub-tasks' }).click();
+      await expect(node(page, 'f-subtasks').locator('.ag-row[row-index="0"]:not(.fd-grid-totals)').first()).toHaveClass(/fd-tone-muted/);
+      await page.getByRole('tab', { name: 'Blocked By' }).click();
+      await expect(node(page, 'f-depend-on')).toContainText('Electrical first fix, meeting rooms');
+      await expect(node(page, 'f-depend-on')).toContainText('Done');
+      expect(problems).toEqual([]);
+
+      // Delete, as project_task_form's: a task with sub-tasks warns that they go too; No keeps it.
+      await page.locator('.fd-record-bar .fd-record-gear').click();
+      await page.getByRole('menuitem', { name: 'Delete' }).click();
+      const question = page.getByRole('alertdialog');
+      await expect(question).toContainText('Deleting a task will also delete its associated sub-tasks.');
+      await question.getByRole('button', { name: 'Cancel' }).click();
+      await expect.poll(() => value(page, 'name')).toBe('Fit acoustic ceiling panels, meeting rooms A and B');
+
+      // The Sub-tasks button lists them, in the task's place.
+      ({ problems } = await open(page, variant, TASK));
+      await expect.poll(() => value(page, 'name')).toBe('Fit acoustic ceiling panels, meeting rooms A and B');
+      await page.locator('button[data-node="subtasks"]').click();
+      await expect(page.locator('.fd-list-row')).toHaveCount(3);
+      expect(problems).toEqual([]);
+
+      // Someone without the project manager's group sends for approval, but cannot approve.
+      ({ problems } = await open(page, variant, `${TASK}&roles=base.group_user`));
+      await expect.poll(() => value(page, 'name')).toBe('Fit acoustic ceiling panels, meeting rooms A and B');
+      await page.getByRole('button', { name: 'Mark Done / Send for Approval' }).click();
+      await expect(toast(page, 'Submitted for approval to Salma Nabil.')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Approve', exact: true })).toBeHidden();
+      await expect(page.getByRole('tab', { name: 'Timesheets' })).toHaveCount(0);
       expect(problems).toEqual([]);
     });
 

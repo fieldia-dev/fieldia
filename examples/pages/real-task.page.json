@@ -6,7 +6,7 @@
   "data": { "kind": "record", "model": "project.task" },
   "fields": {
     "name": { "type": "char", "label": "Title", "required": true },
-    "priority": { "type": "integer", "label": "Priority", "min": 1, "max": 1 },
+    "priority": { "type": "selection", "label": "Priority", "default": "0", "options": [{ "value": "0", "label": "Low" }, { "value": "1", "label": "High" }] },
     "state": {
       "type": "selection",
       "label": "State",
@@ -21,19 +21,14 @@
         { "value": "04_waiting_normal", "label": "Waiting" }
       ]
     },
-    "stage_id": { "type": "many2one", "label": "Stage", "relation": "project.task.type", "filter": [{ "field": "project_id", "op": "=", "valueFrom": "project_id" }] },
-    "personal_stage_type_id": { "type": "many2one", "label": "Personal Stage", "relation": "project.task.type", "filter": [{ "field": "user_id", "op": "set" }] },
+    "stage_id": { "type": "many2one", "label": "Stage", "relation": "project.task.type", "filter": [{ "field": "project_ids", "op": "contains", "valueFrom": "project_id" }] },
+    "personal_stage_type_id": { "type": "many2one", "label": "Personal Stage", "help": "The current user's personal task stage.", "relation": "project.task.type", "filter": [{ "field": "user_id", "op": "set" }] },
     "approval_required": { "type": "boolean", "label": "Approval Required", "readonly": true },
     "approval_status": {
       "type": "selection",
       "label": "Approval",
       "default": "none",
-      "options": [
-        { "value": "none", "label": "—" },
-        { "value": "to_approve", "label": "Waiting Approval" },
-        { "value": "approved", "label": "Approved" },
-        { "value": "rejected", "label": "Changes Requested" }
-      ]
+      "options": [{ "value": "none", "label": "—" }, { "value": "to_approve", "label": "Waiting Approval" }, { "value": "approved", "label": "Approved" }, { "value": "rejected", "label": "Changes Requested" }]
     },
     "active": { "type": "boolean", "label": "Active", "default": true },
     "display_in_project": { "type": "boolean", "label": "Display In Project", "default": true, "readonly": true },
@@ -41,43 +36,62 @@
     "work_item_type": {
       "type": "selection",
       "label": "Work Item Type",
+      "help": "Type of work item: Epic (large feature), Story (user requirement), Task (work to do), or Bug (defect)",
       "default": "task",
-      "options": [
-        { "value": "epic", "label": "Epic" },
-        { "value": "story", "label": "User Story" },
-        { "value": "task", "label": "Task" },
-        { "value": "bug", "label": "Bug" }
-      ]
+      "options": [{ "value": "epic", "label": "Epic" }, { "value": "story", "label": "User Story" }, { "value": "task", "label": "Task" }, { "value": "bug", "label": "Bug" }]
     },
-    "milestone_id": { "type": "many2one", "label": "Milestone", "relation": "project.milestone", "filter": [{ "field": "project_id", "op": "=", "valueFrom": "project_id" }] },
+    "milestone_id": {
+      "type": "many2one",
+      "label": "Milestone",
+      "help": "Deliver your services automatically when a milestone is reached by linking it to a sales order item.",
+      "relation": "project.milestone",
+      "filter": [{ "field": "project_id", "op": "=", "valueFrom": "project_id" }],
+      "createValues": { "project_id": "project_id" }
+    },
     "epic_id": {
       "type": "many2one",
       "label": "Parent Epic",
+      "help": "Epic that contains this story",
       "relation": "project.task",
-      "filter": [{ "field": "work_item_type", "op": "=", "value": "epic" }, { "field": "project_id", "op": "=", "valueFrom": "project_id" }]
+      "filter": [{ "field": "work_item_type", "op": "=", "value": "epic" }, { "field": "project_id", "op": "=", "valueFrom": "project_id" }],
+      "createValues": { "project_id": "project_id" }
     },
     "user_ids": { "type": "many2many", "label": "Assignees", "relation": "res.users", "filter": [{ "field": "share", "op": "=", "value": false }] },
     "tag_ids": { "type": "many2many", "label": "Tags", "relation": "project.tags" },
     "partner_id": { "type": "many2one", "label": "Customer", "relation": "res.partner" },
-    "sale_order_id": { "type": "many2one", "label": "Sales Order", "relation": "sale.order", "readonly": true },
+    "sale_order_id": { "type": "many2one", "label": "Sales Order", "help": "Sales order to which the task is linked.", "relation": "sale.order", "readonly": true },
     "project_sale_order_id": { "type": "many2one", "label": "Project's sale order", "relation": "sale.order", "readonly": true },
-    "sale_line_id": { "type": "many2one", "label": "Sales Order Item", "relation": "sale.order.line", "filter": [{ "field": "order_partner_id", "op": "=", "valueFrom": "partner_id" }] },
+    "sale_line_id": {
+      "type": "many2one",
+      "label": "Sales Order Item",
+      "help": "Sales Order Item to which the time spent on this task will be added in order to be invoiced to your customer. By default the sales order item set on the project will be selected. In the absence of one, the last prepaid sales order item that has time remaining will be used. Remove the sales order item in order to make this task non billable. You can also change or remove the sales order item of each timesheet entry individually.",
+      "relation": "sale.order.line",
+      "filter": [{ "field": "order_partner_id", "op": "=", "valueFrom": "partner_id" }]
+    },
     "allow_billable": { "type": "boolean", "label": "Billable", "readonly": true },
     "pricing_type": {
       "type": "selection",
       "label": "Pricing",
       "readonly": true,
-      "options": [
-        { "value": "task_rate", "label": "Task rate" },
-        { "value": "fixed_rate", "label": "Project rate" },
-        { "value": "employee_rate", "label": "Employee rate" }
-      ]
+      "options": [{ "value": "task_rate", "label": "Task rate" }, { "value": "fixed_rate", "label": "Project rate" }, { "value": "employee_rate", "label": "Employee rate" }]
     },
     "is_project_map_empty": { "type": "boolean", "label": "Is Project map empty", "readonly": true },
     "has_multi_sol": { "type": "boolean", "label": "Has Multi Sol", "readonly": true },
-    "opportunity_id": { "type": "many2one", "label": "Source Opportunity", "relation": "crm.lead", "filter": [{ "field": "type", "op": "=", "value": "opportunity" }] },
+    "opportunity_id": {
+      "type": "many2one",
+      "label": "Source Opportunity",
+      "help": "The CRM opportunity this task originated from. Lets reporting answer \"how much delivery effort came from this opportunity?\".",
+      "relation": "crm.lead",
+      "filter": [{ "field": "type", "op": "=", "value": "opportunity" }]
+    },
     "allocated_hours": { "type": "float", "label": "Allocated Time", "digits": [16, 2], "min": 0 },
-    "subtask_allocated_hours": { "type": "float", "label": "Sub-tasks Allocated Time", "digits": [16, 2], "compute": "sum(child_ids, 'allocated_hours')" },
+    "subtask_allocated_hours": {
+      "type": "float",
+      "label": "Sub-tasks Allocated Time",
+      "help": "Sum of the hours allocated for all the sub-tasks (and their own sub-tasks) linked to this task. Usually less than or equal to the allocated hours of this task.",
+      "digits": [16, 2],
+      "compute": "sum(child_ids, 'allocated_hours')"
+    },
     "date_deadline": { "type": "datetime", "label": "Deadline" },
     "recurring_task": { "type": "boolean", "label": "Recurrent" },
     "recurrence_id": { "type": "many2one", "label": "Recurrence", "relation": "project.task.recurrence", "readonly": true },
@@ -87,36 +101,13 @@
       "type": "selection",
       "label": "Repeat Unit",
       "default": "week",
-      "options": [
-        { "value": "day", "label": "Days" },
-        { "value": "week", "label": "Weeks" },
-        { "value": "month", "label": "Months" },
-        { "value": "year", "label": "Years" }
-      ]
+      "options": [{ "value": "day", "label": "Days" }, { "value": "week", "label": "Weeks" }, { "value": "month", "label": "Months" }, { "value": "year", "label": "Years" }]
     },
-    "repeat_type": {
-      "type": "selection",
-      "label": "Until",
-      "default": "forever",
-      "options": [
-        { "value": "forever", "label": "Forever" },
-        { "value": "until", "label": "Until" }
-      ]
-    },
+    "repeat_type": { "type": "selection", "label": "Until", "default": "forever", "options": [{ "value": "forever", "label": "Forever" }, { "value": "until", "label": "Until" }] },
     "repeat_until": { "type": "date", "label": "End Date" },
-    "task_properties": {
-      "type": "properties",
-      "label": "Properties",
-      "definitions": [
-        { "name": "site_zone", "label": "Site zone", "type": "selection", "options": [{ "value": "a", "label": "Meeting room A" }, { "value": "b", "label": "Meeting room B" }, { "value": "open", "label": "Open plan" }] },
-        { "name": "permit_needed", "label": "Building permit needed", "type": "boolean" },
-        { "name": "lift_slot", "label": "Freight lift slot", "type": "char" },
-        { "name": "panels", "label": "Panels to fit", "type": "integer" }
-      ]
-    },
+    "task_properties": { "type": "properties", "label": "Properties", "definitionsFrom": { "list": "task_properties", "dependsOn": ["project_id"] } },
     "description": { "type": "html", "label": "Description" },
-
-    "allow_timesheets": { "type": "boolean", "label": "Allow timesheets", "readonly": true },
+    "allow_timesheets": { "type": "boolean", "label": "Allow timesheets", "help": "Timesheets can be logged on this task.", "readonly": true },
     "analytic_account_active": { "type": "boolean", "label": "Active Analytic Account", "readonly": true },
     "encode_uom_in_days": { "type": "boolean", "label": "Encode in days", "readonly": true },
     "is_timeoff_task": { "type": "boolean", "label": "Is Time off Task", "readonly": true },
@@ -131,18 +122,18 @@
         "name": { "type": "char", "label": "Description" },
         "so_line": { "type": "many2one", "label": "Sales Order Item", "relation": "sale.order.line" },
         "unit_amount": { "type": "float", "label": "Hours Spent", "digits": [16, 2], "min": 0 }
-      }
+      },
+      "lineDefaults": { "so_line": "sale_line_id" }
     },
     "effective_hours": { "type": "float", "label": "Hours Spent", "digits": [16, 2], "compute": "sum(timesheet_ids, 'unit_amount')" },
-    "subtask_effective_hours": { "type": "float", "label": "Hours Spent on Sub-Tasks", "digits": [16, 2], "compute": "sum(child_ids, 'total_hours_spent')" },
-    "total_hours_spent": { "type": "float", "label": "Total Hours", "digits": [16, 2], "compute": "effective_hours + subtask_effective_hours" },
-    "remaining_hours": { "type": "float", "label": "Remaining Hours", "digits": [16, 2], "compute": "allocated_hours - total_hours_spent" },
+    "subtask_effective_hours": { "type": "float", "label": "Hours Spent on Sub-Tasks", "help": "Time spent on the sub-tasks (and their own sub-tasks) of this task.", "digits": [16, 2], "compute": "sum(child_ids, 'total_hours_spent')" },
+    "total_hours_spent": { "type": "float", "label": "Total Hours", "help": "Time spent on this task and its sub-tasks (and their own sub-tasks).", "digits": [16, 2], "compute": "effective_hours + subtask_effective_hours" },
+    "remaining_hours": { "type": "float", "label": "Remaining Hours", "help": "Number of allocated hours minus the number of hours spent.", "digits": [16, 2], "compute": "allocated_hours - total_hours_spent" },
     "progress": { "type": "float", "label": "Progress", "digits": [16, 0], "compute": "if(allocated_hours, round(100 * total_hours_spent / allocated_hours), 0)" },
     "remaining_hours_so": { "type": "float", "label": "Remaining Hours on SO", "digits": [16, 2], "readonly": true },
     "remaining_hours_available": { "type": "boolean", "label": "Remaining Hours Available", "readonly": true },
-
-    "epic_color": { "type": "char", "label": "Epic Color", "pattern": "^#[0-9A-Fa-f]{6}$" },
-    "epic_progress": { "type": "float", "label": "Epic Progress", "readonly": true },
+    "epic_color": { "type": "char", "label": "Epic Color", "help": "Color code for this epic (e.g., #FF5733)", "pattern": "^#[0-9A-Fa-f]{6}$" },
+    "epic_progress": { "type": "float", "label": "Epic Progress", "help": "Percentage of completed stories in this epic", "readonly": true },
     "child_story_ids": {
       "type": "one2many",
       "label": "Stories in Epic",
@@ -168,20 +159,15 @@
         }
       }
     },
-    "story_points": { "type": "integer", "label": "Story Points", "min": 0 },
-    "acceptance_criteria": { "type": "html", "label": "Acceptance Criteria" },
+    "story_points": { "type": "integer", "label": "Story Points", "help": "Estimated complexity/effort for this story (Fibonacci: 1, 2, 3, 5, 8, 13, 21)", "min": 0 },
+    "acceptance_criteria": { "type": "html", "label": "Acceptance Criteria", "help": "Conditions that must be met for this story to be considered complete" },
     "bug_severity": {
       "type": "selection",
       "label": "Severity",
-      "options": [
-        { "value": "low", "label": "Low" },
-        { "value": "medium", "label": "Medium" },
-        { "value": "high", "label": "High" },
-        { "value": "critical", "label": "Critical" }
-      ]
+      "help": "Impact level of this bug",
+      "options": [{ "value": "low", "label": "Low" }, { "value": "medium", "label": "Medium" }, { "value": "high", "label": "High" }, { "value": "critical", "label": "Critical" }]
     },
-    "steps_to_reproduce": { "type": "text", "label": "Steps to Reproduce" },
-
+    "steps_to_reproduce": { "type": "text", "label": "Steps to Reproduce", "help": "Step-by-step instructions to reproduce this bug" },
     "allow_milestones": { "type": "boolean", "label": "Milestones", "readonly": true },
     "child_ids": {
       "type": "one2many",
@@ -220,27 +206,59 @@
         "my_activity_date_deadline": { "type": "date", "label": "My Deadline", "readonly": true },
         "tag_ids": { "type": "many2many", "label": "Tags", "relation": "project.tags" },
         "stage_id": { "type": "many2one", "label": "Stage", "relation": "project.task.type" }
-      }
+      },
+      "lineDefaults": { "project_id": "project_id", "partner_id": "partner_id", "company_id": "company_id", "user_ids": "user_ids", "milestone_id": "milestone_id" }
     },
     "subtask_count": { "type": "integer", "label": "Sub-task Count", "compute": "count(child_ids)" },
     "closed_subtask_count": { "type": "integer", "label": "Closed Sub-tasks Count", "readonly": true },
     "allow_task_dependencies": { "type": "boolean", "label": "Task Dependencies", "readonly": true },
-    "depend_on_ids": { "type": "many2many", "label": "Blocked By", "relation": "project.task", "filter": [{ "field": "project_id", "op": "set" }] },
+    "depend_on_ids": {
+      "type": "many2many",
+      "label": "Blocked By",
+      "relation": "project.task",
+      "filter": [{ "field": "project_id", "op": "set" }],
+      "fields": {
+        "name": { "type": "char", "label": "Title" },
+        "project_id": { "type": "many2one", "label": "Project", "relation": "project.project" },
+        "date_deadline": { "type": "datetime", "label": "Deadline" },
+        "stage_id": { "type": "many2one", "label": "Stage", "relation": "project.task.type" },
+        "state": {
+          "type": "selection",
+          "label": "State",
+          "options": [
+            { "value": "01_in_progress", "label": "In Progress" },
+            { "value": "02_changes_requested", "label": "Changes Requested" },
+            { "value": "03_approved", "label": "Approved" },
+            { "value": "1_done", "label": "Done" },
+            { "value": "1_canceled", "label": "Canceled" },
+            { "value": "04_waiting_normal", "label": "Waiting" }
+          ]
+        }
+      }
+    },
     "dependent_tasks_count": { "type": "integer", "label": "Dependent Tasks", "readonly": true },
-
     "parent_id": { "type": "many2one", "label": "Parent Task", "relation": "project.task" },
-    "analytic_account_id": { "type": "many2one", "label": "Analytic Account", "relation": "account.analytic.account" },
+    "analytic_account_id": {
+      "type": "many2one",
+      "label": "Analytic Account",
+      "help": "Analytic account to which this task and its timesheets are linked. Track the costs and revenues of your task by setting its analytic account on your related documents (e.g. sales orders, invoices, purchase orders, vendor bills, expenses etc.). By default, the analytic account of the project is set. However, it can be changed on each task individually if necessary.",
+      "relation": "account.analytic.account"
+    },
     "company_id": { "type": "many2one", "label": "Company", "relation": "res.company" },
     "sequence": { "type": "integer", "label": "Sequence", "default": 10 },
-    "email_cc": { "type": "char", "label": "Email cc" },
+    "email_cc": { "type": "char", "label": "Email cc", "help": "Email addresses that were in the CC of the incoming emails from this task and that are not currently linked to an existing customer." },
     "displayed_image_id": { "type": "many2one", "label": "Cover Image", "relation": "ir.attachment" },
-    "date_assign": { "type": "datetime", "label": "Assigning Date", "readonly": true },
-    "date_last_stage_update": { "type": "datetime", "label": "Last Stage Update", "readonly": true },
+    "date_assign": { "type": "datetime", "label": "Assigning Date", "help": "Date on which this task was last assigned (or unassigned). Based on this, you can get statistics on the time it usually takes to assign tasks.", "readonly": true },
+    "date_last_stage_update": {
+      "type": "datetime",
+      "label": "Last Stage Update",
+      "help": "Date on which the state of your task has last been modified. Based on this information you can identify tasks that are stalling and get statistics on the time it usually takes to move tasks from one stage/state to another.",
+      "readonly": true
+    },
     "working_hours_open": { "type": "float", "label": "Working Hours to Assign", "digits": [16, 2], "readonly": true },
     "working_days_open": { "type": "float", "label": "Working Days to Assign", "readonly": true },
     "working_hours_close": { "type": "float", "label": "Working Hours to Close", "digits": [16, 2], "readonly": true },
     "working_days_close": { "type": "float", "label": "Working Days to Close", "readonly": true },
-
     "rating_active": { "type": "boolean", "label": "Project Rating Status", "readonly": true },
     "rating_count": { "type": "integer", "label": "# Ratings", "readonly": true },
     "rating_avg": { "type": "float", "label": "Average Rating", "readonly": true },
@@ -249,26 +267,23 @@
       "type": "selection",
       "label": "Rating Avg Text",
       "readonly": true,
-      "options": [
-        { "value": "top", "label": "Satisfied" },
-        { "value": "ok", "label": "Okay" },
-        { "value": "ko", "label": "Dissatisfied" },
-        { "value": "none", "label": "No Rating yet" }
-      ]
-    }
+      "options": [{ "value": "top", "label": "Satisfied" }, { "value": "ok", "label": "Okay" }, { "value": "ko", "label": "Dissatisfied" }, { "value": "none", "label": "No Rating yet" }]
+    },
+    "duration_tracking": { "type": "json", "label": "Status time", "readonly": true }
   },
   "layout": {
     "type": "sheet",
     "id": "sheet",
-    "statusbar": { "field": "stage_id", "clickable": true },
+    "statusbar": { "field": "stage_id", "clickable": true, "fold": true, "saves": true, "durationsField": "duration_tracking", "invisible": "not project_id and not stage_id" },
     "buttons": [
       {
         "type": "button",
         "id": "action_send_for_approval",
         "label": "Mark Done / Send for Approval",
         "style": "primary",
-        "invisible": "not approval_required or approval_status in ['to_approve', 'approved']",
-        "steps": [{ "do": "save" }, { "do": "call", "action": "project.task.action_send_for_approval" }, { "do": "save" }]
+        "invisible": "not approval_required or approval_status in ('to_approve', 'approved')",
+        "steps": [{ "do": "save" }, { "do": "call", "action": "project.task.action_send_for_approval" }, { "do": "save" }],
+        "hotkey": "q"
       },
       {
         "type": "button",
@@ -276,7 +291,8 @@
         "label": "Approve",
         "style": "primary",
         "invisible": "approval_status != 'to_approve'",
-        "steps": [{ "do": "save" }, { "do": "call", "action": "project.task.action_approve" }, { "do": "save" }]
+        "steps": [{ "do": "save" }, { "do": "call", "action": "project.task.action_approve" }, { "do": "save" }],
+        "roles": ["project.group_project_manager"]
       },
       {
         "type": "button",
@@ -284,24 +300,68 @@
         "label": "Request Changes",
         "style": "secondary",
         "invisible": "approval_status != 'to_approve'",
-        "steps": [{ "do": "save" }, { "do": "call", "action": "project.task.action_request_changes" }, { "do": "save" }]
+        "steps": [{ "do": "save" }, { "do": "call", "action": "project.task.action_request_changes" }, { "do": "save" }],
+        "roles": ["project.group_project_manager"]
       }
     ],
     "statButtons": [
-      { "id": "action_view_so", "label": "Sales Order", "icon": "money", "action": "project.task.action_view_so", "invisible": "not sale_order_id" },
-      { "id": "rating-satisfied", "label": "Last Rating: Satisfied", "icon": "thumb", "action": "project.task.action_open_ratings", "invisible": "rating_count == 0 or not rating_active or rating_avg < 3.66" },
-      { "id": "rating-okay", "label": "Last Rating: Okay", "icon": "star", "action": "project.task.action_open_ratings", "invisible": "rating_count == 0 or not rating_active or rating_avg < 2.33 or rating_avg >= 3.66" },
-      { "id": "rating-dissatisfied", "label": "Last Rating: Dissatisfied", "icon": "warning", "action": "project.task.action_open_ratings", "invisible": "rating_count == 0 or not rating_active or rating_avg >= 2.33" },
+      { "id": "action_view_so", "label": "Sales Order", "icon": "money", "action": "project.task.action_view_so", "invisible": "not sale_order_id", "roles": ["sales_team.group_sale_salesman"] },
       {
-        "id": "action_open_parent_task",
-        "label": "Parent Task",
-        "icon": "list",
-        "invisible": "not parent_id",
-        "steps": [{ "do": "open", "page": "real-task", "as": "dialog", "record": "parent_id" }]
+        "id": "rating-satisfied",
+        "label": "Last Rating",
+        "icon": "thumb",
+        "action": "project.task.action_open_ratings",
+        "invisible": "rating_count == 0 or not rating_active or rating_avg < 3.66",
+        "field": "rating_avg_text",
+        "roles": ["project.group_project_rating"]
       },
-      { "id": "action_recurring_tasks", "label": "Recurring Tasks", "icon": "calendar", "field": "recurring_count", "action": "project.task.action_recurring_tasks", "invisible": "not active or not recurrence_id" },
-      { "id": "subtasks", "label": "Sub-tasks", "icon": "list", "field": "subtask_count", "invisible": "subtask_count == 0", "steps": [{ "do": "goTo", "target": "sub_tasks_page" }] },
-      { "id": "action_dependent_tasks", "label": "Blocking Tasks", "icon": "lock", "field": "dependent_tasks_count", "action": "project.task.action_dependent_tasks", "invisible": "dependent_tasks_count == 0" }
+      {
+        "id": "rating-okay",
+        "label": "Last Rating",
+        "icon": "star",
+        "action": "project.task.action_open_ratings",
+        "invisible": "rating_count == 0 or not rating_active or rating_avg < 2.33 or rating_avg >= 3.66",
+        "field": "rating_avg_text",
+        "roles": ["project.group_project_rating"]
+      },
+      {
+        "id": "rating-dissatisfied",
+        "label": "Last Rating",
+        "icon": "warning",
+        "action": "project.task.action_open_ratings",
+        "invisible": "rating_count == 0 or not rating_active or rating_avg >= 2.33",
+        "field": "rating_avg_text",
+        "roles": ["project.group_project_rating"]
+      },
+      { "id": "action_open_parent_task", "label": "Parent Task", "icon": "list", "invisible": "not parent_id", "steps": [{ "do": "open", "page": "real-task", "as": "dialog", "record": "parent_id" }] },
+      {
+        "id": "action_recurring_tasks",
+        "label": "Recurring Tasks",
+        "icon": "calendar",
+        "field": "recurring_count",
+        "action": "project.task.action_recurring_tasks",
+        "invisible": "not active or not recurrence_id",
+        "roles": ["project.group_project_recurring_tasks"]
+      },
+      {
+        "id": "subtasks",
+        "label": "Sub-tasks",
+        "icon": "list",
+        "field": "subtask_count",
+        "invisible": "not id or subtask_count == 0",
+        "steps": [{ "do": "open", "page": "real-task-list", "as": "page", "filter": [{ "field": "parent_id", "op": "=", "valueFrom": "id" }] }],
+        "secondField": "closed_subtask_count",
+        "secondLabel": "Closed"
+      },
+      {
+        "id": "action_dependent_tasks",
+        "label": "Blocking Tasks",
+        "icon": "lock",
+        "field": "dependent_tasks_count",
+        "action": "project.task.action_dependent_tasks",
+        "invisible": "dependent_tasks_count == 0",
+        "roles": ["project.group_project_task_dependencies"]
+      }
     ],
     "ribbon": { "id": "archived", "label": "Archived", "tone": "danger", "invisible": "active" },
     "badges": [
@@ -312,11 +372,18 @@
     "title": {
       "field": "name",
       "placeholder": "Task Title...",
-      "above": [
-        { "type": "field", "id": "f-personal-stage", "field": "personal_stage_type_id", "widget": "statusbar", "label": "Personal Stage", "options": { "clickable": true }, "invisible": "project_id" },
-        { "type": "field", "id": "f-priority", "field": "priority", "widget": "rating", "labels": "hidden" }
-      ],
-      "below": [{ "type": "field", "id": "f-state", "field": "state", "labels": "hidden" }]
+      "above": [{ "type": "field", "id": "f-personal-stage", "field": "personal_stage_type_id", "widget": "statusbar", "label": "Personal Stage", "options": { "clickable": true }, "invisible": "project_id" }],
+      "before": [{ "type": "field", "id": "f-priority", "field": "priority", "widget": "priority", "labels": "hidden" }],
+      "after": [
+        {
+          "type": "field",
+          "id": "f-state",
+          "field": "state",
+          "labels": "hidden",
+          "widget": "dot",
+          "options": { "tones": { "01_in_progress": "muted", "02_changes_requested": "warning", "03_approved": "success", "1_done": "success", "1_canceled": "danger", "04_waiting_normal": "info" } }
+        }
+      ]
     },
     "children": [
       {
@@ -332,8 +399,8 @@
               { "type": "field", "id": "f-work-item-type", "field": "work_item_type", "invisible": "not project_id" },
               { "type": "field", "id": "f-milestone", "field": "milestone_id", "placeholder": "e.g. Product Launch", "invisible": "not project_id or not allow_milestones" },
               { "type": "field", "id": "f-epic", "field": "epic_id", "label": "Epic", "placeholder": "Select Epic...", "invisible": "work_item_type != 'story' or not project_id" },
-              { "type": "field", "id": "f-users", "field": "user_ids", "widget": "tags", "options": { "create": false } },
-              { "type": "field", "id": "f-tags", "field": "tag_ids", "widget": "tags" }
+              { "type": "field", "id": "f-users", "field": "user_ids", "widget": "tags", "options": { "create": false, "open": false, "avatar": true } },
+              { "type": "field", "id": "f-tags", "field": "tag_ids", "widget": "tags", "options": { "create": false, "colors": true } }
             ]
           },
           {
@@ -341,14 +408,43 @@
             "id": "group-right",
             "children": [
               { "type": "field", "id": "f-partner", "field": "partner_id", "invisible": "not allow_billable" },
-              { "type": "field", "id": "f-sale-line", "field": "sale_line_id", "placeholder": "Non-billable", "options": { "create": false }, "invisible": "not allow_billable or not project_id or not partner_id" },
+              {
+                "type": "field",
+                "id": "f-sale-line-readonly",
+                "field": "sale_line_id",
+                "readonly": true,
+                "options": { "open": false },
+                "roles": ["!sales_team.group_sale_salesman"],
+                "invisible": "not allow_billable or not project_id or not sale_line_id or not partner_id"
+              },
+              {
+                "type": "field",
+                "id": "f-sale-line",
+                "field": "sale_line_id",
+                "placeholder": "Non-billable",
+                "options": { "create": false },
+                "invisible": "not allow_billable or not project_id or not partner_id",
+                "roles": ["sales_team.group_sale_salesman"]
+              },
               { "type": "field", "id": "f-opportunity", "field": "opportunity_id", "options": { "create": false } },
-              { "type": "field", "id": "f-allocated", "field": "allocated_hours", "options": { "suffix": "h" }, "invisible": "not allow_timesheets or encode_uom_in_days" },
-              { "type": "field", "id": "f-allocated-days", "field": "allocated_hours", "options": { "suffix": "days" }, "invisible": "not allow_timesheets or not encode_uom_in_days" },
-              { "type": "field", "id": "f-subtask-allocated", "field": "subtask_allocated_hours", "label": "incl. on Sub-tasks", "widget": "label", "options": { "suffix": " h" }, "invisible": "not allow_timesheets or subtask_count == 0" },
-              { "type": "field", "id": "f-progress-inline", "field": "progress", "widget": "label", "options": { "suffix": " %" }, "invisible": "not allow_timesheets or not project_id" },
-              { "type": "field", "id": "f-deadline", "field": "date_deadline" },
-              { "type": "field", "id": "f-recurring", "field": "recurring_task", "widget": "toggle", "invisible": "not active or parent_id" },
+              {
+                "type": "section",
+                "id": "allocated-row",
+                "title": "Allocated Time",
+                "style": "inline",
+                "roles": ["hr_timesheet.group_hr_timesheet_user"],
+                "invisible": "not allow_timesheets or encode_uom_in_days",
+                "children": [
+                  { "type": "field", "id": "f-allocated", "field": "allocated_hours", "widget": "duration", "labels": "hidden" },
+                  { "type": "text", "id": "allocated-incl", "text": "(incl.", "invisible": "subtask_count == 0" },
+                  { "type": "field", "id": "f-subtask-allocated", "field": "subtask_allocated_hours", "widget": "duration", "readonly": true, "labels": "hidden", "invisible": "subtask_count == 0" },
+                  { "type": "text", "id": "allocated-on-subtasks", "text": "on Sub-tasks)", "invisible": "subtask_count == 0" },
+                  { "type": "text", "id": "allocated-progress", "text": "({progress} %)", "invisible": "not project_id" }
+                ]
+              },
+              { "type": "field", "id": "f-allocated-days", "field": "allocated_hours", "options": { "suffix": "days" }, "invisible": "not allow_timesheets or not encode_uom_in_days", "roles": ["hr_timesheet.group_hr_timesheet_user"] },
+              { "type": "field", "id": "f-deadline", "field": "date_deadline", "tones": [{ "tone": "danger", "when": "date_deadline and date_deadline < today() and state not in ('1_done', '1_canceled')" }] },
+              { "type": "field", "id": "f-recurring", "field": "recurring_task", "widget": "toggle", "invisible": "not active or parent_id", "roles": ["project.group_project_recurring_tasks"] },
               {
                 "type": "section",
                 "id": "repeat-row",
@@ -362,23 +458,19 @@
                   { "type": "field", "id": "f-repeat-unit", "field": "repeat_unit", "required": "recurring_task" },
                   { "type": "field", "id": "f-repeat-type", "field": "repeat_type", "required": "recurring_task" },
                   { "type": "field", "id": "f-repeat-until", "field": "repeat_until", "invisible": "repeat_type != 'until'", "required": "repeat_type == 'until'" }
-                ]
+                ],
+                "roles": ["project.group_project_recurring_tasks"]
               }
             ]
           }
         ]
       },
-      { "type": "field", "id": "f-properties", "field": "task_properties", "labels": "hidden" },
+      { "type": "field", "id": "f-properties", "field": "task_properties", "labels": "hidden", "options": { "columns": 2, "add": true } },
       {
         "type": "tabs",
         "id": "notebook",
         "children": [
-          {
-            "type": "tab",
-            "id": "description_page",
-            "label": "Description",
-            "children": [{ "type": "field", "id": "f-description", "field": "description", "labels": "hidden", "placeholder": "Add details about this task..." }]
-          },
+          { "type": "tab", "id": "description_page", "label": "Description", "children": [{ "type": "field", "id": "f-description", "field": "description", "labels": "hidden", "placeholder": "Add details about this task..." }] },
           {
             "type": "tab",
             "id": "page_timesheets",
@@ -388,9 +480,10 @@
               {
                 "type": "text",
                 "id": "timesheet-error",
-                "style": "note",
+                "style": "alert",
                 "text": "You cannot log timesheets on this project since it is linked to an inactive analytic account. Please change this account, or reactivate the current one to timesheet on the project.",
-                "invisible": "analytic_account_active"
+                "invisible": "analytic_account_active",
+                "tone": "warning"
               },
               {
                 "type": "field",
@@ -403,7 +496,15 @@
                 "totals": ["unit_amount"],
                 "invisible": "not analytic_account_active",
                 "readonly": "is_timeoff_task",
-                "options": { "addLabel": "Add a line" }
+                "options": { "addLabel": "Add a line" },
+                "cells": {
+                  "date": { "readonly": "readonly_timesheet" },
+                  "employee_id": { "readonly": "readonly_timesheet" },
+                  "name": { "readonly": "readonly_timesheet" },
+                  "unit_amount": { "readonly": "readonly_timesheet", "widget": "duration", "tones": [{ "tone": "danger", "when": "unit_amount > 24 or unit_amount < 0" }] }
+                },
+                "rowTones": [{ "tone": "muted", "when": "readonly_timesheet" }],
+                "cards": "narrow"
               },
               {
                 "type": "section",
@@ -419,36 +520,36 @@
                     "style": "plain",
                     "labels": "beside",
                     "children": [
-                      { "type": "field", "id": "f-effective", "field": "effective_hours", "label": "Hours Spent", "widget": "label", "options": { "suffix": " h" }, "invisible": "encode_uom_in_days" },
+                      { "type": "field", "id": "f-effective", "field": "effective_hours", "label": "Hours Spent", "widget": "duration", "invisible": "encode_uom_in_days" },
                       { "type": "field", "id": "f-effective-days", "field": "effective_hours", "label": "Days Spent", "widget": "label", "options": { "suffix": " days" }, "invisible": "not encode_uom_in_days" },
-                      {
-                        "type": "button",
-                        "id": "action_view_subtask_timesheet",
-                        "label": "Hours Spent on Sub-tasks:",
-                        "style": "link",
-                        "action": "project.task.action_view_subtask_timesheet",
-                        "invisible": "subtask_effective_hours == 0"
-                      },
-                      { "type": "field", "id": "f-subtask-effective", "field": "subtask_effective_hours", "label": "Hours Spent on Sub-tasks", "labels": "hidden", "widget": "label", "options": { "suffix": " h" }, "invisible": "subtask_effective_hours == 0" },
-                      { "type": "field", "id": "f-total-hours", "field": "total_hours_spent", "label": "Total Hours", "widget": "label", "options": { "suffix": " h" }, "invisible": "subtask_effective_hours == 0 or encode_uom_in_days" },
+                      { "type": "button", "id": "action_view_subtask_timesheet", "label": "Hours Spent on Sub-tasks:", "style": "link", "action": "project.task.action_view_subtask_timesheet", "invisible": "subtask_effective_hours == 0" },
+                      { "type": "field", "id": "f-subtask-effective", "field": "subtask_effective_hours", "label": "Hours Spent on Sub-tasks", "labels": "hidden", "widget": "duration", "invisible": "subtask_effective_hours == 0" },
+                      { "type": "field", "id": "f-total-hours", "field": "total_hours_spent", "label": "Total Hours", "widget": "duration", "invisible": "subtask_effective_hours == 0 or encode_uom_in_days" },
                       { "type": "field", "id": "f-total-days", "field": "total_hours_spent", "label": "Total Days", "widget": "label", "options": { "suffix": " days" }, "invisible": "subtask_effective_hours == 0 or not encode_uom_in_days" },
-                      { "type": "field", "id": "f-remaining", "field": "remaining_hours", "label": "Remaining Hours", "widget": "label", "options": { "suffix": " h" }, "invisible": "allocated_hours == 0 or encode_uom_in_days" },
+                      {
+                        "type": "field",
+                        "id": "f-remaining",
+                        "field": "remaining_hours",
+                        "label": "Remaining Hours",
+                        "widget": "duration",
+                        "invisible": "allocated_hours == 0 or encode_uom_in_days",
+                        "tones": [{ "tone": "danger", "when": "remaining_hours < 0" }]
+                      },
                       { "type": "field", "id": "f-remaining-days", "field": "remaining_hours", "label": "Remaining Days", "widget": "label", "options": { "suffix": " days" }, "invisible": "allocated_hours == 0 or not encode_uom_in_days" },
-                      { "type": "text", "id": "overrun", "style": "note", "text": "Over the allocated time.", "invisible": "allocated_hours == 0 or remaining_hours >= 0" },
                       {
                         "type": "field",
                         "id": "f-remaining-so",
                         "field": "remaining_hours_so",
                         "label": "Remaining Hours on SO",
-                        "widget": "label",
-                        "options": { "suffix": " h" },
+                        "widget": "duration",
                         "invisible": "not allow_billable or not sale_order_id or not partner_id or not sale_line_id or not remaining_hours_available"
                       }
                     ]
                   }
                 ]
               }
-            ]
+            ],
+            "roles": ["hr_timesheet.group_hr_timesheet_user"]
           },
           {
             "type": "tab",
@@ -464,23 +565,12 @@
                   {
                     "type": "section",
                     "id": "epic-left",
-                    "children": [
-                      { "type": "field", "id": "f-epic-color", "field": "epic_color", "placeholder": "#1F7A4D" },
-                      { "type": "field", "id": "f-epic-progress", "field": "epic_progress", "widget": "progressbar" }
-                    ]
+                    "children": [{ "type": "field", "id": "f-epic-color", "field": "epic_color", "placeholder": "#1F7A4D", "widget": "color" }, { "type": "field", "id": "f-epic-progress", "field": "epic_progress", "widget": "progressbar" }]
                   },
                   {
                     "type": "section",
                     "id": "epic-right",
-                    "children": [
-                      {
-                        "type": "field",
-                        "id": "f-child-stories",
-                        "field": "child_story_ids",
-                        "columns": ["name", "story_points", "user_ids", "stage_id", "state"],
-                        "totals": ["story_points"]
-                      }
-                    ]
+                    "children": [{ "type": "field", "id": "f-child-stories", "field": "child_story_ids", "columns": ["name", "story_points", "user_ids", "stage_id", "state"], "totals": ["story_points"] }]
                   }
                 ]
               }
@@ -493,7 +583,13 @@
             "invisible": "work_item_type != 'story' or not project_id",
             "children": [
               { "type": "section", "id": "story-group", "columns": 2, "children": [{ "type": "field", "id": "f-story-points", "field": "story_points" }] },
-              { "type": "section", "id": "acceptance-separator", "title": "Acceptance Criteria", "style": "line", "children": [{ "type": "field", "id": "f-acceptance", "field": "acceptance_criteria", "labels": "hidden", "placeholder": "Define acceptance criteria for this story..." }] }
+              {
+                "type": "section",
+                "id": "acceptance-separator",
+                "title": "Acceptance Criteria",
+                "style": "line",
+                "children": [{ "type": "field", "id": "f-acceptance", "field": "acceptance_criteria", "labels": "hidden", "placeholder": "Define acceptance criteria for this story..." }]
+              }
             ]
           },
           {
@@ -513,12 +609,15 @@
                 "type": "section",
                 "id": "bug-groups",
                 "columns": 2,
-                "children": [
-                  { "type": "field", "id": "f-bug-severity", "field": "bug_severity" },
-                  { "type": "field", "id": "f-effort-bug", "field": "story_points", "label": "Effort Points" }
-                ]
+                "children": [{ "type": "field", "id": "f-bug-severity", "field": "bug_severity" }, { "type": "field", "id": "f-effort-bug", "field": "story_points", "label": "Effort Points" }]
               },
-              { "type": "section", "id": "steps-separator", "title": "Steps to Reproduce", "style": "line", "children": [{ "type": "field", "id": "f-steps", "field": "steps_to_reproduce", "labels": "hidden", "placeholder": "Provide steps to reproduce this bug..." }] }
+              {
+                "type": "section",
+                "id": "steps-separator",
+                "title": "Steps to Reproduce",
+                "style": "line",
+                "children": [{ "type": "field", "id": "f-steps", "field": "steps_to_reproduce", "labels": "hidden", "placeholder": "Provide steps to reproduce this bug..." }]
+              }
             ]
           },
           {
@@ -574,7 +673,27 @@
                 },
                 "totals": ["allocated_hours", "effective_hours", "subtask_effective_hours", "total_hours_spent", "remaining_hours"],
                 "editMode": "row",
-                "options": { "addLabel": "Add a sub-task" }
+                "options": { "addLabel": "Add a sub-task" },
+                "cells": {
+                  "priority": { "widget": "priority", "width": 4 },
+                  "state": {
+                    "widget": "dot",
+                    "options": { "tones": { "01_in_progress": "muted", "02_changes_requested": "warning", "03_approved": "success", "1_done": "success", "1_canceled": "danger", "04_waiting_normal": "info" } },
+                    "width": 4
+                  },
+                  "milestone_id": { "hidden": "not allow_milestones" },
+                  "sale_line_id": { "hidden": "not allow_billable" },
+                  "partner_id": { "hidden": "not allow_billable" },
+                  "allocated_hours": { "widget": "duration" },
+                  "effective_hours": { "widget": "duration" },
+                  "subtask_effective_hours": { "widget": "duration" },
+                  "total_hours_spent": { "widget": "duration" },
+                  "remaining_hours": { "widget": "duration", "tones": [{ "tone": "danger", "when": "progress >= 100" }, { "tone": "warning", "when": "progress >= 80" }] },
+                  "progress": { "widget": "progressbar" },
+                  "date_deadline": { "invisible": "state in ('1_done', '1_canceled')", "tones": [{ "tone": "danger", "when": "date_deadline and date_deadline < today()" }] }
+                },
+                "rowTones": [{ "tone": "muted", "when": "state in ('1_done', '1_canceled')" }],
+                "lineOpens": "record"
               }
             ]
           },
@@ -583,7 +702,8 @@
             "id": "task_dependencies",
             "label": "Blocked By",
             "invisible": "not allow_task_dependencies",
-            "children": [{ "type": "field", "id": "f-depend-on", "field": "depend_on_ids", "widget": "tags", "labels": "hidden" }]
+            "children": [{ "type": "field", "id": "f-depend-on", "field": "depend_on_ids", "labels": "hidden", "columns": ["name", "project_id", "date_deadline", "stage_id", "state"] }],
+            "roles": ["project.group_project_task_dependencies"]
           },
           {
             "type": "tab",
@@ -600,21 +720,14 @@
                     "id": "extra-left",
                     "children": [
                       { "type": "field", "id": "f-parent", "field": "parent_id", "options": { "create": false }, "invisible": "not project_id" },
-                      { "type": "field", "id": "f-analytic", "field": "analytic_account_id" },
-                      { "type": "field", "id": "f-company", "field": "company_id", "options": { "create": false } },
+                      { "type": "field", "id": "f-analytic", "field": "analytic_account_id", "roles": ["analytic.group_analytic_accounting"] },
+                      { "type": "field", "id": "f-company", "field": "company_id", "options": { "create": false }, "roles": ["base.group_multi_company"] },
                       { "type": "field", "id": "f-sequence", "field": "sequence" },
                       { "type": "field", "id": "f-email-cc", "field": "email_cc" },
                       { "type": "field", "id": "f-cover", "field": "displayed_image_id", "options": { "create": false } }
                     ]
                   },
-                  {
-                    "type": "section",
-                    "id": "extra-right",
-                    "children": [
-                      { "type": "field", "id": "f-date-assign", "field": "date_assign" },
-                      { "type": "field", "id": "f-last-stage", "field": "date_last_stage_update" }
-                    ]
-                  },
+                  { "type": "section", "id": "extra-right", "children": [{ "type": "field", "id": "f-date-assign", "field": "date_assign" }, { "type": "field", "id": "f-last-stage", "field": "date_last_stage_update" }] },
                   {
                     "type": "section",
                     "id": "time-to-assign",
@@ -639,11 +752,35 @@
                   }
                 ]
               }
-            ]
+            ],
+            "roles": ["base.group_no_one"]
           }
         ]
       }
     ],
-    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" }
-  }
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" },
+    "toolbar": {
+      "menu": [
+        { "id": "m-archive", "builtin": "archive" },
+        { "id": "m-unarchive", "builtin": "unarchive" },
+        { "id": "m-duplicate", "builtin": "duplicate" },
+        {
+          "id": "m-delete",
+          "builtin": "delete",
+          "steps": [
+            {
+              "do": "ask",
+              "when": "subtask_count",
+              "message": "Deleting a task will also delete its associated sub-tasks. If you wish to preserve the sub-tasks, make sure to unlink them from their parent task beforehand. Are you sure you want to proceed?"
+            },
+            { "do": "ask", "when": "not subtask_count", "message": "Are you sure you want to delete this record?" },
+            { "do": "delete" }
+          ]
+        }
+      ],
+      "pager": true,
+      "breadcrumbs": true
+    }
+  },
+  "look": { "helpShown": "tooltip", "readonlyShown": "text" }
 }
