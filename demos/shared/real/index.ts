@@ -26,6 +26,7 @@ export const real = {
   warnings: byModel((lane) => lane.warnings) as NonNullable<MemoryDataSourceOptions['warnings']>,
   lists: Object.assign({}, ...LANES.map((lane) => lane.lists ?? {})) as NonNullable<MemoryDataSourceOptions['lists']>,
   labelField: Object.assign({}, ...LANES.map((lane) => lane.labelField ?? {})) as NonNullable<MemoryDataSourceOptions['labelField']>,
+  definitions: Object.assign({}, ...LANES.map((lane) => lane.definitions ?? {})) as NonNullable<MemoryDataSourceOptions['definitions']>,
   /** What links show of each model's records: a lane adds to a model's, a later one's word winning. */
   shows: byModel((lane) => lane.shows as Record<string, Record<string, unknown>> | undefined) as NonNullable<MemoryDataSourceOptions['shows']>,
   /** By the `?page=` name: the person using it, the pager's records and the breadcrumbs. */

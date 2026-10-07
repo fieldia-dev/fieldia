@@ -426,7 +426,7 @@ function withReal(options: Parameters<typeof createMemoryDataSource>[0] & object
   return {
     ...options,
     records: merge(merge(options.records, real.records), businessData.records),
-    definitions: { ...options.definitions, ...businessData.definitions },
+    definitions: { ...options.definitions, ...businessData.definitions, ...real.definitions },
     onchange: merge(options.onchange, real.onchange),
     warnings: merge(options.warnings, real.warnings),
     lists: { ...options.lists, ...real.lists },

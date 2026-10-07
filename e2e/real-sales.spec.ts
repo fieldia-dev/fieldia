@@ -221,7 +221,24 @@ for (const variant of VARIANTS) {
       await expect(button(page, 'action_update_quantity_on_hand_stat')).toBeVisible();
       await expect(button(page, 'action_update_quantity_on_hand')).toBeVisible();
       await expect(tab(page, 'Inventory')).toBeVisible();
-      await expect(node(page, 'f-tooltip').locator('textarea')).toHaveValue('Storable products are physical items for which you manage the inventory level.');
+      // Read-only words as words, as Flectra draws them.
+      await expect(node(page, 'f-tooltip')).toContainText('Storable products are physical items for which you manage the inventory level.');
+      await expect(node(page, 'f-tooltip').locator('textarea')).toBeHidden();
+      // The label over the name, the star on its line, stat buttons with their unit and two values, Cost per its unit.
+      await expect(page.getByText('Product Name', { exact: true }).first()).toBeVisible();
+      await expect(node(page, 'f-priority')).toBeVisible();
+      await expect(button(page, 'action_view_sales')).toContainText('38 Units');
+      await expect(button(page, 'action_view_stock_move_lines')).toContainText(/In:?\s*5/);
+      await expect(button(page, 'action_view_stock_move_lines')).toContainText(/Out:?\s*9/);
+      await expect(node(page, 'cost-row')).toContainText('per');
+      await expect(node(page, 'cost-row')).toContainText('Units');
+      // The category's properties, from the app, in two columns.
+      await expect(node(page, 'f-properties')).toContainText('Medical device class');
+      // Attributes: a saved line's attribute is locked, its values in their colours, and Configure on each line.
+      await tab(page, 'Attributes & Variants').click();
+      await expect(node(page, 'f-attribute-lines').locator('input[id$="-a1-attribute_id"]')).not.toBeEditable();
+      await expect(node(page, 'f-attribute-lines').locator('[data-row-button="action_open_attribute_values"]').first()).toBeVisible();
+      await tab(page, 'General Information').click();
       if (variant === 'plain') await screen(page, 'real-product');
 
       // A service: no Inventory tab, no stock stat buttons, no Update Quantity or Replenish, and no tooltip.
@@ -250,6 +267,23 @@ for (const variant of VARIANTS) {
       await node(page, 'f-sale-line-warn-msg').locator('textarea').fill('');
       await page.getByRole('button', { name: 'Save', exact: true }).click();
       await expect(node(page, 'f-sale-line-warn-msg').locator('.fd-error')).toBeVisible();
+      expect(problems).toEqual([]);
+    });
+
+    test('product: parts shown by the person’s groups, and a service’s properties are its category’s', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      // A salesperson alone: no stock buttons, no Purchase tab, no Variants, no Accounting.
+      const { problems } = await open(page, variant, `${PRODUCT}&roles=sales_team.group_sale_salesman`);
+      await expect(button(page, 'action_view_sales')).toBeVisible();
+      await expect(button(page, 'action_update_quantity_on_hand')).toBeHidden();
+      await expect(button(page, 'action_update_quantity_on_hand_stat')).toBeHidden();
+      await expect(tab(page, 'Purchase')).toBeHidden();
+      await expect(tab(page, 'Attributes & Variants')).toBeHidden();
+      await expect(tab(page, 'Accounting')).toBeHidden();
+      // Another category, other properties.
+      await page.goto(`/${variant}/?page=real-product&record=7305&skin=underline`);
+      await expect(node(page, 'f-properties')).toContainText('Warranty (months)');
+      await expect(node(page, 'f-properties')).not.toContainText('Medical device class');
       expect(problems).toEqual([]);
     });
 

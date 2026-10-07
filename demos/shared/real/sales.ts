@@ -1,4 +1,4 @@
-import type { ActionRequest, ActionResult, Line, Page, RelatedRecord, Values } from '@fieldia/core';
+import type { ActionRequest, ActionResult, Line, Page, PropertyDefinition, RelatedRecord, Values } from '@fieldia/core';
 import contractRenewal from '../../../examples/pages/real-contract-renewal.page.json';
 import contractTermination from '../../../examples/pages/real-contract-termination.page.json';
 import product from '../../../examples/pages/real-product.page.json';
@@ -47,6 +47,17 @@ const NAMES: Record<string, Record<number, string>> = {
   'tender.opportunity': { 7511: 'Tender 2026/114 — Ministry of Health, ICU equipment' },
   'res.country': { 7491: 'Egypt' },
   'stock.warehouse': { 7495: 'Cairo Main Warehouse' },
+};
+
+/** What each attribute value belongs to, and its colour: the values a line's attribute offers. */
+const ATTRIBUTE_VALUES: Record<number, { attribute: number; color: number }> = { 7481: { attribute: 7471, color: 1 }, 7482: { attribute: 7471, color: 3 }, 7483: { attribute: 7472, color: 5 }, 7484: { attribute: 7472, color: 7 } };
+
+/** The properties a product's category defines (product_properties_definition): the medical devices', and the services'. */
+const DEVICE_PROPERTIES = [{"name": "mdd_class", "label": "Medical device class", "type": "selection", "options": [{"value": "I", "label": "Class I"}, {"value": "IIa", "label": "Class IIa"}, {"value": "IIb", "label": "Class IIb"}, {"value": "III", "label": "Class III"}]}, {"name": "eda_registration", "label": "EDA registration no.", "type": "char"}, {"name": "warranty_months", "label": "Warranty (months)", "type": "integer"}, {"name": "needs_biomedical_signoff", "label": "Biomedical engineer signs the handover", "type": "boolean"}] as PropertyDefinition[];
+const CATEGORY_PROPERTIES: Record<number, PropertyDefinition[]> = {
+  7421: DEVICE_PROPERTIES,
+  7422: DEVICE_PROPERTIES.filter((definition) => definition.name === 'eda_registration'),
+  7423: DEVICE_PROPERTIES.filter((definition) => definition.name === 'warranty_months'),
 };
 
 /** The tags' colours, Flectra's 1 to 11. */
@@ -441,13 +452,24 @@ function taxString(values: Values): string {
 const PRODUCT_TEMPLATES: Record<number, Values> = {
   7301: {
     name: 'Patient monitor PM-12',
-    priority: 1,
+    priority: '1',
     image_1920: picture(MONITOR_SVG, 'pm-12.svg'),
     active: true,
     sale_ok: true,
     purchase_ok: true,
     product_variant_count: 1,
     is_product_variant: false,
+    valid_product_template_attribute_line_ids: [],
+    company_id: null,
+    variant_seller_ids: [],
+    packaging_ids: [],
+    weight_uom_name: 'kg',
+    volume_uom_name: 'm³',
+    property_stock_production: null,
+    property_stock_inventory: null,
+    description_picking: null,
+    nbr_putaway_rules: 0,
+    storage_category_capacity_count: 0,
     detailed_type: 'product',
     invoice_policy: 'delivery',
     visible_expense_policy: false,
@@ -468,8 +490,8 @@ const PRODUCT_TEMPLATES: Record<number, Values> = {
     product_properties: { mdd_class: 'IIb', eda_registration: 'EDA-MD-2025-11873', warranty_months: 24, needs_biomedical_signoff: true },
     description: '<p>Imported from Shenzhen in lots of 40. Keep two in Cairo stock for demonstrations.</p>',
     attribute_line_ids: [
-      { key: 'a1', id: 730101, values: { sequence: 10, attribute_id: link('product.attribute', 7471), value_ids: links('product.attribute.value', 7481), value_count: 1 } },
-      { key: 'a2', id: 730102, values: { sequence: 20, attribute_id: link('product.attribute', 7472), value_ids: links('product.attribute.value', 7484), value_count: 1 } },
+      { key: 'a1', id: 730101, values: { sequence: 10, attribute_id: link('product.attribute', 7471), value_ids: [{ ...link('product.attribute.value', 7481), color: ATTRIBUTE_VALUES[7481].color }], value_count: 1 } },
+      { key: 'a2', id: 730102, values: { sequence: 20, attribute_id: link('product.attribute', 7472), value_ids: [{ ...link('product.attribute.value', 7484), color: ATTRIBUTE_VALUES[7484].color }], value_count: 1 } },
     ],
     description_sale: '12.1" touch screen: ECG, SpO2, NIBP and temperature. 220 V.',
     sale_line_warn: 'warning',
@@ -509,13 +531,21 @@ const PRODUCT_TEMPLATES: Record<number, Values> = {
   },
   7305: {
     name: 'Installation and training',
-    priority: 0,
+    priority: '0',
     image_1920: null,
     active: true,
     sale_ok: true,
     purchase_ok: false,
     product_variant_count: 1,
     is_product_variant: false,
+    valid_product_template_attribute_line_ids: [],
+    company_id: null,
+    variant_seller_ids: [],
+    packaging_ids: [],
+    weight_uom_name: 'kg',
+    volume_uom_name: 'm³',
+    nbr_putaway_rules: 0,
+    storage_category_capacity_count: 0,
     detailed_type: 'service',
     invoice_policy: 'order',
     visible_expense_policy: false,
@@ -936,6 +966,9 @@ function productAction({ action, values }: ActionRequest): ActionResult | undefi
     action_open_product_lot: `The serial numbers of ${name}.`,
     product_tag_action: 'Product tags: Sales › Configuration › Product Tags.',
     action_open_routes: 'The routes diagram: how this product reaches the stock and leaves it.',
+    action_open_attribute_values: 'The attribute’s values open here in Flectra, to set each one’s extra price.',
+    action_view_related_putaway_rules: `The putaway rules of ${name}: where it is stored as it is received.`,
+    action_view_storage_category_capacity: `The storage capacities of ${name}.`,
   };
   return said[action] ? { say: { message: said[action], tone: 'info' } } : undefined;
 }
@@ -1065,7 +1098,9 @@ export const lane: RealLane = {
     'sale.contract': saleContract as Page,
   },
   // A customer's address and tax number under its link (show_address, show_vat), a tag's colour.
-  shows: { 'res.partner': { details: ['street', 'city', 'vat'] }, 'crm.tag': { color: 'color' } },
+  shows: { 'res.partner': { details: ['street', 'city', 'vat'] }, 'crm.tag': { color: 'color' }, 'product.attribute.value': { color: 'color' } },
+  // A product's properties are its category's.
+  definitions: { product_properties: (values) => CATEGORY_PROPERTIES[idOf(values['categ_id']) ?? 0] ?? [] },
   records: {
     'sale.order': SALE_ORDERS,
     'sale.advance.payment.inv': INVOICE_WIZARDS,
@@ -1085,11 +1120,14 @@ export const lane: RealLane = {
       7412: { name: 'VAT 0% (exempt)', type_tax_use: 'sale', amount: 0, company_id: COMPANY(), country_id: link('res.country', 7491) },
       7413: { name: 'VAT 14% (purchases)', type_tax_use: 'purchase', amount: 14, company_id: COMPANY(), country_id: link('res.country', 7491) },
     },
+    'product.attribute.value': Object.fromEntries(
+      Object.entries(ATTRIBUTE_VALUES).map(([id, v]) => [id, { name: NAMES['product.attribute.value'][Number(id)], attribute_id: link('product.attribute', v.attribute), color: v.color }]),
+    ),
     'crm.tag': Object.fromEntries(Object.entries(NAMES['crm.tag']).map(([id, name]) => [id, { name, color: TAG_COLORS[Number(id)] ?? 0 }])),
     'account.account': Object.fromEntries(Object.entries(NAMES['account.account']).map(([id, name]) => [id, { name, deprecated: false }])),
     ...Object.fromEntries(
       Object.entries(NAMES)
-        .filter(([model]) => !['account.tax', 'account.account', 'crm.tag'].includes(model))
+        .filter(([model]) => !['account.tax', 'account.account', 'crm.tag', 'product.attribute.value'].includes(model))
         .map(([model, rows]) => [model, Object.fromEntries(Object.entries(rows).map(([id, name]) => [id, { name }]))]),
     ),
   },

@@ -726,18 +726,21 @@
         {
           "feature": "Replenish (opens the product.replenish wizard) invisible=\"type not in ['consu','product']\"",
           "status": "approximated",
-          "how": "header button with the condition, call answered with words",
-          "needs": "nothing new: the wizard could be an opened page"
+          "how": "header button with the condition and roles [stock.group_stock_user], call answered with words",
+          "app": true,
+          "why": "the product.replenish wizard is the app's own page; an open step would show it"
         },
         {
           "feature": "Print Labels (opens the label layout wizard) invisible=\"detailed_type not in ['consu','product','combo']\"",
           "status": "approximated",
-          "how": "header button with the condition, call answered with words"
+          "how": "header button with the condition, call answered with words",
+          "app": true,
+          "why": "the label layout wizard and its report are the app's"
         },
         {
           "feature": "Header buttons' groups (stock.group_stock_manager, stock.group_stock_user)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles: Update Quantity to stock.group_stock_manager, Replenish to stock.group_stock_user"
         },
         {
           "feature": "Stat button Extra Prices / Extra Price: the words change with the count",
@@ -751,25 +754,24 @@
         },
         {
           "feature": "Stat buttons Sold / Purchased / On Hand / Forecasted: the value followed by the unit (38 Units Sold)",
-          "status": "approximated",
-          "how": "the value alone",
-          "needs": "a stat button with a second field (the unit) or a suffix from a field"
+          "status": "covered",
+          "how": "unitField uom_name on Sold, Purchased, On Hand and Forecasted: 38 Units"
         },
         {
           "feature": "Stat buttons In: n / Out: n and Min: n / Max: n (two values each)",
-          "status": "approximated",
-          "how": "one value (Out, Min) under a label 'In / Out', 'Min / Max'",
-          "needs": "a stat button with two labelled values"
+          "status": "covered",
+          "how": "secondField with secondLabel: In over Out, Min over Max, each after its words"
         },
         {
           "feature": "Stat buttons' help tooltips ('Sold in the last 365 days') and groups (pricelist, variants, sales, purchase, stock user, lots)",
-          "status": "missing",
-          "needs": "a tooltip on a stat button; a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "approximated",
+          "how": "roles on every group-gated stat button (pricelist, variants, sales, purchase, stock user, lots); the help tooltips are not shown",
+          "needs": "a tooltip on a stat button"
         },
         {
           "feature": "Putaway Rules and Storage Capacities stat buttons (groups multi-locations, storage categories)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "both stat buttons, with roles stock.group_stock_multi_locations / stock.group_stock_storage_categories: hidden for this one-warehouse company's people"
         },
         {
           "feature": "Ribbon Archived (web_ribbon, text-bg-danger) invisible=\"active\"",
@@ -783,15 +785,13 @@
         },
         {
           "feature": "'Product Name' label over the h1 name",
-          "status": "approximated",
-          "how": "the name's placeholder only (e.g. Cheese Burger); a sheet title takes no label",
-          "needs": "a label for the sheet's title field"
+          "status": "covered",
+          "how": "title.label: Product Name over the name"
         },
         {
           "feature": "priority widget priority (a star) beside the name; a selection '0'/'1'",
-          "status": "approximated",
-          "how": "an integer with widget rating, max 1, over the title: a second click takes the star away, and no 'Clear selection' shows",
-          "needs": "the star on a selection field ('0'/'1')"
+          "status": "covered",
+          "how": "a selection '0' / '1' with the priority widget, in title.before: the star on the name's line"
         },
         {
           "feature": "name with placeholder, line_breaks false",
@@ -816,8 +816,8 @@
         {
           "feature": "product_tooltip: italic muted words from a compute, no label, invisible=\"type == 'service' and not sale_ok\"",
           "status": "approximated",
-          "how": "a readonly text worked out in the page with if() on type, labels hidden; it shows as a box, not italic words",
-          "needs": "a text node whose words come from a field or an expression"
+          "how": "worked out in the page with if() on type; with look.readonlyShown text it reads as plain words, not a box — not Flectra's italic, muted words",
+          "needs": "italic muted words (Flectra's fst-italic text-muted) for a value"
         },
         {
           "feature": "Sale's two italic notes ('You can invoice them before they are delivered.' / 'Invoice after delivery…') with conditions on type and invoice_policy",
@@ -841,9 +841,8 @@
         },
         {
           "feature": "tax_string '(= 48,735.00 EGP Incl. Taxes)' inline after the price",
-          "status": "approximated",
-          "how": "a readonly char on its own row, labels hidden, worked out by the data source's onchange",
-          "needs": "fields side by side on one row"
+          "status": "covered",
+          "how": "an inline row, Sales Price: the price and its tax string as words after it"
         },
         {
           "feature": "taxes_id many2many_tags (context search defaults)",
@@ -852,14 +851,13 @@
         },
         {
           "feature": "standard_price monetary in cost_currency_id, invisible=\"id and product_variant_count != 1 and not is_product_variant\"",
-          "status": "approximated",
-          "how": "the condition without `id`",
-          "needs": "the record's id in expressions"
+          "status": "covered",
+          "how": "the Cost row's condition in full: id and product_variant_count != 1 and not is_product_variant"
         },
         {
           "feature": "'per <uom_name>' after the cost (groups uom)",
-          "status": "missing",
-          "needs": "a suffix taken from a field on a number box (suffixField, as the label widget has)"
+          "status": "covered",
+          "how": "the Cost row: the cost, 'per' and the unit's name as words, those two with roles [uom.group_uom]"
         },
         {
           "feature": "categ_id, default_code invisible=\"product_variant_count > 1\"",
@@ -868,8 +866,8 @@
         },
         {
           "feature": "barcode invisible=\"product_variant_count > 1 or (product_variant_count == 0 and valid_product_template_attribute_line_ids)\"",
-          "status": "approximated",
-          "how": "the first half of the condition"
+          "status": "covered",
+          "how": "the whole condition, with valid_product_template_attribute_line_ids"
         },
         {
           "feature": "product_tag_ids many2many_tags; Configure tags link button (action, icon oi-arrow-right)",
@@ -878,14 +876,13 @@
         },
         {
           "feature": "company_id (groups base.group_multi_company)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "Company with roles [base.group_multi_company]: hidden in a one-company setup"
         },
         {
           "feature": "product_properties (Properties, columns=2) defined by the category",
-          "status": "approximated",
-          "how": "a properties field with definitions written in the page; one column",
-          "needs": "property definitions read from a linked record (categ_id.product_properties_definition), and columns for properties"
+          "status": "covered",
+          "how": "definitionsFrom { list: product_properties, dependsOn: [categ_id] }: the category's definitions from the app, in two columns"
         },
         {
           "feature": "Internal Notes group: description, nolabel, placeholder",
@@ -899,35 +896,33 @@
         },
         {
           "feature": "attribute_id readonly=\"id\" on saved lines",
-          "status": "missing",
-          "needs": "conditions per line: readonly/invisible/required on a line field (or column) read against that line's own values"
+          "status": "covered",
+          "how": "cells readonly: id — a saved line's attribute is locked (a line's conditions now read its own id, fixed in this lane)"
         },
         {
           "feature": "value_ids many2many_tags in the line with color_field, no_create_edit, context default_attribute_id",
-          "status": "approximated",
-          "how": "many2many line column; no colours, any value can be picked",
-          "needs": "a line field's filter reading another field of the same line (values of the line's attribute)"
+          "status": "covered",
+          "how": "the line's tags in their colours (cells widget tags, colors), filtered by the line's own attribute (valueFrom attribute_id), made with it (createValues)"
         },
         {
           "feature": "Configure button on each attribute line (action_open_attribute_values)",
-          "status": "missing",
-          "needs": "buttons on each line of a table, with steps or an action and a condition per line"
+          "status": "covered",
+          "how": "a rowButton Configure on each saved line, calling action_open_attribute_values"
         },
         {
           "feature": "Attribute lines decoration-info=\"value_count <= 1\"",
-          "status": "missing",
-          "needs": "line (row) and cell decorations by condition: decoration-info/-success/-warning/-danger/-bf"
+          "status": "covered",
+          "how": "rowTones info when value_count <= 1"
         },
         {
           "feature": "Warning paragraph (oe_edit_only)",
-          "status": "approximated",
-          "how": "a note text, always shown",
-          "needs": "parts shown only while editing"
+          "status": "covered",
+          "how": "invisible: not editing — shown only while the record is edited"
         },
         {
           "feature": "Variants tab groups=\"product.group_product_variant\"",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles [product.group_product_variant] on the tab"
         },
         {
           "feature": "Sales tab invisible=\"not sale_ok\" (sale removes the '1 or')",
@@ -946,8 +941,8 @@
         },
         {
           "feature": "Warning when Selling groups (sales_team.group_sale_salesman, sale.group_warning_sale)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles [sale.group_warning_sale] on the section"
         },
         {
           "feature": "Purchase tab invisible=\"not purchase_ok\" (purchase)",
@@ -962,8 +957,8 @@
         },
         {
           "feature": "variant_seller_ids for products with variants",
-          "status": "approximated",
-          "how": "left out: this product has one variant"
+          "status": "covered",
+          "how": "a second vendors table, shown only when the product has several variants"
         },
         {
           "feature": "Vendor Bills: supplier_taxes_id tags, purchase_method radio",
@@ -977,8 +972,8 @@
         },
         {
           "feature": "Vendor Bills groups (purchase.group_purchase_manager), Purchase tab group, warning group",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles: the Purchase tab to purchase.group_purchase_user, Vendor Bills to purchase.group_purchase_manager, the warning to purchase.group_warning_purchase"
         },
         {
           "feature": "Inventory tab invisible=\"type == 'service'\"",
@@ -997,15 +992,13 @@
         },
         {
           "feature": "responsible_id many2one_avatar_user",
-          "status": "approximated",
-          "how": "a plain many2one",
-          "needs": "a user link with the person's avatar"
+          "status": "covered",
+          "how": "options.avatar: initials (or a picture) before the name"
         },
         {
           "feature": "weight + weight_uom_name, volume + volume_uom_name inline",
-          "status": "approximated",
-          "how": "a fixed suffix kg / m³ in the box",
-          "needs": "a suffix taken from a field on a number box"
+          "status": "covered",
+          "how": "inline rows: the weight and its unit's name, the volume and its own, from the record"
         },
         {
           "feature": "Traceability group invisible=\"type == 'consu'\": tracking radio invisible=\"type == 'service'\"",
@@ -1014,8 +1007,8 @@
         },
         {
           "feature": "Traceability groups (stock.group_production_lot); Counterpart Locations (base.group_no_one); Description for Internal Transfers (multi-locations); Packaging table (product.group_stock_packaging)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles: Traceability to stock.group_production_lot, Counterpart Locations to base.group_no_one, internal transfers' description to stock.group_stock_multi_locations, the Packaging table to product.group_stock_packaging"
         },
         {
           "feature": "Description for Receipts / for Delivery Orders",
@@ -1029,8 +1022,8 @@
         },
         {
           "feature": "Accounting tab groups (account.group_account_readonly, account.group_account_invoice)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles [account.group_account_readonly, account.group_account_invoice] on the tab"
         },
         {
           "feature": "type worked out from detailed_type; show_on_hand / show_forecasted buttons flags",
@@ -1049,15 +1042,14 @@
         },
         {
           "feature": "Field help",
-          "status": "approximated",
-          "how": "a paragraph under each field",
-          "needs": "help shown as a tooltip (?) beside the label, as Flectra does, instead of a paragraph under every field"
+          "status": "covered",
+          "how": "look.helpShown: tooltip"
         }
       ],
       "summary": {
-        "covered": 32,
-        "approximated": 19,
-        "missing": 13
+        "covered": 58,
+        "approximated": 6,
+        "missing": 0
       }
     },
     {
