@@ -30,6 +30,14 @@ export function sampleChatter() {
     people: [salma, mona, karim, youssef],
     activityTypes: [call, todo, meeting],
     records: {
+      // The vendor bill's conversation: what was tracked as it was confirmed, and the vendor's own word.
+      'account.move:3': {
+        messages: [
+          { id: 202, kind: 'message', author: mona, date: '2026-10-05T11:30:00Z', body: '<p>Bill NT-8907 attached; the chairs come on Sunday.</p>' },
+          { id: 201, kind: 'event', author: youssef, date: '2026-10-05T10:00:00Z', body: '', tracking: [{ field: 'state', label: 'Status', from: 'Draft', to: 'Posted' }] },
+        ],
+        followers: [{ id: 73, person: mona }],
+      },
       'partner:1': {
         messages: [
           { id: 3, kind: 'note', author: karim, date: '2026-10-01T14:20:00Z', body: '<p>Pays within 30 days. Prefers deliveries on <b>Sundays</b>.</p>' },

@@ -174,7 +174,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // that format money, hours and dates with a unit and a second value, a statusbar's condition, time per step,
 // folded stages and a click that saves, keys on buttons with Alt, parts for editing or reading only, links'
 // pictures, address lines and tag colours, and parts on one line — add 21.1 more, to 355.5.
-const BUDGET_KB = 356.5;
+// What sits around a record — the bar over it with the breadcrumbs, a gear menu that is a real menu and the
+// pager the app fills, the record's own steps (archive, duplicate, delete, a post in its conversation) and
+// another record shown in place, the attachment beside the sheet in the browser's own PDF viewer, and the
+// side panel kept beside it (5.3 of it the stylesheet) — add 20.5, to 376.
+const BUDGET_KB = 377;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -190,7 +194,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the rest of what real Flectra tables need (tones on a field, chosen lines, line pages, cards on a phone,
 // hideOn, a line's money in its record's currency, setWhen on a change, distinct, contains and =?), 4.3, to 102.1.
 // how a dense sheet reads (values as words, ribbons, alerts, stat buttons, statusbar, keys, links, lines), 6 more, to 108.1.
-const GZIP_BUDGET_KB = 108.5;
+// what sits around a record (breadcrumbs, gear menu, pager, the record's own steps and posts, the attachment beside it), 5.6, to 113.7.
+const GZIP_BUDGET_KB = 114;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -206,7 +211,9 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // to 18.7 and German's and French's to 8.1. The (?) that shows a field's help, named in each, a little more: to 18.8 and 8.2.
 // A table's lines chosen (a line's tick, every line's, how many), and a value on two lines of a column, to 19.1 and 8.3.
 // A statusbar's More and the time spent in a step, two words in each, add a little more to each.
-const ADD_ON_BUDGET_KB = { ar: [19.3, 4.2], de: [8.4, 3.6], fr: [8.4, 3.6] };
+// What sits around a record — the gear menu's and its built-ins' words, the trail, the pager, the attachment,
+// and what Archive and Delete ask — eighteen words in each: Arabic's to 20.5, German's to 8.8 and French's to 8.9.
+const ADD_ON_BUDGET_KB = { ar: [20.7, 4.4], de: [9.1, 3.8], fr: [9.1, 3.8] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

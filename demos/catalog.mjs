@@ -231,6 +231,20 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'vendor-bill',
+    name: 'Around a record',
+    category: 'records',
+    query: 'page=vendor-bill&record=3&skin=underline',
+    blurb: 'A vendor bill with what sits around it: the breadcrumbs and the pager over the bills the app gives, a gear menu with Print, Debit Note, Archive, Duplicate and Delete, the vendor’s PDF beside the sheet, and the conversation beside it on any screen it fits.',
+    howTo: [
+      'Press the pager’s › (or Alt+N): the next bill comes, “4 / 4” after it, and round to the first; the PDF beside it follows.',
+      'Open the gear menu with the arrow keys: Print, then Debit Note, Archive, Duplicate and Delete. Press Debit Note: the note is said and posted in the conversation.',
+      'Press Duplicate: the copy shows as “… (copy)”, a draft, and the pager counts five.',
+      'On BILL/2026/10/0002, press Archive and say yes: the Archived ribbon shows and the menu offers Unarchive.',
+      'Make the window narrow: the PDF goes under the sheet, the conversation stays beside it until a phone’s width.',
+    ],
+  },
+  {
     id: 'customers-arabic',
     name: 'Customer list, right to left',
     category: 'lists',

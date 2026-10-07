@@ -1,5 +1,6 @@
 import type { ActionRequest, ActionResult, RelatedRecord } from '@fieldia/core';
 import { real } from './real';
+import { answerBill } from './vendor-bill';
 
 /** What the shop has left of each product, by id; the standing desk none. */
 const STOCK: Record<number, number> = { 1: 12, 2: 40, 3: 7, 4: 0, 5: 120 };
@@ -15,6 +16,9 @@ const ANSWER_MS = 250;
  * Any other call is left alone.
  */
 export function answerAction(request: ActionRequest, locale?: string): Promise<ActionResult | undefined> | undefined {
+  // The vendor bill's gear menu: a debit note made, a bill printed.
+  const billed = request.id.startsWith('m-') ? answerBill(request) : undefined;
+  if (billed) return Promise.resolve(billed);
   // The real pages' own actions: each lane's answers (shared/real/).
   if (request.action !== 'check_stock') return real.action(request, locale);
   const arabic = locale?.startsWith('ar') ?? false;
