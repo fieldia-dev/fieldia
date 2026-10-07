@@ -495,7 +495,11 @@ export class ReferenceCheck {
       this.claim(stat.id, `${path}.statButtons[${i}]`);
       this.checkModifiers(stat, `${path}.statButtons[${i}]`);
       this.checkPress(stat, `${path}.statButtons[${i}]`);
-      if (stat.field !== undefined) this.need(stat.field, `${path}.statButtons[${i}].field`);
+      for (const key of ['field', 'unitField', 'labelField', 'secondField'] as const) {
+        const name = stat[key];
+        if (name !== undefined) this.need(name, `${path}.statButtons[${i}].${key}`);
+      }
+      if (stat.secondLabel !== undefined && stat.secondField === undefined) this.report(`${path}.statButtons[${i}].secondLabel`, 'words for a second value need its field (secondField)');
     });
     const ribbons = [...(sheet.ribbon ? [[sheet.ribbon, `${path}.ribbon`] as const] : []), ...(sheet.ribbons ?? []).map((ribbon, i) => [ribbon, `${path}.ribbons[${i}]`] as const)];
     for (const [ribbon, at] of ribbons) {

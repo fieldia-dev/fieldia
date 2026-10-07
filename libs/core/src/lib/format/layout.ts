@@ -373,11 +373,24 @@ export interface SectionsNode {
 export interface StatButton {
   id: string;
   label: string;
+  /** The label's words from a field, when it holds any — Flectra's "Next Meeting" — `label` while it is empty. */
+  labelField?: string;
   /** What a press does, as a button's. */
   steps?: ActionStep[];
   action?: string;
-  /** A numeric field shown on the button, such as a count of invoices. */
+  /** The field shown on the button, written as the field shows it: a count of invoices, an amount with its currency, hours, a date. */
   field?: string;
+  /** Words after the value, such as "Units" or "Days". */
+  unit?: string;
+  /** The words after the value from a field, such as a product's unit of measure; `unit` while it is empty. */
+  unitField?: string;
+  /**
+   * A second value: "12.5 / 21 Days", or — with `secondLabel` — two values
+   * each with its words, one over the other, as Flectra's "In: 3" and "Out: 5".
+   */
+  secondField?: string;
+  /** The second value's words; with them, `label` is the first value's. */
+  secondLabel?: string;
   icon?: string;
   invisible?: Modifier;
   roles?: Roles;
@@ -732,9 +745,14 @@ export const SectionsNodeSchema = z.strictObject({
 export const StatButtonSchema = z.strictObject({
   id,
   label: z.string(),
+  labelField: fieldName.optional(),
   steps: ActionStepsSchema.optional(),
   action: z.string().min(1).optional(),
   field: fieldName.optional(),
+  unit: z.string().optional(),
+  unitField: fieldName.optional(),
+  secondField: fieldName.optional(),
+  secondLabel: z.string().optional(),
   icon: z.string().optional(),
   invisible, roles,
 });

@@ -253,3 +253,70 @@ describe('alerts holding a field’s value, with buttons inside, and alerts amon
     expect(alert.textContent).toMatch(/^Top up .*2,500\.00 to reach the minimum\.$/);
   });
 });
+
+describe('stat buttons that format what they show', () => {
+  const page = (): Page => ({
+    fieldia: '0.1',
+    id: 'stats',
+    data: { kind: 'record', model: 'x' },
+    fields: {
+      invoiced: { type: 'monetary', label: 'Invoiced', currency: 'EGP' },
+      hours: { type: 'float', label: 'Hours', digits: [16, 2] },
+      meeting_label: { type: 'char', label: 'Meeting label' },
+      meeting_date: { type: 'date', label: 'Meeting' },
+      sold: { type: 'float', label: 'Sold', digits: [16, 2] },
+      uom: { type: 'many2one', label: 'Unit', relation: 'uom' },
+      left: { type: 'float', label: 'Left' },
+      allowed: { type: 'float', label: 'Allowed' },
+      incoming: { type: 'integer', label: 'In' },
+      outgoing: { type: 'integer', label: 'Out' },
+      orders: { type: 'integer', label: 'Orders' },
+    },
+    layout: {
+      type: 'sheet',
+      id: 'root',
+      statButtons: [
+        { id: 's-money', label: 'Invoiced', field: 'invoiced', action: 'a' },
+        { id: 's-hours', label: 'Hours', field: 'hours', action: 'a' },
+        { id: 's-meeting', label: 'No Meeting', labelField: 'meeting_label', field: 'meeting_date', action: 'a' },
+        { id: 's-sold', label: 'Sold', field: 'sold', unit: 'Units', unitField: 'uom', action: 'a' },
+        { id: 's-days', label: 'Time Off', field: 'left', secondField: 'allowed', unit: 'Days', action: 'a' },
+        { id: 's-moves', label: 'In', field: 'incoming', secondField: 'outgoing', secondLabel: 'Out', action: 'a' },
+        { id: 's-orders', label: 'Orders', field: 'orders', action: 'a' },
+      ],
+      children: [],
+    },
+  });
+  const read = (host: HTMLElement, id: string) => {
+    const stat = host.querySelector(`[data-node="${id}"]`) as HTMLElement;
+    return [...stat.querySelectorAll('.fd-stat-value, .fd-stat-label')].map((part) => `${part.className.replace('fd-stat-', '')}:${part.textContent}`);
+  };
+  const values = { invoiced: 6750, hours: 24.8, meeting_label: null, meeting_date: '2026-10-13', sold: 38, uom: { id: 1, label: 'kg' }, left: 12.5, allowed: 21, incoming: 3, outgoing: 5, orders: 1240 };
+
+  it('writes a value as its field shows it: money with its currency, hours with their digits, a date, a count grouped', () => {
+    const { host } = mount(page(), { values });
+    expect(read(host, 's-money')[0]).toMatch(/^value:E£6,750\.00$|^value:EGP\s?6,750\.00$/);
+    expect(read(host, 's-hours')).toEqual(['value:24.80', 'label:Hours']);
+    expect(read(host, 's-orders')).toEqual(['value:1,240', 'label:Orders']);
+  });
+
+  it('takes its words from a field while it holds any', () => {
+    const { host, form } = mount(page(), { values });
+    expect(read(host, 's-meeting')).toEqual(['value:13 Oct 2026', 'label:No Meeting']);
+    form.setValue('meeting_label', 'Next Meeting');
+    expect(read(host, 's-meeting')).toEqual(['value:13 Oct 2026', 'label:Next Meeting']);
+  });
+
+  it('puts a unit after the value — a field’s, or its own while the field is empty', () => {
+    const { host, form } = mount(page(), { values });
+    expect(read(host, 's-sold')).toEqual(['value:38.00 kg', 'label:Sold']);
+    form.setValue('uom', null);
+    expect(read(host, 's-sold')).toEqual(['value:38.00 Units', 'label:Sold']);
+  });
+
+  it('shows a second value after the first, or with its own words, the two one over the other', () => {
+    const { host } = mount(page(), { values });
+    expect(read(host, 's-days')).toEqual(['value:12.50 / 21.00 Days', 'label:Time Off']);
+    expect(read(host, 's-moves')).toEqual(['label:In', 'value:3', 'label:Out', 'value:5']);
+  });
+});

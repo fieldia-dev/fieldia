@@ -106,3 +106,25 @@ describe('alerts that hold a field’s value, with buttons inside, and alerts in
     expect(both(sheet({}, [{ ...text, tone: 'loud' }])).join('\n')).toMatch(/tone/);
   });
 });
+
+describe('stat buttons that say more', () => {
+  const stat = (extra: Record<string, unknown>) => sheet({ statButtons: [{ id: 's', label: 'Sold', field: 'orders', action: 'open', ...extra }] });
+
+  it('takes a unit, a unit from a field, words from a field, and a second value with its own words', () => {
+    expect(both(stat({ unit: 'Units', labelField: 'note' }))).toEqual([]);
+    expect(both(stat({ unitField: 'name', secondField: 'total', secondLabel: 'Out' }))).toEqual([]);
+  });
+
+  it('refuses a field the page lacks, and words for a second value with no second value', () => {
+    const issues = both(stat({ unitField: 'u', labelField: 'l', secondField: 'x' })).join('\n');
+    expect(issues).toMatch(/statButtons\[0\]\.unitField: no field "u"/);
+    expect(issues).toMatch(/statButtons\[0\]\.labelField: no field "l"/);
+    expect(issues).toMatch(/statButtons\[0\]\.secondField: no field "x"/);
+    expect(both(stat({ secondLabel: 'Out' })).join('\n')).toMatch(/statButtons\[0\]\.secondLabel: words for a second value need its field \(secondField\)/);
+  });
+
+  it('hands its unit and second words to a translator', async () => {
+    const { pageWords } = await import('../../index');
+    expect(pageWords(stat({ unit: 'Units', secondField: 'total', secondLabel: 'Out' }) as never)).toEqual(expect.arrayContaining(['Sold', 'Units', 'Out']));
+  });
+});

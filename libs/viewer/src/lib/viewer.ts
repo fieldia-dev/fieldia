@@ -1136,16 +1136,31 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     }
     if (node.statButtons?.length) {
       const stats = el('div', { class: 'fd-stats' });
+      /** A field's value as the field shows it: money with its currency, a date, a count grouped. */
+      const shownValue = (name: string | undefined, values: Values) =>
+        name && page.fields[name] ? displayValue(page.fields[name] as LineField, values[name], values, locale) : '';
       for (const stat of node.statButtons) {
         const value = el('span', { class: 'fd-stat-value' });
+        const label = el('span', { class: 'fd-stat-label' }, stat.label);
+        // A second value with words of its own: the two one over the other, each after its words.
+        const second = stat.secondField && stat.secondLabel !== undefined ? { value: el('span', { class: 'fd-stat-value' }), label: el('span', { class: 'fd-stat-label' }, stat.secondLabel) } : null;
         const icon = drawIcon(doc, stat.icon, options.icons);
-        const words = el('span', { class: 'fd-stat-words' }, value, el('span', { class: 'fd-stat-label' }, stat.label));
+        const words = second
+          ? el('span', { class: 'fd-stat-words fd-stat-pair' }, el('span', { class: 'fd-stat-row' }, label, value), el('span', { class: 'fd-stat-row' }, second.label, second.value))
+          : el('span', { class: 'fd-stat-words' }, value, label);
         const button = el('button', { type: 'button', class: 'fd-stat', 'data-node': stat.id }, ...(icon ? [icon, words] : [words]));
         button.addEventListener('click', () => void press(button, () => form.runAction(stat.id)));
         updaters.push((state) => {
           button.hidden = form.node(stat.id).invisible;
-          const count = stat.field ? state.values[stat.field] : null;
-          value.textContent = count === null || count === undefined ? '' : String(count);
+          const values = state.values as Values;
+          const unit = shownValue(stat.unitField, values) || stat.unit || '';
+          const first = shownValue(stat.field, values);
+          const other = shownValue(stat.secondField, values);
+          if (second) {
+            setText(value, first);
+            setText(second.value, [other, unit].filter(Boolean).join(' '));
+          } else setText(value, [[first, other].filter(Boolean).join(' / '), first || other ? unit : ''].filter(Boolean).join(' '));
+          setText(label, shownValue(stat.labelField, values) || stat.label);
         });
         stats.append(button);
       }
