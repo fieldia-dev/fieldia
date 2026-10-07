@@ -47,33 +47,37 @@ for (const variant of VARIANTS) {
       const { problems } = await open(page, variant, TASK);
       await expect.poll(() => value(page, 'name')).toBe('Fit acoustic ceiling panels, meeting rooms A and B');
       await expect(stage(page, 'In Progress').locator('xpath=ancestor-or-self::*[@aria-current="step"]')).toHaveCount(1);
-      // The stages are the task's project's, searched once its record has loaded.
-      await expect(page.locator('.fd-header .fd-statusbar li')).toHaveText(['New', 'In Progress', 'Client Review', 'Done', 'Cancelled']);
+      // The stages are the task's project's (its project_ids contain it), searched once its record has loaded;
+      // Done and Cancelled are folded under ⋯, and each step says how long the task stood in it.
+      await expect(page.locator('.fd-header .fd-statusbar')).toContainText('Client Review');
+      await expect(stage(page, 'Done')).toBeHidden();
+      await expect(page.locator('.fd-header .fd-statusbar')).toContainText(/In Progress\s*3d/);
       // Stat buttons as Flectra shows them: the sub-tasks counted, no Parent Task on a task without a parent.
-      await expect(page.locator('button[data-node="subtasks"] .fd-stat-value')).toHaveText('3');
+      await expect(page.locator('button[data-node="subtasks"] .fd-stat-value').first()).toHaveText('3');
       await expect(page.locator('button[data-node="action_open_parent_task"]')).toBeHidden();
       // The priority star toggles, as Flectra's: a second click takes it away, and no "Clear selection" shows.
       const star = node(page, 'f-priority').getByRole('radio');
       const priority = await value(page, 'priority');
       await star.click();
-      expect(await value(page, 'priority')).toBe(priority === 1 ? null : 1);
+      expect(await value(page, 'priority')).toBe(priority === '1' ? '0' : '1');
       await expect(node(page, 'f-priority').locator('.fd-choice-clear')).toBeHidden();
       await star.click();
-      expect(await value(page, 'priority')).toBe(priority ?? null);
+      expect(await value(page, 'priority')).toBe(priority);
       if (variant === 'plain') await screen(page, 'real-task');
 
       // Timesheets: 17.5 hours logged; another 2.5 makes 20, and the hours under the grid follow.
       await page.getByRole('tab', { name: 'Timesheets' }).click();
-      await expect(node(page, 'f-effective').getByText('17.50 h')).toBeVisible();
+      // Hours as Flectra's float_time.
+      await expect(node(page, 'f-effective')).toContainText('17:30');
       await node(page, 'f-timesheets').getByRole('button', { name: /Add a line/ }).click();
       await expect(node(page, 'f-timesheets').locator('.ag-row[row-index="3"]')).toBeVisible();
       // Enter or Tab past the last cell would start another line: a click outside the grid keeps this one.
       await typeIn(page, 'f-timesheets', 3, 'name', 'Fit the edge trims, room A', 'Tab');
       await typeIn(page, 'f-timesheets', 3, 'unit_amount', '2.5', '');
       await page.getByRole('tab', { name: 'Timesheets' }).click();
-      await expect(node(page, 'f-effective').getByText('20.00 h')).toBeVisible();
-      await expect(node(page, 'f-total-hours').getByText('30.50 h')).toBeVisible();
-      await expect(node(page, 'f-remaining').getByText('9.50 h')).toBeVisible();
+      await expect(node(page, 'f-effective')).toContainText('20:00');
+      await expect(node(page, 'f-total-hours')).toContainText('30:30');
+      await expect(node(page, 'f-remaining')).toContainText('09:30');
       // The app's onchange gave the line its employee: the first assignee.
       await expect.poll(async () => (await lineValues(page, 'timesheet_ids'))[3]?.['employee_id']).toMatchObject({ label: 'Karim Fathy' });
       if (variant === 'plain') await screen(page, 'real-task-timesheets');
@@ -86,7 +90,7 @@ for (const variant of VARIANTS) {
       await typeIn(page, 'f-subtasks', 3, 'name', 'Snag walk, both rooms', '');
       await page.getByRole('tab', { name: 'Sub-tasks' }).click();
       await expect.poll(async () => (await lineValues(page, 'child_ids'))[3]).toMatchObject({ name: 'Snag walk, both rooms', project_id: { label: 'Nile Towers 12th floor fit-out' }, state: '01_in_progress' });
-      await expect(page.locator('button[data-node="subtasks"] .fd-stat-value')).toHaveText('4');
+      await expect(page.locator('button[data-node="subtasks"] .fd-stat-value').first()).toHaveText('4');
 
       // Saved: both new lines reach the data source.
       await page.keyboard.press('ControlOrMeta+Enter');
@@ -101,6 +105,60 @@ for (const variant of VARIANTS) {
       await expect(page.locator('[data-node="b-approval-waiting"]')).toBeVisible();
       await settled(page);
       expect(await value(page, 'approval_status')).toBe('to_approve');
+      expect(problems).toEqual([]);
+    });
+
+    test('project task: Flectra’s decorations, groups and lists', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      let { problems } = await open(page, variant, TASK);
+      await expect.poll(() => value(page, 'name')).toBe('Fit acoustic ceiling panels, meeting rooms A and B');
+      // Sub-tasks with the closed ones under them, as Flectra's two counts; the tags in their colours, the assignees with faces.
+      await expect(page.locator('button[data-node="subtasks"]')).toContainText('Closed');
+      await expect(node(page, 'f-tags').locator('[data-color]')).toHaveCount(2);
+      await expect(node(page, 'f-users').locator('.fd-link-avatar')).toHaveCount(2);
+      // Allocated time on one line: 40:00 (incl. 28:00 on Sub-tasks).
+      await expect(node(page, 'f-allocated').locator('input')).toHaveValue('40:00');
+      await expect(node(page, 'allocated-row')).toContainText('28:00');
+      // Developer-mode Extra Info is not this person's (base.group_no_one).
+      await expect(page.getByRole('tab', { name: 'Extra Info' })).toHaveCount(0);
+
+      // Timesheets: more than 24 hours in a line is red, as Flectra's decoration.
+      await page.getByRole('tab', { name: 'Timesheets' }).click();
+      await typeIn(page, 'f-timesheets', 0, 'unit_amount', '25', '');
+      await page.getByRole('tab', { name: 'Timesheets' }).click();
+      await expect(cell(page, 'f-timesheets', 0, 'unit_amount')).toHaveClass(/fd-tone-danger/);
+      await expect(cell(page, 'f-timesheets', 0, 'unit_amount')).toHaveText('25:00');
+
+      // Sub-tasks: a closed one is muted; Blocked By lists the linked tasks in columns.
+      await page.getByRole('tab', { name: 'Sub-tasks' }).click();
+      await expect(node(page, 'f-subtasks').locator('.ag-row[row-index="0"]:not(.fd-grid-totals)').first()).toHaveClass(/fd-tone-muted/);
+      await page.getByRole('tab', { name: 'Blocked By' }).click();
+      await expect(node(page, 'f-depend-on')).toContainText('Electrical first fix, meeting rooms');
+      await expect(node(page, 'f-depend-on')).toContainText('Done');
+      expect(problems).toEqual([]);
+
+      // Delete, as project_task_form's: a task with sub-tasks warns that they go too; No keeps it.
+      await page.locator('.fd-record-bar .fd-record-gear').click();
+      await page.getByRole('menuitem', { name: 'Delete' }).click();
+      const question = page.getByRole('alertdialog');
+      await expect(question).toContainText('Deleting a task will also delete its associated sub-tasks.');
+      await question.getByRole('button', { name: 'Cancel' }).click();
+      await expect.poll(() => value(page, 'name')).toBe('Fit acoustic ceiling panels, meeting rooms A and B');
+
+      // The Sub-tasks button lists them, in the task's place.
+      ({ problems } = await open(page, variant, TASK));
+      await expect.poll(() => value(page, 'name')).toBe('Fit acoustic ceiling panels, meeting rooms A and B');
+      await page.locator('button[data-node="subtasks"]').click();
+      await expect(page.locator('.fd-list-row')).toHaveCount(3);
+      expect(problems).toEqual([]);
+
+      // Someone without the project manager's group sends for approval, but cannot approve.
+      ({ problems } = await open(page, variant, `${TASK}&roles=base.group_user`));
+      await expect.poll(() => value(page, 'name')).toBe('Fit acoustic ceiling panels, meeting rooms A and B');
+      await page.getByRole('button', { name: 'Mark Done / Send for Approval' }).click();
+      await expect(toast(page, 'Submitted for approval to Salma Nabil.')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Approve', exact: true })).toBeHidden();
+      await expect(page.getByRole('tab', { name: 'Timesheets' })).toHaveCount(0);
       expect(problems).toEqual([]);
     });
 
@@ -131,9 +189,11 @@ for (const variant of VARIANTS) {
       const dialog = page.getByRole('dialog', { name: 'Create Backorder?' });
       await expect(dialog).toBeVisible();
       await expect(dialog.getByText('You have processed less products than the initial demand.')).toBeVisible();
-      await expect(dialog.getByRole('radio', { name: 'Create Backorder' })).toBeChecked();
+      // The wizard's own buttons, as Flectra's footer: Create Backorder, No Backorder, Discard.
+      await expect(dialog.getByRole('button', { name: 'No Backorder' })).toBeVisible();
+      await expect(dialog.getByRole('button', { name: 'Discard' })).toBeVisible();
       if (variant === 'plain') await screen(page, 'real-transfer-backorder', { viewport: true });
-      await dialog.getByRole('button', { name: /Save|Done|Submit|Send/ }).last().click();
+      await dialog.getByRole('button', { name: 'Create Backorder' }).click();
       await expect(dialog).toBeHidden();
       await expect(toast(page, 'Backorder WH/IN/00043 created for the rest of Table leg, beech, 72 cm.')).toBeVisible();
       await expect(page.locator('.fd-header .fd-statusbar [aria-current="step"]')).toHaveText('Done');
@@ -144,6 +204,40 @@ for (const variant of VARIANTS) {
       expect(record.state).toBe('done');
       expect(record.move_ids_without_package[2].values).toMatchObject({ quantity: 12, product_uom_qty: 12, state: 'done' });
       if (variant === 'plain') await screen(page, 'real-transfer-done');
+      expect(problems).toEqual([]);
+    });
+
+    test('warehouse receipt: Flectra’s columns, tones, row buttons and groups', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      let { problems } = await open(page, variant, TRANSFER);
+      await expect.poll(() => value(page, 'name')).toBe('WH/IN/00042');
+      // The reference reads as the title beside its star.
+      await expect(page.locator('.fd-title .fd-read-text').first()).toHaveCSS('font-size', '24px');
+      // Draft: no Quantity column yet (column_invisible parent.state == 'draft'); on hand below the demand in red.
+      await expect(node(page, 'f-moves').locator('.ag-header-cell[col-id="quantity"]')).toHaveCount(0);
+      await expect(cell(page, 'f-moves', 1, 'qty_on_hand_at_date')).toHaveClass(/fd-tone-danger/);
+      await expect(cell(page, 'f-moves', 0, 'qty_on_hand_at_date')).not.toHaveClass(/fd-tone-danger/);
+      // Each line's Forecast Report, the red one while nothing is forecast.
+      await expect(node(page, 'f-moves').locator('.ag-row:not(.fd-grid-totals)').first().getByRole('button', { name: 'Forecast Report' })).toHaveCount(1);
+      // The gear: its Print group, Duplicate and Delete.
+      await page.locator('.fd-record-bar .fd-record-gear').click();
+      await expect(page.getByRole('menu')).toContainText('Picking Operations');
+      await expect(page.getByRole('menu')).toContainText('Delivery Slip');
+      await page.keyboard.press('Escape');
+
+      // Ready: the Quantity column shows; more than the demand is red.
+      await page.getByRole('button', { name: 'Mark as Todo' }).click();
+      await expect(page.locator('.fd-header .fd-statusbar [aria-current="step"]')).toHaveText('Ready');
+      await settled(page);
+      await typeIn(page, 'f-moves', 2, 'quantity', '20');
+      await expect(cell(page, 'f-moves', 2, 'quantity')).toHaveClass(/fd-tone-danger/);
+      expect(problems).toEqual([]);
+
+      // Without the stock user's group: no Validate, and no Mark as Todo without the internal user's.
+      ({ problems } = await open(page, variant, `${TRANSFER}&roles=base.group_user`));
+      await expect.poll(() => value(page, 'name')).toBe('WH/IN/00042');
+      await expect(page.getByRole('button', { name: 'Mark as Todo' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Validate', exact: true })).toHaveCount(0);
       expect(problems).toEqual([]);
     });
 
@@ -191,6 +285,48 @@ for (const variant of VARIANTS) {
       expect(components.map((c) => [c['quantity'], c['picked']])).toEqual([[24, true], [2, true], [16, true], [1, true], [2, true]]);
       expect((await saved(page, 'mrp.production', 5401)) as Record<string, unknown>).toMatchObject({ state: 'done', qty_produced: 4 });
       if (variant === 'plain') await screen(page, 'real-manufacturing-order-done');
+      expect(problems).toEqual([]);
+    });
+
+    test('manufacturing order: work orders started and finished from their lines, as Flectra’s list', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      let { problems } = await open(page, variant, PRODUCTION);
+      await expect.poll(() => value(page, 'name')).toBe('WH/MO/00031');
+      // "MO Reference" over the title; the quantity on one line, its unit and "To Produce" beside it.
+      await expect(page.locator('.fd-title')).toContainText('MO Reference');
+      await expect(node(page, 'quantity-row')).toContainText('To Produce');
+      // Draft: no Quantity column in the components yet.
+      await expect(node(page, 'f-components').locator('.ag-header-cell[col-id="quantity"]')).toHaveCount(0);
+      await page.getByRole('button', { name: 'Confirm', exact: true }).click();
+      await expect(page.locator('.fd-header .fd-statusbar [aria-current="step"]')).toHaveText('Confirmed');
+      await settled(page);
+      // Reserved as much as it should consume: green, as Flectra's decoration.
+      await expect(cell(page, 'f-components', 0, 'quantity')).toHaveClass(/fd-tone-success/);
+
+      // Work Orders: Start on the first line; its status turns In Progress and Pause takes Start's place.
+      await page.getByRole('tab', { name: 'Work Orders' }).click();
+      const first = node(page, 'f-workorders').locator('.ag-row[row-index="0"]:not(.fd-grid-totals)').first();
+      await first.getByRole('button', { name: 'Start' }).click();
+      await expect(toast(page, 'Cutting: started.')).toBeVisible();
+      await expect(first.getByRole('button', { name: 'Pause' })).toBeVisible();
+      await expect(first.getByRole('button', { name: 'Start' })).toHaveCount(0);
+      await expect(cell(page, 'f-workorders', 0, 'state').locator('[data-tone]')).toHaveAttribute('data-tone', 'warning');
+      // Expected minutes with float_time, as Flectra writes them: 180 minutes read 180:00.
+      await expect(cell(page, 'f-workorders', 0, 'duration_expected')).toHaveText('180:00');
+
+      // The two others chosen, Done for both at once (Flectra's list header buttons).
+      const rows = node(page, 'f-workorders');
+      await rows.locator('.ag-row[row-index="1"]:not(.fd-grid-totals) [role="checkbox"], .ag-row[row-index="1"]:not(.fd-grid-totals) input[type="checkbox"]').first().click();
+      await rows.locator('.ag-row[row-index="2"]:not(.fd-grid-totals) [role="checkbox"], .ag-row[row-index="2"]:not(.fd-grid-totals) input[type="checkbox"]').first().click();
+      await rows.getByRole('button', { name: 'Done', exact: true }).first().click();
+      await expect(toast(page, 'Assembly, Finishing: done.')).toBeVisible();
+      await expect.poll(async () => (await lineValues(page, 'workorder_ids')).map((w) => w['state'])).toEqual(['progress', 'done', 'done']);
+      expect(problems).toEqual([]);
+
+      // Without the routings group, no Work Orders tab.
+      ({ problems } = await open(page, variant, `${PRODUCTION}&roles=base.group_user`));
+      await expect.poll(() => value(page, 'name')).toBe('WH/MO/00031');
+      await expect(page.getByRole('tab', { name: 'Work Orders' })).toHaveCount(0);
       expect(problems).toEqual([]);
     });
   });

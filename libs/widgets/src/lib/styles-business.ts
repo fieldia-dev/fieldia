@@ -19,6 +19,8 @@ export const BUSINESS_CSS = /* css */ `
 /* On a phone the name takes a row of its own rather than be cut. */
 .fd-title-line > .fd-title-name { flex: 1 1 18em; min-width: 0; }
 .fd-title-line > .fd-title-name .fd-input { font-size: 24px; font-weight: 600; min-height: 40px; }
+/* A read-only name on the title's line reads as the title too, as it does alone. */
+.fd-title-line > .fd-title-name > .fd-read-text { font-size: 24px; font-weight: 600; line-height: 1.25; }
 .fd-form .fd-title-line > .fd-field { grid-template-columns: minmax(0, 1fr); }
 .fd-form .fd-title-line > .fd-field > * { grid-column: 1 !important; }
 .fd-form .fd-title-line > .fd-title-side { display: flex; align-items: center; flex: none; }
@@ -55,8 +57,9 @@ export const BUSINESS_CSS = /* css */ `
 .fd-copy-long { align-items: flex-start; }
 .fd-copy-button { flex: none; }
 /* A range of dates: two boxes, from → to, in one row that wraps on a phone, its calendar under it marking the days between. */
-.fd-range { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; }
-.fd-range-box { flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+.fd-range { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+/* Too narrow for a date and the calendar's button beside it, the button goes under: a date is never cut. */
+.fd-range-box { flex: 1 1 8em; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
 .fd-range-box > .fd-input { flex: 1 1 9em; min-width: 0; }
 .fd-range-box > .fd-input[type="datetime-local"] { flex-basis: 13em; }
 .fd-range-arrow { flex: none; display: inline-block; color: var(--fd-muted); }

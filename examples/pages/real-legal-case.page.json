@@ -5,21 +5,17 @@
   "description": "Sherkety ERP's case record (legal.case, view_legal_case_form), with what legal_crm, legal_billing and legal_trust add to it.",
   "data": { "kind": "record", "model": "legal.case" },
   "maxWidth": "full",
-  "look": { "density": "compact" },
+  "look": { "helpShown": "tooltip", "readonlyShown": "text", "density": "compact" },
   "fields": {
     "case_number": { "type": "char", "label": "Case Number", "readonly": true, "default": "New" },
     "name": { "type": "char", "label": "Case Title", "required": true },
+    "active": { "type": "boolean", "label": "Active", "default": true, "readonly": true },
     "state": {
       "type": "selection",
       "label": "Status",
       "required": true,
       "default": "draft",
-      "options": [
-        { "value": "draft", "label": "Draft" },
-        { "value": "open", "label": "Open" },
-        { "value": "on_hold", "label": "On Hold" },
-        { "value": "closed", "label": "Closed" }
-      ]
+      "options": [{ "value": "draft", "label": "Draft" }, { "value": "open", "label": "Open" }, { "value": "on_hold", "label": "On Hold" }, { "value": "closed", "label": "Closed" }]
     },
     "outcome": {
       "type": "selection",
@@ -37,7 +33,6 @@
     "my_timer_running": { "type": "boolean", "label": "My Timer Running", "readonly": true },
     "company_id": { "type": "many2one", "label": "Company", "relation": "res.company", "required": true },
     "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency", "readonly": true },
-
     "hearing_count": { "type": "integer", "label": "Hearings", "readonly": true },
     "task_count": { "type": "integer", "label": "Tasks", "readonly": true },
     "expense_total": { "type": "monetary", "label": "Total Expenses", "currencyField": "currency_id", "readonly": true },
@@ -47,9 +42,8 @@
     "correspondence_count": { "type": "integer", "label": "Correspondence", "readonly": true },
     "conflict_check_count": { "type": "integer", "label": "Conflict Checks", "readonly": true },
     "invoice_count": { "type": "integer", "label": "Invoices", "readonly": true },
-    "lead_id": { "type": "many2one", "label": "Source Opportunity", "relation": "crm.lead", "readonly": true },
+    "lead_id": { "type": "many2one", "label": "Source Opportunity", "help": "The CRM opportunity from which this case was created.", "relation": "crm.lead", "readonly": true },
     "payment_plan_count": { "type": "integer", "label": "Payment Plans", "readonly": true },
-
     "matter_type_id": {
       "type": "many2one",
       "label": "Matter Type",
@@ -60,7 +54,7 @@
       "type": "many2one",
       "label": "Stage",
       "relation": "legal.case.stage",
-      "filter": [{ "any": [{ "field": "matter_type_ids", "op": "notset" }, { "field": "matter_type_ids", "op": "=", "valueFrom": "matter_type_id" }] }]
+      "filter": [{ "any": [{ "field": "matter_type_ids", "op": "notset" }, { "field": "matter_type_ids", "op": "contains", "valueFrom": "matter_type_id" }] }]
     },
     "case_type": {
       "type": "selection",
@@ -95,23 +89,13 @@
       "type": "selection",
       "label": "Priority",
       "default": "1",
-      "options": [
-        { "value": "0", "label": "Low" },
-        { "value": "1", "label": "Normal" },
-        { "value": "2", "label": "High" },
-        { "value": "3", "label": "Urgent" }
-      ]
+      "options": [{ "value": "0", "label": "Low" }, { "value": "1", "label": "Normal" }, { "value": "2", "label": "High" }, { "value": "3", "label": "Urgent" }]
     },
     "risk_level": {
       "type": "selection",
       "label": "Risk Level",
       "default": "low",
-      "options": [
-        { "value": "low", "label": "Low" },
-        { "value": "medium", "label": "Medium" },
-        { "value": "high", "label": "High" },
-        { "value": "critical", "label": "Critical" }
-      ]
+      "options": [{ "value": "low", "label": "Low" }, { "value": "medium", "label": "Medium" }, { "value": "high", "label": "High" }, { "value": "critical", "label": "Critical" }]
     },
     "partner_id": { "type": "many2one", "label": "Client / Company", "relation": "res.partner" },
     "partner_ids": {
@@ -120,12 +104,7 @@
       "relation": "res.partner",
       "help": "Additional clients represented in this matter beside the primary client. The primary client stays the invoicing default."
     },
-    "opposing_party_id": {
-      "type": "many2one",
-      "label": "Opposing Party",
-      "relation": "res.partner",
-      "help": "Kept in sync with an 'Opposing Party' row in the Parties tab."
-    },
+    "opposing_party_id": { "type": "many2one", "label": "Opposing Party", "relation": "res.partner", "help": "Kept in sync with an 'Opposing Party' row in the Parties tab." },
     "responsible_attorney_id": { "type": "many2one", "label": "Responsible Attorney", "relation": "res.users" },
     "assigned_team_ids": { "type": "many2many", "label": "Assigned Team", "relation": "res.users" },
     "branch_id": {
@@ -135,28 +114,7 @@
       "help": "Specific branch this case relates to.",
       "filter": [{ "field": "parent_id", "op": "=", "valueFrom": "company_id" }]
     },
-    "case_properties": {
-      "type": "properties",
-      "label": "Properties",
-      "definitions": [
-        { "name": "contract_value", "label": "Contract value (EGP)", "type": "float" },
-        { "name": "contract_date", "label": "Contract signed on", "type": "date" },
-        {
-          "name": "claim_basis",
-          "label": "Basis of the claim",
-          "type": "selection",
-          "options": [
-            { "value": "breach", "label": "Breach of contract" },
-            { "value": "late_delivery", "label": "Late delivery" },
-            { "value": "non_payment", "label": "Non-payment" },
-            { "value": "defects", "label": "Defective goods" }
-          ]
-        },
-        { "name": "expert_appointed", "label": "Court expert appointed", "type": "boolean" },
-        { "name": "expert_name", "label": "Expert", "type": "char" }
-      ]
-    },
-
+    "case_properties": { "type": "properties", "label": "Properties", "definitionsFrom": { "list": "case_properties", "dependsOn": ["matter_type_id"] } },
     "date_opened": { "type": "date", "label": "Date Opened", "default": "today" },
     "date_filed": { "type": "date", "label": "Date Filed" },
     "deadline": { "type": "date", "label": "Key Deadline" },
@@ -172,15 +130,12 @@
       "help": "Statute-of-limitations rule this case's SOL date was suggested from. Informational — the date is always overridable."
     },
     "next_hearing_date": { "type": "datetime", "label": "Next Hearing", "readonly": true },
-    "days_since_opened": { "type": "integer", "label": "Days Since Opened", "readonly": true },
+    "days_since_opened": { "type": "integer", "label": "Days Since Opened", "compute": "days(date_opened, today())" },
     "date_closed": { "type": "date", "label": "Date Closed", "readonly": true },
-
     "estimated_value": { "type": "monetary", "label": "Amount at Stake", "currencyField": "currency_id" },
     "total_billed_amount": { "type": "monetary", "label": "Billed Amount", "currencyField": "currency_id", "readonly": true },
     "overdue_task_count": { "type": "integer", "label": "Overdue Tasks", "readonly": true },
-
     "description": { "type": "html", "label": "Description" },
-
     "party_ids": {
       "type": "one2many",
       "label": "Parties",
@@ -278,12 +233,7 @@
           "type": "selection",
           "label": "Priority",
           "default": "1",
-          "options": [
-            { "value": "0", "label": "Low" },
-            { "value": "1", "label": "Normal" },
-            { "value": "2", "label": "High" },
-            { "value": "3", "label": "Urgent" }
-          ]
+          "options": [{ "value": "0", "label": "Low" }, { "value": "1", "label": "Normal" }, { "value": "2", "label": "High" }, { "value": "3", "label": "Urgent" }]
         },
         "state": {
           "type": "selection",
@@ -342,17 +292,15 @@
     },
     "document_ids": { "type": "binary", "label": "Documents", "multiple": true },
     "compliance_ids": {
-      "type": "one2many",
+      "type": "many2many",
       "label": "Related Compliance",
       "relation": "legal.compliance",
       "fields": {
-        "name": { "type": "char", "label": "Requirement", "required": true },
+        "name": { "type": "char", "label": "Requirement" },
         "regulation_reference": { "type": "char", "label": "Regulation Reference", "help": "Law, regulation, or standard number." },
         "state": {
           "type": "selection",
           "label": "Status",
-          "required": true,
-          "default": "active",
           "options": [
             { "value": "active", "label": "Active" },
             { "value": "under_review", "label": "Under Review" },
@@ -364,13 +312,7 @@
         "risk_level": {
           "type": "selection",
           "label": "Risk Level",
-          "default": "low",
-          "options": [
-            { "value": "low", "label": "Low" },
-            { "value": "medium", "label": "Medium" },
-            { "value": "high", "label": "High" },
-            { "value": "critical", "label": "Critical" }
-          ]
+          "options": [{ "value": "low", "label": "Low" }, { "value": "medium", "label": "Medium" }, { "value": "high", "label": "High" }, { "value": "critical", "label": "Critical" }]
         },
         "review_date": { "type": "date", "label": "Next Review Date" }
       }
@@ -438,11 +380,7 @@
           "type": "selection",
           "label": "Type",
           "required": true,
-          "options": [
-            { "value": "general", "label": "General" },
-            { "value": "special", "label": "Special" },
-            { "value": "court", "label": "Court / Litigation" }
-          ]
+          "options": [{ "value": "general", "label": "General" }, { "value": "special", "label": "Special" }, { "value": "court", "label": "Court / Litigation" }]
         },
         "issue_date": { "type": "date", "label": "Issue Date", "default": "today" },
         "expiry_date": { "type": "date", "label": "Expiry Date" },
@@ -462,7 +400,6 @@
         }
       }
     },
-
     "fee_arrangement": {
       "type": "selection",
       "label": "Fee Arrangement",
@@ -546,7 +483,13 @@
       "label": "Flat Fee Schedule",
       "relation": "legal.case.flat_fee_line",
       "fields": {
-        "stage_id": { "type": "many2one", "label": "Trigger Stage", "relation": "legal.case.stage", "required": true, "help": "The fee becomes invoiceable when the case enters this stage." },
+        "stage_id": {
+          "type": "many2one",
+          "label": "Trigger Stage",
+          "relation": "legal.case.stage",
+          "required": true,
+          "help": "The fee becomes invoiceable when the case enters this stage."
+        },
         "description": { "type": "char", "label": "Description", "required": true },
         "amount": { "type": "monetary", "label": "Amount", "currency": "EGP", "required": true },
         "state": {
@@ -555,11 +498,7 @@
           "required": true,
           "default": "pending",
           "readonly": true,
-          "options": [
-            { "value": "pending", "label": "Pending" },
-            { "value": "invoiceable", "label": "Invoiceable" },
-            { "value": "invoiced", "label": "Invoiced" }
-          ]
+          "options": [{ "value": "pending", "label": "Pending" }, { "value": "invoiceable", "label": "Invoiceable" }, { "value": "invoiced", "label": "Invoiced" }]
         },
         "invoice_id": { "type": "many2one", "label": "Invoice", "relation": "account.move", "readonly": true }
       }
@@ -578,7 +517,6 @@
         "percent": { "type": "float", "label": "Share (%)", "required": true, "min": 0, "max": 100, "digits": [6, 2] }
       }
     },
-
     "trust_transaction_ids": {
       "type": "one2many",
       "label": "Trust Transactions",
@@ -601,11 +539,7 @@
         "method": {
           "type": "selection",
           "label": "Method",
-          "options": [
-            { "value": "cash", "label": "Cash" },
-            { "value": "bank_transfer", "label": "Bank Transfer" },
-            { "value": "cheque", "label": "Cheque" }
-          ]
+          "options": [{ "value": "cash", "label": "Cash" }, { "value": "bank_transfer", "label": "Bank Transfer" }, { "value": "cheque", "label": "Cheque" }]
         },
         "reference": { "type": "char", "label": "Cheque / Transfer Ref." },
         "amount": { "type": "monetary", "label": "Amount", "currency": "EGP" },
@@ -666,16 +600,11 @@
     "deposit_method": {
       "type": "selection",
       "label": "Deposit method",
-      "options": [
-        { "value": "cash", "label": "Cash" },
-        { "value": "bank_transfer", "label": "Bank Transfer" },
-        { "value": "cheque", "label": "Cheque" }
-      ]
+      "options": [{ "value": "cash", "label": "Cash" }, { "value": "bank_transfer", "label": "Bank Transfer" }, { "value": "cheque", "label": "Cheque" }]
     },
     "deposit_reference": { "type": "char", "label": "Deposit reference" },
     "deposit_date": { "type": "date", "label": "Deposit date" },
     "close_cancel_pending_tasks": { "type": "boolean", "label": "Cancel pending tasks on close" },
-
     "timesheet_ids": {
       "type": "one2many",
       "label": "Timesheets",
@@ -686,7 +615,7 @@
         "shortcode": { "type": "char", "label": "Shortcode", "help": "Type an activity shortcode (e.g. DRAFT) to apply its category; the code clears itself once applied." },
         "activity_category_id": { "type": "many2one", "label": "Activity Category", "relation": "legal.activity.category" },
         "name": { "type": "char", "label": "Work Description" },
-        "legal_task_id": { "type": "many2one", "label": "Legal Task", "relation": "legal.task" },
+        "legal_task_id": { "type": "many2one", "label": "Legal Task", "relation": "legal.task", "filter": [{ "field": "case_id", "op": "=", "valueFrom": "parent.id" }] },
         "unit_amount": { "type": "float", "label": "Hours", "digits": [16, 2] },
         "hourly_rate": { "type": "monetary", "label": "Hourly Rate", "currency": "EGP" },
         "flat_fee_amount": { "type": "monetary", "label": "Flat Fee", "currency": "EGP" },
@@ -701,11 +630,7 @@
           "type": "selection",
           "label": "Status",
           "default": "draft",
-          "options": [
-            { "value": "draft", "label": "Draft" },
-            { "value": "approved", "label": "Approved" },
-            { "value": "invoiced", "label": "Invoiced" }
-          ]
+          "options": [{ "value": "draft", "label": "Draft" }, { "value": "approved", "label": "Approved" }, { "value": "invoiced", "label": "Invoiced" }]
         }
       }
     },
@@ -735,10 +660,7 @@
           "label": "Direction",
           "required": true,
           "default": "outgoing",
-          "options": [
-            { "value": "incoming", "label": "Incoming" },
-            { "value": "outgoing", "label": "Outgoing" }
-          ]
+          "options": [{ "value": "incoming", "label": "Incoming" }, { "value": "outgoing", "label": "Outgoing" }]
         },
         "subject": { "type": "char", "label": "Subject", "required": true },
         "sender_id": { "type": "many2one", "label": "Sender", "relation": "res.partner" },
@@ -772,7 +694,6 @@
         }
       }
     },
-
     "notes": { "type": "text", "label": "Internal Notes" },
     "tag_ids": { "type": "many2many", "label": "Tags", "relation": "legal.tag" }
   },
@@ -811,7 +732,7 @@
         "id": "b-close",
         "label": "Close Case",
         "style": "primary",
-        "invisible": "state not in ['open', 'on_hold']",
+        "invisible": "state not in ('open', 'on_hold')",
         "steps": [
           { "do": "check" },
           {
@@ -833,11 +754,7 @@
               "close_cancel_pending_tasks": "cancel_pending_tasks",
               "actual_settlement": "if(fee_arrangement == 'contingency' and outcome in ['won', 'settled'], actual_settlement, None)"
             },
-            "then": [
-              { "do": "call", "action": "legal.case.close_case_done", "params": {} },
-              { "do": "save" },
-              { "do": "goTo", "target": "tab-outcome" }
-            ]
+            "then": [{ "do": "call", "action": "legal.case.close_case_done", "params": {} }, { "do": "save" }, { "do": "goTo", "target": "tab-outcome" }]
           }
         ]
       },
@@ -853,7 +770,8 @@
           { "do": "clear", "field": "close_reason" },
           { "do": "clear", "field": "outcome" },
           { "do": "save" }
-        ]
+        ],
+        "roles": ["legal.group_legal_officer"]
       },
       {
         "type": "button",
@@ -885,14 +803,23 @@
       { "id": "s-conflicts", "label": "Conflict Checks", "field": "conflict_check_count", "icon": "search", "action": "legal.case.action_view_conflict_checks" },
       { "id": "s-invoices", "label": "Invoices", "field": "invoice_count", "icon": "receipt", "action": "legal.case.action_view_invoices", "invisible": "invoice_count == 0" },
       { "id": "s-lead", "label": "Source Lead", "icon": "thumb", "action": "legal.case.action_view_source_lead", "invisible": "not lead_id" },
-      { "id": "s-payment-plans", "label": "Payment Plans", "field": "payment_plan_count", "icon": "list", "action": "legal.case.action_view_payment_plans", "invisible": "payment_plan_count == 0" },
-      { "id": "s-trust", "label": "Trust Balance", "field": "trust_balance", "icon": "building", "steps": [{ "do": "goTo", "target": "tab-trust" }] }
-    ],
-    "badges": [
-      { "id": "r-won", "label": "Won", "tone": "success", "invisible": "outcome != 'won'" },
-      { "id": "r-lost", "label": "Lost", "tone": "danger", "invisible": "outcome != 'lost'" },
-      { "id": "r-settled", "label": "Settled", "tone": "info", "invisible": "outcome != 'settled'" },
-      { "id": "r-withdrawn", "label": "Withdrawn", "tone": "warning", "invisible": "outcome != 'withdrawn'" }
+      {
+        "id": "s-payment-plans",
+        "label": "Payment Plans",
+        "field": "payment_plan_count",
+        "icon": "list",
+        "action": "legal.case.action_view_payment_plans",
+        "invisible": "payment_plan_count == 0",
+        "roles": ["legal_billing.group_legal_billing_user"]
+      },
+      {
+        "id": "s-trust",
+        "label": "Trust Balance",
+        "field": "trust_balance",
+        "icon": "building",
+        "steps": [{ "do": "goTo", "target": "tab-trust" }],
+        "roles": ["legal.group_legal_user"]
+      }
     ],
     "children": [
       {
@@ -914,7 +841,7 @@
               { "type": "field", "id": "f-court-name", "field": "court_name" },
               { "type": "field", "id": "f-court-ref", "field": "court_reference" },
               { "type": "field", "id": "f-jurisdiction", "field": "jurisdiction_id" },
-              { "type": "field", "id": "f-priority", "field": "priority", "widget": "radio", "options": { "clear": false } },
+              { "type": "field", "id": "f-priority", "field": "priority", "widget": "priority" },
               { "type": "field", "id": "f-risk", "field": "risk_level" }
             ]
           },
@@ -935,7 +862,7 @@
               { "type": "field", "id": "f-opposing", "field": "opposing_party_id" },
               { "type": "field", "id": "f-attorney", "field": "responsible_attorney_id" },
               { "type": "field", "id": "f-team", "field": "assigned_team_ids", "widget": "tags" },
-              { "type": "field", "id": "f-branch", "field": "branch_id" }
+              { "type": "field", "id": "f-branch", "field": "branch_id", "roles": ["base.group_multi_company"] }
             ]
           }
         ]
@@ -945,7 +872,7 @@
         "id": "case_properties_group",
         "style": "plain",
         "invisible": "not matter_type_id",
-        "children": [{ "type": "field", "id": "f-properties", "field": "case_properties" }]
+        "children": [{ "type": "field", "id": "f-properties", "field": "case_properties", "options": { "columns": 2, "add": true } }]
       },
       {
         "type": "section",
@@ -988,19 +915,12 @@
         "type": "tabs",
         "id": "notebook",
         "children": [
-          {
-            "type": "tab",
-            "id": "tab-description",
-            "label": "Description",
-            "children": [{ "type": "field", "id": "f-description", "field": "description", "labels": "hidden" }]
-          },
+          { "type": "tab", "id": "tab-description", "label": "Description", "children": [{ "type": "field", "id": "f-description", "field": "description", "labels": "hidden" }] },
           {
             "type": "tab",
             "id": "tab-parties",
             "label": "Parties",
-            "children": [
-              { "type": "field", "id": "f-parties", "field": "party_ids", "widget": "grid", "labels": "hidden", "columns": ["partner_id", "role_id", "is_primary", "notes"] }
-            ]
+            "children": [{ "type": "field", "id": "f-parties", "field": "party_ids", "widget": "grid", "labels": "hidden", "columns": ["partner_id", "role_id", "is_primary", "notes"] }]
           },
           {
             "type": "tab",
@@ -1013,7 +933,23 @@
                 "field": "hearing_ids",
                 "widget": "grid",
                 "labels": "hidden",
-                "columns": ["name", "hearing_type", "date_time", "location", "state", "result"]
+                "columns": ["name", "hearing_type", "date_time", "location", "state", "result"],
+                "rowTones": [
+                  { "tone": "danger", "when": "state == 'cancelled'" },
+                  { "tone": "success", "when": "state == 'completed'" },
+                  { "tone": "info", "when": "state == 'scheduled'" }
+                ],
+                "cells": {
+                  "state": {
+                    "badge": true,
+                    "tones": [
+                      { "tone": "success", "when": "state == 'completed'" },
+                      { "tone": "info", "when": "state == 'scheduled'" },
+                      { "tone": "warning", "when": "state == 'in_progress'" },
+                      { "tone": "danger", "when": "state == 'cancelled'" }
+                    ]
+                  }
+                }
               }
             ]
           },
@@ -1028,7 +964,20 @@
                 "field": "task_ids",
                 "widget": "grid",
                 "labels": "hidden",
-                "columns": ["name", "task_type", "assigned_to_id", "due_date", "is_statutory", "priority", "state"]
+                "columns": ["name", "task_type", "assigned_to_id", "due_date", "is_statutory", "priority", "state"],
+                "rowTones": [{ "tone": "danger", "when": "is_overdue" }, { "tone": "success", "when": "state == 'completed'" }, { "tone": "muted", "when": "state == 'cancelled'" }],
+                "cells": {
+                  "priority": { "widget": "priority" },
+                  "state": {
+                    "badge": true,
+                    "tones": [
+                      { "tone": "success", "when": "state == 'completed'" },
+                      { "tone": "info", "when": "state == 'pending'" },
+                      { "tone": "warning", "when": "state == 'in_progress'" },
+                      { "tone": "danger", "when": "state == 'cancelled'" }
+                    ]
+                  }
+                }
               }
             ]
           },
@@ -1044,7 +993,13 @@
                 "widget": "grid",
                 "labels": "hidden",
                 "columns": ["date", "name", "expense_type", "employee_id", "hours", "amount", "is_billable", "state"],
-                "totals": ["amount"]
+                "totals": ["amount"],
+                "cells": {
+                  "state": {
+                    "badge": true,
+                    "tones": [{ "tone": "success", "when": "state == 'paid'" }, { "tone": "info", "when": "state == 'approved'" }, { "tone": "warning", "when": "state == 'draft'" }]
+                  }
+                }
               }
             ]
           },
@@ -1059,14 +1014,7 @@
             "id": "tab-compliance",
             "label": "Compliance",
             "children": [
-              {
-                "type": "field",
-                "id": "f-compliance",
-                "field": "compliance_ids",
-                "widget": "grid",
-                "labels": "hidden",
-                "columns": ["name", "regulation_reference", "state", "risk_level", "review_date"]
-              }
+              { "type": "field", "id": "f-compliance", "field": "compliance_ids", "labels": "hidden", "columns": ["name", "regulation_reference", "state", "risk_level", "review_date"] }
             ]
           },
           {
@@ -1081,7 +1029,8 @@
                 "field": "contract_review_ids",
                 "widget": "grid",
                 "labels": "hidden",
-                "columns": ["name", "review_type", "reviewer_id", "risk_assessment", "state"]
+                "columns": ["name", "review_type", "reviewer_id", "risk_assessment", "state"],
+                "cells": { "state": { "badge": true } }
               }
             ]
           },
@@ -1096,7 +1045,18 @@
                 "field": "poa_ids",
                 "widget": "grid",
                 "labels": "hidden",
-                "columns": ["name", "grantor_id", "grantee_id", "poa_type", "issue_date", "expiry_date", "is_notarized", "state"]
+                "columns": ["name", "grantor_id", "grantee_id", "poa_type", "issue_date", "expiry_date", "is_notarized", "state"],
+                "cells": {
+                  "state": {
+                    "badge": true,
+                    "tones": [
+                      { "tone": "success", "when": "state == 'active'" },
+                      { "tone": "info", "when": "state == 'draft'" },
+                      { "tone": "danger", "when": "state == 'expired'" },
+                      { "tone": "warning", "when": "state == 'revoked'" }
+                    ]
+                  }
+                }
               }
             ]
           },
@@ -1118,15 +1078,15 @@
                     "style": "line",
                     "children": [
                       { "type": "field", "id": "f-fee-arrangement", "field": "fee_arrangement", "widget": "radio" },
-                      { "type": "field", "id": "f-hourly-rate", "field": "hourly_rate", "invisible": "fee_arrangement in ['flat', 'non_billable']" },
+                      { "type": "field", "id": "f-hourly-rate", "field": "hourly_rate", "invisible": "fee_arrangement in ('flat', 'non_billable')" },
                       { "type": "field", "id": "f-flat-fee", "field": "flat_fee_amount", "invisible": "fee_arrangement != 'flat'" },
                       { "type": "field", "id": "f-fee-recipient", "field": "fee_recipient_id", "invisible": "fee_arrangement != 'flat'" },
                       { "type": "field", "id": "f-contingency-pct", "field": "contingency_percent", "invisible": "fee_arrangement != 'contingency'", "options": { "suffix": "%" } },
                       { "type": "field", "id": "f-expected-settlement", "field": "expected_settlement", "invisible": "fee_arrangement != 'contingency'" },
                       { "type": "field", "id": "f-actual-settlement", "field": "actual_settlement", "invisible": "fee_arrangement != 'contingency'" },
                       { "type": "field", "id": "f-contingency-fee", "field": "contingency_fee", "invisible": "fee_arrangement != 'contingency'" },
-                      { "type": "field", "id": "f-analytic", "field": "analytic_account_id" },
-                      { "type": "field", "id": "f-payment-profile", "field": "payment_profile_id" }
+                      { "type": "field", "id": "f-analytic", "field": "analytic_account_id", "roles": ["legal.group_legal_officer"] },
+                      { "type": "field", "id": "f-payment-profile", "field": "payment_profile_id", "roles": ["legal_billing.group_legal_billing_user"] }
                     ]
                   },
                   {
@@ -1140,7 +1100,14 @@
                       { "type": "field", "id": "f-budget-total", "field": "budget_total" },
                       { "type": "field", "id": "f-consumed-fees", "field": "budget_consumed_fees", "invisible": "budget_total == 0" },
                       { "type": "field", "id": "f-consumed-expenses", "field": "budget_consumed_expenses", "invisible": "budget_total == 0" },
-                      { "type": "field", "id": "f-budget-progress", "field": "budget_progress", "widget": "progressbar", "invisible": "budget_total == 0", "options": { "max": 100, "showPercent": true } },
+                      {
+                        "type": "field",
+                        "id": "f-budget-progress",
+                        "field": "budget_progress",
+                        "widget": "progressbar",
+                        "invisible": "budget_total == 0",
+                        "options": { "max": 100, "showPercent": true }
+                      },
                       { "type": "field", "id": "f-budget-threshold", "field": "budget_threshold", "options": { "suffix": "%" } },
                       { "type": "field", "id": "f-budget-notify", "field": "budget_notify_user_ids", "widget": "tags" }
                     ]
@@ -1162,7 +1129,17 @@
                     "labels": "hidden",
                     "columns": ["stage_id", "description", "amount", "state", "invoice_id"],
                     "totals": ["amount"],
-                    "optionalColumns": { "invoice_id": "hide" }
+                    "optionalColumns": { "invoice_id": "hide" },
+                    "cells": {
+                      "state": {
+                        "badge": true,
+                        "tones": [
+                          { "tone": "warning", "when": "state == 'pending'" },
+                          { "tone": "info", "when": "state == 'invoiceable'" },
+                          { "tone": "success", "when": "state == 'invoiced'" }
+                        ]
+                      }
+                    }
                   }
                 ]
               },
@@ -1183,11 +1160,8 @@
                     "columns": ["partner_id", "percent"],
                     "totals": ["percent"],
                     "validate": [
-                      {
-                        "holds": "sum(split_line_ids, 'percent') == 100",
-                        "when": "split_billing and split_line_ids",
-                        "message": "The payer shares must add up to 100%."
-                      }
+                      { "holds": "sum(split_line_ids, 'percent') == 100", "when": "split_billing and split_line_ids", "message": "The payer shares must add up to 100%." },
+                      { "distinct": "partner_id", "message": "Each payer can appear only once in the split." }
                     ]
                   }
                 ]
@@ -1202,11 +1176,11 @@
               {
                 "type": "text",
                 "id": "t-trust-below",
-                "style": "note",
-                "text": "Trust funds below minimum: the available balance is under this matter's agreed retainer minimum. Ask the client for the top-up below to replenish the retainer.",
-                "invisible": "not trust_below_minimum"
+                "style": "alert",
+                "text": "Trust funds below minimum: the available balance is under this matter's agreed retainer minimum. Ask the client for {trust_deposit_needed} to replenish the retainer.",
+                "invisible": "not trust_below_minimum",
+                "tone": "warning"
               },
-              { "type": "field", "id": "f-trust-needed", "field": "trust_deposit_needed", "invisible": "not trust_below_minimum" },
               {
                 "type": "section",
                 "id": "g-trust",
@@ -1219,7 +1193,7 @@
                     "title": "Matter Ledger",
                     "style": "line",
                     "children": [
-                      { "type": "field", "id": "f-trust-available", "field": "trust_available" },
+                      { "type": "field", "id": "f-trust-available", "field": "trust_available", "tones": [{ "tone": "danger", "when": "trust_below_minimum" }] },
                       { "type": "field", "id": "f-trust-pending", "field": "trust_pending" },
                       { "type": "field", "id": "f-trust-protected", "field": "trust_protected" },
                       { "type": "field", "id": "f-trust-balance", "field": "trust_balance" }
@@ -1246,17 +1220,33 @@
                             "into": { "deposit_amount": "amount", "deposit_method": "method", "deposit_reference": "reference", "deposit_date": "date" },
                             "then": [{ "do": "call", "action": "legal.case.record_trust_deposit" }]
                           }
-                        ]
+                        ],
+                        "roles": ["legal.group_legal_user"]
                       },
-                      { "type": "button", "id": "b-trust-pay", "label": "Pay Invoice from Trust", "style": "secondary", "action": "legal.case.action_pay_invoice_from_trust" },
-                      { "type": "button", "id": "b-trust-transfer", "label": "Transfer", "style": "secondary", "action": "legal.case.action_trust_transfer" },
+                      {
+                        "type": "button",
+                        "id": "b-trust-pay",
+                        "label": "Pay Invoice from Trust",
+                        "style": "secondary",
+                        "action": "legal.case.action_pay_invoice_from_trust",
+                        "roles": ["legal.group_legal_officer"]
+                      },
+                      {
+                        "type": "button",
+                        "id": "b-trust-transfer",
+                        "label": "Transfer",
+                        "style": "secondary",
+                        "action": "legal.case.action_trust_transfer",
+                        "roles": ["legal.group_legal_officer"]
+                      },
                       {
                         "type": "button",
                         "id": "b-trust-request",
                         "label": "Request Deposit",
                         "style": "secondary",
                         "action": "legal.case.action_request_trust_deposit",
-                        "confirm": "Send a trust deposit request to the client now (bank details + amount needed)? The manual request ignores the automatic-request cooldown."
+                        "confirm": "Send a trust deposit request to the client now (bank details + amount needed)? The manual request ignores the automatic-request cooldown.",
+                        "roles": ["legal.group_legal_officer"]
                       }
                     ]
                   }
@@ -1271,13 +1261,22 @@
                 "children": [
                   { "type": "field", "id": "f-evergreen", "field": "evergreen_enabled" },
                   { "type": "field", "id": "f-trust-last-request", "field": "trust_last_request_date" },
-                  { "type": "field", "id": "f-trust-minimum", "field": "trust_minimum", "invisible": "not evergreen_enabled", "required": "evergreen_enabled", "validate": [{ "min": 0.01, "when": "evergreen_enabled", "message": "The evergreen retainer needs a positive trust minimum." }] },
+                  {
+                    "type": "field",
+                    "id": "f-trust-minimum",
+                    "field": "trust_minimum",
+                    "invisible": "not evergreen_enabled",
+                    "required": "evergreen_enabled",
+                    "validate": [{ "min": 0.01, "when": "evergreen_enabled", "message": "The evergreen retainer needs a positive trust minimum." }]
+                  },
                   {
                     "type": "field",
                     "id": "f-trust-replenish",
                     "field": "trust_replenish_to",
                     "invisible": "not evergreen_enabled",
-                    "validate": [{ "holds": "trust_replenish_to >= trust_minimum", "when": "evergreen_enabled", "message": "The replenish-to target must be at least the trust minimum." }]
+                    "validate": [
+                      { "holds": "trust_replenish_to >= trust_minimum", "when": "evergreen_enabled", "message": "The replenish-to target must be at least the trust minimum." }
+                    ]
                   }
                 ]
               },
@@ -1288,9 +1287,12 @@
                 "widget": "grid",
                 "labels": "hidden",
                 "columns": ["name", "date", "transaction_type", "method", "reference", "amount", "state"],
-                "totals": ["amount"]
+                "totals": ["amount"],
+                "rowTones": [{ "tone": "muted", "when": "state == 'cancelled'" }, { "tone": "info", "when": "state == 'pending_clearance'" }],
+                "cells": { "state": { "badge": true, "tones": [{ "tone": "success", "when": "state == 'cleared'" }, { "tone": "info", "when": "state == 'pending_clearance'" }] } }
               }
-            ]
+            ],
+            "roles": ["legal.group_legal_user"]
           },
           {
             "type": "tab",
@@ -1305,7 +1307,15 @@
                 "labels": "hidden",
                 "columns": ["date", "employee_id", "shortcode", "activity_category_id", "name", "legal_task_id", "unit_amount", "hourly_rate", "billable_amount", "is_billable", "state"],
                 "totals": ["unit_amount", "billable_amount"],
-                "optionalColumns": { "shortcode": "show", "activity_category_id": "show", "legal_task_id": "hide" }
+                "optionalColumns": { "shortcode": "show", "activity_category_id": "show", "legal_task_id": "hide" },
+                "cells": {
+                  "unit_amount": { "widget": "duration" },
+                  "state": {
+                    "badge": true,
+                    "tones": [{ "tone": "info", "when": "state == 'draft'" }, { "tone": "success", "when": "state == 'approved'" }, { "tone": "muted", "when": "state == 'invoiced'" }]
+                  }
+                },
+                "fit": "content"
               }
             ]
           },
@@ -1321,7 +1331,23 @@
                 "widget": "grid",
                 "labels": "hidden",
                 "columns": ["name", "correspondence_type", "direction", "subject", "sender_id", "recipient_id", "date_sent", "delivery_status", "state"],
-                "optionalColumns": { "delivery_status": "show" }
+                "optionalColumns": { "delivery_status": "show" },
+                "cells": {
+                  "direction": { "badge": true, "tones": [{ "tone": "info", "when": "direction == 'outgoing'" }, { "tone": "success", "when": "direction == 'incoming'" }] },
+                  "delivery_status": {
+                    "badge": true,
+                    "tones": [{ "tone": "success", "when": "delivery_status == 'delivered'" }, { "tone": "warning", "when": "delivery_status == 'pending'" }]
+                  },
+                  "state": {
+                    "badge": true,
+                    "tones": [
+                      { "tone": "info", "when": "state == 'draft'" },
+                      { "tone": "success", "when": "state in ('delivered', 'responded')" },
+                      { "tone": "warning", "when": "state == 'awaiting_response'" },
+                      { "tone": "muted", "when": "state == 'closed'" }
+                    ]
+                  }
+                }
               }
             ]
           },
@@ -1335,10 +1361,7 @@
                 "type": "section",
                 "id": "g-outcome",
                 "style": "plain",
-                "children": [
-                  { "type": "field", "id": "f-outcome", "field": "outcome" },
-                  { "type": "field", "id": "f-close-reason", "field": "close_reason" }
-                ]
+                "children": [{ "type": "field", "id": "f-outcome", "field": "outcome" }, { "type": "field", "id": "f-close-reason", "field": "close_reason" }]
               }
             ]
           },
@@ -1348,12 +1371,29 @@
             "label": "Internal",
             "children": [
               { "type": "field", "id": "f-notes", "field": "notes", "labels": "hidden", "placeholder": "Internal notes..." },
-              { "type": "field", "id": "f-tags", "field": "tag_ids", "widget": "tags" }
+              { "type": "field", "id": "f-tags", "field": "tag_ids", "widget": "tags", "options": { "colors": true } }
             ]
           }
         ]
       }
     ],
-    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" }
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" },
+    "ribbons": [
+      { "id": "r-won", "label": "Won", "tone": "success", "invisible": "outcome != 'won'" },
+      { "id": "r-lost", "label": "Lost", "tone": "danger", "invisible": "outcome != 'lost'" },
+      { "id": "r-settled", "label": "Settled", "tone": "info", "invisible": "outcome != 'settled'" },
+      { "id": "r-withdrawn", "label": "Withdrawn", "tone": "warning", "invisible": "outcome != 'withdrawn'" },
+      { "id": "r-archived", "label": "Archived", "tone": "danger", "invisible": "active" }
+    ],
+    "toolbar": {
+      "menu": [
+        { "id": "m-archive", "builtin": "archive" },
+        { "id": "m-unarchive", "builtin": "unarchive" },
+        { "id": "m-duplicate", "builtin": "duplicate" },
+        { "id": "m-delete", "builtin": "delete" }
+      ],
+      "pager": true,
+      "breadcrumbs": true
+    }
   }
 }

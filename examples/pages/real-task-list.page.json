@@ -1,0 +1,32 @@
+{
+  "fieldia": "0.1",
+  "id": "real-task-list",
+  "title": "Tasks",
+  "description": "Sherkety ERP, project: project.task, view_task_tree2 — the task's Sub-tasks smart button opens it, filtered on the task.",
+  "data": { "kind": "record", "model": "project.task" },
+  "fields": {
+    "name": { "type": "char", "label": "Title" },
+    "project_id": { "type": "many2one", "label": "Project", "relation": "project.project" },
+    "date_deadline": { "type": "datetime", "label": "Deadline" },
+    "stage_id": { "type": "many2one", "label": "Stage", "relation": "project.task.type" },
+    "state": {
+      "type": "selection",
+      "label": "State",
+      "options": [
+        { "value": "01_in_progress", "label": "In Progress" },
+        { "value": "02_changes_requested", "label": "Changes Requested" },
+        { "value": "03_approved", "label": "Approved" },
+        { "value": "1_done", "label": "Done" },
+        { "value": "1_canceled", "label": "Canceled" },
+        { "value": "04_waiting_normal", "label": "Waiting" }
+      ]
+    }
+  },
+  "layout": {
+    "type": "list",
+    "id": "task-list",
+    "columns": ["name", "project_id", "date_deadline", "stage_id", "state"],
+    "sort": [{ "field": "name" }],
+    "searchFields": ["name", "project_id", "stage_id"]
+  }
+}

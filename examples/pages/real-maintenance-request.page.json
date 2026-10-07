@@ -9,6 +9,8 @@
   },
   "maxWidth": "wide",
   "look": {
+    "helpShown": "tooltip",
+    "readonlyShown": "text",
     "labels": "beside",
     "labelWidth": 150
   },
@@ -58,6 +60,7 @@
     "archive": {
       "type": "boolean",
       "label": "Archive",
+      "help": "Set archive to true to hide the maintenance request without deleting it.",
       "readonly": true
     },
     "done": {
@@ -73,16 +76,21 @@
     "equipment_id": {
       "type": "many2one",
       "label": "Equipment",
-      "relation": "maintenance.equipment"
+      "relation": "maintenance.equipment",
+      "createValues": {
+        "company_id": "company_id",
+        "category_id": "category_id"
+      }
     },
     "request_date": {
       "type": "date",
       "label": "Request Date",
+      "help": "Date requested for the maintenance to happen",
       "default": "today"
     },
     "close_date": {
       "type": "date",
-      "label": "Close Date"
+      "label": "Close Date", "help": "Date the maintenance was finished."
     },
     "maintenance_type": {
       "type": "selection",
@@ -112,11 +120,12 @@
     },
     "schedule_date": {
       "type": "datetime",
-      "label": "Scheduled Date"
+      "label": "Scheduled Date", "help": "Date the maintenance team plans the maintenance. It should not differ much from the Request Date."
     },
     "duration": {
       "type": "float",
       "label": "Duration",
+      "help": "Duration in hours.",
       "min": 0,
       "digits": [
         6,
@@ -176,10 +185,27 @@
       "label": "End Date"
     },
     "priority": {
-      "type": "integer",
+      "type": "selection",
       "label": "Priority",
-      "min": 1,
-      "max": 3
+      "default": "0",
+      "options": [
+        {
+          "value": "0",
+          "label": "Very Low"
+        },
+        {
+          "value": "1",
+          "label": "Low"
+        },
+        {
+          "value": "2",
+          "label": "Normal"
+        },
+        {
+          "value": "3",
+          "label": "High"
+        }
+      ]
     },
     "description": {
       "type": "html",
@@ -213,11 +239,15 @@
     },
     "instruction_google_slide": {
       "type": "char",
-      "label": "Google Slide"
+      "label": "Google Slide", "help": "Paste the url of your Google Slide. Make sure the access to the document is public."
     },
     "instruction_text": {
       "type": "html",
       "label": "Text"
+    },
+    "email_cc": {
+      "type": "char",
+      "label": "Email cc"
     }
   },
   "layout": {
@@ -225,19 +255,22 @@
     "id": "sheet",
     "title": {
       "field": "name",
+      "label": "Request",
       "placeholder": "e.g. Screen not working",
-      "above": [
+      "after": [
         {
           "type": "field",
           "id": "f-kanban-state",
           "field": "kanban_state",
+          "widget": "dot",
           "labels": "hidden"
         }
       ]
     },
     "statusbar": {
       "field": "stage_id",
-      "clickable": true
+      "clickable": true,
+      "invisible": "archive"
     },
     "badges": [
       {
@@ -311,7 +344,9 @@
                 "field": "employee_id",
                 "label": "Created By",
                 "options": {
-                  "create": false
+                  "create": false,
+                  "open": false,
+                  "avatar": true
                 }
               },
               {
@@ -323,7 +358,10 @@
                 "type": "field",
                 "id": "f-category",
                 "field": "category_id",
-                "invisible": "not equipment_id"
+                "invisible": "not equipment_id",
+                "roles": [
+                  "maintenance.group_equipment_manager"
+                ]
               },
               {
                 "type": "field",
@@ -341,7 +379,9 @@
               {
                 "type": "field",
                 "id": "f-type",
-                "options": { "clear": false },
+                "options": {
+                  "clear": false
+                },
                 "field": "maintenance_type",
                 "widget": "radio"
               }
@@ -377,7 +417,8 @@
                 "field": "duration",
                 "options": {
                   "suffix": "hours"
-                }
+                },
+                "widget": "duration"
               },
               {
                 "type": "field",
@@ -389,12 +430,35 @@
                 "type": "section",
                 "id": "g-repeat",
                 "style": "plain",
-                "columns": { "wide": 12, "medium": 12 },
+                "columns": {
+                  "wide": 12,
+                  "medium": 12
+                },
                 "invisible": "not recurring_maintenance",
                 "children": [
-                  { "type": "field", "id": "f-repeat-interval", "field": "repeat_interval", "colspan": 2, "required": "recurring_maintenance" },
-                  { "type": "field", "id": "f-repeat-unit", "field": "repeat_unit", "colspan": 5, "labels": "hidden", "required": "recurring_maintenance" },
-                  { "type": "field", "id": "f-repeat-type", "field": "repeat_type", "colspan": 5, "labels": "hidden", "required": "recurring_maintenance" }
+                  {
+                    "type": "field",
+                    "id": "f-repeat-interval",
+                    "field": "repeat_interval",
+                    "colspan": 2,
+                    "required": "recurring_maintenance"
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-repeat-unit",
+                    "field": "repeat_unit",
+                    "colspan": 5,
+                    "labels": "hidden",
+                    "required": "recurring_maintenance"
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-repeat-type",
+                    "field": "repeat_type",
+                    "colspan": 5,
+                    "labels": "hidden",
+                    "required": "recurring_maintenance"
+                  }
                 ]
               },
               {
@@ -407,9 +471,16 @@
               {
                 "type": "field",
                 "id": "f-priority",
-                "options": { "clear": false },
                 "field": "priority",
-                "widget": "rating"
+                "widget": "priority"
+              },
+              {
+                "type": "field",
+                "id": "f-email-cc",
+                "field": "email_cc",
+                "roles": [
+                  "base.group_no_one"
+                ]
               },
               {
                 "type": "field",
@@ -417,7 +488,10 @@
                 "field": "company_id",
                 "options": {
                   "create": false
-                }
+                },
+                "roles": [
+                  "base.group_multi_company"
+                ]
               }
             ]
           }
@@ -455,7 +529,9 @@
                   {
                     "type": "field",
                     "id": "f-instruction-type",
-                    "options": { "clear": false },
+                    "options": {
+                      "clear": false
+                    },
                     "field": "instruction_type",
                     "widget": "radio"
                   },
@@ -465,15 +541,13 @@
                     "field": "instruction_pdf",
                     "invisible": "instruction_type != 'pdf'",
                     "required": "instruction_type == 'pdf'",
-                    "options": {
-                      "files": "cards"
-                    }
+                    "widget": "pdf"
                   },
                   {
                     "type": "field",
                     "id": "f-instruction-slide",
                     "field": "instruction_google_slide",
-                    "widget": "url",
+                    "widget": "embed",
                     "placeholder": "Google Slide Link",
                     "invisible": "instruction_type != 'google_slide'",
                     "required": "instruction_type == 'google_slide'"
@@ -496,6 +570,20 @@
       "type": "slot",
       "id": "chatter",
       "name": "chatter"
+    },
+    "toolbar": {
+      "menu": [
+        {
+          "id": "m-duplicate",
+          "builtin": "duplicate"
+        },
+        {
+          "id": "m-delete",
+          "builtin": "delete"
+        }
+      ],
+      "pager": true,
+      "breadcrumbs": true
     }
   }
 }

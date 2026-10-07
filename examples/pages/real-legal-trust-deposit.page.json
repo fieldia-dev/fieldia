@@ -2,6 +2,7 @@
   "fieldia": "0.1",
   "id": "real-legal-trust-deposit",
   "title": "Trust Deposit",
+  "look": { "readonlyShown": "text" },
   "data": { "kind": "responses" },
   "maxWidth": "medium",
   "fields": {

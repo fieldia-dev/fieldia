@@ -1,9 +1,10 @@
-import type { ActionRequest, ActionResult, Line, Page, RelatedRecord, Values } from '@fieldia/core';
+import type { ActionRequest, ActionResult, Line, Page, PropertyDefinition, RelatedRecord, Values } from '@fieldia/core';
 import task from '../../../examples/pages/real-task.page.json';
 import transfer from '../../../examples/pages/real-transfer.page.json';
 import manufacturingOrder from '../../../examples/pages/real-manufacturing-order.page.json';
 import backorderConfirmation from '../../../examples/pages/real-backorder-confirmation.page.json';
 import pickingSign from '../../../examples/pages/real-picking-sign.page.json';
+import taskList from '../../../examples/pages/real-task-list.page.json';
 import type { RealLane } from './lane';
 
 /**
@@ -145,9 +146,11 @@ const linesOf = (values: Values, field: string) => ((values[field] as Line[] | n
 const TASK_ID = 5201;
 const taskRecord: Values = {
   name: 'Fit acoustic ceiling panels, meeting rooms A and B',
-  priority: 1,
+  priority: '1',
   state: '01_in_progress',
   stage_id: STAGES.progress,
+  // The time spent in each stage so far, in seconds, by the stage's id (statusbar_duration).
+  duration_tracking: { 5191: 2 * 86400 + 3 * 3600, 5192: 3 * 86400 + 5 * 3600 },
   personal_stage_type_id: null,
   approval_required: true,
   approval_status: 'none',
@@ -298,7 +301,7 @@ const otherTasks: Record<number, Values> = {
   5202: { name: 'Fix the suspension grid, room A', project_id: PROJECTS.niletowers, parent_id: link(TASK_ID, taskRecord['name'] as string), work_item_type: 'task', state: '1_done', active: true, stage_id: STAGES.done },
   5203: { name: 'Fix the suspension grid, room B', project_id: PROJECTS.niletowers, parent_id: link(TASK_ID, taskRecord['name'] as string), work_item_type: 'task', state: '01_in_progress', active: true, stage_id: STAGES.progress },
   5204: { name: 'Fit the tiles and edge trims, both rooms', project_id: PROJECTS.niletowers, parent_id: link(TASK_ID, taskRecord['name'] as string), work_item_type: 'task', state: '04_waiting_normal', active: true, stage_id: STAGES.new },
-  5205: { name: 'Electrical first fix, meeting rooms', project_id: PROJECTS.niletowers, work_item_type: 'task', state: '1_done', active: true, stage_id: STAGES.done, user_ids: [USERS.mona] },
+  5205: { name: 'Electrical first fix, meeting rooms', project_id: PROJECTS.niletowers, work_item_type: 'task', state: '1_done', active: true, stage_id: STAGES.done, user_ids: [USERS.mona], date_deadline: '2026-10-02T16:00' },
   5206: { name: 'Meeting rooms', project_id: PROJECTS.niletowers, work_item_type: 'epic', state: '01_in_progress', active: true, stage_id: STAGES.progress },
   5207: { name: 'Snag walk with the client', project_id: PROJECTS.niletowers, work_item_type: 'task', state: '01_in_progress', active: true, stage_id: STAGES.new, depend_on_ids: [link(TASK_ID, taskRecord['name'] as string)] },
 };
@@ -398,7 +401,7 @@ function move(key: string, id: number | undefined, productId: number, demand: nu
       date_deadline: '2026-10-09T17:00',
       description_bom_line: null,
       product_uom_qty: demand,
-      forecast_availability: null,
+      forecast_availability: 0,
       quantity: 0,
       product_uom: p.uom,
       qty_on_hand_now: p.onHand,
@@ -409,6 +412,9 @@ function move(key: string, id: number | undefined, productId: number, demand: nu
       scrapped: false,
       additional: false,
       has_tracking: 'none',
+      is_initial_demand_editable: true,
+      is_quantity_done_editable: true,
+      display_assign_serial: false,
       ...extra,
     },
   };
@@ -416,7 +422,7 @@ function move(key: string, id: number | undefined, productId: number, demand: nu
 
 const pickingRecord: Values = {
   name: 'WH/IN/00042',
-  priority: null,
+  priority: '0',
   state: 'draft',
   is_locked: true,
   show_check_availability: false,
@@ -503,7 +509,8 @@ function reserve(values: Values): Values {
     const demand = Number(line.values['product_uom_qty'] ?? 0);
     const available = incoming ? demand : Math.min(demand, id ? PRODUCTS[id].onHand : 0);
     const state = available >= demand ? 'assigned' : available > 0 ? 'partially_available' : 'confirmed';
-    return { ...line, values: { ...line.values, quantity: available, forecast_availability: incoming ? demand : (id ? PRODUCTS[id].onHand : 0), state } };
+    // Reserved, the demand is the order's: only the quantity is typed now (is_initial_demand_editable).
+    return { ...line, values: { ...line.values, quantity: available, forecast_availability: incoming ? demand : (id ? PRODUCTS[id].onHand : 0), state, is_initial_demand_editable: false } };
   });
   const ready = lines.every((line) => line.values['state'] === 'assigned');
   const some = lines.some((line) => Number(line.values['quantity']) > 0);
@@ -663,6 +670,7 @@ function explode(bomId: number, quantity: number, stored = false): Values {
         state: 'pending',
         working_state: 'normal',
         is_user_working: false,
+        timer_start: null,
       },
     })),
   };
@@ -670,7 +678,7 @@ function explode(bomId: number, quantity: number, stored = false): Values {
 
 const productionRecord: Values = {
   name: 'WH/MO/00031',
-  priority: null,
+  priority: '0',
   state: 'draft',
   reservation_state: null,
   show_serial_mass_produce: false,
@@ -720,7 +728,8 @@ const productionRecord: Values = {
   location_dest_id: LOCATIONS.stock,
   origin: 'S00231',
   date_deadline: '2026-10-12T17:00',
-  analytic_distribution: [link(5295, 'Nile Towers 12F')],
+  // Shares by analytic account id, as Flectra's analytic_distribution.
+  analytic_distribution: { 5295: 100 },
 };
 
 /** A product or a bill of materials picked brings the bill's components, by-products and work orders. */
@@ -923,8 +932,99 @@ function productionAction(request: ActionRequest): ActionResult | undefined {
 }
 
 // ---------------------------------------------------------------------------
+// A work order's own buttons, on its line or on the lines chosen.
+// ---------------------------------------------------------------------------
+
+const minutesSince = (from: unknown) => (typeof from === 'string' ? Math.max(0, Math.round((Date.now() - new Date(from).getTime()) / 60000)) : 0);
+
+/** mrp.workorder's buttons: the line (or lines) changed as the server would, the timer running while someone works. */
+function workorderAction(request: ActionRequest): ActionResult | undefined {
+  const what = request.action.slice('mrp.workorder.'.length);
+  const one = request.line ? [request.line.key] : [];
+  const chosen = new Set<string>(request.lines ? request.lines.keys.map(String) : one.map(String));
+  if (!chosen.size) return undefined;
+  const change = (v: Values): Values => {
+    switch (what) {
+      case 'button_start':
+        return { ...v, state: 'progress', is_user_working: true, timer_start: now(), date_start: v['date_start'] ?? now() };
+      case 'button_pending':
+        return { ...v, is_user_working: false, duration: Number(v['duration'] ?? 0) + minutesSince(v['timer_start']), timer_start: null };
+      case 'button_finish':
+      case 'action_mark_as_done':
+        return { ...v, state: 'done', is_user_working: false, duration: Number(v['duration'] ?? 0) + minutesSince(v['timer_start']), timer_start: null, date_finished: now(), qty_remaining: 0 };
+      case 'button_block':
+        return { ...v, working_state: 'blocked', is_user_working: false, duration: Number(v['duration'] ?? 0) + minutesSince(v['timer_start']), timer_start: null };
+      case 'button_unblock':
+        return { ...v, working_state: 'normal' };
+      default:
+        return v;
+    }
+  };
+  const workorders = linesOf(request.values, 'workorder_ids').map((line) => (chosen.has(String(line.key)) ? { ...line, values: change(line.values) } : line));
+  const names = workorders.filter((line) => chosen.has(String(line.key))).map((line) => line.values['name']).join(', ');
+  const said: Record<string, string> = { button_start: 'started', button_pending: 'paused', button_finish: 'done', action_mark_as_done: 'done', button_block: 'blocked', button_unblock: 'unblocked' };
+  return { values: { workorder_ids: workorders, ...(what === 'button_start' ? { state: 'progress' } : {}) }, say: { message: `${names}: ${said[what] ?? what}.`, tone: 'info' } };
+}
+
+// ---------------------------------------------------------------------------
 // The lane.
 // ---------------------------------------------------------------------------
+
+/** The person using the demo: a project manager and salesman with the timesheet, rating, recurrence and dependency groups — not developer mode. */
+const OPERATIONS_USER = {
+  id: 5102,
+  name: 'Mona Adel',
+  roles: [
+    'base.group_user',
+    'base.group_multi_company',
+    'stock.group_stock_user',
+    'uom.group_uom',
+    'project.group_project_manager',
+    'project.group_project_rating',
+    'project.group_project_recurring_tasks',
+    'project.group_project_task_dependencies',
+    'hr_timesheet.group_hr_timesheet_user',
+    'sales_team.group_sale_salesman',
+    'analytic.group_analytic_accounting',
+    'stock.group_stock_manager',
+    'stock.group_stock_multi_locations',
+    'stock.group_production_lot',
+    'stock.group_tracking_lot',
+    'mrp.group_mrp_routings',
+    'mrp.group_mrp_byproducts',
+    'mrp.group_mrp_manager',
+  ],
+};
+
+/** The properties each project keeps for its tasks (project.project task_properties_definition). */
+const TASK_PROPERTIES: Record<number, PropertyDefinition[]> = {
+  5181: [
+    { name: 'site_zone', label: 'Site zone', type: 'selection', options: [{ value: 'a', label: 'Meeting room A' }, { value: 'b', label: 'Meeting room B' }, { value: 'open', label: 'Open plan' }] },
+    { name: 'permit_needed', label: 'Building permit needed', type: 'boolean' },
+    { name: 'lift_slot', label: 'Freight lift slot', type: 'char' },
+    { name: 'panels', label: 'Panels to fit', type: 'integer' },
+  ],
+  5182: [{ name: 'floor', label: 'Floor', type: 'integer' }],
+};
+
+/** The properties each operation type keeps for its transfers (stock.picking.type picking_properties_definition). */
+const PICKING_PROPERTIES: Record<number, PropertyDefinition[]> = {
+  5171: [
+    { name: 'truck_plate', label: 'Truck plate', type: 'char' },
+    { name: 'driver', label: 'Driver', type: 'char' },
+    { name: 'inspected', label: 'Quality inspected', type: 'boolean' },
+    { name: 'dock', label: 'Dock', type: 'selection', options: [{ value: 'd1', label: 'Dock 1' }, { value: 'd2', label: 'Dock 2' }] },
+  ],
+  5172: [{ name: 'carrier', label: 'Carrier', type: 'char' }],
+};
+
+/** A person's initials on a colour, as a link's picture. */
+const FACES = ['#1d4ed8', '#047857', '#b45309', '#7c3aed', '#be185d', '#0e7490'];
+function face(name: string, colour: string): string {
+  const initials = name.split(' ').map((word) => word[0]).join('').slice(0, 2);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="${colour}"/><text x="32" y="41" font-family="sans-serif" font-size="26" font-weight="700" fill="#fff" text-anchor="middle">${initials}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
 
 /** An answer comes after a moment, as one from a server does. */
 const ANSWER_MS = 250;
@@ -939,6 +1039,27 @@ export const lane: RealLane = {
     'real-task': task as Page,
     'real-backorder-confirmation': backorderConfirmation as Page,
     'real-picking-sign': pickingSign as Page,
+    // The task's Sub-tasks button lists them.
+    'real-task-list': taskList as Page,
+  },
+  users: {
+    'real-task': OPERATIONS_USER,
+    'real-transfer': OPERATIONS_USER,
+    'real-manufacturing-order': OPERATIONS_USER,
+  },
+  navigation: {
+    'real-task': { records: [TASK_ID, 5205, 5207], breadcrumbs: [{ label: 'Nile Towers 12th floor fit-out', href: '#tasks' }] },
+    'real-transfer': { records: [PICKING_ID, 5302], breadcrumbs: [{ label: 'Receipts', href: '#receipts' }] },
+    'real-manufacturing-order': { records: [PRODUCTION_ID], breadcrumbs: [{ label: 'Manufacturing Orders', href: '#manufacturing' }] },
+  },
+  shows: {
+    'res.users': { avatar: 'image_128' },
+    'project.tags': { color: 'color' },
+    'project.task.type': { folded: 'fold' },
+  },
+  definitions: {
+    task_properties: (values) => TASK_PROPERTIES[idOf(values['project_id']) ?? 0] ?? [],
+    picking_properties: (values) => PICKING_PROPERTIES[idOf(values['picking_type_id']) ?? 0] ?? [],
   },
   related: { 'project.task': task as Page, 'stock.picking': transfer as Page },
   records: {
@@ -948,19 +1069,19 @@ export const lane: RealLane = {
       5182: { name: PROJECTS.hq.label, active: true },
     },
     'project.task.type': {
-      5191: { name: 'New', project_id: PROJECTS.niletowers },
-      5192: { name: 'In Progress', project_id: PROJECTS.niletowers },
-      5193: { name: 'Client Review', project_id: PROJECTS.niletowers },
-      5194: { name: 'Done', project_id: PROJECTS.niletowers },
-      5195: { name: 'Cancelled', project_id: PROJECTS.niletowers },
+      5191: { name: 'New', project_ids: [PROJECTS.niletowers], fold: false },
+      5192: { name: 'In Progress', project_ids: [PROJECTS.niletowers, PROJECTS.hq], fold: false },
+      5193: { name: 'Client Review', project_ids: [PROJECTS.niletowers], fold: false },
+      5194: { name: 'Done', project_ids: [PROJECTS.niletowers, PROJECTS.hq], fold: true },
+      5195: { name: 'Cancelled', project_ids: [PROJECTS.niletowers, PROJECTS.hq], fold: true },
     },
     'project.milestone': {
       5241: { name: 'Meeting rooms handed over', project_id: PROJECTS.niletowers },
       5242: { name: 'Open plan handed over', project_id: PROJECTS.niletowers },
     },
-    'project.tags': { 5251: { name: 'Ceilings' }, 5252: { name: 'Acoustics' }, 5253: { name: 'Snag list' } },
+    'project.tags': { 5251: { name: 'Ceilings', color: 4 }, 5252: { name: 'Acoustics', color: 10 }, 5253: { name: 'Snag list', color: 1 } },
     'project.task.recurrence': {},
-    'res.users': Object.fromEntries(Object.values(USERS).map((user) => [user.id, { name: user.label, share: false }])),
+    'res.users': Object.fromEntries(Object.values(USERS).map((user, i) => [user.id, { name: user.label, share: false, image_128: face(user.label, FACES[i % FACES.length]) }])),
     'hr.employee': Object.fromEntries(Object.values(EMPLOYEES).map((employee) => [employee.id, { name: employee.label }])),
     'res.partner': {
       5121: { name: PARTNERS.niletowers.label },
@@ -978,7 +1099,23 @@ export const lane: RealLane = {
     'ir.attachment': {},
     'stock.picking': {
       [PICKING_ID]: pickingRecord,
-      5302: { name: 'WH/IN/00038', state: 'done' },
+      // The last receipt, done: what the pager moves to.
+      5302: {
+        ...pickingRecord,
+        name: 'WH/IN/00038',
+        state: 'done',
+        origin: 'P00109',
+        scheduled_date: '2026-09-28T09:00',
+        date_deadline: '2026-09-29T17:00',
+        date_done: '2026-09-28T11:40',
+        partner_id: PARTNERS.hardware,
+        picking_properties: { truck_plate: 'ج ه د 1290', driver: 'Sayed Omar', inspected: true, dock: 'd2' },
+        move_ids_without_package: [
+          move('d1', 5315, 5135, 20, { state: 'done', quantity: 20, picked: true, is_initial_demand_editable: false }),
+          move('d2', 5316, 5134, 4, { state: 'done', quantity: 4, picked: true, is_initial_demand_editable: false }),
+        ],
+        note: null,
+      },
     },
     'product.product': Object.fromEntries(Object.entries(PRODUCTS).map(([id, p]) => [id, { name: p.name, type: p.type, uom_id: p.uom }])),
     'product.template': { 5141: { name: 'Dining table, beech, 6 seats' }, 5142: { name: 'Coffee table, beech' } },
@@ -1029,7 +1166,9 @@ export const lane: RealLane = {
         ? pickingAction(request)
         : request.action.startsWith('mrp.production.')
           ? productionAction(request)
-          : undefined;
+          : request.action.startsWith('mrp.workorder.')
+            ? workorderAction(request)
+            : undefined;
     if (answer === undefined) return undefined;
     return new Promise((resolve) => setTimeout(() => resolve(answer), ANSWER_MS));
   },

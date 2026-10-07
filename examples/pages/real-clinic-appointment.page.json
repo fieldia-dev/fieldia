@@ -5,7 +5,7 @@
   "description": "Sherkety ERP, clinic_aesthetic: clinic.appointment, view_appointment_form, with clinic_finance (deposit) and clinic_kpi (no-show risk) on it.",
   "data": { "kind": "record", "model": "clinic.appointment" },
   "maxWidth": "wide",
-  "look": { "labels": "beside", "labelWidth": 150 },
+  "look": { "helpShown": "tooltip", "readonlyShown": "text", "labels": "beside", "labelWidth": 150 },
   "fields": {
     "name": { "type": "char", "label": "Reference", "required": true, "readonly": true, "default": "New" },
     "state": {
@@ -46,23 +46,27 @@
     "deposit_payment_id": {
       "type": "many2one",
       "label": "Deposit Payment",
+      "help": "Posted customer payment capturing the prepaid deposit; reconciled against the session invoice once the session is invoiced.",
       "relation": "account.payment",
       "readonly": true
     },
     "deposit_forfeited": {
       "type": "boolean",
       "label": "Deposit Forfeited",
+      "help": "Set when a no-show / late cancellation forfeits the prepaid deposit (kept as clinic income, not refunded).",
       "readonly": true
     },
     "no_show_fee_invoice_id": {
       "type": "many2one",
       "label": "No-show Fee Invoice",
+      "help": "Fee invoice raised on no-show / late cancellation when there was no deposit to forfeit.",
       "relation": "account.move",
       "readonly": true
     },
     "no_show_risk_score": {
       "type": "integer",
       "label": "No-show Risk",
+      "help": "Deterministic 0-100 risk that this patient will not show. Blends historical no-show rate, booking lead time, deposit presence, whether the patient is new, and prior no-shows.",
       "readonly": true
     },
     "no_show_risk_band": {
@@ -78,12 +82,14 @@
     "no_show_mitigation": {
       "type": "text",
       "label": "AI Mitigation Suggestion",
+      "help": "Optional one-line, Egyptian-Arabic action to reduce the no-show risk, generated on demand by the clinic AI service.",
       "readonly": true
     },
-    "is_walk_in": { "type": "boolean", "label": "Walk-in" },
+    "is_walk_in": { "type": "boolean", "label": "Walk-in", "help": "Unplanned patient registered straight into the waiting room." },
     "stage_id": {
       "type": "many2one",
       "label": "Flow Stage",
+      "help": "Where the patient physically is in the visit — reception, numbing, with the provider, recovery or checkout.",
       "relation": "clinic.queue.stage"
     },
     "stage_is_numbing": { "type": "boolean", "label": "Is a numbing stage", "readonly": true },
@@ -94,6 +100,7 @@
     "numbing_ready_time": {
       "type": "datetime",
       "label": "Numbing Ready At",
+      "help": "When the topical anaesthetic has sat long enough for the provider to begin (set on entering a numbing stage).",
       "readonly": true
     },
     "cancel_reason_id": { "type": "many2one", "label": "Cancellation Reason", "relation": "clinic.cancel.reason" },
@@ -103,6 +110,14 @@
     "type": "sheet",
     "id": "sheet",
     "title": { "field": "name" },
+    "toolbar": {
+      "menu": [
+        { "id": "m-duplicate", "builtin": "duplicate" },
+        { "id": "m-delete", "builtin": "delete" }
+      ],
+      "pager": true,
+      "breadcrumbs": true
+    },
     "statusbar": { "field": "state", "visibleStates": ["booked", "confirmed", "arrived", "in_progress", "done"] },
     "buttons": [
       {
@@ -122,7 +137,7 @@
         "id": "action_check_in",
         "label": "Check In",
         "style": "primary",
-        "invisible": "state not in ['booked', 'confirmed']",
+        "invisible": "state not in ('booked', 'confirmed')",
         "steps": [{ "do": "call", "action": "clinic_check_in" }, { "do": "save" }]
       },
       {
@@ -136,14 +151,14 @@
         "type": "button",
         "id": "action_create_session",
         "label": "Open Session",
-        "invisible": "state not in ['arrived', 'in_progress']",
+        "invisible": "state not in ('arrived', 'in_progress')",
         "steps": [{ "do": "call", "action": "clinic_open_session" }, { "do": "save" }]
       },
       {
         "type": "button",
         "id": "action_done",
         "label": "Done",
-        "invisible": "state not in ['in_progress', 'arrived']",
+        "invisible": "state not in ('in_progress', 'arrived')",
         "steps": [
           { "do": "set", "field": "state", "value": "'done'" },
           { "do": "save" }
@@ -153,7 +168,7 @@
         "type": "button",
         "id": "action_no_show",
         "label": "No Show",
-        "invisible": "state in ['done', 'no_show', 'cancelled']",
+        "invisible": "state in ('done', 'no_show', 'cancelled')",
         "steps": [
           { "do": "set", "field": "state", "value": "'no_show'" },
           { "do": "call", "action": "clinic_no_show_charge" },
@@ -171,7 +186,7 @@
         "type": "button",
         "id": "action_cancel",
         "label": "Cancel",
-        "invisible": "state in ['done', 'no_show', 'cancelled']",
+        "invisible": "state in ('done', 'no_show', 'cancelled')",
         "steps": [{ "do": "call", "action": "clinic_cancel" }, { "do": "save" }]
       },
       {
@@ -214,7 +229,13 @@
               { "type": "field", "id": "f-deposit-forfeited", "field": "deposit_forfeited", "readonly": true, "invisible": "not deposit_forfeited" },
               { "type": "field", "id": "f-fee-invoice", "field": "no_show_fee_invoice_id", "readonly": true, "invisible": "not no_show_fee_invoice_id" },
               { "type": "field", "id": "f-risk-score", "field": "no_show_risk_score" },
-              { "type": "field", "id": "f-risk-band", "field": "no_show_risk_band" },
+              {
+                "type": "field",
+                "id": "f-risk-band",
+                "field": "no_show_risk_band",
+                "widget": "badge",
+                "options": { "tones": { "high": "danger", "medium": "warning", "low": "success" } }
+              },
               { "type": "field", "id": "f-mitigation", "field": "no_show_mitigation", "readonly": true, "invisible": "not no_show_mitigation" }
             ]
           }

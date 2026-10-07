@@ -5,7 +5,7 @@
   "description": "Sherkety ERP's survey settings record (survey.survey, survey_survey_view_form), with the Courses button website_slides_survey adds.",
   "data": { "kind": "record", "model": "survey.survey" },
   "maxWidth": "full",
-  "look": { "density": "compact" },
+  "look": { "helpShown": "tooltip", "readonlyShown": "text", "readonlyShown": "text", "density": "compact" },
   "fields": {
     "title": { "type": "char", "label": "Survey Title", "required": true },
     "survey_type": {
@@ -21,24 +21,15 @@
       ]
     },
     "background_image": { "type": "image", "label": "Background Image" },
-    "user_id": { "type": "many2one", "label": "Responsible", "relation": "res.users", "filter": [{ "field": "share", "op": "!=", "value": true }] },
+    "user_id": { "type": "many2one", "label": "Responsible", "relation": "res.users", "filter": [{ "field": "share", "op": "=", "value": false }] },
     "active": { "type": "boolean", "label": "Active", "default": true },
-    "session_state": {
-      "type": "selection",
-      "label": "Session State",
-      "readonly": true,
-      "options": [
-        { "value": "ready", "label": "Ready" },
-        { "value": "in_progress", "label": "In Progress" }
-      ]
-    },
+    "session_state": { "type": "selection", "label": "Session State", "readonly": true, "options": [{ "value": "ready", "label": "Ready" }, { "value": "in_progress", "label": "In Progress" }] },
     "answer_count": { "type": "integer", "label": "Registered", "readonly": true },
     "success_count": { "type": "integer", "label": "Success", "readonly": true },
     "answer_done_count": { "type": "integer", "label": "Attempts", "readonly": true },
     "slide_channel_count": { "type": "integer", "label": "Courses", "readonly": true },
-    "question_count": { "type": "integer", "label": "Questions", "compute": "count(question_and_page_ids)" },
+    "question_count": { "type": "integer", "label": "Questions", "compute": "count(question_and_page_ids, \"kind != 'section'\")" },
     "has_conditional_questions": { "type": "boolean", "label": "Contains conditional questions", "readonly": true },
-
     "question_and_page_ids": {
       "type": "one2many",
       "label": "Sections and Questions",
@@ -78,15 +69,10 @@
           "readonly": true,
           "help": "Questions containing the triggering answer(s) to display the current question."
         },
-        "description": {
-          "type": "html",
-          "label": "Description",
-          "help": "Use this field to add additional explanations about your question or to illustrate it with pictures or a video"
-        },
+        "description": { "type": "html", "label": "Description", "help": "Use this field to add additional explanations about your question or to illustrate it with pictures or a video" },
         "constr_error_msg": { "type": "char", "label": "Error message" }
       }
     },
-
     "questions_layout": {
       "type": "selection",
       "label": "Pagination",
@@ -103,10 +89,7 @@
       "label": "Display Progress as",
       "default": "percent",
       "help": "If Number is selected, it will display the number of questions answered on the total number of question to answer.",
-      "options": [
-        { "value": "percent", "label": "Percentage left" },
-        { "value": "number", "label": "Number" }
-      ]
+      "options": [{ "value": "percent", "label": "Percentage left" }, { "value": "number", "label": "Number" }]
     },
     "questions_selection": {
       "type": "selection",
@@ -114,10 +97,7 @@
       "required": true,
       "default": "all",
       "help": "If randomized is selected, you can configure the number of random questions by section. This mode is ignored in live session.",
-      "options": [
-        { "value": "all", "label": "All questions" },
-        { "value": "random", "label": "Randomized per Section" }
-      ]
+      "options": [{ "value": "all", "label": "All questions" }, { "value": "random", "label": "Randomized per Section" }]
     },
     "users_can_go_back": { "type": "boolean", "label": "Users can go back", "help": "If checked, users can go back to previous pages." },
     "access_mode": {
@@ -125,10 +105,7 @@
       "label": "Access Mode",
       "required": true,
       "default": "public",
-      "options": [
-        { "value": "public", "label": "Anyone with the link" },
-        { "value": "token", "label": "Invited people only" }
-      ]
+      "options": [{ "value": "public", "label": "Anyone with the link" }, { "value": "token", "label": "Invited people only" }]
     },
     "users_login_required": { "type": "boolean", "label": "Require Login", "help": "If checked, users have to login before answering even with a valid token." },
     "is_attempts_limited": {
@@ -150,14 +127,17 @@
         { "value": "scoring_with_answers_after_page", "label": "Scoring with answers after each page" },
         { "value": "scoring_with_answers", "label": "Scoring with answers at the end" },
         { "value": "scoring_without_answers", "label": "Scoring without answers" }
+      ],
+      "setWhen": [
+        {
+          "on": ["certification"],
+          "when": "certification and scoring_type not in ('scoring_without_answers', 'scoring_with_answers', 'scoring_with_answers_after_page')",
+          "value": "'scoring_without_answers'"
+        }
       ]
     },
     "scoring_success_min": { "type": "float", "label": "Required Score (%)", "default": 80, "min": 0, "max": 100 },
-    "certification": {
-      "type": "boolean",
-      "label": "Is a Certification",
-      "setWhen": [{ "when": "scoring_type == 'no_scoring'", "value": "False" }]
-    },
+    "certification": { "type": "boolean", "label": "Is a Certification", "setWhen": [{ "when": "scoring_type == 'no_scoring'", "value": "False" }] },
     "certification_report_layout": {
       "type": "selection",
       "label": "Certification template",
@@ -178,21 +158,13 @@
       "help": "Automated email sent to the user when they succeed the certification, containing their certification document.",
       "filter": [{ "field": "model", "op": "=", "value": "survey.user_input" }]
     },
-    "certification_give_badge": {
-      "type": "boolean",
-      "label": "Give Badge",
-      "setWhen": [{ "when": "not users_login_required or not certification", "value": "False" }]
-    },
+    "certification_give_badge": { "type": "boolean", "label": "Give Badge", "setWhen": [{ "when": "not users_login_required or not certification", "value": "False" }] },
     "certification_badge_id": { "type": "many2one", "label": "Certification Badge", "relation": "gamification.badge" },
     "exam_mode": { "type": "boolean", "label": "Exam Mode", "help": "Enable anti-cheating measures: fullscreen enforcement, tab-switch detection, and IP logging." },
     "exam_fullscreen": { "type": "boolean", "label": "Fullscreen Enforcement", "default": true, "help": "Force fullscreen mode during the exam." },
     "exam_tab_switch_limit": { "type": "integer", "label": "Tab Switch Limit", "default": 3, "help": "Number of allowed tab switches before auto-submit. 0 = unlimited." },
     "exam_log_ip": { "type": "boolean", "label": "Log IP Address", "default": true, "help": "Record the IP address of each exam attempt." },
-    "session_code": {
-      "type": "char",
-      "label": "Session Code",
-      "help": "This code will be used by your attendees to reach your session. Feel free to customize it however you like!"
-    },
+    "session_code": { "type": "char", "label": "Session Code", "help": "This code will be used by your attendees to reach your session. Feel free to customize it however you like!" },
     "session_link": { "type": "char", "label": "Session Link", "readonly": true },
     "session_speed_rating": { "type": "boolean", "label": "Reward quick answers", "help": "Attendees get more points if they answer quickly" },
     "description": {
@@ -219,26 +191,51 @@
         "id": "b-start-session",
         "label": "Create Live Session",
         "style": "secondary",
-        "invisible": "session_state or not active or certification or survey_type in ['survey', 'assessment']",
-        "action": "survey.survey.action_start_session"
+        "invisible": "session_state or not active or certification or survey_type in ('survey', 'assessment')",
+        "action": "survey.survey.action_start_session",
+        "hideOn": ["narrow"]
       },
-      { "type": "button", "id": "b-session-manager", "label": "Open Session Manager", "style": "secondary", "invisible": "not session_state", "action": "survey.survey.action_open_session_manager" },
+      {
+        "type": "button",
+        "id": "b-session-manager",
+        "label": "Open Session Manager",
+        "style": "secondary",
+        "invisible": "not session_state",
+        "action": "survey.survey.action_open_session_manager",
+        "hideOn": ["narrow"]
+      },
       {
         "type": "button",
         "id": "b-end-session",
         "label": "Close Live Session",
         "style": "secondary",
-        "invisible": "session_state not in ['ready', 'in_progress']",
-        "steps": [{ "do": "clear", "field": "session_state" }, { "do": "save" }, { "do": "say", "message": "The live session is closed.", "tone": "info" }]
+        "invisible": "session_state not in ('ready', 'in_progress')",
+        "steps": [{ "do": "clear", "field": "session_state" }, { "do": "save" }, { "do": "say", "message": "The live session is closed.", "tone": "info" }],
+        "hideOn": ["narrow"]
       },
-      { "type": "button", "id": "b-test", "label": "Test", "style": "secondary", "invisible": "not active or not question_count", "steps": [{ "do": "save" }, { "do": "call", "action": "survey.survey.action_test_survey" }] },
+      {
+        "type": "button",
+        "id": "b-test",
+        "label": "Test",
+        "style": "secondary",
+        "invisible": "not active or not question_count",
+        "steps": [{ "do": "save" }, { "do": "call", "action": "survey.survey.action_test_survey" }]
+      },
       { "type": "button", "id": "b-reopen", "label": "Reopen", "style": "primary", "invisible": "active", "steps": [{ "do": "set", "field": "active", "value": "True" }, { "do": "save" }] },
       { "type": "button", "id": "b-print", "label": "Print", "style": "secondary", "invisible": "not active", "action": "survey.survey.action_print_survey" },
       { "type": "button", "id": "b-archive", "label": "Close", "style": "secondary", "invisible": "not active", "steps": [{ "do": "set", "field": "active", "value": "False" }, { "do": "save" }] }
     ],
     "statButtons": [
       { "id": "s-registered", "label": "Registered", "field": "answer_count", "icon": "mail", "invisible": "access_mode == 'public'", "action": "survey.survey.action_survey_user_input" },
-      { "id": "s-courses", "label": "Courses", "field": "slide_channel_count", "icon": "layers", "invisible": "slide_channel_count == 0", "action": "survey.survey.action_survey_view_slide_channels" },
+      {
+        "id": "s-courses",
+        "label": "Courses",
+        "field": "slide_channel_count",
+        "icon": "layers",
+        "invisible": "slide_channel_count == 0",
+        "action": "survey.survey.action_survey_view_slide_channels",
+        "roles": ["website_slides.group_website_slides_officer"]
+      },
       { "id": "s-certified", "label": "Certified", "field": "success_count", "icon": "star", "invisible": "not certification", "action": "survey.survey.action_survey_user_input_certified" },
       { "id": "s-participations", "label": "Participations", "field": "answer_done_count", "icon": "check", "action": "survey.survey.action_survey_user_input_completed" }
     ],
@@ -249,9 +246,7 @@
         "id": "g-head",
         "style": "plain",
         "columns": { "wide": 2, "medium": 2, "narrow": 1 },
-        "children": [
-          { "type": "section", "id": "g-head-left", "style": "plain", "children": [{ "type": "field", "id": "f-user", "field": "user_id" }] }
-        ]
+        "children": [{ "type": "section", "id": "g-head-left", "style": "plain", "children": [{ "type": "field", "id": "f-user", "field": "user_id", "options": { "avatar": true } }] }]
       },
       {
         "type": "tabs",
@@ -270,7 +265,8 @@
                 "labels": "hidden",
                 "columns": ["title", "question_type", "constr_mandatory", "random_questions_count", "triggering_question_ids"],
                 "optionalColumns": { "constr_mandatory": "show", "random_questions_count": "hide" },
-                "options": { "addLabel": "Add a question" }
+                "options": { "addLabel": "Add a question", "copy": true },
+                "cells": { "random_questions_count": { "hidden": "questions_selection == 'all'" } }
               }
             ]
           },
@@ -291,13 +287,7 @@
                     "title": "Questions",
                     "style": "line",
                     "children": [
-                      {
-                        "type": "field",
-                        "id": "f-layout",
-                        "field": "questions_layout",
-                        "widget": "radio",
-                        "readonly": "session_state in ['ready', 'in_progress'] or survey_type == 'live_session'"
-                      },
+                      { "type": "field", "id": "f-layout", "field": "questions_layout", "widget": "radio", "readonly": "session_state in ('ready', 'in_progress') or survey_type == 'live_session'" },
                       {
                         "type": "field",
                         "id": "f-progression",
@@ -331,20 +321,24 @@
                       { "type": "field", "id": "f-access", "field": "access_mode", "readonly": "survey_type == 'live_session'" },
                       { "type": "field", "id": "f-login", "field": "users_login_required" },
                       {
-                        "type": "field",
-                        "id": "f-attempts-limited",
-                        "field": "is_attempts_limited",
-                        "label": "Limit Attempts",
-                        "invisible": "survey_type == 'live_session' or access_mode == 'public' and not users_login_required"
-                      },
-                      {
-                        "type": "field",
-                        "id": "f-attempts",
-                        "field": "attempts_limit",
-                        "label": "Attempts",
-                        "options": { "prefix": "to", "suffix": "attempts" },
-                        "invisible": "not is_attempts_limited or survey_type == 'live_session' or access_mode == 'public' and not users_login_required",
-                        "validate": [{ "min": 1, "when": "is_attempts_limited", "message": "The attempts limit needs to be a positive number if the survey has a limited number of attempts." }]
+                        "type": "section",
+                        "id": "attempts-row",
+                        "title": "Limit Attempts",
+                        "style": "inline",
+                        "invisible": "survey_type == 'live_session' or access_mode == 'public' and not users_login_required",
+                        "children": [
+                          { "type": "field", "id": "f-attempts-limited", "field": "is_attempts_limited", "labels": "hidden" },
+                          { "type": "text", "id": "attempts-to", "text": "to", "invisible": "not is_attempts_limited" },
+                          {
+                            "type": "field",
+                            "id": "f-attempts",
+                            "field": "attempts_limit",
+                            "invisible": "not is_attempts_limited",
+                            "validate": [{ "min": 1, "when": "is_attempts_limited", "message": "The attempts limit needs to be a positive number if the survey has a limited number of attempts." }],
+                            "labels": "hidden"
+                          },
+                          { "type": "text", "id": "attempts-unit", "text": "attempts", "invisible": "not is_attempts_limited" }
+                        ]
                       }
                     ]
                   },
@@ -355,15 +349,25 @@
                     "style": "line",
                     "invisible": "survey_type == 'survey'",
                     "children": [
-                      { "type": "field", "id": "f-time-limited", "field": "is_time_limited", "label": "Survey Time Limit", "invisible": "survey_type == 'live_session'" },
                       {
-                        "type": "field",
-                        "id": "f-time-limit",
-                        "field": "time_limit",
-                        "label": "Time limit",
-                        "options": { "suffix": "minutes" },
-                        "invisible": "not is_time_limited or survey_type == 'live_session'",
-                        "validate": [{ "holds": "time_limit > 0", "when": "is_time_limited", "message": "The time limit needs to be a positive number if the survey is time limited." }]
+                        "type": "section",
+                        "id": "time-row",
+                        "title": "Survey Time Limit",
+                        "style": "inline",
+                        "invisible": "survey_type == 'live_session'",
+                        "children": [
+                          { "type": "field", "id": "f-time-limited", "field": "is_time_limited", "labels": "hidden" },
+                          {
+                            "type": "field",
+                            "id": "f-time-limit",
+                            "field": "time_limit",
+                            "invisible": "not is_time_limited",
+                            "validate": [{ "holds": "time_limit > 0", "when": "is_time_limited", "message": "The time limit needs to be a positive number if the survey is time limited." }],
+                            "labels": "hidden",
+                            "widget": "duration"
+                          },
+                          { "type": "text", "id": "time-unit", "text": "minutes", "invisible": "not is_time_limited" }
+                        ]
                       },
                       { "type": "field", "id": "f-scoring", "field": "scoring_type", "widget": "radio" },
                       { "type": "field", "id": "f-success-min", "field": "scoring_success_min", "invisible": "scoring_type == 'no_scoring'", "options": { "suffix": "%" } },
@@ -414,10 +418,10 @@
                     "id": "live_session",
                     "title": "Live Session",
                     "style": "line",
-                    "invisible": "survey_type in ['survey', 'assessment']",
+                    "invisible": "survey_type in ('survey', 'assessment')",
                     "children": [
                       { "type": "field", "id": "f-session-code", "field": "session_code" },
-                      { "type": "field", "id": "f-session-link", "field": "session_link", "widget": "url" },
+                      { "type": "field", "id": "f-session-link", "field": "session_link", "widget": "copy" },
                       { "type": "field", "id": "f-speed", "field": "session_speed_rating" }
                     ]
                   }

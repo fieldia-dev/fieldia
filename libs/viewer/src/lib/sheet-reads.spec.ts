@@ -148,6 +148,21 @@ describe('read-only fields as words (look.readonlyShown)', () => {
     expect(words(at, 'f-state')).toBe('Paid');
   });
 
+  it('keeps a number’s unit, before or after it, as its box shows it', () => {
+    const page = readonlyPage({ readonlyShown: 'text' });
+    const section = (page.layout as { children: { children: unknown[] }[] }).children[0];
+    section.children.push(
+      { type: 'field', id: 'f-days', field: 'hours', readonly: true, options: { suffix: 'Days' } },
+      { type: 'field', id: 'f-cost', field: 'share', readonly: true, options: { prefix: '~' } },
+      { type: 'field', id: 'f-none', field: 'empty', readonly: true, options: { suffix: 'Days' } }
+    );
+    const { at } = mount(page, { values: VALUES });
+    expect(words(at, 'f-days')).toBe('24.80 Days');
+    expect(words(at, 'f-cost')).toBe('~ 0.35');
+    // Empty, it draws nothing, not the unit alone.
+    expect(words(at, 'f-none')).toBe('');
+  });
+
   it('draws a read-only title as words too, so a long one wraps', () => {
     const page = readonlyPage({ readonlyShown: 'text' });
     (page.fields['name'] as { readonly?: boolean }).readonly = true;

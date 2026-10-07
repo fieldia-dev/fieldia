@@ -4,6 +4,7 @@
   "title": "Close Case",
   "data": { "kind": "responses" },
   "maxWidth": "narrow",
+  "look": { "helpShown": "tooltip", "readonlyShown": "text" },
   "fields": {
     "case_label": { "type": "char", "label": "Case", "readonly": true },
     "outcome": {
@@ -67,7 +68,7 @@
         "id": "g-contingency",
         "title": "Contingency Fee",
         "style": "line",
-        "invisible": "fee_arrangement != 'contingency' or outcome not in ['won', 'settled']",
+        "invisible": "fee_arrangement != 'contingency' or outcome not in ('won', 'settled')",
         "children": [
           { "type": "field", "id": "w-settlement", "field": "actual_settlement" },
           { "type": "field", "id": "w-fee-preview", "field": "contingency_fee_preview" },
@@ -82,6 +83,10 @@
           { "type": "field", "id": "w-reason", "field": "close_reason", "placeholder": "Summary of the case outcome and any final disposition..." }
         ]
       }
+    ],
+    "footer": [
+      { "type": "button", "id": "action_close_case", "label": "Close Case", "style": "primary", "steps": [{ "do": "save" }] },
+      { "type": "button", "id": "cancel", "label": "Cancel", "steps": [{ "do": "close" }] }
     ]
   }
 }

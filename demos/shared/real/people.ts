@@ -1,10 +1,12 @@
-import type { ActionRequest, ActionResult, Page, RelatedRecord, Values } from '@fieldia/core';
+import type { ActionRequest, ActionResult, Page, PropertyDefinition, RelatedRecord, Values } from '@fieldia/core';
 import clinicAppointment from '../../../examples/pages/real-clinic-appointment.page.json';
 import timeOff from '../../../examples/pages/real-time-off.page.json';
 import timeOffCancel from '../../../examples/pages/real-time-off-cancel.page.json';
 import employeePage from '../../../examples/pages/real-employee.page.json';
 import employeePlan from '../../../examples/pages/real-employee-plan.page.json';
 import maintenanceRequest from '../../../examples/pages/real-maintenance-request.page.json';
+import employeeDeparture from '../../../examples/pages/real-employee-departure.page.json';
+import employeeEquipment from '../../../examples/pages/real-employee-equipment.page.json';
 import type { RealLane } from './lane';
 
 /**
@@ -633,6 +635,8 @@ const salma: Values = {
   is_absent: false,
   leave_date_to: null,
   allocation_summary: '12.5/21 Days',
+  allocation_remaining_display: '12.5',
+  allocation_display: '21',
   current_leave_id: 4171,
   equipment_count: 2,
   mobile_phone: '+20 100 912 4471',
@@ -780,8 +784,6 @@ function employeeAction(request: ActionRequest): ActionResult | undefined {
       return { values: { barcode: `041${Array.from({ length: 9 }, () => Math.floor(Math.random() * 10)).join('')}` } };
     case 'employee_print_badge':
       return { say: { message: `Badge ${String(values['barcode'])} sent to print.`, tone: 'info' } };
-    case 'employee_equipment':
-      return { say: { message: 'Equipment: DermLite DL5 dermatoscope; iPad mini for patient photos.', tone: 'info' } };
   }
   return undefined;
 }
@@ -846,6 +848,7 @@ const requestBase: Values = {
   instruction_pdf: null,
   instruction_google_slide: null,
   instruction_text: null,
+  email_cc: null,
 };
 
 const maintenanceRequests: Record<string, Values> = {
@@ -863,7 +866,7 @@ const maintenanceRequests: Record<string, Values> = {
     user_id: link(4105, 'Ahmed Tawfik'),
     schedule_date: at(0, '16:00'),
     duration: 2.5,
-    priority: 3,
+    priority: '3',
     description:
       '<p>Error <b>E12</b> (hand-piece cooling) after the third patient this morning. Two laser sessions moved to Room 1’s HydraFacial; the 18:00 laser bookings are on hold until the self-test passes.</p><p>Waiting for a DCD canister from Candela’s Cairo agent.</p>',
     instruction_type: 'pdf',
@@ -882,7 +885,7 @@ const maintenanceRequests: Record<string, Values> = {
     user_id: link(4106, 'Mahmoud Ezzat'),
     schedule_date: at(4, '08:00'),
     duration: 1,
-    priority: 1,
+    priority: '1',
     recurring_maintenance: true,
     repeat_interval: 3,
     repeat_unit: 'month',
@@ -903,7 +906,7 @@ const maintenanceRequests: Record<string, Values> = {
     maintenance_team_id: link(4362, TEAMS[4362]),
     user_id: link(4106, 'Mahmoud Ezzat'),
     duration: 0.25,
-    priority: null,
+    priority: '0',
     instruction_text: '<p>Open the rear door, pull the sheet straight out, never upwards.</p>',
   },
 };
@@ -921,6 +924,54 @@ function maintenanceAction(request: ActionRequest): ActionResult | undefined {
 const named = (rows: Record<number, string>, extra: (id: number) => Values = () => ({})) =>
   Object.fromEntries(Object.entries(rows).map(([id, name]) => [id, { name, ...extra(Number(id)) }]));
 
+/** A face for a link or a tag (image_128), drawn on a colour of its own. */
+const FACE_COLOURS = ['#9a3412', '#1d4ed8', '#047857', '#7c3aed', '#b45309', '#be185d', '#0e7490', '#4d7c0f', '#6d28d9'];
+const face = (id: number, name: string) => {
+  const initials = name.replace(/^Dr\. /, '').split(' ').map((word) => word[0]).join('').slice(0, 2);
+  return `data:image/svg+xml;base64,${portrait(initials, FACE_COLOURS[id % FACE_COLOURS.length]).data}`;
+};
+
+/** The clinic's users; the website's portal user shares no internal access (share), so it is never a related user. */
+const USERS: Record<number, string> = {
+  4101: 'Dr. Rania Fouad',
+  4102: 'Dr. Karim Hegazy',
+  4103: 'Salma Adel',
+  4104: 'Omar Said',
+  4105: 'Ahmed Tawfik',
+  4106: 'Mahmoud Ezzat',
+  4107: 'Mona Khalil',
+  4108: 'Laila Hamdy',
+  4109: 'Clinic website (portal)',
+};
+
+/** The person using the demo — Mona Khalil, the Operations Manager — and the groups Flectra gives her. */
+const MANAGER = {
+  id: 4107,
+  name: 'Mona Khalil',
+  roles: ['base.group_user', 'base.group_multi_company', 'hr.group_hr_user', 'hr_holidays.group_hr_holidays_user', 'maintenance.group_equipment_manager'],
+};
+
+/** The properties each branch keeps for its staff (the company's hr.employee properties definition). */
+const EMPLOYEE_PROPERTIES: Record<number, PropertyDefinition[]> = {
+  4201: [
+    { name: 'uniform_size', label: 'Scrubs size', type: 'selection', options: [{ value: 's', label: 'S' }, { value: 'm', label: 'M' }, { value: 'l', label: 'L' }, { value: 'xl', label: 'XL' }] },
+    { name: 'locker', label: 'Locker', type: 'integer' },
+    { name: 'licence', label: 'Syndicate licence no.', type: 'char' },
+    { name: 'bls_expiry', label: 'BLS certificate expires', type: 'date' },
+  ],
+  4202: [
+    { name: 'uniform_size', label: 'Scrubs size', type: 'selection', options: [{ value: 's', label: 'S' }, { value: 'm', label: 'M' }, { value: 'l', label: 'L' }, { value: 'xl', label: 'XL' }] },
+    { name: 'parking', label: 'Parking spot', type: 'char' },
+  ],
+};
+
+/** The staff's own equipment (maintenance.equipment with an employee), which the employee's Equipment button lists. */
+const STAFF_EQUIPMENT: Record<number, { name: string; employee: number; serial: string; category: number }> = {
+  4345: { name: 'DermLite DL5 dermatoscope', employee: 4122, serial: 'DL5-208114', category: 4351 },
+  4346: { name: 'iPad mini, patient photos', employee: 4122, serial: 'F9FZ71Q2LM', category: 4353 },
+  4347: { name: 'Front desk headset', employee: 4121, serial: 'JB-77310', category: 4353 },
+};
+
 export const lane: RealLane = {
   pages: {
     'real-clinic-appointment': clinicAppointment as Page,
@@ -931,10 +982,37 @@ export const lane: RealLane = {
   opened: {
     'real-time-off-cancel': timeOffCancel as Page,
     'real-employee-plan': employeePlan as Page,
+    // The employee's Archive asks why they leave first, as hr_employee_form's does.
+    'real-employee-departure': employeeDeparture as Page,
+    'real-employee-equipment': employeeEquipment as Page,
     // A stat button opens a request in the employee's place.
     'real-time-off': timeOff as Page,
   },
   labelField: { 'hr.leave.type': 'display_name' },
+  users: {
+    'real-clinic-appointment': MANAGER,
+    'real-time-off': MANAGER,
+    'real-employee': MANAGER,
+    'real-maintenance-request': MANAGER,
+  },
+  // The list each record was opened from, and the way back to it.
+  navigation: {
+    'real-clinic-appointment': { records: [4001, 4002, 4003], breadcrumbs: [{ label: 'Appointments', href: '#appointments' }] },
+    'real-time-off': { records: [4171, 4172, 4173, 4174], breadcrumbs: [{ label: 'Time Off', href: '#time-off' }] },
+    'real-maintenance-request': { records: [4371, 4372, 4373], breadcrumbs: [{ label: 'Maintenance Requests', href: '#maintenance-requests' }] },
+    'real-employee': { records: [4121, 4122, 4123, 4124, 4125, 4126, 4127, 4128, 4129], breadcrumbs: [{ label: 'Employees', href: '#employees' }] },
+  },
+  // What links show besides a name: the staff's faces.
+  shows: {
+    'hr.employee': { avatar: 'image_128' },
+    'res.users': { avatar: 'image_128' },
+    'hr.employee.category': { color: 'color' },
+    'res.company': { color: 'color' },
+    'res.partner': { details: ['street', 'city'] },
+  },
+  definitions: { employee_properties: (values) => EMPLOYEE_PROPERTIES[idOf(values['company_id']) ?? 0] ?? [] },
+  // The doctor's note, beside the sick leave it supports (o_attachment_preview).
+  attachments: { 'hr.leave:4173': [{ name: "Doctor's note, Dr. Hesham Ali.pdf", type: 'application/pdf', size: 720, data: doctorsNote }] },
   records: {
     'clinic.appointment': appointments,
     'hr.leave': leaves,
@@ -948,20 +1026,24 @@ export const lane: RealLane = {
       ...Object.fromEntries(
         Object.entries(STAFF).map(([id, s]) => [
           id,
-          { active: true, name: s.name, job_title: JOBS[s.job], job_id: link(s.job, JOBS[s.job]), department_id: dept(s.dept), work_email: s.email, parent_id: s.parent ? employee(s.parent) : null, company_id: BRANCH, employee_type: 'employee', marital: 'single', tz: 'Africa/Cairo' },
+          { active: true, name: s.name, image_128: face(Number(id), s.name), job_title: JOBS[s.job], job_id: link(s.job, JOBS[s.job]), department_id: dept(s.dept), work_email: s.email, parent_id: s.parent ? employee(s.parent) : null, company_id: BRANCH, employee_type: 'employee', marital: 'single', tz: 'Africa/Cairo' },
         ])
       ),
-      4122: salma,
+      4122: { ...salma, image_128: face(4122, salma['name'] as string) },
     },
     'hr.department': named(DEPARTMENTS),
     'hr.job': named(JOBS),
-    'hr.employee.category': named({ 4181: 'Clinical', 4182: 'Injector certified', 4183: 'Laser certified', 4184: 'Part-time', 4185: 'Arabic & English' }),
+    'hr.employee.category': named({ 4181: 'Clinical', 4182: 'Injector certified', 4183: 'Laser certified', 4184: 'Part-time', 4185: 'Arabic & English' }, (id) => ({ color: ({ 4181: 10, 4182: 4, 4183: 2, 4184: 7, 4185: 9 } as Record<number, number>)[id] ?? 0 })),
     'res.partner': {
       ...Object.fromEntries(Object.entries(PATIENTS).map(([id, p]) => [id, { name: p.name, phone: p.phone, is_patient: true }])),
-      ...named(WORK_ADDRESSES, () => ({ is_patient: false })),
+      ...named(WORK_ADDRESSES, (id) => ({ is_patient: false, ...(id === 4011 ? { street: '26 Taha Hussein Street, Zamalek', city: 'Cairo 11211, Egypt' } : { street: 'Building B, 90th Street', city: 'New Cairo 11835, Egypt' }) })),
     },
-    'res.company': named({ 4201: 'Glow Aesthetic Clinic, Zamalek', 4202: 'Glow Aesthetic Clinic, New Cairo' }),
-    'res.users': named({ 4101: 'Dr. Rania Fouad', 4102: 'Dr. Karim Hegazy', 4103: 'Salma Adel', 4104: 'Omar Said', 4105: 'Ahmed Tawfik', 4106: 'Mahmoud Ezzat', 4107: 'Mona Khalil', 4108: 'Laila Hamdy' }),
+    'res.company': named({ 4201: 'Glow Aesthetic Clinic, Zamalek', 4202: 'Glow Aesthetic Clinic, New Cairo' }, (id) => ({ color: id === 4201 ? 1 : 5 })),
+    'res.users': named(USERS, (id) => ({
+      image_128: id === 4109 ? null : face(id, USERS[id]),
+      share: id === 4109,
+      company_ids: [BRANCH, ...(id === 4107 || id === 4108 ? [link(4202, 'Glow Aesthetic Clinic, New Cairo')] : [])],
+    })),
     'product.product': Object.fromEntries(Object.entries(SERVICES).map(([id, s]) => [id, { name: s.name, is_treatment: s.treatment }])),
     'clinic.resource': named({ 4401: 'Room 1', 4402: 'Room 2', 4403: 'HydraBay', 4404: 'Laser Device' }),
     'clinic.queue.stage': named(Object.fromEntries(Object.entries(STAGES).map(([id, s]) => [id, s.name]))),
@@ -981,7 +1063,15 @@ export const lane: RealLane = {
     'hr.skill.type': named({ 4231: 'Clinical', 4232: 'Languages' }),
     'maintenance.request': maintenanceRequests,
     'maintenance.stage': Object.fromEntries(Object.entries(MAINTENANCE_STAGES).map(([id, st]) => [id, { name: st.name, done: st.done }])),
-    'maintenance.equipment': Object.fromEntries(Object.entries(EQUIPMENT).map(([id, e]) => [id, { name: e.name, category_id: link(e.category, EQUIPMENT_CATEGORIES[e.category]) }])),
+    'maintenance.equipment': {
+      ...Object.fromEntries(Object.entries(EQUIPMENT).map(([id, e]) => [id, { name: e.name, category_id: link(e.category, EQUIPMENT_CATEGORIES[e.category]), employee_id: null, technician_user_id: link(...e.technician) }])),
+      ...Object.fromEntries(
+        Object.entries(STAFF_EQUIPMENT).map(([id, e]) => [
+          id,
+          { name: e.name, category_id: link(e.category, EQUIPMENT_CATEGORIES[e.category]), employee_id: employee(e.employee), serial_no: e.serial, technician_user_id: link(4105, 'Ahmed Tawfik') },
+        ])
+      ),
+    },
     'maintenance.equipment.category': named(EQUIPMENT_CATEGORIES),
     'maintenance.team': named(TEAMS),
     'mail.activity.plan': Object.fromEntries(Object.entries(PLANS).map(([id, p]) => [id, { name: p.name, res_model: p.model }])),

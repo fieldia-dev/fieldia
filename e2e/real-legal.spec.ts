@@ -172,7 +172,9 @@ for (const variant of VARIANTS) {
       await dialog.locator('[data-node="w-outcome"] select').selectOption({ label: 'Settled' });
       await dialog.locator('[data-node="w-reason"] textarea').fill('Settled at the expert hearing: Delta pays 3.1m EGP in two instalments; each side bears its own costs.');
       if (variant === 'plain') await screen(page, 'real-legal-case-close-dialog', { viewport: true });
-      await dialog.getByRole('button', { name: /Submit|Save/ }).click();
+      // The wizard's own buttons, as Flectra's footer: Close Case and Cancel.
+      await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
+      await dialog.getByRole('button', { name: 'Close Case' }).click();
       await expect(dialog).toBeHidden();
       await expect(toast(page, 'Case closed with outcome: Settled.')).toBeVisible();
       await expect.poll(() => value(page, 'state')).toBe('closed');
@@ -184,7 +186,7 @@ for (const variant of VARIANTS) {
       // The Outcome tab, shown now and opened; the badge; Reopen in place of Close Case.
       await expect(tab(page, 'Outcome')).toHaveAttribute('aria-selected', 'true');
       await expect(node(page, 'f-close-reason').locator('textarea')).toHaveValue(/Settled at the expert hearing/);
-      await expect(page.locator('[data-node="r-settled"]')).toBeVisible();
+      await expect(page.locator('.fd-ribbon:visible')).toHaveText('Settled');
       await expect(page.getByRole('button', { name: 'Reopen' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Close Case' })).toHaveCount(0);
       if (variant === 'plain') await screen(page, 'real-legal-case-closed');
@@ -228,7 +230,8 @@ for (const variant of VARIANTS) {
 
       // A deposit, made in its dialog, starting from the top-up the matter needs.
       await tab(page, 'Trust').click();
-      await expect(node(page, 'f-trust-needed').locator('input')).toHaveValue(/75,000/);
+      // The top-up the matter needs, inside the alert's sentence, as Flectra's.
+      await expect(node(page, 't-trust-below')).toContainText('75,000');
       await page.getByRole('button', { name: 'Deposit', exact: true }).click();
       const dialog = page.getByRole('dialog', { name: 'Trust Deposit' });
       await expect(dialog).toBeVisible();
@@ -242,6 +245,47 @@ for (const variant of VARIANTS) {
       const ledger = ((await value(page, 'trust_transaction_ids')) as { values: Record<string, unknown> }[]).map((l) => l.values);
       expect(ledger.at(-1)).toEqual(expect.objectContaining({ transaction_type: 'deposit', method: 'cheque', reference: 'Banque Misr cheque 004417', amount: 75000, state: 'draft' }));
       expect(problems).toEqual([]);
+    });
+
+    test('the case as Flectra reads it: formatted stat buttons, badges and tones in its tables, groups, a many2many table, each payer once', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      // Someone without the legal officer's and user's groups: no Trust tab or button.
+      let { problems } = await open(page, variant, `${CASE}&roles=base.group_user`);
+      await expect.poll(() => value(page, 'case_number')).toBe('LEG/2026/LIT/0042');
+      await expect(tab(page, 'Trust')).toBeHidden();
+      await expect(page.locator('[data-node="s-trust"]')).toBeHidden();
+      expect(problems).toEqual([]);
+      ({ problems } = await open(page, variant, CASE));
+      await expect.poll(() => value(page, 'case_number')).toBe('LEG/2026/LIT/0042');
+      // Money and hours on the stat buttons, as their fields write them.
+      await expect(page.locator('[data-node="s-expenses"]')).toContainText('6,750.00');
+      await expect(page.locator('[data-node="s-hours"]')).toContainText('24.80');
+      // Days since opened worked out on the page: days(date_opened, today()).
+      await expect(node(page, 'f-days-open')).toContainText('72');
+      // Priority as stars, the tags in their colours.
+      await expect(node(page, 'f-priority').getByRole('radio')).toHaveCount(3);
+      // Tasks: an overdue one red, a done one green; its status as a badge.
+      await tab(page, 'Tasks & Deadlines').click();
+      await expect(node(page, 'f-tasks').locator('.ag-row[row-index="1"]:not(.fd-grid-totals)').first()).toHaveClass(/fd-tone-danger/);
+      await expect(node(page, 'f-tasks').locator('.ag-row[row-index="2"]:not(.fd-grid-totals)').first()).toHaveClass(/fd-tone-success/);
+      await expect(gridCell(page, 'f-tasks', 0, 'state').locator('[data-tone]')).toHaveAttribute('data-tone', 'warning');
+      // Compliance: the firm's requirements this case is under, as a table; one more found by searching.
+      await tab(page, 'Compliance').click();
+      await expect(node(page, 'f-compliance')).toContainText('Anti-Money Laundering Law 80/2002');
+      // Timesheets: hours as HH:MM.
+      await tab(page, 'Timesheets').click();
+      await expect(gridCell(page, 'f-timesheets', 0, 'unit_amount')).toHaveText('06:30');
+      // Split billing: the second payer made the same as the first is refused, as the model's constraint.
+      await tab(page, 'Billing').click();
+      await gridCell(page, 'f-split-lines', 1, 'partner_id').click();
+      await page.keyboard.type('Nile Cotton Mills');
+      await page.getByRole('option', { name: 'Nile Cotton Mills S.A.E.', exact: true }).first().click();
+      await node(page, 'f-budget-fees').locator('input').click();
+      await expect.poll(async () => ((await value(page, 'split_line_ids')) as { values: { partner_id: { id: number } } }[]).map((l) => l.values.partner_id.id)).toEqual([9001, 9001]);
+      await page.keyboard.press('ControlOrMeta+Enter');
+      await expect(page.getByText('Each payer can appear only once in the split.').first()).toBeVisible();
+      expect(problems).toEqual([]);
+
     });
 
     test('a draft case: Start Work refused by the conflict gate, in the server’s words', async ({ page }) => {
@@ -313,6 +357,34 @@ for (const variant of VARIANTS) {
       await expect.poll(async () => ((await stored(page, 'survey.survey', 7)) as { active: boolean }).active).toBe(false);
       await expect(page.locator('.fd-ribbon', { hasText: 'Archived' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Reopen' })).toBeVisible();
+      expect(problems).toEqual([]);
+    });
+
+    test('the survey as Flectra lays it out: a question duplicated on its line, limits on one line, the session link to copy', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, SURVEY);
+      await expect(node(page, '#title').locator('input, textarea').first()).toHaveValue('Client satisfaction survey, autumn 2026');
+      const titles = async () => ((await value(page, 'question_and_page_ids')) as { values: { title: string } }[]).map((l) => l.values.title);
+      // Duplicate Question on the second line: its copy right after it.
+      const second = (await titles())[1];
+      await node(page, 'f-questions').getByRole('button', { name: 'Copy line 2' }).click();
+      await expect.poll(async () => (await titles())[2]).toBe(second);
+      // Ten questions and three sections: the copy makes eleven questions, sections left out of the count.
+      await expect.poll(() => value(page, 'question_count')).toBe(11);
+      // Options: Limit Attempts and the time limit each on one line, as Flectra's: "to 1 attempts", "10:00 minutes".
+      await tab(page, 'Options').click();
+      await node(page, 'f-login').locator('input').check();
+      await node(page, 'f-attempts-limited').locator('input').check();
+      const attempts = (await node(page, 'f-attempts').boundingBox())!;
+      const tick = (await node(page, 'f-attempts-limited').boundingBox())!;
+      expect(Math.abs(attempts.y + attempts.height / 2 - (tick.y + tick.height / 2))).toBeLessThan(12);
+      await expect(node(page, 'attempts-row')).toContainText('attempts');
+      await node(page, 'f-survey-type').getByText('Assessment', { exact: true }).click();
+      await node(page, 'f-time-limited').locator('input').check();
+      await expect(node(page, 'f-time-limit').locator('input')).toHaveValue('10:00');
+      // A live session's link, with a Copy button.
+      await node(page, 'f-survey-type').getByText('Live session', { exact: true }).click();
+      await expect(node(page, 'f-session-link').getByRole('button', { name: /Copy/ })).toBeVisible();
       expect(problems).toEqual([]);
     });
 

@@ -102,6 +102,7 @@ export function optionsFromQuery(params: URLSearchParams): {
   readonly?: boolean;
   editSwitch?: boolean;
   translate?: (text: string) => string;
+  user?: FormUser;
 } {
   const saveStatus = params.get('saveStatus');
   return {
@@ -118,10 +119,16 @@ export function optionsFromQuery(params: URLSearchParams): {
   };
 }
 
-/** What the app gives a real page as it opens: the person and their roles, the pager's records, the trail. */
+/**
+ * What the app gives a real page as it opens, by the `?page=` name: the person
+ * and their roles, the pager's records, the trail back to their list — as a
+ * lane's `around`, or its `users` and `navigation`. `roles=` names the roles
+ * held instead, comma-separated — empty for none — to see the page as someone
+ * without a manager's groups.
+ */
 function realAround(params: URLSearchParams): { user?: FormUser; records?: (string | number)[]; breadcrumbs?: { label: string; href?: string }[] } {
-  const around = real.around[params.get('page') ?? ''];
-  if (!around) return {};
+  const id = params.get('page') ?? '';
+  const around = { ...(real.navigation[id] ?? {}), ...(real.users[id] ? { user: real.users[id] } : {}), ...(real.around[id] ?? {}) };
   const roles = params.get('roles');
   const user = around.user && roles !== null ? { ...around.user, roles: roles.split(',').filter(Boolean) } : around.user;
   return { ...around, ...(user ? { user } : {}) };
@@ -426,12 +433,13 @@ function withReal(options: Parameters<typeof createMemoryDataSource>[0] & object
   return {
     ...options,
     records: merge(merge(options.records, real.records), businessData.records),
-    definitions: { ...options.definitions, ...businessData.definitions, ...real.definitions },
     onchange: merge(options.onchange, real.onchange),
     warnings: merge(options.warnings, real.warnings),
     lists: { ...options.lists, ...real.lists },
     labelField: { ...options.labelField, ...real.labelField },
     shows: { ...options.shows, ...real.shows },
+    definitions: { ...options.definitions, ...businessData.definitions, ...real.definitions },
+    attachments: { ...options.attachments, ...real.attachments },
   };
 }
 

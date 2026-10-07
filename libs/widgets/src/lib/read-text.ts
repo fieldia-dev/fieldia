@@ -47,6 +47,13 @@ const ADDRESSES: Record<string, [RegExp, string]> = {
   url: [/^https?:\/\/\S+$/i, ''],
 };
 
+/** A number's unit around it, as its box shows it inside — "3.00 Days" — and nothing round an empty one. */
+function withUnit(words: string, field: Field, node: FieldNode, value: Value | undefined): string {
+  if ((field.type !== 'integer' && field.type !== 'float') || node.widget || value === null || value === undefined || words === '') return words;
+  const unit = (key: 'prefix' | 'suffix') => (typeof node.options?.[key] === 'string' ? (node.options[key] as string).trim() : '');
+  return [unit('prefix'), words, unit('suffix')].filter(Boolean).join(' ');
+}
+
 export function readText(context: { document: Document; field: Field; node: FieldNode; id: string; locale?: Locale; labels?: WidgetLabels; dialogs?: WidgetDialogs }): ReadText {
   const { document: doc, field, node, locale = 'en', labels = WIDGET_LABELS.en, dialogs } = context;
   const element = doc.createElement('div');
@@ -58,7 +65,7 @@ export function readText(context: { document: Document; field: Field; node: Fiel
   return {
     element,
     update(value, values) {
-      const words = cellText(field as LineField, value, values as Record<string, Value>, locale, undefined, { widget: node.widget, options: node.options });
+      const words = withUnit(cellText(field as LineField, value, values as Record<string, Value>, locale, undefined, { widget: node.widget, options: node.options }), field, node, value);
       const key = JSON.stringify([words, value ?? null]);
       if (key === drawn) return;
       drawn = key;

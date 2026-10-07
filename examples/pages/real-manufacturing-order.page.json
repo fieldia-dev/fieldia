@@ -6,10 +6,11 @@
   "data": { "kind": "record", "model": "mrp.production" },
   "fields": {
     "name": { "type": "char", "label": "Reference", "default": "New", "readonly": true },
-    "priority": { "type": "integer", "label": "Priority", "min": 1, "max": 1 },
+    "priority": { "type": "selection", "label": "Priority", "help": "Components will be reserved first for the MO with the highest priorities.", "default": "0", "options": [{ "value": "0", "label": "Normal" }, { "value": "1", "label": "Urgent" }] },
     "state": {
       "type": "selection",
       "label": "State",
+      "help": "* Draft: The MO is not confirmed yet. * Confirmed: The MO is confirmed, the stock rules and the reordering of the components are trigerred. * In Progress: The production has started (on the MO or on the WO). * To Close: The production is done, the MO has to be closed. * Done: The MO is closed, the stock moves are posted. * Cancelled: The MO has been cancelled, can't be confirmed anymore.",
       "readonly": true,
       "default": "draft",
       "options": [
@@ -24,34 +25,27 @@
     "reservation_state": {
       "type": "selection",
       "label": "MO Readiness",
+      "help": "Manufacturing readiness for this MO, as per bill of material configuration: * Ready: The material is available to start the production. * Waiting: The material is not available to start the production.",
       "readonly": true,
-      "options": [
-        { "value": "confirmed", "label": "Waiting" },
-        { "value": "assigned", "label": "Ready" },
-        { "value": "waiting", "label": "Waiting Another Operation" }
-      ]
+      "options": [{ "value": "confirmed", "label": "Waiting" }, { "value": "assigned", "label": "Ready" }, { "value": "waiting", "label": "Waiting Another Operation" }]
     },
-    "show_produce": { "type": "boolean", "label": "Show Produce", "compute": "state in ['confirmed', 'progress', 'to_close'] and qty_producing != 0 and qty_producing != product_qty" },
-    "show_produce_all": { "type": "boolean", "label": "Show Produce All", "compute": "state in ['confirmed', 'progress', 'to_close'] and (qty_producing == 0 or qty_producing == product_qty)" },
+    "show_produce": { "type": "boolean", "label": "Show Produce", "help": "Technical field to check if produce button can be shown", "compute": "state in ['confirmed', 'progress', 'to_close'] and qty_producing != 0 and qty_producing != product_qty" },
+    "show_produce_all": { "type": "boolean", "label": "Show Produce All", "help": "Technical field to check if produce all button can be shown", "compute": "state in ['confirmed', 'progress', 'to_close'] and (qty_producing == 0 or qty_producing == product_qty)" },
     "show_lock": { "type": "boolean", "label": "Show Lock/unlock buttons", "compute": "state not in ['draft', 'cancel']" },
     "show_serial_mass_produce": { "type": "boolean", "label": "Display the serial mass produce wizard action", "readonly": true },
     "is_locked": { "type": "boolean", "label": "Is Locked", "default": true },
     "is_planned": { "type": "boolean", "label": "Its Operations are Planned", "readonly": true },
     "qty_produced": { "type": "float", "label": "Quantity", "readonly": true },
-    "reserve_visible": { "type": "boolean", "label": "Allowed to Reserve Production", "readonly": true },
-    "unreserve_visible": { "type": "boolean", "label": "Allowed to Unreserve Production", "readonly": true },
+    "reserve_visible": { "type": "boolean", "label": "Allowed to Reserve Production", "help": "Technical field to check when we can reserve quantities", "readonly": true },
+    "unreserve_visible": { "type": "boolean", "label": "Allowed to Unreserve Production", "help": "Technical field to check when we can unreserve", "readonly": true },
     "consumption": {
       "type": "selection",
       "label": "Consumption",
       "readonly": true,
       "default": "flexible",
-      "options": [
-        { "value": "flexible", "label": "Allowed" },
-        { "value": "warning", "label": "Allowed with warning" },
-        { "value": "strict", "label": "Blocked" }
-      ]
+      "options": [{ "value": "flexible", "label": "Allowed" }, { "value": "warning", "label": "Allowed with warning" }, { "value": "strict", "label": "Blocked" }]
     },
-    "show_allocation": { "type": "boolean", "label": "Show Allocation", "readonly": true },
+    "show_allocation": { "type": "boolean", "label": "Show Allocation", "help": "Technical Field used to decide whether the button \"Allocation\" should be displayed.", "readonly": true },
     "show_valuation": { "type": "boolean", "label": "Show Valuation", "readonly": true },
     "use_create_components_lots": { "type": "boolean", "label": "Create New Lots/Serial Numbers for Components", "readonly": true },
     "show_lot_ids": { "type": "boolean", "label": "Display the serial number shortcut on the moves", "readonly": true },
@@ -60,21 +54,16 @@
       "type": "selection",
       "label": "Product with Tracking",
       "readonly": true,
-      "options": [
-        { "value": "serial", "label": "By Unique Serial Number" },
-        { "value": "lot", "label": "By Lots" },
-        { "value": "none", "label": "No Tracking" }
-      ]
+      "options": [{ "value": "serial", "label": "By Unique Serial Number" }, { "value": "lot", "label": "By Lots" }, { "value": "none", "label": "No Tracking" }]
     },
     "forecasted_issue": { "type": "boolean", "label": "Forecasted Issue", "readonly": true },
-    "is_outdated_bom": { "type": "boolean", "label": "Outdated BoM", "readonly": true },
+    "is_outdated_bom": { "type": "boolean", "label": "Outdated BoM", "help": "The BoM has been updated since creation of the MO", "readonly": true },
     "product_tmpl_id": { "type": "many2one", "label": "Product Template", "relation": "product.template", "readonly": true },
     "company_id": { "type": "many2one", "label": "Company", "relation": "res.company", "required": true },
     "warehouse_id": { "type": "many2one", "label": "Warehouse", "relation": "stock.warehouse", "readonly": true },
     "production_location_id": { "type": "many2one", "label": "Production Location", "relation": "stock.location", "readonly": true },
     "json_popover": { "type": "char", "label": "JSON data for the popover widget", "readonly": true },
     "delay_alert_date": { "type": "datetime", "label": "Delay Alert Date", "readonly": true },
-
     "mrp_production_child_count": { "type": "integer", "label": "Number of generated MO", "readonly": true },
     "mrp_production_source_count": { "type": "integer", "label": "Number of source MO", "readonly": true },
     "mrp_production_backorder_count": { "type": "integer", "label": "Count of linked backorder", "readonly": true },
@@ -83,41 +72,29 @@
     "delivery_count": { "type": "integer", "label": "Delivery Orders", "readonly": true },
     "sale_order_count": { "type": "integer", "label": "Count of Source SO", "readonly": true },
     "purchase_order_count": { "type": "integer", "label": "Count of generated PO", "readonly": true },
-
     "product_id": { "type": "many2one", "label": "Product", "relation": "product.product", "required": true, "filter": [{ "field": "type", "op": "in", "value": ["product", "consu"] }] },
     "product_description_variants": { "type": "char", "label": "Custom Description" },
     "qty_producing": { "type": "float", "label": "Quantity Producing", "digits": [16, 2], "min": 0 },
     "product_qty": { "type": "float", "label": "Quantity To Produce", "required": true, "digits": [16, 2], "min": 0, "default": 1 },
     "product_uom_id": { "type": "many2one", "label": "Product Unit of Measure", "relation": "uom.uom", "required": true },
-    "bom_id": {
-      "type": "many2one",
-      "label": "Bill of Material",
-      "relation": "mrp.bom",
-      "filter": [{ "field": "product_id", "op": "=", "valueFrom": "product_id" }]
-    },
+    "bom_id": { "type": "many2one", "label": "Bill of Material", "help": "Bills of Materials, also called recipes, are used to autocomplete components and work order instructions.", "relation": "mrp.bom", "filter": [{ "field": "product_id", "op": "=", "valueFrom": "product_id" }] },
     "lot_producing_id": { "type": "many2one", "label": "Lot/Serial Number", "relation": "stock.lot", "filter": [{ "field": "product_id", "op": "=", "valueFrom": "product_id" }] },
-    "date_start": { "type": "datetime", "label": "Start", "required": true },
-    "date_finished": { "type": "datetime", "label": "End" },
+    "date_start": { "type": "datetime", "label": "Start", "help": "Date you plan to start production or date you actually started production.", "required": true },
+    "date_finished": { "type": "datetime", "label": "End", "help": "Date you expect to finish production or actual date you finished production." },
     "components_availability_state": {
       "type": "selection",
       "label": "Components Availability State",
       "readonly": true,
-      "options": [
-        { "value": "available", "label": "Available" },
-        { "value": "expected", "label": "Expected" },
-        { "value": "late", "label": "Late" },
-        { "value": "unavailable", "label": "Not Available" }
-      ]
+      "options": [{ "value": "available", "label": "Available" }, { "value": "expected", "label": "Expected" }, { "value": "late", "label": "Late" }, { "value": "unavailable", "label": "Not Available" }]
     },
-    "components_availability": { "type": "char", "label": "Component Status", "readonly": true },
+    "components_availability": { "type": "char", "label": "Component Status", "help": "Latest component availability status for this MO. If green, then the MO's readiness status is ready, as per BOM configuration.", "readonly": true },
     "user_id": { "type": "many2one", "label": "Responsible", "relation": "res.users" },
-
     "move_raw_ids": {
       "type": "one2many",
       "label": "Components",
       "relation": "stock.move",
       "fields": {
-        "product_id": { "type": "many2one", "label": "Product", "relation": "product.product", "required": true },
+        "product_id": { "type": "many2one", "label": "Product", "relation": "product.product", "required": true, "filter": [{ "field": "id", "op": "!=", "valueFrom": "parent.product_id" }] },
         "location_id": { "type": "many2one", "label": "From", "relation": "stock.location", "readonly": true },
         "product_uom_qty": { "type": "float", "label": "To Consume", "digits": [16, 2], "min": 0 },
         "forecast_availability": { "type": "float", "label": "Forecast", "digits": [16, 2], "readonly": true },
@@ -132,11 +109,7 @@
           "type": "selection",
           "label": "Product with Tracking",
           "readonly": true,
-          "options": [
-            { "value": "serial", "label": "By Unique Serial Number" },
-            { "value": "lot", "label": "By Lots" },
-            { "value": "none", "label": "No Tracking" }
-          ]
+          "options": [{ "value": "serial", "label": "By Unique Serial Number" }, { "value": "lot", "label": "By Lots" }, { "value": "none", "label": "No Tracking" }]
         },
         "state": {
           "type": "selection",
@@ -151,7 +124,8 @@
             { "value": "cancel", "label": "Cancelled" }
           ]
         }
-      }
+      },
+      "lineDefaults": { "location_id": "location_src_id" }
     },
     "workorder_ids": {
       "type": "one2many",
@@ -181,17 +155,9 @@
             { "value": "cancel", "label": "Cancelled" }
           ]
         },
-        "working_state": {
-          "type": "selection",
-          "label": "Workcenter Status",
-          "readonly": true,
-          "options": [
-            { "value": "normal", "label": "Normal" },
-            { "value": "blocked", "label": "Blocked" },
-            { "value": "done", "label": "In Progress" }
-          ]
-        },
-        "is_user_working": { "type": "boolean", "label": "Is the Current User Working", "readonly": true }
+        "working_state": { "type": "selection", "label": "Workcenter Status", "readonly": true, "options": [{ "value": "normal", "label": "Normal" }, { "value": "blocked", "label": "Blocked" }, { "value": "done", "label": "In Progress" }] },
+        "is_user_working": { "type": "boolean", "label": "Is the Current User Working", "readonly": true },
+        "timer_start": { "type": "datetime", "label": "Running since", "readonly": true }
       }
     },
     "move_byproduct_ids": {
@@ -208,22 +174,39 @@
         "lot_ids": { "type": "many2many", "label": "Lot/Serial Numbers", "relation": "stock.lot", "readonly": true },
         "unit_factor": { "type": "float", "label": "Unit Factor", "readonly": true },
         "is_done": { "type": "boolean", "label": "Done", "readonly": true }
-      }
+      },
+      "lineDefaults": { "location_dest_id": "location_dest_id" }
     },
     "picking_type_id": { "type": "many2one", "label": "Operation Type", "relation": "stock.picking.type", "required": true, "filter": [{ "field": "code", "op": "=", "value": "mrp_operation" }] },
-    "location_src_id": { "type": "many2one", "label": "Components Location", "relation": "stock.location", "required": true },
-    "location_dest_id": { "type": "many2one", "label": "Finished Products Location", "relation": "stock.location", "required": true },
-    "origin": { "type": "char", "label": "Source" },
-    "date_deadline": { "type": "datetime", "label": "Deadline", "readonly": true },
-    "analytic_distribution": { "type": "many2many", "label": "Analytic Distribution", "relation": "account.analytic.account" }
+    "location_src_id": { "type": "many2one", "label": "Components Location", "help": "Location where the system will look for components.", "relation": "stock.location", "required": true },
+    "location_dest_id": { "type": "many2one", "label": "Finished Products Location", "help": "Location where the system will stock the finished products.", "relation": "stock.location", "required": true },
+    "origin": { "type": "char", "label": "Source", "help": "Reference of the document that generated this production order request." },
+    "date_deadline": { "type": "datetime", "label": "Deadline", "help": "Informative date allowing to define when the manufacturing order should be processed at the latest to fulfill delivery on time.", "readonly": true },
+    "analytic_distribution": { "type": "json", "label": "Analytic Distribution" }
   },
   "layout": {
     "type": "sheet",
     "id": "sheet",
     "statusbar": { "field": "state", "visibleStates": ["draft", "confirmed", "done"] },
     "buttons": [
-      { "type": "button", "id": "button_mark_done_produce", "label": "Produce", "style": "primary", "invisible": "not move_raw_ids or not show_produce", "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.button_mark_done" }, { "do": "save" }] },
-      { "type": "button", "id": "button_mark_done_all", "label": "Produce All", "style": "primary", "invisible": "not move_raw_ids or not show_produce_all", "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.button_mark_done" }, { "do": "save" }] },
+      {
+        "type": "button",
+        "id": "button_mark_done_produce",
+        "label": "Produce",
+        "style": "primary",
+        "invisible": "not move_raw_ids or not show_produce",
+        "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.button_mark_done" }, { "do": "save" }],
+        "hotkey": "g"
+      },
+      {
+        "type": "button",
+        "id": "button_mark_done_all",
+        "label": "Produce All",
+        "style": "primary",
+        "invisible": "not move_raw_ids or not show_produce_all",
+        "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.button_mark_done" }, { "do": "save" }],
+        "hotkey": "g"
+      },
       {
         "type": "button",
         "id": "button_mark_done_produce_empty",
@@ -231,7 +214,8 @@
         "style": "primary",
         "confirm": "There are no components to consume. Are you still sure you want to continue?",
         "invisible": "move_raw_ids or not show_produce",
-        "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.button_mark_done" }, { "do": "save" }]
+        "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.button_mark_done" }, { "do": "save" }],
+        "hotkey": "g"
       },
       {
         "type": "button",
@@ -240,55 +224,81 @@
         "style": "primary",
         "confirm": "There are no components to consume. Are you still sure you want to continue?",
         "invisible": "move_raw_ids or not show_produce_all",
-        "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.button_mark_done" }, { "do": "save" }]
+        "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.button_mark_done" }, { "do": "save" }],
+        "hotkey": "g"
       },
-      { "type": "button", "id": "action_confirm", "label": "Confirm", "style": "primary", "invisible": "state != 'draft'", "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.action_confirm" }, { "do": "save" }] },
-      { "type": "button", "id": "button_plan", "label": "Plan", "style": "primary", "invisible": "state not in ['confirmed', 'progress', 'to_close'] or not workorder_ids or is_planned", "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.button_plan" }, { "do": "save" }] },
-      { "type": "button", "id": "button_unplan", "label": "Unplan", "invisible": "not is_planned or state == 'cancel'", "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.button_unplan" }, { "do": "save" }] },
-      { "type": "button", "id": "action_assign", "label": "Check availability", "invisible": "state in ['draft', 'done', 'cancel'] or not reserve_visible", "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.action_assign" }, { "do": "save" }] },
-      { "type": "button", "id": "do_unreserve", "label": "Unreserve", "invisible": "not unreserve_visible", "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.do_unreserve" }, { "do": "save" }] },
-      { "type": "button", "id": "button_scrap", "label": "Scrap", "invisible": "state in ['cancel', 'draft']", "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.button_scrap" }, { "do": "save" }] },
-      { "type": "button", "id": "unlock", "label": "Unlock", "invisible": "not show_lock or not is_locked", "steps": [{ "do": "set", "field": "is_locked", "value": "False" }, { "do": "save" }] },
-      { "type": "button", "id": "lock", "label": "Lock", "invisible": "not show_lock or is_locked", "steps": [{ "do": "set", "field": "is_locked", "value": "True" }, { "do": "save" }] },
+      { "type": "button", "id": "action_confirm", "label": "Confirm", "style": "primary", "invisible": "state != 'draft'", "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.action_confirm" }, { "do": "save" }], "hotkey": "q" },
+      {
+        "type": "button",
+        "id": "button_plan",
+        "label": "Plan",
+        "style": "primary",
+        "invisible": "state not in ('confirmed', 'progress', 'to_close') or not workorder_ids or is_planned",
+        "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.button_plan" }, { "do": "save" }],
+        "hotkey": "z"
+      },
+      { "type": "button", "id": "button_unplan", "label": "Unplan", "invisible": "not is_planned or state == 'cancel'", "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.button_unplan" }, { "do": "save" }], "hotkey": "z" },
+      {
+        "type": "button",
+        "id": "action_assign",
+        "label": "Check availability",
+        "invisible": "state in ('draft', 'done', 'cancel') or not reserve_visible",
+        "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.action_assign" }, { "do": "save" }],
+        "hotkey": "c"
+      },
+      { "type": "button", "id": "do_unreserve", "label": "Unreserve", "invisible": "not unreserve_visible", "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.do_unreserve" }, { "do": "save" }], "hotkey": "w" },
+      { "type": "button", "id": "button_scrap", "label": "Scrap", "invisible": "state in ('cancel', 'draft')", "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.button_scrap" }, { "do": "save" }], "hotkey": "y" },
+      { "type": "button", "id": "unlock", "label": "Unlock", "invisible": "not show_lock or not is_locked", "steps": [{ "do": "set", "field": "is_locked", "value": "False" }, { "do": "save" }], "hotkey": "l", "roles": ["mrp.group_mrp_manager"] },
+      { "type": "button", "id": "lock", "label": "Lock", "invisible": "not show_lock or is_locked", "steps": [{ "do": "set", "field": "is_locked", "value": "True" }, { "do": "save" }], "hotkey": "l", "roles": ["mrp.group_mrp_manager"] },
       { "type": "button", "id": "action_serial_mass_produce_wizard", "label": "Mass Produce", "invisible": "not show_serial_mass_produce", "action": "mrp.production.action_serial_mass_produce_wizard" },
       {
         "type": "button",
         "id": "action_cancel",
         "label": "Cancel",
         "confirm": "Are you sure you want to cancel this manufacturing order?",
-        "invisible": "state in ['done', 'cancel']",
-        "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.action_cancel" }, { "do": "save" }]
+        "invisible": "not id or state in ('done', 'cancel')",
+        "steps": [{ "do": "save" }, { "do": "call", "action": "mrp.production.action_cancel" }, { "do": "save" }],
+        "hotkey": "x"
       },
-      { "type": "button", "id": "button_unbuild", "label": "Unbuild", "invisible": "state != 'done'", "steps": [{ "do": "call", "action": "mrp.production.button_unbuild" }, { "do": "save" }] },
+      { "type": "button", "id": "button_unbuild", "label": "Unbuild", "invisible": "state != 'done'", "steps": [{ "do": "call", "action": "mrp.production.button_unbuild" }, { "do": "save" }], "hotkey": "shift+v" },
       { "type": "button", "id": "action_open_label_type", "label": "Print Labels", "action": "mrp.production.action_open_label_type" }
     ],
     "statButtons": [
-      { "id": "action_view_reception_report", "label": "Allocation", "icon": "list", "action": "mrp.production.action_view_reception_report", "invisible": "not show_allocation" },
+      { "id": "action_view_reception_report", "label": "Allocation", "icon": "list", "action": "mrp.production.action_view_reception_report", "invisible": "not show_allocation", "roles": ["mrp.group_mrp_reception_report"] },
       { "id": "action_view_sale_orders", "label": "Sale", "icon": "money", "field": "sale_order_count", "action": "mrp.production.action_view_sale_orders", "invisible": "sale_order_count == 0" },
       { "id": "action_view_purchase_orders", "label": "Purchases", "icon": "cart", "field": "purchase_order_count", "action": "mrp.production.action_view_purchase_orders", "invisible": "purchase_order_count == 0" },
       { "id": "action_view_mrp_production_childs", "label": "Child MO", "icon": "settings", "field": "mrp_production_child_count", "action": "mrp.production.action_view_mrp_production_childs", "invisible": "mrp_production_child_count == 0" },
       { "id": "action_view_mrp_production_sources", "label": "Source MO", "icon": "settings", "field": "mrp_production_source_count", "action": "mrp.production.action_view_mrp_production_sources", "invisible": "mrp_production_source_count == 0" },
-      { "id": "action_view_mrp_production_backorders", "label": "Backorders", "icon": "settings", "field": "mrp_production_backorder_count", "action": "mrp.production.action_view_mrp_production_backorders", "invisible": "mrp_production_backorder_count < 2" },
+      {
+        "id": "action_view_mrp_production_backorders",
+        "label": "Backorders",
+        "icon": "settings",
+        "field": "mrp_production_backorder_count",
+        "action": "mrp.production.action_view_mrp_production_backorders",
+        "invisible": "mrp_production_backorder_count < 2"
+      },
       { "id": "action_view_mrp_production_unbuilds", "label": "Unbuilds", "icon": "layers", "field": "unbuild_count", "action": "mrp.production.action_view_mrp_production_unbuilds", "invisible": "unbuild_count == 0" },
       { "id": "action_see_move_scrap", "label": "Scraps", "icon": "warning", "field": "scrap_count", "action": "mrp.production.action_see_move_scrap", "invisible": "scrap_count == 0" },
-      { "id": "action_view_mo_delivery", "label": "Transfers", "icon": "truck", "field": "delivery_count", "action": "mrp.production.action_view_mo_delivery", "invisible": "delivery_count == 0" },
-      { "id": "action_stock_report", "label": "Traceability", "icon": "link", "action": "mrp.production.action_stock_report", "invisible": "state != 'done'" },
-      { "id": "action_mrp_production_moves", "label": "Product Moves", "icon": "layers", "action": "mrp.production.action_mrp_production_moves", "invisible": "state not in ['progress', 'done']" },
+      { "id": "action_view_mo_delivery", "label": "Transfers", "icon": "truck", "field": "delivery_count", "action": "mrp.production.action_view_mo_delivery", "invisible": "delivery_count == 0", "roles": ["base.group_user"] },
+      { "id": "action_stock_report", "label": "Traceability", "icon": "link", "action": "mrp.production.action_stock_report", "invisible": "state != 'done'", "roles": ["stock.group_production_lot"] },
+      { "id": "action_mrp_production_moves", "label": "Product Moves", "icon": "layers", "action": "mrp.production.action_mrp_production_moves", "invisible": "state not in ('progress', 'done')" },
       { "id": "action_report_mo_overview", "label": "Overview", "icon": "chart", "action": "mrp.production.action_report_mo_overview" },
       { "id": "action_view_stock_valuation_layers", "label": "Valuation", "icon": "money", "action": "mrp.production.action_view_stock_valuation_layers", "invisible": "not show_valuation" },
-      { "id": "action_view_analytic_accounts", "label": "Analytic Account", "icon": "chart", "action": "mrp.production.action_view_analytic_accounts", "invisible": "not analytic_distribution or state in ['draft', 'cancel']" }
+      { "id": "action_view_analytic_accounts", "label": "Analytic Account", "icon": "chart", "action": "mrp.production.action_view_analytic_accounts", "invisible": "not analytic_distribution or state in ('draft', 'cancel')" }
     ],
     "badges": [
-      { "id": "b-components-available", "label": "Components available", "tone": "success", "icon": "check", "invisible": "state not in ['confirmed', 'progress'] or (reservation_state != 'assigned' and components_availability_state != 'available')" },
-      { "id": "b-components-expected", "label": "Components expected", "tone": "warning", "icon": "clock", "invisible": "state not in ['confirmed', 'progress'] or reservation_state == 'assigned' or components_availability_state != 'expected'" },
-      { "id": "b-components-missing", "label": "Components not available", "tone": "danger", "icon": "warning", "invisible": "state not in ['confirmed', 'progress'] or reservation_state == 'assigned' or components_availability_state not in ['late', 'unavailable']" },
+      { "id": "b-components-available", "label": "Components available", "tone": "success", "icon": "check", "invisible": "state not in ('confirmed', 'progress') or (reservation_state != 'assigned' and components_availability_state != 'available')" },
+      { "id": "b-components-expected", "label": "Components expected", "tone": "warning", "icon": "clock", "invisible": "state not in ('confirmed', 'progress') or reservation_state == 'assigned' or components_availability_state != 'expected'" },
+      {
+        "id": "b-components-missing",
+        "label": "Components not available",
+        "tone": "danger",
+        "icon": "warning",
+        "invisible": "state not in ('confirmed', 'progress') or reservation_state == 'assigned' or components_availability_state not in ('late', 'unavailable')"
+      },
       { "id": "b-locked", "label": "Locked", "tone": "muted", "icon": "lock", "invisible": "state != 'done' or not is_locked" }
     ],
-    "title": {
-      "field": "name",
-      "placeholder": "Manufacturing Reference",
-      "above": [{ "type": "field", "id": "f-priority", "field": "priority", "widget": "rating", "labels": "hidden" }]
-    },
+    "title": { "field": "name", "placeholder": "Manufacturing Reference", "before": [{ "type": "field", "id": "f-priority", "field": "priority", "widget": "priority", "labels": "hidden" }], "label": "MO Reference" },
     "children": [
       {
         "type": "section",
@@ -304,12 +314,14 @@
               {
                 "type": "section",
                 "id": "quantity-row",
-                "style": "plain",
-                "columns": { "wide": 3, "medium": 3, "narrow": 3 },
+                "title": "Quantity",
+                "style": "inline",
                 "children": [
-                  { "type": "field", "id": "f-qty-producing", "field": "qty_producing", "label": "Quantity", "invisible": "state == 'draft'", "readonly": "state == 'cancel' or (state == 'done' and is_locked)" },
-                  { "type": "field", "id": "f-product-qty", "field": "product_qty", "label": "To Produce", "readonly": "state != 'draft'" },
-                  { "type": "field", "id": "f-uom", "field": "product_uom_id", "label": "Unit", "options": { "create": false }, "readonly": "state != 'draft'" }
+                  { "type": "field", "id": "f-qty-producing", "field": "qty_producing", "label": "Quantity", "invisible": "state == 'draft'", "readonly": "state == 'cancel' or (state == 'done' and is_locked)", "labels": "hidden" },
+                  { "type": "text", "id": "quantity-slash", "text": "/", "invisible": "state == 'draft'" },
+                  { "type": "field", "id": "f-product-qty", "field": "product_qty", "label": "To Produce", "readonly": "state != 'draft'", "labels": "hidden" },
+                  { "type": "field", "id": "f-uom", "field": "product_uom_id", "label": "Unit", "options": { "create": false }, "readonly": "state != 'draft'", "labels": "hidden", "roles": ["uom.group_uom"] },
+                  { "type": "text", "id": "quantity-to-produce", "text": "To Produce" }
                 ]
               },
               {
@@ -318,7 +330,15 @@
                 "style": "plain",
                 "columns": { "wide": 3, "medium": 3, "narrow": 3 },
                 "children": [
-                  { "type": "button", "id": "action_change_production_qty", "label": "Change quantity to produce", "style": "link", "icon": "edit", "invisible": "state in ['draft', 'done', 'cancel']", "action": "mrp.production.action_change_production_qty" },
+                  {
+                    "type": "button",
+                    "id": "action_change_production_qty",
+                    "label": "Change quantity to produce",
+                    "style": "link",
+                    "icon": "edit",
+                    "invisible": "state in ('draft', 'done', 'cancel') or not id",
+                    "action": "mrp.production.action_change_production_qty"
+                  },
                   { "type": "button", "id": "action_product_forecast_report", "label": "Forecast Report", "style": "link", "icon": "chart", "invisible": "forecasted_issue", "action": "mrp.production.action_product_forecast_report" },
                   { "type": "button", "id": "action_product_forecast_report_issue", "label": "Forecast Report", "style": "danger", "icon": "chart", "invisible": "not forecasted_issue", "action": "mrp.production.action_product_forecast_report" }
                 ]
@@ -330,23 +350,74 @@
                 "style": "plain",
                 "columns": { "wide": 2, "medium": 2, "narrow": 2 },
                 "children": [
-                  { "type": "button", "id": "action_generate_bom", "label": "Generate BOM", "style": "link", "icon": "edit", "invisible": "bom_id or not product_id or not move_raw_ids", "action": "mrp.production.action_generate_bom" },
-                  { "type": "button", "id": "action_update_bom", "label": "Update BoM", "style": "danger", "invisible": "not is_outdated_bom or state not in ['draft', 'confirmed']", "steps": [{ "do": "call", "action": "mrp.production.action_update_bom" }, { "do": "save" }] }
+                  {
+                    "type": "button",
+                    "id": "action_generate_bom",
+                    "label": "Generate BOM",
+                    "style": "link",
+                    "icon": "edit",
+                    "invisible": "bom_id or not product_id or not move_raw_ids",
+                    "action": "mrp.production.action_generate_bom",
+                    "roles": ["mrp.group_mrp_manager"]
+                  },
+                  {
+                    "type": "button",
+                    "id": "action_update_bom",
+                    "label": "Update BoM",
+                    "style": "danger",
+                    "invisible": "not is_outdated_bom or state not in ('draft', 'confirmed')",
+                    "steps": [{ "do": "call", "action": "mrp.production.action_update_bom" }, { "do": "save" }]
+                  }
                 ]
               },
               { "type": "field", "id": "f-lot-producing", "field": "lot_producing_id", "invisible": "state == 'draft' or product_tracking in ['none', False]" },
-              { "type": "button", "id": "action_generate_serial", "label": "Create a new serial/lot number", "icon": "tag", "invisible": "state == 'draft' or product_tracking in ['none', False] or lot_producing_id", "action": "mrp.production.action_generate_serial" }
+              {
+                "type": "button",
+                "id": "action_generate_serial",
+                "label": "Create a new serial/lot number",
+                "icon": "tag",
+                "invisible": "state == 'draft' or product_tracking in ['none', False] or lot_producing_id",
+                "action": "mrp.production.action_generate_serial"
+              }
             ]
           },
           {
             "type": "section",
             "id": "group_extra_info",
             "children": [
-              { "type": "field", "id": "f-date-start-scheduled", "field": "date_start", "label": "Scheduled Date", "invisible": "state in ['progress', 'to_close', 'done', 'cancel']", "readonly": "state in ['done', 'to_close', 'cancel']" },
-              { "type": "field", "id": "f-date-start", "field": "date_start", "label": "Start Date", "invisible": "state not in ['progress', 'to_close', 'done', 'cancel']", "readonly": "state in ['done', 'to_close', 'cancel']" },
+              {
+                "type": "field",
+                "id": "f-date-start-scheduled",
+                "field": "date_start",
+                "label": "Scheduled Date",
+                "invisible": "state in ('progress', 'to_close', 'done', 'cancel')",
+                "readonly": "state in ('done', 'to_close', 'cancel')",
+                "tones": [{ "tone": "danger", "when": "state not in ('done', 'cancel') and date_start < today()" }],
+                "bold": "state not in ('done', 'cancel') and date_start < today()"
+              },
+              {
+                "type": "field",
+                "id": "f-date-start",
+                "field": "date_start",
+                "label": "Start Date",
+                "invisible": "state not in ('progress', 'to_close', 'done', 'cancel')",
+                "readonly": "state in ('done', 'to_close', 'cancel')",
+                "tones": [{ "tone": "danger", "when": "state not in ('done', 'cancel') and date_start < today()" }],
+                "bold": "state not in ('done', 'cancel') and date_start < today()"
+              },
               { "type": "field", "id": "f-date-finished", "field": "date_finished" },
-              { "type": "field", "id": "f-components-availability", "field": "components_availability", "invisible": "state not in ['confirmed', 'progress']" },
-              { "type": "field", "id": "f-user", "field": "user_id", "readonly": "state in ['cancel', 'done']" }
+              {
+                "type": "field",
+                "id": "f-components-availability",
+                "field": "components_availability",
+                "invisible": "state not in ('confirmed', 'progress')",
+                "tones": [
+                  { "tone": "success", "when": "reservation_state == 'assigned' or components_availability_state == 'available'" },
+                  { "tone": "warning", "when": "reservation_state != 'assigned' and components_availability_state in ('expected', 'available')" },
+                  { "tone": "danger", "when": "reservation_state != 'assigned' and components_availability_state in ('late', 'unavailable')" }
+                ]
+              },
+              { "type": "field", "id": "f-user", "field": "user_id", "readonly": "state in ('cancel', 'done')", "options": { "avatar": true } }
             ]
           }
         ]
@@ -369,7 +440,20 @@
                 "columns": ["product_id", "location_id", "product_uom_qty", "forecast_availability", "quantity", "product_uom", "picked", "lot_ids"],
                 "optionalColumns": { "location_id": "show", "forecast_availability": "hide", "picked": "show", "lot_ids": "hide" },
                 "readonly": "state == 'cancel' or (state == 'done' and is_locked)",
-                "options": { "addLabel": "Add a line" }
+                "options": { "addLabel": "Add a line" },
+                "cells": {
+                  "forecast_availability": { "hidden": "state in ('done', 'cancel')" },
+                  "quantity": {
+                    "hidden": "state == 'draft'",
+                    "readonly": "has_tracking != 'none'",
+                    "tones": [
+                      { "tone": "success", "when": "not is_done and quantity - if(parent.qty_producing, should_consume_qty, product_uom_qty) == 0" },
+                      { "tone": "warning", "when": "not is_done and quantity - if(parent.qty_producing, should_consume_qty, product_uom_qty) > 0.0001" }
+                    ]
+                  },
+                  "picked": { "hidden": "state == 'draft'" },
+                  "lot_ids": { "hidden": "not show_lot_ids or state == 'draft'" }
+                }
               }
             ]
           },
@@ -388,9 +472,38 @@
                 "optionalColumns": { "product_id": "show", "qty_remaining": "show", "qty_produced": "hide", "finished_lot_id": "hide", "date_start": "hide", "date_finished": "hide" },
                 "totals": ["duration_expected", "duration"],
                 "readonly": "state == 'cancel' or (state == 'done' and is_locked)",
-                "options": { "addLabel": "Add a line" }
+                "options": { "addLabel": "Add a line" },
+                "cells": {
+                  "duration_expected": { "widget": "duration", "readonly": "state in ('cancel', 'done')" },
+                  "duration": { "widget": "timer", "options": { "startField": "timer_start", "unit": "minutes" }, "invisible": "parent.state == 'draft'" },
+                  "state": {
+                    "hidden": "state == 'draft'",
+                    "badge": true,
+                    "tones": [{ "tone": "warning", "when": "state == 'progress'" }, { "tone": "success", "when": "state == 'done'" }, { "tone": "danger", "when": "state == 'cancel'" }, { "tone": "info", "when": "True" }]
+                  }
+                },
+                "rowButtons": [
+                  {
+                    "type": "button",
+                    "id": "wo-start",
+                    "label": "Start",
+                    "action": "mrp.workorder.button_start",
+                    "invisible": "parent.state in ('draft', 'done', 'cancel') or working_state == 'blocked' or state in ('done', 'cancel') or is_user_working"
+                  },
+                  { "type": "button", "id": "wo-pause", "label": "Pause", "action": "mrp.workorder.button_pending", "invisible": "parent.state in ('draft', 'done', 'cancel') or working_state == 'blocked' or not is_user_working" },
+                  { "type": "button", "id": "wo-done", "label": "Done", "action": "mrp.workorder.button_finish", "invisible": "parent.state in ('draft', 'done', 'cancel') or working_state == 'blocked' or not is_user_working" },
+                  { "type": "button", "id": "wo-block", "label": "Block", "style": "danger", "action": "mrp.workorder.button_block", "invisible": "parent.state in ('draft', 'done', 'cancel') or working_state == 'blocked'" },
+                  { "type": "button", "id": "wo-unblock", "label": "Unblock", "style": "danger", "action": "mrp.workorder.button_unblock", "invisible": "parent.state in ('draft', 'done', 'cancel') or working_state != 'blocked'" }
+                ],
+                "selectedButtons": [
+                  { "type": "button", "id": "wo-start-chosen", "label": "Start", "action": "mrp.workorder.button_start" },
+                  { "type": "button", "id": "wo-pause-chosen", "label": "Pause", "action": "mrp.workorder.button_pending" },
+                  { "type": "button", "id": "wo-done-chosen", "label": "Done", "action": "mrp.workorder.action_mark_as_done" }
+                ],
+                "lineOpens": "fields"
               }
-            ]
+            ],
+            "roles": ["mrp.group_mrp_routings"]
           },
           {
             "type": "tab",
@@ -406,9 +519,12 @@
                 "columns": ["product_id", "location_dest_id", "product_uom_qty", "quantity", "product_uom", "cost_share", "lot_ids"],
                 "optionalColumns": { "cost_share": "hide", "lot_ids": "hide" },
                 "readonly": "state == 'cancel' or (state == 'done' and is_locked)",
-                "options": { "addLabel": "Add a line" }
+                "options": { "addLabel": "Add a line" },
+                "cells": { "quantity": { "hidden": "state == 'draft'" }, "lot_ids": { "hidden": "not show_lot_ids or state == 'draft'" } },
+                "rowTones": [{ "tone": "muted", "when": "is_done" }]
               }
-            ]
+            ],
+            "roles": ["mrp.group_mrp_byproducts"]
           },
           {
             "type": "tab",
@@ -425,18 +541,25 @@
                     "id": "misc-left",
                     "children": [
                       { "type": "field", "id": "f-picking-type", "field": "picking_type_id", "readonly": "state != 'draft'" },
-                      { "type": "field", "id": "f-location-src", "field": "location_src_id", "options": { "create": false }, "readonly": "state != 'draft'" },
-                      { "type": "field", "id": "f-location-dest", "field": "location_dest_id", "options": { "create": false }, "readonly": "state != 'draft'" }
+                      { "type": "field", "id": "f-location-src", "field": "location_src_id", "options": { "create": false }, "readonly": "state != 'draft'", "roles": ["stock.group_stock_multi_locations"] },
+                      { "type": "field", "id": "f-location-dest", "field": "location_dest_id", "options": { "create": false }, "readonly": "state != 'draft'", "roles": ["stock.group_stock_multi_locations"] }
                     ]
                   },
                   {
                     "type": "section",
                     "id": "misc-right",
                     "children": [
-                      { "type": "field", "id": "f-origin", "field": "origin", "readonly": "state in ['cancel', 'done']" },
-                      { "type": "field", "id": "f-deadline", "field": "date_deadline", "invisible": "state in ['done', 'cancel'] or not date_deadline" },
-                      { "type": "field", "id": "f-analytic", "field": "analytic_distribution", "widget": "tags" },
-                      { "type": "field", "id": "f-company", "field": "company_id", "options": { "create": false }, "readonly": "state != 'draft'" }
+                      { "type": "field", "id": "f-origin", "field": "origin", "readonly": "state in ('cancel', 'done')" },
+                      {
+                        "type": "field",
+                        "id": "f-deadline",
+                        "field": "date_deadline",
+                        "invisible": "state in ('done', 'cancel') or not date_deadline",
+                        "tones": [{ "tone": "danger", "when": "date_deadline and date_deadline < today()" }],
+                        "bold": "date_deadline and date_deadline < today()"
+                      },
+                      { "type": "field", "id": "f-analytic", "field": "analytic_distribution", "widget": "distribution", "options": { "model": "account.analytic.account" } },
+                      { "type": "field", "id": "f-company", "field": "company_id", "options": { "create": false }, "readonly": "state != 'draft'", "roles": ["base.group_multi_company"] }
                     ]
                   }
                 ]
@@ -446,6 +569,17 @@
         ]
       }
     ],
-    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" }
-  }
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" },
+    "toolbar": {
+      "menu": [
+        { "id": "m-print-production", "label": "Production Order", "group": "print", "action": "mrp.production.print_production_order" },
+        { "id": "m-print-labels", "label": "Finished Product Label", "group": "print", "action": "mrp.production.action_open_label_type" },
+        { "id": "m-duplicate", "builtin": "duplicate" },
+        { "id": "m-delete", "builtin": "delete", "invisible": "state not in ('draft', 'cancel')" }
+      ],
+      "pager": true,
+      "breadcrumbs": true
+    }
+  },
+  "look": { "helpShown": "tooltip", "readonlyShown": "text" }
 }

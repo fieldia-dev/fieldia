@@ -29,8 +29,11 @@ export const real = {
   definitions: Object.assign({}, ...LANES.map((lane) => lane.definitions ?? {})) as NonNullable<MemoryDataSourceOptions['definitions']>,
   /** What links show of each model's records: a lane adds to a model's, a later one's word winning. */
   shows: byModel((lane) => lane.shows as Record<string, Record<string, unknown>> | undefined) as NonNullable<MemoryDataSourceOptions['shows']>,
-  /** By the `?page=` name: the person using it, the pager's records and the breadcrumbs. */
+  attachments: Object.assign({}, ...LANES.map((lane) => lane.attachments ?? {})) as NonNullable<MemoryDataSourceOptions['attachments']>,
+  /** By the `?page=` name: the person using it, the pager's records and the breadcrumbs — as `around`, or as `users` and `navigation`. */
   around: Object.assign({}, ...LANES.map((lane) => lane.around ?? {})) as Record<string, RealAround>,
+  users: Object.assign({}, ...LANES.map((lane) => lane.users ?? {})) as NonNullable<RealLane['users']>,
+  navigation: Object.assign({}, ...LANES.map((lane) => lane.navigation ?? {})) as NonNullable<RealLane['navigation']>,
   /**
    * The first lane that knows the action answers it. A lane may answer later,
    * and "later, nothing" is not knowing it either: the next lane is asked.
