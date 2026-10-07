@@ -360,6 +360,34 @@ for (const variant of VARIANTS) {
       expect(problems).toEqual([]);
     });
 
+    test('the survey as Flectra lays it out: a question duplicated on its line, limits on one line, the session link to copy', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, SURVEY);
+      await expect(node(page, '#title').locator('input, textarea').first()).toHaveValue('Client satisfaction survey, autumn 2026');
+      const titles = async () => ((await value(page, 'question_and_page_ids')) as { values: { title: string } }[]).map((l) => l.values.title);
+      // Duplicate Question on the second line: its copy right after it.
+      const second = (await titles())[1];
+      await node(page, 'f-questions').getByRole('button', { name: 'Copy line 2' }).click();
+      await expect.poll(async () => (await titles())[2]).toBe(second);
+      // Ten questions and three sections: the copy makes eleven questions, sections left out of the count.
+      await expect.poll(() => value(page, 'question_count')).toBe(11);
+      // Options: Limit Attempts and the time limit each on one line, as Flectra's: "to 1 attempts", "10:00 minutes".
+      await tab(page, 'Options').click();
+      await node(page, 'f-login').locator('input').check();
+      await node(page, 'f-attempts-limited').locator('input').check();
+      const attempts = (await node(page, 'f-attempts').boundingBox())!;
+      const tick = (await node(page, 'f-attempts-limited').boundingBox())!;
+      expect(Math.abs(attempts.y + attempts.height / 2 - (tick.y + tick.height / 2))).toBeLessThan(12);
+      await expect(node(page, 'attempts-row')).toContainText('attempts');
+      await node(page, 'f-survey-type').getByText('Assessment', { exact: true }).click();
+      await node(page, 'f-time-limited').locator('input').check();
+      await expect(node(page, 'f-time-limit').locator('input')).toHaveValue('10:00');
+      // A live session's link, with a Copy button.
+      await node(page, 'f-survey-type').getByText('Live session', { exact: true }).click();
+      await expect(node(page, 'f-session-link').getByRole('button', { name: /Copy/ })).toBeVisible();
+      expect(problems).toEqual([]);
+    });
+
     test('a table in a tab out of sight rests: nothing redrawn frame after frame while nobody types', async ({ page }) => {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, CASE);

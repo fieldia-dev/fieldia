@@ -613,13 +613,13 @@
         },
         {
           "feature": "Live-session buttons class d-none d-sm-block (hidden on phones)",
-          "status": "missing",
-          "needs": "a node shown or hidden by the screen's width"
+          "status": "covered",
+          "how": "hideOn [\"narrow\"] on Create Live Session, Open Session Manager and Close Live Session: hidden on a phone, as Flectra's d-none d-sm-block"
         },
         {
           "feature": "Test's condition 'not question_ids' (a compute: the questions without the sections)",
-          "status": "approximated",
-          "how": "a worked-out helper field, count(question_and_page_ids) — count leaves sections out"
+          "status": "covered",
+          "how": "a worked-out helper field, count(question_and_page_ids, \"kind != 'section'\"): the questions without the sections, as question_ids (shown in the e2e)"
         },
         {
           "feature": "Stat buttons Registered (not public), Certified (certification), Participations; Courses (website_slides_survey, when any)",
@@ -633,8 +633,8 @@
         },
         {
           "feature": "groups on the Courses button (website_slides officer)",
-          "status": "missing",
-          "needs": "user groups on a node"
+          "status": "covered",
+          "how": "roles [website_slides.group_website_slides_officer] on the stat button"
         },
         {
           "feature": "web_ribbon Archived when not active",
@@ -656,8 +656,8 @@
         },
         {
           "feature": "user_id many2one_avatar_user, domain share = False",
-          "status": "approximated",
-          "how": "a plain link with the filter; no avatar"
+          "status": "covered",
+          "how": "a link with avatar: true and the filter share = False, as Flectra's domain"
         },
         {
           "feature": "Questions: question_and_page_ids, sections in bold between questions (is_page)",
@@ -686,9 +686,8 @@
         },
         {
           "feature": "random_questions_count: column shown only when questions are randomized (column_invisible on parent.questions_selection), cell only on sections",
-          "status": "missing",
-          "how": "an optional column, hidden by default; a section's row spans the table, so its count cannot be edited at all",
-          "needs": "a column shown by a condition on the record, cells hidden per line, and fields on a section's row"
+          "status": "approximated",
+          "how": "the column hidden while questions_selection is 'all' (cells hidden, Flectra's column_invisible on the parent); a section's row spans the table, so its count, which only sections have, cannot be edited in it"
         },
         {
           "feature": "survey_question_trigger widget (an icon on conditional questions)",
@@ -697,8 +696,8 @@
         },
         {
           "feature": "Duplicate Question button (copy) on each row",
-          "status": "missing",
-          "needs": "a copy action on a table's line (cards have one)"
+          "status": "covered",
+          "how": "options.copy: ⧉ on each question's line puts its copy right after it (shown in the e2e)"
         },
         {
           "feature": "A question opens survey.question's own form (answers, conditional display, scoring, validation)",
@@ -721,14 +720,13 @@
         },
         {
           "feature": "'Limit Attempts [x] to [N] attempts' — a checkbox and an inline number in one row",
-          "status": "approximated",
-          "how": "two fields: the checkbox, then the number with 'to' and 'attempts' inside its box (prefix, suffix)",
-          "needs": "fields set inline in one row of words"
+          "status": "covered",
+          "how": "a section with style inline: the checkbox, \"to\", the number and \"attempts\" on one line, the words and number shown once it is ticked (shown in the e2e)"
         },
         {
           "feature": "Time & Scoring group hidden for a plain survey; 'Survey Time Limit [x] N minutes' with float_time",
-          "status": "approximated",
-          "how": "the group's condition; time limit as a number with 'minutes' inside its box"
+          "status": "covered",
+          "how": "the group's condition; Survey Time Limit on one line: the checkbox, the time as Flectra's float_time (10:00, widget duration) and \"minutes\" (shown in the e2e)"
         },
         {
           "feature": "Scoring radio, Required Score (%) shown when scoring, kept between 0 and 100 (SQL check)",
@@ -753,9 +751,8 @@
         },
         {
           "feature": "Precompute: scoring_type set to 'Scoring without answers' when a certification is ticked (depends on certification)",
-          "status": "missing",
-          "how": "left out: as a setWhen it answers the certification's own rule, and picking No scoring with a certification on ended at 'Scoring without answers' — both rules start to hold at once and the later wins. In Flectra each compute runs only when its own dependency changes. The case cannot arise from the form (the box hides under No scoring).",
-          "needs": "setWhen tied to the field that changed (a `dependsOn`), or rules that do not answer each other"
+          "status": "covered",
+          "how": "scoring_type's setWhen with on [certification]: set to 'scoring_without_answers' only as Certification is ticked while the survey does not score — Flectra's compute on its own dependency, never answering certification's own rule"
         },
         {
           "feature": "Onchange survey_type: Survey, Live session, Assessment each set their options",
@@ -778,9 +775,8 @@
         },
         {
           "feature": "Live Session group: session code, session link (CopyClipboardChar), reward quick answers",
-          "status": "approximated",
-          "how": "the link as a read-only url; no copy button",
-          "needs": "a copy-to-clipboard widget"
+          "status": "covered",
+          "how": "the session link with widget copy: its value and a Copy button, as CopyClipboardChar (shown in the e2e)"
         },
         {
           "feature": "Description and End Message tabs: html with placeholders, no label",
