@@ -595,6 +595,11 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr) minmax(260px, 360px); }
 /* The side panel goes under the sheet before the sheet is left too narrow for a label beside its value. */
 @container (max-width: 1000px) { .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr); } }
+/* A part hidden at some widths of the form (hideOn): narrow up to 520px, medium up to 760px, wide above — the form's own width, as its columns. */
+.fd-form { container-name: fd-form; }
+@container fd-form (max-width: 520px) { .fd-form [data-hide-on~="narrow"] { display: none !important; } }
+@container fd-form (min-width: 521px) and (max-width: 760px) { .fd-form [data-hide-on~="medium"] { display: none !important; } }
+@container fd-form (min-width: 761px) { .fd-form [data-hide-on~="wide"] { display: none !important; } }
 .fd-card {
   position: relative; background: var(--fd-surface); border: 1px solid var(--fd-border);
   border-radius: var(--fd-radius); padding: 24px 28px 28px; display: grid; gap: 18px; min-width: 0;
