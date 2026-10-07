@@ -224,6 +224,89 @@ class DeleteRenderer implements ICellRendererComp<Line> {
   }
 }
 
+/** What a line's tick and the head's tick need from their grid: which lines are chosen, and choosing them. */
+interface Picking {
+  label(index: number): string;
+  allLabel: string;
+  isChosen(key: string): boolean;
+  choose(key: string, on: boolean): void;
+  chooseAll(on: boolean): void;
+  /** The head's tick, kept up to date by the grid. */
+  head(box: HTMLInputElement): void;
+  readonly(): boolean;
+}
+
+/** A line's tick, choosing it for the table's buttons for chosen lines. */
+class PickRenderer implements ICellRendererComp<Line> {
+  private box!: HTMLInputElement;
+  private params!: ICellRendererParams<Line> & { picking: Picking };
+  init(params: ICellRendererParams<Line> & { picking: Picking }) {
+    this.box = document.createElement('input');
+    this.box.type = 'checkbox';
+    this.box.className = 'fd-checkbox fd-line-pick';
+    this.box.addEventListener('change', () => {
+      if (this.params.data) this.params.picking.choose(this.params.data.key, this.box.checked);
+    });
+    this.refresh(params);
+  }
+  getGui() {
+    return this.box;
+  }
+  refresh(params: ICellRendererParams<Line> & { picking: Picking }) {
+    this.params = params;
+    this.box.checked = !!params.data && params.picking.isChosen(params.data.key);
+    this.box.disabled = params.picking.readonly();
+    this.box.setAttribute('aria-label', params.picking.label((params.node.rowIndex ?? 0) + 1));
+    return true;
+  }
+}
+
+/** The head's tick: every line chosen, or none. */
+class PickAllHeader implements IHeaderComp {
+  private box!: HTMLInputElement;
+  init(params: IHeaderParams & { picking: Picking }) {
+    this.box = document.createElement('input');
+    this.box.type = 'checkbox';
+    this.box.className = 'fd-checkbox fd-line-pick fd-line-pick-all';
+    this.box.setAttribute('aria-label', params.picking.allLabel);
+    this.box.addEventListener('change', () => params.picking.chooseAll(this.box.checked));
+    params.picking.head(this.box);
+  }
+  getGui() {
+    return this.box;
+  }
+  refresh() {
+    return true;
+  }
+}
+
+/** The button that puts a copy of a line right after it. */
+class CopyRenderer implements ICellRendererComp<Line> {
+  private button!: HTMLButtonElement;
+  private params!: ICellRendererParams<Line> & { copy(key: string): void; label(index: number): string };
+  init(params: ICellRendererParams<Line> & { copy(key: string): void; label(index: number): string }) {
+    this.button = document.createElement('button');
+    this.button.type = 'button';
+    this.button.className = 'fd-line-copy';
+    this.button.textContent = '⧉';
+    this.button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (this.params.data) this.params.copy(this.params.data.key);
+    });
+    this.refresh(params);
+  }
+  getGui() {
+    return this.button;
+  }
+  refresh(params: ICellRendererParams<Line> & { copy(key: string): void; label(index: number): string }) {
+    this.params = params;
+    const label = params.label((params.node.rowIndex ?? 0) + 1);
+    this.button.setAttribute('aria-label', label);
+    this.button.title = label;
+    return true;
+  }
+}
+
 /** What the column chooser's header button needs from its grid. */
 interface Chooser {
   label: string;
@@ -513,7 +596,44 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   problems.hidden = true;
   const adds = document.createElement('div');
   adds.className = 'fd-lines-adds';
-  element.append(host, problems, adds);
+  // Lines chosen for the table's buttons for them: a bar of those buttons over the grid while any is.
+  const choosing = !!node.selectedButtons?.length;
+  const chosen = new Set<string>();
+  let pickAll: HTMLInputElement | null = null;
+  const chosenCount = document.createElement('span');
+  chosenCount.className = 'fd-lines-chosen-count';
+  chosenCount.setAttribute('role', 'status');
+  /** A press that waits for its run, and is not pressed again meanwhile. */
+  const pressed = async (button: HTMLButtonElement, run: () => Promise<unknown>) => {
+    if (button.hasAttribute('aria-busy')) return;
+    button.setAttribute('aria-busy', 'true');
+    try {
+      await run();
+    } finally {
+      button.removeAttribute('aria-busy');
+    }
+  };
+  const ownButton = (own: ButtonNode, className: string) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = className;
+    button.dataset['node'] = own.id;
+    const icon = drawIcon(document, own.icon);
+    if (icon) button.append(icon);
+    button.append(own.label);
+    return button;
+  };
+  const chosenButtons = (node.selectedButtons ?? []).map((own) => {
+    const button = ownButton(own, `fd-button fd-button-${own.style ?? 'secondary'} fd-lines-chosen-button`);
+    // In the table's order, whatever order they were ticked in.
+    button.addEventListener('click', () => void pressed(button, () => form.runLinesAction(node.id, own.id, lines().filter((line) => chosen.has(line.key)).map((line) => line.key))));
+    return { id: own.id, button };
+  });
+  const bar = document.createElement('div');
+  bar.className = 'fd-lines-chosen';
+  bar.hidden = true;
+  bar.append(chosenCount, ...chosenButtons.map((b) => b.button));
+  element.append(...(choosing ? [bar] : []), host, problems, adds);
 
   let readonly = false;
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
@@ -671,6 +791,75 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       sortable: false,
       suppressMovable: true,
       lockPosition: lineStart,
+      suppressKeyboardEvent: keys,
+    });
+  }
+  // A tick at the start of each item, choosing it for the table's buttons for chosen lines; the head's chooses every one.
+  const picking: Picking = {
+    label: (n) => fill(labels.chooseLine, { name: fill(labels.lineN, { n }) }),
+    allLabel: labels.chooseAllLines,
+    isChosen: (key) => chosen.has(key),
+    choose(key, on) {
+      if (on) chosen.add(key);
+      else chosen.delete(key);
+      showChosen(true);
+    },
+    chooseAll(on) {
+      chosen.clear();
+      if (on) for (const line of lines()) if (!kindOf(line)) chosen.add(line.key);
+      showChosen(true);
+    },
+    head: (box) => {
+      pickAll = box;
+      showChosen(false);
+    },
+    readonly: () => readonly,
+  };
+  if (choosing) {
+    columnDefs.unshift({
+      colId: '__pick',
+      headerName: '',
+      headerComponent: PickAllHeader,
+      headerComponentParams: { picking },
+      width: 36,
+      minWidth: 36,
+      maxWidth: 36,
+      cellClass: 'fd-grid-tools fd-grid-pick',
+      resizable: false,
+      sortable: false,
+      suppressMovable: true,
+      lockPosition: lineStart,
+      cellRendererSelector: (p) => (p.node.rowPinned || kindOf(p.data) ? undefined : { component: PickRenderer, params: { picking } }),
+      suppressKeyboardEvent: keys,
+    });
+  }
+  // A copy of a line, its values too, right after it: never its saved id or its place in the order.
+  const copyLine = (key: string) => {
+    const all = lines();
+    const at = all.findIndex((l) => l.key === key);
+    if (readonly || at < 0) return;
+    const values = { ...all[at].values };
+    if (sequence) delete values[sequence];
+    const made = form.addLine(name, values);
+    if (sequence) form.moveLine(name, made, at + 1);
+    else {
+      const now = [...lines()];
+      now.splice(at + 1, 0, ...now.splice(now.findIndex((l) => l.key === made), 1));
+      form.setValue(name, now);
+    }
+  };
+  if (node.options?.['copy'] === true) {
+    columnDefs.push({
+      colId: '__copy',
+      headerName: '',
+      width: 40,
+      minWidth: 40,
+      cellClass: 'fd-grid-tools',
+      resizable: false,
+      sortable: false,
+      suppressMovable: true,
+      lockPosition: lineEnd,
+      cellRendererSelector: (p) => (p.node.rowPinned || kindOf(p.data) ? undefined : { component: CopyRenderer, params: { copy: copyLine, label: (n: number) => fill(labels.copy, { name: fill(labels.lineN, { n }) }) } }),
       suppressKeyboardEvent: keys,
     });
   }
@@ -939,6 +1128,28 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     addButton(words('addSectionLabel') ?? labels.addSection, { [kinds.field]: kinds.section ?? 'section' }, 'section');
     addButton(words('addNoteLabel') ?? labels.addNote, { [kinds.field]: kinds.note ?? 'note' }, 'note');
   }
+  // Buttons in the control row, beside the add buttons: the record's, shown by a condition on it (Flectra's <control>).
+  const controls = (node.controlButtons ?? []).map((own) => {
+    const button = ownButton(own, 'fd-button fd-button-link fd-lines-add fd-lines-control');
+    button.addEventListener('click', () => void pressed(button, () => form.runAction(own.id)));
+    adds.append(button);
+    return { id: own.id, button };
+  });
+  /** The bar and the ticks, as the lines chosen are now; `redraw` draws the lines' ticks again. */
+  function showChosen(redraw: boolean) {
+    if (!choosing) return;
+    const items = lines().filter((line) => !kindOf(line));
+    for (const key of [...chosen]) if (!items.some((line) => line.key === key)) chosen.delete(key);
+    bar.hidden = readonly || chosen.size === 0;
+    chosenCount.textContent = fill(labels.linesChosen, { n: chosen.size });
+    for (const { id, button } of chosenButtons) button.hidden = form.node(id).invisible;
+    if (pickAll) {
+      pickAll.checked = items.length > 0 && chosen.size === items.length;
+      pickAll.indeterminate = chosen.size > 0 && chosen.size < items.length;
+      pickAll.disabled = readonly || !items.length;
+    }
+    if (redraw) api.refreshCells({ columns: ['__pick'], force: true, suppressFlash: true });
+  }
 
   // A focused cell that has no editor still answers keys: Space ticks yes/no,
   // and Enter or Space presses the delete button. (AG Grid's onCellKeyDown
@@ -995,15 +1206,18 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     update(state) {
       if (state.readonly !== readonly) {
         readonly = state.readonly;
-        api.setGridOption('columnDefs', columnDefs.filter((c) => !(readonly && (c.colId === '__delete' || c.colId === '__handle'))));
+        api.setGridOption('columnDefs', columnDefs.filter((c) => !(readonly && ['__delete', '__handle', '__copy', '__pick'].includes(c.colId as string))));
       }
       adds.hidden = readonly;
+      for (const { id, button } of controls) button.hidden = form.node(id).invisible;
       const current = (state.value as Line[] | null) ?? [];
       if (current !== shown) {
         shown = current;
         api.setGridOption('rowData', current);
         fitHeight(current.length);
         if (totals.length) api.setGridOption('pinnedBottomRowData', [totalsRow(current)]);
+        // The ticks and copies name a line by where it is: it may have moved.
+        if (choosing || node.options?.['copy'] === true) api.refreshCells({ columns: ['__pick', '__copy'], force: true, suppressFlash: true });
       }
       // Money in the record's currency: its cells written again once that currency changes.
       if (parentCurrencies.length) {
@@ -1037,6 +1251,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         problems.textContent = listed.join(' · ');
         problems.hidden = !found.length;
       }
+      showChosen(false);
       element.setAttribute('aria-invalid', String(state.invalid || found.length > 0));
     },
     destroy() {
