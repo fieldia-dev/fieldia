@@ -316,6 +316,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
           cell.widget.update({
             value: line.values[cell.name],
             values: line.values,
+            parent: state.values,
             // A value worked out from the line's others is shown, never typed.
             readonly: readonly || cell.def.readonly === true || cell.def.compute !== undefined || !!rules?.readonly,
             required: cell.def.required === true || !!rules?.required,
@@ -325,7 +326,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
       });
       for (const [column, td] of sums) {
         const sum = current.filter((line) => !lineKind(def, line.values)).reduce((total, line) => total + Number(line.values[column] ?? 0), 0);
-        td.textContent = displayValue(def.fields[column], sum, current[0]?.values ?? {}, locale);
+        td.textContent = displayValue(def.fields[column], sum, current[0]?.values ?? {}, locale, state.values);
       }
       if (focusNew && rows.has(focusNew)) {
         rows.get(focusNew)?.cells[0]?.widget.focus();

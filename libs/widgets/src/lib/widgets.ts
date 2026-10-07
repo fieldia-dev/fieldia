@@ -35,6 +35,7 @@ import { clearSelection, fillIn, maker, setAttr, setText, wordsFor } from './kin
 import { shownOptions } from './shuffle';
 import { bounds, counted, grower } from './limits';
 import { currencySymbol } from './units';
+import { currencyOf } from './display';
 import { drawIcon } from './icons';
 import { listChoices } from './choices-from';
 import { yesNoWidget } from './yes-no';
@@ -88,6 +89,8 @@ export interface WidgetState {
   value: Value | undefined;
   /** Every value of the record, for widgets that show one field beside another. */
   values: Readonly<Values>;
+  /** In a cell of a table's line: the values of the record the line is on, for money in its currency (`parent.currency_id`). */
+  parent?: Readonly<Values>;
   readonly: boolean;
   required: boolean;
   invalid: boolean;
@@ -268,8 +271,7 @@ const numberWidget: WidgetFactory = (context) => {
         picker.update({ value: state.values[currencyField], values: state.values, readonly: state.readonly, required: false, invalid: false });
       }
       if (currency && field.type === 'monetary') {
-        const holder = field.currencyField ? state.values[field.currencyField] : null;
-        const code = holder && typeof holder === 'object' && 'label' in holder ? (holder as RelatedRecord).label : (typeof holder === 'string' ? holder : field.currency ?? '');
+        const code = currencyOf(field, state.values, state.parent) ?? '';
         setText(currency, /^[A-Z]{3}$/.test(code) ? currencySymbol(code, locale).text : code);
       }
       // Room in the box for its units, as wide as their words.

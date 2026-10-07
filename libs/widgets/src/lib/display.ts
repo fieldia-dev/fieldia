@@ -10,10 +10,25 @@ function localDate(text: string): Date | null {
 }
 
 /**
+ * The currency a money field is in: its own, or the field holding it — on a
+ * line, `parent.` and a field of the record it is on (`parent`). A link by its
+ * name ("EGP"), a choice or text as it is; null when none is known.
+ */
+export function currencyOf(def: LineField, values: Readonly<Record<string, Value>>, parent?: Readonly<Record<string, Value>>): string | null {
+  if (def.type !== 'monetary') return null;
+  if (def.currency) return def.currency;
+  if (!def.currencyField) return null;
+  const holder = def.currencyField.startsWith('parent.') ? parent?.[def.currencyField.slice('parent.'.length)] : values[def.currencyField];
+  if (holder && typeof holder === 'object' && 'label' in holder) return (holder as { label: string }).label || null;
+  return typeof holder === 'string' && holder ? holder : null;
+}
+
+/**
  * A value as a person reads it where it is not being edited: a cell of the
  * lines grid, a totals row. Shared by the plain lines table and @fieldia/grid.
+ * `parent` is the record a line is on, for money in its currency.
  */
-export function displayValue(def: LineField, value: Value | undefined, values: Record<string, Value> = {}, locale: Locale = 'en'): string {
+export function displayValue(def: LineField, value: Value | undefined, values: Record<string, Value> = {}, locale: Locale = 'en', parent?: Readonly<Record<string, Value>>): string {
   const number = (n: number, digits: number) => formatNumber(n, digits, locale);
   if (value === null || value === undefined || value === '') return '';
   switch (def.type) {
@@ -31,7 +46,7 @@ export function displayValue(def: LineField, value: Value | undefined, values: R
     case 'float':
       return number(Number(value), def.digits?.[1] ?? 2);
     case 'monetary': {
-      const currency = def.currency ?? (def.currencyField ? (values[def.currencyField] as { label?: string } | null)?.label : undefined);
+      const currency = currencyOf(def, values, parent);
       // Its currency's symbol, as the amount's own box shows it.
       return currency ? formatMoney(Number(value), currency, def.digits?.[1] ?? 2, locale) : number(Number(value), def.digits?.[1] ?? 2);
     }
