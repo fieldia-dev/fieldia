@@ -469,7 +469,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       // Its words, with the values of the fields they name.
       const words = valueWords(doc, page.fields, node.text, locale);
       const element = inline
-        ? el('span', { class: `fd-inline-words fd-text-${style}`, 'data-node': node.id }, ...words.nodes)
+        ? el('span', { class: `fd-oneline-words fd-text-${style}`, 'data-node': node.id }, ...words.nodes)
         : style === 'alert'
           ? el('div', { class: `fd-alert fd-text-alert fd-tone-${node.tone ?? 'info'}`, role: 'status', 'data-node': node.id }, el('span', { class: 'fd-alert-message' }, ...words.nodes))
           : el(style === 'heading' ? 'h3' : 'p', { class: `fd-text-${style}`, 'data-node': node.id }, ...words.nodes);
@@ -531,9 +531,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
      * each as wide as it needs, its fields named for a screen reader.
      */
     function inlineItem(node: SectionNode, place: Place): HTMLElement {
-      const line = el('div', { class: 'fd-field fd-inline', 'data-node': node.id, 'data-style': 'inline', 'data-labels': place.labels });
+      const line = el('div', { class: 'fd-field fd-oneline', 'data-node': node.id, 'data-style': 'inline', 'data-labels': place.labels });
       spans(line, node.colspan);
-      const row = el('div', { class: 'fd-inline-row', role: 'group' }, ...node.children.map((child) => item(child, { columns: 1, onPage: false, inline: true })));
+      const row = el('div', { class: 'fd-oneline-row', role: 'group' }, ...node.children.map((child) => item(child, { columns: 1, onPage: false, inline: true })));
       if (node.title) {
         const title = el('span', { class: 'fd-label', id: uid(`${node.id}-label`) }, node.title);
         row.setAttribute('aria-labelledby', title.id);

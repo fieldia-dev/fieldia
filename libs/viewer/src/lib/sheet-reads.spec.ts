@@ -611,7 +611,7 @@ describe('parts on one line, and a label over the title', () => {
     const line = at('limit');
     expect(line.getAttribute('data-style')).toBe('inline');
     expect(line.querySelector(':scope > .fd-label')?.textContent).toBe('Limit attempts');
-    const row = line.querySelector(':scope > .fd-inline-row') as HTMLElement;
+    const row = line.querySelector(':scope > .fd-oneline-row') as HTMLElement;
     expect([...row.children].map((c) => c.getAttribute('data-node'))).toEqual(['f-limited', 't-to', 'f-attempts', 't-attempts']);
     expect(row.querySelector('[data-node="t-to"]')?.tagName).toBe('SPAN');
     const attempts = row.querySelector('[data-node="f-attempts"] input') as HTMLInputElement;
@@ -623,7 +623,7 @@ describe('parts on one line, and a label over the title', () => {
     expect(visible(at('t-to'))).toBe(false);
     form.setValue('limited', true);
     expect(visible(at('t-to'))).toBe(true);
-    expect(at('price-row').querySelector('.fd-inline-row [data-node="b-update"]')).not.toBeNull();
+    expect(at('price-row').querySelector('.fd-oneline-row [data-node="b-update"]')).not.toBeNull();
   });
 
   it('puts the title’s own label over it', () => {
