@@ -15,8 +15,9 @@ export const BUSINESS_CSS = /* css */ `
 .fd-priority:not(:has(:disabled)) .fd-priority-star:hover ~ .fd-priority-star { color: var(--fd-border-strong); }
 .fd-priority-star:disabled { cursor: default; }
 /* Fields on the title's line: a priority star before the name, a state's dot after it; the name keeps the room and its big words. */
-.fd-title-line { display: flex; align-items: center; gap: 4px 10px; min-width: 0; }
-.fd-title-line > .fd-title-name { flex: 1 1 auto; min-width: 0; }
+.fd-title-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; }
+/* On a phone the name takes a row of its own rather than be cut. */
+.fd-title-line > .fd-title-name { flex: 1 1 18em; min-width: 0; }
 .fd-title-line > .fd-title-name .fd-input { font-size: 24px; font-weight: 600; min-height: 40px; }
 .fd-form .fd-title-line > .fd-field { grid-template-columns: minmax(0, 1fr); }
 .fd-form .fd-title-line > .fd-field > * { grid-column: 1 !important; }
@@ -57,6 +58,7 @@ export const BUSINESS_CSS = /* css */ `
 .fd-range { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; }
 .fd-range-box { flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
 .fd-range-box > .fd-input { flex: 1 1 9em; min-width: 0; }
+.fd-range-box > .fd-input[type="datetime-local"] { flex-basis: 13em; }
 .fd-range-arrow { flex: none; display: inline-block; color: var(--fd-muted); }
 .fd-range-arrow:dir(rtl) { transform: scaleX(-1); }
 .fd-range-calendar .fd-calendar-grid td button.fd-in-range { background: var(--fd-accent-soft); border-radius: 0; }
@@ -77,7 +79,7 @@ export const BUSINESS_CSS = /* css */ `
 /* An analytic distribution: lines of an account and its share, their total under them. */
 .fd-distribution { display: grid; gap: 6px; min-width: 0; }
 .fd-distribution-table .fd-distribution-share { width: 8.5em; }
-.fd-distribution-table .fd-share { text-align: end; }
+.fd-distribution-table .fd-share { text-align: end; padding-inline-end: calc(var(--fd-pad-x) + 2ch); }
 .fd-distribution-total { font-weight: 600; text-align: end; padding-inline-end: calc(var(--fd-pad-x) + 2ch + 4px); font-variant-numeric: tabular-nums; }
 .fd-distribution-add { justify-self: start; }
 /* Tax totals: words at the start, amounts at the end in even digits, the total in bold over a rule. */
