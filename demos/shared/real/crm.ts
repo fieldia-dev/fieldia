@@ -361,8 +361,8 @@ const tenders: Record<string, Values> = {
       { key: 'l3', id: 7813, values: { sequence: 30, lot_number: 'Lot 3', name: 'Five-year maintenance contract', participating: false, estimated_value: 3000000, quotation_id: null, delivery_deadline: null } },
     ],
     requirement_ids: [
-      { key: 'r1', id: 7821, values: { sequence: 10, name: 'Commercial register, less than 3 months old', requirement_type: 'legal', mandatory: true, compliant: true, responsible_id: LAILA, evidence_count: 1 } },
-      { key: 'r2', id: 7822, values: { sequence: 20, name: 'Tax card and VAT certificate', requirement_type: 'legal', mandatory: true, compliant: true, responsible_id: LAILA, evidence_count: 2 } },
+      { key: 'r1', id: 7821, values: { sequence: 10, name: 'Commercial register, less than 3 months old', requirement_type: 'legal', mandatory: true, compliant: true, responsible_id: LAILA, evidence_count: 1, description: null, evidence_ids: [] } },
+      { key: 'r2', id: 7822, values: { sequence: 20, name: 'Tax card and VAT certificate', requirement_type: 'legal', mandatory: true, compliant: true, responsible_id: LAILA, evidence_count: 2, description: null, evidence_ids: [] } },
       { key: 'r3', id: 7823, values: { sequence: 30, name: 'Bid bond, 1% of the bid, from an Egyptian bank', requirement_type: 'financial', mandatory: true, compliant: true, responsible_id: YOUSSEF, evidence_count: 1 } },
       { key: 'r4', id: 7824, values: { sequence: 40, name: 'ISO 9001 certificate', requirement_type: 'certification', mandatory: true, compliant: true, responsible_id: MONA, evidence_count: 1 } },
       { key: 'r5', id: 7825, values: { sequence: 50, name: 'Three similar projects in the last five years', requirement_type: 'experience', mandatory: true, compliant: false, responsible_id: KARIM, evidence_count: 0 } },
@@ -370,6 +370,7 @@ const tenders: Record<string, Values> = {
       { key: 'r7', id: 7827, values: { sequence: 70, name: 'Local content statement', requirement_type: 'other', mandatory: false, compliant: false, responsible_id: MONA, evidence_count: 0 } },
     ],
     compliance_percentage: 71.43,
+    company_id: null,
     lead_id: YOUSSEF,
     team_member_ids: [KARIM, MONA, LAILA],
     estimated_value: 31800000,

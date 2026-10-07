@@ -198,7 +198,8 @@ for (const variant of VARIANTS) {
       const { problems } = await open(page, variant, 'page=real-tender&record=7801&skin=underline');
       await expect(node(page, 'stat-lots')).toContainText('3');
       await expect(node(page, 'stat-documents')).toContainText('2');
-      await expect(node(page, 'badge-plenty')).toBeVisible();
+      // The deadline's status as a badge in its tone.
+      await expect(node(page, 'f-deadline-status')).toContainText('Plenty of Time');
       await expect(page.locator('button[data-node="mark-lost"]')).toBeHidden();
       if (variant === 'plain') await screen(page, 'real-crm-tender');
 
@@ -210,6 +211,10 @@ for (const variant of VARIANTS) {
       const added = table.locator('tbody tr').last();
       await added.locator('input').first().fill('Site visit certificate');
       await expect.poll(() => value(page, 'compliance_percentage')).toBe(62.5);
+      // A new requirement is the person's own, as Flectra's default_user; rows toned by their compliance.
+      await expect(added.locator('[data-column="responsible_id"]').getByRole('combobox')).toHaveValue('Salma Nabil');
+      await expect(table.locator('tbody tr').nth(4)).toHaveAttribute('data-tone', 'danger');
+      await expect(table.locator('tbody tr').nth(0)).toHaveAttribute('data-tone', 'success');
       await added.locator('input[type="checkbox"]').nth(1).check();
       await expect.poll(() => value(page, 'compliance_percentage')).toBe(75);
       if (variant === 'plain') await screen(page, 'real-crm-tender-requirements');
@@ -230,9 +235,13 @@ for (const variant of VARIANTS) {
       await dialog.locator('[data-node="f-loss-notes"] textarea').fill('Pyramids Contracting came in 9% lower on Lot 1.');
       await pick(dialog.locator('[data-node="f-winning-competitor"]'), 'Pyramids', 'Pyramids Contracting');
       if (variant === 'plain') await screen(page, 'real-crm-tender-loss-dialog', { viewport: true });
-      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      await dialog.locator('[data-node="f-lessons"] textarea').fill('Price the installation lot apart next time.');
+      await expect(dialog.getByRole('button', { name: 'Save & Close' })).toHaveCount(0);
+      await dialog.getByRole('button', { name: 'Confirm Loss' }).click();
       await expect(dialog).toBeHidden();
       await expect.poll(() => value(page, 'state')).toBe('lost');
+      // The lessons learned, in the tender's conversation.
+      await expect(page.locator('.fd-chatter, [data-slot="chatter"]').first()).toContainText('Lessons learned: Price the installation lot apart next time.');
       expect(await value(page, 'loss_reason')).toBe('price');
       await tab(page, 'tab-results').click();
       await expect(node(page, 'f-loss-notes').locator('textarea')).toHaveValue('Pyramids Contracting came in 9% lower on Lot 1.');
