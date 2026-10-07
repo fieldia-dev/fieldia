@@ -5,7 +5,7 @@ import type { Page } from './page';
  * Any key ending in `Label` is read too — a wizard's `nextLabel`, and in a
  * widget's settings the words at a scale's ends.
  */
-const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'placeholder', 'message', 'text', 'confirm', 'alt', 'caption']);
+const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'placeholder', 'message', 'text', 'confirm', 'alt', 'caption', 'tooltip']);
 
 /**
  * Parts that hold names or data, never words to translate: which line fields

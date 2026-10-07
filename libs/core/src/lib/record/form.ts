@@ -1496,7 +1496,7 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     shown('#statusbar', root.statusbar?.field);
     for (const button of [...(root.buttons ?? []), ...(root.footer ?? [])]) add(button, root.id, 'button', { invisible: button.invisible });
     for (const stat of root.statButtons ?? []) add(stat, root.id, 'stat', { invisible: stat.invisible });
-    if (root.ribbon) add(root.ribbon, root.id, 'other', { invisible: root.ribbon.invisible });
+    for (const ribbon of [...(root.ribbon ? [root.ribbon] : []), ...(root.ribbons ?? [])]) add(ribbon, root.id, 'other', { invisible: ribbon.invisible });
     for (const alert of root.alerts ?? []) add(alert, root.id, 'other', { invisible: alert.invisible });
     for (const badge of root.badges ?? []) add(badge, root.id, 'other', { invisible: badge.invisible });
     // Fields over and under the title are field nodes like any other.

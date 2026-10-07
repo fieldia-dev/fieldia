@@ -30,6 +30,7 @@ import {
   type FormNode,
   type WizardNode,
   type LabelPlace,
+  type LineField,
   type Locale,
   type OpenRequest,
   type OpenResult,
@@ -38,7 +39,7 @@ import {
   type Values,
   MESSAGES,
 } from '@fieldia/core';
-import { browserPreferences, createWidget, drawIcon, installStyles, readsAsText, readText, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
+import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { listView } from './list';
 import { applyLook } from './look';
@@ -1103,11 +1104,28 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     if (node.statusbar && !underTitle) header.append(statusbar(node.statusbar));
 
     const card = el('div', { class: 'fd-card' });
-    if (node.ribbon) {
-      const ribbon = el('div', { class: `fd-ribbon fd-tone-${node.ribbon.tone ?? 'muted'}`, 'data-node': node.ribbon.id }, node.ribbon.label);
-      hideWhen(ribbon, node.ribbon.id);
-      // The ribbon is clipped to the card's corner by its own frame, so the card itself never clips: lists open past it.
-      card.append(el('div', { class: 'fd-ribbon-frame' }, ribbon));
+    const ribbons = [...(node.ribbon ? [node.ribbon] : []), ...(node.ribbons ?? [])];
+    if (ribbons.length) {
+      // The ribbons are clipped to the card's corner by their own frame, so the card itself never clips: lists open past it.
+      const frame = el('div', { class: 'fd-ribbon-frame' });
+      const drawn = ribbons.map((ribbon) => {
+        const element = el('div', { class: `fd-ribbon fd-tone-${ribbon.tone ?? 'muted'}`, 'data-node': ribbon.id, title: ribbon.tooltip }, ribbon.label);
+        frame.append(element);
+        return { ribbon, element };
+      });
+      // One corner, one ribbon: the first whose condition holds; its words from a field when the field holds any.
+      updaters.push((state) => {
+        let shown = false;
+        for (const { ribbon, element } of drawn) {
+          const show: boolean = !shown && !form.node(ribbon.id).invisible;
+          shown ||= show;
+          setHidden(element, !show);
+          if (!show) continue;
+          const from = ribbon.labelField ? displayValue(page.fields[ribbon.labelField] as LineField, state.values[ribbon.labelField], state.values, locale) : '';
+          setText(element, from || ribbon.label);
+        }
+      });
+      card.append(frame);
     }
     if (node.statButtons?.length) {
       const stats = el('div', { class: 'fd-stats' });

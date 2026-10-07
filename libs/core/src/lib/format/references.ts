@@ -489,9 +489,11 @@ export class ReferenceCheck {
       this.checkPress(stat, `${path}.statButtons[${i}]`);
       if (stat.field !== undefined) this.need(stat.field, `${path}.statButtons[${i}].field`);
     });
-    if (sheet.ribbon) {
-      this.claim(sheet.ribbon.id, `${path}.ribbon`);
-      this.checkModifiers(sheet.ribbon, `${path}.ribbon`);
+    const ribbons = [...(sheet.ribbon ? [[sheet.ribbon, `${path}.ribbon`] as const] : []), ...(sheet.ribbons ?? []).map((ribbon, i) => [ribbon, `${path}.ribbons[${i}]`] as const)];
+    for (const [ribbon, at] of ribbons) {
+      this.claim(ribbon.id, at);
+      this.checkModifiers(ribbon, at);
+      if (ribbon.labelField !== undefined) this.need(ribbon.labelField, `${at}.labelField`);
     }
     sheet.badges?.forEach((badge, i) => {
       this.claim(badge.id, `${path}.badges[${i}]`);

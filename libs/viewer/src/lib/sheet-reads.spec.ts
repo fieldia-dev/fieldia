@@ -148,3 +148,46 @@ describe('read-only fields as words (look.readonlyShown)', () => {
     expect(host.querySelector('.fd-title [data-node="#title"] .fd-read-text')?.textContent).toBe('INV/2026/0042');
   });
 });
+
+describe('several ribbons', () => {
+  const page = (): Page => ({
+    fieldia: '0.1',
+    id: 'case',
+    data: { kind: 'record', model: 'legal.case' },
+    fields: {
+      name: { type: 'char', label: 'Case' },
+      outcome: { type: 'selection', label: 'Outcome', options: [{ value: 'won', label: 'Won' }, { value: 'lost', label: 'Lost' }, { value: 'settled', label: 'Settled' }] },
+      legacy: { type: 'boolean', label: 'Legacy' },
+    },
+    layout: {
+      type: 'sheet',
+      id: 'root',
+      ribbon: { id: 'r-legacy', label: 'Legacy', tooltip: 'Made in the old app', invisible: 'not legacy' },
+      ribbons: [
+        { id: 'r-won', label: 'Won', tone: 'success', invisible: "outcome != 'won'" },
+        { id: 'r-outcome', label: 'Closed', labelField: 'outcome', tone: 'danger', invisible: 'not outcome' },
+      ],
+      children: [],
+    },
+  });
+  const shown = (host: HTMLElement) => [...host.querySelectorAll('.fd-ribbon')].filter((r) => visible(r));
+
+  it('shows the first ribbon whose condition holds, alone in the corner', () => {
+    const { host, form } = mount(page(), { values: { outcome: 'won' } });
+    expect(shown(host).map((r) => r.textContent)).toEqual(['Won']);
+    form.setValue('legacy', true);
+    expect(shown(host).map((r) => r.textContent)).toEqual(['Legacy']);
+    expect(shown(host)[0].getAttribute('title')).toBe('Made in the old app');
+    form.setValue('legacy', false);
+    form.setValue('outcome', null);
+    expect(shown(host)).toEqual([]);
+  });
+
+  it('takes its words from a field, by the choice’s label', () => {
+    const { host, form } = mount(page(), { values: { outcome: 'settled' } });
+    expect(shown(host).map((r) => r.textContent)).toEqual(['Settled']);
+    form.setValue('outcome', 'lost');
+    expect(shown(host).map((r) => r.textContent)).toEqual(['Lost']);
+    expect(shown(host)[0].className).toContain('fd-tone-danger');
+  });
+});

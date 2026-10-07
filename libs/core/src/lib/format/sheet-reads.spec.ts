@@ -34,3 +34,35 @@ describe('read-only fields as words', () => {
     expect(both({ ...sheet(), look: { readonlyShown: 'words' } }).join('\n')).toMatch(/readonlyShown/);
   });
 });
+
+describe('several ribbons', () => {
+  const ribbons = [
+    { id: 'paid', label: 'Paid', tone: 'success', invisible: "state != 'done'" },
+    { id: 'legacy', label: 'Legacy', tooltip: 'Made before the switch to Flectra', labelField: 'note' },
+  ];
+
+  it('takes ribbons, each with its condition, words from a field and a tooltip', () => {
+    expect(both(sheet({ ribbons }))).toEqual([]);
+  });
+
+  it('refuses a ribbon whose field the page lacks, a condition it cannot read, and an id used twice', () => {
+    const issues = both(sheet({ ribbon: { id: 'paid', label: 'Old' }, ribbons: [{ id: 'paid', label: 'Paid', labelField: 'nope', invisible: 'state ==' }] })).join('\n');
+    expect(issues).toMatch(/ribbons\[0\]\.labelField: no field "nope"/);
+    expect(issues).toMatch(/ribbons\[0\]\.invisible: cannot read/);
+    expect(issues).toMatch(/duplicate id "paid"/);
+  });
+
+  it('shows the first ribbon whose condition holds, as a form reads it', async () => {
+    const { createForm } = await import('../../index');
+    const form = createForm({ page: sheet({ ribbons }) as never, values: { state: 'done' } });
+    expect(form.node('paid').invisible).toBe(false);
+    form.setValue('state', 'draft');
+    expect(form.node('paid').invisible).toBe(true);
+    expect(form.node('legacy').invisible).toBe(false);
+  });
+
+  it('hands a ribbon’s tooltip to a translator', async () => {
+    const { pageWords } = await import('../../index');
+    expect(pageWords(sheet({ ribbons }) as never)).toEqual(expect.arrayContaining(['Paid', 'Legacy', 'Made before the switch to Flectra']));
+  });
+});

@@ -382,6 +382,10 @@ export interface StatButton {
 export interface Ribbon {
   id: string;
   label: string;
+  /** The ribbon's words from a field, when it holds any: Flectra's ribbon by outcome. `label` while it is empty. */
+  labelField?: string;
+  /** Words shown on pointing at it, as Flectra's ribbon's title. */
+  tooltip?: string;
   tone?: Tone;
   invisible?: Modifier;
   roles?: Roles;
@@ -437,6 +441,8 @@ export interface SheetNode {
   buttons?: ButtonNode[];
   statButtons?: StatButton[];
   ribbon?: Ribbon;
+  /** Several ribbons, each with its condition, as Flectra's web_ribbons: the first one shown wins the corner, after `ribbon`. */
+  ribbons?: Ribbon[];
   alerts?: Alert[];
   badges?: Badge[];
   children: LayoutNode[];
@@ -723,7 +729,7 @@ export const StatButtonSchema = z.strictObject({
   invisible, roles,
 });
 
-export const RibbonSchema = z.strictObject({ id, label: z.string(), tone: tone.optional(), invisible, roles });
+export const RibbonSchema = z.strictObject({ id, label: z.string(), labelField: fieldName.optional(), tooltip: z.string().optional(), tone: tone.optional(), invisible, roles });
 
 export const AlertSchema = z.strictObject({ id, message: z.string(), tone: tone.optional(), dismissible: z.boolean().optional(), invisible, roles });
 
@@ -753,6 +759,7 @@ export const SheetNodeSchema = z.strictObject({
   buttons: z.array(ButtonNodeSchema).optional(),
   statButtons: z.array(StatButtonSchema).optional(),
   ribbon: RibbonSchema.optional(),
+  ribbons: z.array(RibbonSchema).optional(),
   alerts: z.array(AlertSchema).optional(),
   badges: z.array(BadgeSchema).optional(),
   get children(): z.ZodArray<typeof LayoutNodeSchema> {

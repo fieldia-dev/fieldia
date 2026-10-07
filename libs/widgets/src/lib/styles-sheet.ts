@@ -18,4 +18,6 @@ export const SHEET_CSS = /* css */ `
 /* A choice as a coloured pill, as wide as its words, on the line a box's words sit on. */
 .fd-field > .fd-badge { justify-self: start; align-self: start; width: fit-content; margin-block: calc((var(--fd-control-height, 30px) - 24px) / 2); }
 .fd-title > .fd-field > .fd-read-text { font-size: 24px; font-weight: 600; line-height: 1.25; }
+/* A ribbon with words to point at takes the pointer, though its frame lets clicks through. */
+.fd-ribbon[title] { pointer-events: auto; cursor: help; }
 `;

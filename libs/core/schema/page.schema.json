@@ -3423,6 +3423,13 @@
             "label": {
               "type": "string"
             },
+            "labelField": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "tooltip": {
+              "type": "string"
+            },
             "tone": {
               "type": "string",
               "enum": [
@@ -3445,6 +3452,49 @@
             "label"
           ],
           "additionalProperties": false
+        },
+        "ribbons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "labelField": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "tooltip": {
+                "type": "string"
+              },
+              "tone": {
+                "type": "string",
+                "enum": [
+                  "info",
+                  "success",
+                  "warning",
+                  "danger",
+                  "muted"
+                ]
+              },
+              "invisible": {
+                "$ref": "#/$defs/Modifier"
+              },
+              "roles": {
+                "$ref": "#/$defs/Roles"
+              }
+            },
+            "required": [
+              "id",
+              "label"
+            ],
+            "additionalProperties": false
+          }
         },
         "alerts": {
           "type": "array",
