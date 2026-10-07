@@ -829,9 +829,12 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       locked = true;
     } else locked = false;
     root.toggleAttribute('data-readonly', locked);
+    // Conditions read `editing`: parts for editing only, or reading only, follow.
+    form.setEditing(!locked);
     render(form.getState());
   });
   root.toggleAttribute('data-readonly', locked);
+  form.setEditing(!locked);
   updaters.push(() => {
     if (!editSwitch) return;
     editSwitch.textContent = locked ? labels.edit : labels.done;
@@ -1479,6 +1482,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     setReadonly(readonly) {
       locked = readonly;
       root.toggleAttribute('data-readonly', locked);
+      form.setEditing(!locked);
       render(form.getState());
     },
     isReadonly: () => locked,

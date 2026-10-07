@@ -192,3 +192,35 @@ describe('keys on buttons', () => {
     expect(both(button('d')).join('\n')).toMatch(/buttons\[0\]\.hotkey: Alt\+D is the browser’s own/);
   });
 });
+
+describe('parts shown only while the record is edited, or only while it is read', () => {
+  const page = () => sheet({}, [
+    { type: 'button', id: 'make-company', label: 'Create company', action: 'create_company', invisible: 'not editing' },
+    { type: 'text', id: 'reading-note', text: 'Press Edit to change it.', invisible: 'editing' },
+  ]);
+
+  it('reads `editing` in any condition, as the record’s id and the person are read', () => {
+    expect(both(page())).toEqual([]);
+  });
+
+  it('is being edited unless told: a form says so, and its parts follow', async () => {
+    const { createForm } = await import('../../index');
+    const form = createForm({ page: page() as never });
+    const seen: boolean[] = [];
+    form.subscribe(() => seen.push(form.node('make-company').invisible));
+    expect(form.node('make-company').invisible).toBe(false);
+    expect(form.node('reading-note').invisible).toBe(true);
+    form.setEditing(false);
+    expect(form.node('make-company').invisible).toBe(true);
+    expect(form.node('reading-note').invisible).toBe(false);
+    expect(seen).toEqual([true]);
+    expect(createForm({ page: page() as never, editing: false }).node('make-company').invisible).toBe(true);
+  });
+
+  it('leaves the name to a field of the page called so', async () => {
+    const { createForm } = await import('../../index');
+    const own = { ...page(), fields: { ...fields, editing: { type: 'boolean', label: 'Editing' } } };
+    const form = createForm({ page: own as never, values: { editing: false } });
+    expect(form.node('make-company').invisible).toBe(true);
+  });
+});

@@ -504,3 +504,39 @@ describe('keys on a dialog’s own buttons', () => {
     expect(actions).toEqual(['mark_lost']);
   });
 });
+
+describe('parts shown only while the record is edited, or only while it is read', () => {
+  const page = (): Page => ({
+    fieldia: '0.1',
+    id: 'contact',
+    data: { kind: 'record', model: 'res.partner' },
+    fields: { name: { type: 'char', label: 'Name' } },
+    layout: {
+      type: 'sheet',
+      id: 'root',
+      children: [
+        { type: 'field', id: 'f-name', field: 'name' },
+        { type: 'button', id: 'b-company', label: 'Create company', action: 'create_company', invisible: 'not editing' },
+        { type: 'text', id: 't-read', text: 'Press Edit to change this contact.', style: 'note', invisible: 'editing' },
+      ],
+    },
+  });
+
+  it('follows the Edit switch: edit-only parts while editing, read-only parts while reading', async () => {
+    const { host, at } = mount(page(), { values: { name: 'Mona' }, readonly: true, editSwitch: true });
+    expect(visible(at('b-company'))).toBe(false);
+    expect(visible(at('t-read'))).toBe(true);
+    (host.querySelector('.fd-edit-switch') as HTMLButtonElement).click();
+    await flush();
+    expect(visible(at('b-company'))).toBe(true);
+    expect(visible(at('t-read'))).toBe(false);
+  });
+
+  it('follows the app locking the form, and a form always edited shows its edit-only parts', () => {
+    const { at, handle } = mount(page(), { values: { name: 'Mona' } });
+    expect(visible(at('b-company'))).toBe(true);
+    handle.setReadonly(true);
+    expect(visible(at('b-company'))).toBe(false);
+    expect(visible(at('t-read'))).toBe(true);
+  });
+});
