@@ -112,6 +112,9 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   const element = document.createElement('div');
   element.className = 'fd-lines';
   element.id = id;
+  // Lines as cards on a narrow form, or always; columns as wide as they hold: the stylesheet draws them so.
+  if (node.cards) element.dataset['cards'] = node.cards;
+  if (node.fit) element.dataset['fit'] = node.fit;
   element.setAttribute('role', 'group');
   const scroller = document.createElement('div');
   scroller.className = 'fd-lines-scroll';
@@ -276,6 +279,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     const td = document.createElement('td');
     td.colSpan = span;
     td.dataset['column'] = column;
+    // Its column's label, which a card shows before its value.
+    td.dataset['label'] = sub.label;
     const label = document.createElement('label');
     label.className = 'fd-sr-only';
     label.htmlFor = cellId;

@@ -368,6 +368,36 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-lines-chosen[hidden] { display: none; }
 .fd-lines-chosen-count { font-weight: 600; font-size: 13px; margin-inline-end: 6px; }
 .fd-lines-chosen-button { display: inline-flex; align-items: center; gap: 6px; padding-block: 3px; }
+/* A line opened in a dialog: its own record's page, or its every field. */
+.fd-lines-table .fd-line-open { border: none; background: none; cursor: pointer; color: var(--fd-accent); font-size: 14px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
+.fd-lines-table .fd-line-open:hover { background: var(--fd-accent-soft); }
+.fd-links-table td { vertical-align: middle; }
+.fd-links-table .fd-value-text { padding-block: 4px; }
+/* Columns as wide as they hold (fit: content), the widest taking what is left. */
+.fd-lines[data-fit="content"] .fd-lines-table td { min-width: 0; }
+.fd-lines[data-fit="content"] .fd-lines-table th { width: 1px; }
+.fd-lines[data-fit="content"] .fd-lines-table :is(input.fd-input, select.fd-input) { min-width: 6ch; }
+/* Lines as cards (cards: narrow on a phone, or always): each a box, every cell its column's label above its value. */
+.fd-lines[data-cards] { container: fd-lines / inline-size; }
+@container fd-lines (max-width: 520px) {
+  .fd-lines[data-cards="narrow"] .fd-lines-table, .fd-lines[data-cards="narrow"] .fd-lines-table :is(tbody, tfoot) { display: block; }
+  .fd-lines[data-cards="narrow"] .fd-lines-table thead { display: none; }
+  .fd-lines[data-cards="narrow"] .fd-lines-table tr { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; position: relative; padding: 10px 12px; margin-block-end: 8px; border: 1px solid var(--fd-border); border-radius: var(--fd-radius); background: var(--fd-surface); }
+  .fd-lines[data-cards="narrow"] .fd-lines-table td { display: block; border: none; padding: 0; min-width: 0; }
+  .fd-lines[data-cards="narrow"] .fd-lines-table td[data-label]:not([colspan]:not([colspan="1"]))::before { content: attr(data-label); display: block; font-size: 12px; font-weight: 600; color: var(--fd-muted); }
+  .fd-lines[data-cards="narrow"] .fd-lines-table td.fd-lines-grip { position: absolute; inset-block-start: 6px; inset-inline-start: 6px; padding: 0; }
+  .fd-lines[data-cards="narrow"] .fd-lines-table td.fd-lines-grip .fd-line-grip { display: none; }
+  .fd-lines[data-cards="narrow"] .fd-lines-table tr:has(.fd-line-pick) { padding-inline-start: 36px; }
+  .fd-lines[data-cards="narrow"] .fd-lines-table td.fd-lines-tools { width: auto; text-align: end; }
+  .fd-lines[data-cards="narrow"] .fd-lines-totals td:empty { display: none; }
+}
+.fd-lines[data-cards="always"] .fd-lines-table, .fd-lines[data-cards="always"] .fd-lines-table :is(tbody, tfoot) { display: block; }
+.fd-lines[data-cards="always"] .fd-lines-table thead { display: none; }
+.fd-lines[data-cards="always"] .fd-lines-table tr { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px 12px; position: relative; padding: 10px 12px; margin-block-end: 8px; border: 1px solid var(--fd-border); border-radius: var(--fd-radius); background: var(--fd-surface); }
+.fd-lines[data-cards="always"] .fd-lines-table td { display: block; border: none; padding: 0; min-width: 0; }
+.fd-lines[data-cards="always"] .fd-lines-table td[data-label]:not([colspan]:not([colspan="1"]))::before { content: attr(data-label); display: block; font-size: 12px; font-weight: 600; color: var(--fd-muted); }
+.fd-lines[data-cards="always"] .fd-lines-table td.fd-lines-grip, .fd-lines[data-cards="always"] .fd-lines-table td.fd-lines-tools { grid-column: 1 / -1; width: auto; }
+.fd-lines[data-cards="always"] .fd-lines-table td.fd-lines-tools { text-align: end; }
 .fd-line-copy { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 15px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
 .fd-line-copy:hover { color: var(--fd-accent); background: var(--fd-accent-soft); }
 /* A section heads the lines below it; a note reads as a remark between them. */

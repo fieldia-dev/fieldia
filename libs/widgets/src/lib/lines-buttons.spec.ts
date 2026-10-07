@@ -135,3 +135,18 @@ describe('a line copied', () => {
     expect(lines[1].id).toBeUndefined();
   });
 });
+
+describe('a plain table on a phone', () => {
+  it('is marked to draw its lines as cards, each cell with its column’s label, and its columns fit to content', async () => {
+    const { FIELDIA_CSS } = await import('./styles');
+    const node = { ...(page.layout as { children: FieldNode[] }).children[0], cards: 'narrow', fit: 'content' } as FieldNode;
+    const form = createForm({ page, values: { state: 'draft', workorder_ids: [{ key: 'a', values: { name: 'Cut', hours: 2 } }] } as never });
+    const widget = createWidget({ form, name: 'workorder_ids', field: page.fields['workorder_ids'] as Field, node, id: 'fd-wo', document, labels: WIDGET_LABELS.en });
+    widget.update({ value: form.getState().values['workorder_ids'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    expect(widget.element.dataset['cards']).toBe('narrow');
+    expect(widget.element.dataset['fit']).toBe('content');
+    expect((widget.element.querySelector('td[data-column="hours"]') as HTMLElement).dataset['label']).toBe('Hours');
+    expect(FIELDIA_CSS).toContain('@container fd-lines (max-width: 520px)');
+    expect(FIELDIA_CSS).toContain('.fd-lines[data-cards="always"]');
+  });
+});
