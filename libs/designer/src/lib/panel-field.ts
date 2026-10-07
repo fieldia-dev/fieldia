@@ -16,6 +16,7 @@ import type { PropertiesView } from './screen-properties';
 import { rolesSetting } from './roles-setting';
 import { tableSettings } from './table-panel';
 import { shownWhileSetting } from './shown-while';
+import { placeholderWhenList } from './placeholder-when';
 
 /**
  * A field's settings, on the panel's tabs: its words and how it is shown
@@ -37,7 +38,9 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   help.addEventListener('input', () => designer.updateQuestion(id, { help: help.value }));
   const placeholder = el('input', { class: 'fd-input', 'aria-label': w.placeholder, placeholder: w.placeholderHint });
   placeholder.addEventListener('input', () => designer.updateQuestion(id, { placeholder: placeholder.value }));
-  const placeholderRow = setting(el, 'content', 'Placeholder', placeholder, { words: w.placeholder });
+  // Other words while a condition holds: a company's name or a person's.
+  const placeholderWhen = placeholderWhenList(el, designer, id);
+  const placeholderRow = setting(el, 'content', 'Placeholder', [placeholder, el('span', { class: 'fd-answer-rule-word' }, w.placeholderWhen), placeholderWhen.element], { words: w.placeholder });
   // Only the kinds that suit what the field holds, as the bar on the canvas offers them, and why.
   const kind = el('select', { class: 'fd-input fd-select', 'aria-label': w.shownAs });
   kind.addEventListener('change', () => designer.changeKind(id, kind.value));
@@ -140,6 +143,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       if (!focused(help)) help.value = found.node.help ?? def.help ?? '';
       placeholderRow.hidden = !TAKES_PLACEHOLDER.has(def.type) || !!found.node.widget && !['email', 'phone', 'url'].includes(found.node.widget);
       if (!focused(placeholder)) placeholder.value = found.node.placeholder ?? '';
+      if (!placeholderRow.hidden) placeholderWhen.update(page);
       const current = kindOfField(def, found.node);
       const offered = designer.kindsFor(id);
       const key = offered.map((k) => k.id).join(',');

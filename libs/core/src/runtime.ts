@@ -11,6 +11,7 @@ export type {
   Roles,
   CellRules,
   LineOrder,
+  PlaceholderWhen,
   HelpShown,
   ToneWhen,
   Tone,

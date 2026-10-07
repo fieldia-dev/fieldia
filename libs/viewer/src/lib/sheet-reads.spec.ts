@@ -702,3 +702,34 @@ describe('a stat button’s help', () => {
     expect(at('returns').hasAttribute('aria-describedby')).toBe(false);
   });
 });
+
+describe('words in an empty box chosen by a condition', () => {
+  it('follow the record, in the title and in a field, as Flectra’s company and person names', () => {
+    const page = {
+      fieldia: '0.1',
+      id: 'contact',
+      data: { kind: 'record', model: 'res.partner' },
+      fields: { name: { type: 'char', label: 'Name' }, is_company: { type: 'boolean', label: 'Company' }, parent_id: { type: 'many2one', label: 'Company', relation: 'res.partner' } },
+      layout: {
+        type: 'sheet',
+        id: 'sheet',
+        title: { field: 'name', placeholder: 'e.g. Brandom Freeman', placeholderWhen: [{ when: 'is_company', text: 'e.g. Lumber Inc' }] },
+        children: [
+          { type: 'field', id: 'f-company', field: 'is_company' },
+          { type: 'field', id: 'f-parent', field: 'parent_id', placeholderWhen: [{ when: 'is_company', text: 'Parent company…' }] },
+        ],
+      },
+    } as unknown as Page;
+    const { host, form } = mount(page);
+    const title = host.querySelector('[data-node="#title"] input') as HTMLInputElement;
+    const parent = host.querySelector('[data-node="f-parent"] input') as HTMLInputElement;
+    const drawn = parent.placeholder;
+    expect(title.placeholder).toBe('e.g. Brandom Freeman');
+    form.setValue('is_company', true);
+    expect(title.placeholder).toBe('e.g. Lumber Inc');
+    expect(parent.placeholder).toBe('Parent company…');
+    form.setValue('is_company', false);
+    expect(title.placeholder).toBe('e.g. Brandom Freeman');
+    expect(parent.placeholder).toBe(drawn);
+  });
+});

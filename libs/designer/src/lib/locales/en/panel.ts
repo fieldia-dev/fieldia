@@ -59,6 +59,13 @@ export const panel = {
   optional: 'Optional',
   placeholder: 'Placeholder',
   placeholderHint: 'Words inside the empty box',
+  /** Other words in the empty box while a condition holds, the first that holds. */
+  placeholderWhen: 'Other words while',
+  placeholderWhenAdd: 'Add words for a condition',
+  placeholderWhenWords: 'Words',
+  placeholderWhenCondition: 'While',
+  placeholderWhenRemove: (n: number) => `Remove words ${n}`,
+  placeholderWhenNeedsWords: 'Words in the empty box need words',
   shownAs: 'Shown as',
   options: 'Options',
   duplicate: 'Duplicate',

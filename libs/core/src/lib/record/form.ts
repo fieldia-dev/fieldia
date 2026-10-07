@@ -288,6 +288,12 @@ export interface Form {
   lineState(nodeId: string, key: string): LineState;
   /** Whether a table's column is hidden now by its `hidden` rule, read on the record. */
   columnHidden(nodeId: string, column: string): boolean;
+  /**
+   * The words a field's empty box shows now, by its node (`#title` for a
+   * sheet's title): its first `placeholderWhen` that holds, else its
+   * `placeholder`; undefined when it has neither.
+   */
+  placeholder(nodeId: string): string | undefined;
   /** Press a button on a table's line: its confirmation, its steps, then its action, each call carrying the line. Hidden on that line, it does not run. */
   runRowAction(nodeId: string, buttonId: string, key: string): Promise<RunResult>;
   /**
@@ -404,6 +410,13 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     }
     return out;
   }
+  /** The words of each field's empty box chosen by conditions, by its node: read once. */
+  const placeholders = new Map<string, { fixed?: string; when: { text: string; holds: CompiledModifier }[] }>();
+  const placeholderOf = (id: string, own: { placeholder?: string; placeholderWhen?: FieldNode['placeholderWhen'] }) => {
+    if (own.placeholderWhen?.length) placeholders.set(id, { fixed: own.placeholder, when: own.placeholderWhen.map((item) => ({ text: item.text, holds: compileModifier(item.when) })) });
+  };
+  for (const node of index.values()) if (node.kind === 'field' && 'type' in node.source) placeholderOf(node.id, node.source as FieldNode);
+  if (page.layout.type === 'sheet' && page.layout.title) placeholderOf('#title', page.layout.title);
   /** Whether any rule only warns: without one, there are never warnings to look for. */
   const warns = [...nodeRules.values()].some((rules) => rules.some((compiled) => compiled.rule.level === 'warning'));
   const steps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
@@ -1505,6 +1518,17 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       }
       if (index.get(nodeId)?.kind !== 'field') throw new Error(`"${nodeId}" is not a field on this page`);
       return { tone: null, bold: false };
+    },
+    placeholder(nodeId) {
+      const own = placeholders.get(nodeId);
+      if (!own) {
+        const node = index.get(nodeId);
+        if (node?.kind !== 'field') throw new Error(`"${nodeId}" is not a field on this page`);
+        const source = node.source as Partial<FieldNode>;
+        return nodeId === '#title' && page.layout.type === 'sheet' ? page.layout.title?.placeholder : source.placeholder;
+      }
+      const { context: ctx, env } = reading();
+      return own.when.find((item) => item.holds.evaluate(ctx, env))?.text ?? own.fixed;
     },
     lineState: (nodeId, key) => lineStateOf(nodeId, key),
     columnHidden(nodeId, column) {

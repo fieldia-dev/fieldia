@@ -374,10 +374,11 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       }
       const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs }, options.widgets);
       // A label kept out of sight still names the box; the empty box shows it instead, unless the page gives it words of its own.
-      if (labelsAt === 'hidden' && !node.placeholder) {
-        const box = widget.element.matches(TEXT_BOX) ? widget.element : widget.element.querySelector(TEXT_BOX);
-        box?.setAttribute('placeholder', labelText);
-      }
+      const textBox = widget.element.matches(TEXT_BOX) ? widget.element : widget.element.querySelector(TEXT_BOX);
+      if (labelsAt === 'hidden' && !node.placeholder) textBox?.setAttribute('placeholder', labelText);
+      // Words chosen by a condition (placeholderWhen), else what the box showed as it was drawn.
+      const drawnPlaceholder = textBox?.getAttribute('placeholder') ?? null;
+      const chosenPlaceholder = node.placeholderWhen?.length ? textBox : null;
       if (!['INPUT', 'SELECT', 'TEXTAREA'].includes(widget.element.tagName)) {
         // `for` stays: a custom field that puts the id on its own input is
         // labelled natively. Only a wrapper with a role (a radio group, say) may
@@ -428,6 +429,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
           setAttr(wrapper, 'data-tone', look.tone);
           wrapper.classList.toggle('fd-value-bold', look.bold);
         }
+        if (chosenPlaceholder) setAttr(chosenPlaceholder, 'placeholder', form.placeholder(node.id) ?? drawnPlaceholder);
         const message = state.errors[node.field];
         setHidden(error, !message);
         setText(error, message ?? '');
@@ -1344,7 +1346,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       // Words over the title, as Flectra's "Product Name" over its h1, naming its box.
       if (node.title.label) title.append(el('label', { class: 'fd-title-label', for: uid('#title') }, node.title.label));
       if (node.title.above?.length) title.append(el('div', { class: 'fd-title-above' }, ...node.title.above.map((part) => fieldItem(part))));
-      const name = fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder });
+      const name = fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder, ...(node.title.placeholderWhen ? { placeholderWhen: node.title.placeholderWhen } : {}) });
       // Fields on the title's line, before and after it: a priority star, a state's dot (Flectra's <h1>).
       const before = node.title.before ?? [];
       const after = node.title.after ?? [];

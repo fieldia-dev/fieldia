@@ -1,4 +1,4 @@
-import type { ButtonNode, CellRules, Field, FieldNode, LayoutNode, Page, ScreenWidth, ToneWhen } from '@fieldia/core';
+import type { ButtonNode, CellRules, Field, FieldNode, LayoutNode, Page, PlaceholderWhen, ScreenWidth, ToneWhen } from '@fieldia/core';
 import { findNode } from './page-tree';
 import { Refusal } from './refusal';
 
@@ -58,6 +58,8 @@ export interface TableCommands {
   setFieldTones(id: string, tones: ToneWhen[] | null): boolean;
   /** A field's value in bold while a condition holds; `null` takes it away. */
   setFieldBold(id: string, when: string | null): boolean;
+  /** Words in a field's empty box while a condition on the record holds, the first that holds (`placeholderWhen`); `null` takes them away. */
+  setPlaceholderWhen(id: string, items: PlaceholderWhen[] | null): boolean;
   /** A column's cells: blank, read-only, required or bold while a condition on their line holds, or the column hidden while one on the record does. */
   setCellRule(id: string, column: string, rule: CellRule, when: string | null): boolean;
   /** A column's cells' tones, each while a condition on its line holds. */
@@ -149,6 +151,17 @@ export function tableCommands({ apply }: TableCommandsDeps): TableCommands {
         if (said) refuseCondition(draft, said);
         put(node, 'bold', said);
       }, `bold:${id}`);
+    },
+
+    setPlaceholderWhen(id, items) {
+      return apply((draft) => {
+        const kept = (items ?? []).map((item) => ({ when: typeof item.when === 'string' ? item.when.trim() : item.when, text: item.text }));
+        for (const item of kept) {
+          if (!item.text.trim()) throw new Refusal((w) => w.panel.placeholderWhenNeedsWords);
+          if (typeof item.when === 'string') refuseCondition(draft, item.when);
+        }
+        put(fieldNode(draft, id), 'placeholderWhen', kept.length ? kept : undefined);
+      }, `placeholder-when:${id}`);
     },
 
     setCellRule(id, column, rule, when) {

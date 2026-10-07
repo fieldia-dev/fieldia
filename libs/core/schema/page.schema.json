@@ -3499,6 +3499,13 @@
             "placeholder": {
               "type": "string"
             },
+            "placeholderWhen": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/PlaceholderWhen"
+              }
+            },
             "above": {
               "type": "array",
               "items": {
@@ -3536,6 +3543,13 @@
                   },
                   "placeholder": {
                     "type": "string"
+                  },
+                  "placeholderWhen": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/PlaceholderWhen"
+                    }
                   },
                   "help": {
                     "type": "string"
@@ -3976,6 +3990,13 @@
                   "placeholder": {
                     "type": "string"
                   },
+                  "placeholderWhen": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/PlaceholderWhen"
+                    }
+                  },
                   "help": {
                     "type": "string"
                   },
@@ -4415,6 +4436,13 @@
                   "placeholder": {
                     "type": "string"
                   },
+                  "placeholderWhen": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/PlaceholderWhen"
+                    }
+                  },
                   "help": {
                     "type": "string"
                   },
@@ -4853,6 +4881,13 @@
                   },
                   "placeholder": {
                     "type": "string"
+                  },
+                  "placeholderWhen": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/PlaceholderWhen"
+                    }
                   },
                   "help": {
                     "type": "string"
@@ -5880,6 +5915,33 @@
       ],
       "additionalProperties": false
     },
+    "PlaceholderWhen": {
+      "type": "object",
+      "properties": {
+        "when": {
+          "$ref": "#/$defs/Modifier"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "when",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "Modifier": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
     "LineOrder": {
       "type": "object",
       "properties": {
@@ -5949,17 +6011,6 @@
         }
       },
       "additionalProperties": false
-    },
-    "Modifier": {
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "type": "string",
-          "minLength": 1
-        }
-      ]
     },
     "ToneWhen": {
       "type": "object",
@@ -6743,6 +6794,13 @@
             },
             "placeholder": {
               "type": "string"
+            },
+            "placeholderWhen": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/PlaceholderWhen"
+              }
             },
             "help": {
               "type": "string"

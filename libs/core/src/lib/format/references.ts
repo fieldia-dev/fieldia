@@ -488,6 +488,7 @@ export class ReferenceCheck {
       this.need(sheet.title.field, `${path}.title.field`);
       if (sheet.title.subtitleField !== undefined) this.need(sheet.title.subtitleField, `${path}.title.subtitleField`);
       if (sheet.title.avatarField !== undefined) this.need(sheet.title.avatarField, `${path}.title.avatarField`);
+      sheet.title.placeholderWhen?.forEach((item, i) => this.checkModifiers(item, `${path}.title.placeholderWhen[${i}]`, ['when']));
     }
     if (sheet.statusbar) {
       const { field, visibleStates, durationsField, fold, saves, clickable } = sheet.statusbar;
@@ -592,8 +593,9 @@ export class ReferenceCheck {
         this.report(`${at}.pattern`, `"${rule.pattern}" is not a regular expression`);
       }
     });
-    // Its value's tones and bold: read on the record, as its other conditions are.
+    // Its value's tones and bold, and the words its empty box shows: read on the record, as its other conditions are.
     node.tones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.tones[${i}]`, ['when']));
+    node.placeholderWhen?.forEach((item, i) => this.checkModifiers(item, `${path}.placeholderWhen[${i}]`, ['when']));
     this.checkModifiers(node, path, ['bold']);
     if (def && node.totals) {
       if (def.type !== 'one2many') {

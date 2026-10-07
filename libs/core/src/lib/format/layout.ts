@@ -104,6 +104,12 @@ export interface FieldNode {
    */
   options?: WidgetOptions;
   placeholder?: string;
+  /**
+   * Words in its empty box chosen by a condition on the record: the first
+   * that holds, else `placeholder` — as Flectra's two name fields, "e.g.
+   * Lumber Inc" for a company and "e.g. Brandom Freeman" for a person.
+   */
+  placeholderWhen?: PlaceholderWhen[];
   help?: string;
   /** Grid columns this field spans inside a section. */
   colspan?: number;
@@ -185,6 +191,12 @@ export interface FieldNode {
   hideOn?: ScreenWidth[];
   readonly?: Modifier;
   required?: Modifier;
+}
+
+/** Words in a field's empty box while a condition holds. */
+export interface PlaceholderWhen {
+  when: Modifier;
+  text: string;
 }
 
 /** One field a table's lines are ordered by, as they load. */
@@ -564,6 +576,8 @@ export interface SheetTitle {
   subtitleField?: string;
   avatarField?: string;
   placeholder?: string;
+  /** Words in the empty title chosen by a condition, the first that holds, else `placeholder`: a company's name or a person's. */
+  placeholderWhen?: PlaceholderWhen[];
   /** Fields over the title, such as an Individual/Company choice. */
   above?: FieldNode[];
   /** Fields on the title's line before it, such as a priority star — Flectra's <h1> holding the priority and the name. */
@@ -748,6 +762,7 @@ const span = z.int().min(1).max(12).optional();
 const labelPlace = z.enum(['above', 'beside', 'hidden']);
 
 export const ToneWhenSchema = z.strictObject({ tone, when: ModifierSchema }).meta({ id: 'ToneWhen' });
+export const PlaceholderWhenSchema = z.strictObject({ when: ModifierSchema, text: z.string() }).meta({ id: 'PlaceholderWhen' });
 
 export const CellRulesSchema = z
   .strictObject({
@@ -796,6 +811,7 @@ export const FieldNodeSchema = z.strictObject({
   widget: z.string().min(1).optional(),
   options: z.object({ clear: z.boolean().optional() }).catchall(JsonValueSchema).optional(),
   placeholder: z.string().optional(),
+  placeholderWhen: z.array(PlaceholderWhenSchema).min(1).optional(),
   help: z.string().optional(),
   colspan: span,
   columns: z.array(fieldName).min(1).optional(),
@@ -1029,6 +1045,7 @@ export const SheetNodeSchema = z.strictObject({
       subtitleField: fieldName.optional(),
       avatarField: fieldName.optional(),
       placeholder: z.string().optional(),
+      placeholderWhen: z.array(PlaceholderWhenSchema).min(1).optional(),
       above: z.array(FieldNodeSchema).optional(),
       before: z.array(FieldNodeSchema).optional(),
       after: z.array(FieldNodeSchema).optional(),
