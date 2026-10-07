@@ -163,3 +163,82 @@ describe('a grid’s line opening its own record’s page', () => {
     expect(labelsIn()).toEqual(['Date', 'Court']);
   });
 });
+
+describe('the grid on a phone', () => {
+  const order = {
+    fieldia: '0.1',
+    id: 'order',
+    data: { kind: 'record', model: 'sale.order' },
+    fields: {
+      line_ids: {
+        type: 'one2many',
+        label: 'Lines',
+        relation: 'sale.order.line',
+        lineKinds: { field: 'kind', text: 'name' },
+        fields: {
+          kind: { type: 'selection', label: 'Kind', options: [{ value: 'section', label: 'Section' }, { value: 'note', label: 'Note' }] },
+          name: { type: 'char', label: 'Description' },
+          qty: { type: 'float', label: 'Quantity' },
+          lot: { type: 'char', label: 'Lot' },
+        },
+      },
+    },
+    layout: {
+      type: 'sections',
+      id: 'root',
+      children: [
+        {
+          type: 'field',
+          id: 'f-lines',
+          field: 'line_ids',
+          widget: 'grid',
+          cards: 'narrow',
+          fit: 'content',
+          columns: ['name', 'qty', 'lot'],
+          totals: ['qty'],
+          cells: { lot: { invisible: "not lot" } },
+          rowTones: [{ tone: 'danger', when: 'qty > 10' }],
+          rowButtons: [{ type: 'button', id: 'b-split', label: 'Split', action: 'action_split' }],
+        },
+      ],
+    },
+  } as unknown as Page;
+
+  async function mountOrder() {
+    const asked: ActionRequest[] = [];
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountViewer(host, {
+      page: order,
+      widgets: gridWidgets,
+      values: { line_ids: [{ key: 's', values: { kind: 'section', name: 'Furniture', qty: null, lot: null } }, { key: 'a', values: { kind: null, name: 'Desk', qty: 12, lot: null } }] } as never,
+      onAction: (request) => void asked.push(request),
+    });
+    await frames();
+    return { grid: host.querySelector('.fd-grid-lines') as HTMLElement, asked };
+  }
+
+  it('draws each line as a card too — its columns by their labels, its tone and buttons — shown on a narrow form', async () => {
+    const { grid, asked } = await mountOrder();
+    expect(grid.dataset['cards']).toBe('narrow');
+    const cards = [...grid.querySelectorAll('.fd-line-cards > .fd-line-card')] as HTMLElement[];
+    expect(cards.map((c) => c.dataset['line'])).toEqual(['s', 'a']);
+    expect(cards[0].classList).toContain('fd-line-card-section');
+    expect(cards[0].textContent).toBe('Furniture');
+    expect(cards[1].dataset['tone']).toBe('danger');
+    expect(cards[1].querySelector('.fd-line-card-title')?.textContent).toBe('Desk');
+    // A cell its line hides is left out.
+    expect([...cards[1].querySelectorAll('dt')].map((dt) => dt.textContent)).toEqual(['Quantity']);
+    expect(grid.querySelector('.fd-line-cards-total')?.textContent).toBe('Quantity: 12.00');
+    (cards[1].querySelector('[data-row-button="b-split"]') as HTMLButtonElement).click();
+    await frames();
+    expect(asked[0]).toMatchObject({ action: 'action_split', line: { key: 'a' } });
+  });
+
+  it('sizes its columns to what they hold, sharing none of the width', async () => {
+    const { grid } = await mountOrder();
+    const api = (await import('./grid')).gridApiOf(grid)!;
+    expect(api.getColumnDef('name')?.flex).toBeUndefined();
+    expect(api.getColumnDef('qty')?.flex).toBeUndefined();
+  });
+});

@@ -625,7 +625,11 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   bar.className = 'fd-lines-chosen';
   bar.hidden = true;
   bar.append(chosenCount, ...chosenButtons.map((b) => b.button));
-  element.append(...(choosing ? [bar] : []), host, problems, adds);
+  // Lines as cards too (cards: narrow or always): the stylesheet shows them in the grid's place on a narrow form.
+  const cardList = document.createElement('div');
+  cardList.className = 'fd-line-cards';
+  if (node.cards) element.dataset['cards'] = node.cards;
+  element.append(...(choosing ? [bar] : []), ...(node.cards ? [cardList] : []), host, problems, adds);
 
   let readonly = false;
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
@@ -743,6 +747,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       flex: wide ? 2 : sub.type === 'monetary' ? 1.3 : 1,
       hide: optional[column] === 'hide',
       ...(node.cells?.[column]?.width ? { width: node.cells[column].width! * 8 + 32, flex: 0 } : {}),
+      // Columns as wide as what they hold (fit: content), sized once the lines are drawn.
+      ...(node.fit === 'content' && !node.cells?.[column]?.width ? { flex: undefined, minWidth: 64 } : {}),
       editable: (p) => {
         if (readonly || p.node.rowPinned) return false;
         if (kindOf(p.data)) return spans(p.api);
@@ -1115,6 +1121,82 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     adds.append(button);
     return { id: own.id, button };
   });
+  /** What the cards were last drawn from: drawn again only when it changes. */
+  let cardsDrawn = '';
+  /** Each line as a card: its first column as its title, the rest by their labels, its tone, its buttons, ↗ and ×. */
+  function drawCards() {
+    if (!node.cards) return;
+    const current = lines();
+    const hidden = new Set(columns.filter((column) => ruleHidden.has(column) || api.getColumn(column)?.isVisible() === false));
+    const shownColumns = columns.filter((column) => !hidden.has(column));
+    const signature = JSON.stringify([current, [...lineStates], shownColumns, readonly, form.getState().values]);
+    if (signature === cardsDrawn) return;
+    cardsDrawn = signature;
+    const parent = form.getState().values;
+    const cards = current.map((line) => {
+      const card = document.createElement('div');
+      card.className = 'fd-line-card';
+      card.dataset['line'] = line.key;
+      const kind = kindOf(line);
+      if (kind && kinds) {
+        card.classList.add(`fd-line-card-${kind}`);
+        card.textContent = String(line.values[kinds.text] ?? '');
+        return card;
+      }
+      const state = lineStates.get(line.key);
+      if (state?.tone) card.dataset['tone'] = state.tone;
+      card.classList.toggle('fd-line-bold', !!state?.bold);
+      const shownHere = shownColumns.filter((column) => !state?.cells[column]?.invisible);
+      const [first, ...rest] = shownHere;
+      const text = (column: string) => displayValue(def.fields[column], line.values[column] as Value, line.values, locale, parent);
+      const title = document.createElement(dialogs ? 'button' : 'div');
+      title.className = 'fd-line-card-title';
+      title.textContent = first ? text(first) || fill(labels.lineN, { n: current.indexOf(line) + 1 }) : '';
+      if (dialogs && title instanceof HTMLButtonElement) {
+        title.type = 'button';
+        title.addEventListener('click', () => void openLine(line));
+      }
+      const list = document.createElement('dl');
+      for (const column of rest) {
+        const dt = document.createElement('dt');
+        dt.textContent = def.fields[column].label;
+        const dd = document.createElement('dd');
+        dd.textContent = text(column);
+        const tone = state?.cells[column]?.tone;
+        if (tone) dd.dataset['tone'] = tone;
+        list.append(dt, dd);
+      }
+      const tools = document.createElement('div');
+      tools.className = 'fd-line-card-tools';
+      for (const own of node.rowButtons ?? []) {
+        if (!state?.buttons[own.id]) continue;
+        const button = ownButton(own, 'fd-button fd-button-link fd-line-button');
+        button.dataset['rowButton'] = own.id;
+        delete button.dataset['node'];
+        button.addEventListener('click', () => void pressed(button, () => form.runRowAction(node.id, own.id, line.key)));
+        tools.append(button);
+      }
+      if (!readonly) {
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'fd-line-delete';
+        remove.textContent = '×';
+        remove.setAttribute('aria-label', labels.deleteLine);
+        remove.addEventListener('click', () => form.removeLine(name, line.key));
+        tools.append(remove);
+      }
+      card.append(title, list, tools);
+      return card;
+    });
+    const items = current.filter((line) => !kindOf(line));
+    const sums = totals.filter((column) => !hidden.has(column)).map((column) => {
+      const sum = items.reduce((total, line) => total + Number(line.values[column] ?? 0), 0);
+      return `${def.fields[column].label}: ${displayValue(def.fields[column], sum, items[0]?.values ?? {}, locale, parent)}`;
+    });
+    const total = sums.length ? Object.assign(document.createElement('div'), { className: 'fd-line-cards-total', textContent: sums.join(' · ') }) : null;
+    cardList.replaceChildren(...cards, ...(total ? [total] : []));
+  }
+
   /** The bar and the ticks, as the lines chosen are now; `redraw` draws the lines' ticks again. */
   function showChosen(redraw: boolean) {
     if (!choosing) return;
@@ -1196,6 +1278,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         api.setGridOption('rowData', current);
         fitHeight(current.length);
         if (totals.length) api.setGridOption('pinnedBottomRowData', [totalsRow(current)]);
+        // Columns as wide as what they hold, once more as the lines change.
+        if (node.fit === 'content') api.autoSizeAllColumns();
         // The ticks and copies name a line by where it is: it may have moved.
         if (choosing || node.options?.['copy'] === true) api.refreshCells({ columns: ['__pick', '__copy'], force: true, suppressFlash: true });
       }
@@ -1232,6 +1316,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         problems.hidden = !found.length;
       }
       showChosen(false);
+      drawCards();
       element.setAttribute('aria-invalid', String(state.invalid || found.length > 0));
     },
     destroy() {
