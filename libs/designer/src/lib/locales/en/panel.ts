@@ -253,6 +253,8 @@ export const panel = {
   actionHint: 'The name the app receives when it is pressed; the app decides what it does.',
   buttonLooks: { secondary: 'Plain', primary: 'Main', danger: 'Danger', link: 'A link' },
   asksFirst: 'Asks first',
+  hotkey: 'Key, with Alt',
+  hotkeyHint: 'A letter or a digit: Alt and it presses the button, as Flectra’s hotkeys. Shift+G for Alt+Shift+G.',
   actsAtOnce: 'Nothing: it acts at once',
   numberFrom: 'Number from',
   unitWords: 'Words after the value',

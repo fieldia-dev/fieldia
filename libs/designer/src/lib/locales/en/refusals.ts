@@ -100,6 +100,9 @@ export const refusals = {
   timesFromJson: (label: string) => `The time per step comes from a field holding JSON; ${label} does not`,
   foldStages: 'Only stages a link points to fold: a choice keeps the steps it shows',
   savesOnClick: 'A click saves the record only where a step can be clicked',
+  hotkeyShape: 'A key is one letter or digit, with Shift or without: V, Shift+G',
+  hotkeyBrowser: (key: string) => `${key} is the browser’s own: pick another key`,
+  onlyButtonKey: 'Only a button has a key',
   megabytes: (n: number) => `${n} MB`,
   // ---- kinds' own settings
   matrixNoPictures: 'A matrix’s columns have no pictures',

@@ -4,6 +4,7 @@ import { across, isSection, locate, nodeOf, rowsOf, spanOf, type Holder, type Pa
 import { fill, fromTwelfths, inTwelfths, isGroup, keepsFull, laidInTwelfths, resize, toTwelfths, TWELVE, twelfthsAhead } from './layout-twelfths';
 import { settingWords } from './look-parts-words';
 import { Refusal } from './refusal';
+import { hotkeyFrom } from './hotkey-setting';
 
 /**
  * A layout's settings: a group's columns on each size of screen, how wide a
@@ -189,13 +190,15 @@ export interface BlockPatch {
   confirm?: string;
   /** Words in an alert's box: its colour. */
   tone?: Tone;
+  /** A button's key, as typed: "v", "Shift+G"; empty for none. */
+  hotkey?: string;
 }
 
 export function updateBlock(page: Page, id: string, patch: BlockPatch): void {
   const node = locate(page, id)?.node;
   if (!node) throw new Refusal((w) => w.layout.noPart(id));
   if (node.type === 'text') {
-    if (patch.label !== undefined || patch.src !== undefined || patch.alt !== undefined || patch.caption !== undefined || patch.confirm !== undefined) throw new Refusal((w) => w.layout.wordsNotLabel);
+    if (patch.label !== undefined || patch.src !== undefined || patch.alt !== undefined || patch.caption !== undefined || patch.confirm !== undefined || patch.hotkey !== undefined) throw new Refusal((w) => w.layout.wordsNotLabel);
     if (patch.text !== undefined) node.text = patch.text;
     if (patch.style !== undefined) node.style = patch.style as TextNode['style'];
     // A colour is an alert's: words that are no longer one lose it.
@@ -212,8 +215,13 @@ export function updateBlock(page: Page, id: string, patch: BlockPatch): void {
       if (patch.confirm.trim()) node.confirm = patch.confirm;
       else delete node.confirm;
     }
+    if (patch.hotkey !== undefined) {
+      const key = hotkeyFrom(patch.hotkey);
+      if (key) node.hotkey = key;
+      else delete node.hotkey;
+    }
   } else if (node.type === 'image') {
-    if (patch.text !== undefined || patch.label !== undefined || patch.confirm !== undefined) throw new Refusal((w) => w.layout.pictureWords);
+    if (patch.text !== undefined || patch.label !== undefined || patch.confirm !== undefined || patch.hotkey !== undefined) throw new Refusal((w) => w.layout.pictureWords);
     if (patch.src !== undefined) {
       if (!patch.src.trim()) throw new Refusal((w) => w.layout.pictureAddress);
       node.src = patch.src.trim();

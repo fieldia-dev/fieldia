@@ -74,6 +74,7 @@ const NAMES: Record<string, string> = {
   'When…': 'عندما…',
   Look: 'المظهر',
   'Asks first': 'يسأل أولًا',
+  'Key, with Alt': 'المفتاح مع Alt',
 };
 
 export const panel: DesignerWords['panel'] = {
@@ -310,6 +311,8 @@ export const panel: DesignerWords['panel'] = {
   actionHint: 'الاسم الذي يتلقاه التطبيق عند الضغط؛ والتطبيق يقرر ما يفعل.',
   buttonLooks: { secondary: 'عادي', primary: 'رئيسي', danger: 'خطر', link: 'رابط' },
   asksFirst: 'يسأل أولًا',
+  hotkey: 'المفتاح مع Alt',
+  hotkeyHint: 'حرف أو رقم: يضغط الزر مع Alt. ‏Shift+G لـ Alt+Shift+G.',
   actsAtOnce: 'لا شيء: ينفّذ فورًا',
   numberFrom: 'الرقم من',
   unitWords: 'نص بعد القيمة',

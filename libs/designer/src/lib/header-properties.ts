@@ -7,6 +7,7 @@ import { allSections } from './page-tree';
 import { whenClicked } from './steps-panel';
 import type { PropertiesView } from './screen-properties';
 import { rolesSetting } from './roles-setting';
+import { hotkeyShown } from './hotkey-setting';
 
 /**
  * The panel for a part of a record's header: a button, a counter or a badge
@@ -40,6 +41,10 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   const asks = el('input', { class: 'fd-input', 'aria-label': w.asksFirst, placeholder: w.actsAtOnce }) as HTMLInputElement;
   asks.addEventListener('input', () => designer.updateHeaderPart(id, { confirm: asks.value }));
   const asksRow = prop(el, w.asksFirst, asks);
+  // A key that presses it with Alt, as Flectra's hotkeys.
+  const hotkey = el('input', { class: 'fd-input fd-hotkey-input', 'aria-label': w.hotkey, placeholder: 'V', autocomplete: 'off', spellcheck: 'false', maxlength: '11' }) as HTMLInputElement;
+  hotkey.addEventListener('change', () => designer.updateHeaderPart(id, { hotkey: hotkey.value }));
+  const hotkeyRow = el('label', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.hotkey), hotkey, el('p', { class: 'fd-properties-hint' }, w.hotkeyHint));
   const count = el('select', { class: 'fd-input fd-select', 'aria-label': w.numberFrom }) as HTMLSelectElement;
   count.addEventListener('change', () => designer.updateHeaderPart(id, { field: count.value }));
   const countRow = prop(el, w.numberFrom, count);
@@ -102,6 +107,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
     ...(pressed ? [pressed.element] : []),
     lookRow,
     asksRow,
+    hotkeyRow,
     countRow,
     ...statRows,
     toneRow,
@@ -123,10 +129,11 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
       const { kind, part, index, list } = found;
       if (!focused(words)) words.value = wordsOf(part);
       pressed?.update(page);
-      lookRow.hidden = asksRow.hidden = kind !== 'button';
+      lookRow.hidden = asksRow.hidden = hotkeyRow.hidden = kind !== 'button';
       if (kind === 'button') {
         look.value = (part as ButtonNode).style ?? 'secondary';
         if (!focused(asks)) asks.value = (part as ButtonNode).confirm ?? '';
+        if (!focused(hotkey)) hotkey.value = hotkeyShown((part as ButtonNode).hotkey);
       }
       countRow.hidden = kind !== 'stat';
       for (const row of statRows) row.hidden = kind !== 'stat';

@@ -241,3 +241,36 @@ describe('the status steps', () => {
     expect(designer.setStatusbar('stage', { saves: true })).toBe(false);
   });
 });
+
+describe('a key on a button', () => {
+  it('is typed as a person says it, kept as the page writes it, one undo step, on a header’s button and a section’s', () => {
+    const page = sheet();
+    ((page.layout as SheetNode).children[0] as { children: unknown[] }).children.push({ type: 'button', id: 'b-in', label: 'Update prices', action: 'update' });
+    const designer = createDesigner({ page });
+    const header = designer.addHeaderPart('button', 'Confirm') as string;
+    const { host } = mount(designer, { mode: 'advanced' });
+    const key = field(host, 'Key, with Alt') as HTMLInputElement;
+    key.value = 'Alt+Shift+G';
+    key.dispatchEvent(new Event('change', { bubbles: true }));
+    expect((designer.getPage().layout as SheetNode).buttons?.find((b) => b.id === header)?.hotkey).toBe('shift+g');
+    expect((field(host, 'Key, with Alt') as HTMLInputElement).value).toBe('Shift+G');
+    designer.undo();
+    expect((designer.getPage().layout as SheetNode).buttons?.find((b) => b.id === header)?.hotkey).toBeUndefined();
+    designer.select('b-in');
+    const blockKey = field(host, 'Key, with Alt') as HTMLInputElement;
+    blockKey.value = 'u';
+    blockKey.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(((designer.getPage().layout as SheetNode).children[0] as { children: { id: string; hotkey?: string }[] }).children.find((n) => n.id === 'b-in')?.hotkey).toBe('u');
+  });
+
+  it('refuses two letters, a key the browser keeps, and a key on what is not a button', () => {
+    const designer = createDesigner({ page: sheet() });
+    const button = designer.addHeaderPart('button', 'Confirm') as string;
+    expect(designer.updateHeaderPart(button, { hotkey: 'ab' })).toBe(false);
+    expect(designer.getState().issues.join(' ')).toMatch(/one letter or digit/);
+    expect(designer.updateHeaderPart(button, { hotkey: 'D' })).toBe(false);
+    expect(designer.getState().issues.join(' ')).toMatch(/Alt\+D is the browser’s own/);
+    const badge = designer.addHeaderPart('badge', 'VIP') as string;
+    expect(designer.updateHeaderPart(badge, { hotkey: 'v' })).toBe(false);
+  });
+});

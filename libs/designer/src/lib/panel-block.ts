@@ -5,6 +5,7 @@ import { locate } from './layout-tree';
 import { segmented, setting } from './panel-controls';
 import { formContent } from './panel-form';
 import { whenClicked } from './steps-panel';
+import { hotkeyShown } from './hotkey-setting';
 
 /**
  * A block's own settings, on the Content tab: a picture's address and the
@@ -128,12 +129,15 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
     );
     const asks = el('input', { class: 'fd-input', 'aria-label': w.asksFirst, placeholder: w.actsAtOnce, autocomplete: 'off' }) as HTMLInputElement;
     asks.addEventListener('input', () => designer.updateBlock(id, { confirm: asks.value }));
+    const hotkey = el('input', { class: 'fd-input fd-hotkey-input', 'aria-label': w.hotkey, placeholder: 'V', autocomplete: 'off', spellcheck: 'false', maxlength: '11' }) as HTMLInputElement;
+    hotkey.addEventListener('change', () => designer.updateBlock(id, { hotkey: hotkey.value }));
     return {
       rows: [
         setting(el, 'content', 'Button words', words, { words: w.buttonWords }),
         clicked.element,
         setting(el, 'content', 'Look', look.element, { words: w.look }),
         setting(el, 'content', 'Asks first', asks, { words: w.asksFirst }),
+        setting(el, 'content', 'Key, with Alt', hotkey, { words: w.hotkey, hint: w.hotkeyHint }),
       ],
       update(page) {
         const node = locate(page, id)?.node;
@@ -142,6 +146,7 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
         clicked.update(page);
         look.set(node.style ?? 'secondary');
         if (!focused(asks)) asks.value = node.confirm ?? '';
+        if (!focused(hotkey)) hotkey.value = hotkeyShown(node.hotkey);
       },
     };
   }

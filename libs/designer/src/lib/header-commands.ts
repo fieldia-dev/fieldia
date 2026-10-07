@@ -2,6 +2,7 @@ import type { Alert, Badge, ButtonNode, Field, Page, Ribbon, SheetNode, StatButt
 import { storedAs } from './kinds';
 import { allIds, nextName, shownFields } from './page-tree';
 import { Refusal } from './refusal';
+import { hotkeyFrom } from './hotkey-setting';
 
 /**
  * A record's header, as the designer edits it: the status steps, the
@@ -26,6 +27,8 @@ export interface HeaderPartPatch {
   style?: ButtonNode['style'];
   /** A button's question before it acts; empty asks nothing. */
   confirm?: string;
+  /** A button's key, as typed: "v", "Shift+G"; empty for none. */
+  hotkey?: string;
   /** A badge's, a ribbon's or an alert's colour. */
   tone?: Tone;
   /** A ribbon's or an alert's words from a field, while it holds any; empty for none. */
@@ -215,6 +218,12 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
             if (kind !== 'button') throw new Refusal((w) => w.refusals.onlyButtonAsks);
             if (patch.confirm.trim()) (part as ButtonNode).confirm = patch.confirm;
             else delete (part as ButtonNode).confirm;
+          }
+          if (patch.hotkey !== undefined) {
+            if (kind !== 'button') throw new Refusal((w) => w.refusals.onlyButtonKey);
+            const key = hotkeyFrom(patch.hotkey);
+            if (key) (part as ButtonNode).hotkey = key;
+            else delete (part as ButtonNode).hotkey;
           }
           if (patch.tone !== undefined) {
             if (kind !== 'badge' && kind !== 'ribbon' && kind !== 'alert') throw new Refusal((w) => w.refusals.onlyBadgeTone);
