@@ -97,6 +97,34 @@ describe('the grid', () => {
     expect(taxed.checked).toBe(true);
   });
 
+  it('closes a date cell once a day is picked from its calendar, keeping the date', async () => {
+    const { box, api, form } = await mount();
+    api!.startEditingCell({ rowIndex: 1, colKey: 'delivery' });
+    const input = box.querySelector('.ag-cell-inline-editing input[type="date"]') as HTMLInputElement;
+    // A pick from the browser's calendar: a value, no key pressed.
+    input.value = '2026-11-03';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    await frames();
+    expect(api!.getEditingCells()).toHaveLength(0);
+    expect(formLines(form)[1].values['delivery']).toBe('2026-11-03');
+    expect(rowCells(box, 1)[4]).toBe('3 Nov 2026');
+  });
+
+  it('keeps a date cell open while its date is typed', async () => {
+    const { box, api, form } = await mount();
+    api!.startEditingCell({ rowIndex: 1, colKey: 'delivery' });
+    const input = box.querySelector('.ag-cell-inline-editing input[type="date"]') as HTMLInputElement;
+    // The browser says change as soon as the typed year makes a date: typing, not a pick.
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: '2', bubbles: true }));
+    input.value = '0002-11-03';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    await frames();
+    expect(api!.getEditingCells()).toHaveLength(1);
+    expect(formLines(form)[1].values['delivery']).toBe('0002-11-03');
+  });
+
   it('edits a cell with the field’s own widget, and the change reaches the form at once', async () => {
     const { box, api, form } = await mount();
     api!.startEditingCell({ rowIndex: 1, colKey: 'name' });

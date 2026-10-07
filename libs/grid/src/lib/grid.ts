@@ -445,6 +445,18 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
       if (event.defaultPrevented) _stopPropagationForAgGrid(event);
       else if (event.key === 'Escape') params.cell.cancel(key, this.before);
     });
+    // A day picked from a date's calendar is the whole answer: the cell keeps it and closes, as a
+    // spreadsheet's does. The browser says change while a date is typed too (once the year makes
+    // one), so a change right after a key is typing, which Enter or Tab commits. A date with a time
+    // stays open for its time, and a whole line open at once stays open.
+    if (def.type === 'date' && !cell.rowMode) {
+      let typedAt = 0;
+      this.box.addEventListener('keydown', () => (typedAt = Date.now()), true);
+      this.box.addEventListener('change', (event) => {
+        if ((event.target as HTMLInputElement).type !== 'date' || Date.now() - typedAt < 500) return;
+        params.stopEditing();
+      });
+    }
     // Like a spreadsheet, a cell reached from the keyboard has its text selected,
     // so typing replaces it; a click still puts the caret where it lands.
     let pointing = false;
