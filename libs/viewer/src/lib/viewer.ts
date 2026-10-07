@@ -1351,7 +1351,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       // Words over the title, as Flectra's "Product Name" over its h1, naming its box.
       if (node.title.label) title.append(el('label', { class: 'fd-title-label', for: uid('#title') }, node.title.label));
       if (node.title.above?.length) title.append(el('div', { class: 'fd-title-above' }, ...node.title.above.map((part) => fieldItem(part))));
-      const name = fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder, ...(node.title.placeholderWhen ? { placeholderWhen: node.title.placeholderWhen } : {}) });
+      const name = fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder, ...(node.title.placeholderWhen ? { placeholderWhen: node.title.placeholderWhen } : {}), ...(node.title.focus ? { focus: true } : {}) });
       // Fields on the title's line, before and after it: a priority star, a state's dot (Flectra's <h1>).
       const before = node.title.before ?? [];
       const after = node.title.after ?? [];

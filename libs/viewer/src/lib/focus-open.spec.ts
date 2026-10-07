@@ -70,6 +70,15 @@ describe('a field that takes the focus as the record opens', () => {
     expect(first.contains(document.activeElement)).toBe(true);
   });
 
+  it('has it in a sheet’s title, as Flectra’s default_focus on the name', async () => {
+    const sheet = { ...contact, layout: { type: 'sheet', id: 'sheet', title: { field: 'name', focus: true }, children: [{ type: 'field', id: 'f-email', field: 'email' }] } } as unknown as Page;
+    const host = document.createElement('div');
+    document.body.append(host);
+    handles.push(mountViewer(host, { page: sheet }));
+    await settle();
+    expect(focusedNode()).toBe('#title');
+  });
+
   it('has it in a dialog, in place of the first field', async () => {
     void openFormDialog({ page: contact, title: 'New contact' });
     await settle();

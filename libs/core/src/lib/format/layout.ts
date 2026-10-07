@@ -597,6 +597,8 @@ export interface SheetTitle {
   placeholder?: string;
   /** Words in the empty title chosen by a condition, the first that holds, else `placeholder`: a company's name or a person's. */
   placeholderWhen?: PlaceholderWhen[];
+  /** The title takes the focus as the record opens, as a field node's `focus`: Flectra's default_focus on the name. */
+  focus?: boolean;
   /** Fields over the title, such as an Individual/Company choice. */
   above?: FieldNode[];
   /** Fields on the title's line before it, such as a priority star — Flectra's <h1> holding the priority and the name. */
@@ -1077,6 +1079,7 @@ export const SheetNodeSchema = z.strictObject({
       avatarField: fieldName.optional(),
       placeholder: z.string().optional(),
       placeholderWhen: z.array(PlaceholderWhenSchema).min(1).optional(),
+      focus: z.boolean().optional(),
       above: z.array(FieldNodeSchema).optional(),
       before: z.array(FieldNodeSchema).optional(),
       after: z.array(FieldNodeSchema).optional(),
