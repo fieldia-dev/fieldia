@@ -5,6 +5,7 @@
   "description": "Sherkety ERP's own multi-item expense (sherkety_expense: sherkety.expense, view_sherkety_expense_form): a shared header that cascades to every line, its own approval, and posting as an employee bill or company payments.",
   "data": { "kind": "record", "model": "sherkety.expense" },
   "maxWidth": "full",
+  "look": { "readonlyShown": "text" },
   "fields": {
     "name": { "type": "char", "label": "Reference", "required": true, "readonly": true, "default": "New" },
     "title": { "type": "char", "label": "Description", "required": true },
@@ -20,7 +21,12 @@
       "default": "own_account",
       "options": [{ "value": "own_account", "label": "Paid by Employee (to reimburse)" }, { "value": "company_account", "label": "Paid by Company" }]
     },
-    "employee_journal_id": { "type": "many2one", "label": "Journal", "relation": "account.journal", "filter": [{ "field": "type", "op": "=", "value": "purchase" }] },
+    "employee_journal_id": {
+      "type": "many2one",
+      "label": "Journal",
+      "relation": "account.journal",
+      "filter": [{ "field": "type", "op": "=", "value": "purchase" }]
+    },
     "payment_method_line_id": {
       "type": "many2one",
       "label": "Payment Method",
@@ -63,14 +69,19 @@
     "move_count": { "type": "integer", "label": "Entries", "readonly": true },
     "analytic_precision": { "type": "integer", "label": "Analytic Precision", "readonly": true },
     "header_vendor": { "type": "char", "label": "Vendor Name" },
-    "header_tax_ids": { "type": "many2many", "label": "Taxes", "relation": "account.tax", "filter": [{ "field": "type_tax_use", "op": "=", "value": "purchase" }] },
+    "header_tax_ids": {
+      "type": "many2many",
+      "label": "Taxes",
+      "relation": "account.tax",
+      "filter": [{ "field": "type_tax_use", "op": "=", "value": "purchase" }]
+    },
     "header_account_id": {
       "type": "many2one",
       "label": "Expense Account",
       "relation": "account.account",
       "filter": [{ "field": "account_type", "op": "not in", "value": ["asset_receivable", "liability_payable", "asset_cash", "liability_credit_card"] }]
     },
-    "header_analytic_distribution": { "type": "many2many", "label": "Analytic Distribution", "relation": "account.analytic.account" },
+    "header_analytic_distribution": { "type": "json", "label": "Analytic Distribution" },
     "line_ids": {
       "type": "one2many",
       "label": "Lines",
@@ -79,12 +90,22 @@
       "fields": {
         "sequence": { "type": "integer", "label": "Sequence", "default": 10 },
         "name": { "type": "char", "label": "Description", "required": true },
-        "product_id": { "type": "many2one", "label": "Category", "relation": "product.product", "filter": [{ "field": "can_be_expensed", "op": "=", "value": true }] },
+        "product_id": {
+          "type": "many2one",
+          "label": "Category",
+          "relation": "product.product",
+          "filter": [{ "field": "can_be_expensed", "op": "=", "value": true }]
+        },
         "vendor": { "type": "char", "label": "Vendor", "help": "Merchant name; inherits the header, overridable per line." },
         "date": { "type": "date", "label": "Date" },
         "quantity": { "type": "float", "label": "Quantity", "required": true, "default": 1, "digits": [16, 2] },
         "price_unit": { "type": "float", "label": "Unit Price", "digits": [16, 2] },
-        "tax_ids": { "type": "many2many", "label": "Taxes", "relation": "account.tax", "filter": [{ "field": "type_tax_use", "op": "=", "value": "purchase" }] },
+        "tax_ids": {
+          "type": "many2many",
+          "label": "Taxes",
+          "relation": "account.tax",
+          "filter": [{ "field": "type_tax_use", "op": "=", "value": "purchase" }]
+        },
         "account_id": {
           "type": "many2one",
           "label": "Account",
@@ -114,7 +135,7 @@
   "layout": {
     "type": "sheet",
     "id": "sheet",
-    "title": { "field": "title", "subtitleField": "name", "placeholder": "e.g. Trip to Riyadh" },
+    "title": { "field": "title", "label": "Description", "subtitleField": "name", "placeholder": "e.g. Trip to Riyadh" },
     "statusbar": { "field": "state", "visibleStates": ["draft", "submit", "approve", "post", "done"] },
     "buttons": [
       {
@@ -136,7 +157,8 @@
           { "do": "set", "field": "state", "value": "'approve'" },
           { "do": "save" },
           { "do": "say", "message": "Expense approved", "tone": "success" }
-        ]
+        ],
+        "roles": ["hr_expense.group_hr_expense_team_approver"]
       },
       {
         "type": "button",
@@ -144,7 +166,8 @@
         "label": "Post",
         "style": "primary",
         "invisible": "state != 'approve'",
-        "steps": [{ "do": "call", "action": "action_post" }, { "do": "save" }]
+        "steps": [{ "do": "call", "action": "action_post" }, { "do": "save" }],
+        "roles": ["account.group_account_invoice"]
       },
       {
         "type": "button",
@@ -174,7 +197,8 @@
             "into": { "payment_amount": "amount", "payment_handling": "payment_difference_handling" },
             "then": [{ "do": "call", "action": "expense_payment_registered" }, { "do": "save" }]
           }
-        ]
+        ],
+        "roles": ["account.group_account_invoice"]
       },
       {
         "type": "button",
@@ -186,17 +210,21 @@
           { "do": "set", "field": "state", "value": "'cancel'" },
           { "do": "save" },
           { "do": "say", "message": "Expense refused", "tone": "warning" }
-        ]
+        ],
+        "roles": ["hr_expense.group_hr_expense_team_approver"]
       },
       {
         "type": "button",
         "id": "b-reset-draft",
         "label": "Reset to Draft",
         "invisible": "state not in ['post', 'cancel']",
-        "steps": [{ "do": "call", "action": "action_draft" }, { "do": "save" }]
+        "steps": [{ "do": "call", "action": "action_draft" }, { "do": "save" }],
+        "roles": ["hr_expense.group_hr_expense_manager"]
       }
     ],
-    "statButtons": [{ "id": "s-entries", "label": "Entries", "field": "move_count", "icon": "file", "action": "action_open_moves", "invisible": "move_count == 0" }],
+    "statButtons": [
+      { "id": "s-entries", "label": "Entries", "field": "move_count", "icon": "file", "action": "action_open_moves", "invisible": "move_count == 0" }
+    ],
     "ribbon": { "id": "r-paid", "label": "Paid", "tone": "success", "invisible": "payment_state != 'paid'" },
     "children": [
       {
@@ -236,8 +264,8 @@
             "style": "plain",
             "children": [
               { "type": "field", "id": "f-date", "field": "expense_date", "readonly": "state != 'draft'" },
-              { "type": "field", "id": "f-company", "field": "company_id", "readonly": "state != 'draft'" },
-              { "type": "field", "id": "f-currency", "field": "currency_id", "readonly": "state != 'draft'" },
+              { "type": "field", "id": "f-company", "field": "company_id", "readonly": "state != 'draft'", "roles": ["base.group_multi_company"] },
+              { "type": "field", "id": "f-currency", "field": "currency_id", "readonly": "state != 'draft'", "roles": ["base.group_multi_currency"] },
               { "type": "field", "id": "f-accounting-date", "field": "accounting_date", "invisible": "not accounting_date" },
               { "type": "field", "id": "f-payment-state", "field": "payment_state", "invisible": "state not in ['post', 'done']" }
             ]
@@ -273,7 +301,15 @@
             "style": "plain",
             "children": [
               { "type": "field", "id": "f-header-account", "field": "header_account_id", "options": { "create": false }, "readonly": "state != 'draft'" },
-              { "type": "field", "id": "f-header-analytic", "field": "header_analytic_distribution", "widget": "tags", "readonly": "state != 'draft'" }
+              {
+                "type": "field",
+                "id": "f-header-analytic",
+                "field": "header_analytic_distribution",
+                "widget": "distribution",
+                "readonly": "state != 'draft'",
+                "options": { "model": "account.analytic.account" },
+                "roles": ["analytic.group_analytic_accounting"]
+              }
             ]
           }
         ]

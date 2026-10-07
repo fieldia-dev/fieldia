@@ -920,7 +920,9 @@ function expenseAmounts(line: Values, currency: Values[string] | undefined): Val
 /** New lines take the header's vendor, date, taxes, account and analytic; a category brings its account and taxes. */
 function recomputeExpense(values: Values, cascade: Partial<Record<'vendor' | 'date' | 'taxes' | 'account' | 'analytic', boolean>> = {}): Values {
   const headerTaxes = links(values['header_tax_ids']);
-  const headerAnalytic = links(values['header_analytic_distribution']);
+  // The header's distribution ({ "4104": 100 }, shares by account): each line takes its accounts.
+  const shares = (values['header_analytic_distribution'] ?? {}) as Record<string, number>;
+  const headerAnalytic = Object.keys(shares).filter((id) => ANALYTIC[Number(id)]).map((id) => analytic(Number(id)));
   const lines = ((values['line_ids'] as Line[] | null) ?? []).map((line) => {
     const v = { ...line.values };
     const fresh = line.id === undefined;
@@ -1014,7 +1016,7 @@ const EXPENSES: Record<number, Values> = {
     header_vendor: null,
     header_tax_ids: [tax(4102)],
     header_account_id: null,
-    header_analytic_distribution: [analytic(4104)],
+    header_analytic_distribution: { 4104: 100 },
     line_ids: [
       expenseLine('x1', 41201, { sequence: 10, name: 'Flight Cairo – Riyadh, return', product_id: product(4111), vendor: 'EgyptAir', date: '2026-10-01', price_unit: 18400, tax_ids: [tax(4102)], account_id: account(4108), analytic_distribution: [analytic(4104)] }),
       expenseLine('x2', 41202, { sequence: 20, name: 'Hotel, 3 nights', product_id: product(4112), vendor: 'Hilton Riyadh', date: '2026-10-04', quantity: 3, price_unit: 4200, tax_ids: [tax(4102)], account_id: account(4109), analytic_distribution: [analytic(4104)] }),
@@ -1037,7 +1039,7 @@ const EXPENSES: Record<number, Values> = {
     header_vendor: 'Cairo Telecom Services',
     header_tax_ids: [tax(4102)],
     header_account_id: account(4112),
-    header_analytic_distribution: [analytic(4103)],
+    header_analytic_distribution: { 4103: 100 },
     line_ids: [
       expenseLine('x1', 41211, { name: 'Fibre 100 Mbps, October', product_id: product(4115), vendor: 'Cairo Telecom Services', date: '2026-10-02', price_unit: 2280, tax_ids: [tax(4102)], account_id: account(4112), analytic_distribution: [analytic(4103)] }),
     ],
@@ -1085,7 +1087,38 @@ const WIZARD: Values = {
   ...paymentChoices({ payment_type: 'inbound', partner_id: partner(4102) }),
 };
 
+/**
+ * The person the accounting pages are shown to: the company's accountant, who
+ * also approves expenses — with the groups Flectra gives one in a company of
+ * one country that keeps EGP and USD. Developer mode, several companies and
+ * cash rounding stay off, as in Sherkety's own setup.
+ */
+const ACCOUNTANT = {
+  id: 4151,
+  name: 'Nour El-Sayed',
+  roles: [
+    'base.group_user',
+    'base.group_multi_currency',
+    'account.group_account_invoice',
+    'account.group_account_readonly',
+    'account.group_account_user',
+    'account.group_account_manager',
+    'analytic.group_analytic_accounting',
+    'uom.group_uom',
+    'hr_expense.group_hr_expense_user',
+    'hr_expense.group_hr_expense_team_approver',
+    'hr_expense.group_hr_expense_manager',
+    'sales_team.group_sale_salesman',
+    'purchase.group_purchase_user',
+  ],
+};
+
 export const lane: RealLane = {
+  around: {
+    'real-invoice': { user: ACCOUNTANT, records: [4101, 4102, 4103, 4104, 4105, 4106], breadcrumbs: [{ label: 'Invoices', href: '#invoices' }] },
+    'real-register-payment': { user: ACCOUNTANT },
+    'real-expense': { user: ACCOUNTANT, records: [4101, 4102], breadcrumbs: [{ label: 'Expenses', href: '#expenses' }] },
+  },
   pages: {
     'real-invoice': invoice as Page,
     'real-register-payment': registerPayment as Page,

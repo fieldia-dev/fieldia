@@ -256,6 +256,11 @@ for (const variant of VARIANTS) {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, 'page=real-expense&record=4101&skin=underline');
       await expect.poll(() => shown(page, 'f-total')).toContain('34,930.00');
+      // Description over the title; the shared analytic as accounts and shares; Company only for several companies.
+      await expect(page.locator('.fd-form').getByText('Description', { exact: true }).first()).toBeVisible();
+      await expect(node(page, 'f-header-analytic')).toContainText('100%');
+      await expect(node(page, 'f-company')).toBeHidden();
+      await expect(node(page, 'f-currency')).toBeVisible();
       // The shared vendor goes to every line.
       await node(page, 'f-header-vendor').locator('input').fill('Hilton Riyadh');
       await node(page, 'f-header-vendor').locator('input').press('Tab');

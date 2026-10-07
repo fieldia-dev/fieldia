@@ -715,24 +715,32 @@
         },
         { "feature": "Refuse (submit or approve)", "status": "covered", "how": "steps: set approval_state and state, save, say" },
         { "feature": "Reset to Draft (manager): bills back to draft and removed", "status": "covered", "how": "the app's answer" },
-        { "feature": "groups on the header buttons (team approver, all approver, manager)", "status": "missing", "needs": "permission groups on buttons" },
+        {
+          "feature": "groups on the header buttons (team approver, all approver, manager)",
+          "status": "covered",
+          "how": "roles: Approve and Refuse to hr_expense.group_hr_expense_team_approver, Post and Register Payment to account.group_account_invoice, Reset to Draft to hr_expense.group_hr_expense_manager"
+        },
         {
           "feature": "state computed from approval_state, the bills and their payment state",
           "status": "approximated",
-          "how": "the steps and the app's answers set state directly; Fieldia's `compute` cannot read the server's bills"
+          "how": "the steps and the app's answers set state directly; Fieldia's `compute` cannot read the server's bills",
+          "app": true,
+          "why": "the state follows the server's bills and their payment: the app's answers set it"
         },
         {
           "feature": "Entries smart button (move_count statinfo) opening the journal entries",
           "status": "approximated",
           "how": "a stat button with the count; the app's answer says what opens",
-          "needs": "opening a list of related records"
+          "needs": "opening a list of related records",
+          "app": true,
+          "why": "the journal entries' list is the app's page; an open step with a filter would show it"
         },
         { "feature": "Paid ribbon (text-bg-success)", "status": "covered", "how": "ribbon, tone success, condition on payment_state" },
         {
           "feature": "Title: 'Description' label over an h1, placeholder e.g. Trip to Riyadh, readonly unless draft; the reference muted under it",
           "status": "approximated",
-          "how": "title field with placeholder and the reference as its subtitle",
-          "needs": "a label over the title and a readonly condition on it; the reference draws large, not muted"
+          "how": "title.label Description over the h1, the placeholder, and the reference under it as the subtitle",
+          "needs": "a readonly condition on a sheet's title, and a muted subtitle"
         },
         {
           "feature": "Employee (readonly unless draft) and the approver worked out from the employee's manager",
@@ -748,11 +756,11 @@
         },
         {
           "feature": "Date, Company (multi-company group), Currency (multi-currency group)",
-          "status": "approximated",
-          "how": "fields and conditions; shown to everyone (no groups)"
+          "status": "covered",
+          "how": "Company with roles [base.group_multi_company], Currency with [base.group_multi_currency], their conditions"
         },
         { "feature": "Accounting Date shown once set; Payment State shown once posted", "status": "covered", "how": "conditions" },
-        { "feature": "Read-only selections (Payment State)", "status": "approximated", "how": "drawn as a greyed select with its arrow rather than as words" },
+        { "feature": "Read-only selections (Payment State)", "status": "covered", "how": "look.readonlyShown: text — a read-only choice as its words" },
         { "feature": "Shared Configuration — applies to every line (titled group)", "status": "covered", "how": "a titled section, two plain columns" },
         { "feature": "analytic_precision (invisible)", "status": "covered", "how": "declared, not placed" },
         {
@@ -760,7 +768,12 @@
           "status": "covered",
           "how": "fields, placeholder, tags, `create: false`, conditions"
         },
-        { "feature": "Analytic Distribution widget", "status": "approximated", "how": "a many2many of analytic accounts as tags: no percentages" },
+        {
+          "feature": "Analytic Distribution widget",
+          "status": "approximated",
+          "how": "the header's distribution is the distribution widget (accounts and shares, roles analytic.group_analytic_accounting) and its accounts go to every line; a line's analytic is still a list of accounts without shares",
+          "needs": "the distribution widget in a grid cell"
+        },
         {
           "feature": "The header cascading to every line (vendor, date, taxes, account, analytic) and to new lines",
           "status": "covered",
@@ -789,7 +802,9 @@
         {
           "feature": "Chatter with tracking (title, employee, paid by, state)",
           "status": "approximated",
-          "how": "the chatter slot; Fieldia posts no tracking messages by itself, and this lane's sample conversation is empty"
+          "how": "the chatter slot; Fieldia posts no tracking messages by itself, and this lane's sample conversation is empty",
+          "app": true,
+          "why": "tracking messages are posted by the server; the chatter fetches them again after a save"
         }
       ]
     }
