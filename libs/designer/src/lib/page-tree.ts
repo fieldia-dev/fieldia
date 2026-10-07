@@ -1,4 +1,4 @@
-import type { FieldNode, FilterItem, LayoutNode, Page, SectionNode, StepNode, TabNode, TabsNode } from '@fieldia/core';
+import { valuesIn, type FieldNode, type FilterItem, type LayoutNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 
@@ -90,7 +90,7 @@ export function allIds(page: Page): Set<string> {
   }
   // A sheet's header parts have ids of their own.
   const root = page.layout;
-  if (root.type === 'sheet') for (const part of [...(root.buttons ?? []), ...(root.statButtons ?? []), ...(root.badges ?? []), ...(root.alerts ?? []), ...(root.ribbon ? [root.ribbon] : [])]) ids.add(part.id);
+  if (root.type === 'sheet') for (const part of sheetParts(root)) ids.add(part.id);
   // A list's filters and buttons too.
   if (root.type === 'list') for (const part of [...(root.filters ?? []), ...(root.actions ?? [])]) ids.add(part.id);
   return ids;
@@ -99,10 +99,18 @@ export function allIds(page: Page): Set<string> {
 /** The fields the page shows somewhere: in its containers, and in a sheet's title, statusbar and stat buttons. */
 export function shownFields(page: Page): Set<string> {
   const shown = new Set(containers(page).flatMap((c) => c.children.filter((n): n is FieldNode => n.type === 'field').map((n) => n.field)));
+  // Words that show a field's value, among the parts.
+  for (const c of containers(page)) for (const n of c.children) if (n.type === 'text') for (const name of valuesIn(n.text)) shown.add(name);
   const root = page.layout;
   if (root.type === 'sheet') {
     const title = root.title;
-    for (const name of [title?.field, title?.subtitleField, title?.avatarField, root.statusbar?.field, ...(root.statButtons ?? []).map((s) => s.field)]) if (name) shown.add(name);
+    const bar = root.statusbar as { field: string; durationsField?: string } | undefined;
+    for (const name of [title?.field, title?.subtitleField, title?.avatarField, bar?.field, bar?.durationsField]) if (name) shown.add(name);
+    // Stat buttons, ribbons and alerts show fields too: a value, a unit, words from a field, a value inside words.
+    for (const part of sheetParts(root) as Record<string, unknown>[]) {
+      for (const [key, value] of Object.entries(part)) if (typeof value === 'string' && (key === 'field' || key.endsWith('Field'))) shown.add(value);
+      if (typeof part['message'] === 'string') for (const name of valuesIn(part['message'])) shown.add(name);
+    }
     for (const node of [...(title?.above ?? []), ...(title?.below ?? [])]) shown.add(node.field);
   }
   // A list names its fields in its columns, order, search, filters and groupings.
@@ -142,4 +150,10 @@ export function tabHolds(tab: TabNode, id: string | null): boolean {
   if (tab.id === id) return true;
   const walk = (nodes: LayoutNode[]): boolean => nodes.some((n) => n.id === id || ('children' in n && Array.isArray(n.children) && walk(n.children as LayoutNode[])));
   return walk(tab.children);
+}
+
+/** A sheet's own parts outside its sections, each with an id: buttons, stat buttons, badges, alerts and their buttons, ribbons. */
+export function sheetParts(root: SheetNode): { id: string }[] {
+  const alerts = root.alerts ?? [];
+  return [...(root.buttons ?? []), ...(root.statButtons ?? []), ...(root.badges ?? []), ...alerts, ...alerts.flatMap((a) => a.buttons ?? []), ...(root.ribbon ? [root.ribbon] : []), ...(root.ribbons ?? [])];
 }

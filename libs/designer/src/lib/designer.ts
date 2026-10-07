@@ -21,7 +21,7 @@ import {
   type StepNode,
   type TabsNode,
 } from '@fieldia/core';
-import { conditionToHide, conditionToHold, type Condition } from './conditions';
+import { conditionToHide, conditionToHold, splitShownWhile, withShownWhile, type Condition, type ShownWhile } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { listCommands, type ListCommands } from './list-commands';
 import { kindCommands, type OptionDetails } from './kind-commands';
@@ -315,6 +315,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setLayoutKind(kind: 'sections' | 'sheet'): boolean;
   /** A sheet's title: a text field taken out of its section, or `null` to put it back first in the first section. */
   setTitleField(nodeId: string | null): boolean;
+  /** Small words over a sheet's title, as Flectra's "Product Name" over the name; empty for none. */
+  setTitleLabel(label: string): boolean;
   /** Tabs on a sheet, after `after` or at the end: one tab, with a section. Returns the tabs' id. */
   addTabs(where?: { after?: string }): string | false;
   /** One more tab, with a section. Returns its id. */
@@ -328,6 +330,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setCondition(id: string, condition: Condition | { field: string; equals: string | number | boolean } | null): boolean;
   /** The roles a part shows to (Flectra's groups=), `!` before one hiding it from people holding it; null shows it to everyone. */
   setRoles(id: string, roles: string[] | null): boolean;
+  /** A part shown only while the record is edited, only while it is read, or always: Flectra's oe_edit_only and oe_read_only. */
+  setShownWhile(id: string, mode: ShownWhile): boolean;
   /**
    * A field required, or read-only, only when a rule holds; `null` for no
    * rule. A field always required becomes required only then; a field the
@@ -1090,6 +1094,16 @@ export function createDesigner(options: {
       });
     },
 
+    setTitleLabel(label) {
+      return apply((draft) => {
+        const root = draft.layout as SheetNode;
+        if (root.type !== 'sheet') throw new Refusal((w) => w.refusals.onlySheetHasTitle);
+        if (!root.title) throw new Refusal((w) => w.refusals.titleLabelNeedsTitle);
+        if (label.trim()) root.title.label = label;
+        else delete root.title.label;
+      }, 'title-label');
+    },
+
     setTitleField(nodeId) {
       return apply((draft) => {
         const root = draft.layout as SheetNode;
@@ -1166,26 +1180,42 @@ export function createDesigner(options: {
         const container = findContainer(draft, id) as { invisible?: string } | null;
         const found = container ? null : findNode(draft, id);
         // A badge, a counter or a button of a sheet's header shows only for some records too.
-        const target = container ?? (found?.node as { invisible?: string } | undefined) ?? (findHeaderPart(draft, id)?.part as { invisible?: string } | undefined);
+        const target = container ?? (found?.node as { invisible?: string } | undefined) ?? (findHeaderPart(draft, id)?.part as { invisible?: string } | undefined) ?? statusbarOf(draft, id);
         if (!target) throw new Refusal((w) => w.refusals.noElement(id));
         const rules: Condition = !condition
           ? { join: 'all', rules: [] }
           : 'rules' in condition
             ? condition
             : { join: 'all', rules: [{ field: condition.field, op: 'is', value: condition.equals }] };
+        // Shown only while the record is edited, or read: that stays as it is.
+        const mode = splitShownWhile(target.invisible).mode;
         if (!rules.rules.length) {
-          delete target.invisible;
+          const kept = withShownWhile(undefined, mode);
+          if (kept) target.invisible = kept;
+          else delete target.invisible;
           return;
         }
         const own = found?.node.type === 'field' ? found.node.field : null;
         if (own && rules.rules.some((rule) => rule.field === own)) throw new Refusal((w) => w.refusals.questionOwnAnswer);
-        target.invisible = conditionToHide(rules);
+        target.invisible = withShownWhile(conditionToHide(rules), mode) as string;
+      });
+    },
+
+    setShownWhile(id, mode) {
+      return apply((draft) => {
+        const target = (findContainer(draft, id) ?? findNode(draft, id)?.node ?? findHeaderPart(draft, id)?.part ?? statusbarOf(draft, id)) as { invisible?: string | boolean } | null | undefined;
+        if (!target) throw new Refusal((w) => w.refusals.noElement(id));
+        if (target.invisible === true) throw new Refusal((w) => w.refusals.alwaysHidden);
+        const { rest } = splitShownWhile(target.invisible);
+        const next = withShownWhile(typeof rest === 'string' ? rest : undefined, mode);
+        if (next) target.invisible = next;
+        else delete target.invisible;
       });
     },
 
     setRoles(id, roles) {
       return apply((draft) => {
-        const target = (findContainer(draft, id) ?? findNode(draft, id)?.node ?? findHeaderPart(draft, id)?.part) as { roles?: string[] } | null | undefined;
+        const target = (findContainer(draft, id) ?? findNode(draft, id)?.node ?? findHeaderPart(draft, id)?.part ?? statusbarOf(draft, id)) as { roles?: string[] } | null | undefined;
         if (!target) throw new Refusal((w) => w.refusals.noElement(id));
         const wrong = roles?.find((role) => !ROLE.test(role));
         if (wrong !== undefined) throw new Refusal((w) => w.refusals.notARole(wrong));
@@ -1581,3 +1611,8 @@ createDesigner.open = async (
   if (!page) throw new Error(`The store has no page "${id}"`);
   return createDesigner({ page, store, versions, model: options.model, lists: options.lists, kinds: options.kinds, looks: options.looks, openForm: options.openForm, locale: options.locale });
 };
+
+/** A sheet's status steps, by the id the designer picks them by: they show for some records only, and to some roles, as any part. */
+function statusbarOf(page: Page, id: string): { invisible?: string; roles?: string[] } | undefined {
+  return id === '#statusbar' && page.layout.type === 'sheet' ? (page.layout.statusbar as { invisible?: string; roles?: string[] } | undefined) : undefined;
+}

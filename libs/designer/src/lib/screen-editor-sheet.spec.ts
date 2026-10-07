@@ -189,7 +189,7 @@ describe('screen editor — a record’s header in the panel', () => {
     const { designer, panel, add } = setup();
     designer.setStatusbar('state');
     add('stat');
-    expect([...(field(panel(), 'Number from') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['Nothing', 'Invoices']);
+    expect([...(field(panel(), 'Number from') as HTMLSelectElement).options].map((o) => o.textContent)).toEqual(['Nothing', 'Name', 'Status', 'Invoices']);
     choose(field(panel(), 'Number from'), 'invoice_count');
     expect(sheet(designer).statButtons?.[0].field).toBe('invoice_count');
     add('badge');

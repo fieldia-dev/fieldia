@@ -21,6 +21,8 @@ export const defaults = {
   newButton: 'New button',
   counter: 'Counter',
   badge: 'Badge',
+  ribbon: 'Ribbon',
+  alert: 'Something to know about this record.',
   noneOfThese: 'None of these',
   /** The blocks Advanced's toolbox adds. */
   newGroup: 'New group',

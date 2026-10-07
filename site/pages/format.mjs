@@ -118,6 +118,56 @@ ${code(
   <li><strong>The statusbar</strong> sits in the header bar, or with ${c('"position": "title"')} under the title in the sheet.</li>
 </ul>
 
+<h3 id="sheet-reading">How a dense sheet reads</h3>
+<p>What a Flectra sheet shows besides its fields, each checked when the page is: a ribbon or several, alerts that hold a field's value or a button, stat buttons that write their value as its field does, a statusbar that hides and times its steps, keys on buttons, parts on one line, and a label over the title.</p>
+${code(
+  'json',
+  `
+{
+  "type": "sheet", "id": "invoice",
+  "title": { "field": "name", "label": "Customer Invoice" },
+  "statusbar": { "field": "stage_id", "clickable": true, "saves": true, "fold": true,
+    "durationsField": "duration_tracking", "invisible": "not active" },
+  "buttons": [
+    { "type": "button", "id": "b-post", "label": "Confirm", "hotkey": "v", "action": "action_post" },
+    { "type": "button", "id": "b-draft", "label": "Reset to Draft", "hotkey": "shift+g", "action": "button_draft" }
+  ],
+  "statButtons": [
+    { "id": "s-paid", "label": "Paid", "field": "amount_paid", "action": "open_payments" },
+    { "id": "s-sold", "label": "Sold", "field": "sales_count", "unitField": "uom_name", "unit": "Units", "action": "open_sales" },
+    { "id": "s-moves", "label": "In", "field": "nbr_moves_in", "secondField": "nbr_moves_out", "secondLabel": "Out", "action": "open_moves" },
+    { "id": "s-meeting", "label": "No Meeting", "labelField": "meeting_display_label", "field": "meeting_display_date", "action": "open_meetings" }
+  ],
+  "ribbons": [
+    { "id": "r-paid", "label": "Paid", "tone": "success", "invisible": "payment_state != 'paid'" },
+    { "id": "r-outcome", "label": "Closed", "labelField": "outcome", "invisible": "not outcome" },
+    { "id": "r-legacy", "label": "Legacy", "tooltip": "Made in the old invoicing app", "invisible": "not legacy" }
+  ],
+  "alerts": [
+    { "id": "a-lock", "message": "Entries before {tax_lock_date} cannot be posted.", "tone": "warning" },
+    { "id": "a-credit", "message": "", "messageField": "partner_credit_warning", "invisible": "not partner_credit_warning" },
+    { "id": "a-dup", "message": "This bill may be a duplicate.",
+      "buttons": [{ "type": "button", "id": "b-dup", "label": "See it", "action": "open_duplicate" }] }
+  ],
+  "children": [
+    { "type": "section", "id": "price", "title": "Pricelist", "style": "inline", "children": [
+      { "type": "field", "id": "f-pricelist", "field": "pricelist_id" },
+      { "type": "button", "id": "b-update", "label": "Update prices", "style": "link", "action": "update_prices" }
+    ] },
+    { "type": "text", "id": "t-top-up", "text": "Top up {topup_amount} to reach the minimum.", "style": "alert", "tone": "warning" }
+  ]
+}`
+)}
+<ul>
+  <li><strong>Ribbons</strong>: ${c('ribbons')} lists several, each with its condition; the first that shows has the corner, after ${c('ribbon')}. A ribbon's ${c('labelField')} gives its words from a field while it holds any — a choice by its label — and ${c('tooltip')} words on pointing at it.</li>
+  <li><strong>Alerts</strong>: ${c('{field}')} in an alert's ${c('message')} — or a text's ${c('text')} — shows that field's value as the field writes it, set apart in bold; ${c('messageField')} takes the alert's words from a field while it holds any, as Flectra's server warnings; ${c('buttons')} sit inside it after its words, links unless styled. Words with ${c('"style": "alert"')} and a ${c('tone')} are an alert among the parts: in a tab, a sections page, a dialog.</li>
+  <li><strong>Stat buttons</strong> write their ${c('field')} as it shows itself: money with its currency, hours with their digits, a date, a choice's label. ${c('unit')} or ${c('unitField')} puts words after the value; ${c('labelField')} takes the label from a field; ${c('secondField')} adds a second value, “12.5 / 21 Days”, or with ${c('secondLabel')} two values one over the other, each after its words.</li>
+  <li><strong>The statusbar</strong> takes ${c('invisible')} and ${c('roles')} as any part; ${c('durationsField')}, ${c('fold')} and ${c('saves')} as its widget does — see <a href="/fields/#options">the widgets' options</a>.</li>
+  <li><strong>A key</strong>: a button's ${c('hotkey')}, a letter or a digit with ${c('shift+')} or not, presses it with Alt — Flectra's ${c('data-hotkey')}. It shows on the button while Alt is held and in its tooltip, and a screen reader is told it. The first button shown with a key wins; a dialog's own buttons take theirs over the page's; Alt+D, E and F are the browser's and refused.</li>
+  <li><strong>On one line</strong>: a section's ${c('"style": "inline"')} lays its fields, words and buttons on one line, as Flectra's ${c('o_row')}, its title as the line's label; its fields are named for a screen reader without showing their labels, unless one sets ${c('labels')}.</li>
+  <li><strong>A label over the title</strong>: ${c('title.label')}, as Flectra's “Product Name” over its name.</li>
+</ul>
+
 <h3 id="wizard">Wizards</h3>
 ${code(
   'json',
@@ -179,6 +229,7 @@ ${code(
 <p>${c('roles')} shows a part only to people holding one of them, as Flectra's ${c('groups=')}; a role written with ${c('!')} hides it from people who hold that one. Any part takes them — a field, a section, a tab, a button, a stat button. The app names the person with the form's ${c('user')} option, ${c("{ id, name, roles }")}; without it they hold no role. Roles decide what a page shows, not what someone may do: the app's server checks that.</p>
 ${code('json', `{ "type": "button", "id": "lock", "label": "Lock", "action": "action_lock",
   "roles": ["sales_team.group_sale_manager"], "invisible": "not id" }`)}
+<p>${c('editing')} says whether the record is being edited: false while a view shows it locked — the Edit switch before Edit is pressed, or the app's ${c('setReadonly(true)')}. ${c('"invisible": "not editing"')} is a part for editing only, Flectra's ${c('oe_edit_only')}, and ${c('"invisible": "editing"')} one for reading only; a form always being edited shows its editing parts. In the designer it is Shown while.</p>
 <p>A condition that names a field the page does not have is refused when the page is checked, not when someone fills it in.</p>
 
 <h2 id="checking">Checking a page</h2>

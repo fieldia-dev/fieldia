@@ -127,6 +127,13 @@
         "helpShown": {
           "$ref": "#/$defs/HelpShown"
         },
+        "readonlyShown": {
+          "type": "string",
+          "enum": [
+            "text",
+            "box"
+          ]
+        },
         "scheme": {
           "type": "string",
           "enum": [
@@ -3451,6 +3458,9 @@
               "type": "string",
               "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
             },
+            "label": {
+              "type": "string"
+            },
             "subtitleField": {
               "type": "string",
               "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
@@ -3610,6 +3620,10 @@
                         "icon": {
                           "type": "string"
                         },
+                        "hotkey": {
+                          "type": "string",
+                          "pattern": "^(shift\\+)?[a-z0-9]$"
+                        },
                         "colspan": {
                           "type": "integer",
                           "minimum": 1,
@@ -3689,6 +3703,10 @@
                         "icon": {
                           "type": "string"
                         },
+                        "hotkey": {
+                          "type": "string",
+                          "pattern": "^(shift\\+)?[a-z0-9]$"
+                        },
                         "colspan": {
                           "type": "integer",
                           "minimum": 1,
@@ -3767,6 +3785,10 @@
                         },
                         "icon": {
                           "type": "string"
+                        },
+                        "hotkey": {
+                          "type": "string",
+                          "pattern": "^(shift\\+)?[a-z0-9]$"
                         },
                         "colspan": {
                           "type": "integer",
@@ -4024,6 +4046,10 @@
                         "icon": {
                           "type": "string"
                         },
+                        "hotkey": {
+                          "type": "string",
+                          "pattern": "^(shift\\+)?[a-z0-9]$"
+                        },
                         "colspan": {
                           "type": "integer",
                           "minimum": 1,
@@ -4103,6 +4129,10 @@
                         "icon": {
                           "type": "string"
                         },
+                        "hotkey": {
+                          "type": "string",
+                          "pattern": "^(shift\\+)?[a-z0-9]$"
+                        },
                         "colspan": {
                           "type": "integer",
                           "minimum": 1,
@@ -4181,6 +4211,10 @@
                         },
                         "icon": {
                           "type": "string"
+                        },
+                        "hotkey": {
+                          "type": "string",
+                          "pattern": "^(shift\\+)?[a-z0-9]$"
                         },
                         "colspan": {
                           "type": "integer",
@@ -4321,6 +4355,22 @@
                 "header",
                 "title"
               ]
+            },
+            "durationsField": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "fold": {
+              "type": "boolean"
+            },
+            "saves": {
+              "type": "boolean"
+            },
+            "invisible": {
+              "$ref": "#/$defs/Modifier"
+            },
+            "roles": {
+              "$ref": "#/$defs/Roles"
             }
           },
           "required": [
@@ -4379,6 +4429,10 @@
               "icon": {
                 "type": "string"
               },
+              "hotkey": {
+                "type": "string",
+                "pattern": "^(shift\\+)?[a-z0-9]$"
+              },
               "colspan": {
                 "type": "integer",
                 "minimum": 1,
@@ -4418,6 +4472,10 @@
               "label": {
                 "type": "string"
               },
+              "labelField": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
               "steps": {
                 "minItems": 1,
                 "type": "array",
@@ -4432,6 +4490,20 @@
               "field": {
                 "type": "string",
                 "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "unitField": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "secondField": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "secondLabel": {
+                "type": "string"
               },
               "icon": {
                 "type": "string"
@@ -4460,6 +4532,13 @@
             "label": {
               "type": "string"
             },
+            "labelField": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "tooltip": {
+              "type": "string"
+            },
             "tone": {
               "type": "string",
               "enum": [
@@ -4483,6 +4562,49 @@
           ],
           "additionalProperties": false
         },
+        "ribbons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "labelField": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "tooltip": {
+                "type": "string"
+              },
+              "tone": {
+                "type": "string",
+                "enum": [
+                  "info",
+                  "success",
+                  "warning",
+                  "danger",
+                  "muted"
+                ]
+              },
+              "invisible": {
+                "$ref": "#/$defs/Modifier"
+              },
+              "roles": {
+                "$ref": "#/$defs/Roles"
+              }
+            },
+            "required": [
+              "id",
+              "label"
+            ],
+            "additionalProperties": false
+          }
+        },
         "alerts": {
           "type": "array",
           "items": {
@@ -4494,6 +4616,93 @@
               },
               "message": {
                 "type": "string"
+              },
+              "messageField": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "buttons": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "button"
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "steps": {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/ActionStep"
+                      }
+                    },
+                    "action": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "params": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "$ref": "#/$defs/JsonValue"
+                      }
+                    },
+                    "style": {
+                      "type": "string",
+                      "enum": [
+                        "primary",
+                        "secondary",
+                        "danger",
+                        "link"
+                      ]
+                    },
+                    "confirm": {
+                      "type": "string"
+                    },
+                    "icon": {
+                      "type": "string"
+                    },
+                    "hotkey": {
+                      "type": "string",
+                      "pattern": "^(shift\\+)?[a-z0-9]$"
+                    },
+                    "colspan": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 12
+                    },
+                    "invisible": {
+                      "$ref": "#/$defs/Modifier"
+                    },
+                    "roles": {
+                      "$ref": "#/$defs/Roles"
+                    },
+                    "hideOn": {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/ScreenWidth"
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "label"
+                  ],
+                  "additionalProperties": false
+                }
               },
               "tone": {
                 "type": "string",
@@ -4655,6 +4864,10 @@
               },
               "icon": {
                 "type": "string"
+              },
+              "hotkey": {
+                "type": "string",
+                "pattern": "^(shift\\+)?[a-z0-9]$"
               },
               "colspan": {
                 "type": "integer",
@@ -5499,6 +5712,10 @@
                   "icon": {
                     "type": "string"
                   },
+                  "hotkey": {
+                    "type": "string",
+                    "pattern": "^(shift\\+)?[a-z0-9]$"
+                  },
                   "colspan": {
                     "type": "integer",
                     "minimum": 1,
@@ -5578,6 +5795,10 @@
                   "icon": {
                     "type": "string"
                   },
+                  "hotkey": {
+                    "type": "string",
+                    "pattern": "^(shift\\+)?[a-z0-9]$"
+                  },
                   "colspan": {
                     "type": "integer",
                     "minimum": 1,
@@ -5656,6 +5877,10 @@
                   },
                   "icon": {
                     "type": "string"
+                  },
+                  "hotkey": {
+                    "type": "string",
+                    "pattern": "^(shift\\+)?[a-z0-9]$"
                   },
                   "colspan": {
                     "type": "integer",
@@ -5813,6 +6038,10 @@
             "icon": {
               "type": "string"
             },
+            "hotkey": {
+              "type": "string",
+              "pattern": "^(shift\\+)?[a-z0-9]$"
+            },
             "colspan": {
               "type": "integer",
               "minimum": 1,
@@ -5858,7 +6087,18 @@
               "enum": [
                 "heading",
                 "paragraph",
-                "note"
+                "note",
+                "alert"
+              ]
+            },
+            "tone": {
+              "type": "string",
+              "enum": [
+                "info",
+                "success",
+                "warning",
+                "danger",
+                "muted"
               ]
             },
             "colspan": {
@@ -6204,7 +6444,8 @@
             "card",
             "plain",
             "line",
-            "framed"
+            "framed",
+            "inline"
           ]
         },
         "labels": {
@@ -6407,6 +6648,10 @@
               },
               "icon": {
                 "type": "string"
+              },
+              "hotkey": {
+                "type": "string",
+                "pattern": "^(shift\\+)?[a-z0-9]$"
               },
               "colspan": {
                 "type": "integer",
@@ -6671,6 +6916,10 @@
               },
               "icon": {
                 "type": "string"
+              },
+              "hotkey": {
+                "type": "string",
+                "pattern": "^(shift\\+)?[a-z0-9]$"
               },
               "colspan": {
                 "type": "integer",

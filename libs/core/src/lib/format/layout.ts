@@ -2,6 +2,7 @@ import * as z from 'zod';
 import { FIELD_NAME, FilterItemSchema, type FilterItem } from './field';
 import { ActionStepsSchema, type ActionStep } from './actions';
 import { JsonValueSchema, type JsonValue } from './json';
+import { HOTKEY } from './hotkeys';
 
 /**
  * The layout: where each field goes and what surrounds it.
@@ -206,6 +207,12 @@ export interface ButtonNode {
   /** Ask before running the action. */
   confirm?: string;
   icon?: string;
+  /**
+   * A key that presses it with Alt, as Flectra's data-hotkey: a letter or a
+   * digit, `shift+` before it for Alt+Shift — "v" is Alt+V. Shown on it while
+   * Alt is held and in its tooltip; the first shown wins when two share one.
+   */
+  hotkey?: string;
   /** Grid columns it spans inside a section. */
   colspan?: number;
   invisible?: Modifier;
@@ -217,8 +224,12 @@ export interface ButtonNode {
 export interface TextNode {
   type: 'text';
   id: string;
+  /** The words; `{field}` in them shows that field's value, as the field shows it. */
   text: string;
-  style?: 'heading' | 'paragraph' | 'note';
+  /** A heading, a paragraph, a note, or an alert's box — Flectra's alert in a tab or a wizard, toned by `tone`. */
+  style?: 'heading' | 'paragraph' | 'note' | 'alert';
+  /** An alert's colour; blue unless said. */
+  tone?: Tone;
   /** Grid columns it spans inside a section. */
   colspan?: number;
   invisible?: Modifier;
@@ -347,8 +358,16 @@ export interface SectionNode {
   collapsed?: boolean;
   /** Grid columns it spans inside the section around it, one to twelve: groups side by side. */
   colspan?: number;
-  /** A card (the default), plain (nothing drawn), a line under the title, or a frame with the title on it. */
-  style?: 'card' | 'plain' | 'line' | 'framed';
+  /**
+   * A card (the default), plain (nothing drawn), a line under the title, a
+   * frame with the title on it — or `inline`: its parts on one line, each as
+   * wide as it needs, with words and buttons among them, wrapping when the line
+   * runs out, its title the line's label — Flectra's `<label/><div class="o_row">`,
+   * as "Limit attempts [x] to [3] attempts" or a price with Update Prices
+   * beside it. Its fields' labels are read out, not shown, unless a field sets
+   * its own.
+   */
+  style?: 'card' | 'plain' | 'line' | 'framed' | 'inline';
   /** Where the labels of the fields inside sit, unless a field says otherwise. */
   labels?: LabelPlace;
   /** How wide labels set beside their boxes are, in pixels. */
@@ -432,11 +451,24 @@ export interface SectionsNode {
 export interface StatButton {
   id: string;
   label: string;
+  /** The label's words from a field, when it holds any — Flectra's "Next Meeting" — `label` while it is empty. */
+  labelField?: string;
   /** What a press does, as a button's. */
   steps?: ActionStep[];
   action?: string;
-  /** A numeric field shown on the button, such as a count of invoices. */
+  /** The field shown on the button, written as the field shows it: a count of invoices, an amount with its currency, hours, a date. */
   field?: string;
+  /** Words after the value, such as "Units" or "Days". */
+  unit?: string;
+  /** The words after the value from a field, such as a product's unit of measure; `unit` while it is empty. */
+  unitField?: string;
+  /**
+   * A second value: "12.5 / 21 Days", or — with `secondLabel` — two values
+   * each with its words, one over the other, as Flectra's "In: 3" and "Out: 5".
+   */
+  secondField?: string;
+  /** The second value's words; with them, `label` is the first value's. */
+  secondLabel?: string;
   icon?: string;
   invisible?: Modifier;
   roles?: Roles;
@@ -445,6 +477,10 @@ export interface StatButton {
 export interface Ribbon {
   id: string;
   label: string;
+  /** The ribbon's words from a field, when it holds any: Flectra's ribbon by outcome. `label` while it is empty. */
+  labelField?: string;
+  /** Words shown on pointing at it, as Flectra's ribbon's title. */
+  tooltip?: string;
   tone?: Tone;
   invisible?: Modifier;
   roles?: Roles;
@@ -452,7 +488,12 @@ export interface Ribbon {
 
 export interface Alert {
   id: string;
+  /** The words; `{field}` in them shows that field's value, as the field shows it. */
   message: string;
+  /** The words from a field, when it holds any, as Flectra's alert showing the server's warning; `message` while it is empty. */
+  messageField?: string;
+  /** Buttons inside it, after its words: a link to the duplicate, Retry, Activate. */
+  buttons?: ButtonNode[];
   tone?: Tone;
   /** Has a × that hides it until the page opens again. */
   dismissible?: boolean;
@@ -472,6 +513,8 @@ export interface Badge {
 
 export interface SheetTitle {
   field: string;
+  /** Words over the title, as Flectra's label over its h1: "Product Name", "MO Reference". */
+  label?: string;
   subtitleField?: string;
   avatarField?: string;
   placeholder?: string;
@@ -489,6 +532,18 @@ export interface Statusbar {
   clickable?: boolean;
   /** In the header bar (the default), or in the sheet under the title. */
   position?: 'header' | 'title';
+  /**
+   * A json field holding the time spent in each step, in seconds, by the
+   * step's value — a choice's, or a stage record's id: `{ "3": 86400 }` —
+   * shown on each step, as Flectra's statusbar_duration.
+   */
+  durationsField?: string;
+  /** Stages whose record says it is folded go under a More menu at the end, unless the record stands on one: Flectra's fold_field. */
+  fold?: boolean;
+  /** A click on a step also saves the record at once, as Flectra's does. Needs `clickable`. */
+  saves?: boolean;
+  invisible?: Modifier;
+  roles?: Roles;
 }
 
 /** The record layout: a header with a statusbar and buttons, then the sheet itself. */
@@ -500,6 +555,8 @@ export interface SheetNode {
   buttons?: ButtonNode[];
   statButtons?: StatButton[];
   ribbon?: Ribbon;
+  /** Several ribbons, each with its condition, as Flectra's web_ribbons: the first one shown wins the corner, after `ribbon`. */
+  ribbons?: Ribbon[];
   alerts?: Alert[];
   badges?: Badge[];
   children: LayoutNode[];
@@ -658,6 +715,7 @@ export const ButtonNodeSchema = z.strictObject({
   style: z.enum(['primary', 'secondary', 'danger', 'link']).optional(),
   confirm: z.string().optional(),
   icon: z.string().optional(),
+  hotkey: z.string().regex(HOTKEY, 'a hotkey is a letter or a digit, in small letters, with shift+ before it for Alt+Shift: "v", "shift+g"').optional(),
   colspan: span,
   invisible, roles, hideOn,
 });
@@ -666,7 +724,8 @@ export const TextNodeSchema = z.strictObject({
   type: z.literal('text'),
   id,
   text: z.string(),
-  style: z.enum(['heading', 'paragraph', 'note']).optional(),
+  style: z.enum(['heading', 'paragraph', 'note', 'alert']).optional(),
+  tone: tone.optional(),
   colspan: span,
   invisible, roles, hideOn,
 });
@@ -712,7 +771,7 @@ export const SectionNodeSchema = z.strictObject({
   collapsible: z.boolean().optional(),
   collapsed: z.boolean().optional(),
   colspan: span,
-  style: z.enum(['card', 'plain', 'line', 'framed']).optional(),
+  style: z.enum(['card', 'plain', 'line', 'framed', 'inline']).optional(),
   labels: labelPlace.optional(),
   labelWidth: z.int().min(60).max(320).optional(),
   rows: z.enum(['full', 'gaps']).optional(),
@@ -792,16 +851,30 @@ export const SectionsNodeSchema = z.strictObject({
 export const StatButtonSchema = z.strictObject({
   id,
   label: z.string(),
+  labelField: fieldName.optional(),
   steps: ActionStepsSchema.optional(),
   action: z.string().min(1).optional(),
   field: fieldName.optional(),
+  unit: z.string().optional(),
+  unitField: fieldName.optional(),
+  secondField: fieldName.optional(),
+  secondLabel: z.string().optional(),
   icon: z.string().optional(),
   invisible, roles,
 });
 
-export const RibbonSchema = z.strictObject({ id, label: z.string(), tone: tone.optional(), invisible, roles });
+export const RibbonSchema = z.strictObject({ id, label: z.string(), labelField: fieldName.optional(), tooltip: z.string().optional(), tone: tone.optional(), invisible, roles });
 
-export const AlertSchema = z.strictObject({ id, message: z.string(), tone: tone.optional(), dismissible: z.boolean().optional(), invisible, roles });
+export const AlertSchema = z.strictObject({
+  id,
+  message: z.string(),
+  messageField: fieldName.optional(),
+  buttons: z.array(ButtonNodeSchema).min(1).optional(),
+  tone: tone.optional(),
+  dismissible: z.boolean().optional(),
+  invisible,
+  roles,
+});
 
 export const BadgeSchema = z.strictObject({ id, label: z.string(), tone: tone.optional(), icon: z.string().min(1).optional(), invisible, roles });
 
@@ -811,6 +884,7 @@ export const SheetNodeSchema = z.strictObject({
   title: z
     .strictObject({
       field: fieldName,
+      label: z.string().optional(),
       subtitleField: fieldName.optional(),
       avatarField: fieldName.optional(),
       placeholder: z.string().optional(),
@@ -824,11 +898,17 @@ export const SheetNodeSchema = z.strictObject({
       visibleStates: z.array(z.union([z.string(), z.number()])).optional(),
       clickable: z.boolean().optional(),
       position: z.enum(['header', 'title']).optional(),
+      durationsField: fieldName.optional(),
+      fold: z.boolean().optional(),
+      saves: z.boolean().optional(),
+      invisible,
+      roles,
     })
     .optional(),
   buttons: z.array(ButtonNodeSchema).optional(),
   statButtons: z.array(StatButtonSchema).optional(),
   ribbon: RibbonSchema.optional(),
+  ribbons: z.array(RibbonSchema).optional(),
   alerts: z.array(AlertSchema).optional(),
   badges: z.array(BadgeSchema).optional(),
   get children(): z.ZodArray<typeof LayoutNodeSchema> {

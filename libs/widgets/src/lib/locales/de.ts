@@ -23,6 +23,8 @@ export const de: WidgetLabels = {
   chooseLine: '{name} auswählen',
   chooseAllLines: 'Alle Zeilen auswählen',
   linesChosen: '{n} ausgewählt',
+  moreSteps: 'Mehr',
+  timeInStep: '{time} in diesem Schritt',
   chooseDate: 'Datum auswählen',
   other: 'Andere:',
   otherAnswer: 'Eigene Antwort',

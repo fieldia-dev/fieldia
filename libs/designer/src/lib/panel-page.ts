@@ -22,6 +22,9 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
   const title = el('select', { class: 'fd-input fd-select', 'aria-label': w.titleField });
   title.addEventListener('change', () => designer.setTitleField(title.value === '' ? null : title.value === CURRENT_TITLE ? ((designer.getPage().layout as SheetNode).title?.field ?? null) : title.value));
   const titleRow = setting(el, 'content', 'Title field', title, { hint: w.titleFieldHint, words: w.titleField });
+  const titleLabel = el('input', { class: 'fd-input', 'aria-label': w.titleLabel, placeholder: w.optional }) as HTMLInputElement;
+  titleLabel.addEventListener('input', () => designer.setTitleLabel(titleLabel.value));
+  const titleLabelRow = setting(el, 'content', 'Words over the title', titleLabel, { hint: w.titleLabelHint, words: w.titleLabel });
   const look = pageLookSettings(el, designer);
   // steps lane: what the form does at its moments — opened, saved or sent, a tab or step shown.
   const moments = formMoments(el, designer);
@@ -30,6 +33,7 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
     { class: 'fd-props' },
     setting(el, 'content', 'Description', description, { words: w.description }),
     titleRow,
+    titleLabelRow,
     el('p', { class: 'fd-properties-hint' }, w.nothingPicked),
     setting(el, 'layout', 'Layout', layout, { hint: w.layoutHint, words: w.layout }),
     ...look.rows,
@@ -44,7 +48,9 @@ export function pageProperties(el: ElementFactory, designer: Designer): Properti
       const root = page.layout;
       layout.value = root.type === 'sheet' ? 'sheet' : 'sections';
       titleRow.hidden = root.type !== 'sheet';
+      titleLabelRow.hidden = root.type !== 'sheet' || !root.title;
       if (root.type !== 'sheet') return;
+      if (!focused(titleLabel)) titleLabel.value = root.title?.label ?? '';
       // The text fields that could be the title, and the one that is.
       const texts = allSections(page).flatMap((s) => s.children.filter((n): n is FieldNode => n.type === 'field' && page.fields[n.field]?.type === 'char'));
       title.replaceChildren(

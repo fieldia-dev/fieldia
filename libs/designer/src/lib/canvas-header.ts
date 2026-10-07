@@ -1,7 +1,8 @@
-import type { Badge, ButtonNode, FieldNode, Form, Page, SheetNode, StatButton } from '@fieldia/core';
+import type { Alert, Badge, ButtonNode, FieldNode, Form, Page, Ribbon, SheetNode, StatButton } from '@fieldia/core';
 import { createWidget, type Widget } from '@fieldia/widgets';
 import type { ElementFactory } from './chrome';
 import type { Designer, HeaderPartKind } from './designer';
+import { wordsOf, type HeaderPart } from './header-commands';
 import { designerIcon } from './icons';
 import { openMenu } from './menu';
 import { setHidden } from './writes';
@@ -31,8 +32,9 @@ export interface CanvasHeader {
 export function canvasHeader(options: { el: ElementFactory; doc: Document; designer: Designer }): CanvasHeader {
   const { el, doc, designer } = options;
   const w = designer.words.canvas;
-  const NEW_WORDS: Record<HeaderPartKind, string> = { button: designer.words.defaults.newButton, stat: designer.words.defaults.counter, badge: designer.words.defaults.badge };
-  const ADD_WORDS: Record<HeaderPartKind | 'statusbar', string> = { button: w.addButton, statusbar: w.addStatus, stat: w.addCounter, badge: w.addBadge };
+  const d = designer.words.defaults;
+  const NEW_WORDS: Record<HeaderPartKind, string> = { button: d.newButton, stat: d.counter, badge: d.badge, ribbon: d.ribbon, alert: d.alert };
+  const ADD_WORDS: Record<HeaderPartKind | 'statusbar', string> = { button: w.addButton, statusbar: w.addStatus, stat: w.addCounter, badge: w.addBadge, ribbon: w.addRibbon, alert: w.addAlert };
   const adder = (kind: HeaderPartKind | 'statusbar') => {
     const button = el('button', { type: 'button', class: 'fd-canvas-add-part', 'data-add-part': kind }, designerIcon(doc, 'plus'), ADD_WORDS[kind]);
     button.addEventListener('click', () => (kind === 'statusbar' ? pickStatusField(button) : add(kind)));
@@ -43,8 +45,11 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
   const top = el('div', { class: 'fd-header fd-canvas-header', hidden: '' }, actions, steps);
   const stats = el('div', { class: 'fd-stats fd-canvas-stats' });
   const badges = el('div', { class: 'fd-badges fd-canvas-badges' });
-  const card = el('div', { class: 'fd-canvas-header-card', hidden: '' }, stats, badges);
-  const adders = { button: adder('button'), statusbar: adder('statusbar'), stat: adder('stat'), badge: adder('badge') };
+  // The ribbons, each a chip in its colour beside the badges (the viewer shows the first whose condition holds, in the card's corner),
+  // and the alerts as the viewer draws them: a row of their own only once there is one, so a sheet without keeps its height.
+  const alerts = el('div', { class: 'fd-canvas-alerts' });
+  const card = el('div', { class: 'fd-canvas-header-card', hidden: '' }, stats, alerts, badges);
+  const adders = { button: adder('button'), statusbar: adder('statusbar'), stat: adder('stat'), badge: adder('badge'), ribbon: adder('ribbon'), alert: adder('alert') };
 
   function add(kind: HeaderPartKind) {
     const created = designer.addHeaderPart(kind, NEW_WORDS[kind]);
@@ -53,7 +58,8 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
   function pickStatusField(anchor: HTMLElement) {
     const page = designer.getPage();
     const own = Object.entries(page.fields).map(([name, field]) => ({ name, field }));
-    const choices = [...own, ...designer.modelFields()].filter(({ field }) => field.type === 'selection' && !field.multiple);
+    // A choice's options, or the stages a link points to.
+    const choices = [...own, ...designer.modelFields()].filter(({ field }) => (field.type === 'selection' && !field.multiple) || field.type === 'many2one');
     openMenu({
       el,
       anchor,
@@ -76,21 +82,23 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
   }
   const views = new Map<string, PartView>();
 
-  function looks(kind: HeaderPartKind, part: ButtonNode | StatButton | Badge): string {
+  function looks(kind: HeaderPartKind, part: HeaderPart): string {
     if (kind === 'button') return `fd-button fd-button-${(part as ButtonNode).style ?? 'secondary'}`;
     if (kind === 'stat') return 'fd-stat';
+    if (kind === 'ribbon') return `fd-badge fd-canvas-ribbon fd-tone-${(part as Ribbon).tone ?? 'muted'}`;
+    if (kind === 'alert') return `fd-alert fd-tone-${(part as Alert).tone ?? 'info'}`;
     return `fd-badge fd-tone-${(part as Badge).tone ?? 'muted'}`;
   }
 
-  function closedPart(kind: HeaderPartKind, part: ButtonNode | StatButton | Badge, page: Page): HTMLElement {
-    const tag = kind === 'badge' ? 'span' : 'button';
+  function closedPart(kind: HeaderPartKind, part: HeaderPart, page: Page): HTMLElement {
+    const tag = kind === 'badge' || kind === 'ribbon' ? 'span' : kind === 'alert' ? 'div' : 'button';
     const element = el(tag, { class: `${looks(kind, part)} fd-canvas-part`, 'data-part': part.id, ...(tag === 'button' ? { type: 'button' } : { role: 'button', tabindex: '0' }) });
     if (kind === 'stat') {
-      const count = (part as StatButton).field;
-      const value = el('span', { class: 'fd-stat-value' }, count ? '12' : '');
-      element.append(el('span', { class: 'fd-stat-words' }, value, el('span', { class: 'fd-stat-label' }, part.label)));
+      const { field: count, unit } = part as StatButton;
+      const value = el('span', { class: 'fd-stat-value' }, [count ? '12' : '', unit ?? ''].filter(Boolean).join(' '));
+      element.append(el('span', { class: 'fd-stat-words' }, value, el('span', { class: 'fd-stat-label' }, wordsOf(part))));
       if (count) element.title = w.shows(page.fields[count]?.label ?? count);
-    } else element.append(part.label);
+    } else element.append(wordsOf(part));
     const pick = () => {
       designer.select(part.id);
       focus(part.id, false);
@@ -98,7 +106,7 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     element.addEventListener('click', pick);
     element.addEventListener('keydown', (event) => {
       const key = (event as KeyboardEvent).key;
-      if (tag === 'span' && (key === 'Enter' || key === ' ')) {
+      if (tag !== 'button' && (key === 'Enter' || key === ' ')) {
         event.preventDefault();
         pick();
       }
@@ -106,8 +114,8 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     return element;
   }
 
-  function openPart(kind: HeaderPartKind, part: ButtonNode | StatButton | Badge): PartView {
-    const input = el('input', { class: 'fd-part-input', 'aria-label': w.words, autocomplete: 'off', size: String(Math.max(4, part.label.length + 1)) }) as HTMLInputElement;
+  function openPart(kind: HeaderPartKind, part: HeaderPart): PartView {
+    const input = el('input', { class: 'fd-part-input', 'aria-label': w.words, autocomplete: 'off', size: String(Math.max(4, wordsOf(part).length + 1)) }) as HTMLInputElement;
     input.addEventListener('input', () => {
       input.size = Math.max(4, input.value.length + 1);
       designer.updateHeaderPart(part.id, { label: input.value });
@@ -125,13 +133,13 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     };
     const left = tool(w.moveLeft, 'left', () => designer.moveHeaderPart(part.id, -1));
     const right = tool(w.moveRight, 'right', () => designer.moveHeaderPart(part.id, 1));
-    const bar = el('div', { class: 'fd-field-bar fd-part-bar', role: 'toolbar', 'aria-label': part.label }, left, right, tool(w.delete, 'delete', () => designer.removeHeaderPart(part.id)));
+    const bar = el('div', { class: 'fd-field-bar fd-part-bar', role: 'toolbar', 'aria-label': wordsOf(part) }, left, right, tool(w.delete, 'delete', () => designer.removeHeaderPart(part.id)));
     const words = kind === 'stat' ? el('span', { class: 'fd-stat-words' }, el('span', { class: 'fd-stat-value' }, (part as StatButton).field ? '12' : ''), input) : input;
     const element = el('span', { class: `${looks(kind, part)} fd-canvas-part fd-editing`, 'data-part': part.id }, bar, words);
     return { element, key: '', input, left, right };
   }
 
-  function drawPart(kind: HeaderPartKind, part: ButtonNode | StatButton | Badge, index: number, count: number, page: Page, selected: string | null): HTMLElement {
+  function drawPart(kind: HeaderPartKind, part: HeaderPart, index: number, count: number, page: Page, selected: string | null): HTMLElement {
     const editing = selected === part.id;
     const key = `${editing}:${JSON.stringify(part)}`;
     let view = views.get(part.id);
@@ -143,7 +151,7 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     }
     const shown = view as PartView;
     shown.key = key;
-    if (shown.input && doc.activeElement !== shown.input) shown.input.value = part.label;
+    if (shown.input && doc.activeElement !== shown.input) shown.input.value = wordsOf(part);
     if (shown.input) shown.element.className = `${looks(kind, part)} fd-canvas-part fd-editing`;
     if (shown.left) shown.left.hidden = index === 0;
     if (shown.right) shown.right.hidden = index === count - 1;
@@ -208,7 +216,7 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
       setHidden(card, root.type !== 'sheet');
       if (root.type !== 'sheet') return;
       const live = new Set<string>();
-      const row = (kind: HeaderPartKind, parts: (ButtonNode | StatButton | Badge)[] | undefined) =>
+      const row = (kind: HeaderPartKind, parts: HeaderPart[] | undefined) =>
         (parts ?? []).map((part, i, all) => {
           live.add(part.id);
           return drawPart(kind, part, i, all.length, page, selected);
@@ -217,7 +225,9 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
       statusPart.classList.toggle('fd-editing', selected === '#statusbar');
       arrange(steps, [root.statusbar ? drawSteps(root, page, form) : adders.statusbar]);
       arrange(stats, [...row('stat', root.statButtons), adders.stat]);
-      arrange(badges, [...row('badge', root.badges), adders.badge]);
+      arrange(badges, [...row('badge', root.badges), adders.badge, ...row('ribbon', [...(root.ribbon ? [root.ribbon] : []), ...(root.ribbons ?? [])]), adders.ribbon, adders.alert]);
+      arrange(alerts, row('alert', root.alerts));
+      setHidden(alerts, !root.alerts?.length);
       for (const id of [...views.keys()]) if (!live.has(id)) views.delete(id);
     },
     destroy() {

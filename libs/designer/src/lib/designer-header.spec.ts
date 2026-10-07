@@ -6,6 +6,7 @@ const model: Record<string, Field> = {
   state: { type: 'selection', label: 'Status', options: [{ value: 'draft', label: 'Draft' }, { value: 'active', label: 'Active' }, { value: 'blocked', label: 'Blocked' }] },
   invoice_count: { type: 'integer', label: 'Invoices' },
   email: { type: 'char', label: 'Email' },
+  vip: { type: 'boolean', label: 'VIP' },
 };
 const sheet = (d: ReturnType<typeof createDesigner>) => d.getPage().layout as SheetNode;
 const customer = () => createDesigner({ page: blankPage('sheet', 'Customer'), model });
@@ -92,8 +93,8 @@ describe('a record’s header', () => {
     expect(designer.updateHeaderPart(confirm, { tone: 'danger' })).toBe(false);
     expect(designer.getState().issues).toEqual(['Only a badge has a tone']);
     const invoices = designer.addHeaderPart('stat', 'Invoices') as string;
-    expect(designer.updateHeaderPart(invoices, { field: 'email' })).toBe(false);
-    expect(designer.getState().issues).toEqual(['A counter shows a number; Email holds text']);
+    expect(designer.updateHeaderPart(invoices, { field: 'vip' })).toBe(false);
+    expect(designer.getState().issues).toEqual(['A counter shows a number, an amount, a date or words; VIP holds yes or no']);
     expect(designer.addHeaderPart('badge', '   ')).toBe(false);
     const vip = designer.addHeaderPart('badge', 'VIP') as string;
     expect(designer.updateHeaderPart(vip, { action: 'promote' })).toBe(false);

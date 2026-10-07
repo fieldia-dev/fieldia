@@ -1,4 +1,5 @@
-import { validatePage, type Field, type FieldNode, type Page } from '@fieldia/core';
+import { validatePage, type Field, type FieldNode, type Page, type SheetNode } from '@fieldia/core';
+import { wordsOf, type HeaderPart } from './header-commands';
 import { readCondition, type Condition } from './conditions';
 import { kindById, kindOfField } from './kinds';
 import { inputChanges } from './input-changes';
@@ -358,10 +359,12 @@ function headerChanges(before: Page, after: Page, words: DesignerWords): string[
   const [a, b] = [before.layout, after.layout];
   if (a.type !== 'sheet' || b.type !== 'sheet') return [];
   const out: string[] = [];
-  const kinds = [['buttons', 'button'], ['statButtons', 'counter'], ['badges', 'badge']] as const;
+  const kinds = [['buttons', 'button'], ['statButtons', 'counter'], ['badges', 'badge'], ['ribbons', 'ribbon'], ['alerts', 'alert']] as const;
+  // A page's one ribbon counts among its ribbons; an alert is named by its words.
+  const parts = (root: SheetNode, key: (typeof kinds)[number][0]) => [...(key === 'ribbons' && root.ribbon ? [root.ribbon] : []), ...((root[key] ?? []) as HeaderPart[])];
   for (const [key, word] of kinds) {
-    const was = new Map((a[key] ?? []).map((p) => [p.id, p.label]));
-    const now = new Map((b[key] ?? []).map((p) => [p.id, p.label]));
+    const was = new Map(parts(a, key).map((p) => [p.id, wordsOf(p)]));
+    const now = new Map(parts(b, key).map((p) => [p.id, wordsOf(p)]));
     for (const [id, label] of now) if (!was.has(id)) out.push(w.addedHeader(word, label));
     for (const [id, label] of was) if (!now.has(id)) out.push(w.removedHeader(word, label));
     for (const [id, label] of now) if (was.has(id) && was.get(id) !== label) out.push(w.renamedHeader(word, was.get(id) as string, label));

@@ -48,6 +48,26 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
   let refresh: (page: Page, node: FieldNode) => void = () => undefined;
   let standsIn = false;
 
+  /** How a link shows its record: a picture, lines under it, colours on tags, and whether it opens — Flectra's avatar widgets, show_address, color_field and no_open. */
+  function linkLooks(several: boolean) {
+    const switches = (several ? (['avatar', 'colors', 'open'] as const) : (['avatar', 'details', 'open'] as const)).map((key) => {
+      const label = { avatar: w.linkPicture, details: w.linkLines, colors: w.tagColours, open: w.opensRecord }[key];
+      const button = el('button', { type: 'button', class: 'fd-switch', role: 'switch', 'aria-checked': 'false', 'aria-label': label }) as HTMLButtonElement;
+      // Opening is on unless turned off; the rest off unless turned on.
+      button.addEventListener('click', () => {
+        const on = button.getAttribute('aria-checked') !== 'true';
+        designer.setWidgetOptions(id, { [key]: key === 'open' ? (on ? null : false) : on || null });
+      });
+      return { key, button, element: el('span', { class: 'fd-inline-setting fd-inline-toggle' }, button, el('span', { 'aria-hidden': 'true' }, label)) };
+    });
+    return {
+      element: el('div', { class: 'fd-inline-row fd-link-looks' }, ...switches.map((s) => s.element)),
+      refresh(node: FieldNode) {
+        for (const { key, button } of switches) button.setAttribute('aria-checked', String(key === 'open' ? node.options?.['open'] !== false : node.options?.[key] === true));
+      },
+    };
+  }
+
   function build(kind: string | null) {
     standsIn = false;
     refresh = () => undefined;
@@ -95,13 +115,18 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
         const def = page.fields[node.field];
         if (!focused(currency)) currency.value = def.type === 'monetary' ? (def.currency ?? '') : '';
       };
-    } else if (kind === 'link' || kind === 'links') {
+    } else if (kind === 'link' || kind === 'links' || kind === 'model:link' || kind === 'model:links') {
+      // What it points to — the page's own field only — and how it shows what it points to, whoever's field it is.
+      const own = !kind.startsWith('model:');
       const target = el('input', { class: 'fd-inline-input', 'aria-label': w.linksTo, placeholder: 'contact', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
       target.addEventListener('input', () => target.value.trim() && designer.setRelation(id, target.value));
-      element.replaceChildren(word(w.linksTo, target));
+      const several = kind.endsWith('links');
+      const looks = linkLooks(several);
+      element.replaceChildren(...(own ? [word(w.linksTo, target)] : []), looks.element);
       refresh = (page, node) => {
         const def = page.fields[node.field];
-        if (!focused(target)) target.value = 'relation' in def ? def.relation : '';
+        if (own && !focused(target)) target.value = 'relation' in def ? def.relation : '';
+        looks.refresh(node);
       };
     } else if (kind === 'file' || kind === 'image') {
       // Which kinds of file it takes — none picked, any; an image takes images — and the largest.
@@ -208,7 +233,9 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
     element,
     update(page, node) {
       const def = page.fields[node.field];
-      const kind = designer.isFromModel(id) ? null : kindOfField(def, node);
+      const own = kindOfField(def, node);
+      // A field of the model keeps the model's definition; how a link shows its record is the page's still.
+      const kind = designer.isFromModel(id) ? (own === 'link' || own === 'links' ? `model:${own}` : null) : own;
       if ((kind ?? '') !== drawn) {
         drawn = kind ?? '';
         build(kind);

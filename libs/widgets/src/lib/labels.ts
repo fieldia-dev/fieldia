@@ -31,6 +31,9 @@ export interface WidgetLabels {
   chooseLine: string;
   chooseAllLines: string;
   linesChosen: string;
+  /** The button at a statusbar's end that holds its folded steps, and what it says of the time spent in a step (`{time}`). */
+  moreSteps: string;
+  timeInStep: string;
   /** The button that lets a person hide or show a table's optional columns. */
   chooseColumns: string;
   /** The button beside a date that opens its calendar. */
@@ -166,6 +169,8 @@ const en: WidgetLabels = {
   chooseLine: 'Choose {name}',
   chooseAllLines: 'Choose every line',
   linesChosen: '{n} chosen',
+  moreSteps: 'More',
+  timeInStep: '{time} in this step',
   chooseDate: 'Choose a date',
   other: 'Other:',
   otherAnswer: 'Your own answer',

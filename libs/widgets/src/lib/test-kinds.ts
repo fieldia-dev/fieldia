@@ -1,6 +1,6 @@
 import { createForm, type Field, type FieldNode, type Locale, type Page, type Value } from '@fieldia/core';
 import { WIDGET_LABELS } from './labels';
-import { createWidget, type WidgetState } from './widgets';
+import { createWidget, type WidgetDialogs, type WidgetState } from './widgets';
 
 type Shown = Partial<Pick<WidgetState, 'readonly' | 'required' | 'invalid' | 'describedBy'>>;
 
@@ -9,7 +9,7 @@ type Shown = Partial<Pick<WidgetState, 'readonly' | 'required' | 'invalid' | 'de
  * kept up to date with its form, as the viewer keeps it: for the specs of the
  * question kinds.
  */
-export function mountKind(field: Record<string, unknown>, node: Partial<FieldNode> = {}, options: { locale?: Locale; dir?: 'rtl' } = {}) {
+export function mountKind(field: Record<string, unknown>, node: Partial<FieldNode> = {}, options: { locale?: Locale; dir?: 'rtl'; dialogs?: WidgetDialogs } = {}) {
   const page = {
     fieldia: '0.1',
     id: 't',
@@ -28,6 +28,7 @@ export function mountKind(field: Record<string, unknown>, node: Partial<FieldNod
     document,
     labels: WIDGET_LABELS[locale],
     locale,
+    ...(options.dialogs ? { dialogs: options.dialogs } : {}),
   });
   const host = document.createElement('div');
   if (options.dir) host.setAttribute('dir', options.dir);

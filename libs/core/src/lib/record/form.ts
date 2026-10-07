@@ -142,6 +142,8 @@ export interface FormOptions {
    * in them. Left out, the person has no id and no roles.
    */
   user?: FormUser;
+  /** Whether the record starts being edited, as conditions read `editing`; true unless said. A view locking it says so with `setEditing`. */
+  editing?: boolean;
 }
 
 /** The person using a form, as the app knows them. */
@@ -162,6 +164,8 @@ export interface Form {
   /** Write several fields at once, worked out once: the app's change, never a person's. Throws for a field the page lacks. */
   setValues(values: Values): void;
   node(id: string): NodeState;
+  /** Whether the record is being edited, as conditions read `editing`: a view that locks it to be read says false, and parts follow. */
+  setEditing(editing: boolean): void;
   fieldReadonly(name: string): boolean;
   /** What a field would be told if the form were checked now, or null when it passes. Nothing is shown. */
   problem(field: string): string | null;
@@ -333,7 +337,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   const today = () => localDay(options.now?.() ?? new Date());
   // The record's id and the person, as worked-out values read them: the id is the one asked for until the form has its state.
   let started = false;
-  const about = () => ({ recordId: started ? state.recordId : (options.recordId ?? null), user: options.user });
+  let editing = options.editing !== false;
+  const about = () => ({ recordId: started ? state.recordId : (options.recordId ?? null), user: options.user, editing });
   const computed = compileComputed(page, today, about);
   const setWhen = compileSetWhen(page, today, about);
   /** The saved forms placed on the page, by the part's id: each one's answers sit under its name, as JSON. */
@@ -451,7 +456,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   let showing = false;
   /** The wizard step last told as entered. */
   let told: string | null = null;
-  let contextCache: { values: Values; recordId: RecordId | null; context: Record<string, unknown>; env: ExpressionEnv } | null = null;
+  let contextCache: { values: Values; recordId: RecordId | null; editing: boolean; context: Record<string, unknown>; env: ExpressionEnv } | null = null;
   const userRoles: readonly string[] = [...(options.user?.roles ?? [])];
 
   /** The latest load of each field's choices: an answer to an older one is let go. */
@@ -538,10 +543,10 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
 
   /** The values as expressions read them, and what else they read: the record's id, the person, the lines' rows, today. */
   function reading(): { context: Record<string, unknown>; env: ExpressionEnv } {
-    if (contextCache?.values !== state.values || contextCache.recordId !== state.recordId) {
+    if (contextCache?.values !== state.values || contextCache.recordId !== state.recordId || contextCache.editing !== editing) {
       const values = state.values as Values;
       const context = recordContext(values, page.fields, about());
-      contextCache = { values, recordId: state.recordId, context, env: expressionEnv(values, page.fields, today) };
+      contextCache = { values, recordId: state.recordId, editing, context, env: expressionEnv(values, page.fields, today) };
     }
     return contextCache;
   }
@@ -1099,6 +1104,13 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
 
     node: nodeState,
 
+    setEditing(next) {
+      if (next === editing) return;
+      editing = next;
+      // Nothing of the record changed; what shows of it may have.
+      set({});
+    },
+
     fieldReadonly: (name) => lockedField(fieldDef(name)),
 
     loadChoices,
@@ -1558,11 +1570,16 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     shown('#title', root.title?.field);
     shown('#subtitle', root.title?.subtitleField);
     shown('#avatar', root.title?.avatarField);
-    shown('#statusbar', root.statusbar?.field);
+    // The statusbar shows and hides by its own condition and roles.
+    if (root.statusbar) add({ id: '#statusbar', ...(root.statusbar.roles ? { roles: root.statusbar.roles } : {}) }, root.id, 'field', { field: root.statusbar.field, invisible: root.statusbar.invisible });
     for (const button of [...(root.buttons ?? []), ...(root.footer ?? [])]) add(button, root.id, 'button', { invisible: button.invisible });
     for (const stat of root.statButtons ?? []) add(stat, root.id, 'stat', { invisible: stat.invisible });
-    if (root.ribbon) add(root.ribbon, root.id, 'other', { invisible: root.ribbon.invisible });
-    for (const alert of root.alerts ?? []) add(alert, root.id, 'other', { invisible: alert.invisible });
+    for (const ribbon of [...(root.ribbon ? [root.ribbon] : []), ...(root.ribbons ?? [])]) add(ribbon, root.id, 'other', { invisible: ribbon.invisible });
+    for (const alert of root.alerts ?? []) {
+      add(alert, root.id, 'other', { invisible: alert.invisible });
+      // An alert's buttons are hidden with it.
+      for (const button of alert.buttons ?? []) add(button, alert.id, 'button', { invisible: button.invisible });
+    }
     for (const badge of root.badges ?? []) add(badge, root.id, 'other', { invisible: badge.invisible });
     // Fields over and under the title are field nodes like any other.
     walk([...(root.title?.above ?? []), ...(root.title?.below ?? [])], root.id);

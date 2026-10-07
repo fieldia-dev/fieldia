@@ -23,6 +23,8 @@ export const ar: WidgetLabels = {
   chooseLine: 'اختيار {name}',
   chooseAllLines: 'اختيار كل الأسطر',
   linesChosen: 'المختارة: {n}',
+  moreSteps: 'المزيد',
+  timeInStep: '{time} في هذه المرحلة',
   chooseDate: 'اختيار تاريخ',
   other: 'أخرى:',
   otherAnswer: 'إجابتك الخاصة',

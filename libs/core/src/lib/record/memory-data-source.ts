@@ -32,6 +32,14 @@ export interface MemoryDataSourceOptions {
   warnings?: Record<string, Record<string, (values: Values) => string | null>>;
   /** Which value names a record in search results, per model. Defaults to `name`. */
   labelField?: Record<string, string>;
+  /**
+   * What a link shows of a model's records besides their name, by model: the
+   * fields its picture, its colour, the lines under its name and its folding
+   * come from — `{ "res.users": { avatar: "image" }, "tag": { color: "color" },
+   * "stage": { folded: "fold" }, "partner": { details: ["street", "city"] } }` —
+   * given with each record a search finds and each link a record loads.
+   */
+  shows?: Record<string, { avatar?: string; color?: string; details?: string[]; folded?: string }>;
   /** The app's lists of choices, by name: the choices, or a function of the form's values giving them. */
   lists?: Record<string, Option[] | ((values: Values) => Option[] | Promise<Option[]>)>;
   /** Answer after this long, so a demo shows its loading states. */
@@ -61,6 +69,19 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   const labelOf = (model: string, id: RecordId) => {
     const value = table(model)[String(id)]?.[options.labelField?.[model] ?? 'name'];
     return typeof value === 'string' ? value : String(id);
+  };
+  /** A linked record with what its model shows besides its name. */
+  const shown = (model: string, record: RelatedRecord): RelatedRecord => {
+    const how = options.shows?.[model];
+    const values = how ? table(model)[String(record.id)] : undefined;
+    if (!how || !values) return record;
+    const out: RelatedRecord = { ...record };
+    if (how.avatar && typeof values[how.avatar] === 'string') out.avatar = values[how.avatar] as string;
+    if (how.color && typeof values[how.color] === 'number') out.color = values[how.color] as number;
+    if (how.folded) out.folded = values[how.folded] === true;
+    const lines = (how.details ?? []).map((name) => values[name]).map((v) => (v && typeof v === 'object' && 'label' in v ? (v as RelatedRecord).label : v)).filter((v) => typeof v === 'string' && v.trim());
+    if (lines.length) out.details = lines.join('\n');
+    return out;
   };
   const nextId = (model: string) => Math.max(0, ...Object.keys(table(model)).map(Number).filter(Number.isFinite)) + 1;
   const asId = (key: string): RecordId => (Number.isFinite(Number(key)) ? Number(key) : key);
@@ -104,7 +125,16 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       await pause();
       const stored = table(request.model)[String(request.id)];
       if (!stored) throw new Error(`No ${request.model} record with id ${request.id}`);
-      return structuredCopy(stored);
+      const values = structuredCopy(stored);
+      // Its links, with what their models show besides their names.
+      if (options.shows) {
+        for (const [name, def] of Object.entries(request.fields)) {
+          const value = values[name];
+          if (def.type === 'many2one' && value && typeof value === 'object' && 'id' in value) values[name] = shown(def.relation, value as RelatedRecord);
+          else if (def.type === 'many2many' && Array.isArray(value)) values[name] = (value as RelatedRecord[]).map((record) => shown(def.relation, record));
+        }
+      }
+      return values;
     },
 
     async save(request: SaveRequest): Promise<SaveResult> {
@@ -140,7 +170,8 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
         .filter(([key, values]) => matchesFilter(withId(key, values), request.filter ?? []))
         .map(([key]) => ({ id: asId(key), label: labelOf(request.model, asId(key)) }))
         .filter((record) => record.label.toLowerCase().includes(query))
-        .slice(0, request.limit ?? 8);
+        .slice(0, request.limit ?? 8)
+        .map((record) => shown(request.model, record));
     },
 
     async list(request: ListRequest): Promise<ListResult> {

@@ -164,10 +164,42 @@ export function choiceSettings(el: ElementFactory, designer: Designer, id: strin
     };
   }
 
+  /** A dropdown drawn as a coloured badge, as Flectra's widget="badge": a colour for each option. */
+  function badge(): ChoicePart {
+    const made = toggle(w.colouredBadge, (on) => designer.setBadge(id, on));
+    const colours = el('div', { class: 'fd-inline-row fd-badge-tones' });
+    const tones = designer.words.panel.tones;
+    let drawn = '';
+    return {
+      element: el('div', { class: 'fd-kind-block' }, made.element, colours),
+      standsIn: false,
+      refresh(page, node) {
+        const on = node.widget === 'badge';
+        made.button.setAttribute('aria-checked', String(on));
+        colours.hidden = !on;
+        if (!on) return;
+        const chosen = (node.options?.['tones'] ?? {}) as Record<string, string>;
+        const key = JSON.stringify([optionsOf(page.fields[node.field]), chosen]);
+        if (key === drawn) return;
+        drawn = key;
+        colours.replaceChildren(
+          ...optionsOf(page.fields[node.field]).map((o) => {
+            const box = select(w.colourFor(o.label), [['', tones.muted], ['info', tones.info], ['success', tones.success], ['warning', tones.warning], ['danger', tones.danger]], (value) =>
+              designer.setBadgeTone(id, o.value, value ? (value as 'info') : null)
+            );
+            box.value = chosen[String(o.value)] ?? '';
+            return word(o.label, box);
+          })
+        );
+      },
+    };
+  }
+
   const parts: ChoicePart[] = [];
   if (kind === 'multiple-choice' || kind === 'checkboxes' || kind === 'image-choice') parts.push(layout(kind === 'image-choice'));
   if (kind === 'image-choice') parts.push(pictureLook());
   if (kind === 'dropdown') parts.push(search());
+  if (kind === 'dropdown') parts.push(badge());
   if (kind === 'ranking') parts.push(top());
   if (kind && SHUFFLED.has(kind)) parts.push(keepInPlace());
   if (kind === 'tags') parts.push(switchPart(w.ownAnswers, (on) => designer.setOwnAnswers(id, on), (page, node) => (page.fields[node.field] as { ownAnswers?: boolean }).ownAnswers === true));

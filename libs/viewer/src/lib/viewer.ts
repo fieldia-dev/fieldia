@@ -30,6 +30,7 @@ import {
   type FormNode,
   type WizardNode,
   type LabelPlace,
+  type LineField,
   type Locale,
   type OpenRequest,
   type OpenResult,
@@ -38,7 +39,7 @@ import {
   type Values,
   MESSAGES,
 } from '@fieldia/core';
-import { browserPreferences, createWidget, drawIcon, installStyles, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
+import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { listView } from './list';
 import { applyLook } from './look';
@@ -47,6 +48,8 @@ import { setAttr, setHidden, setText } from './dom';
 import { openPage } from './open';
 import { sayer } from './say';
 import { tabStrip } from './tab-strip';
+import { valueWords } from './value-words';
+import { hotkeyOf, hotkeyOn } from './hotkeys';
 
 export type Skin = 'underline' | 'outlined';
 
@@ -362,6 +365,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
       const warning = el('div', { class: 'fd-warning', id: `${id}-warning`, role: 'status', hidden: '' });
       wrapper.append(...(labelsAt === 'after' ? [widget.element, label] : [label, widget.element]), ...(help ? [help] : []), error, warning);
+      // Read-only, as words in place of the box, when the page draws them so.
+      const asText = page.look?.readonlyShown === 'text' && readsAsText(def, node) ? readText({ document: doc, field: def, node, id, locale, labels: widgetLabels, dialogs }) : null;
+      if (asText) widget.element.after(asText.element);
       if (widget.destroy) cleanups.push(() => widget.destroy?.());
       // An answer rule's warning waits until the person leaves the field: no advice
       // mid-word. One already shown stays while they put it right, and goes once they have.
@@ -403,10 +409,17 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
           wrapper.classList.toggle('fd-valid', valid);
           mark.toggleAttribute('hidden', !valid);
         }
+        const readonly = shown.readonly || locked || scope.locked();
+        if (asText) {
+          setHidden(widget.element, readonly);
+          setHidden(asText.element, !readonly);
+          setAttr(wrapper, 'data-read-text', readonly ? '' : null);
+          if (readonly) asText.update(state.values[node.field], state.values);
+        }
         widget.update({
           value: state.values[node.field],
           values: state.values,
-          readonly: shown.readonly || locked || scope.locked(),
+          readonly,
           required: shown.required,
           invalid: !!message,
           describedBy: [help?.id ?? tip?.bubble.id, message ? error.id : undefined, warned ? warning.id : undefined].filter(Boolean).join(' ') || undefined,
@@ -450,6 +463,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
 
     function buttonItem(node: ButtonNode): HTMLElement {
       const button = el('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, ...withIcon(node.icon, node.label));
+      if (node.hotkey) hotkeyOn(button, node.hotkey, node.label);
       spans(button, node.colspan);
       // Its confirmation, then its steps: the form asks, through the viewer.
       button.addEventListener('click', () => void press(button, () => form.runAction(node.id)));
@@ -458,11 +472,18 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       return hiddenOn(node, button);
     }
 
-    function textItem(node: TextNode): HTMLElement {
+    function textItem(node: TextNode, inline = false): HTMLElement {
       const style = node.style ?? 'paragraph';
-      const element = el(style === 'heading' ? 'h3' : 'p', { class: `fd-text-${style}`, 'data-node': node.id }, node.text);
+      // Its words, with the values of the fields they name.
+      const words = valueWords(doc, page.fields, node.text, locale);
+      const element = inline
+        ? el('span', { class: `fd-oneline-words fd-text-${style}`, 'data-node': node.id }, ...words.nodes)
+        : style === 'alert'
+          ? el('div', { class: `fd-alert fd-text-alert fd-tone-${node.tone ?? 'info'}`, role: 'status', 'data-node': node.id }, el('span', { class: 'fd-alert-message' }, ...words.nodes))
+          : el(style === 'heading' ? 'h3' : 'p', { class: `fd-text-${style}`, 'data-node': node.id }, ...words.nodes);
       spans(element, node.colspan);
       hideWhen(element, node.id);
+      watch((state) => words.update(state.values));
       return element;
     }
 
@@ -512,7 +533,27 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       return where === undefined ? 'skin' : where === 'beside' ? 'beside' : null;
     }
 
+    /**
+     * A line of parts, as Flectra's `<label/><div class="o_row">`: its title as
+     * the line's label, where the labels round it sit, and its parts after it,
+     * each as wide as it needs, its fields named for a screen reader.
+     */
+    function inlineItem(node: SectionNode, place: Place): HTMLElement {
+      const line = el('div', { class: 'fd-field fd-oneline', 'data-node': node.id, 'data-style': 'inline', 'data-labels': place.labels });
+      spans(line, node.colspan);
+      const row = el('div', { class: 'fd-oneline-row', role: 'group' }, ...node.children.map((child) => item(child, { columns: 1, onPage: false, inline: true })));
+      if (node.title) {
+        const title = el('span', { class: 'fd-label', id: uid(`${node.id}-label`) }, node.title);
+        row.setAttribute('aria-labelledby', title.id);
+        line.append(title);
+      }
+      line.append(row);
+      hideWhen(line, node.id);
+      return line;
+    }
+
     function sectionItem(node: SectionNode, place: Place): HTMLElement {
+      if (node.style === 'inline') return inlineItem(node, place);
       const plan = planSection(node, place);
       // An arrangement is no group to name, and a fieldset cannot lay its parts on the columns round it.
       const section = el(plan.arrangement ? 'div' : 'fieldset', {
@@ -683,7 +724,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         case 'button':
           return buttonItem(node);
         case 'text':
-          return textItem(node);
+          return textItem(node, place.inline);
         case 'slot':
           return slotItem(node);
         case 'section':
@@ -827,9 +868,12 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       locked = true;
     } else locked = false;
     root.toggleAttribute('data-readonly', locked);
+    // Conditions read `editing`: parts for editing only, or reading only, follow.
+    form.setEditing(!locked);
     render(form.getState());
   });
   root.toggleAttribute('data-readonly', locked);
+  form.setEditing(!locked);
   updaters.push(() => {
     if (!editSwitch) return;
     editSwitch.textContent = locked ? labels.edit : labels.done;
@@ -1111,24 +1155,56 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     if (node.statusbar && !underTitle) header.append(statusbar(node.statusbar));
 
     const card = el('div', { class: 'fd-card' });
-    if (node.ribbon) {
-      const ribbon = el('div', { class: `fd-ribbon fd-tone-${node.ribbon.tone ?? 'muted'}`, 'data-node': node.ribbon.id }, node.ribbon.label);
-      hideWhen(ribbon, node.ribbon.id);
-      // The ribbon is clipped to the card's corner by its own frame, so the card itself never clips: lists open past it.
-      card.append(el('div', { class: 'fd-ribbon-frame' }, ribbon));
+    const ribbons = [...(node.ribbon ? [node.ribbon] : []), ...(node.ribbons ?? [])];
+    if (ribbons.length) {
+      // The ribbons are clipped to the card's corner by their own frame, so the card itself never clips: lists open past it.
+      const frame = el('div', { class: 'fd-ribbon-frame' });
+      const drawn = ribbons.map((ribbon) => {
+        const element = el('div', { class: `fd-ribbon fd-tone-${ribbon.tone ?? 'muted'}`, 'data-node': ribbon.id, title: ribbon.tooltip }, ribbon.label);
+        frame.append(element);
+        return { ribbon, element };
+      });
+      // One corner, one ribbon: the first whose condition holds; its words from a field when the field holds any.
+      updaters.push((state) => {
+        let shown = false;
+        for (const { ribbon, element } of drawn) {
+          const show: boolean = !shown && !form.node(ribbon.id).invisible;
+          shown ||= show;
+          setHidden(element, !show);
+          if (!show) continue;
+          const from = ribbon.labelField ? displayValue(page.fields[ribbon.labelField] as LineField, state.values[ribbon.labelField], state.values, locale) : '';
+          setText(element, from || ribbon.label);
+        }
+      });
+      card.append(frame);
     }
     if (node.statButtons?.length) {
       const stats = el('div', { class: 'fd-stats' });
+      /** A field's value as the field shows it: money with its currency, a date, a count grouped. */
+      const shownValue = (name: string | undefined, values: Values) =>
+        name && page.fields[name] ? displayValue(page.fields[name] as LineField, values[name], values, locale) : '';
       for (const stat of node.statButtons) {
         const value = el('span', { class: 'fd-stat-value' });
+        const label = el('span', { class: 'fd-stat-label' }, stat.label);
+        // A second value with words of its own: the two one over the other, each after its words.
+        const second = stat.secondField && stat.secondLabel !== undefined ? { value: el('span', { class: 'fd-stat-value' }), label: el('span', { class: 'fd-stat-label' }, stat.secondLabel) } : null;
         const icon = drawIcon(doc, stat.icon, options.icons);
-        const words = el('span', { class: 'fd-stat-words' }, value, el('span', { class: 'fd-stat-label' }, stat.label));
+        const words = second
+          ? el('span', { class: 'fd-stat-words fd-stat-pair' }, el('span', { class: 'fd-stat-row' }, label, value), el('span', { class: 'fd-stat-row' }, second.label, second.value))
+          : el('span', { class: 'fd-stat-words' }, value, label);
         const button = el('button', { type: 'button', class: 'fd-stat', 'data-node': stat.id }, ...(icon ? [icon, words] : [words]));
         button.addEventListener('click', () => void press(button, () => form.runAction(stat.id)));
         updaters.push((state) => {
           button.hidden = form.node(stat.id).invisible;
-          const count = stat.field ? state.values[stat.field] : null;
-          value.textContent = count === null || count === undefined ? '' : String(count);
+          const values = state.values as Values;
+          const unit = shownValue(stat.unitField, values) || stat.unit || '';
+          const first = shownValue(stat.field, values);
+          const other = shownValue(stat.secondField, values);
+          if (second) {
+            setText(value, first);
+            setText(second.value, [other, unit].filter(Boolean).join(' '));
+          } else setText(value, [[first, other].filter(Boolean).join(' / '), first || other ? unit : ''].filter(Boolean).join(' '));
+          setText(label, shownValue(stat.labelField, values) || stat.label);
         });
         stats.append(button);
       }
@@ -1139,7 +1215,20 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       card.append(stats);
     }
     for (const alert of node.alerts ?? []) {
-      const box = el('div', { class: `fd-alert fd-tone-${alert.tone ?? 'info'}`, role: 'status', 'data-node': alert.id }, el('span', { class: 'fd-alert-message' }, alert.message));
+      // Its words with the values they name, or a field's words while it holds any; its buttons after them, as links unless styled.
+      const words = valueWords(doc, page.fields, alert.message, locale);
+      const message = el('span', { class: 'fd-alert-message' }, ...words.nodes);
+      let fromField = false;
+      const box = el('div', { class: `fd-alert fd-tone-${alert.tone ?? 'info'}`, role: 'status', 'data-node': alert.id }, message);
+      if (alert.buttons?.length) box.append(el('span', { class: 'fd-alert-actions' }, ...alert.buttons.map((button) => buttonItem({ ...button, style: button.style ?? 'link' }))));
+      updaters.push((state) => {
+        words.update(state.values);
+        const from = alert.messageField ? state.values[alert.messageField] : null;
+        const said = typeof from === 'string' ? from.trim() : '';
+        if (said) setText(message, said);
+        else if (fromField) message.replaceChildren(...words.nodes);
+        fromField = !!said;
+      });
       if (alert.dismissible) {
         // Closed, it stays closed while the page is open, whatever its condition does.
         let dismissed = false;
@@ -1169,6 +1258,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     }
     if (node.title) {
       const title = el('div', { class: 'fd-title' });
+      // Words over the title, as Flectra's "Product Name" over its h1, naming its box.
+      if (node.title.label) title.append(el('label', { class: 'fd-title-label', for: uid('#title') }, node.title.label));
       if (node.title.above?.length) title.append(el('div', { class: 'fd-title-above' }, ...node.title.above.map((part) => fieldItem(part))));
       title.append(fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder }));
       if (node.title.subtitleField) title.append(fieldItem({ type: 'field', id: '#subtitle', field: node.title.subtitleField }));
@@ -1205,14 +1296,18 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const def = page.fields[config.field];
     const barOptions: { [key: string]: JsonValue } = { clickable: config.clickable === true };
     if (config.visibleStates) barOptions['visibleStates'] = config.visibleStates;
+    for (const key of ['durationsField', 'fold', 'saves'] as const) if (config[key] !== undefined) barOptions[key] = config[key];
     const node: FieldNode = { type: 'field', id: '#statusbar', field: config.field, widget: 'statusbar', options: barOptions };
     const widget = createWidget(
       { form, name: config.field, field: def, node, id: uid('statusbar'), document: doc, labels: widgetLabels, preferences, locale, dialogs },
       options.widgets
     );
-    updaters.push((state) =>
-      widget.update({ value: state.values[config.field], values: state.values, readonly: form.node('#statusbar').readonly || locked, required: false, invalid: false })
-    );
+    if (widget.destroy) cleanups.push(() => widget.destroy?.());
+    updaters.push((state) => {
+      // Hidden while its own condition holds, or from people outside its roles.
+      setHidden(widget.element, form.node('#statusbar').invisible);
+      widget.update({ value: state.values[config.field], values: state.values, readonly: form.node('#statusbar').readonly || locked, required: false, invalid: false });
+    });
     return widget.element;
   }
 
@@ -1316,6 +1411,46 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     nextField(from)?.focus();
   });
 
+  // ---- a button's key, with Alt -------------------------------------------------
+
+  /**
+   * Whether a key pressed with Alt is this form's: pressed in it (not in a
+   * form inside it, such as a dialog's), or — pressed outside any form — this
+   * is the first form on the page, or in the question or dialog on top of it.
+   */
+  function hotkeysHere(target: EventTarget | null): boolean {
+    const inner = target instanceof Element ? target.closest('.fd-form') : null;
+    if (inner) return inner === root && !root.querySelector(':scope > .fd-dialog-backdrop');
+    const modals = [...doc.querySelectorAll('[aria-modal="true"]')].filter((modal) => !modal.closest('[hidden]'));
+    const top = modals[modals.length - 1];
+    return (top ?? doc).querySelector('.fd-form') === root;
+  }
+  const onHotkey = (event: KeyboardEvent) => {
+    if (event.key === 'Alt') {
+      if (hotkeysHere(event.target)) root.setAttribute('data-hotkeys', '');
+      return;
+    }
+    const key = hotkeyOf(event);
+    if (!key || !hotkeysHere(event.target)) return;
+    const button = [...root.querySelectorAll<HTMLButtonElement>(`button[data-hotkey="${key}"]`)].find(
+      (b) => b.closest('.fd-form') === root && !b.closest('[hidden]') && !b.disabled && !b.hasAttribute('aria-busy')
+    );
+    if (!button) return;
+    event.preventDefault();
+    root.removeAttribute('data-hotkeys');
+    button.click();
+  };
+  const offHotkeys = () => root.removeAttribute('data-hotkeys');
+  const altUp = (event: KeyboardEvent) => event.key === 'Alt' && offHotkeys();
+  doc.addEventListener('keydown', onHotkey);
+  doc.addEventListener('keyup', altUp);
+  doc.defaultView?.addEventListener('blur', offHotkeys);
+  cleanups.push(() => {
+    doc.removeEventListener('keydown', onHotkey);
+    doc.removeEventListener('keyup', altUp);
+    doc.defaultView?.removeEventListener('blur', offHotkeys);
+  });
+
   // ---- confirmation dialog -----------------------------------------------------
 
   /** A question with Cancel and OK, or with `withCancel` false a notice with OK alone. */
@@ -1388,6 +1523,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     setReadonly(readonly) {
       locked = readonly;
       root.toggleAttribute('data-readonly', locked);
+      form.setEditing(!locked);
       render(form.getState());
     },
     isReadonly: () => locked,

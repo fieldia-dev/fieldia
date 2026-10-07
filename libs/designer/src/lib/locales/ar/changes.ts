@@ -4,7 +4,7 @@ import { plural, quoteAr } from '../speak';
 const q = quoteAr;
 const at = (where: string) => (where ? ` ${where}` : '');
 const PART = { page: 'الصفحة', tab: 'علامة التبويب', section: 'القسم' } as const;
-const HEADER = { button: 'الزر', counter: 'العدّاد', badge: 'الشارة' } as const;
+const HEADER = { button: 'الزر', counter: 'العدّاد', badge: 'الشارة', ribbon: 'الشريط', alert: 'التنبيه' } as const;
 const columns = (n: number) => plural('ar', n, { zero: '# أعمدة', one: 'عمود واحد', two: 'عمودان', few: '# أعمدة', many: '# عمودًا', other: '# عمود' });
 const files = (n: number) => plural('ar', n, { zero: '# ملفات', one: 'ملف واحد', two: 'ملفان', few: '# ملفات', many: '# ملفًا', other: '# ملف' });
 const LABELS: Record<string, string> = { above: 'فوق مربعاتها', beside: 'بجانب مربعاتها', hidden: 'داخل مربعاتها' };
@@ -103,7 +103,7 @@ export const changes: DesignerWords['changes'] = {
     return `${name}: ${smaller.length ? `${n(wide)} على سطح المكتب، ${smaller.join('، ')}` : n(wide)}`;
   },
   gaps: (name, gaps) => `${name}: ${gaps ? 'قد تترك الصفوف فراغات' : 'تبقى الصفوف ممتلئة'}`,
-  drawn: (name, style) => `${name}: ${{ card: 'يُرسم بطاقةً', plain: 'يُرسم دون إطار', line: 'يُرسم بخط تحت عنوانه', framed: 'يُرسم في إطار، وعنوانه عليه' }[style]}`,
+  drawn: (name, style) => `${name}: ${{ card: 'يُرسم بطاقةً', plain: 'يُرسم دون إطار', line: 'يُرسم بخط تحت عنوانه', framed: 'يُرسم في إطار، وعنوانه عليه', inline: 'يُرسم في سطر واحد، وعنوانه تسميته' }[style]}`,
   folds: (name, fold) => `${name}: ${{ no: 'لم يعد يُطوى', open: 'يُطوى بعنوانه، ويبدأ مفتوحًا', folded: 'يُطوى بعنوانه، ويبدأ مطويًا' }[fold]}`,
   labels: (name, place) => `${name}: التسميات ${LABELS[place] ?? 'حيث تضعها الصفحة'}`,
   labelWidth: (name, px) => `${name}: التسميات ${px ? `بعرض ${px} بكسل` : 'بالعرض الذي تجعله الصفحة'}`,

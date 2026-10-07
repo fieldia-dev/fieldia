@@ -32,7 +32,7 @@ describe('a record’s header on the canvas', () => {
   it('offers to add each part where it goes, and nothing for a screen of sections', () => {
     const { q } = setup();
     expect(q('.fd-canvas-header').hidden).toBe(false);
-    expect([...canvas.element.querySelectorAll('[data-add-part]')].map((b) => b.textContent)).toEqual(['Add a button', 'Add status steps', 'Add a counter', 'Add a badge']);
+    expect([...canvas.element.querySelectorAll('[data-add-part]')].map((b) => b.textContent)).toEqual(['Add a button', 'Add status steps', 'Add a counter', 'Add a badge', 'Add a ribbon', 'Add an alert']);
     const screen = createDesigner({ page: blankPage('screen', 'Visit') });
     const other = screenCanvas({ designer: screen, doc: document, more: () => undefined, dropTool: () => undefined });
     other.update(screen.getState());

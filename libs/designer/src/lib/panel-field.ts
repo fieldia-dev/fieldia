@@ -15,6 +15,7 @@ import type { SampleOptions } from './rules-sample';
 import type { PropertiesView } from './screen-properties';
 import { rolesSetting } from './roles-setting';
 import { tableSettings } from './table-panel';
+import { shownWhileSetting } from './shown-while';
 
 /**
  * A field's settings, on the panel's tabs: its words and how it is shown
@@ -87,6 +88,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   showWhen.addEventListener('click', () => when.start());
   const noRules = el('p', { class: 'fd-properties-hint', hidden: '' }, w.noRulesField);
   const roles = rolesSetting(el, designer, id);
+  const shownWhile = shownWhileSetting(el, designer, id);
   const whenBox = onTab(el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, w.whenItShows), when.element, showWhen, noRules), 'rules', 'When it shows');
   // Worked out from others, set when, and the rules its answer keeps.
   const own = fieldRules(el, designer, id, sampling);
@@ -119,6 +121,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     onTab(el('div', { class: 'fd-prop fd-prop-when' }, readonlyWhen.element, readonlyOnly), 'rules', 'Read-only'),
     whenBox,
     roles.element,
+    shownWhile.element,
     ...own.rows,
     changes.element,
     ...table.rows,
@@ -171,6 +174,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       readonlyOnly.hidden = !readonlyWhen.element.hidden || !readonlyWhen.canStart();
       when.update(page, others, found.node.invisible);
       roles.update(page);
+      shownWhile.update(page);
       showWhen.hidden = !when.element.hidden || !when.canStart();
       noRules.hidden = !when.element.hidden || when.canStart();
       own.update(page);

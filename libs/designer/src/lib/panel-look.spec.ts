@@ -31,7 +31,7 @@ describe('the Look tab — the page', () => {
     const { host, panel } = screenEditor();
     expect([...panel.querySelectorAll('[role="tab"]')].map((t) => t.textContent)).toEqual(['Content', 'Layout', 'Look', 'Rules']);
     openTab(host, 'Look');
-    expect([...panel.querySelectorAll('[role="tabpanel"]:not([hidden]) [data-setting]')].map((r) => r.getAttribute('data-setting'))).toEqual(['Look presets', 'Accent colour', 'Font', 'Spacing', 'Corners', 'Labels', 'Label width', 'Help', 'Colours', 'Each kind of part']);
+    expect([...panel.querySelectorAll('[role="tabpanel"]:not([hidden]) [data-setting]')].map((r) => r.getAttribute('data-setting'))).toEqual(['Look presets', 'Accent colour', 'Font', 'Spacing', 'Corners', 'Labels', 'Label width', 'Help', 'Read-only fields', 'Colours', 'Each kind of part']);
   });
 
   it('sets the spacing, the font, the corners and the colours, and the canvas wears each as it is set', () => {
@@ -100,7 +100,7 @@ describe('the Look tab — a group', () => {
     const panel = host.querySelector('.fd-properties [role="tabpanel"]:not([hidden])') as HTMLElement;
     const style = panel.querySelector('[role="group"][aria-label="Style"]') as HTMLElement;
     const chips = () => [...style.querySelectorAll('button')];
-    expect(chips().map((b) => b.textContent)).toEqual(['Card', 'Plain', 'Line', 'Framed']);
+    expect(chips().map((b) => b.textContent)).toEqual(['Card', 'Plain', 'Line', 'Framed', 'One line']);
     expect(chips().every((b) => b.querySelector('svg'))).toBe(true);
     expect(chips().find((b) => b.getAttribute('aria-pressed') === 'true')?.textContent).toBe('Card');
     chips()[3].click();

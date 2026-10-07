@@ -4,13 +4,16 @@ import { expressionContext, lineKind, type Line, type RecordId, type Values } fr
 
 /**
  * What expressions read besides a record's fields: `id`, the record's id
- * (null while it is new), and `user`, the person using the form (`id`,
- * `name`, `roles`). A page's own field of the same name comes first.
+ * (null while it is new), `user`, the person using the form (`id`, `name`,
+ * `roles`), and `editing`, whether the record is being edited — false while
+ * a view shows it locked, to be read, as Flectra's oe_edit_only and
+ * oe_read_only. A page's own field of the same name comes first.
  */
-export function builtIns(fields: Record<string, unknown>, recordId: RecordId | null, user: { id: RecordId | null; name?: string; roles?: readonly string[] } | undefined): Record<string, unknown> {
+export function builtIns(fields: Record<string, unknown>, recordId: RecordId | null, user: { id: RecordId | null; name?: string; roles?: readonly string[] } | undefined, editing = true): Record<string, unknown> {
   const names: Record<string, unknown> = {
     id: recordId ?? null,
     user: { id: user?.id ?? null, name: user?.name ?? null, roles: [...(user?.roles ?? [])] },
+    editing,
   };
   for (const name of Object.keys(names)) if (name in fields) delete names[name];
   return names;
@@ -25,11 +28,13 @@ export function builtIns(fields: Record<string, unknown>, recordId: RecordId | n
 export interface About {
   recordId: RecordId | null;
   user?: { id: RecordId | null; name?: string; roles?: readonly string[] };
+  /** Whether the record is being edited; true unless said. */
+  editing?: boolean;
 }
 
 /** The record as expressions read it: its values, its `id` and `user`. What a line reads as `parent`. */
 export function recordContext(values: Values, fields: Record<string, Field | LineField>, about: About): Record<string, unknown> {
-  return { ...builtIns(fields, about.recordId, about.user), ...expressionContext(values, fields) };
+  return { ...builtIns(fields, about.recordId, about.user, about.editing), ...expressionContext(values, fields) };
 }
 
 /**

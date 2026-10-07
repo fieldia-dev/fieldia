@@ -33,8 +33,31 @@ export function conditionToHide(condition: Condition): string {
 
 const RULE = /^\s*([A-Za-z_]\w*)\s*(==|!=)\s*('[^']*'|True|False|-?\d+(?:\.\d+)?)\s*/;
 
-/** The condition a node's `invisible` holds: null when it always shows, `custom` when it was written another way. */
-export function readCondition(invisible: unknown): Condition | null | 'custom' {
+/** When a part shows of a record's being edited: always, only while it is edited (Flectra's oe_edit_only), or only while it is read. */
+export type ShownWhile = 'always' | 'editing' | 'reading';
+
+/**
+ * A part's `invisible` cut in two: when it shows of the record's being edited
+ * — the `not editing` or `editing` the designer puts last — and the rest.
+ */
+export function splitShownWhile(invisible: unknown): { mode: ShownWhile; rest: unknown } {
+  if (typeof invisible !== 'string') return { mode: 'always', rest: invisible };
+  const found = /^(?:(.+) or )?(not )?editing$/.exec(invisible.trim());
+  if (!found) return { mode: 'always', rest: invisible };
+  const rest = found[1]?.replace(/^\((.*)\)$/, '$1');
+  return { mode: found[2] ? 'editing' : 'reading', rest: rest || undefined };
+}
+
+/** A part's `invisible` again, from the rest and when it shows of the record's being edited. */
+export function withShownWhile(rest: string | undefined, mode: ShownWhile): string | undefined {
+  const clause = mode === 'editing' ? 'not editing' : mode === 'reading' ? 'editing' : '';
+  if (!clause) return rest || undefined;
+  return rest ? `(${rest}) or ${clause}` : clause;
+}
+
+/** The condition a node's `invisible` holds: null when it always shows, `custom` when it was written another way. When it shows of the record's being edited is said apart. */
+export function readCondition(shown: unknown): Condition | null | 'custom' {
+  const invisible = splitShownWhile(shown).rest;
   if (invisible === undefined || invisible === null || invisible === '' || invisible === false) return null;
   if (typeof invisible !== 'string') return 'custom';
   const rules: ConditionRule[] = [];

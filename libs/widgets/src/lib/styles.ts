@@ -2,6 +2,7 @@ import { KINDS_CSS } from './styles-kinds';
 import { CHOICES_CSS } from './styles-choices';
 import { INPUTS_CSS } from './styles-inputs';
 import { PARTS_CSS } from './styles-parts';
+import { SHEET_CSS } from './styles-sheet';
 
 /**
  * Fieldia's stylesheet: two skins and the layout chrome, all scoped to the
@@ -723,6 +724,12 @@ button.fd-chip-label:hover { text-decoration: underline; }
 /* A value as a pill (widget badge): grey, or its tone's colour on its soft shade. */
 .fd-value-badge { justify-self: start; align-self: center; display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; line-height: 18px; font-weight: 500; color: var(--fd-tone, var(--fd-muted)); background: var(--fd-tone-soft, color-mix(in srgb, var(--fd-tone, var(--fd-muted)) 14%, transparent)); }
 .fd-value-badge[hidden] { display: none; }
+/* A value given its own tone by options.tones, over the part's. */
+.fd-value-badge[data-tone="info"] { --fd-tone: var(--fd-info); --fd-tone-soft: var(--fd-info-soft); }
+.fd-value-badge[data-tone="success"] { --fd-tone: var(--fd-success); --fd-tone-soft: var(--fd-success-soft); }
+.fd-value-badge[data-tone="warning"] { --fd-tone: var(--fd-warning); --fd-tone-soft: var(--fd-warning-soft); }
+.fd-value-badge[data-tone="danger"] { --fd-tone: var(--fd-error); --fd-tone-soft: var(--fd-error-soft); }
+.fd-value-badge[data-tone="muted"] { --fd-tone: var(--fd-muted); --fd-tone-soft: color-mix(in srgb, var(--fd-muted) 14%, transparent); }
 .fd-date-pick { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; }
 .fd-date-pick > .fd-input { flex: 1 1 auto; min-width: 0; }
 .fd-calendar-button {
@@ -943,7 +950,7 @@ button.fd-chip-label:hover { text-decoration: underline; }
 `;
 
 /** Fieldia's whole stylesheet: the skins, then the layout over them, the inputs' details, the question kinds and the choices' details. */
-export const FIELDIA_CSS = SKINS_CSS + LAYOUT_CSS + INPUTS_CSS + KINDS_CSS + CHOICES_CSS + PARTS_CSS;
+export const FIELDIA_CSS = SKINS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + KINDS_CSS + CHOICES_CSS + PARTS_CSS;
 
 const STYLE_ID = 'fieldia-styles';
 

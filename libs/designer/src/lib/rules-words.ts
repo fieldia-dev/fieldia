@@ -1,6 +1,7 @@
 import type { AnswerRule, Field, Page, SetWhen } from '@fieldia/core';
 import { readCondition, readHolds, type Condition } from './conditions';
 import { nameOf } from './layout-tree';
+import { sheetParts } from './page-tree';
 import { fieldsReadBy, formulaInWords, literalOf, valueInWords } from './rules-formula';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
@@ -259,7 +260,7 @@ export function pageRules(page: Page, words: DesignerWords = en): RuleEntry[] {
   };
   const root = page.layout;
   if (root.type === 'sheet') {
-    for (const part of [...(root.buttons ?? []), ...(root.statButtons ?? []), ...(root.badges ?? []), ...(root.alerts ?? []), ...(root.ribbon ? [root.ribbon] : [])] as { id: string; label?: string; message?: string; invisible?: unknown }[]) {
+    for (const part of sheetParts(root) as { id: string; label?: string; message?: string; invisible?: unknown }[]) {
       const hidden = shows(page, part.invisible, words);
       if (hidden) out.push({ kind: 'shows', part: part.id, name: part.label ?? part.message ?? '', sentence: hidden, reads: reads(part.invisible) });
     }

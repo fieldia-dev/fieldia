@@ -13,6 +13,16 @@ export type RecordId = number | string;
 export interface RelatedRecord {
   id: RecordId;
   label: string;
+  /**
+   * What a link may show of the record besides its name, when the data source
+   * gives it: the person's picture (an address or a data: URI), its colour as
+   * Flectra numbers them (1 to 11; 0 or none for no colour), lines under its
+   * name such as an address, and — for a stage — whether it is folded.
+   */
+  avatar?: string;
+  color?: number;
+  details?: string;
+  folded?: boolean;
 }
 
 /** A reference points at a record of one of several models. */

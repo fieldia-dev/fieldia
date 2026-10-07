@@ -6,6 +6,8 @@ import { BUILT_IN_NAMES, USER_PARTS } from '../expression/built-ins';
 import { compileModifier } from '../expression/modifier';
 import { compileExpression } from '../expression/expression';
 import { dependencyOrder } from '../expression/order';
+import { valuesIn } from './words';
+import { BROWSER_HOTKEYS, hotkeyWords } from './hotkeys';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -75,6 +77,8 @@ export class ReferenceCheck {
   /** A press: steps, an app action, or both — and its steps checked. */
   private checkPress(button: ButtonNode | StatButton, path: string) {
     if (!button.steps && button.action === undefined) this.report(path, 'a button needs steps, an action, or both');
+    const key = 'hotkey' in button ? button.hotkey : undefined;
+    if (typeof key === 'string' && BROWSER_HOTKEYS.includes(key.replace('shift+', ''))) this.report(`${path}.hotkey`, `${hotkeyWords(key)} is the browser’s own: pick another key`);
     if (button.steps) this.checkSteps(button.steps, `${path}.steps`);
   }
 
@@ -139,6 +143,11 @@ export class ReferenceCheck {
           return;
       }
     });
+  }
+
+  /** Words that show fields' values: each `{name}` a field of this page. */
+  private checkValuesIn(words: string, path: string) {
+    for (const name of valuesIn(words)) this.need(name, path);
   }
 
   private report(path: string, message: string) {
@@ -427,6 +436,13 @@ export class ReferenceCheck {
       case 'section':
         if (node.collapsible && !node.title) this.report(path, 'a collapsible section needs a title to fold it by');
         if (node.collapsed && !node.collapsible) this.report(path, 'collapsed needs collapsible: true');
+        if (node.style === 'inline' && node.columns !== undefined) this.report(`${path}.columns`, 'parts on one line take no columns: each is as wide as it needs');
+        if (node.style === 'inline' && node.collapsible) this.report(`${path}.collapsible`, 'a line of parts does not fold: its title is its label');
+        if (node.style === 'inline') {
+          node.children.forEach((child, i) => {
+            if (!['field', 'text', 'button', 'spacer'].includes(child.type)) this.report(`${path}.children[${i}]`, `a line of parts holds fields, words and buttons; a ${child.type} needs a row of its own`);
+          });
+        }
         return this.walkChildren(node.children, path);
       case 'tabs':
         return this.walkTabs(node, path);
@@ -434,6 +450,8 @@ export class ReferenceCheck {
         return this.checkFormNode(node, path);
       case 'button':
         return this.checkPress(node, path);
+      case 'text':
+        return this.checkValuesIn(node.text, `${path}.text`);
       default:
         return;
     }
@@ -469,8 +487,16 @@ export class ReferenceCheck {
       if (sheet.title.avatarField !== undefined) this.need(sheet.title.avatarField, `${path}.title.avatarField`);
     }
     if (sheet.statusbar) {
-      const { field, visibleStates } = sheet.statusbar;
+      const { field, visibleStates, durationsField, fold, saves, clickable } = sheet.statusbar;
+      const at = `${path}.statusbar`;
+      this.checkModifiers(sheet.statusbar, at);
+      if (durationsField !== undefined) {
+        const times = this.need(durationsField, `${at}.durationsField`);
+        if (times && times.type !== 'json') this.report(`${at}.durationsField`, `"${durationsField}" is a ${times.type}; time per step comes from a json field`);
+      }
+      if (saves && !clickable) this.report(`${at}.saves`, 'a click saves only where a step can be clicked (clickable)');
       const def = this.need(field, `${path}.statusbar.field`);
+      if (fold && def && def.type !== 'many2one') this.report(`${at}.fold`, 'steps fold by their record (a stage), so only a link’s steps fold; a choice keeps the steps it shows with visibleStates');
       if (def && def.type !== 'selection' && def.type !== 'many2one') {
         this.report(`${path}.statusbar.field`, `"${field}" is a ${def.type}; a statusbar needs a selection or many2one`);
       }
@@ -492,11 +518,17 @@ export class ReferenceCheck {
       this.claim(stat.id, `${path}.statButtons[${i}]`);
       this.checkModifiers(stat, `${path}.statButtons[${i}]`);
       this.checkPress(stat, `${path}.statButtons[${i}]`);
-      if (stat.field !== undefined) this.need(stat.field, `${path}.statButtons[${i}].field`);
+      for (const key of ['field', 'unitField', 'labelField', 'secondField'] as const) {
+        const name = stat[key];
+        if (name !== undefined) this.need(name, `${path}.statButtons[${i}].${key}`);
+      }
+      if (stat.secondLabel !== undefined && stat.secondField === undefined) this.report(`${path}.statButtons[${i}].secondLabel`, 'words for a second value need its field (secondField)');
     });
-    if (sheet.ribbon) {
-      this.claim(sheet.ribbon.id, `${path}.ribbon`);
-      this.checkModifiers(sheet.ribbon, `${path}.ribbon`);
+    const ribbons = [...(sheet.ribbon ? [[sheet.ribbon, `${path}.ribbon`] as const] : []), ...(sheet.ribbons ?? []).map((ribbon, i) => [ribbon, `${path}.ribbons[${i}]`] as const)];
+    for (const [ribbon, at] of ribbons) {
+      this.claim(ribbon.id, at);
+      this.checkModifiers(ribbon, at);
+      if (ribbon.labelField !== undefined) this.need(ribbon.labelField, `${at}.labelField`);
     }
     sheet.badges?.forEach((badge, i) => {
       this.claim(badge.id, `${path}.badges[${i}]`);
@@ -506,8 +538,16 @@ export class ReferenceCheck {
       sheet.title?.[place]?.forEach((node, i) => this.walkNode(node, `${path}.title.${place}[${i}]`));
     }
     sheet.alerts?.forEach((alert, i) => {
-      this.claim(alert.id, `${path}.alerts[${i}]`);
-      this.checkModifiers(alert, `${path}.alerts[${i}]`);
+      const at = `${path}.alerts[${i}]`;
+      this.claim(alert.id, at);
+      this.checkModifiers(alert, at);
+      this.checkValuesIn(alert.message, `${at}.message`);
+      if (alert.messageField !== undefined) this.need(alert.messageField, `${at}.messageField`);
+      alert.buttons?.forEach((button, j) => {
+        this.claim(button.id, `${at}.buttons[${j}]`);
+        this.checkModifiers(button, `${at}.buttons[${j}]`);
+        this.checkPress(button, `${at}.buttons[${j}]`);
+      });
     });
     this.walkChildren(sheet.children, path);
     if (sheet.sidePanel) {
