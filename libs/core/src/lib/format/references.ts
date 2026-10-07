@@ -226,8 +226,8 @@ export class ReferenceCheck {
     }
     for (const name of reads.fields) {
       if (has(scope.fields, name)) continue;
-      // A record's expressions read its id and the person; a line's, the person and the record it is on.
-      const builtIn = scope.lines === undefined ? (BUILT_IN_NAMES as readonly string[]).includes(name) : name === 'user' || name === 'parent';
+      // A record's expressions read its id and the person; a line's, its own id, the person and the record it is on.
+      const builtIn = scope.lines === undefined ? (BUILT_IN_NAMES as readonly string[]).includes(name) : name === 'user' || name === 'parent' || name === 'id';
       if (builtIn) {
         for (const read of reads.paths) {
           const [root, part] = read.split('.');

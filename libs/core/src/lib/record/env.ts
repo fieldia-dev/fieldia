@@ -42,8 +42,9 @@ export function recordContext(values: Values, fields: Record<string, Field | Lin
  * on, as that record's expressions read it — and `user`. A line field of the
  * same name comes first.
  */
-export function lineContext(values: Values, fields: Record<string, LineField>, parent: Record<string, unknown>): Record<string, unknown> {
-  const names: Record<string, unknown> = { parent, user: parent['user'] ?? builtIns({}, null, undefined)['user'] };
+export function lineContext(values: Values, fields: Record<string, LineField>, parent: Record<string, unknown>, id: RecordId | null = null): Record<string, unknown> {
+  // The line's own id, empty until it is saved: Flectra's readonly="id" on a saved line.
+  const names: Record<string, unknown> = { parent, user: parent['user'] ?? builtIns({}, null, undefined)['user'], id };
   for (const name of Object.keys(names)) if (name in fields) delete names[name];
   return { ...names, ...expressionContext(values, fields) };
 }
