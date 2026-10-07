@@ -203,6 +203,12 @@ export interface CellRules {
   options?: WidgetOptions;
   /** How wide the column is, in characters of its text. */
   width?: number;
+  /**
+   * The roles the column is shown to, as Flectra's groups= on a list's
+   * column: read once on the person, hiding the whole column as `hidden`
+   * does — its cells asked nothing — from people holding none of them.
+   */
+  roles?: Roles;
 }
 
 export interface ButtonNode {
@@ -729,6 +735,7 @@ export const CellRulesSchema = z
     widget: z.string().min(1).optional(),
     options: z.object({ clear: z.boolean().optional() }).catchall(JsonValueSchema).optional(),
     width: z.int().min(1).max(200).optional(),
+    roles,
   })
   .meta({ id: 'CellRules' });
 

@@ -29,6 +29,7 @@ export const tables: DesignerWords['tables'] = {
   shownAs: 'العرض بشكل',
   asItsType: 'كما يعرضه نوعه',
   width: 'العرض بالأحرف',
+  columnShownTo: 'العمود يظهر فقط لـ',
   onEachLine: 'في كل بند',
   forChosenLines: 'للبنود المختارة',
   besideAdd: 'بجانب إضافة سطر',
@@ -57,6 +58,7 @@ export const tables: DesignerWords['tables'] = {
   widthRange: 'العرض من 1 إلى 200 حرف',
   widgetUnsuited: (column, widget) => `لا يمكن عرض «${column}» بشكل ${widget}: فهو لا يحمل ما يعرضه`,
   buttonNeedsWords: 'يحتاج الزر إلى نص',
+  notARole: (role) => `${q(role)} ليس اسم دور: حروف وأرقام ونقاط وشرطات سفلية، و! قبله لإخفاء العمود عمّن يحمله`,
   tableChanged: (name) => `${q(name)}: تغيّرت قواعد جدوله`,
   toneChanged: (name) => `${q(name)}: تغيّر لونه`,
 };

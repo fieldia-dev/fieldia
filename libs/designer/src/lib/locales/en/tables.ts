@@ -33,6 +33,8 @@ export const tables = {
   shownAs: 'Shown as',
   asItsType: 'As its kind shows it',
   width: 'Width, in characters',
+  /** The roles a column shows to, as Flectra's groups= on a list's column. */
+  columnShownTo: 'Column shown only to',
   // ---- buttons
   onEachLine: 'On each line',
   forChosenLines: 'For the lines chosen',
@@ -65,6 +67,7 @@ export const tables = {
   widthRange: 'A width is 1 to 200 characters',
   widgetUnsuited: (column: string, widget: string) => `${column} cannot be shown as ${widget}: it does not hold what that shows`,
   buttonNeedsWords: 'A button needs words',
+  notARole: (role: string) => `“${role}” is not a role’s name: letters, digits, dots and underscores, with ! before it to hide the column from people holding it`,
   // ---- what changed, for the Publish dialog
   tableChanged: (name: string) => `“${name}”: its table’s rules changed`,
   toneChanged: (name: string) => `“${name}”: its tone changed`,

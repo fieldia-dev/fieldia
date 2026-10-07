@@ -291,6 +291,7 @@ ${code(
   <li><strong>Badges.</strong> A choice with ${c('"badge": true')} shows as a pill in its tone, in the grid, as ${c('widget="badge"')}.</li>
   <li><strong>Buttons on a line</strong> are shown by their own condition on it. A press runs their steps, and each call your app answers carries the line: ${c('{ field, key, values }')}.</li>
   <li><strong>Width.</strong> A cell's ${c('width')} is the column's, in characters.</li>
+  <li><strong>A column for some roles.</strong> A cell's ${c('roles')}, as a part's — ${c('["analytic.group_analytic_accounting"]')}, Flectra's ${c('groups=')} on a list's column — hides the whole column, as ${c('hidden')} does, from people holding none of them; their cells are asked nothing. The app names the person's roles (${c('user')}); its server still decides what they may do.</li>
 </ul>
 <p>Both the plain table and the grid draw them; the form reads them, so your own widget can too, with ${c('form.lineState(node, key)')} and ${c('form.columnHidden(node, column)')}.</p>
 <p>A line's money can be in the record's currency, as Flectra's related ${c('currency_id')}: ${c('"currencyField": "parent.currency_id"')} on a line's monetary field. Its cells, the total under them and the line's dialog follow the record's currency as it changes.</p>

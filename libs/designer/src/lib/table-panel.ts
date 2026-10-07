@@ -122,6 +122,15 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
   const cellWidget = el('select', { class: 'fd-input fd-select fd-table-cell-widget', 'aria-label': w.shownAs }) as HTMLSelectElement;
   cellWidget.addEventListener('change', () => designer.setCellLook(id, current(), { widget: cellWidget.value || null }));
   const width = el('input', { type: 'number', class: 'fd-input fd-inline-number', min: '1', max: '200', step: '1', 'aria-label': w.width }) as HTMLInputElement;
+  // The roles the column shows to: kept once it is left or Enter is pressed, a role half typed being no role.
+  const columnRoles = el('input', { class: 'fd-input fd-answer-rule-code fd-table-column-roles', 'aria-label': w.columnShownTo, placeholder: words.rulesUi.rolesPlaceholder, spellcheck: 'false', autocomplete: 'off' }) as HTMLInputElement;
+  const keepRoles = () => {
+    const typed = columnRoles.value.split(/[\s,]+/).filter(Boolean);
+    if (typed.join(',') === (node?.cells?.[current()]?.roles ?? []).join(',')) return;
+    if (!designer.setCellLook(id, current(), { roles: typed.length ? typed : null })) columnRoles.value = (node?.cells?.[current()]?.roles ?? []).join(', ');
+  };
+  columnRoles.addEventListener('change', keepRoles);
+  columnRoles.addEventListener('keydown', (event) => event.key === 'Enter' && (event.preventDefault(), keepRoles()));
   width.addEventListener('change', () => designer.setCellLook(id, current(), { width: width.value.trim() ? Number(width.value) : null }));
   column.addEventListener('change', () => drawColumn());
   const columnBox = el(
@@ -130,6 +139,7 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
     el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.column), column),
     ...cellRules.map((r) => r.box.element),
     el('p', { class: 'fd-properties-hint fd-set-hint' }, w.columnHiddenHint),
+    el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.columnShownTo), columnRoles),
     el('span', { class: 'fd-answer-rule-word' }, w.toneOf),
     cellTones.element,
     el('label', { class: 'fd-inline-setting' }, badge, el('span', {}, w.badge)),
@@ -162,6 +172,7 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
     cellWidget.value = rules.widget && offered.includes(rules.widget) ? rules.widget : '';
     (cellWidget.parentElement as HTMLElement).hidden = !offered.length;
     if (!focused(width)) width.value = rules.width ? String(rules.width) : '';
+    if (!focused(columnRoles)) columnRoles.value = (rules.roles ?? []).join(', ');
   }
 
   // ---- Content: the table's buttons ----

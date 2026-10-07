@@ -97,6 +97,25 @@ describe('a table’s own rules, in the panel', () => {
     expect((field(row('Line rules'), 'Read-only when') as HTMLInputElement).value).toBe('');
   });
 
+  it('shows a column only to some roles, refusing a name no role has, in English and Arabic', () => {
+    const { host, row, node, designer } = screen('f-moves');
+    openTab(host, 'Rules');
+    choose(field(row('Line rules'), 'Column'), 'demand');
+    const roles = (text: string) => {
+      const box = field(row('Line rules'), 'Column shown only to') as HTMLInputElement;
+      type(box, text);
+      box.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    roles('stock.group_stock_manager, !base.group_portal');
+    expect(node('f-moves').cells).toEqual({ demand: { roles: ['stock.group_stock_manager', '!base.group_portal'] } });
+    expect(designer.setCellLook('f-moves', 'demand', { roles: ['not a role'] })).toBe(false);
+    roles('');
+    expect(node('f-moves').cells).toBeUndefined();
+    const ar = screen('f-moves', 'ar');
+    openTab(ar.host, 'القواعد');
+    expect(field(ar.row('Line rules'), 'العمود يظهر فقط لـ')).toBeDefined();
+  });
+
   it('says what is wrong with a line’s condition under its box, and keeps the page as it was', () => {
     const { host, row, node } = screen('f-moves');
     openTab(host, 'Rules');

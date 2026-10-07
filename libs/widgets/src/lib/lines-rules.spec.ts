@@ -77,6 +77,21 @@ describe('a plain table by its own rules', () => {
     expect(cell(el, 'a', 'quantity').hidden).toBe(false);
   });
 
+  it('hides a column from people without its roles, as Flectra’s groups= on a column', () => {
+    const page = JSON.parse(JSON.stringify(transfer)) as Page;
+    const ruled = (page.layout as { children: FieldNode[] }).children[1];
+    ruled.cells!['demand'] = { roles: ['stock.group_stock_manager'] };
+    const draw = (roles: string[]) => {
+      const form = createForm({ page, values: { state: 'assigned', move_ids: moves } as never, user: { id: 1, roles } });
+      const widget = createWidget({ form, name: 'move_ids', field: transfer.fields['move_ids'] as Field, node: ruled, id: 'fd-moves', document, labels: WIDGET_LABELS.en });
+      widget.update({ value: form.getState().values['move_ids'], values: form.getState().values, readonly: false, required: false, invalid: false });
+      return widget.element;
+    };
+    expect(heads(draw([]))).toEqual(['', 'Product', 'Quantity', 'Lot', '']);
+    expect(cell(draw([]), 'a', 'demand').hidden).toBe(true);
+    expect(heads(draw(['stock.group_stock_manager']))).toEqual(['', 'Product', 'Demand', 'Quantity', 'Lot', '']);
+  });
+
   it('locks, blanks and requires each cell by its own line, with the record as parent', () => {
     const { form, el } = mount('draft');
     expect((cell(el, 'a', 'product').querySelector('input') as HTMLInputElement).readOnly).toBe(false);

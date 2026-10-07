@@ -133,3 +133,27 @@ describe('the page check reads a table’s rules where they hold', () => {
     expect(said(withCells({}, { rowTones: [{ tone: 'muted', when: 'nope' }] }))).toEqual(['layout.children[1].rowTones[0].when: "nope" reads "nope", which is not a field of the lines of "move_ids"']);
   });
 });
+
+describe('a column shown only to some roles', () => {
+  const page = JSON.parse(JSON.stringify(transfer)) as Page & { layout: { children: { cells?: Record<string, Record<string, unknown>> }[] } };
+  page.layout.children[1].cells!['lot'] = { ...page.layout.children[1].cells!['lot'], roles: ['stock.group_production_lot'] };
+  const open = (roles: string[]) => createForm({ page, values: { state: 'assigned', move_ids: lines } as never, user: { id: 1, roles } });
+
+  it('is hidden, as Flectra’s groups= on a list’s column, from people without them, and asks them nothing', () => {
+    expect(validatePage(page)).toMatchObject({ ok: true });
+    const clerk = open([]);
+    expect(clerk.columnHidden('f-moves', 'lot')).toBe(true);
+    // Lot is required on line b while assigned: a person who cannot see the column is not asked for it.
+    expect(clerk.validate()).toBe(true);
+    const keeper = open(['stock.group_production_lot']);
+    expect(keeper.columnHidden('f-moves', 'lot')).toBe(false);
+    expect(keeper.validate()).toBe(false);
+    expect(open(['!x', 'stock.group_production_lot']).columnHidden('f-moves', 'lot')).toBe(false);
+  });
+
+  it('is refused as a role name no group could have', () => {
+    const bad = JSON.parse(JSON.stringify(page));
+    bad.layout.children[1].cells.lot.roles = ['not a role'];
+    expect(validatePage(bad)).toMatchObject({ ok: false });
+  });
+});

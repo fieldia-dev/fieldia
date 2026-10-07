@@ -84,6 +84,21 @@ describe('the grid by a table’s own rules', () => {
     expect(api.getColumn('quantity')?.isVisible()).toBe(true);
   });
 
+  it('hides a column from people without its roles, as Flectra’s groups= on a column', async () => {
+    const page = JSON.parse(JSON.stringify(transfer));
+    page.layout.children[1].cells.demand = { roles: ['stock.group_stock_manager'] };
+    const show = async (roles: string[]) => {
+      handle?.destroy();
+      const host = document.createElement('div');
+      document.body.replaceChildren(host);
+      handle = mountViewer(host, { page, widgets: gridWidgets, values: { state: 'assigned', move_ids: moves } as never, user: { id: 1, roles } });
+      await frames();
+      return gridApiOf(host.querySelector('[data-node="f-moves"] .fd-grid-lines') as HTMLElement)!;
+    };
+    expect((await show([])).getColumn('demand')?.isVisible()).toBe(false);
+    expect((await show(['stock.group_stock_manager'])).getColumn('demand')?.isVisible()).toBe(true);
+  });
+
   it('locks a cell by its line and its record, again when the record changes', async () => {
     const { api } = await mount('draft');
     const editable = (key: string, column: string) => api.getColumn(column)!.isCellEditable(api.getRowNode(key)!);

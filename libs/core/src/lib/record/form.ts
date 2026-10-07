@@ -741,7 +741,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
           for (const [sub, subDef] of Object.entries(def.fields)) {
             if (kind && sub !== def.lineKinds?.text) continue;
             const cell = ruled[sub];
-            if (cell?.invisible || (tables.has(node.id) && tables.get(node.id)!.compiled.hidden(sub, reading().context, reading().env))) continue;
+            if (cell?.invisible || (tables.has(node.id) && tables.get(node.id)!.compiled.hidden(sub, reading().context, reading().env, userRoles))) continue;
             const lineMessage = checkValue(subDef, line.values[sub], subDef.required === true || cell?.required === true, messages, today());
             if (lineMessage) errors[`${name}.${line.key}.${sub}`] = lineMessage;
           }
@@ -1474,7 +1474,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     columnHidden(nodeId, column) {
       const table = tableOf(nodeId);
       const { context, env } = reading();
-      return table ? table.compiled.hidden(column, context, env) : false;
+      return table ? table.compiled.hidden(column, context, env, userRoles) : false;
     },
     async runRowAction(nodeId, buttonId, key) {
       const table = tableOf(nodeId);

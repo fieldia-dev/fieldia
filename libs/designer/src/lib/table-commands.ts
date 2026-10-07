@@ -62,7 +62,7 @@ export interface TableCommands {
   setCellTones(id: string, column: string, tones: ToneWhen[] | null): boolean;
   /** A column's cells drawn as pills, and its width in characters; `null` takes either back. */
   /** A column's look: a pill, a width, or a widget its cells are drawn with — one that suits what the column holds (`CELL_WIDGETS`). */
-  setCellLook(id: string, column: string, look: { badge?: boolean | null; width?: number | null; widget?: string | null }): boolean;
+  setCellLook(id: string, column: string, look: { badge?: boolean | null; width?: number | null; widget?: string | null; roles?: string[] | null }): boolean;
   /** The lines' tones, each while a condition on the line holds. */
   setRowTones(id: string, tones: ToneWhen[] | null): boolean;
   /** The lines in bold while a condition on the line holds. */
@@ -76,6 +76,8 @@ export interface TableCommands {
 }
 
 const WIDTHS: ScreenWidth[] = ['narrow', 'medium', 'wide'];
+/** A role's name, as the format takes it. */
+const ROLE = /^!?[A-Za-z0-9_][A-Za-z0-9_.:-]*$/;
 
 export function tableCommands({ apply }: TableCommandsDeps): TableCommands {
   function fieldNode(draft: Page, id: string): FieldNode {
@@ -178,6 +180,13 @@ export function tableCommands({ apply }: TableCommandsDeps): TableCommands {
           put(cell, 'widget', look.widget ?? undefined);
           // A widget's settings go with it.
           put(cell, 'options', undefined);
+        }
+        // The roles the column shows to, as a part's: each a name, `!` before one hiding it from people holding it.
+        if (look.roles !== undefined) {
+          const named = (look.roles ?? []).map((role) => role.trim()).filter(Boolean);
+          const wrong = named.find((role) => !ROLE.test(role));
+          if (wrong !== undefined) throw new Refusal((w) => w.tables.notARole(wrong));
+          put(cell, 'roles', named.length ? named : undefined);
         }
         if (look.width !== undefined) {
           if (look.width !== null && !(Number.isInteger(look.width) && look.width >= 1 && look.width <= 200)) throw new Refusal((w) => w.tables.widthRange);

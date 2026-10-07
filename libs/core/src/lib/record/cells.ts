@@ -30,6 +30,7 @@ interface CompiledCell {
   readonly: CompiledModifier;
   required: CompiledModifier;
   hidden: CompiledModifier;
+  roles?: readonly string[];
   tones: CompiledTone[];
   bold: CompiledModifier;
 }
@@ -38,8 +39,8 @@ interface CompiledCell {
 export interface CompiledTable {
   /** The line as its rules have it: `line` its fields as expressions read them, with `parent`. */
   line(context: Record<string, unknown>, env: ExpressionEnv, roles: readonly string[]): LineState;
-  /** Whether a column is hidden now, read on the record. */
-  hidden(column: string, record: Record<string, unknown>, env: ExpressionEnv): boolean;
+  /** Whether a column is hidden now: by its condition, read on the record, or by its roles, which the person holds none of. */
+  hidden(column: string, record: Record<string, unknown>, env: ExpressionEnv, roles: readonly string[]): boolean;
   buttons: readonly ButtonNode[];
 }
 
@@ -67,6 +68,7 @@ export function compileTable(node: FieldNode): CompiledTable {
       readonly: compileModifier(rules.readonly),
       required: compileModifier(rules.required),
       hidden: compileModifier(rules.hidden),
+      ...(rules.roles?.length ? { roles: rules.roles } : {}),
       tones: tonesOf(rules.tones),
       bold: compileModifier(rules.bold),
     });
@@ -91,7 +93,10 @@ export function compileTable(node: FieldNode): CompiledTable {
       for (const button of shown) state.buttons[button.id] = rolesAllow(button.roles, roles) && !button.invisible.evaluate(context, env);
       return state;
     },
-    hidden: (column, record, env) => cells.get(column)?.hidden.evaluate(record, env) ?? false,
+    hidden(column, record, env, roles) {
+      const cell = cells.get(column);
+      return !!cell && (!rolesAllow(cell.roles, roles) || cell.hidden.evaluate(record, env));
+    },
   };
 }
 

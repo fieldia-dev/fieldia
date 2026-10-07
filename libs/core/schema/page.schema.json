@@ -5884,6 +5884,9 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 200
+        },
+        "roles": {
+          "$ref": "#/$defs/Roles"
         }
       },
       "additionalProperties": false
@@ -5921,6 +5924,14 @@
         "when"
       ],
       "additionalProperties": false
+    },
+    "Roles": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^!?[A-Za-z0-9_][A-Za-z0-9_.:-]*$"
+      }
     },
     "ActionStep": {
       "oneOf": [
@@ -6551,14 +6562,6 @@
           "additionalProperties": false
         }
       ]
-    },
-    "Roles": {
-      "minItems": 1,
-      "type": "array",
-      "items": {
-        "type": "string",
-        "pattern": "^!?[A-Za-z0-9_][A-Za-z0-9_.:-]*$"
-      }
     },
     "ScreenWidth": {
       "type": "string",
