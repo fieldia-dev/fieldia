@@ -1,5 +1,6 @@
 import type { FieldNode, Form, ReferenceValue, RelatedRecord } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
+import { floatUnder } from './float';
 import { setAttr, setHidden } from './kind-parts';
 import type { Widget, WidgetContext, WidgetFactory } from './widgets';
 
@@ -65,6 +66,7 @@ function combobox(options: {
   const element = doc.createElement('div');
   element.className = 'fd-combo';
   element.append(input, list);
+  const floating = floatUnder(input, list);
 
   let shown = '';
   /** The "Create …" choice in the list, and the text it would make a record from. */
@@ -101,10 +103,12 @@ function combobox(options: {
     }
     if (active >= 0) input.setAttribute('aria-activedescendant', `${listId}-${active}`);
     else input.removeAttribute('aria-activedescendant');
+    // Its height changed: above its box or below, it is placed again.
+    floating.place();
   }
 
   function open() {
-    list.hidden = false;
+    floating.show();
     input.setAttribute('aria-expanded', 'true');
   }
 
@@ -112,7 +116,7 @@ function combobox(options: {
     // A search still on its way must not open the list again.
     clearTimeout(timer);
     seq++;
-    list.hidden = true;
+    floating.hide();
     input.setAttribute('aria-expanded', 'false');
     input.removeAttribute('aria-activedescendant');
     active = -1;

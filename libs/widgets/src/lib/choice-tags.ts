@@ -1,5 +1,6 @@
 import type { Option } from '@fieldia/core';
 import { withAlone } from './choice-rules';
+import { floatUnder } from './float';
 import { describeState, fillIn, maker, setAttr, wordsFor } from './kind-parts';
 import type { WidgetContext, WidgetFactory } from './widgets';
 
@@ -40,6 +41,7 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
   const list = make('ul', { id: listId, class: 'fd-listbox', role: 'listbox', hidden: '' });
   const chips = make('ul', { class: 'fd-chips' });
   const box = make('div', { class: 'fd-combo' }, input, list);
+  const floating = floatUnder(input, list);
   const element = single ? make('div', { class: 'fd-choice-search' }, box) : make('div', { class: 'fd-tags fd-choice-tags' }, chips, box);
 
   const current = () => form.getState().values[name];
@@ -75,11 +77,11 @@ function combo({ form, name, field, node, id, document, labels, locale }: Widget
     if (own && typed && !taken.has(written) && !options.some((o) => o.label.toLowerCase() === typed)) found.push({ value: written, label: fillIn(words.createNamed, { name: written }) });
     active = -1;
     draw();
-    list.hidden = false;
+    floating.show();
     input.setAttribute('aria-expanded', 'true');
   }
   function close() {
-    list.hidden = true;
+    floating.hide();
     active = -1;
     input.setAttribute('aria-expanded', 'false');
     input.removeAttribute('aria-activedescendant');
