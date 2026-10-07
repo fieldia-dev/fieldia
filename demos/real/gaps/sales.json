@@ -1099,12 +1099,14 @@
         {
           "feature": "The renewal creates a new draft contract",
           "status": "approximated",
-          "how": "the app says so; the new contract is not opened"
+          "how": "the app says so; the new contract is not opened",
+          "app": true,
+          "why": "the new contract is made on the server; the app's answer can show it in the form's place (record) once it exists"
         },
         {
           "feature": "Buttons' groups (sale_contract.group_contract_manager / group_contract_user)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles: Activate and Terminate to sale_contract.group_contract_manager, Renew to group_contract_user"
         },
         {
           "feature": "Statusbar draft, active, completed (renewal_due, terminated shown when current)",
@@ -1120,12 +1122,16 @@
           "feature": "Stat buttons Milestones and Amendments open their records' lists (tree, form, calendar, gantt)",
           "status": "approximated",
           "how": "goTo steps to the Milestones and Amendments tabs",
-          "needs": "an open step to a list page of another model filtered by a domain"
+          "needs": "an open step to a list page of another model filtered by a domain",
+          "app": true,
+          "why": "an open step opens a list page filtered by the contract; the milestones' and amendments' list pages are the app's, not built in this lane"
         },
         {
           "feature": "Stat buttons Invoices and Documents (invisible when 0)",
           "status": "approximated",
-          "how": "statButtons with conditions, calls answered with words"
+          "how": "statButtons with conditions, calls answered with words",
+          "app": true,
+          "why": "the invoices' and documents' lists are the app's pages"
         },
         {
           "feature": "milestone_count, amendment_count (computes)",
@@ -1139,9 +1145,8 @@
         },
         {
           "feature": "Pill badge '<days_until_expiry> days until expiry' invisible=\"state not in ('active','renewal_due')\"",
-          "status": "approximated",
-          "how": "a readonly label-widget field with suffix ' days until expiry' under the title",
-          "needs": "a badge whose words include a field's value"
+          "status": "covered",
+          "how": "a worked-out char (days_until_expiry + ' days until expiry') drawn as a badge, toned by the days left, under the title with Flectra's condition"
         },
         {
           "feature": "partner_id required; partner_contact_id domain parent_id = partner_id",
@@ -1155,8 +1160,8 @@
         },
         {
           "feature": "company_id groups base.group_multi_company",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "Company with roles [base.group_multi_company]"
         },
         {
           "feature": "start_date required, end_date, duration_months (stored compute), contract_value monetary required, notice_period_days default 30",
@@ -1180,37 +1185,33 @@
         },
         {
           "feature": "Milestone amount in the contract's currency (related currency_id)",
-          "status": "approximated",
-          "how": "a fixed currency EGP on the line field",
-          "needs": "a line monetary taking its currency from the parent record"
+          "status": "covered",
+          "how": "currencyField parent.currency_id on the milestone's amount (and an amendment's value change)"
         },
         {
           "feature": "responsible_id many2one_avatar_user",
-          "status": "approximated",
-          "how": "a plain many2one",
-          "needs": "a user link with the person's avatar"
+          "status": "covered",
+          "how": "the Contract Manager and each milestone's Responsible with their initials (options.avatar, on the line's column too)"
         },
         {
           "feature": "state widget badge in the line",
-          "status": "approximated",
-          "how": "a select",
-          "needs": "a badge widget for a selection, in lines too"
+          "status": "covered",
+          "how": "cells state: badge, toned by the state"
         },
         {
           "feature": "decoration-danger=\"state == 'pending' and days_until_due < 0\", decoration-warning=\"state == 'pending' and days_until_due <= 7\"",
-          "status": "missing",
-          "needs": "line (row) and cell decorations by condition: decoration-info/-success/-warning/-danger/-bf"
+          "status": "covered",
+          "how": "rowTones danger when pending and overdue, warning when pending and due within 7 days"
         },
         {
           "feature": "Row buttons Complete (invisible state != 'in_progress') and Invoice (invisible state != 'completed')",
-          "status": "missing",
-          "needs": "buttons on each line of a table, with steps or an action and a condition per line"
+          "status": "covered",
+          "how": "rowButtons Complete (invisible state != 'in_progress') and Invoice (invisible state != 'completed'), each answered by the app on its line"
         },
         {
           "feature": "milestone_completion_percentage widget progressbar in the subtotal footer (server compute: completed, invoiced or paid over all)",
-          "status": "approximated",
-          "how": "a progressbar worked out in the page from a helper line field done = if(state in [...], 1, 0): sum(milestone_ids, 'done') * 100 / count(milestone_ids)",
-          "needs": "a count of lines that meet a condition (countWhere) so no helper field is needed"
+          "status": "covered",
+          "how": "count(milestone_ids, \"state in ('completed', 'invoiced', 'paid')\") * 100 / count(milestone_ids): no helper field"
         },
         {
           "feature": "Price Escalation tab invisible=\"contract_type != 'framework'\": has_escalation; type, rate, next date invisible=\"not has_escalation\"; formula invisible=\"escalation_type != 'custom'\"",
@@ -1224,14 +1225,13 @@
         },
         {
           "feature": "Amendments tab: a read-only list (each line opens the amendment's own form)",
-          "status": "approximated",
-          "how": "a table of lines edited in place; number, value change and status are readonly",
-          "needs": "a read-only table whose lines open their own record page"
+          "status": "covered",
+          "how": "a read-only table whose lines open the amendment's own page (lineOpens: record, a contract.amendment page)"
         },
         {
           "feature": "Amendments decoration-info / -success / -danger by state; state widget badge",
-          "status": "missing",
-          "needs": "line (row) and cell decorations by condition: decoration-info/-success/-warning/-danger/-bf; a badge widget"
+          "status": "covered",
+          "how": "rowTones by state and a state badge toned by it"
         },
         {
           "feature": "value_change optional show",
@@ -1260,9 +1260,8 @@
         },
         {
           "feature": "Termination wizard footer: Terminate Contract (primary) / Cancel",
-          "status": "approximated",
-          "how": "the dialog's Save & Close / Discard",
-          "needs": "a page's own footer buttons when it is opened in a dialog (label, style, steps), in place of Discard / Save & Close"
+          "status": "covered",
+          "how": "the page's footer: Terminate Contract (check, call, save) and Cancel (close)"
         },
         {
           "feature": "Renewal wizard: two groups (dates and duration / keep terms and value), separator Price Escalation, escalation_rate invisible=\"not apply_escalation\"",
@@ -1278,7 +1277,7 @@
           "feature": "Renewal reads the contract through contract_id (value, currency)",
           "status": "approximated",
           "how": "a helper readonly contract_value filled by the opener's values",
-          "needs": "the opener's record as a link, its fields readable in the opened page"
+          "needs": "the opener's own record as a link in an open step's values (id gives its id, not a link)"
         },
         {
           "feature": "Renewal UserError when the end is not after the start",
@@ -1287,15 +1286,14 @@
         },
         {
           "feature": "Renewal footer: Create Renewed Contract / Cancel",
-          "status": "approximated",
-          "how": "Save & Close / Discard",
-          "needs": "a page's own footer buttons when it is opened in a dialog (label, style, steps), in place of Discard / Save & Close"
+          "status": "covered",
+          "how": "the page's footer: Create Renewed Contract and Cancel"
         }
       ],
       "summary": {
-        "covered": 23,
-        "approximated": 12,
-        "missing": 5
+        "covered": 36,
+        "approximated": 4,
+        "missing": 0
       }
     }
   ]

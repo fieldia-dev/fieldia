@@ -301,9 +301,15 @@ for (const variant of VARIANTS) {
       await expect(tab(page, 'SLA Performance')).toBeVisible();
       await node(page, 'f-contract-type').locator('select').selectOption({ label: 'Framework Agreement' });
 
-      // The first milestone completed: one of four, a quarter of the bar.
-      await node(page, 'f-milestones').locator('tbody tr').first().locator('select').selectOption({ label: 'Completed' });
+      // The first milestone, in progress, completed by its line's own button: one of four, a quarter of the bar.
+      const first = node(page, 'f-milestones').locator('tbody tr').first();
+      await expect(first.locator('[data-row-button="action_milestone_invoice"]')).toBeHidden();
+      await first.locator('[data-row-button="action_milestone_complete"]').click();
+      await expect(toast(page, /Milestone .* completed/)).toBeVisible();
       await expect.poll(() => value(page, 'milestone_completion_percentage')).toBe(25);
+      // Now it can be invoiced; its state is a green badge.
+      await expect(first.locator('[data-row-button="action_milestone_invoice"]')).toBeVisible();
+      await expect(first.locator('[data-row-button="action_milestone_complete"]')).toBeHidden();
 
       // Activated: Terminate and Renew appear.
       await expect(button(page, 'action_terminate')).toBeHidden();
@@ -313,21 +319,48 @@ for (const variant of VARIANTS) {
       await expect(button(page, 'action_terminate')).toBeVisible();
       await expect(button(page, 'action_renew')).toBeVisible();
       await expect(node(page, 'f-days-until-expiry')).toBeVisible();
+      await expect(node(page, 'f-days-until-expiry')).toContainText('days until expiry');
 
       // Terminated through its dialog: the reason comes back, and the termination details show under the terms.
       await button(page, 'action_terminate').click();
       const dialog = page.getByRole('dialog', { name: 'Terminate Contract' });
       await expect(dialog).toBeVisible();
-      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      // The wizard's own footer: Terminate Contract and Cancel.
+      await expect(dialog.getByRole('button', { name: 'Save & Close' })).toHaveCount(0);
+      await dialog.getByRole('button', { name: 'Terminate Contract' }).click();
       await expect(dialog.locator('[data-node="f-termination-reason"] .fd-error')).toBeVisible();
       await dialog.locator('[data-node="f-termination-reason"] textarea').fill('The hospital moved its ICU to a new building with its own supplier.');
       if (variant === 'plain') await screen(page, 'real-contract-termination', { viewport: true });
-      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      await dialog.getByRole('button', { name: 'Terminate Contract' }).click();
       await expect(dialog).toBeHidden();
       await expect(toast(page, 'Contract terminated')).toBeVisible();
       await expect.poll(() => value(page, 'state')).toBe('terminated');
       await expect(tab(page, 'Terms & Conditions')).toHaveAttribute('aria-selected', 'true');
       await expect(node(page, 'f-termination-reason').locator('textarea')).toHaveValue('The hospital moved its ICU to a new building with its own supplier.');
+      await expect(button(page, 'action_terminate')).toBeHidden();
+      expect(problems).toEqual([]);
+    });
+
+    test('sales contract: an amendment opens its own page, read-only lines toned by state, and the renewal’s own footer', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, 'page=real-sale-contract&record=7602&skin=underline');
+      await tab(page, 'Amendments').click();
+      const amendments = node(page, 'f-amendments');
+      await expect(amendments.locator('tbody tr').nth(1)).toHaveAttribute('data-tone', 'info');
+      await amendments.locator('.fd-line-open').first().click();
+      const dialog = page.getByRole('dialog');
+      await expect(dialog.locator('[data-node="f-value"] input')).toHaveValue(/60,000\.00/);
+      await dialog.getByRole('button', { name: 'Discard' }).click();
+      await expect(dialog).toBeHidden();
+      // Renew opens its dialog with its own buttons.
+      await button(page, 'action_renew').click();
+      const renewal = page.getByRole('dialog', { name: 'Renew Contract' });
+      await expect(renewal.getByRole('button', { name: 'Create Renewed Contract' })).toBeVisible();
+      await renewal.getByRole('button', { name: 'Cancel' }).click();
+      await expect(renewal).toBeHidden();
+      // A contract user without the manager's group: Renew, but no Terminate.
+      await page.goto(`/${variant}/?page=real-sale-contract&record=7602&skin=underline&roles=sale_contract.group_contract_user`);
+      await expect(button(page, 'action_renew')).toBeVisible();
       await expect(button(page, 'action_terminate')).toBeHidden();
       expect(problems).toEqual([]);
     });

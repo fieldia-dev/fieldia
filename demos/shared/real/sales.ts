@@ -4,6 +4,7 @@ import contractTermination from '../../../examples/pages/real-contract-terminati
 import product from '../../../examples/pages/real-product.page.json';
 import saleContract from '../../../examples/pages/real-sale-contract.page.json';
 import invoiceWizard from '../../../examples/pages/real-sale-invoice-wizard.page.json';
+import contractAmendment from '../../../examples/pages/real-contract-amendment.page.json';
 import saleOrder from '../../../examples/pages/real-sale-order.page.json';
 import type { RealLane } from './lane';
 
@@ -656,7 +657,7 @@ const CONTRACTS: Record<number, Values> = {
     invoice_count: 0,
     document_count: 2,
     milestone_ids: [
-      milestone('m1', 760101, 10, 'Lot 1: 20 monitors delivered and installed', '2026-12-15', 600000, 7123, 'pending', 70),
+      milestone('m1', 760101, 10, 'Lot 1: 20 monitors delivered and installed', '2026-12-15', 600000, 7123, 'in_progress', 70),
       milestone('m2', 760102, 20, 'Lot 2: 20 monitors', '2027-04-15', 600000, 7123, 'pending', 191),
       milestone('m3', 760103, 30, 'Lot 3: 20 monitors', '2027-10-15', 600000, 7123, 'pending', 374),
       milestone('m4', 760104, 40, 'Lot 4: 20 monitors and the central station', '2028-04-15', 600000, 7123, 'pending', 557),
@@ -973,9 +974,23 @@ function productAction({ action, values }: ActionRequest): ActionResult | undefi
   return said[action] ? { say: { message: said[action], tone: 'info' } } : undefined;
 }
 
-function contractAction({ action, values }: ActionRequest): ActionResult | undefined {
+/** A milestone's line moved to another state by its own button, and what the contract says of it. */
+function milestoneTo(request: ActionRequest, state: string): Values {
+  const lines = ((request.values['milestone_ids'] as Line[] | null) ?? []).map((line) => (line.key === request.line?.key ? { ...line, values: { ...line.values, state } } : line));
+  return { milestone_ids: lines };
+}
+
+function contractAction(request: ActionRequest): ActionResult | undefined {
+  const { action, values } = request;
   const name = String(values['name'] ?? '');
   switch (action) {
+    case 'action_milestone_complete':
+      return { values: milestoneTo(request, 'completed'), say: { message: `Milestone “${request.line?.values['name']}” completed.`, tone: 'success' } };
+    case 'action_milestone_invoice':
+      return {
+        values: { ...milestoneTo(request, 'invoiced'), invoice_count: num(values['invoice_count']) + 1 },
+        say: { message: `A draft invoice for “${request.line?.values['name']}”: ${egp(num(request.line?.values['amount']))}.`, tone: 'success' },
+      };
     case 'action_activate': {
       const lines = (values['milestone_ids'] as Line[] | null) ?? [];
       const first = [...lines].sort((a, b) => String(a.values['due_date']).localeCompare(String(b.values['due_date'])))[0];
@@ -1096,6 +1111,8 @@ export const lane: RealLane = {
   },
   related: {
     'sale.contract': saleContract as Page,
+    // An amendment's own page, which a line of the contract's Amendments opens.
+    'contract.amendment': contractAmendment as Page,
   },
   // A customer's address and tax number under its link (show_address, show_vat), a tag's colour.
   shows: { 'res.partner': { details: ['street', 'city', 'vat'] }, 'crm.tag': { color: 'color' }, 'product.attribute.value': { color: 'color' } },
@@ -1106,6 +1123,14 @@ export const lane: RealLane = {
     'sale.advance.payment.inv': INVOICE_WIZARDS,
     'product.template': PRODUCT_TEMPLATES,
     'sale.contract': CONTRACTS,
+    'contract.amendment': Object.fromEntries(
+      Object.values(CONTRACTS).flatMap((contract) =>
+        ((contract['amendment_ids'] as Line[] | undefined) ?? []).map((line) => [
+          String(line.id),
+          { ...line.values, currency_id: contract['currency_id'], description: `<p>${line.values['name']}.</p>` },
+        ]),
+      ),
+    ),
     'res.partner': Object.fromEntries(
       Object.entries(PARTNERS).map(([id, p]) => [
         id,
