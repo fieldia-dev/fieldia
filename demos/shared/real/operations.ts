@@ -66,12 +66,14 @@ interface Product {
   uom: RelatedRecord;
   onHand: number;
   type: 'product' | 'consu';
+  /** Consumed by hand, as the bill of materials says (manual_consumption). */
+  manual?: boolean;
 }
 const PRODUCTS: Record<number, Product> = {
   5131: { name: 'Beech wood plank 2400 × 200 × 40 mm', uom: UOM.units, onHand: 120, type: 'product' },
   5132: { name: 'MDF board 18 mm, 1220 × 2440 mm', uom: UOM.units, onHand: 14, type: 'product' },
   5133: { name: 'Table leg, beech, 72 cm', uom: UOM.units, onHand: 12, type: 'product' },
-  5134: { name: 'Wood glue PVA, 5 L', uom: UOM.units, onHand: 3, type: 'product' },
+  5134: { name: 'Wood glue PVA, 5 L', uom: UOM.units, onHand: 3, type: 'product', manual: true },
   5135: { name: 'Wood screws 4 × 40, box of 200', uom: UOM.units, onHand: 30, type: 'product' },
   5136: { name: 'Dining table, beech, 6 seats', uom: UOM.units, onHand: 2, type: 'product' },
   5137: { name: 'Coffee table, beech', uom: UOM.units, onHand: 5, type: 'product' },
@@ -629,10 +631,13 @@ function explode(bomId: number, quantity: number, stored = false): Values {
   const bom = BOMS[bomId];
   if (!bom) return { move_raw_ids: [], move_byproduct_ids: [], workorder_ids: [] };
   return {
-    move_raw_ids: bom.components.map(([id, perUnit]) => ({
+    move_raw_ids: bom.components.map(([id, perUnit], i) => ({
       key: newKey('c'),
       ...ids(),
       values: {
+        // In the bill's order; glue is consumed by hand (manual_consumption), so Flectra's list puts it first.
+        sequence: i + 1,
+        manual_consumption: PRODUCTS[id].manual === true,
         product_id: product(id),
         location_id: LOCATIONS.stock,
         product_uom_qty: round2(perUnit * quantity),
@@ -1052,6 +1057,8 @@ export const lane: RealLane = {
     'real-transfer': { records: [PICKING_ID, 5302], breadcrumbs: [{ label: 'Receipts', href: '#receipts' }] },
     'real-manufacturing-order': { records: [PRODUCTION_ID], breadcrumbs: [{ label: 'Manufacturing Orders', href: '#manufacturing' }] },
   },
+  // Opened from Receipts, as Flectra's action: only incoming operation types (context restricted_picking_type_code).
+  around: { 'real-transfer': { context: { restricted_picking_type_code: 'incoming' } } },
   shows: {
     'res.users': { avatar: 'image_128' },
     'project.tags': { color: 'color' },

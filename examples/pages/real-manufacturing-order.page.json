@@ -105,6 +105,8 @@
         "unit_factor": { "type": "float", "label": "Unit Factor", "readonly": true },
         "should_consume_qty": { "type": "float", "label": "Quantity To Consume", "readonly": true },
         "is_done": { "type": "boolean", "label": "Done", "readonly": true },
+        "manual_consumption": { "type": "boolean", "label": "Manual Consumption", "readonly": true },
+        "sequence": { "type": "integer", "label": "Sequence" },
         "has_tracking": {
           "type": "selection",
           "label": "Product with Tracking",
@@ -125,7 +127,7 @@
           ]
         }
       },
-      "lineDefaults": { "location_id": "location_src_id" }
+      "lineDefaults": { "location_id": "location_src_id", "state": "'draft'" }
     },
     "workorder_ids": {
       "type": "one2many",
@@ -439,6 +441,8 @@
                 "labels": "hidden",
                 "columns": ["product_id", "location_id", "product_uom_qty", "forecast_availability", "quantity", "product_uom", "picked", "lot_ids"],
                 "optionalColumns": { "location_id": "show", "forecast_availability": "hide", "picked": "show", "lot_ids": "hide" },
+                "order": [{ "field": "is_done" }, { "field": "manual_consumption", "desc": true }, { "field": "sequence" }],
+                "lineDelete": "state == 'draft'",
                 "readonly": "state == 'cancel' or (state == 'done' and is_locked)",
                 "options": { "addLabel": "Add a line" },
                 "cells": {

@@ -1,4 +1,4 @@
-import type { ActionRequest, ActionResult, FormUser, MemoryDataSourceOptions, Page, RecordId } from '@fieldia/core';
+import type { ActionRequest, ActionResult, FormUser, JsonValue, MemoryDataSourceOptions, Page, RecordId } from '@fieldia/core';
 
 /**
  * One lane of the real pages: Sherkety ERP's own screens, rebuilt in Fieldia
@@ -44,6 +44,8 @@ export interface RealLane {
 /** The person, the pager's records and the breadcrumbs an app gives a real page. */
 export interface RealAround {
   user?: FormUser;
+  /** The values the app passes in, as Flectra's context: a transfer opened from Receipts restricts its operation types. */
+  context?: Record<string, JsonValue>;
   records?: (string | number)[];
   breadcrumbs?: { label: string; href?: string }[];
 }

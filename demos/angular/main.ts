@@ -103,6 +103,7 @@ class NoteComponent implements OnInit {
     [translator]="options.translate"
     [user]="options.user"
     [records]="options.records"
+    [context]="options.context"
     [breadcrumbs]="options.breadcrumbs"
     [user]="options.user"
     (ready)="ready($event)"

@@ -27,6 +27,7 @@ export default [
       'Set the table legs’ Quantity to 12 of 16, then press Validate.',
       'Create Backorder? opens with Flectra’s own buttons: press Create Backorder. The receipt is Done, and the rest goes to a backorder.',
       'Add a product in the grid: its unit and the stock on hand come with it.',
+      'Click Operation Type: opened from Receipts, it offers only incoming types.',
     ],
   },
   {
@@ -38,7 +39,8 @@ export default [
       'Sherkety ERP’s manufacturing order, rebuilt: four beech dining tables, their components, work orders and by-products from the bill of materials, sixteen header buttons and fourteen stat buttons, each shown only when Flectra would.',
     howTo: [
       'Change To Produce to 6: the components, the offcuts and the work orders’ minutes follow.',
-      'Press Confirm: the components are reserved, and the badge says they are not all available — WH/Stock has 12 table legs of 16.',
+      'The glue, consumed by hand, leads the components, as Flectra orders them; each has its × while the order is a draft.',
+      'Press Confirm: the components are reserved, and the badge says they are not all available — WH/Stock has 12 table legs of 16. Confirmed, they can no longer be deleted.',
       'Open Work Orders and press Plan: each operation gets its start and end.',
       'Press Produce All: the tables are made, the components consumed, and the order is Done and locked.',
     ],

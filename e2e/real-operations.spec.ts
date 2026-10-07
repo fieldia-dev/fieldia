@@ -225,6 +225,13 @@ for (const variant of VARIANTS) {
       await expect(page.getByRole('menu')).toContainText('Delivery Slip');
       await page.keyboard.press('Escape');
 
+      // Opened from Receipts: the app's context leaves only incoming operation types to choose from.
+      await node(page, 'f-picking-type').locator('input').first().click();
+      const types = node(page, 'f-picking-type').getByRole('option');
+      await expect(types.filter({ hasText: 'Sherkety Furniture: Receipts' })).toHaveCount(1);
+      await expect(types.filter({ hasText: 'Delivery Orders' })).toHaveCount(0);
+      await page.keyboard.press('Escape');
+
       // Ready: the Quantity column shows; more than the demand is red.
       await page.getByRole('button', { name: 'Mark as Todo' }).click();
       await expect(page.locator('.fd-header .fd-statusbar [aria-current="step"]')).toHaveText('Ready');
@@ -239,6 +246,17 @@ for (const variant of VARIANTS) {
       await expect(page.getByRole('button', { name: 'Mark as Todo' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Validate', exact: true })).toHaveCount(0);
       expect(problems).toEqual([]);
+
+      // In debug mode (base.group_no_one): the Operations stat button, its help its tooltip and its description.
+      ({ problems } = await open(page, variant, `${TRANSFER}&roles=base.group_user,stock.group_stock_user,base.group_no_one`));
+      await expect.poll(() => value(page, 'name')).toBe('WH/IN/00042');
+      const operations = page.locator('button[data-node="action_picking_move_tree"]');
+      // Shown while the transfer is not locked (Flectra's is_locked, which the app's Unlock clears).
+      await page.evaluate(() => (window as any).fieldiaDemo.handle.setValues({ is_locked: false }));
+      await expect(operations).toBeVisible();
+      await expect(operations).toHaveAttribute('title', 'List view of operations');
+      await expect(operations).toHaveAccessibleDescription('List view of operations');
+      expect(problems).toEqual([]);
     });
 
     test('manufacturing order: confirmed, its components’ availability shown, then produced', async ({ page }) => {
@@ -246,14 +264,19 @@ for (const variant of VARIANTS) {
       const { problems } = await open(page, variant, PRODUCTION);
       await expect.poll(() => value(page, 'name')).toBe('WH/MO/00031');
       await expect(page.getByRole('button', { name: 'Produce All' })).toBeHidden();
+      // Flectra's order (is_done, manual_consumption desc, sequence): the glue, consumed by hand, first; then the bill's order.
+      await expect(cell(page, 'f-components', 0, 'product_id')).toHaveText('Wood glue PVA, 5 L');
+      await expect(cell(page, 'f-components', 1, 'product_id')).toHaveText('Beech wood plank 2400 × 200 × 40 mm');
+      // Draft: every component can go (its × shown).
+      await expect(node(page, 'f-components').locator('.ag-row:not(.fd-grid-totals) .fd-line-delete:visible')).toHaveCount(5);
       // Draft: change how many to make, and the components follow the bill of materials.
       const toProduce = node(page, 'f-product-qty').locator('input');
       await toProduce.fill('6');
       await toProduce.press('Tab');
-      await expect(cell(page, 'f-components', 2, 'product_uom_qty')).toHaveText('24.00');
+      await expect(cell(page, 'f-components', 3, 'product_uom_qty')).toHaveText('24.00');
       await toProduce.fill('4');
       await toProduce.press('Tab');
-      await expect(cell(page, 'f-components', 2, 'product_uom_qty')).toHaveText('16.00');
+      await expect(cell(page, 'f-components', 3, 'product_uom_qty')).toHaveText('16.00');
       if (variant === 'plain') await screen(page, 'real-manufacturing-order');
 
       await page.getByRole('button', { name: 'Confirm', exact: true }).click();
@@ -262,7 +285,19 @@ for (const variant of VARIANTS) {
       // 12 table legs of 16 reserved: the order is not ready, and says so.
       await expect(page.locator('[data-node="b-components-missing"]')).toBeVisible();
       expect(await value(page, 'components_availability')).toBe('Not Available');
-      await expect(cell(page, 'f-components', 2, 'quantity')).toHaveText('12.00');
+      await expect(cell(page, 'f-components', 3, 'quantity')).toHaveText('12.00');
+      // Confirmed: no component can go any more (options delete: draft only) — no ×, and the form refuses it.
+      await expect(node(page, 'f-components').locator('.ag-row:not(.fd-grid-totals) .fd-line-delete:visible')).toHaveCount(0);
+      const refused = await page.evaluate(() => {
+        const form = (window as any).fieldiaDemo.handle.form;
+        try {
+          form.removeLine('move_raw_ids', form.getState().values['move_raw_ids'][0].key);
+          return 'removed';
+        } catch (error) {
+          return (error as Error).message;
+        }
+      });
+      expect(refused).toContain('cannot be deleted');
       await expect(page.getByRole('button', { name: 'Check availability' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Produce All' })).toBeVisible();
       await settled(page);
@@ -282,7 +317,7 @@ for (const variant of VARIANTS) {
       await expect(page.getByRole('button', { name: 'Unlock' })).toBeVisible();
       await settled(page);
       const components = await lineValues(page, 'move_raw_ids');
-      expect(components.map((c) => [c['quantity'], c['picked']])).toEqual([[24, true], [2, true], [16, true], [1, true], [2, true]]);
+      expect(components.map((c) => [c['quantity'], c['picked']])).toEqual([[1, true], [24, true], [2, true], [16, true], [2, true]]);
       expect((await saved(page, 'mrp.production', 5401)) as Record<string, unknown>).toMatchObject({ state: 'done', qty_produced: 4 });
       if (variant === 'plain') await screen(page, 'real-manufacturing-order-done');
       expect(problems).toEqual([]);

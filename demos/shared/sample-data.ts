@@ -1,4 +1,4 @@
-import { createMemoryDataSource, type FormUser, type Line, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, type FormUser, type JsonValue, type Line, type Page, type Values } from '@fieldia/core';
 import type { PageRequest } from '@fieldia/viewer';
 import address from '../../examples/pages/address.page.json';
 import delivery from '../../examples/pages/delivery.page.json';
@@ -94,6 +94,7 @@ export function openRecord(params: URLSearchParams, id: string | number): void {
  */
 export function optionsFromQuery(params: URLSearchParams): {
   user?: FormUser;
+  context?: Record<string, JsonValue>;
   records?: (string | number)[];
   breadcrumbs?: { label: string; href?: string }[];
   keys?: { enterMovesToNext: boolean };
@@ -126,7 +127,7 @@ export function optionsFromQuery(params: URLSearchParams): {
  * held instead, comma-separated — empty for none — to see the page as someone
  * without a manager's groups.
  */
-function realAround(params: URLSearchParams): { user?: FormUser; records?: (string | number)[]; breadcrumbs?: { label: string; href?: string }[] } {
+function realAround(params: URLSearchParams): { user?: FormUser; context?: Record<string, JsonValue>; records?: (string | number)[]; breadcrumbs?: { label: string; href?: string }[] } {
   const id = params.get('page') ?? '';
   const around = { ...(real.navigation[id] ?? {}), ...(real.users[id] ? { user: real.users[id] } : {}), ...(real.around[id] ?? {}) };
   const roles = params.get('roles');

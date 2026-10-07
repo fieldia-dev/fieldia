@@ -63,7 +63,13 @@
     "return_count": { "type": "integer", "label": "# Returns", "readonly": true },
     "batch_id": { "type": "many2one", "label": "Batch Transfer", "help": "Batch associated to this transfer", "relation": "stock.picking.batch", "readonly": true },
     "partner_id": { "type": "many2one", "label": "Contact", "relation": "res.partner" },
-    "picking_type_id": { "type": "many2one", "label": "Operation Type", "relation": "stock.picking.type", "required": true },
+    "picking_type_id": {
+      "type": "many2one",
+      "label": "Operation Type",
+      "relation": "stock.picking.type",
+      "required": true,
+      "filter": [{ "field": "code", "op": "=?", "valueFrom": "context.restricted_picking_type_code" }]
+    },
     "location_id": { "type": "many2one", "label": "Source Location", "relation": "stock.location", "required": true },
     "location_dest_id": { "type": "many2one", "label": "Destination Location", "relation": "stock.location", "required": true },
     "backorder_id": {
@@ -275,6 +281,7 @@
         "label": "Operations",
         "icon": "layers",
         "action": "stock.picking.action_picking_move_tree",
+        "help": "List view of operations",
         "invisible": "is_locked or state == 'done'",
         "roles": ["base.group_no_one"]
       },

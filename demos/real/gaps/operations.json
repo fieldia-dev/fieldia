@@ -493,8 +493,8 @@
         },
         {
           "feature": "Stat button help tooltip (help=\"List view of operations\")",
-          "status": "missing",
-          "needs": "help on a stat button"
+          "status": "covered",
+          "how": "help on the Operations stat button: its tooltip (title) and its accessible description (aria-describedby), as Flectra's help="
         },
         {
           "feature": "Priority star and name in the title, both hidden while name is \"/\"",
@@ -518,8 +518,8 @@
         },
         {
           "feature": "Operation type domain from context (restricted_picking_type_code)",
-          "status": "missing",
-          "needs": "filters reading the app's context"
+          "status": "covered",
+          "how": "picking_type_id filter { field: code, op: '=?', valueFrom: 'context.restricted_picking_type_code' }: the app's context (the viewer's context option, given by the Receipts action) limits the search to incoming types, and leaves it open when the app gives none"
         },
         {
           "feature": "Source / destination locations by type, two variants by the multi-locations group",
@@ -873,13 +873,13 @@
         },
         {
           "feature": "Components default order (is_done, manual_consumption desc, sequence)",
-          "status": "missing",
-          "needs": "a table order by line fields"
+          "status": "covered",
+          "how": "order [is_done, manual_consumption desc, sequence] on the components grid: the lines load in Flectra's order (the hand-consumed glue first), a line dragged or added stays where it is until they load again"
         },
         {
           "feature": "Components deletable only in draft (options delete)",
-          "status": "missing",
-          "needs": "a per-line delete condition"
+          "status": "covered",
+          "how": "lineDelete \"state == 'draft'\" (Flectra's options delete domain on the move): a confirmed order's components have no ×, and the form refuses removeLine for them; a new line starts draft (lineDefaults) and can go"
         },
         {
           "feature": "Component domain excluding the produced product (parent.product_id)",
