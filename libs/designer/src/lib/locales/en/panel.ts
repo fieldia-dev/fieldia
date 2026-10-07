@@ -280,6 +280,9 @@ export const panel = {
   inHeaderBar: 'In the header bar',
   underTitle: 'Under the title',
   removeStatus: 'Remove the status steps',
+  timePerStep: 'Time per step from',
+  foldStages: 'Folded stages go under More',
+  clickSaves: 'A click saves the record',
   stepsHint: 'The steps are the field’s choices, in their order. Clicking one moves the record to it.',
   /** An app's kind's own settings, by the app's name for its kind. */
   kindSettings: (kind: string) => `${kind} settings`,

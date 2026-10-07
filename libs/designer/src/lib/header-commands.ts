@@ -47,9 +47,21 @@ export interface HeaderPartPatch {
   icon?: string;
 }
 
+/** How the status steps behave: clicked, where they sit, the time spent per step, folded stages, a click that saves. */
+export interface StatusbarOptions {
+  clickable?: boolean;
+  position?: 'header' | 'title';
+  /** A json field holding the time per step; empty for none. */
+  durationsField?: string;
+  /** Stages folded by their record under More: a link's steps only. */
+  fold?: boolean;
+  /** A click saves the record at once: steps that can be clicked only. */
+  saves?: boolean;
+}
+
 export interface HeaderCommands {
   /** Status steps from a field that holds one of a list, or `null` for none. */
-  setStatusbar(field: string | null, options?: { clickable?: boolean; position?: 'header' | 'title' }): boolean;
+  setStatusbar(field: string | null, options?: StatusbarOptions): boolean;
   /** A button, a counter or a badge, at the end of its kind. Returns its id, picked. */
   addHeaderPart(kind: HeaderPartKind, label: string): string | false;
   updateHeaderPart(id: string, patch: HeaderPartPatch): boolean;
@@ -142,11 +154,19 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
           return;
         }
         const def = fieldFor(draft, field);
-        if (def.type !== 'selection' || def.multiple) throw new Refusal((w) => w.refusals.statusOneOfList(def.label, storedAs(def, w)));
+        // A choice's steps, or the stages a link points to.
+        if ((def.type !== 'selection' || def.multiple) && def.type !== 'many2one') throw new Refusal((w) => w.refusals.statusOneOfList(def.label, storedAs(def, w)));
         const kept = root.statusbar?.field === field ? root.statusbar : undefined;
-        root.statusbar = { ...kept, field, ...options };
-        if (root.statusbar.clickable === false) delete root.statusbar.clickable;
-        if (root.statusbar.position === 'header') delete root.statusbar.position;
+        const bar = { ...kept, field, ...options };
+        if (bar.durationsField) {
+          const times = fieldFor(draft, bar.durationsField);
+          if (times.type !== 'json') throw new Refusal((w) => w.refusals.timesFromJson(times.label));
+        } else delete bar.durationsField;
+        if (bar.fold && def.type !== 'many2one') throw new Refusal((w) => w.refusals.foldStages);
+        if (bar.saves && !bar.clickable) throw new Refusal((w) => w.refusals.savesOnClick);
+        for (const key of ['clickable', 'fold', 'saves'] as const) if (!bar[key]) delete bar[key];
+        if (bar.position === 'header') delete bar.position;
+        root.statusbar = bar;
         prune(draft);
       });
     },

@@ -1164,7 +1164,7 @@ export function createDesigner(options: {
         const container = findContainer(draft, id) as { invisible?: string } | null;
         const found = container ? null : findNode(draft, id);
         // A badge, a counter or a button of a sheet's header shows only for some records too.
-        const target = container ?? (found?.node as { invisible?: string } | undefined) ?? (findHeaderPart(draft, id)?.part as { invisible?: string } | undefined);
+        const target = container ?? (found?.node as { invisible?: string } | undefined) ?? (findHeaderPart(draft, id)?.part as { invisible?: string } | undefined) ?? statusbarOf(draft, id);
         if (!target) throw new Refusal((w) => w.refusals.noElement(id));
         const rules: Condition = !condition
           ? { join: 'all', rules: [] }
@@ -1183,7 +1183,7 @@ export function createDesigner(options: {
 
     setRoles(id, roles) {
       return apply((draft) => {
-        const target = (findContainer(draft, id) ?? findNode(draft, id)?.node ?? findHeaderPart(draft, id)?.part) as { roles?: string[] } | null | undefined;
+        const target = (findContainer(draft, id) ?? findNode(draft, id)?.node ?? findHeaderPart(draft, id)?.part ?? statusbarOf(draft, id)) as { roles?: string[] } | null | undefined;
         if (!target) throw new Refusal((w) => w.refusals.noElement(id));
         const wrong = roles?.find((role) => !ROLE.test(role));
         if (wrong !== undefined) throw new Refusal((w) => w.refusals.notARole(wrong));
@@ -1579,3 +1579,8 @@ createDesigner.open = async (
   if (!page) throw new Error(`The store has no page "${id}"`);
   return createDesigner({ page, store, versions, model: options.model, lists: options.lists, kinds: options.kinds, looks: options.looks, openForm: options.openForm, locale: options.locale });
 };
+
+/** A sheet's status steps, by the id the designer picks them by: they show for some records only, and to some roles, as any part. */
+function statusbarOf(page: Page, id: string): { invisible?: string; roles?: string[] } | undefined {
+  return id === '#statusbar' && page.layout.type === 'sheet' ? (page.layout.statusbar as { invisible?: string; roles?: string[] } | undefined) : undefined;
+}

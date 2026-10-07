@@ -200,3 +200,44 @@ describe('stat buttons that say more', () => {
     expect(designer.updateHeaderPart('nope', { unit: 'x' })).toBe(false);
   });
 });
+
+describe('the status steps', () => {
+  function staged() {
+    const page = sheet();
+    page.fields['stage'] = { type: 'many2one', label: 'Stage', relation: 'crm.stage' };
+    page.fields['times'] = { type: 'json', label: 'Time per stage' };
+    page.fields['active'] = { type: 'boolean', label: 'Active' };
+    ((page.layout as SheetNode).children[0] as { children: unknown[] }).children.push({ type: 'field', id: 'f-active', field: 'active' }, { type: 'field', id: 'f-times', field: 'times', invisible: true });
+    return createDesigner({ page });
+  }
+
+  it('come from a link’s stages too, folded under More, with the time per step and a click that saves', () => {
+    const designer = staged();
+    expect(designer.setStatusbar('stage', { clickable: true })).toBe(true);
+    designer.select('#statusbar');
+    const { host } = mount(designer, { mode: 'advanced' });
+    choose(field(host, 'Time per step from'), 'times');
+    (host.querySelector('input[aria-label="Folded stages go under More"]') as HTMLInputElement).click();
+    (host.querySelector('input[aria-label="A click saves the record"]') as HTMLInputElement).click();
+    expect((designer.getPage().layout as SheetNode).statusbar).toEqual({ field: 'stage', clickable: true, durationsField: 'times', fold: true, saves: true });
+    designer.undo();
+    expect((designer.getPage().layout as SheetNode).statusbar?.saves).toBeUndefined();
+  });
+
+  it('show only when a rule holds, as any part does', () => {
+    const designer = staged();
+    designer.setStatusbar('state');
+    expect(designer.setCondition('#statusbar', { field: 'active', equals: false })).toBe(true);
+    expect((designer.getPage().layout as SheetNode).statusbar?.invisible).toBeDefined();
+    expect(designer.setCondition('#statusbar', null)).toBe(true);
+    expect((designer.getPage().layout as SheetNode).statusbar?.invisible).toBeUndefined();
+  });
+
+  it('refuse folding a choice’s steps, time from what is not JSON, and a save no click can make', () => {
+    const designer = staged();
+    expect(designer.setStatusbar('state', { fold: true })).toBe(false);
+    expect(designer.setStatusbar('stage', { durationsField: 'name' })).toBe(false);
+    expect(designer.getState().issues.join(' ')).toMatch(/JSON/);
+    expect(designer.setStatusbar('stage', { saves: true })).toBe(false);
+  });
+});

@@ -201,14 +201,23 @@ export function statusbarProperties(el: ElementFactory, designer: Designer): Pro
   const which = el('select', { class: 'fd-input fd-select', 'aria-label': w.stepsFrom }) as HTMLSelectElement;
   const clickable = el('input', { type: 'checkbox', 'aria-label': w.clickStep }) as HTMLInputElement;
   const where = select(el, w.where, [['header', w.inHeaderBar], ['title', w.underTitle]]);
+  // The time spent in each step, folded stages, a click that saves.
+  const times = el('select', { class: 'fd-input fd-select', 'aria-label': w.timePerStep }) as HTMLSelectElement;
+  const fold = el('input', { type: 'checkbox', 'aria-label': w.foldStages }) as HTMLInputElement;
+  const saves = el('input', { type: 'checkbox', 'aria-label': w.clickSaves }) as HTMLInputElement;
+  const foldRow = el('label', { class: 'fd-q-required' }, fold, el('span', {}, w.foldStages));
+  const savesRow = el('label', { class: 'fd-q-required' }, saves, el('span', {}, w.clickSaves));
   const current = () => (designer.getPage().layout as SheetNode).statusbar;
   const save = () => {
     const position = where.value as 'header' | 'title';
-    designer.setStatusbar(which.value, { clickable: clickable.checked, position });
+    const link = (designer.getPage().fields[which.value] ?? designer.modelFields().find((m) => m.name === which.value)?.field)?.type === 'many2one';
+    designer.setStatusbar(which.value, { clickable: clickable.checked, position, durationsField: times.value, fold: fold.checked && link, saves: saves.checked && clickable.checked });
   };
-  which.addEventListener('change', save);
-  clickable.addEventListener('change', save);
-  where.addEventListener('change', save);
+  for (const control of [which, clickable, where, times, fold, saves]) control.addEventListener('change', save);
+  // When it shows, as any part of the header.
+  const when = conditionEditor(el, designer, '#statusbar', 'question');
+  const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, w.showOnlyWhen);
+  showWhen.addEventListener('click', () => when.start());
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.removeStatus);
   remove.addEventListener('click', () => {
     if (designer.setStatusbar(null)) designer.select(null);
@@ -218,8 +227,12 @@ export function statusbarProperties(el: ElementFactory, designer: Designer): Pro
     { class: 'fd-props' },
     prop(el, w.stepsFrom, which),
     el('label', { class: 'fd-q-required' }, clickable, el('span', {}, w.clickStep)),
+    savesRow,
     prop(el, w.where, where),
+    prop(el, w.timePerStep, times),
+    foldRow,
     el('p', { class: 'fd-properties-hint' }, w.stepsHint),
+    el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, w.whenItShows), when.element, showWhen),
     el('div', { class: 'fd-props-actions' }, remove)
   );
   return {
@@ -227,11 +240,22 @@ export function statusbarProperties(el: ElementFactory, designer: Designer): Pro
     update(page) {
       const config = current();
       if (!config) return;
-      const fields = [...Object.entries(page.fields).map(([name, field]) => ({ name, field })), ...designer.modelFields()].filter(({ field }) => field.type === 'selection' && !field.multiple);
+      const all = [...Object.entries(page.fields).map(([name, field]) => ({ name, field })), ...designer.modelFields()];
+      const fields = all.filter(({ field }) => (field.type === 'selection' && !field.multiple) || field.type === 'many2one');
       which.replaceChildren(...fields.map(({ name, field }) => el('option', { value: name }, field.label)));
       which.value = config.field;
       clickable.checked = config.clickable === true;
       where.value = config.position ?? 'header';
+      times.replaceChildren(el('option', { value: '' }, w.nothing), ...all.filter(({ field }) => field.type === 'json').map(({ name, field }) => el('option', { value: name }, field.label)));
+      times.value = config.durationsField ?? '';
+      foldRow.hidden = (page.fields[config.field] ?? all.find((f) => f.name === config.field)?.field)?.type !== 'many2one';
+      fold.checked = config.fold === true;
+      savesRow.hidden = !config.clickable;
+      saves.checked = config.saves === true;
+      // Rules on the page's fields that hold one of a list, or yes or no.
+      const others = allSections(page).flatMap((s) => s.children.filter((n): n is FieldNode => n.type === 'field' && choicesOf(page.fields[n.field]) !== null));
+      when.update(page, others, config.invisible);
+      showWhen.hidden = !when.element.hidden || !when.canStart();
     },
   };
 }

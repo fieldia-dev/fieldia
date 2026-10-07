@@ -58,7 +58,8 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
   function pickStatusField(anchor: HTMLElement) {
     const page = designer.getPage();
     const own = Object.entries(page.fields).map(([name, field]) => ({ name, field }));
-    const choices = [...own, ...designer.modelFields()].filter(({ field }) => field.type === 'selection' && !field.multiple);
+    // A choice's options, or the stages a link points to.
+    const choices = [...own, ...designer.modelFields()].filter(({ field }) => (field.type === 'selection' && !field.multiple) || field.type === 'many2one');
     openMenu({
       el,
       anchor,

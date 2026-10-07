@@ -97,6 +97,9 @@ export const refusals = {
   onlyAlertCloses: 'Only an alert can be closed',
   onlySomeIcons: 'A ribbon or an alert has no icon',
   onlyOneChoiceBadge: 'Only a field that holds one choice of a list shows as a coloured badge',
+  timesFromJson: (label: string) => `The time per step comes from a field holding JSON; ${label} does not`,
+  foldStages: 'Only stages a link points to fold: a choice keeps the steps it shows',
+  savesOnClick: 'A click saves the record only where a step can be clicked',
   megabytes: (n: number) => `${n} MB`,
   // ---- kinds' own settings
   matrixNoPictures: 'A matrix’s columns have no pictures',

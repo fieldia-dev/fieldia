@@ -337,6 +337,9 @@ export const panel: DesignerWords['panel'] = {
   inHeaderBar: 'في شريط الرأس',
   underTitle: 'تحت العنوان',
   removeStatus: 'إزالة مراحل الحالة',
+  timePerStep: 'الوقت لكل مرحلة من',
+  foldStages: 'المراحل المطوية تحت «المزيد»',
+  clickSaves: 'النقر يحفظ السجل',
   stepsHint: 'المراحل هي اختيارات الحقل، بترتيبها. النقر على إحداها ينقل السجل إليها.',
   kindSettings: (kind) => `إعدادات ${kind}`,
 };
