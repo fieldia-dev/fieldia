@@ -48,6 +48,7 @@ import { setAttr, setHidden, setText } from './dom';
 import { openPage } from './open';
 import { sayer } from './say';
 import { tabStrip } from './tab-strip';
+import { valueWords } from './value-words';
 
 export type Skin = 'underline' | 'outlined';
 
@@ -463,9 +464,15 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
 
     function textItem(node: TextNode): HTMLElement {
       const style = node.style ?? 'paragraph';
-      const element = el(style === 'heading' ? 'h3' : 'p', { class: `fd-text-${style}`, 'data-node': node.id }, node.text);
+      // Its words, with the values of the fields they name.
+      const words = valueWords(doc, page.fields, node.text, locale);
+      const element =
+        style === 'alert'
+          ? el('div', { class: `fd-alert fd-text-alert fd-tone-${node.tone ?? 'info'}`, role: 'status', 'data-node': node.id }, el('span', { class: 'fd-alert-message' }, ...words.nodes))
+          : el(style === 'heading' ? 'h3' : 'p', { class: `fd-text-${style}`, 'data-node': node.id }, ...words.nodes);
       spans(element, node.colspan);
       hideWhen(element, node.id);
+      watch((state) => words.update(state.values));
       return element;
     }
 
@@ -1149,7 +1156,20 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       card.append(stats);
     }
     for (const alert of node.alerts ?? []) {
-      const box = el('div', { class: `fd-alert fd-tone-${alert.tone ?? 'info'}`, role: 'status', 'data-node': alert.id }, el('span', { class: 'fd-alert-message' }, alert.message));
+      // Its words with the values they name, or a field's words while it holds any; its buttons after them, as links unless styled.
+      const words = valueWords(doc, page.fields, alert.message, locale);
+      const message = el('span', { class: 'fd-alert-message' }, ...words.nodes);
+      let fromField = false;
+      const box = el('div', { class: `fd-alert fd-tone-${alert.tone ?? 'info'}`, role: 'status', 'data-node': alert.id }, message);
+      if (alert.buttons?.length) box.append(el('span', { class: 'fd-alert-actions' }, ...alert.buttons.map((button) => buttonItem({ ...button, style: button.style ?? 'link' }))));
+      updaters.push((state) => {
+        words.update(state.values);
+        const from = alert.messageField ? state.values[alert.messageField] : null;
+        const said = typeof from === 'string' ? from.trim() : '';
+        if (said) setText(message, said);
+        else if (fromField) message.replaceChildren(...words.nodes);
+        fromField = !!said;
+      });
       if (alert.dismissible) {
         // Closed, it stays closed while the page is open, whatever its condition does.
         let dismissed = false;

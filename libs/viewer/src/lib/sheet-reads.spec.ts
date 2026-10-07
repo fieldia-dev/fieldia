@@ -191,3 +191,65 @@ describe('several ribbons', () => {
     expect(shown(host)[0].className).toContain('fd-tone-danger');
   });
 });
+
+describe('alerts holding a field’s value, with buttons inside, and alerts among the parts', () => {
+  const page = (children: Page['layout'] extends infer L ? unknown[] : never = []): Page => ({
+    fieldia: '0.1',
+    id: 'bill',
+    data: { kind: 'record', model: 'account.move' },
+    fields: {
+      lock: { type: 'date', label: 'Lock date' },
+      warning: { type: 'char', label: 'Credit warning' },
+      topup: { type: 'monetary', label: 'Top-up', currency: 'EGP' },
+      tz: { type: 'selection', label: 'Timezone', options: [{ value: 'Africa/Cairo', label: 'Cairo' }] },
+    },
+    layout: {
+      type: 'sheet',
+      id: 'root',
+      alerts: [
+        { id: 'a-lock', message: 'Entries before {lock} cannot be posted.', tone: 'warning' },
+        { id: 'a-credit', message: 'Over the credit limit.', messageField: 'warning', tone: 'danger' },
+        { id: 'a-dup', message: 'This bill may be a duplicate.', buttons: [{ type: 'button', id: 'b-dup', label: 'See the other bill', action: 'open_duplicate' }] },
+      ],
+      children: children as never,
+    },
+  });
+  const words = (host: HTMLElement, id: string) => (host.querySelector(`[data-node="${id}"] .fd-alert-message`) as HTMLElement).textContent;
+
+  it('shows a field’s value inside its words, as the field shows it, and follows it', () => {
+    const { host, form } = mount(page(), { values: { lock: '2026-09-30' } });
+    expect(words(host, 'a-lock')).toBe('Entries before 30 Sept 2026 cannot be posted.');
+    form.setValue('lock', '2026-12-31');
+    expect(words(host, 'a-lock')).toBe('Entries before 31 Dec 2026 cannot be posted.');
+  });
+
+  it('shows a field’s words in place of its own while the field holds any', () => {
+    const { host, form } = mount(page(), { values: {} });
+    expect(words(host, 'a-credit')).toBe('Over the credit limit.');
+    form.setValue('warning', 'Nile Traders owes 12,000 EGP past due.');
+    expect(words(host, 'a-credit')).toBe('Nile Traders owes 12,000 EGP past due.');
+    form.setValue('warning', null);
+    expect(words(host, 'a-credit')).toBe('Over the credit limit.');
+  });
+
+  it('has its buttons inside, after its words, as links unless styled; a press runs the button', async () => {
+    const actions: string[] = [];
+    const { host } = mount(page(), { values: {}, onAction: async (request) => void actions.push(request.action) });
+    const button = host.querySelector('[data-node="a-dup"] [data-node="b-dup"]') as HTMLButtonElement;
+    expect(button.textContent).toBe('See the other bill');
+    expect(button.className).toContain('fd-button-link');
+    button.click();
+    await flush();
+    expect(actions).toEqual(['open_duplicate']);
+  });
+
+  it('draws an alert among the parts — in a tab — with a field’s value inside', () => {
+    const tabs = [{ type: 'tabs', id: 'tabs', children: [{ type: 'tab', id: 'trust', label: 'Trust', children: [{ type: 'text', id: 't-topup', text: 'Top up {topup} to reach the minimum.', style: 'alert', tone: 'warning' }] }] }];
+    const { host } = mount(page(tabs), { values: { topup: 2500 } });
+    const alert = host.querySelector('[data-node="t-topup"]') as HTMLElement;
+    expect(alert.classList.contains('fd-alert')).toBe(true);
+    expect(alert.classList.contains('fd-tone-warning')).toBe(true);
+    expect(alert.getAttribute('role')).toBe('status');
+    expect(alert.textContent).toMatch(/^Top up .*2,500\.00 to reach the minimum\.$/);
+  });
+});

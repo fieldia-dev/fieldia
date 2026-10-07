@@ -170,8 +170,12 @@ export interface ButtonNode {
 export interface TextNode {
   type: 'text';
   id: string;
+  /** The words; `{field}` in them shows that field's value, as the field shows it. */
   text: string;
-  style?: 'heading' | 'paragraph' | 'note';
+  /** A heading, a paragraph, a note, or an alert's box — Flectra's alert in a tab or a wizard, toned by `tone`. */
+  style?: 'heading' | 'paragraph' | 'note' | 'alert';
+  /** An alert's colour; blue unless said. */
+  tone?: Tone;
   /** Grid columns it spans inside a section. */
   colspan?: number;
   invisible?: Modifier;
@@ -393,7 +397,12 @@ export interface Ribbon {
 
 export interface Alert {
   id: string;
+  /** The words; `{field}` in them shows that field's value, as the field shows it. */
   message: string;
+  /** The words from a field, when it holds any, as Flectra's alert showing the server's warning; `message` while it is empty. */
+  messageField?: string;
+  /** Buttons inside it, after its words: a link to the duplicate, Retry, Activate. */
+  buttons?: ButtonNode[];
   tone?: Tone;
   /** Has a × that hides it until the page opens again. */
   dismissible?: boolean;
@@ -596,7 +605,8 @@ export const TextNodeSchema = z.strictObject({
   type: z.literal('text'),
   id,
   text: z.string(),
-  style: z.enum(['heading', 'paragraph', 'note']).optional(),
+  style: z.enum(['heading', 'paragraph', 'note', 'alert']).optional(),
+  tone: tone.optional(),
   colspan: span,
   invisible, roles,
 });
@@ -731,7 +741,16 @@ export const StatButtonSchema = z.strictObject({
 
 export const RibbonSchema = z.strictObject({ id, label: z.string(), labelField: fieldName.optional(), tooltip: z.string().optional(), tone: tone.optional(), invisible, roles });
 
-export const AlertSchema = z.strictObject({ id, message: z.string(), tone: tone.optional(), dismissible: z.boolean().optional(), invisible, roles });
+export const AlertSchema = z.strictObject({
+  id,
+  message: z.string(),
+  messageField: fieldName.optional(),
+  buttons: z.array(ButtonNodeSchema).min(1).optional(),
+  tone: tone.optional(),
+  dismissible: z.boolean().optional(),
+  invisible,
+  roles,
+});
 
 export const BadgeSchema = z.strictObject({ id, label: z.string(), tone: tone.optional(), icon: z.string().min(1).optional(), invisible, roles });
 

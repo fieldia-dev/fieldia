@@ -1497,7 +1497,11 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     for (const button of [...(root.buttons ?? []), ...(root.footer ?? [])]) add(button, root.id, 'button', { invisible: button.invisible });
     for (const stat of root.statButtons ?? []) add(stat, root.id, 'stat', { invisible: stat.invisible });
     for (const ribbon of [...(root.ribbon ? [root.ribbon] : []), ...(root.ribbons ?? [])]) add(ribbon, root.id, 'other', { invisible: ribbon.invisible });
-    for (const alert of root.alerts ?? []) add(alert, root.id, 'other', { invisible: alert.invisible });
+    for (const alert of root.alerts ?? []) {
+      add(alert, root.id, 'other', { invisible: alert.invisible });
+      // An alert's buttons are hidden with it.
+      for (const button of alert.buttons ?? []) add(button, alert.id, 'button', { invisible: button.invisible });
+    }
     for (const badge of root.badges ?? []) add(badge, root.id, 'other', { invisible: badge.invisible });
     // Fields over and under the title are field nodes like any other.
     walk([...(root.title?.above ?? []), ...(root.title?.below ?? [])], root.id);

@@ -6,6 +6,7 @@ import { BUILT_IN_NAMES, USER_PARTS } from '../expression/built-ins';
 import { compileModifier } from '../expression/modifier';
 import { compileExpression } from '../expression/expression';
 import { dependencyOrder } from '../expression/order';
+import { valuesIn } from './words';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -139,6 +140,11 @@ export class ReferenceCheck {
           return;
       }
     });
+  }
+
+  /** Words that show fields' values: each `{name}` a field of this page. */
+  private checkValuesIn(words: string, path: string) {
+    for (const name of valuesIn(words)) this.need(name, path);
   }
 
   private report(path: string, message: string) {
@@ -429,6 +435,8 @@ export class ReferenceCheck {
         return this.checkFormNode(node, path);
       case 'button':
         return this.checkPress(node, path);
+      case 'text':
+        return this.checkValuesIn(node.text, `${path}.text`);
       default:
         return;
     }
@@ -503,8 +511,16 @@ export class ReferenceCheck {
       sheet.title?.[place]?.forEach((node, i) => this.walkNode(node, `${path}.title.${place}[${i}]`));
     }
     sheet.alerts?.forEach((alert, i) => {
-      this.claim(alert.id, `${path}.alerts[${i}]`);
-      this.checkModifiers(alert, `${path}.alerts[${i}]`);
+      const at = `${path}.alerts[${i}]`;
+      this.claim(alert.id, at);
+      this.checkModifiers(alert, at);
+      this.checkValuesIn(alert.message, `${at}.message`);
+      if (alert.messageField !== undefined) this.need(alert.messageField, `${at}.messageField`);
+      alert.buttons?.forEach((button, j) => {
+        this.claim(button.id, `${at}.buttons[${j}]`);
+        this.checkModifiers(button, `${at}.buttons[${j}]`);
+        this.checkPress(button, `${at}.buttons[${j}]`);
+      });
     });
     this.walkChildren(sheet.children, path);
     if (sheet.sidePanel) {
