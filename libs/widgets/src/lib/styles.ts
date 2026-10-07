@@ -341,6 +341,21 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-line-grip { display: block; margin-block-start: 7px; cursor: grab; }
 .fd-line-delete { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
 .fd-line-delete:hover { color: var(--fd-error); background: var(--fd-error-soft); }
+/* A table's own rules: a line's or a cell's tone and bold (Flectra's decoration-*), and buttons on a line. */
+.fd-lines-table [data-tone="info"] { --fd-line-tone: var(--fd-info); }
+.fd-lines-table [data-tone="success"] { --fd-line-tone: var(--fd-success); }
+.fd-lines-table [data-tone="warning"] { --fd-line-tone: var(--fd-warning); }
+.fd-lines-table [data-tone="danger"] { --fd-line-tone: var(--fd-error); }
+.fd-lines-table [data-tone="muted"] { --fd-line-tone: var(--fd-muted); }
+.fd-lines-table [data-tone] :is(input, select, textarea, .fd-input, .fd-display) { color: var(--fd-line-tone); -webkit-text-fill-color: var(--fd-line-tone); }
+.fd-lines-table :is(.fd-line-bold, .fd-cell-bold) :is(input, select, textarea, .fd-input, .fd-display) { font-weight: 600; }
+.fd-lines-table td.fd-lines-tools { white-space: nowrap; }
+/* With buttons on some lines, every line's × keeps to the end, so they line up. */
+.fd-lines-table:has(.fd-line-button) td.fd-lines-tools { text-align: end; padding-inline-end: 4px; }
+.fd-line-button { padding: 2px 6px; font-size: 12.5px; vertical-align: middle; }
+.fd-line-button-icon { padding: 4px; color: var(--fd-muted); }
+.fd-line-button-icon:hover { color: var(--fd-accent); }
+.fd-line-button svg { width: 15px; height: 15px; display: block; }
 .fd-lines-totals td { padding: 8px; font-weight: 600; border-block-start: 1px solid var(--fd-border); font-variant-numeric: tabular-nums; }
 .fd-lines-adds { display: flex; flex-wrap: wrap; gap: 4px 16px; justify-self: start; }
 /* A section heads the lines below it; a note reads as a remark between them. */

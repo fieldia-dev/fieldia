@@ -1,5 +1,6 @@
 import { isEmpty, lineKind, type Field, type FieldNode, type Form, type FormState, type Line, type LineField, type Value } from '@fieldia/core';
 import { displayValue } from './display';
+import { drawIcon } from './icons';
 import { askFirst, fillIn, maker } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
 import { moveLineTo } from './line-moves';
@@ -24,7 +25,9 @@ import { createWidget, type Widget, type WidgetFactory } from './widgets';
 interface Row {
   element: HTMLTableRowElement;
   kind: 'section' | 'note' | null;
-  cells: { name: string; def: LineField; widget: Widget; error: HTMLElement }[];
+  cells: { name: string; def: LineField; widget: Widget; error: HTMLElement; td: HTMLTableCellElement }[];
+  /** The line's own buttons, by their id. */
+  buttons: Map<string, HTMLButtonElement>;
   remove: HTMLButtonElement;
   grip: HTMLElement;
 }
@@ -60,6 +63,9 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   const words = (key: string) => (typeof options[key] === 'string' && (options[key] as string).trim() ? (options[key] as string) : null);
   // The fields that say what a line is and keep the lines' order never show as columns.
   // Optional columns the page starts hidden stay out of the plain table.
+  const heads = new Map<string, HTMLTableCellElement>();
+  // The table's own rules, read by the form line by line; a table with none asks nothing.
+  const ruled = !!(node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons);
   const columns = (node.columns ?? Object.keys(def.fields)).filter(
     (column) => def.fields[column] && column !== kinds?.field && column !== def.sequenceField && node.optionalColumns?.[column] !== 'hide'
   );
@@ -77,7 +83,11 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   for (const column of columns) {
     const th = document.createElement('th');
     th.scope = 'col';
+    th.dataset['column'] = column;
     th.textContent = def.fields[column].label;
+    const width = node.cells?.[column]?.width;
+    if (width) th.style.width = `${width}ch`;
+    heads.set(column, th);
     headRow.append(th);
   }
   const lastTh = document.createElement('th');
@@ -89,6 +99,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   // Number columns the page asks to add up, in a row under the lines.
   const totals = (node.totals ?? []).filter((column) => columns.includes(column));
   const sums = new Map<string, HTMLTableCellElement>();
+  const footCells = new Map<string, HTMLTableCellElement>();
   if (totals.length) {
     const foot = document.createElement('tfoot');
     const row = document.createElement('tr');
@@ -96,6 +107,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     row.append(document.createElement('td'));
     columns.forEach((column, i) => {
       const td = document.createElement('td');
+      td.dataset['column'] = column;
+      footCells.set(column, td);
       if (totals.includes(column)) sums.set(column, td);
       else if (i === 0) td.textContent = labels.total;
       row.append(td);
@@ -166,6 +179,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs });
     const td = document.createElement('td');
     td.colSpan = span;
+    td.dataset['column'] = column;
     const label = document.createElement('label');
     label.className = 'fd-sr-only';
     label.htmlFor = cellId;
@@ -175,7 +189,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     error.hidden = true;
     td.append(label, widget.element, error);
     tr.append(td);
-    return { name: column, def: sub, widget, error };
+    return { name: column, def: sub, widget, error, td };
   }
 
   function makeRow(line: Line): Row {
@@ -222,9 +236,27 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
         (next ? rows.get(next.key)?.remove : adds.querySelector('button'))?.focus();
       });
     });
+    // The line's own buttons, each shown by its condition on the line; a press runs with the line.
+    const buttons = new Map<string, HTMLButtonElement>();
+    for (const own of kind ? [] : (node.rowButtons ?? [])) {
+      const icon = drawIcon(document, own.icon);
+      const button = make('button', { type: 'button', class: `fd-button fd-button-link fd-line-button${icon ? ' fd-line-button-icon' : ''}`, 'data-row-button': own.id, 'aria-label': own.label, title: own.label });
+      button.append(icon ?? own.label);
+      button.addEventListener('click', async () => {
+        if (button.hasAttribute('aria-busy')) return;
+        button.setAttribute('aria-busy', 'true');
+        try {
+          await form.runRowAction(node.id, own.id, line.key);
+        } finally {
+          button.removeAttribute('aria-busy');
+        }
+      });
+      buttons.set(own.id, button);
+      tools.append(button);
+    }
     tools.append(remove);
     tr.append(tools);
-    return { element: tr, kind, cells, remove, grip };
+    return { element: tr, kind, cells, remove, grip, buttons };
   }
 
   return {
@@ -237,6 +269,10 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
       if (readonly) confirm.element.hidden = true;
       if (empty) empty.hidden = current.length > 0;
       const errors = form.getState().errors;
+      // Columns the record hides now: their head, cells and total go with them.
+      const gone = new Set(ruled ? columns.filter((column) => form.columnHidden(node.id, column)) : []);
+      for (const [column, th] of heads) th.hidden = gone.has(column);
+      for (const [column, td] of footCells) td.hidden = gone.has(column);
       const keep = new Set(current.map((line) => line.key));
       for (const [key, row] of rows) {
         if (!keep.has(key)) {
@@ -260,16 +296,28 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
         row.grip.hidden = readonly;
         if (readonly) row.remove.remove();
         else if (!row.remove.isConnected) row.element.lastElementChild?.append(row.remove);
+        const now = ruled ? form.lineState(node.id, line.key) : null;
+        setData(row.element, 'tone', now?.tone);
+        row.element.classList.toggle('fd-line-bold', !!now?.bold);
+        for (const [id, button] of row.buttons) button.hidden = readonly || !now?.buttons[id];
+        // A section's or note's one cell spans the columns shown.
+        if (row.kind) row.cells[0].td.colSpan = columns.length - gone.size;
         for (const cell of row.cells) {
           const message = errors[`${name}.${line.key}.${cell.name}`];
+          const rules = row.kind ? undefined : now?.cells[cell.name];
+          if (!row.kind) cell.td.hidden = gone.has(cell.name);
+          // Hidden by its line, the cell stays, empty, so the column lines up.
+          cell.widget.element.hidden = !!rules?.invisible;
+          setData(cell.td, 'tone', rules?.tone);
+          cell.td.classList.toggle('fd-cell-bold', !!rules?.bold);
           cell.error.hidden = !message;
           cell.error.textContent = message ?? '';
           cell.widget.update({
             value: line.values[cell.name],
             values: line.values,
             // A value worked out from the line's others is shown, never typed.
-            readonly: readonly || cell.def.readonly === true || cell.def.compute !== undefined,
-            required: cell.def.required === true,
+            readonly: readonly || cell.def.readonly === true || cell.def.compute !== undefined || !!rules?.readonly,
+            required: cell.def.required === true || !!rules?.required,
             invalid: !!message,
           });
         }
@@ -285,3 +333,9 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     },
   };
 };
+
+/** A data attribute set, or taken away when there is nothing to say. */
+function setData(element: HTMLElement, key: string, value: string | null | undefined) {
+  if (value) element.dataset[key] = value;
+  else delete element.dataset[key];
+}
