@@ -251,5 +251,9 @@ describe('the structures’ changes, in words for the Publish dialog', () => {
     designer.setLinkFilter(link, null);
     designer.setLineTable(lines, { totals: null });
     expect(pageChanges(after, designer.getPage())).toEqual(['“Milestones”: adds up nothing', '“Owner”: offers every record']);
+    const then = designer.getPage();
+    designer.setRowTones(lines, [{ tone: 'muted', when: 'quantity == 0' }]);
+    expect(designer.setFieldTones(link, [{ tone: 'danger', when: 'True' }])).toBe(true);
+    expect(pageChanges(then, designer.getPage())).toEqual(['“Milestones”: its table’s rules changed', '“Owner”: its tone changed']);
   });
 });

@@ -194,4 +194,16 @@ export const DESIGNER_RULES_CSS = /* css */ `
 .fd-answer-sample-mark { font-weight: 700; min-width: 0.8em; text-align: center; }
 .fd-answer-sample-message { min-width: 0; }
 .fd-answer-sample-tag { grid-column: 2; font-size: 11px; font-weight: 600; letter-spacing: 0.01em; opacity: 0.85; }
+/* ---- a table's own rules, a field's tone, a table's buttons: rows in light boxes, as answer rules ---- */
+.fd-table-setting { display: grid; gap: 8px; min-width: 0; }
+.fd-table-tone-list, .fd-table-button-place { display: grid; gap: 6px; min-width: 0; }
+.fd-table-tones, .fd-table-buttons { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; min-width: 0; }
+.fd-table-tones[hidden] { display: none; }
+.fd-table-tone-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: start; padding: 6px; border: 1px solid var(--fd-border); border-radius: 8px; background: var(--fd-surface); min-width: 0; }
+.fd-table-tone-when { grid-column: 1 / -1; grid-row: 2; display: grid; gap: 4px; min-width: 0; }
+.fd-table-button { display: grid; gap: 6px; padding: 8px; padding-inline-end: 32px; position: relative; border: 1px solid var(--fd-border); border-radius: 8px; background: var(--fd-surface); min-width: 0; }
+.fd-table-button > .fd-icon-button { position: absolute; inset-block-start: 4px; inset-inline-end: 4px; }
+.fd-table-column-rules { display: grid; gap: 8px; padding: 8px; border-radius: 8px; background: var(--fd-page); min-width: 0; }
+.fd-table-setting .fd-table-add-tone, .fd-table-button-place > .fd-button-link { justify-self: start; padding-inline: 0; min-height: 26px; }
+.fd-table-setting .fd-inline-number { max-width: 8em; }
 `;

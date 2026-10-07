@@ -129,3 +129,39 @@ describe('the grid on a page that reads right to left', () => {
     expect(host.querySelector('[data-node="f-moves"] .ag-ltr')).toBeNull();
   });
 });
+
+describe('the grid’s money in its record’s currency', () => {
+  const order = {
+    fieldia: '0.1',
+    id: 'order',
+    data: { kind: 'record', model: 'sale.order' },
+    fields: {
+      currency_id: { type: 'many2one', label: 'Currency', relation: 'res.currency' },
+      line_ids: {
+        type: 'one2many',
+        label: 'Lines',
+        relation: 'sale.order.line',
+        fields: { name: { type: 'char', label: 'Description' }, price: { type: 'monetary', label: 'Price', currencyField: 'parent.currency_id' } },
+      },
+    },
+    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-lines', field: 'line_ids', widget: 'grid', totals: ['price'] }] },
+  } as unknown as Page;
+
+  it('writes each line’s amount and the total in the record’s currency, and follows it', async () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    handle = mountViewer(host, { page: order, widgets: gridWidgets, values: { currency_id: { id: 1, label: 'EUR' }, line_ids: [{ key: 'a', values: { name: 'Desk', price: 1200 } }] } as never });
+    await frames();
+    const grid = host.querySelector('.fd-grid-lines') as HTMLElement;
+    // The line's cell, then the total's under it.
+    const prices = () => [...grid.querySelectorAll('.ag-cell[col-id="price"]')].map((c) => c.textContent);
+    expect(prices()).toEqual(['€1,200.00', '€1,200.00']);
+    handle.form.setValue('currency_id', { id: 2, label: 'USD' });
+    await frames();
+    expect(prices()).toEqual(['$1,200.00', '$1,200.00']);
+    // Opened in its dialog, which has no record round it, the line's money keeps the record's currency.
+    (grid.querySelector('button[aria-label="Open line"]') as HTMLButtonElement).click();
+    await frames();
+    expect(document.querySelector('.fd-form-dialog [data-node="values-price"] .fd-currency')?.textContent).toBe('$');
+  });
+});

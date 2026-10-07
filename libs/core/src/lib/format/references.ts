@@ -275,6 +275,7 @@ export class ReferenceCheck {
       }
       def.setWhen?.forEach((item, i) => {
         this.checkModifiers(item, `${path}.setWhen[${i}]`, ['when'], scope);
+        item.on?.forEach((other, j) => this.need(other, `${path}.setWhen[${i}].on[${j}]`, fields));
         this.checkExpression(item.value, `${path}.setWhen[${i}].value`, scope);
       });
     }
@@ -289,15 +290,7 @@ export class ReferenceCheck {
     this.checkWorkedOut(fields, base, { fields, lines });
     for (const [name, def] of Object.entries(fields)) {
       const path = `${base}.${name}`;
-      if (def.type === 'monetary' && def.currencyField !== undefined) {
-        const currency = this.need(def.currencyField, `${path}.currencyField`, fields);
-        if (currency && !['many2one', 'selection', 'char'].includes(currency.type)) {
-          this.report(
-            `${path}.currencyField`,
-            `"${def.currencyField}" is a ${currency.type}; a currency field must be a many2one, selection or char`
-          );
-        }
-      }
+      if (def.type === 'monetary' && def.currencyField !== undefined) this.checkCurrency(def.currencyField, `${path}.currencyField`, fields, lines);
       // A first value worked out, and what a record made from a link starts with: read where this field is.
       if (def.defaultFrom !== undefined) this.checkExpression(def.defaultFrom, `${path}.defaultFrom`, { fields, lines });
       if ((def.type === 'many2one' || def.type === 'many2many') && def.createValues) {
@@ -335,6 +328,18 @@ export class ReferenceCheck {
           }
         }
       }
+    }
+  }
+
+  /** A money field's currency: a field beside it, or on a line `parent.` and a field of the record — one that holds a currency. */
+  private checkCurrency(name: string, path: string, fields: Record<string, Field | LineField>, lines: string | undefined) {
+    let currency: Field | LineField | undefined;
+    if (!name.startsWith('parent.')) currency = this.need(name, path, fields);
+    else if (lines === undefined) return this.report(path, `"${name}": only a line’s money reads parent, the record it is on`);
+    else if (!has(this.page.fields, name.slice('parent.'.length))) return this.report(path, `"${name}": "${name.slice('parent.'.length)}" is not a field of this page`);
+    else currency = this.page.fields[name.slice('parent.'.length)];
+    if (currency && !['many2one', 'selection', 'char'].includes(currency.type)) {
+      this.report(path, `"${name}" is a ${currency.type}; a currency field must be a many2one, selection or char`);
     }
   }
 
@@ -517,6 +522,11 @@ export class ReferenceCheck {
     node.validate?.forEach((rule, i) => {
       const at = `${path}.validate[${i}]`;
       this.checkModifiers(rule, at, ['when', 'holds']);
+      // No value twice in a column: a column of this table's lines.
+      if (rule.distinct !== undefined && def) {
+        if (def.type !== 'one2many') this.report(`${at}.distinct`, `distinct is for a table of lines; "${node.field}" is a ${def.type}`);
+        else if (!has(def.fields, rule.distinct)) this.report(`${at}.distinct`, `"${rule.distinct}" is not a field of the lines of "${node.field}"`);
+      }
       if (rule.pattern === undefined) return;
       try {
         new RegExp(rule.pattern);
@@ -524,6 +534,9 @@ export class ReferenceCheck {
         this.report(`${at}.pattern`, `"${rule.pattern}" is not a regular expression`);
       }
     });
+    // Its value's tones and bold: read on the record, as its other conditions are.
+    node.tones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.tones[${i}]`, ['when']));
+    this.checkModifiers(node, path, ['bold']);
     if (def && node.totals) {
       if (def.type !== 'one2many') {
         this.report(`${path}.totals`, `totals only apply to one2many fields; "${node.field}" is a ${def.type}`);
@@ -540,6 +553,9 @@ export class ReferenceCheck {
     // Options that point at another field: by convention their names end in "Field".
     for (const [key, value] of Object.entries(node.options ?? {})) {
       if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.options.${key}`);
+    }
+    for (const key of ['lineOpens', 'cards', 'fit'] as const) {
+      if (def && node[key] && def.type !== 'one2many') this.report(`${path}.${key}`, `${key} only applies to one2many fields; "${node.field}" is a ${def.type}`);
     }
     if (def && node.editMode && def.type !== 'one2many') {
       this.report(`${path}.editMode`, `editMode only applies to one2many fields; "${node.field}" is a ${def.type}`);
@@ -567,6 +583,16 @@ export class ReferenceCheck {
         });
       }
     }
+    // Buttons for the chosen lines and in the control row: buttons of the record, as any.
+    for (const key of ['selectedButtons', 'controlButtons'] as const) {
+      if (!node[key]) continue;
+      if (def && def.type !== 'one2many') this.report(`${path}.${key}`, `${key} only apply to one2many fields; "${node.field}" is a ${def.type}`);
+      node[key].forEach((button, i) => {
+        this.claim(button.id, `${path}.${key}[${i}]`);
+        this.checkModifiers(button, `${path}.${key}[${i}]`);
+        this.checkPress(button, `${path}.${key}[${i}]`);
+      });
+    }
     if (def && node.optionalColumns) {
       if (def.type !== 'one2many') {
         this.report(`${path}.optionalColumns`, `optional columns only apply to one2many fields; "${node.field}" is a ${def.type}`);
@@ -585,7 +611,12 @@ export class ReferenceCheck {
           this.report(`${path}.columns[${i}]`, `"${column}" is not a field of the lines of "${node.field}"`);
         }
       });
-    } else if (def.type !== 'many2many') {
+    } else if (def.type === 'many2many') {
+      // A table of the records linked: its columns are fields of those records.
+      node.columns.forEach((column, i) => {
+        if (!def.fields || !has(def.fields, column)) this.report(`${path}.columns[${i}]`, `"${column}" is not a field of the records of "${node.field}"`);
+      });
+    } else {
       this.report(`${path}.columns`, `columns only apply to one2many and many2many fields; "${node.field}" is a ${def.type}`);
     }
   }

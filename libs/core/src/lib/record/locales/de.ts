@@ -37,6 +37,7 @@ export const de: Messages = {
   datePast: '{label} muss in der Vergangenheit liegen',
   dateFuture: '{label} muss in der Zukunft liegen',
   holds: '{label} passt nicht zu den anderen Antworten',
+  distinct: '{column}: {value} steht in mehr als einer Zeile von {label}',
   or: 'oder',
   tick: 'Kreuzen Sie dieses Kästchen an, um fortzufahren',
   email: 'Geben Sie eine E-Mail-Adresse ein, z. B. name@example.com',

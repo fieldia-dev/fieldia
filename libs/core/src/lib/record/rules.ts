@@ -5,7 +5,7 @@ import { localDay } from '../expression/functions';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import { isNumber } from '../expression/operations';
 import { fill, type Messages } from './messages';
-import { isEmpty, type Value } from './values';
+import { isEmpty, lineKind, type Line, type RelatedRecord, type Value } from './values';
 
 /**
  * Answer rules: what a field node's `validate` asks of an answer, besides its
@@ -76,12 +76,38 @@ function brokenAsk({ rule, pattern }: CompiledRule, field: Field, value: Value, 
   const count = Array.isArray(value) ? value.length : null;
   if (count !== null && rule.atLeast !== undefined && count < rule.atLeast) return { say: 'atLeast', values: { min: rule.atLeast } };
   if (count !== null && rule.atMost !== undefined && count > rule.atMost) return { say: 'atMost', values: { max: rule.atMost } };
+  if (rule.distinct !== undefined && field.type === 'one2many' && Array.isArray(value)) {
+    const twice = sharedValue(field, value as Line[], rule.distinct);
+    if (twice !== null) return { say: 'distinct', values: { column: field.fields[rule.distinct]?.label ?? rule.distinct, value: twice } };
+  }
   if (text !== null && rule.date !== undefined) {
     const side = whenIs(field, text, now);
     if (rule.date === 'past' && side >= 0) return { say: 'datePast' };
     if (rule.date === 'future' && side <= 0) return { say: 'dateFuture' };
   }
   return undefined;
+}
+
+/** The first value of a column two of a table's items share, as a person reads it; null when each is there once. Empty cells, sections and notes are left out. */
+function sharedValue(field: Extract<Field, { type: 'one2many' }>, lines: readonly Line[], column: string): string | null {
+  const def = field.fields[column];
+  const seen = new Set<string>();
+  for (const line of lines) {
+    if (lineKind(field, line.values) !== null) continue;
+    const value = line.values[column];
+    if (value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length)) continue;
+    // A link by its id; anything else as it is.
+    const link = typeof value === 'object' && !Array.isArray(value) && 'id' in value ? (value as RelatedRecord) : null;
+    const key = JSON.stringify(link ? link.id : value);
+    if (!seen.has(key)) {
+      seen.add(key);
+      continue;
+    }
+    if (link) return link.label;
+    if (def?.type === 'selection') return def.options.find((o) => o.value === value)?.label ?? String(value);
+    return String(value);
+  }
+  return null;
 }
 
 /** Nothing to compare with yet: an empty value, as expressions read it. */

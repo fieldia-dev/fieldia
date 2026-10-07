@@ -37,6 +37,7 @@ export type {
   ListNode,
   ListFilter,
   LabelPlace,
+  ScreenWidth,
   AnswerRule,
   DividerNode,
   SpacerNode,
@@ -73,7 +74,7 @@ export type { PageIssue, PageValidation } from './lib/format/references';
 export { translatePage, localizePage, pageWords, isRightToLeft } from './lib/format/translate';
 export { compileModifier, type CompiledModifier } from './lib/expression/modifier';
 export { rolesAllow } from './lib/record/roles';
-export type { CellState, LineState } from './lib/record/cells';
+export type { CellState, FieldTone, LineState } from './lib/record/cells';
 export { evaluateModifier, isModifierValid } from './lib/expression/evaluateModifier';
 export {
   emptyValue,
@@ -134,7 +135,7 @@ export {
   type ChangeBy,
   type FormEvents,
 } from './lib/record/form';
-export type { ActionHost, ActionResult, OnAction, OpenRequest, OpenResult, RunContext, RunResult, RunStop } from './lib/record/run';
+export type { ActionHost, ActionResult, ChosenLines, OnAction, OpenRequest, OpenResult, RunContext, RunResult, RunStop } from './lib/record/run';
 export { MESSAGES, fill, type Messages, type Locale } from './lib/record/messages';
 export { dayOf } from './lib/record/limits';
 export { ADDRESS_PARTS } from './lib/record/structures';

@@ -23,6 +23,12 @@ function isSet(value: unknown): boolean {
   return value !== null && value !== undefined && value !== '' && value !== false && !(Array.isArray(value) && !value.length);
 }
 
+/** The ids a list of links holds: records by their id, ids as they are. */
+function idsIn(value: unknown): unknown[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => (item !== null && typeof item === 'object' && 'id' in item ? (item as RelatedRecord).id : item));
+}
+
 function meets(values: Values, condition: ResolvedFilterCondition): boolean {
   const raw = values[condition.field];
   // A link compares by its id.
@@ -33,6 +39,15 @@ function meets(values: Values, condition: ResolvedFilterCondition): boolean {
   switch (condition.op) {
     case '=':
       return actual === expected;
+    case '=?':
+      return !isSet(expected) || actual === expected;
+    case 'contains':
+    case 'not contains': {
+      const held = idsIn(raw);
+      const wanted = Array.isArray(expected) ? expected : [expected];
+      const found = wanted.some((value) => held.includes(value));
+      return condition.op === 'contains' ? found : !found;
+    }
     case '!=':
       return actual !== expected;
     case '<':
@@ -67,15 +82,32 @@ function meets(values: Values, condition: ResolvedFilterCondition): boolean {
   }
 }
 
-/** A filter as a search or a list receives it: each `valueFrom` — a field, or a path such as `parent.company_id` or `user.id` — replaced by its value in `context`. */
+/** What a condition left out stands for: it always holds. */
+const ALWAYS = null;
+
+/**
+ * A filter as a search or a list receives it: each `valueFrom` — a field, or a
+ * path such as `parent.company_id` or `user.id` — replaced by its value in
+ * `context`. A `=?` whose value is empty is left out, and so is a group it
+ * makes always hold: an `any` group with one item always holding, an `all`
+ * group left with none. A `=?` with a value goes as `=`, so a data source
+ * never sees `=?`.
+ */
 export function resolveFilter(items: readonly FilterItem[], context: Readonly<Record<string, unknown>>): ResolvedFilter[] {
-  const resolve = (item: FilterItem): ResolvedFilter =>
-    'any' in item
-      ? { any: item.any.map(resolve) }
-      : 'all' in item
-        ? { all: item.all.map(resolve) }
-        : { field: item.field, op: item.op, value: (item.valueFrom !== undefined ? valueAt(context, item.valueFrom) : (item.value ?? null)) as JsonValue };
-  return items.map(resolve);
+  const resolve = (item: FilterItem): ResolvedFilter | typeof ALWAYS => {
+    if ('any' in item) {
+      const inner = item.any.map(resolve);
+      return inner.includes(ALWAYS) ? ALWAYS : { any: inner as ResolvedFilter[] };
+    }
+    if ('all' in item) {
+      const inner = item.all.map(resolve).filter((r): r is ResolvedFilter => r !== ALWAYS);
+      return inner.length ? { all: inner } : ALWAYS;
+    }
+    const value = (item.valueFrom !== undefined ? valueAt(context, item.valueFrom) : (item.value ?? null)) as JsonValue;
+    if (item.op === '=?') return isSet(value) ? { field: item.field, op: '=', value } : ALWAYS;
+    return { field: item.field, op: item.op, value };
+  };
+  return items.map(resolve).filter((r): r is ResolvedFilter => r !== ALWAYS);
 }
 
 function valueAt(context: Readonly<Record<string, unknown>>, path: string): unknown {

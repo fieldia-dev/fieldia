@@ -1,4 +1,4 @@
-import { plural } from '../speak';
+import { listOf, plural } from '../speak';
 
 const lower = (words: string) => words.charAt(0).toLowerCase() + words.slice(1);
 const letters = (n: number) => plural('en', n, { one: '# letter', other: '# letters' });
@@ -21,6 +21,7 @@ export const rules = {
     past: 'A date in the past',
     future: 'A date in the future',
     across: 'A rule across fields',
+    distinct: 'No value twice in a column',
   },
   /** The patterns people pick by name. */
   patterns: { letters: 'Letters only', digits: 'Digits only', lettersAndDigits: 'Letters and digits only' },
@@ -57,6 +58,8 @@ export const rules = {
   future: 'A date in the future',
   mustFuture: 'Must be a date in the future',
   mustHold: (formula: string) => `Must hold: ${formula}`,
+  distinct: (column: string) => `No ${column} twice`,
+  mustDistinct: (column: string) => `Must have each ${column} once`,
   /** A rule's asks said as one: "At least 2 letters, ends with .com". */
   joinAsks: (asks: readonly string[]) => [asks[0], ...asks.slice(1).map(lower)].join(', '),
   onlyWarns: 'only warns',
@@ -88,6 +91,8 @@ export const rules = {
   readonlyWhen: (formula: string) => `Read-only when ${formula}`,
   workedOutFrom: (formula: string) => `Worked out from ${formula}`,
   setTo: (value: string, when: string) => `Set to ${value} when ${when}`,
+  /** When a rule set on a change acts: the fields it is on changing, and its condition when it has one. */
+  onChange: (labels: readonly string[], condition: string) => `${listOf('en', labels.map((label) => `“${label}”`), 'or')} ${labels.length === 1 ? 'changes' : 'change'}${condition ? `, if ${condition}` : ''}`,
   // ---- a formula in words
   signs: { is: 'is', isNot: 'is not' },
   /** The formula's own words (and, or, not, in), said in the designer's language; English keeps them as written. */
@@ -132,6 +137,7 @@ export const rules = {
     atMost: 'how many are ticked',
     date: 'a date in the past or the future',
     holds: 'a rule across fields',
+    distinct: 'no value twice in a column',
   },
   computeFromModel: (label: string) => `How “${label}” is worked out comes from the model`,
   notALineField: (name: string, table: string) => `“${name}” is not a field of the lines of ${table}`,

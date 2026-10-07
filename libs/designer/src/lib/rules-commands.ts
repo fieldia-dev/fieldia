@@ -130,7 +130,7 @@ export function ruleRefusal(draft: Page, node: FieldNode, rule: AnswerRule, word
 /** Which box of the values set by a rule changed, when only one did: typing in it is one undo step. */
 function setWhenBox(before: SetWhen[] | undefined, after: SetWhen[]): string | null {
   if (!before || before.length !== after.length) return null;
-  const changed = after.flatMap((item, i) => (['when', 'value'] as const).filter((part) => item[part] !== before[i][part]).map((part) => `${i}:${part}`));
+  const changed = after.flatMap((item, i) => (['when', 'value', 'on'] as const).filter((part) => JSON.stringify(item[part]) !== JSON.stringify(before[i][part])).map((part) => `${i}:${part}`));
   return changed.length === 1 ? changed[0] : null;
 }
 
@@ -215,7 +215,8 @@ export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps):
     },
 
     setSetWhen(id, items) {
-      const list = (items ?? []).map((item) => ({ when: item.when.trim(), value: item.value.trim() }));
+      // A rule set on a change keeps the fields it is on; its condition may then be left out.
+      const list: SetWhen[] = (items ?? []).map((item) => ({ ...(item.when?.trim() ? { when: item.when.trim() } : {}), value: item.value.trim(), ...(item.on?.length ? { on: [...item.on] } : {}) }));
       // Typing in one box — a value, or when — is one undo step; another box is another.
       const now = findNode(getPage(), id)?.node;
       const box = now?.type === 'field' ? setWhenBox(getPage().fields[now.field]?.setWhen, list) : null;
@@ -231,7 +232,10 @@ export function rulesCommands({ apply, getPage, fromModel }: RulesCommandsDeps):
           }
           if (!WORKED_OUT.has(field.type)) throw new Refusal((w) => w.rules.cannotBeSet(label, storedAs(field, w)));
           for (const item of list) {
-            refuseFormula(draft, item.when, (w, problem) => w.rules.inWhen(problem));
+            if (item.when === undefined && !item.on) throw new Refusal((w) => w.rules.inWhen(w.rules.typeAFormula));
+            const gone = item.on?.find((name) => !draft.fields[name]);
+            if (gone) throw new Refusal((w) => w.rules.unknownField(gone));
+            if (item.when !== undefined) refuseFormula(draft, item.when, (w, problem) => w.rules.inWhen(problem));
             refuseFormula(draft, item.value, (w, problem) => w.rules.inSetTo(problem));
             if (cannotHold(field, label, item.value)) throw new Refusal((w) => cannotHold(field, label, item.value, w) as string);
           }

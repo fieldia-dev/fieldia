@@ -376,10 +376,17 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         queueMicrotask(() => update(form.getState()));
       });
 
+      const toned = node.tones !== undefined || node.bold !== undefined;
       const update = (state: FormState) => {
         const shown = form.node(node.id);
         setHidden(wrapper, shown.invisible);
         wrapper.classList.toggle('fd-required', shown.required);
+        // Its value's tone and bold while a condition holds: Flectra's decoration-* on a field.
+        if (toned) {
+          const look = form.fieldTone(node.id);
+          setAttr(wrapper, 'data-tone', look.tone);
+          wrapper.classList.toggle('fd-value-bold', look.bold);
+        }
         const message = state.errors[node.field];
         setHidden(error, !message);
         setText(error, message ?? '');
@@ -447,7 +454,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       // Its confirmation, then its steps: the form asks, through the viewer.
       button.addEventListener('click', () => void press(button, () => form.runAction(node.id)));
       hideWhen(button, node.id);
-      return button;
+      // A header's button is drawn here too, never through item(): hidden at its widths the same way.
+      return hiddenOn(node, button);
     }
 
     function textItem(node: TextNode): HTMLElement {
@@ -659,6 +667,16 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     }
 
     function item(node: LayoutNode, place: Place): HTMLElement {
+      return hiddenOn(node, partItem(node, place));
+    }
+
+    /** A part hidden at some widths of the form (`hideOn`), as a phone's: the stylesheet hides it there. */
+    function hiddenOn(node: { hideOn?: readonly string[] }, element: HTMLElement): HTMLElement {
+      if (node.hideOn?.length) element.dataset['hideOn'] = node.hideOn.join(' ');
+      return element;
+    }
+
+    function partItem(node: LayoutNode, place: Place): HTMLElement {
       switch (node.type) {
         case 'field':
           return fieldItem(node, place.labels);

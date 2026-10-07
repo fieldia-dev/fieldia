@@ -37,6 +37,7 @@ export const ar: Messages = {
   datePast: 'يجب أن يكون {label} في الماضي',
   dateFuture: 'يجب أن يكون {label} في المستقبل',
   holds: 'لا يتفق {label} مع الإجابات الأخرى',
+  distinct: '{column}: {value} في أكثر من سطر في {label}',
   or: 'أو',
   tick: 'ضع علامة في هذا المربع للمتابعة',
   email: 'أدخل بريدًا إلكترونيًا، مثل name@example.com',

@@ -99,7 +99,7 @@ export function ruleChecks(page: Page, words: DesignerWords = en): { checks: Pag
     }
     if (rule.kind === 'set' && def?.setWhen && rule.index !== undefined) {
       const item = def.setWhen[rule.index];
-      const problem = formulaProblem(page, item.when, words) ?? formulaProblem(page, item.value, words);
+      const problem = (item.when === undefined ? null : formulaProblem(page, item.when, words)) ?? formulaProblem(page, item.value, words);
       if (problem) {
         say(rule, 'must', w.setBroken(rule.name, rule.sentence, problemWords(problem, words)), w.removeIt);
         continue;

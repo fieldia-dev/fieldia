@@ -16,7 +16,7 @@ import {
 } from 'ag-grid-community';
 import { fill, isRightToLeft, lineKind, type ButtonNode, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
-import { createWidget, displayValue, drawIcon, kindTextField, lineForm, WIDGET_LABELS, type WidgetDialogs, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
+import { createWidget, displayValue, drawIcon, openLineDialog, kindTextField, lineForm, WIDGET_LABELS, type WidgetDialogs, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
 
 /**
  * A one2many as a spreadsheet, on AG Grid. Each cell is edited with the same
@@ -216,6 +216,89 @@ class DeleteRenderer implements ICellRendererComp<Line> {
   }
 }
 
+/** What a line's tick and the head's tick need from their grid: which lines are chosen, and choosing them. */
+interface Picking {
+  label(index: number): string;
+  allLabel: string;
+  isChosen(key: string): boolean;
+  choose(key: string, on: boolean): void;
+  chooseAll(on: boolean): void;
+  /** The head's tick, kept up to date by the grid. */
+  head(box: HTMLInputElement): void;
+  readonly(): boolean;
+}
+
+/** A line's tick, choosing it for the table's buttons for chosen lines. */
+class PickRenderer implements ICellRendererComp<Line> {
+  private box!: HTMLInputElement;
+  private params!: ICellRendererParams<Line> & { picking: Picking };
+  init(params: ICellRendererParams<Line> & { picking: Picking }) {
+    this.box = document.createElement('input');
+    this.box.type = 'checkbox';
+    this.box.className = 'fd-checkbox fd-line-pick';
+    this.box.addEventListener('change', () => {
+      if (this.params.data) this.params.picking.choose(this.params.data.key, this.box.checked);
+    });
+    this.refresh(params);
+  }
+  getGui() {
+    return this.box;
+  }
+  refresh(params: ICellRendererParams<Line> & { picking: Picking }) {
+    this.params = params;
+    this.box.checked = !!params.data && params.picking.isChosen(params.data.key);
+    this.box.disabled = params.picking.readonly();
+    this.box.setAttribute('aria-label', params.picking.label((params.node.rowIndex ?? 0) + 1));
+    return true;
+  }
+}
+
+/** The head's tick: every line chosen, or none. */
+class PickAllHeader implements IHeaderComp {
+  private box!: HTMLInputElement;
+  init(params: IHeaderParams & { picking: Picking }) {
+    this.box = document.createElement('input');
+    this.box.type = 'checkbox';
+    this.box.className = 'fd-checkbox fd-line-pick fd-line-pick-all';
+    this.box.setAttribute('aria-label', params.picking.allLabel);
+    this.box.addEventListener('change', () => params.picking.chooseAll(this.box.checked));
+    params.picking.head(this.box);
+  }
+  getGui() {
+    return this.box;
+  }
+  refresh() {
+    return true;
+  }
+}
+
+/** The button that puts a copy of a line right after it. */
+class CopyRenderer implements ICellRendererComp<Line> {
+  private button!: HTMLButtonElement;
+  private params!: ICellRendererParams<Line> & { copy(key: string): void; label(index: number): string };
+  init(params: ICellRendererParams<Line> & { copy(key: string): void; label(index: number): string }) {
+    this.button = document.createElement('button');
+    this.button.type = 'button';
+    this.button.className = 'fd-line-copy';
+    this.button.textContent = '⧉';
+    this.button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (this.params.data) this.params.copy(this.params.data.key);
+    });
+    this.refresh(params);
+  }
+  getGui() {
+    return this.button;
+  }
+  refresh(params: ICellRendererParams<Line> & { copy(key: string): void; label(index: number): string }) {
+    this.params = params;
+    const label = params.label((params.node.rowIndex ?? 0) + 1);
+    this.button.setAttribute('aria-label', label);
+    this.button.title = label;
+    return true;
+  }
+}
+
 /** What the column chooser's header button needs from its grid. */
 interface Chooser {
   label: string;
@@ -319,7 +402,7 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
       // A cell the form found wrong stays marked while it is fixed.
       const invalid = !!cell.form.getState().errors[`${cell.field}.${key}.${column}`];
       this.box.classList.toggle('fd-grid-editor-invalid', invalid);
-      this.widget.update({ value: line?.values[column], values: line?.values ?? {}, readonly: false, required: def.required === true, invalid });
+      this.widget.update({ value: line?.values[column], values: line?.values ?? {}, parent: cell.form.getState().values, readonly: false, required: def.required === true, invalid });
     };
     show();
     this.leave = cell.form.subscribe(show);
@@ -461,6 +544,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const ruleOf = (line: Line | undefined, column: string) => (line ? lineStates.get(line.key)?.cells[column] : undefined);
   /** Columns hidden by the record now. */
   let ruleHidden = new Set<string>();
+  /** The record's fields its money takes its currency from (`parent.currency_id`), and their values when last drawn. */
+  const parentCurrencies = [...new Set(Object.values(def.fields).flatMap((sub) => (sub.type === 'monetary' && sub.currencyField?.startsWith('parent.') ? [sub.currencyField.slice('parent.'.length)] : [])))];
+  let currencyShown = '';
   // Columns a person may hide or show, and where their choices (and widths, and order) are kept.
   const optional = node.optionalColumns ?? {};
   const optionalIds = columns.filter((column) => column in optional);
@@ -502,7 +588,48 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   problems.hidden = true;
   const adds = document.createElement('div');
   adds.className = 'fd-lines-adds';
-  element.append(host, problems, adds);
+  // Lines chosen for the table's buttons for them: a bar of those buttons over the grid while any is.
+  const choosing = !!node.selectedButtons?.length;
+  const chosen = new Set<string>();
+  let pickAll: HTMLInputElement | null = null;
+  const chosenCount = document.createElement('span');
+  chosenCount.className = 'fd-lines-chosen-count';
+  chosenCount.setAttribute('role', 'status');
+  /** A press that waits for its run, and is not pressed again meanwhile. */
+  const pressed = async (button: HTMLButtonElement, run: () => Promise<unknown>) => {
+    if (button.hasAttribute('aria-busy')) return;
+    button.setAttribute('aria-busy', 'true');
+    try {
+      await run();
+    } finally {
+      button.removeAttribute('aria-busy');
+    }
+  };
+  const ownButton = (own: ButtonNode, className: string) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = className;
+    button.dataset['node'] = own.id;
+    const icon = drawIcon(document, own.icon);
+    if (icon) button.append(icon);
+    button.append(own.label);
+    return button;
+  };
+  const chosenButtons = (node.selectedButtons ?? []).map((own) => {
+    const button = ownButton(own, `fd-button fd-button-${own.style ?? 'secondary'} fd-lines-chosen-button`);
+    // In the table's order, whatever order they were ticked in.
+    button.addEventListener('click', () => void pressed(button, () => form.runLinesAction(node.id, own.id, lines().filter((line) => chosen.has(line.key)).map((line) => line.key))));
+    return { id: own.id, button };
+  });
+  const bar = document.createElement('div');
+  bar.className = 'fd-lines-chosen';
+  bar.hidden = true;
+  bar.append(chosenCount, ...chosenButtons.map((b) => b.button));
+  // Lines as cards too (cards: narrow or always): the stylesheet shows them in the grid's place on a narrow form.
+  const cardList = document.createElement('div');
+  cardList.className = 'fd-line-cards';
+  if (node.cards) element.dataset['cards'] = node.cards;
+  element.append(...(choosing ? [bar] : []), ...(node.cards ? [cardList] : []), host, problems, adds);
 
   let readonly = false;
   const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
@@ -601,7 +728,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
           : // Hidden by its line, the cell stays, blank, so the column lines up.
             ruleOf(p.data, column)?.invisible
             ? ''
-            : displayValue(sub, p.value as Value, p.data?.values ?? {}, locale),
+            : displayValue(sub, p.value as Value, p.data?.values ?? {}, locale, form.getState().values),
       type: numeric ? 'rightAligned' : undefined,
       // A section or note runs across every column but the delete button.
       colSpan: (p) => (kindOf(p.data) && spans(p.api) ? spanWidth(p.api) : 1),
@@ -620,6 +747,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       flex: wide ? 2 : sub.type === 'monetary' ? 1.3 : 1,
       hide: optional[column] === 'hide',
       ...(node.cells?.[column]?.width ? { width: node.cells[column].width! * 8 + 32, flex: 0 } : {}),
+      // Columns as wide as what they hold (fit: content), sized once the lines are drawn.
+      ...(node.fit === 'content' && !node.cells?.[column]?.width ? { flex: undefined, minWidth: 64 } : {}),
       editable: (p) => {
         if (readonly || p.node.rowPinned) return false;
         if (kindOf(p.data)) return spans(p.api);
@@ -663,17 +792,79 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       suppressKeyboardEvent: keys,
     });
   }
+  // A tick at the start of each item, choosing it for the table's buttons for chosen lines; the head's chooses every one.
+  const picking: Picking = {
+    label: (n) => fill(labels.chooseLine, { name: fill(labels.lineN, { n }) }),
+    allLabel: labels.chooseAllLines,
+    isChosen: (key) => chosen.has(key),
+    choose(key, on) {
+      if (on) chosen.add(key);
+      else chosen.delete(key);
+      showChosen(true);
+    },
+    chooseAll(on) {
+      chosen.clear();
+      if (on) for (const line of lines()) if (!kindOf(line)) chosen.add(line.key);
+      showChosen(true);
+    },
+    head: (box) => {
+      pickAll = box;
+      showChosen(false);
+    },
+    readonly: () => readonly,
+  };
+  if (choosing) {
+    columnDefs.unshift({
+      colId: '__pick',
+      headerName: '',
+      headerComponent: PickAllHeader,
+      headerComponentParams: { picking },
+      width: 36,
+      minWidth: 36,
+      maxWidth: 36,
+      cellClass: 'fd-grid-tools fd-grid-pick',
+      resizable: false,
+      sortable: false,
+      suppressMovable: true,
+      lockPosition: lineStart,
+      cellRendererSelector: (p) => (p.node.rowPinned || kindOf(p.data) ? undefined : { component: PickRenderer, params: { picking } }),
+      suppressKeyboardEvent: keys,
+    });
+  }
+  // A copy of a line, its values too, right after it: never its saved id or its place in the order.
+  const copyLine = (key: string) => {
+    const all = lines();
+    const at = all.findIndex((l) => l.key === key);
+    if (readonly || at < 0) return;
+    const values = { ...all[at].values };
+    if (sequence) delete values[sequence];
+    const made = form.addLine(name, values);
+    if (sequence) form.moveLine(name, made, at + 1);
+    else {
+      const now = [...lines()];
+      now.splice(at + 1, 0, ...now.splice(now.findIndex((l) => l.key === made), 1));
+      form.setValue(name, now);
+    }
+  };
+  if (node.options?.['copy'] === true) {
+    columnDefs.push({
+      colId: '__copy',
+      headerName: '',
+      width: 40,
+      minWidth: 40,
+      cellClass: 'fd-grid-tools',
+      resizable: false,
+      sortable: false,
+      suppressMovable: true,
+      lockPosition: lineEnd,
+      cellRendererSelector: (p) => (p.node.rowPinned || kindOf(p.data) ? undefined : { component: CopyRenderer, params: { copy: copyLine, label: (n: number) => fill(labels.copy, { name: fill(labels.lineN, { n }) }) } }),
+      suppressKeyboardEvent: keys,
+    });
+  }
   // AG Grid copies column definitions deeply, so the button calls through, never a copy.
   // With dialogs, a line can be opened to see and edit every one of its fields at once.
-  const openLine = async (line: Line) => {
-    if (!dialogs) return;
-    const fields = Object.fromEntries(Object.entries(def.fields).filter(([key]) => key !== kinds?.field && key !== sequence)) as Record<string, Field>;
-    // The dialog shows what the onchange makes of the line as it is edited; the line itself waits for Save & Close.
-    const values = await dialogs.editValues({ title: def.label, fields, values: line.values, readonly, recompute: (edited) => form.previewLine(name, line.key, edited) });
-    if (!values) return;
-    // Written in one go, so the form recalculates once.
-    form.setValue(name, lines().map((l) => (l.key === line.key ? { ...l, values: { ...l.values, ...values } } : l)));
-  };
+  // Its own record's page, by the table's model (lineOpens: "record"), or every one of its fields.
+  const openLine = (line: Line) => (dialogs ? openLineDialog(form, name, node, line, dialogs, readonly) : undefined);
   if (node.rowButtons?.length) {
     columnDefs.push({
       colId: '__row_buttons',
@@ -923,6 +1114,104 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     addButton(words('addSectionLabel') ?? labels.addSection, { [kinds.field]: kinds.section ?? 'section' }, 'section');
     addButton(words('addNoteLabel') ?? labels.addNote, { [kinds.field]: kinds.note ?? 'note' }, 'note');
   }
+  // Buttons in the control row, beside the add buttons: the record's, shown by a condition on it (Flectra's <control>).
+  const controls = (node.controlButtons ?? []).map((own) => {
+    const button = ownButton(own, 'fd-button fd-button-link fd-lines-add fd-lines-control');
+    button.addEventListener('click', () => void pressed(button, () => form.runAction(own.id)));
+    adds.append(button);
+    return { id: own.id, button };
+  });
+  /** What the cards were last drawn from: drawn again only when it changes. */
+  let cardsDrawn = '';
+  /** Each line as a card: its first column as its title, the rest by their labels, its tone, its buttons, ↗ and ×. */
+  function drawCards() {
+    if (!node.cards) return;
+    const current = lines();
+    const hidden = new Set(columns.filter((column) => ruleHidden.has(column) || api.getColumn(column)?.isVisible() === false));
+    const shownColumns = columns.filter((column) => !hidden.has(column));
+    const signature = JSON.stringify([current, [...lineStates], shownColumns, readonly, form.getState().values]);
+    if (signature === cardsDrawn) return;
+    cardsDrawn = signature;
+    const parent = form.getState().values;
+    const cards = current.map((line) => {
+      const card = document.createElement('div');
+      card.className = 'fd-line-card';
+      card.dataset['line'] = line.key;
+      const kind = kindOf(line);
+      if (kind && kinds) {
+        card.classList.add(`fd-line-card-${kind}`);
+        card.textContent = String(line.values[kinds.text] ?? '');
+        return card;
+      }
+      const state = lineStates.get(line.key);
+      if (state?.tone) card.dataset['tone'] = state.tone;
+      card.classList.toggle('fd-line-bold', !!state?.bold);
+      const shownHere = shownColumns.filter((column) => !state?.cells[column]?.invisible);
+      const [first, ...rest] = shownHere;
+      const text = (column: string) => displayValue(def.fields[column], line.values[column] as Value, line.values, locale, parent);
+      const title = document.createElement(dialogs ? 'button' : 'div');
+      title.className = 'fd-line-card-title';
+      title.textContent = first ? text(first) || fill(labels.lineN, { n: current.indexOf(line) + 1 }) : '';
+      if (dialogs && title instanceof HTMLButtonElement) {
+        title.type = 'button';
+        title.addEventListener('click', () => void openLine(line));
+      }
+      const list = document.createElement('dl');
+      for (const column of rest) {
+        const dt = document.createElement('dt');
+        dt.textContent = def.fields[column].label;
+        const dd = document.createElement('dd');
+        dd.textContent = text(column);
+        const tone = state?.cells[column]?.tone;
+        if (tone) dd.dataset['tone'] = tone;
+        list.append(dt, dd);
+      }
+      const tools = document.createElement('div');
+      tools.className = 'fd-line-card-tools';
+      for (const own of node.rowButtons ?? []) {
+        if (!state?.buttons[own.id]) continue;
+        const button = ownButton(own, 'fd-button fd-button-link fd-line-button');
+        button.dataset['rowButton'] = own.id;
+        delete button.dataset['node'];
+        button.addEventListener('click', () => void pressed(button, () => form.runRowAction(node.id, own.id, line.key)));
+        tools.append(button);
+      }
+      if (!readonly) {
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'fd-line-delete';
+        remove.textContent = '×';
+        remove.setAttribute('aria-label', labels.deleteLine);
+        remove.addEventListener('click', () => form.removeLine(name, line.key));
+        tools.append(remove);
+      }
+      card.append(title, list, tools);
+      return card;
+    });
+    const items = current.filter((line) => !kindOf(line));
+    const sums = totals.filter((column) => !hidden.has(column)).map((column) => {
+      const sum = items.reduce((total, line) => total + Number(line.values[column] ?? 0), 0);
+      return `${def.fields[column].label}: ${displayValue(def.fields[column], sum, items[0]?.values ?? {}, locale, parent)}`;
+    });
+    const total = sums.length ? Object.assign(document.createElement('div'), { className: 'fd-line-cards-total', textContent: sums.join(' · ') }) : null;
+    cardList.replaceChildren(...cards, ...(total ? [total] : []));
+  }
+
+  /** The bar and the ticks, as the lines chosen are now; `redraw` draws the lines' ticks again. */
+  function showChosen(redraw: boolean) {
+    if (!choosing) return;
+    const items = lines().filter((line) => !kindOf(line));
+    for (const key of [...chosen]) if (!items.some((line) => line.key === key)) chosen.delete(key);
+    bar.hidden = readonly || chosen.size === 0;
+    chosenCount.textContent = fill(labels.linesChosen, { n: chosen.size });
+    for (const { id, button } of chosenButtons) button.hidden = form.node(id).invisible;
+    if (pickAll) {
+      pickAll.checked = items.length > 0 && chosen.size === items.length;
+      pickAll.indeterminate = chosen.size > 0 && chosen.size < items.length;
+      pickAll.disabled = readonly || !items.length;
+    }
+    if (redraw) api.refreshCells({ columns: ['__pick'], force: true, suppressFlash: true });
+  }
 
   // A focused cell that has no editor still answers keys: Space ticks yes/no,
   // and Enter or Space presses the delete button. (AG Grid's onCellKeyDown
@@ -979,15 +1268,28 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     update(state) {
       if (state.readonly !== readonly) {
         readonly = state.readonly;
-        api.setGridOption('columnDefs', columnDefs.filter((c) => !(readonly && (c.colId === '__delete' || c.colId === '__handle'))));
+        api.setGridOption('columnDefs', columnDefs.filter((c) => !(readonly && ['__delete', '__handle', '__copy', '__pick'].includes(c.colId as string))));
       }
       adds.hidden = readonly;
+      for (const { id, button } of controls) button.hidden = form.node(id).invisible;
       const current = (state.value as Line[] | null) ?? [];
       if (current !== shown) {
         shown = current;
         api.setGridOption('rowData', current);
         fitHeight(current.length);
         if (totals.length) api.setGridOption('pinnedBottomRowData', [totalsRow(current)]);
+        // Columns as wide as what they hold, once more as the lines change.
+        if (node.fit === 'content') api.autoSizeAllColumns();
+        // The ticks and copies name a line by where it is: it may have moved.
+        if (choosing || node.options?.['copy'] === true) api.refreshCells({ columns: ['__pick', '__copy'], force: true, suppressFlash: true });
+      }
+      // Money in the record's currency: its cells written again once that currency changes.
+      if (parentCurrencies.length) {
+        const now = JSON.stringify(parentCurrencies.map((field) => state.values[field] ?? null));
+        if (now !== currencyShown) {
+          currencyShown = now;
+          api.refreshCells({ force: true, suppressFlash: true });
+        }
       }
       // The table's own rules as the form has them now: redrawn only when they changed.
       if (ruled) {
@@ -1013,6 +1315,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         problems.textContent = listed.join(' · ');
         problems.hidden = !found.length;
       }
+      showChosen(false);
+      drawCards();
       element.setAttribute('aria-invalid', String(state.invalid || found.length > 0));
     },
     destroy() {

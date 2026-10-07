@@ -37,6 +37,7 @@ export const fr: Messages = {
   datePast: '{label} doit être dans le passé',
   dateFuture: '{label} doit être dans le futur',
   holds: '{label} ne concorde pas avec les autres réponses',
+  distinct: '{column} : {value} figure sur plus d’une ligne de {label}',
   or: 'ou',
   tick: 'Cochez cette case pour continuer',
   email: 'Saisissez une adresse e-mail, par exemple nom@exemple.com',

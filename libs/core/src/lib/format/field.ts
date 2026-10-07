@@ -40,7 +40,12 @@ export type Option = z.infer<typeof OptionSchema>;
  * can follow the chosen country — or its `id`, the person (`user.id`), or on a
  * line the record it is on (`parent.company_id`). `like` finds text inside; `ilike`,
  * `startswith` and `endswith` whatever the case; `set` and `notset` take no
- * value; `between` takes `[low, high]`, both ends included.
+ * value; `between` takes `[low, high]`, both ends included. `contains` holds
+ * when a record's list of links (a many2many) holds the value, or one of a
+ * list of them — Flectra's `=` and `in` on a many2many — and `not contains`
+ * when it holds none. `=?` is `=` while its value is set, and left out of the
+ * filter while it is empty (nothing, false, empty text or an empty list), as
+ * Flectra's `=?`: "this company, if the record has one".
  */
 /** What a filter's `valueFrom` may name: a field, `parent.` and a field of the record a line is on, or `user.` and a part of the person. */
 const VALUE_FROM = /^((parent|user)\.)?[A-Za-z_][A-Za-z0-9_]*$/;
@@ -48,7 +53,7 @@ const VALUE_FROM = /^((parent|user)\.)?[A-Za-z_][A-Za-z0-9_]*$/;
 export const FilterConditionSchema = z
   .object({
     field: z.string().min(1),
-    op: z.enum(['=', '!=', '<', '>', '<=', '>=', 'in', 'not in', 'like', 'ilike', 'startswith', 'endswith', 'set', 'notset', 'between']),
+    op: z.enum(['=', '!=', '<', '>', '<=', '>=', 'in', 'not in', 'like', 'ilike', 'startswith', 'endswith', 'set', 'notset', 'between', 'contains', 'not contains', '=?']),
     value: JsonValueSchema.optional(),
     valueFrom: z.string().regex(VALUE_FROM).optional(),
   })
@@ -84,11 +89,22 @@ export const FilterAllSchema = z.strictObject({
 
 export const FilterItemSchema = z.union([FilterConditionSchema, FilterAnySchema, FilterAllSchema]).meta({ id: 'FilterItem' });
 
-/** A value set when a condition starts to hold: `when` is a condition, `value` an expression. People may still change it. */
+/**
+ * A value set when a condition starts to hold: `when` is a condition, `value`
+ * an expression. People may still change it. With `on`, it is set when one of
+ * those fields changes instead — while `when` holds, if it has one — as
+ * Flectra's onchange: "ticking Certification sets the scoring".
+ */
 export const SetWhenSchema = z
-  .object({ when: z.string().min(1), value: z.string().min(1) })
+  .object({
+    when: z.string().min(1).optional(),
+    value: z.string().min(1),
+    /** The fields whose change sets it: set as one of them changes, never as `when` alone starts to hold. */
+    on: z.array(z.string().regex(FIELD_NAME)).min(1).optional(),
+  })
   .strict()
-  .meta({ id: 'SetWhen' });
+  .refine((rule) => rule.when !== undefined || rule.on !== undefined, { message: 'a value is set when a condition starts to hold, or when a field it is on changes: give when, on or both' })
+  .meta({ id: 'SetWhen', anyOf: [{ required: ['when'] }, { required: ['on'] }] });
 
 export type SetWhen = z.infer<typeof SetWhenSchema>;
 
@@ -137,8 +153,8 @@ const Monetary = z
   .object({
     type: z.literal('monetary'),
     ...common,
-    /** The field holding this amount's currency. */
-    currencyField: z.string().regex(FIELD_NAME).optional(),
+    /** The field holding this amount's currency; on a line, `parent.` and a field of the record it is on, as Flectra's related currency. */
+    currencyField: z.string().regex(/^(parent\.)?[A-Za-z_][A-Za-z0-9_]*$/).optional(),
     /** A fixed ISO 4217 currency, when the page has no currency field. */
     currency: z.string().regex(/^[A-Z]{3}$/).optional(),
     min: z.number().optional(),
@@ -242,7 +258,17 @@ const Binary = withFileRules(
 /** Images only: an image field takes no list of kinds. */
 const Image = withFileRules(z.object({ type: z.literal('image'), ...common, ...files }).strict());
 const Many2one = z.object({ type: z.literal('many2one'), ...common, relation, filter, createValues }).strict();
-const Many2many = z.object({ type: z.literal('many2many'), ...common, relation, filter, createValues }).strict();
+/**
+ * The fields of the records a many2many links to, for a table of them: its
+ * node's `columns` name them, and the data source reads their values. Plain
+ * values only — text, numbers, money, yes or no, dates, choices and links.
+ */
+const LinkedFieldSchema = z
+  .discriminatedUnion('type', [Char, Text, Integer, Float, Monetary, BooleanField, DateField, DateTime, LineSelection, Many2one])
+  .meta({ id: 'LinkedField' });
+const Many2many = z
+  .object({ type: z.literal('many2many'), ...common, relation, filter, createValues, fields: z.record(z.string().regex(FIELD_NAME), LinkedFieldSchema).optional() })
+  .strict();
 const Reference = z
   .object({ type: z.literal('reference'), ...common, models: z.array(OptionSchema).min(1) })
   .strict();

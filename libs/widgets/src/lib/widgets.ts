@@ -35,9 +35,12 @@ import { clearSelection, fillIn, maker, setAttr, setText, wordsFor } from './kin
 import { shownOptions } from './shuffle';
 import { bounds, counted, grower } from './limits';
 import { currencySymbol } from './units';
+import { currencyOf } from './display';
 import { drawIcon } from './icons';
 import { listChoices } from './choices-from';
 import { yesNoWidget } from './yes-no';
+import { badgeWidget } from './badge';
+import { linksTableWidget } from './links-table';
 import { layOut, limiter } from './choice-rules';
 
 /**
@@ -71,9 +74,10 @@ export interface WidgetDialogs {
   canOpen(model: string): boolean;
   /**
    * A record in a dialog: an existing one (`recordId`) or a new one, whose name
-   * starts as `name`. Resolves with the record once saved, or null.
+   * starts as `name`. Resolves with the record once saved, or null; asked
+   * `withValues`, with its values as its page saved them too.
    */
-  openRecord(model: string, request: { recordId?: RecordId; name?: string; title: string; values?: Values }): Promise<RelatedRecord | null>;
+  openRecord(model: string, request: { recordId?: RecordId; name?: string; title: string; values?: Values; withValues?: boolean }): Promise<(RelatedRecord & { values?: Values }) | null>;
   /** Pick a record from a searchable list. */
   searchMore(request: { title: string; search(query: string, limit: number): Promise<RelatedRecord[]> }): Promise<RelatedRecord | null>;
   /**
@@ -87,6 +91,8 @@ export interface WidgetState {
   value: Value | undefined;
   /** Every value of the record, for widgets that show one field beside another. */
   values: Readonly<Values>;
+  /** In a cell of a table's line: the values of the record the line is on, for money in its currency (`parent.currency_id`). */
+  parent?: Readonly<Values>;
   readonly: boolean;
   required: boolean;
   invalid: boolean;
@@ -113,6 +119,8 @@ export function createWidget(context: WidgetContext, registry: Record<string, Wi
   const keys = [
     node.widget ? `${field.type}.${node.widget}` : null,
     field.type === 'selection' && field.multiple ? 'selection.checkboxes' : null,
+    // A many2many with columns is a table of its records, as Flectra's list of them.
+    field.type === 'many2many' && node.columns?.length ? 'many2many.table' : null,
     field.type,
   ].filter((key): key is string => key !== null);
   for (const key of keys) {
@@ -267,8 +275,7 @@ const numberWidget: WidgetFactory = (context) => {
         picker.update({ value: state.values[currencyField], values: state.values, readonly: state.readonly, required: false, invalid: false });
       }
       if (currency && field.type === 'monetary') {
-        const holder = field.currencyField ? state.values[field.currencyField] : null;
-        const code = holder && typeof holder === 'object' && 'label' in holder ? (holder as RelatedRecord).label : (typeof holder === 'string' ? holder : field.currency ?? '');
+        const code = currencyOf(field, state.values, state.parent) ?? '';
         setText(currency, /^[A-Z]{3}$/.test(code) ? currencySymbol(code, locale).text : code);
       }
       // Room in the box for its units, as wide as their words.
@@ -607,6 +614,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   many2many: tagsWidget,
   'many2many.tags': tagsWidget,
   'many2many.checkboxes': linkCheckboxesWidget,
+  'many2many.table': linksTableWidget,
   reference: referenceWidget,
   one2many: linesWidget,
   'one2many.cards': cardsWidget,
@@ -618,4 +626,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'json.address': addressWidget,
   properties: propertiesWidget,
   matrix: matrixWidget,
+  // A value as a pill in its tone: Flectra's widget="badge".
+  'char.badge': badgeWidget,
+  'selection.badge': badgeWidget,
+  'many2one.badge': badgeWidget,
 };

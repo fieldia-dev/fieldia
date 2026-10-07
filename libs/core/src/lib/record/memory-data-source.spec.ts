@@ -163,3 +163,14 @@ describe('createMemoryDataSource — lists and groups', () => {
     ]);
   });
 });
+
+describe('createMemoryDataSource — a record’s own id in a filter', () => {
+  it('finds and lists records by their id, as a filter `id in` a list the form holds asks', async () => {
+    const ds = source();
+    const found = await ds.search({ model: 'country', query: '', filter: [{ field: 'id', op: 'in', value: [1, 3] }] });
+    expect(found.map((r) => r.label)).toEqual(['Egypt', 'Jordan']);
+    const listed = await ds.list({ model: 'tag', fields: ['name'], filter: [{ field: 'id', op: 'in', value: [11, 12] }], sort: [], offset: 0, limit: 10 });
+    expect(listed.records.map((r) => r.id)).toEqual([11, 12]);
+    expect(listed.records[0].values).toEqual({ name: 'Wholesale' });
+  });
+});

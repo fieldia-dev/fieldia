@@ -342,11 +342,11 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-line-delete { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
 .fd-line-delete:hover { color: var(--fd-error); background: var(--fd-error-soft); }
 /* A table's own rules: a line's or a cell's tone and bold (Flectra's decoration-*), and buttons on a line. */
-.fd-lines-table [data-tone="info"] { --fd-line-tone: var(--fd-info); }
-.fd-lines-table [data-tone="success"] { --fd-line-tone: var(--fd-success); }
-.fd-lines-table [data-tone="warning"] { --fd-line-tone: var(--fd-warning); }
-.fd-lines-table [data-tone="danger"] { --fd-line-tone: var(--fd-error); }
-.fd-lines-table [data-tone="muted"] { --fd-line-tone: var(--fd-muted); }
+.fd-lines-table [data-tone="info"] { --fd-line-tone: var(--fd-info); --fd-tone: var(--fd-info); --fd-tone-soft: var(--fd-info-soft); }
+.fd-lines-table [data-tone="success"] { --fd-line-tone: var(--fd-success); --fd-tone: var(--fd-success); --fd-tone-soft: var(--fd-success-soft); }
+.fd-lines-table [data-tone="warning"] { --fd-line-tone: var(--fd-warning); --fd-tone: var(--fd-warning); --fd-tone-soft: var(--fd-warning-soft); }
+.fd-lines-table [data-tone="danger"] { --fd-line-tone: var(--fd-error); --fd-tone: var(--fd-error); --fd-tone-soft: var(--fd-error-soft); }
+.fd-lines-table [data-tone="muted"] { --fd-line-tone: var(--fd-muted); --fd-tone: var(--fd-muted); --fd-tone-soft: color-mix(in srgb, var(--fd-muted) 14%, transparent); }
 .fd-lines-table [data-tone] :is(input, select, textarea, .fd-input, .fd-display) { color: var(--fd-line-tone); -webkit-text-fill-color: var(--fd-line-tone); }
 .fd-lines-table :is(.fd-line-bold, .fd-cell-bold) :is(input, select, textarea, .fd-input, .fd-display) { font-weight: 600; }
 .fd-lines-table td.fd-lines-tools { white-space: nowrap; }
@@ -358,6 +358,47 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-line-button svg { width: 15px; height: 15px; display: block; }
 .fd-lines-totals td { padding: 8px; font-weight: 600; border-block-start: 1px solid var(--fd-border); font-variant-numeric: tabular-nums; }
 .fd-lines-adds { display: flex; flex-wrap: wrap; gap: 4px 16px; justify-self: start; }
+.fd-lines-control { display: inline-flex; align-items: center; gap: 6px; }
+.fd-lines-control svg, .fd-lines-chosen-button svg { width: 15px; height: 15px; }
+/* Lines chosen for the table's buttons: a tick before each line's grip, and a bar of buttons over the table. */
+.fd-line-lead { display: inline-flex; align-items: center; gap: 4px; margin-block-start: 6px; }
+.fd-line-lead .fd-line-grip { margin-block-start: 0; }
+.fd-lines-table th.fd-lines-grip:has(.fd-line-pick-all) { padding-block: 4px; }
+.fd-lines-chosen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 6px 10px; border-radius: var(--fd-radius); background: var(--fd-accent-soft); }
+.fd-lines-chosen[hidden] { display: none; }
+.fd-lines-chosen-count { font-weight: 600; font-size: 13px; margin-inline-end: 6px; }
+.fd-lines-chosen-button { display: inline-flex; align-items: center; gap: 6px; padding-block: 3px; }
+/* A line opened in a dialog: its own record's page, or its every field. */
+.fd-lines-table .fd-line-open { border: none; background: none; cursor: pointer; color: var(--fd-accent); font-size: 14px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
+.fd-lines-table .fd-line-open:hover { background: var(--fd-accent-soft); }
+.fd-links-table td { vertical-align: middle; }
+.fd-links-table .fd-value-text { padding-block: 4px; }
+/* Columns as wide as they hold (fit: content), the widest taking what is left. */
+.fd-lines[data-fit="content"] .fd-lines-table { width: auto; max-width: 100%; }
+.fd-lines[data-fit="content"] .fd-lines-table td { min-width: 0; }
+/* Lines as cards (cards: narrow on a phone, or always): each a box, every cell its column's label above its value. */
+.fd-lines[data-cards] { container: fd-lines / inline-size; }
+@container fd-lines (max-width: 520px) {
+  .fd-lines[data-cards="narrow"] .fd-lines-table, .fd-lines[data-cards="narrow"] .fd-lines-table :is(tbody, tfoot) { display: block; }
+  .fd-lines[data-cards="narrow"] .fd-lines-table thead { display: none; }
+  .fd-lines[data-cards="narrow"] .fd-lines-table tr { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; position: relative; padding: 10px 12px; margin-block-end: 8px; border: 1px solid var(--fd-border); border-radius: var(--fd-radius); background: var(--fd-surface); }
+  .fd-lines[data-cards="narrow"] .fd-lines-table td { display: block; border: none; padding: 0; min-width: 0; }
+  .fd-lines[data-cards="narrow"] .fd-lines-table td[data-label]:not([colspan]:not([colspan="1"]))::before { content: attr(data-label); display: block; font-size: 12px; font-weight: 600; color: var(--fd-muted); }
+  .fd-lines[data-cards="narrow"] .fd-lines-table td.fd-lines-grip { position: absolute; inset-block-start: 6px; inset-inline-start: 6px; padding: 0; }
+  .fd-lines[data-cards="narrow"] .fd-lines-table td.fd-lines-grip .fd-line-grip { display: none; }
+  .fd-lines[data-cards="narrow"] .fd-lines-table tr:has(.fd-line-pick) { padding-inline-start: 36px; }
+  .fd-lines[data-cards="narrow"] .fd-lines-table td.fd-lines-tools { width: auto; text-align: end; }
+  .fd-lines[data-cards="narrow"] .fd-lines-totals td:empty { display: none; }
+}
+.fd-lines[data-cards="always"] .fd-lines-table, .fd-lines[data-cards="always"] .fd-lines-table :is(tbody, tfoot) { display: block; }
+.fd-lines[data-cards="always"] .fd-lines-table thead { display: none; }
+.fd-lines[data-cards="always"] .fd-lines-table tr { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px 12px; position: relative; padding: 10px 12px; margin-block-end: 8px; border: 1px solid var(--fd-border); border-radius: var(--fd-radius); background: var(--fd-surface); }
+.fd-lines[data-cards="always"] .fd-lines-table td { display: block; border: none; padding: 0; min-width: 0; }
+.fd-lines[data-cards="always"] .fd-lines-table td[data-label]:not([colspan]:not([colspan="1"]))::before { content: attr(data-label); display: block; font-size: 12px; font-weight: 600; color: var(--fd-muted); }
+.fd-lines[data-cards="always"] .fd-lines-table td.fd-lines-grip, .fd-lines[data-cards="always"] .fd-lines-table td.fd-lines-tools { grid-column: 1 / -1; width: auto; }
+.fd-lines[data-cards="always"] .fd-lines-table td.fd-lines-tools { text-align: end; }
+.fd-line-copy { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 15px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
+.fd-line-copy:hover { color: var(--fd-accent); background: var(--fd-accent-soft); }
 /* A section heads the lines below it; a note reads as a remark between them. */
 .fd-line-section td { background: var(--fd-page); }
 .fd-line-section .fd-input { font-weight: 600; }
@@ -583,6 +624,11 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr) minmax(260px, 360px); }
 /* The side panel goes under the sheet before the sheet is left too narrow for a label beside its value. */
 @container (max-width: 1000px) { .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr); } }
+/* A part hidden at some widths of the form (hideOn): narrow up to 520px, medium up to 760px, wide above — the form's own width, as its columns. */
+.fd-form { container-name: fd-form; }
+@container fd-form (max-width: 520px) { .fd-form [data-hide-on~="narrow"] { display: none !important; } }
+@container fd-form (min-width: 521px) and (max-width: 760px) { .fd-form [data-hide-on~="medium"] { display: none !important; } }
+@container fd-form (min-width: 761px) { .fd-form [data-hide-on~="wide"] { display: none !important; } }
 .fd-card {
   position: relative; background: var(--fd-surface); border: 1px solid var(--fd-border);
   border-radius: var(--fd-radius); padding: 24px 28px 28px; display: grid; gap: 18px; min-width: 0;
@@ -666,6 +712,17 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-progress { display: grid; gap: 8px; }
 .fd-progress-text { color: var(--fd-muted); font-size: 13px; }
 .fd-value-text { display: block; padding-block: 6px; font-variant-numeric: tabular-nums; }
+/* A field's own value in a tone while a condition holds, and in bold (Flectra's decoration-* on a field). */
+.fd-field[data-tone="info"] { --fd-tone: var(--fd-info); --fd-tone-soft: var(--fd-info-soft); }
+.fd-field[data-tone="success"] { --fd-tone: var(--fd-success); --fd-tone-soft: var(--fd-success-soft); }
+.fd-field[data-tone="warning"] { --fd-tone: var(--fd-warning); --fd-tone-soft: var(--fd-warning-soft); }
+.fd-field[data-tone="danger"] { --fd-tone: var(--fd-error); --fd-tone-soft: var(--fd-error-soft); }
+.fd-field[data-tone="muted"] { --fd-tone: var(--fd-muted); --fd-tone-soft: color-mix(in srgb, var(--fd-muted) 14%, transparent); }
+.fd-field[data-tone] :is(input, select, textarea, .fd-value-text, .fd-pending) { color: var(--fd-tone); -webkit-text-fill-color: var(--fd-tone); }
+.fd-field.fd-value-bold :is(input, select, textarea, .fd-value-text, .fd-pending, .fd-value-badge) { font-weight: 700; }
+/* A value as a pill (widget badge): grey, or its tone's colour on its soft shade. */
+.fd-value-badge { justify-self: start; align-self: center; display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; line-height: 18px; font-weight: 500; color: var(--fd-tone, var(--fd-muted)); background: var(--fd-tone-soft, color-mix(in srgb, var(--fd-tone, var(--fd-muted)) 14%, transparent)); }
+.fd-value-badge[hidden] { display: none; }
 .fd-date-pick { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; }
 .fd-date-pick > .fd-input { flex: 1 1 auto; min-width: 0; }
 .fd-calendar-button {

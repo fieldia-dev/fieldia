@@ -108,6 +108,30 @@ describe('worked out from', () => {
   });
 });
 
+describe('set when a field changes', () => {
+  it('sets a value when a chosen field changes, a condition then optional, and says so', () => {
+    const { panel, def } = screen('state');
+    (button(panel(), 'Set when…') as HTMLButtonElement).click();
+    choose(field(panel(), 'Set to'), 'active');
+    choose(field(panel(), 'Set'), 'vip');
+    expect(def('state').setWhen).toEqual([{ value: "'active'", on: ['vip'] }]);
+    expect([...panel().querySelectorAll('.fd-set-when-say')].map((s) => s.textContent)).toEqual(['Set to Active when “VIP” changes']);
+    type(field(panel(), 'When'), 'vip');
+    expect(def('state').setWhen).toEqual([{ when: 'vip', value: "'active'", on: ['vip'] }]);
+    expect([...panel().querySelectorAll('.fd-set-when-say')].map((s) => s.textContent)).toEqual(['Set to Active when “VIP” changes, if VIP']);
+    // Back to as the condition starts to hold: the condition is kept, the field it was on goes.
+    choose(field(panel(), 'Set'), '');
+    expect(def('state').setWhen).toEqual([{ when: 'vip', value: "'active'" }]);
+  });
+
+  it('refuses a rule on a change of a field the page does not have, in words', () => {
+    const { designer, def } = screen('state');
+    expect(designer.setSetWhen('f-state', [{ value: "'active'", on: ['nothing'] }])).toBe(false);
+    expect(designer.getState().issues).toEqual(['Unknown field “nothing”']);
+    expect(def('state').setWhen).toBeUndefined();
+  });
+});
+
 describe('set when', () => {
   it('sets a value when something holds, a row each, and takes a row away', () => {
     const { panel, def, typeOn } = screen('kind');

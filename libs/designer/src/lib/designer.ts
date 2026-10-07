@@ -28,6 +28,7 @@ import { kindCommands, type OptionDetails } from './kind-commands';
 import { choiceCommands, type ChoiceCommands } from './choice-commands';
 import { inputCommands, type InputCommands } from './input-commands';
 import { structureCommands, type StructureCommands } from './structure-commands';
+import { tableCommands, type TableCommands } from './table-commands';
 import { fixCheck, pageChecks, type PageCheck } from './page-checks';
 import { COLUMN_TYPES, columnKind, kindById, kindFits, kindName, kindOfField, kindsFor, registerKinds, storedAs, type LineColumn, type QuestionKind } from './kinds';
 import type { AppKind } from './app-kinds';
@@ -271,7 +272,7 @@ export interface ModelField {
   field: Field;
 }
 
-export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, InputCommands, StructureCommands, StepsCommands {
+export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, InputCommands, StructureCommands, StepsCommands, TableCommands {
   /** The designer's own words, in its language: English unless `locale` said another it speaks. */
   readonly words: DesignerWords;
   /**
@@ -785,6 +786,7 @@ export function createDesigner(options: {
     ...choices,
     ...inputs,
     ...structures,
+    ...tableCommands({ apply }),
     words,
     locale,
     getPage: () => page,

@@ -98,7 +98,7 @@ ${code(
 }`
 )}
 
-<p>A filter's items all hold together; a group of ${c('any')} holds when one of its items does, and ${c('all')} groups nest inside it. Besides ${c('=')} ${c('!=')} ${c('<')} ${c('>')} ${c('<=')} ${c('>=')} ${c('in')} ${c('not in')}, a condition can find text with ${c('like')} (as typed), ${c('ilike')}, ${c('startswith')} or ${c('endswith')} (whatever the case), ask whether a field is ${c('set')} or ${c('notset')}, or take a value ${c('between')} two:</p>
+<p>A filter's items all hold together; a group of ${c('any')} holds when one of its items does, and ${c('all')} groups nest inside it. Besides ${c('=')} ${c('!=')} ${c('<')} ${c('>')} ${c('<=')} ${c('>=')} ${c('in')} ${c('not in')}, a condition can find text with ${c('like')} (as typed), ${c('ilike')}, ${c('startswith')} or ${c('endswith')} (whatever the case), ask whether a field is ${c('set')} or ${c('notset')}, or take a value ${c('between')} two. ${c('contains')} holds when a record's many2many holds the value, or one of a list — Flectra's ${c('=')} and ${c('in')} on a many2many, such as a stage's projects — and ${c('not contains')} when it holds none. ${c('=?')} is ${c('=')} while its value is set and is left out while it is empty, as Flectra's: "this company, if the record has one". A record's own ${c('id')} can be tested against a list the form holds: ${c('{ "field": "id", "op": "in", "valueFrom": "available_journal_ids" }')}.</p>
 ${code(
   'json',
   `
@@ -279,6 +279,69 @@ ${code(
   <li><strong>Width.</strong> A cell's ${c('width')} is the column's, in characters.</li>
 </ul>
 <p>Both the plain table and the grid draw them; the form reads them, so your own widget can too, with ${c('form.lineState(node, key)')} and ${c('form.columnHidden(node, column)')}.</p>
+<p>A line's money can be in the record's currency, as Flectra's related ${c('currency_id')}: ${c('"currencyField": "parent.currency_id"')} on a line's monetary field. Its cells, the total under them and the line's dialog follow the record's currency as it changes.</p>
+<p>An answer rule on a table, ${c('{ "distinct": "partner_id" }')}, refuses two lines with one value in that column — a split's payers, each once — as a model's constraint would: "Payer: Mona Adel is on more than one line of Split". Empty cells, sections and notes are left out.</p>
+
+<h2 id="table-buttons">A table's buttons</h2>
+<p>Besides a line's own ${c('rowButtons')}, a table takes buttons for the lines chosen in it and buttons beside Add a line:</p>
+${code(
+  'json',
+  `
+{
+  "type": "field", "id": "workorders", "field": "workorder_ids", "widget": "grid",
+  "selectedButtons": [
+    { "type": "button", "id": "wo-start", "label": "Start", "action": "button_start", "invisible": "state == 'done'" },
+    { "type": "button", "id": "wo-done", "label": "Done", "action": "button_finish", "confirm": "Mark the chosen work orders done?" }
+  ],
+  "controlButtons": [{ "type": "button", "id": "catalog", "label": "Catalog", "icon": "list", "action": "action_add_from_catalog" }],
+  "options": { "copy": true }
+}`
+)}
+<ul>
+  <li><strong>Lines chosen.</strong> With ${c('selectedButtons')}, each line has a tick and the head one that chooses every line; while any is chosen, a bar over the table says how many and shows the buttons — Flectra's list header buttons. A press runs with the lines in the table's order: every call carries ${c('{ field, keys, ids, values }')} as its ${c('lines')}, the ids of those already saved. ${c('form.runLinesAction(node, button, keys)')} does the same.</li>
+  <li><strong>Beside Add a line.</strong> ${c('controlButtons')} are the record's buttons, shown by a condition on it, as Flectra's ${c('<control>')}: a catalog to add from, say.</li>
+  <li><strong>A copy of a line.</strong> ${c('"copy": true')} in the node's options puts ⧉ on each line: a copy of it, its values too, right after it — never its saved id.</li>
+  <li>A button on a line asks its ${c('confirm')} first, as any button does.</li>
+</ul>
+
+<h2 id="line-pages">Lines with pages of their own</h2>
+<ul>
+  <li><strong>A line's own page.</strong> ${c('"lineOpens": "record"')} makes a line's ↗ open its own record, by the table's model, in the page your app gives for it (${c('pages')}) — Flectra's list opening a line's form. What that page saves comes back to the line's fields of the same names. A line not saved yet has no record: it opens its fields, as ${c('"lineOpens": "fields"')} does, and as the grid always can. The plain table shows ↗ only with ${c('lineOpens')}.</li>
+  <li><strong>A many2many as a table.</strong> Give the many2many its records' ${c('fields')} and its node ${c('columns')}: a table of the records it links to, its values read with your data source's ${c('list')} by their ids (${c('form.linkedValues(field, ids, columns)')}). Add a line finds one more by searching; × takes one away, never deleting it; ↗ opens a record's own page.</li>
+</ul>
+${code(
+  'json',
+  `
+"compliance_ids": {
+  "type": "many2many", "label": "Compliance", "relation": "legal.compliance",
+  "fields": {
+    "name": { "type": "char", "label": "Requirement" },
+    "state": { "type": "selection", "label": "Status", "options": [{ "value": "open", "label": "Open" }, { "value": "met", "label": "Met" }] }
+  }
+}
+…
+{ "type": "field", "id": "compliance", "field": "compliance_ids", "columns": ["name", "state"] }`
+)}
+
+<h2 id="table-phone">On a phone</h2>
+<ul>
+  <li><strong>Lines as cards.</strong> ${c('"cards": "narrow"')} draws a table's lines as cards while it is up to 520px wide — Flectra's ${c('mode="tree,kanban"')} on a phone — each column's label by its value, its tone, its buttons; in the grid, a card's title opens the line. ${c('"cards": "always"')} keeps them at every width.</li>
+  <li><strong>Columns as wide as they hold.</strong> ${c('"fit": "content"')} sizes each column to what it holds, as Flectra's lists, rather than sharing the width: a wide table with short columns stops cutting text. A cell's ${c('width')} still fixes one.</li>
+  <li><strong>A part hidden on a phone.</strong> Any part — a field, a section, a button, a text — takes ${c('"hideOn": ["narrow"]')}, Flectra's ${c('d-none d-sm-block')}: hidden while the form is that wide. ${c('narrow')} is up to 520px, ${c('medium')} up to 760px, ${c('wide')} above, the widths a section's columns change at.</li>
+</ul>
+
+<h2 id="field-tones">A field's value in a tone</h2>
+<p>A field outside a table takes ${c('tones')} and ${c('bold')} too, read on the record — Flectra's ${c('decoration-danger')} on a field: a deadline red once it has passed, hours available red below what is needed. ${c('"widget": "badge"')} draws a choice, text or link as a pill in its tone, never edited; in a table, a cell's ${c('"badge": true')}.</p>
+${code(
+  'json',
+  `
+{ "type": "field", "id": "deadline", "field": "date_deadline",
+  "tones": [{ "tone": "danger", "when": "date_deadline and date_deadline < today() and state != 'done'" }] }
+
+{ "type": "field", "id": "status", "field": "deadline_status", "widget": "badge",
+  "tones": [{ "tone": "danger", "when": "deadline_status == 'late'" }, { "tone": "success", "when": "deadline_status == 'ok'" }] }`
+)}
+<p>${c('form.fieldTone(node)')} says the tone and bold now.</p>
 
 <h2 id="code">JSON in a code editor</h2>
 <p>${c('@fieldia/code')} shows a ${c('json')} field in CodeMirror, bundled with the package, so it works offline and loads only where it is used. Valid JSON reaches the form as it is typed; text that is not valid is said so, and the last good value stays.</p>

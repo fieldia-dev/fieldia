@@ -109,3 +109,41 @@ describe('a plain table by its own rules', () => {
     expect(asked[0]).toMatchObject({ action: 'action_assign_serial', line: { key: 'b' } });
   });
 });
+
+describe('a plain table’s badge cells', () => {
+  const page = {
+    fieldia: '0.1',
+    id: 'contract',
+    data: { kind: 'record', model: 'sale.contract' },
+    fields: {
+      milestone_ids: {
+        type: 'one2many',
+        label: 'Milestones',
+        relation: 'sale.contract.milestone',
+        fields: {
+          name: { type: 'char', label: 'Milestone' },
+          state: { type: 'selection', label: 'Status', options: [{ value: 'pending', label: 'Pending' }, { value: 'done', label: 'Done' }] },
+        },
+      },
+    },
+    layout: {
+      type: 'sections',
+      id: 'root',
+      children: [{ type: 'field', id: 'f-ms', field: 'milestone_ids', cells: { state: { badge: true, tones: [{ tone: 'success', when: "state == 'done'" }] } } }],
+    },
+  } as unknown as Page;
+
+  it('draws a choice as a pill in its cell’s tone, and grey while none holds', () => {
+    const form = createForm({ page, values: { milestone_ids: [{ key: 'a', values: { name: 'Design', state: 'done' } }, { key: 'b', values: { name: 'Build', state: 'pending' } }] } as never });
+    const node = (page.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: 'milestone_ids', field: page.fields['milestone_ids'] as Field, node, id: 'fd-ms', document, labels: WIDGET_LABELS.en });
+    document.body.replaceChildren(widget.element);
+    widget.update({ value: form.getState().values['milestone_ids'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    const pill = (key: string) => cell(widget.element, key, 'state').querySelector('.fd-value-badge') as HTMLElement;
+    expect(pill('a').textContent).toBe('Done');
+    expect(cell(widget.element, 'a', 'state').dataset['tone']).toBe('success');
+    expect(pill('b').textContent).toBe('Pending');
+    expect(cell(widget.element, 'b', 'state').dataset['tone']).toBeUndefined();
+    expect(cell(widget.element, 'a', 'state').querySelector('select')).toBeNull();
+  });
+});

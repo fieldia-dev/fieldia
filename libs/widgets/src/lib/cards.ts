@@ -158,7 +158,7 @@ export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, docume
           const message = errors[`${name}.${line.key}.${f.name}`];
           f.error.hidden = !message;
           f.error.textContent = message ?? '';
-          f.widget.update({ value: line.values[f.name], values: line.values, readonly: readonly || f.def.readonly === true, required: f.def.required === true, invalid: !!message });
+          f.widget.update({ value: line.values[f.name], values: line.values, parent: state.values, readonly: readonly || f.def.readonly === true, required: f.def.required === true, invalid: !!message });
         }
       });
       addButton.hidden = readonly || current.length >= max;

@@ -99,7 +99,9 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
       });
       if (!result.saved || result.recordId === null) return null;
       const name = nameField ? result.values[nameField] : null;
-      return { id: result.recordId, label: typeof name === 'string' && name ? name : request.name ?? request.title };
+      const label = typeof name === 'string' && name ? name : request.name ?? request.title;
+      // Its values as its page saved them, for a line of a table that opened it to take back.
+      return request.withValues ? { id: result.recordId, label, values: result.values } : { id: result.recordId, label };
     },
     searchMore: (request) => openSearchDialog({ title: request.title, search: request.search, locale: options.locale, skin: options.skin, dir: options.dir, look: options.page.look }),
     async editValues(request) {

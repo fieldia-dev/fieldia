@@ -14,6 +14,7 @@ import { whenItChanges } from './steps-panel';
 import type { SampleOptions } from './rules-sample';
 import type { PropertiesView } from './screen-properties';
 import { rolesSetting } from './roles-setting';
+import { tableSettings } from './table-panel';
 
 /**
  * A field's settings, on the panel's tabs: its words and how it is shown
@@ -91,6 +92,8 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   const own = fieldRules(el, designer, id, sampling);
   // steps lane: what a person's change of it does.
   const changes = whenItChanges(el, designer, id);
+  // tables lane: its value's tone; a table's line rules, buttons and shape; the widths it is hidden at.
+  const table = tableSettings(el, designer, id);
 
   // ---- Data: what it is stored under and as ----
   const name = el('code', { class: 'fd-insp-code' });
@@ -118,6 +121,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     roles.element,
     ...own.rows,
     changes.element,
+    ...table.rows,
     setting(el, 'data', 'Field name', name, { hint: nameHint, words: w.fieldName }),
     setting(el, 'data', 'Stored as', stored, { hint: fromModelNote, words: w.storedAs })
   );
@@ -171,6 +175,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       noRules.hidden = !when.element.hidden || when.canStart();
       own.update(page);
       changes.update(page);
+      table.update(page);
 
       // Data.
       name.textContent = found.node.field;

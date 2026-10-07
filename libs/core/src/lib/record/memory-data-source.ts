@@ -64,6 +64,8 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
   };
   const nextId = (model: string) => Math.max(0, ...Object.keys(table(model)).map(Number).filter(Number.isFinite)) + 1;
   const asId = (key: string): RecordId => (Number.isFinite(Number(key)) ? Number(key) : key);
+  /** A record as a filter reads it: its values and its own `id`, which a field of its own named id comes before. */
+  const withId = (key: string, values: Values): Values => ({ id: asId(key), ...values });
 
   function applyLines(current: Line[], ops: LineOp[]): Line[] {
     let lines = [...current];
@@ -135,7 +137,7 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       await pause();
       const query = request.query.trim().toLowerCase();
       return Object.entries(table(request.model))
-        .filter(([, values]) => matchesFilter(values, request.filter ?? []))
+        .filter(([key, values]) => matchesFilter(withId(key, values), request.filter ?? []))
         .map(([key]) => ({ id: asId(key), label: labelOf(request.model, asId(key)) }))
         .filter((record) => record.label.toLowerCase().includes(query))
         .slice(0, request.limit ?? 8);
@@ -145,7 +147,7 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       calls.push({ method: 'list', request });
       await pause();
       const matching = Object.entries(table(request.model))
-        .filter(([, values]) => matchesFilter(values, request.filter))
+        .filter(([key, values]) => matchesFilter(withId(key, values), request.filter))
         .map(([key, values]) => ({ id: asId(key), values }));
       matching.sort((a, b) => {
         for (const order of request.sort) {
@@ -169,8 +171,8 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
       calls.push({ method: 'groups', request });
       await pause();
       const counted = new Map<string, Group>();
-      for (const values of Object.values(table(request.model))) {
-        if (!matchesFilter(values, request.filter)) continue;
+      for (const [id, values] of Object.entries(table(request.model))) {
+        if (!matchesFilter(withId(id, values), request.filter)) continue;
         const raw = values[request.field] ?? null;
         const link = raw !== null && typeof raw === 'object' && !Array.isArray(raw) && 'id' in raw ? (raw as RelatedRecord) : null;
         const value = (link ? link.id : raw) as JsonValue;

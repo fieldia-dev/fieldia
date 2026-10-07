@@ -14,7 +14,7 @@ import { expressionEnv, lineContext, recordContext } from './env';
 import { firstValues, readLooseMap, readValueMap, type MapScope } from './value-map';
 import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
-import { compileTable, type CompiledTable, type LineState } from './cells';
+import { compileFieldTone, compileTable, type CompiledTable, type FieldTone, type LineState } from './cells';
 import { MESSAGES, type Messages } from './messages';
 import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
@@ -190,6 +190,12 @@ export interface Form {
   search(field: string, query: string, limit?: number, options?: { model?: string }): Promise<RelatedRecord[]>;
   /** The same, for a relation inside a one2many line, filtered by that line's values. */
   searchLine(field: string, key: string, subfield: string, query: string, limit?: number): Promise<RelatedRecord[]>;
+  /**
+   * The values of records a many2many links to, for a table of them: `fields`
+   * of the records with these ids, in the order asked, read with the data
+   * source's `list`. None without one.
+   */
+  linkedValues(field: string, ids: readonly RecordId[], fields: readonly string[]): Promise<{ id: RecordId; values: Values }[]>;
   /** Whether a link field can make a record from a typed name: the data source must be able to. */
   canCreate(field: string): boolean;
   /** Make a record from a typed name, for the link field to point to, with what its `createValues` hand on. */
@@ -216,12 +222,20 @@ export interface Form {
    * the records chosen in it, and every call of the run carries them.
    */
   runAction(id: string, chosen?: { recordIds: RecordId[] }): Promise<RunResult>;
+  /** A field's own value as its tones have it now: its tone and whether it is bold, read on the record. */
+  fieldTone(nodeId: string): FieldTone;
   /** A table's line as its rules have it now — its tone, each ruled column's cells, which of its buttons show — by the table's field node. */
   lineState(nodeId: string, key: string): LineState;
   /** Whether a table's column is hidden now by its `hidden` rule, read on the record. */
   columnHidden(nodeId: string, column: string): boolean;
-  /** Press a button on a table's line: its steps, then its action, each call carrying the line. Hidden on that line, it does not run. */
+  /** Press a button on a table's line: its confirmation, its steps, then its action, each call carrying the line. Hidden on that line, it does not run. */
   runRowAction(nodeId: string, buttonId: string, key: string): Promise<RunResult>;
+  /**
+   * Press a button for the lines chosen in a table (its `selectedButtons`),
+   * by their keys: its confirmation, its steps, then its action, each call
+   * carrying the lines. Hidden, or with no line chosen, it does not run.
+   */
+  runLinesAction(nodeId: string, buttonId: string, keys: readonly string[]): Promise<RunResult>;
   /** Run steps on this form, as a button would: `context.id` is what their calls carry (`run` when left out). */
   run(steps: readonly ActionStep[], context?: RunContext): Promise<RunResult>;
   /** A tab was shown: the viewer says so, and the page's `show` steps for it run. */
@@ -305,6 +319,12 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     const source = node.source as FieldNode;
     if (node.kind !== 'field' || page.fields[source.field]?.type !== 'one2many') continue;
     if (source.cells || source.rowTones || source.rowBold !== undefined || source.rowButtons) tables.set(node.id, { field: source.field, compiled: compileTable(source) });
+  }
+  /** Field nodes whose value takes a tone or bold, by id: each read once. */
+  const fieldTones = new Map<string, ReturnType<typeof compileFieldTone>>();
+  for (const node of index.values()) {
+    const source = node.source as FieldNode;
+    if (node.kind === 'field' && (source.tones || source.bold !== undefined)) fieldTones.set(node.id, compileFieldTone(source));
   }
   /** Whether any rule only warns: without one, there are never warnings to look for. */
   const warns = [...nodeRules.values()].some((rules) => rules.some((compiled) => compiled.rule.level === 'warning'));
@@ -1040,6 +1060,23 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   });
   const moment = createMoments((key, list, chain) => runTop(list, { id: key, chain }));
 
+  /** A press of a button: its confirmation first, then its steps and its app action as a final call, in `scope`. */
+  function press(source: ButtonNode | StatButton, scope: RunScope): Promise<RunResult> {
+    const list: ActionStep[] = [...(source.steps ?? [])];
+    if (source.action !== undefined) list.push({ do: 'call', action: source.action, ...('params' in source && source.params ? { params: source.params } : {}) });
+    const confirm = 'confirm' in source ? source.confirm : undefined;
+    return track(
+      (async (): Promise<RunResult> => {
+        if (confirm && !(await runner.ask(confirm))) {
+          const result: RunResult = { done: false, reason: 'no', message: confirm };
+          emit('run', { id: scope.id, steps: list, result });
+          return result;
+        }
+        return runTop(list, scope);
+      })()
+    );
+  }
+
   const form: Form = {
     page,
     getState: () => state,
@@ -1244,24 +1281,34 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       const node = index.get(id);
       if (!node || (node.kind !== 'button' && node.kind !== 'stat')) throw new Error(`The page has no button "${id}"`);
       if (nodeState(id).invisible) return { done: false, reason: 'cannot', message: `The button "${id}" is hidden` };
-      const source = node.source as ButtonNode | StatButton;
-      // Its steps, then its app action as a final call.
-      const list: ActionStep[] = [...(source.steps ?? [])];
-      if (source.action !== undefined) list.push({ do: 'call', action: source.action, ...('params' in source && source.params ? { params: source.params } : {}) });
-      const scope: RunScope = { id, chain: [], ...(chosen ? { recordIds: [...chosen.recordIds] } : {}) };
-      const confirm = 'confirm' in source ? source.confirm : undefined;
-      return track(
-        (async (): Promise<RunResult> => {
-          if (confirm && !(await runner.ask(confirm))) {
-            const result: RunResult = { done: false, reason: 'no', message: confirm };
-            emit('run', { id, steps: list, result });
-            return result;
-          }
-          return runTop(list, scope);
-        })()
-      );
+      // A button for a table's chosen lines runs with them: runLinesAction.
+      if (node.parent && (index.get(node.parent)?.source as FieldNode | undefined)?.selectedButtons?.some((b) => b.id === id)) {
+        return { done: false, reason: 'cannot', message: `The button "${id}" runs with the lines chosen in its table` };
+      }
+      return press(node.source as ButtonNode | StatButton, { id, chain: [], ...(chosen ? { recordIds: [...chosen.recordIds] } : {}) });
     },
 
+    async linkedValues(field, ids, columns) {
+      const def = fieldDef(field);
+      if (def.type !== 'many2many') throw new Error(`"${field}" is not a many2many`);
+      const source = options.dataSource;
+      if (!source?.list || !ids.length) return [];
+      const found = await source.list({ model: def.relation, fields: [...columns], filter: [{ field: 'id', op: 'in', value: [...ids] }], sort: [], offset: 0, limit: ids.length });
+      const byId = new Map(found.records.map((record) => [String(record.id), record]));
+      return ids.flatMap((id) => {
+        const record = byId.get(String(id));
+        return record ? [{ id: record.id, values: record.values }] : [];
+      });
+    },
+    fieldTone(nodeId) {
+      const compiled = fieldTones.get(nodeId);
+      if (compiled) {
+        const { context: ctx, env } = reading();
+        return compiled(ctx, env);
+      }
+      if (index.get(nodeId)?.kind !== 'field') throw new Error(`"${nodeId}" is not a field on this page`);
+      return { tone: null, bold: false };
+    },
     lineState: (nodeId, key) => lineStateOf(nodeId, key),
     columnHidden(nodeId, column) {
       const table = tableOf(nodeId);
@@ -1274,9 +1321,25 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       if (!table || !button) throw new Error(`The table "${nodeId}" has no button "${buttonId}"`);
       if (!lineStateOf(nodeId, key).buttons[buttonId]) return { done: false, reason: 'cannot', message: `The button "${buttonId}" is hidden on this line` };
       const line = ((state.values[table.field] as Line[] | null) ?? []).find((l) => l.key === key) as Line;
-      const list: ActionStep[] = [...(button.steps ?? [])];
-      if (button.action !== undefined) list.push({ do: 'call', action: button.action, ...(button.params ? { params: button.params } : {}) });
-      return track(runTop(list, { id: buttonId, chain: [], line: { field: table.field, key, values: structuredCopy(line.values) } }));
+      return press(button, { id: buttonId, chain: [], line: { field: table.field, key, values: structuredCopy(line.values) } });
+    },
+    async runLinesAction(nodeId, buttonId, keys) {
+      const node = index.get(nodeId);
+      const source = node?.source as FieldNode | undefined;
+      const button = source?.selectedButtons?.find((b) => b.id === buttonId);
+      if (!node || !source || !button) throw new Error(`The table "${nodeId}" has no button "${buttonId}" for its chosen lines`);
+      const all = (state.values[source.field] as Line[] | null) ?? [];
+      const chosen = keys.map((key) => all.find((line) => line.key === key) ?? null);
+      const missing = keys.find((_, i) => !chosen[i]);
+      if (missing !== undefined) throw new Error(`"${source.field}" has no line "${missing}"`);
+      if (nodeState(buttonId).invisible) return { done: false, reason: 'cannot', message: `The button "${buttonId}" is hidden` };
+      if (!keys.length) return { done: false, reason: 'cannot', message: `The button "${buttonId}" runs with lines chosen: none is` };
+      const lines = chosen as Line[];
+      return press(button, {
+        id: buttonId,
+        chain: [],
+        lines: { field: source.field, keys: [...keys], ids: lines.flatMap((line) => (line.id === undefined ? [] : [line.id])), values: lines.map((line) => structuredCopy(line.values)) },
+      });
     },
     run: (list, context = {}) => track(runTop(list, { id: context.id ?? 'run', chain: [], ...(context.recordIds ? { recordIds: [...context.recordIds] } : {}) })),
 
@@ -1448,6 +1511,8 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     for (const node of nodes) {
       if (node.type === 'field') {
         add(node, parent, 'field', { invisible: node.invisible, readonly: node.readonly, required: node.required, field: node.field });
+        // A table's buttons for its chosen lines and in its control row: buttons of the record, inside the table.
+        for (const button of [...(node.selectedButtons ?? []), ...(node.controlButtons ?? [])]) add(button, node.id, 'button', { invisible: button.invisible });
       } else if (node.type === 'button') {
         add(node, parent, 'button', { invisible: node.invisible });
       } else if (node.type === 'tabs') {

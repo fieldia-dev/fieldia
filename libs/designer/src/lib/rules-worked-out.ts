@@ -170,6 +170,13 @@ export function setWhenSetting(el: ElementFactory, designer: Designer, id: strin
       value = el('input', { class: 'fd-input', type, 'aria-label': w.setTo, autocomplete: 'off' });
     }
     let when = '';
+    // As the condition starts to hold, or when a field changes (Flectra's onchange): the condition is then optional.
+    const as = el('select', { class: 'fd-input fd-select fd-set-when-as', 'aria-label': w.setAs }, el('option', { value: '' }, w.asItStartsToHold)) as HTMLSelectElement;
+    let offered = '';
+    as.addEventListener('change', () => {
+      whenBox.input.placeholder = as.value ? w.ifPlaceholder : w.whenPlaceholder;
+      save();
+    });
     const whenBox = formulaBox(el, {
       words,
       label: w.when,
@@ -184,6 +191,7 @@ export function setWhenSetting(el: ElementFactory, designer: Designer, id: strin
       'div',
       { class: 'fd-answer-rule-body', hidden: '' },
       el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.setTo), value),
+      el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.setAs), as),
       el('div', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.when), whenBox.element, whenBox.problem),
       problem
     );
@@ -196,11 +204,15 @@ export function setWhenSetting(el: ElementFactory, designer: Designer, id: strin
       const wrong = !expression ? null : raw ? formulaProblem(page, expression, words)?.words ?? null : cannotHold(own.def, own.node.label ?? own.def.label, expression, words);
       problem.textContent = wrong ?? '';
       problem.hidden = !wrong;
-      if (!expression || !when || wrong) return;
+      if (!expression || !(when || as.value) || wrong) return;
       const items = [...stored()];
-      items[index] = { when, value: expression };
+      // Several fields it is on, from the page as written: the first is the one shown, the rest kept.
+      items[index] = { ...(when ? { when } : {}), value: expression, ...(as.value ? { on: [as.value, ...(stored()[index]?.on?.slice(1) ?? []).filter((n) => n !== as.value)] } : {}) };
       if (JSON.stringify(items) === JSON.stringify(stored())) return;
-      if (designer.setSetWhen(id, items) && index === stored().length - 1) drafting = false;
+      // The row begun is kept from now: no longer drafted when the panel draws the page that holds it.
+      const begun = index >= stored().length;
+      if (begun) drafting = false;
+      if (!designer.setSetWhen(id, items) && begun) drafting = true;
     }
     value.addEventListener(value.tagName === 'SELECT' ? 'change' : 'input', save);
     say.addEventListener('click', () => open(say.getAttribute('aria-expanded') !== 'true'));
@@ -240,8 +252,17 @@ export function setWhenSetting(el: ElementFactory, designer: Designer, id: strin
         remove.setAttribute('aria-label', item ? w.removeSet(sentence) : w.removeNewRule);
         const doc = element.ownerDocument;
         if (item && doc.activeElement !== value) value.value = rawFrom(item.value);
-        if (item) when = item.when;
-        whenBox.update(page, item?.when ?? when);
+        if (item) when = item.when ?? '';
+        whenBox.update(page, item ? (item.when ?? '') : when);
+        // The fields it can be set on a change of: every other one an expression reads, by its label.
+        const fields = Object.entries(page.fields).filter(([name, f]) => name !== own?.name && f.type !== 'one2many');
+        const key = JSON.stringify(fields.map(([name, f]) => [name, f.label]));
+        if (key !== offered) {
+          offered = key;
+          as.replaceChildren(as.options[0], ...fields.map(([name, f]) => el('option', { value: name }, w.whenChanges(f.label || name))));
+        }
+        if (item && doc.activeElement !== as) as.value = item.on?.[0] ?? '';
+        whenBox.input.placeholder = as.value ? w.ifPlaceholder : w.whenPlaceholder;
       },
     };
   }

@@ -119,6 +119,11 @@ export const rulesUi = {
   setWhen: 'Set when',
   remove: 'Remove',
   setTo: 'Set to',
+  /** A rule set as its condition starts to hold, or when a field changes. */
+  setAs: 'Set',
+  asItStartsToHold: 'as the condition starts to hold',
+  whenChanges: (label: string) => `when “${label}” changes`,
+  ifPlaceholder: 'Always — or a condition, such as Quantity > 10',
   yes: 'Yes',
   no: 'No',
   choose: 'Choose…',
