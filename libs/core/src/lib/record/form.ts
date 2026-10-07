@@ -190,6 +190,12 @@ export interface Form {
   search(field: string, query: string, limit?: number, options?: { model?: string }): Promise<RelatedRecord[]>;
   /** The same, for a relation inside a one2many line, filtered by that line's values. */
   searchLine(field: string, key: string, subfield: string, query: string, limit?: number): Promise<RelatedRecord[]>;
+  /**
+   * The values of records a many2many links to, for a table of them: `fields`
+   * of the records with these ids, in the order asked, read with the data
+   * source's `list`. None without one.
+   */
+  linkedValues(field: string, ids: readonly RecordId[], fields: readonly string[]): Promise<{ id: RecordId; values: Values }[]>;
   /** Whether a link field can make a record from a typed name: the data source must be able to. */
   canCreate(field: string): boolean;
   /** Make a record from a typed name, for the link field to point to, with what its `createValues` hand on. */
@@ -1282,6 +1288,18 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       return press(node.source as ButtonNode | StatButton, { id, chain: [], ...(chosen ? { recordIds: [...chosen.recordIds] } : {}) });
     },
 
+    async linkedValues(field, ids, columns) {
+      const def = fieldDef(field);
+      if (def.type !== 'many2many') throw new Error(`"${field}" is not a many2many`);
+      const source = options.dataSource;
+      if (!source?.list || !ids.length) return [];
+      const found = await source.list({ model: def.relation, fields: [...columns], filter: [{ field: 'id', op: 'in', value: [...ids] }], sort: [], offset: 0, limit: ids.length });
+      const byId = new Map(found.records.map((record) => [String(record.id), record]));
+      return ids.flatMap((id) => {
+        const record = byId.get(String(id));
+        return record ? [{ id: record.id, values: record.values }] : [];
+      });
+    },
     fieldTone(nodeId) {
       const compiled = fieldTones.get(nodeId);
       if (compiled) {

@@ -258,7 +258,17 @@ const Binary = withFileRules(
 /** Images only: an image field takes no list of kinds. */
 const Image = withFileRules(z.object({ type: z.literal('image'), ...common, ...files }).strict());
 const Many2one = z.object({ type: z.literal('many2one'), ...common, relation, filter, createValues }).strict();
-const Many2many = z.object({ type: z.literal('many2many'), ...common, relation, filter, createValues }).strict();
+/**
+ * The fields of the records a many2many links to, for a table of them: its
+ * node's `columns` name them, and the data source reads their values. Plain
+ * values only — text, numbers, money, yes or no, dates, choices and links.
+ */
+const LinkedFieldSchema = z
+  .discriminatedUnion('type', [Char, Text, Integer, Float, Monetary, BooleanField, DateField, DateTime, LineSelection, Many2one])
+  .meta({ id: 'LinkedField' });
+const Many2many = z
+  .object({ type: z.literal('many2many'), ...common, relation, filter, createValues, fields: z.record(z.string().regex(FIELD_NAME), LinkedFieldSchema).optional() })
+  .strict();
 const Reference = z
   .object({ type: z.literal('reference'), ...common, models: z.array(OptionSchema).min(1) })
   .strict();

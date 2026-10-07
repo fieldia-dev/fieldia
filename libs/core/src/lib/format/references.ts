@@ -554,6 +554,9 @@ export class ReferenceCheck {
     for (const [key, value] of Object.entries(node.options ?? {})) {
       if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.options.${key}`);
     }
+    if (def && node.lineOpens && def.type !== 'one2many') {
+      this.report(`${path}.lineOpens`, `lineOpens only applies to one2many fields; "${node.field}" is a ${def.type}`);
+    }
     if (def && node.editMode && def.type !== 'one2many') {
       this.report(`${path}.editMode`, `editMode only applies to one2many fields; "${node.field}" is a ${def.type}`);
     }
@@ -608,7 +611,12 @@ export class ReferenceCheck {
           this.report(`${path}.columns[${i}]`, `"${column}" is not a field of the lines of "${node.field}"`);
         }
       });
-    } else if (def.type !== 'many2many') {
+    } else if (def.type === 'many2many') {
+      // A table of the records linked: its columns are fields of those records.
+      node.columns.forEach((column, i) => {
+        if (!def.fields || !has(def.fields, column)) this.report(`${path}.columns[${i}]`, `"${column}" is not a field of the records of "${node.field}"`);
+      });
+    } else {
       this.report(`${path}.columns`, `columns only apply to one2many and many2many fields; "${node.field}" is a ${def.type}`);
     }
   }

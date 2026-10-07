@@ -122,6 +122,13 @@ export interface FieldNode {
   selectedButtons?: ButtonNode[];
   /** For one2many: buttons in the table's control row, beside Add a line — Flectra's <control>, such as Catalog. Buttons of the record, as any. */
   controlButtons?: ButtonNode[];
+  /**
+   * For one2many: what a line's ↗ opens — a dialog of every one of its fields
+   * (`fields`, the grid's own), or the page of its own record, found by the
+   * table's model (`record`), as Flectra's lists open a line's form. A line
+   * not saved yet has no record: it opens its fields.
+   */
+  lineOpens?: 'fields' | 'record';
   /** Where the label sits, when not where its group or the page puts labels. */
   labels?: LabelPlace;
   /** Where its help shows, when not where the page shows help: under it, behind a (?) by its label, or both. */
@@ -589,6 +596,7 @@ export const FieldNodeSchema = z.strictObject({
   get controlButtons(): z.ZodOptional<z.ZodArray<typeof ButtonNodeSchema>> {
     return z.array(ButtonNodeSchema).min(1).optional();
   },
+  lineOpens: z.enum(['fields', 'record']).optional(),
   editMode: z.enum(['cell', 'row']).optional(),
   labels: labelPlace.optional(),
   helpShown: HelpShownSchema.optional(),
