@@ -1,10 +1,10 @@
-import { isEmpty, lineKind, type Field, type FieldNode, type Form, type FormState, type Line, type LineField, type Value } from '@fieldia/core';
-import { displayValue } from './display';
+import { isEmpty, lineKind, type Field, type FieldNode, type Form, type FormState, type Line, type LineField, type Value, type Values } from '@fieldia/core';
+import { currencyOf, displayValue } from './display';
 import { drawIcon } from './icons';
 import { askFirst, fillIn, maker } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
 import { moveLineTo } from './line-moves';
-import { createWidget, type Widget, type WidgetFactory } from './widgets';
+import { createWidget, type Widget, type WidgetDialogs, type WidgetFactory } from './widgets';
 
 /**
  * A one2many as an editable table. Each cell is an ordinary widget; a small
@@ -55,6 +55,42 @@ export function lineForm(form: Form, field: string, key: string): Form {
     quickCreate: (name: string, text: string) => form.quickCreateLine(field, name, text, key),
     createValues: (name: string) => form.createValues(name, { lines: field, key }),
   };
+}
+
+/** A line's money in its record's currency (`parent.…`), as a field of its own: in that currency, fixed — for a dialog with no record round it. */
+export function ownCurrency(sub: LineField, parent: Readonly<Values>): LineField {
+  if (sub.type !== 'monetary' || !sub.currencyField?.startsWith('parent.')) return sub;
+  const { currencyField: _, ...rest } = sub;
+  const code = currencyOf(sub, {}, parent);
+  return code && /^[A-Z]{3}$/.test(code) ? { ...rest, currency: code } : rest;
+}
+
+/**
+ * A line opened in a dialog: with `lineOpens: "record"`, a saved line's own
+ * record by the table's model — what its page saved is written back to the
+ * line's fields of the same names — else, or for a line not saved yet, every
+ * one of its fields, recalculated as they change and written back on Save &
+ * Close. Shared with @fieldia/grid.
+ */
+export async function openLineDialog(form: Form, name: string, node: FieldNode, line: Line, dialogs: WidgetDialogs, readonly: boolean): Promise<void> {
+  const def = form.page.fields[name] as Extract<Field, { type: 'one2many' }>;
+  const lines = () => (form.getState().values[name] as Line[] | null) ?? [];
+  const write = (values: Values) => form.setValue(name, lines().map((l) => (l.key === line.key ? { ...l, values: { ...l.values, ...values } } : l)));
+  if (node.lineOpens === 'record' && line.id !== undefined && dialogs.canOpen(def.relation)) {
+    const saved = await dialogs.openRecord(def.relation, { recordId: line.id, title: def.label, withValues: true });
+    const back = Object.fromEntries(Object.entries(saved?.values ?? {}).filter(([key]) => key in def.fields && key !== def.sequenceField));
+    if (Object.keys(back).length) write(back as Values);
+    return;
+  }
+  const fields = Object.fromEntries(
+    Object.entries(def.fields)
+      .filter(([key]) => key !== def.lineKinds?.field && key !== def.sequenceField)
+      .map(([key, sub]) => [key, ownCurrency(sub, form.getState().values)])
+  ) as Record<string, Field>;
+  // The dialog shows what the onchange makes of the line as it is edited; the line itself waits for Save & Close.
+  const values = await dialogs.editValues({ title: def.label, fields, values: line.values, readonly, recompute: (edited) => form.previewLine(name, line.key, edited) });
+  // Written in one go, so the form recalculates once.
+  if (values) write(values);
 }
 
 export const linesWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, locale, dialogs }) => {
@@ -334,6 +370,15 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
       rows.get(made)?.cells[0]?.widget.focus();
     });
     if (copy) tools.append(copy);
+    // Its own page, or its every field, in a dialog (lineOpens).
+    if (node.lineOpens && dialogs && !kind) {
+      const open = make('button', { type: 'button', class: 'fd-line-open', 'aria-label': labels.openLine, title: labels.openLine }, '↗') as HTMLButtonElement;
+      open.addEventListener('click', () => {
+        const now = current().find((l) => l.key === line.key);
+        if (now) void openLineDialog(form, name, node, now, dialogs, readonly);
+      });
+      tools.append(open);
+    }
     tools.append(remove);
     tr.append(tools);
     return { element: tr, kind, cells, remove, grip, buttons, pick, copy };
