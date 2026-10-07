@@ -19,6 +19,10 @@ interface DataSource {
   submit?(request: SubmitRequest): Promise<SubmitResult>;    // store one response
   list?(request: ListRequest): Promise<ListResult>;          // a page of records, for a list
   groups?(request: GroupRequest): Promise<Group[]>;          // a list's groups and their counts
+  archive?(request: ArchiveRequest): Promise<void>;          // archive a record, or bring it back
+  copy?(request: RecordRequest): Promise<SaveResult>;        // duplicate it: the copy's id
+  delete?(request: RecordRequest): Promise<void>;            // delete it
+  attachments?(request: RecordRequest): Promise<FileValue[]>; // its files, the main one first
 }`
 )}
 
@@ -33,6 +37,8 @@ interface DataSource {
     <tr><td>${c('submit')}</td><td>Someone sends a responses page</td><td>Surveys, sign-ups</td></tr>
     <tr><td>${c('list')}</td><td>A list opens, is searched, sorted or paged</td><td>Lists of records — see <a href="/lists/#data">lists</a></td></tr>
     <tr><td>${c('groups')}</td><td>A list is grouped by a field</td><td>Group By</td></tr>
+    <tr><td>${c('archive')} · ${c('copy')} · ${c('delete')}</td><td>The gear menu's Archive, Unarchive, Duplicate or Delete, or those steps, run</td><td>The record's own operations — without one, your app's action of the step's name is called. See <a href="/record/#toolbar">Around a record</a></td></tr>
+    <tr><td>${c('attachments')}</td><td>A sheet with an ${c('attachmentPreview')} shows a record</td><td>The PDF or picture beside the sheet</td></tr>
   </tbody>
 </table>
 

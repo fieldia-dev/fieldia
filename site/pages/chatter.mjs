@@ -35,6 +35,7 @@ function Chatter({ form }: SlotComponentProps) {
 <FieldiaForm page={page} dataSource={dataSource} recordId={7} slots={{ chatter: Chatter }} />`
 )}
 <p>On its own, anywhere: ${c("mountChatter(element, { source, record: { model: 'sale.order', id: 7 } })")}.</p>
+<p>It fetches again once the record is loaded again — after your server action changed it — and posts what a ${c('post')} step or your app's answer posts. ${c('chatterAttachments(source)')} hands its files to a sheet's attachment preview; ${c('"sidePanelBeside": "always"')} keeps it beside the sheet on any screen it fits. See <a href="/record/">Around a record</a>.</p>
 
 <h2 id="source">Your server, through a source</h2>
 <p>The chatter reaches your backend only through an object you write, as you write a data source. Two methods are all it needs; each other one adds a part, and a part whose method is missing is not shown.</p>
