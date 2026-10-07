@@ -26,6 +26,11 @@ export const real = {
   warnings: byModel((lane) => lane.warnings) as NonNullable<MemoryDataSourceOptions['warnings']>,
   lists: Object.assign({}, ...LANES.map((lane) => lane.lists ?? {})) as NonNullable<MemoryDataSourceOptions['lists']>,
   labelField: Object.assign({}, ...LANES.map((lane) => lane.labelField ?? {})) as NonNullable<MemoryDataSourceOptions['labelField']>,
+  shows: Object.assign({}, ...LANES.map((lane) => lane.shows ?? {})) as NonNullable<MemoryDataSourceOptions['shows']>,
+  definitions: Object.assign({}, ...LANES.map((lane) => lane.definitions ?? {})) as NonNullable<MemoryDataSourceOptions['definitions']>,
+  attachments: Object.assign({}, ...LANES.map((lane) => lane.attachments ?? {})) as NonNullable<MemoryDataSourceOptions['attachments']>,
+  users: Object.assign({}, ...LANES.map((lane) => lane.users ?? {})) as NonNullable<RealLane['users']>,
+  navigation: Object.assign({}, ...LANES.map((lane) => lane.navigation ?? {})) as NonNullable<RealLane['navigation']>,
   /**
    * The first lane that knows the action answers it. A lane may answer later,
    * and "later, nothing" is not knowing it either: the next lane is asked.

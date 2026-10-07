@@ -1,4 +1,4 @@
-import { createMemoryDataSource, type Line, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, type FormUser, type Line, type Page, type Values } from '@fieldia/core';
 import type { PageRequest } from '@fieldia/viewer';
 import address from '../../examples/pages/address.page.json';
 import delivery from '../../examples/pages/delivery.page.json';
@@ -101,9 +101,11 @@ export function optionsFromQuery(params: URLSearchParams): {
   readonly?: boolean;
   editSwitch?: boolean;
   translate?: (text: string) => string;
+  user?: FormUser;
 } {
   const saveStatus = params.get('saveStatus');
   return {
+    ...realOptions(params),
     // The vendor bill has the records round it and the trail to it, as an app gives them.
     ...(params.get('page') === 'vendor-bill' ? billNavigation() : {}),
     ...(params.get('translate') === 'fr' ? { translate: (text: string) => APP_CATALOG_FR[text] ?? text } : {}),
@@ -112,6 +114,21 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(params.get('enterToNext') === '1' ? { keys: { enterMovesToNext: true } } : {}),
     ...(params.get('showValid') === '1' ? { showValid: true } : {}),
     ...(saveStatus === 'toast' || saveStatus === 'bar' ? { saveStatus } : {}),
+  };
+}
+
+/**
+ * A real page's person and the list round its record, as the app gives them.
+ * `roles=` names the roles held instead, comma-separated — empty for none —
+ * to see the page as someone without a manager's groups.
+ */
+function realOptions(params: URLSearchParams): { user?: FormUser; records?: (string | number)[]; breadcrumbs?: { label: string; href?: string }[] } {
+  const id = params.get('page') ?? '';
+  const user = real.users[id];
+  const roles = params.get('roles');
+  return {
+    ...(user ? { user: roles === null ? user : { ...user, roles: roles.split(',').filter(Boolean) } } : {}),
+    ...(real.navigation[id] ?? {}),
   };
 }
 
@@ -414,11 +431,13 @@ function withReal(options: Parameters<typeof createMemoryDataSource>[0] & object
   return {
     ...options,
     records: merge(merge(options.records, real.records), businessData.records),
-    definitions: { ...options.definitions, ...businessData.definitions },
     onchange: merge(options.onchange, real.onchange),
     warnings: merge(options.warnings, real.warnings),
     lists: { ...options.lists, ...real.lists },
     labelField: { ...options.labelField, ...real.labelField },
+    shows: { ...options.shows, ...real.shows },
+    definitions: { ...options.definitions, ...businessData.definitions, ...real.definitions },
+    attachments: { ...options.attachments, ...real.attachments },
   };
 }
 
