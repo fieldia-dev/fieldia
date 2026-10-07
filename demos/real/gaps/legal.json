@@ -29,11 +29,11 @@
         "open": {
           "legalCaseMs": "196–215 when the machine is quiet (235–260 with the wait for the frame); 242–306 inside the e2e runs",
           "forComparison": "the Sales order example 93–99 ms, the Survey page 87–89 ms",
-          "why": "Every tab is built at mount and only hidden: all 15 panels and all 12 AG Grids exist before anything is shown — 4,393 DOM elements. Opening costs about twice a small sheet; nothing is put off until a tab is first shown."
+          "why": "Before: every tab was built at mount and only hidden — all 15 panels and 12 AG Grids, 4,393 DOM elements. Now a tab's parts are built when it is first shown, so opening builds the header and one tab: inside the e2e, the timing test's opening went from 370–475 ms to 93–120 ms, measured side by side with the old build on the same machine."
         },
-        "tabSwitch": { "medianMs": "16–20 in all four frameworks", "maxMs": "45–67 (a tab whose grid draws for the first time at its real width)" },
-        "keystroke": { "medianMs": "19.7–23.5 in all four frameworks", "maxMs": "24–63", "note": "Over the one-frame (16 ms) budget e2e/perf.spec.ts holds the 500-field page to: every keystroke re-checks the 36 conditions, 5 worked-out values and 12 tables' state, and asks the data source's onchange." },
-        "verdict": "Usable — no click or key took longer than 70 ms — but a page this size would gain from building a tab's content when it is first shown, which Fieldia does not offer."
+        "tabSwitch": { "medianMs": "21–26 in all four frameworks (before: 18–26 side by side); the harness shows each tab once, so every switch it times is a first show that builds the tab", "maxMs": "55–65 (a tab whose grids are built and drawn for the first time)" },
+        "keystroke": { "medianMs": "5.2–8.9 in all four frameworks (before: 20.7–22.5 side by side)", "maxMs": "15–20", "note": "A tab out of sight is no longer brought up to date as values change, only when shown again; and a table hidden as display: none no longer measures itself every frame (AG Grid did, 120 frames a second each, idle or not). Under the one-frame (16 ms) budget." },
+        "verdict": "Quick: opening about a quarter of before, a keystroke well within one frame; the first show of each tab carries its own building."
       },
       "wayfinding": {
         "flectra": "Flectra's notebook wraps its 15 tab labels onto a second line, so every tab is in sight; the smart buttons open each related list in its own view.",

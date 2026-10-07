@@ -316,6 +316,35 @@ for (const variant of VARIANTS) {
       expect(problems).toEqual([]);
     });
 
+    test('a table in a tab out of sight rests: nothing redrawn frame after frame while nobody types', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, CASE);
+      await expect(node(page, '#title').locator('input')).toHaveValue('LEG/2026/LIT/0042');
+      // The tabs with tables, shown once and left: Expenses, then Billing's two.
+      for (const label of ['Expenses', 'Billing', 'Description']) {
+        await tab(page, label).scrollIntoViewIfNeeded();
+        await tab(page, label).click();
+      }
+      // Three tables built: Expenses', and Billing's split and flat-fee lines (hidden by its condition).
+      await expect(page.locator('.fd-grid-lines')).toHaveCount(3);
+      const frames = await page.evaluate(
+        () =>
+          new Promise<number>((resolve) => {
+            const ask = window.requestAnimationFrame.bind(window);
+            let asked = 0;
+            window.requestAnimationFrame = (callback) => (asked++, ask(callback));
+            setTimeout(() => resolve(asked), 1000);
+          })
+      );
+      // A grid hidden as display: none measured itself every frame for ever: 120 frames a second each.
+      expect(frames).toBeLessThan(10);
+      // Shown again, a table is back as it was, drawn to fit.
+      await tab(page, 'Expenses').click();
+      await expect(node(page, 'f-expenses').locator('.ag-root-wrapper')).toBeVisible();
+      await expect(node(page, 'f-expenses').locator('.ag-header-cell').first()).toBeVisible();
+      expect(problems).toEqual([]);
+    });
+
     test('the notebook’s tabs too long for their room: faded at the edge with more, scrolled by its button, the tab chosen in sight', async ({ page }) => {
       const strip = page.locator('[data-node="notebook"] > .fd-tabbar');
       const list = strip.locator('> .fd-tablist');

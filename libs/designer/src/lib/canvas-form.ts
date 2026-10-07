@@ -37,6 +37,8 @@ interface View {
   drawn: { page: Page; key: string } | null;
   /** The saved form it shows now, for “Open it”. */
   pageId: string;
+  /** Keeps apart the parts the viewer draws after it is placed. */
+  watcher?: MutationObserver | null;
 }
 
 /** A page of one part, the saved form placed as this page places it: what the form draws, without the page's own conditions round it. */
@@ -87,6 +89,8 @@ export function formViews(options: { el: ElementFactory; doc: Document; designer
     view.viewer?.destroy();
     view.viewer = null;
     view.drawn = null;
+    view.watcher?.disconnect();
+    view.watcher = null;
   }
 
   /** Inside the frame, the saved form's parts keep their own ids apart from the page's: the canvas finds the page's parts by theirs. */
@@ -132,6 +136,13 @@ export function formViews(options: { el: ElementFactory; doc: Document; designer
         view.body.replaceChildren();
         try {
           view.viewer = mountViewer(view.body, { page: placing(node, look, language), showActions: false, skin: (options.skin ?? 'outlined') as 'outlined' | 'underline', widgets: options.widgets, pages });
+          // Parts the viewer draws later — a tab when first shown, a saved form inside when its page comes — are kept apart too.
+          const Watch = doc.defaultView?.MutationObserver;
+          const drawn = view;
+          if (Watch) {
+            drawn.watcher = new Watch(() => apart(drawn));
+            drawn.watcher.observe(drawn.body, { childList: true, subtree: true });
+          }
         } catch (error) {
           setText(view.note, w.cannotShow(name, (error as Error).message.split('\n')[0]));
           setHidden(view.note, false);

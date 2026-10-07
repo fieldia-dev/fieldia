@@ -693,6 +693,7 @@ describe('a record sheet', () => {
     expect(form.getState().values['state']).toBe('blocked');
     expect(visible(host.querySelector('.fd-ribbon'))).toBe(true);
     expect(host.querySelector('.fd-ribbon')?.textContent).toBe('Blocked');
+    (host.querySelector('.fd-tab[data-node="tab-billing"]') as HTMLButtonElement).click();
     expect(input(host, 'f-credit-limit').readOnly).toBe(true);
   });
 
@@ -765,6 +766,58 @@ describe('a record sheet', () => {
     await viewer.run([{ do: 'goTo', target: last.dataset['node'] as string }]);
     expect(last.getBoundingClientRect().right).toBeLessThanOrEqual(200);
     expect(last.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('builds a tab’s parts when it is first shown, by a click or a step', async () => {
+    const { host, form, handle: viewer } = sheet();
+    await form.settled();
+    // The tabs shown so far are built — Billing while the record loaded, Contacts hidden till then; Notes waits.
+    expect(at(host, 'f-contacts')).not.toBeNull();
+    expect(at(host, 'f-notes')).toBeNull();
+    (host.querySelector('.fd-tab[data-node="tab-billing"]') as HTMLButtonElement).click();
+    expect(input(host, 'f-credit-limit').value).toBe('5,000.00');
+    await viewer.run([{ do: 'goTo', target: 'tab-notes' }]);
+    expect(visible(at(host, 'f-notes'))).toBe(true);
+    // Built once: shown again, it is the same.
+    const notes = at(host, 'f-notes');
+    (host.querySelector('.fd-tab[data-node="tab-billing"]') as HTMLButtonElement).click();
+    (host.querySelector('.fd-tab[data-node="tab-notes"]') as HTMLButtonElement).click();
+    expect(at(host, 'f-notes')).toBe(notes);
+  });
+
+  it('leaves a tab out of sight alone as values change, and brings it up to date when shown', async () => {
+    const { host, form } = sheet();
+    await form.settled();
+    const tab = (id: string) => host.querySelector(`.fd-tab[data-node="${id}"]`) as HTMLButtonElement;
+    tab('tab-billing').click();
+    const limit = input(host, 'f-credit-limit');
+    tab('tab-notes').click();
+    form.setValue('credit_limit', 7500);
+    // Not drawn again while nobody can see it…
+    expect(limit.value).toBe('5,000.00');
+    // …and as it is the moment it is shown.
+    tab('tab-billing').click();
+    expect(limit.value).toBe('7,500.00');
+    // Its conditions too: a field hidden meanwhile is hidden when it shows.
+    expect(visible(at(host, 'f-credit-limit'))).toBe(true);
+  });
+
+  it('marks a tab with a problem in it, and a save stopped there shows that tab, at the problem', async () => {
+    const strict = page('customer') as any;
+    strict.fields.credit_limit = { ...strict.fields.credit_limit, required: true };
+    const dataSource = createMemoryDataSource({ records: { partner: { 1: { ...customer, credit_limit: null } } } });
+    const again = document.createElement('div');
+    document.body.append(again);
+    handle = mountViewer(again, { page: strict, dataSource, recordId: 1 });
+    await handle.form.settled();
+    type(input(again, 'f-website'), 'https://nile.example');
+    expect(await handle.save()).toBe(false);
+    const billing = again.querySelector('.fd-tab[data-node="tab-billing"]') as HTMLButtonElement;
+    expect(billing.hasAttribute('data-problem')).toBe(true);
+    expect(billing.getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).toBe(input(again, 'f-credit-limit'));
+    handle.form.setValue('credit_limit', 100);
+    expect(billing.hasAttribute('data-problem')).toBe(false);
   });
 
   it('opens the first tab that is visible once the record loads, until someone picks one', async () => {

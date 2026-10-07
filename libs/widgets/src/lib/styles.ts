@@ -513,6 +513,8 @@ button.fd-chip-label:hover { text-decoration: underline; }
   border-block-end: 2px solid transparent; margin-block-end: -1px; white-space: nowrap;
 }
 .fd-tab[aria-selected="true"] { color: var(--fd-accent); border-block-end-color: var(--fd-accent); font-weight: 600; }
+/* A tab with a problem in it, seen or not: a dot in the error colour after its words. */
+.fd-tab[data-problem]::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-inline-start: 6px; border-radius: 50%; background: var(--fd-error); vertical-align: 0.15em; }
 .fd-tabpanel { padding-block: 16px; display: grid; gap: 16px; }
 
 /* ---- buttons ---------------------------------------------------------- */
