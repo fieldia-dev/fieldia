@@ -190,3 +190,67 @@ describe('setWhen — a value set as a condition starts to hold', () => {
     expect(values(form)).toMatchObject({ total: 1200, discount: 10 });
   });
 });
+
+describe('setWhen with on — set when a field changes, as Flectra’s onchange', () => {
+  // Flectra: @api.onchange('certification') — ticked, scoring becomes "Scoring without answers".
+  const survey = {
+    certification: { type: 'boolean', label: 'Certification' },
+    other: { type: 'char', label: 'Other' },
+    scoring_type: {
+      type: 'selection',
+      label: 'Scoring',
+      options: [{ value: 'none', label: 'No scoring' }, { value: 'without', label: 'Scoring without answers' }],
+      setWhen: [{ on: ['certification'], when: 'certification', value: "'without'" }],
+    },
+    // With no condition: every change of the price sets the margin again.
+    price: { type: 'float', label: 'Price' },
+    margin: { type: 'float', label: 'Margin', setWhen: [{ on: ['price'], value: 'price * 0.2' }] },
+  };
+
+  it('sets the value when a field it is on changes and its condition holds, and only then', () => {
+    const form = createForm({ page: page(survey), values: { scoring_type: 'none' } });
+    form.setValue('certification', true);
+    expect(values(form)['scoring_type']).toBe('without');
+    // Changed by hand while it stays ticked: kept, whatever else changes.
+    form.setValue('scoring_type', 'none');
+    form.setValue('other', 'x');
+    expect(values(form)['scoring_type']).toBe('none');
+    // Unticked, nothing is set; ticked again, it is.
+    form.setValue('certification', false);
+    expect(values(form)['scoring_type']).toBe('none');
+    form.setValue('certification', true);
+    expect(values(form)['scoring_type']).toBe('without');
+  });
+
+  it('never acts while a field it is on keeps its value, even as its condition starts to hold', () => {
+    const fields = {
+      a: { type: 'integer', label: 'A' },
+      b: { type: 'integer', label: 'B' },
+      c: { type: 'integer', label: 'C', setWhen: [{ on: ['a'], when: 'b > 1', value: '7' }] },
+    };
+    const form = createForm({ page: page(fields), values: { a: 1, b: 0 } });
+    form.setValue('b', 5);
+    expect(values(form)['c']).toBeNull();
+    form.setValue('a', 2);
+    expect(values(form)['c']).toBe(7);
+  });
+
+  it('with no condition, sets it at each change, and leaves alone what the form started with', () => {
+    const form = createForm({ page: page(survey), values: { price: 100, margin: 3 } });
+    expect(values(form)['margin']).toBe(3);
+    form.setValue('price', 200);
+    expect(values(form)['margin']).toBe(40);
+    form.setValue('margin', 1);
+    form.setValue('price', 300);
+    expect(values(form)['margin']).toBe(60);
+  });
+
+  it('is checked: the fields it is on are fields where it is', async () => {
+    const { validatePage } = await import('../format/validate');
+    const wrong = page({ a: { type: 'integer', label: 'A', setWhen: [{ on: ['nope'], value: '1' }] } });
+    const result = validatePage(wrong);
+    expect(result.ok).toBe(false);
+    expect(JSON.stringify(result)).toContain('fields.a.setWhen[0].on[0]');
+    expect(validatePage(page({ a: { type: 'integer', label: 'A', setWhen: [{ value: '1' }] } })).ok).toBe(false);
+  });
+});

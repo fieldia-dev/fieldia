@@ -11,7 +11,9 @@ import { lineKind, sameValue, type Line, type Values } from './values';
  * only as its condition goes from not holding to holding — so people may
  * still change the value afterwards — and rules act in the order the field
  * lists them. Each rule is known by a key (`discount#0`, or in a line
- * `lines.<line key>.pallet#0`), so what held before can be remembered.
+ * `lines.<line key>.pallet#0`), so what held before can be remembered. A
+ * rule `on` fields acts as one of them changes instead: its key carries their
+ * values, so a key not held before is a change.
  */
 export interface SetWhenRules {
   /** The keys of the conditions holding for these values: a starting point, where nothing is set. */
@@ -30,11 +32,20 @@ interface Rule {
   def: Field | LineField;
   when: CompiledModifier;
   value: CompiledExpression;
+  /** The fields whose change sets it, when it is set on a change rather than as its condition starts to hold. */
+  on?: readonly string[];
 }
 
 function rules(fields: Record<string, Field | LineField>): Rule[] {
   return Object.entries(fields).flatMap(([name, def]) =>
-    (def.setWhen ?? []).map((rule: SetWhen, i): Rule => ({ key: `${name}#${i}`, name, def, when: compileModifier(rule.when), value: compileExpression(rule.value) }))
+    (def.setWhen ?? []).map((rule: SetWhen, i): Rule => ({
+      key: `${name}#${i}`,
+      name,
+      def,
+      when: compileModifier(rule.when ?? true),
+      value: compileExpression(rule.value),
+      ...(rule.on ? { on: rule.on } : {}),
+    }))
   );
 }
 
@@ -56,10 +67,17 @@ export function compileSetWhen(page: Page, today: () => string, about: () => Abo
   function run(values: Values, list: Rule[], context: Record<string, unknown>, env: ExpressionEnv, prefix: string, before: ReadonlySet<string>, now: Set<string>): Values {
     let next = values;
     for (const rule of list) {
-      if (!rule.when.evaluate(context, env)) continue;
-      const key = prefix + rule.key;
-      now.add(key);
-      if (before.has(key)) continue;
+      // On a change: known by the values of the fields it is on, so a new key is a change of one of them.
+      if (rule.on) {
+        const key = `${prefix}${rule.key}@${JSON.stringify(rule.on.map((name) => values[name] ?? null))}`;
+        now.add(key);
+        if (before.has(key) || !rule.when.evaluate(context, env)) continue;
+      } else {
+        if (!rule.when.evaluate(context, env)) continue;
+        const key = prefix + rule.key;
+        now.add(key);
+        if (before.has(key)) continue;
+      }
       const value = fitTo(rule.def, rule.value.evaluate(context, env));
       if (!sameValue(value, next[rule.name])) next = { ...next, [rule.name]: value };
     }

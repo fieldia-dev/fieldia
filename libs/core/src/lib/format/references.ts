@@ -275,6 +275,7 @@ export class ReferenceCheck {
       }
       def.setWhen?.forEach((item, i) => {
         this.checkModifiers(item, `${path}.setWhen[${i}]`, ['when'], scope);
+        item.on?.forEach((other, j) => this.need(other, `${path}.setWhen[${i}].on[${j}]`, fields));
         this.checkExpression(item.value, `${path}.setWhen[${i}].value`, scope);
       });
     }

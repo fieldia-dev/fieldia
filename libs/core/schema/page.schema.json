@@ -1539,13 +1539,32 @@
         "value": {
           "type": "string",
           "minLength": 1
+        },
+        "on": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          }
         }
       },
       "required": [
-        "when",
         "value"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "when"
+          ]
+        },
+        {
+          "required": [
+            "on"
+          ]
+        }
+      ]
     },
     "Option": {
       "type": "object",

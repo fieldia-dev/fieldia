@@ -89,11 +89,22 @@ export const FilterAllSchema = z.strictObject({
 
 export const FilterItemSchema = z.union([FilterConditionSchema, FilterAnySchema, FilterAllSchema]).meta({ id: 'FilterItem' });
 
-/** A value set when a condition starts to hold: `when` is a condition, `value` an expression. People may still change it. */
+/**
+ * A value set when a condition starts to hold: `when` is a condition, `value`
+ * an expression. People may still change it. With `on`, it is set when one of
+ * those fields changes instead — while `when` holds, if it has one — as
+ * Flectra's onchange: "ticking Certification sets the scoring".
+ */
 export const SetWhenSchema = z
-  .object({ when: z.string().min(1), value: z.string().min(1) })
+  .object({
+    when: z.string().min(1).optional(),
+    value: z.string().min(1),
+    /** The fields whose change sets it: set as one of them changes, never as `when` alone starts to hold. */
+    on: z.array(z.string().regex(FIELD_NAME)).min(1).optional(),
+  })
   .strict()
-  .meta({ id: 'SetWhen' });
+  .refine((rule) => rule.when !== undefined || rule.on !== undefined, { message: 'a value is set when a condition starts to hold, or when a field it is on changes: give when, on or both' })
+  .meta({ id: 'SetWhen', anyOf: [{ required: ['when'] }, { required: ['on'] }] });
 
 export type SetWhen = z.infer<typeof SetWhenSchema>;
 
