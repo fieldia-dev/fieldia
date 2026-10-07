@@ -163,8 +163,8 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // line's parent read in conditions, Python's tuples and and/or values, counts and sums where a condition holds
 // and days between dates, defaults handed to new lines, links and records, reload, a web address and a list of
 // related records opened, a wizard's own footer buttons — and a table's own rules (cells by line, columns by
-// record, tones, row buttons) and help behind a (?) add 13.7, to 313.8.
-const BUDGET_KB = 314.5;
+// record, tones, row buttons, drawn in the plain table) and help behind a (?) add 17.1, to 317.2.
+const BUDGET_KB = 318;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -176,8 +176,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // and the events an app hears, 3, to 87.7; a page in a side panel, 0.5, to 88.2; the viewer as the host
 // of the steps (pages opened, toasts, busy buttons, tabs shown), 1.7, to 89.5; a panel from any side, 0.3, to 89.8;
 // files as cards and the switch between them and a list, 1, to 90.8; the real pages' defects mended, 1.9, to 92.7;
-// what real Flectra pages need of steps, conditions, defaults and tables' own rules, and help behind a (?), 4, to 96.7.
-const GZIP_BUDGET_KB = 97;
+// what real Flectra pages need of steps, conditions, defaults and tables' own rules, and help behind a (?), 5.1, to 97.8.
+const GZIP_BUDGET_KB = 98;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
