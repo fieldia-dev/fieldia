@@ -48,6 +48,7 @@ import { stateDotWidget } from './state-dot';
 import { colourWidget } from './colour';
 import { copyWidget } from './copy';
 import { dateRangeWidget } from './date-range';
+import { timerWidget } from './timer';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -623,6 +624,9 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   // One box from → to, a range picked on a calendar, writing two date fields: Flectra's daterange.
   'date.daterange': dateRangeWidget,
   'datetime.daterange': dateRangeWidget,
+  // A live timer, the time logged and the time running from a start: Flectra's mrp_timer.
+  'float.timer': timerWidget,
+  'datetime.timer': timerWidget,
   selection: selectWidget,
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),

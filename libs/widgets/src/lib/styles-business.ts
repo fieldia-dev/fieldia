@@ -60,4 +60,11 @@ export const BUSINESS_CSS = /* css */ `
 .fd-range-arrow { flex: none; display: inline-block; color: var(--fd-muted); }
 .fd-range-arrow:dir(rtl) { transform: scaleX(-1); }
 .fd-range-calendar .fd-calendar-grid td button.fd-in-range { background: var(--fd-accent-soft); border-radius: 0; }
+/* A timer: its time in even digits, a green dot beating while it runs. */
+.fd-timer { display: inline-flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; font-weight: 600; direction: ltr; unicode-bidi: isolate; }
+.fd-timer-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--fd-border-strong); }
+.fd-timer[data-running] .fd-timer-dot { background: var(--fd-success); animation: fd-timer-beat 1s ease-in-out infinite alternate; }
+.fd-timer[data-running] .fd-timer-time { color: var(--fd-success); }
+@keyframes fd-timer-beat { to { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .fd-timer[data-running] .fd-timer-dot { animation: none; } }
 `;
