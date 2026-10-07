@@ -562,6 +562,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     function labelledRow(node: SectionNode, plan: ReturnType<typeof planSection>): 'skin' | 'beside' | null {
       const [first] = node.children;
       if (!plan.arrangement || plan.at === 'tracks' || wideColumns(node.columns) !== 12 || node.children.length < 2 || first?.type !== 'field') return null;
+      // One line of them: parts running past twelve twelfths are a column of fields, each with its own label.
+      if (node.children.reduce((sum, child) => sum + ((child as { colspan?: number }).colspan ?? 1), 0) > 12) return null;
       const type = page.fields[first.field]?.type;
       const where = type ? labelPlace(first, type, plan.inner.labels) : 'hidden';
       // The skin's place: beside in the underline skin, above in the outlined one, as the stylesheet says.

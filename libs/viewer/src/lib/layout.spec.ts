@@ -177,6 +177,8 @@ describe('a row of twelfths', () => {
       row([{ type: 'text', id: 't', text: 'Hi' } as LayoutNode, field('b', { colspan: 6 })]),
       row([field('a', { colspan: 12 })]),
       { ...(row([field('a', { colspan: 6 }), field('b', { colspan: 6 })]) as object), title: 'Named' } as LayoutNode,
+      // A column of fields in twelfths, more than one line of them — Flectra's col-md-6 beside the stats — is no row.
+      row([field('a', { colspan: 12 }), field('b', { colspan: 8 }), field('c', { colspan: 4 })]),
     ];
     for (const inner of cases) {
       const host = mount(page([inColumn(inner)]));
