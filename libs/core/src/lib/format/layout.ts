@@ -185,6 +185,12 @@ export interface FieldNode {
   bold?: Modifier;
   /** Rules the answer must keep. */
   validate?: AnswerRule[];
+  /**
+   * Takes the focus when the record opens, as Flectra's default_focus — in a
+   * page, a dialog or a panel — while it shows, and unless the person is
+   * busy elsewhere on the screen: the first such field shown wins.
+   */
+  focus?: boolean;
   invisible?: Modifier;
   roles?: Roles;
   /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
@@ -840,6 +846,7 @@ export const FieldNodeSchema = z.strictObject({
   tones: z.array(ToneWhenSchema).min(1).optional(),
   bold: ModifierSchema.optional(),
   validate: z.array(AnswerRuleSchema).min(1).optional(),
+  focus: z.boolean().optional(),
   invisible, roles, hideOn,
   readonly: ModifierSchema.optional(),
   required: ModifierSchema.optional(),

@@ -40,6 +40,10 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
   placeholder.addEventListener('input', () => designer.updateQuestion(id, { placeholder: placeholder.value }));
   // Other words while a condition holds: a company's name or a person's.
   const placeholderWhen = placeholderWhenList(el, designer, id);
+  // The field that takes the focus as the record opens, as Flectra's default_focus.
+  const focusBox = el('input', { type: 'checkbox', class: 'fd-checkbox', 'aria-label': w.focusOnOpen }) as HTMLInputElement;
+  focusBox.addEventListener('change', () => designer.updateQuestion(id, { focus: focusBox.checked }));
+  const focusRow = setting(el, 'content', 'Focused as the record opens', focusBox, { words: w.focusOnOpen, hint: w.focusOnOpenHint });
   const placeholderRow = setting(el, 'content', 'Placeholder', [placeholder, el('span', { class: 'fd-answer-rule-word' }, w.placeholderWhen), placeholderWhen.element], { words: w.placeholder });
   // Only the kinds that suit what the field holds, as the bar on the canvas offers them, and why.
   const kind = el('select', { class: 'fd-input fd-select', 'aria-label': w.shownAs });
@@ -112,6 +116,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
     setting(el, 'content', 'Label', label, { words: w.label }),
     setting(el, 'content', 'Help text', help, { words: w.helpText }),
     placeholderRow,
+    focusRow,
     setting(el, 'content', 'Shown as', kind, { hint: kindNote, words: w.shownAs }),
     appSettings.element,
     optionsRow,
@@ -144,6 +149,7 @@ export function fieldProperties(el: ElementFactory, designer: Designer, id: stri
       placeholderRow.hidden = !TAKES_PLACEHOLDER.has(def.type) || !!found.node.widget && !['email', 'phone', 'url'].includes(found.node.widget);
       if (!focused(placeholder)) placeholder.value = found.node.placeholder ?? '';
       if (!placeholderRow.hidden) placeholderWhen.update(page);
+      focusBox.checked = found.node.focus === true;
       const current = kindOfField(def, found.node);
       const offered = designer.kindsFor(id);
       const key = offered.map((k) => k.id).join(',');

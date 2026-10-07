@@ -59,6 +59,9 @@ export const panel = {
   optional: 'Optional',
   placeholder: 'Placeholder',
   placeholderHint: 'Words inside the empty box',
+  /** The field that takes the focus as the record opens: Flectra's default_focus. */
+  focusOnOpen: 'Focused as the record opens',
+  focusOnOpenHint: 'The cursor starts here, unless the person is busy elsewhere on the screen.',
   /** Other words in the empty box while a condition holds, the first that holds. */
   placeholderWhen: 'Other words while',
   placeholderWhenAdd: 'Add words for a condition',

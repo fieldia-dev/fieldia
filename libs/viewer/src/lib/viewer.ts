@@ -330,6 +330,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
 
   // ---- the parts -------------------------------------------------------
 
+  /** The fields that take the focus as the record opens, in the order they are drawn. */
+  const focusers: { wrapper: HTMLElement; focus(): void }[] = [];
   /** Folded sections, and how to open each: a problem inside one has to be seen. */
   const folds = new Map<HTMLElement, () => void>();
   /** Every part drawn again from the state of the page shown. */
@@ -362,7 +364,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const def = page.fields[node.field];
       const id = uid(node.id);
       const labelsAt = labelPlace(node, def.type, place);
-      const wrapper = el('div', { class: 'fd-field', 'data-node': node.id, 'data-field': node.field, 'data-path': scope.path + node.field, 'data-type': def.type, 'data-labels': labelsAt });
+      const wrapper = el('div', { class: 'fd-field', 'data-node': node.id, 'data-field': node.field, 'data-path': scope.path + node.field, 'data-type': def.type, 'data-labels': labelsAt, 'data-focus': node.focus && scope.root ? '' : undefined });
       if (node.colspan) wrapper.style.setProperty('--fd-span', String(node.colspan));
       const labelText = node.label ?? def.label;
       const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, labelText);
@@ -373,6 +375,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         label.append(mark);
       }
       const widget = createWidget({ form, name: node.field, field: def, node, id, document: doc, labels: widgetLabels, preferences, locale, dialogs }, options.widgets);
+      // The field that takes the focus as the record opens (Flectra's default_focus): the page's own, not a saved form's inside it.
+      if (node.focus && scope.root) focusers.push({ wrapper, focus: () => widget.focus() });
       // A label kept out of sight still names the box; the empty box shows it instead, unless the page gives it words of its own.
       const textBox = widget.element.matches(TEXT_BOX) ? widget.element : widget.element.querySelector(TEXT_BOX);
       if (labelsAt === 'hidden' && !node.placeholder) textBox?.setAttribute('placeholder', labelText);
@@ -1611,6 +1615,24 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   );
   render(form.getState());
   mounted = true;
+  // As the record opens, its focused field takes the focus — the first shown — unless the person is busy elsewhere:
+  // only while nothing has the focus, or, the first time, while it is in this form (a dialog's first box).
+  let opened = false;
+  if (focusers.length) {
+    cleanups.push(
+      form.on('open', () => {
+        const first = !opened;
+        opened = true;
+        queueMicrotask(() => {
+          if (gone || !root.isConnected || root.closest('[hidden]') || (typeof root.checkVisibility === 'function' && !root.checkVisibility())) return;
+          const active = doc.activeElement;
+          const free = !active || active === doc.body || active === doc.documentElement;
+          if (!free && !(first && root.contains(active))) return;
+          focusers.find((one) => !one.wrapper.closest('[hidden]'))?.focus();
+        });
+      })
+    );
+  }
   if (form.getState().status === 'idle') void form.load();
 
   return {

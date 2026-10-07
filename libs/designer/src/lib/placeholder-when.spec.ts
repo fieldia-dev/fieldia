@@ -36,3 +36,23 @@ describe('words in an empty box chosen by a condition, in the panel', () => {
     expect(button(row(), 'إضافة نص لشرط')).toBeDefined();
   });
 });
+
+describe('the field that takes the focus as the record opens, in the panel', () => {
+  it('is ticked on the Content tab, and unticked takes it away', () => {
+    const { host, node, designer } = screen();
+    openTab(host, 'Content');
+    const box = field(host.querySelector('[data-setting="Focused as the record opens"]') as HTMLElement, 'Focused as the record opens') as HTMLInputElement;
+    box.click();
+    expect(node().focus).toBe(true);
+    box.click();
+    expect(node().focus).toBeUndefined();
+    designer.undo();
+    expect(node().focus).toBe(true);
+  });
+
+  it('speaks Arabic', () => {
+    const { host } = screen('ar');
+    openTab(host, 'المحتوى');
+    expect(host.querySelector('[data-setting="Focused as the record opens"] .fd-prop-name')?.textContent).toBe('يأخذ التركيز عند فتح السجل');
+  });
+});

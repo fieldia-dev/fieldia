@@ -3924,6 +3924,9 @@
                       "$ref": "#/$defs/AnswerRule"
                     }
                   },
+                  "focus": {
+                    "type": "boolean"
+                  },
                   "invisible": {
                     "$ref": "#/$defs/Modifier"
                   },
@@ -4369,6 +4372,9 @@
                     "items": {
                       "$ref": "#/$defs/AnswerRule"
                     }
+                  },
+                  "focus": {
+                    "type": "boolean"
                   },
                   "invisible": {
                     "$ref": "#/$defs/Modifier"
@@ -4816,6 +4822,9 @@
                       "$ref": "#/$defs/AnswerRule"
                     }
                   },
+                  "focus": {
+                    "type": "boolean"
+                  },
                   "invisible": {
                     "$ref": "#/$defs/Modifier"
                   },
@@ -5261,6 +5270,9 @@
                     "items": {
                       "$ref": "#/$defs/AnswerRule"
                     }
+                  },
+                  "focus": {
+                    "type": "boolean"
                   },
                   "invisible": {
                     "$ref": "#/$defs/Modifier"
@@ -7174,6 +7186,9 @@
               "items": {
                 "$ref": "#/$defs/AnswerRule"
               }
+            },
+            "focus": {
+              "type": "boolean"
             },
             "invisible": {
               "$ref": "#/$defs/Modifier"

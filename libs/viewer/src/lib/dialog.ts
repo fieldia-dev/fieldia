@@ -60,6 +60,12 @@ let dialogs = 0;
 /** The first box to type or choose in, where a page opened takes the focus. */
 export const FIRST_FIELD = 'input:not([type="hidden"]), select, textarea, [contenteditable="true"]';
 
+/** The box of the first field shown that takes the focus as the record opens (a node's `focus`), if there is one. */
+export function focusField(scope: Element): HTMLElement | null {
+  const wrapper = [...scope.querySelectorAll<HTMLElement>('.fd-field[data-focus]')].find((one) => !one.closest('[hidden]'));
+  return wrapper?.querySelector<HTMLElement>(FIRST_FIELD) ?? null;
+}
+
 /** The dialogs' way to make an element of a document: a tag, its attributes, and its words. */
 const maker =
   (doc: Document) =>
@@ -147,8 +153,8 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
   let done = false;
   if (options.recompute) recalculate(handle.form, options.page.fields, options.recompute, () => done);
 
-  // Into the dialog: its first field, once the record is in, or the dialog itself meanwhile.
-  const firstField = () => body.querySelector<HTMLElement>(FIRST_FIELD);
+  // Into the dialog: its field that takes the focus (focus) or its first, once the record is in, or the dialog itself meanwhile.
+  const firstField = () => focusField(body) ?? body.querySelector<HTMLElement>(FIRST_FIELD);
   (firstField() ?? box).focus();
   void handle.form.settled().then(() => {
     if (doc.activeElement === box || !box.contains(doc.activeElement)) firstField()?.focus();

@@ -257,6 +257,8 @@ export interface QuestionPatch {
   required?: boolean;
   help?: string;
   placeholder?: string;
+  /** Takes the focus as the record opens (the node's `focus`), as Flectra's default_focus. */
+  focus?: boolean;
 }
 
 /** Where something is added: after an element, or in a container — at a place among its children, or at its end. */
@@ -861,6 +863,11 @@ export function createDesigner(options: {
       return apply(
         (draft) => {
           const node = fieldNode(draft, id);
+          // Where the focus goes as the record opens is the place's, whatever the field.
+          if (patch.focus !== undefined) {
+            if (patch.focus) node.focus = true;
+            else delete node.focus;
+          }
           if (fromModel(node.field)) {
             // The backend's definition stays as it is: what this page says goes on the field's place on it.
             if (patch.label !== undefined) node.label = patch.label;

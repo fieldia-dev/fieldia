@@ -65,7 +65,7 @@ describe('the search box over the settings', () => {
     const { panel, search, groups } = picked();
     search('s');
     expect(groups()).toEqual([
-      ['Content', 'Shown as'],
+      ['Content', 'Shown as', 'Focused as the record opens'],
       // In a tab's group, the best first: a name with an s anywhere in it last.
       ['Layout', 'Section', 'Labels'],
       ['Rules', 'Shown only to', 'Shown while', 'Starts with', 'Set when', 'When it shows', 'Answer rules', 'When it changes'],
@@ -94,13 +94,14 @@ describe('the search box over the settings', () => {
     expect(active()).toBe('Shown as');
     // Down the list as it is drawn, tab by tab.
     const drawn: (string | null | undefined)[] = [active()];
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 11; i++) {
       press('ArrowDown', {}, box);
       drawn.push(active());
     }
     expect(drawn).toEqual([...panel.querySelectorAll('.fd-insp-found-name')].map((n) => n.textContent));
     press('ArrowDown', {}, box);
     expect(active()).toBe('Shown as');
+    press('ArrowDown', {}, box);
     press('ArrowDown', {}, box);
     press('ArrowDown', {}, box);
     press('ArrowUp', {}, box);

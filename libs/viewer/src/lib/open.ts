@@ -1,5 +1,5 @@
 import type { OpenRequest, OpenResult, Page, PostedMessage, Tone, Values } from '@fieldia/core';
-import { FIRST_FIELD, openFormDialog, openFormPanel, type FormDialogResult } from './dialog';
+import { FIRST_FIELD, focusField, openFormDialog, openFormPanel, type FormDialogResult } from './dialog';
 import { findPage, nameFieldOf } from './related';
 import { mountViewer, type ViewerOptions } from './viewer';
 
@@ -103,6 +103,6 @@ function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResu
     const leave = () => void opened.form.settled().then(() => end(true));
     opened.on('save', leave);
     opened.on('send', leave);
-    (opened.element.querySelector<HTMLElement>(FIRST_FIELD) ?? back).focus();
+    (focusField(opened.element) ?? opened.element.querySelector<HTMLElement>(FIRST_FIELD) ?? back).focus();
   });
 }
