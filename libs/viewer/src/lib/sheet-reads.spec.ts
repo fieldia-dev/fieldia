@@ -34,6 +34,7 @@ const FIELDS: Page['fields'] = {
   risk: { type: 'selection', label: 'Risk', options: [{ value: 'low', label: 'Low' }, { value: 'high', label: 'High' }] },
   amount: { type: 'monetary', label: 'Amount', currency: 'EGP' },
   hours: { type: 'float', label: 'Hours', digits: [16, 2] },
+  share: { type: 'float', label: 'Share' },
   due: { type: 'date', label: 'Due' },
   partner: { type: 'many2one', label: 'Customer', relation: 'res.partner' },
   notes: { type: 'text', label: 'Notes' },
@@ -48,6 +49,7 @@ const VALUES: Values = {
   risk: 'high',
   amount: 6750,
   hours: 24.8,
+  share: 0.35,
   due: '2026-10-13',
   partner: { id: 7, label: 'Bermuda Real Estate' },
   notes: 'Two lines\nof notes',
@@ -75,6 +77,8 @@ function readonlyPage(look?: Page['look']): Page {
             field('f-state', 'state'),
             field('f-amount', 'amount'),
             field('f-hours', 'hours'),
+            field('f-spent', 'hours', { widget: 'duration' }),
+            field('f-share', 'share', { widget: 'percentage' }),
             field('f-due', 'due'),
             field('f-partner', 'partner'),
             field('f-notes', 'notes'),
@@ -108,6 +112,9 @@ describe('read-only fields as words (look.readonlyShown)', () => {
     expect(words(at, 'f-amount')).toMatch(/6,750\.00/);
     expect(words(at, 'f-amount')).toMatch(/EGP|E£|£/);
     expect(words(at, 'f-hours')).toBe('24.80');
+    // Hours and per cents read as their widgets write them.
+    expect(words(at, 'f-spent')).toBe('24:48');
+    expect(words(at, 'f-share')).toBe('35%');
     expect(words(at, 'f-due')).toBe('13 Oct 2026');
     expect(words(at, 'f-partner')).toBe('Bermuda Real Estate');
     expect(words(at, 'f-notes')).toBe('Two lines\nof notes');

@@ -1,5 +1,5 @@
 import type { Field, FieldNode, LineField, Locale, RelatedRecord, Value, Values } from '@fieldia/core';
-import { displayValue } from './display';
+import { cellText } from './display';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import type { WidgetDialogs } from './widgets';
 import { detailLines, linkAvatar } from './relations';
@@ -23,6 +23,8 @@ export function readsAsText(field: Field, node: FieldNode): boolean {
     case 'text':
     case 'integer':
     case 'float':
+      // Hours and per cents read as their widgets write them: 06:30, 35%.
+      return !widget || widget === 'duration' || widget === 'percentage';
     case 'monetary':
     case 'date':
     case 'datetime':
@@ -56,7 +58,7 @@ export function readText(context: { document: Document; field: Field; node: Fiel
   return {
     element,
     update(value, values) {
-      const words = displayValue(field as LineField, value, values as Record<string, Value>, locale);
+      const words = cellText(field as LineField, value, values as Record<string, Value>, locale, undefined, { widget: node.widget, options: node.options });
       const key = JSON.stringify([words, value ?? null]);
       if (key === drawn) return;
       drawn = key;
