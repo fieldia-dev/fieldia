@@ -104,6 +104,40 @@ for (const variant of VARIANTS) {
       expect(problems).toEqual([]);
     });
 
+    test('contact: a same-Tax-ID warning that names and opens the other partner, defaults for a new address, parts by the person’s groups', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, 'page=real-contact&record=7007&skin=underline');
+      const warning = page.locator('.fd-alert', { hasText: 'same Tax ID' });
+      await expect(warning).toContainText('Pyramids Contracting');
+      await warning.getByRole('button', { name: 'Open it' }).click();
+      const dialog = page.getByRole('dialog');
+      await expect(dialog.getByRole('textbox', { name: 'Name' }).first()).toHaveValue('Pyramids Contracting');
+      await dialog.getByRole('button', { name: 'Discard' }).click();
+      // No country: every state may be picked (=?), as Flectra's domain.
+      await page.evaluate(() => (window as any).fieldiaDemo.handle.form.setValue('country_id', null));
+      await expect.poll(() => value(page, 'country_id')).toBeNull();
+      const state = node(page, 'f-state').getByRole('combobox');
+      await state.click();
+      await state.fill('Riy');
+      await expect(node(page, 'f-state').getByRole('option', { name: 'Riyadh', exact: true }).first()).toBeVisible();
+      await state.press('Escape');
+
+      // A company's new address starts at the company's own, as Flectra's context gives it.
+      await page.goto(`/${variant}/?page=real-contact&record=7001&skin=underline`);
+      const cards = node(page, 'f-children');
+      await cards.getByRole('button', { name: 'Add', exact: true }).click();
+      await expect(cards.getByRole('textbox', { name: 'Street', exact: true }).last()).toHaveValue('Plot 112, South 90th Street');
+      // Tags in their colours.
+      await expect(node(page, 'f-tags').locator('[data-color]').first()).toBeVisible();
+
+      // Someone without the sales or invoicing groups: no Sales stat button, no Invoicing tab.
+      await page.goto(`/${variant}/?page=real-contact&record=7001&skin=underline&roles=base.group_user`);
+      await expect(node(page, 'stat-meetings')).toBeVisible();
+      await expect(node(page, 'stat-sales')).toBeHidden();
+      await expect(tab(page, 'tab-accounting')).toBeHidden();
+      expect(problems).toEqual([]);
+    });
+
     test('opportunity: the probability follows the stage; Lost asks why, then Restore and Won', async ({ page }) => {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, 'page=real-opportunity&record=7701&skin=underline');

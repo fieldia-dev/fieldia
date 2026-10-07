@@ -3,18 +3,15 @@
   "id": "real-contact",
   "title": "Contact",
   "description": "Sherkety ERP's contact form (res.partner, base.view_partner_form) as a user with Sales, Purchase, Invoicing, CRM and the Egyptian e-invoicing module sees it.",
-  "maxWidth": "full",
   "data": { "kind": "record", "model": "res.partner" },
+  "maxWidth": "full",
   "fields": {
     "name": { "type": "char", "label": "Name", "required": true },
     "image_1920": { "type": "image", "label": "Image", "maxSize": 2097152 },
     "company_type": {
       "type": "selection",
       "label": "Company Type",
-      "options": [
-        { "value": "person", "label": "Individual" },
-        { "value": "company", "label": "Company" }
-      ],
+      "options": [{ "value": "person", "label": "Individual" }, { "value": "company", "label": "Company" }],
       "default": "person"
     },
     "is_company": { "type": "boolean", "label": "Is a Company", "default": false },
@@ -23,7 +20,8 @@
       "type": "many2one",
       "label": "Related Company",
       "relation": "res.partner",
-      "filter": [{ "field": "is_company", "op": "=", "value": true }]
+      "filter": [{ "field": "is_company", "op": "=", "value": true }],
+      "createValues": { "company_type": "'company'", "is_company": "True", "user_id": "user_id", "vat": "vat" }
     },
     "company_name": { "type": "char", "label": "Company Name" },
     "type": {
@@ -45,7 +43,7 @@
       "type": "many2one",
       "label": "State",
       "relation": "res.country.state",
-      "filter": [{ "field": "country_id", "op": "=", "valueFrom": "country_id" }]
+      "filter": [{ "field": "country_id", "op": "=?", "valueFrom": "country_id" }]
     },
     "zip": { "type": "char", "label": "ZIP" },
     "country_id": { "type": "many2one", "label": "Country", "relation": "res.country" },
@@ -63,10 +61,7 @@
     "lang": {
       "type": "selection",
       "label": "Language",
-      "options": [
-        { "value": "en_US", "label": "English (US)" },
-        { "value": "ar_001", "label": "Arabic / العربية" }
-      ]
+      "options": [{ "value": "en_US", "label": "English (US)" }, { "value": "ar_001", "label": "Arabic / العربية" }]
     },
     "category_id": { "type": "many2many", "label": "Tags", "relation": "res.partner.category" },
     "same_vat_partner_id": { "type": "many2one", "label": "Partner with same Tax ID", "relation": "res.partner", "readonly": true },
@@ -101,22 +96,85 @@
         "phone": { "type": "char", "label": "Phone" },
         "mobile": { "type": "char", "label": "Mobile" },
         "comment": { "type": "text", "label": "Notes" }
+      },
+      "lineDefaults": {
+        "type": "'other'",
+        "street": "street",
+        "street2": "street2",
+        "city": "city",
+        "state_id": "state_id",
+        "zip": "zip",
+        "country_id": "country_id"
       }
     },
-    "user_id": { "type": "many2one", "label": "Salesperson", "relation": "res.users", "help": "The internal user in charge of this contact." },
-    "property_payment_term_id": { "type": "many2one", "label": "Payment Terms", "relation": "account.payment.term", "help": "This payment term will be used instead of the default one for sales orders and customer invoices" },
+    "user_id": {
+      "type": "many2one",
+      "label": "Salesperson",
+      "relation": "res.users",
+      "help": "The internal user in charge of this contact.",
+      "filter": [{ "field": "share", "op": "!=", "value": true }]
+    },
+    "team_id": { "type": "many2one", "label": "Sales Team", "relation": "crm.team" },
+    "property_payment_term_id": {
+      "type": "many2one",
+      "label": "Payment Terms",
+      "relation": "account.payment.term",
+      "help": "This payment term will be used instead of the default one for sales orders and customer invoices"
+    },
     "property_product_pricelist": { "type": "many2one", "label": "Pricelist", "relation": "product.pricelist" },
     "buyer_id": { "type": "many2one", "label": "Buyer", "relation": "res.users" },
-    "property_supplier_payment_term_id": { "type": "many2one", "label": "Payment Terms", "relation": "account.payment.term", "help": "This payment term will be used instead of the default one for purchase orders and vendor bills" },
-    "receipt_reminder_email": { "type": "boolean", "label": "Receipt Reminder", "help": "Automatically send a confirmation email to the vendor X days before the expected receipt date, asking him to confirm the exact date." },
-    "reminder_date_before_receipt": { "type": "integer", "label": "Days Before Receipt", "default": 1, "help": "Number of days to send reminder email before the promised receipt date" },
-    "property_account_position_id": { "type": "many2one", "label": "Fiscal Position", "relation": "account.fiscal.position", "help": "The fiscal position determines the taxes/accounts used for this contact." },
-    "company_registry": { "type": "char", "label": "Company ID", "help": "The registry number of the company. Use it if it is different from the Tax ID. It must be unique across all partners of a same country" },
+    "property_supplier_payment_term_id": {
+      "type": "many2one",
+      "label": "Payment Terms",
+      "relation": "account.payment.term",
+      "help": "This payment term will be used instead of the default one for purchase orders and vendor bills"
+    },
+    "property_purchase_currency_id": {
+      "type": "many2one",
+      "label": "Supplier Currency",
+      "relation": "res.currency",
+      "help": "This currency will be used for purchases from the current partner"
+    },
+    "receipt_reminder_email": {
+      "type": "boolean",
+      "label": "Receipt Reminder",
+      "help": "Automatically send a confirmation email to the vendor X days before the expected receipt date, asking him to confirm the exact date."
+    },
+    "reminder_date_before_receipt": {
+      "type": "integer",
+      "label": "Days Before Receipt",
+      "default": 1,
+      "help": "Number of days to send reminder email before the promised receipt date"
+    },
+    "property_account_position_id": {
+      "type": "many2one",
+      "label": "Fiscal Position",
+      "relation": "account.fiscal.position",
+      "help": "The fiscal position determines the taxes/accounts used for this contact."
+    },
+    "company_registry": {
+      "type": "char",
+      "label": "Company ID",
+      "help": "The registry number of the company. Use it if it is different from the Tax ID. It must be unique across all partners of a same country"
+    },
     "ref": { "type": "char", "label": "Reference" },
+    "company_id": { "type": "many2one", "label": "Company", "relation": "res.company" },
     "industry_id": { "type": "many2one", "label": "Industry", "relation": "res.partner.industry" },
-    "l10n_eg_tax_card_no": { "type": "char", "label": "Tax Card No (البطاقة الضريبية)", "help": "Egyptian Tax Card number. Required for vendors located in Egypt." },
-    "l10n_eg_tax_file_no": { "type": "char", "label": "Tax File No (الملف الضريبي)", "help": "Egyptian Tax File number. Required for vendors located in Egypt." },
-    "l10n_eg_tax_record_no": { "type": "char", "label": "Tax Record No (السجل الضريبي)", "help": "Egyptian Commercial Tax Record number. Required for vendors located in Egypt." },
+    "l10n_eg_tax_card_no": {
+      "type": "char",
+      "label": "Tax Card No (البطاقة الضريبية)",
+      "help": "Egyptian Tax Card number. Required for vendors located in Egypt."
+    },
+    "l10n_eg_tax_file_no": {
+      "type": "char",
+      "label": "Tax File No (الملف الضريبي)",
+      "help": "Egyptian Tax File number. Required for vendors located in Egypt."
+    },
+    "l10n_eg_tax_record_no": {
+      "type": "char",
+      "label": "Tax Record No (السجل الضريبي)",
+      "help": "Egyptian Commercial Tax Record number. Required for vendors located in Egypt."
+    },
     "bank_ids": {
       "type": "one2many",
       "label": "Banks",
@@ -130,11 +188,33 @@
       }
     },
     "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency", "readonly": true },
-    "property_account_receivable_id": { "type": "many2one", "label": "Account Receivable", "relation": "account.account", "filter": [{ "field": "account_type", "op": "=", "value": "asset_receivable" }] },
-    "property_account_payable_id": { "type": "many2one", "label": "Account Payable", "relation": "account.account", "filter": [{ "field": "account_type", "op": "=", "value": "liability_payable" }] },
+    "property_account_receivable_id": {
+      "type": "many2one",
+      "label": "Account Receivable",
+      "relation": "account.account",
+      "filter": [{ "field": "account_type", "op": "=", "value": "asset_receivable" }]
+    },
+    "property_account_payable_id": {
+      "type": "many2one",
+      "label": "Account Payable",
+      "relation": "account.account",
+      "filter": [{ "field": "account_type", "op": "=", "value": "liability_payable" }]
+    },
     "show_credit_limit": { "type": "boolean", "label": "Show Credit Limit", "readonly": true },
-    "credit": { "type": "monetary", "label": "Total Receivable", "currencyField": "currency_id", "readonly": true, "help": "Total amount this customer owes you." },
-    "days_sales_outstanding": { "type": "float", "label": "Days Sales Outstanding (DSO)", "readonly": true, "digits": [16, 2], "help": "[(Total Receivable/Total Revenue) * number of days since the first invoice] for this customer" },
+    "credit": {
+      "type": "monetary",
+      "label": "Total Receivable",
+      "currencyField": "currency_id",
+      "readonly": true,
+      "help": "Total amount this customer owes you."
+    },
+    "days_sales_outstanding": {
+      "type": "float",
+      "label": "Days Sales Outstanding (DSO)",
+      "readonly": true,
+      "digits": [16, 2],
+      "help": "[(Total Receivable/Total Revenue) * number of days since the first invoice] for this customer"
+    },
     "use_partner_credit_limit": { "type": "boolean", "label": "Partner Limit", "help": "Set a value greater than 0.0 to activate a credit limit check" },
     "credit_limit": { "type": "monetary", "label": "Credit Limit", "currencyField": "currency_id", "min": 0, "help": "Credit limit specific to this partner." },
     "comment": { "type": "html", "label": "Notes" },
@@ -195,36 +275,96 @@
           "labels": "hidden",
           "invisible": "((is_company and not parent_id) or company_name) and company_name != ''"
         },
-        { "type": "field", "id": "f-company-name", "field": "company_name", "labels": "hidden", "readonly": true, "invisible": "not company_name or company_name == '' or is_company" }
+        {
+          "type": "field",
+          "id": "f-company-name",
+          "field": "company_name",
+          "labels": "hidden",
+          "readonly": true,
+          "invisible": "not company_name or company_name == '' or is_company"
+        }
       ]
     },
     "statButtons": [
-      { "id": "stat-opportunities", "label": "Opportunities", "field": "opportunity_count", "icon": "star", "action": "partner_view_opportunities" },
+      {
+        "id": "stat-opportunities",
+        "label": "Opportunities",
+        "field": "opportunity_count",
+        "icon": "star",
+        "action": "partner_view_opportunities",
+        "roles": ["sales_team.group_sale_salesman"]
+      },
       { "id": "stat-meetings", "label": "Meetings", "field": "meeting_count", "icon": "calendar", "action": "partner_schedule_meeting" },
-      { "id": "stat-sales", "label": "Sales", "field": "sale_order_count", "icon": "money", "action": "partner_view_sale_orders" },
-      { "id": "stat-invoiced", "label": "Invoiced", "field": "total_invoiced", "icon": "edit", "action": "partner_view_invoices" },
-      { "id": "stat-vendor-bills", "label": "Vendor Bills", "field": "supplier_invoice_count", "icon": "edit", "action": "partner_view_vendor_bills", "invisible": "supplier_invoice_count == 0" },
-      { "id": "stat-purchases", "label": "Purchases", "field": "purchase_order_count", "icon": "cart", "action": "partner_view_purchases" }
+      {
+        "id": "stat-sales",
+        "label": "Sales",
+        "field": "sale_order_count",
+        "icon": "money",
+        "action": "partner_view_sale_orders",
+        "roles": ["sales_team.group_sale_salesman"]
+      },
+      {
+        "id": "stat-invoiced",
+        "label": "Invoiced",
+        "field": "total_invoiced",
+        "icon": "edit",
+        "action": "partner_view_invoices",
+        "roles": ["account.group_account_invoice", "account.group_account_readonly"]
+      },
+      {
+        "id": "stat-vendor-bills",
+        "label": "Vendor Bills",
+        "field": "supplier_invoice_count",
+        "icon": "edit",
+        "action": "partner_view_vendor_bills",
+        "invisible": "supplier_invoice_count == 0",
+        "roles": ["account.group_account_invoice", "account.group_account_readonly"]
+      },
+      {
+        "id": "stat-purchases",
+        "label": "Purchases",
+        "field": "purchase_order_count",
+        "icon": "cart",
+        "action": "partner_view_purchases",
+        "roles": ["purchase.group_purchase_user"]
+      }
     ],
     "ribbon": { "id": "ribbon-archived", "label": "Archived", "tone": "danger", "invisible": "active" },
     "alerts": [
       {
         "id": "warning-tax",
-        "message": "A partner with the same Tax ID already exists, are you sure to create a new one?",
+        "message": "A partner with the same Tax ID already exists ({same_vat_partner_id}), are you sure to create a new one?",
         "tone": "warning",
-        "invisible": "not same_vat_partner_id"
+        "invisible": "not same_vat_partner_id",
+        "buttons": [
+          {
+            "type": "button",
+            "id": "open-same-vat",
+            "label": "Open it",
+            "steps": [{ "do": "open", "page": "real-contact", "as": "dialog", "record": "same_vat_partner_id" }]
+          }
+        ]
       },
       {
         "id": "warning-company",
-        "message": "A partner with the same Company Registry already exists, are you sure to create a new one?",
+        "message": "A partner with the same Company Registry already exists ({same_company_registry_partner_id}), are you sure to create a new one?",
         "tone": "warning",
-        "invisible": "not same_company_registry_partner_id"
+        "invisible": "not same_company_registry_partner_id",
+        "buttons": [
+          {
+            "type": "button",
+            "id": "open-same-registry",
+            "label": "Open it",
+            "steps": [{ "do": "open", "page": "real-contact", "as": "dialog", "record": "same_company_registry_partner_id" }]
+          }
+        ]
       },
       {
         "id": "warning-bank",
         "message": "One or more Bank Accounts set on this partner are also used by other Partners. Please make sure that this is a wanted behavior.",
         "tone": "warning",
-        "invisible": "duplicated_bank_account_partners_count == 0"
+        "invisible": "duplicated_bank_account_partners_count == 0",
+        "buttons": [{ "type": "button", "id": "open-bank-partners", "label": "Partners", "action": "action_view_partner_with_same_bank" }]
       }
     ],
     "children": [
@@ -235,7 +375,7 @@
         "icon": "building",
         "style": "link",
         "action": "partner_create_company",
-        "invisible": "is_company or company_name == '' or not company_name"
+        "invisible": "is_company or company_name == '' or not company_name or not editing"
       },
       {
         "type": "section",
@@ -262,9 +402,23 @@
                   { "type": "field", "id": "f-street2", "field": "street2", "placeholder": "Street 2...", "colspan": 12 },
                   { "type": "field", "id": "f-building-no", "field": "l10n_eg_building_no", "placeholder": "Building Number", "colspan": 12 },
                   { "type": "field", "id": "f-city", "field": "city", "placeholder": "City", "colspan": 5 },
-                  { "type": "field", "id": "f-state", "field": "state_id", "placeholder": "State", "colspan": 4 },
+                  {
+                    "type": "field",
+                    "id": "f-state",
+                    "field": "state_id",
+                    "placeholder": "State",
+                    "colspan": 4,
+                    "options": { "open": false, "create": false }
+                  },
                   { "type": "field", "id": "f-zip", "field": "zip", "placeholder": "ZIP", "colspan": 3 },
-                  { "type": "field", "id": "f-country", "field": "country_id", "placeholder": "Country", "colspan": 12, "options": { "create": false } }
+                  {
+                    "type": "field",
+                    "id": "f-country",
+                    "field": "country_id",
+                    "placeholder": "Country",
+                    "colspan": 12,
+                    "options": { "create": false, "open": false }
+                  }
                 ]
               },
               { "type": "field", "id": "f-vat", "field": "vat", "placeholder": "e.g. BE0477472701", "readonly": "parent_id" }
@@ -291,7 +445,14 @@
               { "type": "field", "id": "f-website", "field": "website", "widget": "url", "placeholder": "e.g. https://sherkety.net" },
               { "type": "field", "id": "f-title", "field": "title", "placeholder": "e.g. Mister", "invisible": "is_company" },
               { "type": "field", "id": "f-lang", "field": "lang", "invisible": "active_lang_count <= 1" },
-              { "type": "field", "id": "f-tags", "field": "category_id", "widget": "tags", "placeholder": "e.g. \"B2B\", \"VIP\", \"Consulting\", ...", "options": { "create": false } }
+              {
+                "type": "field",
+                "id": "f-tags",
+                "field": "category_id",
+                "widget": "tags",
+                "placeholder": "e.g. \"B2B\", \"VIP\", \"Consulting\", ...",
+                "options": { "create": false, "colors": true }
+              }
             ]
           }
         ]
@@ -333,12 +494,27 @@
                     "title": "Sales",
                     "style": "line",
                     "children": [
-                      { "type": "field", "id": "f-user", "field": "user_id" },
+                      { "type": "field", "id": "f-user", "field": "user_id", "options": { "avatar": true } },
+                      { "type": "field", "id": "f-team", "field": "team_id", "roles": ["base.group_no_one"], "options": { "create": false } },
                       { "type": "field", "id": "f-payment-term", "field": "property_payment_term_id", "options": { "create": false } },
                       { "type": "field", "id": "f-pricelist", "field": "property_product_pricelist", "invisible": "not is_company and parent_id" },
-                      { "type": "text", "id": "t-parent-pricelists", "text": "Pricelists are managed on the parent company.", "style": "note", "invisible": "is_company or not parent_id" },
-                      { "type": "button", "id": "open-parent-pricelists", "label": "the parent company", "style": "link", "action": "open_commercial_entity", "invisible": "is_company or not parent_id" }
-                    ]
+                      {
+                        "type": "text",
+                        "id": "t-parent-pricelists",
+                        "text": "Pricelists are managed on the parent company.",
+                        "style": "note",
+                        "invisible": "is_company or not parent_id"
+                      },
+                      {
+                        "type": "button",
+                        "id": "open-parent-pricelists",
+                        "label": "the parent company",
+                        "style": "link",
+                        "action": "open_commercial_entity",
+                        "invisible": "is_company or not parent_id"
+                      }
+                    ],
+                    "roles": ["sales_team.group_sale_salesman"]
                   },
                   {
                     "type": "section",
@@ -346,11 +522,25 @@
                     "title": "Purchase",
                     "style": "line",
                     "children": [
-                      { "type": "field", "id": "f-buyer", "field": "buyer_id" },
+                      { "type": "field", "id": "f-buyer", "field": "buyer_id", "options": { "avatar": true } },
                       { "type": "field", "id": "f-supplier-payment-term", "field": "property_supplier_payment_term_id", "options": { "create": false } },
+                      {
+                        "type": "field",
+                        "id": "f-purchase-currency",
+                        "field": "property_purchase_currency_id",
+                        "roles": ["base.group_multi_currency"],
+                        "options": { "create": false }
+                      },
                       { "type": "field", "id": "f-receipt-reminder", "field": "receipt_reminder_email" },
-                      { "type": "field", "id": "f-reminder-days", "field": "reminder_date_before_receipt", "options": { "suffix": "day(s) before" }, "invisible": "not receipt_reminder_email" }
-                    ]
+                      {
+                        "type": "field",
+                        "id": "f-reminder-days",
+                        "field": "reminder_date_before_receipt",
+                        "options": { "suffix": "day(s) before" },
+                        "invisible": "not receipt_reminder_email"
+                      }
+                    ],
+                    "roles": ["purchase.group_purchase_user"]
                   },
                   {
                     "type": "section",
@@ -367,6 +557,14 @@
                     "children": [
                       { "type": "field", "id": "f-company-registry", "field": "company_registry", "invisible": "parent_id" },
                       { "type": "field", "id": "f-ref", "field": "ref" },
+                      {
+                        "type": "field",
+                        "id": "f-company",
+                        "field": "company_id",
+                        "roles": ["base.group_multi_company"],
+                        "readonly": "parent_id",
+                        "options": { "create": false }
+                      },
                       { "type": "field", "id": "f-industry", "field": "industry_id", "invisible": "not is_company", "options": { "create": false } }
                     ]
                   },
@@ -404,7 +602,14 @@
                     "title": "Bank Accounts",
                     "style": "line",
                     "children": [
-                      { "type": "field", "id": "f-banks", "field": "bank_ids", "labels": "hidden", "columns": ["acc_number", "bank_id", "allow_out_payment"], "options": { "addLabel": "Add a line" } }
+                      {
+                        "type": "field",
+                        "id": "f-banks",
+                        "field": "bank_ids",
+                        "labels": "hidden",
+                        "columns": ["acc_number", "bank_id", "allow_out_payment"],
+                        "options": { "addLabel": "Add a line" }
+                      }
                     ]
                   },
                   {
@@ -432,7 +637,8 @@
                   }
                 ]
               }
-            ]
+            ],
+            "roles": ["account.group_account_invoice", "account.group_account_readonly"]
           },
           {
             "type": "tab",
@@ -440,9 +646,15 @@
             "label": "Invoicing",
             "invisible": "is_company or not parent_id",
             "children": [
-              { "type": "text", "id": "t-accounting-on-parent", "text": "Accounting-related settings are managed on the parent company.", "style": "paragraph" },
+              {
+                "type": "text",
+                "id": "t-accounting-on-parent",
+                "text": "Accounting-related settings are managed on the parent company.",
+                "style": "paragraph"
+              },
               { "type": "button", "id": "open-parent-accounting", "label": "the parent company", "style": "link", "action": "open_commercial_entity" }
-            ]
+            ],
+            "roles": ["account.group_account_invoice", "account.group_account_readonly"]
           },
           {
             "type": "tab",
@@ -464,7 +676,14 @@
                     "labels": "hidden",
                     "children": [
                       { "type": "field", "id": "f-sale-warn", "field": "sale_warn", "required": true },
-                      { "type": "field", "id": "f-sale-warn-msg", "field": "sale_warn_msg", "placeholder": "Type a message...", "invisible": "sale_warn in [False, 'no-message']", "required": "sale_warn and sale_warn != 'no-message'" }
+                      {
+                        "type": "field",
+                        "id": "f-sale-warn-msg",
+                        "field": "sale_warn_msg",
+                        "placeholder": "Type a message...",
+                        "invisible": "sale_warn in [False, 'no-message']",
+                        "required": "sale_warn and sale_warn != 'no-message'"
+                      }
                     ]
                   },
                   {
@@ -475,7 +694,14 @@
                     "labels": "hidden",
                     "children": [
                       { "type": "field", "id": "f-invoice-warn", "field": "invoice_warn", "required": true },
-                      { "type": "field", "id": "f-invoice-warn-msg", "field": "invoice_warn_msg", "placeholder": "Type a message...", "invisible": "invoice_warn in [False, 'no-message']", "required": "invoice_warn and invoice_warn != 'no-message'" }
+                      {
+                        "type": "field",
+                        "id": "f-invoice-warn-msg",
+                        "field": "invoice_warn_msg",
+                        "placeholder": "Type a message...",
+                        "invisible": "invoice_warn in [False, 'no-message']",
+                        "required": "invoice_warn and invoice_warn != 'no-message'"
+                      }
                     ]
                   },
                   {
@@ -486,7 +712,14 @@
                     "labels": "hidden",
                     "children": [
                       { "type": "field", "id": "f-purchase-warn", "field": "purchase_warn", "required": true },
-                      { "type": "field", "id": "f-purchase-warn-msg", "field": "purchase_warn_msg", "placeholder": "Type a message...", "invisible": "purchase_warn in [False, 'no-message']", "required": "purchase_warn and purchase_warn != 'no-message'" }
+                      {
+                        "type": "field",
+                        "id": "f-purchase-warn-msg",
+                        "field": "purchase_warn_msg",
+                        "placeholder": "Type a message...",
+                        "invisible": "purchase_warn in [False, 'no-message']",
+                        "required": "purchase_warn and purchase_warn != 'no-message'"
+                      }
                     ]
                   }
                 ]

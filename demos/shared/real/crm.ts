@@ -86,6 +86,11 @@ const PARTNER_DEFAULTS: Values = {
   currency_id: EGP,
   show_credit_limit: true,
   duplicated_bank_account_partners_count: 0,
+  same_vat_partner_id: null,
+  same_company_registry_partner_id: null,
+  team_id: null,
+  property_purchase_currency_id: null,
+  company_id: null,
   sale_warn: 'no-message',
   invoice_warn: 'no-message',
   purchase_warn: 'no-message',
@@ -193,7 +198,8 @@ const partners: Record<string, Values> = {
   }),
   7005: person('Omar Fathy', { parent_id: link(7004, 'New Capital Housing Authority'), function: 'Head of the Procurement Committee', title: link(7634, 'Engineer'), email: 'o.fathy@nchousing.example', phone: '+20 2 2812 0140', city: 'New Administrative Capital', state_id: CAIRO, country_id: EGYPT, country_code: 'EG' }),
   7006: company('Pyramids Contracting', { city: 'Giza', state_id: GIZA, country_id: EGYPT, country_code: 'EG', category_id: [link(7625, 'Contractor')] }),
-  7007: company('Delta Build & Co.', { city: 'Mansoura', country_id: EGYPT, country_code: 'EG', category_id: [link(7625, 'Contractor')] }),
+  // Registered under Pyramids Contracting's tax ID: the page warns of a partner with the same one.
+  7007: company('Delta Build & Co.', { city: 'Mansoura', country_id: EGYPT, country_code: 'EG', vat: '431-118-602', same_vat_partner_id: link(7006, 'Pyramids Contracting'), category_id: [link(7625, 'Contractor')] }),
   7008: company('Sinai Engineering Group', { city: 'Cairo', state_id: CAIRO, country_id: EGYPT, country_code: 'EG', category_id: [link(7625, 'Contractor')] }),
   // The opportunity's customer: a person buying a penthouse.
   7009: person('Mostafa Kamel', {
@@ -512,6 +518,8 @@ function action(request: ActionRequest): Promise<ActionResult> | undefined {
       return answer({ open: { page: 'real-contact', as: 'page', record: 'parent_id' } });
     case 'mail_action_blacklist_remove':
       return answer({ values: { is_blacklisted: false }, say: { message: 'Taken off the blacklist for mass mailings.', tone: 'success' } });
+    case 'action_view_partner_with_same_bank':
+      return answer(info(`The partners that share a bank account with ${v['name']}.`));
     case 'phone_action_blacklist_remove':
       return answer({ values: { phone_blacklisted: false, mobile_blacklisted: false }, say: { message: 'Taken off the blacklist for SMS marketing.', tone: 'success' } });
 
@@ -587,7 +595,7 @@ export const lane: RealLane = {
     'real-opportunity': { user: CRM_MANAGER, records: [7701, 7702], breadcrumbs: [{ label: 'Pipeline', href: '#pipeline' }] },
     'real-tender': { user: CRM_MANAGER, breadcrumbs: [{ label: 'Tenders', href: '#tenders' }] },
   },
-  shows: { 'crm.stage': { folded: 'fold' } },
+  shows: { 'crm.stage': { folded: 'fold' }, 'res.partner.category': { color: 'color' } },
   // A lead's properties are its sales team's.
   definitions: { lead_properties: (values) => TEAM_PROPERTIES[idOf(values['team_id']) ?? -1] ?? [] },
   pages: {
@@ -630,7 +638,7 @@ export const lane: RealLane = {
     },
     'res.currency': { 7461: { name: 'EGP' }, 7462: { name: 'USD' } },
     'res.partner.title': { 7631: { name: 'Mister' }, 7632: { name: 'Madam' }, 7633: { name: 'Doctor' }, 7634: { name: 'Engineer' }, 7635: { name: 'Professor' } },
-    'res.partner.category': { 7621: { name: 'Real estate' }, 7622: { name: 'Key account' }, 7623: { name: 'Government' }, 7624: { name: 'Supplier' }, 7625: { name: 'Contractor' } },
+    'res.partner.category': { 7621: { name: 'Real estate', color: 10 }, 7622: { name: 'Key account', color: 3 }, 7623: { name: 'Government', color: 4 }, 7624: { name: 'Supplier', color: 7 }, 7625: { name: 'Contractor', color: 2 } },
     'res.partner.industry': { 7641: { name: 'Real Estate' }, 7642: { name: 'Construction' }, 7643: { name: 'Public Administration' } },
     'account.payment.term': { 7651: { name: 'Immediate Payment' }, 7652: { name: '15 Days' }, 7653: { name: '30 Days' }, 7654: { name: '45 Days' }, 7655: { name: '30% Now, Balance 60 Days' } },
     'product.pricelist': { 7661: { name: 'Public Pricelist (EGP)' }, 7662: { name: 'Developers (EGP)' } },
