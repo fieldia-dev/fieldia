@@ -33,6 +33,7 @@ const NAMES: Record<string, string> = {
   Help: 'المساعدة',
   'Read-only fields': 'الحقول للقراءة فقط',
   'Shown only to': 'يظهر فقط لـ',
+  'Shown while': 'يظهر أثناء',
   'Starts with': 'يبدأ بـ',
   'New lines start with': 'تبدأ البنود الجديدة بـ',
   'A record made from it starts with': 'يبدأ السجل المُنشأ منه بـ',

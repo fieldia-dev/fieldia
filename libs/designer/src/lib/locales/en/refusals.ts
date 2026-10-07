@@ -103,6 +103,7 @@ export const refusals = {
   hotkeyShape: 'A key is one letter or digit, with Shift or without: V, Shift+G',
   hotkeyBrowser: (key: string) => `${key} is the browser’s own: pick another key`,
   onlyButtonKey: 'Only a button has a key',
+  alwaysHidden: 'It is hidden always: show it first, then say when',
   megabytes: (n: number) => `${n} MB`,
   // ---- kinds' own settings
   matrixNoPictures: 'A matrix’s columns have no pictures',

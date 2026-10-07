@@ -97,6 +97,7 @@ export const refusals: DesignerWords['refusals'] = {
   hotkeyShape: 'المفتاح حرف واحد أو رقم، مع Shift أو دونه: V أو Shift+G',
   hotkeyBrowser: (key) => `${key} مفتاح المتصفح نفسه: اختر مفتاحًا آخر`,
   onlyButtonKey: 'الزر وحده له مفتاح',
+  alwaysHidden: 'إنه مخفي دائمًا: أظهره أولًا ثم حدد متى',
   megabytes: (n) => `${n} ميغابايت`,
   matrixNoPictures: 'لا صور لأعمدة الشبكة',
   onlyOptionsPictures: 'السؤال ذو الخيارات وحده له صور ونقاط',

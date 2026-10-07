@@ -274,3 +274,38 @@ describe('a key on a button', () => {
     expect(designer.updateHeaderPart(badge, { hotkey: 'v' })).toBe(false);
   });
 });
+
+describe('parts shown only while editing, or only while reading', () => {
+  it('is set on a field’s Rules, kept apart from when it shows by a rule, one undo step', () => {
+    const designer = createDesigner({ page: sheet() });
+    designer.select('f-unit');
+    const { host } = mount(designer, { mode: 'advanced' });
+    openTab(host, 'Rules');
+    pick(host, 'Shown while', 'Editing');
+    expect(nodeOf(designer.getPage(), 'f-unit').invisible).toBe('not editing');
+    // A rule on another field joins it, and taking the rule away keeps it.
+    expect(designer.setCondition('f-unit', { field: 'state', equals: 'draft' })).toBe(true);
+    expect(nodeOf(designer.getPage(), 'f-unit').invisible).toBe("(state != 'draft') or not editing");
+    pick(host, 'Shown while', 'Reading');
+    expect(nodeOf(designer.getPage(), 'f-unit').invisible).toBe("(state != 'draft') or editing");
+    expect(designer.setCondition('f-unit', null)).toBe(true);
+    expect(nodeOf(designer.getPage(), 'f-unit').invisible).toBe('editing');
+    pick(host, 'Shown while', 'Always');
+    expect(nodeOf(designer.getPage(), 'f-unit').invisible).toBeUndefined();
+    designer.undo();
+    expect(nodeOf(designer.getPage(), 'f-unit').invisible).toBe('editing');
+  });
+
+  it('is offered for a header’s button and for words among the parts', () => {
+    const page = sheet();
+    ((page.layout as SheetNode).children[0] as { children: unknown[] }).children.push({ type: 'text', id: 't-warn', text: 'Changes reach every open order.' });
+    const designer = createDesigner({ page });
+    const button = designer.addHeaderPart('button', 'Create company') as string;
+    const { host } = mount(designer, { mode: 'advanced' });
+    pick(host, 'Shown while', 'Editing');
+    expect((designer.getPage().layout as SheetNode).buttons?.find((b) => b.id === button)?.invisible).toBe('not editing');
+    designer.select('t-warn');
+    pick(host, 'Shown while', 'Editing');
+    expect(((designer.getPage().layout as SheetNode).children[0] as { children: { id: string; invisible?: string }[] }).children.find((n) => n.id === 't-warn')?.invisible).toBe('not editing');
+  });
+});

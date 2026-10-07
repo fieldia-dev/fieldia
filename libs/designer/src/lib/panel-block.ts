@@ -6,6 +6,7 @@ import { segmented, setting } from './panel-controls';
 import { formContent } from './panel-form';
 import { whenClicked } from './steps-panel';
 import { hotkeyShown } from './hotkey-setting';
+import { shownWhileSetting } from './shown-while';
 
 /**
  * A block's own settings, on the Content tab: a picture's address and the
@@ -105,11 +106,13 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
       (value) => value && designer.updateBlock(id, { tone: value })
     );
     const toneRow = setting(el, 'content', 'Alert colour', tone.element, { words: w.alertColour });
+    const textWhile = shownWhileSetting(el, designer, id, { tab: 'content' });
     return {
-      rows: [setting(el, 'content', 'Reads as', style.element, { words: w.readsAs }), toneRow],
+      rows: [setting(el, 'content', 'Reads as', style.element, { words: w.readsAs }), toneRow, textWhile.element],
       update(page) {
         const node = locate(page, id)?.node;
         if (node?.type !== 'text') return;
+        textWhile.update(page);
         style.set(node.style ?? 'paragraph');
         toneRow.hidden = node.style !== 'alert';
         tone.set(node.tone ?? 'info');
@@ -131,6 +134,7 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
     asks.addEventListener('input', () => designer.updateBlock(id, { confirm: asks.value }));
     const hotkey = el('input', { class: 'fd-input fd-hotkey-input', 'aria-label': w.hotkey, placeholder: 'V', autocomplete: 'off', spellcheck: 'false', maxlength: '11' }) as HTMLInputElement;
     hotkey.addEventListener('change', () => designer.updateBlock(id, { hotkey: hotkey.value }));
+    const buttonWhile = shownWhileSetting(el, designer, id, { tab: 'content' });
     return {
       rows: [
         setting(el, 'content', 'Button words', words, { words: w.buttonWords }),
@@ -138,6 +142,7 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
         setting(el, 'content', 'Look', look.element, { words: w.look }),
         setting(el, 'content', 'Asks first', asks, { words: w.asksFirst }),
         setting(el, 'content', 'Key, with Alt', hotkey, { words: w.hotkey, hint: w.hotkeyHint }),
+        buttonWhile.element,
       ],
       update(page) {
         const node = locate(page, id)?.node;
@@ -147,6 +152,7 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
         look.set(node.style ?? 'secondary');
         if (!focused(asks)) asks.value = node.confirm ?? '';
         if (!focused(hotkey)) hotkey.value = hotkeyShown(node.hotkey);
+        buttonWhile.update(page);
       },
     };
   }

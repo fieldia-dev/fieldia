@@ -8,6 +8,7 @@ import { whenClicked } from './steps-panel';
 import type { PropertiesView } from './screen-properties';
 import { rolesSetting } from './roles-setting';
 import { hotkeyShown } from './hotkey-setting';
+import { shownWhileSetting } from './shown-while';
 
 /**
  * The panel for a part of a record's header: a button, a counter or a badge
@@ -94,6 +95,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, w.showOnlyWhen);
   showWhen.addEventListener('click', () => when.start());
   const roles = rolesSetting(el, designer, id, { tabbed: false });
+  const shownWhile = shownWhileSetting(el, designer, id, { tabbed: false });
   const left = el('button', { type: 'button', class: 'fd-button' }, w.moveLeft);
   const right = el('button', { type: 'button', class: 'fd-button' }, w.moveRight);
   const remove = el('button', { type: 'button', class: 'fd-button fd-button-danger' }, w.delete);
@@ -118,6 +120,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
     buttonsRow,
     el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, w.whenItShows), when.element, showWhen),
     roles.element,
+    shownWhile.element,
     el('div', { class: 'fd-props-actions' }, left, right, remove)
   );
 
@@ -193,6 +196,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
       if (kind === 'ribbon' && !focused(tooltip)) tooltip.value = (part as Ribbon).tooltip ?? '';
       when.update(page, testable(page), part.invisible);
       roles.update(page);
+      shownWhile.update(page);
       showWhen.hidden = !when.element.hidden || !when.canStart();
       left.hidden = index === 0;
       right.hidden = index === list.length - 1;

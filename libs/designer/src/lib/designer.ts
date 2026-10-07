@@ -21,7 +21,7 @@ import {
   type StepNode,
   type TabsNode,
 } from '@fieldia/core';
-import { conditionToHide, conditionToHold, type Condition } from './conditions';
+import { conditionToHide, conditionToHold, splitShownWhile, withShownWhile, type Condition, type ShownWhile } from './conditions';
 import { findHeaderPart, headerCommands, type HeaderCommands } from './header-commands';
 import { listCommands, type ListCommands } from './list-commands';
 import { kindCommands, type OptionDetails } from './kind-commands';
@@ -327,6 +327,8 @@ export interface Designer extends HeaderCommands, ListCommands, ChoiceCommands, 
   setCondition(id: string, condition: Condition | { field: string; equals: string | number | boolean } | null): boolean;
   /** The roles a part shows to (Flectra's groups=), `!` before one hiding it from people holding it; null shows it to everyone. */
   setRoles(id: string, roles: string[] | null): boolean;
+  /** A part shown only while the record is edited, only while it is read, or always: Flectra's oe_edit_only and oe_read_only. */
+  setShownWhile(id: string, mode: ShownWhile): boolean;
   /**
    * A field required, or read-only, only when a rule holds; `null` for no
    * rule. A field always required becomes required only then; a field the
@@ -1171,13 +1173,29 @@ export function createDesigner(options: {
           : 'rules' in condition
             ? condition
             : { join: 'all', rules: [{ field: condition.field, op: 'is', value: condition.equals }] };
+        // Shown only while the record is edited, or read: that stays as it is.
+        const mode = splitShownWhile(target.invisible).mode;
         if (!rules.rules.length) {
-          delete target.invisible;
+          const kept = withShownWhile(undefined, mode);
+          if (kept) target.invisible = kept;
+          else delete target.invisible;
           return;
         }
         const own = found?.node.type === 'field' ? found.node.field : null;
         if (own && rules.rules.some((rule) => rule.field === own)) throw new Refusal((w) => w.refusals.questionOwnAnswer);
-        target.invisible = conditionToHide(rules);
+        target.invisible = withShownWhile(conditionToHide(rules), mode) as string;
+      });
+    },
+
+    setShownWhile(id, mode) {
+      return apply((draft) => {
+        const target = (findContainer(draft, id) ?? findNode(draft, id)?.node ?? findHeaderPart(draft, id)?.part ?? statusbarOf(draft, id)) as { invisible?: string | boolean } | null | undefined;
+        if (!target) throw new Refusal((w) => w.refusals.noElement(id));
+        if (target.invisible === true) throw new Refusal((w) => w.refusals.alwaysHidden);
+        const { rest } = splitShownWhile(target.invisible);
+        const next = withShownWhile(typeof rest === 'string' ? rest : undefined, mode);
+        if (next) target.invisible = next;
+        else delete target.invisible;
       });
     },
 
