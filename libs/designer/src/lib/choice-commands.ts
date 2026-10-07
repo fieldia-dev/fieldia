@@ -1,4 +1,4 @@
-import type { Field, FieldNode, Page } from '@fieldia/core';
+import type { Field, FieldNode, Page, Tone } from '@fieldia/core';
 import { kindOfField } from './kinds';
 import { findNode } from './page-tree';
 import { Refusal } from './refusal';
@@ -36,6 +36,10 @@ export interface ChoiceCommands {
   setOnePerColumn(id: string, on: boolean): boolean;
   /** A yes or no as two buttons, nothing picked until one is, or as a switch. */
   setYesNoLook(id: string, look: 'buttons' | 'switch'): boolean;
+  /** One choice of a list drawn as a coloured badge, as Flectra's widget="badge", or back as a dropdown. */
+  setBadge(id: string, on: boolean): boolean;
+  /** A badge's colour for one option's value; `null` leaves it grey. */
+  setBadgeTone(id: string, value: string | number, tone: Tone | null): boolean;
 }
 
 const megabytes = (bytes: number) => Math.round((bytes / 1024 / 1024) * 10) / 10;
@@ -123,6 +127,39 @@ export function choiceCommands({ apply, fromModel, words }: ChoiceCommandsDeps):
           delete node.options['noLabel'];
           if (!Object.keys(node.options).length) delete node.options;
         }
+      });
+    },
+
+    setBadge(id, on) {
+      return apply((draft) => {
+        const found = findNode(draft, id);
+        const field = found?.node.type === 'field' ? draft.fields[found.node.field] : undefined;
+        if (!found || found.node.type !== 'field' || field?.type !== 'selection' || field.multiple || (found.node.widget && found.node.widget !== 'badge')) throw new Refusal((w) => w.refusals.onlyOneChoiceBadge);
+        const node = found.node;
+        if (on) node.widget = 'badge';
+        else {
+          delete node.widget;
+          if (node.options) {
+            delete node.options['tones'];
+            if (!Object.keys(node.options).length) delete node.options;
+          }
+        }
+      });
+    },
+
+    setBadgeTone(id, value, tone) {
+      return apply((draft) => {
+        const found = findNode(draft, id);
+        if (!found || found.node.type !== 'field' || found.node.widget !== 'badge') throw new Refusal((w) => w.refusals.onlyOneChoiceBadge);
+        const node = found.node;
+        const tones = { ...((node.options?.['tones'] as Record<string, string> | undefined) ?? {}) };
+        if (tone) tones[String(value)] = tone;
+        else delete tones[String(value)];
+        const options = { ...(node.options ?? {}) } as Record<string, unknown>;
+        if (Object.keys(tones).length) options['tones'] = tones;
+        else delete options['tones'];
+        if (Object.keys(options).length) node.options = options as FieldNode['options'];
+        else delete node.options;
       });
     },
   };

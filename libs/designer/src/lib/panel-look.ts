@@ -31,7 +31,7 @@ export const SWATCHES: readonly [string, string][] = [
   ['#0e7c86', 'Teal'],
 ];
 
-type Key = 'font' | 'density' | 'corners' | 'labels' | 'helpShown' | 'scheme';
+type Key = 'font' | 'density' | 'corners' | 'labels' | 'helpShown' | 'readonlyShown' | 'scheme';
 /** The look's choices of a few, by their key, in the order they stand: their names and words are the designer's. */
 const CHOICES: { key: Key; name: string; values: string[] }[] = [
   { key: 'font', name: 'Font', values: ['system', 'serif', 'rounded'] },
@@ -39,6 +39,7 @@ const CHOICES: { key: Key; name: string; values: string[] }[] = [
   { key: 'corners', name: 'Corners', values: ['square', 'soft', 'round'] },
   { key: 'labels', name: 'Labels', values: ['above', 'beside', 'hidden'] },
   { key: 'helpShown', name: 'Help', values: ['below', 'tooltip', 'both'] },
+  { key: 'readonlyShown', name: 'Read-only fields', values: ['text', 'box'] },
   { key: 'scheme', name: 'Colours', values: ['light', 'dark', 'auto'] },
 ];
 
@@ -55,12 +56,14 @@ function lookChoice(w: DesignerWords['panel'], key: Key, value: string): Choice<
       return value === 'hidden' ? { value, words: w.inTheBox, title: w.inBoxTitle } : { value, words: value === 'above' ? w.above : w.beside };
     case 'helpShown':
       return { value, words: w.helpWays[value as keyof typeof w.helpWays] };
+    case 'readonlyShown':
+      return { value, words: w.readonlyWays[value as keyof typeof w.readonlyWays] };
     default:
       return value === 'auto' ? { value, words: w.schemes.auto, title: w.schemeAutoTitle } : { value, words: w.schemes[value as 'light' | 'dark'] };
   }
 }
-const lookName = (w: DesignerWords['panel'], key: Key) => ({ font: w.font, density: w.spacing, corners: w.corners, labels: w.labels, helpShown: w.help, scheme: w.colours })[key];
-const lookHint = (w: DesignerWords['panel'], key: Key) => (key === 'density' ? w.spacingHint : key === 'labels' ? w.labelsHint : key === 'helpShown' ? w.helpShownHint : undefined);
+const lookName = (w: DesignerWords['panel'], key: Key) => ({ font: w.font, density: w.spacing, corners: w.corners, labels: w.labels, helpShown: w.help, readonlyShown: w.readonlyFields, scheme: w.colours })[key];
+const lookHint = (w: DesignerWords['panel'], key: Key) => (key === 'density' ? w.spacingHint : key === 'labels' ? w.labelsHint : key === 'helpShown' ? w.helpShownHint : key === 'readonlyShown' ? w.readonlyShownHint : undefined);
 
 /** The page's look, setting by setting. Pressing what is pressed gives the setting back to the skin. */
 export function pageLookSettings(el: ElementFactory, designer: Designer): LookSetting {
@@ -102,6 +105,7 @@ export function pageLookSettings(el: ElementFactory, designer: Designer): LookSe
   slider.addEventListener('input', () => width(slider.value));
   number.addEventListener('input', () => width(number.value));
   const widthRow = setting(el, 'look', 'Label width', [el('div', { class: 'fd-insp-range' }, slider, number, el('span', { class: 'fd-insp-unit' }, w.px))], { words: w.labelWidth });
+  const readonlyRow = rows[CHOICES.findIndex((c) => c.key === 'readonlyShown')];
   const labelsAt = CHOICES.findIndex((c) => c.key === 'labels');
   rows.splice(labelsAt + 1, 0, widthRow);
 
@@ -117,6 +121,8 @@ export function pageLookSettings(el: ElementFactory, designer: Designer): LookSe
       skins.hidden = !look.accent;
       if (any.ownerDocument.activeElement !== any) any.value = look.accent?.toLowerCase() ?? '#1677ff';
       for (const [key, seg] of segs) seg.set(look[key]);
+      // Read-only fields are a record's: a survey's answers are all to be given.
+      readonlyRow.hidden = page.data.kind !== 'record';
       widthRow.hidden = look.labels !== 'beside';
       const value = String(look.labelWidth ?? 140);
       if (number.ownerDocument.activeElement !== number) number.value = value;

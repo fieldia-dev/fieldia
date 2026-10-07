@@ -120,6 +120,8 @@ export const questions: DesignerWords['questions'] = {
   shuffleRows: 'ترتيب الصفوف عشوائيًا',
   onePerColumn: 'إجابة واحدة في كل عمود',
   pickAStep: 'يمكن للناس اختيار مرحلة',
+  colouredBadge: 'شارة ملوّنة',
+  colourFor: (label) => `لون ${label}`,
   mostCharacters: 'الحد الأقصى للأحرف',
   any: 'أي عدد',
   growsAsTyped: 'يكبر أثناء الكتابة',

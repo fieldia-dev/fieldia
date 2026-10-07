@@ -31,7 +31,7 @@ describe('the Look tab — the page', () => {
     const { host, panel } = screenEditor();
     expect([...panel.querySelectorAll('[role="tab"]')].map((t) => t.textContent)).toEqual(['Content', 'Layout', 'Look', 'Rules']);
     openTab(host, 'Look');
-    expect([...panel.querySelectorAll('[role="tabpanel"]:not([hidden]) [data-setting]')].map((r) => r.getAttribute('data-setting'))).toEqual(['Look presets', 'Accent colour', 'Font', 'Spacing', 'Corners', 'Labels', 'Label width', 'Help', 'Colours', 'Each kind of part']);
+    expect([...panel.querySelectorAll('[role="tabpanel"]:not([hidden]) [data-setting]')].map((r) => r.getAttribute('data-setting'))).toEqual(['Look presets', 'Accent colour', 'Font', 'Spacing', 'Corners', 'Labels', 'Label width', 'Help', 'Read-only fields', 'Colours', 'Each kind of part']);
   });
 
   it('sets the spacing, the font, the corners and the colours, and the canvas wears each as it is set', () => {

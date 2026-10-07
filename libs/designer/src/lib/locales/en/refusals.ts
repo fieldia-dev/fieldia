@@ -91,6 +91,7 @@ export const refusals = {
   onlyTagsOwn: 'Only tags take answers of one’s own',
   onlyMatrixOnce: 'Only a matrix has columns to take once',
   onlyYesNoLook: 'Only a yes or no shows as buttons or a switch',
+  onlyOneChoiceBadge: 'Only a field that holds one choice of a list shows as a coloured badge',
   megabytes: (n: number) => `${n} MB`,
   // ---- kinds' own settings
   matrixNoPictures: 'A matrix’s columns have no pictures',

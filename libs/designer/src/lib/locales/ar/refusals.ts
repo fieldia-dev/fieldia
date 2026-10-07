@@ -85,6 +85,7 @@ export const refusals: DesignerWords['refusals'] = {
   onlyTagsOwn: 'الوسوم وحدها تقبل إجابات يكتبها الشخص',
   onlyMatrixOnce: 'الشبكة وحدها لها أعمدة تُختار مرة واحدة',
   onlyYesNoLook: 'سؤال «نعم أو لا» وحده يُعرض زرين أو مفتاحًا',
+  onlyOneChoiceBadge: 'الحقل الذي يحمل اختيارًا واحدًا من قائمة وحده يُعرض شارةً ملوّنة',
   megabytes: (n) => `${n} ميغابايت`,
   matrixNoPictures: 'لا صور لأعمدة الشبكة',
   onlyOptionsPictures: 'السؤال ذو الخيارات وحده له صور ونقاط',

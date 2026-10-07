@@ -126,6 +126,8 @@ export const questions = {
   shuffleRows: 'Shuffle rows',
   onePerColumn: 'One answer per column',
   pickAStep: 'People can pick a step',
+  colouredBadge: 'Coloured badge',
+  colourFor: (label: string) => `Colour for ${label}`,
   // ---- text, numbers and dates
   mostCharacters: 'Most characters',
   any: 'Any',
