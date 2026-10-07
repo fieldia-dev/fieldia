@@ -49,7 +49,7 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
     const list = el('ul', { class: 'fd-table-tones' });
     const add = el('button', { type: 'button', class: 'fd-button fd-button-link fd-table-add-tone' }, w.addTone);
     let drafting = false;
-    let rows: { element: HTMLElement; tone: HTMLSelectElement; when: FormulaBox; remove: HTMLButtonElement }[] = [];
+    const rows: { element: HTMLElement; tone: HTMLSelectElement; when: FormulaBox; remove: HTMLButtonElement }[] = [];
     add.addEventListener('click', () => {
       drafting = true;
       draw();
@@ -164,7 +164,7 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
       save([...read(), { type: 'button', id: '', label: w.newButton }]);
       (list.lastElementChild?.querySelector('input') as HTMLInputElement | null)?.focus();
     });
-    let drawn: { element: HTMLElement; words: HTMLInputElement; action: HTMLInputElement; hidden: ReturnType<typeof whenBox>; remove: HTMLButtonElement }[] = [];
+    const drawn: { element: HTMLElement; words: HTMLInputElement; action: HTMLInputElement; hidden: ReturnType<typeof whenBox>; remove: HTMLButtonElement }[] = [];
     function draw() {
       const items = read();
       while (drawn.length > items.length) drawn.pop()?.element.remove();
