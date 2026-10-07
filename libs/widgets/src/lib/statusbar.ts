@@ -38,6 +38,8 @@ export const statusbarWidget: WidgetFactory = ({ form, name, field, node, id, do
   let lookedUp: string | null = field.type === 'selection' ? '' : null;
   let asked = 0;
   let last: { value: unknown; readonly: boolean } = { value: undefined, readonly: false };
+  /** What the bar shows now: drawn again only when that changes — redrawing a focused step loses the focus, and the form redraws as focus leaves. */
+  let drawn = '';
 
   function draw() {
     const { value, readonly } = last;
@@ -48,6 +50,9 @@ export const statusbarWidget: WidgetFactory = ({ form, name, field, node, id, do
     if (currentKey && !shown.some((s) => s.key === currentKey) && value && typeof value === 'object') {
       shown = [...shown, { key: currentKey, label: (value as RelatedRecord).label, value }];
     }
+    const now = JSON.stringify([shown.map((s) => [s.key, s.label]), currentKey, readonly]);
+    if (now === drawn) return;
+    drawn = now;
     list.replaceChildren(
       ...shown.map((step) => {
         const label = document.createElement('span');

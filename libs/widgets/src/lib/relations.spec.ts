@@ -344,7 +344,7 @@ describe('statusbar', () => {
     const refresh = () => widget.update({ value: form.getState().values[node.field], values: form.getState().values, readonly, required: false, invalid: false });
     form.subscribe(refresh);
     refresh();
-    return { form, el: widget.element };
+    return { form, el: widget.element, refresh };
   }
   const steps = (el: Element) => [...el.querySelectorAll('li')].map((li) => li.textContent);
   const current = (el: Element) => el.querySelector('[aria-current="step"]')?.textContent;
@@ -419,6 +419,22 @@ describe('statusbar', () => {
     expect(form.getState().values['state']).toBe('done');
     expect(document.activeElement?.textContent).toBe('Done');
     expect(document.activeElement?.getAttribute('aria-current')).toBe('step');
+  });
+
+  it('draws itself again only when its steps, its current one or its lock change: a form that redraws as focus leaves comes to rest', async () => {
+    const { el, refresh } = mountBar({ field: 'state', widget: 'statusbar', options: { clickable: true } });
+    const before = el.querySelectorAll('button')[1];
+    refresh();
+    expect(el.querySelectorAll('button')[1]).toBe(before);
+    // As the viewer does: focus leaving a field brings it up to date a moment later — once, not for ever.
+    let redraws = 0;
+    el.addEventListener('focusout', () => queueMicrotask(() => redraws++ < 20 && refresh()));
+    const done = el.querySelectorAll('button')[2] as HTMLButtonElement;
+    done.focus();
+    done.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(redraws).toBeLessThan(3);
+    expect(document.activeElement?.textContent).toBe('Done');
   });
 
   it('cannot be clicked when read-only', () => {
