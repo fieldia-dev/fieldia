@@ -1,0 +1,163 @@
+{
+  "fieldia": "0.1",
+  "id": "business",
+  "title": "Fit-out task",
+  "description": "The widgets an ERP's screens lean on, on one task: priority stars and a state's dot on the title's line, hours as HH:MM, a live timer, a range of dates, tag colours, a value to copy, a PDF and a page shown inline, an analytic distribution, tax totals, payments, and properties defined by the task's project.",
+  "data": { "kind": "record", "model": "project.task" },
+  "fields": {
+    "name": { "type": "char", "label": "Task", "required": true },
+    "priority": {
+      "type": "selection",
+      "label": "Priority",
+      "options": [
+        { "value": "0", "label": "Low" },
+        { "value": "1", "label": "Medium" },
+        { "value": "2", "label": "High" },
+        { "value": "3", "label": "Very high" }
+      ]
+    },
+    "kanban_state": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        { "value": "normal", "label": "In progress" },
+        { "value": "blocked", "label": "Blocked" },
+        { "value": "done", "label": "Ready for the next stage" }
+      ]
+    },
+    "project_id": { "type": "many2one", "label": "Project", "relation": "project.project" },
+    "is_favourite": { "type": "boolean", "label": "Favourite" },
+    "color": { "type": "integer", "label": "Tag colour" },
+    "epic_color": { "type": "char", "label": "Epic colour" },
+    "date_from": { "type": "date", "label": "Starts" },
+    "date_to": { "type": "date", "label": "Ends" },
+    "visit_start": { "type": "datetime", "label": "Site visit from" },
+    "visit_end": { "type": "datetime", "label": "Site visit until" },
+    "allocated_hours": { "type": "float", "label": "Allocated time" },
+    "duration": { "type": "float", "label": "Time logged", "readonly": true },
+    "timer_start": { "type": "datetime", "label": "Timer started", "readonly": true },
+    "prepayment_percent": { "type": "float", "label": "Prepayment" },
+    "session_link": { "type": "char", "label": "Client portal link" },
+    "access_note": { "type": "text", "label": "Access instructions" },
+    "instructions": { "type": "binary", "label": "Instructions", "accept": ["application/pdf"] },
+    "slides": { "type": "char", "label": "Briefing slides" },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency" },
+    "analytic_distribution": { "type": "json", "label": "Analytic distribution" },
+    "tax_totals": { "type": "json", "label": "Totals" },
+    "invoice_payments_widget": { "type": "json", "label": "Payments" },
+    "amount_residual": { "type": "monetary", "label": "Amount due", "currencyField": "currency_id", "readonly": true },
+    "task_properties": { "type": "properties", "label": "Properties", "definitionsFrom": { "list": "task_properties", "dependsOn": ["project_id"] } },
+    "child_ids": {
+      "type": "one2many",
+      "label": "Sub-tasks",
+      "relation": "project.task",
+      "fields": {
+        "priority": { "type": "selection", "label": "Priority", "options": [{ "value": "0", "label": "Normal" }, { "value": "1", "label": "Urgent" }] },
+        "name": { "type": "char", "label": "Title", "required": true },
+        "kanban_state": {
+          "type": "selection",
+          "label": "Status",
+          "options": [
+            { "value": "normal", "label": "In progress" },
+            { "value": "blocked", "label": "Blocked" },
+            { "value": "done", "label": "Ready" }
+          ]
+        },
+        "allocated_hours": { "type": "float", "label": "Allocated" },
+        "progress": { "type": "float", "label": "Progress" }
+      }
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "buttons": [
+      { "type": "button", "id": "b-start", "label": "Start timer", "style": "primary", "invisible": "timer_start", "steps": [{ "do": "call", "action": "action_timer_start" }] },
+      { "type": "button", "id": "b-stop", "label": "Stop timer and log", "style": "danger", "invisible": "not timer_start", "steps": [{ "do": "call", "action": "action_timer_stop" }] }
+    ],
+    "title": {
+      "field": "name",
+      "placeholder": "Task title…",
+      "before": [{ "type": "field", "id": "f-priority", "field": "priority", "widget": "priority" }],
+      "after": [{ "type": "field", "id": "f-state", "field": "kanban_state", "widget": "dot" }]
+    },
+    "children": [
+      {
+        "type": "section",
+        "id": "s-main",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-project", "field": "project_id" },
+          { "type": "field", "id": "f-dates", "field": "date_from", "label": "Dates", "widget": "daterange", "options": { "endField": "date_to" } },
+          { "type": "field", "id": "f-allocated", "field": "allocated_hours", "widget": "duration", "options": { "suffix": "hours" } },
+          { "type": "field", "id": "f-visit", "field": "visit_start", "label": "Site visit", "widget": "daterange", "options": { "endField": "visit_end" } },
+          { "type": "field", "id": "f-duration", "field": "duration", "widget": "timer", "options": { "startField": "timer_start" } },
+          { "type": "field", "id": "f-timer-start", "field": "timer_start", "widget": "timer", "invisible": "not timer_start" },
+          { "type": "field", "id": "f-favourite", "field": "is_favourite", "widget": "priority" },
+          { "type": "field", "id": "f-prepayment", "field": "prepayment_percent", "widget": "percentage" },
+          { "type": "field", "id": "f-color", "field": "color", "widget": "color" },
+          { "type": "field", "id": "f-epic-color", "field": "epic_color", "widget": "color" },
+          { "type": "field", "id": "f-session-link", "field": "session_link", "widget": "copy" },
+          { "type": "field", "id": "f-access", "field": "access_note", "widget": "copy" }
+        ]
+      },
+      { "type": "field", "id": "f-properties", "field": "task_properties", "labels": "hidden", "options": { "columns": 2, "add": true }, "invisible": "not project_id" },
+      {
+        "type": "tabs",
+        "id": "notebook",
+        "children": [
+          {
+            "type": "tab",
+            "id": "t-subtasks",
+            "label": "Sub-tasks",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-subtasks",
+                "field": "child_ids",
+                "widget": "grid",
+                "labels": "hidden",
+                "columns": ["priority", "name", "kanban_state", "allocated_hours", "progress"],
+                "totals": ["allocated_hours"],
+                "cells": {
+                  "priority": { "widget": "priority", "width": 6 },
+                  "kanban_state": { "widget": "dot", "width": 8 },
+                  "allocated_hours": { "widget": "duration" },
+                  "progress": { "widget": "progressbar" }
+                }
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "t-invoice",
+            "label": "Invoicing",
+            "children": [
+              {
+                "type": "section",
+                "id": "s-invoice",
+                "columns": 2,
+                "children": [
+                  { "type": "field", "id": "f-analytic", "field": "analytic_distribution", "colspan": 2, "widget": "distribution", "options": { "model": "account.analytic.account" } },
+                  { "type": "field", "id": "f-currency", "field": "currency_id" },
+                  { "type": "field", "id": "f-tax-totals", "field": "tax_totals", "labels": "hidden", "widget": "tax-totals", "options": { "currencyField": "currency_id", "editable": true } },
+                  { "type": "spacer", "id": "sp-pay" },
+                  { "type": "field", "id": "f-payments", "field": "invoice_payments_widget", "labels": "hidden", "widget": "payments", "options": { "currencyField": "currency_id", "dueField": "amount_residual" } }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "t-documents",
+            "label": "Documents",
+            "children": [
+              { "type": "field", "id": "f-instructions", "field": "instructions", "widget": "pdf", "options": { "height": 360 } },
+              { "type": "field", "id": "f-slides", "field": "slides", "widget": "embed", "placeholder": "https://docs.google.com/presentation/d/…/embed", "options": { "height": 360 } }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

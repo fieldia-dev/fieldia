@@ -17,6 +17,7 @@ import survey from '../../examples/pages/survey.page.json';
 import big from '../../examples/pages/big.page.json';
 import { customPage } from './custom-page';
 import { real } from './real';
+import { businessData, businessPage } from './business';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -26,6 +27,8 @@ export const pages: Record<string, Page> = {
   customers: customers as Page,
   fields: fields as Page,
   kinds: kinds as Page,
+  // The business widgets on one task: shared/business.ts.
+  business: businessPage,
   order: order as Page,
   rules: rules as Page,
   layout: layout as Page,
@@ -395,7 +398,8 @@ function withReal(options: Parameters<typeof createMemoryDataSource>[0] & object
   };
   return {
     ...options,
-    records: merge(options.records, real.records),
+    records: merge(merge(options.records, real.records), businessData.records),
+    definitions: { ...options.definitions, ...businessData.definitions },
     onchange: merge(options.onchange, real.onchange),
     warnings: merge(options.warnings, real.warnings),
     lists: { ...options.lists, ...real.lists },
