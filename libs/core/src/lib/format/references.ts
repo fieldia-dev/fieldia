@@ -549,6 +549,21 @@ export class ReferenceCheck {
         this.checkPress(button, `${at}.buttons[${j}]`);
       });
     });
+    // The gear menu: buttons of the record, each doing something — its steps, an action, or a built-in — and named.
+    sheet.toolbar?.menu?.forEach((item, i) => {
+      const at = `${path}.toolbar.menu[${i}]`;
+      this.claim(item.id, at);
+      this.checkModifiers(item, at);
+      if (!item.steps && item.action === undefined && !item.builtin) this.report(at, 'a menu item needs steps, an action, or a built-in');
+      if (item.label === undefined && !item.builtin) this.report(`${at}.label`, 'a menu item needs words, unless it is a built-in');
+      if (item.steps) this.checkSteps(item.steps, `${at}.steps`);
+    });
+    const preview = sheet.attachmentPreview;
+    if (preview) {
+      this.checkModifiers(preview, `${path}.attachmentPreview`);
+      const def = preview.field !== undefined ? this.need(preview.field, `${path}.attachmentPreview.field`) : undefined;
+      if (def && def.type !== 'binary' && def.type !== 'image') this.report(`${path}.attachmentPreview.field`, `"${preview.field}" is a ${def.type}; the preview shows a file (binary or image)`);
+    }
     this.walkChildren(sheet.children, path);
     if (sheet.sidePanel) {
       this.claim(sheet.sidePanel.id, `${path}.sidePanel`);

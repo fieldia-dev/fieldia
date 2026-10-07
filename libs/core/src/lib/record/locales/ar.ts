@@ -50,5 +50,7 @@ export const ar: Messages = {
   minLines: 'أضف إلى {label} ما لا يقل عن {min}',
   maxLines: 'عدد ما في {label} أكثر من {max}',
   addressParts: 'عنوان الشارع|سطر العنوان 2|المدينة|المحافظة أو المنطقة|الرمز البريدي|الدولة',
+  archiveConfirm: 'هل أنت متأكد من أرشفة هذا السجل؟',
+  deleteConfirm: 'هل أنت متأكد من حذف هذا السجل؟',
   locale: 'ar',
 };

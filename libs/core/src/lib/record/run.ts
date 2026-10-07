@@ -5,6 +5,7 @@ import type { Modifier, Tone } from '../format/layout';
 import { compileExpression, type CompiledExpression, type ExpressionEnv } from '../expression/expression';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import { FIELD_NAME } from '../format/names';
+import { splitValues } from '../format/words';
 import { fitTo } from './compute';
 import type { ResolvedFilter } from './data-source';
 import { resolveFilter } from './filter';
@@ -55,7 +56,24 @@ export interface ActionResult {
   reload?: boolean;
   say?: string | { message: string; tone?: Tone };
   open?: Omit<OpenStep, 'do' | 'when'>;
+  /**
+   * Show this record in the form's place from now on, as the pager moves to
+   * one — the copy a duplicate made, the record a server action made — or a
+   * new one for null. Changes not saved are dropped.
+   */
+  record?: RecordId | null;
+  /** Post words in the record's conversation, as a `post` step does: a note unless it is a `message`. */
+  post?: string | { message: string; kind?: 'note' | 'message' };
   stop?: boolean | string;
+}
+
+/** Words posted in a record's conversation by a `post` step or the app's answer. */
+export interface PostedMessage {
+  kind: 'note' | 'message';
+  /** The words as typed, each `{field}` filled in. */
+  text: string;
+  /** The same as HTML: every character escaped, each line its own. An html field's value comes as it is. */
+  body: string;
 }
 
 /** What a button does that only the app can: handed over, and awaited. */
@@ -106,6 +124,12 @@ export interface ActionHost {
   show?(target: string): void;
   /** Open a web address: in a new tab, or in this one. */
   openUrl?(url: string, newTab: boolean): void;
+  /**
+   * Post words in a record's conversation. Left out, the form tells its own
+   * listeners (`post`): the chatter beside it. A page opened over a record
+   * is given one that posts in that record's. False: nothing heard them.
+   */
+  post?(message: PostedMessage): boolean | void | Promise<boolean | void>;
 }
 
 /**
@@ -184,6 +208,23 @@ export interface RunForm {
   onAction?: OnAction;
   /** The app answered a call. */
   answered(request: ActionRequest, result: ActionResult | undefined): void;
+  /** Whether something changed since the record was loaded or saved. */
+  changed(): boolean;
+  /**
+   * The record's own operations through the data source, each only when the
+   * data source has it; without, the app's action of the step's name is called.
+   */
+  archive?(archive: boolean): Promise<void>;
+  copy?(): Promise<RecordId>;
+  remove?(): Promise<void>;
+  /** Show another record in this form's place, loaded as a pager loads it; a new one for null. */
+  showRecord(id: RecordId | null): Promise<Stopped | null>;
+  /** The record was archived (or brought back), copied, or deleted: told to the app. Deleted, the form leaves it unless a listener moved it on. */
+  told(event: { archived: boolean } | { copied: RecordId } | { deleted: true }, id: RecordId): void;
+  /** Post words in the record's conversation: false when nothing here can. */
+  post(message: PostedMessage): Promise<boolean>;
+  /** A field's value as words in a posted message: a link's name, a choice's label. */
+  wordsOf(field: string): string;
 }
 
 export const DONE: RunResult = Object.freeze({ done: true });
@@ -364,6 +405,15 @@ export function createRunner(form: RunForm) {
       const said = typeof answer.say === 'string' ? { message: answer.say } : answer.say;
       form.host?.say(said.message, said.tone ?? 'info');
     }
+    if (answer.post !== undefined) {
+      const posted = typeof answer.post === 'string' ? { message: answer.post } : answer.post;
+      const stopped = await post(posted.message, posted.kind ?? 'note', false);
+      if (stopped) return stopped;
+    }
+    if (answer.record !== undefined) {
+      const moved = await form.showRecord(answer.record);
+      if (moved) return moved;
+    }
     if (answer.open) {
       const opened = await open(answer.open, scope);
       if (opened) return opened;
@@ -372,6 +422,62 @@ export function createRunner(form: RunForm) {
       if (typeof answer.stop === 'string') form.host?.say(answer.stop, 'warning');
       return { reason: 'app', ...(typeof answer.stop === 'string' ? { message: answer.stop } : {}) };
     }
+    return null;
+  }
+
+  /** Words posted: a `post` step's with each `{field}` filled in, or the app's as they are. */
+  async function post(message: string, kind: 'note' | 'message', filled: boolean): Promise<Stopped | null> {
+    const parts = filled ? splitValues(message) : [{ text: message }];
+    const text = parts.map((part) => (part.field ? form.wordsOf(part.field) : part.text)).join('');
+    // An html field's value comes as HTML; the rest are escaped, a line each.
+    const body = parts
+      .map((part) => (part.field && form.fields[part.field]?.type === 'html' ? String(form.values()[part.field] ?? '') : escapeHtml(part.field ? form.wordsOf(part.field) : part.text)))
+      .join('');
+    const posted = await form.post({ kind, text, body: `<p>${body}</p>` });
+    return posted ? null : cannot('Nothing can post a message here: no conversation is beside this record');
+  }
+
+  /** A record step the data source cannot do: the app's action of its name, answered as a call is. */
+  async function instead(name: 'archive' | 'unarchive' | 'duplicate' | 'delete', method: string, scope: RunScope): Promise<Stopped | null> {
+    if (!form.onAction) return cannot(`Nothing can ${name} this record here: the data source has no ${method}, and the app takes no actions`);
+    return call({ action: name }, scope);
+  }
+
+  /** Archive the record or bring it back, copy it, or delete it: through the data source when it can, else the app. */
+  async function recordStep(name: 'archive' | 'unarchive' | 'duplicate' | 'delete', scope: RunScope): Promise<Stopped | null> {
+    const id = form.recordId();
+    if (id == null) return cannot(`A new record cannot be ${name === 'duplicate' ? 'duplicated' : name === 'delete' ? 'deleted' : `${name}d`}: it is not saved yet`);
+    if (name === 'archive' || name === 'unarchive') {
+      if (!form.archive) return instead(name, 'archive', scope);
+      await form.archive(name === 'archive');
+      form.told({ archived: name === 'archive' }, id);
+      return form.reload();
+    }
+    if (name === 'duplicate') {
+      // What was changed goes with the copy: it is saved first.
+      if (form.changed()) {
+        const saved = await form.save(scope.chain);
+        if (saved) return saved;
+      }
+      if (!form.copy) {
+        const stopped = await instead(name, 'copy', scope);
+        const now = form.recordId();
+        if (!stopped && now != null && now !== id) form.told({ copied: now }, id);
+        return stopped;
+      }
+      const copied = await form.copy();
+      const moved = await form.showRecord(copied);
+      if (moved) return moved;
+      form.told({ copied }, id);
+      return null;
+    }
+    if (!form.remove) {
+      const stopped = await instead(name, 'delete', scope);
+      if (!stopped) form.told({ deleted: true }, id);
+      return stopped;
+    }
+    await form.remove();
+    form.told({ deleted: true }, id);
     return null;
   }
 
@@ -437,6 +543,13 @@ export function createRunner(form: RunForm) {
         openUrl.call(form.host, url.trim(), step.newTab ?? true);
         return null;
       }
+      case 'archive':
+      case 'unarchive':
+      case 'duplicate':
+      case 'delete':
+        return recordStep(step.do, scope);
+      case 'post':
+        return post(step.message, step.kind ?? 'note', true);
     }
   }
 
@@ -526,4 +639,9 @@ export function createMoments(run: (key: string, steps: readonly ActionStep[], c
     }
     return busy.queued;
   };
+}
+
+/** Words as HTML: every character that means something there escaped, each line break a <br>. */
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string).replace(/\n/g, '<br>');
 }

@@ -1,6 +1,6 @@
 import type { FilterCondition, Fields, Option } from '../format/field';
 import type { JsonValue } from '../format/json';
-import type { RecordId, RelatedRecord, Values } from './values';
+import type { FileValue, RecordId, RelatedRecord, Values } from './values';
 import type { RunStop } from './run';
 
 /**
@@ -27,6 +27,30 @@ export interface DataSource {
   groups?(request: GroupRequest): Promise<Group[]>;
   /** The choices of one of the app's lists, for a selection with `optionsFrom`. */
   options?(request: OptionsRequest): Promise<Option[]>;
+  /** Archive a record, or bring it back (`archive: false`): Flectra's `active` set false or true. For the `archive` and `unarchive` steps. */
+  archive?(request: ArchiveRequest): Promise<void>;
+  /** Copy a record, as a backend's copy does: the copy's id, and its values when the source has them. For the `duplicate` step. */
+  copy?(request: RecordRequest): Promise<SaveResult>;
+  /** Delete a record. For the `delete` step. */
+  delete?(request: RecordRequest): Promise<void>;
+  /**
+   * The record's attachments, its main one first, for a sheet's attachment
+   * preview: each a file with its `url` (or its `data`) and its media type.
+   */
+  attachments?(request: RecordRequest): Promise<FileValue[]>;
+}
+
+/** One stored record, by its model and id. */
+export interface RecordRequest {
+  model: string;
+  id: RecordId;
+  /** The page's fields, so the source knows what the page shows of it. */
+  fields: Fields;
+}
+
+export interface ArchiveRequest extends RecordRequest {
+  /** True to archive it, false to bring it back. */
+  archive: boolean;
 }
 
 export interface OptionsRequest {

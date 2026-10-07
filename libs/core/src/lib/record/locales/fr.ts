@@ -50,5 +50,7 @@ export const fr: Messages = {
   minLines: 'Ajoutez au moins {min} à {label}',
   maxLines: 'Trop d’éléments dans {label} : {max} au plus',
   addressParts: 'Adresse|Complément d’adresse|Ville|État ou région|Code postal|Pays',
+  archiveConfirm: 'Voulez-vous vraiment archiver cet enregistrement ?',
+  deleteConfirm: 'Voulez-vous vraiment supprimer cet enregistrement ?',
   locale: 'fr',
 };

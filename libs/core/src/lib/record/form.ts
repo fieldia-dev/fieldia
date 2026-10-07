@@ -1,6 +1,6 @@
 import type { ActionStep } from '../format/actions';
 import type { Field, Fields, LineField, Option, OptionsFrom } from '../format/field';
-import type { ButtonNode, FieldNode, FormNode, LayoutNode, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
+import type { ButtonNode, FieldNode, FormNode, LayoutNode, MenuItem, Modifier, RootLayout, StatButton, StepNode } from '../format/layout';
 import type { Page } from '../format/page';
 import { compileModifier, type CompiledModifier } from '../expression/modifier';
 import type { ExpressionEnv } from '../expression/functions';
@@ -18,7 +18,7 @@ import { compileFieldTone, compileTable, type CompiledTable, type FieldTone, typ
 import { MESSAGES, type Messages } from './messages';
 import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
-import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
+import { createMoments, createRunner, type ActionHost, type ActionRequest, type ActionResult, type OnAction, type PostedMessage, type RunContext, type RunResult, type RunScope, type Stopped } from './run';
 import {
   emptyValue,
   initialValues,
@@ -109,6 +109,17 @@ export interface FormEvents {
   step: { step: string };
   /** The form has its values: loaded, or new. */
   open: { recordId: RecordId | null; values: Readonly<Values> };
+  /** The record was archived (`archived` true) or brought back, by a step. */
+  archive: { recordId: RecordId; archived: boolean };
+  /** The record was copied, by a step: the form shows the copy now. */
+  duplicate: { from: RecordId; recordId: RecordId };
+  /**
+   * The record was deleted, by a step. A listener may show another record
+   * (`openRecord`), as a pager moves on; else the form starts a new one.
+   */
+  delete: { recordId: RecordId };
+  /** Words to post in the record's conversation, from a `post` step or the app's answer: the chatter beside it listens. */
+  post: { recordId: RecordId | null; message: PostedMessage };
 }
 
 export interface FormOptions {
@@ -184,6 +195,18 @@ export interface Form {
    * written: the record, its changes and its autosave stay as they are.
    */
   previewLine(field: string, key: string, values: Values): Promise<Values>;
+  /**
+   * Show another record of the page's model in this form, loaded from the
+   * data source as a pager moves to it, or a new one for null. Changes not
+   * saved are dropped: save first. The page's `open` steps run for it.
+   */
+  openRecord(id: RecordId | null): Promise<void>;
+  /**
+   * Post words in the record's conversation, as a `post` step does: through
+   * the form's host when it has a way to, else told to the form's own
+   * listeners (`post`). False when nothing heard them.
+   */
+  post(message: PostedMessage): Promise<boolean>;
   /**
    * Load, or load again, the choices of a selection whose options come from
    * the app's list (`optionsFrom`). Once loaded, they load again by themselves
@@ -276,7 +299,7 @@ interface IndexedNode {
   required: CompiledModifier;
   /** The roles it is shown to, when it names any. */
   roles?: readonly string[];
-  source: LayoutNode | StepNode | ButtonNode | StatButton | RootLayout | { id: string; invisible?: Modifier };
+  source: LayoutNode | StepNode | ButtonNode | StatButton | MenuItem | RootLayout | { id: string; invisible?: Modifier };
 }
 
 /**
@@ -353,13 +376,14 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   let syncing = false;
 
   /** A new record's values: each field's default, then those worked out from `defaultFrom`, then what the form is given. */
-  function startingValues(): Values {
+  /** What the record starts with: each field's default, a new one's worked-out first values, and — as the form opens — what it was given. */
+  function startingValues(isNew = options.recordId == null, given = true): Values {
     const values = initialValues(fields, today());
-    if (options.recordId == null) {
+    if (isNew) {
       const about = { recordId: null, user: options.user };
       Object.assign(values, firstValues(page.fields, mapScope(values, page.fields, recordContext(values, page.fields, about), expressionEnv(values, page.fields, today))));
     }
-    return { ...values, ...structuredCopy(options.values ?? {}) };
+    return given ? { ...values, ...structuredCopy(options.values ?? {}) } : values;
   }
 
   /** The name this form knows a record by, from a link to the same model it holds. */
@@ -1027,17 +1051,59 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       set({ status: 'error', error: 'This page has no data source to load from' });
       return;
     }
+    // Only the latest load is taken: a pager pressed twice shows the record it ended on.
+    const seq = ++loads;
     set({ status: 'loading', error: null });
     try {
       const loaded = await source.load({ model: page.data.model, id: state.recordId, fields });
+      if (seq !== loads) return;
       baseline = syncParts(startFrom({ ...initialValues(fields, today()), ...loaded }), 'start');
       set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings) });
       if (again) return;
       offerDraft();
       void track(opening());
     } catch (error) {
-      set({ status: 'error', error: (error as Error).message });
+      if (seq === loads) set({ status: 'error', error: (error as Error).message });
     }
+  }
+
+  let loads = 0;
+
+  /** Another record in this form's place, or a new one: what was there let go, the new one loaded and opened. */
+  async function openRecord(id: RecordId | null): Promise<void> {
+    if (draftTimer !== null) scheduler.clearTimeout(draftTimer);
+    if (autosaveTimer !== null) scheduler.clearTimeout(autosaveTimer);
+    draftTimer = autosaveTimer = null;
+    serverErrors = {};
+    told = null;
+    showing = false;
+    const fresh = { dirty: [], errors: {}, warning: null, warningField: null, error: null, draft: null, step: steps[0] ?? null, skipped: [], saveProblem: null };
+    if (id != null) {
+      set({ ...fresh, recordId: id, status: 'idle' });
+      return load();
+    }
+    loads++;
+    baseline = startFrom(startingValues(true, false));
+    const values = syncParts(structuredCopy(baseline), 'start');
+    set({ ...fresh, recordId: null, status: 'ready', values, warnings: withValues(values, collectWarnings) });
+    offerDraft();
+    await opening();
+  }
+
+  /** The record a record step asks the data source about. */
+  const record = () => ({ model: (page.data as { model: string }).model, id: state.recordId as RecordId, fields });
+
+  async function post(message: PostedMessage): Promise<boolean> {
+    if (options.host?.post) {
+      try {
+        return (await options.host.post(message)) !== false;
+      } catch {
+        return false;
+      }
+    }
+    if (!events.get('post')?.size) return false;
+    emit('post', { recordId: state.recordId, message });
+    return true;
   }
 
   const runner = createRunner({
@@ -1062,14 +1128,37 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     confirm: options.confirm,
     onAction: options.onAction,
     answered: (request, result) => emit('action', { request, result }),
+    changed: () => state.dirty.length > 0,
+    ...(options.dataSource?.archive && page.data.kind === 'record' ? { archive: (archive: boolean) => track((options.dataSource?.archive as NonNullable<DataSource['archive']>)({ ...record(), archive })) } : {}),
+    ...(options.dataSource?.copy && page.data.kind === 'record' ? { copy: async () => (await track((options.dataSource?.copy as NonNullable<DataSource['copy']>)(record()))).id } : {}),
+    ...(options.dataSource?.delete && page.data.kind === 'record' ? { remove: () => track((options.dataSource?.delete as NonNullable<DataSource['delete']>)(record())) } : {}),
+    async showRecord(id) {
+      await openRecord(id);
+      return state.status === 'error' ? { reason: 'cannot', message: state.error ?? 'The record could not be loaded' } : null;
+    },
+    told(event, id) {
+      if ('archived' in event) emit('archive', { recordId: id, archived: event.archived });
+      else if ('copied' in event) emit('duplicate', { from: id, recordId: event.copied });
+      else {
+        emit('delete', { recordId: id });
+        // Nobody moved the form on: it starts a new record in the deleted one's place.
+        if (state.recordId === id) void track(openRecord(null));
+      }
+    },
+    post,
+    wordsOf: (field) => wordsOfValue(fieldDef(field), state.values[field]),
   });
   const moment = createMoments((key, list, chain) => runTop(list, { id: key, chain }));
 
   /** A press of a button: its confirmation first, then its steps and its app action as a final call, in `scope`. */
-  function press(source: ButtonNode | StatButton, scope: RunScope): Promise<RunResult> {
+  function press(source: ButtonNode | StatButton | MenuItem, scope: RunScope): Promise<RunResult> {
     const list: ActionStep[] = [...(source.steps ?? [])];
     if (source.action !== undefined) list.push({ do: 'call', action: source.action, ...('params' in source && source.params ? { params: source.params } : {}) });
-    const confirm = 'confirm' in source ? source.confirm : undefined;
+    // A built-in item of the gear menu with nothing of its own: its step, asked about first when it archives or deletes.
+    const builtin = 'builtin' in source && !list.length ? source.builtin : undefined;
+    if (builtin) list.push({ do: builtin });
+    const asked = builtin === 'archive' ? messages.archiveConfirm : builtin === 'delete' ? messages.deleteConfirm : undefined;
+    const confirm = 'confirm' in source && source.confirm !== undefined ? source.confirm : asked;
     return track(
       (async (): Promise<RunResult> => {
         if (confirm && !(await runner.ask(confirm))) {
@@ -1103,6 +1192,10 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     setValues: (values) => write(values, 'app'),
 
     node: nodeState,
+
+    openRecord: (id) => track(openRecord(id)),
+
+    post,
 
     setEditing(next) {
       if (next === editing) return;
@@ -1297,7 +1390,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       if (node.parent && (index.get(node.parent)?.source as FieldNode | undefined)?.selectedButtons?.some((b) => b.id === id)) {
         return { done: false, reason: 'cannot', message: `The button "${id}" runs with the lines chosen in its table` };
       }
-      return press(node.source as ButtonNode | StatButton, { id, chain: [], ...(chosen ? { recordIds: [...chosen.recordIds] } : {}) });
+      return press(node.source as ButtonNode | StatButton | MenuItem, { id, chain: [], ...(chosen ? { recordIds: [...chosen.recordIds] } : {}) });
     },
 
     async linkedValues(field, ids, columns) {
@@ -1585,6 +1678,27 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     walk([...(root.title?.above ?? []), ...(root.title?.below ?? [])], root.id);
     walk(root.children, root.id);
     if (root.sidePanel) add(root.sidePanel, root.id, 'other', { invisible: root.sidePanel.invisible });
+    // The gear menu's items are buttons of the record; Archive shows while it is active, Unarchive while it is not.
+    for (const item of root.toolbar?.menu ?? []) {
+      add(item, root.id, 'button', { invisible: item.invisible });
+      if (item.builtin === 'archive' || item.builtin === 'unarchive') {
+        const own = index.get(item.id) as IndexedNode;
+        const mine = own.invisible;
+        const archived = item.builtin === 'unarchive';
+        own.invisible = { ...mine, evaluate: (context, env) => (context['active'] === false) !== archived || mine.evaluate(context, env) };
+      }
+    }
+    if (root.attachmentPreview) add({ id: '#preview', ...root.attachmentPreview }, root.id, 'other', { invisible: root.attachmentPreview.invisible });
   }
   return index;
+}
+
+/** A field's value as words in a posted message: a link's name, a choice's label, a yes or no, a number or a date as written. */
+function wordsOfValue(def: Field, value: Value | undefined): string {
+  if (def.type === 'boolean') return value === true ? 'Yes' : 'No';
+  if (value === null || value === undefined || value === false) return '';
+  if (def.type === 'selection') return def.options.find((option) => option.value === value)?.label ?? String(value);
+  if (def.type === 'html') return String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  const one = (item: unknown): string => (item && typeof item === 'object' && 'label' in item ? String((item as { label: unknown }).label) : item && typeof item === 'object' && 'name' in item ? String((item as { name: unknown }).name) : String(item));
+  return Array.isArray(value) ? value.map(one).join(', ') : one(value);
 }
