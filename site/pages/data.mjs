@@ -19,6 +19,9 @@ interface DataSource {
   submit?(request: SubmitRequest): Promise<SubmitResult>;    // store one response
   list?(request: ListRequest): Promise<ListResult>;          // a page of records, for a list
   groups?(request: GroupRequest): Promise<Group[]>;          // a list's groups and their counts
+  options?(request: OptionsRequest): Promise<Option[]>;      // a selection's choices from the app
+  definitions?(request: OptionsRequest): Promise<PropertyDefinition[]>;  // properties a linked record keeps
+  saveDefinitions?(request: OptionsRequest & { definitions }): Promise<void>; // one added in place
 }`
 )}
 
@@ -33,6 +36,8 @@ interface DataSource {
     <tr><td>${c('submit')}</td><td>Someone sends a responses page</td><td>Surveys, sign-ups</td></tr>
     <tr><td>${c('list')}</td><td>A list opens, is searched, sorted or paged</td><td>Lists of records — see <a href="/lists/#data">lists</a></td></tr>
     <tr><td>${c('groups')}</td><td>A list is grouped by a field</td><td>Group By</td></tr>
+    <tr><td>${c('definitions')}</td><td>A properties field with ${c('definitionsFrom')} is shown, and again when the link it follows changes</td><td>Properties a linked record defines — see <a href="/fields/#business">business widgets</a></td></tr>
+    <tr><td>${c('saveDefinitions')}</td><td>Someone adds a property in place</td><td>Keeping it on that record</td></tr>
   </tbody>
 </table>
 
@@ -42,6 +47,8 @@ interface DataSource {
   <li>${c('save({ model, id, fields, changes, values })')} — to refuse it, throw ${c('saveRefused({ kind, message, fields })')}: the fields, a business rule or the network, each shown where it belongs (see <a href="/behaviour/#refused">a save the server refuses</a>). ${c('id')} is ${c('null')} for a new record. ${c('changes')} holds only what changed since the record was loaded; ${c('values')} holds everything, for backends that save whole records. Return ${c('{ id }')}, and ${c('values')} if your backend recalculated anything.</li>
   <li>${c('onchange({ model, id, changed, values })')} — return ${c('{ values }')} for the fields to update, and an optional ${c('warning')}. The warning appears under the field that changed, without blocking, and goes away with the next answer that has none. A line edited in a dialog also asks it, with that line changed, to show what it would become; nothing is saved, so answer without side effects.</li>
   <li>${c('search({ model, query, filter, limit })')} — the field's filter arrives with every ${c('valueFrom')} already replaced by its value, its groups kept: an ${c('{ any: [...] }')} is an OR, an ${c('{ all: [...] }')} an AND. Translate both, or the OR is lost; ${c('matchesFilter(values, filter)')} from ${c('@fieldia/core')} judges a record the same way, for sources that filter in JavaScript. Return ${c('[{ id, label }]')}.</li>
+  <li>A ${c('json')} field whose widget names records of a model — an analytic distribution's accounts — searches that ${c('model')} too, and asks for the records its value holds by their ids: the filter is then ${c('[{ field: "id", op: "in", value: [12, 14] }]')}.</li>
+  <li>${c('definitions({ list, values })')} — the definitions of a properties field's ${c('definitionsFrom.list')}: those the record its link points to keeps (Flectra's ${c('definition_record')}), read from ${c('values')}. ${c('saveDefinitions({ list, values, definitions })')} keeps them all again, one added in place among them.</li>
   <li>${c('create({ model, name })')} — make a record from just its name (a backend's ${c('name_create')}). Return ${c('{ id, label }')}.</li>
   <li>${c('submit({ pageId, values })')} — the answers to the questions that were shown; skipped steps are left out.</li>
 </ul>
