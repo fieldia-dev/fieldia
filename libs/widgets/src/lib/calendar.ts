@@ -7,7 +7,9 @@ import type { Widget, WidgetContext } from './widgets';
  * (`options.weekNumbers` on a date or date-and-time node). The ARIA
  * date-picker dialog: a grid of days, Monday first, an ISO 8601 week number at
  * the start of each row, arrow keys by day and week, PageUp and PageDown by
- * month, Enter to pick, Escape to close.
+ * month, Enter to pick, Escape to close. A pick says so: a bubbling
+ * `fd-picked` event, its `detail.value` the value set, for what holds the
+ * field — a grid's cell closes on it.
  */
 
 /** The ISO 8601 week a day falls in: weeks start on Monday, week 1 holds the year's first Thursday. */
@@ -109,6 +111,8 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
       form.setValue(name, at.toISOString());
     }
     close();
+    // A day picked is the whole answer: what holds the field (a table's cell) may close on it.
+    element.dispatchEvent(new CustomEvent('fd-picked', { bubbles: true, detail: { value: form.getState().values[name] } }));
   }
 
   function draw(focus: boolean) {

@@ -275,7 +275,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     const cellId = `${id}-${line.key}-${column}`;
     // A cell the page draws as a pill in its tone (Flectra's widget="badge"), never edited, or with a widget of its own.
     const rules = lineKind(def, line.values) ? undefined : node.cells?.[column];
-    const look = rules?.badge ? { widget: 'badge' } : rules?.widget ? { widget: rules.widget, ...(rules.options ? { options: rules.options } : {}) } : {};
+    // Its settings reach its widget even without a widget named: a calendar's week numbers.
+    const look = rules?.badge ? { widget: 'badge' } : rules?.widget ? { widget: rules.widget, ...(rules.options ? { options: rules.options } : {}) } : rules?.options ? { options: rules.options } : {};
     const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column, ...look };
     const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs });
     const td = document.createElement('td');

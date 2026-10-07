@@ -253,6 +253,7 @@ mountViewer(host, { page, dataSource, widgets: gridWidgets });
 <p>In React pass ${c('widgets={gridWidgets}')}, in Vue ${c(':widgets="gridWidgets"')}, in Angular ${c('[widgets]="gridWidgets"')}. A node without ${c('"widget": "grid"')} keeps the plain table.</p>
 <ul>
   <li><strong>Keys.</strong> A click edits a cell. Enter keeps it and moves down; Tab moves across, skipping cells that cannot be edited; Shift+Tab goes back. Tab or Enter at the very end starts a new line. Escape puts the cell back, and takes away a line added a moment ago. Space ticks a yes/no cell. Alt+Up and Alt+Down move a line.</li>
+  <li><strong>Dates.</strong> A day picked from a date's calendar keeps it and closes the cell, as a spreadsheet's does; a date typed is kept with Enter or Tab. Fieldia's own calendar with week numbers is the column's ${c('cells.<column>.options')}, ${c('{ "weekNumbers": true }')} — a column's options reach its editor with or without a widget — and its pick closes the cell too. A date with a time, or a whole line open at once, stays open.</li>
   <li><strong>Every keystroke reaches the form</strong>, so totals and other computed values follow while a cell is still being typed.</li>
   <li><strong>Sections and notes</strong> run across the row. A note grows as it is typed; Enter starts a new line of it, Ctrl+Enter (Cmd+Enter) finishes it.</li>
   <li><strong>Moving lines.</strong> With a ${c('sequenceField')}, each line has a handle to drag it by.</li>

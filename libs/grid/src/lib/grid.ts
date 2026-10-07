@@ -63,8 +63,8 @@ interface CellContext {
   locale?: Locale;
   /** Dialogs a cell's link may open: Search more…, Create and edit…. */
   dialogs?: WidgetDialogs;
-  /** The widgets columns are typed with, by column: hours as HH:MM, a per cent. */
-  looks?: Record<string, { widget: string; options?: FieldNode['options'] }>;
+  /** The widgets columns are typed with, by column — hours as HH:MM, a per cent — and their settings, a calendar's week numbers. */
+  looks?: Record<string, { widget?: string; options?: FieldNode['options'] }>;
 }
 
 /** The grid's own columns (the drag handle, the delete button) start with two underscores. */
@@ -417,7 +417,7 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     const def = (this.def = kind ? kindTextField(cell.defs[column], kind) : cell.defs[column]);
     // A cell typed in its own way (hours as HH:MM, a per cent) is typed so in its editor too.
     const look = kind ? undefined : cell.looks?.[column];
-    const node: FieldNode = { type: 'field', id: `${cell.fieldId}.${key}.${column}`, field: column, ...(look ? { widget: look.widget, ...(look.options ? { options: look.options } : {}) } : {}) };
+    const node: FieldNode = { type: 'field', id: `${cell.fieldId}.${key}.${column}`, field: column, ...(look?.widget ? { widget: look.widget } : {}), ...(look?.options ? { options: look.options } : {}) };
     const context: WidgetContext = {
       form: lineForm(cell.form, cell.field, key),
       name: column,
@@ -461,6 +461,8 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
         if ((event.target as HTMLInputElement).type !== 'date' || Date.now() - typedAt < 500) return;
         params.stopEditing();
       });
+      // Fieldia's own calendar (options.weekNumbers) sets the day itself, and says it was picked.
+      this.box.addEventListener('fd-picked', () => params.stopEditing());
     }
     // Like a spreadsheet, a cell reached from the keyboard has its text selected,
     // so typing replaces it; a click still puts the caret where it lands.
@@ -649,9 +651,11 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     layer: element,
     locale,
     dialogs,
-    // Columns typed in a widget's own way: drawn ones are used in their cells instead.
+    // Columns typed in a widget's own way, or with settings of their own (a calendar's week numbers): drawn ones are used in their cells instead.
     looks: Object.fromEntries(
-      Object.entries(node.cells ?? {}).flatMap(([column, rules]) => (rules.widget && !DRAWN_IN_CELLS.has(rules.widget) ? [[column, { widget: rules.widget, ...(rules.options ? { options: rules.options } : {}) }]] : []))
+      Object.entries(node.cells ?? {}).flatMap(([column, rules]): [string, { widget?: string; options?: FieldNode['options'] }][] =>
+        rules.widget ? (DRAWN_IN_CELLS.has(rules.widget) ? [] : [[column, { widget: rules.widget, ...(rules.options ? { options: rules.options } : {}) }]]) : rules.options ? [[column, { options: rules.options }]] : []
+      )
     ),
   };
   installGridStyles(document);

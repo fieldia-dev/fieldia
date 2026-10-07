@@ -106,3 +106,22 @@ describe('a date with week numbers', () => {
     expect([picked.getDate(), picked.getHours(), picked.getMinutes()]).toEqual([14, 10, 30]);
   });
 });
+
+describe('a pick from the calendar, announced', () => {
+  it('tells what is round it that a day was picked (fd-picked), by the mouse and by Enter, the value already set', () => {
+    const { el, button, day, key, value } = mountDate('date', '2026-10-11');
+    const heard: unknown[] = [];
+    document.body.addEventListener('fd-picked', (event) => heard.push([(event as CustomEvent).detail, value()]));
+    button.click();
+    day(14).click();
+    expect(heard).toEqual([[{ value: '2026-10-14' }, '2026-10-14']]);
+    button.click();
+    key(day(20), 'Enter');
+    expect(heard).toHaveLength(2);
+    // Moving round the month with the arrows is no pick.
+    button.click();
+    key(day(20), 'ArrowRight');
+    expect(heard).toHaveLength(2);
+    expect(el.isConnected).toBe(true);
+  });
+});

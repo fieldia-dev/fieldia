@@ -111,6 +111,23 @@ describe('the grid', () => {
     expect(rowCells(box, 1)[4]).toBe('3 Nov 2026');
   });
 
+  it('hands a column’s options to its editor without a widget, and closes once its calendar picks a day', async () => {
+    const page = JSON.parse(JSON.stringify(order)) as Page;
+    const node = (page.layout as unknown as { children: { children: Record<string, unknown>[] }[] }).children[0].children[1];
+    node['cells'] = { delivery: { options: { weekNumbers: true } } };
+    const { box, api, form } = await mount(page);
+    api!.startEditingCell({ rowIndex: 1, colKey: 'delivery' });
+    await frames();
+    const calendar = box.querySelector('.ag-cell-inline-editing .fd-calendar-button') as HTMLButtonElement;
+    expect(calendar).not.toBeNull();
+    calendar.click();
+    const day = [...box.querySelectorAll<HTMLButtonElement>('.fd-calendar tbody button')].find((b) => b.textContent === '12' && !b.classList.contains('fd-outside')) as HTMLButtonElement;
+    day.click();
+    await frames();
+    expect(api!.getEditingCells()).toHaveLength(0);
+    expect(formLines(form)[1].values['delivery']).toMatch(/^\d{4}-\d{2}-12$/);
+  });
+
   it('keeps a date cell open while its date is typed', async () => {
     const { box, api, form } = await mount();
     api!.startEditingCell({ rowIndex: 1, colKey: 'delivery' });
