@@ -1,4 +1,4 @@
-import { createMemoryDataSource, type Line, type Page, type Values } from '@fieldia/core';
+import { createMemoryDataSource, type FormUser, type Line, type Page, type Values } from '@fieldia/core';
 import type { PageRequest } from '@fieldia/viewer';
 import address from '../../examples/pages/address.page.json';
 import delivery from '../../examples/pages/delivery.page.json';
@@ -93,6 +93,7 @@ export function openRecord(params: URLSearchParams, id: string | number): void {
  * sign-up in French through an app's own catalog.
  */
 export function optionsFromQuery(params: URLSearchParams): {
+  user?: FormUser;
   records?: (string | number)[];
   breadcrumbs?: { label: string; href?: string }[];
   keys?: { enterMovesToNext: boolean };
@@ -106,6 +107,8 @@ export function optionsFromQuery(params: URLSearchParams): {
   return {
     // The vendor bill has the records round it and the trail to it, as an app gives them.
     ...(params.get('page') === 'vendor-bill' ? billNavigation() : {}),
+    // A real page's person, with the roles that show its parts, and the records round it: `roles=a,b` (or none) changes the roles.
+    ...realAround(params),
     ...(params.get('translate') === 'fr' ? { translate: (text: string) => APP_CATALOG_FR[text] ?? text } : {}),
     ...(params.get('readonly') === '1' ? { readonly: true } : {}),
     ...(params.get('editSwitch') === '1' ? { editSwitch: true } : {}),
@@ -113,6 +116,15 @@ export function optionsFromQuery(params: URLSearchParams): {
     ...(params.get('showValid') === '1' ? { showValid: true } : {}),
     ...(saveStatus === 'toast' || saveStatus === 'bar' ? { saveStatus } : {}),
   };
+}
+
+/** What the app gives a real page as it opens: the person and their roles, the pager's records, the trail. */
+function realAround(params: URLSearchParams): { user?: FormUser; records?: (string | number)[]; breadcrumbs?: { label: string; href?: string }[] } {
+  const around = real.around[params.get('page') ?? ''];
+  if (!around) return {};
+  const roles = params.get('roles');
+  const user = around.user && roles !== null ? { ...around.user, roles: roles.split(',').filter(Boolean) } : around.user;
+  return { ...around, ...(user ? { user } : {}) };
 }
 
 /** An app's own catalog, as an app keeps it: the sign-up's words in French. */
