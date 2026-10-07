@@ -1,4 +1,4 @@
-import type { ActionRequest, ActionResult, Line, Page, RelatedRecord, Values } from '@fieldia/core';
+import type { ActionRequest, ActionResult, Line, Page, PropertyDefinition, RelatedRecord, Values } from '@fieldia/core';
 import contact from '../../../examples/pages/real-contact.page.json';
 import opportunity from '../../../examples/pages/real-opportunity.page.json';
 import leadLost from '../../../examples/pages/real-crm-lead-lost.page.json';
@@ -42,11 +42,13 @@ const TEAM_CAIRO = link(7201, 'Real Estate — Cairo');
 const TEAM_TENDERS = link(7202, 'Government & Tenders');
 
 /** The stages of the pipeline, in order, and the probability each gives an opportunity entering it. */
-const STAGES: Record<number, { name: string; sequence: number; probability: number; is_won?: boolean }> = {
+const STAGES: Record<number, { name: string; sequence: number; probability: number; is_won?: boolean; fold?: boolean }> = {
   7301: { name: 'New', sequence: 1, probability: 10 },
   7302: { name: 'Qualified', sequence: 2, probability: 30 },
   7303: { name: 'Proposition', sequence: 3, probability: 70 },
   7304: { name: 'Won', sequence: 70, probability: 100, is_won: true },
+  // Folded in the pipeline: the statusbar keeps it under its ⋯.
+  7305: { name: 'On Hold', sequence: 80, probability: 20, fold: true },
 };
 const stage = (id: number) => link(id, STAGES[id].name);
 
@@ -221,7 +223,12 @@ const lead: Record<string, Values> = {
     type: 'opportunity',
     active: true,
     stage_id: stage(7303),
-    priority: 2,
+    // Seconds spent in each stage so far, as Flectra's duration_tracking keeps them.
+    duration_tracking: { 7301: 2 * 86400 + 4 * 3600, 7302: 6 * 86400, 7303: 9 * 86400 + 5 * 3600 },
+    priority: '2',
+    email_cc: null,
+    message_bounce: 0,
+    company_id: null,
     company_currency: EGP,
     expected_revenue: 14500000,
     probability: 70,
@@ -276,7 +283,11 @@ const lead: Record<string, Values> = {
     type: 'lead',
     active: true,
     stage_id: stage(7301),
-    priority: 1,
+    duration_tracking: { 7301: 6 * 86400 },
+    priority: '1',
+    email_cc: null,
+    message_bounce: 0,
+    company_id: null,
     company_currency: EGP,
     expected_revenue: 0,
     probability: 12.5,
@@ -540,7 +551,44 @@ function action(request: ActionRequest): Promise<ActionResult> | undefined {
   }
 }
 
+/** The properties a lead's sales team defines (lead_properties_definition): the Cairo real-estate team's. */
+const TEAM_PROPERTIES: Record<number, PropertyDefinition[]> = {
+  7201: [{"name": "unit_type", "label": "Unit type", "type": "selection", "options": [{"value": "apartment", "label": "Apartment"}, {"value": "duplex", "label": "Duplex"}, {"value": "penthouse", "label": "Penthouse"}, {"value": "villa", "label": "Villa"}, {"value": "office", "label": "Office"}]}, {"name": "bedrooms", "label": "Bedrooms", "type": "integer"}, {"name": "financing_approved", "label": "Financing approved", "type": "boolean"}, {"name": "viewing_date", "label": "Site viewing", "type": "date"}] as PropertyDefinition[],
+};
+
+/**
+ * The person the CRM pages are shown to: a sales manager who also leads the
+ * tenders — with the groups Flectra gives one in a one-company setup, so
+ * developer mode (base.group_no_one) and several companies stay off.
+ */
+const CRM_MANAGER = {
+  id: 7101,
+  name: 'Salma Nabil',
+  roles: [
+    'base.group_user',
+    'base.group_partner_manager',
+    'sales_team.group_sale_salesman',
+    'sales_team.group_sale_salesman_all_leads',
+    'sales_team.group_sale_manager',
+    'crm.group_use_lead',
+    'account.group_account_invoice',
+    'account.group_account_readonly',
+    'purchase.group_purchase_user',
+    'product.group_product_pricelist',
+    'crm_tender.group_tender_user',
+    'crm_tender.group_tender_manager',
+  ],
+};
+
 export const lane: RealLane = {
+  around: {
+    'real-contact': { user: CRM_MANAGER, records: [7001, 7002, 7004, 7009], breadcrumbs: [{ label: 'Contacts', href: '#contacts' }] },
+    'real-opportunity': { user: CRM_MANAGER, records: [7701, 7702], breadcrumbs: [{ label: 'Pipeline', href: '#pipeline' }] },
+    'real-tender': { user: CRM_MANAGER, breadcrumbs: [{ label: 'Tenders', href: '#tenders' }] },
+  },
+  shows: { 'crm.stage': { folded: 'fold' } },
+  // A lead's properties are its sales team's.
+  definitions: { lead_properties: (values) => TEAM_PROPERTIES[idOf(values['team_id']) ?? -1] ?? [] },
   pages: {
     'real-contact': contact as Page,
     'real-opportunity': opportunity as Page,
@@ -561,9 +609,9 @@ export const lane: RealLane = {
     'res.partner': partners,
     'crm.lead': lead,
     'tender.opportunity': tenders,
-    'crm.stage': Object.fromEntries(Object.entries(STAGES).map(([id, s]) => [id, { name: s.name, sequence: s.sequence, is_won: s.is_won ?? false, team_id: null }])),
+    'crm.stage': Object.fromEntries(Object.entries(STAGES).map(([id, s]) => [id, { name: s.name, sequence: s.sequence, is_won: s.is_won ?? false, fold: s.fold ?? false, team_id: null }])),
     'crm.team': { 7201: { name: 'Real Estate — Cairo' }, 7202: { name: 'Government & Tenders' }, 7203: { name: 'Direct Sales' } },
-    'crm.tag': { 7721: { name: 'Residential' }, 7722: { name: 'Commercial' }, 7723: { name: 'Off-plan' }, 7724: { name: 'VIP' }, 7725: { name: 'Installments' } },
+    'crm.tag': { 7721: { name: 'Residential', color: 10 }, 7722: { name: 'Commercial', color: 4 }, 7723: { name: 'Off-plan', color: 2 }, 7724: { name: 'VIP', color: 3 }, 7725: { name: 'Installments', color: 8 } },
     'crm.lost.reason': { 7761: { name: 'Too expensive' }, 7762: { name: "We don't have people/skills" }, 7763: { name: 'Not enough stock' }, 7764: { name: 'Chose another developer' }, 7765: { name: 'Financing not approved' } },
     'utm.campaign': { 7731: { name: 'Autumn launch 2026' }, 7732: { name: 'Sahel summer 2026' } },
     'utm.medium': { 7741: { name: 'Website' }, 7742: { name: 'Phone' }, 7743: { name: 'Referral' }, 7744: { name: 'Email' } },

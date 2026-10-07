@@ -107,17 +107,26 @@ for (const variant of VARIANTS) {
     test('opportunity: the probability follows the stage; Lost asks why, then Restore and Won', async ({ page }) => {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, 'page=real-opportunity&record=7701&skin=underline');
-      await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Proposition');
+      await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText(/^Proposition/);
       expect(await value(page, 'probability')).toBe(70);
       await expect(node(page, 'f-expected-revenue')).toBeVisible();
       await expect(page.locator('button[data-node="convert"]')).toBeHidden();
       await expect(node(page, 'stat-similar-lead')).toBeVisible();
-      await expect(node(page, 'stat-next-meeting')).toBeVisible();
+      // One meetings button: its label and its date from the record's fields.
+      await expect(node(page, 'stat-meeting')).toContainText('Next Meeting');
+      // The time spent in each stage, and the folded stage under the statusbar's ⋯.
+      await expect(page.locator('.fd-statusbar').getByRole('button', { name: /Qualified/ })).toContainText('6d');
+      await expect(page.locator('.fd-statusbar').getByRole('button', { name: /^On Hold/ })).toHaveCount(0);
+      // Keys on the header's buttons; the tags in their colours, the priority as stars.
+      await expect(page.locator('button[data-node="won"]')).toHaveAttribute('title', /Alt\+W/i);
+      await expect(node(page, 'f-priority').locator('[role="radio"], button, input').first()).toBeVisible();
       if (variant === 'plain') await screen(page, 'real-crm-opportunity');
 
       // A stage clicked: the server works the probability out from it.
-      await page.locator('.fd-statusbar').getByRole('button', { name: 'Qualified' }).click();
+      await page.locator('.fd-statusbar').getByRole('button', { name: /^Qualified/ }).click();
       await expect.poll(() => value(page, 'probability')).toBe(30);
+      // The click saves at once, as Flectra's statusbar does.
+      await expect.poll(() => page.evaluate(() => (window as any).fieldiaDemo.dataSource.records['crm.lead']['7701'].probability)).toBe(30);
       await expect(node(page, 'f-probability').locator('input')).toHaveValue('30.00');
 
       // Lost: the reason asked in a dialog, then the record lost — the ribbon, the reason, Restore.
@@ -126,9 +135,13 @@ for (const variant of VARIANTS) {
       await expect(dialog).toBeVisible();
       await pick(dialog.locator('[data-node="f-lost-reason"]'), 'Too', 'Too expensive');
       if (variant === 'plain') await screen(page, 'real-crm-opportunity-lost-dialog', { viewport: true });
-      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      await expect(dialog.getByRole('button', { name: 'Save & Close' })).toHaveCount(0);
+      await dialog.getByRole('button', { name: 'Mark as Lost' }).click();
       await expect(dialog).toBeHidden();
       await expect(node(page, 'ribbon-lost')).toBeVisible();
+      // Lost: no statusbar; the reason posted in the opportunity's conversation.
+      await expect(page.locator('.fd-statusbar')).toBeHidden();
+      await expect(page.locator('.fd-chatter, [data-slot="chatter"]').first()).toContainText('Lost: Too expensive');
       await expect.poll(() => value(page, 'active')).toBe(false);
       expect(await value(page, 'probability')).toBe(0);
       expect(((await value(page, 'lost_reason_id')) as { label: string }).label).toBe('Too expensive');
@@ -146,9 +159,9 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'ribbon-lost')).toBeHidden();
       await expect.poll(() => value(page, 'probability')).toBe(30);
       await page.locator('button[data-node="won"]').click();
-      await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Won');
+      await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText(/^Won/);
       await expect.poll(() => value(page, 'probability')).toBe(100);
-      await expect(node(page, 'badge-won')).toBeVisible();
+      await expect(node(page, 'ribbon-won')).toBeVisible();
       await expect(page.locator('button[data-node="won"]')).toBeHidden();
       expect(problems).toEqual([]);
     });
@@ -162,6 +175,8 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-lead-contact-name').locator('input')).toHaveValue('Yasmin Ashraf');
       await expect(tab(page, 'tab-extra')).toBeVisible();
       await expect(tab(page, 'tab-lead')).toBeHidden();
+      // A lead has no stages to show.
+      await expect(page.locator('.fd-statusbar')).toBeHidden();
       if (variant === 'plain') await screen(page, 'real-crm-lead');
 
       await page.locator('button[data-node="convert"]').click();

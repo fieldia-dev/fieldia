@@ -8,15 +8,25 @@
     "name": {
       "type": "selection",
       "label": "Conversion Action",
-      "options": [
-        { "value": "convert", "label": "Convert to opportunity" },
-        { "value": "merge", "label": "Merge with existing opportunities" }
-      ],
+      "options": [{ "value": "convert", "label": "Convert to opportunity" }, { "value": "merge", "label": "Merge with existing opportunities" }],
       "default": "convert"
     },
     "user_id": { "type": "many2one", "label": "Salesperson", "relation": "res.users" },
     "team_id": { "type": "many2one", "label": "Sales Team", "relation": "crm.team" },
-    "duplicated_lead_ids": { "type": "many2many", "label": "Opportunities", "relation": "crm.lead" },
+    "duplicated_lead_ids": {
+      "type": "many2many",
+      "label": "Opportunities",
+      "relation": "crm.lead",
+      "fields": {
+        "name": { "type": "char", "label": "Opportunity" },
+        "type": { "type": "selection", "label": "Type", "options": [{ "value": "lead", "label": "Lead" }, { "value": "opportunity", "label": "Opportunity" }] },
+        "contact_name": { "type": "char", "label": "Contact Name" },
+        "email_from": { "type": "char", "label": "Email" },
+        "stage_id": { "type": "many2one", "label": "Stage", "relation": "crm.stage" },
+        "user_id": { "type": "many2one", "label": "Salesperson", "relation": "res.users" },
+        "team_id": { "type": "many2one", "label": "Sales Team", "relation": "crm.team" }
+      }
+    },
     "action": {
       "type": "selection",
       "label": "Related Customer",
@@ -33,7 +43,12 @@
     "type": "sections",
     "id": "convert",
     "children": [
-      { "type": "section", "id": "conversion", "style": "plain", "children": [{ "type": "field", "id": "f-name", "field": "name", "widget": "radio", "labels": "hidden", "options": { "clear": false } }] },
+      {
+        "type": "section",
+        "id": "conversion",
+        "style": "plain",
+        "children": [{ "type": "field", "id": "f-name", "field": "name", "widget": "radio", "labels": "hidden", "options": { "clear": false } }]
+      },
       {
         "type": "section",
         "id": "assign",
@@ -50,7 +65,15 @@
         "title": "Opportunities",
         "style": "line",
         "invisible": "name != 'merge'",
-        "children": [{ "type": "field", "id": "f-duplicates", "field": "duplicated_lead_ids", "widget": "tags", "labels": "hidden" }]
+        "children": [
+          {
+            "type": "field",
+            "id": "f-duplicates",
+            "field": "duplicated_lead_ids",
+            "labels": "hidden",
+            "columns": ["name", "type", "contact_name", "email_from", "stage_id", "user_id", "team_id"]
+          }
+        ]
       },
       {
         "type": "section",
