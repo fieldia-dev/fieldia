@@ -80,7 +80,8 @@ describe('fields the backend already has', () => {
   it('switches a model field only between editors that suit what it holds, keeping its definition', () => {
     const designer = customer();
     const email = designer.addModelField('email') as string;
-    expect(designer.kindsFor(email).map((k) => k.id)).toEqual(['short-answer', 'email', 'phone', 'keywords', 'website']);
+    // Text may also be a colour as #rrggbb, a value to copy, or a page shown inline.
+    expect(designer.kindsFor(email).map((k) => k.id)).toEqual(['short-answer', 'email', 'phone', 'keywords', 'website', 'colour', 'copy', 'embed']);
     expect(designer.changeKind(email, 'email')).toBe(true);
     const page = designer.getPage();
     expect(nodeOf(page, email).widget).toBe('email');
@@ -103,10 +104,11 @@ describe('fields the backend already has', () => {
     const visits = designer.addModelField('visits') as string;
     const score = designer.addModelField('score') as string;
     const terms = designer.addModelField('payment_terms') as string;
-    expect(designer.kindsFor(visits).map((k) => k.id)).toEqual(['rating', 'scale', 'number', 'slider', 'progress']);
-    expect(designer.kindsFor(score).map((k) => k.id)).toEqual(['number', 'slider']);
+    // A whole number may also be a tag colour; a decimal, hours as HH:MM, a per cent or a timer.
+    expect(designer.kindsFor(visits).map((k) => k.id)).toEqual(['rating', 'scale', 'number', 'slider', 'progress', 'colour']);
+    expect(designer.kindsFor(score).map((k) => k.id)).toEqual(['number', 'slider', 'duration', 'percentage', 'timer']);
     // One answer stays one answer: checkboxes would make it many.
-    expect(designer.kindsFor(terms).map((k) => k.id)).toEqual(['multiple-choice', 'dropdown', 'image-choice', 'status']);
+    expect(designer.kindsFor(terms).map((k) => k.id)).toEqual(['multiple-choice', 'dropdown', 'image-choice', 'status', 'priority', 'state-dot']);
     expect(designer.changeKind(terms, 'status')).toBe(true);
     expect(designer.getPage().fields['payment_terms']).toEqual(model['payment_terms']);
     expect(nodeOf(designer.getPage(), terms).widget).toBe('statusbar');

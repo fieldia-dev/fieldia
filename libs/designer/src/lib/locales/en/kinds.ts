@@ -35,6 +35,20 @@ export const kinds = {
     keywords: 'Keywords',
     website: 'Website',
     image: 'Image',
+    priority: 'Priority stars',
+    'state-dot': 'State dot',
+    duration: 'Hours and minutes',
+    percentage: 'Percentage',
+    timer: 'Timer',
+    'date-range': 'Range of dates',
+    colour: 'Colour',
+    copy: 'Text to copy',
+    pdf: 'PDF shown inline',
+    embed: 'Page shown inline',
+    distribution: 'Analytic distribution',
+    'tax-totals': 'Tax totals',
+    payments: 'Payments',
+    properties: 'Properties',
   },
   /** The toolbox's groups, by their key. */
   groups: {
@@ -43,6 +57,7 @@ export const kinds = {
     Choices: 'Choices',
     Records: 'Records',
     More: 'More',
+    Business: 'Business',
     'Your kinds': 'Your kinds',
   },
   /** What a field holds, by its type, as a refusal or a tile explains it. */

@@ -2,7 +2,7 @@ import type { FieldNode, Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { columnsEditor } from './columns-editor';
 import type { Designer } from './designer';
-import { kindOfField } from './kinds';
+import { WIDGET_ONLY_KINDS, kindOfField } from './kinds';
 import { kindSettings } from './kind-settings';
 import { inputSettings } from './kind-settings-inputs';
 import { structureSettings } from './kind-settings-structures';
@@ -208,7 +208,9 @@ export function inlineSettings(el: ElementFactory, designer: Designer, id: strin
     element,
     update(page, node) {
       const def = page.fields[node.field];
-      const kind = designer.isFromModel(id) ? null : kindOfField(def, node);
+      // A field of the model keeps what it holds: only the settings that are its widget's own are offered for it.
+      const own = kindOfField(def, node);
+      const kind = designer.isFromModel(id) && !WIDGET_ONLY_KINDS.has(own ?? '') ? null : own;
       if ((kind ?? '') !== drawn) {
         drawn = kind ?? '';
         build(kind);

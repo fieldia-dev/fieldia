@@ -82,7 +82,37 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
   { id: 'keywords', label: 'Keywords', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'tags' },
   { id: 'website', label: 'Website', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'url' },
   { id: 'image', label: 'Image', group: 'more', field: (label) => ({ type: 'image', label }) },
+  // The business widgets an ERP's screens lean on.
+  {
+    id: 'priority',
+    label: 'Priority stars',
+    group: 'more',
+    field: (label, w = en) => ({ type: 'selection', label, options: [w.defaults.priorityNone, ...w.defaults.priorityLevels].map((words, i) => ({ value: String(i), label: words })) }),
+    widget: 'priority',
+  },
+  {
+    id: 'state-dot',
+    label: 'State dot',
+    group: 'more',
+    field: (label, w = en) => ({ type: 'selection', label, options: ['normal', 'blocked', 'done'].map((value, i) => ({ value, label: w.defaults.dotStates[i] })) }),
+    widget: 'dot',
+  },
+  { id: 'duration', label: 'Hours and minutes', group: 'more', field: (label) => ({ type: 'float', label }), widget: 'duration' },
+  { id: 'percentage', label: 'Percentage', group: 'more', field: (label) => ({ type: 'float', label }), widget: 'percentage' },
+  { id: 'timer', label: 'Timer', group: 'more', field: (label) => ({ type: 'float', label, readonly: true }), widget: 'timer' },
+  { id: 'date-range', label: 'Range of dates', group: 'more', field: (label) => ({ type: 'date', label }), widget: 'daterange' },
+  { id: 'colour', label: 'Colour', group: 'more', field: (label) => ({ type: 'integer', label }), widget: 'color' },
+  { id: 'copy', label: 'Text to copy', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'copy' },
+  { id: 'pdf', label: 'PDF shown inline', group: 'more', field: (label) => ({ type: 'binary', label, accept: ['application/pdf'] }), widget: 'pdf' },
+  { id: 'embed', label: 'Page shown inline', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'embed' },
+  { id: 'distribution', label: 'Analytic distribution', group: 'more', field: (label) => ({ type: 'json', label }), widget: 'distribution' },
+  { id: 'tax-totals', label: 'Tax totals', group: 'more', field: (label) => ({ type: 'json', label, readonly: true }), widget: 'tax-totals' },
+  { id: 'payments', label: 'Payments', group: 'more', field: (label) => ({ type: 'json', label, readonly: true }), widget: 'payments' },
+  { id: 'properties', label: 'Properties', group: 'more', field: (label) => ({ type: 'properties', label }) },
 ];
+
+/** The business kinds whose own settings are the widget's alone: shown for a field of the model too, which keeps what it holds. */
+export const WIDGET_ONLY_KINDS: ReadonlySet<string> = new Set(['priority', 'state-dot', 'duration', 'percentage', 'timer', 'date-range', 'colour', 'copy', 'pdf', 'embed', 'distribution', 'tax-totals', 'payments', 'properties']);
 
 /** The kind a field was made as, from its type and widget — an app's kind by the widget that draws it; null for one no kind makes. */
 export function kindOfField(field: Field, node: FieldNode): string | null {
@@ -95,29 +125,35 @@ export function kindOfField(field: Field, node: FieldNode): string | null {
 function builtInKindOf(field: Field, node: FieldNode): string | null {
   switch (field.type) {
     case 'char':
+      if (node.widget === 'color') return 'colour';
+      if (node.widget === 'copy' || node.widget === 'embed') return node.widget;
       return node.widget === 'email' ? 'email' : node.widget === 'phone' ? 'phone' : node.widget === 'url' ? 'website' : node.widget === 'tags' ? 'keywords' : node.widget === 'time' ? 'time' : 'short-answer';
     case 'text':
-      return 'paragraph';
+      return node.widget === 'copy' ? 'copy' : 'paragraph';
     case 'html':
       return 'rich-text';
     case 'selection':
       if (node.widget === 'image-choice') return 'image-choice';
+      if (!field.multiple && node.widget === 'priority') return 'priority';
+      if (!field.multiple && node.widget === 'dot') return 'state-dot';
       if (field.multiple && (node.widget === 'tags' || node.widget === 'ranking')) return node.widget;
       return field.multiple ? 'checkboxes' : node.widget === 'radio' ? 'multiple-choice' : node.widget === 'statusbar' ? 'status' : 'dropdown';
     case 'integer':
+      if (node.widget === 'color') return 'colour';
       return node.widget === 'rating' ? 'rating' : node.widget === 'scale' ? 'scale' : node.widget === 'progressbar' ? 'progress' : node.widget === 'slider' ? 'slider' : 'number';
     case 'float':
+      if (node.widget === 'duration' || node.widget === 'percentage' || node.widget === 'timer') return node.widget;
       return node.widget === 'slider' ? 'slider' : 'number';
     case 'monetary':
       return 'amount';
     case 'date':
-      return 'date';
+      return node.widget === 'daterange' ? 'date-range' : 'date';
     case 'datetime':
-      return 'date-time';
+      return node.widget === 'daterange' ? 'date-range' : node.widget === 'timer' ? 'timer' : 'date-time';
     case 'boolean':
-      return node.widget === 'tick' ? 'tick' : 'yes-no';
+      return node.widget === 'priority' ? 'priority' : node.widget === 'tick' ? 'tick' : 'yes-no';
     case 'binary':
-      return node.widget === 'signature' ? 'signature' : 'file';
+      return node.widget === 'signature' ? 'signature' : node.widget === 'pdf' ? 'pdf' : 'file';
     case 'image':
       return 'image';
     case 'many2one':
@@ -129,7 +165,9 @@ function builtInKindOf(field: Field, node: FieldNode): string | null {
     case 'matrix':
       return 'matrix';
     case 'json':
-      return node.widget === 'address' ? 'address' : null;
+      return node.widget === 'address' || node.widget === 'distribution' || node.widget === 'tax-totals' || node.widget === 'payments' ? node.widget : null;
+    case 'properties':
+      return 'properties';
     default:
       return null;
   }
@@ -198,12 +236,33 @@ export function kindFits(kind: QuestionKind, field: Field): boolean {
   if (kind.app) return kind.app.fits ? kind.app.fits(field) : made.type === field.type;
   // Pictures to choose from, one or several.
   if (kind.id === 'image-choice') return field.type === 'selection';
+  // The business widgets, each on the data it reads: stars on one of a list or a yes or no, a timer on hours or a start, a range on dates…
+  const suits = BUSINESS_FITS[kind.id];
+  if (suits) return suits(field);
   if (made.type === 'selection' && field.type === 'selection') return !!made.multiple === !!field.multiple;
   if (kind.id === 'number' || kind.id === 'slider') return field.type === 'integer' || field.type === 'float';
   // A time of day: only text the model keeps as one.
   if (kind.id === 'time') return field.type === 'char' && field.pattern === (made as { pattern?: string }).pattern;
   return made.type === field.type;
 }
+
+const single = (field: Field) => field.type === 'selection' && !field.multiple;
+/** Which data each business kind shows without changing it. */
+const BUSINESS_FITS: Record<string, (field: Field) => boolean> = {
+  priority: (field) => single(field) || field.type === 'boolean',
+  'state-dot': single,
+  duration: (field) => field.type === 'float',
+  percentage: (field) => field.type === 'float',
+  timer: (field) => field.type === 'float' || field.type === 'datetime',
+  'date-range': (field) => field.type === 'date' || field.type === 'datetime',
+  colour: (field) => field.type === 'integer' || field.type === 'char',
+  copy: (field) => field.type === 'char' || field.type === 'text',
+  pdf: (field) => field.type === 'binary' && !field.multiple,
+  embed: (field) => field.type === 'char',
+  distribution: (field) => field.type === 'json',
+  'tax-totals': (field) => field.type === 'json',
+  payments: (field) => field.type === 'json',
+};
 
 /**
  * The kinds a field can be shown as: for a field from the model, those that
