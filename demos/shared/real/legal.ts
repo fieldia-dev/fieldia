@@ -1,4 +1,4 @@
-import type { ActionRequest, ActionResult, JsonValue, Line, Page, RelatedRecord, Values } from '@fieldia/core';
+import type { ActionRequest, ActionResult, JsonValue, Line, Page, PropertyDefinition, RelatedRecord, Values } from '@fieldia/core';
 import casePage from '../../../examples/pages/real-legal-case.page.json';
 import closePage from '../../../examples/pages/real-legal-case-close.page.json';
 import depositPage from '../../../examples/pages/real-legal-trust-deposit.page.json';
@@ -109,6 +109,43 @@ const RATES: Record<number, number> = { 7201: 2500, 7202: 1500, 7203: 1200 };
 const line = (key: string, id: number, values: Values): Line => ({ key, id, values });
 
 const FILED = day(-61);
+
+/** The firm's compliance requirements (legal.compliance): a case links to those it is under. */
+const COMPLIANCE: Record<number, Values & { name: string }> = {
+  7071: { name: 'Client’s commercial register extract is current', regulation_reference: 'Commercial Register Law 34/1976', state: 'compliant', risk_level: 'low', review_date: day(120) },
+  7072: { name: 'Know-your-client and beneficial owners on file', regulation_reference: 'Anti-Money Laundering Law 80/2002', state: 'compliant', risk_level: 'medium', review_date: day(200) },
+  7073: { name: 'Filings follow the Economic Courts procedure', regulation_reference: 'Economic Courts Law 120/2008', state: 'under_review', risk_level: 'medium', review_date: day(14) },
+  7074: { name: 'Data protection notice signed by the client', regulation_reference: 'Personal Data Protection Law 151/2020', state: 'active', risk_level: 'high', review_date: day(30) },
+};
+
+/** The properties each matter type keeps for its cases (legal.matter.type case_properties_definition). */
+const CASE_PROPERTIES: Record<number, PropertyDefinition[]> = {
+  7601: [
+    { name: 'contract_value', label: 'Contract value (EGP)', type: 'float' },
+    { name: 'contract_date', label: 'Contract signed on', type: 'date' },
+    {
+      name: 'claim_basis',
+      label: 'Basis of the claim',
+      type: 'selection',
+      options: [
+        { value: 'breach', label: 'Breach of contract' },
+        { value: 'late_delivery', label: 'Late delivery' },
+        { value: 'non_payment', label: 'Non-payment' },
+        { value: 'defects', label: 'Defective goods' },
+      ],
+    },
+    { name: 'expert_appointed', label: 'Court expert appointed', type: 'boolean' },
+    { name: 'expert_name', label: 'Expert', type: 'char' },
+  ],
+  7602: [
+    { name: 'employment_end', label: 'Employment ended on', type: 'date' },
+    { name: 'labour_office', label: 'Labour office complaint no.', type: 'char' },
+  ],
+  7603: [],
+};
+
+/** The person using the demo: a legal officer, with billing and the branches. */
+const LEGAL_USER = { id: 9101, name: 'Hany Mansour', roles: ['base.group_user', 'base.group_multi_company', 'legal.group_legal_user', 'legal.group_legal_officer', 'legal_billing.group_legal_billing_user'] };
 
 const hearings = (): Line[] => [
   line('h1', 7011, { name: 'First hearing — statement of claim', hearing_type: 'initial', date_time: at(-40, '10:00'), duration: 2, location: 'Cairo Economic Court, Abbassia — Hall 3', judge_name: 'Counsellor Ahmed Ragab', state: 'completed', result: 'adjourned', reminder_days: 3 }),
@@ -230,6 +267,7 @@ function nileCase(): Values {
     case_number: 'LEG/2026/LIT/0042',
     name: 'Nile Cotton Mills v. Delta Logistics — breach of the 2024 supply and transport contract',
     state: 'open',
+    active: true,
     outcome: null,
     close_reason: null,
     my_timer_running: false,
@@ -276,11 +314,8 @@ function nileCase(): Values {
     task_ids: tasks(),
     expense_ids: expenses(),
     document_ids: documents(),
-    compliance_ids: [
-      line('c1', 7071, { name: 'Client’s commercial register extract is current', regulation_reference: 'Commercial Register Law 34/1976', state: 'compliant', risk_level: 'low', review_date: day(120) }),
-      line('c2', 7072, { name: 'Know-your-client and beneficial owners on file', regulation_reference: 'Anti-Money Laundering Law 80/2002', state: 'compliant', risk_level: 'medium', review_date: day(200) }),
-      line('c3', 7073, { name: 'Filings follow the Economic Courts procedure', regulation_reference: 'Economic Courts Law 120/2008', state: 'under_review', risk_level: 'medium', review_date: day(14) }),
-    ],
+    // A many2many to the firm's compliance requirements: the ids of those this case is under.
+    compliance_ids: [link(7071, COMPLIANCE[7071].name), link(7072, COMPLIANCE[7072].name), link(7073, COMPLIANCE[7073].name)],
     contract_review_ids: [
       line('cr1', 7081, { name: 'CR/2026/0017', review_type: 'new_contract', reviewer_id: U.rana, risk_assessment: 'medium', state: 'in_review' }),
     ],
@@ -332,6 +367,7 @@ function draftCase(): Values {
     case_number: 'LEG/2026/LAB/0043',
     name: 'Sara Hamdy v. Giza Spinning — unpaid end-of-service gratuity',
     state: 'draft',
+    active: true,
     my_timer_running: false,
     company_id: COMPANY,
     currency_id: EGP,
@@ -723,21 +759,26 @@ export const lane: RealLane = {
     'res.currency': { 7461: { name: 'EGP' } },
     'legal.party.role': named(labels(ROLE)),
     'legal.matter.type': named(labels(MATTER)),
-    // A stage serves one matter type here, or every one: a many2many's "contains" has no filter (see the gap log).
+    // A stage serves the matter types it lists, or every one while it lists none (matter_type_ids contains).
     'legal.case.stage': {
-      7701: { name: 'Intake', matter_type_ids: null },
-      7702: { name: 'Filed', matter_type_ids: null },
-      7703: { name: 'Hearings', matter_type_ids: null },
-      7704: { name: 'Expert report', matter_type_ids: MATTER.commercial },
-      7705: { name: 'Judgment', matter_type_ids: null },
-      7706: { name: 'Formation documents', matter_type_ids: MATTER.formation },
+      7701: { name: 'Intake', matter_type_ids: [] },
+      7702: { name: 'Filed', matter_type_ids: [] },
+      7703: { name: 'Hearings', matter_type_ids: [] },
+      7704: { name: 'Expert report', matter_type_ids: [MATTER.commercial, MATTER.labour] },
+      7705: { name: 'Judgment', matter_type_ids: [] },
+      7706: { name: 'Formation documents', matter_type_ids: [MATTER.formation] },
     },
     'legal.limitation.rule': named(labels(RULE)),
     'legal.case.category': named(labels(CATEGORY)),
     'legal.jurisdiction': { 7961: { name: 'Egypt' }, 7962: { name: 'Saudi Arabia' }, 7963: { name: 'United Arab Emirates' } },
-    'legal.tag': named(labels(TAG)),
+    'legal.tag': { 7871: { name: TAG.economic.label, color: 4 }, 7872: { name: TAG.supply.label, color: 2 }, 7873: { name: TAG.highValue.label, color: 1 } },
+    'legal.compliance': COMPLIANCE,
     'legal.activity.category': named(labels(CAT)),
-    'legal.task': { 7021: { name: 'File the defence memorandum on the expert’s preliminary findings' }, 7024: { name: 'Prepare the client’s CFO for the expert meeting' } },
+    // The case's tasks, each knowing its case: a time entry's Legal Task offers only this case's (case_id = parent.id).
+    'legal.task': {
+      ...Object.fromEntries(tasks().map((t) => [t.id, { name: t.values['name'], case_id: link(42, 'Nile Cotton Mills v. Delta Logistics') }])),
+      7029: { name: 'Collect the end-of-service calculation', case_id: link(43, 'Sara Hamdy v. Giza Spinning — unpaid end-of-service gratuity') },
+    },
     'legal.payment.profile': { 7991: { name: 'Standard — 1.5% a month after 30 days', company_id: COMPANY }, 7992: { name: 'Corporate — 1% a month after 45 days', company_id: COMPANY } },
     'legal.trust.account': { 7995: { name: 'Client trust account — CIB 100-447-0091' } },
     'account.move': { 7993: { name: 'INV/2026/00311' }, 7994: { name: 'INV/2026/00347' } },
@@ -760,6 +801,13 @@ export const lane: RealLane = {
           : null,
     },
   },
+  users: { 'real-legal-case': LEGAL_USER, 'real-survey': LEGAL_USER },
+  navigation: {
+    'real-legal-case': { records: [42, 43], breadcrumbs: [{ label: 'Cases', href: '#cases' }] },
+    'real-survey': { records: [7], breadcrumbs: [{ label: 'Surveys', href: '#surveys' }] },
+  },
+  shows: { 'legal.tag': { color: 'color' } },
+  definitions: { case_properties: (values) => CASE_PROPERTIES[Number((values['matter_type_id'] as RelatedRecord | null)?.id ?? 0)] ?? [] },
   labelField: { 'survey.question': 'title', 'survey.survey': 'title', 'legal.case': 'name' },
   action: (request) => {
     const result = answer(request);
