@@ -186,8 +186,13 @@ export interface Form {
    * when a field they change with changes; the latest answer wins.
    */
   loadChoices(field: string): void;
-  /** Records a many2one, many2many or reference may point to. A reference needs `options.model`. */
-  search(field: string, query: string, limit?: number, options?: { model?: string }): Promise<RelatedRecord[]>;
+  /**
+   * Records a many2one, many2many or reference may point to. A reference needs
+   * `options.model`, and so does structured data naming records of a model (a
+   * json field, such as an analytic distribution's accounts); `options.ids`
+   * finds those records alone, for their names.
+   */
+  search(field: string, query: string, limit?: number, options?: { model?: string; ids?: RecordId[] }): Promise<RelatedRecord[]>;
   /** The same, for a relation inside a one2many line, filtered by that line's values. */
   searchLine(field: string, key: string, subfield: string, query: string, limit?: number): Promise<RelatedRecord[]>;
   /**
@@ -985,17 +990,19 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     ctx: Record<string, unknown>,
     query: string,
     limit: number,
-    model?: string
+    model?: string,
+    ids?: RecordId[]
   ): Promise<RelatedRecord[]> {
-    if (def.type !== 'many2one' && def.type !== 'many2many' && def.type !== 'reference') {
-      throw new Error(`"${name}" is not a many2one, many2many or reference`);
+    if (def.type !== 'many2one' && def.type !== 'many2many' && def.type !== 'reference' && def.type !== 'json') {
+      throw new Error(`"${name}" is not a many2one, many2many, reference or json`);
     }
-    if (def.type === 'reference' && !model) throw new Error(`Searching "${name}" needs a model`);
+    if ((def.type === 'reference' || def.type === 'json') && !model) throw new Error(`Searching "${name}" needs a model`);
     const source = options.dataSource;
     if (!source?.search) return [];
     // Every valueFrom, in groups too, becomes the value it names before the search goes out.
-    const filter: ResolvedFilter[] | undefined = def.type === 'reference' || !def.filter ? undefined : resolveFilter(def.filter, ctx);
-    const relation = def.type === 'reference' ? (model as string) : def.relation;
+    const own: ResolvedFilter[] | undefined = def.type === 'reference' || def.type === 'json' || !def.filter ? undefined : resolveFilter(def.filter, ctx);
+    const filter = ids ? [...(own ?? []), { field: 'id', op: 'in' as const, value: ids }] : own;
+    const relation = def.type === 'reference' || def.type === 'json' ? (model as string) : def.relation;
     return track(source.search({ model: relation, query, ...(filter ? { filter } : {}), limit }));
   }
 
@@ -1183,7 +1190,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     },
 
     async search(field, query, limit = 8, options = {}) {
-      return runSearch(fieldDef(field), field, context(), query, limit, options.model);
+      return runSearch(fieldDef(field), field, context(), query, limit, options.model, options.ids);
     },
 
     async previewLine(field, key, values) {
