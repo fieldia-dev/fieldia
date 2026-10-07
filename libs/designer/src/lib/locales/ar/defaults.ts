@@ -17,6 +17,8 @@ export const defaults: DesignerWords['defaults'] = {
   newButton: 'زر جديد',
   counter: 'عدّاد',
   badge: 'شارة',
+  ribbon: 'شريط',
+  alert: 'أمر ينبغي معرفته عن هذا السجل.',
   noneOfThese: 'لا شيء مما سبق',
   newGroup: 'مجموعة جديدة',
   left: 'اليسار',

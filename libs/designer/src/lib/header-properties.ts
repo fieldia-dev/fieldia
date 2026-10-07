@@ -1,8 +1,8 @@
-import type { ButtonNode, FieldNode, Page, SheetNode, Tone } from '@fieldia/core';
+import type { Alert, ButtonNode, FieldNode, Page, Ribbon, SheetNode, Tone } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { choicesOf, conditionEditor } from './condition-editor';
 import type { Designer } from './designer';
-import { findHeaderPart } from './header-commands';
+import { findHeaderPart, wordsOf } from './header-commands';
 import { allSections } from './page-tree';
 import { whenClicked } from './steps-panel';
 import type { PropertiesView } from './screen-properties';
@@ -32,7 +32,8 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   const words = el('input', { class: 'fd-input', 'aria-label': w.words }) as HTMLInputElement;
   words.addEventListener('input', () => designer.updateHeaderPart(id, { label: words.value }));
   // steps lane: what a button or a counter does when clicked, its app action one of the steps.
-  const pressed = findHeaderPart(designer.getPage(), id)?.kind !== 'badge' ? whenClicked(el, designer, id) : null;
+  const kindNow = findHeaderPart(designer.getPage(), id)?.kind;
+  const pressed = kindNow === 'button' || kindNow === 'stat' ? whenClicked(el, designer, id) : null;
   const look = select(el, w.look, [['secondary', w.buttonLooks.secondary], ['primary', w.buttonLooks.primary], ['danger', w.buttonLooks.danger], ['link', w.buttonLooks.link]]);
   look.addEventListener('change', () => designer.updateHeaderPart(id, { style: look.value as ButtonNode['style'] }));
   const lookRow = prop(el, w.look, look);
@@ -45,6 +46,31 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   const tone = select(el, w.tone, [['muted', w.tones.muted], ['info', w.tones.info], ['success', w.tones.success], ['warning', w.tones.warning], ['danger', w.tones.danger]]);
   tone.addEventListener('change', () => designer.updateHeaderPart(id, { tone: tone.value as Tone }));
   const toneRow = prop(el, w.tone, tone);
+  // A ribbon's or an alert's words from a field, a ribbon's tooltip, an alert's ×, a field's value put in the words, an alert's own buttons.
+  const wordsFrom = el('select', { class: 'fd-input fd-select', 'aria-label': w.wordsFrom }) as HTMLSelectElement;
+  wordsFrom.addEventListener('change', () => designer.updateHeaderPart(id, { wordsField: wordsFrom.value }));
+  const wordsFromRow = el('label', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.wordsFrom), wordsFrom, el('p', { class: 'fd-properties-hint' }, w.wordsFromHint));
+  const tooltip = el('input', { class: 'fd-input', 'aria-label': w.tooltip, placeholder: w.optional }) as HTMLInputElement;
+  tooltip.addEventListener('input', () => designer.updateHeaderPart(id, { tooltip: tooltip.value }));
+  const tooltipRow = prop(el, w.tooltip, tooltip);
+  const closes = el('input', { type: 'checkbox', 'aria-label': w.canBeClosed }) as HTMLInputElement;
+  closes.addEventListener('change', () => designer.updateHeaderPart(id, { dismissible: closes.checked }));
+  const closesRow = el('label', { class: 'fd-q-required' }, closes, el('span', {}, w.canBeClosed));
+  const value = el('select', { class: 'fd-input fd-select', 'aria-label': w.showValue }) as HTMLSelectElement;
+  value.addEventListener('change', () => {
+    const found = findHeaderPart(designer.getPage(), id);
+    if (found && value.value) designer.updateHeaderPart(id, { label: `${wordsOf(found.part).trimEnd()} {${value.value}}`.trimStart() });
+    value.value = '';
+  });
+  const valueRow = el('label', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.showValue), value, el('p', { class: 'fd-properties-hint' }, w.valueHint));
+  const buttonsList = el('div', { class: 'fd-alert-buttons' });
+  const addInside = el('button', { type: 'button', class: 'fd-button fd-button-link' }, w.addButtonInside);
+  addInside.addEventListener('click', () => {
+    const made = designer.addAlertButton(id, designer.words.defaults.newButton);
+    if (made) (buttonsList.querySelector(`[data-button="${made}"] input`) as HTMLInputElement | null)?.focus();
+  });
+  const buttonsRow = el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.buttonsInside), buttonsList, addInside);
+  let buttonsDrawn = '';
   const when = conditionEditor(el, designer, id, 'question');
   const showWhen = el('button', { type: 'button', class: 'fd-button fd-button-link fd-q-when' }, w.showOnlyWhen);
   showWhen.addEventListener('click', () => when.start());
@@ -64,6 +90,11 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
     asksRow,
     countRow,
     toneRow,
+    wordsFromRow,
+    valueRow,
+    tooltipRow,
+    closesRow,
+    buttonsRow,
     el('div', { class: 'fd-prop fd-prop-when' }, el('span', { class: 'fd-prop-name' }, w.whenItShows), when.element, showWhen),
     roles.element,
     el('div', { class: 'fd-props-actions' }, left, right, remove)
@@ -75,7 +106,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
       const found = findHeaderPart(page, id);
       if (!found) return;
       const { kind, part, index, list } = found;
-      if (!focused(words)) words.value = part.label;
+      if (!focused(words)) words.value = wordsOf(part);
       pressed?.update(page);
       lookRow.hidden = asksRow.hidden = kind !== 'button';
       if (kind === 'button') {
@@ -89,8 +120,42 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
         count.replaceChildren(el('option', { value: '' }, w.nothing), ...offered.map(([name, f]) => el('option', { value: name }, f.label)));
         count.value = (part as { field?: string }).field ?? '';
       }
-      toneRow.hidden = kind !== 'badge';
-      if (kind === 'badge') tone.value = (part as { tone?: string }).tone ?? 'muted';
+      toneRow.hidden = kind !== 'badge' && kind !== 'ribbon' && kind !== 'alert';
+      if (!toneRow.hidden) tone.value = (part as { tone?: string }).tone ?? (kind === 'alert' ? 'info' : 'muted');
+      const worded = kind === 'ribbon' || kind === 'alert';
+      wordsFromRow.hidden = !worded;
+      valueRow.hidden = kind !== 'alert';
+      tooltipRow.hidden = kind !== 'ribbon';
+      closesRow.hidden = buttonsRow.hidden = kind !== 'alert';
+      if (worded) {
+        // Fields that hold words: text, a choice (by its label), a link (by its record's name).
+        const texts = [...Object.entries(page.fields), ...designer.modelFields().map((m) => [m.name, m.field] as const)].filter(([, f]) => ['char', 'text', 'selection', 'many2one'].includes(f.type));
+        const from = kind === 'ribbon' ? (part as Ribbon).labelField : (part as Alert).messageField;
+        wordsFrom.replaceChildren(el('option', { value: '' }, w.nothing), ...texts.map(([name, f]) => el('option', { value: name }, f.label)));
+        wordsFrom.value = from ?? '';
+      }
+      if (kind === 'alert') {
+        const alert = part as Alert;
+        value.replaceChildren(el('option', { value: '' }, '—'), ...Object.entries(page.fields).map(([name, f]) => el('option', { value: name }, f.label)));
+        value.value = '';
+        closes.checked = alert.dismissible === true;
+        const key = JSON.stringify(alert.buttons ?? []);
+        if (key !== buttonsDrawn && !buttonsList.contains(buttonsList.ownerDocument.activeElement)) {
+          buttonsDrawn = key;
+          buttonsList.replaceChildren(
+            ...(alert.buttons ?? []).map((button) => {
+              const label = el('input', { class: 'fd-input', 'aria-label': w.buttonInsideWords, value: button.label }) as HTMLInputElement;
+              label.addEventListener('input', () => designer.updateAlertButton(id, button.id, { label: label.value }));
+              const action = el('input', { class: 'fd-input', 'aria-label': w.action, value: button.action ?? '', spellcheck: 'false' }) as HTMLInputElement;
+              action.addEventListener('change', () => designer.updateAlertButton(id, button.id, { action: action.value }));
+              const remove = el('button', { type: 'button', class: 'fd-icon-button', 'aria-label': w.removeNamed(button.label), title: w.removeNamed(button.label) }, '×');
+              remove.addEventListener('click', () => designer.removeAlertButton(id, button.id));
+              return el('div', { class: 'fd-alert-button-row', 'data-button': button.id }, label, action, remove);
+            })
+          );
+        }
+      }
+      if (kind === 'ribbon' && !focused(tooltip)) tooltip.value = (part as Ribbon).tooltip ?? '';
       when.update(page, testable(page), part.invisible);
       roles.update(page);
       showWhen.hidden = !when.element.hidden || !when.canStart();

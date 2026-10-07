@@ -4,7 +4,7 @@ import { plural, quoteAr } from '../speak';
 const q = quoteAr;
 const at = (where: string) => (where ? ` ${where}` : '');
 const PART = { page: 'الصفحة', tab: 'علامة التبويب', section: 'القسم' } as const;
-const HEADER = { button: 'الزر', counter: 'العدّاد', badge: 'الشارة' } as const;
+const HEADER = { button: 'الزر', counter: 'العدّاد', badge: 'الشارة', ribbon: 'الشريط', alert: 'التنبيه' } as const;
 const columns = (n: number) => plural('ar', n, { zero: '# أعمدة', one: 'عمود واحد', two: 'عمودان', few: '# أعمدة', many: '# عمودًا', other: '# عمود' });
 const files = (n: number) => plural('ar', n, { zero: '# ملفات', one: 'ملف واحد', two: 'ملفان', few: '# ملفات', many: '# ملفًا', other: '# ملف' });
 const LABELS: Record<string, string> = { above: 'فوق مربعاتها', beside: 'بجانب مربعاتها', hidden: 'داخل مربعاتها' };

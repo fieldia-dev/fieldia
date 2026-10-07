@@ -91,6 +91,11 @@ export const refusals = {
   onlyTagsOwn: 'Only tags take answers of one’s own',
   onlyMatrixOnce: 'Only a matrix has columns to take once',
   onlyYesNoLook: 'Only a yes or no shows as buttons or a switch',
+  onlyAlertButtons: 'Only an alert has buttons inside it',
+  onlyRibbonAlertField: 'Only a ribbon or an alert takes its words from a field',
+  onlyRibbonTooltip: 'Only a ribbon has words shown on pointing at it',
+  onlyAlertCloses: 'Only an alert can be closed',
+  onlySomeIcons: 'A ribbon or an alert has no icon',
   onlyOneChoiceBadge: 'Only a field that holds one choice of a list shows as a coloured badge',
   megabytes: (n: number) => `${n} MB`,
   // ---- kinds' own settings

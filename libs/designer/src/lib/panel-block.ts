@@ -1,4 +1,4 @@
-import type { ButtonNode, ImageNode, Page, TextNode } from '@fieldia/core';
+import type { ButtonNode, ImageNode, Page, TextNode, Tone } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import { locate } from './layout-tree';
@@ -92,14 +92,26 @@ export function blockContent(el: ElementFactory, designer: Designer, id: string)
         { value: 'heading', words: w.heading },
         { value: 'paragraph', words: w.words },
         { value: 'note', words: w.note, title: w.noteTitle },
+        { value: 'alert', words: w.alertBox, title: w.alertBoxTitle },
       ],
       (value) => value && designer.updateBlock(id, { style: value })
     );
+    // An alert's colour, as a sheet's alert has one.
+    const tone = segmented<Tone>(
+      el,
+      w.tone,
+      (['info', 'success', 'warning', 'danger'] as const).map((value) => ({ value, words: w.tones[value] })),
+      (value) => value && designer.updateBlock(id, { tone: value })
+    );
+    const toneRow = setting(el, 'content', 'Alert colour', tone.element, { words: w.alertColour });
     return {
-      rows: [setting(el, 'content', 'Reads as', style.element, { words: w.readsAs })],
+      rows: [setting(el, 'content', 'Reads as', style.element, { words: w.readsAs }), toneRow],
       update(page) {
         const node = locate(page, id)?.node;
-        if (node?.type === 'text') style.set(node.style ?? 'paragraph');
+        if (node?.type !== 'text') return;
+        style.set(node.style ?? 'paragraph');
+        toneRow.hidden = node.style !== 'alert';
+        tone.set(node.tone ?? 'info');
       },
     };
   }

@@ -84,3 +84,84 @@ describe('a choice as a coloured badge', () => {
     expect(designer.getState().issues.join(' ')).toMatch(/one choice of a list/i);
   });
 });
+
+describe('ribbons', () => {
+  it('adds several from the canvas, each with its colour, words from a field and a tooltip, one undo step each', () => {
+    const designer = createDesigner({ page: sheet() });
+    const { host } = mount(designer, { mode: 'advanced' });
+    (host.querySelector('[data-add-part="ribbon"]') as HTMLButtonElement).click();
+    (host.querySelector('[data-add-part="ribbon"]') as HTMLButtonElement).click();
+    const ribbons = () => (designer.getPage().layout as SheetNode).ribbons ?? [];
+    expect(ribbons().map((r) => r.label)).toEqual(['Ribbon', 'Ribbon']);
+    const second = ribbons()[1].id;
+    expect(designer.getState().selected).toBe(second);
+    choose(field(host, 'Tone'), 'danger');
+    choose(field(host, 'Words from a field'), 'state');
+    const tooltip = field(host, 'Words on pointing at it') as HTMLInputElement;
+    tooltip.value = 'Lost to a competitor';
+    tooltip.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(ribbons()[1]).toEqual({ id: second, label: 'Ribbon', tone: 'danger', labelField: 'state', tooltip: 'Lost to a competitor' });
+    designer.undo();
+    expect(ribbons()[1].tooltip).toBeUndefined();
+    // Its condition, as any part's.
+    expect(host.querySelector('.fd-q-when')).not.toBeNull();
+  });
+
+  it('takes a page’s one ribbon into the list as it is edited, and says what changed', () => {
+    const page = sheet();
+    (page.layout as SheetNode).ribbon = { id: 'old', label: 'Archived', tone: 'muted' };
+    const designer = createDesigner({ page });
+    designer.addHeaderPart('ribbon', 'Paid');
+    const root = designer.getPage().layout as SheetNode;
+    expect(root.ribbon).toBeUndefined();
+    expect(root.ribbons?.map((r) => r.label)).toEqual(['Archived', 'Paid']);
+    expect(designer.moveHeaderPart(root.ribbons?.[1].id as string, -1)).toBe(true);
+    expect((designer.getPage().layout as SheetNode).ribbons?.map((r) => r.label)).toEqual(['Paid', 'Archived']);
+    expect(designer.updateHeaderPart('old', { dismissible: true })).toBe(false);
+    expect(designer.getState().issues.join(' ')).toMatch(/only an alert can be closed/i);
+  });
+});
+
+describe('alerts', () => {
+  it('adds one from the canvas with a field’s value in its words, words from a field, a ×, and buttons inside', () => {
+    const designer = createDesigner({ page: sheet() });
+    const { host } = mount(designer, { mode: 'advanced' });
+    (host.querySelector('[data-add-part="alert"]') as HTMLButtonElement).click();
+    const alert = () => (designer.getPage().layout as SheetNode).alerts?.[0] as NonNullable<SheetNode['alerts']>[number];
+    expect(alert().message).toBe('Something to know about this record.');
+    const words = field(host, 'Words') as HTMLInputElement;
+    words.value = 'Over the limit by';
+    words.dispatchEvent(new Event('input', { bubbles: true }));
+    choose(field(host, 'Show a field’s value in the words'), 'total');
+    expect(alert().message).toBe('Over the limit by {total}');
+    choose(field(host, 'Words from a field'), 'unit');
+    (host.querySelector('input[aria-label="Can be closed"]') as HTMLInputElement).click();
+    (button(host, 'Add a button inside') as HTMLButtonElement).click();
+    expect(alert().messageField).toBe('unit');
+    expect(alert().dismissible).toBe(true);
+    expect(alert().buttons?.map((b) => [b.label, b.action])).toEqual([['New button', 'new_button']]);
+    const action = host.querySelector('.fd-alert-button-row input[aria-label="Action"]') as HTMLInputElement;
+    action.value = 'open_duplicate';
+    action.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(alert().buttons?.[0].action).toBe('open_duplicate');
+    (host.querySelector('.fd-alert-button-row [aria-label="Remove New button"]') as HTMLButtonElement).click();
+    expect(alert().buttons).toBeUndefined();
+    // The canvas draws it as the viewer does.
+    expect(host.querySelector(`.fd-canvas-alerts .fd-alert[data-part="${alert().id}"]`)).not.toBeNull();
+  });
+
+  it('puts words in an alert’s box among the parts, in a colour', () => {
+    const page = sheet();
+    ((page.layout as SheetNode).children[0] as { children: unknown[] }).children.push({ type: 'text', id: 't-note', text: 'Top up {total}.' });
+    const designer = createDesigner({ page });
+    designer.select('t-note');
+    const { host } = mount(designer, { mode: 'advanced' });
+    pick(host, 'Reads as', 'Alert');
+    pick(host, 'Alert colour', 'Amber');
+    const text = () => ((designer.getPage().layout as SheetNode).children[0] as { children: { id: string; style?: string; tone?: string }[] }).children.find((n) => n.id === 't-note');
+    expect(text()).toMatchObject({ style: 'alert', tone: 'warning' });
+    pick(host, 'Reads as', 'Words');
+    expect(text()?.tone).toBeUndefined();
+    expect(designer.updateBlock('t-note', { tone: 'danger' })).toBe(false);
+  });
+});

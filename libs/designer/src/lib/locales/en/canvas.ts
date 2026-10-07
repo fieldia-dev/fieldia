@@ -24,6 +24,8 @@ export const canvas = {
   addStatus: 'Add status steps',
   addCounter: 'Add a counter',
   addBadge: 'Add a badge',
+  addRibbon: 'Add a ribbon',
+  addAlert: 'Add an alert',
   statusFrom: 'Status steps from',
   statusNote: 'A field that holds one of a list: its choices become the steps.',
   noStatusField: 'No field holds one of a list yet: add a dropdown, then show it as steps.',

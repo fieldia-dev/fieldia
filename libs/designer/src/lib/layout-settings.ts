@@ -1,4 +1,4 @@
-import { PART_LOOKS, type ButtonNode, type ColumnCount, type ColumnsByWidth, type HelpShown, type ImageNode, type LabelPlace, type Page, type PageLook, type PartLook, type PartLookKind, type SectionNode, type TextNode } from '@fieldia/core';
+import { PART_LOOKS, type ButtonNode, type ColumnCount, type ColumnsByWidth, type HelpShown, type ImageNode, type LabelPlace, type Page, type PageLook, type PartLook, type PartLookKind, type SectionNode, type TextNode, type Tone } from '@fieldia/core';
 import { columnsValue, setSpan, SPANNED } from './layout-ops';
 import { across, isSection, locate, nodeOf, rowsOf, spanOf, type Holder, type Part } from './layout-tree';
 import { fill, fromTwelfths, inTwelfths, isGroup, keepsFull, laidInTwelfths, resize, toTwelfths, TWELVE, twelfthsAhead } from './layout-twelfths';
@@ -187,6 +187,8 @@ export interface BlockPatch {
   caption?: string;
   /** A button's question before it acts; empty asks nothing. */
   confirm?: string;
+  /** Words in an alert's box: its colour. */
+  tone?: Tone;
 }
 
 export function updateBlock(page: Page, id: string, patch: BlockPatch): void {
@@ -196,6 +198,12 @@ export function updateBlock(page: Page, id: string, patch: BlockPatch): void {
     if (patch.label !== undefined || patch.src !== undefined || patch.alt !== undefined || patch.caption !== undefined || patch.confirm !== undefined) throw new Refusal((w) => w.layout.wordsNotLabel);
     if (patch.text !== undefined) node.text = patch.text;
     if (patch.style !== undefined) node.style = patch.style as TextNode['style'];
+    // A colour is an alert's: words that are no longer one lose it.
+    if (patch.tone !== undefined) {
+      if (node.style !== 'alert') throw new Refusal((w) => w.layout.onlyAlertColour);
+      node.tone = patch.tone;
+    }
+    if (node.style !== 'alert') delete node.tone;
   } else if (node.type === 'button') {
     if (patch.text !== undefined || patch.src !== undefined || patch.alt !== undefined) throw new Refusal((w) => w.layout.buttonNotText);
     if (patch.label !== undefined) node.label = patch.label;

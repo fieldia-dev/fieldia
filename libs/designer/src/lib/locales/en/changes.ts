@@ -3,7 +3,7 @@ import { plural } from '../speak';
 const count = (n: number, one: string) => plural('en', n, { one: `# ${one}`, other: `# ${one}s` });
 const at = (where: string) => (where ? ` ${where}` : '');
 type Kind = 'page' | 'tab' | 'section';
-type HeaderKind = 'button' | 'counter' | 'badge';
+type HeaderKind = 'button' | 'counter' | 'badge' | 'ribbon' | 'alert';
 const LABELS: Record<string, string> = { above: 'above their boxes', beside: 'beside their boxes', hidden: 'inside their boxes' };
 
 /**

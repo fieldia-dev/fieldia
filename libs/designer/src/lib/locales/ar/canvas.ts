@@ -27,6 +27,8 @@ export const canvas: DesignerWords['canvas'] = {
   addStatus: 'إضافة مراحل الحالة',
   addCounter: 'إضافة عدّاد',
   addBadge: 'إضافة شارة',
+  addRibbon: 'إضافة شريط',
+  addAlert: 'إضافة تنبيه',
   statusFrom: 'مراحل الحالة من',
   statusNote: 'حقل يحمل عنصرًا واحدًا من قائمة: تصبح اختياراته هي المراحل.',
   noStatusField: 'لا حقل يحمل عنصرًا واحدًا من قائمة بعد: أضف قائمة منسدلة، ثم اعرضها مراحل.',
