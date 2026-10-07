@@ -309,3 +309,36 @@ describe('parts shown only while editing, or only while reading', () => {
     expect(((designer.getPage().layout as SheetNode).children[0] as { children: { id: string; invisible?: string }[] }).children.find((n) => n.id === 't-warn')?.invisible).toBe('not editing');
   });
 });
+
+describe('how a link shows its record', () => {
+  const switchOf = (host: Element, label: string) => host.querySelector(`.fd-properties [role="switch"][aria-label="${label}"]`) as HTMLButtonElement;
+
+  it('takes a picture, lines under it, and no button to open it, one undo step each', () => {
+    const designer = createDesigner({ page: sheet() });
+    designer.select('f-partner');
+    const { host } = mount(designer, { mode: 'advanced' });
+    switchOf(host, 'Picture').click();
+    switchOf(host, 'Lines under it').click();
+    expect(switchOf(host, 'Opens its record').getAttribute('aria-checked')).toBe('true');
+    switchOf(host, 'Opens its record').click();
+    expect(nodeOf(designer.getPage(), 'f-partner').options).toEqual({ avatar: true, details: true, open: false });
+    expect(switchOf(host, 'Opens its record').getAttribute('aria-checked')).toBe('false');
+    designer.undo();
+    expect(nodeOf(designer.getPage(), 'f-partner').options).toEqual({ avatar: true, details: true });
+  });
+
+  it('colours tags by their record, and is the page’s to set even on a field of the model', () => {
+    const page = sheet();
+    const tags = page.fields['tags'];
+    delete page.fields['tags'];
+    ((page.layout as SheetNode).children[0] as { children: FieldNode[] }).children = ((page.layout as SheetNode).children[0] as { children: FieldNode[] }).children.filter((n) => n.id !== 'f-tags');
+    const designer = createDesigner({ page, model: { tags } });
+    const id = designer.addModelField('tags') as string;
+    designer.select(id);
+    const { host } = mount(designer, { mode: 'advanced' });
+    // What it points to is the model's: no box for it.
+    expect(host.querySelector('.fd-properties input[aria-label="Links to"]')).toBeNull();
+    switchOf(host, 'Colours').click();
+    expect(nodeOf(designer.getPage(), id).options).toEqual({ colors: true });
+  });
+});

@@ -127,6 +127,10 @@ export const questions = {
   onePerColumn: 'One answer per column',
   pickAStep: 'People can pick a step',
   colouredBadge: 'Coloured badge',
+  linkPicture: 'Picture',
+  linkLines: 'Lines under it',
+  tagColours: 'Colours',
+  opensRecord: 'Opens its record',
   colourFor: (label: string) => `Colour for ${label}`,
   // ---- text, numbers and dates
   mostCharacters: 'Most characters',
