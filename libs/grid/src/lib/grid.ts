@@ -16,7 +16,24 @@ import {
 } from 'ag-grid-community';
 import { fill, isRightToLeft, lineKind, type ButtonNode, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
-import { cellText, createWidget, DRAWN_IN_CELLS, drawIcon, openLineDialog, kindTextField, lineForm, WIDGET_LABELS, type WidgetDialogs, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
+import {
+  cellText,
+  createWidget,
+  distributionIds,
+  distributionModel,
+  distributionWords,
+  DRAWN_IN_CELLS,
+  drawIcon,
+  openLineDialog,
+  kindTextField,
+  lineForm,
+  WIDGET_LABELS,
+  type WidgetDialogs,
+  type Widget,
+  type WidgetContext,
+  type WidgetFactory,
+  type WidgetLabels,
+} from '@fieldia/widgets';
 
 /**
  * A one2many as a spreadsheet, on AG Grid. Each cell is edited with the same
@@ -193,6 +210,33 @@ class BadgeRenderer implements ICellRendererComp<Line> {
     const tone = params.toneOf(params.data);
     if (tone) this.pill.dataset['tone'] = tone;
     else delete this.pill.dataset['tone'];
+    return true;
+  }
+}
+
+/** What an analytic distribution's cell needs: the accounts' names as they are found, and finding those not known yet. */
+interface DistributionParams {
+  locale?: Locale;
+  nameOf(id: string): string | undefined;
+  find(line: Line, ids: string[]): void;
+}
+
+/** An analytic distribution's cell: each account by its name and its share, "Sales 60%, Marketing 40%"; its editor opens its lines. */
+class DistributionRenderer implements ICellRendererComp<Line> {
+  private text!: HTMLElement;
+  init(params: ICellRendererParams<Line> & DistributionParams) {
+    this.text = document.createElement('span');
+    this.text.className = 'fd-grid-distribution';
+    this.refresh(params);
+  }
+  getGui() {
+    return this.text;
+  }
+  refresh(params: ICellRendererParams<Line> & DistributionParams) {
+    const value = params.value as Value | undefined;
+    const unknown = distributionIds(value).map(String).filter((id) => params.nameOf(id) === undefined);
+    if (unknown.length && params.data) params.find(params.data, unknown);
+    this.text.textContent = distributionWords(value, params.locale, params.nameOf);
     return true;
   }
 }
@@ -439,9 +483,10 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     if (kind === 'note') this.growing(this.box.querySelector('textarea'));
     if (cell.rowMode) this.floatList();
     if (this.isPopup()) {
-      // AG Grid places a popup over its cell but leaves its size to the editor.
+      // AG Grid places a popup over its cell but leaves its size to the editor; a distribution's lines take the room they need.
       const { width, height } = params.eGridCell.getBoundingClientRect();
-      Object.assign(this.box.style, { width: `${width}px`, height: `${height}px` });
+      if (def.type === 'json') Object.assign(this.box.style, { minWidth: `${Math.max(width, 360)}px` });
+      else Object.assign(this.box.style, { width: `${width}px`, height: `${height}px` });
     }
     // The form never changes values in place, so holding them is enough.
     this.before = this.line()?.values ?? {};
@@ -568,11 +613,11 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   getValue() {
     return this.line()?.values[this.column];
   }
-  /** Lists that open below their input need room the cell does not have (a whole open line floats them instead). */
+  /** Lists that open below their input need room the cell does not have (a whole open line floats them instead); so do a distribution's lines. */
   isPopup() {
     if (this.params.cell.rowMode) return false;
     const type = this.def.type;
-    return type === 'many2one' || type === 'many2many' || type === 'reference';
+    return type === 'many2one' || type === 'many2many' || type === 'reference' || type === 'json';
   }
   getPopupPosition(): 'over' {
     return 'over';
@@ -617,6 +662,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   // The table's own rules, read by the form for each line as the form changes; a table with none asks nothing.
   const ruled = !!(node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons || node.lineDelete !== undefined);
   let lineStates = new Map<string, LineState>();
+  /** Accounts' names an analytic distribution's cells show, by model and id, as they are found. */
+  const accountNames = new Map<string, string>();
   /** Whether a line may be deleted now: always, unless the table's lineDelete keeps it. */
   const deletable = (key: string) => node.lineDelete === undefined || (lineStates.get(key) ?? form.lineState(node.id, key)).deletable;
   const ruleOf = (line: Line | undefined, column: string) => (line ? lineStates.get(line.key)?.cells[column] : undefined);
@@ -796,6 +843,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const wide = ['char', 'text', 'html', 'many2one', 'many2many', 'reference', 'selection'].includes(sub.type);
     /** Whether this column is where a section's or note's text starts. */
     const spans = (api: GridApi<Line>) => spanStart(api)?.getColId() === column;
+    /** An analytic distribution (a json line field shown as `distribution`): its cell says its accounts, its editor opens its lines. */
+    const distributed = sub.type === 'json' && node.cells?.[column]?.widget === 'distribution';
     const base: ColDef<Line> = {
       colId: column,
       headerName: sub.label,
@@ -840,11 +889,46 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         if (readonly || p.node.rowPinned) return false;
         if (kindOf(p.data)) return spans(p.api);
         const rules = ruleOf(p.data, column);
-        return sub.type !== 'boolean' && EDITABLE.has(sub.type) && !locked(sub) && !rules?.readonly && !rules?.invisible;
+        return sub.type !== 'boolean' && (EDITABLE.has(sub.type) || distributed) && !locked(sub) && !rules?.readonly && !rules?.invisible;
       },
       cellEditor: FieldiaCellEditor,
       cellEditorParams: { cell, subfield: column },
     };
+    if (distributed) {
+      const model = distributionModel(node.cells?.[column]?.options);
+      const asked = new Set<string>();
+      const params: DistributionParams = {
+        locale,
+        nameOf: (id) => accountNames.get(`${model}:${id}`),
+        find(line, ids) {
+          const fresh = ids.filter((id) => !asked.has(`${model}:${id}`));
+          if (!fresh.length) return;
+          for (const id of fresh) asked.add(`${model}:${id}`);
+          form.searchLine(name, line.key, column, '', fresh.length, { model, ids: fresh.map((id) => (/^\d+$/.test(id) ? Number(id) : id)) }).then(
+            (found) => {
+              for (const record of found) accountNames.set(`${model}:${record.id}`, record.label);
+              if (!api.isDestroyed()) api.refreshCells({ columns: [column], force: true, suppressFlash: true });
+            },
+            () => undefined
+          );
+        },
+      };
+      return {
+        ...base,
+        cellRendererSelector: (p) => (kindOf(p.data) || p.node.rowPinned ? undefined : { component: DistributionRenderer, params }),
+        // Tab goes round the lines of its open editor; from its last box, on to the next cell.
+        suppressKeyboardEvent: (p) => {
+          if (p.editing && p.event.key === 'Tab') {
+            const editor = (p.event.target as Element | null)?.closest?.('.fd-grid-editor');
+            const boxes = editor ? [...editor.querySelectorAll<HTMLElement>('input, button, select')].filter((b) => !b.closest('[hidden]') && !(b as HTMLButtonElement).disabled) : [];
+            const at = boxes.indexOf(p.event.target as HTMLElement);
+            const to = at + (p.event.shiftKey ? -1 : 1);
+            if (at >= 0 && to >= 0 && to < boxes.length) return true;
+          }
+          return keys(p);
+        },
+      };
+    }
     const drawn = node.cells?.[column]?.widget;
     if (drawn && DRAWN_IN_CELLS.has(drawn) && drawn !== 'badge') {
       const look = { widget: drawn, ...(node.cells?.[column]?.options ? { options: node.cells[column].options } : {}) };

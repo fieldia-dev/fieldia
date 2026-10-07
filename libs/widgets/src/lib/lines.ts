@@ -1,4 +1,4 @@
-import { isEmpty, lineKind, type Field, type FieldNode, type Form, type FormState, type Line, type LineField, type Value, type Values } from '@fieldia/core';
+import { isEmpty, lineKind, type Field, type FieldNode, type Form, type FormState, type Line, type LineField, type RecordId, type Value, type Values } from '@fieldia/core';
 import { cellText, currencyOf } from './display';
 import { drawIcon } from './icons';
 import { askFirst, fillIn, maker } from './kind-parts';
@@ -50,7 +50,7 @@ export function lineForm(form: Form, field: string, key: string): Form {
     ...form,
     getState: (): FormState => ({ ...form.getState(), values: values() }),
     setValue: (name: string, value: Value) => form.updateLine(field, key, name, value),
-    search: (name: string, query: string, limit?: number) => form.searchLine(field, key, name, query, limit),
+    search: (name: string, query: string, limit?: number, options?: { model?: string; ids?: RecordId[] }) => form.searchLine(field, key, name, query, limit, options),
     canCreate: (name: string) => form.canCreateLine(field, name),
     quickCreate: (name: string, text: string) => form.quickCreateLine(field, name, text, key),
     createValues: (name: string) => form.createValues(name, { lines: field, key }),

@@ -69,6 +69,16 @@ describe('a column’s cells drawn by a widget, in the panel', () => {
     expect(field(row('Line rules'), 'Shown as')).toBeUndefined();
   });
 
+  it('offers a json column as an analytic distribution', () => {
+    const { designer, node } = screen('f-moves');
+    const page = designer.getPage();
+    (page.fields['move_ids'] as { fields: Record<string, unknown> }).fields['analytic'] = { type: 'json', label: 'Analytic' };
+    designer.replacePage(page);
+    expect(designer.setCellLook('f-moves', 'analytic', { widget: 'distribution' })).toBe(true);
+    expect(node('f-moves').cells).toEqual({ analytic: { widget: 'distribution' } });
+    expect(designer.setCellLook('f-moves', 'demand', { widget: 'distribution' })).toBe(false);
+  });
+
   it('refuses a widget that does not suit the column, saying why in Arabic', () => {
     const { designer } = screen('f-moves', 'ar');
     expect(designer.setCellLook('f-moves', 'product', { widget: 'duration' })).toBe(false);

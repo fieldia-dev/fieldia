@@ -85,3 +85,30 @@ describe('an analytic distribution', () => {
     expect(shareBox(rows(el)[0]).readOnly).toBe(true);
   });
 });
+
+describe('an analytic distribution as a column of a plain table', () => {
+  it('is the widget itself in each line’s cell, its accounts found by the line, its shares written into the line', async () => {
+    const order = {
+      fieldia: '0.1',
+      id: 'order',
+      data: { kind: 'record', model: 'sale.order' },
+      fields: { order_line: { type: 'one2many', label: 'Lines', relation: 'sale.order.line', fields: { name: { type: 'char', label: 'Description' }, analytic_distribution: { type: 'json', label: 'Analytic' } } } },
+      layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-lines', field: 'order_line', cells: { analytic_distribution: { widget: 'distribution' } } }] },
+    } as unknown as Page;
+    const form = createForm({ page: order, dataSource, values: { order_line: [{ key: 'a', values: { name: 'Desks', analytic_distribution: { '1': 60, '3': 40 } } }] } as never });
+    const node = (order.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: 'order_line', field: order.fields['order_line'] as Field, node, id: 'fd-lines', document, labels: WIDGET_LABELS.en });
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values['order_line'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    refresh();
+    await settle();
+    await settle();
+    const cell = widget.element.querySelector('td[data-column="analytic_distribution"] .fd-distribution') as HTMLElement;
+    // Its own lines, not the table's round it.
+    const own = () => [...cell.querySelectorAll<HTMLElement>('.fd-distribution-table > tbody > tr')];
+    expect(own().map((row) => accountBox(row).value)).toEqual(['Cairo office', 'Marketing']);
+    type(shareBox(own()[1]), '30');
+    expect((form.getState().values['order_line'] as { values: Record<string, unknown> }[])[0].values['analytic_distribution']).toEqual({ '1': 60, '3': 30 });
+  });
+});

@@ -248,8 +248,8 @@ export interface Form {
    * finds those records alone, for their names.
    */
   search(field: string, query: string, limit?: number, options?: { model?: string; ids?: RecordId[] }): Promise<RelatedRecord[]>;
-  /** The same, for a relation inside a one2many line, filtered by that line's values. */
-  searchLine(field: string, key: string, subfield: string, query: string, limit?: number): Promise<RelatedRecord[]>;
+  /** The same, for a relation inside a one2many line, filtered by that line's values — or structured data of a line naming records of a model (`options.model`). */
+  searchLine(field: string, key: string, subfield: string, query: string, limit?: number, options?: { model?: string; ids?: RecordId[] }): Promise<RelatedRecord[]>;
   /**
    * The values of records a many2many links to, for a table of them: `fields`
    * of the records with these ids, in the order asked, read with the data
@@ -1410,13 +1410,13 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       return after ? computed.line(field, { ...merged, ...after.values }, state.values as Values) : merged;
     },
 
-    async searchLine(field, key, subfield, query, limit = 8) {
+    async searchLine(field, key, subfield, query, limit = 8, options = {}) {
       const def = lineField(field);
       const sub = def.fields[subfield];
       if (!sub) throw new Error(`The lines of "${field}" have no field "${subfield}"`);
       const line = ((state.values[field] as Line[] | null) ?? []).find((l) => l.key === key);
       if (!line) throw new Error(`"${field}" has no line "${key}"`);
-      return runSearch(sub, subfield, lineContext(line.values, def.fields as Record<string, LineField>, context(), line.id ?? null), query, limit);
+      return runSearch(sub, subfield, lineContext(line.values, def.fields as Record<string, LineField>, context(), line.id ?? null), query, limit, options.model, options.ids);
     },
 
     canCreate: (field) => creatable(page.fields[field]) !== null,

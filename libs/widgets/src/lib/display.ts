@@ -1,6 +1,7 @@
 import type { LineField, Locale, Value } from '@fieldia/core';
 import { formatMoney, formatNumber } from './numbers';
 import { shownNumber } from './duration';
+import { distributionWords } from './distribution';
 
 
 function localDate(text: string): Date | null {
@@ -86,6 +87,8 @@ export interface ShownWith {
  * says it (`displayValue`). For a table's cells and totals, plain and grid.
  */
 export function cellText(def: LineField, value: Value | undefined, values: Record<string, Value> = {}, locale: Locale = 'en', parent?: Readonly<Record<string, Value>>, shown: ShownWith = {}): string {
+  // An analytic distribution in a cell: its shares, "60% · 40%".
+  if (shown.widget === 'distribution' && def.type === 'json') return distributionWords(value, locale);
   return shownNumber(shown.widget, def as never, value, locale, shown.options as Record<string, unknown>) ?? displayValue(def, value, values, locale, parent);
 }
 

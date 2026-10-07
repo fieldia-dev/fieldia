@@ -9,9 +9,11 @@ export const CELL_WIDGETS: Readonly<Record<string, readonly string[]>> = {
   monetary: ['progressbar'],
   selection: ['priority', 'dot'],
   boolean: ['priority'],
+  // Shares of accounts: an analytic distribution, its lines opened from the cell.
+  json: ['distribution'],
 };
 /** The kind each cell widget is named by. */
-export const CELL_WIDGET_KINDS: Readonly<Record<string, string>> = { duration: 'duration', percentage: 'percentage', progressbar: 'progress', color: 'colour', priority: 'priority', dot: 'state-dot' };
+export const CELL_WIDGET_KINDS: Readonly<Record<string, string>> = { duration: 'duration', percentage: 'percentage', progressbar: 'progress', color: 'colour', priority: 'priority', dot: 'state-dot', distribution: 'distribution' };
 import { formulaProblem, problemWords } from './rules-formula';
 
 /**
