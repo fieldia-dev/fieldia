@@ -55,8 +55,9 @@ export const BUSINESS_CSS = /* css */ `
 .fd-copy-long { align-items: flex-start; }
 .fd-copy-button { flex: none; }
 /* A range of dates: two boxes, from → to, in one row that wraps on a phone, its calendar under it marking the days between. */
-.fd-range { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; }
-.fd-range-box { flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+.fd-range { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+/* Too narrow for a date and the calendar's button beside it, the button goes under: a date is never cut. */
+.fd-range-box { flex: 1 1 8em; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
 .fd-range-box > .fd-input { flex: 1 1 9em; min-width: 0; }
 .fd-range-box > .fd-input[type="datetime-local"] { flex-basis: 13em; }
 .fd-range-arrow { flex: none; display: inline-block; color: var(--fd-muted); }
