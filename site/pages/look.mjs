@@ -54,6 +54,10 @@ ${code(
 </ul>
 <p>Corners are ${c('square')}, ${c('soft')} or ${c('round')}, as the page’s; text is ${c('small')} (13px) or ${c('large')} (16px). Words always stay readable: a colour they could not be read on is drawn lighter or darker, only as far as it has to be — a ground stays light on a light page and dark on a dark one, and an accent reads at 4.5:1 on the page and on every ground given. A border is drawn as given. Each kind’s settings reach the stylesheet as its own custom properties (${c('--fd-inputs-bg')}, ${c('--fd-buttons-accent')}, …), named on the form (${c('data-inputs="bg radius"')}), so your own CSS can follow them too.</p>
 
+<h2 id="help">Where help shows</h2>
+<p>A field's ${c('help')} shows as words under it, or behind a (?) beside its label, as Flectra shows it — shorter on a busy sheet — or both. The page sets its way in ${c('look.helpShown')}, and any field may have its own ${c('helpShown')}: ${c('below')} (the default), ${c('tooltip')} or ${c('both')}. The (?) opens on hover, on focus or with a tap, and Escape closes it; the box stays described by the help, so a screen reader still says it. In the designer it is Help, on the Look tab for the page and under a field's Layout.</p>
+${code('json', `{ "look": { "helpShown": "tooltip" } }`)}
+
 <h2 id="languages">Four languages</h2>
 <p>Fieldia's own words — Save, Next, validation messages, “Step 2 of 3”, the upload and search prompts — come in English, Arabic, German and French:</p>
 ${code('ts', `mountViewer(host, { page, dataSource, locale: 'ar' });   // 'en' | 'ar' | 'de' | 'fr'`)}
