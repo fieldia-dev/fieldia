@@ -111,6 +111,10 @@ export interface FieldNode {
   labels?: LabelPlace;
   /** Where its help shows, when not where the page shows help: under it, behind a (?) by its label, or both. */
   helpShown?: HelpShown;
+  /** Its value's tone while a condition on the record holds, the first that holds — Flectra's decoration-* on a field. */
+  tones?: ToneWhen[];
+  /** Its value in bold while this holds — Flectra's decoration-bf on a field. */
+  bold?: Modifier;
   /** Rules the answer must keep. */
   validate?: AnswerRule[];
   invisible?: Modifier;
@@ -566,6 +570,8 @@ export const FieldNodeSchema = z.strictObject({
   editMode: z.enum(['cell', 'row']).optional(),
   labels: labelPlace.optional(),
   helpShown: HelpShownSchema.optional(),
+  tones: z.array(ToneWhenSchema).min(1).optional(),
+  bold: ModifierSchema.optional(),
   validate: z.array(AnswerRuleSchema).min(1).optional(),
   invisible, roles,
   readonly: ModifierSchema.optional(),

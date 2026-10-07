@@ -3011,6 +3011,16 @@
                   "helpShown": {
                     "$ref": "#/$defs/HelpShown"
                   },
+                  "tones": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ToneWhen"
+                    }
+                  },
+                  "bold": {
+                    "$ref": "#/$defs/Modifier"
+                  },
                   "validate": {
                     "minItems": 1,
                     "type": "array",
@@ -3224,6 +3234,16 @@
                   },
                   "helpShown": {
                     "$ref": "#/$defs/HelpShown"
+                  },
+                  "tones": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ToneWhen"
+                    }
+                  },
+                  "bold": {
+                    "$ref": "#/$defs/Modifier"
                   },
                   "validate": {
                     "minItems": 1,
@@ -4466,6 +4486,16 @@
             },
             "helpShown": {
               "$ref": "#/$defs/HelpShown"
+            },
+            "tones": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ToneWhen"
+              }
+            },
+            "bold": {
+              "$ref": "#/$defs/Modifier"
             },
             "validate": {
               "minItems": 1,

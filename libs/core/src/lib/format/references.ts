@@ -524,6 +524,9 @@ export class ReferenceCheck {
         this.report(`${at}.pattern`, `"${rule.pattern}" is not a regular expression`);
       }
     });
+    // Its value's tones and bold: read on the record, as its other conditions are.
+    node.tones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.tones[${i}]`, ['when']));
+    this.checkModifiers(node, path, ['bold']);
     if (def && node.totals) {
       if (def.type !== 'one2many') {
         this.report(`${path}.totals`, `totals only apply to one2many fields; "${node.field}" is a ${def.type}`);

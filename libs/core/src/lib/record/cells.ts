@@ -43,6 +43,19 @@ export interface CompiledTable {
   buttons: readonly ButtonNode[];
 }
 
+/** A field's own value as its tones have it now: Flectra's decoration-* on a field. */
+export interface FieldTone {
+  tone: Tone | null;
+  bold: boolean;
+}
+
+/** A field node's tones and bold, read once; read on the record. */
+export function compileFieldTone(node: Pick<FieldNode, 'tones' | 'bold'>): (context: Record<string, unknown>, env: ExpressionEnv) => FieldTone {
+  const tones = tonesOf(node.tones);
+  const bold = compileModifier(node.bold);
+  return (context, env) => ({ tone: toneNow(tones, context, env), bold: bold.evaluate(context, env) });
+}
+
 const tonesOf = (list: readonly ToneWhen[] | undefined): CompiledTone[] => (list ?? []).map((item) => ({ tone: item.tone, when: compileModifier(item.when) }));
 const toneNow = (list: readonly CompiledTone[], context: Record<string, unknown>, env: ExpressionEnv) => list.find((item) => item.when.evaluate(context, env))?.tone ?? null;
 

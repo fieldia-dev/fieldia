@@ -14,7 +14,7 @@ import { expressionEnv, lineContext, recordContext } from './env';
 import { firstValues, readLooseMap, readValueMap, type MapScope } from './value-map';
 import { resolveFilter } from './filter';
 import { rolesAllow } from './roles';
-import { compileTable, type CompiledTable, type LineState } from './cells';
+import { compileFieldTone, compileTable, type CompiledTable, type FieldTone, type LineState } from './cells';
 import { MESSAGES, type Messages } from './messages';
 import { saveProblemOf, type DataSource, type LineOp, type LinkOp, type RecordChanges, type ResolvedFilter, type SaveProblem } from './data-source';
 import { hostScheduler, type Scheduler } from './scheduler';
@@ -216,6 +216,8 @@ export interface Form {
    * the records chosen in it, and every call of the run carries them.
    */
   runAction(id: string, chosen?: { recordIds: RecordId[] }): Promise<RunResult>;
+  /** A field's own value as its tones have it now: its tone and whether it is bold, read on the record. */
+  fieldTone(nodeId: string): FieldTone;
   /** A table's line as its rules have it now — its tone, each ruled column's cells, which of its buttons show — by the table's field node. */
   lineState(nodeId: string, key: string): LineState;
   /** Whether a table's column is hidden now by its `hidden` rule, read on the record. */
@@ -305,6 +307,12 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     const source = node.source as FieldNode;
     if (node.kind !== 'field' || page.fields[source.field]?.type !== 'one2many') continue;
     if (source.cells || source.rowTones || source.rowBold !== undefined || source.rowButtons) tables.set(node.id, { field: source.field, compiled: compileTable(source) });
+  }
+  /** Field nodes whose value takes a tone or bold, by id: each read once. */
+  const fieldTones = new Map<string, ReturnType<typeof compileFieldTone>>();
+  for (const node of index.values()) {
+    const source = node.source as FieldNode;
+    if (node.kind === 'field' && (source.tones || source.bold !== undefined)) fieldTones.set(node.id, compileFieldTone(source));
   }
   /** Whether any rule only warns: without one, there are never warnings to look for. */
   const warns = [...nodeRules.values()].some((rules) => rules.some((compiled) => compiled.rule.level === 'warning'));
@@ -1262,6 +1270,15 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       );
     },
 
+    fieldTone(nodeId) {
+      const compiled = fieldTones.get(nodeId);
+      if (compiled) {
+        const { context: ctx, env } = reading();
+        return compiled(ctx, env);
+      }
+      if (index.get(nodeId)?.kind !== 'field') throw new Error(`"${nodeId}" is not a field on this page`);
+      return { tone: null, bold: false };
+    },
     lineState: (nodeId, key) => lineStateOf(nodeId, key),
     columnHidden(nodeId, column) {
       const table = tableOf(nodeId);
