@@ -46,6 +46,7 @@ import { durationWidget, percentageWidget } from './duration';
 import { priorityWidget } from './priority';
 import { stateDotWidget } from './state-dot';
 import { colourWidget } from './colour';
+import { copyWidget } from './copy';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -615,6 +616,9 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   // A tag colour from Flectra's twelve (0 none … 11), or a colour as #rrggbb.
   'integer.color': colourWidget,
   'char.color': colourWidget,
+  // A value and a button that copies it: Flectra's CopyClipboardChar and CopyClipboardText.
+  'char.copy': copyWidget,
+  'text.copy': copyWidget,
   selection: selectWidget,
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),

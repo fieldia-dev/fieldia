@@ -48,4 +48,9 @@ export const BUSINESS_CSS = /* css */ `
 .fd-colour[aria-checked="true"] { box-shadow: 0 0 0 2px var(--fd-surface), 0 0 0 4px var(--fd-accent); }
 .fd-colour-input { width: 44px; height: 30px; padding: 2px; border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); background: var(--fd-surface); }
 .fd-colour-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; color: var(--fd-muted); }
+/* A value to copy: its box, the button after it. */
+.fd-copy { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.fd-copy > .fd-input { flex: 1 1 auto; min-width: 0; }
+.fd-copy-long { align-items: flex-start; }
+.fd-copy-button { flex: none; }
 `;
