@@ -341,7 +341,7 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-lines-table td > .fd-checkbox, .fd-lines-table td > .fd-switch { margin-block-start: 6px; }
 .fd-lines-table .fd-lines-grip { width: 1px; min-width: 0; padding-inline: 6px 2px; }
 .fd-line-grip { display: block; margin-block-start: 7px; cursor: grab; }
-.fd-line-delete { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
+.fd-line-delete { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 4px 6px; border-radius: 4px; min-width: 24px; min-height: 24px; }
 .fd-line-delete:hover { color: var(--fd-error); background: var(--fd-error-soft); }
 /* A table's own rules: a line's or a cell's tone and bold (Flectra's decoration-*), and buttons on a line. */
 .fd-lines-table [data-tone="info"] { --fd-line-tone: var(--fd-info); --fd-tone: var(--fd-info); --fd-tone-soft: var(--fd-info-soft); }
