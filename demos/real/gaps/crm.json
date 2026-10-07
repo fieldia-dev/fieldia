@@ -1,9 +1,9 @@
 {
   "lane": "crm",
   "notes": [
-    "Security groups: every page is built for one user who holds the groups its fields and buttons need (salesman, invoicing, purchase user, tender manager), without developer mode (base.group_no_one), multi-company or multi-currency. Fieldia has no per-user groups: an app would serve a page per user, or Fieldia would need a `groups`-like condition on what the viewing user may see.",
-    "Help: Flectra shows a field's help as a tooltip on its label; Fieldia writes it under the field. The longest helps on the busiest groups were left out of the pages so they read like Flectra's.",
-    "Expressions: Flectra's tuples, `x in (a, b)`, are not read; Fieldia's lists, `x in [a, b]`, are. Translated by hand.",
+    "Security groups: since Phase 26 the parts carry Flectra's groups as `roles`, and the demo names its person (a sales manager who also leads tenders, without developer mode, several companies or currencies); `roles=` in the query shows the pages to someone else.",
+    "Help: Flectra shows a field's help as a tooltip on its label; Fieldia can too (look.helpShown: tooltip). The longest helps on the busiest groups were left out of the pages in Phase 25.",
+    "Expressions: Flectra's tuples, `x in (a, b)`, read as lists since Phase 26; the pages written before keep lists, which read the same.",
     "Sizes: `size` counts the Flectra view as seen with the inherited views listed (fields include the invisible technical ones; conditions are invisible/readonly/required attributes that are expressions). `built` counts the Fieldia page.",
     "Placeholders: a node's placeholder was shown by text, number and date boxes, but not by a many2one, a many2many or an html field, which always said “Search…” or nothing; fixed since, so Flectra's “Company Name...”, “e.g. Mister”, “Internal notes...” and the tags' examples show (the contact's e2e)."
   ],
@@ -110,9 +110,8 @@
       "mostImportantMissing": [
         "Kanban-style read-only cards for a one2many with a template, opening a line form",
         "A line form with its own layout and per-line conditions (invisible/required reading the line)",
-        "Defaults for new lines and for records created from a link (Flectra's context defaults)",
-        "Stat buttons that format their value (money, dates) instead of a bare number",
-        "Conditions on the title field (required, placeholder by condition) and buttons in the title rows"
+        "Conditions on the title field (required, placeholder by condition) and buttons in the title rows",
+        "A field (the address type) standing as another part's label; a field to focus when the record opens"
       ]
     },
     {
@@ -194,11 +193,9 @@
         { "feature": "js_class crm_form (the form controller's own behaviour)", "status": "approximated", "how": "its effects (probability on stage change, won stage) are the data source's and the app's", "app": true, "why": "its effects (probability on stage change, won stage) are the data source's and the app's" }
       ],
       "mostImportantMissing": [
-        "A condition on the sheet's statusbar (Flectra hides the stages for a lead and a lost opportunity), and stage durations / folded stages",
-        "The words of an opened dialog's buttons (Mark as Lost, Create Opportunity, Confirm Loss)",
-        "Carrying an opened form's answers that are not fields here back into the call (the closing note to the chatter)",
-        "Several ribbons; stat buttons with field-driven labels and formatted values; hiding parts on a new record",
-        "A priority (stars) widget on a selection, and tag colours"
+        "Words between fields under the title (Expected Revenue “at” Probability) and the automated-probability gear",
+        "An icon with a tooltip beside a field, by condition (the customer will be updated too)",
+        "Collaborative editing of the notes"
       ]
     },
     {
@@ -262,13 +259,7 @@
         { "feature": "Timeline tab: the dates again (announcement, clarification; submission, opening, award)", "status": "covered", "how": "the same fields placed a second time" },
         { "feature": "Chatter (tender alerts and posts are the server's crons and templates)", "status": "covered", "how": "chatter slot" }
       ],
-      "mostImportantMissing": [
-        "Row decorations (colours) on a table's lines by condition",
-        "Conditional counts and sums over lines in expressions (compliance %), and date arithmetic (days until)",
-        "A line's money field in the parent record's currency",
-        "The words of an opened dialog's buttons (Confirm Loss)",
-        "Defaults of the current user, and column widths in tables"
-      ]
+      "mostImportantMissing": ["A many2many of attachments (ir.attachment) rather than files kept in the record"]
     }
   ]
 }
