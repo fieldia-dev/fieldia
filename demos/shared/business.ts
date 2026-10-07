@@ -32,10 +32,10 @@ const DEFINITIONS: Record<number, PropertyDefinition[]> = {
 
 export const businessData: Pick<MemoryDataSourceOptions, 'records' | 'definitions'> = {
   records: {
-    'project.project': { 1: { name: 'Nile Towers fit-out' }, 2: { name: 'Amira Clinics, Zamalek' } },
-    'account.analytic.account': { 1: { name: 'Cairo office' }, 2: { name: 'Alexandria branch' }, 3: { name: 'Fit-out projects' }, 4: { name: 'Marketing' } },
-    'res.currency': { 1: { name: 'EGP' }, 2: { name: 'USD' } },
-    'project.task': {
+    // Models of its own, so its records never mix with the real pages' (the currencies are theirs).
+    'fitout.project': { 1: { name: 'Nile Towers fit-out' }, 2: { name: 'Amira Clinics, Zamalek' } },
+    'fitout.analytic.account': { 1: { name: 'Cairo office' }, 2: { name: 'Alexandria branch' }, 3: { name: 'Fit-out projects' }, 4: { name: 'Marketing' } },
+    'fitout.task': {
       1: {
         name: 'Lay the raised floor, 12th floor',
         priority: '2',
@@ -56,7 +56,7 @@ export const businessData: Pick<MemoryDataSourceOptions, 'records' | 'definition
         access_note: 'Freight lift 08:00 to 10:00. Badge from reception, ask for Karim.',
         instructions: { name: 'Raised floor, method statement.pdf', type: 'application/pdf', size: 577, data: INSTRUCTIONS },
         slides: null,
-        currency_id: { id: 1, label: 'EGP' },
+        currency_id: { id: 7461, label: 'EGP' },
         analytic_distribution: { '1': 70, '3': 30 },
         tax_totals: {
           amount_untaxed: 184000,

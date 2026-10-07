@@ -3,7 +3,7 @@
   "id": "business",
   "title": "Fit-out task",
   "description": "The widgets an ERP's screens lean on, on one task: priority stars and a state's dot on the title's line, hours as HH:MM, a live timer, a range of dates, tag colours, a value to copy, a PDF and a page shown inline, an analytic distribution, tax totals, payments, and properties defined by the task's project.",
-  "data": { "kind": "record", "model": "project.task" },
+  "data": { "kind": "record", "model": "fitout.task" },
   "fields": {
     "name": { "type": "char", "label": "Task", "required": true },
     "priority": {
@@ -25,7 +25,7 @@
         { "value": "done", "label": "Ready for the next stage" }
       ]
     },
-    "project_id": { "type": "many2one", "label": "Project", "relation": "project.project" },
+    "project_id": { "type": "many2one", "label": "Project", "relation": "fitout.project" },
     "is_favourite": { "type": "boolean", "label": "Favourite" },
     "color": { "type": "integer", "label": "Tag colour" },
     "epic_color": { "type": "char", "label": "Epic colour" },
@@ -50,7 +50,7 @@
     "child_ids": {
       "type": "one2many",
       "label": "Sub-tasks",
-      "relation": "project.task",
+      "relation": "fitout.task",
       "fields": {
         "priority": { "type": "selection", "label": "Priority", "options": [{ "value": "0", "label": "Normal" }, { "value": "1", "label": "Urgent" }] },
         "name": { "type": "char", "label": "Title", "required": true },
@@ -138,7 +138,7 @@
                 "id": "s-invoice",
                 "columns": 2,
                 "children": [
-                  { "type": "field", "id": "f-analytic", "field": "analytic_distribution", "colspan": 2, "widget": "distribution", "options": { "model": "account.analytic.account" } },
+                  { "type": "field", "id": "f-analytic", "field": "analytic_distribution", "colspan": 2, "widget": "distribution", "options": { "model": "fitout.analytic.account" } },
                   { "type": "field", "id": "f-currency", "field": "currency_id" },
                   { "type": "field", "id": "f-tax-totals", "field": "tax_totals", "labels": "hidden", "widget": "tax-totals", "options": { "currencyField": "currency_id", "editable": true } },
                   { "type": "spacer", "id": "sp-pay" },
