@@ -88,8 +88,9 @@ export const businessData: Pick<MemoryDataSourceOptions, 'records' | 'definition
       },
     },
   },
+  // Its own list's name: the real Project task keeps a task_properties list of its own.
   definitions: {
-    task_properties: (values) => DEFINITIONS[Number((values['project_id'] as { id: number } | null)?.id ?? 0)] ?? [],
+    business_task_properties: (values) => DEFINITIONS[Number((values['project_id'] as { id: number } | null)?.id ?? 0)] ?? [],
   },
 };
 

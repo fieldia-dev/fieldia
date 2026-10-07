@@ -46,7 +46,7 @@
     "tax_totals": { "type": "json", "label": "Totals" },
     "invoice_payments_widget": { "type": "json", "label": "Payments" },
     "amount_residual": { "type": "monetary", "label": "Amount due", "currencyField": "currency_id", "readonly": true },
-    "task_properties": { "type": "properties", "label": "Properties", "definitionsFrom": { "list": "task_properties", "dependsOn": ["project_id"] } },
+    "task_properties": { "type": "properties", "label": "Properties", "definitionsFrom": { "list": "business_task_properties", "dependsOn": ["project_id"] } },
     "child_ids": {
       "type": "one2many",
       "label": "Sub-tasks",

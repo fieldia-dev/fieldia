@@ -25,10 +25,6 @@ export interface RealLane {
   shows?: MemoryDataSourceOptions['shows'];
   /** Which value names a record of a model in search results, when not `name`. */
   labelField?: MemoryDataSourceOptions['labelField'];
-  /** What a link shows of a model's records besides their names: a picture, a colour, lines, a folded stage. */
-  shows?: MemoryDataSourceOptions['shows'];
-  /** Properties' definitions kept on linked records, by the list's name. */
-  definitions?: MemoryDataSourceOptions['definitions'];
   /** Each record's attachments, its main one first, by `model:id`. */
   attachments?: MemoryDataSourceOptions['attachments'];
   /** The person using a page, by page id, and the roles they hold — Flectra's groups: the one its view was read for. */
