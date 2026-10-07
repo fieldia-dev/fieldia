@@ -50,6 +50,10 @@ import { sayer } from './say';
 import { tabStrip } from './tab-strip';
 import { valueWords } from './value-words';
 import { hotkeyOf, hotkeyOn } from './hotkeys';
+import { recordBar, type Breadcrumb, type RecordPager } from './record-bar';
+import { attachmentPreview } from './attachment-preview';
+import { installRecordStyles } from './record-styles';
+export type { Breadcrumb, RecordPager } from './record-bar';
 
 export type Skin = 'underline' | 'outlined';
 
@@ -141,6 +145,23 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
    * your router, your own dialog — or with undefined to let the viewer open it.
    */
   onOpen?: (request: OpenRequest) => Promise<OpenResult> | undefined;
+  /**
+   * The records round this one, for the pager over a record — "3 / 42",
+   * Previous and Next — as the list it was opened from has them: their ids in
+   * order, or how many there are, where this one is, and the id at a place.
+   * Moving saves what changed first, as Flectra does; the form then shows
+   * the other record (its `open` event says which). A copy joins them after
+   * its record; a record deleted leaves them, the pager moving to the next.
+   * Never in a dialog.
+   */
+  records?: readonly RecordId[] | RecordPager;
+  /**
+   * The trail to this record, for the breadcrumbs over it: each page before
+   * it with its words and what a press does (back to it); the record itself
+   * comes last, by its name. A page a step opens in this one's place adds
+   * this one to the trail, as the way back. Never in a dialog.
+   */
+  breadcrumbs?: readonly Breadcrumb[];
 }
 
 export interface ViewerHandle {
@@ -216,7 +237,20 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
    */
   const actionHost: ActionHost = {
     open: (request) =>
-      openPage({ options, place: host, root, title: (other) => shownAs(other).title || other.id, back: labels.back, missing: (id) => fill(labels.pageMissing, { page: id }), say: (message, tone) => actionHost.say(message, tone) }, request),
+      openPage(
+        {
+          options,
+          place: host,
+          root,
+          title: (other) => shownAs(other).title || other.id,
+          back: labels.back,
+          missing: (id) => fill(labels.pageMissing, { page: id }),
+          say: (message, tone) => actionHost.say(message, tone),
+          post: (message) => form.post(message),
+          name: () => recordName() || labels.newRecord,
+        },
+        request
+      ),
     say: (message, tone) => say(message, tone),
     ask: (message) => confirm(message),
     show: (target) => {
@@ -244,6 +278,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     template.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? ''));
 
   installStyles(doc);
+  installRecordStyles(doc);
 
   function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string | undefined> = {}, ...children: (Node | string)[]) {
     const node = doc.createElement(tag);
@@ -1009,6 +1044,48 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     done.hidden = true;
   });
 
+  /** The record's name, as the last of its breadcrumbs says it: its sheet's title field, else the page's title; empty for a new one. */
+  function recordName(): string {
+    const state = form.getState();
+    if (state.recordId == null) return '';
+    const field = page.layout.type === 'sheet' ? page.layout.title?.field : undefined;
+    const name = field ? displayValue(page.fields[field] as LineField, state.values[field], state.values as Values, locale) : '';
+    return name || page.title || '';
+  }
+
+  /** The bar over a record — its breadcrumbs, its gear menu, its pager — or null when it would hold nothing. */
+  function topBar(toolbar: SheetNode['toolbar']): HTMLElement | null {
+    if (page.data.kind !== 'record') return null;
+    const bar = recordBar({
+      doc,
+      el,
+      form,
+      toolbar,
+      records: options.records,
+      breadcrumbs: options.breadcrumbs,
+      labels,
+      icons: options.icons,
+      uid,
+      fill,
+      withIcon,
+      press,
+      name: recordName,
+      async leave() {
+        if (!form.getState().dirty.length) return true;
+        const saved = await form.save();
+        if (!saved) {
+          if (!form.getState().saveProblem) announce(checkText(form.getState()));
+          focusFirstProblem();
+        }
+        return saved;
+      },
+    });
+    if (!bar) return null;
+    updaters.push(bar.update);
+    cleanups.push(bar.destroy);
+    return bar.element;
+  }
+
   function pageHead(): HTMLElement | null {
     if (!page.title && !page.description) return null;
     const head = el('header', { class: 'fd-page-head' });
@@ -1283,11 +1360,21 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     }
 
     const layout = el('div', { class: 'fd-sheet-layout' }, card);
+    if (node.attachmentPreview) {
+      // Beside the sheet on a wide form, the side panel then under the sheet; under the sheet on a narrow one.
+      const preview = attachmentPreview({ doc, el, form, page, node: node.attachmentPreview, dataSource: options.dataSource, labels, fill });
+      layout.classList.add('fd-has-preview');
+      layout.append(preview.element);
+      updaters.push(preview.update);
+      cleanups.push(preview.destroy);
+    }
     if (node.sidePanel) {
       layout.classList.add('fd-has-side');
+      if (node.sidePanelBeside) layout.setAttribute('data-side-beside', node.sidePanelBeside);
       layout.append(el('aside', { class: 'fd-side' }, slotItem(node.sidePanel)));
     }
-    pageBox.append(header, layout);
+    const bar = topBar(node.toolbar);
+    pageBox.append(...(bar ? [bar] : []), header, layout);
     return pageBox;
   }
 
@@ -1343,7 +1430,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   else body = sectionsLayout(layout);
 
   const head = layout.type === 'sheet' ? null : pageHead();
-  content.append(...(head ? [head] : []), banner, draft, body);
+  // A record of sections or tabs has the bar the app fills — its breadcrumbs and pager — over its title.
+  const bar = layout.type === 'sections' || layout.type === 'tabs' ? topBar(undefined) : null;
+  content.append(...(bar ? [bar] : []), ...(head ? [head] : []), banner, draft, body);
   root.append(content, done, announcer);
   // The status leaves its place beside Save when the page wants it in a corner or across the top.
   if (options.saveStatus === 'toast') {

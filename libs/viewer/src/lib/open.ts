@@ -1,4 +1,4 @@
-import type { OpenRequest, OpenResult, Page, Tone, Values } from '@fieldia/core';
+import type { OpenRequest, OpenResult, Page, PostedMessage, Tone, Values } from '@fieldia/core';
 import { FIRST_FIELD, openFormDialog, openFormPanel, type FormDialogResult } from './dialog';
 import { findPage, nameFieldOf } from './related';
 import { mountViewer, type ViewerOptions } from './viewer';
@@ -18,6 +18,10 @@ export interface Opener {
   missing(page: string): string;
   /** Words said as this viewer says them: a page opened over it says its own here, so they show over it and outlive it. */
   say(message: string, tone: Tone): void;
+  /** Words posted in this record's conversation: a page opened over it posts its own here. */
+  post(message: PostedMessage): Promise<boolean>;
+  /** This record's name, for the crumb a page opened in its place goes back by. */
+  name(): string;
 }
 
 /**
@@ -48,12 +52,15 @@ export async function openPage(opener: Opener, request: OpenRequest): Promise<Op
     readonly: undefined,
     editSwitch: undefined,
     saveStatus: undefined,
+    // The pager and the trail are this record's: a dialog has neither, and a page in its place a trail of its own.
+    records: undefined,
+    breadcrumbs: undefined,
   };
   const title = request.title ?? opener.title(found);
-  // Over this form, its words are this form's: a page in its place has this form's place, and its own.
-  const over: ViewerOptions = { ...shared, host: { ...options.host, say: opener.say } };
+  // Over this form, its words are this form's: a page in its place has this form's place, and its own. Either posts in this record's conversation.
+  const over: ViewerOptions = { ...shared, host: { ...options.host, say: opener.say, post: opener.post } };
   const result =
-    request.as === 'page' ? await inPlace(opener, shared)
+    request.as === 'page' ? await inPlace(opener, { ...shared, host: { ...options.host, post: opener.post } })
     : request.as === 'panel' ? await openFormPanel({ ...over, title, side: request.side })
     : await openFormDialog({ ...over, title, size: found.layout.type === 'sheet' ? 'large' : 'medium' });
   const name = nameFieldOf(found);
@@ -62,9 +69,11 @@ export async function openPage(opener: Opener, request: OpenRequest): Promise<Op
 }
 
 /**
- * A page in this form's place, with Back over it. Saved or sent — once its own
+ * A page in this form's place, with the way back over it: where the app
+ * gives this record breadcrumbs, the trail with this record last; else, or
+ * where its page draws none (a list), Back. Saved or sent — once its own
  * after-save steps have run — it gives way back to this form, as it was, and
- * the run goes on; Back, or a `close` step inside it, returns without.
+ * the run goes on; the way back, or a `close` step inside it, returns without.
  */
 function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResult> {
   const { place, root } = opener;
@@ -82,13 +91,15 @@ function inPlace(opener: Opener, options: ViewerOptions): Promise<FormDialogResu
       resolve({ saved, recordId: state.recordId ?? null, values: state.values as Values });
     };
     root.hidden = true;
-    const opened = mountViewer(place, { ...options, host: { ...options.host, close: () => end(false) } });
+    // Where the app keeps a trail, this record joins it as the way back.
+    const trail = opener.options.breadcrumbs ? [...opener.options.breadcrumbs, { label: opener.name(), open: () => end(false) }] : undefined;
+    const opened = mountViewer(place, { ...options, breadcrumbs: trail, host: { ...options.host, close: () => end(false) } });
     const back = doc.createElement('button');
     back.type = 'button';
     back.className = 'fd-button fd-button-link fd-back';
     back.textContent = opener.back;
     back.addEventListener('click', () => end(false));
-    opened.element.prepend(back);
+    if (!opened.element.querySelector('.fd-breadcrumbs')) opened.element.prepend(back);
     const leave = () => void opened.form.settled().then(() => end(true));
     opened.on('save', leave);
     opened.on('send', leave);
