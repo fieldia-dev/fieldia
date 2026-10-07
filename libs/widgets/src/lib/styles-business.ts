@@ -74,4 +74,10 @@ export const BUSINESS_CSS = /* css */ `
 .fd-embed-open { flex: none; }
 .fd-embed-frame { display: block; width: 100%; border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 4px); background: var(--fd-page); }
 .fd-embed-none { padding: 24px 12px; text-align: center; color: var(--fd-muted); border: 1px dashed var(--fd-border); border-radius: max(var(--fd-control-radius), 4px); }
+/* An analytic distribution: lines of an account and its share, their total under them. */
+.fd-distribution { display: grid; gap: 6px; min-width: 0; }
+.fd-distribution-table .fd-distribution-share { width: 8.5em; }
+.fd-distribution-table .fd-share { text-align: end; }
+.fd-distribution-total { font-weight: 600; text-align: end; padding-inline-end: calc(var(--fd-pad-x) + 2ch + 4px); font-variant-numeric: tabular-nums; }
+.fd-distribution-add { justify-self: start; }
 `;

@@ -50,6 +50,7 @@ import { copyWidget } from './copy';
 import { dateRangeWidget } from './date-range';
 import { timerWidget } from './timer';
 import { embedWidget, pdfWidget } from './embed';
+import { distributionWidget } from './distribution';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -631,6 +632,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   // A PDF, or a web page at an address, shown inline: Flectra's pdf_viewer and embed_viewer.
   'binary.pdf': pdfWidget,
   'char.embed': embedWidget,
+  // Shares of accounts, {accountId: percent}, as lines adding up to 100 %: Flectra's analytic_distribution.
+  'json.distribution': distributionWidget,
   selection: selectWidget,
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),

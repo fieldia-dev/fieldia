@@ -149,6 +149,28 @@ export interface WidgetLabels {
   /** A document shown inline, while there is none; a page shown inline, opened in a tab of its own. */
   noDocument: string;
   openInNewTab: string;
+  /** An analytic distribution: a line's account, its share, adding an account, and shares that do not add up to 100 % ({n}). */
+  account: string;
+  share: string;
+  addAccount: string;
+  sharesOff: string;
+  /** Tax totals: the amount before tax. */
+  untaxed: string;
+  /** A list of payments: each one's date ({date}), the amount still due, a payment's details ({amount}), and opening it. */
+  paidOn: string;
+  amountDue: string;
+  paymentOf: string;
+  journal: string;
+  memo: string;
+  openPayment: string;
+  /** Properties: adding one in place — its name, its kind (the kinds split by |: text, long text, whole number, number, yes or no, date), Add and Cancel — and while their definitions load. */
+  addProperty: string;
+  propertyName: string;
+  propertyType: string;
+  propertyTypes: string;
+  add: string;
+  cancel: string;
+  loading: string;
 }
 
 /** English: always here, and the words a language leaves out. */
@@ -262,6 +284,24 @@ const en: WidgetLabels = {
   copied: 'Copied',
   noDocument: 'No document yet',
   openInNewTab: 'Open in a new tab',
+  account: 'Account',
+  share: 'Percentage',
+  addAccount: 'Add an account',
+  sharesOff: 'The shares add up to {n}, not 100%',
+  untaxed: 'Untaxed amount',
+  paidOn: 'Paid on {date}',
+  amountDue: 'Amount due',
+  paymentOf: 'Payment of {amount}',
+  journal: 'Journal',
+  memo: 'Memo',
+  openPayment: 'Open',
+  addProperty: 'Add a property',
+  propertyName: 'Property name',
+  propertyType: 'Kind',
+  propertyTypes: 'Text|Long text|Whole number|Number|Yes or no|Date',
+  add: 'Add',
+  cancel: 'Cancel',
+  loading: 'Loading…',
 };
 
 /**
