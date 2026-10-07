@@ -38,6 +38,7 @@ import { currencySymbol } from './units';
 import { drawIcon } from './icons';
 import { listChoices } from './choices-from';
 import { yesNoWidget } from './yes-no';
+import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
 
 /**
@@ -600,6 +601,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'selection.image-choice': imageChoiceWidget,
   'selection.ranking': rankingWidget,
   'selection.statusbar': statusbarWidget,
+  'selection.badge': badgeWidget,
   date: dateWidget,
   datetime: dateTimeWidget,
   many2one: many2oneWidget,

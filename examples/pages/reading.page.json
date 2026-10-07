@@ -1,0 +1,70 @@
+{
+  "fieldia": "0.1",
+  "id": "reading",
+  "title": "Invoice",
+  "data": { "kind": "record", "model": "invoice" },
+  "look": { "readonlyShown": "text" },
+  "fields": {
+    "name": { "type": "char", "label": "Number", "readonly": true },
+    "partner_id": { "type": "many2one", "label": "Customer", "relation": "partner" },
+    "invoice_date": { "type": "date", "label": "Invoice date" },
+    "payment_state": {
+      "type": "selection",
+      "label": "Payment state",
+      "readonly": true,
+      "options": [
+        { "value": "not_paid", "label": "Not paid" },
+        { "value": "partial", "label": "Partially paid" },
+        { "value": "paid", "label": "Paid" }
+      ]
+    },
+    "risk": {
+      "type": "selection",
+      "label": "Risk band",
+      "readonly": true,
+      "options": [
+        { "value": "low", "label": "Low" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "high", "label": "High" }
+      ]
+    },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "currency" },
+    "amount_total": { "type": "monetary", "label": "Total", "currencyField": "currency_id", "readonly": true },
+    "narration": { "type": "text", "label": "Terms and conditions" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "invoice",
+    "title": { "field": "name" },
+    "children": [
+      {
+        "type": "section",
+        "id": "head",
+        "columns": 2,
+        "style": "plain",
+        "children": [
+          {
+            "type": "section",
+            "id": "head-start",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-partner", "field": "partner_id" },
+              { "type": "field", "id": "f-date", "field": "invoice_date" }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "head-end",
+            "style": "plain",
+            "children": [
+              { "type": "field", "id": "f-payment", "field": "payment_state" },
+              { "type": "field", "id": "f-risk", "field": "risk", "widget": "badge", "options": { "tones": { "high": "danger", "medium": "warning", "low": "success" } } },
+              { "type": "field", "id": "f-total", "field": "amount_total" }
+            ]
+          }
+        ]
+      },
+      { "type": "field", "id": "f-narration", "field": "narration" }
+    ]
+  }
+}

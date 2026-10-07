@@ -127,6 +127,13 @@
         "helpShown": {
           "$ref": "#/$defs/HelpShown"
         },
+        "readonlyShown": {
+          "type": "string",
+          "enum": [
+            "text",
+            "box"
+          ]
+        },
         "scheme": {
           "type": "string",
           "enum": [

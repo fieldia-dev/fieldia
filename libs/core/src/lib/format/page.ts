@@ -35,6 +35,13 @@ export interface PageLook {
    * tooltip, which keeps a dense sheet short — or both.
    */
   helpShown?: HelpShown;
+  /**
+   * How a read-only field shows: as its value in words, as Flectra draws one
+   * — a choice without its arrow, a long text wrapped, an amount with its
+   * currency, a link's name — or in its greyed box (the default). A yes or
+   * no, a table, tags, a file and the like keep their own look either way.
+   */
+  readonlyShown?: 'text' | 'box';
   /** Light, dark, or as the reader's system has it. */
   scheme?: 'light' | 'dark' | 'auto';
   /** A look for each kind of part, over the page's: text boxes, choices, groups, buttons, tables. See `PART_LOOKS`. */
@@ -108,6 +115,7 @@ export const PageSchema = z
         labels: z.enum(['above', 'beside', 'hidden']).optional(),
         labelWidth: z.int().min(60).max(320).optional(),
         helpShown: HelpShownSchema.optional(),
+        readonlyShown: z.enum(['text', 'box']).optional(),
         scheme: z.enum(['light', 'dark', 'auto']).optional(),
         parts: PartsLookSchema.optional(),
       })

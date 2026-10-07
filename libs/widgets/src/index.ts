@@ -16,3 +16,4 @@ export * from './lib/properties';
 export * from './lib/icons';
 export * from './lib/focus-trap';
 export { countriesIn } from './lib/address';
+export * from './lib/read-text';

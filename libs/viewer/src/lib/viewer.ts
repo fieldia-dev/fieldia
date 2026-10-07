@@ -38,7 +38,7 @@ import {
   type Values,
   MESSAGES,
 } from '@fieldia/core';
-import { browserPreferences, createWidget, drawIcon, installStyles, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
+import { browserPreferences, createWidget, drawIcon, installStyles, readsAsText, readText, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { listView } from './list';
 import { applyLook } from './look';
@@ -362,6 +362,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
       const warning = el('div', { class: 'fd-warning', id: `${id}-warning`, role: 'status', hidden: '' });
       wrapper.append(...(labelsAt === 'after' ? [widget.element, label] : [label, widget.element]), ...(help ? [help] : []), error, warning);
+      // Read-only, as words in place of the box, when the page draws them so.
+      const asText = page.look?.readonlyShown === 'text' && readsAsText(def, node) ? readText({ document: doc, field: def, node, id, locale, labels: widgetLabels, dialogs }) : null;
+      if (asText) widget.element.after(asText.element);
       if (widget.destroy) cleanups.push(() => widget.destroy?.());
       // An answer rule's warning waits until the person leaves the field: no advice
       // mid-word. One already shown stays while they put it right, and goes once they have.
@@ -396,10 +399,17 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
           wrapper.classList.toggle('fd-valid', valid);
           mark.toggleAttribute('hidden', !valid);
         }
+        const readonly = shown.readonly || locked || scope.locked();
+        if (asText) {
+          setHidden(widget.element, readonly);
+          setHidden(asText.element, !readonly);
+          setAttr(wrapper, 'data-read-text', readonly ? '' : null);
+          if (readonly) asText.update(state.values[node.field], state.values);
+        }
         widget.update({
           value: state.values[node.field],
           values: state.values,
-          readonly: shown.readonly || locked || scope.locked(),
+          readonly,
           required: shown.required,
           invalid: !!message,
           describedBy: [help?.id ?? tip?.bubble.id, message ? error.id : undefined, warned ? warning.id : undefined].filter(Boolean).join(' ') || undefined,
