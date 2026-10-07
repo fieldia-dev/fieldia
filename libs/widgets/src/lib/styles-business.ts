@@ -23,4 +23,20 @@ export const BUSINESS_CSS = /* css */ `
 .fd-form .fd-title-line > .fd-title-side { display: flex; align-items: center; flex: none; }
 .fd-title-line > .fd-field > .fd-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .fd-title-line .fd-priority-star { font-size: 24px; }
+/* A state's dot: grey, red, green…, in the state's tone; its menu floats under it. */
+.fd-dot-box { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+.fd-dot-button { display: inline-grid; place-items: center; width: 24px; height: 24px; padding: 0; border: none; border-radius: 50%; background: none; cursor: pointer; }
+.fd-dot-button:hover:not(:disabled) { background: var(--fd-accent-soft); }
+.fd-dot-button:disabled { cursor: default; }
+.fd-dot { display: inline-block; width: 12px; height: 12px; flex: none; border-radius: 50%; background: var(--fd-dot, var(--fd-border-strong)); }
+.fd-dot-button[data-tone="muted"], .fd-dot-item[data-tone="muted"] { --fd-dot: var(--fd-border-strong); }
+.fd-dot-button[data-tone="danger"], .fd-dot-item[data-tone="danger"] { --fd-dot: var(--fd-error); }
+.fd-dot-button[data-tone="success"], .fd-dot-item[data-tone="success"] { --fd-dot: var(--fd-success); }
+.fd-dot-button[data-tone="warning"], .fd-dot-item[data-tone="warning"] { --fd-dot: #d97706; }
+.fd-dot-button[data-tone="info"], .fd-dot-item[data-tone="info"] { --fd-dot: var(--fd-info); }
+.fd-dot-label { font-size: 13px; color: var(--fd-muted); }
+.fd-dot-menu { position: absolute; top: calc(100% + 4px); inset-inline-start: 0; z-index: 30; min-width: 180px; padding: 4px; display: grid; background: var(--fd-surface); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 6px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16); }
+.fd-dot-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 4px; cursor: pointer; white-space: nowrap; font-size: 14px; }
+.fd-dot-item:hover, .fd-dot-item:focus { background: var(--fd-accent-soft); outline: none; }
+.fd-dot-item[aria-checked="true"] { font-weight: 600; }
 `;

@@ -44,6 +44,7 @@ import { linksTableWidget } from './links-table';
 import { layOut, limiter } from './choice-rules';
 import { durationWidget, percentageWidget } from './duration';
 import { priorityWidget } from './priority';
+import { stateDotWidget } from './state-dot';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -608,6 +609,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   // Stars over a selection, the first option none, or one over a yes or no: Flectra's priority.
   'boolean.priority': priorityWidget,
   'selection.priority': priorityWidget,
+  // A grey, red or green dot with a menu of the states: Flectra's state_selection.
+  'selection.dot': stateDotWidget,
   selection: selectWidget,
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),
