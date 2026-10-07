@@ -93,8 +93,8 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
     const tag = kind === 'badge' || kind === 'ribbon' ? 'span' : kind === 'alert' ? 'div' : 'button';
     const element = el(tag, { class: `${looks(kind, part)} fd-canvas-part`, 'data-part': part.id, ...(tag === 'button' ? { type: 'button' } : { role: 'button', tabindex: '0' }) });
     if (kind === 'stat') {
-      const count = (part as StatButton).field;
-      const value = el('span', { class: 'fd-stat-value' }, count ? '12' : '');
+      const { field: count, unit } = part as StatButton;
+      const value = el('span', { class: 'fd-stat-value' }, [count ? '12' : '', unit ?? ''].filter(Boolean).join(' '));
       element.append(el('span', { class: 'fd-stat-words' }, value, el('span', { class: 'fd-stat-label' }, wordsOf(part))));
       if (count) element.title = w.shows(page.fields[count]?.label ?? count);
     } else element.append(wordsOf(part));

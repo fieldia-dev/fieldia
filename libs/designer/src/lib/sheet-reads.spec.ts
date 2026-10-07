@@ -165,3 +165,38 @@ describe('alerts', () => {
     expect(designer.updateBlock('t-note', { tone: 'danger' })).toBe(false);
   });
 });
+
+describe('stat buttons that say more', () => {
+  it('shows an amount, a date or words, with a unit, words from a field and a second value, each one undo step', () => {
+    const designer = createDesigner({ page: sheet() });
+    const id = designer.addHeaderPart('stat', 'Hours') as string;
+    const { host } = mount(designer, { mode: 'advanced' });
+    choose(field(host, 'Number from'), 'total');
+    choose(field(host, 'Second value from'), 'hours');
+    const words = field(host, 'Second value’s words') as HTMLInputElement;
+    words.value = 'Out';
+    words.dispatchEvent(new Event('input', { bubbles: true }));
+    const unit = field(host, 'Words after the value') as HTMLInputElement;
+    unit.value = 'Days';
+    unit.dispatchEvent(new Event('input', { bubbles: true }));
+    choose(field(host, 'Words after it from a field'), 'unit');
+    choose(field(host, 'Its words from a field'), 'state');
+    const stat = () => (designer.getPage().layout as SheetNode).statButtons?.find((s) => s.id === id);
+    expect(stat()).toMatchObject({ field: 'total', secondField: 'hours', secondLabel: 'Out', unit: 'Days', unitField: 'unit', labelField: 'state' });
+    designer.undo();
+    expect(stat()?.labelField).toBeUndefined();
+    // The second value gone, its words go with it.
+    choose(field(host, 'Second value from'), '');
+    expect(stat()?.secondField).toBeUndefined();
+    expect(stat()?.secondLabel).toBeUndefined();
+  });
+
+  it('refuses a value that is no number, amount, date or words, and second words with no second value', () => {
+    const designer = createDesigner({ page: sheet() });
+    const id = designer.addHeaderPart('stat', 'Tags') as string;
+    expect(designer.updateHeaderPart(id, { field: 'tags' })).toBe(false);
+    expect(designer.getState().issues.join(' ')).toMatch(/a number, an amount, a date or words/);
+    expect(designer.updateHeaderPart(id, { secondLabel: 'Out' })).toBe(false);
+    expect(designer.updateHeaderPart('nope', { unit: 'x' })).toBe(false);
+  });
+});

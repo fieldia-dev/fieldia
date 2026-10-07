@@ -148,7 +148,9 @@ export const refusals = {
   onlyButtonAsks: 'Only a button asks before it acts',
   onlyBadgeTone: 'Only a badge has a tone',
   onlyCounterField: 'Only a counter shows a field',
-  counterNumber: (label: string, stored: string) => `A counter shows a number; ${label} holds ${stored}`,
+  counterNumber: (label: string, stored: string) => `A counter shows a number, an amount, a date or words; ${label} holds ${stored}`,
+  onlyCounterSecond: 'Only a counter shows a second value, a unit or words from a field under its value',
+  secondWordsNeedValue: 'Words for a second value need the second value first',
   // ---- a list
   onlyListColumns: 'Only a list has columns',
   columnAlready: (label: string) => `${label} is a column already`,

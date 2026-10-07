@@ -34,8 +34,16 @@ export interface HeaderPartPatch {
   tooltip?: string;
   /** An alert with a × that hides it. */
   dismissible?: boolean;
-  /** The number a counter shows, from a field; empty shows none. */
+  /** The value a counter shows, from a field; empty shows none. */
   field?: string;
+  /** A counter's words after its value; empty for none. */
+  unit?: string;
+  /** A counter's words after its value from a field, its words from a field, its second value: a field's name, empty for none. */
+  unitField?: string;
+  labelField?: string;
+  secondField?: string;
+  /** Words for a counter's second value, which then shows under the first; empty for none. */
+  secondLabel?: string;
   icon?: string;
 }
 
@@ -55,6 +63,9 @@ export interface HeaderCommands {
 }
 
 /** The lists a header part sits in, by kind, as the sheet names them. */
+/** What a counter can show: a number, an amount, a date, words, a choice. */
+const COUNTED: string[] = ['integer', 'float', 'monetary', 'date', 'datetime', 'char', 'selection'];
+
 const LISTS = { button: 'buttons', stat: 'statButtons', badge: 'badges', ribbon: 'ribbons', alert: 'alerts' } as const;
 
 /** A part of a sheet's header by its id: what kind, which list, and where in it. A page's one `ribbon` is found as the first of the ribbons. */
@@ -163,7 +174,7 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
     },
 
     updateHeaderPart(id, patch) {
-      const typing = Object.keys(patch).length === 1 && ('label' in patch || 'action' in patch || 'confirm' in patch || 'tooltip' in patch);
+      const typing = Object.keys(patch).length === 1 && ('label' in patch || 'action' in patch || 'confirm' in patch || 'tooltip' in patch || 'unit' in patch || 'secondLabel' in patch);
       return apply(
         (draft) => {
           const { kind, part } = partOf(draft, id);
@@ -214,10 +225,34 @@ export function headerCommands(context: HeaderContext): HeaderCommands {
             if (!patch.field) delete (part as StatButton).field;
             else {
               const def = fieldFor(draft, patch.field);
-              if (!['integer', 'float', 'monetary'].includes(def.type)) throw new Refusal((w) => w.refusals.counterNumber(def.label, storedAs(def, w)));
+              if (!COUNTED.includes(def.type)) throw new Refusal((w) => w.refusals.counterNumber(def.label, storedAs(def, w)));
               (part as StatButton).field = patch.field;
             }
             prune(draft);
+          }
+          for (const key of ['unitField', 'labelField', 'secondField'] as const) {
+            const name = patch[key];
+            if (name === undefined) continue;
+            if (kind !== 'stat') throw new Refusal((w) => w.refusals.onlyCounterSecond);
+            const stat = part as StatButton;
+            if (!name) {
+              delete stat[key];
+              if (key === 'secondField') delete stat.secondLabel;
+            } else {
+              const def = fieldFor(draft, name);
+              if (key === 'secondField' && !COUNTED.includes(def.type)) throw new Refusal((w) => w.refusals.counterNumber(def.label, storedAs(def, w)));
+              stat[key] = name;
+            }
+            prune(draft);
+          }
+          for (const key of ['unit', 'secondLabel'] as const) {
+            const words = patch[key];
+            if (words === undefined) continue;
+            if (kind !== 'stat') throw new Refusal((w) => w.refusals.onlyCounterSecond);
+            const stat = part as StatButton;
+            if (key === 'secondLabel' && words.trim() && !stat.secondField) throw new Refusal((w) => w.refusals.secondWordsNeedValue);
+            if (words.trim()) stat[key] = words;
+            else delete stat[key];
           }
           if (patch.icon !== undefined) {
             if (kind === 'ribbon' || kind === 'alert') throw new Refusal((w) => w.refusals.onlySomeIcons);

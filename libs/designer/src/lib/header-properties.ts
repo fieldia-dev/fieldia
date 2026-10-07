@@ -1,4 +1,4 @@
-import type { Alert, ButtonNode, FieldNode, Page, Ribbon, SheetNode, Tone } from '@fieldia/core';
+import type { Alert, ButtonNode, FieldNode, Page, Ribbon, SheetNode, StatButton, Tone } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import { choicesOf, conditionEditor } from './condition-editor';
 import type { Designer } from './designer';
@@ -43,6 +43,20 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
   const count = el('select', { class: 'fd-input fd-select', 'aria-label': w.numberFrom }) as HTMLSelectElement;
   count.addEventListener('change', () => designer.updateHeaderPart(id, { field: count.value }));
   const countRow = prop(el, w.numberFrom, count);
+  // A counter's value written as its field shows it, with a unit, its words from a field, and a second value.
+  const fieldSelect = (label: string, key: 'unitField' | 'labelField' | 'secondField') => {
+    const box = el('select', { class: 'fd-input fd-select', 'aria-label': label }) as HTMLSelectElement;
+    box.addEventListener('change', () => designer.updateHeaderPart(id, { [key]: box.value }));
+    return box;
+  };
+  const unit = el('input', { class: 'fd-input', 'aria-label': w.unitWords, placeholder: w.optional }) as HTMLInputElement;
+  unit.addEventListener('input', () => designer.updateHeaderPart(id, { unit: unit.value }));
+  const unitField = fieldSelect(w.unitFrom, 'unitField');
+  const labelField = fieldSelect(w.labelFrom, 'labelField');
+  const secondField = fieldSelect(w.secondFrom, 'secondField');
+  const secondLabel = el('input', { class: 'fd-input', 'aria-label': w.secondWords, placeholder: w.secondWordsHint }) as HTMLInputElement;
+  secondLabel.addEventListener('input', () => designer.updateHeaderPart(id, { secondLabel: secondLabel.value }));
+  const statRows = [prop(el, w.unitWords, unit), prop(el, w.unitFrom, unitField), prop(el, w.labelFrom, labelField), prop(el, w.secondFrom, secondField), prop(el, w.secondWords, secondLabel)];
   const tone = select(el, w.tone, [['muted', w.tones.muted], ['info', w.tones.info], ['success', w.tones.success], ['warning', w.tones.warning], ['danger', w.tones.danger]]);
   tone.addEventListener('change', () => designer.updateHeaderPart(id, { tone: tone.value as Tone }));
   const toneRow = prop(el, w.tone, tone);
@@ -89,6 +103,7 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
     lookRow,
     asksRow,
     countRow,
+    ...statRows,
     toneRow,
     wordsFromRow,
     valueRow,
@@ -114,11 +129,24 @@ export function headerPartProperties(el: ElementFactory, designer: Designer, id:
         if (!focused(asks)) asks.value = (part as ButtonNode).confirm ?? '';
       }
       countRow.hidden = kind !== 'stat';
+      for (const row of statRows) row.hidden = kind !== 'stat';
       if (kind === 'stat') {
-        const numbers = Object.entries(page.fields).filter(([, f]) => ['integer', 'float', 'monetary'].includes(f.type));
-        const offered = [...numbers, ...designer.modelFields().filter((m) => ['integer', 'float', 'monetary'].includes(m.field.type)).map((m) => [m.name, m.field] as const)];
-        count.replaceChildren(el('option', { value: '' }, w.nothing), ...offered.map(([name, f]) => el('option', { value: name }, f.label)));
-        count.value = (part as { field?: string }).field ?? '';
+        const stat = part as StatButton;
+        const all = [...Object.entries(page.fields), ...designer.modelFields().map((m) => [m.name, m.field] as const)];
+        const options = (types: string[]) => [el('option', { value: '' }, w.nothing), ...all.filter(([, f]) => types.includes(f.type)).map(([name, f]) => el('option', { value: name }, f.label))];
+        const counted = ['integer', 'float', 'monetary', 'date', 'datetime', 'char', 'selection'];
+        const worded = ['char', 'selection', 'many2one'];
+        count.replaceChildren(...options(counted));
+        count.value = stat.field ?? '';
+        unitField.replaceChildren(...options(worded));
+        unitField.value = stat.unitField ?? '';
+        labelField.replaceChildren(...options(worded));
+        labelField.value = stat.labelField ?? '';
+        secondField.replaceChildren(...options(counted));
+        secondField.value = stat.secondField ?? '';
+        if (!focused(unit)) unit.value = stat.unit ?? '';
+        if (!focused(secondLabel)) secondLabel.value = stat.secondLabel ?? '';
+        (secondLabel.closest('.fd-prop') as HTMLElement).hidden = !stat.secondField;
       }
       toneRow.hidden = kind !== 'badge' && kind !== 'ribbon' && kind !== 'alert';
       if (!toneRow.hidden) tone.value = (part as { tone?: string }).tone ?? (kind === 'alert' ? 'info' : 'muted');
