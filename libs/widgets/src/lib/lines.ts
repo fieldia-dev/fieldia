@@ -30,6 +30,10 @@ interface Row {
   buttons: Map<string, HTMLButtonElement>;
   remove: HTMLButtonElement;
   grip: HTMLElement;
+  /** The tick that chooses the line for the table's buttons for chosen lines; none without them, or on a section or note. */
+  pick: HTMLInputElement | null;
+  /** The button that puts a copy of the line right after it (`options.copy`). */
+  copy: HTMLButtonElement | null;
 }
 
 const count = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined);
@@ -79,7 +83,11 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   table.className = 'fd-lines-table';
   const head = document.createElement('thead');
   const headRow = document.createElement('tr');
-  headRow.append(make('th', { class: 'fd-lines-grip' }));
+  // Lines chosen for the table's buttons for them: a tick on each line, one in the head for every line, and a bar over the table.
+  const choosing = !!node.selectedButtons?.length;
+  const chosen = new Set<string>();
+  const pickAll = choosing ? (make('input', { type: 'checkbox', class: 'fd-checkbox fd-line-pick fd-line-pick-all', 'aria-label': labels.chooseAllLines }) as HTMLInputElement) : null;
+  headRow.append(make('th', { class: 'fd-lines-grip' }, ...(pickAll ? [pickAll] : [])));
   for (const column of columns) {
     const th = document.createElement('th');
     th.scope = 'col';
@@ -141,13 +149,64 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     addButton(words('addSectionLabel') ?? labels.addSection, { [kinds.field]: kinds.section ?? 'section' }, 'section');
     addButton(words('addNoteLabel') ?? labels.addNote, { [kinds.field]: kinds.note ?? 'note' }, 'note');
   }
+  // Buttons in the control row, beside the add buttons: the record's, shown by a condition on it (Flectra's <control>).
+  const controls = (node.controlButtons ?? []).map((own) => {
+    const icon = drawIcon(document, own.icon);
+    const button = make('button', { type: 'button', class: 'fd-button fd-button-link fd-lines-add fd-lines-control', 'data-node': own.id }, ...(icon ? [icon] : []), own.label);
+    button.addEventListener('click', () => void pressed(button, () => form.runAction(own.id)));
+    adds.append(button);
+    return { id: own.id, button };
+  });
+  // The bar of buttons for the lines chosen, over the table while any is.
+  const chosenCount = make('span', { class: 'fd-lines-chosen-count', role: 'status' });
+  const chosenButtons = (node.selectedButtons ?? []).map((own) => {
+    const icon = drawIcon(document, own.icon);
+    const button = make('button', { type: 'button', class: `fd-button fd-button-${own.style ?? 'secondary'} fd-lines-chosen-button`, 'data-node': own.id }, ...(icon ? [icon] : []), own.label);
+    // In the table's order, whatever order they were ticked in.
+    button.addEventListener('click', () => void pressed(button, () => form.runLinesAction(node.id, own.id, current().filter((line) => chosen.has(line.key)).map((line) => line.key))));
+    return { id: own.id, button };
+  });
+  const bar = choosing ? make('div', { class: 'fd-lines-chosen', hidden: '' }, chosenCount, ...chosenButtons.map((b) => b.button)) : null;
   const emptyWords = words('emptyLabel');
   const empty = emptyWords ? make('div', { class: 'fd-help fd-lines-empty' }, emptyWords) : null;
   // Removing a line with something in it asks first, in place: "Remove line 2?  Remove · Keep".
   const confirm = askFirst(make, labels);
   // Where a line went, said politely; not the page's own announcer, which a page looks for by its class.
   const voice = make('div', { class: 'fd-sr-only', role: 'status' });
-  element.append(scroller, ...(empty ? [empty] : []), adds, confirm.element, voice);
+  element.append(...(bar ? [bar] : []), scroller, ...(empty ? [empty] : []), adds, confirm.element, voice);
+  /** A press that waits for its run, and is not pressed again meanwhile. */
+  async function pressed(button: HTMLButtonElement, run: () => Promise<unknown>) {
+    if (button.hasAttribute('aria-busy')) return;
+    button.setAttribute('aria-busy', 'true');
+    try {
+      await run();
+    } finally {
+      button.removeAttribute('aria-busy');
+    }
+  }
+  /** The bar and the head's tick, as the lines chosen are now. */
+  function showChosen() {
+    if (!bar || !pickAll) return;
+    const items = current().filter((line) => !lineKind(def, line.values));
+    for (const key of [...chosen]) if (!items.some((line) => line.key === key)) chosen.delete(key);
+    bar.hidden = readonly || chosen.size === 0;
+    chosenCount.textContent = fillIn(labels.linesChosen, { n: chosen.size });
+    for (const { id, button } of chosenButtons) button.hidden = form.node(id).invisible;
+    pickAll.checked = items.length > 0 && chosen.size === items.length;
+    pickAll.indeterminate = chosen.size > 0 && chosen.size < items.length;
+    pickAll.disabled = readonly || !items.length;
+    for (const [key, row] of rows) {
+      if (!row.pick) continue;
+      row.pick.checked = chosen.has(key);
+      row.pick.disabled = readonly;
+    }
+  }
+  pickAll?.addEventListener('change', () => {
+    const items = current().filter((line) => !lineKind(def, line.values));
+    if (pickAll.checked) for (const line of items) chosen.add(line.key);
+    else chosen.clear();
+    showChosen();
+  });
 
   const rows = new Map<string, Row>();
   let focusNew: string | null = null;
@@ -213,7 +272,14 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
       move(line.key, [...body.children].filter((row) => row !== tr && row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2 < event.clientY).length);
     });
     for (const end of ['pointerup', 'pointercancel']) grip.addEventListener(end, () => (dragging = false));
-    tr.append(make('td', { class: 'fd-lines-grip' }, grip));
+    // Its tick for the table's buttons for chosen lines, before the grip.
+    const pick = choosing && !kind ? (make('input', { type: 'checkbox', class: 'fd-checkbox fd-line-pick' }) as HTMLInputElement) : null;
+    pick?.addEventListener('change', () => {
+      if (pick.checked) chosen.add(line.key);
+      else chosen.delete(line.key);
+      showChosen();
+    });
+    tr.append(make('td', { class: 'fd-lines-grip' }, ...(pick ? [make('span', { class: 'fd-line-lead' }, pick, grip)] : [grip])));
     const cells =
       kind && kinds
         ? [makeCell(tr, line, kinds.text, kindTextField(def.fields[kinds.text], kind), columns.length)]
@@ -255,9 +321,22 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
       buttons.set(own.id, button);
       tools.append(button);
     }
+    // A copy of the line, its values too, right after it: never its saved id or its place in the order.
+    const copy = options['copy'] === true && !kind ? (make('button', { type: 'button', class: 'fd-line-copy' }, '⧉') as HTMLButtonElement) : null;
+    copy?.addEventListener('click', () => {
+      const all = current();
+      const at = all.findIndex((l) => l.key === line.key);
+      if (readonly || at < 0 || all.length >= max) return;
+      const values = { ...all[at].values };
+      if (def.sequenceField) delete values[def.sequenceField];
+      const made = form.addLine(name, values);
+      moveLineTo(form, name, def, made, at + 1);
+      rows.get(made)?.cells[0]?.widget.focus();
+    });
+    if (copy) tools.append(copy);
     tools.append(remove);
     tr.append(tools);
-    return { element: tr, kind, cells, remove, grip, buttons };
+    return { element: tr, kind, cells, remove, grip, buttons, pick, copy };
   }
 
   return {
@@ -295,6 +374,14 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
         if (body.children[index] !== row.element) body.insertBefore(row.element, body.children[index] ?? null);
         row.remove.hidden = readonly || current.length <= min;
         row.grip.hidden = readonly;
+        // Named by where it is now: it moves.
+        const lineName = fillIn(labels.lineN, { n: index + 1 });
+        row.pick?.setAttribute('aria-label', fillIn(labels.chooseLine, { name: lineName }));
+        if (row.copy) {
+          row.copy.setAttribute('aria-label', fillIn(labels.copy, { name: lineName }));
+          row.copy.title = row.copy.getAttribute('aria-label') as string;
+          row.copy.hidden = readonly || current.length >= max;
+        }
         if (readonly) row.remove.remove();
         else if (!row.remove.isConnected) row.element.lastElementChild?.append(row.remove);
         const now = ruled ? form.lineState(node.id, line.key) : null;
@@ -328,6 +415,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
         const sum = current.filter((line) => !lineKind(def, line.values)).reduce((total, line) => total + Number(line.values[column] ?? 0), 0);
         td.textContent = displayValue(def.fields[column], sum, current[0]?.values ?? {}, locale, state.values);
       }
+      for (const { id, button } of controls) button.hidden = form.node(id).invisible;
+      showChosen();
       if (focusNew && rows.has(focusNew)) {
         rows.get(focusNew)?.cells[0]?.widget.focus();
         focusNew = null;

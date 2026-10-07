@@ -27,6 +27,10 @@ export interface WidgetLabels {
   openNamed: string;
   /** The button that opens a line of a table in a dialog. */
   openLine: string;
+  /** A table's lines chosen for its buttons: the tick on a line (`{name}`), the tick choosing every line, and how many are chosen (`{n}`). */
+  chooseLine: string;
+  chooseAllLines: string;
+  linesChosen: string;
   /** The button that lets a person hide or show a table's optional columns. */
   chooseColumns: string;
   /** The button beside a date that opens its calendar. */
@@ -159,6 +163,9 @@ const en: WidgetLabels = {
   searchMore: 'Search more…',
   openNamed: 'Open {name}',
   openLine: 'Open line',
+  chooseLine: 'Choose {name}',
+  chooseAllLines: 'Choose every line',
+  linesChosen: '{n} chosen',
   chooseDate: 'Choose a date',
   other: 'Other:',
   otherAnswer: 'Your own answer',

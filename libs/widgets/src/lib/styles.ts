@@ -358,6 +358,18 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-line-button svg { width: 15px; height: 15px; display: block; }
 .fd-lines-totals td { padding: 8px; font-weight: 600; border-block-start: 1px solid var(--fd-border); font-variant-numeric: tabular-nums; }
 .fd-lines-adds { display: flex; flex-wrap: wrap; gap: 4px 16px; justify-self: start; }
+.fd-lines-control { display: inline-flex; align-items: center; gap: 6px; }
+.fd-lines-control svg, .fd-lines-chosen-button svg { width: 15px; height: 15px; }
+/* Lines chosen for the table's buttons: a tick before each line's grip, and a bar of buttons over the table. */
+.fd-line-lead { display: inline-flex; align-items: center; gap: 4px; margin-block-start: 6px; }
+.fd-line-lead .fd-line-grip { margin-block-start: 0; }
+.fd-lines-table th.fd-lines-grip:has(.fd-line-pick-all) { padding-block: 4px; }
+.fd-lines-chosen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 6px 10px; border-radius: var(--fd-radius); background: var(--fd-accent-soft); }
+.fd-lines-chosen[hidden] { display: none; }
+.fd-lines-chosen-count { font-weight: 600; font-size: 13px; margin-inline-end: 6px; }
+.fd-lines-chosen-button { display: inline-flex; align-items: center; gap: 6px; padding-block: 3px; }
+.fd-line-copy { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 15px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
+.fd-line-copy:hover { color: var(--fd-accent); background: var(--fd-accent-soft); }
 /* A section heads the lines below it; a note reads as a remark between them. */
 .fd-line-section td { background: var(--fd-page); }
 .fd-line-section .fd-input { font-weight: 600; }
