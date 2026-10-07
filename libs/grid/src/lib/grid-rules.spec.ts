@@ -115,7 +115,8 @@ describe('the grid by a table’s own rules', () => {
     (grid.querySelector('.ag-row[row-index="0"] .ag-cell[col-id="__delete"]') as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     expect((handle.form.getState().values['move_ids'] as unknown[]).length).toBe(2);
     handle.form.setValue('state', 'draft');
-    await frames();
+    // The lines are drawn again on a frame of AG Grid's own: wait for the button to be back.
+    for (let tries = 0; tries < 40 && !cross('a'); tries++) await frames();
     expect(cross('a').hidden).toBe(false);
   });
 

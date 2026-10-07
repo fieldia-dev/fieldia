@@ -115,6 +115,8 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
         dataSource: lookupsOf(options.dataSource),
         values: request.values,
         title: request.title,
+        // A line's own form is laid out as a page is: the room of a record's dialog.
+        ...(request.layout ? { size: 'large' as const } : {}),
         mode: 'values',
         ...(request.recompute ? { recompute: request.recompute } : {}),
         ...(say ? { host: { say } } : {}),

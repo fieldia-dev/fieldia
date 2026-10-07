@@ -118,10 +118,11 @@ describe('the grid', () => {
     const { box, api, form } = await mount(page);
     api!.startEditingCell({ rowIndex: 1, colKey: 'delivery' });
     await frames();
-    const calendar = box.querySelector('.ag-cell-inline-editing .fd-calendar-button') as HTMLButtonElement;
+    // Over its cell, so its month has room: a popup, as a link's list is.
+    const calendar = document.querySelector('.ag-popup-editor .fd-grid-editor .fd-calendar-button') as HTMLButtonElement;
     expect(calendar).not.toBeNull();
     calendar.click();
-    const day = [...box.querySelectorAll<HTMLButtonElement>('.fd-calendar tbody button')].find((b) => b.textContent === '12' && !b.classList.contains('fd-outside')) as HTMLButtonElement;
+    const day = [...document.querySelectorAll<HTMLButtonElement>('.fd-calendar tbody button')].find((b) => b.textContent === '12' && !b.classList.contains('fd-outside')) as HTMLButtonElement;
     day.click();
     await frames();
     expect(api!.getEditingCells()).toHaveLength(0);

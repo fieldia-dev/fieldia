@@ -99,7 +99,7 @@ describe('the grid’s cells drawn by a widget of their own', () => {
 });
 
 describe('an analytic distribution as a column of the grid', () => {
-  const order = {
+  const order: Page & { layout: { children: Record<string, unknown>[] } } = {
     fieldia: '0.1',
     id: 'order',
     data: { kind: 'record', model: 'sale.order' },
@@ -112,7 +112,7 @@ describe('an analytic distribution as a column of the grid', () => {
       },
     },
     layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-lines', field: 'order_line', widget: 'grid', cells: { analytic_distribution: { widget: 'distribution', options: { model: 'account.analytic.account' } } } }] },
-  } as unknown as Page;
+  } as never;
 
   async function mountOrder() {
     const host = document.createElement('div');
@@ -128,6 +128,17 @@ describe('an analytic distribution as a column of the grid', () => {
   it('says each account by its name with its share in the cell', async () => {
     const { grid } = await mountOrder();
     expect(cell(grid, 0, 'analytic_distribution').textContent).toBe('Cairo office 60%, Marketing 40%');
+  });
+
+  it('says the accounts by their names on a line’s card too', async () => {
+    order.layout.children[0].cards = 'always';
+    try {
+      const { grid } = await mountOrder();
+      await frames();
+      expect(grid.querySelector('.fd-line-card dd')?.textContent).toBe('Cairo office 60%, Marketing 40%');
+    } finally {
+      delete order.layout.children[0].cards;
+    }
   });
 
   it('opens its lines to edit, writing a share into the line as it is typed', async () => {

@@ -200,6 +200,17 @@ export function withCalendar(inner: Widget, context: WidgetContext, kind: 'date'
     dialog.hidden = false;
     button.setAttribute('aria-expanded', 'true');
     draw(true);
+    keepOnScreen();
+  }
+
+  /** The month kept on the screen, 8px from its edges: beside a narrow box (a table's cell on a phone) it would run off. */
+  function keepOnScreen() {
+    dialog.style.translate = '';
+    const rect = dialog.getBoundingClientRect();
+    const width = doc.documentElement.clientWidth;
+    if (!rect.width || !width) return;
+    const shift = rect.left < 8 ? 8 - rect.left : rect.right > width - 8 ? Math.max(8 - rect.left, width - 8 - rect.right) : 0;
+    if (shift) dialog.style.translate = `${Math.round(shift)}px 0`;
   }
 
   function close() {

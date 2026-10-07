@@ -216,6 +216,8 @@ class BadgeRenderer implements ICellRendererComp<Line> {
 
 /** What an analytic distribution's cell needs: the accounts' names as they are found, and finding those not known yet. */
 interface DistributionParams {
+  /** The model the accounts are records of. */
+  model: string;
   locale?: Locale;
   nameOf(id: string): string | undefined;
   find(line: Line, ids: string[]): void;
@@ -237,6 +239,8 @@ class DistributionRenderer implements ICellRendererComp<Line> {
     const unknown = distributionIds(value).map(String).filter((id) => params.nameOf(id) === undefined);
     if (unknown.length && params.data) params.find(params.data, unknown);
     this.text.textContent = distributionWords(value, params.locale, params.nameOf);
+    // All of it on pointing at it, when the column is narrower than its words.
+    this.text.title = this.text.textContent;
     return true;
   }
 }
@@ -448,6 +452,8 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   /** The line field this editor writes: the column's, or a section's or note's text. */
   private column = '';
   private def!: LineField;
+  /** A date typed beside Fieldia's own calendar (options.weekNumbers): its month needs room the cell does not have. */
+  private calendar = false;
   private note: HTMLTextAreaElement | null = null;
   private floating: { list: HTMLElement; watch: MutationObserver } | null = null;
 
@@ -462,6 +468,7 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     // A cell typed in its own way (hours as HH:MM, a per cent) is typed so in its editor too.
     const look = kind ? undefined : cell.looks?.[column];
     const node: FieldNode = { type: 'field', id: `${cell.fieldId}.${key}.${column}`, field: column, ...(look?.widget ? { widget: look.widget } : {}), ...(look?.options ? { options: look.options } : {}) };
+    this.calendar = (def.type === 'date' || def.type === 'datetime') && look?.options?.['weekNumbers'] === true;
     const context: WidgetContext = {
       form: lineForm(cell.form, cell.field, key),
       name: column,
@@ -617,7 +624,7 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   isPopup() {
     if (this.params.cell.rowMode) return false;
     const type = this.def.type;
-    return type === 'many2one' || type === 'many2many' || type === 'reference' || type === 'json';
+    return type === 'many2one' || type === 'many2many' || type === 'reference' || type === 'json' || this.calendar;
   }
   getPopupPosition(): 'over' {
     return 'over';
@@ -665,6 +672,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   let lineStates = new Map<string, LineState>();
   /** Accounts' names an analytic distribution's cells show, by model and id, as they are found. */
   const accountNames = new Map<string, string>();
+  /** The analytic distributions among the columns, by column: their names found and said. */
+  const distributions = new Map<string, DistributionParams>();
   /** Whether a line may be deleted now: always, unless the table's lineDelete keeps it. */
   const deletable = (key: string) => node.lineDelete === undefined || (lineStates.get(key) ?? form.lineState(node.id, key)).deletable;
   const ruleOf = (line: Line | undefined, column: string) => (line ? lineStates.get(line.key)?.cells[column] : undefined);
@@ -899,6 +908,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       const model = distributionModel(node.cells?.[column]?.options);
       const asked = new Set<string>();
       const params: DistributionParams = {
+        model,
         locale,
         nameOf: (id) => accountNames.get(`${model}:${id}`),
         find(line, ids) {
@@ -908,14 +918,22 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
           form.searchLine(name, line.key, column, '', fresh.length, { model, ids: fresh.map((id) => (/^\d+$/.test(id) ? Number(id) : id)) }).then(
             (found) => {
               for (const record of found) accountNames.set(`${model}:${record.id}`, record.label);
-              if (!api.isDestroyed()) api.refreshCells({ columns: [column], force: true, suppressFlash: true });
+              if (api.isDestroyed()) return;
+              api.refreshCells({ columns: [column], force: true, suppressFlash: true });
+              // The cards say the accounts by their names too.
+              cardsDrawn = '';
+              drawCards();
             },
             () => undefined
           );
         },
       };
+      distributions.set(column, params);
       return {
         ...base,
+        // Its accounts' names take room, as words do.
+        minWidth: node.fit === 'shrink' ? 96 : 180,
+        flex: 2,
         cellRendererSelector: (p) => (kindOf(p.data) || p.node.rowPinned ? undefined : { component: DistributionRenderer, params }),
         // Tab goes round the lines of its open editor; from its last box, on to the next cell.
         suppressKeyboardEvent: (p) => {
@@ -1335,7 +1353,14 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       card.classList.toggle('fd-line-bold', !!state?.bold);
       const shownHere = shownColumns.filter((column) => !state?.cells[column]?.invisible);
       const [first, ...rest] = shownHere;
-      const text = (column: string) => cellText(def.fields[column], line.values[column] as Value, line.values, locale, parent, node.cells?.[column]);
+      const text = (column: string) => {
+        // A distribution says its accounts by their names, as its cell does, once they are found.
+        const shares = distributions.get(column);
+        if (!shares) return cellText(def.fields[column], line.values[column] as Value, line.values, locale, parent, node.cells?.[column]);
+        const unknown = distributionIds(line.values[column] as Value).map(String).filter((id) => shares.nameOf(id) === undefined);
+        if (unknown.length) shares.find(line, unknown);
+        return distributionWords(line.values[column] as Value, locale, shares.nameOf);
+      };
       const title = document.createElement(dialogs ? 'button' : 'div');
       title.className = 'fd-line-card-title';
       title.textContent = first ? text(first) || fill(labels.lineN, { n: current.indexOf(line) + 1 }) : '';

@@ -108,6 +108,10 @@ button.fd-line-card-title { color: var(--fd-accent); }
 .fd-grid-editor[data-kind="note"] { align-items: start; }
 .fd-grid-editor[data-kind="note"] textarea { resize: none; min-height: 0; overflow: hidden; font-style: italic; line-height: 20px; padding-block: 9px; }
 .fd-grid-editor[data-type="integer"] input, .fd-grid-editor[data-type="float"] input, .fd-grid-editor[data-type="monetary"] input { text-align: end; }
+/* An analytic distribution's lines, opened from its cell: room round them, each share clear of its % sign. */
+.ag-popup-editor .fd-grid-editor[data-type="json"] { height: auto; align-items: stretch; padding: 8px 12px; }
+.fd-grid-editor .fd-distribution .fd-share { padding-inline-end: calc(var(--fd-pad-x, 10px) + 2ch); }
+.fd-grid-distribution { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 `;
 
 const STYLE_ID = 'fieldia-grid-styles';
