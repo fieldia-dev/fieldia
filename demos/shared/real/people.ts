@@ -921,6 +921,16 @@ function maintenanceAction(request: ActionRequest): ActionResult | undefined {
 const named = (rows: Record<number, string>, extra: (id: number) => Values = () => ({})) =>
   Object.fromEntries(Object.entries(rows).map(([id, name]) => [id, { name, ...extra(Number(id)) }]));
 
+/** A face for a link or a tag (image_128), drawn on a colour of its own. */
+const FACE_COLOURS = ['#9a3412', '#1d4ed8', '#047857', '#7c3aed', '#b45309', '#be185d', '#0e7490', '#4d7c0f', '#6d28d9'];
+const face = (id: number, name: string) => {
+  const initials = name.replace(/^Dr\. /, '').split(' ').map((word) => word[0]).join('').slice(0, 2);
+  return `data:image/svg+xml;base64,${portrait(initials, FACE_COLOURS[id % FACE_COLOURS.length]).data}`;
+};
+
+/** The person using the demo — Mona Khalil, the Operations Manager — and the groups Flectra gives her. */
+const MANAGER = { id: 4107, name: 'Mona Khalil', roles: ['hr_holidays.group_hr_holidays_user'] };
+
 export const lane: RealLane = {
   pages: {
     'real-clinic-appointment': clinicAppointment as Page,
@@ -935,6 +945,21 @@ export const lane: RealLane = {
     'real-time-off': timeOff as Page,
   },
   labelField: { 'hr.leave.type': 'display_name' },
+  users: {
+    'real-clinic-appointment': MANAGER,
+    'real-time-off': MANAGER,
+    'real-employee': MANAGER,
+    'real-maintenance-request': MANAGER,
+  },
+  // The list each record was opened from, and the way back to it.
+  navigation: {
+    'real-clinic-appointment': { records: [4001, 4002, 4003], breadcrumbs: [{ label: 'Appointments', href: '#appointments' }] },
+    'real-time-off': { records: [4171, 4172, 4173, 4174], breadcrumbs: [{ label: 'Time Off', href: '#time-off' }] },
+  },
+  // What links show besides a name: the staff's faces.
+  shows: { 'hr.employee': { avatar: 'image_128' } },
+  // The doctor's note, beside the sick leave it supports (o_attachment_preview).
+  attachments: { 'hr.leave:4173': [{ name: "Doctor's note, Dr. Hesham Ali.pdf", type: 'application/pdf', size: 720, data: doctorsNote }] },
   records: {
     'clinic.appointment': appointments,
     'hr.leave': leaves,
@@ -948,10 +973,10 @@ export const lane: RealLane = {
       ...Object.fromEntries(
         Object.entries(STAFF).map(([id, s]) => [
           id,
-          { active: true, name: s.name, job_title: JOBS[s.job], job_id: link(s.job, JOBS[s.job]), department_id: dept(s.dept), work_email: s.email, parent_id: s.parent ? employee(s.parent) : null, company_id: BRANCH, employee_type: 'employee', marital: 'single', tz: 'Africa/Cairo' },
+          { active: true, name: s.name, image_128: face(Number(id), s.name), job_title: JOBS[s.job], job_id: link(s.job, JOBS[s.job]), department_id: dept(s.dept), work_email: s.email, parent_id: s.parent ? employee(s.parent) : null, company_id: BRANCH, employee_type: 'employee', marital: 'single', tz: 'Africa/Cairo' },
         ])
       ),
-      4122: salma,
+      4122: { ...salma, image_128: face(4122, salma['name'] as string) },
     },
     'hr.department': named(DEPARTMENTS),
     'hr.job': named(JOBS),

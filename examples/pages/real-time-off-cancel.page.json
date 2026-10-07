@@ -17,6 +17,10 @@
         "style": "plain",
         "children": [{ "type": "field", "id": "f-reason", "field": "reason", "placeholder": "Provide a reason to delete an approved time off" }]
       }
+    ],
+    "footer": [
+      { "type": "button", "id": "action_cancel_leave", "label": "Delete Time Off", "style": "primary", "steps": [{ "do": "save" }] },
+      { "type": "button", "id": "discard", "label": "Discard", "steps": [{ "do": "close" }] }
     ]
   }
 }

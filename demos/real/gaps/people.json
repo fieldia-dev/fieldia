@@ -61,7 +61,9 @@
         {
           "feature": "Open Session (invisible state not in arrived/in_progress): creates the treatment session and opens its form",
           "status": "approximated",
-          "how": "call clinic_open_session answers session_id, state and a message; Flectra then navigates to the session's charting form — an `open` with as \"page\" would do it, but no session page was built (another model, out of this page)"
+          "how": "call clinic_open_session answers session_id, state and a message; Flectra then navigates to the session's charting form",
+          "app": true,
+          "why": "the session's charting form is another model's page, the app's to give; with it an open step (as \"page\", record session_id) shows it in the appointment's place"
         },
         {
           "feature": "Done (invisible state not in in_progress/arrived)",
@@ -135,8 +137,8 @@
         },
         {
           "feature": "Risk Band widget=\"badge\" with decoration-danger/warning/success by value",
-          "status": "missing",
-          "needs": "shown as a read-only selection; needs a badge widget for a selection with a tone per value"
+          "status": "covered",
+          "how": "widget badge on the selection with options.tones: high danger, medium warning, low success (shown in the e2e)"
         },
         {
           "feature": "AI Mitigation Suggestion: readonly, invisible when empty",
@@ -166,7 +168,9 @@
         {
           "feature": "Datetimes stored in UTC and shown in the user's timezone",
           "status": "approximated",
-          "how": "datetimes are kept as local \"YYYY-MM-DDTHH:MM\" strings; the app converts"
+          "how": "datetimes are kept as local \"YYYY-MM-DDTHH:MM\" strings",
+          "app": true,
+          "why": "storing in UTC and converting to the person's timezone is the app's data source"
         },
         {
           "feature": "Cancellation Reason required when state == cancelled",
@@ -195,8 +199,8 @@
         },
         {
           "feature": "Help texts as a tooltip on the label",
-          "status": "approximated",
-          "how": "left out: Fieldia prints `help` under the field, which on a dense Flectra sheet doubles its height; needs `help` shown as a tooltip (a ? by the label) as an option"
+          "status": "covered",
+          "how": "look.helpShown \"tooltip\": each field's help behind a (?) by its label, as Flectra shows it, with Flectra's own help texts on the fields (shown in the e2e)"
         },
         {
           "feature": "Labels beside values in <group>s",
@@ -205,18 +209,20 @@
         },
         {
           "feature": "Conditions written with tuples: `state in ('a', 'b')`",
-          "status": "approximated",
-          "how": "refused by the parser (\"Expected closing parenthesis\") and written as lists `['a', 'b']`; Flectra's views use tuples throughout, and site/pages/format.mjs shows a tuple in its own example, so a pasted condition fails. Needs tuple literals in the expression language"
+          "status": "covered",
+          "how": "the page's conditions are written as Flectra writes them, with tuples — state in ('done', 'cancel') — read as lists"
         },
         {
           "feature": "Read-only fields shown as text",
-          "status": "approximated",
-          "how": "an empty read-only field draws empty, as Flectra's (no \"Search…\", no dd.mm.yyyy mask: shown in the e2e); but a read-only selection is a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+          "status": "covered",
+          "how": "look.readonlyShown \"text\": read-only values drawn as their words, as Flectra draws them — a choice by its label with no arrow, a date as written, a link by its name, long words wrapped, an empty one as nothing (shown in the e2e)"
         },
         {
           "feature": "Object buttons save the record first, run the method, then reload it",
           "status": "approximated",
-          "how": "steps: the method's effect (set steps, or a `call` the app answers with values), then `save`; the order differs (Flectra saves before the method) but the record ends the same"
+          "how": "steps run the method's effect (set steps, or a call the app answers with values), then save; a page can write Flectra's order — save, call, reload (or the app's reload: true) — where the app's server runs the method",
+          "app": true,
+          "why": "running the method on the server between the save and the reload is the app's; the demo's in-memory app answers a call with values instead"
         },
         {
           "feature": "A server refusal on save (ValidationError / UserError from constraints)",
@@ -225,13 +231,13 @@
         },
         {
           "feature": "Record menu (gear): Archive, Duplicate, Delete; record pager; breadcrumbs",
-          "status": "missing",
-          "needs": "Fieldia draws one record without the action menu, the 1/12 pager or breadcrumbs; needs a record toolbar the app can fill (Archive, Duplicate, Delete, Print) and a pager"
+          "status": "covered",
+          "how": "toolbar: the gear menu (Duplicate and Delete — an appointment has no active field, so no Archive), the pager and the breadcrumbs, the list's records and the trail handed in by the app as the viewer's records and breadcrumbs options (shown in the e2e)"
         },
         {
           "feature": "groups= on fields, buttons and pages",
-          "status": "approximated",
-          "how": "Fieldia has no user groups: the page here is the one a manager sees; needs `groups`-like conditions on the person (e.g. a `user.groups` value in expressions) or the app handing a page per role"
+          "status": "covered",
+          "how": "roles on any part, the person and their roles handed in by the app (user option); this view and the two that inherit it gate nothing by group, so no part needs one"
         }
       ],
       "summary": {
@@ -290,8 +296,8 @@
         },
         {
           "feature": "Confirm (invisible \"id == False or state != draft or not active\"), validated at once for a no-validation type",
-          "status": "approximated",
-          "how": "steps: set state confirm, set validate when validation_type == no_validation, save, say; `id == False` dropped — needs the record id (new or stored) in expressions"
+          "status": "covered",
+          "how": "steps: set state confirm, set validate when validation_type == no_validation, save, say; invisible \"not id or state != 'draft' or not active\" — Flectra's id == False as not id, the id empty while the request is new (shown in the e2e)"
         },
         {
           "feature": "Approve (invisible \"not active or not can_approve or state != confirm\"): first approval when the type needs two, else approved",
@@ -300,8 +306,8 @@
         },
         {
           "feature": "Validate (invisible state != validate1, groups hr_holidays_user)",
-          "status": "approximated",
-          "how": "set, call, save; the group is not checked (see groups)"
+          "status": "covered",
+          "how": "set, call, save; roles [hr_holidays.group_hr_holidays_user]: someone without the group never sees it (shown in the e2e)"
         },
         {
           "feature": "Refuse (invisible \"not active or not can_approve or state not in (confirm, validate1, validate)\")",
@@ -315,8 +321,8 @@
         },
         {
           "feature": "The cancel wizard's own buttons: \"Delete Time Off\" (primary) and \"Discard\"",
-          "status": "approximated",
-          "how": "the dialog's Save & Close and Discard; needs a page's own words for its dialog buttons"
+          "status": "covered",
+          "how": "the wizard's own footer: Delete Time Off (primary, Ctrl+Enter) saves and closes it, Discard closes it without (shown in the e2e)"
         },
         {
           "feature": "Mark as Draft (invisible \"not can_reset or state not in (confirm, refuse)\")",
@@ -325,8 +331,8 @@
         },
         {
           "feature": "Status statusbar, statusbar_visible=\"confirm,validate\", invisible=\"not active\"",
-          "status": "approximated",
-          "how": "statusbar with visibleStates (To Submit, Refused and Second Approval show while current); the statusbar cannot be hidden — needs `invisible` on the sheet's statusbar"
+          "status": "covered",
+          "how": "statusbar with visibleStates (To Submit, Refused and Second Approval show while current) and invisible \"not active\": a cancelled request has none (shown in the e2e)"
         },
         {
           "feature": "Canceled ribbon (web_ribbon, invisible=\"active\")",
@@ -335,13 +341,13 @@
         },
         {
           "feature": "Timezone alert in three wordings by holiday_type, with the timezone field inside the sentence",
-          "status": "approximated",
-          "how": "three sheet alerts with Flectra's conditions; the (tz) value cannot sit inside an alert's words — needs field values in alert/text words"
+          "status": "covered",
+          "how": "three sheet alerts with Flectra's conditions, each ending with the timezone's value inside its words, ({tz})"
         },
         {
           "feature": "Title div: display_name (\"Salma Adel on Paid Time Off: 3.00 days (10/11/2026 - 10/13/2026)\"), shown once a type is chosen",
           "status": "approximated",
-          "how": "a read-only char at the head of the form with Flectra's condition; the sheet title would cut it (a read-only title is an input), and it is still cut at a phone's width"
+          "how": "a read-only char at the head of the form with Flectra's condition, drawn as words that wrap (readonlyShown text), so a phone no longer cuts it; it reads at the size of the fields, not as Flectra's title"
         },
         {
           "feature": "Mode (holiday_type, label \"Mode\"), Company / Employee Tag / Department by mode, each invisible, readonly and required by its condition",
@@ -350,8 +356,8 @@
         },
         {
           "feature": "Employee (many2one_avatar_user) shown once approved; Employees (many2many_tags_avatar) before",
-          "status": "approximated",
-          "how": "Flectra's conditions kept; avatars missing — needs a person's picture on a link and on tags"
+          "status": "covered",
+          "how": "Flectra's conditions kept; the link and the tags with avatar: true, the employees' faces from the data source (shown in the e2e)"
         },
         {
           "feature": "Time Off Type: domain \"requires_allocation = no OR (has_valid_allocation AND (allows_negative OR (virtual_remaining_leaves > 0 AND NOT allows_negative)))\"",
@@ -375,8 +381,8 @@
         },
         {
           "feature": "daterange widget: one box from → to, with a range picker",
-          "status": "approximated",
-          "how": "two date boxes side by side (twelfths 8/4) and an answer rule request_date_to >= request_date_from; needs a date range widget over two fields"
+          "status": "covered",
+          "how": "widget daterange on request_date_from with endField request_date_to: one box from → to with a range calendar, and the answer rule request_date_to >= request_date_from (shown in the e2e)"
         },
         {
           "feature": "Morning / Afternoon (request_date_from_period), invisible and required with Half Day",
@@ -410,8 +416,8 @@
         },
         {
           "feature": "Extra Hours Available (hr_holidays_attendance), float_time, green, invisible unless the type deducts overtime and there is some",
-          "status": "approximated",
-          "how": "float with the suffix \"hours\" (6.50, not 06:30) and Flectra's condition; needs a float_time (hh:mm) widget and a text tone"
+          "status": "covered",
+          "how": "widget duration with the suffix \"hours\" (06:30 hours), a success tone while there are some, and Flectra's condition (shown in the e2e)"
         },
         {
           "feature": "Description (text, placeholder \"Add a description...\")",
@@ -425,23 +431,25 @@
         },
         {
           "feature": "Warning \"You can only take this time off in whole days…\" at the foot of the sheet (alert-warning)",
-          "status": "approximated",
-          "how": "a note text with its condition; needs a tone on a body text or an alert placed in the body"
+          "status": "covered",
+          "how": "a text with style alert and tone warning at the foot of the sheet, on Flectra's condition"
         },
         {
           "feature": "Right column: the hr_leave_stats widget — the employee's time off this year by type, and the department's absences",
           "status": "approximated",
-          "how": "a read-only html field the app fills on each change, under the form rather than beside it; html keeps text structure only, so lines rather than its table; needs a slot the app fills with the form's values, or the two-column split"
+          "how": "a read-only html field the app fills on each change, under the form rather than beside it, in lines rather than its table",
+          "app": true,
+          "why": "hr_leave_stats is Flectra's own widget over the server's data: the employee's and the department's time off; the page shows what the app works out"
         },
         {
           "feature": "Two columns (col-md-6) for the form and the stats",
           "status": "approximated",
-          "how": "stacked: a twelfths split nested in a section that itself stacks at the form's medium width (the chatter beside it) cannot keep 7/5; laid flat instead so the dates row keeps its split"
+          "how": "stacked: a two-column split works (columns 2 at every width), but beside the chatter each half is about 370px, too narrow for the dates' one box with the labels beside them; laid flat, the stats under the form"
         },
         {
           "feature": "Attachment preview pane beside the form (o_attachment_preview)",
-          "status": "missing",
-          "needs": "needs a preview of the record's attachments beside the sheet"
+          "status": "covered",
+          "how": "attachmentPreview: the request's attachments from the data source — the doctor's note beside the sick leave, nothing beside a request with none (shown in the e2e)"
         },
         {
           "feature": "Approvers recorded (first_approver_id, second_approver_id), not on the form",
@@ -460,8 +468,8 @@
         },
         {
           "feature": "Help texts as a tooltip on the label",
-          "status": "approximated",
-          "how": "left out: Fieldia prints `help` under the field, which on a dense Flectra sheet doubles its height; needs `help` shown as a tooltip (a ? by the label) as an option"
+          "status": "covered",
+          "how": "look.helpShown \"tooltip\": each field's help behind a (?) by its label, as Flectra shows it, with Flectra's own help texts on the fields (shown in the e2e)"
         },
         {
           "feature": "Labels beside values in <group>s",
@@ -470,18 +478,20 @@
         },
         {
           "feature": "Conditions written with tuples: `state in ('a', 'b')`",
-          "status": "approximated",
-          "how": "refused by the parser (\"Expected closing parenthesis\") and written as lists `['a', 'b']`; Flectra's views use tuples throughout, and site/pages/format.mjs shows a tuple in its own example, so a pasted condition fails. Needs tuple literals in the expression language"
+          "status": "covered",
+          "how": "the page's conditions are written as Flectra writes them, with tuples — state in ('done', 'cancel') — read as lists"
         },
         {
           "feature": "Read-only fields shown as text",
-          "status": "approximated",
-          "how": "an empty read-only field draws empty, as Flectra's (no \"Search…\", no dd.mm.yyyy mask: shown in the e2e); but a read-only selection is a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+          "status": "covered",
+          "how": "look.readonlyShown \"text\": read-only values drawn as their words, as Flectra draws them — a choice by its label with no arrow, a date as written, a link by its name, long words wrapped, an empty one as nothing (shown in the e2e)"
         },
         {
           "feature": "Object buttons save the record first, run the method, then reload it",
           "status": "approximated",
-          "how": "steps: the method's effect (set steps, or a `call` the app answers with values), then `save`; the order differs (Flectra saves before the method) but the record ends the same"
+          "how": "steps run the method's effect (set steps, or a call the app answers with values), then save; a page can write Flectra's order — save, call, reload (or the app's reload: true) — where the app's server runs the method",
+          "app": true,
+          "why": "running the method on the server between the save and the reload is the app's; the demo's in-memory app answers a call with values instead"
         },
         {
           "feature": "A server refusal on save (ValidationError / UserError from constraints)",
@@ -490,13 +500,13 @@
         },
         {
           "feature": "Record menu (gear): Archive, Duplicate, Delete; record pager; breadcrumbs",
-          "status": "missing",
-          "needs": "Fieldia draws one record without the action menu, the 1/12 pager or breadcrumbs; needs a record toolbar the app can fill (Archive, Duplicate, Delete, Print) and a pager"
+          "status": "covered",
+          "how": "toolbar: the gear menu (Archive, Unarchive, Duplicate and Delete), the pager and the breadcrumbs, the list's records and the trail handed in by the app as the viewer's records and breadcrumbs options (shown in the e2e)"
         },
         {
           "feature": "groups= on fields, buttons and pages",
-          "status": "approximated",
-          "how": "Fieldia has no user groups: the page here is the one a manager sees; needs `groups`-like conditions on the person (e.g. a `user.groups` value in expressions) or the app handing a page per role"
+          "status": "covered",
+          "how": "roles [hr_holidays.group_hr_holidays_user] on Mode, Company, Employee Tag, Department, Employee, Employees and Validate, as hr_leave_view_form_manager gates them; the app hands the person and their roles in (user option) — without the group they are not shown (shown in the e2e)"
         }
       ],
       "summary": {

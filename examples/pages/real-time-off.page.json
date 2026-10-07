@@ -9,6 +9,8 @@
   },
   "maxWidth": "wide",
   "look": {
+    "helpShown": "tooltip",
+    "readonlyShown": "text",
     "labels": "beside",
     "labelWidth": 150
   },
@@ -79,6 +81,7 @@
     "holiday_type": {
       "type": "selection",
       "label": "Allocation Mode",
+      "help": "By Employee: Allocation/Request for individual Employee, By Employee Tag: Allocation/Request for group of employees in category",
       "required": true,
       "default": "employee",
       "options": [
@@ -160,6 +163,7 @@
     "category_id": {
       "type": "many2one",
       "label": "Employee Tag",
+      "help": "Category of Employee",
       "relation": "hr.employee.category"
     },
     "department_id": {
@@ -170,6 +174,7 @@
     "multi_employee": {
       "type": "boolean",
       "label": "Several employees",
+      "help": "Holds whether this allocation concerns more than 1 employee",
       "readonly": true
     },
     "employee_id": {
@@ -682,6 +687,7 @@
     "number_of_days_display": {
       "type": "float",
       "label": "Duration in days",
+      "help": "Number of days of the time off request according to your working schedule. Used for interface.",
       "readonly": true,
       "digits": [
         6,
@@ -691,6 +697,7 @@
     "number_of_hours_display": {
       "type": "float",
       "label": "Duration in hours",
+      "help": "Number of hours of the time off request according to your working schedule. Used for interface.",
       "readonly": true,
       "digits": [
         6,
@@ -739,12 +746,14 @@
     "first_approver_id": {
       "type": "many2one",
       "label": "First Approval",
+      "help": "This area is automatically filled by the user who validate the time off",
       "relation": "hr.employee",
       "readonly": true
     },
     "second_approver_id": {
       "type": "many2one",
       "label": "Second Approval",
+      "help": "This area is automatically filled by the user who validate the time off with second level (If time off type need second validation)",
       "relation": "hr.employee",
       "readonly": true
     },
@@ -762,7 +771,8 @@
       "visibleStates": [
         "confirm",
         "validate"
-      ]
+      ],
+      "invisible": "not active"
     },
     "ribbon": {
       "id": "ribbon-canceled",
@@ -774,19 +784,19 @@
       {
         "id": "tz-employee",
         "tone": "info",
-        "message": "The employee has a different timezone than yours! Here dates and times are displayed in the employee's timezone.",
+        "message": "The employee has a different timezone than yours! Here dates and times are displayed in the employee's timezone ({tz}).",
         "invisible": "not request_unit_hours or not tz_mismatch or holiday_type == 'category' or holiday_type != 'employee'"
       },
       {
         "id": "tz-department",
         "tone": "info",
-        "message": "The department's company has a different timezone than yours! Here dates and times are displayed in the company's timezone.",
+        "message": "The department's company has a different timezone than yours! Here dates and times are displayed in the company's timezone ({tz}).",
         "invisible": "not request_unit_hours or not tz_mismatch or holiday_type == 'category' or holiday_type != 'department'"
       },
       {
         "id": "tz-company",
         "tone": "info",
-        "message": "The company has a different timezone than yours! Here dates and times are displayed in the company's timezone.",
+        "message": "The company has a different timezone than yours! Here dates and times are displayed in the company's timezone ({tz}).",
         "invisible": "not request_unit_hours or not tz_mismatch or holiday_type == 'category' or holiday_type != 'company'"
       }
     ],
@@ -796,7 +806,7 @@
         "id": "action_confirm",
         "label": "Confirm",
         "style": "primary",
-        "invisible": "state != 'draft' or not active",
+        "invisible": "not id or state != 'draft' or not active",
         "steps": [
           {
             "do": "set",
@@ -867,13 +877,16 @@
           {
             "do": "save"
           }
+        ],
+        "roles": [
+          "hr_holidays.group_hr_holidays_user"
         ]
       },
       {
         "type": "button",
         "id": "action_refuse",
         "label": "Refuse",
-        "invisible": "not active or not can_approve or state not in ['confirm', 'validate1', 'validate']",
+        "invisible": "not active or not can_approve or state not in ('confirm', 'validate1', 'validate')",
         "steps": [
           {
             "do": "call",
@@ -916,7 +929,7 @@
         "type": "button",
         "id": "action_draft",
         "label": "Mark as Draft",
-        "invisible": "not can_reset or state not in ['confirm', 'refuse']",
+        "invisible": "not can_reset or state not in ('confirm', 'refuse')",
         "steps": [
           {
             "do": "set",
@@ -961,7 +974,10 @@
             "field": "holiday_type",
             "label": "Mode",
             "colspan": 12,
-            "readonly": "state not in ['confirm', 'draft']"
+            "readonly": "state not in ('confirm', 'draft')",
+            "roles": [
+              "hr_holidays.group_hr_holidays_user"
+            ]
           },
           {
             "type": "field",
@@ -970,8 +986,11 @@
             "label": "Company",
             "colspan": 12,
             "invisible": "holiday_type != 'company'",
-            "readonly": "state not in ['confirm', 'draft']",
-            "required": "holiday_type == 'company'"
+            "readonly": "state not in ('confirm', 'draft')",
+            "required": "holiday_type == 'company'",
+            "roles": [
+              "hr_holidays.group_hr_holidays_user"
+            ]
           },
           {
             "type": "field",
@@ -979,8 +998,11 @@
             "field": "category_id",
             "colspan": 12,
             "invisible": "holiday_type != 'category'",
-            "readonly": "state not in ['confirm', 'draft']",
-            "required": "holiday_type == 'category'"
+            "readonly": "state not in ('confirm', 'draft')",
+            "required": "holiday_type == 'category'",
+            "roles": [
+              "hr_holidays.group_hr_holidays_user"
+            ]
           },
           {
             "type": "field",
@@ -988,8 +1010,11 @@
             "field": "department_id",
             "colspan": 12,
             "invisible": "holiday_type != 'department'",
-            "readonly": "state in ['cancel', 'refuse', 'validate', 'validate1']",
-            "required": "holiday_type == 'department'"
+            "readonly": "state in ('cancel', 'refuse', 'validate', 'validate1')",
+            "required": "holiday_type == 'department'",
+            "roles": [
+              "hr_holidays.group_hr_holidays_user"
+            ]
           },
           {
             "type": "field",
@@ -997,7 +1022,13 @@
             "field": "employee_id",
             "colspan": 12,
             "invisible": "holiday_type != 'employee' or state != 'validate' or not employee_id",
-            "readonly": "state in ['cancel', 'refuse', 'validate', 'validate1']"
+            "readonly": "state in ('cancel', 'refuse', 'validate', 'validate1')",
+            "roles": [
+              "hr_holidays.group_hr_holidays_user"
+            ],
+            "options": {
+              "avatar": true
+            }
           },
           {
             "type": "field",
@@ -1006,8 +1037,14 @@
             "widget": "tags",
             "colspan": 12,
             "invisible": "holiday_type != 'employee' or (state == 'validate' and employee_id)",
-            "readonly": "state in ['cancel', 'refuse', 'validate', 'validate1']",
-            "required": "holiday_type == 'employee' and state in ['draft', 'cancel', 'refuse']"
+            "readonly": "state in ('cancel', 'refuse', 'validate', 'validate1')",
+            "required": "holiday_type == 'employee' and state in ('draft', 'cancel', 'refuse')",
+            "roles": [
+              "hr_holidays.group_hr_holidays_user"
+            ],
+            "options": {
+              "avatar": true
+            }
           },
           {
             "type": "field",
@@ -1017,7 +1054,7 @@
             "options": {
               "create": false
             },
-            "readonly": "state in ['cancel', 'refuse', 'validate', 'validate1']"
+            "readonly": "state in ('cancel', 'refuse', 'validate', 'validate1')"
           },
           {
             "type": "field",
@@ -1026,7 +1063,7 @@
             "label": "Date",
             "colspan": 8,
             "invisible": "not request_unit_half and not request_unit_hours",
-            "readonly": "state not in ['draft', 'confirm']"
+            "readonly": "state not in ('draft', 'confirm')"
           },
           {
             "type": "field",
@@ -1036,27 +1073,21 @@
             "colspan": 4,
             "invisible": "not request_unit_half",
             "required": "request_unit_half",
-            "readonly": "state not in ['draft', 'confirm']"
+            "readonly": "state not in ('draft', 'confirm')"
           },
           {
             "type": "field",
             "id": "f-dates-from",
             "field": "request_date_from",
             "label": "Dates",
-            "colspan": 8,
+            "colspan": 12,
             "invisible": "request_unit_half or request_unit_hours",
-            "readonly": "state not in ['draft', 'confirm']",
-            "required": "not date_from or not date_to"
-          },
-          {
-            "type": "field",
-            "id": "f-dates-to",
-            "field": "request_date_to",
-            "labels": "hidden",
-            "colspan": 4,
-            "invisible": "request_unit_half or request_unit_hours",
-            "readonly": "state not in ['draft', 'confirm']",
+            "readonly": "state not in ('draft', 'confirm')",
             "required": "not date_from or not date_to",
+            "widget": "daterange",
+            "options": {
+              "endField": "request_date_to"
+            },
             "validate": [
               {
                 "holds": "request_date_to >= request_date_from",
@@ -1070,7 +1101,7 @@
             "field": "request_unit_half",
             "colspan": 6,
             "invisible": "leave_type_request_unit == 'day'",
-            "readonly": "state not in ['draft', 'confirm']"
+            "readonly": "state not in ('draft', 'confirm')"
           },
           {
             "type": "field",
@@ -1078,7 +1109,7 @@
             "field": "request_unit_hours",
             "colspan": 6,
             "invisible": "leave_type_request_unit != 'hour'",
-            "readonly": "state not in ['draft', 'confirm']"
+            "readonly": "state not in ('draft', 'confirm')"
           },
           {
             "type": "field",
@@ -1135,7 +1166,14 @@
             "options": {
               "suffix": "hours"
             },
-            "invisible": "not employee_id or not overtime_deductible or employee_overtime <= 0"
+            "invisible": "not employee_id or not overtime_deductible or employee_overtime <= 0",
+            "widget": "duration",
+            "tones": [
+              {
+                "tone": "success",
+                "when": "employee_overtime > 0"
+              }
+            ]
           },
           {
             "type": "field",
@@ -1150,7 +1188,7 @@
             "field": "supported_attachment_ids",
             "label": "Supporting Document",
             "colspan": 12,
-            "invisible": "not leave_type_support_document or state not in ['draft', 'confirm', 'validate1']"
+            "invisible": "not leave_type_support_document or state not in ('draft', 'confirm', 'validate1')"
           }
         ]
       },
@@ -1173,15 +1211,39 @@
       {
         "type": "text",
         "id": "duration_warning",
-        "style": "note",
+        "style": "alert",
         "text": "You can only take this time off in whole days, so if your schedule has half days, it won't be used efficiently.",
-        "invisible": "not leave_type_increases_duration"
+        "invisible": "not leave_type_increases_duration",
+        "tone": "warning"
       }
     ],
     "sidePanel": {
       "type": "slot",
       "id": "chatter",
       "name": "chatter"
-    }
+    },
+    "toolbar": {
+      "menu": [
+        {
+          "id": "m-archive",
+          "builtin": "archive"
+        },
+        {
+          "id": "m-unarchive",
+          "builtin": "unarchive"
+        },
+        {
+          "id": "m-duplicate",
+          "builtin": "duplicate"
+        },
+        {
+          "id": "m-delete",
+          "builtin": "delete"
+        }
+      ],
+      "pager": true,
+      "breadcrumbs": true
+    },
+    "attachmentPreview": {}
   }
 }
