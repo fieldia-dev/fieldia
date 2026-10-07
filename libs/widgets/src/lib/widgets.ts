@@ -52,6 +52,7 @@ import { timerWidget } from './timer';
 import { embedWidget, pdfWidget } from './embed';
 import { distributionWidget } from './distribution';
 import { taxTotalsWidget } from './tax-totals';
+import { paymentsWidget } from './payments';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -637,6 +638,8 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'json.distribution': distributionWidget,
   // Untaxed amount, a line per tax group, the total, from a value the app works out: Flectra's tax_totals.
   'json.tax-totals': taxTotalsWidget,
+  // Each payment's date and amount, its details in a popover: Flectra's invoice_payments_widget.
+  'json.payments': paymentsWidget,
   selection: selectWidget,
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),

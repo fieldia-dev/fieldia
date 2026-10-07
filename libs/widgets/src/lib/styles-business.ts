@@ -87,4 +87,18 @@ export const BUSINESS_CSS = /* css */ `
 .fd-tax-totals .fd-tax-subtotal th { color: var(--fd-text); }
 .fd-tax-totals .fd-tax-total :is(th, td) { font-weight: 700; color: var(--fd-text); font-size: 15px; border-top: 1px solid var(--fd-border); padding-top: 6px; }
 .fd-tax-totals .fd-input { width: 9em; text-align: end; }
+/* Payments: each one's button, "Paid on …" and its amount; its details in a small box under it; the amount due in bold. */
+.fd-payments { display: grid; gap: 6px; justify-self: end; min-width: min(100%, 320px); font-variant-numeric: tabular-nums; }
+.fd-payments-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.fd-payment { position: relative; display: flex; align-items: center; gap: 8px; }
+.fd-payment-info { flex: none; width: 20px; height: 20px; padding: 0; border: 1px solid var(--fd-border-strong); border-radius: 50%; background: var(--fd-surface); color: var(--fd-muted); font: italic 600 12px/1 Georgia, serif; cursor: pointer; }
+.fd-payment-info:hover, .fd-payment-info[aria-expanded="true"] { color: var(--fd-accent); border-color: var(--fd-accent); }
+.fd-payment-date { flex: 1 1 auto; font-style: italic; color: var(--fd-muted); }
+.fd-payment-amount { white-space: nowrap; }
+.fd-payment-details { position: absolute; top: calc(100% + 4px); inset-inline-start: 0; z-index: 30; min-width: 240px; display: grid; gap: 6px; padding: 10px 12px; background: var(--fd-surface); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 6px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16); }
+.fd-payment-details dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; }
+.fd-payment-details dt { color: var(--fd-muted); }
+.fd-payment-details dd { margin: 0; }
+.fd-payment-open { justify-self: start; }
+.fd-payment-due { display: flex; justify-content: space-between; gap: 16px; padding-top: 6px; border-top: 1px solid var(--fd-border); font-weight: 600; }
 `;
