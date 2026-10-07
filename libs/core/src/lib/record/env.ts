@@ -16,13 +16,16 @@ export function builtIns(
   recordId: RecordId | null,
   user: { id: RecordId | null; name?: string; roles?: readonly string[] } | undefined,
   editing = true,
-  context: Readonly<Record<string, JsonValue>> = {}
+  context: Readonly<Record<string, JsonValue>> = {},
+  parent?: Record<string, unknown>
 ): Record<string, unknown> {
   const names: Record<string, unknown> = {
     id: recordId ?? null,
     user: { id: user?.id ?? null, name: user?.name ?? null, roles: [...(user?.roles ?? [])] },
     editing,
     context,
+    // A line's own form reads the record the line is on, as a line does.
+    ...(parent ? { parent } : {}),
   };
   for (const name of Object.keys(names)) if (name in fields) delete names[name];
   return names;
@@ -41,11 +44,13 @@ export interface About {
   editing?: boolean;
   /** The values the app passes in (the form's `context`). */
   context?: Readonly<Record<string, JsonValue>>;
+  /** For a line's own form: the record the line is on, as expressions read it. */
+  parent?: Record<string, unknown>;
 }
 
 /** The record as expressions read it: its values, its `id` and `user`. What a line reads as `parent`. */
 export function recordContext(values: Values, fields: Record<string, Field | LineField>, about: About): Record<string, unknown> {
-  return { ...builtIns(fields, about.recordId, about.user, about.editing, about.context), ...expressionContext(values, fields) };
+  return { ...builtIns(fields, about.recordId, about.user, about.editing, about.context, about.parent), ...expressionContext(values, fields) };
 }
 
 /**

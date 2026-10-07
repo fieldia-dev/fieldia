@@ -53,6 +53,8 @@ export interface TableShape {
   copy?: boolean | null;
   /** The order its lines load in, by their fields (`order`). */
   order?: { field: string; desc?: boolean }[] | null;
+  /** A line opens as a form of its own (`lineForm`): true lays one out of every line field, two columns, kept as it is when there is one; null takes it away. */
+  lineForm?: boolean | null;
 }
 
 export interface TableCommands {
@@ -272,6 +274,13 @@ export function tableCommands({ apply }: TableCommandsDeps): TableCommands {
           put(node, 'order', by.length ? by : undefined);
         }
         if (shape.lineOpens !== undefined) put(node, 'lineOpens', shape.lineOpens ?? undefined);
+        if (shape.lineForm !== undefined) {
+          if (!shape.lineForm) put(node, 'lineForm', undefined);
+          else if (!node.lineForm) {
+            const fields = Object.keys(def.fields).filter((name) => name !== def.sequenceField && name !== def.lineKinds?.field);
+            node.lineForm = { children: [{ type: 'section', id: freshId(draft, `${id}-form`), columns: 2, children: fields.map((name) => ({ type: 'field' as const, id: freshId(draft, `${id}-${name}`), field: name })) }] };
+          }
+        }
         if (shape.cards !== undefined) put(node, 'cards', shape.cards ?? undefined);
         if (shape.fit !== undefined) put(node, 'fit', shape.fit ?? undefined);
         if (shape.copy !== undefined) {

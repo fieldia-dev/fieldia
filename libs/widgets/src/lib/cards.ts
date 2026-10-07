@@ -1,7 +1,7 @@
 import type { Field, FieldNode, Line, LineField } from '@fieldia/core';
 import { announcer, describeState, fillIn, maker, wordsFor } from './kind-parts';
 import { moveLineTo } from './line-moves';
-import { lineForm } from './lines';
+import { lineForm, openLineDialog } from './lines';
 import { createWidget, type Widget, type WidgetFactory } from './widgets';
 
 /**
@@ -36,7 +36,7 @@ export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, docume
   const itemLabel = typeof options['itemLabel'] === 'string' && options['itemLabel'].trim() ? options['itemLabel'].trim() : null;
   const titleOf = (n: number) => (itemLabel ? `${itemLabel} ${n}` : fillIn(words.entry, { n }));
   // The fields that keep the lines' order or say what a line is are not asked for.
-  const names = (node.columns ?? Object.keys(def.fields)).filter((f) => def.fields[f] && f !== def.sequenceField && f !== def.lineKinds?.field);
+  const names = (node.columns ?? Object.keys(def.fields)).filter((f) => def.fields[f] && def.fields[f].type !== 'one2many' && f !== def.sequenceField && f !== def.lineKinds?.field);
 
   const list = make('div', { class: 'fd-repeat-list' });
   const addButton = make('button', { type: 'button', class: 'fd-button fd-repeat-add' }, typeof options['addLabel'] === 'string' && options['addLabel'] ? options['addLabel'] : words.addAnother);
@@ -70,8 +70,14 @@ export const cardsWidget: WidgetFactory = ({ form, name, field, node, id, docume
     };
     const at = () => lines().findIndex((l) => l.key === line.key);
     const tools = [tool('↑', 'moveUp', () => move(line.key, at() - 1)), tool('↓', 'moveDown', () => move(line.key, at() + 1)), tool('⧉', 'copy', () => copy(line.key))];
+    // Its own form (lineForm), its own page or every field (lineOpens), in a dialog — the card is named by its title, so ↗ need not repeat it.
+    const open = dialogs && (node.lineOpens || node.lineForm) ? make('button', { type: 'button', class: 'fd-repeat-tool fd-line-open', 'aria-label': words.openLine, title: words.openLine }, '↗') : null;
+    open?.addEventListener('click', () => {
+      const now = lines().find((l) => l.key === line.key);
+      if (now && dialogs) void openLineDialog(form, name, node, now, dialogs, readonly);
+    });
     const body = make('div', { class: 'fd-repeat-fields' });
-    const cardElement = make('div', { class: 'fd-repeat-card', role: 'group', 'aria-labelledby': titleId, 'data-line': line.key }, make('div', { class: 'fd-repeat-head' }, title, ...tools.map(([b]) => b), remove), body);
+    const cardElement = make('div', { class: 'fd-repeat-card', role: 'group', 'aria-labelledby': titleId, 'data-line': line.key }, make('div', { class: 'fd-repeat-head' }, title, ...tools.map(([b]) => b), ...(open ? [open] : []), remove), body);
     const fields = names.map((column) => {
       const sub = def.fields[column];
       const cellId = `${id}-${line.key}-${column}`;

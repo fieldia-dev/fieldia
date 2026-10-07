@@ -178,6 +178,17 @@ describe('a table’s own rules, in the panel', () => {
     expect(field(ar.row('Table'), 'ترتيب البنود حسب')).toBeDefined();
   });
 
+  it('opens a line in a form of its own, laid out of its fields, and takes it away', () => {
+    const { host, row, node } = screen('f-moves');
+    openTab(host, 'Layout');
+    choose(field(row('Table'), 'A line opens'), 'form');
+    expect(node('f-moves').lineForm).toEqual({ children: [{ type: 'section', id: 'f-moves-form-1', columns: 2, children: ['product', 'demand', 'quantity'].map((name) => ({ type: 'field', id: `f-moves-${name}-1`, field: name })) }] });
+    expect((field(row('Table'), 'A line opens') as HTMLSelectElement).value).toBe('form');
+    choose(field(row('Table'), 'A line opens'), 'record');
+    expect(node('f-moves')).toMatchObject({ lineOpens: 'record' });
+    expect(node('f-moves').lineForm).toBeUndefined();
+  });
+
   it('speaks Arabic', () => {
     const { host, row } = screen('f-moves', 'ar');
     openTab(host, 'القواعد');

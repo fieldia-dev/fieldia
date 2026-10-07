@@ -28,6 +28,20 @@ interface Scope {
   fields: Record<string, Field | LineField>;
   /** The one2many whose lines these are; none for the page's own fields. */
   lines?: string;
+  /** The fields of the record those lines are on, as `parent` reads them: the page's unless said. */
+  parent?: Record<string, Field | LineField>;
+}
+
+/**
+ * A page that is one line's form — a table's line opened in a form of its
+ * own (`lineForm`), its fields the line's: its conditions read the line, the
+ * record it is on as `parent`.
+ */
+export interface LineOf {
+  /** The table whose line it is, for what is said. */
+  name: string;
+  /** The fields of the record the line is on. */
+  parent: Record<string, Field | LineField>;
 }
 
 /** Names quoted and joined as a person lists them: "a", "b" and "c". */
@@ -46,16 +60,40 @@ export class ReferenceCheck {
   private readonly places = new Set<string>();
   private readonly goingTo: { target: string; path: string }[] = [];
 
-  constructor(private readonly page: Page) {}
+  constructor(
+    private readonly page: Page,
+    private readonly line?: LineOf
+  ) {}
 
   run(): PageIssue[] {
-    this.checkFields(this.page.fields, 'fields');
+    this.checkFields(this.page.fields, 'fields', this.line?.name, this.line?.parent);
     this.walkRoot(this.page.layout, 'layout');
     if (this.page.on) this.checkEvents(this.page.on, 'on');
+    this.checkGoingTo();
+    return this.issues;
+  }
+
+  /** Each step's goTo and show names a tab or a wizard step of this page. */
+  private checkGoingTo() {
     for (const { target, path } of this.goingTo) {
       if (!this.places.has(target)) this.report(path, `no tab or wizard step "${target}" on this page`);
     }
-    return this.issues;
+  }
+
+  /** Where the page's own expressions read: its fields — on a line's form, the line's, with its record as parent. */
+  private here(): Scope {
+    return this.line ? { fields: this.page.fields, lines: this.line.name, parent: this.line.parent } : { fields: this.page.fields };
+  }
+
+  /** A line's own form (`lineForm`), its parts checked against the line's fields, its record as parent. */
+  private checkLineForm(node: FieldNode, def: Extract<Field, { type: 'one2many' }>, path: string) {
+    const children = node.lineForm?.children;
+    if (!Array.isArray(children)) return this.report(`${path}.lineForm`, 'a line’s form holds its parts: { "children": [...] }');
+    const page = { ...this.page, fields: def.fields as Fields, layout: { type: 'sections', id: `${node.id}#line`, children }, on: undefined } as Page;
+    const inside = new ReferenceCheck(page, { name: node.field, parent: this.page.fields });
+    inside.walkChildren(children, `${path}.lineForm`);
+    inside.checkGoingTo();
+    this.issues.push(...inside.issues);
   }
 
   /** The form's moments: their steps checked, a change named by a field (or a saved form placed here, by its answers' name), a step or tab shown by its id. */
@@ -90,7 +128,7 @@ export class ReferenceCheck {
    * as an expression.
    */
   private checkSteps(steps: ActionStep[], path: string) {
-    const scope: Scope = { fields: this.page.fields };
+    const scope: Scope = this.here();
     steps.forEach((step, i) => {
       const at = `${path}[${i}]`;
       this.checkModifiers(step, at, ['when']);
@@ -186,13 +224,13 @@ export class ReferenceCheck {
       // The app's values: any name it passes in.
     } else if (scope.lines === undefined) {
       this.report(path, `"${name}": only a line's filter reads parent, the record it is on`);
-    } else if (!has(this.page.fields, part) && part !== 'id') {
+    } else if (!has(scope.parent ?? this.page.fields, part) && part !== 'id') {
       this.report(path, `"${name}": "${part}" is not a field of this page`);
     }
   }
 
   /** Every modifier on `owner` must read, and read only fields of this page (or of its line). */
-  private checkModifiers(owner: object, path: string, keys: readonly string[] = ['invisible'], scope: Scope = { fields: this.page.fields }) {
+  private checkModifiers(owner: object, path: string, keys: readonly string[] = ['invisible'], scope: Scope = this.here()) {
     for (const key of keys) {
       const value = (owner as Record<string, unknown>)[key];
       if (typeof value !== 'string') continue;
@@ -235,7 +273,7 @@ export class ReferenceCheck {
           const [root, part] = read.split('.');
           if (root !== name || part === undefined) continue;
           if (name === 'user' && !(USER_PARTS as readonly string[]).includes(part)) this.report(path, `"${source}" reads "${read}": the person has an id, name or roles`);
-          if (name === 'parent' && !has(this.page.fields, part) && !(BUILT_IN_NAMES as readonly string[]).includes(part)) this.report(path, `"${source}" reads "${read}": "${part}" is not a field of this page`);
+          if (name === 'parent' && !has(scope.parent ?? this.page.fields, part) && !(BUILT_IN_NAMES as readonly string[]).includes(part)) this.report(path, `"${source}" reads "${read}": "${part}" is not a field of this page`);
         }
         continue;
       }
@@ -297,25 +335,26 @@ export class ReferenceCheck {
     }
   }
 
-  private checkFields(fields: Fields | Record<string, LineField>, base: string, lines?: string) {
-    this.checkWorkedOut(fields, base, { fields, lines });
-    for (const [name, def] of Object.entries(fields)) {
+  private checkFields(fields: Fields | Record<string, LineField>, base: string, lines?: string, parent?: Record<string, Field | LineField>) {
+    const scope: Scope = { fields, lines, ...(parent ? { parent } : {}) };
+    this.checkWorkedOut(fields, base, scope);
+    for (const [name, def] of Object.entries(fields as Record<string, Field | LineField>)) {
       const path = `${base}.${name}`;
-      if (def.type === 'monetary' && def.currencyField !== undefined) this.checkCurrency(def.currencyField, `${path}.currencyField`, fields, lines);
+      if (def.type === 'monetary' && def.currencyField !== undefined) this.checkCurrency(def.currencyField, `${path}.currencyField`, fields, lines, parent);
       // A first value worked out, and what a record made from a link starts with: read where this field is.
-      if (def.defaultFrom !== undefined) this.checkExpression(def.defaultFrom, `${path}.defaultFrom`, { fields, lines });
+      if (def.defaultFrom !== undefined) this.checkExpression(def.defaultFrom, `${path}.defaultFrom`, scope);
       if ((def.type === 'many2one' || def.type === 'many2many') && def.createValues) {
-        for (const [key, source] of Object.entries(def.createValues)) this.checkExpression(source, `${path}.createValues.${key}`, { fields, lines });
+        for (const [key, source] of Object.entries(def.createValues)) this.checkExpression(source, `${path}.createValues.${key}`, scope);
       }
       // A new line's values: fields of its lines, read from the record.
       if (def.type === 'one2many' && def.lineDefaults) {
         for (const [key, source] of Object.entries(def.lineDefaults)) {
           if (!has(def.fields, key)) this.report(`${path}.lineDefaults.${key}`, `"${key}" is not a field of the lines of "${name}"`);
-          else this.checkExpression(source, `${path}.lineDefaults.${key}`, { fields: this.page.fields });
+          else this.checkExpression(source, `${path}.lineDefaults.${key}`, scope);
         }
       }
       if ((def.type === 'many2one' || def.type === 'many2many') && def.filter) {
-        def.filter.forEach((item, i) => this.checkFilterItem(item, `${path}.filter[${i}]`, { fields, lines }));
+        def.filter.forEach((item, i) => this.checkFilterItem(item, `${path}.filter[${i}]`, scope));
       }
       if (def.type === 'selection') def.optionsFrom?.dependsOn?.forEach((other, i) => this.need(other, `${path}.optionsFrom.dependsOn[${i}]`, fields));
       if (def.type === 'properties') def.definitionsFrom?.dependsOn?.forEach((other, i) => this.need(other, `${path}.definitionsFrom.dependsOn[${i}]`, fields));
@@ -330,8 +369,9 @@ export class ReferenceCheck {
         });
       }
       if (def.type === 'one2many') {
-        this.checkFields(def.fields, `${path}.fields`, name);
-        if (def.lineKinds) this.checkLineKinds(name, def.lineKinds, def.fields, `${path}.lineKinds`);
+        // Its lines read the record they are on — on a line, that line — as parent.
+        this.checkFields(def.fields, `${path}.fields`, name, fields);
+        if ('lineKinds' in def && def.lineKinds) this.checkLineKinds(name, def.lineKinds, def.fields, `${path}.lineKinds`);
         if (def.sequenceField !== undefined) {
           const sequence = def.fields[def.sequenceField];
           if (!sequence) this.report(`${path}.sequenceField`, `"${def.sequenceField}" is not a field of the lines of "${name}"`);
@@ -344,12 +384,12 @@ export class ReferenceCheck {
   }
 
   /** A money field's currency: a field beside it, or on a line `parent.` and a field of the record — one that holds a currency. */
-  private checkCurrency(name: string, path: string, fields: Record<string, Field | LineField>, lines: string | undefined) {
+  private checkCurrency(name: string, path: string, fields: Record<string, Field | LineField>, lines: string | undefined, parent: Record<string, Field | LineField> = this.page.fields) {
     let currency: Field | LineField | undefined;
     if (!name.startsWith('parent.')) currency = this.need(name, path, fields);
     else if (lines === undefined) return this.report(path, `"${name}": only a line’s money reads parent, the record it is on`);
-    else if (!has(this.page.fields, name.slice('parent.'.length))) return this.report(path, `"${name}": "${name.slice('parent.'.length)}" is not a field of this page`);
-    else currency = this.page.fields[name.slice('parent.'.length)];
+    else if (!has(parent, name.slice('parent.'.length))) return this.report(path, `"${name}": "${name.slice('parent.'.length)}" is not a field of this page`);
+    else currency = parent[name.slice('parent.'.length)];
     if (currency && !['many2one', 'selection', 'char'].includes(currency.type)) {
       this.report(path, `"${name}" is a ${currency.type}; a currency field must be a many2one, selection or char`);
     }
@@ -619,6 +659,11 @@ export class ReferenceCheck {
       if (def.type !== 'one2many') this.report(`${path}.order`, `order only applies to one2many fields; "${node.field}" is a ${def.type}`);
       else node.order.forEach((item, i) => !has(def.fields, item.field) && this.report(`${path}.order[${i}].field`, `"${item.field}" is not a field of the lines of "${node.field}"`));
     }
+    // A line's own form: its parts read the line's fields, the record as parent.
+    if (def && node.lineForm) {
+      if (def.type !== 'one2many') this.report(`${path}.lineForm`, `lineForm only applies to one2many fields; "${node.field}" is a ${def.type}`);
+      else this.checkLineForm(node, def, path);
+    }
     for (const key of ['lineOpens', 'cards', 'fit'] as const) {
       if (def && node[key] && def.type !== 'one2many') this.report(`${path}.${key}`, `${key} only applies to one2many fields; "${node.field}" is a ${def.type}`);
     }
@@ -670,7 +715,7 @@ export class ReferenceCheck {
         this.report(`${path}.optionalColumns`, `optional columns only apply to one2many fields; "${node.field}" is a ${def.type}`);
       } else {
         // The columns the table shows: those named, or every line field but the structural ones.
-        const shown = node.columns ?? Object.keys(def.fields).filter((c) => c !== def.lineKinds?.field && c !== def.sequenceField);
+        const shown = node.columns ?? Object.keys(def.fields).filter((c) => c !== ('lineKinds' in def ? def.lineKinds?.field : undefined) && c !== def.sequenceField);
         for (const column of Object.keys(node.optionalColumns)) {
           if (!shown.includes(column)) this.report(`${path}.optionalColumns.${column}`, `"${column}" is not a column of "${node.field}"`);
         }
@@ -681,6 +726,8 @@ export class ReferenceCheck {
       node.columns.forEach((column, i) => {
         if (!has(def.fields, column)) {
           this.report(`${path}.columns[${i}]`, `"${column}" is not a field of the lines of "${node.field}"`);
+        } else if (def.fields[column].type === 'one2many') {
+          this.report(`${path}.columns[${i}]`, `"${column}" holds lines of its own: they are edited in the line's form (lineForm), not drawn in its row`);
         }
       });
     } else if (def.type === 'many2many') {

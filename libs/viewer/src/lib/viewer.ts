@@ -212,7 +212,8 @@ let mounts = 0;
 export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHandle {
   const doc = host.ownerDocument;
   // The quick check of names and conditions: the full one, with its validation library, belongs where pages are made.
-  const checked = checkPage(options.page);
+  // A line's own form reads the record the line is on as parent.
+  const checked = checkPage(options.page, options.parent ? { parent: options.parent.fields } : {});
   if (!checked.ok) {
     throw new Error(`This page cannot be shown:\n${checked.issues.map((i) => `  ${i.path}: ${i.message}`).join('\n')}`);
   }

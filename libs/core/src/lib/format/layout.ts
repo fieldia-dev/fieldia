@@ -163,6 +163,14 @@ export interface FieldNode {
    */
   lineOpens?: 'fields' | 'record';
   /**
+   * For one2many: a line opened (↗) as a form of its own, laid out by these
+   * parts as a page's are — sections, columns, words, its fields by the
+   * line's names — its conditions read on the line, with its record as
+   * `parent`: Flectra's <form> inside a one2many. Its fields not placed
+   * are kept as they are.
+   */
+  lineForm?: LineForm;
+  /**
    * For one2many: its lines as cards, each column's label by its value — on a
    * narrow form (`narrow`, up to 520px: a phone, as Flectra's mode="tree,kanban"
    * there), or always.
@@ -197,6 +205,11 @@ export interface FieldNode {
   hideOn?: ScreenWidth[];
   readonly?: Modifier;
   required?: Modifier;
+}
+
+/** A table's line as a form of its own: its parts, as a page's. */
+export interface LineForm {
+  children: LayoutNode[];
 }
 
 /** Words in a field's empty box while a condition holds. */
@@ -838,6 +851,9 @@ export const FieldNodeSchema = z.strictObject({
     return z.array(ButtonNodeSchema).min(1).optional();
   },
   lineOpens: z.enum(['fields', 'record']).optional(),
+  get lineForm(): z.ZodOptional<typeof LineFormSchema> {
+    return LineFormSchema.optional();
+  },
   cards: z.enum(['narrow', 'always']).optional(),
   fit: z.enum(['content', 'shrink']).optional(),
   editMode: z.enum(['cell', 'row']).optional(),
@@ -851,6 +867,14 @@ export const FieldNodeSchema = z.strictObject({
   readonly: ModifierSchema.optional(),
   required: ModifierSchema.optional(),
 });
+
+export const LineFormSchema = z
+  .strictObject({
+    get children(): z.ZodArray<typeof LayoutNodeSchema> {
+      return z.array(LayoutNodeSchema).min(1);
+    },
+  })
+  .meta({ id: 'LineForm' });
 
 export const ButtonNodeSchema = z.strictObject({
   type: z.literal('button'),

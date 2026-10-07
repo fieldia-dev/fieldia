@@ -51,6 +51,8 @@ export const tables = {
   lineOpens: 'A line opens',
   opensFields: 'Its fields',
   opensRecord: 'Its own page',
+  /** A form of its own, laid out of its fields: Flectra's form inside a one2many. */
+  opensForm: 'A form of its own',
   onAPhone: 'On a phone',
   rows: 'Rows',
   cardsOnPhone: 'Cards',

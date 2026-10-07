@@ -88,7 +88,17 @@ export async function openLineDialog(form: Form, name: string, node: FieldNode, 
       .map(([key, sub]) => [key, ownCurrency(sub, form.getState().values)])
   ) as Record<string, Field>;
   // The dialog shows what the onchange makes of the line as it is edited; the line itself waits for Save & Close.
-  const values = await dialogs.editValues({ title: def.label, fields, values: line.values, readonly, recompute: (edited) => form.previewLine(name, line.key, edited) });
+  // Laid out by the table's lineForm when it has one, its conditions reading the line, its record as parent.
+  const state = form.getState();
+  const values = await dialogs.editValues({
+    title: def.label,
+    fields,
+    values: line.values,
+    readonly,
+    recompute: (edited) => form.previewLine(name, line.key, edited),
+    parent: { values: state.values, fields: form.page.fields, id: state.recordId },
+    ...(node.lineForm ? { layout: node.lineForm.children } : {}),
+  });
   // Written in one go, so the form recalculates once.
   if (values) write(values);
 }
@@ -107,7 +117,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   // The table's own rules, read by the form line by line; a table with none asks nothing.
   const ruled = !!(node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons || node.lineDelete !== undefined);
   const columns = (node.columns ?? Object.keys(def.fields)).filter(
-    (column) => def.fields[column] && column !== kinds?.field && column !== def.sequenceField && node.optionalColumns?.[column] !== 'hide'
+    // Lines a line holds are edited in its form, never drawn in its row.
+    (column) => def.fields[column] && def.fields[column].type !== 'one2many' && column !== kinds?.field && column !== def.sequenceField && node.optionalColumns?.[column] !== 'hide'
   );
   const element = document.createElement('div');
   element.className = 'fd-lines';
@@ -378,8 +389,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
       rows.get(made)?.cells[0]?.widget.focus();
     });
     if (copy) tools.append(copy);
-    // Its own page, or its every field, in a dialog (lineOpens).
-    if (node.lineOpens && dialogs && !kind) {
+    // Its own page, its own form (lineForm), or its every field, in a dialog (lineOpens).
+    if ((node.lineOpens || node.lineForm) && dialogs && !kind) {
       const open = make('button', { type: 'button', class: 'fd-line-open', 'aria-label': labels.openLine, title: labels.openLine }, '↗') as HTMLButtonElement;
       open.addEventListener('click', () => {
         const now = current().find((l) => l.key === line.key);

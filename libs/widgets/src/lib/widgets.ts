@@ -3,7 +3,9 @@ import type {
   FieldNode,
   FileValue,
   Form,
+  LayoutNode,
   Line,
+  LineField,
   Locale,
   RecordId,
   ReferenceValue,
@@ -95,7 +97,17 @@ export interface WidgetDialogs {
    * Values edited in a form made of these fields. Resolves with the new values,
    * or null. `recompute` recalculates them as they change, as a line's onchange.
    */
-  editValues(request: { title: string; fields: Record<string, Field>; values: Values; readonly?: boolean; recompute?: (values: Values) => Promise<Values> }): Promise<Values | null>;
+  editValues(request: {
+    title: string;
+    fields: Record<string, Field>;
+    values: Values;
+    readonly?: boolean;
+    recompute?: (values: Values) => Promise<Values>;
+    /** How the form is laid out (a table's `lineForm`): its parts, as a page's; every field in two columns when left out. */
+    layout?: LayoutNode[];
+    /** The record the values are a line of, read by the form's conditions and filters as `parent`. */
+    parent?: { values: Readonly<Values>; fields: Readonly<Record<string, Field | LineField>>; id?: RecordId | null };
+  }): Promise<Values | null>;
 }
 
 export interface WidgetState {

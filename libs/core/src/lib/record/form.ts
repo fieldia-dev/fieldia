@@ -175,6 +175,13 @@ export interface FormOptions {
    * them, and a page's field of that name comes first.
    */
   context?: Readonly<Record<string, JsonValue>>;
+  /**
+   * The record this form's values are a line of, when the form edits one
+   * table's line in a form of its own (a node's `lineForm`): its values and
+   * fields, read by conditions and filters as `parent`, as a line's are —
+   * `parent.state`, a filter's `valueFrom: "parent.company_id"`.
+   */
+  parent?: { values: Readonly<Values>; fields: Readonly<Record<string, Field | LineField>>; id?: RecordId | null };
 }
 
 /** The person using a form, as the app knows them. */
@@ -425,7 +432,9 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   // The record's id and the person, as worked-out values read them: the id is the one asked for until the form has its state.
   let started = false;
   let editing = options.editing !== false;
-  const about = () => ({ recordId: started ? state.recordId : (options.recordId ?? null), user: options.user, editing, context: options.context });
+  /** The record a line's form is of, as its conditions read it: worked out once. */
+  const parentContext = options.parent ? recordContext(options.parent.values as Values, options.parent.fields, { recordId: options.parent.id ?? null, user: options.user, context: options.context }) : undefined;
+  const about = () => ({ recordId: started ? state.recordId : (options.recordId ?? null), user: options.user, editing, context: options.context, parent: parentContext });
   const computed = compileComputed(page, today, about);
   const setWhen = compileSetWhen(page, today, about);
   /** The saved forms placed on the page, by the part's id: each one's answers sit under its name, as JSON. */
@@ -444,7 +453,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   function startingValues(isNew = options.recordId == null, given = true): Values {
     const values = initialValues(fields, today());
     if (isNew) {
-      const about = { recordId: null, user: options.user, context: options.context };
+      const about = { recordId: null, user: options.user, context: options.context, parent: parentContext };
       Object.assign(values, firstValues(page.fields, mapScope(values, page.fields, recordContext(values, page.fields, about), expressionEnv(values, page.fields, today))));
     }
     return given ? ordered({ ...values, ...structuredCopy(options.values ?? {}) }) : values;
@@ -1042,8 +1051,10 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
 
   function addLine(field: string, values: Values, by: ChangeBy): string {
     const def = lineField(field);
-    const key = `new-${++lineKeys}`;
     const current = (state.values[field] as Line[] | null) ?? [];
+    // A key no line holds: lines given (a line's own lines, back from its form) may hold new-… keys already.
+    let key = `new-${++lineKeys}`;
+    while (current.some((line) => line.key === key)) key = `new-${++lineKeys}`;
     // Each line field's default, then what is worked out from its defaultFrom, then the record's lineDefaults, then what the line is given.
     const lineFields = def.fields as Record<string, LineField>;
     const start = initialValues(lineFields, today());

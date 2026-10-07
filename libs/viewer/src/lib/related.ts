@@ -1,4 +1,4 @@
-import type { CreateRequest, DataSource, Field, Page, SearchRequest, Tone } from '@fieldia/core';
+import type { CreateRequest, DataSource, Field, LayoutNode, Page, SearchRequest, Tone } from '@fieldia/core';
 import type { WidgetDialogs } from '@fieldia/widgets';
 import { openFormDialog, openSearchDialog } from './dialog';
 import type { ViewerOptions } from './viewer';
@@ -12,8 +12,8 @@ export function nameFieldOf(page: Page): string | null {
 
 
 
-/** A form made of fields, for values edited in a dialog (a line, for one). */
-function valuesPage(fields: Record<string, Field>, title: string, readonly: boolean): Page {
+/** A form made of fields, for values edited in a dialog (a line, for one): laid out as asked (a line's own form), else every field in two columns. */
+function valuesPage(fields: Record<string, Field>, title: string, readonly: boolean, layout?: LayoutNode[]): Page {
   const shown = Object.fromEntries(Object.entries(fields).map(([name, def]) => [name, readonly ? { ...def, readonly: true } : def])) as Page['fields'];
   return {
     fieldia: '0.1',
@@ -24,7 +24,7 @@ function valuesPage(fields: Record<string, Field>, title: string, readonly: bool
     layout: {
       type: 'sections',
       id: 'values',
-      children: [{ type: 'section', id: 'values-section', columns: 2, children: Object.keys(shown).map((name) => ({ type: 'field' as const, id: `values-${name}`, field: name })) }],
+      children: layout ?? [{ type: 'section', id: 'values-section', columns: 2, children: Object.keys(shown).map((name) => ({ type: 'field' as const, id: `values-${name}`, field: name })) }],
     },
   };
 }
@@ -110,7 +110,8 @@ export function pageDialogs(options: ViewerOptions, say?: (message: string, tone
     async editValues(request) {
       const result = await openFormDialog({
         ...shared,
-        page: valuesPage(request.fields, request.title, request.readonly === true),
+        page: valuesPage(request.fields, request.title, request.readonly === true, request.layout),
+        ...(request.parent ? { parent: request.parent } : {}),
         dataSource: lookupsOf(options.dataSource),
         values: request.values,
         title: request.title,

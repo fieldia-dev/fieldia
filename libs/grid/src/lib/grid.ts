@@ -653,7 +653,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const kinds = def.lineKinds;
   const sequence = def.sequenceField;
   // The fields that say what a line is and keep the lines' order never show as columns.
-  const columns = (node.columns ?? Object.keys(def.fields)).filter((column) => def.fields[column] && column !== kinds?.field && column !== sequence);
+  // Lines a line holds are edited in its form, never drawn in its row.
+  const columns = (node.columns ?? Object.keys(def.fields)).filter((column) => def.fields[column] && def.fields[column].type !== 'one2many' && column !== kinds?.field && column !== sequence);
   const kindOf = (line: Line | undefined) => (line ? lineKind(def, line.values) : null);
   // Its columns run the way the page reads; a column held at the start or the end of the line is held at that side.
   const rtl = !!locale && isRightToLeft(locale);

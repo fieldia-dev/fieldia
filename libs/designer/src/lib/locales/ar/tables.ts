@@ -43,6 +43,7 @@ export const tables: DesignerWords['tables'] = {
   lineOpens: 'يفتح البند',
   opensFields: 'حقوله',
   opensRecord: 'صفحته',
+  opensForm: 'نموذج خاص به',
   onAPhone: 'على الهاتف',
   rows: 'صفوف',
   cardsOnPhone: 'بطاقات',

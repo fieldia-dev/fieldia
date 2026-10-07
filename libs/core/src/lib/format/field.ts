@@ -334,11 +334,36 @@ const Matrix = z
   })
   .strict();
 
-/** A field of a one2many's lines. Lines cannot hold lines of their own. */
-export const LineFieldSchema = z
+/** A field of the lines a line holds: any line field but more lines. */
+const InnerLineFieldSchema = z
   .discriminatedUnion('type', [
     Char, Text, Html, Integer, Float, Monetary, BooleanField, DateField, DateTime,
     LineSelection, Binary, Image, Many2one, Many2many, Reference, Properties, Json,
+  ])
+  .meta({ id: 'InnerLineField' });
+
+/**
+ * Lines a line holds, one level down — a survey question's answers: edited
+ * in the line's own form (its node's `lineForm`), never drawn inside the
+ * table's row, and kept in the line's values as its list of lines.
+ */
+const LineOne2many = z
+  .object({
+    type: z.literal('one2many'),
+    ...common,
+    relation,
+    fields: z.record(z.string().regex(FIELD_NAME), InnerLineFieldSchema),
+    sequenceField: z.string().regex(FIELD_NAME).optional(),
+    /** What a new inner line starts with: each of its fields from an expression over the line that holds it. */
+    lineDefaults: valueMap.optional(),
+  })
+  .strict();
+
+/** A field of a one2many's lines; lines may hold lines of their own, one level down. */
+export const LineFieldSchema = z
+  .discriminatedUnion('type', [
+    Char, Text, Html, Integer, Float, Monetary, BooleanField, DateField, DateTime,
+    LineSelection, Binary, Image, Many2one, Many2many, Reference, Properties, Json, LineOne2many,
   ])
   .meta({ id: 'LineField' });
 

@@ -234,7 +234,10 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
     box.addEventListener('change', () => change(box.value));
     return box;
   };
-  const opens = select(w.lineOpens, [['', w.opensFields], ['record', w.opensRecord]], (value) => designer.setTableShape(id, { lineOpens: value ? 'record' : null }));
+  // Its fields, a form of its own laid out of them (lineForm, arranged in the page's JSON), or its own page.
+  const opens = select(w.lineOpens, [['', w.opensFields], ['form', w.opensForm], ['record', w.opensRecord]], (value) =>
+    designer.setTableShape(id, { lineOpens: value === 'record' ? 'record' : null, lineForm: value === 'form' ? true : null })
+  );
   const phone = select(w.onAPhone, [['', w.rows], ['narrow', w.cardsOnPhone], ['always', w.cardsAlways]], (value) => designer.setTableShape(id, { cards: (value || null) as 'narrow' | 'always' | null }));
   const fit = select(w.columnWidths, [['', w.shareWidth], ['content', w.fitContent], ['shrink', w.shrinkToFit]], (value) => designer.setTableShape(id, { fit: (value || null) as 'content' | 'shrink' | null }));
   // The order lines load in: their fields' names, apart by commas, "desc" after one turning it round.
@@ -299,7 +302,7 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
         }
         drawColumn();
         for (const place of buttonPlaces) place.draw();
-        opens.value = node.lineOpens === 'record' ? 'record' : '';
+        opens.value = node.lineOpens === 'record' ? 'record' : node.lineForm ? 'form' : '';
         phone.value = node.cards ?? '';
         fit.value = node.fit ?? '';
         copy.checked = node.options?.['copy'] === true;
