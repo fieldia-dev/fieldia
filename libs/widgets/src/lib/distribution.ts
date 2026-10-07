@@ -28,7 +28,7 @@ const sharesOf = (value: Value | undefined): [string, number][] =>
   value && typeof value === 'object' && !Array.isArray(value) ? Object.entries(value as Record<string, unknown>).map(([key, share]) => [key, typeof share === 'number' ? share : Number(share) || 0]) : [];
 
 export const distributionWidget: WidgetFactory = (context) => {
-  const { form, name, field, node, id, document, labels, locale = 'en' } = context;
+  const { form, name, node, id, document, labels, locale = 'en' } = context;
   const make = maker(document);
   const words = wordsFor(labels, locale);
   const model = typeof node.options?.['model'] === 'string' ? (node.options['model'] as string) : 'account.analytic.account';
