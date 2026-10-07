@@ -50,6 +50,8 @@ export interface Messages {
   dateFuture: string;
   /** A rule across fields that does not hold, when it says nothing of its own. */
   holds: string;
+  /** A column of a table's lines with one value on two lines: `{column}` its label, `{value}` the value. */
+  distinct: string;
   /** Joins the last two items of a list: "PDF or image". */
   or: string;
   /** A tick box that must be ticked to go on, as an "I agree" box. */
@@ -111,6 +113,7 @@ const en: Messages = {
   datePast: '{label} must be in the past',
   dateFuture: '{label} must be in the future',
   holds: '{label} does not agree with the other answers',
+  distinct: '{column}: {value} is on more than one line of {label}',
   or: 'or',
   tick: 'Tick this box to go on',
   email: 'Enter an email address, like name@example.com',

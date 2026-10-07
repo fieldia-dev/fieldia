@@ -518,6 +518,11 @@ export class ReferenceCheck {
     node.validate?.forEach((rule, i) => {
       const at = `${path}.validate[${i}]`;
       this.checkModifiers(rule, at, ['when', 'holds']);
+      // No value twice in a column: a column of this table's lines.
+      if (rule.distinct !== undefined && def) {
+        if (def.type !== 'one2many') this.report(`${at}.distinct`, `distinct is for a table of lines; "${node.field}" is a ${def.type}`);
+        else if (!has(def.fields, rule.distinct)) this.report(`${at}.distinct`, `"${rule.distinct}" is not a field of the lines of "${node.field}"`);
+      }
       if (rule.pattern === undefined) return;
       try {
         new RegExp(rule.pattern);

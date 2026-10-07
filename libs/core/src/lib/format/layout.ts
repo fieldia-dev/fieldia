@@ -53,6 +53,12 @@ export interface AnswerRule {
   atMost?: number;
   date?: 'past' | 'future';
   /**
+   * For a table of lines: a column no two of its lines may share a value in,
+   * as a model's constraint would refuse it — a split's payers, each once.
+   * Empty cells and the sections and notes between lines are left out.
+   */
+  distinct?: string;
+  /**
    * An expression the answers must keep together, such as `end_date >=
    * start_date` or `paid <= total`: broken when it is false. Checked once
    * every field it reads is filled in.
@@ -537,14 +543,15 @@ export const AnswerRuleSchema = z
     atLeast: z.int().min(0).optional(),
     atMost: z.int().min(1).optional(),
     date: z.enum(['past', 'future']).optional(),
+    distinct: fieldName.optional(),
     holds: z.string().min(1).optional(),
     when: ModifierSchema.optional(),
     message: z.string().optional(),
     level: z.enum(['error', 'warning']).optional(),
   })
   .refine(
-    (r) => ['minLength', 'maxLength', 'pattern', 'endsWith', 'min', 'max', 'atLeast', 'atMost', 'date', 'holds'].some((k) => r[k as keyof typeof r] !== undefined),
-    { message: 'an answer rule asks for something: a length, a pattern, an ending, a range, a count, a date or an expression that holds' }
+    (r) => ['minLength', 'maxLength', 'pattern', 'endsWith', 'min', 'max', 'atLeast', 'atMost', 'date', 'distinct', 'holds'].some((k) => r[k as keyof typeof r] !== undefined),
+    { message: 'an answer rule asks for something: a length, a pattern, an ending, a range, a count, a date, a column with no value twice or an expression that holds' }
   )
   .meta({ id: 'AnswerRule' });
 
