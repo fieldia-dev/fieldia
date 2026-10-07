@@ -217,6 +217,20 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'reading',
+    name: 'A sheet that reads like Flectra',
+    category: 'records',
+    query: 'page=reading&skin=underline&editSwitch=1',
+    blurb: 'A dense invoice as an ERP draws it: read-only values as words, stat buttons with money, hours and two values, a customer with the address under it, coloured tags, parts on one line, alerts holding a date, keys on buttons and ribbons by condition.',
+    howTo: [
+      'Hold Alt: each header button shows its key. Alt+Shift+G sets the invoice back to Draft, Alt+V confirms it.',
+      'Read the alerts: the lock date and the customer sit inside their words, and the duplicate alert has a button inside.',
+      'Press Done: the parts for editing only — Add Credit Note, the note under the tags — go, and every field reads as words.',
+      'Click Draft on the statusbar: the time spent in each step shows on it, and Confirm takes the place of Send & Print.',
+      'Open the Trust tab: an alert sits among its fields, with the amount inside its sentence.',
+    ],
+  },
+  {
     id: 'customers-arabic',
     name: 'Customer list, right to left',
     category: 'lists',

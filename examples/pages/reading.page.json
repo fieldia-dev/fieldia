@@ -2,12 +2,36 @@
   "fieldia": "0.1",
   "id": "reading",
   "title": "Invoice",
-  "data": { "kind": "record", "model": "invoice" },
+  "data": { "kind": "record", "model": "reading.invoice" },
   "look": { "readonlyShown": "text" },
   "fields": {
     "name": { "type": "char", "label": "Number", "readonly": true },
-    "partner_id": { "type": "many2one", "label": "Customer", "relation": "partner" },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        { "value": "draft", "label": "Draft" },
+        { "value": "posted", "label": "Posted" },
+        { "value": "cancel", "label": "Cancelled" }
+      ],
+      "default": "draft"
+    },
+    "state_times": { "type": "json", "label": "Time in each status" },
+    "active": { "type": "boolean", "label": "Active", "default": true },
+    "partner_id": { "type": "many2one", "label": "Customer", "relation": "reading.partner" },
+    "user_id": { "type": "many2one", "label": "Salesperson", "relation": "reading.user" },
+    "tag_ids": { "type": "many2many", "label": "Tags", "relation": "reading.tag" },
     "invoice_date": { "type": "date", "label": "Invoice date" },
+    "invoice_date_due": { "type": "date", "label": "Due date" },
+    "payment_term": {
+      "type": "selection",
+      "label": "Payment terms",
+      "options": [
+        { "value": "now", "label": "Immediate payment" },
+        { "value": "30", "label": "30 days" },
+        { "value": "60", "label": "60 days" }
+      ]
+    },
     "payment_state": {
       "type": "selection",
       "label": "Payment state",
@@ -15,7 +39,8 @@
       "options": [
         { "value": "not_paid", "label": "Not paid" },
         { "value": "partial", "label": "Partially paid" },
-        { "value": "paid", "label": "Paid" }
+        { "value": "paid", "label": "Paid" },
+        { "value": "reversed", "label": "Reversed" }
       ]
     },
     "risk": {
@@ -29,27 +54,90 @@
       ]
     },
     "currency_id": { "type": "many2one", "label": "Currency", "relation": "currency" },
+    "pricelist_id": { "type": "many2one", "label": "Pricelist", "relation": "reading.pricelist" },
     "amount_total": { "type": "monetary", "label": "Total", "currencyField": "currency_id", "readonly": true },
+    "amount_paid": { "type": "monetary", "label": "Paid", "currencyField": "currency_id", "readonly": true },
+    "hours": { "type": "float", "label": "Hours", "digits": [16, 2], "readonly": true },
+    "incoming": { "type": "integer", "label": "In", "readonly": true },
+    "outgoing": { "type": "integer", "label": "Out", "readonly": true },
+    "days_left": { "type": "float", "label": "Days left", "digits": [16, 1], "readonly": true },
+    "days_allowed": { "type": "float", "label": "Days allowed", "digits": [16, 0], "readonly": true },
+    "next_meeting": { "type": "date", "label": "Meeting", "readonly": true },
+    "meeting_label": { "type": "char", "label": "Meeting words", "readonly": true },
+    "lock_date": { "type": "date", "label": "Tax lock date", "readonly": true },
+    "credit_warning": { "type": "char", "label": "Credit warning", "readonly": true },
+    "duplicate": { "type": "boolean", "label": "May be a duplicate", "readonly": true },
+    "outcome": {
+      "type": "selection",
+      "label": "Outcome",
+      "readonly": true,
+      "options": [
+        { "value": "won", "label": "Won" },
+        { "value": "settled", "label": "Settled" }
+      ]
+    },
+    "legacy": { "type": "boolean", "label": "Made in the old app", "readonly": true },
+    "trust_minimum": { "type": "monetary", "label": "Top-up needed", "currencyField": "currency_id", "readonly": true },
     "narration": { "type": "text", "label": "Terms and conditions" }
   },
   "layout": {
     "type": "sheet",
     "id": "invoice",
-    "title": { "field": "name" },
+    "title": { "field": "name", "label": "Customer Invoice" },
+    "statusbar": {
+      "field": "state",
+      "visibleStates": ["draft", "posted"],
+      "clickable": true,
+      "durationsField": "state_times",
+      "invisible": "not active"
+    },
+    "buttons": [
+      { "type": "button", "id": "b-confirm", "label": "Confirm", "style": "primary", "hotkey": "v", "action": "action_post", "invisible": "state != 'draft'" },
+      { "type": "button", "id": "b-send", "label": "Send & Print", "hotkey": "y", "action": "action_send", "invisible": "state != 'posted'" },
+      { "type": "button", "id": "b-draft", "label": "Reset to Draft", "hotkey": "shift+g", "action": "button_draft", "invisible": "state == 'draft'" },
+      { "type": "button", "id": "b-credit", "label": "Add Credit Note", "hotkey": "q", "action": "action_reverse", "invisible": "not editing or state != 'posted'" }
+    ],
+    "statButtons": [
+      { "id": "s-paid", "label": "Paid", "field": "amount_paid", "icon": "money", "action": "open_payments" },
+      { "id": "s-hours", "label": "Hours", "field": "hours", "unit": "h", "icon": "clock", "action": "open_timesheets" },
+      { "id": "s-meeting", "label": "No Meeting", "labelField": "meeting_label", "field": "next_meeting", "icon": "calendar", "action": "open_meetings" },
+      { "id": "s-moves", "label": "In", "field": "incoming", "secondField": "outgoing", "secondLabel": "Out", "icon": "list", "action": "open_moves" },
+      { "id": "s-time-off", "label": "Time Off", "field": "days_left", "secondField": "days_allowed", "unit": "Days", "icon": "calendar", "action": "open_time_off" }
+    ],
+    "ribbon": { "id": "r-legacy", "label": "Legacy", "tooltip": "Made in the old invoicing app", "tone": "muted", "invisible": "not legacy" },
+    "ribbons": [
+      { "id": "r-paid", "label": "Paid", "tone": "success", "invisible": "payment_state != 'paid'" },
+      { "id": "r-reversed", "label": "Reversed", "tone": "danger", "invisible": "payment_state != 'reversed'" },
+      { "id": "r-outcome", "label": "Closed", "labelField": "outcome", "tone": "info", "invisible": "not outcome" }
+    ],
+    "alerts": [
+      { "id": "a-lock", "message": "Entries dated before {lock_date} cannot be posted: that is the tax lock date.", "tone": "warning", "invisible": "not lock_date" },
+      { "id": "a-credit", "message": "", "messageField": "credit_warning", "tone": "danger", "invisible": "not credit_warning" },
+      {
+        "id": "a-duplicate",
+        "message": "This invoice may be a duplicate of another one for {partner_id}.",
+        "tone": "info",
+        "invisible": "not duplicate",
+        "buttons": [{ "type": "button", "id": "b-see-duplicate", "label": "See the other invoice", "action": "open_duplicate" }]
+      }
+    ],
     "children": [
       {
         "type": "section",
         "id": "head",
         "columns": 2,
         "style": "plain",
+        "labels": "beside",
         "children": [
           {
             "type": "section",
             "id": "head-start",
             "style": "plain",
             "children": [
-              { "type": "field", "id": "f-partner", "field": "partner_id" },
-              { "type": "field", "id": "f-date", "field": "invoice_date" }
+              { "type": "field", "id": "f-partner", "field": "partner_id", "options": { "details": true } },
+              { "type": "field", "id": "f-user", "field": "user_id", "options": { "avatar": true, "open": false } },
+              { "type": "field", "id": "f-tags", "field": "tag_ids", "options": { "colors": true } },
+              { "type": "text", "id": "t-edit-only", "text": "Changing the customer sets its pricelist and payment terms again.", "style": "note", "invisible": "not editing" }
             ]
           },
           {
@@ -57,6 +145,28 @@
             "id": "head-end",
             "style": "plain",
             "children": [
+              { "type": "field", "id": "f-date", "field": "invoice_date" },
+              {
+                "type": "section",
+                "id": "l-due",
+                "title": "Due date",
+                "style": "inline",
+                "children": [
+                  { "type": "field", "id": "f-due", "field": "invoice_date_due", "invisible": "payment_term" },
+                  { "type": "text", "id": "t-or", "text": "or", "invisible": "payment_term or invoice_date_due" },
+                  { "type": "field", "id": "f-term", "field": "payment_term", "invisible": "invoice_date_due" }
+                ]
+              },
+              {
+                "type": "section",
+                "id": "l-pricelist",
+                "title": "Pricelist",
+                "style": "inline",
+                "children": [
+                  { "type": "field", "id": "f-pricelist", "field": "pricelist_id" },
+                  { "type": "button", "id": "b-update-prices", "label": "Update prices", "style": "link", "action": "update_prices", "confirm": "Update every line’s price from this pricelist?" }
+                ]
+              },
               { "type": "field", "id": "f-payment", "field": "payment_state" },
               { "type": "field", "id": "f-risk", "field": "risk", "widget": "badge", "options": { "tones": { "high": "danger", "medium": "warning", "low": "success" } } },
               { "type": "field", "id": "f-total", "field": "amount_total" }
@@ -64,7 +174,27 @@
           }
         ]
       },
-      { "type": "field", "id": "f-narration", "field": "narration" }
+      {
+        "type": "tabs",
+        "id": "tabs",
+        "children": [
+          {
+            "type": "tab",
+            "id": "tab-terms",
+            "label": "Terms",
+            "children": [{ "type": "field", "id": "f-narration", "field": "narration" }]
+          },
+          {
+            "type": "tab",
+            "id": "tab-trust",
+            "label": "Trust",
+            "children": [
+              { "type": "text", "id": "t-trust", "text": "The trust balance is below its minimum: top up {trust_minimum} to reach it.", "style": "alert", "tone": "warning", "invisible": "not trust_minimum" },
+              { "type": "field", "id": "f-trust", "field": "trust_minimum" }
+            ]
+          }
+        ]
+      }
     ]
   }
 }

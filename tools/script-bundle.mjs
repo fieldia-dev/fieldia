@@ -164,7 +164,12 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // and days between dates, defaults handed to new lines, links and records, reload, a web address and a list of
 // related records opened, a wizard's own footer buttons — and a table's own rules (cells by line, columns by
 // record, tones, row buttons, drawn in the plain table) and help behind a (?) add 17.1, to 317.2.
-const BUDGET_KB = 318;
+// How a dense sheet reads, as Flectra draws one — read-only values as words and a choice as a badge, several
+// ribbons by condition, alerts holding a field's value with buttons inside and alerts in a tab, stat buttons
+// that format money, hours and dates with a unit and a second value, a statusbar's condition, time per step,
+// folded stages and a click that saves, keys on buttons with Alt, parts for editing or reading only, links'
+// pictures, address lines and tag colours, and parts on one line — add 20.8, to 338.
+const BUDGET_KB = 339;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -176,8 +181,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // and the events an app hears, 3, to 87.7; a page in a side panel, 0.5, to 88.2; the viewer as the host
 // of the steps (pages opened, toasts, busy buttons, tabs shown), 1.7, to 89.5; a panel from any side, 0.3, to 89.8;
 // files as cards and the switch between them and a list, 1, to 90.8; the real pages' defects mended, 1.9, to 92.7;
-// what real Flectra pages need of steps, conditions, defaults and tables' own rules, and help behind a (?), 5.1, to 97.8.
-const GZIP_BUDGET_KB = 98;
+// what real Flectra pages need of steps, conditions, defaults and tables' own rules, and help behind a (?), 5.1, to 97.8;
+// how a dense sheet reads (values as words, ribbons, alerts, stat buttons, statusbar, keys, links, lines), 5.8, to 103.6.
+const GZIP_BUDGET_KB = 104;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -191,7 +197,8 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
  */
 // A saved form's four messages take Arabic's to 18.1; the switch over the files, four words, Arabic's
 // to 18.7 and German's and French's to 8.1. The (?) that shows a field's help, named in each, a little more: to 18.8 and 8.2.
-const ADD_ON_BUDGET_KB = { ar: [18.8, 4], de: [8.2, 3.5], fr: [8.2, 3.5] };
+// A statusbar's More and the time spent in a step, two words in each, take Arabic's to 18.9.
+const ADD_ON_BUDGET_KB = { ar: [19, 4], de: [8.2, 3.5], fr: [8.2, 3.5] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

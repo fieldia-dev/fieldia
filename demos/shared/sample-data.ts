@@ -15,6 +15,7 @@ import rules from '../../examples/pages/rules.page.json';
 import signup from '../../examples/pages/signup.page.json';
 import survey from '../../examples/pages/survey.page.json';
 import big from '../../examples/pages/big.page.json';
+import reading from '../../examples/pages/reading.page.json';
 import { customPage } from './custom-page';
 import { real } from './real';
 
@@ -37,6 +38,8 @@ export const pages: Record<string, Page> = {
   'quick-order': quickOrder as Page,
   // 500 fields, for timing: e2e/perf.spec.ts opens it; no card in the gallery (see e2e/demos-shell.spec.ts).
   big: big as Page,
+  // How a dense sheet reads, as Flectra's: values as words, formatted stat buttons, links with pictures, lines, alerts, keys, ribbons.
+  reading: reading as Page,
   // Sherkety ERP's own screens, rebuilt: one file per lane in shared/real/.
   ...real.pages,
 };
@@ -196,7 +199,10 @@ const CURRENCIES: Record<number, string> = { 1: 'EGP', 2: 'JOD', 3: 'SAR' };
 export function sampleDataSource() {
   return createMemoryDataSource(withReal({
     lists: appLists,
+    // What links show of their records besides their names: an address, a picture, a colour.
+    shows: { 'reading.partner': { details: ['street', 'city', 'vat'] }, 'reading.user': { avatar: 'image' }, 'reading.tag': { color: 'color' } },
     records: {
+      ...READING,
       partner: {
         1: {
           name: 'Nile Traders',
@@ -400,3 +406,54 @@ function withReal(options: Parameters<typeof createMemoryDataSource>[0] & object
     labelField: { ...options.labelField, ...real.labelField },
   };
 }
+
+/** A face, drawn: a salesperson's picture for the reading sheet. */
+const FACE =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" fill="#c7a17a"/><circle cx="20" cy="15" r="8" fill="#6b4f3a"/><rect x="8" y="26" width="24" height="14" rx="7" fill="#6b4f3a"/></svg>');
+
+/** The reading sheet's invoice and the records its links point to. Sample data. */
+const READING = {
+  'reading.invoice': {
+    1: {
+      name: 'INV/2026/00042',
+      state: 'posted',
+      state_times: { draft: 3 * 86400, posted: 5 * 3600 },
+      active: true,
+      partner_id: { id: 1, label: 'Nile Traders' },
+      user_id: { id: 5, label: 'Mona Adel' },
+      tag_ids: [
+        { id: 1, label: 'Wholesale' },
+        { id: 2, label: 'Late payer' },
+        { id: 3, label: 'Export' },
+      ],
+      invoice_date: '2026-10-02',
+      invoice_date_due: null,
+      payment_term: '30',
+      payment_state: 'paid',
+      risk: 'high',
+      currency_id: { id: 1, label: 'EGP' },
+      pricelist_id: { id: 1, label: 'Public pricelist (EGP)' },
+      amount_total: 73069.44,
+      amount_paid: 25000,
+      hours: 24.8,
+      incoming: 3,
+      outgoing: 5,
+      days_left: 12.5,
+      days_allowed: 21,
+      next_meeting: '2026-10-13',
+      meeting_label: 'Next Meeting',
+      lock_date: '2026-09-30',
+      credit_warning: 'Nile Traders owes 48,069.44 EGP past its due date, above its 40,000 EGP limit.',
+      duplicate: true,
+      outcome: null,
+      legacy: false,
+      trust_minimum: 12500,
+      narration: 'Payment within 30 days of the invoice date, by bank transfer.\nLate payments carry 1.5% a month.',
+    },
+  },
+  'reading.partner': { 1: { name: 'Nile Traders', street: '12 Nile St, Garden City', city: 'Cairo, Egypt', vat: 'Tax ID 123-456-789' } },
+  'reading.user': { 5: { name: 'Mona Adel', image: FACE }, 6: { name: 'Karim Fathy' } },
+  'reading.tag': { 1: { name: 'Wholesale', color: 10 }, 2: { name: 'Late payer', color: 1 }, 3: { name: 'Export', color: 4 }, 4: { name: 'VIP', color: 3 } },
+  'reading.pricelist': { 1: { name: 'Public pricelist (EGP)' }, 2: { name: 'Wholesale (EGP)' } },
+};
