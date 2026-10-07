@@ -1,0 +1,66 @@
+{
+  "fieldia": "0.1",
+  "id": "tables",
+  "title": "Work order",
+  "description": "A table's own rules, the way an ERP's lists have them: values and lines in a tone while a condition holds, choices drawn as pills, and buttons on the lines.",
+  "data": { "kind": "record", "model": "mrp.workorder.sheet" },
+  "fields": {
+    "name": { "type": "char", "label": "Reference", "required": true },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        { "value": "draft", "label": "Draft" },
+        { "value": "progress", "label": "In progress" },
+        { "value": "done", "label": "Done" }
+      ],
+      "default": "draft"
+    },
+    "code": { "type": "char", "label": "Code" },
+    "workcenter_id": { "type": "many2one", "label": "Work centre", "relation": "mrp.workcenter" },
+    "deadline": { "type": "date", "label": "Deadline" },
+    "available": { "type": "float", "label": "Hours available" },
+    "minimum": { "type": "float", "label": "Hours needed" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "root",
+    "children": [
+      {
+        "type": "section",
+        "id": "s-head",
+        "title": "Work order",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-name", "field": "name" },
+          {
+            "type": "field",
+            "id": "f-state",
+            "field": "state",
+            "widget": "badge",
+            "tones": [
+              { "tone": "success", "when": "state == 'done'" },
+              { "tone": "info", "when": "state == 'progress'" }
+            ]
+          },
+          { "type": "field", "id": "f-code", "field": "code", "widget": "badge" },
+          { "type": "field", "id": "f-workcenter", "field": "workcenter_id", "widget": "badge" },
+          {
+            "type": "field",
+            "id": "f-deadline",
+            "field": "deadline",
+            "tones": [{ "tone": "danger", "when": "deadline and deadline < today() and state != 'done'" }]
+          },
+          {
+            "type": "field",
+            "id": "f-available",
+            "field": "available",
+            "tones": [{ "tone": "danger", "when": "available < minimum" }, { "tone": "success", "when": "available >= minimum" }],
+            "bold": "available < 0"
+          },
+          { "type": "field", "id": "f-minimum", "field": "minimum" }
+        ]
+      }
+    ]
+  }
+}

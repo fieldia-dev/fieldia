@@ -620,5 +620,7 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   properties: propertiesWidget,
   matrix: matrixWidget,
   // A value as a pill in its tone: Flectra's widget="badge".
-  ...Object.fromEntries(['char', 'integer', 'float', 'monetary', 'date', 'datetime', 'selection', 'many2one'].map((type) => [`${type}.badge`, badgeWidget])),
+  'char.badge': badgeWidget,
+  'selection.badge': badgeWidget,
+  'many2one.badge': badgeWidget,
 };
