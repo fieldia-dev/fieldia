@@ -290,15 +290,7 @@ export class ReferenceCheck {
     this.checkWorkedOut(fields, base, { fields, lines });
     for (const [name, def] of Object.entries(fields)) {
       const path = `${base}.${name}`;
-      if (def.type === 'monetary' && def.currencyField !== undefined) {
-        const currency = this.need(def.currencyField, `${path}.currencyField`, fields);
-        if (currency && !['many2one', 'selection', 'char'].includes(currency.type)) {
-          this.report(
-            `${path}.currencyField`,
-            `"${def.currencyField}" is a ${currency.type}; a currency field must be a many2one, selection or char`
-          );
-        }
-      }
+      if (def.type === 'monetary' && def.currencyField !== undefined) this.checkCurrency(def.currencyField, `${path}.currencyField`, fields, lines);
       // A first value worked out, and what a record made from a link starts with: read where this field is.
       if (def.defaultFrom !== undefined) this.checkExpression(def.defaultFrom, `${path}.defaultFrom`, { fields, lines });
       if ((def.type === 'many2one' || def.type === 'many2many') && def.createValues) {
@@ -336,6 +328,18 @@ export class ReferenceCheck {
           }
         }
       }
+    }
+  }
+
+  /** A money field's currency: a field beside it, or on a line `parent.` and a field of the record — one that holds a currency. */
+  private checkCurrency(name: string, path: string, fields: Record<string, Field | LineField>, lines: string | undefined) {
+    let currency: Field | LineField | undefined;
+    if (!name.startsWith('parent.')) currency = this.need(name, path, fields);
+    else if (lines === undefined) return this.report(path, `"${name}": only a line’s money reads parent, the record it is on`);
+    else if (!has(this.page.fields, name.slice('parent.'.length))) return this.report(path, `"${name}": "${name.slice('parent.'.length)}" is not a field of this page`);
+    else currency = this.page.fields[name.slice('parent.'.length)];
+    if (currency && !['many2one', 'selection', 'char'].includes(currency.type)) {
+      this.report(path, `"${name}" is a ${currency.type}; a currency field must be a many2one, selection or char`);
     }
   }
 

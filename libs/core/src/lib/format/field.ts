@@ -153,8 +153,8 @@ const Monetary = z
   .object({
     type: z.literal('monetary'),
     ...common,
-    /** The field holding this amount's currency. */
-    currencyField: z.string().regex(FIELD_NAME).optional(),
+    /** The field holding this amount's currency; on a line, `parent.` and a field of the record it is on, as Flectra's related currency. */
+    currencyField: z.string().regex(/^(parent\.)?[A-Za-z_][A-Za-z0-9_]*$/).optional(),
     /** A fixed ISO 4217 currency, when the page has no currency field. */
     currency: z.string().regex(/^[A-Z]{3}$/).optional(),
     min: z.number().optional(),
