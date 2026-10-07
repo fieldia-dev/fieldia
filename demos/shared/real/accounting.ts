@@ -173,7 +173,6 @@ const EMPLOYEES: Record<number, { name: string; contact: number; manager: number
 };
 const employee = (id: number) => link(id, EMPLOYEES[id].name);
 const ANALYTIC: Record<number, string> = { 4101: 'Heliopolis rollout', 4102: 'Sales department', 4103: 'Operations', 4104: 'Riyadh trade fair 2026' };
-const analytic = (id: number) => link(id, ANALYTIC[id]);
 
 const rows = <T>(table: Record<number, T>, values: (row: T, id: number) => Values) =>
   Object.fromEntries(Object.entries(table).map(([id, row]) => [id, values(row, Number(id))]));
@@ -289,7 +288,7 @@ function journalItems(move: Values, lines: Line[], previous: Line[]): Line[] {
         display_type: 'product',
         account_id: v['account_id'] ?? null,
         name: v['name'] ?? null,
-        analytic_distribution: v['analytic_distribution'] ?? [],
+        analytic_distribution: v['analytic_distribution'] ?? null,
         amount_currency: round(sign * subtotal),
         tax_ids: lineTaxes,
         tax_tag_ids: tags,
@@ -437,7 +436,7 @@ function taxTyped(values: Values): Values {
 // The sample moves.
 // ---------------------------------------------------------------------------
 
-const invoiceLine = (key: string, id: number, values: Values): Line => ({ key, id, values: { display_type: 'product', analytic_distribution: [], discount: 0, ...values } });
+const invoiceLine = (key: string, id: number, values: Values): Line => ({ key, id, values: { display_type: 'product', analytic_distribution: null, discount: 0, ...values } });
 const sectionLine = (key: string, id: number, name: string, sequence: number): Line => ({ key, id, values: { display_type: 'line_section', name, sequence } });
 const noteLine = (key: string, id: number, name: string, sequence: number): Line => ({ key, id, values: { display_type: 'line_note', name, sequence } });
 
@@ -567,10 +566,10 @@ const MOVES: Record<number, Values> = {
     narration: '<p>Payment by bank transfer to CIB within 30 days. Prices include delivery inside Greater Cairo.</p>',
     invoice_line_ids: [
       sectionLine('s1', 41001, 'Equipment', 10),
-      invoiceLine('l1', 41002, { sequence: 20, product_id: product(4101), name: 'Laser printer HP LaserJet M404dn', account_id: account(4101), quantity: 2, product_uom_id: UOM.units, price_unit: 14500, tax_ids: [tax(4101)], analytic_distribution: [analytic(4101)] }),
-      invoiceLine('l2', 41003, { sequence: 30, product_id: product(4102), name: 'Toner cartridge HP 59A', account_id: account(4101), quantity: 6, product_uom_id: UOM.units, price_unit: 3400, discount: 5, tax_ids: [tax(4101)], analytic_distribution: [analytic(4101)] }),
+      invoiceLine('l1', 41002, { sequence: 20, product_id: product(4101), name: 'Laser printer HP LaserJet M404dn', account_id: account(4101), quantity: 2, product_uom_id: UOM.units, price_unit: 14500, tax_ids: [tax(4101)], analytic_distribution: { 4101: 100 } }),
+      invoiceLine('l2', 41003, { sequence: 30, product_id: product(4102), name: 'Toner cartridge HP 59A', account_id: account(4101), quantity: 6, product_uom_id: UOM.units, price_unit: 3400, discount: 5, tax_ids: [tax(4101)], analytic_distribution: { 4101: 100 } }),
       sectionLine('s2', 41004, 'Services', 40),
-      invoiceLine('l3', 41005, { sequence: 50, product_id: product(4104), name: 'Installation and setup, on site', account_id: account(4102), quantity: 4, product_uom_id: UOM.hours, price_unit: 650, tax_ids: [tax(4101)], analytic_distribution: [analytic(4101)] }),
+      invoiceLine('l3', 41005, { sequence: 50, product_id: product(4104), name: 'Installation and setup, on site', account_id: account(4102), quantity: 4, product_uom_id: UOM.hours, price_unit: 650, tax_ids: [tax(4101)], analytic_distribution: { 4101: 100 } }),
       noteLine('n1', 41006, 'Installed at the Heliopolis campus, Building B, 2nd floor.', 60),
     ],
     line_ids: [],
@@ -630,7 +629,7 @@ const MOVES: Record<number, Values> = {
     invoice_source_email: 'billing@gizapapermills.example',
     to_check: true,
     invoice_line_ids: [
-      invoiceLine('l1', 41021, { sequence: 10, product_id: product(4103), name: 'A4 copy paper, box of 5 reams', account_id: account(4107), quantity: 40, product_uom_id: UOM.boxes, price_unit: 980, tax_ids: [tax(4102)], analytic_distribution: [analytic(4103)] }),
+      invoiceLine('l1', 41021, { sequence: 10, product_id: product(4103), name: 'A4 copy paper, box of 5 reams', account_id: account(4107), quantity: 40, product_uom_id: UOM.boxes, price_unit: 980, tax_ids: [tax(4102)], analytic_distribution: { 4103: 100 } }),
     ],
     line_ids: [],
   }),
@@ -646,8 +645,8 @@ const MOVES: Record<number, Values> = {
     narration: '<p>Reversed on 1 November when the landlord’s invoice arrives.</p>',
     invoice_line_ids: [],
     line_ids: [
-      { key: 'e1', id: 41031, values: { display_type: 'product', account_id: account(4116), partner_id: null, name: 'Office rent, Zamalek, October 2026', analytic_distribution: [analytic(4103)], debit: 85000, credit: 0, amount_currency: 85000, currency_id: EGP, company_currency_id: EGP, tax_ids: [], tax_tag_ids: [] } },
-      { key: 'e2', id: 41032, values: { display_type: 'product', account_id: account(4117), partner_id: null, name: 'Office rent, Zamalek, October 2026', analytic_distribution: [], debit: 0, credit: 85000, amount_currency: -85000, currency_id: EGP, company_currency_id: EGP, tax_ids: [], tax_tag_ids: [] } },
+      { key: 'e1', id: 41031, values: { display_type: 'product', account_id: account(4116), partner_id: null, name: 'Office rent, Zamalek, October 2026', analytic_distribution: { 4103: 100 }, debit: 85000, credit: 0, amount_currency: 85000, currency_id: EGP, company_currency_id: EGP, tax_ids: [], tax_tag_ids: [] } },
+      { key: 'e2', id: 41032, values: { display_type: 'product', account_id: account(4117), partner_id: null, name: 'Office rent, Zamalek, October 2026', analytic_distribution: null, debit: 0, credit: 85000, amount_currency: -85000, currency_id: EGP, company_currency_id: EGP, tax_ids: [], tax_tag_ids: [] } },
     ],
   }),
   // A customer credit note, posted and paid back.
@@ -1008,7 +1007,7 @@ function recomputeExpense(values: Values, cascade: Partial<Record<'vendor' | 'da
   const headerTaxes = links(values['header_tax_ids']);
   // The header's distribution ({ "4104": 100 }, shares by account): each line takes its accounts.
   const shares = (values['header_analytic_distribution'] ?? {}) as Record<string, number>;
-  const headerAnalytic = Object.keys(shares).filter((id) => ANALYTIC[Number(id)]).map((id) => analytic(Number(id)));
+  const headerAnalytic = Object.fromEntries(Object.entries(shares).filter(([id]) => ANALYTIC[Number(id)]));
   const lines = ((values['line_ids'] as Line[] | null) ?? []).map((line) => {
     const v = { ...line.values };
     const fresh = line.id === undefined;
@@ -1016,7 +1015,8 @@ function recomputeExpense(values: Values, cascade: Partial<Record<'vendor' | 'da
     if ((fresh && values['expense_date'] && !v['date']) || (cascade.date && values['expense_date'])) v['date'] = values['expense_date'];
     if ((fresh && headerTaxes.length && !links(v['tax_ids']).length) || cascade.taxes) v['tax_ids'] = headerTaxes;
     if ((fresh && values['header_account_id'] && !v['account_id']) || (cascade.account && values['header_account_id'])) v['account_id'] = values['header_account_id'];
-    if ((fresh && headerAnalytic.length && !links(v['analytic_distribution']).length) || cascade.analytic) v['analytic_distribution'] = headerAnalytic;
+    const own = v['analytic_distribution'] as Record<string, number> | null | undefined;
+    if ((fresh && Object.keys(headerAnalytic).length && !Object.keys(own ?? {}).length) || cascade.analytic) v['analytic_distribution'] = Object.keys(headerAnalytic).length ? { ...headerAnalytic } : null;
     // A category picked or changed brings its expense account and taxes, unless the header sets them.
     const seenKey = `expense:${String(values['name'] ?? 'new')}:${line.key}`;
     const categoryId = idOf(v['product_id']);
@@ -1081,7 +1081,7 @@ function expenseAction(request: ActionRequest): ActionResult | undefined {
 // ---------------------------------------------------------------------------
 
 const EXPENSE_DEFAULTS: Values = { company_id: COMPANY, currency_id: EGP, analytic_precision: 2, approval_state: null, move_count: 0, payment_state: null, amount_residual: 0, accounting_date: null };
-const expenseLine = (key: string, id: number, values: Values): Line => ({ key, id, values: { sequence: 10, quantity: 1, analytic_distribution: [], ...values } });
+const expenseLine = (key: string, id: number, values: Values): Line => ({ key, id, values: { sequence: 10, quantity: 1, analytic_distribution: null, ...values } });
 const storedExpense = (values: Values): Values => {
   const expense = { ...EXPENSE_DEFAULTS, ...values };
   return { ...expense, ...recomputeExpense(expense) };
@@ -1104,10 +1104,10 @@ const EXPENSES: Record<number, Values> = {
     header_account_id: null,
     header_analytic_distribution: { 4104: 100 },
     line_ids: [
-      expenseLine('x1', 41201, { sequence: 10, name: 'Flight Cairo – Riyadh, return', product_id: product(4111), vendor: 'EgyptAir', date: '2026-10-01', price_unit: 18400, tax_ids: [tax(4102)], account_id: account(4108), analytic_distribution: [analytic(4104)] }),
-      expenseLine('x2', 41202, { sequence: 20, name: 'Hotel, 3 nights', product_id: product(4112), vendor: 'Hilton Riyadh', date: '2026-10-04', quantity: 3, price_unit: 4200, tax_ids: [tax(4102)], account_id: account(4109), analytic_distribution: [analytic(4104)] }),
-      expenseLine('x3', 41203, { sequence: 30, name: 'Client dinner, Gulf Medical Supplies', product_id: product(4113), vendor: 'Najd Village', date: '2026-10-03', price_unit: 2850, tax_ids: [tax(4102)], account_id: account(4110), analytic_distribution: [analytic(4104)] }),
-      expenseLine('x4', 41204, { sequence: 40, name: 'Taxi to and from the venue', product_id: product(4114), vendor: 'Uber', date: '2026-10-04', quantity: 6, price_unit: 180, tax_ids: [], account_id: account(4111), analytic_distribution: [analytic(4104)] }),
+      expenseLine('x1', 41201, { sequence: 10, name: 'Flight Cairo – Riyadh, return', product_id: product(4111), vendor: 'EgyptAir', date: '2026-10-01', price_unit: 18400, tax_ids: [tax(4102)], account_id: account(4108), analytic_distribution: { 4104: 100 } }),
+      expenseLine('x2', 41202, { sequence: 20, name: 'Hotel, 3 nights', product_id: product(4112), vendor: 'Hilton Riyadh', date: '2026-10-04', quantity: 3, price_unit: 4200, tax_ids: [tax(4102)], account_id: account(4109), analytic_distribution: { 4104: 100 } }),
+      expenseLine('x3', 41203, { sequence: 30, name: 'Client dinner, Gulf Medical Supplies', product_id: product(4113), vendor: 'Najd Village', date: '2026-10-03', price_unit: 2850, tax_ids: [tax(4102)], account_id: account(4110), analytic_distribution: { 4104: 100 } }),
+      expenseLine('x4', 41204, { sequence: 40, name: 'Taxi to and from the venue', product_id: product(4114), vendor: 'Uber', date: '2026-10-04', quantity: 6, price_unit: 180, tax_ids: [], account_id: account(4111), analytic_distribution: { 4104: 100 } }),
     ],
   }),
   4102: storedExpense({
@@ -1127,7 +1127,7 @@ const EXPENSES: Record<number, Values> = {
     header_account_id: account(4112),
     header_analytic_distribution: { 4103: 100 },
     line_ids: [
-      expenseLine('x1', 41211, { name: 'Fibre 100 Mbps, October', product_id: product(4115), vendor: 'Cairo Telecom Services', date: '2026-10-02', price_unit: 2280, tax_ids: [tax(4102)], account_id: account(4112), analytic_distribution: [analytic(4103)] }),
+      expenseLine('x1', 41211, { name: 'Fibre 100 Mbps, October', product_id: product(4115), vendor: 'Cairo Telecom Services', date: '2026-10-02', price_unit: 2280, tax_ids: [tax(4102)], account_id: account(4112), analytic_distribution: { 4103: 100 } }),
     ],
   }),
 };

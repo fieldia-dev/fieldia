@@ -112,7 +112,7 @@
           "relation": "account.account",
           "filter": [{ "field": "account_type", "op": "not in", "value": ["asset_receivable", "liability_payable", "asset_cash", "liability_credit_card"] }]
         },
-        "analytic_distribution": { "type": "many2many", "label": "Analytic Distribution", "relation": "account.analytic.account" },
+        "analytic_distribution": { "type": "json", "label": "Analytic Distribution" },
         "untaxed_amount": { "type": "monetary", "label": "Untaxed Amount", "currencyField": "currency_id", "readonly": true },
         "tax_amount": { "type": "monetary", "label": "Tax Amount", "currencyField": "currency_id", "readonly": true },
         "total_amount": { "type": "monetary", "label": "Subtotal", "currencyField": "currency_id", "readonly": true },
@@ -331,7 +331,8 @@
                 "labels": "hidden",
                 "readonly": "state != 'draft'",
                 "columns": ["name", "product_id", "vendor", "date", "quantity", "price_unit", "tax_ids", "account_id", "analytic_distribution", "total_amount"],
-                "optionalColumns": { "date": "show", "tax_ids": "show", "account_id": "hide", "analytic_distribution": "hide" }
+                "optionalColumns": { "date": "show", "tax_ids": "show", "account_id": "hide", "analytic_distribution": "hide" },
+                "cells": { "analytic_distribution": { "widget": "distribution", "options": { "model": "account.analytic.account" } } }
               },
               {
                 "type": "section",

@@ -329,7 +329,7 @@
         {
           "feature": "analytic_distribution widget (percentages per analytic account and plan)",
           "status": "approximated",
-          "how": "a many2many of analytic accounts, as tags: no percentages, no plans"
+          "how": "the distribution widget as a grid column: accounts and their shares, opened in a popup from the cell; no plans"
         },
         {
           "feature": "quantity, UoM (group uom, domain by the product's category)",
@@ -795,9 +795,8 @@
         },
         {
           "feature": "Analytic Distribution widget",
-          "status": "approximated",
-          "how": "the header's distribution is the distribution widget (accounts and shares, roles analytic.group_analytic_accounting) and its accounts go to every line; a line's analytic is still a list of accounts without shares",
-          "needs": "the distribution widget in a grid cell"
+          "status": "covered",
+          "how": "the header's distribution is the distribution widget (accounts and shares, roles analytic.group_analytic_accounting) and its shares go to every line; each line's is the distribution widget as a grid column, opened in a popup from its cell"
         },
         {
           "feature": "The header cascading to every line (vendor, date, taxes, account, analytic) and to new lines",

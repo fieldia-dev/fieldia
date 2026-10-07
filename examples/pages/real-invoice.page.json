@@ -226,7 +226,7 @@
             { "field": "account_type", "op": "not in", "value": ["asset_receivable", "liability_payable", "off_balance"] }
           ]
         },
-        "analytic_distribution": { "type": "many2many", "label": "Analytic", "relation": "account.analytic.account" },
+        "analytic_distribution": { "type": "json", "label": "Analytic" },
         "quantity": { "type": "float", "label": "Quantity", "digits": [16, 2], "default": 1 },
         "product_uom_id": { "type": "many2one", "label": "UoM", "relation": "uom.uom" },
         "price_unit": { "type": "float", "label": "Price", "digits": [16, 2] },
@@ -324,7 +324,7 @@
         },
         "partner_id": { "type": "many2one", "label": "Partner", "relation": "res.partner" },
         "name": { "type": "char", "label": "Label" },
-        "analytic_distribution": { "type": "many2many", "label": "Analytic", "relation": "account.analytic.account" },
+        "analytic_distribution": { "type": "json", "label": "Analytic" },
         "date_maturity": { "type": "date", "label": "Due Date" },
         "amount_currency": { "type": "monetary", "label": "Amount in Currency", "currencyField": "currency_id" },
         "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency" },
@@ -996,7 +996,7 @@
                 },
                 "cells": {
                   "product_uom_id": { "hidden": "'uom.group_uom' not in user.roles" },
-                  "analytic_distribution": { "hidden": "'analytic.group_analytic_accounting' not in user.roles" },
+                  "analytic_distribution": { "widget": "distribution", "options": { "model": "account.analytic.account" }, "hidden": "'analytic.group_analytic_accounting' not in user.roles" },
                   "price_total": { "hidden": "tax_calculation_rounding_method == 'round_globally'" },
                   "purchase_order_id": { "hidden": "move_type not in ('in_invoice', 'in_refund', 'in_receipt')" }
                 },
@@ -1104,7 +1104,7 @@
                 "totals": ["debit", "credit"],
                 "cells": {
                   "partner_id": { "hidden": "move_type != 'entry'" },
-                  "analytic_distribution": { "hidden": "'analytic.group_analytic_accounting' not in user.roles" },
+                  "analytic_distribution": { "widget": "distribution", "options": { "model": "account.analytic.account" }, "hidden": "'analytic.group_analytic_accounting' not in user.roles" },
                   "amount_currency": { "hidden": "'base.group_multi_currency' not in user.roles", "readonly": "display_type in ('payment_term', 'tax')" },
                   "currency_id": { "hidden": "'base.group_multi_currency' not in user.roles" },
                   "tax_ids": { "invisible": "display_type in ('line_section', 'line_note')", "readonly": "display_type in ('payment_term', 'tax')" },
