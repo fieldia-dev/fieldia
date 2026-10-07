@@ -12,7 +12,17 @@ const LANES: RealLane[] = [sales, accounting, crm, people, operations, legal];
 /** Maps by model then key, put together: a later lane adds to a model, never replaces one. */
 function byModel<T>(pick: (lane: RealLane) => Record<string, Record<string, T>> | undefined): Record<string, Record<string, T>> {
   const all: Record<string, Record<string, T>> = {};
-  for (const lane of LANES) for (const [model, rows] of Object.entries(pick(lane) ?? {})) all[model] = { ...all[model], ...rows };
+  for (const lane of LANES) {
+    for (const [model, rows] of Object.entries(pick(lane) ?? {})) {
+      const merged: Record<string, T> = { ...all[model] };
+      // Two lanes listing a model's fields (the lines under a link) each keep theirs: the lists join, each field once.
+      for (const [key, value] of Object.entries(rows)) {
+        const had = merged[key];
+        merged[key] = (Array.isArray(had) && Array.isArray(value) ? [...new Set([...had, ...value])] : value) as T;
+      }
+      all[model] = merged;
+    }
+  }
   return all;
 }
 
