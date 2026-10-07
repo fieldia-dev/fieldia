@@ -67,4 +67,11 @@ export const BUSINESS_CSS = /* css */ `
 .fd-timer[data-running] .fd-timer-time { color: var(--fd-success); }
 @keyframes fd-timer-beat { to { opacity: 0.35; } }
 @media (prefers-reduced-motion: reduce) { .fd-timer[data-running] .fd-timer-dot { animation: none; } }
+/* A document shown inline: the browser's own viewer, as wide as the field. */
+.fd-embed { display: grid; gap: 8px; min-width: 0; }
+.fd-embed-bar { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.fd-embed-bar > .fd-input { flex: 1 1 auto; min-width: 0; }
+.fd-embed-open { flex: none; }
+.fd-embed-frame { display: block; width: 100%; border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 4px); background: var(--fd-page); }
+.fd-embed-none { padding: 24px 12px; text-align: center; color: var(--fd-muted); border: 1px dashed var(--fd-border); border-radius: max(var(--fd-control-radius), 4px); }
 `;

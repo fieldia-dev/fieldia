@@ -49,6 +49,7 @@ import { colourWidget } from './colour';
 import { copyWidget } from './copy';
 import { dateRangeWidget } from './date-range';
 import { timerWidget } from './timer';
+import { embedWidget, pdfWidget } from './embed';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -627,6 +628,9 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   // A live timer, the time logged and the time running from a start: Flectra's mrp_timer.
   'float.timer': timerWidget,
   'datetime.timer': timerWidget,
+  // A PDF, or a web page at an address, shown inline: Flectra's pdf_viewer and embed_viewer.
+  'binary.pdf': pdfWidget,
+  'char.embed': embedWidget,
   selection: selectWidget,
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),
