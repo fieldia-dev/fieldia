@@ -267,7 +267,7 @@ test.describe('screen designer · fields the backend already has', () => {
     await tile(page, 'model:visits').click();
     await editing(page).card.getByRole('button', { name: /^Show as:/ }).click();
     // Every editor for a whole number, a slider among them, and nothing that would store something else.
-    await expect(page.getByRole('menuitemradio')).toHaveText(['Rating', 'Linear scale', 'Number', 'Slider', 'Progress']);
+    await expect(page.getByRole('menuitemradio')).toHaveText(['Rating', 'Linear scale', 'Number', 'Slider', 'Progress', 'Colour']);
     await page.getByRole('menuitemradio', { name: 'Progress' }).click();
     await expect(editing(page).card.locator('.fd-progress, progress, [role="progressbar"]').first()).toBeVisible();
     expect(problems).toEqual([]);
