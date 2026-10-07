@@ -215,6 +215,10 @@ describe('the pager over a record', () => {
     gear(host).click();
     item(host, 'Duplicate').click();
     await until(() => pagerText(host) === '2 / 4');
+    await settle();
+    // Counted at once, before anything else is drawn.
+    expect(pagerText(host)).toBe('2 / 4');
+    expect((host.querySelector('.fd-record-pager') as HTMLElement).hidden).toBe(false);
     gear(host).click();
     item(host, 'Delete').click();
     await until(() => pagerText(host) === '2 / 3');

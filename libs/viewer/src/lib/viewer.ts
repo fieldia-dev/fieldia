@@ -1072,6 +1072,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       withIcon,
       press,
       name: recordName,
+      render: renderNow,
       async leave() {
         if (!form.getState().dirty.length) return true;
         const saved = await form.save();

@@ -43,6 +43,8 @@ export interface RecordBarContext {
   name(): string;
   /** Save what changed before the pager moves on; false keeps the record where it is. */
   leave(): Promise<boolean>;
+  /** Draw the form again: the pager's records changed, the record shown perhaps not. */
+  render(): void;
 }
 
 const GEAR: IconSet = {
@@ -239,6 +241,8 @@ function pager(context: RecordBarContext, given: readonly RecordId[] | RecordPag
       const place = ids.findIndex((id) => same(id, from));
       ids.splice(place + 1, 0, recordId);
       total = ids.length;
+      // Told once the copy shows: the pager counts it now.
+      context.render();
     }),
     form.on('delete', ({ recordId }) => {
       const place = ids ? ids.findIndex((id) => same(id, recordId)) : same(placed, recordId) ? at : -1;
