@@ -45,10 +45,10 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
   const top = el('div', { class: 'fd-header fd-canvas-header', hidden: '' }, actions, steps);
   const stats = el('div', { class: 'fd-stats fd-canvas-stats' });
   const badges = el('div', { class: 'fd-badges fd-canvas-badges' });
-  // The ribbons, each a chip in its colour (the viewer shows the first whose condition holds, in the card's corner), and the alerts as the viewer draws them.
-  const ribbons = el('div', { class: 'fd-badges fd-canvas-ribbons' });
+  // The ribbons, each a chip in its colour beside the badges (the viewer shows the first whose condition holds, in the card's corner),
+  // and the alerts as the viewer draws them: a row of their own only once there is one, so a sheet without keeps its height.
   const alerts = el('div', { class: 'fd-canvas-alerts' });
-  const card = el('div', { class: 'fd-canvas-header-card', hidden: '' }, stats, badges, ribbons, alerts);
+  const card = el('div', { class: 'fd-canvas-header-card', hidden: '' }, stats, alerts, badges);
   const adders = { button: adder('button'), statusbar: adder('statusbar'), stat: adder('stat'), badge: adder('badge'), ribbon: adder('ribbon'), alert: adder('alert') };
 
   function add(kind: HeaderPartKind) {
@@ -225,9 +225,9 @@ export function canvasHeader(options: { el: ElementFactory; doc: Document; desig
       statusPart.classList.toggle('fd-editing', selected === '#statusbar');
       arrange(steps, [root.statusbar ? drawSteps(root, page, form) : adders.statusbar]);
       arrange(stats, [...row('stat', root.statButtons), adders.stat]);
-      arrange(badges, [...row('badge', root.badges), adders.badge]);
-      arrange(ribbons, [...row('ribbon', [...(root.ribbon ? [root.ribbon] : []), ...(root.ribbons ?? [])]), adders.ribbon]);
-      arrange(alerts, [...row('alert', root.alerts), adders.alert]);
+      arrange(badges, [...row('badge', root.badges), adders.badge, ...row('ribbon', [...(root.ribbon ? [root.ribbon] : []), ...(root.ribbons ?? [])]), adders.ribbon, adders.alert]);
+      arrange(alerts, row('alert', root.alerts));
+      setHidden(alerts, !root.alerts?.length);
       for (const id of [...views.keys()]) if (!live.has(id)) views.delete(id);
     },
     destroy() {
