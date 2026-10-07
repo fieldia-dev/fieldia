@@ -1640,7 +1640,10 @@
             "endswith",
             "set",
             "notset",
-            "between"
+            "between",
+            "contains",
+            "not contains",
+            "=?"
           ]
         },
         "value": {

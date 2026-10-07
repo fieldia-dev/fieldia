@@ -40,7 +40,12 @@ export type Option = z.infer<typeof OptionSchema>;
  * can follow the chosen country — or its `id`, the person (`user.id`), or on a
  * line the record it is on (`parent.company_id`). `like` finds text inside; `ilike`,
  * `startswith` and `endswith` whatever the case; `set` and `notset` take no
- * value; `between` takes `[low, high]`, both ends included.
+ * value; `between` takes `[low, high]`, both ends included. `contains` holds
+ * when a record's list of links (a many2many) holds the value, or one of a
+ * list of them — Flectra's `=` and `in` on a many2many — and `not contains`
+ * when it holds none. `=?` is `=` while its value is set, and left out of the
+ * filter while it is empty (nothing, false, empty text or an empty list), as
+ * Flectra's `=?`: "this company, if the record has one".
  */
 /** What a filter's `valueFrom` may name: a field, `parent.` and a field of the record a line is on, or `user.` and a part of the person. */
 const VALUE_FROM = /^((parent|user)\.)?[A-Za-z_][A-Za-z0-9_]*$/;
@@ -48,7 +53,7 @@ const VALUE_FROM = /^((parent|user)\.)?[A-Za-z_][A-Za-z0-9_]*$/;
 export const FilterConditionSchema = z
   .object({
     field: z.string().min(1),
-    op: z.enum(['=', '!=', '<', '>', '<=', '>=', 'in', 'not in', 'like', 'ilike', 'startswith', 'endswith', 'set', 'notset', 'between']),
+    op: z.enum(['=', '!=', '<', '>', '<=', '>=', 'in', 'not in', 'like', 'ilike', 'startswith', 'endswith', 'set', 'notset', 'between', 'contains', 'not contains', '=?']),
     value: JsonValueSchema.optional(),
     valueFrom: z.string().regex(VALUE_FROM).optional(),
   })
