@@ -25,7 +25,7 @@ export default [
     howTo: [
       'Press Mark as Todo: the receipt is Ready and every line’s Quantity is its Demand.',
       'Set the table legs’ Quantity to 12 of 16, then press Validate.',
-      'Create Backorder? opens: keep Create Backorder and save it. The receipt is Done, and the rest goes to a backorder.',
+      'Create Backorder? opens with Flectra’s own buttons: press Create Backorder. The receipt is Done, and the rest goes to a backorder.',
       'Add a product in the grid: its unit and the stock on hand come with it.',
     ],
   },
