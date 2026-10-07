@@ -4,6 +4,7 @@
   "title": "Register Payment",
   "data": { "kind": "record", "model": "account.payment.register" },
   "maxWidth": "medium",
+  "look": { "helpShown": "tooltip" },
   "fields": {
     "line_ids": { "type": "many2many", "label": "Journal items", "relation": "account.move.line", "readonly": true },
     "can_edit_wizard": { "type": "boolean", "label": "Can Edit Wizard" },
@@ -14,7 +15,11 @@
       "label": "Payment Type",
       "options": [{ "value": "outbound", "label": "Send Money" }, { "value": "inbound", "label": "Receive Money" }]
     },
-    "partner_type": { "type": "selection", "label": "Partner Type", "options": [{ "value": "customer", "label": "Customer" }, { "value": "supplier", "label": "Vendor" }] },
+    "partner_type": {
+      "type": "selection",
+      "label": "Partner Type",
+      "options": [{ "value": "customer", "label": "Customer" }, { "value": "supplier", "label": "Vendor" }]
+    },
     "source_amount": { "type": "monetary", "label": "Amount to Pay (company currency)", "currencyField": "company_currency_id", "readonly": true },
     "source_amount_currency": { "type": "monetary", "label": "Amount to Pay (foreign currency)", "currencyField": "source_currency_id", "readonly": true },
     "source_currency_id": { "type": "many2one", "label": "Source Currency", "relation": "res.currency", "readonly": true },
@@ -29,29 +34,38 @@
     "writeoff_is_exchange_account": { "type": "boolean", "label": "Writeoff Is Exchange Account" },
     "untrusted_payments_count": { "type": "integer", "label": "Untrusted Payments Count", "readonly": true },
     "total_payments_amount": { "type": "integer", "label": "Total Payments Amount", "readonly": true },
-    "journal_id": { "type": "many2one", "label": "Journal", "relation": "account.journal", "filter": [{ "field": "type", "op": "in", "value": ["bank", "cash"] }] },
+    "available_journal_ids": { "type": "many2many", "label": "Available Journals", "relation": "account.journal", "readonly": true },
+    "journal_id": {
+      "type": "many2one",
+      "label": "Journal",
+      "relation": "account.journal",
+      "filter": [{ "field": "id", "op": "in", "valueFrom": "available_journal_ids" }]
+    },
     "payment_method_line_id": {
       "type": "many2one",
       "label": "Payment Method",
       "relation": "account.payment.method.line",
-      "filter": [{ "field": "journal_id", "op": "=", "valueFrom": "journal_id" }, { "field": "payment_type", "op": "=", "valueFrom": "payment_type" }]
+      "filter": [{ "field": "journal_id", "op": "=", "valueFrom": "journal_id" }, { "field": "payment_type", "op": "=", "valueFrom": "payment_type" }],
+      "help": "Manual: pay or be paid by any method outside the app.\nPostdated check: a check dated later, with its number and due date.\nBatch Deposit: several customer checks deposited at once."
     },
     "payment_method_code": { "type": "char", "label": "Code", "readonly": true },
     "is_postdated_check": { "type": "boolean", "label": "Is Postdated Check" },
     "bill_no": { "type": "char", "label": "Check / Bill Number" },
     "due_date": { "type": "date", "label": "Check Due Date" },
     "use_electronic_payment_method": { "type": "boolean", "label": "Use Electronic Payment Method" },
+    "suitable_payment_token_ids": { "type": "many2many", "label": "Suitable Payment Tokens", "relation": "payment.token", "readonly": true },
     "payment_token_id": {
       "type": "many2one",
       "label": "Saved payment token",
       "relation": "payment.token",
-      "filter": [{ "field": "partner_id", "op": "=", "valueFrom": "partner_id" }]
+      "filter": [{ "field": "id", "op": "in", "valueFrom": "suitable_payment_token_ids" }]
     },
+    "available_partner_bank_ids": { "type": "many2many", "label": "Available Partner Banks", "relation": "res.partner.bank", "readonly": true },
     "partner_bank_id": {
       "type": "many2one",
       "label": "Recipient Bank Account",
       "relation": "res.partner.bank",
-      "filter": [{ "field": "partner_id", "op": "=", "valueFrom": "partner_id" }]
+      "filter": [{ "field": "id", "op": "in", "valueFrom": "available_partner_bank_ids" }]
     },
     "group_payment": { "type": "boolean", "label": "Group Payments" },
     "amount": { "type": "monetary", "label": "Amount", "currencyField": "currency_id" },
@@ -65,7 +79,12 @@
       "options": [{ "value": "open", "label": "Keep open" }, { "value": "reconcile", "label": "Mark as fully paid" }],
       "default": "open"
     },
-    "writeoff_account_id": { "type": "many2one", "label": "Difference Account", "relation": "account.account", "filter": [{ "field": "deprecated", "op": "!=", "value": true }] },
+    "writeoff_account_id": {
+      "type": "many2one",
+      "label": "Difference Account",
+      "relation": "account.account",
+      "filter": [{ "field": "deprecated", "op": "!=", "value": true }]
+    },
     "writeoff_label": { "type": "char", "label": "Journal Item Label", "default": "Write-Off" },
     "qr_code": { "type": "html", "label": "QR Code URL", "readonly": true }
   },
@@ -76,37 +95,32 @@
       {
         "type": "section",
         "id": "alert-early-discount",
-        "style": "framed",
+        "style": "plain",
         "invisible": "not hide_writeoff_section",
         "children": [
-          { "type": "text", "id": "t-early-discount", "text": "An early payment discount has been applied.", "style": "note" },
-          { "type": "field", "id": "f-early-discount-amount", "field": "payment_difference", "label": "Early Payment Discount", "readonly": true }
+          {
+            "type": "text",
+            "id": "t-early-discount",
+            "text": "Early Payment Discount of {payment_difference} has been applied.",
+            "style": "alert",
+            "tone": "info"
+          }
         ]
       },
       {
         "type": "section",
         "id": "alert-untrusted",
-        "style": "framed",
-        "columns": 2,
+        "style": "plain",
         "invisible": "untrusted_payments_count == 0",
         "children": [
-          { "type": "field", "id": "f-untrusted-count", "field": "untrusted_payments_count", "label": "Payments that will be skipped" },
-          { "type": "field", "id": "f-total-payments", "field": "total_payments_amount", "label": "Out of" },
           {
             "type": "text",
             "id": "t-untrusted",
-            "text": "These payments are skipped because their bank accounts are not trusted.",
-            "style": "note",
-            "colspan": 2
+            "text": "{untrusted_payments_count} out of {total_payments_amount} payments will be skipped due to untrusted bank accounts.",
+            "style": "alert",
+            "tone": "warning"
           },
-          {
-            "type": "button",
-            "id": "b-untrusted-banks",
-            "label": "untrusted bank accounts",
-            "style": "link",
-            "action": "action_open_untrusted_bank_accounts",
-            "colspan": 2
-          }
+          { "type": "button", "id": "b-untrusted-banks", "label": "untrusted bank accounts", "style": "link", "action": "action_open_untrusted_bank_accounts" }
         ]
       },
       {
@@ -121,7 +135,7 @@
             "style": "plain",
             "children": [
               { "type": "field", "id": "f-journal", "field": "journal_id", "required": true, "options": { "create": false } },
-              { "type": "field", "id": "f-payment-method", "field": "payment_method_line_id", "required": true, "options": { "create": false } },
+              { "type": "field", "id": "f-payment-method", "field": "payment_method_line_id", "required": true, "options": { "create": false, "open": false } },
               { "type": "field", "id": "f-bill-no", "field": "bill_no", "invisible": "not is_postdated_check", "required": "is_postdated_check" },
               { "type": "field", "id": "f-check-due-date", "field": "due_date", "invisible": "not is_postdated_check", "required": "is_postdated_check" },
               {
@@ -166,7 +180,14 @@
             "invisible": "payment_difference == 0 or early_payment_discount_mode or not can_edit_wizard or (can_group_payments and not group_payment)",
             "children": [
               { "type": "field", "id": "f-payment-difference", "field": "payment_difference" },
-              { "type": "field", "id": "f-difference-handling", "field": "payment_difference_handling", "widget": "radio", "labels": "hidden", "options": { "clear": false } },
+              {
+                "type": "field",
+                "id": "f-difference-handling",
+                "field": "payment_difference_handling",
+                "widget": "radio",
+                "labels": "hidden",
+                "options": { "clear": false }
+              },
               {
                 "type": "field",
                 "id": "f-writeoff-account",
@@ -189,6 +210,27 @@
           { "type": "field", "id": "f-qr-code", "field": "qr_code", "labels": "hidden", "colspan": 2, "invisible": "not qr_code" }
         ]
       }
+    ],
+    "footer": [
+      {
+        "type": "button",
+        "id": "action_create_payments",
+        "label": "Create Payment",
+        "style": "primary",
+        "hotkey": "q",
+        "invisible": "total_payments_amount > 1",
+        "steps": [{ "do": "check" }, { "do": "save" }]
+      },
+      {
+        "type": "button",
+        "id": "action_create_payments_many",
+        "label": "Create Payments",
+        "style": "primary",
+        "hotkey": "q",
+        "invisible": "total_payments_amount <= 1",
+        "steps": [{ "do": "check" }, { "do": "save" }]
+      },
+      { "type": "button", "id": "cancel", "label": "Discard", "hotkey": "x", "steps": [{ "do": "close" }] }
     ]
   },
   "on": { "open": [{ "do": "call", "action": "payment_register_defaults" }], "afterSave": [{ "do": "call", "action": "action_create_payments" }] }

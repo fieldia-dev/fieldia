@@ -122,7 +122,10 @@ for (const variant of VARIANTS) {
       // Words said show over the dialog: the toasts sit above its backdrop.
       const layer = (selector: string) => page.locator(selector).first().evaluate((el) => Number(getComputedStyle(el).zIndex));
       expect(await layer('.fd-says')).toBeGreaterThan(await layer('.fd-dialog-backdrop'));
-      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      // Its own footer, as Flectra's: Create Payment and Discard, with their keys.
+      await expect(dialog.getByRole('button', { name: 'Save & Close' })).toHaveCount(0);
+      await expect(dialog.getByRole('button', { name: 'Create Payment', exact: true })).toHaveAttribute('title', /Alt\+Q/i);
+      await dialog.getByRole('button', { name: 'Create Payment', exact: true }).click();
       await expect(dialog).toBeHidden();
       // The dialog's own words, said as it saved, outlive it: the page under it says them.
       await expect(toast(page, /^Payment P\S+ of EGP 50,000\.00 posted/)).toBeVisible();
@@ -135,7 +138,7 @@ for (const variant of VARIANTS) {
       // The rest: the dialog offers what is left, and paid, the ribbon says so.
       dialog = await openPayment(page);
       await expect(amountBox(dialog, 'f-amount')).toHaveValue('22,253.20');
-      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      await dialog.getByRole('button', { name: 'Create Payment', exact: true }).click();
       await expect(dialog).toBeHidden();
       await expect(toast(page, 'Payment of EGP 22,253.20 registered: paid in full')).toBeVisible();
       await expect.poll(() => value(page, 'payment_state')).toBe('paid');
@@ -207,6 +210,13 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-writeoff-label')).toBeVisible();
       // Not required, yet no "Clear selection" under the radio, as Flectra has none (clear: false).
       await expect(node(page, 'f-difference-handling').locator('.fd-choice-clear')).toBeHidden();
+      // Payments skipped for untrusted banks: the counts inside the alert's sentence.
+      await page.evaluate(() => (window as any).fieldiaDemo.handle.setValues({ untrusted_payments_count: 2, total_payments_amount: 5 }));
+      await expect(page.getByText('2 out of 5 payments will be skipped due to untrusted bank accounts.')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Create Payments', exact: true })).toBeVisible();
+      await page.evaluate(() => (window as any).fieldiaDemo.handle.setValues({ untrusted_payments_count: 0, total_payments_amount: 1 }));
+      // The method's help behind a (?), not under the field.
+      await expect(node(page, 'f-payment-method').locator('.fd-help-tip')).toBeAttached();
       if (variant === 'plain') await screen(page, 'real-register-payment');
 
       // Paid in EGP: the amount due worked out at the day's rate, the difference gone, and no manual rate.
@@ -218,9 +228,11 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-payment-difference')).toBeHidden();
       await expect(node(page, 'f-manual-rate')).toBeHidden();
 
-      // The EGP bank and a postdated check: its number and due date are asked for.
+      // The EGP bank and a postdated check: its number and due date are asked for. Only bank and cash journals are offered (id in available_journal_ids).
       const journal = node(page, 'f-journal').getByRole('combobox');
       await journal.click();
+      await journal.fill('');
+      await expect(page.getByRole('option', { name: 'Customer Invoices', exact: true })).toHaveCount(0);
       await journal.fill('CIB');
       await page.getByRole('option', { name: 'Bank — CIB', exact: true }).click();
       await expect(node(page, 'f-bill-no')).toBeHidden();
@@ -230,11 +242,11 @@ for (const variant of VARIANTS) {
       await page.getByRole('option', { name: 'Postdated Check', exact: true }).click();
       await expect(node(page, 'f-bill-no')).toBeVisible();
       await expect(node(page, 'f-check-due-date')).toBeVisible();
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await page.getByRole('button', { name: 'Create Payment', exact: true }).click();
       await expect(node(page, 'f-bill-no').locator('.fd-error')).toHaveText('Check / Bill Number is required');
       await node(page, 'f-bill-no').locator('input').fill('CHK-004417');
       await node(page, 'f-check-due-date').locator('input').fill('2026-11-15');
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await page.getByRole('button', { name: 'Create Payment', exact: true }).click();
       await expect(toast(page, /posted, check CHK-004417 due 2026-11-15/)).toBeVisible();
       await expectNoSidewaysScroll(page);
       expect(problems).toEqual([]);
@@ -277,7 +289,7 @@ for (const variant of VARIANTS) {
       const dialog = await openPayment(page);
       await expect(amountBox(dialog, 'f-amount')).toHaveValue('35,500.00');
       await expect.poll(() => shown(dialog, 'f-partner-bank')).toContain('Banque Misr');
-      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      await dialog.getByRole('button', { name: 'Create Payment', exact: true }).click();
       await expect(dialog).toBeHidden();
       await expect(toast(page, 'Omar Hassan is reimbursed in full')).toBeVisible();
       await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Paid');

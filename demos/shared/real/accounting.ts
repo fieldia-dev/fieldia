@@ -708,6 +708,17 @@ function writeoffPicked(values: Values): Values {
 }
 
 /** default_get: the journal to pay through (the bank in the invoice's currency), its first method, the amount due. */
+/** What the wizard may pick from, as Flectra's computes say: bank and cash journals, the banks of whoever receives the money. */
+function paymentChoices(values: Values): Values {
+  // Money received goes to the company's own banks (its partner, 4106); money sent, to the partner's.
+  const owner = values['payment_type'] === 'outbound' ? Number(idOf(values['partner_id'])) : 4106;
+  return {
+    available_journal_ids: Object.entries(JOURNALS).filter(([, j]) => ['bank', 'cash'].includes(j.type)).map(([id]) => journal(Number(id))),
+    available_partner_bank_ids: Object.entries(BANKS).filter(([, [, holder]]) => holder === owner).map(([id]) => bank(Number(id))),
+    suitable_payment_token_ids: [],
+  };
+}
+
 function paymentDefaults(values: Values): ActionResult | undefined {
   if (values['journal_id']) return undefined; // a stored wizard keeps its own
   const usd = codeOf(values['source_currency_id']) === 'USD';
@@ -726,6 +737,7 @@ function paymentDefaults(values: Values): ActionResult | undefined {
       untrusted_payments_count: 0,
       total_payments_amount: 1,
       country_code: 'EG',
+      ...paymentChoices(values),
     },
   };
 }
@@ -1070,6 +1082,7 @@ const WIZARD: Values = {
   writeoff_account_id: null,
   writeoff_label: 'Write-Off',
   qr_code: null,
+  ...paymentChoices({ payment_type: 'inbound', partner_id: partner(4102) }),
 };
 
 export const lane: RealLane = {
