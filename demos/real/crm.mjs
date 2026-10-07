@@ -9,7 +9,7 @@ export default [
       "Sherkety ERP's contact form as Sales, Purchase, Invoicing and CRM users see it: Individual or Company reshapes the page, contacts and addresses as cards, Sales & Purchase, Invoicing with bank accounts and the credit limit, Egyptian tax numbers, warnings, smart buttons and the chatter.",
     howTo: [
       'Pick Individual over the name: Job Position, Title and the address type appear, Industry goes, and the address block loses its heading.',
-      'Open Contacts & Addresses: the people and addresses of Nile Crest are cards; add one with Add.',
+      'Open Contacts & Addresses: the people and addresses of Nile Crest are cards; add one with Add, or press ↗ on a card for its own form — pick Invoice Address there and the address takes the job’s place.',
       'Open Invoicing and untick Partner Limit: the credit limit goes away.',
       'In Internal Notes, set the invoice warning to Warning: a message box appears and must be filled in before saving.',
       'Open Hany Saber (record=7002): his address is the company’s and locked, and Invoicing is managed on the parent company.',

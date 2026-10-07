@@ -264,7 +264,9 @@
     "title": {
       "field": "name",
       "avatarField": "image_1920",
-      "placeholder": "e.g. Lumber Inc",
+      "placeholder": "e.g. Brandom Freeman",
+      "placeholderWhen": [{ "when": "is_company", "text": "e.g. Lumber Inc" }],
+      "focus": true,
       "above": [{ "type": "field", "id": "f-company-type", "field": "company_type", "widget": "radio", "labels": "hidden", "options": { "clear": false } }],
       "below": [
         {
@@ -473,7 +475,62 @@
                 "widget": "cards",
                 "labels": "hidden",
                 "columns": ["type", "name", "function", "email", "phone", "mobile", "street", "city", "country_id"],
-                "options": { "itemLabel": "Contact", "addLabel": "Add" }
+                "options": { "itemLabel": "Contact", "addLabel": "Add" },
+                "lineForm": {
+                  "children": [
+                    { "type": "field", "id": "child-type", "field": "type", "widget": "radio", "labels": "hidden", "required": true, "options": { "clear": false, "columns": "row" } },
+                    { "type": "text", "id": "child-help-contact", "style": "note", "text": "Use this to organize the contact details of employees of a given company (e.g. CEO, CFO, ...).", "invisible": "type != 'contact'" },
+                    { "type": "text", "id": "child-help-invoice", "style": "note", "text": "Preferred address for all invoices. Selected by default when you invoice an order that belongs to this company.", "invisible": "type != 'invoice'" },
+                    { "type": "text", "id": "child-help-delivery", "style": "note", "text": "Preferred address for all deliveries. Selected by default when you deliver an order that belongs to this company.", "invisible": "type != 'delivery'" },
+                    { "type": "text", "id": "child-help-other", "style": "note", "text": "Other address for the company (e.g. subsidiary, ...)", "invisible": "type != 'other'" },
+                    { "type": "divider", "id": "child-divider" },
+                    {
+                      "type": "section",
+                      "id": "child-main",
+                      "style": "plain",
+                      "columns": 2,
+                      "children": [
+                        {
+                          "type": "section",
+                          "id": "child-who",
+                          "style": "plain",
+                          "children": [
+                            { "type": "field", "id": "child-name", "field": "name", "label": "Contact Name", "required": "type == 'contact'" },
+                            { "type": "field", "id": "child-title", "field": "title", "placeholder": "e.g. Mr.", "invisible": "type != 'contact'", "options": { "open": false } },
+                            { "type": "field", "id": "child-function", "field": "function", "placeholder": "e.g. Sales Director", "invisible": "type != 'contact'" },
+                            {
+                              "type": "section",
+                              "id": "child-address",
+                              "title": "Address",
+                              "style": "plain",
+                              "labels": "hidden",
+                              "invisible": "type == 'contact'",
+                              "children": [
+                                { "type": "field", "id": "child-street", "field": "street", "placeholder": "Street..." },
+                                { "type": "field", "id": "child-street2", "field": "street2", "placeholder": "Street 2..." },
+                                { "type": "field", "id": "child-city", "field": "city", "placeholder": "City" },
+                                { "type": "field", "id": "child-state", "field": "state_id", "placeholder": "State", "options": { "open": false } },
+                                { "type": "field", "id": "child-zip", "field": "zip", "placeholder": "ZIP" },
+                                { "type": "field", "id": "child-country", "field": "country_id", "placeholder": "Country", "options": { "open": false, "create": false } }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "section",
+                          "id": "child-reach",
+                          "style": "plain",
+                          "children": [
+                            { "type": "field", "id": "child-email", "field": "email", "widget": "email" },
+                            { "type": "field", "id": "child-phone", "field": "phone", "widget": "phone" },
+                            { "type": "field", "id": "child-mobile", "field": "mobile", "widget": "phone" }
+                          ]
+                        }
+                      ]
+                    },
+                    { "type": "field", "id": "child-comment", "field": "comment", "labels": "hidden", "placeholder": "Internal notes..." }
+                  ]
+                }
               }
             ]
           },

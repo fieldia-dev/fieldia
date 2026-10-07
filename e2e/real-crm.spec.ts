@@ -73,6 +73,50 @@ for (const variant of VARIANTS) {
       expect(problems).toEqual([]);
     });
 
+    test('contact: the name has the cursor and its words by Individual or Company; a card opens its own form', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, 'page=real-contact&record=7001&skin=underline');
+      await expect.poll(() => value(page, 'name')).toBe('Nile Crest Developments');
+      // default_focus on the name: the cursor is in it as the record opens.
+      const name = page.locator('[data-node="#title"] input').first();
+      await expect(name).toBeFocused();
+      // A company's name, "e.g. Lumber Inc"; a person's, "e.g. Brandom Freeman".
+      await expect(name).toHaveAttribute('placeholder', 'e.g. Lumber Inc');
+      await node(page, 'f-company-type').getByRole('radio', { name: 'Individual' }).check();
+      await expect.poll(() => value(page, 'is_company')).toBe(false);
+      await expect(name).toHaveAttribute('placeholder', 'e.g. Brandom Freeman');
+      await node(page, 'f-company-type').getByRole('radio', { name: 'Company' }).check();
+      await expect.poll(() => value(page, 'is_company')).toBe(true);
+
+      // A card's ↗ opens the line's own form: the type as radios, a sentence for each, the parts its type has.
+      await tab(page, 'tab-contacts').click();
+      await node(page, 'f-children').locator('.fd-repeat-card[data-line="c7002"]').getByRole('button', { name: 'Open line' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Contact' });
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByRole('radio', { name: 'Contact', exact: true })).toBeChecked();
+      await expect(dialog.getByText('Use this to organize the contact details of employees')).toBeVisible();
+      await expect(dialog.locator('[data-node="child-function"] input')).toHaveValue('Chief Financial Officer');
+      await expect(dialog.locator('[data-node="child-address"]')).toBeHidden();
+      if (variant === 'plain') await screen(page, 'real-crm-contact-child-form', { viewport: true });
+      await dialog.getByRole('radio', { name: 'Invoice Address' }).check();
+      await expect(dialog.getByText('Preferred address for all invoices.')).toBeVisible();
+      await expect(dialog.locator('[data-node="child-function"]')).toBeHidden();
+      await expect(dialog.locator('[data-node="child-address"]')).toBeVisible();
+      await dialog.getByRole('radio', { name: 'Contact', exact: true }).check();
+      // A contact needs its name: Save & Close stays until it has one.
+      await dialog.locator('[data-node="child-name"] input').fill('');
+      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      await expect(dialog).toBeVisible();
+      await expect(dialog.locator('[data-node="child-name"] .fd-error')).toBeVisible();
+      await dialog.locator('[data-node="child-name"] input').fill('Hany M. Saber');
+      await dialog.locator('[data-node="child-function"] input').fill('Chief Executive Officer');
+      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      await expect(dialog).toBeHidden();
+      const children = (await value(page, 'child_ids')) as { key: string; values: Record<string, unknown> }[];
+      expect(children[0].values).toMatchObject({ type: 'contact', name: 'Hany M. Saber', function: 'Chief Executive Officer' });
+      expect(problems).toEqual([]);
+    });
+
     test('contact: a company’s person has the company’s address, locked, and invoicing on the parent', async ({ page }) => {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, 'page=real-contact&record=7002&skin=underline');
