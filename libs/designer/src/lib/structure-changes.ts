@@ -30,6 +30,10 @@ export function structureChanges(name: string, was: Placed, now: Placed, words: 
     const labels = (names: string[]) => words.parts.commaList(names.map((n) => fields[n]?.label ?? n));
     if (!same(was.node.totals, now.node.totals)) lines.push(now.node.totals?.length ? w.addsUp(name, labels(now.node.totals)) : w.addsUpNothing(name));
     if (!same(was.node.optionalColumns, now.node.optionalColumns)) lines.push(w.optionalColumns(name));
+    // tables lane: the table's own rules, buttons and shape, said once.
+    const own = (p: Placed) => [p.node.cells, p.node.rowTones, p.node.rowBold, p.node.rowButtons, p.node.selectedButtons, p.node.controlButtons, p.node.lineOpens, p.node.cards, p.node.fit, p.node.options?.['copy']];
+    if (!same(own(was), own(now))) lines.push(words.tables.tableChanged(name));
   }
+  if (!same([was.node.tones, was.node.bold], [now.node.tones, now.node.bold])) lines.push(words.tables.toneChanged(name));
   return lines;
 }
