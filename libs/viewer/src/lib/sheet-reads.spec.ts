@@ -569,3 +569,67 @@ describe('a link read as words, with its picture and its address', () => {
     expect((at('f-user').querySelector('.fd-combo .fd-link-avatar img') as HTMLImageElement).src).toBe('data:image/png;base64,AAAA');
   });
 });
+
+describe('parts on one line, and a label over the title', () => {
+  const page = (): Page => ({
+    fieldia: '0.1',
+    id: 'survey',
+    data: { kind: 'record', model: 'survey' },
+    fields: {
+      title: { type: 'char', label: 'Title' },
+      limited: { type: 'boolean', label: 'Limit attempts' },
+      attempts: { type: 'integer', label: 'Attempts' },
+      price: { type: 'monetary', label: 'Price', currency: 'EGP' },
+    },
+    layout: {
+      type: 'sheet',
+      id: 'root',
+      title: { field: 'title', label: 'Survey Title' },
+      children: [
+        {
+          type: 'section',
+          id: 'limit',
+          title: 'Limit attempts',
+          style: 'inline',
+          children: [
+            { type: 'field', id: 'f-limited', field: 'limited' },
+            { type: 'text', id: 't-to', text: 'to', invisible: 'not limited' },
+            { type: 'field', id: 'f-attempts', field: 'attempts', invisible: 'not limited' },
+            { type: 'text', id: 't-attempts', text: 'attempts', invisible: 'not limited' },
+          ],
+        },
+        { type: 'section', id: 'price-row', title: 'Price', style: 'inline', children: [
+          { type: 'field', id: 'f-price', field: 'price' },
+          { type: 'button', id: 'b-update', label: 'Update prices', style: 'link', action: 'update' },
+        ] },
+      ],
+    },
+  });
+
+  it('draws its parts on one line after its title, each field named for a screen reader though its label is not shown', () => {
+    const { at } = mount(page(), { values: { limited: true, attempts: 3 } });
+    const line = at('limit');
+    expect(line.getAttribute('data-style')).toBe('inline');
+    expect(line.querySelector(':scope > .fd-label')?.textContent).toBe('Limit attempts');
+    const row = line.querySelector(':scope > .fd-inline-row') as HTMLElement;
+    expect([...row.children].map((c) => c.getAttribute('data-node'))).toEqual(['f-limited', 't-to', 'f-attempts', 't-attempts']);
+    expect(row.querySelector('[data-node="t-to"]')?.tagName).toBe('SPAN');
+    const attempts = row.querySelector('[data-node="f-attempts"] input') as HTMLInputElement;
+    expect(attempts.labels?.[0]?.textContent).toBe('Attempts');
+  });
+
+  it('shows and hides its parts by their own conditions, and puts a button beside a field', () => {
+    const { at, form } = mount(page(), { values: { limited: false } });
+    expect(visible(at('t-to'))).toBe(false);
+    form.setValue('limited', true);
+    expect(visible(at('t-to'))).toBe(true);
+    expect(at('price-row').querySelector('.fd-inline-row [data-node="b-update"]')).not.toBeNull();
+  });
+
+  it('puts the title’s own label over it', () => {
+    const { host } = mount(page(), { values: {} });
+    const label = host.querySelector('.fd-title .fd-title-label') as HTMLLabelElement;
+    expect(label.textContent).toBe('Survey Title');
+    expect(label.htmlFor).toBe((host.querySelector('[data-node="#title"] input') as HTMLInputElement).id);
+  });
+});

@@ -299,8 +299,16 @@ export interface SectionNode {
   collapsed?: boolean;
   /** Grid columns it spans inside the section around it, one to twelve: groups side by side. */
   colspan?: number;
-  /** A card (the default), plain (nothing drawn), a line under the title, or a frame with the title on it. */
-  style?: 'card' | 'plain' | 'line' | 'framed';
+  /**
+   * A card (the default), plain (nothing drawn), a line under the title, a
+   * frame with the title on it — or `inline`: its parts on one line, each as
+   * wide as it needs, with words and buttons among them, wrapping when the line
+   * runs out, its title the line's label — Flectra's `<label/><div class="o_row">`,
+   * as "Limit attempts [x] to [3] attempts" or a price with Update Prices
+   * beside it. Its fields' labels are read out, not shown, unless a field sets
+   * its own.
+   */
+  style?: 'card' | 'plain' | 'line' | 'framed' | 'inline';
   /** Where the labels of the fields inside sit, unless a field says otherwise. */
   labels?: LabelPlace;
   /** How wide labels set beside their boxes are, in pixels. */
@@ -442,6 +450,8 @@ export interface Badge {
 
 export interface SheetTitle {
   field: string;
+  /** Words over the title, as Flectra's label over its h1: "Product Name", "MO Reference". */
+  label?: string;
   subtitleField?: string;
   avatarField?: string;
   placeholder?: string;
@@ -685,7 +695,7 @@ export const SectionNodeSchema = z.strictObject({
   collapsible: z.boolean().optional(),
   collapsed: z.boolean().optional(),
   colspan: span,
-  style: z.enum(['card', 'plain', 'line', 'framed']).optional(),
+  style: z.enum(['card', 'plain', 'line', 'framed', 'inline']).optional(),
   labels: labelPlace.optional(),
   labelWidth: z.int().min(60).max(320).optional(),
   rows: z.enum(['full', 'gaps']).optional(),
@@ -798,6 +808,7 @@ export const SheetNodeSchema = z.strictObject({
   title: z
     .strictObject({
       field: fieldName,
+      label: z.string().optional(),
       subtitleField: fieldName.optional(),
       avatarField: fieldName.optional(),
       placeholder: z.string().optional(),

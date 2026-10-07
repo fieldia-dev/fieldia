@@ -11,6 +11,9 @@ export const SHEET_CSS = /* css */ `
   white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.45; color: var(--fd-text);
 }
 .fd-field:is([data-type="integer"], [data-type="float"], [data-type="monetary"]) > .fd-read-text { font-variant-numeric: tabular-nums; }
+/* A record's words read their own way — English on a page read right to left keeps its order — lined up with the page. */
+.fd-read-text { unicode-bidi: plaintext; text-align: left; }
+[dir="rtl"] .fd-read-text { text-align: right; }
 .fd-read-text a, .fd-read-link { color: var(--fd-accent); text-decoration: none; }
 .fd-read-link { border: none; background: none; padding: 0; font: inherit; cursor: pointer; text-align: start; }
 .fd-read-text a:hover, .fd-read-link:hover { text-decoration: underline; }
@@ -91,4 +94,23 @@ export const SHEET_CSS = /* css */ `
 .fd-chip[data-color="4"] { --fd-tag: #6cc1ed; } .fd-chip[data-color="5"] { --fd-tag: #814968; } .fd-chip[data-color="6"] { --fd-tag: #eb7e7f; }
 .fd-chip[data-color="7"] { --fd-tag: #2c8397; } .fd-chip[data-color="8"] { --fd-tag: #475577; } .fd-chip[data-color="9"] { --fd-tag: #d6145f; }
 .fd-chip[data-color="10"] { --fd-tag: #30c381; } .fd-chip[data-color="11"] { --fd-tag: #9365b8; }
+/* A line of parts, as Flectra's o_row: its title the line's label, its parts each as wide as they need, words and buttons among them. */
+.fd-inline-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; min-height: var(--fd-control-height, 30px); }
+.fd-form .fd-inline-row > .fd-field { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; flex: 0 1 auto; width: auto; min-width: 0; grid-template-columns: none; }
+.fd-form .fd-inline-row > .fd-field > * { grid-column: auto !important; }
+.fd-inline-row > .fd-field:not([data-labels="beside"]):not([data-labels="above"]) > .fd-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.fd-inline-row > .fd-field > :is(.fd-error, .fd-warning) { flex-basis: 100%; }
+.fd-inline-row .fd-input { width: 12em; }
+.fd-inline-row > .fd-field:is([data-type="many2one"], [data-type="reference"]) .fd-input { width: 15em; }
+.fd-inline-row > .fd-field:is([data-type="integer"], [data-type="float"]) .fd-input { width: 7em; }
+.fd-inline-row > .fd-field[data-type="monetary"] .fd-input { width: 8.5em; }
+.fd-inline-row > .fd-field:is([data-type="date"], [data-type="datetime"]) .fd-input { width: 9.5em; }
+.fd-form .fd-inline-words { margin: 0; padding: 0; border: 0; background: none; color: var(--fd-text); }
+.fd-form .fd-inline-words.fd-text-note { color: var(--fd-muted); font-size: 12.5px; }
+/* A line with no title of its own takes the whole row, its fields' labels beside them where they ask. */
+.fd-form .fd-inline:not(:has(> .fd-label)) > .fd-inline-row { grid-column: 1 / -1 !important; }
+.fd-inline-row > .fd-button-link { padding-inline: 0; min-height: 0; }
+.fd-inline-row > .fd-field > .fd-read-text { min-height: 0; padding-block: 0; }
+/* Words over a sheet's title, as Flectra's label over its h1. */
+.fd-title-label { font-size: 12.5px; font-weight: 600; color: var(--fd-muted); }
 `;

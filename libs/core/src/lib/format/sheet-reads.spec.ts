@@ -224,3 +224,31 @@ describe('parts shown only while the record is edited, or only while it is read'
     expect(form.node('make-company').invisible).toBe(true);
   });
 });
+
+describe('parts on one line, and a label over the title', () => {
+  const row = (extra: Record<string, unknown> = {}) => ({
+    type: 'section', id: 'limit', title: 'Limit attempts', style: 'inline', ...extra,
+    children: [
+      { type: 'field', id: 'f-on', field: 'orders' },
+      { type: 'text', id: 't-to', text: 'to' },
+      { type: 'field', id: 'f-n', field: 'total' },
+      { type: 'button', id: 'b-update', label: 'Update prices', style: 'link', action: 'update' },
+    ],
+  });
+
+  it('takes a group whose parts stand on one line, words and buttons among them, its title the line’s label', () => {
+    expect(both(sheet({}, [row()]))).toEqual([]);
+  });
+
+  it('refuses columns, folding and a frame on a line', () => {
+    expect(both(sheet({}, [row({ columns: 2 })])).join('\n')).toMatch(/children\[0\]\.columns: parts on one line take no columns/);
+    expect(both(sheet({}, [row({ collapsible: true })])).join('\n')).toMatch(/children\[0\]\.collapsible: a line of parts does not fold/);
+  });
+
+  it('takes a label over the title, as Flectra’s “Product Name” over the h1, and hands it to a translator', async () => {
+    const page = sheet({ title: { field: 'name', label: 'Product Name' } });
+    expect(both(page)).toEqual([]);
+    const { pageWords } = await import('../../index');
+    expect(pageWords(page as never)).toContain('Product Name');
+  });
+});

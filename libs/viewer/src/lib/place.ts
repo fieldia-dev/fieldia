@@ -12,6 +12,8 @@ export interface Place {
   onPage: boolean;
   /** Where labels sit here, as the page or a group round it says; undefined leaves them to the skin. */
   labels?: LabelPlace;
+  /** On a line of parts: words are drawn as words in the line, not a paragraph of their own. */
+  inline?: boolean;
 }
 
 export type SectionStyle = NonNullable<SectionNode['style']>;

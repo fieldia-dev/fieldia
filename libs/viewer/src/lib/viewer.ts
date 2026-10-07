@@ -464,12 +464,13 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       return button;
     }
 
-    function textItem(node: TextNode): HTMLElement {
+    function textItem(node: TextNode, inline = false): HTMLElement {
       const style = node.style ?? 'paragraph';
       // Its words, with the values of the fields they name.
       const words = valueWords(doc, page.fields, node.text, locale);
-      const element =
-        style === 'alert'
+      const element = inline
+        ? el('span', { class: `fd-inline-words fd-text-${style}`, 'data-node': node.id }, ...words.nodes)
+        : style === 'alert'
           ? el('div', { class: `fd-alert fd-text-alert fd-tone-${node.tone ?? 'info'}`, role: 'status', 'data-node': node.id }, el('span', { class: 'fd-alert-message' }, ...words.nodes))
           : el(style === 'heading' ? 'h3' : 'p', { class: `fd-text-${style}`, 'data-node': node.id }, ...words.nodes);
       spans(element, node.colspan);
@@ -524,7 +525,27 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       return where === undefined ? 'skin' : where === 'beside' ? 'beside' : null;
     }
 
+    /**
+     * A line of parts, as Flectra's `<label/><div class="o_row">`: its title as
+     * the line's label, where the labels round it sit, and its parts after it,
+     * each as wide as it needs, its fields named for a screen reader.
+     */
+    function inlineItem(node: SectionNode, place: Place): HTMLElement {
+      const line = el('div', { class: 'fd-field fd-inline', 'data-node': node.id, 'data-style': 'inline', 'data-labels': place.labels });
+      spans(line, node.colspan);
+      const row = el('div', { class: 'fd-inline-row', role: 'group' }, ...node.children.map((child) => item(child, { columns: 1, onPage: false, inline: true })));
+      if (node.title) {
+        const title = el('span', { class: 'fd-label', id: uid(`${node.id}-label`) }, node.title);
+        row.setAttribute('aria-labelledby', title.id);
+        line.append(title);
+      }
+      line.append(row);
+      hideWhen(line, node.id);
+      return line;
+    }
+
     function sectionItem(node: SectionNode, place: Place): HTMLElement {
+      if (node.style === 'inline') return inlineItem(node, place);
       const plan = planSection(node, place);
       // An arrangement is no group to name, and a fieldset cannot lay its parts on the columns round it.
       const section = el(plan.arrangement ? 'div' : 'fieldset', {
@@ -685,7 +706,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         case 'button':
           return buttonItem(node);
         case 'text':
-          return textItem(node);
+          return textItem(node, place.inline);
         case 'slot':
           return slotItem(node);
         case 'section':
@@ -1219,6 +1240,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     }
     if (node.title) {
       const title = el('div', { class: 'fd-title' });
+      // Words over the title, as Flectra's "Product Name" over its h1, naming its box.
+      if (node.title.label) title.append(el('label', { class: 'fd-title-label', for: uid('#title') }, node.title.label));
       if (node.title.above?.length) title.append(el('div', { class: 'fd-title-above' }, ...node.title.above.map((part) => fieldItem(part))));
       title.append(fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder }));
       if (node.title.subtitleField) title.append(fieldItem({ type: 'field', id: '#subtitle', field: node.title.subtitleField }));

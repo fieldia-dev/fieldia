@@ -2821,6 +2821,9 @@
               "type": "string",
               "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
             },
+            "label": {
+              "type": "string"
+            },
             "subtitleField": {
               "type": "string",
               "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
@@ -5091,7 +5094,8 @@
             "card",
             "plain",
             "line",
-            "framed"
+            "framed",
+            "inline"
           ]
         },
         "labels": {

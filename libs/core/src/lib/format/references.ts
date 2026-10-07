@@ -431,6 +431,8 @@ export class ReferenceCheck {
       case 'section':
         if (node.collapsible && !node.title) this.report(path, 'a collapsible section needs a title to fold it by');
         if (node.collapsed && !node.collapsible) this.report(path, 'collapsed needs collapsible: true');
+        if (node.style === 'inline' && node.columns !== undefined) this.report(`${path}.columns`, 'parts on one line take no columns: each is as wide as it needs');
+        if (node.style === 'inline' && node.collapsible) this.report(`${path}.collapsible`, 'a line of parts does not fold: its title is its label');
         return this.walkChildren(node.children, path);
       case 'tabs':
         return this.walkTabs(node, path);
