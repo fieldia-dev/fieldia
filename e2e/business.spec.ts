@@ -160,8 +160,8 @@ test.describe('the business widgets, right to left and on a phone', () => {
 for (const variant of VARIANTS) {
   test(`${variant}: the title’s line and the timer`, async ({ page }) => {
     const { problems } = await open(page, variant, QUERY);
-    await node(page, 'f-priority').getByRole('radio').nth(1).click();
-    expect(await valueOf(page, 'priority')).toBe('2');
+    await node(page, 'f-priority').getByRole('radio').nth(2).click();
+    expect(await valueOf(page, 'priority')).toBe('3');
     await page.getByRole('button', { name: 'Start timer' }).click();
     await expect(node(page, 'f-duration').getByRole('timer')).toHaveAttribute('data-running', 'true');
     expect(problems).toEqual([]);
