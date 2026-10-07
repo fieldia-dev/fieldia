@@ -229,6 +229,54 @@ function combobox(options: {
   };
 }
 
+/**
+ * A linked record's picture, as Flectra's avatar widgets show one: its own,
+ * or the initials of its name in a circle when it has none.
+ */
+export function linkAvatar(doc: Document, record: RelatedRecord | null | undefined, into?: HTMLElement): HTMLElement {
+  const box = into ?? doc.createElement('span');
+  box.className = 'fd-link-avatar';
+  box.setAttribute('aria-hidden', 'true');
+  if (!record) {
+    box.hidden = true;
+    box.replaceChildren();
+    return box;
+  }
+  box.hidden = false;
+  if (record.avatar) {
+    const img = doc.createElement('img');
+    img.src = record.avatar;
+    img.alt = '';
+    box.replaceChildren(img);
+  } else {
+    const words = record.label.trim().split(/\s+/).filter(Boolean);
+    box.textContent = (words.length > 1 ? words[0][0] + words[words.length - 1][0] : (words[0]?.[0] ?? '')).toUpperCase();
+  }
+  return box;
+}
+
+/**
+ * A linked record's lines under it — an address, a tax number — each a line
+ * of its own that reads its own way: an address in English stays in its order
+ * on a page read right to left, still lined up with the page.
+ */
+export function detailLines(box: HTMLElement, text: string): void {
+  const doc = box.ownerDocument;
+  box.replaceChildren(
+    ...text.split('\n').map((line) => {
+      const row = doc.createElement('div');
+      row.textContent = line;
+      return row;
+    })
+  );
+}
+
+/** What a link's node asks of it beyond its name: a picture, lines under it, a colour, and whether its record opens. */
+function shows(node: FieldNode) {
+  const options = node.options ?? {};
+  return { avatar: options['avatar'] === true, details: options['details'] === true, colors: options['colors'] === true, opens: options['open'] !== false };
+}
+
 /** Making a record from a typed name, unless the page turns it off or the data source cannot. */
 function creator(form: Form, name: string, node: FieldNode): ((text: string) => Promise<RelatedRecord>) | undefined {
   return node.options?.['create'] !== false && form.canCreate(name) ? (text) => form.quickCreate(name, text) : undefined;
@@ -236,7 +284,9 @@ function creator(form: Form, name: string, node: FieldNode): ((text: string) => 
 
 export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, dialogs }) => {
   const relation = field.type === 'many2one' ? field.relation : '';
-  const canOpen = !!dialogs && dialogs.canOpen(relation);
+  const own = shows(node);
+  // No button to open it where the page says so, as Flectra's no_open.
+  const canOpen = own.opens && !!dialogs && dialogs.canOpen(relation);
   let readonly = false;
   const box = combobox({
     document,
@@ -291,11 +341,32 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
     box.input.focus();
   });
   box.element.append(clear, ...(open ? [open] : []));
+  // The record's picture before its name; lines of it — an address — under the link.
+  const avatar = own.avatar ? linkAvatar(document, null) : null;
+  if (avatar) {
+    box.element.prepend(avatar);
+    box.element.setAttribute('data-avatar', '');
+  }
+  const details = own.details ? document.createElement('div') : null;
+  let element = box.element;
+  if (details) {
+    details.className = 'fd-link-details';
+    details.hidden = true;
+    element = document.createElement('div');
+    element.className = 'fd-link';
+    element.append(box.element, details);
+  }
   return {
-    element: box.element,
+    element,
     focus: () => box.input.focus(),
     update(state) {
       const record = state.value as RelatedRecord | null | undefined;
+      if (avatar) linkAvatar(document, record, avatar);
+      if (details) {
+        const lines = record?.details?.trim() ?? '';
+        setHidden(details, !lines);
+        if (details.textContent !== lines.replace(/\n/g, '')) detailLines(details, lines);
+      }
       readonly = state.readonly;
       box.setText(record?.label ?? '');
       box.setReadonly(state.readonly);
@@ -313,6 +384,7 @@ export const many2oneWidget: WidgetFactory = ({ form, name, field, node, id, doc
 
 export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, dialogs }) => {
   const relation = field.type === 'many2many' ? field.relation : '';
+  const own = shows(node);
   const current = () => (form.getState().values[name] as RelatedRecord[] | null) ?? [];
   const element = document.createElement('div');
   element.className = 'fd-tags';
@@ -342,7 +414,7 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
   });
   // A linked record, opened from its tag in a dialog where the app can show it; a new name it is saved with follows here.
   const open =
-    dialogs && dialogs.canOpen(relation)
+    own.opens && dialogs && dialogs.canOpen(relation)
       ? async (record: RelatedRecord) => {
           const saved = await dialogs.openRecord(relation, { recordId: record.id, title: record.label });
           if (saved && saved.label !== record.label) form.setValue(name, current().map((r) => (r.id === record.id ? saved : r)));
@@ -365,19 +437,25 @@ export const tagsWidget: WidgetFactory = ({ form, name, field, node, id, documen
       if (state.describedBy) box.input.setAttribute('aria-describedby', state.describedBy);
       if (key === drawn) return;
       drawn = key;
-      drawChips(chips, records, readonly, labels, (record) => form.setValue(name, current().filter((r) => r.id !== record.id)), open);
+      drawChips(chips, records, readonly, labels, (record) => form.setValue(name, current().filter((r) => r.id !== record.id)), open, own);
       box.setText('');
     },
   };
 };
 
-/** Chips for tags, each with a remove button unless read-only; with `open`, each one's words a button that opens it. */
-function drawChips(chips: HTMLElement, records: RelatedRecord[], readonly: boolean, labels: WidgetLabels, remove: (record: RelatedRecord) => void, open?: (record: RelatedRecord) => void) {
+/**
+ * Chips for tags, each with a remove button unless read-only; with `open`,
+ * each one's words a button that opens it. With `look`, each in its record's
+ * colour (Flectra's 1 to 11) and with its picture.
+ */
+function drawChips(chips: HTMLElement, records: RelatedRecord[], readonly: boolean, labels: WidgetLabels, remove: (record: RelatedRecord) => void, open?: (record: RelatedRecord) => void, look: { avatar?: boolean; colors?: boolean } = {}) {
   const doc = chips.ownerDocument;
   chips.replaceChildren(
     ...records.map((record) => {
       const chip = doc.createElement('li');
       chip.className = 'fd-chip';
+      if (look.colors && typeof record.color === 'number' && record.color >= 1 && record.color <= 11) chip.setAttribute('data-color', String(Math.trunc(record.color)));
+      if (look.avatar) chip.append(linkAvatar(doc, record));
       const text = doc.createElement(open ? 'button' : 'span');
       text.className = 'fd-chip-label';
       text.textContent = record.label;

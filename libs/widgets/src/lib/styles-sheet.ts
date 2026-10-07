@@ -68,4 +68,27 @@ export const SHEET_CSS = /* css */ `
   display: inline-block; margin-inline-start: 6px; padding: 0 4px; border: 1px solid currentColor; border-radius: 3px;
   font: 600 10.5px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; opacity: 0.85; vertical-align: 1px;
 }
+/* A link's picture, or its initials, in a circle before its name; lines of the record — an address — under the link. */
+.fd-link-avatar {
+  flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; overflow: hidden;
+  background: var(--fd-accent-soft); color: var(--fd-accent); font-size: 10px; font-weight: 700; line-height: 1; vertical-align: middle;
+}
+.fd-link-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.fd-combo[data-avatar] > .fd-link-avatar { position: absolute; inset-inline-start: 4px; pointer-events: none; }
+.fd-combo[data-avatar] > .fd-link-avatar[hidden] ~ .fd-combo-input { padding-inline-start: var(--fd-pad-x); }
+.fd-combo[data-avatar] > .fd-link-avatar:not([hidden]) ~ .fd-combo-input { padding-inline-start: 32px; }
+.fd-form[data-fd-skin="underline"] .fd-combo[data-avatar] > .fd-link-avatar { inset-inline-start: 0; }
+.fd-form[data-fd-skin="underline"] .fd-combo[data-avatar] > .fd-link-avatar:not([hidden]) ~ .fd-combo-input { padding-inline-start: 28px; }
+.fd-read-text > .fd-link-avatar { margin-inline-end: 6px; }
+.fd-chip > .fd-link-avatar { width: 18px; height: 18px; font-size: 9px; margin-inline: -4px 2px; }
+.fd-link { display: grid; gap: 2px; min-width: 0; }
+.fd-link-details { font-size: 12.5px; line-height: 1.4; color: var(--fd-muted); text-align: left; }
+[dir="rtl"] .fd-link-details { text-align: right; }
+.fd-link-details > div { unicode-bidi: plaintext; }
+/* Tags in their record's colour, as Flectra numbers them, soft enough to read in either scheme. */
+.fd-chip[data-color] { background: color-mix(in srgb, var(--fd-tag) 18%, var(--fd-surface)); border-color: color-mix(in srgb, var(--fd-tag) 55%, var(--fd-surface)); }
+.fd-chip[data-color="1"] { --fd-tag: #f06050; } .fd-chip[data-color="2"] { --fd-tag: #f4a460; } .fd-chip[data-color="3"] { --fd-tag: #f7cd1f; }
+.fd-chip[data-color="4"] { --fd-tag: #6cc1ed; } .fd-chip[data-color="5"] { --fd-tag: #814968; } .fd-chip[data-color="6"] { --fd-tag: #eb7e7f; }
+.fd-chip[data-color="7"] { --fd-tag: #2c8397; } .fd-chip[data-color="8"] { --fd-tag: #475577; } .fd-chip[data-color="9"] { --fd-tag: #d6145f; }
+.fd-chip[data-color="10"] { --fd-tag: #30c381; } .fd-chip[data-color="11"] { --fd-tag: #9365b8; }
 `;

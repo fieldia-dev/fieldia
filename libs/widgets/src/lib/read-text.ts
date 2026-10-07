@@ -2,6 +2,7 @@ import type { Field, FieldNode, LineField, Locale, RelatedRecord, Value, Values 
 import { displayValue } from './display';
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import type { WidgetDialogs } from './widgets';
+import { detailLines, linkAvatar } from './relations';
 
 /**
  * A read-only value drawn as its words, as Flectra draws one: a choice by its
@@ -60,23 +61,34 @@ export function readText(context: { document: Document; field: Field; node: Fiel
       if (key === drawn) return;
       drawn = key;
       const address = node.widget ? ADDRESSES[node.widget] : undefined;
+      const record = relation !== null && value && typeof value === 'object' && 'id' in value ? (value as RelatedRecord) : null;
+      let main: Node;
       if (address && typeof value === 'string' && address[0].test(value.trim())) {
         const link = doc.createElement('a');
         link.href = `${address[1]}${value.trim()}`;
         if (node.widget === 'url') Object.assign(link, { target: '_blank', rel: 'noopener noreferrer' });
         link.textContent = words;
-        element.replaceChildren(link);
-      } else if (opens && value && typeof value === 'object' && 'id' in value) {
+        main = link;
+      } else if (opens && record) {
         // The linked record, opened where the app can show it, as Flectra's read-only link.
-        const record = value as RelatedRecord;
         const link = doc.createElement('button');
         link.type = 'button';
         link.className = 'fd-read-link';
         link.textContent = words;
         link.setAttribute('aria-label', labels.openNamed.replace('{name}', record.label));
         link.addEventListener('click', () => void dialogs?.openRecord(relation as string, { recordId: record.id, title: record.label }));
-        element.replaceChildren(link);
-      } else element.textContent = words;
+        main = link;
+      } else main = doc.createTextNode(words);
+      // A link's picture before its name, and lines of it — an address — under it, when the page asks.
+      const picture = record && node.options?.['avatar'] === true ? [linkAvatar(doc, record)] : [];
+      const lines: HTMLElement[] = [];
+      if (record?.details?.trim() && node.options?.['details'] === true) {
+        const box = doc.createElement('div');
+        box.className = 'fd-link-details';
+        detailLines(box, record.details.trim());
+        lines.push(box);
+      }
+      element.replaceChildren(...picture, main, ...lines);
     },
   };
 }

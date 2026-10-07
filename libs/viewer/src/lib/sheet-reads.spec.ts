@@ -540,3 +540,32 @@ describe('parts shown only while the record is edited, or only while it is read'
     expect(visible(at('t-read'))).toBe(true);
   });
 });
+
+describe('a link read as words, with its picture and its address', () => {
+  it('draws the picture before the name and the record’s lines under it, from the data source', async () => {
+    const page: Page = {
+      fieldia: '0.1',
+      id: 'order',
+      data: { kind: 'record', model: 'sale.order' },
+      look: { readonlyShown: 'text' },
+      fields: { partner_id: { type: 'many2one', label: 'Customer', relation: 'partner', readonly: true }, user_id: { type: 'many2one', label: 'Salesperson', relation: 'user' } },
+      layout: { type: 'sheet', id: 'root', children: [
+        { type: 'field', id: 'f-partner', field: 'partner_id', options: { details: true, open: false } },
+        { type: 'field', id: 'f-user', field: 'user_id', options: { avatar: true } },
+      ] },
+    };
+    const dataSource = createMemoryDataSource({
+      records: {
+        'sale.order': { 1: { partner_id: { id: 1, label: 'Nile Traders' }, user_id: { id: 5, label: 'Mona Adel' } } },
+        partner: { 1: { name: 'Nile Traders', street: '12 Nile St', city: 'Cairo' } },
+        user: { 5: { name: 'Mona Adel', image: 'data:image/png;base64,AAAA' } },
+      },
+      shows: { partner: { details: ['street', 'city'] }, user: { avatar: 'image' } },
+    });
+    const { at } = mount(page, { dataSource, recordId: 1 });
+    for (let i = 0; i < 4; i++) await flush();
+    expect(at('f-partner').querySelector('.fd-read-text')?.textContent).toBe('Nile Traders12 Nile StCairo');
+    expect(at('f-partner').querySelector('.fd-read-link')).toBeNull();
+    expect((at('f-user').querySelector('.fd-combo .fd-link-avatar img') as HTMLImageElement).src).toBe('data:image/png;base64,AAAA');
+  });
+});
