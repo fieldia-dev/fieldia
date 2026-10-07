@@ -20,6 +20,8 @@ export const fr: WidgetLabels = {
   searchMore: 'Rechercher plus…',
   openNamed: 'Ouvrir {name}',
   openLine: 'Ouvrir la ligne',
+  moreSteps: 'Plus',
+  timeInStep: '{time} à cette étape',
   chooseDate: 'Choisir une date',
   other: 'Autre :',
   otherAnswer: 'Votre propre réponse',

@@ -20,6 +20,8 @@ export const ar: WidgetLabels = {
   searchMore: 'بحث موسّع…',
   openNamed: 'فتح {name}',
   openLine: 'فتح السطر',
+  moreSteps: 'المزيد',
+  timeInStep: '{time} في هذه المرحلة',
   chooseDate: 'اختيار تاريخ',
   other: 'أخرى:',
   otherAnswer: 'إجابتك الخاصة',

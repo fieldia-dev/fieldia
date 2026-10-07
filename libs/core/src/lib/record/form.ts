@@ -1493,7 +1493,8 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     shown('#title', root.title?.field);
     shown('#subtitle', root.title?.subtitleField);
     shown('#avatar', root.title?.avatarField);
-    shown('#statusbar', root.statusbar?.field);
+    // The statusbar shows and hides by its own condition and roles.
+    if (root.statusbar) add({ id: '#statusbar', ...(root.statusbar.roles ? { roles: root.statusbar.roles } : {}) }, root.id, 'field', { field: root.statusbar.field, invisible: root.statusbar.invisible });
     for (const button of [...(root.buttons ?? []), ...(root.footer ?? [])]) add(button, root.id, 'button', { invisible: button.invisible });
     for (const stat of root.statButtons ?? []) add(stat, root.id, 'stat', { invisible: stat.invisible });
     for (const ribbon of [...(root.ribbon ? [root.ribbon] : []), ...(root.ribbons ?? [])]) add(ribbon, root.id, 'other', { invisible: ribbon.invisible });

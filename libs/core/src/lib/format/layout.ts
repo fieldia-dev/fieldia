@@ -452,6 +452,18 @@ export interface Statusbar {
   clickable?: boolean;
   /** In the header bar (the default), or in the sheet under the title. */
   position?: 'header' | 'title';
+  /**
+   * A json field holding the time spent in each step, in seconds, by the
+   * step's value — a choice's, or a stage record's id: `{ "3": 86400 }` —
+   * shown on each step, as Flectra's statusbar_duration.
+   */
+  durationsField?: string;
+  /** Stages whose record says it is folded go under a More menu at the end, unless the record stands on one: Flectra's fold_field. */
+  fold?: boolean;
+  /** A click on a step also saves the record at once, as Flectra's does. Needs `clickable`. */
+  saves?: boolean;
+  invisible?: Modifier;
+  roles?: Roles;
 }
 
 /** The record layout: a header with a statusbar and buttons, then the sheet itself. */
@@ -791,6 +803,11 @@ export const SheetNodeSchema = z.strictObject({
       visibleStates: z.array(z.union([z.string(), z.number()])).optional(),
       clickable: z.boolean().optional(),
       position: z.enum(['header', 'title']).optional(),
+      durationsField: fieldName.optional(),
+      fold: z.boolean().optional(),
+      saves: z.boolean().optional(),
+      invisible,
+      roles,
     })
     .optional(),
   buttons: z.array(ButtonNodeSchema).optional(),

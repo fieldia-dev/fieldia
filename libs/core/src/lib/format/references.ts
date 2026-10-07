@@ -472,8 +472,16 @@ export class ReferenceCheck {
       if (sheet.title.avatarField !== undefined) this.need(sheet.title.avatarField, `${path}.title.avatarField`);
     }
     if (sheet.statusbar) {
-      const { field, visibleStates } = sheet.statusbar;
+      const { field, visibleStates, durationsField, fold, saves, clickable } = sheet.statusbar;
+      const at = `${path}.statusbar`;
+      this.checkModifiers(sheet.statusbar, at);
+      if (durationsField !== undefined) {
+        const times = this.need(durationsField, `${at}.durationsField`);
+        if (times && times.type !== 'json') this.report(`${at}.durationsField`, `"${durationsField}" is a ${times.type}; time per step comes from a json field`);
+      }
+      if (saves && !clickable) this.report(`${at}.saves`, 'a click saves only where a step can be clicked (clickable)');
       const def = this.need(field, `${path}.statusbar.field`);
+      if (fold && def && def.type !== 'many2one') this.report(`${at}.fold`, 'steps fold by their record (a stage), so only a link’s steps fold; a choice keeps the steps it shows with visibleStates');
       if (def && def.type !== 'selection' && def.type !== 'many2one') {
         this.report(`${path}.statusbar.field`, `"${field}" is a ${def.type}; a statusbar needs a selection or many2one`);
       }

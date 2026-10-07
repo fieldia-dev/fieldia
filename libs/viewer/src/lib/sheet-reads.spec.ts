@@ -1,4 +1,4 @@
-import type { Page, Values } from '@fieldia/core';
+import { createMemoryDataSource, type Page, type Values } from '@fieldia/core';
 import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
 /**
@@ -318,5 +318,79 @@ describe('stat buttons that format what they show', () => {
     const { host } = mount(page(), { values });
     expect(read(host, 's-days')).toEqual(['value:12.50 / 21.00 Days', 'label:Time Off']);
     expect(read(host, 's-moves')).toEqual(['label:In', 'value:3', 'label:Out', 'value:5']);
+  });
+});
+
+describe('a statusbar with a condition, time per step, folded steps, and a click that saves', () => {
+  const page = (statusbar: Record<string, unknown>): Page => ({
+    fieldia: '0.1',
+    id: 'deal',
+    data: { kind: 'record', model: 'deal' },
+    fields: {
+      name: { type: 'char', label: 'Name' },
+      active: { type: 'boolean', label: 'Active' },
+      stage_id: { type: 'many2one', label: 'Stage', relation: 'stage' },
+      durations: { type: 'json', label: 'Time per stage' },
+    },
+    layout: { type: 'sheet', id: 'root', statusbar: { field: 'stage_id', ...statusbar } as never, children: [{ type: 'field', id: 'f-name', field: 'name' }] },
+  });
+  const source = () =>
+    createMemoryDataSource({
+      records: {
+        deal: { 1: { name: 'Office fit-out', active: true, stage_id: { id: 2, label: 'Proposal' }, durations: { 1: 3 * 86400, 2: 5 * 3600 } } },
+        stage: { 1: { name: 'New', fold: false }, 2: { name: 'Proposal', fold: false }, 3: { name: 'Won', fold: false }, 4: { name: 'Lost', fold: true }, 5: { name: 'On hold', fold: true } },
+      },
+      shows: { stage: { folded: 'fold' } },
+    });
+  const settle = async () => {
+    for (let i = 0; i < 5; i++) await flush();
+  };
+  const bar = (host: HTMLElement) => host.querySelector('.fd-statusbar') as HTMLElement;
+  const steps = (host: HTMLElement) => [...bar(host).querySelectorAll(':scope > li:not(.fd-step-more) > *')].map((s) => s.querySelector('span')?.textContent);
+
+  it('hides while its condition holds', async () => {
+    const { host, form } = mount(page({ invisible: 'not active' }), { dataSource: source(), recordId: 1 });
+    await settle();
+    expect(visible(bar(host))).toBe(true);
+    form.setValue('active', false);
+    expect(visible(bar(host))).toBe(false);
+  });
+
+  it('shows the time spent in each step from the record, as days, hours or minutes', async () => {
+    const { host } = mount(page({ durationsField: 'durations' }), { dataSource: source(), recordId: 1 });
+    await settle();
+    const time = (label: string) => [...bar(host).querySelectorAll('li')].find((li) => li.textContent?.startsWith(label))?.querySelector('.fd-step-time')?.textContent;
+    expect(time('New')).toBe('3d');
+    expect(time('Proposal')).toBe('5h');
+    expect(time('Won')).toBeUndefined();
+  });
+
+  it('folds the stages their record folds under More, unless the record stands on one', async () => {
+    const { host, form } = mount(page({ fold: true, clickable: true }), { dataSource: source(), recordId: 1 });
+    await settle();
+    expect(steps(host)).toEqual(['New', 'Proposal', 'Won']);
+    const more = bar(host).querySelector('.fd-step-more > button') as HTMLButtonElement;
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+    more.click();
+    const menu = bar(host).querySelector('.fd-step-more [role="menu"]') as HTMLElement;
+    expect(visible(menu)).toBe(true);
+    expect([...menu.querySelectorAll('[role="menuitem"]')].map((i) => i.textContent)).toEqual(['Lost', 'On hold']);
+    (menu.querySelector('[role="menuitem"]') as HTMLButtonElement).click();
+    expect((form.getState().values['stage_id'] as { label: string }).label).toBe('Lost');
+    await settle();
+    // Standing on a folded stage, it shows in the bar.
+    expect(steps(host)).toEqual(['New', 'Proposal', 'Won', 'Lost']);
+  });
+
+  it('saves the record at once on a click, when told to', async () => {
+    const data = source();
+    const { host, form } = mount(page({ clickable: true, saves: true }), { dataSource: data, recordId: 1 });
+    await settle();
+    const won = [...bar(host).querySelectorAll('button')].find((b) => b.textContent === 'Won') as HTMLButtonElement;
+    won.click();
+    await settle();
+    expect(data.calls.some((c) => c.method === 'save')).toBe(true);
+    expect(form.getState().dirty).toEqual([]);
+    expect((data.records['deal']['1']['stage_id'] as { label: string }).label).toBe('Won');
   });
 });

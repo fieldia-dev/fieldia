@@ -128,3 +128,53 @@ describe('stat buttons that say more', () => {
     expect(pageWords(stat({ unit: 'Units', secondField: 'total', secondLabel: 'Out' }) as never)).toEqual(expect.arrayContaining(['Sold', 'Units', 'Out']));
   });
 });
+
+describe('a statusbar with a condition, time per step, folded steps, and a click that saves', () => {
+  const page = (statusbar: Record<string, unknown>, more: Record<string, unknown> = {}) => ({
+    ...sheet({ statusbar }),
+    fields: { ...fields, stage_id: { type: 'many2one', label: 'Stage', relation: 'stage' }, durations: { type: 'json', label: 'Time per stage' }, ...more },
+  });
+
+  it('takes a condition, roles, the field holding time per step, folded steps and a click that saves', () => {
+    expect(both(page({ field: 'stage_id', invisible: "state == 'done'", roles: ['sales.user'], durationsField: 'durations', fold: true, clickable: true, saves: true }))).toEqual([]);
+  });
+
+  it('refuses time per step from what is not a json field, folded steps of a choice, and a save on a click no one can make', () => {
+    expect(both(page({ field: 'stage_id', durationsField: 'name' })).join('\n')).toMatch(/statusbar\.durationsField: "name" is a char; time per step comes from a json field/);
+    expect(both(page({ field: 'state', fold: true })).join('\n')).toMatch(/statusbar\.fold: steps fold by their record/);
+    expect(both(page({ field: 'state', saves: true })).join('\n')).toMatch(/statusbar\.saves: a click saves only where a step can be clicked/);
+    expect(both(page({ field: 'state', invisible: 'state ==' })).join('\n')).toMatch(/statusbar\.invisible: cannot read/);
+  });
+
+  it('hides the statusbar while its condition holds, as a form reads it', async () => {
+    const { createForm } = await import('../../index');
+    const form = createForm({ page: page({ field: 'state', invisible: "state == 'done'" }) as never, values: { state: 'draft' } });
+    expect(form.node('#statusbar').invisible).toBe(false);
+    form.setValue('state', 'done');
+    expect(form.node('#statusbar').invisible).toBe(true);
+  });
+});
+
+describe('what a link shows of its record, from the memory data source', () => {
+  it('gives each record a search finds, and each link a record loads, its picture, colour, lines and folding', async () => {
+    const { createMemoryDataSource } = await import('../../index');
+    const source = createMemoryDataSource({
+      records: {
+        deal: { 1: { user_id: { id: 5, label: 'Mona' }, tag_ids: [{ id: 9, label: 'VIP' }], stage_id: { id: 3, label: 'Won' } } },
+        user: { 5: { name: 'Mona', image: 'data:image/png;base64,AAA', city: { id: 1, label: 'Cairo' }, street: '12 Nile St' } },
+        tag: { 9: { name: 'VIP', color: 4 } },
+        stage: { 2: { name: 'Lost', fold: true }, 3: { name: 'Won', fold: false } },
+      },
+      shows: { user: { avatar: 'image', details: ['street', 'city'] }, tag: { color: 'color' }, stage: { folded: 'fold' } },
+    });
+    const fieldsOf = {
+      user_id: { type: 'many2one', label: 'User', relation: 'user' },
+      tag_ids: { type: 'many2many', label: 'Tags', relation: 'tag' },
+      stage_id: { type: 'many2one', label: 'Stage', relation: 'stage' },
+    } as const;
+    const loaded = await source.load({ model: 'deal', id: 1, fields: fieldsOf as never });
+    expect(loaded['user_id']).toEqual({ id: 5, label: 'Mona', avatar: 'data:image/png;base64,AAA', details: '12 Nile St\nCairo' });
+    expect(loaded['tag_ids']).toEqual([{ id: 9, label: 'VIP', color: 4 }]);
+    expect(await source.search({ model: 'stage', query: '' })).toEqual([{ id: 2, label: 'Lost', folded: true }, { id: 3, label: 'Won', folded: false }]);
+  });
+});

@@ -48,4 +48,18 @@ export const SHEET_CSS = /* css */ `
   .fd-card:has(> .fd-ribbon-frame > .fd-ribbon:not([hidden])) .fd-stat:nth-child(2 of :not([hidden])) { padding-inline-end: 64px; }
   .fd-card:has(> .fd-ribbon-frame > .fd-ribbon:not([hidden])) .fd-stat:nth-child(4 of :not([hidden])) { padding-inline-end: 36px; }
 }
+/* A statusbar's time spent in a step, after its words; its folded stages under More, in a menu fixed to the page so the bar's scrolling never cuts it. */
+.fd-step-time { margin-inline-start: 6px; font-size: 11.5px; font-weight: 400; opacity: 0.8; font-variant-numeric: tabular-nums; }
+.fd-statusbar li.fd-step-more > button { padding-inline: 16px 20px; letter-spacing: 1px; }
+.fd-statusbar li.fd-step-more > .fd-step-menu {
+  position: fixed; z-index: 30; display: grid; min-width: 160px; margin: 0; padding: 4px 0; clip-path: none; transform: none;
+  background: var(--fd-surface); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: max(var(--fd-control-radius), 4px);
+  box-shadow: 0 8px 24px rgba(15, 20, 25, 0.12); white-space: nowrap;
+}
+.fd-statusbar li.fd-step-more > .fd-step-menu[hidden] { display: none; }
+.fd-statusbar .fd-step-menu > button {
+  font: inherit; font-size: 13px; text-align: start; border: none; background: none; color: inherit; padding: 6px 14px; cursor: pointer; transform: none;
+}
+.fd-statusbar .fd-step-menu > button:hover:not(:disabled), .fd-statusbar .fd-step-menu > button:focus-visible { background: var(--fd-accent-soft); outline: none; }
+.fd-statusbar .fd-step-menu > button:disabled { cursor: default; color: var(--fd-muted); }
 `;

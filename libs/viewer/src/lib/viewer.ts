@@ -1250,14 +1250,18 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const def = page.fields[config.field];
     const barOptions: { [key: string]: JsonValue } = { clickable: config.clickable === true };
     if (config.visibleStates) barOptions['visibleStates'] = config.visibleStates;
+    for (const key of ['durationsField', 'fold', 'saves'] as const) if (config[key] !== undefined) barOptions[key] = config[key];
     const node: FieldNode = { type: 'field', id: '#statusbar', field: config.field, widget: 'statusbar', options: barOptions };
     const widget = createWidget(
       { form, name: config.field, field: def, node, id: uid('statusbar'), document: doc, labels: widgetLabels, preferences, locale, dialogs },
       options.widgets
     );
-    updaters.push((state) =>
-      widget.update({ value: state.values[config.field], values: state.values, readonly: form.node('#statusbar').readonly || locked, required: false, invalid: false })
-    );
+    if (widget.destroy) cleanups.push(() => widget.destroy?.());
+    updaters.push((state) => {
+      // Hidden while its own condition holds, or from people outside its roles.
+      setHidden(widget.element, form.node('#statusbar').invisible);
+      widget.update({ value: state.values[config.field], values: state.values, readonly: form.node('#statusbar').readonly || locked, required: false, invalid: false });
+    });
     return widget.element;
   }
 

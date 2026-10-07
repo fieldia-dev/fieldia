@@ -3291,6 +3291,22 @@
                 "header",
                 "title"
               ]
+            },
+            "durationsField": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "fold": {
+              "type": "boolean"
+            },
+            "saves": {
+              "type": "boolean"
+            },
+            "invisible": {
+              "$ref": "#/$defs/Modifier"
+            },
+            "roles": {
+              "$ref": "#/$defs/Roles"
             }
           },
           "required": [
