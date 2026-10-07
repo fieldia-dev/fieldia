@@ -77,7 +77,7 @@ test.describe('When… in the screen designer', () => {
 
     // Add a step: the kinds that fit, grouped plainly.
     await clicked(page).getByRole('button', { name: 'Add a step' }).click();
-    await expect(menu(page).locator('.fd-menu-heading')).toHaveText(['Open and close', 'Values', 'Check and save', 'Talk to the person', 'The app']);
+    await expect(menu(page).locator('.fd-menu-heading')).toHaveText(['Open and close', 'Values', 'Check and save', 'Talk to the person', 'The record itself', 'The app']);
     await look(page, 'add-a-step');
     await menu(page).getByRole('menuitem', { name: 'Open a page' }).click();
 
@@ -338,7 +338,7 @@ test.describe('When… in the screen designer', () => {
     const button = panel(page).locator('[data-setting="When clicked"]');
     await expect(button.locator('.fd-prop-name')).toHaveText('عند النقر');
     await button.getByRole('button', { name: 'إضافة خطوة', exact: true }).click();
-    await expect(menu(page).locator('.fd-menu-heading')).toHaveText(['الفتح والإغلاق', 'القيم', 'التحقق والحفظ', 'مخاطبة الشخص', 'التطبيق']);
+    await expect(menu(page).locator('.fd-menu-heading')).toHaveText(['الفتح والإغلاق', 'القيم', 'التحقق والحفظ', 'مخاطبة الشخص', 'السجل نفسه', 'التطبيق']);
     await look(page, 'arabic-add-a-step');
     await menu(page).getByRole('menuitem', { name: 'فتح صفحة' }).click();
     await button.getByRole('combobox', { name: 'الصفحة' }).selectOption({ label: 'العميل' });
