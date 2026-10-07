@@ -17,6 +17,7 @@ const page = {
         allocated_hours: { type: 'float', label: 'Allocated' },
         share: { type: 'float', label: 'Share' },
         progress: { type: 'float', label: 'Progress' },
+        priority: { type: 'selection', label: 'Priority', options: [{ value: '0', label: 'Normal' }, { value: '1', label: 'Urgent' }] },
       },
     },
   },
@@ -30,7 +31,7 @@ const page = {
         field: 'child_ids',
         widget: 'grid',
         totals: ['allocated_hours'],
-        cells: { allocated_hours: { widget: 'duration' }, share: { widget: 'percentage' }, progress: { widget: 'progressbar' } },
+        cells: { allocated_hours: { widget: 'duration' }, share: { widget: 'percentage' }, progress: { widget: 'progressbar' }, priority: { widget: 'priority' } },
       },
     ],
   },
@@ -74,6 +75,15 @@ describe('the grid’s cells drawn by a widget of their own', () => {
     expect(bar.getAttribute('aria-label')).toBe('Progress');
     api.startEditingCell({ rowIndex: 0, colKey: 'progress' });
     expect(api.getEditingCells()).toEqual([]);
+  });
+
+  it('takes a click on a star in its cell, as the plain table does', async () => {
+    const { grid } = await mount();
+    const star = cell(grid, 1, 'priority').querySelector('button[role="radio"]') as HTMLButtonElement;
+    expect(star.closest('[role="radiogroup"]')?.getAttribute('aria-label')).toBe('Priority');
+    star.click();
+    await frames();
+    expect((handle!.form.getState().values['child_ids'] as { values: { priority: string } }[])[1].values.priority).toBe('1');
   });
 
   it('types hours in its editor as HH:MM', async () => {

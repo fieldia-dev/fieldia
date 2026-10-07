@@ -94,4 +94,4 @@ export function cellText(def: LineField, value: Value | undefined, values: Recor
  * state's dot, a colour, a pill. A grid shows them in the cell itself, used
  * there with a click; the rest are typed into as the field's own box.
  */
-export const DRAWN_IN_CELLS: ReadonlySet<string> = new Set(['progressbar', 'priority', 'dot', 'color', 'badge']);
+export const DRAWN_IN_CELLS: ReadonlySet<string> = new Set(['progressbar', 'priority', 'dot', 'color', 'timer', 'badge']);
