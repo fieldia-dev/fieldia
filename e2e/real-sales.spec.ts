@@ -116,11 +116,19 @@ for (const variant of VARIANTS) {
       await expect(dialog.locator('[data-node="f-deposit-account"]')).toBeHidden();
       await amount.fill('10');
       if (variant === 'plain') await screen(page, 'real-sale-invoice-wizard-in-order', { viewport: true });
-      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      // The wizard's own footer, as Flectra's: Create Draft Invoice and Cancel, with their keys, in place of Save & Close.
+      await expect(dialog.getByRole('button', { name: 'Save & Close' })).toHaveCount(0);
+      await expect(dialog.locator('button[data-node="cancel"]')).toBeVisible();
+      await dialog.locator('button[data-node="create_invoices"]').click();
       await expect(dialog).toBeHidden();
+      // Said inside the dialog, and still said once it is gone.
       await expect(toast(page, 'Draft down payment invoice INV/2026/00118 created for E£36,765.00.')).toBeVisible();
       await expect.poll(() => value(page, 'invoice_count')).toBe(2);
       await expect.poll(() => value(page, 'amount_invoiced')).toBe(66765);
+      // The order gets a Down Payments section and the down payment's line.
+      await expect.poll(() => page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().values.order_line.map((line: any) => line.values.name))).toEqual(
+        expect.arrayContaining(['Down Payments', 'Down Payment (Draft) INV/2026/00118']),
+      );
       expect(problems).toEqual([]);
     });
 
@@ -138,10 +146,16 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-amount').locator('.fd-warning')).toContainText('The Down Payment is greater than the amount remaining to be invoiced.');
       await expect.poll(() => value(page, 'display_invoice_amount_warning')).toBe(true);
       if (variant === 'plain') await screen(page, 'real-sale-invoice-wizard');
-      // The fixed amount takes its place, and is required.
+      // The fixed amount takes its place, and is required: one row, Down Payment Amount, whichever it is.
       await page.getByRole('radio', { name: 'Down payment (fixed amount)' }).check();
       await expect(node(page, 'f-amount')).toBeHidden();
       await expect(node(page, 'f-fixed-amount')).toBeVisible();
+      await expect(node(page, 'f-fixed-amount')).toContainText('Down Payment Amount');
+      // Help behind a (?) by the label, as Flectra's, not words under every field; the keys in the footer's tooltips.
+      await expect(node(page, 'f-fixed-amount').getByText('The fixed amount to be invoiced in advance.')).toBeHidden();
+      await expect(node(page, 'f-fixed-amount').locator('.fd-help-tip')).toBeAttached();
+      await expect(button(page, 'create_invoices')).toHaveAttribute('title', /Alt\+Q/i);
+      await expect(button(page, 'cancel')).toHaveAttribute('title', /Alt\+X/i);
       await expect(node(page, 'f-fixed-amount').locator('.fd-required, [aria-required="true"]').first()).toBeAttached();
       // Opened for three orders: the count and Consolidated Billing, and no choice of a down payment.
       await page.goto(`/${variant}/?page=real-sale-invoice-wizard&record=7702&skin=outlined`);

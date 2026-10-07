@@ -785,19 +785,54 @@ function saleOrderAction({ action, values }: ActionRequest): ActionResult | unde
       const made = lastInvoice;
       lastInvoice = null;
       const invoiced = made.method === 'delivered' ? num(values['amount_total']) : num(values['amount_invoiced']) + made.amount;
-      const what = made.method === 'delivered' ? 'Draft invoice' : 'Draft down payment invoice';
       return {
-        say: { message: `${what} ${made.number} created${made.amount ? ` for ${egp(made.amount)}` : ''}.`, tone: 'success' },
         values: {
           invoice_count: num(values['invoice_count']) + 1,
           amount_invoiced: round(invoiced),
           amount_to_invoice: round(Math.max(0, num(values['amount_total']) - invoiced)),
-          ...(made.method === 'delivered' ? { invoice_status: 'invoiced' } : {}),
+          ...(made.method === 'delivered' ? { invoice_status: 'invoiced' } : { order_line: withDownPayment((values['order_line'] as Line[] | null) ?? [], made) }),
         },
       };
     }
   }
   return undefined;
+}
+
+/**
+ * A down payment invoiced: the order gets a Down Payments section and a line
+ * for it, as Flectra's _prepare_down_payment_section_line does — nothing
+ * ordered, the amount as its price. Saved lines, so the onchange never
+ * prices them again.
+ */
+let downPaymentId = 719000;
+function withDownPayment(lines: Line[], made: { amount: number; number: string }): Line[] {
+  const last = Math.max(0, ...lines.map((line) => num(line.values['sequence'])));
+  const hasSection = lines.some((line) => line.values['display_type'] === 'line_section' && line.values['name'] === 'Down Payments');
+  const added: Line[] = [];
+  if (!hasSection) added.push(section(`dp-section-${++downPaymentId}`, downPaymentId, last + 10, 'Down Payments'));
+  downPaymentId += 1;
+  added.push({
+    key: `dp-${downPaymentId}`,
+    id: downPaymentId,
+    values: priced({
+      sequence: last + 20,
+      display_type: null,
+      product_id: link('product.product', 7307),
+      name: `Down Payment (Draft) ${made.number}`,
+      product_uom_qty: 0,
+      qty_delivered: 0,
+      qty_invoiced: 1,
+      product_uom: link('uom.uom', 7401),
+      customer_lead: 0,
+      price_unit: made.amount,
+      tax_id: [],
+      discount: 0,
+      is_downpayment: true,
+      qty_delivered_method: 'manual',
+      invoice_status: 'no',
+    }),
+  });
+  return [...lines, ...added];
 }
 
 function invoiceWizardAction({ action, values }: ActionRequest): ActionResult | undefined {
@@ -811,10 +846,11 @@ function invoiceWizardAction({ action, values }: ActionRequest): ActionResult | 
       const method = String(values['advance_payment_method']);
       const amount = method === 'percentage' ? round((num(values['amount']) / 100) * num(values['orders_amount_total'])) : method === 'fixed' ? num(values['fixed_amount']) : num(values['amount_to_invoice']);
       if (method !== 'delivered' && amount <= 0) return { stop: 'The value of the down payment amount must be positive.' };
-      // Said by the order once the dialog is closed: words said inside a dialog go with it.
+      // Said from the dialog: its words outlive it, over the order.
       invoiceNumber += 1;
       lastInvoice = { method, amount, number: `INV/2026/00${invoiceNumber}` };
-      return {};
+      const what = method === 'delivered' ? 'Draft invoice' : 'Draft down payment invoice';
+      return { say: { message: `${what} ${lastInvoice.number} created${amount ? ` for ${egp(amount)}` : ''}.`, tone: 'success' } };
     }
   }
   return undefined;
@@ -907,8 +943,50 @@ const warnedLines = new Set<string>();
 /** An answer comes after a moment, as one from a server does. */
 const later = (answer: ActionResult | undefined) => (answer === undefined ? undefined : new Promise<ActionResult>((resolve) => setTimeout(() => resolve(answer), 150)));
 
+/**
+ * The person the sales pages are shown to: a sales manager of a one-company,
+ * one-warehouse firm, with the groups Flectra gives one — so the parts for
+ * several companies, warehouses or locations, and developer mode
+ * (base.group_no_one), stay hidden, as they do in Sherkety's own setup.
+ */
+const SALES_MANAGER = {
+  id: 7121,
+  name: 'Salma Nabil',
+  roles: [
+    'base.group_user',
+    'sales_team.group_sale_salesman',
+    'sales_team.group_sale_salesman_all_leads',
+    'sales_team.group_sale_manager',
+    'sale.group_proforma_sales',
+    'sale.group_auto_done_setting',
+    'sale.group_warning_sale',
+    'product.group_discount_per_so_line',
+    'product.group_product_pricelist',
+    'product.group_product_variant',
+    'uom.group_uom',
+    'analytic.group_analytic_accounting',
+    'stock.group_stock_user',
+    'stock.group_stock_manager',
+    'stock.group_production_lot',
+    'purchase.group_purchase_user',
+    'purchase.group_purchase_manager',
+    'purchase.group_warning_purchase',
+    'account.group_account_invoice',
+    'account.group_account_readonly',
+    'account.group_account_manager',
+    'sale_contract.group_contract_user',
+    'sale_contract.group_contract_manager',
+  ],
+};
+
 /** The real pages of this lane: see demos/real/README.md. */
 export const lane: RealLane = {
+  around: {
+    'real-sale-invoice-wizard': { user: SALES_MANAGER },
+    'real-sale-order': { user: SALES_MANAGER, records: [7101, 7102], breadcrumbs: [{ label: 'Quotations', href: '#quotations' }] },
+    'real-product': { user: SALES_MANAGER, records: [7301, 7305], breadcrumbs: [{ label: 'Products', href: '#products' }] },
+    'real-sale-contract': { user: SALES_MANAGER, records: [7601, 7602], breadcrumbs: [{ label: 'Contracts', href: '#contracts' }] },
+  },
   pages: {
     'real-sale-invoice-wizard': invoiceWizard as Page,
     'real-sale-order': saleOrder as Page,

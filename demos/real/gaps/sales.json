@@ -34,7 +34,9 @@
           "feature": "Defaults computed from active_ids: sale_order_ids, count, currency, amounts already invoiced and left to invoice",
           "status": "approximated",
           "how": "the opener's `values` expressions copy the order's own fields (currency_id, amount_invoiced, amount_to_invoice, amount_total)",
-          "needs": "the opener's record as a link in an expression (an `id` / `self` name), so sale_order_ids can be given; today no expression yields a link to the record itself"
+          "needs": "the opener's record as a link in an expression (an `id` / `self` name), so sale_order_ids can be given; today no expression yields a link to the record itself",
+          "app": true,
+          "why": "default_get reads the chosen orders on the server (active_ids); the opener hands the wizard what it read, and the app's data source would fill the rest"
         },
         {
           "feature": "product_id: the company's down payment product, a compute on company_id",
@@ -49,8 +51,8 @@
         {
           "feature": "Alert box (alert-warning) over the form: 'There are existing Draft Invoices…' with the link inline in the sentence",
           "status": "approximated",
-          "how": "a framed section holding a text node and a link-style button, invisible 'not display_draft_invoice_warning'; the link sits under the sentence",
-          "needs": "alerts in a sections page (they exist only on a sheet), and an action link inside a sentence of text"
+          "how": "an alert among the parts (text style alert, warning tone) with the sentence, invisible 'not display_draft_invoice_warning'; the Draft Invoices link sits under it, not inside the sentence",
+          "needs": "buttons inside an alert in the body (a text alert takes none; only a sheet's header alerts do)"
         },
         {
           "feature": "Second paragraph invisible=\"advance_payment_method != 'delivered'\"",
@@ -79,8 +81,8 @@
         },
         {
           "feature": "One label row switching between fixed_amount and amount (`<label for>` + div)",
-          "status": "approximated",
-          "how": "two field nodes, each with its own label and invisible/required conditions; they never show together"
+          "status": "covered",
+          "how": "two field nodes in one place, both labelled Down Payment Amount, each with its invisible/required condition: one row whose box switches with the choice"
         },
         {
           "feature": "fixed_amount monetary in currency_id, invisible/required by the choice",
@@ -96,7 +98,7 @@
           "feature": "Warning icon (fa-warning, text-danger, title) when display_invoice_amount_warning",
           "status": "approximated",
           "how": "an answer rule of level warning (`holds`) under the amount, and the boolean worked out client-side with if(); it needs a helper field orders_amount_total that the opener fills",
-          "needs": "worked-out values across a many2many's records (sum of sale_order_ids.amount_total), or an icon with a title shown by a boolean field"
+          "needs": "a sum over a many2many's records (sum works over a one2many's lines), or an icon with a title shown by a boolean field"
         },
         {
           "feature": "deposit_account_id: options no_create, domain deprecated = False, invisible=\"product_id\"",
@@ -105,8 +107,8 @@
         },
         {
           "feature": "deposit_account_id groups=\"account.group_account_manager\"",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles: [account.group_account_manager] on the Income Account; the demo's person holds it (roles= in the query takes it away)"
         },
         {
           "feature": "Group invisible=\"not has_down_payments\": amount_invoiced and amount_to_invoice, readonly money with help",
@@ -120,46 +122,48 @@
         },
         {
           "feature": "Footer buttons: Create Draft Invoice (primary) and Cancel (special=cancel)",
-          "status": "approximated",
-          "how": "the dialog's own Save & Close runs beforeSave (check, then call create_invoices) and Discard closes it; standalone, the page's Save",
-          "needs": "a page's own footer buttons when it is opened in a dialog (label, style, steps), in place of Discard / Save & Close"
+          "status": "covered",
+          "how": "the page's footer: Create Draft Invoice (primary: check, call create_invoices, save, so the dialog closes with its answers) and Cancel (a close step)"
         },
         {
           "feature": "data-hotkey q / x on the footer buttons",
-          "status": "missing",
-          "needs": "keyboard shortcuts on buttons (Flectra's data-hotkey: Alt+Q, Alt+X…)"
+          "status": "covered",
+          "how": "hotkey q on Create Draft Invoice and x on Cancel: Alt+Q, Alt+X, shown in their tooltips"
         },
         {
           "feature": "create_invoices returns the invoice's window action (the new invoice opens)",
           "status": "approximated",
-          "how": "the order's then-steps call sale_invoice_created: the invoice count and amounts follow and the invoice number is said; no invoice page is opened (none in this lane, though an open step could)"
+          "how": "the order's then-steps call sale_invoice_created: the invoice count and amounts follow and the invoice number is said; no invoice page is opened (none in this lane, though an open step could)",
+          "app": true,
+          "why": "the invoice is made on the server; the app's answer can open its page (open) once it exists — this demo's memory source has no invoice to open"
         },
         {
           "feature": "A down payment adds a 'Down Payments' section and line to the order",
-          "status": "approximated",
-          "how": "only the order's invoiced amounts and count change"
+          "status": "covered",
+          "how": "the app's answer to the order's sale_invoice_created adds a Down Payments section and a down payment line (nothing ordered, the amount as its price) to the order's lines"
         },
         {
           "feature": "A transient record, never kept",
           "status": "approximated",
-          "how": "the memory data source saves a sale.advance.payment.inv record on Save & Close"
+          "how": "the memory data source saves a sale.advance.payment.inv record on Save & Close",
+          "app": true,
+          "why": "whether a save keeps the record is the data source's: an app's would make nothing for a transient model; the demo's memory source keeps everything"
         },
         {
           "feature": "Words said by the dialog's page while it saves (a toast from its beforeSave call) vanish as the dialog closes: toasts live inside the dialog's viewer",
-          "status": "missing",
-          "needs": "toasts of an opened page shown at the opener's (or the document's) level, so they outlive the dialog"
+          "status": "covered",
+          "how": "the dialog's create_invoices answer says the invoice's number, and the words show over the order after the dialog closes"
         },
         {
           "feature": "Field help (sale.advance.payment.inv help strings)",
-          "status": "approximated",
-          "how": "shown as a paragraph under the field",
-          "needs": "help shown as a tooltip (?) beside the label, as Flectra does, instead of a paragraph under every field"
+          "status": "covered",
+          "how": "look.helpShown: tooltip — the help behind a (?) beside each label, as Flectra shows it"
         }
       ],
       "summary": {
-        "covered": 14,
-        "approximated": 9,
-        "missing": 3
+        "covered": 21,
+        "approximated": 5,
+        "missing": 0
       }
     },
     {

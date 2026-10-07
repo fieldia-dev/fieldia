@@ -2,13 +2,36 @@
   "fieldia": "0.1",
   "id": "real-sale-invoice-wizard",
   "title": "Create invoices",
-  "data": { "kind": "record", "model": "sale.advance.payment.inv" },
+  "data": {
+    "kind": "record",
+    "model": "sale.advance.payment.inv"
+  },
   "maxWidth": "narrow",
+  "look": {
+    "helpShown": "tooltip"
+  },
   "fields": {
-    "display_draft_invoice_warning": { "type": "boolean", "label": "Display Draft Invoice Warning", "readonly": true },
-    "has_down_payments": { "type": "boolean", "label": "Has down payments", "readonly": true },
-    "sale_order_ids": { "type": "many2many", "label": "Sale Order", "relation": "sale.order" },
-    "count": { "type": "integer", "label": "Order Count", "readonly": true, "default": 1 },
+    "display_draft_invoice_warning": {
+      "type": "boolean",
+      "label": "Display Draft Invoice Warning",
+      "readonly": true
+    },
+    "has_down_payments": {
+      "type": "boolean",
+      "label": "Has down payments",
+      "readonly": true
+    },
+    "sale_order_ids": {
+      "type": "many2many",
+      "label": "Sale Order",
+      "relation": "sale.order"
+    },
+    "count": {
+      "type": "integer",
+      "label": "Order Count",
+      "readonly": true,
+      "default": 1
+    },
     "consolidated_billing": {
       "type": "boolean",
       "label": "Consolidated Billing",
@@ -22,27 +45,63 @@
       "default": "delivered",
       "help": "A standard invoice is issued with all the order lines ready for invoicing, according to their invoicing policy (based on ordered or delivered quantity).",
       "options": [
-        { "value": "delivered", "label": "Regular invoice" },
-        { "value": "percentage", "label": "Down payment (percentage)" },
-        { "value": "fixed", "label": "Down payment (fixed amount)" }
+        {
+          "value": "delivered",
+          "label": "Regular invoice"
+        },
+        {
+          "value": "percentage",
+          "label": "Down payment (percentage)"
+        },
+        {
+          "value": "fixed",
+          "label": "Down payment (fixed amount)"
+        }
       ]
     },
-    "company_id": { "type": "many2one", "label": "Company", "relation": "res.company" },
+    "company_id": {
+      "type": "many2one",
+      "label": "Company",
+      "relation": "res.company"
+    },
     "product_id": {
       "type": "many2one",
       "label": "Down Payment Product",
       "relation": "product.product",
-      "filter": [{ "field": "type", "op": "=", "value": "service" }]
+      "filter": [
+        {
+          "field": "type",
+          "op": "=",
+          "value": "service"
+        }
+      ]
     },
-    "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency" },
-    "orders_amount_total": { "type": "monetary", "label": "Total of the orders", "currencyField": "currency_id", "readonly": true },
+    "currency_id": {
+      "type": "many2one",
+      "label": "Currency",
+      "relation": "res.currency"
+    },
+    "orders_amount_total": {
+      "type": "monetary",
+      "label": "Total of the orders",
+      "currencyField": "currency_id",
+      "readonly": true
+    },
     "fixed_amount": {
       "type": "monetary",
       "label": "Down Payment Amount (Fixed)",
       "currencyField": "currency_id",
       "help": "The fixed amount to be invoiced in advance."
     },
-    "amount": { "type": "float", "label": "Down Payment Amount", "help": "The percentage of amount to be invoiced in advance.", "digits": [16, 2] },
+    "amount": {
+      "type": "float",
+      "label": "Down Payment Amount",
+      "help": "The percentage of amount to be invoiced in advance.",
+      "digits": [
+        16,
+        2
+      ]
+    },
     "display_invoice_amount_warning": {
       "type": "boolean",
       "label": "Display Invoice Amount Warning",
@@ -53,9 +112,21 @@
       "label": "Income Account",
       "relation": "account.account",
       "help": "Account used for deposits",
-      "filter": [{ "field": "deprecated", "op": "!=", "value": true }]
+      "filter": [
+        {
+          "field": "deprecated",
+          "op": "!=",
+          "value": true
+        }
+      ]
     },
-    "amount_invoiced": { "type": "monetary", "label": "Already invoiced", "currencyField": "currency_id", "readonly": true, "help": "Only confirmed down payments are considered." },
+    "amount_invoiced": {
+      "type": "monetary",
+      "label": "Already invoiced",
+      "currencyField": "currency_id",
+      "readonly": true,
+      "help": "Only confirmed down payments are considered."
+    },
     "amount_to_invoice": {
       "type": "monetary",
       "label": "Amount to invoice",
@@ -71,11 +142,24 @@
       {
         "type": "section",
         "id": "draft-warning",
-        "style": "framed",
+        "style": "plain",
         "invisible": "not display_draft_invoice_warning",
         "children": [
-          { "type": "text", "id": "t-draft-invoices", "text": "There are existing Draft Invoices for this Sale Order.", "style": "paragraph" },
-          { "type": "button", "id": "view-draft-invoices", "label": "Draft Invoices", "style": "link", "icon": "receipt", "action": "view_draft_invoices" },
+          {
+            "type": "text",
+            "id": "t-draft-invoices",
+            "text": "There are existing Draft Invoices for this Sale Order.",
+            "style": "alert",
+            "tone": "warning"
+          },
+          {
+            "type": "button",
+            "id": "view-draft-invoices",
+            "label": "Draft Invoices",
+            "style": "link",
+            "icon": "receipt",
+            "action": "view_draft_invoices"
+          },
           {
             "type": "text",
             "id": "t-deduct-drafts",
@@ -91,9 +175,25 @@
         "style": "plain",
         "labels": "beside",
         "children": [
-          { "type": "field", "id": "f-count", "field": "count", "invisible": "count == 1" },
-          { "type": "field", "id": "f-consolidated", "field": "consolidated_billing", "invisible": "count == 1" },
-          { "type": "field", "id": "f-method", "field": "advance_payment_method", "widget": "radio", "invisible": "count > 1" }
+          {
+            "type": "field",
+            "id": "f-count",
+            "field": "count",
+            "invisible": "count == 1"
+          },
+          {
+            "type": "field",
+            "id": "f-consolidated",
+            "field": "consolidated_billing",
+            "invisible": "count == 1"
+          },
+          {
+            "type": "field",
+            "id": "f-method",
+            "field": "advance_payment_method",
+            "widget": "radio",
+            "invisible": "count > 1"
+          }
         ]
       },
       {
@@ -110,23 +210,51 @@
             "invisible": "advance_payment_method != 'fixed'",
             "required": "advance_payment_method == 'fixed'",
             "validate": [
-              { "min": 0.01, "message": "The value of the down payment amount must be positive." },
-              { "holds": "fixed_amount <= amount_to_invoice", "level": "warning", "message": "The Down Payment is greater than the amount remaining to be invoiced." }
-            ]
+              {
+                "min": 0.01,
+                "message": "The value of the down payment amount must be positive."
+              },
+              {
+                "holds": "fixed_amount <= amount_to_invoice",
+                "level": "warning",
+                "message": "The Down Payment is greater than the amount remaining to be invoiced."
+              }
+            ],
+            "label": "Down Payment Amount"
           },
           {
             "type": "field",
             "id": "f-amount",
             "field": "amount",
-            "options": { "suffix": "%" },
+            "options": {
+              "suffix": "%"
+            },
             "invisible": "advance_payment_method != 'percentage'",
             "required": "advance_payment_method == 'percentage'",
             "validate": [
-              { "min": 0.01, "message": "The value of the down payment amount must be positive." },
-              { "holds": "amount / 100 * orders_amount_total <= amount_to_invoice", "level": "warning", "message": "The Down Payment is greater than the amount remaining to be invoiced." }
+              {
+                "min": 0.01,
+                "message": "The value of the down payment amount must be positive."
+              },
+              {
+                "holds": "amount / 100 * orders_amount_total <= amount_to_invoice",
+                "level": "warning",
+                "message": "The Down Payment is greater than the amount remaining to be invoiced."
+              }
             ]
           },
-          { "type": "field", "id": "f-deposit-account", "field": "deposit_account_id", "options": { "create": false }, "invisible": "product_id" }
+          {
+            "type": "field",
+            "id": "f-deposit-account",
+            "field": "deposit_account_id",
+            "options": {
+              "create": false
+            },
+            "invisible": "product_id",
+            "roles": [
+              "account.group_account_manager"
+            ]
+          }
         ]
       },
       {
@@ -136,14 +264,59 @@
         "labels": "beside",
         "invisible": "not has_down_payments",
         "children": [
-          { "type": "field", "id": "f-amount-invoiced", "field": "amount_invoiced" },
-          { "type": "field", "id": "f-amount-to-invoice", "field": "amount_to_invoice" }
+          {
+            "type": "field",
+            "id": "f-amount-invoiced",
+            "field": "amount_invoiced"
+          },
+          {
+            "type": "field",
+            "id": "f-amount-to-invoice",
+            "field": "amount_to_invoice"
+          }
+        ]
+      }
+    ],
+    "footer": [
+      {
+        "type": "button",
+        "id": "create_invoices",
+        "label": "Create Draft Invoice",
+        "style": "primary",
+        "hotkey": "q",
+        "steps": [
+          {
+            "do": "check"
+          },
+          {
+            "do": "call",
+            "action": "create_invoices"
+          },
+          {
+            "do": "save"
+          }
+        ]
+      },
+      {
+        "type": "button",
+        "id": "cancel",
+        "label": "Cancel",
+        "hotkey": "x",
+        "steps": [
+          {
+            "do": "close"
+          }
         ]
       }
     ]
   },
   "on": {
-    "open": [{ "do": "call", "action": "sale_advance_defaults", "when": "not product_id" }],
-    "beforeSave": [{ "do": "check" }, { "do": "call", "action": "create_invoices" }]
+    "open": [
+      {
+        "do": "call",
+        "action": "sale_advance_defaults",
+        "when": "not product_id"
+      }
+    ]
   }
 }
