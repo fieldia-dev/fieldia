@@ -400,6 +400,24 @@ describe('a statusbar with a condition, time per step, folded steps, and a click
     expect(form.getState().dirty).toEqual([]);
     expect((data.records['deal']['1']['stage_id'] as { label: string }).label).toBe('Won');
   });
+
+  it('saves what the server worked out from the step, as Flectra saves once its onchange is back', async () => {
+    const data = createMemoryDataSource({
+      records: {
+        deal: { 1: { name: 'Office fit-out', active: true, stage_id: { id: 2, label: 'Proposal' }, durations: {} } },
+        stage: { 1: { name: 'New' }, 2: { name: 'Proposal' }, 3: { name: 'Won' } },
+      },
+      // The server renames the deal as its stage changes, a moment later.
+      onchange: { deal: { stage_id: (values) => ({ name: `Office fit-out (${(values['stage_id'] as { label: string }).label})` }) } },
+      delayMs: 20,
+    });
+    const { host } = mount(page({ clickable: true, saves: true }), { dataSource: data, recordId: 1 });
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const won = [...bar(host).querySelectorAll('button')].find((b) => b.textContent === 'Won') as HTMLButtonElement;
+    won.click();
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(data.records['deal']['1']['name']).toBe('Office fit-out (Won)');
+  });
 });
 
 describe('keys on buttons', () => {

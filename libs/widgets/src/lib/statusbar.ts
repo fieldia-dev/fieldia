@@ -67,7 +67,8 @@ export const statusbarWidget: WidgetFactory = ({ form, name, field, node, id, do
   /** Move the record to a step; and, when told to, save it at once. */
   const pick = (step: Step) => {
     form.setValue(name, step.value as never);
-    if (saves) void form.save();
+    // Saved once what the server works out from the step is back, as Flectra saves after its onchange.
+    if (saves) void form.settled().then(() => form.save());
   };
 
   function draw() {
