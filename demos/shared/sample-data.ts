@@ -431,6 +431,7 @@ function withReal(options: Parameters<typeof createMemoryDataSource>[0] & object
     warnings: merge(options.warnings, real.warnings),
     lists: { ...options.lists, ...real.lists },
     labelField: { ...options.labelField, ...real.labelField },
+    shows: { ...options.shows, ...real.shows },
   };
 }
 

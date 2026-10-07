@@ -19,6 +19,8 @@ export interface RealLane {
   onchange?: MemoryDataSourceOptions['onchange'];
   warnings?: MemoryDataSourceOptions['warnings'];
   lists?: MemoryDataSourceOptions['lists'];
+  /** What a link shows of a model's records besides their names, by model: a picture, a colour, lines under it. */
+  shows?: MemoryDataSourceOptions['shows'];
   /** Which value names a record of a model in search results, when not `name`. */
   labelField?: MemoryDataSourceOptions['labelField'];
   /** The app's answer to one of its own actions: undefined when this lane does not know the action. */

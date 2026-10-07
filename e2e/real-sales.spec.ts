@@ -53,7 +53,7 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-validity')).toBeVisible();
       await expect(node(page, 'f-date-order')).toBeHidden();
       // The grid's add buttons in the page's words, as Flectra's.
-      await expect(node(page, 'f-order-line').locator('.fd-lines-add')).toHaveText(['+ Add a product', '+ Add a section', '+ Add a note']);
+      await expect(node(page, 'f-order-line').locator(".fd-lines-add")).toHaveText(["+ Add a product", "+ Add a section", "+ Add a note", "Catalog"]);
       if (variant === 'plain') await screen(page, 'real-sale-order');
 
       // Four monitors become five: the line's Tax excl. and the order's totals follow, worked out by the server's rules.
@@ -65,7 +65,8 @@ for (const variant of VARIANTS) {
       await expect.poll(() => value(page, 'amount_total')).toBe(378708);
 
       // Another customer: the addresses and terms follow, and Delta Care Clinics is over its credit limit.
-      const warning = page.getByText('This customer is over the credit limit');
+      // The alert says the server's own words (messageField).
+      const warning = page.getByText('Delta Care Clinics has reached its credit limit of: E£ 150,000.00');
       await expect(warning).toBeHidden();
       await pick(page, 'f-partner', 'delta', 'Delta Care Clinics');
       await expect(warning).toBeVisible();
@@ -129,6 +130,55 @@ for (const variant of VARIANTS) {
       await expect.poll(() => page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().values.order_line.map((line: any) => line.values.name))).toEqual(
         expect.arrayContaining(['Down Payments', 'Down Payment (Draft) INV/2026/00118']),
       );
+      expect(problems).toEqual([]);
+    });
+
+    test('sales order: keys, roles, the customer’s address, rows on one line, tax totals, line rules and an optional product added', async ({ page, context }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, ORDER);
+      // The customer's address and tax number under the link, as show_address / show_vat.
+      await expect(node(page, 'f-partner')).toContainText('27 Ramses Street');
+      await expect(node(page, 'f-partner')).toContainText('EG 205-118-332');
+      // Keys on the header's buttons, said in their tooltips; the PRO-FORMA button for the person holding its group.
+      await expect(button(page, 'send_by_email_primary')).toHaveAttribute('title', /Alt\+G/i);
+      await expect(button(page, 'action_confirm_draft')).toHaveAttribute('title', /Alt\+Q/i);
+      await expect(button(page, 'send_proforma_draft')).toBeVisible();
+      // The pricelist and its Update Prices on one row; a tax group's row in the totals.
+      await expect(node(page, 'pricelist-row').locator('[data-node="f-pricelist"]')).toBeVisible();
+      await expect(node(page, 'f-tax-totals')).toContainText('VAT 14%');
+      await expect(node(page, 'f-tax-totals')).toContainText('40,523.00');
+      // Catalog beside the grid's own add buttons.
+      await expect(node(page, 'f-order-line').locator('button[data-node="action_add_from_catalog"]')).toBeVisible();
+      // Preview opens the customer's portal page in a new tab.
+      const [portal] = await Promise.all([context.waitForEvent('page'), button(page, 'action_preview_sale_order').click()]);
+      expect(portal.url()).toContain('/my/orders/7101');
+      await portal.close();
+      // Optional Products: a line's own button adds it to the order, then the line is green and the button goes.
+      await tab(page, 'Optional Products').click();
+      const options = node(page, 'f-options');
+      const before = await page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().values.order_line.length);
+      await options.locator('.ag-row[row-index="0"] [data-row-button="button_add_to_order"]').click();
+      await expect.poll(() => page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().values.order_line.length)).toBe(before + 1);
+      await expect(options.locator('.ag-row[row-index="0"]')).toHaveClass(/fd-tone-success/);
+      await expect(options.locator('.ag-row[row-index="0"] [data-row-button="button_add_to_order"]')).toBeHidden();
+      // Other Info: the salesperson with initials, the tags in their colours, the prepayment as a per cent on Online payment's row.
+      await tab(page, 'Other Info').click();
+      await expect(node(page, 'online-payment-row').locator('[data-node="f-prepayment"] input')).toHaveValue(/30/);
+      if (variant === 'plain') await screen(page, 'real-sale-order-other-info');
+
+      // A confirmed order: quantities to invoice in the info tone; Delivered and Invoiced shown, as the order is a sale.
+      await page.goto(`/${variant}/?${CONFIRMED}`);
+      await expect(cell(page, 'f-order-line', 0, 'qty_delivered')).toHaveClass(/fd-tone-info/);
+      await expect(cell(page, 'f-order-line', 0, 'product_uom_qty')).toHaveClass(/fd-cell-bold/);
+      await expect(button(page, 'action_view_delivery')).toBeVisible();
+      await expect(button(page, 'action_lock')).toBeVisible();
+      await expect(tab(page, 'Customer Signature')).toBeHidden();
+      // Another person, in developer mode only: no Delivery, no Lock, no PRO-FORMA; the Customer Signature tab.
+      await page.goto(`/${variant}/?${CONFIRMED}&roles=base.group_no_one`);
+      await expect(button(page, 'action_view_invoice')).toBeVisible();
+      await expect(button(page, 'action_view_delivery')).toBeHidden();
+      await expect(button(page, 'action_lock')).toBeHidden();
+      await expect(tab(page, 'Customer Signature')).toBeVisible();
       expect(problems).toEqual([]);
     });
 

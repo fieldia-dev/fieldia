@@ -45,7 +45,12 @@ const NAMES: Record<string, Record<number, string>> = {
   'product.attribute.value': { 7481: '220 V', 7482: '110 V', 7483: 'Wall mount', 7484: 'Rolling stand' },
   'crm.lead': { 7501: 'Dar El Shifa — ICU monitors renewal', 7502: 'Alexandria Medical Center — maintenance' },
   'tender.opportunity': { 7511: 'Tender 2026/114 — Ministry of Health, ICU equipment' },
+  'res.country': { 7491: 'Egypt' },
+  'stock.warehouse': { 7495: 'Cairo Main Warehouse' },
 };
+
+/** The tags' colours, Flectra's 1 to 11. */
+const TAG_COLORS: Record<number, number> = { 7171: 4, 7172: 2, 7173: 10, 7174: 9 };
 
 /** A link to a record of a model, by its id: what a many2one holds. */
 function link(model: string, id: number): RelatedRecord {
@@ -62,6 +67,8 @@ const COMPANY = () => link('res.company', 7001);
 
 interface Partner {
   name: string;
+  street?: string;
+  vat?: string;
   parent?: number;
   type?: 'contact' | 'invoice' | 'delivery';
   city: string;
@@ -78,10 +85,10 @@ interface Partner {
 }
 
 const PARTNERS: Record<number, Partner> = {
-  7101: { name: 'Dar El Shifa Hospital', city: 'Abbassia, Cairo', email: 'procurement@darelshifa.example', phone: '+20 2 2683 1100', pricelist: 7152, term: 7142, fiscal: 7161, user: 7121, team: 7131 },
-  7102: { name: 'Alexandria Medical Center', city: 'Smouha, Alexandria', email: 'supply@alexmedcenter.example', phone: '+20 3 425 7700', pricelist: 7152, term: 7143, fiscal: 7161, user: 7122, team: 7132 },
-  7103: { name: 'Delta Care Clinics', city: 'Tanta', email: 'admin@deltacare.example', phone: '+20 40 334 2200', pricelist: 7151, term: 7141, fiscal: 7161, user: 7123, team: 7133, creditLimit: 150000, owed: 128400 },
-  7104: { name: 'Suez Canal Free Zone Hospital', city: 'Port Said', email: 'buying@scfzh.example', phone: '+20 66 332 9000', pricelist: 7151, term: 7144, fiscal: 7162, user: 7122, team: 7132 },
+  7101: { name: 'Dar El Shifa Hospital', street: '27 Ramses Street', vat: 'EG 205-118-332', city: 'Abbassia, Cairo', email: 'procurement@darelshifa.example', phone: '+20 2 2683 1100', pricelist: 7152, term: 7142, fiscal: 7161, user: 7121, team: 7131 },
+  7102: { name: 'Alexandria Medical Center', street: '14 Victor Emmanuel Square', vat: 'EG 310-442-907', city: 'Smouha, Alexandria', email: 'supply@alexmedcenter.example', phone: '+20 3 425 7700', pricelist: 7152, term: 7143, fiscal: 7161, user: 7122, team: 7132 },
+  7103: { name: 'Delta Care Clinics', street: '8 El Bahr Street', vat: 'EG 412-090-516', city: 'Tanta', email: 'admin@deltacare.example', phone: '+20 40 334 2200', pricelist: 7151, term: 7141, fiscal: 7161, user: 7123, team: 7133, creditLimit: 150000, owed: 128400 },
+  7104: { name: 'Suez Canal Free Zone Hospital', street: 'Free Zone, Gate 2', city: 'Port Said', email: 'buying@scfzh.example', phone: '+20 66 332 9000', pricelist: 7151, term: 7144, fiscal: 7162, user: 7122, team: 7132 },
   7105: { name: 'Mindray Medical International', city: 'Shenzhen', email: 'export@mindray.example' },
   7106: { name: 'Siemens Healthineers Egypt', city: 'New Cairo', email: 'orders.eg@siemens-healthineers.example' },
   7111: { name: 'Dr. Hany Saleh', parent: 7101, type: 'contact', city: 'Abbassia, Cairo', email: 'hany.saleh@darelshifa.example' },
@@ -164,7 +171,18 @@ function totals(lines: Line[], amountInvoiced = 0): Values {
   const untaxed = round(items.reduce((sum, line) => sum + num(line.values['price_subtotal']), 0));
   const tax = round(items.reduce((sum, line) => sum + num(line.values['price_tax']), 0));
   const total = round(untaxed + tax);
-  return { amount_untaxed: untaxed, amount_tax: tax, amount_total: total, amount_to_invoice: round(Math.max(0, total - amountInvoiced)) };
+  return { amount_untaxed: untaxed, amount_tax: tax, amount_total: total, amount_to_invoice: round(Math.max(0, total - amountInvoiced)), tax_totals: taxTotals(items, untaxed, total) };
+}
+
+/** Flectra's tax_totals, as the tax-totals widget reads it: the untaxed amount, a row per tax group, the total. */
+function taxTotals(items: Line[], untaxed: number, total: number): Values {
+  const byGroup = new Map<string, number>();
+  for (const line of items) {
+    const taxes = (line.values['tax_id'] as RelatedRecord[] | null) ?? [];
+    const base = num(line.values['price_subtotal']);
+    for (const tax of taxes) byGroup.set(tax.label, round((byGroup.get(tax.label) ?? 0) + (base * (TAX_RATES[Number(tax.id)] ?? 0)) / 100));
+  }
+  return { untaxed, groups: [...byGroup].map(([name, amount]) => ({ name, amount })), total };
 }
 
 const QUOTATION_LINES: Line[] = [
@@ -214,6 +232,10 @@ const header = (partnerId: number, invoiceId: number, shippingId: number): Value
     show_update_pricelist: false,
     show_update_fpos: false,
     tax_calculation_rounding_method: 'round_per_line',
+    tax_country_id: link('res.country', 7491),
+    warehouse_id: link('stock.warehouse', 7495),
+    analytic_account_id: null,
+    journal_id: null,
     authorized_transaction_ids: [],
     locked: false,
   };
@@ -239,7 +261,7 @@ const SALE_ORDERS: Record<number, Values> = {
     partner_credit_warning: '',
     require_signature: true,
     require_payment: true,
-    prepayment_percent: 30,
+    prepayment_percent: 0.3,
     reference: null,
     client_order_ref: 'DSH-PO-2026-0412',
     tag_ids: links('crm.tag', 7171, 7172),
@@ -273,7 +295,11 @@ const SALE_ORDERS: Record<number, Values> = {
     partner_credit_warning: '',
     require_signature: false,
     require_payment: false,
-    prepayment_percent: 100,
+    prepayment_percent: 1,
+    // Signed on the portal before it was confirmed: the Customer Signature tab, in developer mode.
+    signed_by: 'Eng. Rania Mansour',
+    signed_on: '2026-09-21T10:48',
+    signature: null,
     reference: 'S00068',
     client_order_ref: 'AMC/SUP/2026/337',
     tag_ids: links('crm.tag', 7171, 7173),
@@ -722,7 +748,8 @@ function pageOf(values: Values): 'order' | 'wizard' | 'product' | 'contract' | '
   return null;
 }
 
-function saleOrderAction({ action, values }: ActionRequest): ActionResult | undefined {
+function saleOrderAction(request: ActionRequest): ActionResult | undefined {
+  const { action, values } = request;
   const name = String(values['name'] ?? '');
   const customer = (values['partner_id'] as RelatedRecord | null)?.label ?? 'the customer';
   switch (action) {
@@ -748,6 +775,42 @@ function saleOrderAction({ action, values }: ActionRequest): ActionResult | unde
         values: values['state'] === 'draft' ? { state: 'sent' } : {},
         say: { message: `${values['state'] === 'sale' ? 'Order confirmation' : 'Quotation'} ${name} emailed to ${customer}.`, tone: 'success' },
       };
+    case 'action_quotation_send_proforma':
+      return { say: { message: `PRO-FORMA invoice for ${name} emailed to ${customer}.`, tone: 'success' } };
+    case 'button_add_to_order': {
+      // The optional product becomes an order line, at its own price and discount; the option is then on the quotation.
+      const line = request.line;
+      if (!line) return undefined;
+      const productId = idOf(line.values['product_id']);
+      const p = productId ? PRODUCTS[productId] : undefined;
+      if (!p || !productId) return { stop: 'Pick a product first.' };
+      const lines = (values['order_line'] as Line[] | null) ?? [];
+      const last = Math.max(0, ...lines.map((l) => num(l.values['sequence'])));
+      lineProducts.set(`opt-${line.key}`, productId);
+      const added: Line = {
+        key: `opt-${line.key}`,
+        values: priced({
+          sequence: last + 10,
+          display_type: null,
+          product_id: link('product.product', productId),
+          name: String(line.values['name'] ?? p.name),
+          product_uom_qty: num(line.values['quantity']) || 1,
+          qty_delivered: 0,
+          qty_invoiced: 0,
+          product_uom: link('uom.uom', p.uom),
+          customer_lead: p.lead ?? 0,
+          price_unit: num(line.values['price_unit']),
+          tax_id: links('account.tax', ...mappedTaxes(p.taxes, idOf(values['fiscal_position_id']))),
+          discount: num(line.values['discount']),
+          is_downpayment: false,
+          qty_delivered_method: p.type === 'service' ? 'manual' : 'stock_move',
+          invoice_status: 'no',
+        }),
+      };
+      const orderLines = [...lines, added];
+      const options = ((values['sale_order_option_ids'] as Line[] | null) ?? []).map((o) => (o.key === line.key ? { ...o, values: { ...o.values, is_present: true } } : o));
+      return { values: { order_line: orderLines, sale_order_option_ids: options, ...totals(orderLines, num(values['amount_invoiced'])) } };
+    }
     case 'payment_action_capture':
       return { values: { authorized_transaction_ids: [] }, say: { message: 'Transaction captured.', tone: 'success' } };
     case 'payment_action_void':
@@ -1001,6 +1064,8 @@ export const lane: RealLane = {
   related: {
     'sale.contract': saleContract as Page,
   },
+  // A customer's address and tax number under its link (show_address, show_vat), a tag's colour.
+  shows: { 'res.partner': { details: ['street', 'city', 'vat'] }, 'crm.tag': { color: 'color' } },
   records: {
     'sale.order': SALE_ORDERS,
     'sale.advance.payment.inv': INVOICE_WIZARDS,
@@ -1009,21 +1074,22 @@ export const lane: RealLane = {
     'res.partner': Object.fromEntries(
       Object.entries(PARTNERS).map(([id, p]) => [
         id,
-        { name: p.name, parent_id: p.parent ? link('res.partner', p.parent) : null, type: p.type ?? 'contact', city: p.city, email: p.email ?? null, phone: p.phone ?? null, is_company: !p.parent },
+        { name: p.name, parent_id: p.parent ? link('res.partner', p.parent) : null, type: p.type ?? 'contact', street: p.street ?? null, city: p.city, vat: p.vat ?? null, email: p.email ?? null, phone: p.phone ?? null, is_company: !p.parent },
       ]),
     ),
     'product.product': Object.fromEntries(
       Object.entries(PRODUCTS).map(([id, p]) => [id, { name: p.name, type: p.type, sale_ok: p.saleOk ?? true, lst_price: p.price }]),
     ),
     'account.tax': {
-      7411: { name: 'VAT 14%', type_tax_use: 'sale', amount: 14 },
-      7412: { name: 'VAT 0% (exempt)', type_tax_use: 'sale', amount: 0 },
-      7413: { name: 'VAT 14% (purchases)', type_tax_use: 'purchase', amount: 14 },
+      7411: { name: 'VAT 14%', type_tax_use: 'sale', amount: 14, company_id: COMPANY(), country_id: link('res.country', 7491) },
+      7412: { name: 'VAT 0% (exempt)', type_tax_use: 'sale', amount: 0, company_id: COMPANY(), country_id: link('res.country', 7491) },
+      7413: { name: 'VAT 14% (purchases)', type_tax_use: 'purchase', amount: 14, company_id: COMPANY(), country_id: link('res.country', 7491) },
     },
+    'crm.tag': Object.fromEntries(Object.entries(NAMES['crm.tag']).map(([id, name]) => [id, { name, color: TAG_COLORS[Number(id)] ?? 0 }])),
     'account.account': Object.fromEntries(Object.entries(NAMES['account.account']).map(([id, name]) => [id, { name, deprecated: false }])),
     ...Object.fromEntries(
       Object.entries(NAMES)
-        .filter(([model]) => !['account.tax', 'account.account'].includes(model))
+        .filter(([model]) => !['account.tax', 'account.account', 'crm.tag'].includes(model))
         .map(([model, rows]) => [model, Object.fromEntries(Object.entries(rows).map(([id, name]) => [id, { name }]))]),
     ),
   },
