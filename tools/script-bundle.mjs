@@ -182,7 +182,11 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // pager the app fills, the record's own steps (archive, duplicate, delete, a post in its conversation) and
 // another record shown in place, the attachment beside the sheet in the browser's own PDF viewer, and the
 // side panel kept beside it (5.3 of it the stylesheet) — add 20.3 more, to 415.9.
-const BUDGET_KB = 417;
+// Phase 26's last ten — a line opened in a form of its own (its parts checked against the line, the record
+// as parent, its own lines held in it), a placeholder by condition, a field focused as the record opens, a
+// table's order, a line kept from deletion, the app's context in conditions and filters, a stat button's
+// help, a distribution's words in a cell, a column for some roles, a calendar's pick announced — add 6, to 422.4.
+const BUDGET_KB = 423;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -201,7 +205,9 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the business widgets (stars, a state's dot, HH:MM, per cents, a timer, a range of dates, colours, copy, a PDF and
 // a page inline, a distribution, tax totals, payments, linked properties, a column's own widget), 11.9 more, to 120.
 // what sits around a record (breadcrumbs, gear menu, pager, the record's own steps and posts, the attachment beside it), 5.9 more, to 125.9.
-const GZIP_BUDGET_KB = 126.5;
+// Phase 26's last ten (a line's own form, placeholders by condition, focus on open, order, a line kept, context,
+// a stat button's help, a distribution's words, a column's roles, a calendar's pick), 2.2 more, to 128.2.
+const GZIP_BUDGET_KB = 128.7;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
