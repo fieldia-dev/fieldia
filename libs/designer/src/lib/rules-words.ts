@@ -1,4 +1,4 @@
-import type { AnswerRule, Field, Page } from '@fieldia/core';
+import type { AnswerRule, Field, Page, SetWhen } from '@fieldia/core';
 import { readCondition, readHolds, type Condition } from './conditions';
 import { nameOf } from './layout-tree';
 import { fieldsReadBy, formulaInWords, literalOf, valueInWords } from './rules-formula';
@@ -115,6 +115,12 @@ function askWords(page: Page, rule: AnswerRule, words: DesignerWords): { say: st
  * builds reads the same through the formula's words, `==` as "is" and a
  * choice by its label. Empty when it always holds.
  */
+/** When a value set by a rule is set, in words: its condition, or the fields it is on changing — "“Certification” changes, if Certification". */
+export function setWhenPhrase(page: Page, item: SetWhen, words: DesignerWords = en): string {
+  const condition = item.when === undefined ? '' : whenWords(page, item.when, words) || item.when;
+  return item.on ? words.rules.onChange(item.on.map((name) => page.fields[name]?.label || name), condition) : condition;
+}
+
 function whenWords(page: Page, when: AnswerRule['when'], words: DesignerWords): string {
   return typeof when === 'string' ? formulaInWords(page, when, words) : '';
 }
@@ -222,7 +228,7 @@ export function pageRules(page: Page, words: DesignerWords = en): RuleEntry[] {
     if (!def) return;
     if (def.compute !== undefined) out.push({ kind: 'compute', part, field: name, name: label, sentence: w.workedOutFrom(formulaInWords(page, def.compute, words)), reads: reads(def.compute) });
     def.setWhen?.forEach((item, index) =>
-      out.push({ kind: 'set', part, field: name, index, name: label, sentence: w.setTo(setValueInWords(page, def, item.value, words), whenWords(page, item.when, words) || item.when), reads: [...new Set([...reads(item.when), ...reads(item.value)])] })
+      out.push({ kind: 'set', part, field: name, index, name: label, sentence: w.setTo(setValueInWords(page, def, item.value, words), setWhenPhrase(page, item, words)), reads: [...new Set([...reads(item.when), ...reads(item.value), ...(item.on ?? [])])] })
     );
   };
   const visit = (node: Visited) => {

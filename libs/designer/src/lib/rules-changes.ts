@@ -1,7 +1,7 @@
 import type { AnswerRule, FieldNode, Page } from '@fieldia/core';
 import { containers } from './page-tree';
 import { formulaInWords } from './rules-formula';
-import { answerRuleMust, setValueInWords } from './rules-words';
+import { answerRuleMust, setValueInWords, setWhenPhrase } from './rules-words';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 
@@ -55,7 +55,7 @@ export function ruleChanges(before: Page, after: Page, words: DesignerWords = en
     if ((was?.compute ?? '') !== (def.compute ?? '')) out.push(def.compute ? w.workedOut(name, formulaInWords(after, def.compute, words)) : w.noLongerWorkedOut(name));
     if (JSON.stringify(was?.setWhen ?? []) !== JSON.stringify(def.setWhen ?? [])) {
       const items = def.setWhen ?? [];
-      out.push(items.length ? w.setWhenJoin(items.map((item) => w.setWhen(name, setValueInWords(after, def, item.value, words), formulaInWords(after, item.when, words)))) : w.noLongerSet(name));
+      out.push(items.length ? w.setWhenJoin(items.map((item) => w.setWhen(name, setValueInWords(after, def, item.value, words), setWhenPhrase(after, item, words)))) : w.noLongerSet(name));
     }
   }
   return out;

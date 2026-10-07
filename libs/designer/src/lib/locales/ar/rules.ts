@@ -76,6 +76,7 @@ export const rules: DesignerWords['rules'] = {
   readonlyWhen: (formula) => `للقراءة فقط عندما ${formula}`,
   workedOutFrom: (formula) => `محسوب من ${formula}`,
   setTo: (value, when) => `يُضبط على ${value} عندما ${when}`,
+  onChange: (labels, condition) => `يتغيّر ${listOf('ar', labels.map((label) => q(label)), 'or')}${condition ? `، إن كان ${condition}` : ''}`,
   signs: { is: 'يساوي', isNot: 'لا يساوي' },
   keyword: (word) => word.toLowerCase().split(/\s+/).map((part) => KEYWORDS[part] ?? part).join(' '),
   quoteName: (label) => q(label),

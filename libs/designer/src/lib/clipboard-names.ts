@@ -59,7 +59,18 @@ export function remapReferences(parts: Part[], fields: Record<string, Field>, na
 
   const walk = (part: Part) => {
     const node = part as unknown as Record<string, unknown>;
-    modifiers(node, ['invisible', 'readonly', 'required']);
+    modifiers(node, ['invisible', 'readonly', 'required', 'bold']);
+    // A value's tones, each read on the record: one whose condition reads a field that is gone goes.
+    if (Array.isArray(node['tones'])) {
+      const tones = (node['tones'] as Record<string, unknown>[]).filter((tone) => {
+        if (typeof tone['when'] !== 'string') return true;
+        const renamed = expression(tone['when'] as string);
+        if (renamed !== undefined) tone['when'] = renamed;
+        return renamed !== undefined;
+      });
+      if (tones.length) node['tones'] = tones;
+      else delete node['tones'];
+    }
     if (Array.isArray(node['validate'])) {
       const rules = (node['validate'] as Record<string, unknown>[]).filter((rule) => {
         if (typeof rule['when'] !== 'string') return true;
@@ -87,10 +98,12 @@ export function remapReferences(parts: Part[], fields: Record<string, Field>, na
     modifiers(field, ['compute']);
     if (def.setWhen) {
       const kept = def.setWhen.filter((item) => {
-        const when = expression(item.when);
+        const when = item.when === undefined ? null : expression(item.when);
         const value = when === undefined ? undefined : expression(item.value);
-        if (when === undefined || value === undefined) return false;
-        Object.assign(item, { when, value });
+        // The fields a rule is on, renamed with the rest; one that is gone takes the rule with it.
+        const on = item.on?.map(name);
+        if (when === undefined || value === undefined || on?.includes(undefined)) return false;
+        Object.assign(item, { ...(when === null ? {} : { when }), value, ...(on ? { on } : {}) });
         return true;
       });
       if (kept.length) def.setWhen = kept;

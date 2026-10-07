@@ -1,4 +1,4 @@
-import { plural } from '../speak';
+import { listOf, plural } from '../speak';
 
 const lower = (words: string) => words.charAt(0).toLowerCase() + words.slice(1);
 const letters = (n: number) => plural('en', n, { one: '# letter', other: '# letters' });
@@ -88,6 +88,8 @@ export const rules = {
   readonlyWhen: (formula: string) => `Read-only when ${formula}`,
   workedOutFrom: (formula: string) => `Worked out from ${formula}`,
   setTo: (value: string, when: string) => `Set to ${value} when ${when}`,
+  /** When a rule set on a change acts: the fields it is on changing, and its condition when it has one. */
+  onChange: (labels: readonly string[], condition: string) => `${listOf('en', labels.map((label) => `“${label}”`), 'or')} ${labels.length === 1 ? 'changes' : 'change'}${condition ? `, if ${condition}` : ''}`,
   // ---- a formula in words
   signs: { is: 'is', isNot: 'is not' },
   /** The formula's own words (and, or, not, in), said in the designer's language; English keeps them as written. */
