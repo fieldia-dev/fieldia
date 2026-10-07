@@ -47,6 +47,7 @@ import { priorityWidget } from './priority';
 import { stateDotWidget } from './state-dot';
 import { colourWidget } from './colour';
 import { copyWidget } from './copy';
+import { dateRangeWidget } from './date-range';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -619,6 +620,9 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   // A value and a button that copies it: Flectra's CopyClipboardChar and CopyClipboardText.
   'char.copy': copyWidget,
   'text.copy': copyWidget,
+  // One box from → to, a range picked on a calendar, writing two date fields: Flectra's daterange.
+  'date.daterange': dateRangeWidget,
+  'datetime.daterange': dateRangeWidget,
   selection: selectWidget,
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),

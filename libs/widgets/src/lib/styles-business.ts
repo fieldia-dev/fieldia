@@ -53,4 +53,11 @@ export const BUSINESS_CSS = /* css */ `
 .fd-copy > .fd-input { flex: 1 1 auto; min-width: 0; }
 .fd-copy-long { align-items: flex-start; }
 .fd-copy-button { flex: none; }
+/* A range of dates: two boxes, from → to, in one row that wraps on a phone, its calendar under it marking the days between. */
+.fd-range { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.fd-range-box { flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+.fd-range-box > .fd-input { flex: 1 1 9em; min-width: 0; }
+.fd-range-arrow { flex: none; display: inline-block; color: var(--fd-muted); }
+.fd-range-arrow:dir(rtl) { transform: scaleX(-1); }
+.fd-range-calendar .fd-calendar-grid td button.fd-in-range { background: var(--fd-accent-soft); border-radius: 0; }
 `;
