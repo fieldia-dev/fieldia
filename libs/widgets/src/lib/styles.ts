@@ -340,7 +340,34 @@ button.fd-chip-label:hover { text-decoration: underline; }
 /* A yes/no cell sits level with the inputs beside it. */
 .fd-lines-table td > .fd-checkbox, .fd-lines-table td > .fd-switch { margin-block-start: 6px; }
 .fd-lines-table .fd-lines-grip { width: 1px; min-width: 0; padding-inline: 6px 2px; }
+/* A column of yes/no, numbers, money or dates as wide as its values, as Flectra's lists size them: words and links have the rest. */
+.fd-lines-table td[data-fit] { min-width: 0; }
+/* A head may take two lines rather than widen a column of short values: "Delivery Lead Time" over "45". */
+.fd-lines-table thead th:not(.fd-lines-grip, .fd-lines-tools) { white-space: normal; }
+.fd-lines-table thead th { vertical-align: bottom; }
+.fd-lines-table th[data-fit="boolean"] { width: 5em; min-width: 5em; }
+.fd-lines-table th[data-fit="integer"] { width: 7em; min-width: 7em; }
+.fd-lines-table th[data-fit="float"] { width: 7.5em; min-width: 7.5em; }
+.fd-lines-table th[data-fit="monetary"] { width: 11.5em; min-width: 11.5em; }
+.fd-lines-table th[data-fit="date"] { width: 9em; min-width: 9em; }
+.fd-lines-table th[data-fit="datetime"] { width: 12.5em; min-width: 12.5em; }
+/* Numbers and money read from the end, as Flectra's lists align them. */
+.fd-lines-table th:is([data-fit="integer"], [data-fit="float"], [data-fit="monetary"]) { text-align: end; }
+.fd-lines-table td:is([data-fit="integer"], [data-fit="float"], [data-fit="monetary"]) input { text-align: end; }
+/* A table reads as a table, as a grid does: a line shows its boxes and buttons where the pointer or the cursor is.
+   A touch screen has no pointer to hover with: there the boxes always show. */
+@media (hover: hover) and (pointer: fine) {
+  .fd-lines:not([data-cards="always"]) .fd-lines-table tbody tr:not(:hover, :focus-within) .fd-input:not([aria-invalid="true"]) { border-color: transparent; background-color: transparent; box-shadow: none; }
+  .fd-lines:not([data-cards="always"]) .fd-lines-table tbody tr:not(:hover, :focus-within) :is(.fd-combo-open, .fd-combo-clear) { display: none; }
+  .fd-lines:not([data-cards="always"]) .fd-lines-table tbody tr:not(:hover, :focus-within) .fd-combo .fd-combo-input { padding-inline-end: 8px; }
+  .fd-lines:not([data-cards="always"]) .fd-lines-table tbody tr:not(:hover, :focus-within) select.fd-input { appearance: none; }
+}
 .fd-line-grip { display: block; margin-block-start: 7px; cursor: grab; }
+/* A line dragged by its grip follows the pointer, lifted over the others, which slide out of its way. */
+.fd-lines-dragging, .fd-lines-dragging * { cursor: grabbing; user-select: none; }
+.fd-lines-dragging > tr:not(.fd-line-lifted) { transition: transform 0.15s ease; }
+.fd-line-lifted { position: relative; z-index: 2; box-shadow: 0 6px 18px rgba(15, 20, 25, 0.16); }
+.fd-line-lifted > td { background: var(--fd-surface); }
 .fd-line-delete { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 4px 6px; border-radius: 4px; min-width: 24px; min-height: 24px; }
 .fd-line-delete:hover { color: var(--fd-error); background: var(--fd-error-soft); }
 /* A table's own rules: a line's or a cell's tone and bold (Flectra's decoration-*), and buttons on a line. */

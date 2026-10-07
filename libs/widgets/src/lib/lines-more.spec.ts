@@ -101,7 +101,8 @@ describe('moving a table’s lines', () => {
     expect(grip.getAttribute('aria-hidden')).toBe('true');
     pointer(grip, 'pointerdown', 20);
     pointer(grip, 'pointermove', 70);
-    expect(names()).toEqual(['Design', 'Survey', 'Build']);
+    // Held, it follows the pointer; the table's value changes once it is let go.
+    expect(names()).toEqual(['Survey', 'Design', 'Build']);
     pointer(grip, 'pointermove', 115);
     pointer(grip, 'pointerup', 115);
     expect(names()).toEqual(['Design', 'Build', 'Survey']);

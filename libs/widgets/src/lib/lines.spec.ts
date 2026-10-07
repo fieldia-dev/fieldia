@@ -225,3 +225,64 @@ describe('one2many lines with sections and notes', () => {
     expect(el.querySelectorAll('.fd-lines-add')).toHaveLength(1);
   });
 });
+
+describe('a line dragged by its grip', () => {
+  /** Three lines, 40 px tall each from the top, as a browser lays them out. */
+  function three() {
+    const { form, el } = mount();
+    for (const note of ['a', 'b', 'c']) {
+      form.addLine('line_ids');
+      form.updateLine('line_ids', lines(form).at(-1)!.key, 'note', note);
+    }
+    rows(el).forEach((tr, i) => ((tr as HTMLElement).getBoundingClientRect = () => ({ top: i * 40, height: 40, bottom: i * 40 + 40 }) as DOMRect));
+    const press = (tr: Element, type: string, y: number) => tr.querySelector('.fd-line-grip')!.dispatchEvent(new MouseEvent(type, { bubbles: true, button: 0, clientY: y }));
+    const notes = () => lines(form).map((line) => line.values['note']);
+    return { el, press, notes };
+  }
+
+  it('follows the pointer, the lines it passes making room, and moves once it is let go', () => {
+    const { el, press, notes } = three();
+    const [a, b, c] = rows(el) as HTMLElement[];
+    press(a, 'pointerdown', 20);
+    press(a, 'pointermove', 22);
+    // A press that hardly moves is not a drag yet.
+    expect(a.classList.contains('fd-line-lifted')).toBe(false);
+    press(a, 'pointermove', 65);
+    expect(a.classList.contains('fd-line-lifted')).toBe(true);
+    expect(a.style.transform).toBe('translateY(45px)');
+    expect(b.style.transform).toBe('translateY(-40px)');
+    expect(c.style.transform).toBe('');
+    // Nothing is changed while it is held.
+    expect(notes()).toEqual(['a', 'b', 'c']);
+    press(a, 'pointerup', 65);
+    expect(notes()).toEqual(['b', 'a', 'c']);
+    expect(rows(el).map((tr) => (tr as HTMLElement).style.transform)).toEqual(['', '', '']);
+    expect(el.querySelector('.fd-line-lifted, .fd-lines-dragging')).toBeNull();
+  });
+
+  it('moves up past the lines above it', () => {
+    const { el, press, notes } = three();
+    const [a, b, c] = rows(el) as HTMLElement[];
+    press(c, 'pointerdown', 100);
+    press(c, 'pointermove', 15);
+    expect([a.style.transform, b.style.transform]).toEqual(['translateY(40px)', 'translateY(40px)']);
+    press(c, 'pointerup', 15);
+    expect(notes()).toEqual(['c', 'a', 'b']);
+  });
+
+  it('goes back where it was on Escape, and on a cancelled pointer', () => {
+    const { el, press, notes } = three();
+    const [a, b] = rows(el) as HTMLElement[];
+    press(a, 'pointerdown', 20);
+    press(a, 'pointermove', 65);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect([a.style.transform, b.style.transform]).toEqual(['', '']);
+    press(a, 'pointerup', 65);
+    expect(notes()).toEqual(['a', 'b', 'c']);
+    press(a, 'pointerdown', 20);
+    press(a, 'pointermove', 65);
+    press(a, 'pointercancel', 65);
+    expect(notes()).toEqual(['a', 'b', 'c']);
+    expect(el.querySelector('.fd-line-lifted')).toBeNull();
+  });
+});

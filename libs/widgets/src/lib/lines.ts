@@ -22,6 +22,16 @@ import { createWidget, type Widget, type WidgetDialogs, type WidgetFactory } fro
  * with something in it goes.
  */
 
+/** The kinds of field whose column is as wide as its values, so the columns of words and links have the rest. */
+const FIXED_WIDTH = new Set(['boolean', 'integer', 'float', 'monetary', 'date', 'datetime']);
+
+/** A line being dragged by its grip. */
+interface Drag {
+  follow(y: number): void;
+  drop(): void;
+  settle(): void;
+}
+
 interface Row {
   element: HTMLTableRowElement;
   kind: 'section' | 'note' | null;
@@ -145,6 +155,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     th.textContent = def.fields[column].label;
     const width = node.cells?.[column]?.width;
     if (width) th.style.width = `${width}ch`;
+    // Its kind, which sizes a column of yes/no, numbers, money or dates to its values, as Flectra's lists do.
+    else if (FIXED_WIDTH.has(def.fields[column].type)) th.dataset['fit'] = def.fields[column].type;
     heads.set(column, th);
     headRow.append(th);
   }
@@ -276,6 +288,61 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     if (focused && focused !== document.activeElement) focused.focus();
     voice.textContent = fillIn(labels.movedTo, { label: typeof first === 'string' && first.trim() ? first : fillIn(labels.lineN, { n: from + 1 }), n: to + 1, total: current().length });
   }
+  /**
+   * A line lifted by its grip: it follows the pointer, the lines it passes
+   * slide out of its way, and the table's value changes once, when it is let
+   * go — as a grid's row drags. Escape puts it back.
+   */
+  function lift(tr: HTMLTableRowElement, key: string, startY: number): Drag {
+    const all = [...body.children] as HTMLElement[];
+    const from = all.indexOf(tr);
+    const others = all.filter((row) => row !== tr);
+    const box = tr.getBoundingClientRect();
+    const middles = others.map((row) => {
+      const at = row.getBoundingClientRect();
+      return at.top + at.height / 2;
+    });
+    let to = from;
+    let lifted = false;
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      settle();
+    };
+    function settle() {
+      for (const row of all) row.style.transform = '';
+      tr.classList.remove('fd-line-lifted');
+      body.classList.remove('fd-lines-dragging');
+      document.removeEventListener('keydown', escape, true);
+      lifted = false;
+    }
+    return {
+      follow(y: number) {
+        const by = y - startY;
+        if (!lifted) {
+          // A press that hardly moves is not a drag yet.
+          if (Math.abs(by) < 4 || readonly) return;
+          lifted = true;
+          tr.classList.add('fd-line-lifted');
+          body.classList.add('fd-lines-dragging');
+          document.addEventListener('keydown', escape, true);
+        }
+        tr.style.transform = `translateY(${by}px)`;
+        // Its place: after every other line whose middle its own middle has passed.
+        const middle = box.top + box.height / 2 + by;
+        to = middles.filter((at) => at < middle).length;
+        others.forEach((row, i) => {
+          row.style.transform = i >= from && i < to ? `translateY(${-box.height}px)` : i < from && i >= to ? `translateY(${box.height}px)` : '';
+        });
+      },
+      drop() {
+        const moved = lifted && to !== from;
+        settle();
+        if (moved) move(key, to);
+      },
+      settle,
+    };
+  }
   body.addEventListener('keydown', (event) => {
     const key = (event.target as Element).closest('tr')?.dataset['line'];
     if (!key || !event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
@@ -293,6 +360,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     const td = document.createElement('td');
     td.colSpan = span;
     td.dataset['column'] = column;
+    if (FIXED_WIDTH.has(sub.type)) td.dataset['fit'] = sub.type;
     // Its column's label, which a card shows before its value.
     td.dataset['label'] = sub.label;
     const label = document.createElement('label');
@@ -312,21 +380,24 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     tr.dataset['line'] = line.key;
     const kind = lineKind(def, line.values);
     if (kind) tr.className = `fd-line-${kind}`;
-    // Dragged by its grip, the line takes the place the pointer is at.
+    // Dragged by its grip, the line follows the pointer and takes its place when let go.
     const grip = make('span', { class: 'fd-line-grip fd-rank-grip', 'aria-hidden': 'true' });
-    let dragging = false;
+    let drag: Drag | null = null;
     grip.addEventListener('pointerdown', (event) => {
       if (readonly || event.button !== 0) return;
       event.preventDefault();
       grip.setPointerCapture?.(event.pointerId);
-      dragging = true;
+      drag = lift(tr, line.key, event.clientY);
     });
-    grip.addEventListener('pointermove', (event) => {
-      if (!dragging) return;
-      // The place among the others: as many as have their middle above the pointer.
-      move(line.key, [...body.children].filter((row) => row !== tr && row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2 < event.clientY).length);
+    grip.addEventListener('pointermove', (event) => drag?.follow(event.clientY));
+    grip.addEventListener('pointerup', () => {
+      drag?.drop();
+      drag = null;
     });
-    for (const end of ['pointerup', 'pointercancel']) grip.addEventListener(end, () => (dragging = false));
+    grip.addEventListener('pointercancel', () => {
+      drag?.settle();
+      drag = null;
+    });
     // Its tick for the table's buttons for chosen lines, before the grip.
     const pick = choosing && !kind ? (make('input', { type: 'checkbox', class: 'fd-checkbox fd-line-pick' }) as HTMLInputElement) : null;
     pick?.addEventListener('change', () => {
@@ -417,6 +488,18 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
       const gone = new Set(ruled ? columns.filter((column) => form.columnHidden(node.id, column)) : []);
       for (const [column, th] of heads) th.hidden = gone.has(column);
       for (const [column, td] of footCells) td.hidden = gone.has(column);
+      // A column of words or links as wide as its longest value, as a list of words is: a long name has the room a code does not need.
+      for (const [column, th] of heads) {
+        if (th.dataset['fit'] || node.cells?.[column]?.width) continue;
+        const sub = def.fields[column];
+        const longest = current.reduce((most, line) => (lineKind(def, line.values) ? most : Math.max(most, cellText(sub, line.values[column], line.values, locale).length)), 0);
+        // A link's box holds its open and clear buttons too.
+        const buttons = sub.type === 'many2one' ? 5 : 0;
+        // Its head may wrap: a long label over short codes does not widen it.
+        th.style.width = `${Math.min(Math.max(longest, Math.min(sub.label.length, 10), 6), 32) + 4 + buttons}ch`;
+        // Short values keep their whole width when the table is tight: the long ones give way.
+        th.style.minWidth = `${Math.min(Math.max(longest, 6), 14) + 4}ch`;
+      }
       const keep = new Set(current.map((line) => line.key));
       for (const [key, row] of rows) {
         if (!keep.has(key)) {
