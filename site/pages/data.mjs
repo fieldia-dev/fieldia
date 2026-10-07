@@ -25,6 +25,7 @@ interface DataSource {
 }`
 )}
 
+<div class="table-scroll">
 <table>
   <thead><tr><th>Method</th><th>Called when</th><th>Needed for</th></tr></thead>
   <tbody>
@@ -40,6 +41,7 @@ interface DataSource {
     <tr><td>${c('saveDefinitions')}</td><td>Someone adds a property in place</td><td>Keeping it on that record</td></tr>
   </tbody>
 </table>
+</div>
 
 <h2 id="requests">What each method receives</h2>
 <ul>
