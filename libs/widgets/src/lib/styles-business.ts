@@ -80,4 +80,11 @@ export const BUSINESS_CSS = /* css */ `
 .fd-distribution-table .fd-share { text-align: end; }
 .fd-distribution-total { font-weight: 600; text-align: end; padding-inline-end: calc(var(--fd-pad-x) + 2ch + 4px); font-variant-numeric: tabular-nums; }
 .fd-distribution-add { justify-self: start; }
+/* Tax totals: words at the start, amounts at the end in even digits, the total in bold over a rule. */
+.fd-tax-totals { justify-self: end; border-collapse: collapse; min-width: min(100%, 320px); font-variant-numeric: tabular-nums; }
+.fd-tax-totals th { text-align: start; font-weight: 400; color: var(--fd-muted); padding: 3px 16px 3px 0; padding-inline: 0 16px; }
+.fd-tax-totals td { text-align: end; padding: 3px 0; white-space: nowrap; }
+.fd-tax-totals .fd-tax-subtotal th { color: var(--fd-text); }
+.fd-tax-totals .fd-tax-total :is(th, td) { font-weight: 700; color: var(--fd-text); font-size: 15px; border-top: 1px solid var(--fd-border); padding-top: 6px; }
+.fd-tax-totals .fd-input { width: 9em; text-align: end; }
 `;
