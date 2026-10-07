@@ -355,17 +355,20 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-close-date')).toBeHidden();
       if (variant === 'plain') await screen(page, 'real-maintenance-request');
 
-      // Two stars of three: Normal.
-      await node(page, 'f-priority').locator('button[data-value="2"]').click();
-      expect(await value(page, 'priority')).toBe(2);
-      // No "Clear selection", as Flectra has none (clear: false): the star picked, clicked again, goes back to Very Low.
-      await expect(node(page, 'f-priority').locator('.fd-choice-clear')).toBeHidden();
+      // Flectra's priority: three stars over '0'…'3'. Two stars: Normal.
+      const stars = node(page, 'f-priority').getByRole('radio');
+      await expect(stars).toHaveCount(3);
+      await stars.nth(1).click();
+      expect(await value(page, 'priority')).toBe('2');
+      // No "Clear selection", as Flectra has none: the star picked, clicked again, goes back to Very Low.
       await expect(node(page, 'f-type').locator('.fd-choice-clear')).toBeHidden();
-      await node(page, 'f-priority').locator('button[data-value="2"]').click();
-      expect(await value(page, 'priority')).toBeNull();
-      await node(page, 'f-priority').locator('button[data-value="2"]').click();
-      expect(await value(page, 'priority')).toBe(2);
+      await stars.nth(1).click();
+      expect(await value(page, 'priority')).toBe('0');
+      await stars.nth(1).click();
+      expect(await value(page, 'priority')).toBe('2');
+      // Hours as Flectra's float_time: 02:30, typed as 3.75.
       const duration = node(page, 'f-duration').locator('input');
+      await expect(duration).toHaveValue('02:30');
       await duration.fill('3.75');
       await duration.press('Tab');
       expect(await value(page, 'duration')).toBe(3.75);
@@ -379,7 +382,7 @@ for (const variant of VARIANTS) {
       await page.keyboard.press('ControlOrMeta+Enter');
       await settled(page);
       const saved = await stored(page, 'maintenance.request', 4371);
-      expect(saved.priority).toBe(2);
+      expect(saved.priority).toBe('2');
       expect(saved.duration).toBe(3.75);
       expect(saved.stage_id).toEqual({ id: 4333, label: 'Repaired' });
       expect(saved.close_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -394,6 +397,34 @@ for (const variant of VARIANTS) {
       await node(page, 'f-repeat-type').locator('select').selectOption({ label: 'Until' });
       await expect(node(page, 'f-repeat-until')).toBeVisible();
       expect(problems).toEqual([]);
+    });
+
+    test('maintenance request: its state’s dot, the manual inline, and a cancelled request without its stages', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, 'page=real-maintenance-request&record=4371&skin=underline');
+      // "Request" over the title; the kanban state as Flectra's coloured dot on its line.
+      await expect(page.locator('.fd-title')).toContainText('Request');
+      await expect(node(page, 'f-kanban-state').getByRole('button', { name: /Blocked/ })).toBeVisible();
+      // Created By with a face, and no Email cc outside developer mode (base.group_no_one).
+      await expect(node(page, 'f-employee').locator('.fd-link-avatar')).toBeVisible();
+      await expect(node(page, 'f-email-cc')).toBeHidden();
+      // The service manual shown inline, as pdf_viewer.
+      await page.getByRole('tab', { name: 'Instructions' }).click();
+      await expect(node(page, 'f-instruction-pdf').locator('iframe')).toBeVisible();
+      // Cancelled: no stages (invisible="archive"), and Reopen Request.
+      await button(page, 'archive_equipment_request').click();
+      await expect(page.locator('.fd-header .fd-statusbar')).toBeHidden();
+      await expect(button(page, 'reset_equipment_request')).toBeVisible();
+      // The gear: Duplicate and Delete — a request has no active field.
+      await bar(page).locator('.fd-record-gear').click();
+      await expect(page.getByRole('menu').getByRole('menuitem')).toHaveText(['Duplicate', 'Delete']);
+      await page.keyboard.press('Escape');
+      expect(problems).toEqual([]);
+
+      // The air conditioner's slides, embedded as embed_viewer.
+      await open(page, variant, 'page=real-maintenance-request&record=4372&skin=underline');
+      await page.getByRole('tab', { name: 'Instructions' }).click();
+      await expect(node(page, 'f-instruction-slide').locator('iframe')).toHaveAttribute('src', /docs\.google\.com/);
     });
 
     test('maintenance request: Repeat Every on one row in its column, its label with the others, at any width', async ({ page }) => {

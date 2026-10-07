@@ -848,6 +848,7 @@ const requestBase: Values = {
   instruction_pdf: null,
   instruction_google_slide: null,
   instruction_text: null,
+  email_cc: null,
 };
 
 const maintenanceRequests: Record<string, Values> = {
@@ -865,7 +866,7 @@ const maintenanceRequests: Record<string, Values> = {
     user_id: link(4105, 'Ahmed Tawfik'),
     schedule_date: at(0, '16:00'),
     duration: 2.5,
-    priority: 3,
+    priority: '3',
     description:
       '<p>Error <b>E12</b> (hand-piece cooling) after the third patient this morning. Two laser sessions moved to Room 1’s HydraFacial; the 18:00 laser bookings are on hold until the self-test passes.</p><p>Waiting for a DCD canister from Candela’s Cairo agent.</p>',
     instruction_type: 'pdf',
@@ -884,7 +885,7 @@ const maintenanceRequests: Record<string, Values> = {
     user_id: link(4106, 'Mahmoud Ezzat'),
     schedule_date: at(4, '08:00'),
     duration: 1,
-    priority: 1,
+    priority: '1',
     recurring_maintenance: true,
     repeat_interval: 3,
     repeat_unit: 'month',
@@ -905,7 +906,7 @@ const maintenanceRequests: Record<string, Values> = {
     maintenance_team_id: link(4362, TEAMS[4362]),
     user_id: link(4106, 'Mahmoud Ezzat'),
     duration: 0.25,
-    priority: null,
+    priority: '0',
     instruction_text: '<p>Open the rear door, pull the sheet straight out, never upwards.</p>',
   },
 };
@@ -998,6 +999,7 @@ export const lane: RealLane = {
   navigation: {
     'real-clinic-appointment': { records: [4001, 4002, 4003], breadcrumbs: [{ label: 'Appointments', href: '#appointments' }] },
     'real-time-off': { records: [4171, 4172, 4173, 4174], breadcrumbs: [{ label: 'Time Off', href: '#time-off' }] },
+    'real-maintenance-request': { records: [4371, 4372, 4373], breadcrumbs: [{ label: 'Maintenance Requests', href: '#maintenance-requests' }] },
     'real-employee': { records: [4121, 4122, 4123, 4124, 4125, 4126, 4127, 4128, 4129], breadcrumbs: [{ label: 'Employees', href: '#employees' }] },
   },
   // What links show besides a name: the staff's faces.

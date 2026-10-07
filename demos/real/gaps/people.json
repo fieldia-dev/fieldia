@@ -871,8 +871,8 @@
         },
         {
           "feature": "Stage statusbar invisible=\"archive\"",
-          "status": "missing",
-          "needs": "needs `invisible` on the sheet's statusbar"
+          "status": "covered",
+          "how": "the statusbar's invisible \"archive\": a cancelled request shows no stages (shown in the e2e)"
         },
         {
           "feature": "Canceled badge (text-bg-warning, float-end) when archived",
@@ -881,18 +881,18 @@
         },
         {
           "feature": "Kanban state (state_selection: a grey, red or green dot with a menu)",
-          "status": "approximated",
-          "how": "a plain selection over the title (title.above); needs a state-dot widget for a selection"
+          "status": "covered",
+          "how": "widget dot on the selection, on the title's line (title.after): grey, red or green, with a menu of the states (shown in the e2e)"
         },
         {
           "feature": "Title with a \"Request\" label above and placeholder \"e.g. Screen not working\"",
-          "status": "approximated",
-          "how": "sheet title with the placeholder; no label over a title"
+          "status": "covered",
+          "how": "title.label \"Request\" over the title, with the placeholder (shown in the e2e)"
         },
         {
           "feature": "Created By (hr_maintenance employee_id, many2one_avatar_employee, no_create_edit, no_open)",
-          "status": "approximated",
-          "how": "many2one with create false; no avatar"
+          "status": "covered",
+          "how": "many2one with create false, open false (no_open) and avatar: true — the employee's face (shown in the e2e)"
         },
         {
           "feature": "Equipment, with its category (related, groups manager, invisible not equipment), team and technician following it",
@@ -901,8 +901,8 @@
         },
         {
           "feature": "Equipment's context defaults for a new one (default_company_id, default_category_id)",
-          "status": "approximated",
-          "how": "Create and edit… would open with the typed name only; needs defaults handed to a link's new record"
+          "status": "covered",
+          "how": "equipment_id's createValues: company_id and category_id, so Create and edit… starts with them, as default_company_id and default_category_id"
         },
         {
           "feature": "Request Date (readonly), Close Date (readonly, invisible not done; done related to the stage)",
@@ -921,8 +921,8 @@
         },
         {
           "feature": "Duration with widget float_time and \"hours\" after",
-          "status": "approximated",
-          "how": "a float with the suffix \"hours\", 2.50 rather than 02:30; needs a float_time (hh:mm) widget"
+          "status": "covered",
+          "how": "widget duration with the suffix \"hours\": 02:30, typed as 2.5 or 02:30 (shown in the e2e)"
         },
         {
           "feature": "Recurrent (label and box hidden for corrective)",
@@ -941,13 +941,13 @@
         },
         {
           "feature": "Priority (widget priority: three stars over a selection '0'..'3')",
-          "status": "approximated",
-          "how": "an integer from 1 to 3 with the rating widget and `clear: false`: no \"Clear selection\", and the star picked, clicked again, goes back to Very Low, as Flectra's (shown in the e2e); the value is a number, not Flectra's string key — needs the rating widget on a selection"
+          "status": "covered",
+          "how": "a selection '0'…'3' as Flectra's, with the priority widget: three stars, the star picked clicked again back to Very Low, no Clear selection (shown in the e2e)"
         },
         {
           "feature": "Email cc (groups base.group_no_one: developer mode only)",
-          "status": "missing",
-          "needs": "left out: no developer mode or groups"
+          "status": "covered",
+          "how": "placed with roles [base.group_no_one]: shown only to someone the app says is in developer mode — not to the demo's person (shown in the e2e)"
         },
         {
           "feature": "Company (multi company, no_create)",
@@ -966,13 +966,13 @@
         },
         {
           "feature": "Instruction PDF shown inline (widget pdf_viewer)",
-          "status": "approximated",
-          "how": "a binary accepting PDFs, shown as a file card that opens in the viewer; needs an inline PDF preview"
+          "status": "covered",
+          "how": "widget pdf: the manual in the browser's own viewer, inline, with a link to open it (shown in the e2e)"
         },
         {
           "feature": "Google Slide embedded (widget embed_viewer)",
-          "status": "approximated",
-          "how": "a url field; needs an embedded viewer for a link"
+          "status": "covered",
+          "how": "widget embed on the link: the slides shown inline (shown in the e2e)"
         },
         {
           "feature": "Instruction text (html, placeholder \"Your instructions\")",
@@ -1001,8 +1001,8 @@
         },
         {
           "feature": "Help texts as a tooltip on the label",
-          "status": "approximated",
-          "how": "left out: Fieldia prints `help` under the field, which on a dense Flectra sheet doubles its height; needs `help` shown as a tooltip (a ? by the label) as an option"
+          "status": "covered",
+          "how": "look.helpShown \"tooltip\": each field's help behind a (?) by its label, as Flectra shows it, with Flectra's own help texts on the fields (shown in the e2e)"
         },
         {
           "feature": "Labels beside values in <group>s",
@@ -1011,18 +1011,20 @@
         },
         {
           "feature": "Conditions written with tuples: `state in ('a', 'b')`",
-          "status": "approximated",
-          "how": "refused by the parser (\"Expected closing parenthesis\") and written as lists `['a', 'b']`; Flectra's views use tuples throughout, and site/pages/format.mjs shows a tuple in its own example, so a pasted condition fails. Needs tuple literals in the expression language"
+          "status": "covered",
+          "how": "the page's conditions are written as Flectra writes them, with tuples — state in ('done', 'cancel') — read as lists"
         },
         {
           "feature": "Read-only fields shown as text",
-          "status": "approximated",
-          "how": "an empty read-only field draws empty, as Flectra's (no \"Search…\", no dd.mm.yyyy mask: shown in the e2e); but a read-only selection is a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+          "status": "covered",
+          "how": "look.readonlyShown \"text\": read-only values drawn as their words, as Flectra draws them — a choice by its label with no arrow, a date as written, a link by its name, long words wrapped, an empty one as nothing (shown in the e2e)"
         },
         {
           "feature": "Object buttons save the record first, run the method, then reload it",
           "status": "approximated",
-          "how": "steps: the method's effect (set steps, or a `call` the app answers with values), then `save`; the order differs (Flectra saves before the method) but the record ends the same"
+          "how": "steps run the method's effect (set steps, or a call the app answers with values), then save; a page can write Flectra's order — save, call, reload (or the app's reload: true) — where the app's server runs the method",
+          "app": true,
+          "why": "running the method on the server between the save and the reload is the app's; the demo's in-memory app answers a call with values instead"
         },
         {
           "feature": "A server refusal on save (ValidationError / UserError from constraints)",
@@ -1031,13 +1033,13 @@
         },
         {
           "feature": "Record menu (gear): Archive, Duplicate, Delete; record pager; breadcrumbs",
-          "status": "missing",
-          "needs": "Fieldia draws one record without the action menu, the 1/12 pager or breadcrumbs; needs a record toolbar the app can fill (Archive, Duplicate, Delete, Print) and a pager"
+          "status": "covered",
+          "how": "toolbar: the gear menu (Duplicate and Delete — a request has no active field, Cancel sets archive), the pager and the breadcrumbs, the list's records and the trail handed in by the app as the viewer's records and breadcrumbs options (shown in the e2e)"
         },
         {
           "feature": "groups= on fields, buttons and pages",
-          "status": "approximated",
-          "how": "Fieldia has no user groups: the page here is the one a manager sees; needs `groups`-like conditions on the person (e.g. a `user.groups` value in expressions) or the app handing a page per role"
+          "status": "covered",
+          "how": "roles as the view gates them: maintenance.group_equipment_manager on Category, base.group_multi_company on Company, base.group_no_one on Email cc; the app hands the person in (user option)"
         }
       ],
       "summary": {
