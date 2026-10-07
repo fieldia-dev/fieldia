@@ -299,6 +299,46 @@ for (const variant of VARIANTS) {
       expect(problems).toEqual([]);
     });
 
+    test('the survey: a question opens its own form, its answers lines held in it', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, SURVEY);
+      await expect(node(page, '#title').locator('input, textarea').first()).toHaveValue('Client satisfaction survey, autumn 2026');
+      // The table's row never draws a question's answers.
+      await expect(node(page, 'f-questions').locator('.ag-header-cell[col-id="suggested_answer_ids"]')).toHaveCount(0);
+      await node(page, 'f-questions').locator('.ag-row[row-index="2"] .fd-line-open').click();
+      const dialog = page.getByRole('dialog', { name: 'Sections and Questions' });
+      await expect(dialog).toBeVisible();
+      await expect(dialog.locator('[data-node="question-title"] input')).toHaveValue('Overall, how satisfied are you with our service?');
+      // Its answers, in its own form; no scoring on the survey (the parent): no Correct, no Score.
+      const answers = dialog.locator('[data-node="question-suggested"]');
+      await expect(answers.locator('tbody tr[data-line]')).toHaveCount(4);
+      await expect(answers.locator('thead th[data-column="answer_score"]')).toBeHidden();
+      if (variant === 'plain') await screen(page, 'real-survey-question-form', { viewport: true });
+      await answers.getByRole('button', { name: 'Add a line' }).click();
+      await answers.locator('tbody tr[data-line]').last().locator('input').first().fill('Very dissatisfied');
+      // Options: the mandatory answer's message, as the question has it.
+      await dialog.getByRole('tab', { name: 'Options' }).click();
+      await expect(dialog.locator('[data-node="question-mandatory-error"] input')).toHaveValue('This question requires an answer.');
+      // A text question has no answers to give: the tab goes.
+      await dialog.getByRole('radio', { name: 'Multiple Lines Text Box' }).check();
+      await expect(dialog.getByRole('tab', { name: 'Answers' })).toBeHidden();
+      await dialog.getByRole('radio', { name: 'Multiple choice: only one answer' }).check();
+      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      await expect(dialog).toBeHidden();
+      const question = ((await value(page, 'question_and_page_ids')) as { values: Record<string, unknown> }[])[2].values;
+      expect((question['suggested_answer_ids'] as { values: { value: string } }[]).map((answer) => answer.values.value)).toEqual(['Very satisfied', 'Satisfied', 'Neutral', 'Dissatisfied', 'Very dissatisfied']);
+
+      // Scored: the answers' Correct and Score show.
+      await tab(page, 'Options').click();
+      await node(page, 'f-survey-type').getByText('Assessment', { exact: true }).click();
+      await expect.poll(() => value(page, 'scoring_type')).toBe('scoring_with_answers');
+      await tab(page, 'Questions').click();
+      await node(page, 'f-questions').locator('.ag-row[row-index="2"] .fd-line-open').click();
+      await expect(dialog.locator('[data-node="question-suggested"] thead th[data-column="answer_score"]')).toBeVisible();
+      await dialog.getByRole('button', { name: 'Discard' }).click();
+      expect(problems).toEqual([]);
+    });
+
     test('the survey: a question added and moved up, the type changed and the options following', async ({ page }) => {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, SURVEY);

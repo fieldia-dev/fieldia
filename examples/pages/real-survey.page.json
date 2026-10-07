@@ -5,7 +5,7 @@
   "description": "Sherkety ERP's survey settings record (survey.survey, survey_survey_view_form), with the Courses button website_slides_survey adds.",
   "data": { "kind": "record", "model": "survey.survey" },
   "maxWidth": "full",
-  "look": { "helpShown": "tooltip", "readonlyShown": "text", "readonlyShown": "text", "density": "compact" },
+  "look": { "helpShown": "tooltip", "readonlyShown": "text", "density": "compact" },
   "fields": {
     "title": { "type": "char", "label": "Survey Title", "required": true },
     "survey_type": {
@@ -70,7 +70,27 @@
           "help": "Questions containing the triggering answer(s) to display the current question."
         },
         "description": { "type": "html", "label": "Description", "help": "Use this field to add additional explanations about your question or to illustrate it with pictures or a video" },
-        "constr_error_msg": { "type": "char", "label": "Error message" }
+        "constr_error_msg": { "type": "char", "label": "Error message" },
+        "validation_required": { "type": "boolean", "label": "Validate entry" },
+        "validation_length_min": { "type": "integer", "label": "Minimum Text Length" },
+        "validation_length_max": { "type": "integer", "label": "Maximum Text Length" },
+        "validation_min_float_value": { "type": "float", "label": "Minimum value" },
+        "validation_max_float_value": { "type": "float", "label": "Maximum value" },
+        "validation_error_msg": { "type": "char", "label": "Validation Error" },
+        "question_placeholder": { "type": "char", "label": "Placeholder" },
+        "comments_allowed": { "type": "boolean", "label": "Show Comments Field" },
+        "comments_message": { "type": "char", "label": "Comment Message" },
+        "triggering_answer_ids": { "type": "many2many", "label": "Triggering Answers", "relation": "survey.question.answer" },
+        "suggested_answer_ids": {
+          "type": "one2many",
+          "label": "Types of answers",
+          "relation": "survey.question.answer",
+          "fields": {
+            "value": { "type": "char", "label": "Choices", "required": true },
+            "is_correct": { "type": "boolean", "label": "Correct" },
+            "answer_score": { "type": "float", "label": "Score" }
+          }
+        }
       }
     },
     "questions_layout": {
@@ -266,7 +286,98 @@
                 "columns": ["title", "question_type", "constr_mandatory", "random_questions_count", "triggering_question_ids"],
                 "optionalColumns": { "constr_mandatory": "show", "random_questions_count": "hide" },
                 "options": { "addLabel": "Add a question", "copy": true },
-                "cells": { "random_questions_count": { "hidden": "questions_selection == 'all'" } }
+                "cells": { "random_questions_count": { "hidden": "questions_selection == 'all'" } },
+                "lineForm": {
+                  "children": [
+                    { "type": "field", "id": "question-title", "field": "title", "label": "Question" },
+                    { "type": "field", "id": "question-type", "field": "question_type", "widget": "radio", "options": { "clear": false, "columns": 2 } },
+                    {
+                      "type": "tabs",
+                      "id": "question-tabs",
+                      "children": [
+                        {
+                          "type": "tab",
+                          "id": "question-answers",
+                          "label": "Answers",
+                          "invisible": "question_type not in ('simple_choice', 'multiple_choice', 'matrix')",
+                          "children": [
+                            {
+                              "type": "field",
+                              "id": "question-suggested",
+                              "field": "suggested_answer_ids",
+                              "labels": "hidden",
+                              "columns": ["value", "is_correct", "answer_score"],
+                              "options": { "addLabel": "Add a line" },
+                              "cells": {
+                                "is_correct": { "hidden": "parent.scoring_type == 'no_scoring' or question_type == 'matrix'" },
+                                "answer_score": { "hidden": "parent.scoring_type == 'no_scoring' or question_type == 'matrix'" }
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "tab",
+                          "id": "question-description-tab",
+                          "label": "Description",
+                          "children": [{ "type": "field", "id": "question-description", "field": "description", "labels": "hidden" }]
+                        },
+                        {
+                          "type": "tab",
+                          "id": "question-options",
+                          "label": "Options",
+                          "children": [
+                            {
+                              "type": "section",
+                              "id": "question-options-row",
+                              "style": "plain",
+                              "columns": 2,
+                              "children": [
+                                {
+                                  "type": "section",
+                                  "id": "question-validation",
+                                  "title": "Answers",
+                                  "style": "line",
+                                  "children": [
+                                    { "type": "field", "id": "question-validate", "field": "validation_required", "invisible": "question_type not in ('char_box', 'numerical_box', 'date', 'datetime')" },
+                                    { "type": "field", "id": "question-length-min", "field": "validation_length_min", "invisible": "not validation_required or question_type != 'char_box'", "required": "validation_required and question_type == 'char_box'" },
+                                    { "type": "field", "id": "question-length-max", "field": "validation_length_max", "invisible": "not validation_required or question_type != 'char_box'", "required": "validation_required and question_type == 'char_box'" },
+                                    { "type": "field", "id": "question-min-value", "field": "validation_min_float_value", "invisible": "not validation_required or question_type != 'numerical_box'", "required": "validation_required and question_type == 'numerical_box'" },
+                                    { "type": "field", "id": "question-max-value", "field": "validation_max_float_value", "invisible": "not validation_required or question_type != 'numerical_box'", "required": "validation_required and question_type == 'numerical_box'" },
+                                    { "type": "field", "id": "question-validation-error", "field": "validation_error_msg", "placeholder": "Displayed when the answer entered is not valid.", "invisible": "not validation_required" },
+                                    { "type": "field", "id": "question-placeholder", "field": "question_placeholder", "placeholder": "Help Participants know what to write", "invisible": "question_type not in ('text_box', 'char_box', 'date', 'datetime', 'numerical_box')" },
+                                    { "type": "field", "id": "question-comments", "field": "comments_allowed", "invisible": "question_type not in ('simple_choice', 'multiple_choice', 'matrix')" },
+                                    { "type": "field", "id": "question-comments-message", "field": "comments_message", "placeholder": "If other, please specify:", "invisible": "question_type not in ('simple_choice', 'multiple_choice', 'matrix') or not comments_allowed" }
+                                  ]
+                                },
+                                {
+                                  "type": "section",
+                                  "id": "question-conditional",
+                                  "title": "Conditional display",
+                                  "style": "line",
+                                  "children": [
+                                    { "type": "text", "id": "question-conditional-random", "style": "note", "text": "Conditional display is not available when questions are randomly picked.", "invisible": "parent.questions_selection == 'all'" },
+                                    { "type": "field", "id": "question-triggering", "field": "triggering_answer_ids", "widget": "tags", "placeholder": "Optional previous answers required", "invisible": "parent.questions_selection == 'random'", "options": { "create": false } },
+                                    { "type": "field", "id": "question-triggering-questions", "field": "triggering_question_ids", "widget": "tags", "invisible": "parent.questions_selection == 'random' or not triggering_question_ids" }
+                                  ]
+                                },
+                                {
+                                  "type": "section",
+                                  "id": "question-constraints",
+                                  "title": "Constraints",
+                                  "style": "line",
+                                  "children": [
+                                    { "type": "field", "id": "question-mandatory", "field": "constr_mandatory", "label": "Mandatory Answer" },
+                                    { "type": "field", "id": "question-mandatory-error", "field": "constr_error_msg", "placeholder": "This question requires an answer.", "invisible": "not constr_mandatory" }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
               }
             ]
           },

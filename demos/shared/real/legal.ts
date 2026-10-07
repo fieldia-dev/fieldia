@@ -424,6 +424,17 @@ const SURVEY_QUESTIONS: [kind: 'section' | null, title: string, type: string | n
   [null, 'May we call you about your answers?', 'simple_choice', true],
   [null, 'Best day for a follow-up call', 'date', false, [7212, 'May we call you about your answers?']],
 ];
+/** Each choice question's answers, by its place among the survey's lines, with their scores: lines held in a line (survey.question.answer). */
+const SURVEY_ANSWERS: Record<number, [id: number, value: string, score: number][]> = {
+  1: [[7301, 'A colleague', 0], [7302, 'A search engine', 0], [7303, 'The Cairo office fair', 0]],
+  2: [[7304, 'Very satisfied', 3], [7305, 'Satisfied', 2], [7306, 'Neutral', 1], [7307, 'Dissatisfied', 0]],
+  3: [[7308, 'Office furniture', 0], [7309, 'Stationery', 0], [7310, 'Printing', 0]],
+  6: [[7311, 'The same day', 2], [7312, 'Within two days', 1], [7313, 'Longer', 0]],
+  11: [[7314, 'Yes', 0], [7315, 'No', 0]],
+};
+const answers = (index: number): Line[] =>
+  (SURVEY_ANSWERS[index] ?? []).map(([id, value, score]) => ({ key: `a${id}`, id, values: { value, is_correct: score > 0 && score === Math.max(...SURVEY_ANSWERS[index].map(([, , s]) => s)), answer_score: score } }));
+
 const surveyLines = (): Line[] =>
   SURVEY_QUESTIONS.map(([kind, title, type, mandatory, trigger], i) =>
     line(`q${i + 1}`, 7201 + i, {
@@ -436,6 +447,18 @@ const surveyLines = (): Line[] =>
       triggering_question_ids: trigger ? [link(trigger[0], trigger[1])] : [],
       description: null,
       constr_error_msg: mandatory ? 'This question requires an answer.' : null,
+      validation_required: false,
+      validation_length_min: null,
+      validation_length_max: null,
+      validation_min_float_value: null,
+      validation_max_float_value: null,
+      validation_error_msg: null,
+      question_placeholder: null,
+      comments_allowed: false,
+      comments_message: null,
+      // The follow-up date shows only after a Yes to the call.
+      triggering_answer_ids: trigger ? [link(7314, 'Yes')] : [],
+      suggested_answer_ids: answers(i),
     })
   );
 
@@ -784,6 +807,8 @@ export const lane: RealLane = {
     'account.move': { 7993: { name: 'INV/2026/00311' }, 7994: { name: 'INV/2026/00347' } },
     'crm.lead': { 7951: { name: 'Nile Cotton Mills — supply dispute with Delta' } },
     'account.analytic.account': { 7981: { name: 'LEG/2026/LIT/0042 Nile Cotton Mills v. Delta Logistics' } },
+    // The survey's answers, found by a question's triggering answers.
+    'survey.question.answer': Object.fromEntries(Object.values(SURVEY_ANSWERS).flat().map(([id, value]) => [id, { name: value }])),
     'survey.question': Object.fromEntries(SURVEY_QUESTIONS.map(([, title], i) => [7201 + i, { title }])),
     'mail.template': { 7971: { name: 'Certification: Success', model: 'survey.user_input' }, 7972: { name: 'Survey: Invite', model: 'survey.user_input' } },
     'gamification.badge': { 7975: { name: 'Certified supplier contact' } },

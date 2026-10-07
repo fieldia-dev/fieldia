@@ -701,9 +701,8 @@
         },
         {
           "feature": "A question opens survey.question's own form (answers, conditional display, scoring, validation)",
-          "status": "missing",
-          "how": "↗ opens only the line's fields (title, type, mandatory, error message, description…)",
-          "needs": "lines holding lines (a question's answers), or a line opening its related page"
+          "status": "covered",
+          "how": "lineForm on the questions grid: ↗ opens the question's own form — its type as radios, Answers (suggested_answer_ids, lines held in the line, with Correct and Score hidden while parent.scoring_type is no_scoring), Description, and Options: validation by type (length or value limits, its message), placeholder, comments, conditional display (triggering answers), Mandatory and its message — saved inside the question line"
         },
         {
           "feature": "Options: Questions group — Pagination (radio, read-only in a live session), Display Progress as, Question Selection, Allow Roaming (label override), with their conditions",
