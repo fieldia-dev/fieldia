@@ -59,7 +59,7 @@ const same = (a: RecordId | null | undefined, b: RecordId | null | undefined) =>
  * the menu shows; on a phone the trail folds to the page before this one.
  */
 export function recordBar(context: RecordBarContext): { element: HTMLElement; update(): void; destroy(): void } | null {
-  const { doc, el, form, labels, toolbar } = context;
+  const { el, labels, toolbar } = context;
   const menuItems = toolbar?.menu ?? [];
   const trail = toolbar?.breadcrumbs === false ? undefined : context.breadcrumbs;
   const given = toolbar?.pager === false ? undefined : context.records;
