@@ -376,10 +376,17 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         queueMicrotask(() => update(form.getState()));
       });
 
+      const toned = node.tones !== undefined || node.bold !== undefined;
       const update = (state: FormState) => {
         const shown = form.node(node.id);
         setHidden(wrapper, shown.invisible);
         wrapper.classList.toggle('fd-required', shown.required);
+        // Its value's tone and bold while a condition holds: Flectra's decoration-* on a field.
+        if (toned) {
+          const look = form.fieldTone(node.id);
+          setAttr(wrapper, 'data-tone', look.tone);
+          wrapper.classList.toggle('fd-value-bold', look.bold);
+        }
         const message = state.errors[node.field];
         setHidden(error, !message);
         setText(error, message ?? '');
