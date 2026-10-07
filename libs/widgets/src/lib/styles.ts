@@ -355,12 +355,11 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-lines-table th:is([data-fit="integer"], [data-fit="float"], [data-fit="monetary"]) { text-align: end; }
 .fd-lines-table td:is([data-fit="integer"], [data-fit="float"], [data-fit="monetary"]) input { text-align: end; }
 /* A table reads as a table, as a grid does: a line shows its boxes and buttons where the pointer or the cursor is.
+   Only colours and visibility change, never a size: a line left for a click elsewhere must not move what is clicked.
    A touch screen has no pointer to hover with: there the boxes always show. */
 @media (hover: hover) and (pointer: fine) {
   .fd-lines:not([data-cards="always"]) .fd-lines-table tbody tr:not(:hover, :focus-within) .fd-input:not([aria-invalid="true"]) { border-color: transparent; background-color: transparent; box-shadow: none; }
-  .fd-lines:not([data-cards="always"]) .fd-lines-table tbody tr:not(:hover, :focus-within) :is(.fd-combo-open, .fd-combo-clear) { display: none; }
-  .fd-lines:not([data-cards="always"]) .fd-lines-table tbody tr:not(:hover, :focus-within) .fd-combo .fd-combo-input { padding-inline-end: 8px; }
-  .fd-lines:not([data-cards="always"]) .fd-lines-table tbody tr:not(:hover, :focus-within) select.fd-input { appearance: none; }
+  .fd-lines:not([data-cards="always"]) .fd-lines-table tbody tr:not(:hover, :focus-within) :is(.fd-combo-open, .fd-combo-clear) { visibility: hidden; }
 }
 .fd-line-grip { display: block; margin-block-start: 7px; cursor: grab; }
 /* A line dragged by its grip follows the pointer, lifted over the others, which slide out of its way. */

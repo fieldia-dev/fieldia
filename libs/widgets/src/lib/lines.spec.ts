@@ -286,3 +286,19 @@ describe('a line dragged by its grip', () => {
     expect(el.querySelector('.fd-line-lifted')).toBeNull();
   });
 });
+
+describe('a table’s columns by their values', () => {
+  it('are sized as lines come and go, never while a cell is typed in', () => {
+    const { form, el } = mount();
+    form.addLine('line_ids');
+    const key = lines(form)[0].key;
+    const width = () => (el.querySelector('thead th[data-column="note"], thead th[data-column="product_id"]') as HTMLElement).style.width;
+    const before = width();
+    form.updateLine('line_ids', key, 'product_id', { id: 2, label: 'A much longer product name than any before it' });
+    // Typed in: the column stays where it was under the person's hands.
+    expect(width()).toBe(before);
+    form.addLine('line_ids');
+    // A line came: the columns are measured again, with the long name.
+    expect(width()).not.toBe(before);
+  });
+});

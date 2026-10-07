@@ -273,6 +273,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   const rows = new Map<string, Row>();
   let focusNew: string | null = null;
   let readonly = false;
+  /** The lines the columns were last sized for, by their keys. */
+  let columnsSizedFor: string | null = null;
   const current = () => (form.getState().values[name] as Line[] | null) ?? [];
   // A new table starts with the lines it needs at least.
   for (let have = current().length; have < min; have++) form.addLine(name);
@@ -489,7 +491,11 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
       for (const [column, th] of heads) th.hidden = gone.has(column);
       for (const [column, td] of footCells) td.hidden = gone.has(column);
       // A column of words or links as wide as its longest value, as a list of words is: a long name has the room a code does not need.
-      for (const [column, th] of heads) {
+      // Measured as lines come and go, not as a cell is typed in: the columns never move under the person's hands.
+      const sizedFor = current.map((line) => line.key).join(' ');
+      const resize = sizedFor !== columnsSizedFor;
+      columnsSizedFor = sizedFor;
+      for (const [column, th] of resize ? heads : new Map<string, HTMLTableCellElement>()) {
         if (th.dataset['fit'] || node.cells?.[column]?.width) continue;
         const sub = def.fields[column];
         const longest = current.reduce((most, line) => (lineKind(def, line.values) ? most : Math.max(most, cellText(sub, line.values[column], line.values, locale).length)), 0);
