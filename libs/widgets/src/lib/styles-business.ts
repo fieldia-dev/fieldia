@@ -19,6 +19,8 @@ export const BUSINESS_CSS = /* css */ `
 /* On a phone the name takes a row of its own rather than be cut. */
 .fd-title-line > .fd-title-name { flex: 1 1 18em; min-width: 0; }
 .fd-title-line > .fd-title-name .fd-input { font-size: 24px; font-weight: 600; min-height: 40px; }
+/* A read-only name on the title's line reads as the title too, as it does alone. */
+.fd-title-line > .fd-title-name > .fd-read-text { font-size: 24px; font-weight: 600; line-height: 1.25; }
 .fd-form .fd-title-line > .fd-field { grid-template-columns: minmax(0, 1fr); }
 .fd-form .fd-title-line > .fd-field > * { grid-column: 1 !important; }
 .fd-form .fd-title-line > .fd-title-side { display: flex; align-items: center; flex: none; }
