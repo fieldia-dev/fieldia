@@ -3620,6 +3620,13 @@
                         },
                         "roles": {
                           "$ref": "#/$defs/Roles"
+                        },
+                        "hideOn": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ScreenWidth"
+                          }
                         }
                       },
                       "required": [
@@ -3692,6 +3699,13 @@
                         },
                         "roles": {
                           "$ref": "#/$defs/Roles"
+                        },
+                        "hideOn": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ScreenWidth"
+                          }
                         }
                       },
                       "required": [
@@ -3764,6 +3778,13 @@
                         },
                         "roles": {
                           "$ref": "#/$defs/Roles"
+                        },
+                        "hideOn": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ScreenWidth"
+                          }
                         }
                       },
                       "required": [
@@ -3821,6 +3842,13 @@
                   },
                   "roles": {
                     "$ref": "#/$defs/Roles"
+                  },
+                  "hideOn": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ScreenWidth"
+                    }
                   },
                   "readonly": {
                     "$ref": "#/$defs/Modifier"
@@ -3995,6 +4023,13 @@
                         },
                         "roles": {
                           "$ref": "#/$defs/Roles"
+                        },
+                        "hideOn": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ScreenWidth"
+                          }
                         }
                       },
                       "required": [
@@ -4067,6 +4102,13 @@
                         },
                         "roles": {
                           "$ref": "#/$defs/Roles"
+                        },
+                        "hideOn": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ScreenWidth"
+                          }
                         }
                       },
                       "required": [
@@ -4139,6 +4181,13 @@
                         },
                         "roles": {
                           "$ref": "#/$defs/Roles"
+                        },
+                        "hideOn": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ScreenWidth"
+                          }
                         }
                       },
                       "required": [
@@ -4196,6 +4245,13 @@
                   },
                   "roles": {
                     "$ref": "#/$defs/Roles"
+                  },
+                  "hideOn": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ScreenWidth"
+                    }
                   },
                   "readonly": {
                     "$ref": "#/$defs/Modifier"
@@ -4311,6 +4367,13 @@
               },
               "roles": {
                 "$ref": "#/$defs/Roles"
+              },
+              "hideOn": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/ScreenWidth"
+                }
               }
             },
             "required": [
@@ -4503,6 +4566,13 @@
             },
             "roles": {
               "$ref": "#/$defs/Roles"
+            },
+            "hideOn": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ScreenWidth"
+              }
             }
           },
           "required": [
@@ -4574,6 +4644,13 @@
               },
               "roles": {
                 "$ref": "#/$defs/Roles"
+              },
+              "hideOn": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/ScreenWidth"
+                }
               }
             },
             "required": [
@@ -5168,6 +5245,14 @@
         "pattern": "^!?[A-Za-z0-9_][A-Za-z0-9_.:-]*$"
       }
     },
+    "ScreenWidth": {
+      "type": "string",
+      "enum": [
+        "narrow",
+        "medium",
+        "wide"
+      ]
+    },
     "HelpShown": {
       "type": "string",
       "enum": [
@@ -5402,6 +5487,13 @@
                   },
                   "roles": {
                     "$ref": "#/$defs/Roles"
+                  },
+                  "hideOn": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ScreenWidth"
+                    }
                   }
                 },
                 "required": [
@@ -5474,6 +5566,13 @@
                   },
                   "roles": {
                     "$ref": "#/$defs/Roles"
+                  },
+                  "hideOn": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ScreenWidth"
+                    }
                   }
                 },
                 "required": [
@@ -5546,6 +5645,13 @@
                   },
                   "roles": {
                     "$ref": "#/$defs/Roles"
+                  },
+                  "hideOn": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ScreenWidth"
+                    }
                   }
                 },
                 "required": [
@@ -5603,6 +5709,13 @@
             },
             "roles": {
               "$ref": "#/$defs/Roles"
+            },
+            "hideOn": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ScreenWidth"
+              }
             },
             "readonly": {
               "$ref": "#/$defs/Modifier"
@@ -5677,6 +5790,13 @@
             },
             "roles": {
               "$ref": "#/$defs/Roles"
+            },
+            "hideOn": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ScreenWidth"
+              }
             }
           },
           "required": [
@@ -5718,6 +5838,13 @@
             },
             "roles": {
               "$ref": "#/$defs/Roles"
+            },
+            "hideOn": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ScreenWidth"
+              }
             }
           },
           "required": [
@@ -5747,6 +5874,13 @@
             },
             "roles": {
               "$ref": "#/$defs/Roles"
+            },
+            "hideOn": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ScreenWidth"
+              }
             }
           },
           "required": [
@@ -5778,6 +5912,13 @@
             },
             "roles": {
               "$ref": "#/$defs/Roles"
+            },
+            "hideOn": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ScreenWidth"
+              }
             }
           },
           "required": [
@@ -5807,6 +5948,13 @@
             },
             "roles": {
               "$ref": "#/$defs/Roles"
+            },
+            "hideOn": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ScreenWidth"
+              }
             }
           },
           "required": [
@@ -5876,6 +6024,13 @@
             },
             "roles": {
               "$ref": "#/$defs/Roles"
+            },
+            "hideOn": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ScreenWidth"
+              }
             }
           },
           "required": [
@@ -5923,6 +6078,13 @@
             },
             "roles": {
               "$ref": "#/$defs/Roles"
+            },
+            "hideOn": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ScreenWidth"
+              }
             },
             "readonly": {
               "$ref": "#/$defs/Modifier"
@@ -6038,6 +6200,13 @@
         "roles": {
           "$ref": "#/$defs/Roles"
         },
+        "hideOn": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ScreenWidth"
+          }
+        },
         "readonly": {
           "$ref": "#/$defs/Modifier"
         },
@@ -6076,6 +6245,13 @@
         },
         "roles": {
           "$ref": "#/$defs/Roles"
+        },
+        "hideOn": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ScreenWidth"
+          }
         },
         "children": {
           "minItems": 1,
@@ -6209,6 +6385,13 @@
               },
               "roles": {
                 "$ref": "#/$defs/Roles"
+              },
+              "hideOn": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/ScreenWidth"
+                }
               }
             },
             "required": [
@@ -6466,6 +6649,13 @@
               },
               "roles": {
                 "$ref": "#/$defs/Roles"
+              },
+              "hideOn": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/ScreenWidth"
+                }
               }
             },
             "required": [

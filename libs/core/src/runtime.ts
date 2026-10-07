@@ -37,6 +37,7 @@ export type {
   ListNode,
   ListFilter,
   LabelPlace,
+  ScreenWidth,
   AnswerRule,
   DividerNode,
   SpacerNode,

@@ -29,6 +29,15 @@ export const HelpShownSchema = z.enum(['below', 'tooltip', 'both']).meta({ id: '
 
 export type Tone = 'info' | 'success' | 'warning' | 'danger' | 'muted';
 
+/**
+ * A width of the form a part may be hidden at (`hideOn`): `narrow` up to
+ * 520px — a phone — `medium` up to 760px, `wide` above, the widths a
+ * section's columns change at. Flectra's `d-none d-sm-block`, hidden on a
+ * phone, is `["narrow"]`.
+ */
+export type ScreenWidth = 'narrow' | 'medium' | 'wide';
+export const ScreenWidthSchema = z.enum(['narrow', 'medium', 'wide']).meta({ id: 'ScreenWidth' });
+
 /** Where a field's label sits: above its box, beside it, or inside it as the placeholder (still read out by screen readers). */
 export type LabelPlace = 'above' | 'beside' | 'hidden';
 
@@ -141,6 +150,8 @@ export interface FieldNode {
   validate?: AnswerRule[];
   invisible?: Modifier;
   roles?: Roles;
+  /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
+  hideOn?: ScreenWidth[];
   readonly?: Modifier;
   required?: Modifier;
 }
@@ -191,6 +202,8 @@ export interface ButtonNode {
   colspan?: number;
   invisible?: Modifier;
   roles?: Roles;
+  /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
+  hideOn?: ScreenWidth[];
 }
 
 export interface TextNode {
@@ -202,6 +215,8 @@ export interface TextNode {
   colspan?: number;
   invisible?: Modifier;
   roles?: Roles;
+  /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
+  hideOn?: ScreenWidth[];
 }
 
 /** A line across the whole row, between parts. */
@@ -210,6 +225,8 @@ export interface DividerNode {
   id: string;
   invisible?: Modifier;
   roles?: Roles;
+  /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
+  hideOn?: ScreenWidth[];
 }
 
 /** Empty room: in a section with columns, an empty cell. */
@@ -219,6 +236,8 @@ export interface SpacerNode {
   colspan?: number;
   invisible?: Modifier;
   roles?: Roles;
+  /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
+  hideOn?: ScreenWidth[];
 }
 
 /** A picture between parts, such as a logo. */
@@ -240,6 +259,8 @@ export interface ImageNode {
   colspan?: number;
   invisible?: Modifier;
   roles?: Roles;
+  /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
+  hideOn?: ScreenWidth[];
 }
 
 /**
@@ -266,6 +287,8 @@ export interface FormNode {
   colspan?: number;
   invisible?: Modifier;
   roles?: Roles;
+  /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
+  hideOn?: ScreenWidth[];
   /** Every field inside is read-only while this holds. */
   readonly?: Modifier;
 }
@@ -277,6 +300,8 @@ export interface SlotNode {
   name: string;
   invisible?: Modifier;
   roles?: Roles;
+  /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
+  hideOn?: ScreenWidth[];
 }
 
 /** A group's columns: one to four for an even grid, or twelve for rows each divided its own way (twelfths). */
@@ -328,6 +353,8 @@ export interface SectionNode {
   rows?: 'full' | 'gaps';
   invisible?: Modifier;
   roles?: Roles;
+  /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
+  hideOn?: ScreenWidth[];
   /** Every field inside is read-only while this holds. */
   readonly?: Modifier;
   children: LayoutNode[];
@@ -350,6 +377,8 @@ export interface TabsNode {
   colspan?: number;
   invisible?: Modifier;
   roles?: Roles;
+  /** Hidden at these widths of the form, such as a phone's: `["narrow"]`. */
+  hideOn?: ScreenWidth[];
   children: TabNode[];
 }
 
@@ -530,6 +559,7 @@ const invisible = ModifierSchema.optional();
 /** A role's name, `!` before it to hide the part from people holding it. */
 export const RolesSchema = z.array(z.string().regex(/^!?[A-Za-z0-9_][A-Za-z0-9_.:-]*$/, 'a role is a name such as sales_team.group_sale_manager, with ! before it to hide the part from people holding it')).min(1).meta({ id: 'Roles' });
 const roles = RolesSchema.optional();
+const hideOn = z.array(ScreenWidthSchema).min(1).optional();
 const span = z.int().min(1).max(12).optional();
 const labelPlace = z.enum(['above', 'beside', 'hidden']);
 
@@ -603,7 +633,7 @@ export const FieldNodeSchema = z.strictObject({
   tones: z.array(ToneWhenSchema).min(1).optional(),
   bold: ModifierSchema.optional(),
   validate: z.array(AnswerRuleSchema).min(1).optional(),
-  invisible, roles,
+  invisible, roles, hideOn,
   readonly: ModifierSchema.optional(),
   required: ModifierSchema.optional(),
 });
@@ -619,7 +649,7 @@ export const ButtonNodeSchema = z.strictObject({
   confirm: z.string().optional(),
   icon: z.string().optional(),
   colspan: span,
-  invisible, roles,
+  invisible, roles, hideOn,
 });
 
 export const TextNodeSchema = z.strictObject({
@@ -628,12 +658,12 @@ export const TextNodeSchema = z.strictObject({
   text: z.string(),
   style: z.enum(['heading', 'paragraph', 'note']).optional(),
   colspan: span,
-  invisible, roles,
+  invisible, roles, hideOn,
 });
 
-export const DividerNodeSchema = z.strictObject({ type: z.literal('divider'), id, invisible, roles });
+export const DividerNodeSchema = z.strictObject({ type: z.literal('divider'), id, invisible, roles, hideOn });
 
-export const SpacerNodeSchema = z.strictObject({ type: z.literal('spacer'), id, colspan: span, invisible, roles });
+export const SpacerNodeSchema = z.strictObject({ type: z.literal('spacer'), id, colspan: span, invisible, roles, hideOn });
 
 export const ImageNodeSchema = z.strictObject({
   type: z.literal('image'),
@@ -645,10 +675,10 @@ export const ImageNodeSchema = z.strictObject({
   href: z.string().regex(/^(https?:\/\/|mailto:)\S+$/i, 'a link is a web address, https://…, or a mail address, mailto:…').optional(),
   caption: z.string().optional(),
   colspan: span,
-  invisible, roles,
+  invisible, roles, hideOn,
 });
 
-export const SlotNodeSchema = z.strictObject({ type: z.literal('slot'), id, name: z.string().min(1), invisible, roles });
+export const SlotNodeSchema = z.strictObject({ type: z.literal('slot'), id, name: z.string().min(1), invisible, roles, hideOn });
 
 export const FormNodeSchema = z.strictObject({
   type: z.literal('form'),
@@ -658,7 +688,7 @@ export const FormNodeSchema = z.strictObject({
   name: fieldName,
   title: z.string().optional(),
   colspan: span,
-  invisible, roles,
+  invisible, roles, hideOn,
   readonly: ModifierSchema.optional(),
 });
 
@@ -676,7 +706,7 @@ export const SectionNodeSchema = z.strictObject({
   labels: labelPlace.optional(),
   labelWidth: z.int().min(60).max(320).optional(),
   rows: z.enum(['full', 'gaps']).optional(),
-  invisible, roles,
+  invisible, roles, hideOn,
   readonly: ModifierSchema.optional(),
   get children(): z.ZodArray<typeof LayoutNodeSchema> {
     return z.array(LayoutNodeSchema);
@@ -698,7 +728,7 @@ export const TabsNodeSchema = z.strictObject({
   type: z.literal('tabs'),
   id,
   colspan: span,
-  invisible, roles,
+  invisible, roles, hideOn,
   children: z.array(TabNodeSchema).min(1),
 }).meta({ id: 'TabsNode' });
 
