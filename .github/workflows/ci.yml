@@ -46,7 +46,20 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # The browser kept between runs, by Playwright's version: most runs download nothing.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      # Chromium and the system packages it needs. An apt mirror can stall for good (twice on 7 Oct,
+      # each eating a shard's 20 minutes): each try has 4 minutes, and a stalled one is tried again.
+      - name: Install Chromium for Playwright
+        run: |
+          for try in 1 2 3; do
+            timeout 240 npx playwright install --with-deps chromium && exit 0
+            echo "Install try $try stalled or failed; trying again."
+          done
+          exit 1
       # Each demo mounts the same pages through a different framework; every
       # scenario runs against each one, and variants.spec.ts fails if a demo
       # was not built, so a missing framework cannot skip its gates quietly.
