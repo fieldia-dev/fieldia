@@ -193,7 +193,7 @@ describe('several ribbons', () => {
 });
 
 describe('alerts holding a field’s value, with buttons inside, and alerts among the parts', () => {
-  const page = (children: Page['layout'] extends infer L ? unknown[] : never = []): Page => ({
+  const page = (children: unknown[] = []): Page => ({
     fieldia: '0.1',
     id: 'bill',
     data: { kind: 'record', model: 'account.move' },
