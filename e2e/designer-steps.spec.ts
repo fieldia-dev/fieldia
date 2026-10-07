@@ -207,7 +207,7 @@ test.describe('When… in the screen designer', () => {
     // Once it is saved: the menu again, down to Say something.
     await clicked(page).getByRole('button', { name: 'Add a step once it’s saved' }).focus();
     await page.keyboard.press('Enter');
-    for (let i = 0; i < 7; i++) await page.keyboard.press('ArrowDown');
+    for (let i = 0; i < 8; i++) await page.keyboard.press('ArrowDown');
     await expect(menu(page).getByRole('menuitem', { name: 'Say something' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(clicked(page).getByRole('textbox', { name: 'Words' })).toBeFocused();

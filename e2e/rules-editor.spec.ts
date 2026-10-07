@@ -68,8 +68,8 @@ test.describe('rules in the designers', () => {
     await page.keyboard.press('ControlOrMeta+a');
     await page.keyboard.press('Backspace');
     await workOutTotal(page);
-    await expect(panel(page).locator('.fd-formula-reads')).toHaveText('Reads: Price × Quantity');
-    await expect(panel(page).locator('.fd-formula-outcome')).toHaveText('With Price 120 and Quantity 80: 9600');
+    await expect(panel(page).locator('[data-setting="Worked out from"] .fd-formula-reads')).toHaveText('Reads: Price × Quantity');
+    await expect(panel(page).locator('[data-setting="Worked out from"] .fd-formula-outcome')).toHaveText('With Price 120 and Quantity 80: 9600');
     await expect(panel(page).locator('[data-setting="Worked out from"] .fd-properties-hint')).toContainText('cannot type in it');
     await check(page, 'worked-out');
 
@@ -77,12 +77,12 @@ test.describe('rules in the designers', () => {
     const box = panel(page).getByRole('combobox', { name: 'Worked out from' });
     await box.press('End');
     await page.keyboard.type(' *');
-    await expect(panel(page).locator('.fd-formula-problem-words')).toHaveText(/^Something is missing after “\*” at \d+$/);
-    await expect(panel(page).locator('.fd-formula-problem mark')).toHaveText('*');
+    await expect(panel(page).locator('[data-setting="Worked out from"] .fd-formula-problem-words')).toHaveText(/^Something is missing after “\*” at \d+$/);
+    await expect(panel(page).locator('[data-setting="Worked out from"] .fd-formula-problem mark')).toHaveText('*');
     await check(page, 'formula-problem');
     await page.keyboard.press('Backspace');
     await page.keyboard.press('Backspace');
-    await expect(panel(page).locator('.fd-formula-problem')).toBeHidden();
+    await expect(panel(page).locator('[data-setting="Worked out from"] .fd-formula-problem')).toBeHidden();
 
     // Tried: the total follows the price and the quantity, and cannot be typed in.
     await page.getByRole('button', { name: 'Try it', exact: true }).click();

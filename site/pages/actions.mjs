@@ -39,7 +39,7 @@ ${code(
     <tr><td>${c('say')} · ${c('ask')}</td><td>Words in a tone (${c('info')}, ${c('success')}, ${c('warning')}, ${c('danger')}, ${c('muted')}); a question, No stopping the steps after it.</td></tr>
     <tr><td>${c('call')}</td><td>One of your app's actions, by name, with ${c('params')}.</td></tr>
     <tr><td>${c('close')}</td><td>The dialog or panel this form was opened in, without saving it.</td></tr>
-    <tr><td>${c('openUrl')}</td><td>A web address, from an expression — ${c(`"'https://portal.example/orders/' + name"`)} — in a new tab, or this one with ${c('"newTab": false')}.</td></tr>
+    <tr><td>${c('openUrl')}</td><td>A web address, from an expression — ${c(`"'/orders/' + name"`)} — in a new tab, or this one with ${c('"newTab": false')}.</td></tr>
     <tr><td>${c('reload')}</td><td>The record loaded again, as your data source now has it: after your app changed it on its server. Your app's answer can ask for it too, with ${c('reload: true')}.</td></tr>
   </tbody>
 </table>
