@@ -271,7 +271,7 @@ describe('editing a whole line', () => {
     expect(editingCells(api)?.sort()).toEqual(['delivery', 'name', 'price', 'product_id', 'qty'].sort());
   });
 
-  it('edits a link inside its cell, its list floating in the grid’s own box where nothing clips it', async () => {
+  it('edits a link inside its cell, its list floating over the page where nothing clips it', async () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     const { box, api } = await mount(rowMode);
     api?.startEditingCell({ rowIndex: 1, colKey: 'product_id' });
@@ -279,13 +279,13 @@ describe('editing a whole line', () => {
     expect(box.querySelector('.ag-popup-editor')).toBeNull();
     const input = box.querySelector('.ag-row[row-index="1"] .ag-cell[col-id="product_id"] input') as HTMLInputElement;
     expect(input).not.toBeNull();
-    const list = box.querySelector('.fd-grid-floating-list') as HTMLElement;
+    // The list stays with its box; a browser draws it in the page's top layer (floatUnder).
+    const list = input.closest('.fd-combo')?.querySelector('.fd-listbox') as HTMLElement;
     expect(list.getAttribute('role')).toBe('listbox');
-    expect(list.parentElement).toBe(box);
     expect(warn.mock.calls.flat().join(' ')).not.toMatch(/#98/);
     api?.stopEditing();
     await frames();
-    expect(box.querySelector('.fd-grid-floating-list')).toBeNull();
+    expect(list.isConnected).toBe(false);
     warn.mockRestore();
   });
 
@@ -359,11 +359,21 @@ describe('the grid’s columns', () => {
     expect(chooser.hidden).toBe(true);
   });
 
+  it('keeps nothing for a person who arranged nothing, though the grid sizes its columns by its lines', async () => {
+    const preferences = memoryPreferences();
+    const { api } = await mount(choosy, lines, preferences);
+    // A width the grid sets itself, as it does by its lines: told as the API's, not a person's drag.
+    api?.setColumnWidths([{ key: 'name', newWidth: 300 }], true);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(preferences.get('order.f-lines.columns')).toBeFalsy();
+  });
+
   // Two grids mounted one after the other: slow on a busy machine, so more than the usual five seconds.
   it('remembers widths, order and choices in the preferences, and brings them back', async () => {
     const preferences = memoryPreferences();
     const first = await mount(choosy, lines, preferences);
-    first.api?.setColumnWidths([{ key: 'qty', newWidth: 222 }], true);
+    // As a person drags a column's edge.
+    first.api?.setColumnWidths([{ key: 'qty', newWidth: 222 }], true, 'uiColumnResized');
     first.api?.moveColumns(['price'], 1);
     first.api?.setColumnsVisible(['delivery'], true);
     // AG Grid tells its listeners a moment later: wait for all three to be kept, however busy the machine.
@@ -545,8 +555,22 @@ describe('a grid whose columns shrink to fit (fit: shrink)', () => {
     expect(product?.flex).toBeGreaterThan(0);
     expect(price?.minWidth).toBe(80);
     const { api: plain } = await mount();
-    expect(plain?.getColumnDef('product_id')).toEqual(expect.objectContaining({ minWidth: 140 }));
+    expect(plain?.getColumnDef('product_id')?.minWidth).toBeGreaterThan(72);
     expect(plain?.getColumnDef('product_id')?.wrapHeaderText).toBeFalsy();
+  });
+});
+
+describe('a grid’s columns by what they hold', () => {
+  it('gives words the room their longest value needs, and numbers the room their kind needs, never cut', async () => {
+    const { api } = await mount();
+    const state = (column: string) => api?.getColumnState().find((c) => c.colId === column);
+    // Words share the width by the room their values need: the descriptions more than the products' short names.
+    expect(state('name')?.flex).toBeGreaterThan(state('product_id')?.flex as number);
+    // Numbers and money are as wide as their values, not a share: never cut when the grid is tight.
+    expect(state('qty')?.flex).toBeFalsy();
+    expect(state('qty')?.width).toBe(Math.round(6 * 7.6 + 40));
+    // Money keeps room for a total in the millions.
+    expect(state('price')?.width).toBe(Math.round(14 * 7.6 + 40));
   });
 });
 

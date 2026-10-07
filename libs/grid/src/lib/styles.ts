@@ -96,8 +96,6 @@ button.fd-line-card-title { color: var(--fd-accent); }
   background: var(--ag-background-color); border: var(--ag-cell-editing-border); border-radius: var(--ag-border-radius);
   box-shadow: var(--ag-cell-editing-shadow);
 }
-/* Its list is as wide as its choices need, never narrower than the cell. */
-.fd-grid-lines > .fd-grid-floating-list { position: absolute; inset-inline-end: auto; width: max-content; max-width: min(420px, 90vw); z-index: 30; }
 .fd-grid-editor .fd-listbox { inset-inline-end: auto; width: max-content; min-width: 100%; max-width: min(420px, 90vw); }
 /* A section heads the lines below it; a note is a remark between them, every line of it shown. */
 .fd-grid-lines .fd-grid-section { background: var(--fd-page); }
@@ -110,6 +108,8 @@ button.fd-line-card-title { color: var(--fd-accent); }
 .fd-grid-editor[data-type="integer"] input, .fd-grid-editor[data-type="float"] input, .fd-grid-editor[data-type="monetary"] input { text-align: end; }
 /* An analytic distribution's lines, opened from its cell: room round them, each share clear of its % sign. */
 .ag-popup-editor .fd-grid-editor[data-type="json"] { height: auto; align-items: stretch; padding: 8px 12px; }
+.ag-popup-editor .fd-grid-editor[data-type="many2many"] { height: auto; padding-block: 6px; }
+.fd-grid-editor .fd-chip { white-space: nowrap; }
 .fd-grid-editor .fd-distribution .fd-share { padding-inline-end: calc(var(--fd-pad-x, 10px) + 2ch); }
 .fd-grid-distribution { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 `;

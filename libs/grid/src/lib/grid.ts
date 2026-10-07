@@ -455,7 +455,6 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   /** A date typed beside Fieldia's own calendar (options.weekNumbers): its month needs room the cell does not have. */
   private calendar = false;
   private note: HTMLTextAreaElement | null = null;
-  private floating: { list: HTMLElement; watch: MutationObserver } | null = null;
 
   init(params: ICellEditorParams<Line> & { cell: CellContext; subfield: string }) {
     this.params = params;
@@ -488,11 +487,12 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     this.box.setAttribute('aria-label', def.label);
     this.box.append(this.widget.element);
     if (kind === 'note') this.growing(this.box.querySelector('textarea'));
-    if (cell.rowMode) this.floatList();
     if (this.isPopup()) {
       // AG Grid places a popup over its cell but leaves its size to the editor; a distribution's lines take the room they need.
       const { width, height } = params.eGridCell.getBoundingClientRect();
       if (def.type === 'json') Object.assign(this.box.style, { minWidth: `${Math.max(width, 360)}px` });
+      // Tags wrap in a box of their own, as wide as a few need and as tall as they take, never spilling over the lines around.
+      else if (def.type === 'many2many') Object.assign(this.box.style, { minWidth: `${Math.max(width, 280)}px`, minHeight: `${height}px` });
       else Object.assign(this.box.style, { width: `${width}px`, height: `${height}px` });
     }
     // The form never changes values in place, so holding them is enough.
@@ -559,26 +559,6 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
    * In a cell, a link's list would be cut off by the rows around it, so it
    * floats in the grid's own box, under its input, while the line is open.
    */
-  private floatList() {
-    const list = this.box.querySelector<HTMLElement>('.fd-listbox');
-    if (!list) return;
-    const { layer, document: doc } = { layer: this.params.cell.layer, document: this.box.ownerDocument };
-    list.classList.add('fd-grid-floating-list');
-    layer.append(list);
-    const place = () => {
-      if (list.hidden || !this.box.isConnected) return;
-      const at = (this.box.querySelector('input') ?? this.box).getBoundingClientRect();
-      const frame = layer.getBoundingClientRect();
-      const rtl = doc.defaultView?.getComputedStyle(layer).direction === 'rtl';
-      list.style.insetBlockStart = `${at.bottom - frame.top + 2}px`;
-      list.style.insetInlineStart = `${rtl ? frame.right - at.right : at.left - frame.left}px`;
-      list.style.minWidth = `${this.params.eGridCell.getBoundingClientRect().width}px`;
-    };
-    const watch = new MutationObserver(place);
-    watch.observe(list, { attributes: true, attributeFilter: ['hidden'], childList: true });
-    this.floating = { list, watch };
-    place();
-  }
   private resize() {
     const area = this.note;
     if (!area) return;
@@ -631,8 +611,6 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   }
   destroy() {
     this.leave();
-    this.floating?.watch.disconnect();
-    this.floating?.list.remove();
     this.widget.destroy?.();
     const { node, api, cell, data } = this.params;
     cell.finish(data.key);
@@ -654,6 +632,9 @@ const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 38;
 
 const EDITABLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'date', 'datetime', 'selection', 'many2one', 'many2many', 'reference']);
+
+/** The kinds of field whose column is as wide as its values need, in characters, as Flectra's lists size them. */
+const FIXED_CHARS: Partial<Record<string, number>> = { boolean: 4, integer: 4, float: 6, monetary: 14, date: 11, datetime: 17 };
 
 export const gridWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, preferences, locale, dialogs }) => {
   const def = field as LineDef;
@@ -846,8 +827,24 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     return false;
   };
 
+  // Each column's share of the width by what it holds, as Flectra's lists size theirs: yes/no, numbers and dates by
+  // their kind, words and links by the longest the lines have — a long name gets the room a short code does not need.
+  const linesOf = (value: unknown) => ((value as Line[] | null) ?? []).filter((line) => !kindOf(line));
+  const drawnFirst = linesOf(form.getState().values[name]);
+  /** Whether a column is as wide as its values, not a share of the width: yes/no, numbers, money and dates, unless the grid shrinks to fit. */
+  const fixedWidth = (column: string) => !!FIXED_CHARS[def.fields[column].type] && node.fit !== 'shrink';
+  /** The room a column's values need, in pixels: its longest value, its kind's least, a short label — and the cell's padding. */
+  const roomOf = (column: string, lines = drawnFirst) => {
+    const sub = def.fields[column];
+    const least = FIXED_CHARS[sub.type] ?? 6;
+    const longest = sub.type === 'boolean' ? 0 : lines.reduce((most, line) => Math.max(most, cellText(sub, line.values[column] as Value, line.values, locale, form.getState().values, node.cells?.[column]).length), 0);
+    // A long label over short numbers is cut, as Flectra's are, rather than widen its column.
+    return Math.round(Math.min(Math.max(longest, least, Math.min(sub.label.length, 6)), 40) * 7.6 + 40);
+  };
+
   const columnDefs: ColDef<Line>[] = columns.map((column) => {
     const sub = def.fields[column];
+    const room = roomOf(column);
     const numeric = sub.type === 'integer' || sub.type === 'float' || sub.type === 'monetary';
     // Words get the room; numbers and yes/no take what they need.
     const wide = ['char', 'text', 'html', 'many2one', 'many2many', 'reference', 'selection'].includes(sub.type);
@@ -886,9 +883,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       },
       tooltipValueGetter: (p) => (p.node?.rowPinned ? undefined : problemAt(p.data, column, p.api)),
       suppressKeyboardEvent: keys,
-      // Money keeps room for a bold total in the millions (EGP 1,234,567.00).
-      minWidth: wide ? 140 : sub.type === 'monetary' ? 150 : 96,
-      flex: wide ? 2 : sub.type === 'monetary' ? 1.3 : 1,
+      // Numbers, money and dates as wide as their values, never cut; words share the rest by the room they need, giving way when it is tight.
+      minWidth: fixedWidth(column) ? 48 : 96,
+      ...(fixedWidth(column) ? { width: room } : { flex: room }),
       hide: optional[column] === 'hide',
       ...(node.cells?.[column]?.width ? { width: node.cells[column].width! * 8 + 32, flex: 0 } : {}),
       // Columns as wide as what they hold (fit: content), sized once the lines are drawn.
@@ -1204,7 +1201,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   // A person's widths, order and choices are kept for the next visit. AG Grid
   // tells of each change a moment after it; bringing a layout back is told too,
   // and keeping it again changes nothing.
-  api.addEventListener('columnResized', (event) => event.finished && remember(event.source));
+  // A person widens a column by dragging its edge; widths the grid sets itself (by its lines) are not theirs.
+  api.addEventListener('columnResized', (event) => event.finished && event.source !== 'api' && remember(event.source));
   api.addEventListener('columnMoved', (event) => event.finished && remember(event.source));
   api.addEventListener('columnVisible', (event) => remember(event.source));
   /** Sizing the grid does by itself is not a choice to keep. */
@@ -1220,6 +1218,14 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   const personHidden = new Set(optionalIds.filter((column) => optional[column] === 'hide'));
   const hiddenByPerson = (column: string) => personHidden.has(column);
   const saved = preferences?.get(columnsKey);
+  /** The words' columns are sized by the lines once: when the first come, unless the person arranged the columns. */
+  let sizedByLines = drawnFirst.length > 0 || Array.isArray(saved) || node.fit === 'content';
+  function sizeByLines(lines: Line[]) {
+    if (sizedByLines || !lines.length) return;
+    sizedByLines = true;
+    const state = columns.filter((column) => !node.cells?.[column]?.width).map((colId) => (fixedWidth(colId) ? { colId, width: roomOf(colId, lines), flex: null } : { colId, flex: roomOf(colId, lines) }));
+    api.applyColumnState({ state });
+  }
   if (Array.isArray(saved)) {
     const known = new Set(api.getColumns()?.map((c) => c.getColId()));
     const state = (saved as { colId?: unknown }[]).filter((s) => typeof s?.colId === 'string' && known.has(s.colId)) as ColumnState[];
@@ -1492,6 +1498,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         if (totals.length) api.setGridOption('pinnedBottomRowData', [totalsRow(current)]);
         // Columns as wide as what they hold, once more as the lines change.
         if (node.fit === 'content') api.autoSizeAllColumns();
+        sizeByLines(linesOf(current));
         // The ticks and copies name a line by where it is: it may have moved.
         if (choosing || node.options?.['copy'] === true) api.refreshCells({ columns: ['__pick', '__copy'], force: true, suppressFlash: true });
       }
