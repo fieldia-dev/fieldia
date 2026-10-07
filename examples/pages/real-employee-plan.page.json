@@ -44,6 +44,10 @@
           { "type": "field", "id": "f-summary", "field": "plan_assignation_summary", "labels": "above", "label": "Plan summary", "options": { "toolbar": false } }
         ]
       }
+    ],
+    "footer": [
+      { "type": "button", "id": "action_schedule_plan", "label": "Schedule", "style": "primary", "hotkey": "q", "steps": [{ "do": "save" }] },
+      { "type": "button", "id": "cancel", "label": "Cancel", "hotkey": "x", "steps": [{ "do": "close" }] }
     ]
   }
 }

@@ -249,7 +249,8 @@ for (const variant of VARIANTS) {
     test('employee: the spouse goes with a single status; a badge generated', async ({ page }) => {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, 'page=real-employee&record=4122&skin=underline');
-      await expect(page.locator('[data-node="stat-time-off"]')).toContainText('12.5/21 Days');
+      // Flectra's "12.5/21 Days": the remaining days, then the allocated ones and the unit.
+      await expect(page.locator('[data-node="stat-time-off"]')).toContainText(/12\.5\s*\/\s*21\s*Days/);
       await expect(page.locator('[data-node="presence-present"]')).toBeVisible();
       if (variant === 'plain') await screen(page, 'real-employee');
 
@@ -279,7 +280,9 @@ for (const variant of VARIANTS) {
       await dialog.getByRole('option', { name: 'Onboarding', exact: true }).click();
       await expect(dialog.locator('[data-node="f-summary"]')).toContainText('Setup IT materials: Ahmed Tawfik');
       if (variant === 'plain') await screen(page, 'real-employee-plan', { viewport: true });
-      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      // The wizard's own footer, as Flectra's: Schedule and Cancel.
+      await expect(dialog.getByRole('button', { name: 'Save & Close' })).toHaveCount(0);
+      await dialog.getByRole('button', { name: 'Schedule' }).click();
       await expect(dialog).toBeHidden();
       await expect(toast(page, 'The plan is launched')).toBeVisible();
 
@@ -288,6 +291,60 @@ for (const variant of VARIANTS) {
       await settled(page);
       await page.locator('[data-node="stat-time-off"]').click();
       await expect(words(page, 'f-display-name')).toHaveText(/^Salma Adel on Paid Time Off/);
+      expect(problems).toEqual([]);
+    });
+
+    test('employee: Archive asks why she leaves; Equipment lists hers; colours, faces and properties', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, 'page=real-employee&record=4122&skin=underline');
+      // Tags and companies in their records' colours, the manager with his face.
+      await expect(node(page, 'f-tags').locator('[data-color="10"]')).toContainText('Clinical');
+      await expect(node(page, 'f-companies').locator('[data-color]')).toHaveCount(2);
+      await expect(node(page, 'f-manager').locator('.fd-link-avatar')).toBeVisible();
+      // The branch's properties, in two columns, one more addable in place.
+      await expect(node(page, 'f-properties')).toContainText('Syndicate licence no.');
+      await expect(node(page, 'f-properties').getByRole('button', { name: /Add a property/ })).toBeVisible();
+      // Skills' levels as bars.
+      await expect(node(page, 'f-skills').locator('[role="progressbar"]').first()).toBeVisible();
+
+      // Equipment: the list of what is hers, opened in the employee's place.
+      await expect(page.locator('[data-node="stat-equipment"]')).toContainText('2');
+      await page.locator('[data-node="stat-equipment"]').click();
+      await expect(page.locator('.fd-list-row')).toHaveCount(2);
+      await expect(page.locator('.fd-list-row').first()).toContainText('DermLite DL5 dermatoscope');
+      await page.getByRole('button', { name: 'Back' }).first().click();
+      await expect(page.locator('.fd-title [data-field="name"] input')).toHaveValue('Salma Adel');
+
+      // Archive, as hr_employee_form's: the departure wizard first, then archived.
+      await bar(page).locator('.fd-record-gear').click();
+      await page.getByRole('menuitem', { name: 'Archive' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Register Departure' });
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByRole('button', { name: 'Apply' })).toBeVisible();
+      const reason = dialog.locator('[data-node="f-reason"]').getByRole('combobox');
+      await reason.click();
+      await reason.fill('Resig');
+      await dialog.getByRole('option', { name: 'Resigned', exact: true }).click();
+      await dialog.getByRole('button', { name: 'Apply' }).click();
+      await expect(dialog).toBeHidden();
+      await expect(page.locator('.fd-ribbon:visible')).toHaveText('Archived');
+      await settled(page);
+      const saved = await stored(page, 'hr.employee', 4122);
+      expect(saved.active).toBe(false);
+      expect(saved.departure_reason_id).toEqual({ id: 4244, label: 'Resigned' });
+      expect(problems).toEqual([]);
+    });
+
+    test('employee: someone without the HR groups sees no private tabs, no plan and no equipment', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, 'page=real-employee&record=4122&skin=underline&roles=base.group_user');
+      await expect(page.getByRole('tab', { name: 'Work Information' })).toBeVisible();
+      await expect(page.getByRole('tab', { name: 'Private Information' })).toHaveCount(0);
+      await expect(page.getByRole('tab', { name: 'HR Settings' })).toHaveCount(0);
+      await expect(button(page, 'launch_plan')).toBeHidden();
+      await expect(page.locator('[data-node="stat-equipment"]')).toBeHidden();
+      await expect(node(page, 'f-companies')).toBeHidden();
+      await expect(page.locator('[data-node="stat-time-off"]')).toBeVisible();
       expect(problems).toEqual([]);
     });
 

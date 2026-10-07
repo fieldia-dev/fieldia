@@ -569,12 +569,12 @@
         {
           "feature": "Photo (image widget, zoom, preview_image avatar_128) at the right of the title",
           "status": "approximated",
-          "how": "avatarField image_1920 with Replace; no zoom on hover, no separate small preview"
+          "how": "avatarField image_1920 with Replace; no zoom on hover, no separate small preview (an image zoom is still to come in Fieldia)"
         },
         {
           "feature": "Tags under the title (many2many_tags, color_field, no_create_edit)",
-          "status": "approximated",
-          "how": "title.below with the tags widget and create false; tags have no colours — needs color_field on tags"
+          "status": "covered",
+          "how": "title.below with the tags widget, create false and colors: true — each tag in its category's colour; roles [hr.group_hr_user] (shown in the e2e)"
         },
         {
           "feature": "Archived ribbon (invisible active)",
@@ -589,7 +589,9 @@
         {
           "feature": "Chat icon by the name (hr_employee_chat, context chat_icon)",
           "status": "missing",
-          "needs": "needs a way to open a chat with the record's user beside its name"
+          "needs": "a way to open a chat with the record's user beside its name",
+          "app": true,
+          "why": "opening a chat with the employee's user is the app's messaging (Discuss); Flectra shows it only with the chat_icon context"
         },
         {
           "feature": "Launch Plan (type action, invisible not active): mail.activity.schedule in plan mode",
@@ -598,28 +600,30 @@
         },
         {
           "feature": "Plan wizard footer: Schedule / Cancel",
-          "status": "approximated",
-          "how": "the dialog's Save & Close / Discard (see the dialog button words)"
+          "status": "covered",
+          "how": "the wizard page's own footer: Schedule (primary, Alt+Q) and Cancel (Alt+X) in place of Save & Close / Discard (shown in the e2e)"
         },
         {
           "feature": "Smart button Off Till <date>, with a plane icon green or amber by presence",
           "status": "approximated",
-          "how": "stat button with the date field and invisible \"not is_absent\"; one icon, no colour by value; opens the time off request in place (a calendar dashboard in Flectra)"
+          "how": "stat button with the date field, written as a date, and invisible \"not is_absent\"; one icon, not green or amber by presence; opens the time off request in place (a calendar dashboard in Flectra)"
         },
         {
           "feature": "Smart button Time Off \"12.5/21 Days\", or only \"Time Off\" when no allocation",
-          "status": "approximated",
-          "how": "stat button on one char field the app joins from the two (allocation_remaining_display, allocation_display); needs a stat button that shows several fields or a template"
+          "status": "covered",
+          "how": "stat button on allocation_remaining_display with secondField allocation_display and unit Days: \"12.5 / 21 Days\", roles [base.group_user] (shown in the e2e)"
         },
         {
           "feature": "Smart button Org Chart (invisible \"not parent_id and not child_ids\"), opening the hierarchy view",
           "status": "approximated",
-          "how": "stat button with the same condition (an empty table reads as false); it shows the Work Information tab, where the chart column is"
+          "how": "stat button with the same condition (an empty table reads as false); it shows the Work Information tab, where the chart column is",
+          "app": true,
+          "why": "the hierarchy view it opens is Flectra's own org chart screen, the app's to give"
         },
         {
           "feature": "Smart button Equipment (statinfo on equipment_count, groups equipment manager), opening the employee's equipment",
-          "status": "approximated",
-          "how": "stat button on the count, call employee_equipment answers with the list in words; a list page of maintenance.equipment filtered on the employee was not built"
+          "status": "covered",
+          "how": "stat button on the count, roles [maintenance.group_equipment_manager], opening the maintenance.equipment list page in the employee's place with filter employee_id = id (shown in the e2e)"
         },
         {
           "feature": "Work Mobile, Work Phone (phone), Work Email (email)",
@@ -628,13 +632,13 @@
         },
         {
           "feature": "Primary Company and Companies (many2many_tags, color_field), groups multi_company",
-          "status": "approximated",
-          "how": "shown; no tag colours; no group"
+          "status": "covered",
+          "how": "both shown with roles [base.group_multi_company]; the companies' tags with colors: true (shown in the e2e)"
         },
         {
           "feature": "Department, Job Position, Manager and Coach (many2one_avatar_user)",
-          "status": "approximated",
-          "how": "many2one links without avatars"
+          "status": "covered",
+          "how": "many2one links; Manager, Coach (and the time off approver, the related user) with avatar: true, their faces from the data source (shown in the e2e)"
         },
         {
           "feature": "Manager follows the department, the coach follows the manager (_compute_parent_id, _compute_coach); job title follows the job",
@@ -643,8 +647,8 @@
         },
         {
           "feature": "Employee properties (properties field, definitions on the company, columns=\"2\")",
-          "status": "approximated",
-          "how": "a properties field with the definitions written in the page (scrubs size, locker, licence, BLS expiry) shown one per row; Flectra keeps the definitions on the company and lets people add one from the form — needs definitions from the app and adding one in place"
+          "status": "covered",
+          "how": "a properties field with definitionsFrom {list employee_properties, dependsOn company_id}: the branch's definitions from the app, in two columns (columns 2), a property added in place (add: true) (shown in the e2e)"
         },
         {
           "feature": "Notebook: Resume, Work Information, Private Information, HR Settings",
@@ -654,17 +658,17 @@
         {
           "feature": "Resume lines (resume_one2many): a timeline grouped by line type",
           "status": "approximated",
-          "how": "a table with type, name, dates, description (optional column), sections and notes by display_type; needs a grouped timeline widget for lines"
+          "how": "a table with type, name, dates, description (optional column), sections and notes by display_type; Flectra's resume_one2many timeline, grouped by line type, is its own widget"
         },
         {
           "feature": "Skills (skills_one2many): grouped by skill type, level shown as a progress bar",
           "status": "approximated",
-          "how": "a table; level_progress as a number — needs a widget per column (progressbar in a line)"
+          "how": "a table, the level's progress as a progress bar in its cell (cells.level_progress widget progressbar); not grouped by skill type, as Flectra's skills_one2many is"
         },
         {
           "feature": "Location: Work Address (show_address, highlight_first_line), Work Location filtered by the address (context default_address_id)",
-          "status": "approximated",
-          "how": "many2one; work_location_id filtered with valueFrom address_id and cleared by the onchange when the address changes; the address shows its name only, not its lines"
+          "status": "covered",
+          "how": "address_id with details: true — the address's lines under its name, as show_address; work_location_id filtered with valueFrom address_id, cleared by the onchange when the address changes, and a new one made from it starts at the address (createValues, Flectra's default_address_id)"
         },
         {
           "feature": "Approvers group made visible by hr_holidays, Time Off approver (leave_manager_id)",
@@ -678,13 +682,15 @@
         },
         {
           "feature": "Schedule: Working Hours, Timezone required=\"id\"",
-          "status": "approximated",
-          "how": "timezone always required (no record id in expressions) and six of Flectra's ~600 timezones"
+          "status": "covered",
+          "how": "Working Hours, and the timezone required \"id\" — not while the employee is new (the timezones themselves a sample of six)"
         },
         {
           "feature": "Organization chart column (hr_org_chart widget: manager chain above, colleagues and subordinates below)",
           "status": "approximated",
-          "how": "a titled column: the manager link and a read-only table of direct subordinates; needs an org chart widget"
+          "how": "a titled column: the manager link with a face and a read-only table of direct subordinates",
+          "app": true,
+          "why": "hr_org_chart is Flectra's own widget over the hierarchy the server reads"
         },
         {
           "feature": "Private address block (o_address_format: street, street 2, city, state, zip, country with placeholders)",
@@ -693,8 +699,8 @@
         },
         {
           "feature": "Private Email, Phone, Bank Account (context default_partner_id, readonly=\"not id\"), Language, Home-Work Distance with \"Km\", Private Car Plate",
-          "status": "approximated",
-          "how": "all placed; Km as the number's suffix; the bank account is not read-only on a new employee (no id in expressions)"
+          "status": "covered",
+          "how": "all placed; Km as the number's unit; the bank account read-only \"not id\", with no quick create"
         },
         {
           "feature": "Family Status: spouse name and birthdate invisible unless married or cohabitant",
@@ -723,8 +729,8 @@
         },
         {
           "feature": "HR Settings: Employee Type, Related User (many2one_avatar_user, domain on companies and share, context default_create_employee_id)",
-          "status": "approximated",
-          "how": "many2one without avatar or domain on the user's companies"
+          "status": "covered",
+          "how": "a link with avatar: true, filtered company_ids contains company_id and share = False (the portal user is never offered), a new user made from it starting with create_employee_id = id (createValues)"
         },
         {
           "feature": "PIN Code",
@@ -734,7 +740,9 @@
         {
           "feature": "Badge ID with Generate (object button, invisible barcode) and Print Badge (report action, invisible not barcode) on its row",
           "status": "approximated",
-          "how": "buttons inside the section next to the field: Generate calls employee_generate_barcode (041 + nine digits); Print Badge only says so — needs a report/download answer for an action"
+          "how": "buttons inside the section next to the field: Generate calls employee_generate_barcode (041 + nine digits); Print Badge calls the app",
+          "app": true,
+          "why": "rendering the badge report as a PDF is the app's server"
         },
         {
           "feature": "Payroll and Application Settings groups (invisible=\"1\" extension points)",
@@ -748,8 +756,8 @@
         },
         {
           "feature": "js_class hr_employee_form: Archive opens the departure wizard",
-          "status": "missing",
-          "needs": "needs the record menu (Archive) and a step from it"
+          "status": "covered",
+          "how": "the gear's built-in Archive with steps of its own: it opens Register Departure (reason, date, details; Apply and Discard), sets them on the employee, saves and archives (shown in the e2e)"
         },
         {
           "feature": "The chatter: followers, activities, messages (oe_chatter)",
@@ -763,8 +771,8 @@
         },
         {
           "feature": "Help texts as a tooltip on the label",
-          "status": "approximated",
-          "how": "left out: Fieldia prints `help` under the field, which on a dense Flectra sheet doubles its height; needs `help` shown as a tooltip (a ? by the label) as an option"
+          "status": "covered",
+          "how": "look.helpShown \"tooltip\": each field's help behind a (?) by its label, as Flectra shows it, with Flectra's own help texts on the fields (shown in the e2e)"
         },
         {
           "feature": "Labels beside values in <group>s",
@@ -773,18 +781,20 @@
         },
         {
           "feature": "Conditions written with tuples: `state in ('a', 'b')`",
-          "status": "approximated",
-          "how": "refused by the parser (\"Expected closing parenthesis\") and written as lists `['a', 'b']`; Flectra's views use tuples throughout, and site/pages/format.mjs shows a tuple in its own example, so a pasted condition fails. Needs tuple literals in the expression language"
+          "status": "covered",
+          "how": "the page's conditions are written as Flectra writes them, with tuples — state in ('done', 'cancel') — read as lists"
         },
         {
           "feature": "Read-only fields shown as text",
-          "status": "approximated",
-          "how": "an empty read-only field draws empty, as Flectra's (no \"Search…\", no dd.mm.yyyy mask: shown in the e2e); but a read-only selection is a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+          "status": "covered",
+          "how": "look.readonlyShown \"text\": read-only values drawn as their words, as Flectra draws them — a choice by its label with no arrow, a date as written, a link by its name, long words wrapped, an empty one as nothing (shown in the e2e)"
         },
         {
           "feature": "Object buttons save the record first, run the method, then reload it",
           "status": "approximated",
-          "how": "steps: the method's effect (set steps, or a `call` the app answers with values), then `save`; the order differs (Flectra saves before the method) but the record ends the same"
+          "how": "steps run the method's effect (set steps, or a call the app answers with values), then save; a page can write Flectra's order — save, call, reload (or the app's reload: true) — where the app's server runs the method",
+          "app": true,
+          "why": "running the method on the server between the save and the reload is the app's; the demo's in-memory app answers a call with values instead"
         },
         {
           "feature": "A server refusal on save (ValidationError / UserError from constraints)",
@@ -793,13 +803,13 @@
         },
         {
           "feature": "Record menu (gear): Archive, Duplicate, Delete; record pager; breadcrumbs",
-          "status": "missing",
-          "needs": "Fieldia draws one record without the action menu, the 1/12 pager or breadcrumbs; needs a record toolbar the app can fill (Archive, Duplicate, Delete, Print) and a pager"
+          "status": "covered",
+          "how": "toolbar: the gear menu (Archive through the departure wizard, Unarchive, Duplicate and Delete), the pager and the breadcrumbs, the list's records and the trail handed in by the app as the viewer's records and breadcrumbs options (shown in the e2e)"
         },
         {
           "feature": "groups= on fields, buttons and pages",
-          "status": "approximated",
-          "how": "Fieldia has no user groups: the page here is the one a manager sees; needs `groups`-like conditions on the person (e.g. a `user.groups` value in expressions) or the app handing a page per role"
+          "status": "covered",
+          "how": "roles as the views gate them: hr.group_hr_user on Launch Plan, the tags and the Private Information and HR Settings tabs, base.group_multi_company on the companies, maintenance.group_equipment_manager on Equipment; the app hands the person in (user option) — without them those parts are not shown (shown in the e2e)"
         }
       ],
       "summary": {

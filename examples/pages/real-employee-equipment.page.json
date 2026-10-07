@@ -1,0 +1,21 @@
+{
+  "fieldia": "0.1",
+  "id": "real-employee-equipment",
+  "title": "Equipment",
+  "description": "Sherkety ERP, maintenance: maintenance.equipment, hr_equipment_view_tree — the employee's Equipment smart button opens it, filtered on the employee.",
+  "data": { "kind": "record", "model": "maintenance.equipment" },
+  "fields": {
+    "name": { "type": "char", "label": "Equipment Name" },
+    "employee_id": { "type": "many2one", "label": "Assigned Employee", "relation": "hr.employee" },
+    "serial_no": { "type": "char", "label": "Serial Number" },
+    "technician_user_id": { "type": "many2one", "label": "Technician", "relation": "res.users" },
+    "category_id": { "type": "many2one", "label": "Equipment Category", "relation": "maintenance.equipment.category" }
+  },
+  "layout": {
+    "type": "list",
+    "id": "equipment-list",
+    "columns": ["name", "employee_id", "serial_no", "technician_user_id", "category_id"],
+    "sort": [{ "field": "name" }],
+    "searchFields": ["name", "serial_no", "category_id"]
+  }
+}

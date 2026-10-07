@@ -5,7 +5,7 @@
   "description": "Sherkety ERP, hr: hr.employee, view_employee_form, with what hr_holidays, hr_skills, hr_org_chart and hr_maintenance add to it.",
   "data": { "kind": "record", "model": "hr.employee" },
   "maxWidth": "wide",
-  "look": { "labels": "beside", "labelWidth": 150 },
+  "look": { "helpShown": "tooltip", "readonlyShown": "text", "labels": "beside", "labelWidth": 150 },
   "fields": {
     "active": { "type": "boolean", "label": "Active", "default": true, "readonly": true },
     "name": { "type": "char", "label": "Employee Name", "required": true },
@@ -31,26 +31,23 @@
     "is_absent": { "type": "boolean", "label": "Absent Today", "readonly": true },
     "leave_date_to": { "type": "date", "label": "To Date", "readonly": true },
     "allocation_summary": { "type": "char", "label": "Time Off", "readonly": true },
+    "allocation_remaining_display": { "type": "char", "label": "Remaining Paid Time Off", "readonly": true },
+    "allocation_display": { "type": "char", "label": "Total number of days allocated.", "readonly": true },
     "current_leave_id": { "type": "integer", "label": "Time off request", "readonly": true },
     "equipment_count": { "type": "integer", "label": "Equipment", "readonly": true },
     "mobile_phone": { "type": "char", "label": "Work Mobile" },
     "work_phone": { "type": "char", "label": "Work Phone" },
     "work_email": { "type": "char", "label": "Work Email" },
-    "company_id": { "type": "many2one", "label": "Primary Company", "relation": "res.company", "required": true },
-    "company_ids": { "type": "many2many", "label": "Companies", "relation": "res.company" },
+    "company_id": { "type": "many2one", "label": "Primary Company", "help": "Primary company where employee is registered", "relation": "res.company", "required": true },
+    "company_ids": { "type": "many2many", "label": "Companies", "help": "Companies where this employee can work", "relation": "res.company" },
     "department_id": { "type": "many2one", "label": "Department", "relation": "hr.department" },
     "job_id": { "type": "many2one", "label": "Job Position", "relation": "hr.job" },
     "parent_id": { "type": "many2one", "label": "Manager", "relation": "hr.employee" },
-    "coach_id": { "type": "many2one", "label": "Coach", "relation": "hr.employee" },
+    "coach_id": { "type": "many2one", "label": "Coach", "help": "Select the \"Employee\" who is the coach of this employee. The \"Coach\" has no specific rights or responsibilities by default.", "relation": "hr.employee" },
     "employee_properties": {
       "type": "properties",
       "label": "Properties",
-      "definitions": [
-        { "name": "uniform_size", "label": "Scrubs size", "type": "selection", "options": [{ "value": "s", "label": "S" }, { "value": "m", "label": "M" }, { "value": "l", "label": "L" }, { "value": "xl", "label": "XL" }] },
-        { "name": "locker", "label": "Locker", "type": "integer" },
-        { "name": "licence", "label": "Syndicate licence no.", "type": "char" },
-        { "name": "bls_expiry", "label": "BLS certificate expires", "type": "date" }
-      ]
+      "definitionsFrom": { "list": "employee_properties", "dependsOn": ["company_id"] }
     },
     "resume_line_ids": {
       "type": "one2many",
@@ -90,9 +87,10 @@
       "type": "many2one",
       "label": "Work Location",
       "relation": "hr.work.location",
-      "filter": [{ "field": "address_id", "op": "=", "valueFrom": "address_id" }]
+      "filter": [{ "field": "address_id", "op": "=", "valueFrom": "address_id" }],
+      "createValues": { "address_id": "address_id" }
     },
-    "leave_manager_id": { "type": "many2one", "label": "Time Off", "relation": "res.users" },
+    "leave_manager_id": { "type": "many2one", "label": "Time Off", "help": "Select the user responsible for approving \"Time Off\" of this employee. If empty, the approval is done by an Administrator or Approver (determined in settings/users).", "relation": "res.users" },
     "departure_reason_id": { "type": "many2one", "label": "Departure Reason", "relation": "hr.departure.reason" },
     "departure_description": { "type": "html", "label": "Additional Information" },
     "departure_date": { "type": "date", "label": "Departure Date" },
@@ -100,6 +98,7 @@
     "tz": {
       "type": "selection",
       "label": "Timezone",
+      "help": "This field is used in order to define in which timezone the resources will work.",
       "options": [
         { "value": "Africa/Cairo", "label": "Africa/Cairo" },
         { "value": "Asia/Riyadh", "label": "Asia/Riyadh" },
@@ -132,7 +131,7 @@
     "private_country_id": { "type": "many2one", "label": "Private Country", "relation": "res.country" },
     "private_email": { "type": "char", "label": "Private Email" },
     "private_phone": { "type": "char", "label": "Private Phone" },
-    "bank_account_id": { "type": "many2one", "label": "Bank Account Number", "relation": "res.partner.bank" },
+    "bank_account_id": { "type": "many2one", "label": "Bank Account Number", "help": "Employee bank account to pay salaries", "relation": "res.partner.bank" },
     "lang": {
       "type": "selection",
       "label": "Lang",
@@ -143,7 +142,7 @@
       ]
     },
     "km_home_work": { "type": "integer", "label": "Home-Work Distance" },
-    "private_car_plate": { "type": "char", "label": "Private Car Plate" },
+    "private_car_plate": { "type": "char", "label": "Private Car Plate", "help": "If you have more than one car, just separate the plates by a space." },
     "marital": {
       "type": "selection",
       "label": "Marital Status",
@@ -183,7 +182,7 @@
     "has_work_permit": { "type": "binary", "label": "Work Permit" },
     "country_id": { "type": "many2one", "label": "Nationality (Country)", "relation": "res.country" },
     "identification_id": { "type": "char", "label": "Identification No" },
-    "ssnid": { "type": "char", "label": "SSN No" },
+    "ssnid": { "type": "char", "label": "SSN No", "help": "Social Security Number" },
     "passport_id": { "type": "char", "label": "Passport No" },
     "gender": {
       "type": "selection",
@@ -200,6 +199,7 @@
     "employee_type": {
       "type": "selection",
       "label": "Employee Type",
+      "help": "The employee type. Although the primary purpose may seem to categorize employees, this field has also an impact in the Contract History. Only Employee type is supposed to be under contract and will have a Contract History.",
       "required": true,
       "default": "employee",
       "options": [
@@ -210,9 +210,18 @@
         { "value": "freelance", "label": "Freelancer" }
       ]
     },
-    "user_id": { "type": "many2one", "label": "User", "relation": "res.users" },
-    "pin": { "type": "char", "label": "PIN", "pattern": "^[0-9]*$" },
-    "barcode": { "type": "char", "label": "Badge ID" }
+    "user_id": {
+      "type": "many2one",
+      "label": "User",
+      "relation": "res.users",
+      "filter": [
+        { "field": "company_ids", "op": "contains", "valueFrom": "company_id" },
+        { "field": "share", "op": "=", "value": false }
+      ],
+      "createValues": { "create_employee_id": "id" }
+    },
+    "pin": { "type": "char", "label": "PIN", "help": "PIN used to Check In/Out in the Kiosk Mode of the Attendance application (if enabled in Configuration) and to change the cashier in the Point of Sale application.", "pattern": "^[0-9]*$" },
+    "barcode": { "type": "char", "label": "Badge ID", "help": "ID used for employee identification." }
   },
   "layout": {
     "type": "sheet",
@@ -222,13 +231,37 @@
       "subtitleField": "job_title",
       "avatarField": "image_1920",
       "placeholder": "Employee's Name",
-      "below": [{ "type": "field", "id": "f-tags", "field": "category_ids", "widget": "tags", "labels": "hidden", "placeholder": "Tags", "options": { "create": false } }]
+      "below": [{ "type": "field", "id": "f-tags", "field": "category_ids", "widget": "tags", "labels": "hidden", "placeholder": "Tags", "options": { "create": false, "colors": true }, "roles": ["hr.group_hr_user"] }]
     },
     "ribbon": { "id": "ribbon-archived", "label": "Archived", "tone": "danger", "invisible": "active" },
+    "toolbar": {
+      "menu": [
+        {
+          "id": "m-archive",
+          "builtin": "archive",
+          "steps": [
+            {
+              "do": "open",
+              "page": "real-employee-departure",
+              "as": "dialog",
+              "title": "Register Departure",
+              "values": { "employee_name": "name" },
+              "into": { "departure_reason_id": "departure_reason_id", "departure_date": "departure_date", "departure_description": "departure_description" },
+              "then": [{ "do": "save" }, { "do": "archive" }]
+            }
+          ]
+        },
+        { "id": "m-unarchive", "builtin": "unarchive" },
+        { "id": "m-duplicate", "builtin": "duplicate" },
+        { "id": "m-delete", "builtin": "delete" }
+      ],
+      "pager": true,
+      "breadcrumbs": true
+    },
     "badges": [
       { "id": "presence-present", "label": "Present", "tone": "success", "icon": "user", "invisible": "not show_hr_icon_display or hr_icon_display != 'presence_present'" },
-      { "id": "presence-absent", "label": "Absent", "tone": "warning", "icon": "user", "invisible": "not show_hr_icon_display or hr_icon_display not in ['presence_absent', 'presence_absent_active']" },
-      { "id": "presence-holiday", "label": "On time off", "tone": "info", "icon": "calendar", "invisible": "not show_hr_icon_display or hr_icon_display not in ['presence_holiday_absent', 'presence_holiday_present']" }
+      { "id": "presence-absent", "label": "Absent", "tone": "warning", "icon": "user", "invisible": "not show_hr_icon_display or hr_icon_display not in ('presence_absent', 'presence_absent_active')" },
+      { "id": "presence-holiday", "label": "On time off", "tone": "info", "icon": "calendar", "invisible": "not show_hr_icon_display or hr_icon_display not in ('presence_holiday_absent', 'presence_holiday_present')" }
     ],
     "buttons": [
       {
@@ -236,14 +269,22 @@
         "id": "launch_plan",
         "label": "Launch Plan",
         "invisible": "not active",
+        "roles": ["hr.group_hr_user"],
         "steps": [{ "do": "open", "page": "real-employee-plan", "as": "dialog", "title": "Launch Plan", "values": { "employee_name": "name" }, "then": [{ "do": "call", "action": "employee_plan_launched" }] }]
       }
     ],
     "statButtons": [
       { "id": "stat-off-till", "label": "Off Till", "icon": "calendar", "field": "leave_date_to", "invisible": "not is_absent", "steps": [{ "do": "open", "page": "real-time-off", "as": "page", "record": "current_leave_id" }] },
-      { "id": "stat-time-off", "label": "Time Off", "icon": "calendar", "field": "allocation_summary", "invisible": "not show_leaves", "steps": [{ "do": "open", "page": "real-time-off", "as": "page", "record": "current_leave_id" }] },
+      { "id": "stat-time-off", "label": "Time Off", "icon": "calendar", "field": "allocation_remaining_display", "secondField": "allocation_display", "unit": "Days", "invisible": "not show_leaves", "roles": ["base.group_user"], "steps": [{ "do": "open", "page": "real-time-off", "as": "page", "record": "current_leave_id" }] },
       { "id": "stat-org-chart", "label": "Org Chart", "icon": "users", "invisible": "not parent_id and not child_ids", "steps": [{ "do": "goTo", "target": "public" }] },
-      { "id": "stat-equipment", "label": "Equipment", "icon": "box", "field": "equipment_count", "action": "employee_equipment" }
+      {
+        "id": "stat-equipment",
+        "label": "Equipment",
+        "icon": "box",
+        "field": "equipment_count",
+        "roles": ["maintenance.group_equipment_manager"],
+        "steps": [{ "do": "open", "page": "real-employee-equipment", "as": "page", "filter": [{ "field": "employee_id", "op": "=", "valueFrom": "id" }] }]
+      }
     ],
     "children": [
       {
@@ -260,8 +301,8 @@
               { "type": "field", "id": "f-mobile", "field": "mobile_phone", "widget": "phone" },
               { "type": "field", "id": "f-work-phone", "field": "work_phone", "widget": "phone" },
               { "type": "field", "id": "f-work-email", "field": "work_email", "widget": "email" },
-              { "type": "field", "id": "f-company", "field": "company_id" },
-              { "type": "field", "id": "f-companies", "field": "company_ids", "widget": "tags" }
+              { "type": "field", "id": "f-company", "field": "company_id", "roles": ["base.group_multi_company"] },
+              { "type": "field", "id": "f-companies", "field": "company_ids", "widget": "tags", "options": { "colors": true }, "roles": ["base.group_multi_company"] }
             ]
           },
           {
@@ -271,13 +312,13 @@
             "children": [
               { "type": "field", "id": "f-department", "field": "department_id" },
               { "type": "field", "id": "f-job", "field": "job_id" },
-              { "type": "field", "id": "f-manager", "field": "parent_id" },
-              { "type": "field", "id": "f-coach", "field": "coach_id" }
+              { "type": "field", "id": "f-manager", "field": "parent_id", "options": { "avatar": true } },
+              { "type": "field", "id": "f-coach", "field": "coach_id", "options": { "avatar": true } }
             ]
           }
         ]
       },
-      { "type": "field", "id": "f-properties", "field": "employee_properties", "labels": "hidden" },
+      { "type": "field", "id": "f-properties", "field": "employee_properties", "labels": "hidden", "options": { "columns": 2, "add": true } },
       {
         "type": "tabs",
         "id": "notebook",
@@ -307,7 +348,7 @@
                     "title": "Skills",
                     "style": "line",
                     "colspan": 5,
-                    "children": [{ "type": "field", "id": "f-skills", "field": "employee_skill_ids", "labels": "hidden", "columns": ["skill_id", "skill_level_id", "level_progress", "skill_type_id"], "optionalColumns": { "skill_type_id": "hide" } }]
+                    "children": [{ "type": "field", "id": "f-skills", "field": "employee_skill_ids", "labels": "hidden", "columns": ["skill_id", "skill_level_id", "level_progress", "skill_type_id"], "optionalColumns": { "skill_type_id": "hide" }, "cells": { "level_progress": { "widget": "progressbar" } } }]
                   }
                 ]
               }
@@ -336,7 +377,7 @@
                         "title": "Location",
                         "style": "line",
                         "children": [
-                          { "type": "field", "id": "f-address", "field": "address_id" },
+                          { "type": "field", "id": "f-address", "field": "address_id", "options": { "details": true } },
                           { "type": "field", "id": "f-work-location", "field": "work_location_id" }
                         ]
                       },
@@ -345,7 +386,7 @@
                         "id": "managers",
                         "title": "Approvers",
                         "style": "line",
-                        "children": [{ "type": "field", "id": "f-leave-manager", "field": "leave_manager_id" }]
+                        "children": [{ "type": "field", "id": "f-leave-manager", "field": "leave_manager_id", "options": { "avatar": true } }]
                       },
                       {
                         "type": "section",
@@ -366,7 +407,7 @@
                         "style": "line",
                         "children": [
                           { "type": "field", "id": "f-calendar", "field": "resource_calendar_id" },
-                          { "type": "field", "id": "f-tz", "field": "tz", "required": true }
+                          { "type": "field", "id": "f-tz", "field": "tz", "required": "id" }
                         ]
                       }
                     ]
@@ -378,7 +419,7 @@
                     "style": "line",
                     "colspan": 4,
                     "children": [
-                      { "type": "field", "id": "f-org-manager", "field": "parent_id", "labels": "above", "readonly": true },
+                      { "type": "field", "id": "f-org-manager", "field": "parent_id", "labels": "above", "readonly": true, "options": { "avatar": true } },
                       { "type": "field", "id": "f-org-team", "field": "child_ids", "labels": "above", "label": "Direct subordinates", "readonly": true, "columns": ["name", "job_title"], "options": { "emptyLabel": "No direct subordinates." } }
                     ]
                   }
@@ -390,6 +431,7 @@
             "type": "tab",
             "id": "personal_information",
             "label": "Private Information",
+            "roles": ["hr.group_hr_user"],
             "children": [
               {
                 "type": "section",
@@ -412,7 +454,7 @@
                       { "type": "field", "id": "f-country", "field": "private_country_id", "labels": "hidden", "placeholder": "Country", "colspan": 12, "options": { "create": false } },
                       { "type": "field", "id": "f-private-email", "field": "private_email", "label": "Email", "widget": "email", "colspan": 12 },
                       { "type": "field", "id": "f-private-phone", "field": "private_phone", "label": "Phone", "widget": "phone", "colspan": 12 },
-                      { "type": "field", "id": "f-bank", "field": "bank_account_id", "colspan": 12 },
+                      { "type": "field", "id": "f-bank", "field": "bank_account_id", "colspan": 12, "readonly": "not id", "options": { "create": false } },
                       { "type": "field", "id": "f-lang", "field": "lang", "label": "Language", "colspan": 12 },
                       { "type": "field", "id": "f-km", "field": "km_home_work", "options": { "suffix": "Km" }, "colspan": 12 },
                       { "type": "field", "id": "f-car-plate", "field": "private_car_plate", "colspan": 12 }
@@ -425,8 +467,8 @@
                     "style": "line",
                     "children": [
                       { "type": "field", "id": "f-marital", "field": "marital" },
-                      { "type": "field", "id": "f-spouse-name", "field": "spouse_complete_name", "invisible": "marital not in ['married', 'cohabitant']" },
-                      { "type": "field", "id": "f-spouse-birthdate", "field": "spouse_birthdate", "invisible": "marital not in ['married', 'cohabitant']" },
+                      { "type": "field", "id": "f-spouse-name", "field": "spouse_complete_name", "invisible": "marital not in ('married', 'cohabitant')" },
+                      { "type": "field", "id": "f-spouse-birthdate", "field": "spouse_birthdate", "invisible": "marital not in ('married', 'cohabitant')" },
                       { "type": "field", "id": "f-children", "field": "children" }
                     ]
                   },
@@ -481,6 +523,7 @@
             "type": "tab",
             "id": "hr_settings",
             "label": "HR Settings",
+            "roles": ["hr.group_hr_user"],
             "children": [
               {
                 "type": "section",
@@ -495,7 +538,7 @@
                     "style": "line",
                     "children": [
                       { "type": "field", "id": "f-employee-type", "field": "employee_type" },
-                      { "type": "field", "id": "f-user", "field": "user_id", "label": "Related User" }
+                      { "type": "field", "id": "f-user", "field": "user_id", "label": "Related User", "options": { "avatar": true } }
                     ]
                   },
                   {

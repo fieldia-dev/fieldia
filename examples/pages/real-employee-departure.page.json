@@ -1,0 +1,43 @@
+{
+  "fieldia": "0.1",
+  "id": "real-employee-departure",
+  "title": "Register Departure",
+  "description": "Sherkety ERP, hr: hr.departure.wizard, hr_departure_wizard_view_form — what the employee form's Archive opens (js_class hr_employee_form).",
+  "data": { "kind": "record", "model": "hr.departure.wizard" },
+  "maxWidth": "medium",
+  "look": { "readonlyShown": "text" },
+  "fields": {
+    "employee_name": { "type": "char", "label": "Employee", "readonly": true },
+    "departure_reason_id": { "type": "many2one", "label": "Departure Reason", "relation": "hr.departure.reason", "required": true },
+    "departure_date": { "type": "date", "label": "Departure Date", "required": true, "default": "today" },
+    "departure_description": { "type": "html", "label": "Additional Information" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "wizard",
+    "title": { "field": "employee_name" },
+    "children": [
+      {
+        "type": "section",
+        "id": "info",
+        "style": "plain",
+        "children": [
+          { "type": "field", "id": "f-reason", "field": "departure_reason_id", "options": { "create": false, "open": false } },
+          { "type": "field", "id": "f-date", "field": "departure_date" }
+        ]
+      },
+      {
+        "type": "field",
+        "id": "f-description",
+        "field": "departure_description",
+        "label": "Detailed Reason",
+        "labels": "above",
+        "placeholder": "Give more details about the reason of archiving the employee."
+      }
+    ],
+    "footer": [
+      { "type": "button", "id": "action_register_departure", "label": "Apply", "style": "primary", "hotkey": "q", "steps": [{ "do": "save" }] },
+      { "type": "button", "id": "discard", "label": "Discard", "hotkey": "x", "steps": [{ "do": "close" }] }
+    ]
+  }
+}
