@@ -3,6 +3,7 @@ import { WIDGET_LABELS } from '@fieldia/widgets';
 import { ownLocale } from './labels';
 import { keepTabIn } from './focus-trap';
 import { applyLook } from './look';
+import { hotkeyOf, hotkeyOn } from './hotkeys';
 import { mountViewer, VIEWER_LABELS, type Skin, type ViewerHandle, type ViewerOptions } from './viewer';
 
 /**
@@ -122,6 +123,7 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
   // A page's own buttons at its foot, as a wizard's, stand in place of Discard and Save & Close.
   const footer = options.page.layout.type === 'sections' || options.page.layout.type === 'sheet' ? (options.page.layout.footer ?? []) : [];
   const own = footer.map((node) => ({ node, button: make('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, node.label) }));
+  for (const { node, button } of own) if (node.hotkey) hotkeyOn(button, node.hotkey, node.label);
   box.lastElementChild?.append(...(own.length ? own.map((b) => b.button) : [discard, saveClose]));
   const backdrop = make('div', { class: `fd-dialog-backdrop fd-form-dialog-backdrop${panel ? ' fd-form-panel-backdrop' : ''}` });
   backdrop.append(box);
@@ -226,7 +228,18 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
       });
     }
     closeButton.addEventListener('click', leave);
+    // A footer button's key, with Alt, and the keys shown while Alt is held.
+    box.addEventListener('keyup', (event) => event.key === 'Alt' && box.removeAttribute('data-hotkeys'));
     box.addEventListener('keydown', (event) => {
+      if (event.key === 'Alt') box.setAttribute('data-hotkeys', '');
+      const key = hotkeyOf(event);
+      const pressed = key ? own.find(({ node, button }) => node.hotkey === key && !button.hidden && !(button as HTMLButtonElement).disabled)?.button : undefined;
+      if (pressed) {
+        event.preventDefault();
+        box.removeAttribute('data-hotkeys');
+        pressed.click();
+        return;
+      }
       // Ctrl+Enter is Save & Close from wherever the cursor is, even after a field used the Enter
       // (a tag box adding its tag), taking what is still being typed. The grid keeps its own keys.
       if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !event.isComposing) {

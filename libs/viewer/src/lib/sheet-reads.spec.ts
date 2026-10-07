@@ -394,3 +394,113 @@ describe('a statusbar with a condition, time per step, folded steps, and a click
     expect((data.records['deal']['1']['stage_id'] as { label: string }).label).toBe('Won');
   });
 });
+
+describe('keys on buttons', () => {
+  const page = (): Page => ({
+    fieldia: '0.1',
+    id: 'order',
+    data: { kind: 'record', model: 'sale.order' },
+    fields: { state: { type: 'selection', label: 'Status', options: [{ value: 'draft', label: 'Draft' }, { value: 'sale', label: 'Sale' }] }, note: { type: 'char', label: 'Note' } },
+    layout: {
+      type: 'sheet',
+      id: 'root',
+      buttons: [
+        { type: 'button', id: 'b-confirm', label: 'Confirm', action: 'confirm', hotkey: 'v', invisible: "state != 'draft'" },
+        { type: 'button', id: 'b-cancel', label: 'Cancel', action: 'cancel', hotkey: 'v' },
+        { type: 'button', id: 'b-send', label: 'Send by email', action: 'send', hotkey: 'shift+g' },
+      ],
+      children: [{ type: 'field', id: 'f-note', field: 'note' }],
+    },
+  });
+  const alt = (target: EventTarget, code: string, extra: KeyboardEventInit = {}) => {
+    const event = new KeyboardEvent('keydown', { code, key: code.slice(-1).toLowerCase(), altKey: true, bubbles: true, cancelable: true, ...extra });
+    target.dispatchEvent(event);
+    return event;
+  };
+
+  it('presses the first shown button with the key, with Alt, from a field or from the page', async () => {
+    const actions: string[] = [];
+    const { host, form } = mount(page(), { values: { state: 'draft' }, onAction: async (request) => void actions.push(request.action) });
+    const note = host.querySelector('[data-node="f-note"] input') as HTMLInputElement;
+    note.focus();
+    expect(alt(note, 'KeyV').defaultPrevented).toBe(true);
+    await flush();
+    expect(actions).toEqual(['confirm']);
+    form.setValue('state', 'sale');
+    alt(document.body, 'KeyV');
+    await flush();
+    expect(actions).toEqual(['confirm', 'cancel']);
+    alt(document.body, 'KeyG', { shiftKey: true });
+    await flush();
+    expect(actions).toEqual(['confirm', 'cancel', 'send']);
+    // Without Alt, or with Ctrl too, it is the field's key.
+    expect(alt(note, 'KeyV', { altKey: false }).defaultPrevented).toBe(false);
+    expect(alt(note, 'KeyV', { ctrlKey: true }).defaultPrevented).toBe(false);
+    expect(alt(note, 'KeyQ').defaultPrevented).toBe(false);
+  });
+
+  it('says its key in its tooltip and to a screen reader, and shows it while Alt is held', () => {
+    const { host } = mount(page(), { values: { state: 'draft' } });
+    const send = host.querySelector('[data-node="b-send"]') as HTMLButtonElement;
+    expect(send.getAttribute('aria-keyshortcuts')).toBe('Alt+Shift+G');
+    expect(send.title).toBe('Send by email (Alt+Shift+G)');
+    const root = host.querySelector('.fd-form') as HTMLElement;
+    root.dispatchEvent(new KeyboardEvent('keydown', { key: 'Alt', altKey: true, bubbles: true }));
+    expect(root.hasAttribute('data-hotkeys')).toBe(true);
+    expect(send.querySelector('.fd-hotkey')?.textContent).toBe('⇧G');
+    document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Alt', bubbles: true }));
+    expect(root.hasAttribute('data-hotkeys')).toBe(false);
+  });
+
+  it('leaves the key to a question asked over the page', async () => {
+    const actions: string[] = [];
+    const confirm = page();
+    (confirm.layout as { buttons: { confirm?: string }[] }).buttons[2].confirm = 'Send it now?';
+    const { host } = mount(confirm, { values: { state: 'draft' }, onAction: async (request) => void actions.push(request.action) });
+    alt(document.body, 'KeyG', { shiftKey: true });
+    await flush();
+    expect(host.querySelector('.fd-dialog')).not.toBeNull();
+    alt(document.body, 'KeyV');
+    await flush();
+    expect(actions).toEqual([]);
+  });
+});
+
+describe('keys on a dialog’s own buttons', () => {
+  it('press the dialog’s button, not the page’s under it', async () => {
+    const wizard: Page = {
+      fieldia: '0.1',
+      id: 'lost',
+      data: { kind: 'record', model: 'crm.lead.lost' },
+      fields: { reason: { type: 'char', label: 'Reason' } },
+      layout: {
+        type: 'sections',
+        id: 'root',
+        children: [{ type: 'field', id: 'f-reason', field: 'reason' }],
+        footer: [
+          { type: 'button', id: 'w-lost', label: 'Mark as Lost', style: 'primary', hotkey: 'q', action: 'mark_lost' },
+          { type: 'button', id: 'w-cancel', label: 'Cancel', hotkey: 'x', steps: [{ do: 'close' }] },
+        ],
+      },
+    };
+    const page: Page = {
+      fieldia: '0.1',
+      id: 'lead',
+      data: { kind: 'record', model: 'crm.lead' },
+      fields: { name: { type: 'char', label: 'Name' } },
+      layout: { type: 'sheet', id: 'root', buttons: [{ type: 'button', id: 'b-lost', label: 'Lost', hotkey: 'q', steps: [{ do: 'open', page: 'lost', as: 'dialog' }] }], children: [] },
+    };
+    const actions: string[] = [];
+    const { host } = mount(page, { pages: { lost: wizard }, onAction: async (request) => void actions.push(request.action) });
+    (host.querySelector('[data-node="b-lost"]') as HTMLButtonElement).click();
+    await flush();
+    const dialog = document.querySelector('.fd-form-dialog') as HTMLElement;
+    expect(dialog).not.toBeNull();
+    expect(dialog.querySelector('[data-node="w-lost"]')?.getAttribute('aria-keyshortcuts')).toBe('Alt+Q');
+    const reason = dialog.querySelector('input') as HTMLInputElement;
+    reason.focus();
+    reason.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyQ', key: 'q', altKey: true, bubbles: true, cancelable: true }));
+    await flush();
+    expect(actions).toEqual(['mark_lost']);
+  });
+});

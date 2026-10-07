@@ -70,6 +70,7 @@ export type { Page, PageData, PageLook } from './lib/format/page';
 export { PART_LOOKS, type PartLook, type PartLookKind, type PartsLook } from './lib/format/part-look';
 export { checkPage } from './lib/format/check-page';
 export { fillValues, splitValues, valuesIn } from './lib/format/words';
+export { BROWSER_HOTKEYS, HOTKEY, hotkeyWords } from './lib/format/hotkeys';
 export type { PageIssue, PageValidation } from './lib/format/references';
 export { translatePage, localizePage, pageWords, isRightToLeft } from './lib/format/translate';
 export { compileModifier, type CompiledModifier } from './lib/expression/modifier';

@@ -2980,6 +2980,10 @@
                         "icon": {
                           "type": "string"
                         },
+                        "hotkey": {
+                          "type": "string",
+                          "pattern": "^(shift\\+)?[a-z0-9]$"
+                        },
                         "colspan": {
                           "type": "integer",
                           "minimum": 1,
@@ -3194,6 +3198,10 @@
                         "icon": {
                           "type": "string"
                         },
+                        "hotkey": {
+                          "type": "string",
+                          "pattern": "^(shift\\+)?[a-z0-9]$"
+                        },
                         "colspan": {
                           "type": "integer",
                           "minimum": 1,
@@ -3364,6 +3372,10 @@
               },
               "icon": {
                 "type": "string"
+              },
+              "hotkey": {
+                "type": "string",
+                "pattern": "^(shift\\+)?[a-z0-9]$"
               },
               "colspan": {
                 "type": "integer",
@@ -3598,6 +3610,10 @@
                     "icon": {
                       "type": "string"
                     },
+                    "hotkey": {
+                      "type": "string",
+                      "pattern": "^(shift\\+)?[a-z0-9]$"
+                    },
                     "colspan": {
                       "type": "integer",
                       "minimum": 1,
@@ -3771,6 +3787,10 @@
               },
               "icon": {
                 "type": "string"
+              },
+              "hotkey": {
+                "type": "string",
+                "pattern": "^(shift\\+)?[a-z0-9]$"
               },
               "colspan": {
                 "type": "integer",
@@ -4596,6 +4616,10 @@
                   "icon": {
                     "type": "string"
                   },
+                  "hotkey": {
+                    "type": "string",
+                    "pattern": "^(shift\\+)?[a-z0-9]$"
+                  },
                   "colspan": {
                     "type": "integer",
                     "minimum": 1,
@@ -4709,6 +4733,10 @@
             },
             "icon": {
               "type": "string"
+            },
+            "hotkey": {
+              "type": "string",
+              "pattern": "^(shift\\+)?[a-z0-9]$"
             },
             "colspan": {
               "type": "integer",
@@ -5253,6 +5281,10 @@
               "icon": {
                 "type": "string"
               },
+              "hotkey": {
+                "type": "string",
+                "pattern": "^(shift\\+)?[a-z0-9]$"
+              },
               "colspan": {
                 "type": "integer",
                 "minimum": 1,
@@ -5509,6 +5541,10 @@
               },
               "icon": {
                 "type": "string"
+              },
+              "hotkey": {
+                "type": "string",
+                "pattern": "^(shift\\+)?[a-z0-9]$"
               },
               "colspan": {
                 "type": "integer",

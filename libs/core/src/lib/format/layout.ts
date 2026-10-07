@@ -2,6 +2,7 @@ import * as z from 'zod';
 import { FIELD_NAME, FilterItemSchema, type FilterItem } from './field';
 import { ActionStepsSchema, type ActionStep } from './actions';
 import { JsonValueSchema, type JsonValue } from './json';
+import { HOTKEY } from './hotkeys';
 
 /**
  * The layout: where each field goes and what surrounds it.
@@ -161,6 +162,12 @@ export interface ButtonNode {
   /** Ask before running the action. */
   confirm?: string;
   icon?: string;
+  /**
+   * A key that presses it with Alt, as Flectra's data-hotkey: a letter or a
+   * digit, `shift+` before it for Alt+Shift — "v" is Alt+V. Shown on it while
+   * Alt is held and in its tooltip; the first shown wins when two share one.
+   */
+  hotkey?: string;
   /** Grid columns it spans inside a section. */
   colspan?: number;
   invisible?: Modifier;
@@ -622,6 +629,7 @@ export const ButtonNodeSchema = z.strictObject({
   style: z.enum(['primary', 'secondary', 'danger', 'link']).optional(),
   confirm: z.string().optional(),
   icon: z.string().optional(),
+  hotkey: z.string().regex(HOTKEY, 'a hotkey is a letter or a digit, in small letters, with shift+ before it for Alt+Shift: "v", "shift+g"').optional(),
   colspan: span,
   invisible, roles,
 });

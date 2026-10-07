@@ -62,4 +62,10 @@ export const SHEET_CSS = /* css */ `
 }
 .fd-statusbar .fd-step-menu > button:hover:not(:disabled), .fd-statusbar .fd-step-menu > button:focus-visible { background: var(--fd-accent-soft); outline: none; }
 .fd-statusbar .fd-step-menu > button:disabled { cursor: default; color: var(--fd-muted); }
+/* A button's key, shown on it while Alt is held, as Flectra shows its hotkeys. */
+.fd-hotkey { display: none; }
+[data-hotkeys] .fd-hotkey {
+  display: inline-block; margin-inline-start: 6px; padding: 0 4px; border: 1px solid currentColor; border-radius: 3px;
+  font: 600 10.5px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; opacity: 0.85; vertical-align: 1px;
+}
 `;

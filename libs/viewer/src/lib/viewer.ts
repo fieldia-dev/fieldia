@@ -49,6 +49,7 @@ import { openPage } from './open';
 import { sayer } from './say';
 import { tabStrip } from './tab-strip';
 import { valueWords } from './value-words';
+import { hotkeyOf, hotkeyOn } from './hotkeys';
 
 export type Skin = 'underline' | 'outlined';
 
@@ -455,6 +456,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
 
     function buttonItem(node: ButtonNode): HTMLElement {
       const button = el('button', { type: 'button', class: `fd-button fd-button-${node.style ?? 'secondary'}`, 'data-node': node.id }, ...withIcon(node.icon, node.label));
+      if (node.hotkey) hotkeyOn(button, node.hotkey, node.label);
       spans(button, node.colspan);
       // Its confirmation, then its steps: the form asks, through the viewer.
       button.addEventListener('click', () => void press(button, () => form.runAction(node.id)));
@@ -1363,6 +1365,46 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     if (['button', 'submit', 'reset', 'file'].includes((from as HTMLInputElement).type)) return;
     event.preventDefault();
     nextField(from)?.focus();
+  });
+
+  // ---- a button's key, with Alt -------------------------------------------------
+
+  /**
+   * Whether a key pressed with Alt is this form's: pressed in it (not in a
+   * form inside it, such as a dialog's), or — pressed outside any form — this
+   * is the first form on the page, or in the question or dialog on top of it.
+   */
+  function hotkeysHere(target: EventTarget | null): boolean {
+    const inner = target instanceof Element ? target.closest('.fd-form') : null;
+    if (inner) return inner === root && !root.querySelector(':scope > .fd-dialog-backdrop');
+    const modals = [...doc.querySelectorAll('[aria-modal="true"]')].filter((modal) => !modal.closest('[hidden]'));
+    const top = modals[modals.length - 1];
+    return (top ?? doc).querySelector('.fd-form') === root;
+  }
+  const onHotkey = (event: KeyboardEvent) => {
+    if (event.key === 'Alt') {
+      if (hotkeysHere(event.target)) root.setAttribute('data-hotkeys', '');
+      return;
+    }
+    const key = hotkeyOf(event);
+    if (!key || !hotkeysHere(event.target)) return;
+    const button = [...root.querySelectorAll<HTMLButtonElement>(`button[data-hotkey="${key}"]`)].find(
+      (b) => b.closest('.fd-form') === root && !b.closest('[hidden]') && !b.disabled && !b.hasAttribute('aria-busy')
+    );
+    if (!button) return;
+    event.preventDefault();
+    root.removeAttribute('data-hotkeys');
+    button.click();
+  };
+  const offHotkeys = () => root.removeAttribute('data-hotkeys');
+  const altUp = (event: KeyboardEvent) => event.key === 'Alt' && offHotkeys();
+  doc.addEventListener('keydown', onHotkey);
+  doc.addEventListener('keyup', altUp);
+  doc.defaultView?.addEventListener('blur', offHotkeys);
+  cleanups.push(() => {
+    doc.removeEventListener('keydown', onHotkey);
+    doc.removeEventListener('keyup', altUp);
+    doc.defaultView?.removeEventListener('blur', offHotkeys);
   });
 
   // ---- confirmation dialog -----------------------------------------------------

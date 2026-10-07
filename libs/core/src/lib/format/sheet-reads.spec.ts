@@ -178,3 +178,17 @@ describe('what a link shows of its record, from the memory data source', () => {
     expect(await source.search({ model: 'stage', query: '' })).toEqual([{ id: 2, label: 'Lost', folded: true }, { id: 3, label: 'Won', folded: false }]);
   });
 });
+
+describe('keys on buttons', () => {
+  const button = (hotkey: string) => sheet({ buttons: [{ type: 'button', id: 'b', label: 'Confirm', action: 'confirm', hotkey }] });
+
+  it('takes a letter or a digit, with shift or without: Alt and it presses the button', () => {
+    for (const hotkey of ['v', 'q', '7', 'shift+g']) expect(both(button(hotkey))).toEqual([]);
+  });
+
+  it('refuses more than one key, a key it cannot press, and the keys a browser keeps for itself', () => {
+    expect(both(button('ctrl+v')).join('\n')).toMatch(/hotkey/);
+    expect(both(button('V')).join('\n')).toMatch(/hotkey/);
+    expect(both(button('d')).join('\n')).toMatch(/buttons\[0\]\.hotkey: Alt\+D is the browser’s own/);
+  });
+});

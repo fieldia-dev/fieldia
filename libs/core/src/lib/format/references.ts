@@ -7,6 +7,7 @@ import { compileModifier } from '../expression/modifier';
 import { compileExpression } from '../expression/expression';
 import { dependencyOrder } from '../expression/order';
 import { valuesIn } from './words';
+import { BROWSER_HOTKEYS, hotkeyWords } from './hotkeys';
 
 export interface PageIssue {
   /** Where the problem is, as a path into the page: `layout.children[0].field`. */
@@ -76,6 +77,8 @@ export class ReferenceCheck {
   /** A press: steps, an app action, or both — and its steps checked. */
   private checkPress(button: ButtonNode | StatButton, path: string) {
     if (!button.steps && button.action === undefined) this.report(path, 'a button needs steps, an action, or both');
+    const key = 'hotkey' in button ? button.hotkey : undefined;
+    if (typeof key === 'string' && BROWSER_HOTKEYS.includes(key.replace('shift+', ''))) this.report(`${path}.hotkey`, `${hotkeyWords(key)} is the browser’s own: pick another key`);
     if (button.steps) this.checkSteps(button.steps, `${path}.steps`);
   }
 
