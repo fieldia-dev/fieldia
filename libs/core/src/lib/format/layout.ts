@@ -138,6 +138,14 @@ export interface FieldNode {
    * not saved yet has no record: it opens its fields.
    */
   lineOpens?: 'fields' | 'record';
+  /**
+   * For one2many: its lines as cards, each column's label by its value — on a
+   * narrow form (`narrow`, up to 520px: a phone, as Flectra's mode="tree,kanban"
+   * there), or always.
+   */
+  cards?: 'narrow' | 'always';
+  /** For one2many: columns as wide as what they hold (`content`), as Flectra sizes a list's, rather than sharing the table's width. */
+  fit?: 'content';
   /** Where the label sits, when not where its group or the page puts labels. */
   labels?: LabelPlace;
   /** Where its help shows, when not where the page shows help: under it, behind a (?) by its label, or both. */
@@ -627,6 +635,8 @@ export const FieldNodeSchema = z.strictObject({
     return z.array(ButtonNodeSchema).min(1).optional();
   },
   lineOpens: z.enum(['fields', 'record']).optional(),
+  cards: z.enum(['narrow', 'always']).optional(),
+  fit: z.literal('content').optional(),
   editMode: z.enum(['cell', 'row']).optional(),
   labels: labelPlace.optional(),
   helpShown: HelpShownSchema.optional(),

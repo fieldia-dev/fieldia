@@ -80,3 +80,14 @@ describe('lines with pages of their own', () => {
     expect(await createForm({ page: matter }).linkedValues('compliance_ids', [1], ['name'])).toEqual([]);
   });
 });
+
+describe('a table on a phone', () => {
+  it('takes lines as cards on a narrow form, and columns as wide as they hold', () => {
+    const page = structuredClone(matter) as unknown as { layout: { children: Record<string, unknown>[] } };
+    page.layout.children[0]['cards'] = 'narrow';
+    page.layout.children[0]['fit'] = 'content';
+    expect(issues(page)).toEqual([]);
+    page.layout.children[1]['cards'] = 'always';
+    expect(issues(page)).toEqual(['layout.children[1].cards: cards only applies to one2many fields; "compliance_ids" is a many2many']);
+  });
+});

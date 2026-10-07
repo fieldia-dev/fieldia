@@ -554,8 +554,8 @@ export class ReferenceCheck {
     for (const [key, value] of Object.entries(node.options ?? {})) {
       if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.options.${key}`);
     }
-    if (def && node.lineOpens && def.type !== 'one2many') {
-      this.report(`${path}.lineOpens`, `lineOpens only applies to one2many fields; "${node.field}" is a ${def.type}`);
+    for (const key of ['lineOpens', 'cards', 'fit'] as const) {
+      if (def && node[key] && def.type !== 'one2many') this.report(`${path}.${key}`, `${key} only applies to one2many fields; "${node.field}" is a ${def.type}`);
     }
     if (def && node.editMode && def.type !== 'one2many') {
       this.report(`${path}.editMode`, `editMode only applies to one2many fields; "${node.field}" is a ${def.type}`);

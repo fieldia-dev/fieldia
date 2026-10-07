@@ -3802,6 +3802,17 @@
                       "record"
                     ]
                   },
+                  "cards": {
+                    "type": "string",
+                    "enum": [
+                      "narrow",
+                      "always"
+                    ]
+                  },
+                  "fit": {
+                    "type": "string",
+                    "const": "content"
+                  },
                   "editMode": {
                     "type": "string",
                     "enum": [
@@ -4204,6 +4215,17 @@
                       "fields",
                       "record"
                     ]
+                  },
+                  "cards": {
+                    "type": "string",
+                    "enum": [
+                      "narrow",
+                      "always"
+                    ]
+                  },
+                  "fit": {
+                    "type": "string",
+                    "const": "content"
                   },
                   "editMode": {
                     "type": "string",
@@ -5668,6 +5690,17 @@
                 "fields",
                 "record"
               ]
+            },
+            "cards": {
+              "type": "string",
+              "enum": [
+                "narrow",
+                "always"
+              ]
+            },
+            "fit": {
+              "type": "string",
+              "const": "content"
             },
             "editMode": {
               "type": "string",
