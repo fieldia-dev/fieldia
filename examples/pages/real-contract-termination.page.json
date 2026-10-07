@@ -39,9 +39,16 @@
           }
         ]
       }
+    ],
+    "footer": [
+      {
+        "type": "button",
+        "id": "action_confirm",
+        "label": "Terminate Contract",
+        "style": "primary",
+        "steps": [{ "do": "check" }, { "do": "call", "action": "contract_termination_confirm" }, { "do": "save" }]
+      },
+      { "type": "button", "id": "cancel", "label": "Cancel", "steps": [{ "do": "close" }] }
     ]
-  },
-  "on": {
-    "beforeSave": [{ "do": "check" }, { "do": "call", "action": "contract_termination_confirm" }]
   }
 }

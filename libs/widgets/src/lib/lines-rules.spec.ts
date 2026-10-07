@@ -51,12 +51,12 @@ const moves = [
   { key: 'b', values: { product: 'MDF board', demand: 25, quantity: 30, tracking: 'lot', lot: null, scrapped: true } },
 ];
 
-function mount(state: string, asked: ActionRequest[] = []) {
+function mount(state: string, asked: ActionRequest[] = [], readonly = false) {
   const form = createForm({ page: transfer, values: { state, move_ids: moves } as never, onAction: (request) => void asked.push(request) });
   const node = (transfer.layout as { children: FieldNode[] }).children[1];
   const widget = createWidget({ form, name: 'move_ids', field: transfer.fields['move_ids'] as Field, node, id: 'fd-moves', document, labels: WIDGET_LABELS.en });
   document.body.replaceChildren(widget.element);
-  const refresh = () => widget.update({ value: form.getState().values['move_ids'], values: form.getState().values, readonly: false, required: false, invalid: false });
+  const refresh = () => widget.update({ value: form.getState().values['move_ids'], values: form.getState().values, readonly, required: false, invalid: false });
   form.subscribe(refresh);
   refresh();
   return { form, el: widget.element };
@@ -104,6 +104,17 @@ describe('a plain table by its own rules', () => {
     expect(serials('a').hidden).toBe(true);
     expect(serials('b').hidden).toBe(false);
     expect(serials('b').getAttribute('aria-label')).toBe('Serials');
+    serials('b').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(asked[0]).toMatchObject({ action: 'action_assign_serial', line: { key: 'b' } });
+  });
+
+  it('keeps a line’s buttons on a read-only table, as the grid and Flectra’s lists do: they act on the saved line', async () => {
+    const asked: ActionRequest[] = [];
+    const { el } = mount('assigned', asked, true);
+    const serials = (key: string) => row(el, key).querySelector('[data-row-button="serials"]') as HTMLButtonElement;
+    expect(serials('a').hidden).toBe(true);
+    expect(serials('b').hidden).toBe(false);
     serials('b').click();
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(asked[0]).toMatchObject({ action: 'action_assign_serial', line: { key: 'b' } });

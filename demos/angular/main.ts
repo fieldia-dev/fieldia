@@ -101,6 +101,7 @@ class NoteComponent implements OnInit {
     [readonly]="options.readonly ?? false"
     [editSwitch]="options.editSwitch ?? false"
     [translator]="options.translate"
+    [user]="options.user"
     [records]="options.records"
     [breadcrumbs]="options.breadcrumbs"
     (ready)="ready($event)"

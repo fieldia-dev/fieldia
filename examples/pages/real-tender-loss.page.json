@@ -22,7 +22,12 @@
     "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency", "readonly": true },
     "winning_amount": { "type": "monetary", "label": "Winning Bid Amount", "currencyField": "currency_id" },
     "lessons_learned": { "type": "text", "label": "Lessons Learned", "help": "Key takeaways for future tenders" },
-    "create_followup_opportunity": { "type": "boolean", "label": "Create Follow-up Opportunity", "default": false, "help": "Create a new opportunity to stay engaged with the client" },
+    "create_followup_opportunity": {
+      "type": "boolean",
+      "label": "Create Follow-up Opportunity",
+      "default": false,
+      "help": "Create a new opportunity to stay engaged with the client"
+    },
     "followup_date": { "type": "date", "label": "Follow-up Date" }
   },
   "layout": {
@@ -62,7 +67,15 @@
         "id": "lessons",
         "title": "Lessons Learned",
         "style": "line",
-        "children": [{ "type": "field", "id": "f-lessons", "field": "lessons_learned", "labels": "hidden", "placeholder": "Key takeaways that will help us in future tenders..." }]
+        "children": [
+          {
+            "type": "field",
+            "id": "f-lessons",
+            "field": "lessons_learned",
+            "labels": "hidden",
+            "placeholder": "Key takeaways that will help us in future tenders..."
+          }
+        ]
       },
       {
         "type": "section",
@@ -75,6 +88,16 @@
           { "type": "field", "id": "f-followup-date", "field": "followup_date", "invisible": "not create_followup_opportunity" }
         ]
       }
+    ],
+    "footer": [
+      {
+        "type": "button",
+        "id": "action_confirm",
+        "label": "Confirm Loss",
+        "style": "primary",
+        "steps": [{ "do": "check" }, { "do": "post", "message": "Lessons learned: {lessons_learned}", "when": "lessons_learned" }, { "do": "save" }]
+      },
+      { "type": "button", "id": "cancel", "label": "Cancel", "steps": [{ "do": "close" }] }
     ]
   }
 }

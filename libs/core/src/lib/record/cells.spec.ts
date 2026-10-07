@@ -107,6 +107,18 @@ describe('a table’s lines by their own rules', () => {
   });
 });
 
+describe('a line’s own id', () => {
+  it('is read by its rules: empty until the line is saved, as Flectra’s readonly="id" locks a saved line', () => {
+    const page = JSON.parse(JSON.stringify(transfer)) as Page & { layout: { children: { cells?: Record<string, unknown> }[] } };
+    page.layout.children[1].cells = { product: { readonly: 'id' } };
+    expect(validatePage(page)).toMatchObject({ ok: true });
+    const saved = [{ key: 'a', id: 41, values: lines[0].values }, { key: 'n', values: lines[1].values }];
+    const form = createForm({ page, values: { state: 'draft', move_ids: saved } as never });
+    expect(form.lineState('f-moves', 'a').cells['product']).toMatchObject({ readonly: true });
+    expect(form.lineState('f-moves', 'n').cells['product']).toMatchObject({ readonly: false });
+  });
+});
+
 describe('the page check reads a table’s rules where they hold', () => {
   const withCells = (cells: unknown, extra: Record<string, unknown> = {}) => {
     const layout = transfer.layout as unknown as { children: Record<string, unknown>[] };

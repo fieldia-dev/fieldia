@@ -454,7 +454,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     const line = ((state.values[table.field] as Line[] | null) ?? []).find((l) => l.key === key);
     if (!line) throw new Error(`"${table.field}" has no line "${key}"`);
     const def = lineField(table.field);
-    return table.compiled.line(lineContext(line.values, def.fields as Record<string, LineField>, reading().context), { today }, userRoles);
+    return table.compiled.line(lineContext(line.values, def.fields as Record<string, LineField>, reading().context, line.id ?? null), { today }, userRoles);
   }
 
   function createValuesOf(field: string, line?: { lines: string; key: string }): Values {
@@ -1367,7 +1367,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       if (!sub) throw new Error(`The lines of "${field}" have no field "${subfield}"`);
       const line = ((state.values[field] as Line[] | null) ?? []).find((l) => l.key === key);
       if (!line) throw new Error(`"${field}" has no line "${key}"`);
-      return runSearch(sub, subfield, lineContext(line.values, def.fields as Record<string, LineField>, context()), query, limit);
+      return runSearch(sub, subfield, lineContext(line.values, def.fields as Record<string, LineField>, context(), line.id ?? null), query, limit);
     },
 
     canCreate: (field) => creatable(page.fields[field]) !== null,

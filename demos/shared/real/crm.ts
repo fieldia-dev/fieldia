@@ -1,4 +1,4 @@
-import type { ActionRequest, ActionResult, Line, Page, RelatedRecord, Values } from '@fieldia/core';
+import type { ActionRequest, ActionResult, Line, Page, PropertyDefinition, RelatedRecord, Values } from '@fieldia/core';
 import contact from '../../../examples/pages/real-contact.page.json';
 import opportunity from '../../../examples/pages/real-opportunity.page.json';
 import leadLost from '../../../examples/pages/real-crm-lead-lost.page.json';
@@ -42,11 +42,13 @@ const TEAM_CAIRO = link(7201, 'Real Estate — Cairo');
 const TEAM_TENDERS = link(7202, 'Government & Tenders');
 
 /** The stages of the pipeline, in order, and the probability each gives an opportunity entering it. */
-const STAGES: Record<number, { name: string; sequence: number; probability: number; is_won?: boolean }> = {
+const STAGES: Record<number, { name: string; sequence: number; probability: number; is_won?: boolean; fold?: boolean }> = {
   7301: { name: 'New', sequence: 1, probability: 10 },
   7302: { name: 'Qualified', sequence: 2, probability: 30 },
   7303: { name: 'Proposition', sequence: 3, probability: 70 },
   7304: { name: 'Won', sequence: 70, probability: 100, is_won: true },
+  // Folded in the pipeline: the statusbar keeps it under its ⋯.
+  7305: { name: 'On Hold', sequence: 80, probability: 20, fold: true },
 };
 const stage = (id: number) => link(id, STAGES[id].name);
 
@@ -84,6 +86,11 @@ const PARTNER_DEFAULTS: Values = {
   currency_id: EGP,
   show_credit_limit: true,
   duplicated_bank_account_partners_count: 0,
+  same_vat_partner_id: null,
+  same_company_registry_partner_id: null,
+  team_id: null,
+  property_purchase_currency_id: null,
+  company_id: null,
   sale_warn: 'no-message',
   invoice_warn: 'no-message',
   purchase_warn: 'no-message',
@@ -191,7 +198,8 @@ const partners: Record<string, Values> = {
   }),
   7005: person('Omar Fathy', { parent_id: link(7004, 'New Capital Housing Authority'), function: 'Head of the Procurement Committee', title: link(7634, 'Engineer'), email: 'o.fathy@nchousing.example', phone: '+20 2 2812 0140', city: 'New Administrative Capital', state_id: CAIRO, country_id: EGYPT, country_code: 'EG' }),
   7006: company('Pyramids Contracting', { city: 'Giza', state_id: GIZA, country_id: EGYPT, country_code: 'EG', category_id: [link(7625, 'Contractor')] }),
-  7007: company('Delta Build & Co.', { city: 'Mansoura', country_id: EGYPT, country_code: 'EG', category_id: [link(7625, 'Contractor')] }),
+  // Registered under Pyramids Contracting's tax ID: the page warns of a partner with the same one.
+  7007: company('Delta Build & Co.', { city: 'Mansoura', country_id: EGYPT, country_code: 'EG', vat: '431-118-602', same_vat_partner_id: link(7006, 'Pyramids Contracting'), category_id: [link(7625, 'Contractor')] }),
   7008: company('Sinai Engineering Group', { city: 'Cairo', state_id: CAIRO, country_id: EGYPT, country_code: 'EG', category_id: [link(7625, 'Contractor')] }),
   // The opportunity's customer: a person buying a penthouse.
   7009: person('Mostafa Kamel', {
@@ -221,7 +229,12 @@ const lead: Record<string, Values> = {
     type: 'opportunity',
     active: true,
     stage_id: stage(7303),
-    priority: 2,
+    // Seconds spent in each stage so far, as Flectra's duration_tracking keeps them.
+    duration_tracking: { 7301: 2 * 86400 + 4 * 3600, 7302: 6 * 86400, 7303: 9 * 86400 + 5 * 3600 },
+    priority: '2',
+    email_cc: null,
+    message_bounce: 0,
+    company_id: null,
     company_currency: EGP,
     expected_revenue: 14500000,
     probability: 70,
@@ -276,7 +289,11 @@ const lead: Record<string, Values> = {
     type: 'lead',
     active: true,
     stage_id: stage(7301),
-    priority: 1,
+    duration_tracking: { 7301: 6 * 86400 },
+    priority: '1',
+    email_cc: null,
+    message_bounce: 0,
+    company_id: null,
     company_currency: EGP,
     expected_revenue: 0,
     probability: 12.5,
@@ -350,8 +367,8 @@ const tenders: Record<string, Values> = {
       { key: 'l3', id: 7813, values: { sequence: 30, lot_number: 'Lot 3', name: 'Five-year maintenance contract', participating: false, estimated_value: 3000000, quotation_id: null, delivery_deadline: null } },
     ],
     requirement_ids: [
-      { key: 'r1', id: 7821, values: { sequence: 10, name: 'Commercial register, less than 3 months old', requirement_type: 'legal', mandatory: true, compliant: true, responsible_id: LAILA, evidence_count: 1 } },
-      { key: 'r2', id: 7822, values: { sequence: 20, name: 'Tax card and VAT certificate', requirement_type: 'legal', mandatory: true, compliant: true, responsible_id: LAILA, evidence_count: 2 } },
+      { key: 'r1', id: 7821, values: { sequence: 10, name: 'Commercial register, less than 3 months old', requirement_type: 'legal', mandatory: true, compliant: true, responsible_id: LAILA, evidence_count: 1, description: null, evidence_ids: [] } },
+      { key: 'r2', id: 7822, values: { sequence: 20, name: 'Tax card and VAT certificate', requirement_type: 'legal', mandatory: true, compliant: true, responsible_id: LAILA, evidence_count: 2, description: null, evidence_ids: [] } },
       { key: 'r3', id: 7823, values: { sequence: 30, name: 'Bid bond, 1% of the bid, from an Egyptian bank', requirement_type: 'financial', mandatory: true, compliant: true, responsible_id: YOUSSEF, evidence_count: 1 } },
       { key: 'r4', id: 7824, values: { sequence: 40, name: 'ISO 9001 certificate', requirement_type: 'certification', mandatory: true, compliant: true, responsible_id: MONA, evidence_count: 1 } },
       { key: 'r5', id: 7825, values: { sequence: 50, name: 'Three similar projects in the last five years', requirement_type: 'experience', mandatory: true, compliant: false, responsible_id: KARIM, evidence_count: 0 } },
@@ -359,6 +376,7 @@ const tenders: Record<string, Values> = {
       { key: 'r7', id: 7827, values: { sequence: 70, name: 'Local content statement', requirement_type: 'other', mandatory: false, compliant: false, responsible_id: MONA, evidence_count: 0 } },
     ],
     compliance_percentage: 71.43,
+    company_id: null,
     lead_id: YOUSSEF,
     team_member_ids: [KARIM, MONA, LAILA],
     estimated_value: 31800000,
@@ -500,6 +518,8 @@ function action(request: ActionRequest): Promise<ActionResult> | undefined {
       return answer({ open: { page: 'real-contact', as: 'page', record: 'parent_id' } });
     case 'mail_action_blacklist_remove':
       return answer({ values: { is_blacklisted: false }, say: { message: 'Taken off the blacklist for mass mailings.', tone: 'success' } });
+    case 'action_view_partner_with_same_bank':
+      return answer(info(`The partners that share a bank account with ${v['name']}.`));
     case 'phone_action_blacklist_remove':
       return answer({ values: { phone_blacklisted: false, mobile_blacklisted: false }, say: { message: 'Taken off the blacklist for SMS marketing.', tone: 'success' } });
 
@@ -540,7 +560,44 @@ function action(request: ActionRequest): Promise<ActionResult> | undefined {
   }
 }
 
+/** The properties a lead's sales team defines (lead_properties_definition): the Cairo real-estate team's. */
+const TEAM_PROPERTIES: Record<number, PropertyDefinition[]> = {
+  7201: [{"name": "unit_type", "label": "Unit type", "type": "selection", "options": [{"value": "apartment", "label": "Apartment"}, {"value": "duplex", "label": "Duplex"}, {"value": "penthouse", "label": "Penthouse"}, {"value": "villa", "label": "Villa"}, {"value": "office", "label": "Office"}]}, {"name": "bedrooms", "label": "Bedrooms", "type": "integer"}, {"name": "financing_approved", "label": "Financing approved", "type": "boolean"}, {"name": "viewing_date", "label": "Site viewing", "type": "date"}] as PropertyDefinition[],
+};
+
+/**
+ * The person the CRM pages are shown to: a sales manager who also leads the
+ * tenders — with the groups Flectra gives one in a one-company setup, so
+ * developer mode (base.group_no_one) and several companies stay off.
+ */
+const CRM_MANAGER = {
+  id: 7101,
+  name: 'Salma Nabil',
+  roles: [
+    'base.group_user',
+    'base.group_partner_manager',
+    'sales_team.group_sale_salesman',
+    'sales_team.group_sale_salesman_all_leads',
+    'sales_team.group_sale_manager',
+    'crm.group_use_lead',
+    'account.group_account_invoice',
+    'account.group_account_readonly',
+    'purchase.group_purchase_user',
+    'product.group_product_pricelist',
+    'crm_tender.group_tender_user',
+    'crm_tender.group_tender_manager',
+  ],
+};
+
 export const lane: RealLane = {
+  around: {
+    'real-contact': { user: CRM_MANAGER, records: [7001, 7002, 7004, 7009], breadcrumbs: [{ label: 'Contacts', href: '#contacts' }] },
+    'real-opportunity': { user: CRM_MANAGER, records: [7701, 7702], breadcrumbs: [{ label: 'Pipeline', href: '#pipeline' }] },
+    'real-tender': { user: CRM_MANAGER, breadcrumbs: [{ label: 'Tenders', href: '#tenders' }] },
+  },
+  shows: { 'crm.stage': { folded: 'fold' }, 'res.partner.category': { color: 'color' } },
+  // A lead's properties are its sales team's.
+  definitions: { lead_properties: (values) => TEAM_PROPERTIES[idOf(values['team_id']) ?? -1] ?? [] },
   pages: {
     'real-contact': contact as Page,
     'real-opportunity': opportunity as Page,
@@ -561,9 +618,9 @@ export const lane: RealLane = {
     'res.partner': partners,
     'crm.lead': lead,
     'tender.opportunity': tenders,
-    'crm.stage': Object.fromEntries(Object.entries(STAGES).map(([id, s]) => [id, { name: s.name, sequence: s.sequence, is_won: s.is_won ?? false, team_id: null }])),
+    'crm.stage': Object.fromEntries(Object.entries(STAGES).map(([id, s]) => [id, { name: s.name, sequence: s.sequence, is_won: s.is_won ?? false, fold: s.fold ?? false, team_id: null }])),
     'crm.team': { 7201: { name: 'Real Estate — Cairo' }, 7202: { name: 'Government & Tenders' }, 7203: { name: 'Direct Sales' } },
-    'crm.tag': { 7721: { name: 'Residential' }, 7722: { name: 'Commercial' }, 7723: { name: 'Off-plan' }, 7724: { name: 'VIP' }, 7725: { name: 'Installments' } },
+    'crm.tag': { 7721: { name: 'Residential', color: 10 }, 7722: { name: 'Commercial', color: 4 }, 7723: { name: 'Off-plan', color: 2 }, 7724: { name: 'VIP', color: 3 }, 7725: { name: 'Installments', color: 8 } },
     'crm.lost.reason': { 7761: { name: 'Too expensive' }, 7762: { name: "We don't have people/skills" }, 7763: { name: 'Not enough stock' }, 7764: { name: 'Chose another developer' }, 7765: { name: 'Financing not approved' } },
     'utm.campaign': { 7731: { name: 'Autumn launch 2026' }, 7732: { name: 'Sahel summer 2026' } },
     'utm.medium': { 7741: { name: 'Website' }, 7742: { name: 'Phone' }, 7743: { name: 'Referral' }, 7744: { name: 'Email' } },
@@ -581,7 +638,7 @@ export const lane: RealLane = {
     },
     'res.currency': { 7461: { name: 'EGP' }, 7462: { name: 'USD' } },
     'res.partner.title': { 7631: { name: 'Mister' }, 7632: { name: 'Madam' }, 7633: { name: 'Doctor' }, 7634: { name: 'Engineer' }, 7635: { name: 'Professor' } },
-    'res.partner.category': { 7621: { name: 'Real estate' }, 7622: { name: 'Key account' }, 7623: { name: 'Government' }, 7624: { name: 'Supplier' }, 7625: { name: 'Contractor' } },
+    'res.partner.category': { 7621: { name: 'Real estate', color: 10 }, 7622: { name: 'Key account', color: 3 }, 7623: { name: 'Government', color: 4 }, 7624: { name: 'Supplier', color: 7 }, 7625: { name: 'Contractor', color: 2 } },
     'res.partner.industry': { 7641: { name: 'Real Estate' }, 7642: { name: 'Construction' }, 7643: { name: 'Public Administration' } },
     'account.payment.term': { 7651: { name: 'Immediate Payment' }, 7652: { name: '15 Days' }, 7653: { name: '30 Days' }, 7654: { name: '45 Days' }, 7655: { name: '30% Now, Balance 60 Days' } },
     'product.pricelist': { 7661: { name: 'Public Pricelist (EGP)' }, 7662: { name: 'Developers (EGP)' } },

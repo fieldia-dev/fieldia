@@ -3,8 +3,8 @@
   "id": "real-tender",
   "title": "Tender Opportunity",
   "description": "Sherkety ERP's own tender form (crm_tender, tender.opportunity, view_tender_opportunity_form): a bid in lots, its compliance checklist, team, money, competition, results, documents and timeline.",
-  "maxWidth": "full",
   "data": { "kind": "record", "model": "tender.opportunity" },
+  "maxWidth": "full",
   "fields": {
     "name": { "type": "char", "label": "Tender Name", "required": true },
     "tender_number": { "type": "char", "label": "Tender Reference", "readonly": true, "default": "New" },
@@ -63,6 +63,7 @@
       "compute": "if(days_until_submission < 0, 'overdue', if(days_until_submission <= 3, 'urgent', if(days_until_submission <= 7, 'approaching', 'plenty')))"
     },
     "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency", "required": true },
+    "company_id": { "type": "many2one", "label": "Company", "relation": "res.company" },
     "lot_ids": {
       "type": "one2many",
       "label": "Tender Lots",
@@ -73,7 +74,7 @@
         "lot_number": { "type": "char", "label": "Lot Number" },
         "name": { "type": "char", "label": "Lot Name", "required": true },
         "participating": { "type": "boolean", "label": "We Are Bidding", "default": true },
-        "estimated_value": { "type": "monetary", "label": "Estimated Value", "currency": "EGP" },
+        "estimated_value": { "type": "monetary", "label": "Estimated Value", "currencyField": "parent.currency_id" },
         "quotation_id": { "type": "many2one", "label": "Our Quote", "relation": "sale.order" },
         "delivery_deadline": { "type": "date", "label": "Delivery Deadline" }
       }
@@ -103,8 +104,10 @@
         },
         "mandatory": { "type": "boolean", "label": "Mandatory", "default": true },
         "compliant": { "type": "boolean", "label": "Compliant" },
-        "responsible_id": { "type": "many2one", "label": "Responsible Person", "relation": "res.users" },
-        "evidence_count": { "type": "integer", "label": "Evidence Count", "readonly": true }
+        "responsible_id": { "type": "many2one", "label": "Responsible Person", "relation": "res.users", "defaultFrom": "user" },
+        "evidence_count": { "type": "integer", "label": "Evidence Count", "readonly": true },
+        "description": { "type": "text", "label": "Description" },
+        "evidence_ids": { "type": "binary", "label": "Evidence Documents", "multiple": true }
       }
     },
     "compliance_percentage": { "type": "float", "label": "Compliance %", "readonly": true, "digits": [5, 2] },
@@ -148,12 +151,8 @@
         "label": "Submit Bid",
         "style": "primary",
         "invisible": "state != 'review'",
-        "steps": [
-          { "do": "check" },
-          { "do": "set", "field": "state", "value": "'submitted'" },
-          { "do": "save" },
-          { "do": "call", "action": "tender_submit" }
-        ]
+        "steps": [{ "do": "check" }, { "do": "set", "field": "state", "value": "'submitted'" }, { "do": "save" }, { "do": "call", "action": "tender_submit" }],
+        "roles": ["crm_tender.group_tender_user"]
       },
       {
         "type": "button",
@@ -161,11 +160,8 @@
         "label": "Mark Won",
         "style": "primary",
         "invisible": "state not in ['submitted', 'shortlisted']",
-        "steps": [
-          { "do": "set", "field": "state", "value": "'won'" },
-          { "do": "save" },
-          { "do": "call", "action": "tender_mark_won" }
-        ]
+        "steps": [{ "do": "set", "field": "state", "value": "'won'" }, { "do": "save" }, { "do": "call", "action": "tender_mark_won" }],
+        "roles": ["crm_tender.group_tender_manager"]
       },
       {
         "type": "button",
@@ -179,25 +175,21 @@
             "as": "dialog",
             "title": "Loss Analysis",
             "values": { "currency_id": "currency_id" },
-            "into": { "loss_reason": "loss_reason", "loss_notes": "loss_notes", "winning_amount": "winning_amount", "winning_competitor_id": "winning_competitor_id" },
-            "then": [
-              { "do": "set", "field": "state", "value": "'lost'" },
-              { "do": "save" },
-              { "do": "call", "action": "tender_mark_lost" }
-            ]
+            "into": {
+              "loss_reason": "loss_reason",
+              "loss_notes": "loss_notes",
+              "winning_amount": "winning_amount",
+              "winning_competitor_id": "winning_competitor_id"
+            },
+            "then": [{ "do": "set", "field": "state", "value": "'lost'" }, { "do": "save" }, { "do": "call", "action": "tender_mark_lost" }]
           }
-        ]
+        ],
+        "roles": ["crm_tender.group_tender_manager"]
       }
     ],
     "statButtons": [
       { "id": "stat-documents", "label": "Documents", "field": "document_count", "icon": "file", "steps": [{ "do": "goTo", "target": "tab-documents" }] },
       { "id": "stat-lots", "label": "Lots", "field": "lot_count", "icon": "list", "steps": [{ "do": "goTo", "target": "tab-lots" }] }
-    ],
-    "badges": [
-      { "id": "badge-plenty", "label": "Plenty of Time", "tone": "success", "icon": "clock", "invisible": "deadline_status != 'plenty'" },
-      { "id": "badge-approaching", "label": "Approaching", "tone": "info", "icon": "clock", "invisible": "deadline_status != 'approaching'" },
-      { "id": "badge-urgent", "label": "Urgent", "tone": "warning", "icon": "warning", "invisible": "deadline_status != 'urgent'" },
-      { "id": "badge-overdue", "label": "Overdue", "tone": "danger", "icon": "warning", "invisible": "deadline_status != 'overdue'" }
     ],
     "children": [
       {
@@ -214,7 +206,8 @@
               { "type": "field", "id": "f-client", "field": "client_id" },
               { "type": "field", "id": "f-client-contact", "field": "client_contact_id" },
               { "type": "field", "id": "f-tender-type", "field": "tender_type" },
-              { "type": "field", "id": "f-sales-team", "field": "sales_team_id" }
+              { "type": "field", "id": "f-sales-team", "field": "sales_team_id" },
+              { "type": "field", "id": "f-company", "field": "company_id", "roles": ["base.group_multi_company"], "options": { "create": false } }
             ]
           },
           {
@@ -224,7 +217,18 @@
             "children": [
               { "type": "field", "id": "f-submission-deadline", "field": "submission_deadline" },
               { "type": "field", "id": "f-days-until", "field": "days_until_submission" },
-              { "type": "field", "id": "f-deadline-status", "field": "deadline_status" },
+              {
+                "type": "field",
+                "id": "f-deadline-status",
+                "field": "deadline_status",
+                "widget": "badge",
+                "tones": [
+                  { "tone": "success", "when": "deadline_status == 'plenty'" },
+                  { "tone": "info", "when": "deadline_status == 'approaching'" },
+                  { "tone": "warning", "when": "deadline_status == 'urgent'" },
+                  { "tone": "danger", "when": "deadline_status == 'overdue'" }
+                ]
+              },
               { "type": "field", "id": "f-opening-date", "field": "opening_date" },
               { "type": "field", "id": "f-award-date", "field": "award_date" }
             ]
@@ -255,14 +259,23 @@
             "id": "tab-requirements",
             "label": "Requirements",
             "children": [
-              { "type": "field", "id": "f-compliance", "field": "compliance_percentage", "widget": "progressbar", "options": { "max": 100, "showPercent": true, "color": "auto" } },
+              {
+                "type": "field",
+                "id": "f-compliance",
+                "field": "compliance_percentage",
+                "widget": "progressbar",
+                "options": { "max": 100, "showPercent": true, "color": "auto" }
+              },
               {
                 "type": "field",
                 "id": "f-requirements",
                 "field": "requirement_ids",
                 "labels": "hidden",
                 "columns": ["name", "requirement_type", "mandatory", "compliant", "responsible_id", "evidence_count"],
-                "options": { "addLabel": "Add a line" }
+                "options": { "addLabel": "Add a line" },
+                "rowTones": [{ "tone": "success", "when": "compliant" }, { "tone": "danger", "when": "mandatory and not compliant" }],
+                "cells": { "name": { "width": 40 } },
+                "lineOpens": "fields"
               }
             ]
           },
@@ -342,7 +355,13 @@
                     "style": "plain",
                     "children": [
                       { "type": "field", "id": "f-competitors-count", "field": "competitors_count" },
-                      { "type": "field", "id": "f-win-probability", "field": "win_probability", "widget": "progressbar", "options": { "max": 100, "showPercent": true, "color": "auto" } }
+                      {
+                        "type": "field",
+                        "id": "f-win-probability",
+                        "field": "win_probability",
+                        "widget": "progressbar",
+                        "options": { "max": 100, "showPercent": true, "color": "auto" }
+                      }
                     ]
                   }
                 ]

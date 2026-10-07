@@ -1,7 +1,7 @@
 import type { ActionRequest, ActionResult, MemoryDataSourceOptions, Page } from '@fieldia/core';
 import { lane as accounting } from './accounting';
 import { lane as crm } from './crm';
-import type { RealLane } from './lane';
+import type { RealAround, RealLane } from './lane';
 import { lane as legal } from './legal';
 import { lane as operations } from './operations';
 import { lane as people } from './people';
@@ -26,6 +26,11 @@ export const real = {
   warnings: byModel((lane) => lane.warnings) as NonNullable<MemoryDataSourceOptions['warnings']>,
   lists: Object.assign({}, ...LANES.map((lane) => lane.lists ?? {})) as NonNullable<MemoryDataSourceOptions['lists']>,
   labelField: Object.assign({}, ...LANES.map((lane) => lane.labelField ?? {})) as NonNullable<MemoryDataSourceOptions['labelField']>,
+  definitions: Object.assign({}, ...LANES.map((lane) => lane.definitions ?? {})) as NonNullable<MemoryDataSourceOptions['definitions']>,
+  /** What links show of each model's records: a lane adds to a model's, a later one's word winning. */
+  shows: byModel((lane) => lane.shows as Record<string, Record<string, unknown>> | undefined) as NonNullable<MemoryDataSourceOptions['shows']>,
+  /** By the `?page=` name: the person using it, the pager's records and the breadcrumbs. */
+  around: Object.assign({}, ...LANES.map((lane) => lane.around ?? {})) as Record<string, RealAround>,
   /**
    * The first lane that knows the action answers it. A lane may answer later,
    * and "later, nothing" is not knowing it either: the next lane is asked.

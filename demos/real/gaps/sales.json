@@ -34,7 +34,9 @@
           "feature": "Defaults computed from active_ids: sale_order_ids, count, currency, amounts already invoiced and left to invoice",
           "status": "approximated",
           "how": "the opener's `values` expressions copy the order's own fields (currency_id, amount_invoiced, amount_to_invoice, amount_total)",
-          "needs": "the opener's record as a link in an expression (an `id` / `self` name), so sale_order_ids can be given; today no expression yields a link to the record itself"
+          "needs": "the opener's record as a link in an expression (an `id` / `self` name), so sale_order_ids can be given; today no expression yields a link to the record itself",
+          "app": true,
+          "why": "default_get reads the chosen orders on the server (active_ids); the opener hands the wizard what it read, and the app's data source would fill the rest"
         },
         {
           "feature": "product_id: the company's down payment product, a compute on company_id",
@@ -49,8 +51,8 @@
         {
           "feature": "Alert box (alert-warning) over the form: 'There are existing Draft Invoices…' with the link inline in the sentence",
           "status": "approximated",
-          "how": "a framed section holding a text node and a link-style button, invisible 'not display_draft_invoice_warning'; the link sits under the sentence",
-          "needs": "alerts in a sections page (they exist only on a sheet), and an action link inside a sentence of text"
+          "how": "an alert among the parts (text style alert, warning tone) with the sentence, invisible 'not display_draft_invoice_warning'; the Draft Invoices link sits under it, not inside the sentence",
+          "needs": "buttons inside an alert in the body (a text alert takes none; only a sheet's header alerts do)"
         },
         {
           "feature": "Second paragraph invisible=\"advance_payment_method != 'delivered'\"",
@@ -79,8 +81,8 @@
         },
         {
           "feature": "One label row switching between fixed_amount and amount (`<label for>` + div)",
-          "status": "approximated",
-          "how": "two field nodes, each with its own label and invisible/required conditions; they never show together"
+          "status": "covered",
+          "how": "two field nodes in one place, both labelled Down Payment Amount, each with its invisible/required condition: one row whose box switches with the choice"
         },
         {
           "feature": "fixed_amount monetary in currency_id, invisible/required by the choice",
@@ -96,7 +98,7 @@
           "feature": "Warning icon (fa-warning, text-danger, title) when display_invoice_amount_warning",
           "status": "approximated",
           "how": "an answer rule of level warning (`holds`) under the amount, and the boolean worked out client-side with if(); it needs a helper field orders_amount_total that the opener fills",
-          "needs": "worked-out values across a many2many's records (sum of sale_order_ids.amount_total), or an icon with a title shown by a boolean field"
+          "needs": "a sum over a many2many's records (sum works over a one2many's lines), or an icon with a title shown by a boolean field"
         },
         {
           "feature": "deposit_account_id: options no_create, domain deprecated = False, invisible=\"product_id\"",
@@ -105,8 +107,8 @@
         },
         {
           "feature": "deposit_account_id groups=\"account.group_account_manager\"",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles: [account.group_account_manager] on the Income Account; the demo's person holds it (roles= in the query takes it away)"
         },
         {
           "feature": "Group invisible=\"not has_down_payments\": amount_invoiced and amount_to_invoice, readonly money with help",
@@ -120,46 +122,48 @@
         },
         {
           "feature": "Footer buttons: Create Draft Invoice (primary) and Cancel (special=cancel)",
-          "status": "approximated",
-          "how": "the dialog's own Save & Close runs beforeSave (check, then call create_invoices) and Discard closes it; standalone, the page's Save",
-          "needs": "a page's own footer buttons when it is opened in a dialog (label, style, steps), in place of Discard / Save & Close"
+          "status": "covered",
+          "how": "the page's footer: Create Draft Invoice (primary: check, call create_invoices, save, so the dialog closes with its answers) and Cancel (a close step)"
         },
         {
           "feature": "data-hotkey q / x on the footer buttons",
-          "status": "missing",
-          "needs": "keyboard shortcuts on buttons (Flectra's data-hotkey: Alt+Q, Alt+X…)"
+          "status": "covered",
+          "how": "hotkey q on Create Draft Invoice and x on Cancel: Alt+Q, Alt+X, shown in their tooltips"
         },
         {
           "feature": "create_invoices returns the invoice's window action (the new invoice opens)",
           "status": "approximated",
-          "how": "the order's then-steps call sale_invoice_created: the invoice count and amounts follow and the invoice number is said; no invoice page is opened (none in this lane, though an open step could)"
+          "how": "the order's then-steps call sale_invoice_created: the invoice count and amounts follow and the invoice number is said; no invoice page is opened (none in this lane, though an open step could)",
+          "app": true,
+          "why": "the invoice is made on the server; the app's answer can open its page (open) once it exists — this demo's memory source has no invoice to open"
         },
         {
           "feature": "A down payment adds a 'Down Payments' section and line to the order",
-          "status": "approximated",
-          "how": "only the order's invoiced amounts and count change"
+          "status": "covered",
+          "how": "the app's answer to the order's sale_invoice_created adds a Down Payments section and a down payment line (nothing ordered, the amount as its price) to the order's lines"
         },
         {
           "feature": "A transient record, never kept",
           "status": "approximated",
-          "how": "the memory data source saves a sale.advance.payment.inv record on Save & Close"
+          "how": "the memory data source saves a sale.advance.payment.inv record on Save & Close",
+          "app": true,
+          "why": "whether a save keeps the record is the data source's: an app's would make nothing for a transient model; the demo's memory source keeps everything"
         },
         {
           "feature": "Words said by the dialog's page while it saves (a toast from its beforeSave call) vanish as the dialog closes: toasts live inside the dialog's viewer",
-          "status": "missing",
-          "needs": "toasts of an opened page shown at the opener's (or the document's) level, so they outlive the dialog"
+          "status": "covered",
+          "how": "the dialog's create_invoices answer says the invoice's number, and the words show over the order after the dialog closes"
         },
         {
           "feature": "Field help (sale.advance.payment.inv help strings)",
-          "status": "approximated",
-          "how": "shown as a paragraph under the field",
-          "needs": "help shown as a tooltip (?) beside the label, as Flectra does, instead of a paragraph under every field"
+          "status": "covered",
+          "how": "look.helpShown: tooltip — the help behind a (?) beside each label, as Flectra shows it"
         }
       ],
       "summary": {
-        "covered": 14,
-        "approximated": 9,
-        "missing": 3
+        "covered": 21,
+        "approximated": 5,
+        "missing": 0
       }
     },
     {
@@ -215,12 +219,14 @@
           "feature": "Send by Email (primary in draft, secondary in sent/sale): opens the mail composer with the quotation template, marks the quotation sent",
           "status": "approximated",
           "how": "check, call action_quotation_send (answered: state sent, words said), save",
-          "needs": "a composer page could be opened by an open step; none is built here"
+          "needs": "a composer page could be opened by an open step; none is built here",
+          "app": true,
+          "why": "the mail composer (template, recipients, attachments) is the app's own wizard: an open step could show it once the app has the page"
         },
         {
           "feature": "Send PRO-FORMA Invoice ×2 (groups sale.group_proforma_sales, invisible on state and invoice_count)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "two Send PRO-FORMA Invoice buttons with roles [sale.group_proforma_sales], their state/invoice_count conditions and Alt+W, calling action_quotation_send_proforma"
         },
         {
           "feature": "Confirm ×2: primary when sent, secondary when draft; context validate_analytic",
@@ -234,20 +240,20 @@
         },
         {
           "feature": "Preview: act_url to the customer portal",
-          "status": "approximated",
-          "how": "call answered with words naming the portal address",
-          "needs": "an open-a-web-address step (act_url)"
+          "status": "covered",
+          "how": "an openUrl step: '/my/orders/' + id, the portal page in a new tab; hidden while new (not id)"
         },
         {
           "feature": "Cancel invisible=\"state not in ['draft','sent','sale'] or not id or locked\"; a non-draft order opens the sale.order.cancel wizard (mail to the customer)",
           "status": "approximated",
-          "how": "ask step when not draft, set state cancel, save; `not id` is dropped",
-          "needs": "the record's id (new or saved) in expressions"
+          "how": "the full condition, `not id` included; a non-draft order asks first, then is cancelled and saved",
+          "app": true,
+          "why": "the sale.order.cancel wizard (a mail to the customer) is the app's own page; an ask stands for it"
         },
         {
           "feature": "Set to Quotation (action_draft: state draft, signature cleared)",
-          "status": "approximated",
-          "how": "set state draft, save; the signature fields are not on this page"
+          "status": "covered",
+          "how": "set state draft, clear signature, signed by and signed on, save"
         },
         {
           "feature": "Lock invisible=\"locked or state != 'sale'\"",
@@ -256,19 +262,18 @@
         },
         {
           "feature": "Unlock / Lock groups (sales_team.group_sale_manager, sale.group_auto_done_setting)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles: Unlock to sales_team.group_sale_manager, Lock to sale.group_auto_done_setting"
         },
         {
           "feature": "data-hotkey on every header button (q, g, w, x, shift+g, shift+v)",
-          "status": "missing",
-          "needs": "keyboard shortcuts on buttons (Flectra's data-hotkey: Alt+Q, Alt+X…)"
+          "status": "covered",
+          "how": "hotkey on every header button: q (Confirm, Create Invoice), g (Send by Email), w (PRO-FORMA, Set to Quotation), x (Cancel), shift+g / shift+v (capture, void)"
         },
         {
           "feature": "Credit limit alert showing the partner_credit_warning text, invisible=\"partner_credit_warning == ''\"",
-          "status": "approximated",
-          "how": "sheet alert with a fixed sentence, invisible 'not partner_credit_warning'; the text is worked out by the data source's onchange",
-          "needs": "an alert whose message comes from a field (messageField)"
+          "status": "covered",
+          "how": "a sheet alert with messageField partner_credit_warning: the server's words, invisible while empty"
         },
         {
           "feature": "Stat button Invoices (statinfo, invisible=\"invoice_count == 0\")",
@@ -284,12 +289,14 @@
           "feature": "Stat buttons open the order's invoices / transfers as a list",
           "status": "approximated",
           "how": "call answered with words",
-          "needs": "an open step to a list page of another model filtered by a domain"
+          "needs": "an open step to a list page of another model filtered by a domain",
+          "app": true,
+          "why": "an open step can open a list page filtered by the order; the invoice and transfer lists are the app's pages, not part of this lane"
         },
         {
           "feature": "Delivery stat button groups=\"stock.group_stock_user\"",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles: [stock.group_stock_user] on the Delivery stat button"
         },
         {
           "feature": "Locked badge with a lock icon, invisible=\"not locked\"",
@@ -308,8 +315,8 @@
         },
         {
           "feature": "widget res_partner_many2one with show_address / show_vat: the customer's address and tax ID under the link",
-          "status": "missing",
-          "needs": "a link that shows details of the linked record under it (a second line from the record's fields)"
+          "status": "covered",
+          "how": "the customer's link with options.details: its street, city and tax ID under it, from the data source (shows res.partner details)"
         },
         {
           "feature": "partner_invoice_id, partner_shipping_id readonly=\"state == 'cancel' or locked\"",
@@ -318,9 +325,8 @@
         },
         {
           "feature": "Their context default_type invoice / delivery for Create and edit…",
-          "status": "approximated",
-          "how": "Create and edit opens the related page without those defaults",
-          "needs": "context defaults for a link's Create and edit…"
+          "status": "covered",
+          "how": "createValues on the invoice and delivery address links: parent_id from the customer and type invoice / delivery for Create and edit…"
         },
         {
           "feature": "Customer onchange: invoice and delivery addresses, pricelist, payment terms, fiscal position, salesperson, team, credit warning",
@@ -339,8 +345,8 @@
         },
         {
           "feature": "date_order shown twice: 'Quotation Date' (debug mode, draft/sent) and 'Order Date' (sale/cancel)",
-          "status": "approximated",
-          "how": "one node labelled Order Date with invisible=\"state in ['draft', 'sent']\"; the debug-only row is left out"
+          "status": "covered",
+          "how": "a second date_order node, Quotation Date, with roles [base.group_no_one] (developer mode) and its state condition, beside Order Date"
         },
         {
           "feature": "pricelist_id invisible=\"not has_active_pricelist\", no_create, readonly in cancel/sale",
@@ -349,14 +355,13 @@
         },
         {
           "feature": "no_open on pricelist, payment terms, incoterm, product (no ↗ to the linked record)",
-          "status": "missing",
-          "needs": "an option to hide a link's ↗ (open) button"
+          "status": "covered",
+          "how": "options.open: false on pricelist, payment terms, incoterm and the line's product"
         },
         {
           "feature": "Update Prices: link button inline after the pricelist (o_row), confirm, invisible on show_update_pricelist and state",
-          "status": "approximated",
-          "how": "a link-style button with confirm and the condition, on its own row under the field",
-          "needs": "a button on a field's own row (field + button side by side)"
+          "status": "covered",
+          "how": "an inline section (style inline, roles product.group_product_pricelist): the pricelist and the Update Prices link button on one row"
         },
         {
           "feature": "Pricelist / fiscal position changed flags (show_update_pricelist, show_update_fpos)",
@@ -390,9 +395,8 @@
         },
         {
           "feature": "Catalog button in the lines' control row (action_add_from_catalog)",
-          "status": "approximated",
-          "how": "a link button under the grid, call answered with words",
-          "needs": "buttons in a table's control row, beside the add buttons"
+          "status": "covered",
+          "how": "a controlButton on the grid, beside Add a product / a section / a note"
         },
         {
           "feature": "product_id required=\"not display_type\", domain sale_ok = True",
@@ -401,18 +405,22 @@
         },
         {
           "feature": "product_id readonly=\"not product_updatable\", product_uom readonly=\"product_uom_readonly\", product_uom_qty readonly=\"is_downpayment\", qty_delivered readonly=\"qty_delivered_method != 'manual'\", price_unit / tax_id readonly=\"qty_invoiced > 0\", price_subtotal invisible=\"is_downpayment\"",
-          "status": "missing",
-          "needs": "conditions per line: readonly/invisible/required on a line field (or column) read against that line's own values"
+          "status": "covered",
+          "how": "cells: product locked as product_updatable is computed (cancelled, or confirmed and locked/delivered/invoiced), UoM locked once confirmed, quantity on a down payment, delivered unless manual, price and taxes once invoiced, Tax excl. blank on a down payment"
         },
         {
           "feature": "widget sol_product_many2one / product_template_id (product configurator, variant grid) on the product cell",
           "status": "missing",
-          "needs": "a line field widget that opens a configurator dialog when a product with variants is picked"
+          "needs": "a line field widget that opens a configurator dialog when a product with variants is picked",
+          "app": true,
+          "why": "the configurator (variants, optional products) is the app's own dialog; a change step could open it"
         },
         {
           "feature": "Product search context (partner, quantity, pricelist, uom) used for the price shown and set",
           "status": "approximated",
-          "how": "the data source's onchange prices the line from the pricelist once a product is picked"
+          "how": "the data source's onchange prices the line from the pricelist once a product is picked",
+          "app": true,
+          "why": "the price shown and set is the server's: the data source's onchange prices the line"
         },
         {
           "feature": "name (Description) section_and_note_text, optional show",
@@ -422,7 +430,7 @@
         {
           "feature": "analytic_distribution widget (groups analytic.group_analytic_accounting), optional hide",
           "status": "missing",
-          "needs": "an analytic distribution widget (accounts and percentages); also a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "needs": "the distribution widget in a grid cell (it exists on a json field, not as a line column); roles on a column"
         },
         {
           "feature": "product_uom_qty",
@@ -431,19 +439,20 @@
         },
         {
           "feature": "decoration-info / decoration-bf on quantities when invoice_status == 'to invoice'",
-          "status": "missing",
-          "needs": "line (row) and cell decorations by condition: decoration-info/-success/-warning/-danger/-bf"
+          "status": "covered",
+          "how": "cells tones info and bold on Quantity, Delivered and Invoiced while the line is to invoice"
         },
         {
           "feature": "qty_delivered / qty_invoiced (Delivered / Invoiced) column_invisible=\"parent.state != 'sale'\", optional show",
-          "status": "approximated",
-          "how": "optional columns that start hidden; a person shows them",
-          "needs": "column visibility read against the parent record (column_invisible=\"parent.state != 'sale'\")"
+          "status": "covered",
+          "how": "cells hidden: state != 'sale' (column_invisible on the order), optional and shown"
         },
         {
           "feature": "qty_at_date_widget (sale_stock): availability icon and forecast popover on each line",
           "status": "missing",
-          "needs": "a cell widget per line with a popover of server data"
+          "needs": "a cell widget per line with a popover of server data",
+          "app": true,
+          "why": "a popover of the server's stock forecast: the app's own screen"
         },
         {
           "feature": "product_uom (UoM) required not display_type, optional show",
@@ -457,8 +466,8 @@
         },
         {
           "feature": "customer_lead readonly=\"parent.state not in ['draft','sent','sale'] or is_downpayment\"",
-          "status": "missing",
-          "needs": "conditions per line: readonly/invisible/required on a line field (or column) read against that line's own values and the parent record"
+          "status": "covered",
+          "how": "cells readonly: parent.state not in (draft, sent, sale) or is_downpayment"
         },
         {
           "feature": "price_unit",
@@ -472,8 +481,8 @@
         },
         {
           "feature": "tax_id domain on parent.company_id and parent.tax_country_id",
-          "status": "missing",
-          "needs": "a line field's filter reading the parent record's values (valueFrom parent)"
+          "status": "covered",
+          "how": "the line's tax filter reads the order: company_id = parent.company_id and country_id = parent.tax_country_id, beside sales taxes only"
         },
         {
           "feature": "discount (Disc.%) optional show",
@@ -487,26 +496,24 @@
         },
         {
           "feature": "price_total (Tax incl.) optional hide, column_invisible on parent.tax_calculation_rounding_method",
-          "status": "approximated",
-          "how": "optional column starting hidden",
-          "needs": "column visibility read against the parent record (column_invisible=\"parent.state != 'sale'\")"
+          "status": "covered",
+          "how": "optional, starting hidden, and cells hidden while tax_calculation_rounding_method is round_globally"
         },
         {
           "feature": "Line money in the order's currency (currency_id on the line)",
-          "status": "approximated",
-          "how": "line monetary fields with a fixed currency EGP",
-          "needs": "a line monetary taking its currency from the parent record's currency field"
+          "status": "covered",
+          "how": "the line's monetary fields take currencyField parent.currency_id"
         },
         {
           "feature": "The line's own <form> (two groups, labels 'Delivered' / 'Invoiced' invisible on parent.state, lead time 'days', invoice_lines in debug)",
           "status": "approximated",
           "how": "the grid's ↗ opens every line field in a plain dialog",
-          "needs": "a layout for a line's dialog (a page for the line)"
+          "needs": "a page for sale.order.line (lineOpens: record opens it, but the line's form is not built here)"
         },
         {
           "feature": "mode=\"tree,kanban\": lines as cards on a phone",
-          "status": "missing",
-          "needs": "a card view of a table's lines on narrow screens; the grid scrolls sideways inside itself on a phone"
+          "status": "covered",
+          "how": "cards: narrow — the lines as cards on a phone"
         },
         {
           "feature": "Line prices, taxes, subtotals and the order's totals (server compute)",
@@ -526,14 +533,15 @@
         {
           "feature": "11 columns beside the chatter: Flectra's list shrinks columns to fit",
           "status": "approximated",
-          "how": "the grid keeps minimum column widths and scrolls sideways inside itself at 1280–1440 px",
-          "needs": "grid columns that shrink to fit (or wrap headers) before scrolling"
+          "how": "the grid scrolls sideways inside itself beside the chatter; fit: shrink was tried and left out: at ~970 px it cuts the amounts (E£171,…) or, sizing them, squeezes Product and Description to 72 px with headers wrapping a letter a line",
+          "needs": "a shrink that keeps numbers whole and re-sizes them as columns show and hide; or the chatter under the sheet below a page-chosen width (Flectra's XXL)"
         },
         {
           "feature": "Discount button (groups product.group_discount_per_so_line) opening the sale.order.discount wizard",
           "status": "approximated",
-          "how": "button calling the app, answered with words",
-          "needs": "nothing new: the wizard could be another opened page; the button's group needs a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "how": "button with roles [product.group_discount_per_so_line], calling the app, answered with words",
+          "app": true,
+          "why": "the sale.order.discount wizard is the app's own page"
         },
         {
           "feature": "note (Terms and conditions) html, nolabel, placeholder, in a group col=6 beside the totals",
@@ -542,9 +550,8 @@
         },
         {
           "feature": "tax_totals widget account-tax-totals-field: untaxed amount, a row per tax group, total; tax amounts editable",
-          "status": "approximated",
-          "how": "three readonly monetary fields: Untaxed Amount, Taxes, Total",
-          "needs": "a totals widget fed by the server: one row per tax group, with editable tax amounts"
+          "status": "covered",
+          "how": "a tax_totals json field with the tax-totals widget: Untaxed Amount, a row per tax group (VAT 14%), Total, worked out by the server's totals"
         },
         {
           "feature": "Optional Products tab (sale_management) invisible=\"state not in ['draft','sent']\"",
@@ -558,18 +565,18 @@
         },
         {
           "feature": "Option line button 'Add to order lines' (button_add_to_order, cart icon) invisible=\"is_present\"",
-          "status": "missing",
-          "needs": "buttons on each line of a table, with steps or an action and a condition per line"
+          "status": "covered",
+          "how": "a rowButton on each option line, invisible is_present, calling button_add_to_order: the app adds the order line and marks the option present"
         },
         {
           "feature": "Option lines decoration-success=\"is_present == True\"",
-          "status": "missing",
-          "needs": "line (row) and cell decorations by condition: decoration-info/-success/-warning/-danger/-bf"
+          "status": "covered",
+          "how": "rowTones success when is_present"
         },
         {
           "feature": "Option product domain company_id = parent.company_id; kanban mode on mobile",
-          "status": "missing",
-          "needs": "line filters reading the parent; a card view of lines on a phone"
+          "status": "covered",
+          "how": "the option's product filter: no company or parent.company_id; cards: narrow on a phone"
         },
         {
           "feature": "Other Info: four titled groups in two columns (Sales, Invoicing, Delivery, Tracking)",
@@ -578,9 +585,8 @@
         },
         {
           "feature": "user_id widget many2one_avatar_user",
-          "status": "approximated",
-          "how": "a plain many2one",
-          "needs": "a user link with the person's avatar"
+          "status": "covered",
+          "how": "options.avatar: the salesperson's picture or initials before the name"
         },
         {
           "feature": "team_id no_create",
@@ -594,9 +600,8 @@
         },
         {
           "feature": "'of' + prepayment_percent inline after Online payment, widget percentage, invisible=\"not require_payment\"",
-          "status": "approximated",
-          "how": "its own row, a number 0–100 with a % suffix (Flectra keeps 0–1 and the widget shows %)",
-          "needs": "a percentage widget (stores a fraction, shows per cent), and fields side by side on one row"
+          "status": "covered",
+          "how": "kept as a fraction (0.3) with the percentage widget, after Online payment and 'of' on one inline row; checked 0 < p <= 1"
         },
         {
           "feature": "reference readonly, invisible=\"not reference\"",
@@ -610,20 +615,18 @@
         },
         {
           "feature": "tag_ids many2many_tags with color_field and no_create_edit",
-          "status": "approximated",
-          "how": "tags widget, create false; no colours",
-          "needs": "tag colours from a field of the tag record"
+          "status": "covered",
+          "how": "options.colors: each tag in its crm.tag colour; create false"
         },
         {
           "feature": "fiscal_position_id + Update Taxes inline button (confirm, invisible on show_update_fpos and state)",
-          "status": "approximated",
-          "how": "many2one and a link button on its own row under it",
-          "needs": "a button on a field's own row"
+          "status": "covered",
+          "how": "an inline section: the fiscal position and Update Taxes on one row"
         },
         {
           "feature": "analytic_account_id (groups analytic), journal_id and invoice_status (base.group_no_one, debug mode), company_id (groups multi_company)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user; debug mode is group base.group_no_one"
+          "status": "covered",
+          "how": "Analytic Account (roles analytic.group_analytic_accounting), Invoicing Journal and Invoice Status (base.group_no_one), Company (base.group_multi_company)"
         },
         {
           "feature": "Delivery (sale_stock): incoterm no_create, incoterm_location, picking_policy required readonly=\"state not in ['draft','sent']\"",
@@ -632,8 +635,8 @@
         },
         {
           "feature": "warehouse_id (groups stock.group_stock_multi_warehouses), readonly=\"state == 'sale'\"",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "Warehouse with roles [stock.group_stock_multi_warehouses] and readonly once confirmed"
         },
         {
           "feature": "commitment_date readonly=\"state == 'cancel' or locked\"",
@@ -643,8 +646,8 @@
         {
           "feature": "'Expected: <expected_date>' span inline after the delivery date, widget date, invisible=\"effective_date and commitment_date\"",
           "status": "approximated",
-          "how": "its own readonly row labelled Expected, with the condition; shown with its time",
-          "needs": "a datetime shown as a date (widget date) and fields side by side on one row"
+          "how": "an inline row: Delivery Date, then 'Expected:' and the expected date, both with the condition; the date still shows its time",
+          "needs": "a datetime shown as a date only (Flectra's widget=\"date\")"
         },
         {
           "feature": "effective_date invisible=\"not effective_date\"; delivery_status invisible=\"state != 'sale'\"",
@@ -654,7 +657,9 @@
         {
           "feature": "json_popover widget stock_rescheduling_popover (late or rescheduled deliveries)",
           "status": "missing",
-          "needs": "a popover widget with server data beside a field"
+          "needs": "a popover widget with server data beside a field",
+          "app": true,
+          "why": "a popover of the server's rescheduling data: the app's own screen"
         },
         {
           "feature": "Tracking: origin, campaign_id, medium_id, source_id",
@@ -663,8 +668,8 @@
         },
         {
           "feature": "Customer Signature tab (base.group_no_one, invisible without signature data): signed_by / signed_on readonly=\"signature\", signature widget image",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user (debug mode); the parts themselves exist (image field, conditions)"
+          "status": "covered",
+          "how": "a tab with roles [base.group_no_one], hidden without signature data; Signed By / Signed On read-only once signed, the signature widget"
         },
         {
           "feature": "Chatter: followers, activities, messages",
@@ -674,14 +679,13 @@
         {
           "feature": "Chatter beside the form on any screen",
           "status": "approximated",
-          "how": "always beside the sheet; Flectra puts it under the sheet below its extra-large breakpoint",
-          "needs": "a side panel that drops under the sheet below a width"
+          "how": "beside the sheet on a wide form, under it once the form is narrower than 1000px — Flectra moves it under below its XXL width, so at 1280–1440px Fieldia still has it beside",
+          "needs": "the width the side panel drops at, chosen by the page"
         },
         {
           "feature": "Field help (Flectra help= strings)",
-          "status": "approximated",
-          "how": "a paragraph under each field",
-          "needs": "help shown as a tooltip (?) beside the label, as Flectra does, instead of a paragraph under every field"
+          "status": "covered",
+          "how": "look.helpShown: tooltip — a (?) beside the label"
         },
         {
           "feature": "Required fields checked before a button's server call (Flectra saves the record before running an object button)",
@@ -690,9 +694,9 @@
         }
       ],
       "summary": {
-        "covered": 49,
-        "approximated": 27,
-        "missing": 21
+        "covered": 83,
+        "approximated": 10,
+        "missing": 4
       }
     },
     {
@@ -722,18 +726,21 @@
         {
           "feature": "Replenish (opens the product.replenish wizard) invisible=\"type not in ['consu','product']\"",
           "status": "approximated",
-          "how": "header button with the condition, call answered with words",
-          "needs": "nothing new: the wizard could be an opened page"
+          "how": "header button with the condition and roles [stock.group_stock_user], call answered with words",
+          "app": true,
+          "why": "the product.replenish wizard is the app's own page; an open step would show it"
         },
         {
           "feature": "Print Labels (opens the label layout wizard) invisible=\"detailed_type not in ['consu','product','combo']\"",
           "status": "approximated",
-          "how": "header button with the condition, call answered with words"
+          "how": "header button with the condition, call answered with words",
+          "app": true,
+          "why": "the label layout wizard and its report are the app's"
         },
         {
           "feature": "Header buttons' groups (stock.group_stock_manager, stock.group_stock_user)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles: Update Quantity to stock.group_stock_manager, Replenish to stock.group_stock_user"
         },
         {
           "feature": "Stat button Extra Prices / Extra Price: the words change with the count",
@@ -747,25 +754,24 @@
         },
         {
           "feature": "Stat buttons Sold / Purchased / On Hand / Forecasted: the value followed by the unit (38 Units Sold)",
-          "status": "approximated",
-          "how": "the value alone",
-          "needs": "a stat button with a second field (the unit) or a suffix from a field"
+          "status": "covered",
+          "how": "unitField uom_name on Sold, Purchased, On Hand and Forecasted: 38 Units"
         },
         {
           "feature": "Stat buttons In: n / Out: n and Min: n / Max: n (two values each)",
-          "status": "approximated",
-          "how": "one value (Out, Min) under a label 'In / Out', 'Min / Max'",
-          "needs": "a stat button with two labelled values"
+          "status": "covered",
+          "how": "secondField with secondLabel: In over Out, Min over Max, each after its words"
         },
         {
           "feature": "Stat buttons' help tooltips ('Sold in the last 365 days') and groups (pricelist, variants, sales, purchase, stock user, lots)",
-          "status": "missing",
-          "needs": "a tooltip on a stat button; a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "approximated",
+          "how": "roles on every group-gated stat button (pricelist, variants, sales, purchase, stock user, lots); the help tooltips are not shown",
+          "needs": "a tooltip on a stat button"
         },
         {
           "feature": "Putaway Rules and Storage Capacities stat buttons (groups multi-locations, storage categories)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "both stat buttons, with roles stock.group_stock_multi_locations / stock.group_stock_storage_categories: hidden for this one-warehouse company's people"
         },
         {
           "feature": "Ribbon Archived (web_ribbon, text-bg-danger) invisible=\"active\"",
@@ -779,15 +785,13 @@
         },
         {
           "feature": "'Product Name' label over the h1 name",
-          "status": "approximated",
-          "how": "the name's placeholder only (e.g. Cheese Burger); a sheet title takes no label",
-          "needs": "a label for the sheet's title field"
+          "status": "covered",
+          "how": "title.label: Product Name over the name"
         },
         {
           "feature": "priority widget priority (a star) beside the name; a selection '0'/'1'",
-          "status": "approximated",
-          "how": "an integer with widget rating, max 1, over the title: a second click takes the star away, and no 'Clear selection' shows",
-          "needs": "the star on a selection field ('0'/'1')"
+          "status": "covered",
+          "how": "a selection '0' / '1' with the priority widget, in title.before: the star on the name's line"
         },
         {
           "feature": "name with placeholder, line_breaks false",
@@ -812,8 +816,8 @@
         {
           "feature": "product_tooltip: italic muted words from a compute, no label, invisible=\"type == 'service' and not sale_ok\"",
           "status": "approximated",
-          "how": "a readonly text worked out in the page with if() on type, labels hidden; it shows as a box, not italic words",
-          "needs": "a text node whose words come from a field or an expression"
+          "how": "worked out in the page with if() on type; with look.readonlyShown text it reads as plain words, not a box — not Flectra's italic, muted words",
+          "needs": "italic muted words (Flectra's fst-italic text-muted) for a value"
         },
         {
           "feature": "Sale's two italic notes ('You can invoice them before they are delivered.' / 'Invoice after delivery…') with conditions on type and invoice_policy",
@@ -837,9 +841,8 @@
         },
         {
           "feature": "tax_string '(= 48,735.00 EGP Incl. Taxes)' inline after the price",
-          "status": "approximated",
-          "how": "a readonly char on its own row, labels hidden, worked out by the data source's onchange",
-          "needs": "fields side by side on one row"
+          "status": "covered",
+          "how": "an inline row, Sales Price: the price and its tax string as words after it"
         },
         {
           "feature": "taxes_id many2many_tags (context search defaults)",
@@ -848,14 +851,13 @@
         },
         {
           "feature": "standard_price monetary in cost_currency_id, invisible=\"id and product_variant_count != 1 and not is_product_variant\"",
-          "status": "approximated",
-          "how": "the condition without `id`",
-          "needs": "the record's id in expressions"
+          "status": "covered",
+          "how": "the Cost row's condition in full: id and product_variant_count != 1 and not is_product_variant"
         },
         {
           "feature": "'per <uom_name>' after the cost (groups uom)",
-          "status": "missing",
-          "needs": "a suffix taken from a field on a number box (suffixField, as the label widget has)"
+          "status": "covered",
+          "how": "the Cost row: the cost, 'per' and the unit's name as words, those two with roles [uom.group_uom]"
         },
         {
           "feature": "categ_id, default_code invisible=\"product_variant_count > 1\"",
@@ -864,8 +866,8 @@
         },
         {
           "feature": "barcode invisible=\"product_variant_count > 1 or (product_variant_count == 0 and valid_product_template_attribute_line_ids)\"",
-          "status": "approximated",
-          "how": "the first half of the condition"
+          "status": "covered",
+          "how": "the whole condition, with valid_product_template_attribute_line_ids"
         },
         {
           "feature": "product_tag_ids many2many_tags; Configure tags link button (action, icon oi-arrow-right)",
@@ -874,14 +876,13 @@
         },
         {
           "feature": "company_id (groups base.group_multi_company)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "Company with roles [base.group_multi_company]: hidden in a one-company setup"
         },
         {
           "feature": "product_properties (Properties, columns=2) defined by the category",
-          "status": "approximated",
-          "how": "a properties field with definitions written in the page; one column",
-          "needs": "property definitions read from a linked record (categ_id.product_properties_definition), and columns for properties"
+          "status": "covered",
+          "how": "definitionsFrom { list: product_properties, dependsOn: [categ_id] }: the category's definitions from the app, in two columns"
         },
         {
           "feature": "Internal Notes group: description, nolabel, placeholder",
@@ -895,35 +896,33 @@
         },
         {
           "feature": "attribute_id readonly=\"id\" on saved lines",
-          "status": "missing",
-          "needs": "conditions per line: readonly/invisible/required on a line field (or column) read against that line's own values"
+          "status": "covered",
+          "how": "cells readonly: id — a saved line's attribute is locked (a line's conditions now read its own id, fixed in this lane)"
         },
         {
           "feature": "value_ids many2many_tags in the line with color_field, no_create_edit, context default_attribute_id",
-          "status": "approximated",
-          "how": "many2many line column; no colours, any value can be picked",
-          "needs": "a line field's filter reading another field of the same line (values of the line's attribute)"
+          "status": "covered",
+          "how": "the line's tags in their colours (cells widget tags, colors), filtered by the line's own attribute (valueFrom attribute_id), made with it (createValues)"
         },
         {
           "feature": "Configure button on each attribute line (action_open_attribute_values)",
-          "status": "missing",
-          "needs": "buttons on each line of a table, with steps or an action and a condition per line"
+          "status": "covered",
+          "how": "a rowButton Configure on each saved line, calling action_open_attribute_values"
         },
         {
           "feature": "Attribute lines decoration-info=\"value_count <= 1\"",
-          "status": "missing",
-          "needs": "line (row) and cell decorations by condition: decoration-info/-success/-warning/-danger/-bf"
+          "status": "covered",
+          "how": "rowTones info when value_count <= 1"
         },
         {
           "feature": "Warning paragraph (oe_edit_only)",
-          "status": "approximated",
-          "how": "a note text, always shown",
-          "needs": "parts shown only while editing"
+          "status": "covered",
+          "how": "invisible: not editing — shown only while the record is edited"
         },
         {
           "feature": "Variants tab groups=\"product.group_product_variant\"",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles [product.group_product_variant] on the tab"
         },
         {
           "feature": "Sales tab invisible=\"not sale_ok\" (sale removes the '1 or')",
@@ -942,8 +941,8 @@
         },
         {
           "feature": "Warning when Selling groups (sales_team.group_sale_salesman, sale.group_warning_sale)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles [sale.group_warning_sale] on the section"
         },
         {
           "feature": "Purchase tab invisible=\"not purchase_ok\" (purchase)",
@@ -958,8 +957,8 @@
         },
         {
           "feature": "variant_seller_ids for products with variants",
-          "status": "approximated",
-          "how": "left out: this product has one variant"
+          "status": "covered",
+          "how": "a second vendors table, shown only when the product has several variants"
         },
         {
           "feature": "Vendor Bills: supplier_taxes_id tags, purchase_method radio",
@@ -973,8 +972,8 @@
         },
         {
           "feature": "Vendor Bills groups (purchase.group_purchase_manager), Purchase tab group, warning group",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles: the Purchase tab to purchase.group_purchase_user, Vendor Bills to purchase.group_purchase_manager, the warning to purchase.group_warning_purchase"
         },
         {
           "feature": "Inventory tab invisible=\"type == 'service'\"",
@@ -993,15 +992,13 @@
         },
         {
           "feature": "responsible_id many2one_avatar_user",
-          "status": "approximated",
-          "how": "a plain many2one",
-          "needs": "a user link with the person's avatar"
+          "status": "covered",
+          "how": "options.avatar: initials (or a picture) before the name"
         },
         {
           "feature": "weight + weight_uom_name, volume + volume_uom_name inline",
-          "status": "approximated",
-          "how": "a fixed suffix kg / m³ in the box",
-          "needs": "a suffix taken from a field on a number box"
+          "status": "covered",
+          "how": "inline rows: the weight and its unit's name, the volume and its own, from the record"
         },
         {
           "feature": "Traceability group invisible=\"type == 'consu'\": tracking radio invisible=\"type == 'service'\"",
@@ -1010,8 +1007,8 @@
         },
         {
           "feature": "Traceability groups (stock.group_production_lot); Counterpart Locations (base.group_no_one); Description for Internal Transfers (multi-locations); Packaging table (product.group_stock_packaging)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles: Traceability to stock.group_production_lot, Counterpart Locations to base.group_no_one, internal transfers' description to stock.group_stock_multi_locations, the Packaging table to product.group_stock_packaging"
         },
         {
           "feature": "Description for Receipts / for Delivery Orders",
@@ -1025,8 +1022,8 @@
         },
         {
           "feature": "Accounting tab groups (account.group_account_readonly, account.group_account_invoice)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles [account.group_account_readonly, account.group_account_invoice] on the tab"
         },
         {
           "feature": "type worked out from detailed_type; show_on_hand / show_forecasted buttons flags",
@@ -1045,15 +1042,14 @@
         },
         {
           "feature": "Field help",
-          "status": "approximated",
-          "how": "a paragraph under each field",
-          "needs": "help shown as a tooltip (?) beside the label, as Flectra does, instead of a paragraph under every field"
+          "status": "covered",
+          "how": "look.helpShown: tooltip"
         }
       ],
       "summary": {
-        "covered": 32,
-        "approximated": 19,
-        "missing": 13
+        "covered": 58,
+        "approximated": 6,
+        "missing": 0
       }
     },
     {
@@ -1103,12 +1099,14 @@
         {
           "feature": "The renewal creates a new draft contract",
           "status": "approximated",
-          "how": "the app says so; the new contract is not opened"
+          "how": "the app says so; the new contract is not opened",
+          "app": true,
+          "why": "the new contract is made on the server; the app's answer can show it in the form's place (record) once it exists"
         },
         {
           "feature": "Buttons' groups (sale_contract.group_contract_manager / group_contract_user)",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "roles: Activate and Terminate to sale_contract.group_contract_manager, Renew to group_contract_user"
         },
         {
           "feature": "Statusbar draft, active, completed (renewal_due, terminated shown when current)",
@@ -1124,12 +1122,16 @@
           "feature": "Stat buttons Milestones and Amendments open their records' lists (tree, form, calendar, gantt)",
           "status": "approximated",
           "how": "goTo steps to the Milestones and Amendments tabs",
-          "needs": "an open step to a list page of another model filtered by a domain"
+          "needs": "an open step to a list page of another model filtered by a domain",
+          "app": true,
+          "why": "an open step opens a list page filtered by the contract; the milestones' and amendments' list pages are the app's, not built in this lane"
         },
         {
           "feature": "Stat buttons Invoices and Documents (invisible when 0)",
           "status": "approximated",
-          "how": "statButtons with conditions, calls answered with words"
+          "how": "statButtons with conditions, calls answered with words",
+          "app": true,
+          "why": "the invoices' and documents' lists are the app's pages"
         },
         {
           "feature": "milestone_count, amendment_count (computes)",
@@ -1143,9 +1145,8 @@
         },
         {
           "feature": "Pill badge '<days_until_expiry> days until expiry' invisible=\"state not in ('active','renewal_due')\"",
-          "status": "approximated",
-          "how": "a readonly label-widget field with suffix ' days until expiry' under the title",
-          "needs": "a badge whose words include a field's value"
+          "status": "covered",
+          "how": "a worked-out char (days_until_expiry + ' days until expiry') drawn as a badge, toned by the days left, under the title with Flectra's condition"
         },
         {
           "feature": "partner_id required; partner_contact_id domain parent_id = partner_id",
@@ -1159,8 +1160,8 @@
         },
         {
           "feature": "company_id groups base.group_multi_company",
-          "status": "missing",
-          "needs": "a condition on the user's groups (Flectra's groups=), e.g. a `groups` list on any node checked against the app's user"
+          "status": "covered",
+          "how": "Company with roles [base.group_multi_company]"
         },
         {
           "feature": "start_date required, end_date, duration_months (stored compute), contract_value monetary required, notice_period_days default 30",
@@ -1184,37 +1185,33 @@
         },
         {
           "feature": "Milestone amount in the contract's currency (related currency_id)",
-          "status": "approximated",
-          "how": "a fixed currency EGP on the line field",
-          "needs": "a line monetary taking its currency from the parent record"
+          "status": "covered",
+          "how": "currencyField parent.currency_id on the milestone's amount (and an amendment's value change)"
         },
         {
           "feature": "responsible_id many2one_avatar_user",
-          "status": "approximated",
-          "how": "a plain many2one",
-          "needs": "a user link with the person's avatar"
+          "status": "covered",
+          "how": "the Contract Manager and each milestone's Responsible with their initials (options.avatar, on the line's column too)"
         },
         {
           "feature": "state widget badge in the line",
-          "status": "approximated",
-          "how": "a select",
-          "needs": "a badge widget for a selection, in lines too"
+          "status": "covered",
+          "how": "cells state: badge, toned by the state"
         },
         {
           "feature": "decoration-danger=\"state == 'pending' and days_until_due < 0\", decoration-warning=\"state == 'pending' and days_until_due <= 7\"",
-          "status": "missing",
-          "needs": "line (row) and cell decorations by condition: decoration-info/-success/-warning/-danger/-bf"
+          "status": "covered",
+          "how": "rowTones danger when pending and overdue, warning when pending and due within 7 days"
         },
         {
           "feature": "Row buttons Complete (invisible state != 'in_progress') and Invoice (invisible state != 'completed')",
-          "status": "missing",
-          "needs": "buttons on each line of a table, with steps or an action and a condition per line"
+          "status": "covered",
+          "how": "rowButtons Complete (invisible state != 'in_progress') and Invoice (invisible state != 'completed'), each answered by the app on its line"
         },
         {
           "feature": "milestone_completion_percentage widget progressbar in the subtotal footer (server compute: completed, invoiced or paid over all)",
-          "status": "approximated",
-          "how": "a progressbar worked out in the page from a helper line field done = if(state in [...], 1, 0): sum(milestone_ids, 'done') * 100 / count(milestone_ids)",
-          "needs": "a count of lines that meet a condition (countWhere) so no helper field is needed"
+          "status": "covered",
+          "how": "count(milestone_ids, \"state in ('completed', 'invoiced', 'paid')\") * 100 / count(milestone_ids): no helper field"
         },
         {
           "feature": "Price Escalation tab invisible=\"contract_type != 'framework'\": has_escalation; type, rate, next date invisible=\"not has_escalation\"; formula invisible=\"escalation_type != 'custom'\"",
@@ -1228,14 +1225,13 @@
         },
         {
           "feature": "Amendments tab: a read-only list (each line opens the amendment's own form)",
-          "status": "approximated",
-          "how": "a table of lines edited in place; number, value change and status are readonly",
-          "needs": "a read-only table whose lines open their own record page"
+          "status": "covered",
+          "how": "a read-only table whose lines open the amendment's own page (lineOpens: record, a contract.amendment page)"
         },
         {
           "feature": "Amendments decoration-info / -success / -danger by state; state widget badge",
-          "status": "missing",
-          "needs": "line (row) and cell decorations by condition: decoration-info/-success/-warning/-danger/-bf; a badge widget"
+          "status": "covered",
+          "how": "rowTones by state and a state badge toned by it"
         },
         {
           "feature": "value_change optional show",
@@ -1264,9 +1260,8 @@
         },
         {
           "feature": "Termination wizard footer: Terminate Contract (primary) / Cancel",
-          "status": "approximated",
-          "how": "the dialog's Save & Close / Discard",
-          "needs": "a page's own footer buttons when it is opened in a dialog (label, style, steps), in place of Discard / Save & Close"
+          "status": "covered",
+          "how": "the page's footer: Terminate Contract (check, call, save) and Cancel (close)"
         },
         {
           "feature": "Renewal wizard: two groups (dates and duration / keep terms and value), separator Price Escalation, escalation_rate invisible=\"not apply_escalation\"",
@@ -1282,7 +1277,7 @@
           "feature": "Renewal reads the contract through contract_id (value, currency)",
           "status": "approximated",
           "how": "a helper readonly contract_value filled by the opener's values",
-          "needs": "the opener's record as a link, its fields readable in the opened page"
+          "needs": "the opener's own record as a link in an open step's values (id gives its id, not a link)"
         },
         {
           "feature": "Renewal UserError when the end is not after the start",
@@ -1291,15 +1286,14 @@
         },
         {
           "feature": "Renewal footer: Create Renewed Contract / Cancel",
-          "status": "approximated",
-          "how": "Save & Close / Discard",
-          "needs": "a page's own footer buttons when it is opened in a dialog (label, style, steps), in place of Discard / Save & Close"
+          "status": "covered",
+          "how": "the page's footer: Create Renewed Contract and Cancel"
         }
       ],
       "summary": {
-        "covered": 23,
-        "approximated": 12,
-        "missing": 5
+        "covered": 36,
+        "approximated": 4,
+        "missing": 0
       }
     }
   ]

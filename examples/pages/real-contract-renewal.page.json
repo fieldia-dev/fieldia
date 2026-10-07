@@ -40,10 +40,7 @@
             "type": "section",
             "id": "renewal-terms",
             "style": "plain",
-            "children": [
-              { "type": "field", "id": "f-keep-terms", "field": "keep_terms" },
-              { "type": "field", "id": "f-new-value", "field": "new_value" }
-            ]
+            "children": [{ "type": "field", "id": "f-keep-terms", "field": "keep_terms" }, { "type": "field", "id": "f-new-value", "field": "new_value" }]
           }
         ]
       },
@@ -58,9 +55,16 @@
           { "type": "field", "id": "f-escalation-rate", "field": "escalation_rate", "invisible": "not apply_escalation" }
         ]
       }
+    ],
+    "footer": [
+      {
+        "type": "button",
+        "id": "action_confirm",
+        "label": "Create Renewed Contract",
+        "style": "primary",
+        "steps": [{ "do": "check" }, { "do": "call", "action": "contract_renewal_confirm" }, { "do": "save" }]
+      },
+      { "type": "button", "id": "cancel", "label": "Cancel", "steps": [{ "do": "close" }] }
     ]
-  },
-  "on": {
-    "beforeSave": [{ "do": "check" }, { "do": "call", "action": "contract_renewal_confirm" }]
   }
 }

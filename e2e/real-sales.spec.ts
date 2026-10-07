@@ -53,7 +53,7 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-validity')).toBeVisible();
       await expect(node(page, 'f-date-order')).toBeHidden();
       // The grid's add buttons in the page's words, as Flectra's.
-      await expect(node(page, 'f-order-line').locator('.fd-lines-add')).toHaveText(['+ Add a product', '+ Add a section', '+ Add a note']);
+      await expect(node(page, 'f-order-line').locator(".fd-lines-add")).toHaveText(["+ Add a product", "+ Add a section", "+ Add a note", "Catalog"]);
       if (variant === 'plain') await screen(page, 'real-sale-order');
 
       // Four monitors become five: the line's Tax excl. and the order's totals follow, worked out by the server's rules.
@@ -65,7 +65,8 @@ for (const variant of VARIANTS) {
       await expect.poll(() => value(page, 'amount_total')).toBe(378708);
 
       // Another customer: the addresses and terms follow, and Delta Care Clinics is over its credit limit.
-      const warning = page.getByText('This customer is over the credit limit');
+      // The alert says the server's own words (messageField).
+      const warning = page.getByText('Delta Care Clinics has reached its credit limit of: E£ 150,000.00');
       await expect(warning).toBeHidden();
       await pick(page, 'f-partner', 'delta', 'Delta Care Clinics');
       await expect(warning).toBeVisible();
@@ -116,11 +117,68 @@ for (const variant of VARIANTS) {
       await expect(dialog.locator('[data-node="f-deposit-account"]')).toBeHidden();
       await amount.fill('10');
       if (variant === 'plain') await screen(page, 'real-sale-invoice-wizard-in-order', { viewport: true });
-      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      // The wizard's own footer, as Flectra's: Create Draft Invoice and Cancel, with their keys, in place of Save & Close.
+      await expect(dialog.getByRole('button', { name: 'Save & Close' })).toHaveCount(0);
+      await expect(dialog.locator('button[data-node="cancel"]')).toBeVisible();
+      await dialog.locator('button[data-node="create_invoices"]').click();
       await expect(dialog).toBeHidden();
+      // Said inside the dialog, and still said once it is gone.
       await expect(toast(page, 'Draft down payment invoice INV/2026/00118 created for E£36,765.00.')).toBeVisible();
       await expect.poll(() => value(page, 'invoice_count')).toBe(2);
       await expect.poll(() => value(page, 'amount_invoiced')).toBe(66765);
+      // The order gets a Down Payments section and the down payment's line.
+      await expect.poll(() => page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().values.order_line.map((line: any) => line.values.name))).toEqual(
+        expect.arrayContaining(['Down Payments', 'Down Payment (Draft) INV/2026/00118']),
+      );
+      expect(problems).toEqual([]);
+    });
+
+    test('sales order: keys, roles, the customer’s address, rows on one line, tax totals, line rules and an optional product added', async ({ page, context }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, ORDER);
+      // The customer's address and tax number under the link, as show_address / show_vat.
+      await expect(node(page, 'f-partner')).toContainText('27 Ramses Street');
+      await expect(node(page, 'f-partner')).toContainText('EG 205-118-332');
+      // Keys on the header's buttons, said in their tooltips; the PRO-FORMA button for the person holding its group.
+      await expect(button(page, 'send_by_email_primary')).toHaveAttribute('title', /Alt\+G/i);
+      await expect(button(page, 'action_confirm_draft')).toHaveAttribute('title', /Alt\+Q/i);
+      await expect(button(page, 'send_proforma_draft')).toBeVisible();
+      // The pricelist and its Update Prices on one row; a tax group's row in the totals.
+      await expect(node(page, 'pricelist-row').locator('[data-node="f-pricelist"]')).toBeVisible();
+      await expect(node(page, 'f-tax-totals')).toContainText('VAT 14%');
+      await expect(node(page, 'f-tax-totals')).toContainText('40,523.00');
+      // Catalog beside the grid's own add buttons.
+      await expect(node(page, 'f-order-line').locator('button[data-node="action_add_from_catalog"]')).toBeVisible();
+      // Preview opens the customer's portal page in a new tab.
+      const [portal] = await Promise.all([context.waitForEvent('page'), button(page, 'action_preview_sale_order').click()]);
+      expect(portal.url()).toContain('/my/orders/7101');
+      await portal.close();
+      // Optional Products: a line's own button adds it to the order, then the line is green and the button goes.
+      await tab(page, 'Optional Products').click();
+      const options = node(page, 'f-options');
+      const before = await page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().values.order_line.length);
+      await options.locator('.ag-row[row-index="0"] [data-row-button="button_add_to_order"]').click();
+      await expect.poll(() => page.evaluate(() => (window as any).fieldiaDemo.handle.form.getState().values.order_line.length)).toBe(before + 1);
+      await expect(options.locator('.ag-row[row-index="0"]')).toHaveClass(/fd-tone-success/);
+      await expect(options.locator('.ag-row[row-index="0"] [data-row-button="button_add_to_order"]')).toBeHidden();
+      // Other Info: the salesperson with initials, the tags in their colours, the prepayment as a per cent on Online payment's row.
+      await tab(page, 'Other Info').click();
+      await expect(node(page, 'online-payment-row').locator('[data-node="f-prepayment"] input')).toHaveValue(/30/);
+      if (variant === 'plain') await screen(page, 'real-sale-order-other-info');
+
+      // A confirmed order: quantities to invoice in the info tone; Delivered and Invoiced shown, as the order is a sale.
+      await page.goto(`/${variant}/?${CONFIRMED}`);
+      await expect(cell(page, 'f-order-line', 0, 'qty_delivered')).toHaveClass(/fd-tone-info/);
+      await expect(cell(page, 'f-order-line', 0, 'product_uom_qty')).toHaveClass(/fd-cell-bold/);
+      await expect(button(page, 'action_view_delivery')).toBeVisible();
+      await expect(button(page, 'action_lock')).toBeVisible();
+      await expect(tab(page, 'Customer Signature')).toBeHidden();
+      // Another person, in developer mode only: no Delivery, no Lock, no PRO-FORMA; the Customer Signature tab.
+      await page.goto(`/${variant}/?${CONFIRMED}&roles=base.group_no_one`);
+      await expect(button(page, 'action_view_invoice')).toBeVisible();
+      await expect(button(page, 'action_view_delivery')).toBeHidden();
+      await expect(button(page, 'action_lock')).toBeHidden();
+      await expect(tab(page, 'Customer Signature')).toBeVisible();
       expect(problems).toEqual([]);
     });
 
@@ -138,10 +196,16 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-amount').locator('.fd-warning')).toContainText('The Down Payment is greater than the amount remaining to be invoiced.');
       await expect.poll(() => value(page, 'display_invoice_amount_warning')).toBe(true);
       if (variant === 'plain') await screen(page, 'real-sale-invoice-wizard');
-      // The fixed amount takes its place, and is required.
+      // The fixed amount takes its place, and is required: one row, Down Payment Amount, whichever it is.
       await page.getByRole('radio', { name: 'Down payment (fixed amount)' }).check();
       await expect(node(page, 'f-amount')).toBeHidden();
       await expect(node(page, 'f-fixed-amount')).toBeVisible();
+      await expect(node(page, 'f-fixed-amount')).toContainText('Down Payment Amount');
+      // Help behind a (?) by the label, as Flectra's, not words under every field; the keys in the footer's tooltips.
+      await expect(node(page, 'f-fixed-amount').getByText('The fixed amount to be invoiced in advance.')).toBeHidden();
+      await expect(node(page, 'f-fixed-amount').locator('.fd-help-tip')).toBeAttached();
+      await expect(button(page, 'create_invoices')).toHaveAttribute('title', /Alt\+Q/i);
+      await expect(button(page, 'cancel')).toHaveAttribute('title', /Alt\+X/i);
       await expect(node(page, 'f-fixed-amount').locator('.fd-required, [aria-required="true"]').first()).toBeAttached();
       // Opened for three orders: the count and Consolidated Billing, and no choice of a down payment.
       await page.goto(`/${variant}/?page=real-sale-invoice-wizard&record=7702&skin=outlined`);
@@ -157,7 +221,24 @@ for (const variant of VARIANTS) {
       await expect(button(page, 'action_update_quantity_on_hand_stat')).toBeVisible();
       await expect(button(page, 'action_update_quantity_on_hand')).toBeVisible();
       await expect(tab(page, 'Inventory')).toBeVisible();
-      await expect(node(page, 'f-tooltip').locator('textarea')).toHaveValue('Storable products are physical items for which you manage the inventory level.');
+      // Read-only words as words, as Flectra draws them.
+      await expect(node(page, 'f-tooltip')).toContainText('Storable products are physical items for which you manage the inventory level.');
+      await expect(node(page, 'f-tooltip').locator('textarea')).toBeHidden();
+      // The label over the name, the star on its line, stat buttons with their unit and two values, Cost per its unit.
+      await expect(page.getByText('Product Name', { exact: true }).first()).toBeVisible();
+      await expect(node(page, 'f-priority')).toBeVisible();
+      await expect(button(page, 'action_view_sales')).toContainText('38 Units');
+      await expect(button(page, 'action_view_stock_move_lines')).toContainText(/In:?\s*5/);
+      await expect(button(page, 'action_view_stock_move_lines')).toContainText(/Out:?\s*9/);
+      await expect(node(page, 'cost-row')).toContainText('per');
+      await expect(node(page, 'cost-row')).toContainText('Units');
+      // The category's properties, from the app, in two columns.
+      await expect(node(page, 'f-properties')).toContainText('Medical device class');
+      // Attributes: a saved line's attribute is locked, its values in their colours, and Configure on each line.
+      await tab(page, 'Attributes & Variants').click();
+      await expect(node(page, 'f-attribute-lines').locator('input[id$="-a1-attribute_id"]')).not.toBeEditable();
+      await expect(node(page, 'f-attribute-lines').locator('[data-row-button="action_open_attribute_values"]').first()).toBeVisible();
+      await tab(page, 'General Information').click();
       if (variant === 'plain') await screen(page, 'real-product');
 
       // A service: no Inventory tab, no stock stat buttons, no Update Quantity or Replenish, and no tooltip.
@@ -189,6 +270,23 @@ for (const variant of VARIANTS) {
       expect(problems).toEqual([]);
     });
 
+    test('product: parts shown by the person’s groups, and a service’s properties are its category’s', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      // A salesperson alone: no stock buttons, no Purchase tab, no Variants, no Accounting.
+      const { problems } = await open(page, variant, `${PRODUCT}&roles=sales_team.group_sale_salesman`);
+      await expect(button(page, 'action_view_sales')).toBeVisible();
+      await expect(button(page, 'action_update_quantity_on_hand')).toBeHidden();
+      await expect(button(page, 'action_update_quantity_on_hand_stat')).toBeHidden();
+      await expect(tab(page, 'Purchase')).toBeHidden();
+      await expect(tab(page, 'Attributes & Variants')).toBeHidden();
+      await expect(tab(page, 'Accounting')).toBeHidden();
+      // Another category, other properties.
+      await page.goto(`/${variant}/?page=real-product&record=7305&skin=underline`);
+      await expect(node(page, 'f-properties')).toContainText('Warranty (months)');
+      await expect(node(page, 'f-properties')).not.toContainText('Medical device class');
+      expect(problems).toEqual([]);
+    });
+
     test('sales contract: the type picks its tab, a milestone done moves the bar, activated then terminated through its dialog', async ({ page }) => {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, CONTRACT);
@@ -203,9 +301,15 @@ for (const variant of VARIANTS) {
       await expect(tab(page, 'SLA Performance')).toBeVisible();
       await node(page, 'f-contract-type').locator('select').selectOption({ label: 'Framework Agreement' });
 
-      // The first milestone completed: one of four, a quarter of the bar.
-      await node(page, 'f-milestones').locator('tbody tr').first().locator('select').selectOption({ label: 'Completed' });
+      // The first milestone, in progress, completed by its line's own button: one of four, a quarter of the bar.
+      const first = node(page, 'f-milestones').locator('tbody tr').first();
+      await expect(first.locator('[data-row-button="action_milestone_invoice"]')).toBeHidden();
+      await first.locator('[data-row-button="action_milestone_complete"]').click();
+      await expect(toast(page, /Milestone .* completed/)).toBeVisible();
       await expect.poll(() => value(page, 'milestone_completion_percentage')).toBe(25);
+      // Now it can be invoiced; its state is a green badge.
+      await expect(first.locator('[data-row-button="action_milestone_invoice"]')).toBeVisible();
+      await expect(first.locator('[data-row-button="action_milestone_complete"]')).toBeHidden();
 
       // Activated: Terminate and Renew appear.
       await expect(button(page, 'action_terminate')).toBeHidden();
@@ -215,21 +319,48 @@ for (const variant of VARIANTS) {
       await expect(button(page, 'action_terminate')).toBeVisible();
       await expect(button(page, 'action_renew')).toBeVisible();
       await expect(node(page, 'f-days-until-expiry')).toBeVisible();
+      await expect(node(page, 'f-days-until-expiry')).toContainText('days until expiry');
 
       // Terminated through its dialog: the reason comes back, and the termination details show under the terms.
       await button(page, 'action_terminate').click();
       const dialog = page.getByRole('dialog', { name: 'Terminate Contract' });
       await expect(dialog).toBeVisible();
-      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      // The wizard's own footer: Terminate Contract and Cancel.
+      await expect(dialog.getByRole('button', { name: 'Save & Close' })).toHaveCount(0);
+      await dialog.getByRole('button', { name: 'Terminate Contract' }).click();
       await expect(dialog.locator('[data-node="f-termination-reason"] .fd-error')).toBeVisible();
       await dialog.locator('[data-node="f-termination-reason"] textarea').fill('The hospital moved its ICU to a new building with its own supplier.');
       if (variant === 'plain') await screen(page, 'real-contract-termination', { viewport: true });
-      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      await dialog.getByRole('button', { name: 'Terminate Contract' }).click();
       await expect(dialog).toBeHidden();
       await expect(toast(page, 'Contract terminated')).toBeVisible();
       await expect.poll(() => value(page, 'state')).toBe('terminated');
       await expect(tab(page, 'Terms & Conditions')).toHaveAttribute('aria-selected', 'true');
       await expect(node(page, 'f-termination-reason').locator('textarea')).toHaveValue('The hospital moved its ICU to a new building with its own supplier.');
+      await expect(button(page, 'action_terminate')).toBeHidden();
+      expect(problems).toEqual([]);
+    });
+
+    test('sales contract: an amendment opens its own page, read-only lines toned by state, and the renewal’s own footer', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, 'page=real-sale-contract&record=7602&skin=underline');
+      await tab(page, 'Amendments').click();
+      const amendments = node(page, 'f-amendments');
+      await expect(amendments.locator('tbody tr').nth(1)).toHaveAttribute('data-tone', 'info');
+      await amendments.locator('.fd-line-open').first().click();
+      const dialog = page.getByRole('dialog');
+      await expect(dialog.locator('[data-node="f-value"] input')).toHaveValue(/60,000\.00/);
+      await dialog.getByRole('button', { name: 'Discard' }).click();
+      await expect(dialog).toBeHidden();
+      // Renew opens its dialog with its own buttons.
+      await button(page, 'action_renew').click();
+      const renewal = page.getByRole('dialog', { name: 'Renew Contract' });
+      await expect(renewal.getByRole('button', { name: 'Create Renewed Contract' })).toBeVisible();
+      await renewal.getByRole('button', { name: 'Cancel' }).click();
+      await expect(renewal).toBeHidden();
+      // A contract user without the manager's group: Renew, but no Terminate.
+      await page.goto(`/${variant}/?page=real-sale-contract&record=7602&skin=underline&roles=sale_contract.group_contract_user`);
+      await expect(button(page, 'action_renew')).toBeVisible();
       await expect(button(page, 'action_terminate')).toBeHidden();
       expect(problems).toEqual([]);
     });

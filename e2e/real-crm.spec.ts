@@ -104,20 +104,63 @@ for (const variant of VARIANTS) {
       expect(problems).toEqual([]);
     });
 
+    test('contact: a same-Tax-ID warning that names and opens the other partner, defaults for a new address, parts by the person’s groups', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, 'page=real-contact&record=7007&skin=underline');
+      const warning = page.locator('.fd-alert', { hasText: 'same Tax ID' });
+      await expect(warning).toContainText('Pyramids Contracting');
+      await warning.getByRole('button', { name: 'Open it' }).click();
+      const dialog = page.getByRole('dialog');
+      await expect(dialog.getByRole('textbox', { name: 'Name' }).first()).toHaveValue('Pyramids Contracting');
+      await dialog.getByRole('button', { name: 'Discard' }).click();
+      // No country: every state may be picked (=?), as Flectra's domain.
+      await page.evaluate(() => (window as any).fieldiaDemo.handle.form.setValue('country_id', null));
+      await expect.poll(() => value(page, 'country_id')).toBeNull();
+      const state = node(page, 'f-state').getByRole('combobox');
+      await state.click();
+      await state.fill('Riy');
+      await expect(node(page, 'f-state').getByRole('option', { name: 'Riyadh', exact: true }).first()).toBeVisible();
+      await state.press('Escape');
+
+      // A company's new address starts at the company's own, as Flectra's context gives it.
+      await page.goto(`/${variant}/?page=real-contact&record=7001&skin=underline`);
+      const cards = node(page, 'f-children');
+      await cards.getByRole('button', { name: 'Add', exact: true }).click();
+      await expect(cards.getByRole('textbox', { name: 'Street', exact: true }).last()).toHaveValue('Plot 112, South 90th Street');
+      // Tags in their colours.
+      await expect(node(page, 'f-tags').locator('[data-color]').first()).toBeVisible();
+
+      // Someone without the sales or invoicing groups: no Sales stat button, no Invoicing tab.
+      await page.goto(`/${variant}/?page=real-contact&record=7001&skin=underline&roles=base.group_user`);
+      await expect(node(page, 'stat-meetings')).toBeVisible();
+      await expect(node(page, 'stat-sales')).toBeHidden();
+      await expect(tab(page, 'tab-accounting')).toBeHidden();
+      expect(problems).toEqual([]);
+    });
+
     test('opportunity: the probability follows the stage; Lost asks why, then Restore and Won', async ({ page }) => {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, 'page=real-opportunity&record=7701&skin=underline');
-      await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Proposition');
+      await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText(/^Proposition/);
       expect(await value(page, 'probability')).toBe(70);
       await expect(node(page, 'f-expected-revenue')).toBeVisible();
       await expect(page.locator('button[data-node="convert"]')).toBeHidden();
       await expect(node(page, 'stat-similar-lead')).toBeVisible();
-      await expect(node(page, 'stat-next-meeting')).toBeVisible();
+      // One meetings button: its label and its date from the record's fields.
+      await expect(node(page, 'stat-meeting')).toContainText('Next Meeting');
+      // The time spent in each stage, and the folded stage under the statusbar's ⋯.
+      await expect(page.locator('.fd-statusbar').getByRole('button', { name: /Qualified/ })).toContainText('6d');
+      await expect(page.locator('.fd-statusbar').getByRole('button', { name: /^On Hold/ })).toHaveCount(0);
+      // Keys on the header's buttons; the tags in their colours, the priority as stars.
+      await expect(page.locator('button[data-node="won"]')).toHaveAttribute('title', /Alt\+W/i);
+      await expect(node(page, 'f-priority').locator('[role="radio"], button, input').first()).toBeVisible();
       if (variant === 'plain') await screen(page, 'real-crm-opportunity');
 
       // A stage clicked: the server works the probability out from it.
-      await page.locator('.fd-statusbar').getByRole('button', { name: 'Qualified' }).click();
+      await page.locator('.fd-statusbar').getByRole('button', { name: /^Qualified/ }).click();
       await expect.poll(() => value(page, 'probability')).toBe(30);
+      // The click saves at once, as Flectra's statusbar does.
+      await expect.poll(() => page.evaluate(() => (window as any).fieldiaDemo.dataSource.records['crm.lead']['7701'].probability)).toBe(30);
       await expect(node(page, 'f-probability').locator('input')).toHaveValue('30.00');
 
       // Lost: the reason asked in a dialog, then the record lost — the ribbon, the reason, Restore.
@@ -126,9 +169,13 @@ for (const variant of VARIANTS) {
       await expect(dialog).toBeVisible();
       await pick(dialog.locator('[data-node="f-lost-reason"]'), 'Too', 'Too expensive');
       if (variant === 'plain') await screen(page, 'real-crm-opportunity-lost-dialog', { viewport: true });
-      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      await expect(dialog.getByRole('button', { name: 'Save & Close' })).toHaveCount(0);
+      await dialog.getByRole('button', { name: 'Mark as Lost' }).click();
       await expect(dialog).toBeHidden();
       await expect(node(page, 'ribbon-lost')).toBeVisible();
+      // Lost: no statusbar; the reason posted in the opportunity's conversation.
+      await expect(page.locator('.fd-statusbar')).toBeHidden();
+      await expect(page.locator('.fd-chatter, [data-slot="chatter"]').first()).toContainText('Lost: Too expensive');
       await expect.poll(() => value(page, 'active')).toBe(false);
       expect(await value(page, 'probability')).toBe(0);
       expect(((await value(page, 'lost_reason_id')) as { label: string }).label).toBe('Too expensive');
@@ -146,9 +193,9 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'ribbon-lost')).toBeHidden();
       await expect.poll(() => value(page, 'probability')).toBe(30);
       await page.locator('button[data-node="won"]').click();
-      await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText('Won');
+      await expect(page.locator('.fd-statusbar [aria-current="step"]')).toHaveText(/^Won/);
       await expect.poll(() => value(page, 'probability')).toBe(100);
-      await expect(node(page, 'badge-won')).toBeVisible();
+      await expect(node(page, 'ribbon-won')).toBeVisible();
       await expect(page.locator('button[data-node="won"]')).toBeHidden();
       expect(problems).toEqual([]);
     });
@@ -162,6 +209,8 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-lead-contact-name').locator('input')).toHaveValue('Yasmin Ashraf');
       await expect(tab(page, 'tab-extra')).toBeVisible();
       await expect(tab(page, 'tab-lead')).toBeHidden();
+      // A lead has no stages to show.
+      await expect(page.locator('.fd-statusbar')).toBeHidden();
       if (variant === 'plain') await screen(page, 'real-crm-lead');
 
       await page.locator('button[data-node="convert"]').click();
@@ -183,7 +232,8 @@ for (const variant of VARIANTS) {
       const { problems } = await open(page, variant, 'page=real-tender&record=7801&skin=underline');
       await expect(node(page, 'stat-lots')).toContainText('3');
       await expect(node(page, 'stat-documents')).toContainText('2');
-      await expect(node(page, 'badge-plenty')).toBeVisible();
+      // The deadline's status as a badge in its tone.
+      await expect(node(page, 'f-deadline-status')).toContainText('Plenty of Time');
       await expect(page.locator('button[data-node="mark-lost"]')).toBeHidden();
       if (variant === 'plain') await screen(page, 'real-crm-tender');
 
@@ -195,6 +245,10 @@ for (const variant of VARIANTS) {
       const added = table.locator('tbody tr').last();
       await added.locator('input').first().fill('Site visit certificate');
       await expect.poll(() => value(page, 'compliance_percentage')).toBe(62.5);
+      // A new requirement is the person's own, as Flectra's default_user; rows toned by their compliance.
+      await expect(added.locator('[data-column="responsible_id"]').getByRole('combobox')).toHaveValue('Salma Nabil');
+      await expect(table.locator('tbody tr').nth(4)).toHaveAttribute('data-tone', 'danger');
+      await expect(table.locator('tbody tr').nth(0)).toHaveAttribute('data-tone', 'success');
       await added.locator('input[type="checkbox"]').nth(1).check();
       await expect.poll(() => value(page, 'compliance_percentage')).toBe(75);
       if (variant === 'plain') await screen(page, 'real-crm-tender-requirements');
@@ -215,9 +269,13 @@ for (const variant of VARIANTS) {
       await dialog.locator('[data-node="f-loss-notes"] textarea').fill('Pyramids Contracting came in 9% lower on Lot 1.');
       await pick(dialog.locator('[data-node="f-winning-competitor"]'), 'Pyramids', 'Pyramids Contracting');
       if (variant === 'plain') await screen(page, 'real-crm-tender-loss-dialog', { viewport: true });
-      await dialog.getByRole('button', { name: 'Save & Close' }).click();
+      await dialog.locator('[data-node="f-lessons"] textarea').fill('Price the installation lot apart next time.');
+      await expect(dialog.getByRole('button', { name: 'Save & Close' })).toHaveCount(0);
+      await dialog.getByRole('button', { name: 'Confirm Loss' }).click();
       await expect(dialog).toBeHidden();
       await expect.poll(() => value(page, 'state')).toBe('lost');
+      // The lessons learned, in the tender's conversation.
+      await expect(page.locator('.fd-chatter, [data-slot="chatter"]').first()).toContainText('Lessons learned: Price the installation lot apart next time.');
       expect(await value(page, 'loss_reason')).toBe('price');
       await tab(page, 'tab-results').click();
       await expect(node(page, 'f-loss-notes').locator('textarea')).toHaveValue('Pyramids Contracting came in 9% lower on Lot 1.');

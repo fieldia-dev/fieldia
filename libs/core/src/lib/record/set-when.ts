@@ -95,7 +95,7 @@ export function compileSetWhen(page: Page, today: () => string, about: () => Abo
       const updated = (current as Line[]).map((line) => {
         // A section or a note has nothing to set.
         if (lineKind(def, line.values) !== null) return line;
-        const set = run(line.values, list, lineContext(line.values, def.fields, parent), lineEnv, `${field}.${line.key}.`, before, now);
+        const set = run(line.values, list, lineContext(line.values, def.fields, parent, line.id ?? null), lineEnv, `${field}.${line.key}.`, before, now);
         if (set === line.values) return line;
         changed = true;
         return { ...line, values: set };

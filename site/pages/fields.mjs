@@ -263,7 +263,7 @@ mountViewer(host, { page, dataSource, widgets: gridWidgets });
 </ul>
 
 <h2 id="table-rules">A table's own rules</h2>
-<p>Each line of a table can be read on its own, as Flectra's editable lists do. Under ${c('cells')}, a column's ${c('invisible')}, ${c('readonly')} and ${c('required')} are conditions on its line — its fields, with the record it is on as ${c('parent')} — and its ${c('hidden')} a condition on the record that hides the whole column, as ${c('column_invisible')} does. A cell its line hides stays, blank, so the column still lines up; one its line requires stops a save until it has a value.</p>
+<p>Each line of a table can be read on its own, as Flectra's editable lists do. Under ${c('cells')}, a column's ${c('invisible')}, ${c('readonly')} and ${c('required')} are conditions on its line — its fields, its own ${c('id')} (empty until the line is saved, so ${c('"readonly": "id"')} locks a saved line), with the record it is on as ${c('parent')} — and its ${c('hidden')} a condition on the record that hides the whole column, as ${c('column_invisible')} does. A cell its line hides stays, blank, so the column still lines up; one its line requires stops a save until it has a value.</p>
 ${code(
   'json',
   `

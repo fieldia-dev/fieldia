@@ -439,7 +439,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
         const now = ruled ? form.lineState(node.id, line.key) : null;
         setData(row.element, 'tone', now?.tone);
         row.element.classList.toggle('fd-line-bold', !!now?.bold);
-        for (const [id, button] of row.buttons) button.hidden = readonly || !now?.buttons[id];
+        // A line's buttons act on the saved line, so a read-only table keeps them, as the grid and Flectra's lists do.
+        for (const [id, button] of row.buttons) button.hidden = !now?.buttons[id];
         // A section's or note's one cell spans the columns shown.
         if (row.kind) row.cells[0].td.colSpan = columns.length - gone.size;
         for (const cell of row.cells) {

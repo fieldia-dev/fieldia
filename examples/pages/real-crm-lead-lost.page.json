@@ -21,6 +21,22 @@
           { "type": "field", "id": "f-lost-feedback", "field": "lost_feedback", "placeholder": "What went wrong?" }
         ]
       }
+    ],
+    "footer": [
+      {
+        "type": "button",
+        "id": "action_lost_reason_apply",
+        "label": "Mark as Lost",
+        "style": "primary",
+        "hotkey": "q",
+        "steps": [
+          { "do": "check" },
+          { "do": "post", "message": "Lost: {lost_reason_id}. {lost_feedback}", "when": "lost_feedback" },
+          { "do": "post", "message": "Lost: {lost_reason_id}.", "when": "not lost_feedback" },
+          { "do": "save" }
+        ]
+      },
+      { "type": "button", "id": "cancel", "label": "Cancel", "hotkey": "x", "steps": [{ "do": "close" }] }
     ]
   }
 }

@@ -1,0 +1,64 @@
+{
+  "fieldia": "0.1",
+  "id": "real-contract-amendment",
+  "title": "Contract Amendment",
+  "data": { "kind": "record", "model": "contract.amendment" },
+  "look": { "readonlyShown": "text" },
+  "fields": {
+    "amendment_number": { "type": "char", "label": "Amendment Number", "readonly": true },
+    "name": { "type": "char", "label": "Amendment Title", "required": true },
+    "amendment_type": {
+      "type": "selection",
+      "label": "Amendment Type",
+      "options": [
+        { "value": "price_change", "label": "Price Change" },
+        { "value": "scope_change", "label": "Scope Change" },
+        { "value": "duration_extension", "label": "Duration Extension" },
+        { "value": "terms_modification", "label": "Terms Modification" },
+        { "value": "other", "label": "Other" }
+      ]
+    },
+    "amendment_date": { "type": "date", "label": "Amendment Date", "required": true },
+    "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency", "readonly": true },
+    "value_change": { "type": "monetary", "label": "Value Change", "currencyField": "currency_id" },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "readonly": true,
+      "default": "draft",
+      "options": [
+        { "value": "draft", "label": "Draft" },
+        { "value": "pending_approval", "label": "Pending Approval" },
+        { "value": "approved", "label": "Approved" },
+        { "value": "rejected", "label": "Rejected" }
+      ]
+    },
+    "description": { "type": "html", "label": "Description" }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": { "field": "name", "subtitleField": "amendment_number", "placeholder": "e.g. Two dialysis units added" },
+    "statusbar": { "field": "state" },
+    "children": [
+      {
+        "type": "section",
+        "id": "amendment",
+        "style": "plain",
+        "columns": { "wide": 2, "medium": 2 },
+        "children": [
+          { "type": "field", "id": "f-type", "field": "amendment_type" },
+          { "type": "field", "id": "f-date", "field": "amendment_date" },
+          { "type": "field", "id": "f-value", "field": "value_change" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "description",
+        "title": "Description",
+        "style": "line",
+        "children": [{ "type": "field", "id": "f-description", "field": "description", "labels": "hidden" }]
+      }
+    ]
+  }
+}

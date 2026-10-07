@@ -1,9 +1,10 @@
-import type { ActionRequest, ActionResult, Line, Page, RelatedRecord, Values } from '@fieldia/core';
+import type { ActionRequest, ActionResult, Line, Page, PropertyDefinition, RelatedRecord, Values } from '@fieldia/core';
 import contractRenewal from '../../../examples/pages/real-contract-renewal.page.json';
 import contractTermination from '../../../examples/pages/real-contract-termination.page.json';
 import product from '../../../examples/pages/real-product.page.json';
 import saleContract from '../../../examples/pages/real-sale-contract.page.json';
 import invoiceWizard from '../../../examples/pages/real-sale-invoice-wizard.page.json';
+import contractAmendment from '../../../examples/pages/real-contract-amendment.page.json';
 import saleOrder from '../../../examples/pages/real-sale-order.page.json';
 import type { RealLane } from './lane';
 
@@ -45,7 +46,23 @@ const NAMES: Record<string, Record<number, string>> = {
   'product.attribute.value': { 7481: '220 V', 7482: '110 V', 7483: 'Wall mount', 7484: 'Rolling stand' },
   'crm.lead': { 7501: 'Dar El Shifa — ICU monitors renewal', 7502: 'Alexandria Medical Center — maintenance' },
   'tender.opportunity': { 7511: 'Tender 2026/114 — Ministry of Health, ICU equipment' },
+  'res.country': { 7491: 'Egypt' },
+  'stock.warehouse': { 7495: 'Cairo Main Warehouse' },
 };
+
+/** What each attribute value belongs to, and its colour: the values a line's attribute offers. */
+const ATTRIBUTE_VALUES: Record<number, { attribute: number; color: number }> = { 7481: { attribute: 7471, color: 1 }, 7482: { attribute: 7471, color: 3 }, 7483: { attribute: 7472, color: 5 }, 7484: { attribute: 7472, color: 7 } };
+
+/** The properties a product's category defines (product_properties_definition): the medical devices', and the services'. */
+const DEVICE_PROPERTIES = [{"name": "mdd_class", "label": "Medical device class", "type": "selection", "options": [{"value": "I", "label": "Class I"}, {"value": "IIa", "label": "Class IIa"}, {"value": "IIb", "label": "Class IIb"}, {"value": "III", "label": "Class III"}]}, {"name": "eda_registration", "label": "EDA registration no.", "type": "char"}, {"name": "warranty_months", "label": "Warranty (months)", "type": "integer"}, {"name": "needs_biomedical_signoff", "label": "Biomedical engineer signs the handover", "type": "boolean"}] as PropertyDefinition[];
+const CATEGORY_PROPERTIES: Record<number, PropertyDefinition[]> = {
+  7421: DEVICE_PROPERTIES,
+  7422: DEVICE_PROPERTIES.filter((definition) => definition.name === 'eda_registration'),
+  7423: DEVICE_PROPERTIES.filter((definition) => definition.name === 'warranty_months'),
+};
+
+/** The tags' colours, Flectra's 1 to 11. */
+const TAG_COLORS: Record<number, number> = { 7171: 4, 7172: 2, 7173: 10, 7174: 9 };
 
 /** A link to a record of a model, by its id: what a many2one holds. */
 function link(model: string, id: number): RelatedRecord {
@@ -62,6 +79,8 @@ const COMPANY = () => link('res.company', 7001);
 
 interface Partner {
   name: string;
+  street?: string;
+  vat?: string;
   parent?: number;
   type?: 'contact' | 'invoice' | 'delivery';
   city: string;
@@ -78,10 +97,10 @@ interface Partner {
 }
 
 const PARTNERS: Record<number, Partner> = {
-  7101: { name: 'Dar El Shifa Hospital', city: 'Abbassia, Cairo', email: 'procurement@darelshifa.example', phone: '+20 2 2683 1100', pricelist: 7152, term: 7142, fiscal: 7161, user: 7121, team: 7131 },
-  7102: { name: 'Alexandria Medical Center', city: 'Smouha, Alexandria', email: 'supply@alexmedcenter.example', phone: '+20 3 425 7700', pricelist: 7152, term: 7143, fiscal: 7161, user: 7122, team: 7132 },
-  7103: { name: 'Delta Care Clinics', city: 'Tanta', email: 'admin@deltacare.example', phone: '+20 40 334 2200', pricelist: 7151, term: 7141, fiscal: 7161, user: 7123, team: 7133, creditLimit: 150000, owed: 128400 },
-  7104: { name: 'Suez Canal Free Zone Hospital', city: 'Port Said', email: 'buying@scfzh.example', phone: '+20 66 332 9000', pricelist: 7151, term: 7144, fiscal: 7162, user: 7122, team: 7132 },
+  7101: { name: 'Dar El Shifa Hospital', street: '27 Ramses Street', vat: 'EG 205-118-332', city: 'Abbassia, Cairo', email: 'procurement@darelshifa.example', phone: '+20 2 2683 1100', pricelist: 7152, term: 7142, fiscal: 7161, user: 7121, team: 7131 },
+  7102: { name: 'Alexandria Medical Center', street: '14 Victor Emmanuel Square', vat: 'EG 310-442-907', city: 'Smouha, Alexandria', email: 'supply@alexmedcenter.example', phone: '+20 3 425 7700', pricelist: 7152, term: 7143, fiscal: 7161, user: 7122, team: 7132 },
+  7103: { name: 'Delta Care Clinics', street: '8 El Bahr Street', vat: 'EG 412-090-516', city: 'Tanta', email: 'admin@deltacare.example', phone: '+20 40 334 2200', pricelist: 7151, term: 7141, fiscal: 7161, user: 7123, team: 7133, creditLimit: 150000, owed: 128400 },
+  7104: { name: 'Suez Canal Free Zone Hospital', street: 'Free Zone, Gate 2', city: 'Port Said', email: 'buying@scfzh.example', phone: '+20 66 332 9000', pricelist: 7151, term: 7144, fiscal: 7162, user: 7122, team: 7132 },
   7105: { name: 'Mindray Medical International', city: 'Shenzhen', email: 'export@mindray.example' },
   7106: { name: 'Siemens Healthineers Egypt', city: 'New Cairo', email: 'orders.eg@siemens-healthineers.example' },
   7111: { name: 'Dr. Hany Saleh', parent: 7101, type: 'contact', city: 'Abbassia, Cairo', email: 'hany.saleh@darelshifa.example' },
@@ -164,7 +183,18 @@ function totals(lines: Line[], amountInvoiced = 0): Values {
   const untaxed = round(items.reduce((sum, line) => sum + num(line.values['price_subtotal']), 0));
   const tax = round(items.reduce((sum, line) => sum + num(line.values['price_tax']), 0));
   const total = round(untaxed + tax);
-  return { amount_untaxed: untaxed, amount_tax: tax, amount_total: total, amount_to_invoice: round(Math.max(0, total - amountInvoiced)) };
+  return { amount_untaxed: untaxed, amount_tax: tax, amount_total: total, amount_to_invoice: round(Math.max(0, total - amountInvoiced)), tax_totals: taxTotals(items, untaxed, total) };
+}
+
+/** Flectra's tax_totals, as the tax-totals widget reads it: the untaxed amount, a row per tax group, the total. */
+function taxTotals(items: Line[], untaxed: number, total: number): Values {
+  const byGroup = new Map<string, number>();
+  for (const line of items) {
+    const taxes = (line.values['tax_id'] as RelatedRecord[] | null) ?? [];
+    const base = num(line.values['price_subtotal']);
+    for (const tax of taxes) byGroup.set(tax.label, round((byGroup.get(tax.label) ?? 0) + (base * (TAX_RATES[Number(tax.id)] ?? 0)) / 100));
+  }
+  return { untaxed, groups: [...byGroup].map(([name, amount]) => ({ name, amount })), total };
 }
 
 const QUOTATION_LINES: Line[] = [
@@ -214,6 +244,10 @@ const header = (partnerId: number, invoiceId: number, shippingId: number): Value
     show_update_pricelist: false,
     show_update_fpos: false,
     tax_calculation_rounding_method: 'round_per_line',
+    tax_country_id: link('res.country', 7491),
+    warehouse_id: link('stock.warehouse', 7495),
+    analytic_account_id: null,
+    journal_id: null,
     authorized_transaction_ids: [],
     locked: false,
   };
@@ -239,7 +273,7 @@ const SALE_ORDERS: Record<number, Values> = {
     partner_credit_warning: '',
     require_signature: true,
     require_payment: true,
-    prepayment_percent: 30,
+    prepayment_percent: 0.3,
     reference: null,
     client_order_ref: 'DSH-PO-2026-0412',
     tag_ids: links('crm.tag', 7171, 7172),
@@ -273,7 +307,11 @@ const SALE_ORDERS: Record<number, Values> = {
     partner_credit_warning: '',
     require_signature: false,
     require_payment: false,
-    prepayment_percent: 100,
+    prepayment_percent: 1,
+    // Signed on the portal before it was confirmed: the Customer Signature tab, in developer mode.
+    signed_by: 'Eng. Rania Mansour',
+    signed_on: '2026-09-21T10:48',
+    signature: null,
     reference: 'S00068',
     client_order_ref: 'AMC/SUP/2026/337',
     tag_ids: links('crm.tag', 7171, 7173),
@@ -415,13 +453,24 @@ function taxString(values: Values): string {
 const PRODUCT_TEMPLATES: Record<number, Values> = {
   7301: {
     name: 'Patient monitor PM-12',
-    priority: 1,
+    priority: '1',
     image_1920: picture(MONITOR_SVG, 'pm-12.svg'),
     active: true,
     sale_ok: true,
     purchase_ok: true,
     product_variant_count: 1,
     is_product_variant: false,
+    valid_product_template_attribute_line_ids: [],
+    company_id: null,
+    variant_seller_ids: [],
+    packaging_ids: [],
+    weight_uom_name: 'kg',
+    volume_uom_name: 'm³',
+    property_stock_production: null,
+    property_stock_inventory: null,
+    description_picking: null,
+    nbr_putaway_rules: 0,
+    storage_category_capacity_count: 0,
     detailed_type: 'product',
     invoice_policy: 'delivery',
     visible_expense_policy: false,
@@ -442,8 +491,8 @@ const PRODUCT_TEMPLATES: Record<number, Values> = {
     product_properties: { mdd_class: 'IIb', eda_registration: 'EDA-MD-2025-11873', warranty_months: 24, needs_biomedical_signoff: true },
     description: '<p>Imported from Shenzhen in lots of 40. Keep two in Cairo stock for demonstrations.</p>',
     attribute_line_ids: [
-      { key: 'a1', id: 730101, values: { sequence: 10, attribute_id: link('product.attribute', 7471), value_ids: links('product.attribute.value', 7481), value_count: 1 } },
-      { key: 'a2', id: 730102, values: { sequence: 20, attribute_id: link('product.attribute', 7472), value_ids: links('product.attribute.value', 7484), value_count: 1 } },
+      { key: 'a1', id: 730101, values: { sequence: 10, attribute_id: link('product.attribute', 7471), value_ids: [{ ...link('product.attribute.value', 7481), color: ATTRIBUTE_VALUES[7481].color }], value_count: 1 } },
+      { key: 'a2', id: 730102, values: { sequence: 20, attribute_id: link('product.attribute', 7472), value_ids: [{ ...link('product.attribute.value', 7484), color: ATTRIBUTE_VALUES[7484].color }], value_count: 1 } },
     ],
     description_sale: '12.1" touch screen: ECG, SpO2, NIBP and temperature. 220 V.',
     sale_line_warn: 'warning',
@@ -483,13 +532,21 @@ const PRODUCT_TEMPLATES: Record<number, Values> = {
   },
   7305: {
     name: 'Installation and training',
-    priority: 0,
+    priority: '0',
     image_1920: null,
     active: true,
     sale_ok: true,
     purchase_ok: false,
     product_variant_count: 1,
     is_product_variant: false,
+    valid_product_template_attribute_line_ids: [],
+    company_id: null,
+    variant_seller_ids: [],
+    packaging_ids: [],
+    weight_uom_name: 'kg',
+    volume_uom_name: 'm³',
+    nbr_putaway_rules: 0,
+    storage_category_capacity_count: 0,
     detailed_type: 'service',
     invoice_policy: 'order',
     visible_expense_policy: false,
@@ -600,7 +657,7 @@ const CONTRACTS: Record<number, Values> = {
     invoice_count: 0,
     document_count: 2,
     milestone_ids: [
-      milestone('m1', 760101, 10, 'Lot 1: 20 monitors delivered and installed', '2026-12-15', 600000, 7123, 'pending', 70),
+      milestone('m1', 760101, 10, 'Lot 1: 20 monitors delivered and installed', '2026-12-15', 600000, 7123, 'in_progress', 70),
       milestone('m2', 760102, 20, 'Lot 2: 20 monitors', '2027-04-15', 600000, 7123, 'pending', 191),
       milestone('m3', 760103, 30, 'Lot 3: 20 monitors', '2027-10-15', 600000, 7123, 'pending', 374),
       milestone('m4', 760104, 40, 'Lot 4: 20 monitors and the central station', '2028-04-15', 600000, 7123, 'pending', 557),
@@ -722,7 +779,8 @@ function pageOf(values: Values): 'order' | 'wizard' | 'product' | 'contract' | '
   return null;
 }
 
-function saleOrderAction({ action, values }: ActionRequest): ActionResult | undefined {
+function saleOrderAction(request: ActionRequest): ActionResult | undefined {
+  const { action, values } = request;
   const name = String(values['name'] ?? '');
   const customer = (values['partner_id'] as RelatedRecord | null)?.label ?? 'the customer';
   switch (action) {
@@ -748,6 +806,42 @@ function saleOrderAction({ action, values }: ActionRequest): ActionResult | unde
         values: values['state'] === 'draft' ? { state: 'sent' } : {},
         say: { message: `${values['state'] === 'sale' ? 'Order confirmation' : 'Quotation'} ${name} emailed to ${customer}.`, tone: 'success' },
       };
+    case 'action_quotation_send_proforma':
+      return { say: { message: `PRO-FORMA invoice for ${name} emailed to ${customer}.`, tone: 'success' } };
+    case 'button_add_to_order': {
+      // The optional product becomes an order line, at its own price and discount; the option is then on the quotation.
+      const line = request.line;
+      if (!line) return undefined;
+      const productId = idOf(line.values['product_id']);
+      const p = productId ? PRODUCTS[productId] : undefined;
+      if (!p || !productId) return { stop: 'Pick a product first.' };
+      const lines = (values['order_line'] as Line[] | null) ?? [];
+      const last = Math.max(0, ...lines.map((l) => num(l.values['sequence'])));
+      lineProducts.set(`opt-${line.key}`, productId);
+      const added: Line = {
+        key: `opt-${line.key}`,
+        values: priced({
+          sequence: last + 10,
+          display_type: null,
+          product_id: link('product.product', productId),
+          name: String(line.values['name'] ?? p.name),
+          product_uom_qty: num(line.values['quantity']) || 1,
+          qty_delivered: 0,
+          qty_invoiced: 0,
+          product_uom: link('uom.uom', p.uom),
+          customer_lead: p.lead ?? 0,
+          price_unit: num(line.values['price_unit']),
+          tax_id: links('account.tax', ...mappedTaxes(p.taxes, idOf(values['fiscal_position_id']))),
+          discount: num(line.values['discount']),
+          is_downpayment: false,
+          qty_delivered_method: p.type === 'service' ? 'manual' : 'stock_move',
+          invoice_status: 'no',
+        }),
+      };
+      const orderLines = [...lines, added];
+      const options = ((values['sale_order_option_ids'] as Line[] | null) ?? []).map((o) => (o.key === line.key ? { ...o, values: { ...o.values, is_present: true } } : o));
+      return { values: { order_line: orderLines, sale_order_option_ids: options, ...totals(orderLines, num(values['amount_invoiced'])) } };
+    }
     case 'payment_action_capture':
       return { values: { authorized_transaction_ids: [] }, say: { message: 'Transaction captured.', tone: 'success' } };
     case 'payment_action_void':
@@ -785,19 +879,54 @@ function saleOrderAction({ action, values }: ActionRequest): ActionResult | unde
       const made = lastInvoice;
       lastInvoice = null;
       const invoiced = made.method === 'delivered' ? num(values['amount_total']) : num(values['amount_invoiced']) + made.amount;
-      const what = made.method === 'delivered' ? 'Draft invoice' : 'Draft down payment invoice';
       return {
-        say: { message: `${what} ${made.number} created${made.amount ? ` for ${egp(made.amount)}` : ''}.`, tone: 'success' },
         values: {
           invoice_count: num(values['invoice_count']) + 1,
           amount_invoiced: round(invoiced),
           amount_to_invoice: round(Math.max(0, num(values['amount_total']) - invoiced)),
-          ...(made.method === 'delivered' ? { invoice_status: 'invoiced' } : {}),
+          ...(made.method === 'delivered' ? { invoice_status: 'invoiced' } : { order_line: withDownPayment((values['order_line'] as Line[] | null) ?? [], made) }),
         },
       };
     }
   }
   return undefined;
+}
+
+/**
+ * A down payment invoiced: the order gets a Down Payments section and a line
+ * for it, as Flectra's _prepare_down_payment_section_line does — nothing
+ * ordered, the amount as its price. Saved lines, so the onchange never
+ * prices them again.
+ */
+let downPaymentId = 719000;
+function withDownPayment(lines: Line[], made: { amount: number; number: string }): Line[] {
+  const last = Math.max(0, ...lines.map((line) => num(line.values['sequence'])));
+  const hasSection = lines.some((line) => line.values['display_type'] === 'line_section' && line.values['name'] === 'Down Payments');
+  const added: Line[] = [];
+  if (!hasSection) added.push(section(`dp-section-${++downPaymentId}`, downPaymentId, last + 10, 'Down Payments'));
+  downPaymentId += 1;
+  added.push({
+    key: `dp-${downPaymentId}`,
+    id: downPaymentId,
+    values: priced({
+      sequence: last + 20,
+      display_type: null,
+      product_id: link('product.product', 7307),
+      name: `Down Payment (Draft) ${made.number}`,
+      product_uom_qty: 0,
+      qty_delivered: 0,
+      qty_invoiced: 1,
+      product_uom: link('uom.uom', 7401),
+      customer_lead: 0,
+      price_unit: made.amount,
+      tax_id: [],
+      discount: 0,
+      is_downpayment: true,
+      qty_delivered_method: 'manual',
+      invoice_status: 'no',
+    }),
+  });
+  return [...lines, ...added];
 }
 
 function invoiceWizardAction({ action, values }: ActionRequest): ActionResult | undefined {
@@ -811,10 +940,11 @@ function invoiceWizardAction({ action, values }: ActionRequest): ActionResult | 
       const method = String(values['advance_payment_method']);
       const amount = method === 'percentage' ? round((num(values['amount']) / 100) * num(values['orders_amount_total'])) : method === 'fixed' ? num(values['fixed_amount']) : num(values['amount_to_invoice']);
       if (method !== 'delivered' && amount <= 0) return { stop: 'The value of the down payment amount must be positive.' };
-      // Said by the order once the dialog is closed: words said inside a dialog go with it.
+      // Said from the dialog: its words outlive it, over the order.
       invoiceNumber += 1;
       lastInvoice = { method, amount, number: `INV/2026/00${invoiceNumber}` };
-      return {};
+      const what = method === 'delivered' ? 'Draft invoice' : 'Draft down payment invoice';
+      return { say: { message: `${what} ${lastInvoice.number} created${amount ? ` for ${egp(amount)}` : ''}.`, tone: 'success' } };
     }
   }
   return undefined;
@@ -837,13 +967,30 @@ function productAction({ action, values }: ActionRequest): ActionResult | undefi
     action_open_product_lot: `The serial numbers of ${name}.`,
     product_tag_action: 'Product tags: Sales › Configuration › Product Tags.',
     action_open_routes: 'The routes diagram: how this product reaches the stock and leaves it.',
+    action_open_attribute_values: 'The attribute’s values open here in Flectra, to set each one’s extra price.',
+    action_view_related_putaway_rules: `The putaway rules of ${name}: where it is stored as it is received.`,
+    action_view_storage_category_capacity: `The storage capacities of ${name}.`,
   };
   return said[action] ? { say: { message: said[action], tone: 'info' } } : undefined;
 }
 
-function contractAction({ action, values }: ActionRequest): ActionResult | undefined {
+/** A milestone's line moved to another state by its own button, and what the contract says of it. */
+function milestoneTo(request: ActionRequest, state: string): Values {
+  const lines = ((request.values['milestone_ids'] as Line[] | null) ?? []).map((line) => (line.key === request.line?.key ? { ...line, values: { ...line.values, state } } : line));
+  return { milestone_ids: lines };
+}
+
+function contractAction(request: ActionRequest): ActionResult | undefined {
+  const { action, values } = request;
   const name = String(values['name'] ?? '');
   switch (action) {
+    case 'action_milestone_complete':
+      return { values: milestoneTo(request, 'completed'), say: { message: `Milestone “${request.line?.values['name']}” completed.`, tone: 'success' } };
+    case 'action_milestone_invoice':
+      return {
+        values: { ...milestoneTo(request, 'invoiced'), invoice_count: num(values['invoice_count']) + 1 },
+        say: { message: `A draft invoice for “${request.line?.values['name']}”: ${egp(num(request.line?.values['amount']))}.`, tone: 'success' },
+      };
     case 'action_activate': {
       const lines = (values['milestone_ids'] as Line[] | null) ?? [];
       const first = [...lines].sort((a, b) => String(a.values['due_date']).localeCompare(String(b.values['due_date'])))[0];
@@ -907,8 +1054,50 @@ const warnedLines = new Set<string>();
 /** An answer comes after a moment, as one from a server does. */
 const later = (answer: ActionResult | undefined) => (answer === undefined ? undefined : new Promise<ActionResult>((resolve) => setTimeout(() => resolve(answer), 150)));
 
+/**
+ * The person the sales pages are shown to: a sales manager of a one-company,
+ * one-warehouse firm, with the groups Flectra gives one — so the parts for
+ * several companies, warehouses or locations, and developer mode
+ * (base.group_no_one), stay hidden, as they do in Sherkety's own setup.
+ */
+const SALES_MANAGER = {
+  id: 7121,
+  name: 'Salma Nabil',
+  roles: [
+    'base.group_user',
+    'sales_team.group_sale_salesman',
+    'sales_team.group_sale_salesman_all_leads',
+    'sales_team.group_sale_manager',
+    'sale.group_proforma_sales',
+    'sale.group_auto_done_setting',
+    'sale.group_warning_sale',
+    'product.group_discount_per_so_line',
+    'product.group_product_pricelist',
+    'product.group_product_variant',
+    'uom.group_uom',
+    'analytic.group_analytic_accounting',
+    'stock.group_stock_user',
+    'stock.group_stock_manager',
+    'stock.group_production_lot',
+    'purchase.group_purchase_user',
+    'purchase.group_purchase_manager',
+    'purchase.group_warning_purchase',
+    'account.group_account_invoice',
+    'account.group_account_readonly',
+    'account.group_account_manager',
+    'sale_contract.group_contract_user',
+    'sale_contract.group_contract_manager',
+  ],
+};
+
 /** The real pages of this lane: see demos/real/README.md. */
 export const lane: RealLane = {
+  around: {
+    'real-sale-invoice-wizard': { user: SALES_MANAGER },
+    'real-sale-order': { user: SALES_MANAGER, records: [7101, 7102], breadcrumbs: [{ label: 'Quotations', href: '#quotations' }] },
+    'real-product': { user: SALES_MANAGER, records: [7301, 7305], breadcrumbs: [{ label: 'Products', href: '#products' }] },
+    'real-sale-contract': { user: SALES_MANAGER, records: [7601, 7602], breadcrumbs: [{ label: 'Contracts', href: '#contracts' }] },
+  },
   pages: {
     'real-sale-invoice-wizard': invoiceWizard as Page,
     'real-sale-order': saleOrder as Page,
@@ -922,30 +1111,48 @@ export const lane: RealLane = {
   },
   related: {
     'sale.contract': saleContract as Page,
+    // An amendment's own page, which a line of the contract's Amendments opens.
+    'contract.amendment': contractAmendment as Page,
   },
+  // A customer's address and tax number under its link (show_address, show_vat), a tag's colour.
+  shows: { 'res.partner': { details: ['street', 'city', 'vat'] }, 'crm.tag': { color: 'color' }, 'product.attribute.value': { color: 'color' } },
+  // A product's properties are its category's.
+  definitions: { product_properties: (values) => CATEGORY_PROPERTIES[idOf(values['categ_id']) ?? 0] ?? [] },
   records: {
     'sale.order': SALE_ORDERS,
     'sale.advance.payment.inv': INVOICE_WIZARDS,
     'product.template': PRODUCT_TEMPLATES,
     'sale.contract': CONTRACTS,
+    'contract.amendment': Object.fromEntries(
+      Object.values(CONTRACTS).flatMap((contract) =>
+        ((contract['amendment_ids'] as Line[] | undefined) ?? []).map((line) => [
+          String(line.id),
+          { ...line.values, currency_id: contract['currency_id'], description: `<p>${line.values['name']}.</p>` },
+        ]),
+      ),
+    ),
     'res.partner': Object.fromEntries(
       Object.entries(PARTNERS).map(([id, p]) => [
         id,
-        { name: p.name, parent_id: p.parent ? link('res.partner', p.parent) : null, type: p.type ?? 'contact', city: p.city, email: p.email ?? null, phone: p.phone ?? null, is_company: !p.parent },
+        { name: p.name, parent_id: p.parent ? link('res.partner', p.parent) : null, type: p.type ?? 'contact', street: p.street ?? null, city: p.city, vat: p.vat ?? null, email: p.email ?? null, phone: p.phone ?? null, is_company: !p.parent },
       ]),
     ),
     'product.product': Object.fromEntries(
       Object.entries(PRODUCTS).map(([id, p]) => [id, { name: p.name, type: p.type, sale_ok: p.saleOk ?? true, lst_price: p.price }]),
     ),
     'account.tax': {
-      7411: { name: 'VAT 14%', type_tax_use: 'sale', amount: 14 },
-      7412: { name: 'VAT 0% (exempt)', type_tax_use: 'sale', amount: 0 },
-      7413: { name: 'VAT 14% (purchases)', type_tax_use: 'purchase', amount: 14 },
+      7411: { name: 'VAT 14%', type_tax_use: 'sale', amount: 14, company_id: COMPANY(), country_id: link('res.country', 7491) },
+      7412: { name: 'VAT 0% (exempt)', type_tax_use: 'sale', amount: 0, company_id: COMPANY(), country_id: link('res.country', 7491) },
+      7413: { name: 'VAT 14% (purchases)', type_tax_use: 'purchase', amount: 14, company_id: COMPANY(), country_id: link('res.country', 7491) },
     },
+    'product.attribute.value': Object.fromEntries(
+      Object.entries(ATTRIBUTE_VALUES).map(([id, v]) => [id, { name: NAMES['product.attribute.value'][Number(id)], attribute_id: link('product.attribute', v.attribute), color: v.color }]),
+    ),
+    'crm.tag': Object.fromEntries(Object.entries(NAMES['crm.tag']).map(([id, name]) => [id, { name, color: TAG_COLORS[Number(id)] ?? 0 }])),
     'account.account': Object.fromEntries(Object.entries(NAMES['account.account']).map(([id, name]) => [id, { name, deprecated: false }])),
     ...Object.fromEntries(
       Object.entries(NAMES)
-        .filter(([model]) => !['account.tax', 'account.account'].includes(model))
+        .filter(([model]) => !['account.tax', 'account.account', 'crm.tag', 'product.attribute.value'].includes(model))
         .map(([model, rows]) => [model, Object.fromEntries(Object.entries(rows).map(([id, name]) => [id, { name }]))]),
     ),
   },
