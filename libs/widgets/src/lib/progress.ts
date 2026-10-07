@@ -38,8 +38,6 @@ export const progressbarWidget: WidgetFactory = (context) => {
   const bar = document.createElement('div');
   bar.className = 'fd-progressbar';
   bar.setAttribute('role', 'progressbar');
-  // Named by its field: a <label> cannot name it, and in a table's cell nothing else does. The viewer's own name, where it gives one, wins.
-  bar.setAttribute('aria-label', node.label ?? field.label);
   const fill = document.createElement('div');
   fill.className = 'fd-progressbar-fill';
   const text = document.createElement('span');
@@ -57,6 +55,9 @@ export const progressbarWidget: WidgetFactory = (context) => {
     element.append(bar, box.element);
   } else {
     bar.id = id;
+    // Named by its field: a <label> cannot name it, and in a table's cell nothing else does. The viewer's own name, where it gives one, wins.
+    // (Beside its own box it is hidden, the box being what is named and typed in.)
+    bar.setAttribute('aria-label', node.label ?? field.label);
   }
 
   return {
