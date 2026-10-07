@@ -24,7 +24,7 @@ export default [
       "Sherkety ERP's lead and opportunity form: the pipeline's stages with the probability that follows them, expected revenue, priority stars, the customer's details, Won and Lost with the lost-reason dialog, Restore, and the lead's own groups and Convert to Opportunity.",
     howTo: [
       'Click Qualified on the stages at the top: the probability follows the stage, to 30 %.',
-      'Press Lost, pick a reason and Save & Close: the Lost ribbon, the reason, and Restore appear.',
+      'Press Lost, pick a reason and Mark as Lost: the Lost ribbon, the reason, and Restore appear, and the reason is posted in the conversation.',
       'Press Restore to bring it back, then Won: it moves to the Won stage at 100 %.',
       'Change the email under Customer: a note says the customer’s email will be updated too.',
       'Open the lead (record=7702): its own groups and tab, and Convert to Opportunity in a dialog.',
@@ -42,7 +42,7 @@ export default [
       'Add a requirement with Add a line: the bar counts it too.',
       'In Lots, untick We Are Bidding on Lot 2: Our Bid Amount under Financial drops by its quotation.',
       'Press Submit Bid: the tender moves to Submitted, and Mark Won and Mark Lost appear.',
-      'Press Mark Lost, fill in the loss analysis and Save & Close: the Results tab shows why.',
+      'Press Mark Lost, fill in the loss analysis and Confirm Loss: the Results tab shows why.',
     ],
   },
 ];

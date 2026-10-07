@@ -48,9 +48,9 @@ export default [
     blurb: 'Sherkety’s own B2B contract: a statusbar with Activate, Terminate and Renew, milestones whose completion bar follows them, tabs shown by contract type, amendments, scope and terms; Terminate and Renew open their own dialogs.',
     howTo: [
       'Change Contract Type to Service Level Agreement: the Price Escalation tab gives way to SLA Performance.',
-      'In Milestones, set the first milestone’s Status to Completed: the completion bar moves to 25%.',
+      'In Milestones, press Complete on the first milestone, in progress: the completion bar moves to 25%, and Invoice takes Complete’s place.',
       'Press Activate: the contract is active, and Terminate and Renew appear.',
-      'Press Terminate, give a reason and save: the contract is terminated and its Termination Details show under the terms.',
+      'Press Terminate, give a reason and press Terminate Contract: the contract is terminated and its Termination Details show under the terms.',
     ],
   },
 ];
