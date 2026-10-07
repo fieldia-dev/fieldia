@@ -486,6 +486,10 @@ export interface SheetTitle {
   placeholder?: string;
   /** Fields over the title, such as an Individual/Company choice. */
   above?: FieldNode[];
+  /** Fields on the title's line before it, such as a priority star — Flectra's <h1> holding the priority and the name. */
+  before?: FieldNode[];
+  /** Fields on the title's line after it, such as a state's dot. */
+  after?: FieldNode[];
   /** Fields under the title, such as "Can be sold" and "Can be purchased". */
   below?: FieldNode[];
 }
@@ -826,6 +830,8 @@ export const SheetNodeSchema = z.strictObject({
       avatarField: fieldName.optional(),
       placeholder: z.string().optional(),
       above: z.array(FieldNodeSchema).optional(),
+      before: z.array(FieldNodeSchema).optional(),
+      after: z.array(FieldNodeSchema).optional(),
       below: z.array(FieldNodeSchema).optional(),
     })
     .optional(),

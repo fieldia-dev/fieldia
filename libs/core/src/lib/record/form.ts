@@ -1564,8 +1564,8 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     if (root.ribbon) add(root.ribbon, root.id, 'other', { invisible: root.ribbon.invisible });
     for (const alert of root.alerts ?? []) add(alert, root.id, 'other', { invisible: alert.invisible });
     for (const badge of root.badges ?? []) add(badge, root.id, 'other', { invisible: badge.invisible });
-    // Fields over and under the title are field nodes like any other.
-    walk([...(root.title?.above ?? []), ...(root.title?.below ?? [])], root.id);
+    // Fields over and under the title, and on its line, are field nodes like any other.
+    walk([...(root.title?.above ?? []), ...(root.title?.before ?? []), ...(root.title?.after ?? []), ...(root.title?.below ?? [])], root.id);
     walk(root.children, root.id);
     if (root.sidePanel) add(root.sidePanel, root.id, 'other', { invisible: root.sidePanel.invisible });
   }

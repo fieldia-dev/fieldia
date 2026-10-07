@@ -502,7 +502,7 @@ export class ReferenceCheck {
       this.claim(badge.id, `${path}.badges[${i}]`);
       this.checkModifiers(badge, `${path}.badges[${i}]`);
     });
-    for (const place of ['above', 'below'] as const) {
+    for (const place of ['above', 'before', 'after', 'below'] as const) {
       sheet.title?.[place]?.forEach((node, i) => this.walkNode(node, `${path}.title.${place}[${i}]`));
     }
     sheet.alerts?.forEach((alert, i) => {

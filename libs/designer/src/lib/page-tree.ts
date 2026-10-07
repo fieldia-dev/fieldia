@@ -103,7 +103,7 @@ export function shownFields(page: Page): Set<string> {
   if (root.type === 'sheet') {
     const title = root.title;
     for (const name of [title?.field, title?.subtitleField, title?.avatarField, root.statusbar?.field, ...(root.statButtons ?? []).map((s) => s.field)]) if (name) shown.add(name);
-    for (const node of [...(title?.above ?? []), ...(title?.below ?? [])]) shown.add(node.field);
+    for (const node of [...(title?.above ?? []), ...(title?.before ?? []), ...(title?.after ?? []), ...(title?.below ?? [])]) shown.add(node.field);
   }
   // A list names its fields in its columns, order, search, filters and groupings.
   if (root.type === 'list') {

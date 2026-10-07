@@ -44,3 +44,32 @@ describe('a cell’s widget', () => {
     expect(validatePage(page({ progress: { widget: '' } })).ok).toBe(false);
   });
 });
+
+/** Fields on the title's own line, as Flectra's <h1> holds the priority star, the name and the state's dot. */
+const titled = (before: unknown, after: unknown) =>
+  ({
+    fieldia: '0.1',
+    id: 'task',
+    data: { kind: 'record', model: 'project.task' },
+    fields: {
+      name: { type: 'char', label: 'Title' },
+      priority: { type: 'selection', label: 'Priority', options: [{ value: '0', label: 'Normal' }, { value: '1', label: 'High' }] },
+      kanban_state: { type: 'selection', label: 'State', options: [{ value: 'normal', label: 'In progress' }, { value: 'done', label: 'Ready' }] },
+    },
+    layout: { type: 'sheet', id: 'sheet', title: { field: 'name', before, after }, children: [] },
+  }) as unknown as Page;
+
+describe('fields on the title’s line', () => {
+  it('takes fields before the title and after it', () => {
+    const page = titled([{ type: 'field', id: 'f-priority', field: 'priority', widget: 'priority' }], [{ type: 'field', id: 'f-state', field: 'kanban_state', widget: 'dot' }]);
+    expect(validatePage(page)).toMatchObject({ ok: true });
+    expect(checkPage(page)).toMatchObject({ ok: true });
+  });
+
+  it('checks them as any field: a field the page has, an id of its own', () => {
+    const page = titled([{ type: 'field', id: 'f-priority', field: 'stars' }], [{ type: 'field', id: 'f-priority', field: 'kanban_state' }]);
+    const said = JSON.stringify(checkPage(page));
+    expect(said).toContain('title.before[0]');
+    expect(said).toContain('title.after[0]');
+  });
+});

@@ -43,6 +43,7 @@ import { badgeWidget } from './badge';
 import { linksTableWidget } from './links-table';
 import { layOut, limiter } from './choice-rules';
 import { durationWidget, percentageWidget } from './duration';
+import { priorityWidget } from './priority';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -604,6 +605,9 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'boolean.toggle': checkboxWidget('switch'),
   'boolean.tick': checkboxWidget('tick'),
   'boolean.buttons': yesNoWidget,
+  // Stars over a selection, the first option none, or one over a yes or no: Flectra's priority.
+  'boolean.priority': priorityWidget,
+  'selection.priority': priorityWidget,
   selection: selectWidget,
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),
