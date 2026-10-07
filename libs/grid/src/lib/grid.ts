@@ -16,7 +16,7 @@ import {
 } from 'ag-grid-community';
 import { fill, isRightToLeft, lineKind, type ButtonNode, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
-import { createWidget, currencyOf, displayValue, drawIcon, kindTextField, lineForm, WIDGET_LABELS, type WidgetDialogs, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
+import { createWidget, displayValue, drawIcon, openLineDialog, kindTextField, lineForm, WIDGET_LABELS, type WidgetDialogs, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
 
 /**
  * A one2many as a spreadsheet, on AG Grid. Each cell is edited with the same
@@ -34,14 +34,6 @@ const apis = new WeakMap<HTMLElement, GridApi<Line>>();
 /** The AG Grid API behind a grid's element, for an app that needs more than the page describes. */
 export function gridApiOf(element: HTMLElement): GridApi<Line> | undefined {
   return apis.get(element);
-}
-
-/** A line's money in its record's currency (`parent.…`), as a field of its own: in that currency, fixed. */
-function ownCurrency(sub: LineField, parent: Values): LineField {
-  if (sub.type !== 'monetary' || !sub.currencyField?.startsWith('parent.')) return sub;
-  const { currencyField: _, ...rest } = sub;
-  const code = currencyOf(sub, {}, parent);
-  return /^[A-Z]{3}$/.test(code ?? '') ? { ...rest, currency: code as string } : rest;
 }
 
 /** Everything a cell needs, handed to AG Grid's editors and renderers. */
@@ -865,20 +857,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   }
   // AG Grid copies column definitions deeply, so the button calls through, never a copy.
   // With dialogs, a line can be opened to see and edit every one of its fields at once.
-  const openLine = async (line: Line) => {
-    if (!dialogs) return;
-    // Money in the record's currency is in that currency in the dialog too, which has no record round it.
-    const fields = Object.fromEntries(
-      Object.entries(def.fields)
-        .filter(([key]) => key !== kinds?.field && key !== sequence)
-        .map(([key, sub]) => [key, ownCurrency(sub, form.getState().values)])
-    ) as Record<string, Field>;
-    // The dialog shows what the onchange makes of the line as it is edited; the line itself waits for Save & Close.
-    const values = await dialogs.editValues({ title: def.label, fields, values: line.values, readonly, recompute: (edited) => form.previewLine(name, line.key, edited) });
-    if (!values) return;
-    // Written in one go, so the form recalculates once.
-    form.setValue(name, lines().map((l) => (l.key === line.key ? { ...l, values: { ...l.values, ...values } } : l)));
-  };
+  // Its own record's page, by the table's model (lineOpens: "record"), or every one of its fields.
+  const openLine = (line: Line) => (dialogs ? openLineDialog(form, name, node, line, dialogs, readonly) : undefined);
   if (node.rowButtons?.length) {
     columnDefs.push({
       colId: '__row_buttons',

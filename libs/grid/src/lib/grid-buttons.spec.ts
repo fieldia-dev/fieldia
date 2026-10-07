@@ -120,3 +120,46 @@ describe('the grid’s buttons beside Add a line, and a line copied', () => {
     expect(now[2].id).toBeUndefined();
   });
 });
+
+describe('a grid’s line opening its own record’s page', () => {
+  const matter = {
+    fieldia: '0.1',
+    id: 'matter',
+    data: { kind: 'record', model: 'legal.matter' },
+    fields: {
+      hearing_ids: { type: 'one2many', label: 'Hearings', relation: 'legal.hearing', fields: { date: { type: 'date', label: 'Date' }, court: { type: 'char', label: 'Court' } } },
+    },
+    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-h', field: 'hearing_ids', widget: 'grid', lineOpens: 'record' }] },
+  } as unknown as Page;
+  const hearing = {
+    fieldia: '0.1',
+    id: 'hearing',
+    data: { kind: 'record', model: 'legal.hearing' },
+    fields: { court: { type: 'char', label: 'Court' }, judge: { type: 'char', label: 'Presiding judge' } },
+    layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-court', field: 'court' }, { type: 'field', id: 'f-judge', field: 'judge' }] },
+  } as unknown as Page;
+
+  it('opens a saved line’s record page, and a new line’s fields', async () => {
+    const { createMemoryDataSource } = await import('@fieldia/core');
+    const host = document.createElement('div');
+    document.body.append(host);
+    const dataSource = createMemoryDataSource({ records: { 'legal.hearing': { 7: { court: 'Cairo Economic Court', judge: 'Hany Fawzy' } } } });
+    handle = mountViewer(host, {
+      page: matter,
+      widgets: gridWidgets,
+      dataSource,
+      relatedPages: { 'legal.hearing': hearing },
+      values: { hearing_ids: [{ key: 'a', id: 7, values: { date: '2026-10-20', court: 'Cairo Economic Court' } }, { key: 'b', values: { date: null, court: null } }] } as never,
+    });
+    await frames();
+    const labelsIn = () => [...(document.querySelector('.fd-form-dialog')?.querySelectorAll('.fd-label') ?? [])].map((l) => l.textContent);
+    (host.querySelector('.ag-row[row-index="0"] button[aria-label="Open line"]') as HTMLButtonElement).click();
+    await frames();
+    expect(labelsIn()).toEqual(['Court', 'Presiding judge']);
+    (document.querySelector('.fd-form-dialog-foot button:last-child') as HTMLButtonElement).click();
+    await frames();
+    (host.querySelector('.ag-row[row-index="1"] button[aria-label="Open line"]') as HTMLButtonElement).click();
+    await frames();
+    expect(labelsIn()).toEqual(['Date', 'Court']);
+  });
+});
