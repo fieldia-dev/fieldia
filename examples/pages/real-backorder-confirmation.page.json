@@ -29,9 +29,14 @@
           { "type": "text", "id": "less", "style": "paragraph", "text": "You have processed less products than the initial demand." },
           { "type": "text", "id": "create-help", "style": "note", "text": "Create a backorder if you expect to process the remaining products later. Do not create a backorder if you will not process the remaining products." },
           { "type": "field", "id": "f-pickings", "field": "pickings" },
-          { "type": "field", "id": "f-choice", "field": "choice", "widget": "radio" }
+          { "type": "field", "id": "f-choice", "field": "choice", "invisible": true }
         ]
       }
+    ],
+    "footer": [
+      { "type": "button", "id": "process", "label": "Create Backorder", "style": "primary", "hotkey": "q", "steps": [{ "do": "set", "field": "choice", "value": "'create'" }, { "do": "save" }] },
+      { "type": "button", "id": "process_cancel_backorder", "label": "No Backorder", "style": "danger", "hotkey": "w", "steps": [{ "do": "set", "field": "choice", "value": "'none'" }, { "do": "save" }] },
+      { "type": "button", "id": "discard", "label": "Discard", "hotkey": "x", "steps": [{ "do": "close" }] }
     ]
   }
 }

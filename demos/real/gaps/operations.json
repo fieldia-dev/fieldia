@@ -436,7 +436,7 @@
         {
           "feature": "Status statusbar, two variants by picking type (incoming: draft,assigned,done; others: draft,confirmed,assigned,done)",
           "status": "approximated",
-          "how": "one header statusbar with the receipt's visible states: the header statusbar takes no condition and there is one per sheet"
+          "how": "one header statusbar with the receipt's visible states: a statusbar now takes a condition, but a sheet has one, so the two variants by type cannot both be placed"
         },
         {
           "feature": "Mark as Todo (action_confirm)",
@@ -459,23 +459,27 @@
         },
         {
           "feature": "Validate with less than the demand: Create Backorder? wizard (stock.backorder.confirmation) with Create Backorder / No Backorder / Discard",
-          "status": "approximated",
-          "how": "the app answers with an open of a dialog page (real-backorder-confirmation): a radio Create/No Backorder and Save & Close; into sets a technical field backorder_choice, then a call finishes the transfer. Needs: dialog pages with their own buttons, each running its steps, so a wizard's two choices are two buttons"
+          "status": "covered",
+          "how": "the app answers with an open of the wizard's page (real-backorder-confirmation), whose own footer is Flectra's: Create Backorder (Alt+Q), No Backorder (Alt+W) and Discard, each setting the choice and closing with it; then a call finishes the transfer (shown in the e2e)"
         },
         {
           "feature": "Sign (widget signature, two variants, outgoing transfers only)",
-          "status": "approximated",
-          "how": "a button opening a dialog page with Fieldia's signature pad (real-picking-sign), the partner's name filled in, into the picking's signature, then saved; hidden on this receipt as in Flectra"
+          "status": "covered",
+          "how": "a button opening a dialog page with Fieldia's signature pad (real-picking-sign), the partner's name filled in, into the picking's signature, then saved — Flectra's signature button and dialog; invisible \"not id or …\" and roles [stock.group_stock_sign_delivery], hidden on this receipt as in Flectra"
         },
         {
           "feature": "Print (Picking Operations), Print (Delivery Slip), Print Labels",
           "status": "approximated",
-          "how": "calls the app answers; rendering the PDF is the app's"
+          "how": "calls the app answers, also under the gear's Print group (Picking Operations, Delivery Slip), Alt+O on the header's Print",
+          "app": true,
+          "why": "rendering the report as a PDF is the app's server"
         },
         {
           "feature": "Return (stock.return.picking wizard)",
           "status": "approximated",
-          "how": "the app makes the return straight away and the Returns stat button counts it; the wizard's lines are not shown"
+          "how": "the app makes the return straight away and the Returns stat button counts it; the wizard's lines are not shown",
+          "app": true,
+          "why": "stock.return.picking is the app's own wizard: one more page the app opens"
         },
         {
           "feature": "Cancel with its confirmation",
@@ -495,7 +499,7 @@
         {
           "feature": "Priority star and name in the title, both hidden while name is \"/\"",
           "status": "approximated",
-          "how": "priority as a one-star rating over the title; the title cannot be hidden by a condition"
+          "how": "priority as Flectra's star over a '0'/'1' selection beside the name (title.before), hidden while name is \"/\"; the name drawn as the title, read-only; the title itself cannot be hidden by a condition"
         },
         {
           "feature": "Partner label by type: Delivery Address / Receive From / Contact",
@@ -509,8 +513,8 @@
         },
         {
           "feature": "Operation type read-only \"state != 'draft' and id\"",
-          "status": "approximated",
-          "how": "the id part dropped"
+          "status": "covered",
+          "how": "readonly \"state != 'draft' and id\", as Flectra's; open false (no_open)"
         },
         {
           "feature": "Operation type domain from context (restricted_picking_type_code)",
@@ -519,8 +523,8 @@
         },
         {
           "feature": "Source / destination locations by type, two variants by the multi-locations group",
-          "status": "approximated",
-          "how": "one of each with the type condition; groups missing"
+          "status": "covered",
+          "how": "one of each with the type condition, roles [stock.group_stock_multi_locations] — Flectra's other variant is invisible, so someone without the group sees none"
         },
         {
           "feature": "Back Order of (invisible unless set) and its link",
@@ -530,12 +534,12 @@
         {
           "feature": "Scheduled Date required \"id\" and coloured when late; rescheduling popover (json_popover)",
           "status": "approximated",
-          "how": "always required; no colour; the popover is missing. Needs: a field popover the app fills"
+          "how": "required \"id\", red and bold once it is past (tones, bold); the rescheduling popover (json_popover) is not drawn"
         },
         {
           "feature": "Deadline, Product Availability (outgoing only, coloured), Effective Date when done",
-          "status": "approximated",
-          "how": "conditions covered; the colours are missing"
+          "status": "covered",
+          "how": "conditions covered; the deadline red and bold once past, the availability green, amber or red by its state (tones)"
         },
         {
           "feature": "Assign Owner (incoming only)",
@@ -543,8 +547,8 @@
         },
         {
           "feature": "Picking properties (definition from the operation type, columns 2)",
-          "status": "approximated",
-          "how": "fixed definitions"
+          "status": "covered",
+          "how": "definitionsFrom {list picking_properties, dependsOn picking_type_id}: the operation type's definitions from the app, in two columns"
         },
         {
           "feature": "Operations editable list (move_ids_without_package, stock_move_one2many, add-label \"Add a Product\")",
@@ -558,33 +562,33 @@
         },
         {
           "feature": "Product readonly once confirmed unless additional, or once it has move lines",
-          "status": "missing",
-          "needs": "per-cell readonly conditions"
+          "status": "covered",
+          "how": "cells.product_id readonly \"state != 'draft' and not additional\""
         },
         {
           "feature": "Demand readonly unless is_initial_demand_editable; and on an inter-company transfer (parent.sherkety_transfer_id)",
-          "status": "approximated",
-          "how": "a badge says the quantities are locked; the cells stay editable. Needs: cell readonly by the line and by the parent"
+          "status": "covered",
+          "how": "cells.product_uom_qty readonly \"not is_initial_demand_editable or parent.sherkety_transfer_id\": by the line and by the record"
         },
         {
           "feature": "Quantity column hidden in draft (column_invisible parent.state=='draft'); Forecast hidden unless an outgoing, confirmed transfer",
-          "status": "missing",
-          "needs": "column conditions reading the record; Forecast is an optional hidden column instead"
+          "status": "covered",
+          "how": "cells hidden: Quantity and Picked while the transfer is draft, Forecast unless an outgoing transfer is confirmed (shown in the e2e)"
         },
         {
           "feature": "Kit column only when the transfer has kits (mrp)",
-          "status": "approximated",
-          "how": "an optional hidden column"
+          "status": "covered",
+          "how": "cells.description_bom_line hidden \"not has_kits\""
         },
         {
           "feature": "Quantity in red above the demand; on-hand at date in red below the demand (Sherkety)",
-          "status": "missing",
-          "needs": "cell decorations"
+          "status": "covered",
+          "how": "cell tones: Quantity red above the demand, On-Hand @ Doc Date red below it (shown in the e2e)"
         },
         {
           "feature": "Rows muted when scrapped, cancelled or done and locked",
-          "status": "missing",
-          "needs": "row decorations"
+          "status": "covered",
+          "how": "rowTones muted when scrapped, cancelled, or done and locked"
         },
         {
           "feature": "Forecast widget (forecast_widget): availability text and date",
@@ -594,17 +598,17 @@
         {
           "feature": "Analytic distribution widget (percentages per account)",
           "status": "approximated",
-          "how": "a many2many of accounts: the percentages are lost. Needs: a distribution widget (accounts with shares)"
+          "how": "a many2many of accounts: Fieldia's distribution widget draws a field's shares, but not yet in a table's cell"
         },
         {
           "feature": "Serial numbers: hidden per line without tracking, created only when the type allows (options create from parent.use_create_lots)",
-          "status": "missing",
-          "needs": "per-cell conditions and a create option reading the parent"
+          "status": "approximated",
+          "how": "cells.lot_ids invisible while the line has no tracking, hidden while draft; creating one only when the type allows (create read from the parent) is not there"
         },
         {
           "feature": "Row buttons: Assign Serial Numbers, Forecast Report (two variants)",
-          "status": "missing",
-          "needs": "buttons in a table row, with conditions"
+          "status": "covered",
+          "how": "rowButtons: Assign Serial Numbers and the two Forecast Reports, each with Flectra's condition on its line and the record (shown in the e2e)"
         },
         {
           "feature": "Product → unit, description, on-hand (onchange)",
@@ -627,8 +631,8 @@
         },
         {
           "feature": "Additional Info tab: Shipping Policy (not for receipts), Responsible (avatar), Procurement Group (developer), Company (multi-company), Batch",
-          "status": "approximated",
-          "how": "all placed with their conditions; avatar and groups missing"
+          "status": "covered",
+          "how": "all placed with their conditions; Responsible with avatar: true, the procurement group roles [base.group_no_one], the company roles [base.group_multi_company]"
         },
         {
           "feature": "Note tab (html, placeholder)",
@@ -646,43 +650,45 @@
         },
         {
           "feature": "Access groups on fields, buttons, tabs and columns (groups=\"…\", \"!group\")",
-          "status": "missing",
-          "needs": "a way to show a part only to some roles: a condition on the person (e.g. user.groups) or a role list on a node; every group-gated part is shown to everyone here"
+          "status": "covered",
+          "how": "roles as the view gates them: the header buttons (base.group_user, stock.group_stock_user, the signature group), Put in Pack, the traceability and allocation buttons, the locations, the owner and Additional Info's fields; the person handed in by the app (shown in the e2e)"
         },
         {
           "feature": "context on fields and buttons (default_* for new lines and linked records, search_default_*, form_view_ref)",
-          "status": "approximated",
-          "how": "new lines get their defaults from the app's onchange; a link's context and view refs are lost"
+          "status": "covered",
+          "how": "lineDefaults: a new move's date from the scheduled date; the rest of a move's defaults (locations, company) the app's onchange gives"
         },
         {
           "feature": "decoration-* on fields and list rows (danger/warning/success/muted/bf)",
-          "status": "missing",
-          "needs": "decorations: a tone for a field or a table row (and cell) while a condition holds"
+          "status": "covered",
+          "how": "field tones and bold, cell tones and rowTones as Flectra's decorations (shown in the e2e)"
         },
         {
           "feature": "data-hotkey on header buttons (Alt+Q, Alt+V…)",
-          "status": "missing",
-          "needs": "a key for a button"
+          "status": "covered",
+          "how": "hotkeys as Flectra's: Mark as Todo q, Check Availability w, Validate v, Print o, Return k, Cancel x, Put in Pack shift+g"
         },
         {
           "feature": "js_class custom form controller",
           "status": "missing",
-          "needs": "Flectra's own JS behaviour for this form (form-level hooks beyond steps)"
+          "needs": "Flectra's own JS behaviour for this form (form-level hooks beyond steps)",
+          "app": true,
+          "why": "picking_form is Flectra's own JavaScript (the moves' details dialog): the app's"
         },
         {
           "feature": "Conditions written with tuples, e.g. state in ('a', 'b')",
-          "status": "approximated",
-          "how": "Fieldia's expressions take lists: every tuple rewritten as ['a', 'b']; tuples would let Flectra conditions be pasted unchanged"
+          "status": "covered",
+          "how": "the page's conditions are written as Flectra writes them, with tuples — state in ('done', 'cancel') — read as lists"
         },
         {
           "feature": "Conditions on the record id (not id, … and id)",
-          "status": "missing",
-          "needs": "the record's id readable in conditions (or a \"new record\" flag); \"not id\" parts were dropped"
+          "status": "covered",
+          "how": "not id read in conditions: the operation type's readonly, the Sign buttons; Scheduled Date required \"id\""
         },
         {
           "feature": "Field help shown as a tooltip on the label",
-          "status": "approximated",
-          "how": "Fieldia shows help as text under the field, which turned these long Flectra helps into noise: they were left out of the page (they stay in Flectra)"
+          "status": "covered",
+          "how": "look.helpShown \"tooltip\": each field's help behind a (?) by its label, as Flectra shows it, with Flectra's own help texts back on the fields"
         },
         {
           "feature": "Technical invisible fields (invisible=\"1\") read by conditions",

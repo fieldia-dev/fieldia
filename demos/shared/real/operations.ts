@@ -401,7 +401,7 @@ function move(key: string, id: number | undefined, productId: number, demand: nu
       date_deadline: '2026-10-09T17:00',
       description_bom_line: null,
       product_uom_qty: demand,
-      forecast_availability: null,
+      forecast_availability: 0,
       quantity: 0,
       product_uom: p.uom,
       qty_on_hand_now: p.onHand,
@@ -412,6 +412,9 @@ function move(key: string, id: number | undefined, productId: number, demand: nu
       scrapped: false,
       additional: false,
       has_tracking: 'none',
+      is_initial_demand_editable: true,
+      is_quantity_done_editable: true,
+      display_assign_serial: false,
       ...extra,
     },
   };
@@ -419,7 +422,7 @@ function move(key: string, id: number | undefined, productId: number, demand: nu
 
 const pickingRecord: Values = {
   name: 'WH/IN/00042',
-  priority: null,
+  priority: '0',
   state: 'draft',
   is_locked: true,
   show_check_availability: false,
@@ -506,7 +509,8 @@ function reserve(values: Values): Values {
     const demand = Number(line.values['product_uom_qty'] ?? 0);
     const available = incoming ? demand : Math.min(demand, id ? PRODUCTS[id].onHand : 0);
     const state = available >= demand ? 'assigned' : available > 0 ? 'partially_available' : 'confirmed';
-    return { ...line, values: { ...line.values, quantity: available, forecast_availability: incoming ? demand : (id ? PRODUCTS[id].onHand : 0), state } };
+    // Reserved, the demand is the order's: only the quantity is typed now (is_initial_demand_editable).
+    return { ...line, values: { ...line.values, quantity: available, forecast_availability: incoming ? demand : (id ? PRODUCTS[id].onHand : 0), state, is_initial_demand_editable: false } };
   });
   const ready = lines.every((line) => line.values['state'] === 'assigned');
   const some = lines.some((line) => Number(line.values['quantity']) > 0);
@@ -936,6 +940,7 @@ const OPERATIONS_USER = {
   roles: [
     'base.group_user',
     'base.group_multi_company',
+    'stock.group_stock_user',
     'project.group_project_manager',
     'project.group_project_rating',
     'project.group_project_recurring_tasks',
@@ -962,6 +967,17 @@ const TASK_PROPERTIES: Record<number, PropertyDefinition[]> = {
     { name: 'panels', label: 'Panels to fit', type: 'integer' },
   ],
   5182: [{ name: 'floor', label: 'Floor', type: 'integer' }],
+};
+
+/** The properties each operation type keeps for its transfers (stock.picking.type picking_properties_definition). */
+const PICKING_PROPERTIES: Record<number, PropertyDefinition[]> = {
+  5171: [
+    { name: 'truck_plate', label: 'Truck plate', type: 'char' },
+    { name: 'driver', label: 'Driver', type: 'char' },
+    { name: 'inspected', label: 'Quality inspected', type: 'boolean' },
+    { name: 'dock', label: 'Dock', type: 'selection', options: [{ value: 'd1', label: 'Dock 1' }, { value: 'd2', label: 'Dock 2' }] },
+  ],
+  5172: [{ name: 'carrier', label: 'Carrier', type: 'char' }],
 };
 
 /** A person's initials on a colour, as a link's picture. */
@@ -995,13 +1011,17 @@ export const lane: RealLane = {
   },
   navigation: {
     'real-task': { records: [TASK_ID, 5205, 5207], breadcrumbs: [{ label: 'Nile Towers 12th floor fit-out', href: '#tasks' }] },
+    'real-transfer': { records: [PICKING_ID, 5302], breadcrumbs: [{ label: 'Receipts', href: '#receipts' }] },
   },
   shows: {
     'res.users': { avatar: 'image_128' },
     'project.tags': { color: 'color' },
     'project.task.type': { folded: 'fold' },
   },
-  definitions: { task_properties: (values) => TASK_PROPERTIES[idOf(values['project_id']) ?? 0] ?? [] },
+  definitions: {
+    task_properties: (values) => TASK_PROPERTIES[idOf(values['project_id']) ?? 0] ?? [],
+    picking_properties: (values) => PICKING_PROPERTIES[idOf(values['picking_type_id']) ?? 0] ?? [],
+  },
   related: { 'project.task': task as Page, 'stock.picking': transfer as Page },
   records: {
     'project.task': { [TASK_ID]: taskRecord, ...otherTasks },
@@ -1040,7 +1060,23 @@ export const lane: RealLane = {
     'ir.attachment': {},
     'stock.picking': {
       [PICKING_ID]: pickingRecord,
-      5302: { name: 'WH/IN/00038', state: 'done' },
+      // The last receipt, done: what the pager moves to.
+      5302: {
+        ...pickingRecord,
+        name: 'WH/IN/00038',
+        state: 'done',
+        origin: 'P00109',
+        scheduled_date: '2026-09-28T09:00',
+        date_deadline: '2026-09-29T17:00',
+        date_done: '2026-09-28T11:40',
+        partner_id: PARTNERS.hardware,
+        picking_properties: { truck_plate: 'ج ه د 1290', driver: 'Sayed Omar', inspected: true, dock: 'd2' },
+        move_ids_without_package: [
+          move('d1', 5315, 5135, 20, { state: 'done', quantity: 20, picked: true, is_initial_demand_editable: false }),
+          move('d2', 5316, 5134, 4, { state: 'done', quantity: 4, picked: true, is_initial_demand_editable: false }),
+        ],
+        note: null,
+      },
     },
     'product.product': Object.fromEntries(Object.entries(PRODUCTS).map(([id, p]) => [id, { name: p.name, type: p.type, uom_id: p.uom }])),
     'product.template': { 5141: { name: 'Dining table, beech, 6 seats' }, 5142: { name: 'Coffee table, beech' } },

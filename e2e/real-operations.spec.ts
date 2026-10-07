@@ -189,9 +189,11 @@ for (const variant of VARIANTS) {
       const dialog = page.getByRole('dialog', { name: 'Create Backorder?' });
       await expect(dialog).toBeVisible();
       await expect(dialog.getByText('You have processed less products than the initial demand.')).toBeVisible();
-      await expect(dialog.getByRole('radio', { name: 'Create Backorder' })).toBeChecked();
+      // The wizard's own buttons, as Flectra's footer: Create Backorder, No Backorder, Discard.
+      await expect(dialog.getByRole('button', { name: 'No Backorder' })).toBeVisible();
+      await expect(dialog.getByRole('button', { name: 'Discard' })).toBeVisible();
       if (variant === 'plain') await screen(page, 'real-transfer-backorder', { viewport: true });
-      await dialog.getByRole('button', { name: /Save|Done|Submit|Send/ }).last().click();
+      await dialog.getByRole('button', { name: 'Create Backorder' }).click();
       await expect(dialog).toBeHidden();
       await expect(toast(page, 'Backorder WH/IN/00043 created for the rest of Table leg, beech, 72 cm.')).toBeVisible();
       await expect(page.locator('.fd-header .fd-statusbar [aria-current="step"]')).toHaveText('Done');
@@ -202,6 +204,40 @@ for (const variant of VARIANTS) {
       expect(record.state).toBe('done');
       expect(record.move_ids_without_package[2].values).toMatchObject({ quantity: 12, product_uom_qty: 12, state: 'done' });
       if (variant === 'plain') await screen(page, 'real-transfer-done');
+      expect(problems).toEqual([]);
+    });
+
+    test('warehouse receipt: Flectra’s columns, tones, row buttons and groups', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      let { problems } = await open(page, variant, TRANSFER);
+      await expect.poll(() => value(page, 'name')).toBe('WH/IN/00042');
+      // The reference reads as the title beside its star.
+      await expect(page.locator('.fd-title .fd-read-text').first()).toHaveCSS('font-size', '24px');
+      // Draft: no Quantity column yet (column_invisible parent.state == 'draft'); on hand below the demand in red.
+      await expect(node(page, 'f-moves').locator('.ag-header-cell[col-id="quantity"]')).toHaveCount(0);
+      await expect(cell(page, 'f-moves', 1, 'qty_on_hand_at_date')).toHaveClass(/fd-tone-danger/);
+      await expect(cell(page, 'f-moves', 0, 'qty_on_hand_at_date')).not.toHaveClass(/fd-tone-danger/);
+      // Each line's Forecast Report, the red one while nothing is forecast.
+      await expect(node(page, 'f-moves').locator('.ag-row:not(.fd-grid-totals)').first().getByRole('button', { name: 'Forecast Report' })).toHaveCount(1);
+      // The gear: its Print group, Duplicate and Delete.
+      await page.locator('.fd-record-bar .fd-record-gear').click();
+      await expect(page.getByRole('menu')).toContainText('Picking Operations');
+      await expect(page.getByRole('menu')).toContainText('Delivery Slip');
+      await page.keyboard.press('Escape');
+
+      // Ready: the Quantity column shows; more than the demand is red.
+      await page.getByRole('button', { name: 'Mark as Todo' }).click();
+      await expect(page.locator('.fd-header .fd-statusbar [aria-current="step"]')).toHaveText('Ready');
+      await settled(page);
+      await typeIn(page, 'f-moves', 2, 'quantity', '20');
+      await expect(cell(page, 'f-moves', 2, 'quantity')).toHaveClass(/fd-tone-danger/);
+      expect(problems).toEqual([]);
+
+      // Without the stock user's group: no Validate, and no Mark as Todo without the internal user's.
+      ({ problems } = await open(page, variant, `${TRANSFER}&roles=base.group_user`));
+      await expect.poll(() => value(page, 'name')).toBe('WH/IN/00042');
+      await expect(page.getByRole('button', { name: 'Mark as Todo' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Validate', exact: true })).toHaveCount(0);
       expect(problems).toEqual([]);
     });
 
