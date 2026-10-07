@@ -52,6 +52,8 @@ export const tables: DesignerWords['tables'] = {
   fitContent: 'بعرض محتواها',
   shrinkToFit: 'تتقلص لتتسع، وتلتف عناوينها (في الشبكة)',
   copyLine: 'نسخ بند',
+  linesOrder: 'ترتيب البنود حسب',
+  linesOrderPlaceholder: 'is_done, manual_consumption desc, sequence',
   widths: { narrow: 'الهاتف', medium: 'الجهاز اللوحي', wide: 'الشاشة العريضة' },
   hiddenOnHint: 'مخفي ما دام النموذج بهذا العرض: الهاتف حتى 520 بكسل، واللوحي حتى 760 بكسل.',
   onlyTables: 'قواعد البنود والأزرار والبطاقات لجدول البنود وحده',

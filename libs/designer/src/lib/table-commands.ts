@@ -49,6 +49,8 @@ export interface TableShape {
   fit?: 'content' | 'shrink' | null;
   /** A ⧉ on each line that puts a copy of it after it (the widget's `copy`). */
   copy?: boolean | null;
+  /** The order its lines load in, by their fields (`order`). */
+  order?: { field: string; desc?: boolean }[] | null;
 }
 
 export interface TableCommands {
@@ -247,7 +249,13 @@ export function tableCommands({ apply }: TableCommandsDeps): TableCommands {
 
     setTableShape(id, shape) {
       return apply((draft) => {
-        const { node } = table(draft, id);
+        const { node, def } = table(draft, id);
+        if (shape.order !== undefined) {
+          const by = (shape.order ?? []).map((item) => ({ field: item.field, ...(item.desc ? { desc: true } : {}) }));
+          const unknown = by.find((item) => !def.fields[item.field]);
+          if (unknown) throw new Refusal((w) => w.tables.notAColumn(unknown.field));
+          put(node, 'order', by.length ? by : undefined);
+        }
         if (shape.lineOpens !== undefined) put(node, 'lineOpens', shape.lineOpens ?? undefined);
         if (shape.cards !== undefined) put(node, 'cards', shape.cards ?? undefined);
         if (shape.fit !== undefined) put(node, 'fit', shape.fit ?? undefined);

@@ -119,6 +119,23 @@ describe('the grid by a table’s own rules', () => {
     expect(cross('a').hidden).toBe(false);
   });
 
+  it('shows the lines in the table’s order of their fields, the plain table too', async () => {
+    const page = JSON.parse(JSON.stringify(transfer));
+    page.layout.children[1].order = [{ field: 'scrapped', desc: true }, { field: 'product' }];
+    const host = document.createElement('div');
+    document.body.replaceChildren(host);
+    handle = mountViewer(host, { page, widgets: gridWidgets, values: { state: 'assigned', move_ids: moves } as never });
+    await frames();
+    const api = gridApiOf(host.querySelector('[data-node="f-moves"] .fd-grid-lines') as HTMLElement)!;
+    const shown: string[] = [];
+    api.forEachNodeAfterFilterAndSort((row) => shown.push(row.data!.key));
+    expect(shown).toEqual(['b', 'a']);
+    handle.destroy();
+    delete page.layout.children[1].widget;
+    handle = mountViewer(host, { page, values: { state: 'assigned', move_ids: moves } as never });
+    expect([...host.querySelectorAll<HTMLElement>('tbody tr[data-line]')].map((tr) => tr.dataset['line'])).toEqual(['b', 'a']);
+  });
+
   it('locks a cell by its line and its record, again when the record changes', async () => {
     const { api } = await mount('draft');
     const editable = (key: string, column: string) => api.getColumn(column)!.isCellEditable(api.getRowNode(key)!);

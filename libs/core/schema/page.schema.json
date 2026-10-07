@@ -3575,6 +3575,13 @@
                       ]
                     }
                   },
+                  "order": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/LineOrder"
+                    }
+                  },
                   "cells": {
                     "type": "object",
                     "propertyNames": {
@@ -4005,6 +4012,13 @@
                         "show",
                         "hide"
                       ]
+                    }
+                  },
+                  "order": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/LineOrder"
                     }
                   },
                   "cells": {
@@ -4439,6 +4453,13 @@
                       ]
                     }
                   },
+                  "order": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/LineOrder"
+                    }
+                  },
                   "cells": {
                     "type": "object",
                     "propertyNames": {
@@ -4869,6 +4890,13 @@
                         "show",
                         "hide"
                       ]
+                    }
+                  },
+                  "order": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/LineOrder"
                     }
                   },
                   "cells": {
@@ -5849,6 +5877,22 @@
       ],
       "additionalProperties": false
     },
+    "LineOrder": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "desc": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "field"
+      ],
+      "additionalProperties": false
+    },
     "CellRules": {
       "type": "object",
       "properties": {
@@ -6733,6 +6777,13 @@
                   "show",
                   "hide"
                 ]
+              }
+            },
+            "order": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/LineOrder"
               }
             },
             "cells": {

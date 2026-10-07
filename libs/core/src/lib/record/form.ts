@@ -377,6 +377,24 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     const source = node.source as FieldNode;
     if (node.kind === 'field' && (source.tones || source.bold !== undefined)) fieldTones.set(node.id, compileFieldTone(source));
   }
+  /** The tables whose lines load in an order of their own fields, by the field: the first node to give one. */
+  const lineOrders = new Map<string, NonNullable<FieldNode['order']>>();
+  for (const node of index.values()) {
+    const source = node.source as FieldNode;
+    if (node.kind === 'field' && source.order?.length && page.fields[source.field]?.type === 'one2many' && !lineOrders.has(source.field)) lineOrders.set(source.field, source.order);
+  }
+  /** Lines as they load, in their tables' orders — only `loaded` fields, when given: the same values when nothing moved. */
+  function ordered(values: Values, loaded?: readonly string[]): Values {
+    let out = values;
+    for (const [field, by] of lineOrders) {
+      if (loaded && !loaded.includes(field)) continue;
+      const lines = values[field] as Line[] | null | undefined;
+      if (!Array.isArray(lines) || lines.length < 2) continue;
+      const sorted = [...lines].sort((a, b) => compareLines(a.values, b.values, by));
+      if (sorted.some((line, i) => line !== lines[i])) out = { ...out, [field]: sorted };
+    }
+    return out;
+  }
   /** Whether any rule only warns: without one, there are never warnings to look for. */
   const warns = [...nodeRules.values()].some((rules) => rules.some((compiled) => compiled.rule.level === 'warning'));
   const steps = page.layout.type === 'wizard' ? page.layout.children.map((step) => step.id) : [];
@@ -407,7 +425,7 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       const about = { recordId: null, user: options.user };
       Object.assign(values, firstValues(page.fields, mapScope(values, page.fields, recordContext(values, page.fields, about), expressionEnv(values, page.fields, today))));
     }
-    return given ? { ...values, ...structuredCopy(options.values ?? {}) } : values;
+    return given ? ordered({ ...values, ...structuredCopy(options.values ?? {}) }) : values;
   }
 
   /** The name this form knows a record by, from a link to the same model it holds. */
@@ -966,7 +984,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
         values: structuredCopy(state.values as Values),
       });
       forgetDraft();
-      const values = syncParts(startFrom(result.values ? { ...(state.values as Values), ...result.values } : (state.values as Values)), 'start');
+      // Lines the save brings back load again, in their tables' orders, as Flectra's reload after a save.
+      const values = syncParts(startFrom(result.values ? ordered({ ...(state.values as Values), ...result.values }, Object.keys(result.values)) : (state.values as Values)), 'start');
       baseline = structuredCopy(values);
       set({ status: 'saved', recordId: result.id, values, dirty: [], warnings: withValues(values, collectWarnings) });
       emit('save', { recordId: state.recordId, values: state.values });
@@ -1111,7 +1130,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
     try {
       const loaded = await source.load({ model: page.data.model, id: state.recordId, fields });
       if (seq !== loads) return;
-      baseline = syncParts(startFrom({ ...initialValues(fields, today()), ...loaded }), 'start');
+      // Lines load in their tables' orders; where a person moves them after, they stay.
+      baseline = syncParts(startFrom(ordered({ ...initialValues(fields, today()), ...loaded })), 'start');
       set({ status: 'ready', values: structuredCopy(baseline), dirty: [], errors: {}, warnings: withValues(baseline, collectWarnings) });
       if (again) return;
       offerDraft();
@@ -1618,6 +1638,27 @@ function inside(errors: Readonly<Record<string, string>>, name: string): Record<
   const found: Record<string, string> = {};
   for (const [key, message] of Object.entries(errors)) if (key.startsWith(`${name}.`)) found[key.slice(name.length + 1)] = message;
   return found;
+}
+
+/** One value against another in a table's order: empty and false first, a link by its name, words as people sort them. */
+function compareValues(a: unknown, b: unknown): number {
+  const empty = (v: unknown) => v === null || v === undefined || v === false || v === '';
+  if (empty(a) || empty(b)) return empty(a) === empty(b) ? 0 : empty(a) ? -1 : 1;
+  const plain = (v: unknown) => (v !== null && typeof v === 'object' && !Array.isArray(v) && 'label' in v ? String((v as RelatedRecord).label) : v);
+  const x = plain(a);
+  const y = plain(b);
+  if (typeof x === 'number' && typeof y === 'number') return x - y;
+  if (typeof x === 'boolean' && typeof y === 'boolean') return Number(x) - Number(y);
+  return String(x).localeCompare(String(y));
+}
+
+/** Two lines in a table's order: by the first field, then the next. */
+function compareLines(a: Values, b: Values, by: NonNullable<FieldNode['order']>): number {
+  for (const item of by) {
+    const found = compareValues(a[item.field], b[item.field]);
+    if (found) return item.desc ? -found : found;
+  }
+  return 0;
 }
 
 /** A field no one types in: read-only by its definition, or worked out from others. */

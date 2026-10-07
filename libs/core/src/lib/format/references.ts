@@ -610,6 +610,11 @@ export class ReferenceCheck {
     for (const [key, value] of Object.entries(node.options ?? {})) {
       if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.options.${key}`);
     }
+    // The order lines load in: fields of its lines.
+    if (def && node.order) {
+      if (def.type !== 'one2many') this.report(`${path}.order`, `order only applies to one2many fields; "${node.field}" is a ${def.type}`);
+      else node.order.forEach((item, i) => !has(def.fields, item.field) && this.report(`${path}.order[${i}].field`, `"${item.field}" is not a field of the lines of "${node.field}"`));
+    }
     for (const key of ['lineOpens', 'cards', 'fit'] as const) {
       if (def && node[key] && def.type !== 'one2many') this.report(`${path}.${key}`, `${key} only applies to one2many fields; "${node.field}" is a ${def.type}`);
     }

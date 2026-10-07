@@ -233,6 +233,7 @@ ${code(
 }`
 )}
 <p>${c('"hide"')} starts a column hidden. Sections and notes stay out of the totals.</p>
+<p>${c('order')} puts the lines in an order of their own fields as they load, as Flectra's list ${c('default_order')}: ${c('[{ "field": "is_done" }, { "field": "manual_consumption", "desc": true }, { "field": "sequence" }]')} — by the first field, then the next, ${c('desc')} turning one round; empty values and false first, a link by its name. Both the plain table and the grid show that order. A line a person drags (with a ${c('sequenceField')}) or adds stays where it is until the lines load again — opening the record, or a save bringing them back.</p>
 
 <h2 id="grid">The grid</h2>
 <p>For orders, invoices and timesheets, ${c('@fieldia/grid')} shows a table of lines as a spreadsheet on <a href="https://www.ag-grid.com/">AG Grid</a>, with Fieldia's own fields in the cells. It is a separate package, so simple forms never load it:</p>

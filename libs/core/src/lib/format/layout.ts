@@ -115,6 +115,15 @@ export interface FieldNode {
   optionalColumns?: { [column: string]: 'show' | 'hide' };
   /** For one2many shown as a grid: edit one cell at a time (the default), or a whole line at once. */
   editMode?: 'cell' | 'row';
+  /**
+   * For one2many: the order its lines are put in as they load — by the first
+   * line field, then the next, `desc` turning one round — as Flectra's list
+   * default_order: `[{ "field": "is_done" }, { "field": "manual_consumption",
+   * "desc": true }, { "field": "sequence" }]`. Empty values and false come
+   * first, a link goes by its name. A line a person moves, or adds, stays
+   * where it is until the lines load again.
+   */
+  order?: LineOrder[];
   /** For one2many: what each column's cells do, line by line — Flectra's conditions and decorations in a list. */
   cells?: { [column: string]: CellRules };
   /** For one2many: each line's tone while a condition on it holds, the first that holds — Flectra's decoration-* on a list. */
@@ -176,6 +185,13 @@ export interface FieldNode {
   hideOn?: ScreenWidth[];
   readonly?: Modifier;
   required?: Modifier;
+}
+
+/** One field a table's lines are ordered by, as they load. */
+export interface LineOrder {
+  field: string;
+  /** From the highest, the latest, true, Z. */
+  desc?: boolean;
 }
 
 /** A tone while a condition holds. */
@@ -783,6 +799,7 @@ export const FieldNodeSchema = z.strictObject({
   columns: z.array(fieldName).min(1).optional(),
   totals: z.array(fieldName).min(1).optional(),
   optionalColumns: z.record(fieldName, z.enum(['show', 'hide'])).optional(),
+  order: z.array(z.strictObject({ field: fieldName, desc: z.boolean().optional() }).meta({ id: 'LineOrder' })).min(1).optional(),
   cells: z.record(fieldName, CellRulesSchema).optional(),
   rowTones: z.array(ToneWhenSchema).min(1).optional(),
   rowBold: ModifierSchema.optional(),

@@ -152,6 +152,22 @@ describe('a table’s own rules, in the panel', () => {
     expect(node('f-moves')).toMatchObject({ lineOpens: 'record', cards: 'narrow', fit: 'content', options: { copy: true } });
   });
 
+  it('orders the lines by their fields, refusing one the lines lack', () => {
+    const { host, row, node, designer } = screen('f-moves');
+    openTab(host, 'Layout');
+    const box = field(row('Table'), 'Lines in order of') as HTMLInputElement;
+    type(box, 'quantity desc, product');
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(node('f-moves').order).toEqual([{ field: 'quantity', desc: true }, { field: 'product' }]);
+    expect(designer.setTableShape('f-moves', { order: [{ field: 'colour' }] })).toBe(false);
+    type(box, '');
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(node('f-moves').order).toBeUndefined();
+    const ar = screen('f-moves', 'ar');
+    openTab(ar.host, 'التخطيط');
+    expect(field(ar.row('Table'), 'ترتيب البنود حسب')).toBeDefined();
+  });
+
   it('speaks Arabic', () => {
     const { host, row } = screen('f-moves', 'ar');
     openTab(host, 'القواعد');

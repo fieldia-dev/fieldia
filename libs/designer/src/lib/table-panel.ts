@@ -237,11 +237,21 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
   const opens = select(w.lineOpens, [['', w.opensFields], ['record', w.opensRecord]], (value) => designer.setTableShape(id, { lineOpens: value ? 'record' : null }));
   const phone = select(w.onAPhone, [['', w.rows], ['narrow', w.cardsOnPhone], ['always', w.cardsAlways]], (value) => designer.setTableShape(id, { cards: (value || null) as 'narrow' | 'always' | null }));
   const fit = select(w.columnWidths, [['', w.shareWidth], ['content', w.fitContent], ['shrink', w.shrinkToFit]], (value) => designer.setTableShape(id, { fit: (value || null) as 'content' | 'shrink' | null }));
+  // The order lines load in: their fields' names, apart by commas, "desc" after one turning it round.
+  const order = el('input', { class: 'fd-input fd-answer-rule-code fd-table-order', 'aria-label': w.linesOrder, placeholder: w.linesOrderPlaceholder, spellcheck: 'false', autocomplete: 'off' }) as HTMLInputElement;
+  const orderText = (items: FieldNode['order']) => (items ?? []).map((item) => `${item.field}${item.desc ? ' desc' : ''}`).join(', ');
+  const keepOrder = () => {
+    const typed = order.value.split(',').map((part) => part.trim().split(/\s+/)).filter((words) => words[0]).map(([field, way]) => ({ field, ...(way?.toLowerCase() === 'desc' ? { desc: true } : {}) }));
+    if (orderText(typed) === orderText(node?.order)) return;
+    if (!designer.setTableShape(id, { order: typed.length ? typed : null })) order.value = orderText(node?.order);
+  };
+  order.addEventListener('change', keepOrder);
+  order.addEventListener('keydown', (event) => event.key === 'Enter' && (event.preventDefault(), keepOrder()));
   const copy = el('input', { type: 'checkbox', class: 'fd-checkbox', 'aria-label': w.copyLine }) as HTMLInputElement;
   copy.addEventListener('change', () => designer.setTableShape(id, { copy: copy.checked || null }));
   const field = (label: string, control: HTMLElement) => el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, label), control);
   const shapeRow = onTab(
-    el('div', { class: 'fd-prop fd-table-setting' }, el('span', { class: 'fd-prop-name' }, w.table), field(w.lineOpens, opens), field(w.onAPhone, phone), field(w.columnWidths, fit), el('label', { class: 'fd-inline-setting' }, copy, el('span', {}, w.copyLine))),
+    el('div', { class: 'fd-prop fd-table-setting' }, el('span', { class: 'fd-prop-name' }, w.table), field(w.lineOpens, opens), field(w.onAPhone, phone), field(w.columnWidths, fit), field(w.linesOrder, order), el('label', { class: 'fd-inline-setting' }, copy, el('span', {}, w.copyLine))),
     'layout',
     'Table'
   );
@@ -293,6 +303,7 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
         phone.value = node.cards ?? '';
         fit.value = node.fit ?? '';
         copy.checked = node.options?.['copy'] === true;
+        if (!focused(order)) order.value = orderText(node.order);
       }
       for (const chip of chips) chip.setAttribute('aria-pressed', String(node.hideOn?.includes(chip.dataset['width'] as ScreenWidth) ?? false));
     },

@@ -60,6 +60,9 @@ export const tables = {
   fitContent: 'As wide as they hold',
   shrinkToFit: 'Shrink to fit, headers wrapping (a grid)',
   copyLine: 'Copy a line',
+  /** The order a table's lines load in, by their fields: Flectra's default_order. */
+  linesOrder: 'Lines in order of',
+  linesOrderPlaceholder: 'is_done, manual_consumption desc, sequence',
   // ---- widths a part is hidden at
   widths: { narrow: 'Phone', medium: 'Tablet', wide: 'Wide screen' } as Record<'narrow' | 'medium' | 'wide', string>,
   hiddenOnHint: 'Hidden while the form is that wide: a phone up to 520px, a tablet up to 760px.',
