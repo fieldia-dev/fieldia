@@ -5,7 +5,7 @@
  */
 export type { JsonValue } from './lib/format/json';
 export { FIELD_NAME, FIELD_TYPES, type FieldType } from './lib/format/names';
-export type { Field, Fields, LineField, LineKinds, Option, OptionsFrom, PropertyDefinition, FilterCondition, FilterItem, SetWhen } from './lib/format/field';
+export type { Field, Fields, LineField, LineKinds, Option, OptionsFrom, DefinitionsFrom, PropertyDefinition, FilterCondition, FilterItem, SetWhen } from './lib/format/field';
 export type {
   Modifier,
   Roles,
@@ -132,6 +132,7 @@ export {
   type FormStatus,
   type NodeState,
   type Choices,
+  type Definitions,
   type DraftStore,
   type ActionRequest,
   type ChangeBy,

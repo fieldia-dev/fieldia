@@ -3,6 +3,7 @@ import { CHOICES_CSS } from './styles-choices';
 import { INPUTS_CSS } from './styles-inputs';
 import { PARTS_CSS } from './styles-parts';
 import { SHEET_CSS } from './styles-sheet';
+import { BUSINESS_CSS } from './styles-business';
 
 /**
  * Fieldia's stylesheet: two skins and the layout chrome, all scoped to the
@@ -951,7 +952,7 @@ button.fd-chip-label:hover { text-decoration: underline; }
 `;
 
 /** Fieldia's whole stylesheet: the skins, then the layout over them, the inputs' details, the question kinds and the choices' details. */
-export const FIELDIA_CSS = SKINS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + KINDS_CSS + CHOICES_CSS + PARTS_CSS;
+export const FIELDIA_CSS = SKINS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + KINDS_CSS + CHOICES_CSS + PARTS_CSS;
 
 const STYLE_ID = 'fieldia-styles';
 

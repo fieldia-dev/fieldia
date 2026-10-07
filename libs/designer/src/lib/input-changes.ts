@@ -68,6 +68,18 @@ const OPTION_WORDS: Record<string, Words> = {
   showPercent: (v, _now, kind, w) => (kind !== 'progress' ? null : v === false ? w.noPercent : w.percent),
   separator: (v, _now, kind, w) => (kind === 'keywords' ? w.apart(String(v ?? ',')) : null),
   suggestions: (v, _now, kind, w) => (kind !== 'keywords' ? null : Array.isArray(v) ? w.suggests(v as string[]) : w.suggestsNothing),
+  // The business kinds' own.
+  endField: (v, _now, kind, w) => (kind !== 'date-range' ? null : v ? w.endsOn(String(v)) : w.oneDate),
+  startField: (v, _now, kind, w) => (kind !== 'timer' ? null : v ? w.runsFrom(String(v)) : w.runsFromNothing),
+  unit: (v, _now, kind, w) => (kind !== 'timer' ? null : v === 'minutes' ? w.keptInMinutes : w.keptInHours),
+  label: (v, _now, kind, w) => (kind !== 'state-dot' ? null : v ? w.wordsBeside : w.noWordsBeside),
+  height: (v, _now, kind, w) => (kind !== 'pdf' && kind !== 'embed' ? null : typeof v === 'number' ? w.height(v) : w.usualHeight),
+  model: (v, _now, kind, w) => (kind !== 'distribution' ? null : w.accountsFrom(String(v ?? 'account.analytic.account'))),
+  currencyField: (v, _now, kind, w) => (kind !== 'tax-totals' && kind !== 'payments' ? null : v ? w.currencyFrom(String(v)) : w.noCurrency),
+  editable: (v, _now, kind, w) => (kind !== 'tax-totals' ? null : v ? w.taxTyped : w.taxShown),
+  dueField: (v, _now, kind, w) => (kind !== 'payments' ? null : v ? w.amountDueFrom(String(v)) : w.noAmountDue),
+  columns: (v, _now, kind, w) => (kind !== 'properties' ? null : w.propertyColumns(v === 2 ? 2 : 1)),
+  add: (v, _now, kind, w) => (kind !== 'properties' ? null : v ? w.canAddProperty : w.cannotAddProperty),
   step: (v, _now, kind, w) => (kind === 'time' || kind === 'date-time' ? (v ? w.everyMinutes(v as number) : w.anyMinute) : kind === 'slider' ? w.stepsBy((v as number | undefined) ?? 1) : null),
 };
 

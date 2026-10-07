@@ -5,7 +5,7 @@ import { findField } from './page-tree';
 import { onTab } from './panel-controls';
 import { formulaProblem } from './rules-formula';
 import { formulaBox, type FormulaBox } from './rules-formula-box';
-import type { CellRule, TableButtonPlace } from './table-commands';
+import { CELL_WIDGET_KINDS, CELL_WIDGETS, type CellRule, type TableButtonPlace } from './table-commands';
 
 /**
  * A field's tone and a table's own rules in the panel: its value's tones and
@@ -118,6 +118,9 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
   const cellTones = toneList(lineScope, () => node?.cells?.[current()]?.tones ?? [], (tones) => designer.setCellTones(id, current(), tones));
   const badge = el('input', { type: 'checkbox', class: 'fd-checkbox', 'aria-label': w.badge }) as HTMLInputElement;
   badge.addEventListener('change', () => designer.setCellLook(id, current(), { badge: badge.checked || null }));
+  // Its cells drawn by a widget that suits what the column holds: hours as HH:MM, stars, a bar…
+  const cellWidget = el('select', { class: 'fd-input fd-select fd-table-cell-widget', 'aria-label': w.shownAs }) as HTMLSelectElement;
+  cellWidget.addEventListener('change', () => designer.setCellLook(id, current(), { widget: cellWidget.value || null }));
   const width = el('input', { type: 'number', class: 'fd-input fd-inline-number', min: '1', max: '200', step: '1', 'aria-label': w.width }) as HTMLInputElement;
   width.addEventListener('change', () => designer.setCellLook(id, current(), { width: width.value.trim() ? Number(width.value) : null }));
   column.addEventListener('change', () => drawColumn());
@@ -130,6 +133,7 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
     el('span', { class: 'fd-answer-rule-word' }, w.toneOf),
     cellTones.element,
     el('label', { class: 'fd-inline-setting' }, badge, el('span', {}, w.badge)),
+    el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.shownAs), cellWidget),
     el('label', { class: 'fd-answer-rule-field' }, el('span', { class: 'fd-answer-rule-word' }, w.width), width)
   );
   const linesRow = onTab(
@@ -151,6 +155,12 @@ export function tableSettings(el: ElementFactory, designer: Designer, id: string
     for (const r of cellRules) r.box.show(typeof rules[r.key] === 'string' ? (rules[r.key] as string) : undefined);
     cellTones.draw();
     badge.checked = rules.badge === true;
+    const type = lines?.fields[current()]?.type ?? '';
+    const offered = CELL_WIDGETS[type] ?? [];
+    const names: Record<string, string> = designer.words.kinds.names;
+    cellWidget.replaceChildren(el('option', { value: '' }, w.asItsType), ...offered.map((widget) => el('option', { value: widget }, names[CELL_WIDGET_KINDS[widget]] ?? widget)));
+    cellWidget.value = rules.widget && offered.includes(rules.widget) ? rules.widget : '';
+    (cellWidget.parentElement as HTMLElement).hidden = !offered.length;
     if (!focused(width)) width.value = rules.width ? String(rules.width) : '';
   }
 

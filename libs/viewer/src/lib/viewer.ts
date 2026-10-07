@@ -1261,7 +1261,19 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       // Words over the title, as Flectra's "Product Name" over its h1, naming its box.
       if (node.title.label) title.append(el('label', { class: 'fd-title-label', for: uid('#title') }, node.title.label));
       if (node.title.above?.length) title.append(el('div', { class: 'fd-title-above' }, ...node.title.above.map((part) => fieldItem(part))));
-      title.append(fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder }));
+      const name = fieldItem({ type: 'field', id: '#title', field: node.title.field, placeholder: node.title.placeholder });
+      // Fields on the title's line, before and after it: a priority star, a state's dot (Flectra's <h1>).
+      const before = node.title.before ?? [];
+      const after = node.title.after ?? [];
+      if (before.length || after.length) {
+        name.classList.add('fd-title-name');
+        const side = (part: FieldNode) => {
+          const item = fieldItem(part);
+          item.classList.add('fd-title-side');
+          return item;
+        };
+        title.append(el('div', { class: 'fd-title-line' }, ...before.map(side), name, ...after.map(side)));
+      } else title.append(name);
       if (node.title.subtitleField) title.append(fieldItem({ type: 'field', id: '#subtitle', field: node.title.subtitleField }));
       if (node.title.below?.length) title.append(el('div', { class: 'fd-title-below' }, ...node.title.below.map((part) => fieldItem(part))));
       const row = el('div', { class: 'fd-title-row' }, title);

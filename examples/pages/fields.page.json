@@ -106,6 +106,8 @@
     "documents": { "type": "binary", "label": "Documents", "help": "Drawings, quotes and notes for the job.", "multiple": true, "maxFiles": 8, "maxSize": 10485760 },
     "settings": { "type": "json", "label": "Access control settings" },
     "door_schedule": { "type": "json", "label": "Door schedule" },
+    "time_on_site": { "type": "float", "label": "Time on site", "help": "Hours and minutes, as 06:30." },
+    "margin": { "type": "float", "label": "Margin" },
     "extra": {
       "type": "properties",
       "label": "Building details",
@@ -235,6 +237,17 @@
           { "type": "field", "id": "f-settings", "field": "settings" },
           { "type": "field", "id": "f-doors", "field": "door_schedule", "widget": "code" },
           { "type": "field", "id": "f-extra", "field": "extra" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "s-business",
+        "title": "Business widgets",
+        "description": "The widgets an ERP's screens lean on: hours as HH:MM, a per cent.",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "f-time-on-site", "field": "time_on_site", "widget": "duration", "options": { "suffix": "hours" } },
+          { "type": "field", "id": "f-margin", "field": "margin", "widget": "percentage" }
         ]
       }
     ]

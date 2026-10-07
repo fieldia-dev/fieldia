@@ -25,6 +25,9 @@ export const GRID_CSS = /* css */ `
 .fd-grid-badge[data-tone="success"] { --fd-line-tone: var(--fd-success); --fd-line-tone-soft: var(--fd-success-soft); }
 .fd-grid-badge[data-tone="warning"] { --fd-line-tone: var(--fd-warning); --fd-line-tone-soft: var(--fd-warning-soft); }
 .fd-grid-badge[data-tone="danger"] { --fd-line-tone: var(--fd-error); --fd-line-tone-soft: var(--fd-error-soft); }
+/* A cell drawn by a widget of its own: a bar as wide as the cell, stars and dots at its start. */
+.fd-grid-drawn { display: flex; align-items: center; width: 100%; height: 100%; min-width: 0; }
+.fd-grid-drawn > .fd-progressbar, .fd-grid-drawn > .fd-progressbar-edit { flex: 1 1 auto; min-width: 0; }
 .fd-grid-row-buttons { display: inline-flex; gap: 2px; }
 /* Lines as cards (cards: narrow on a phone, or always), in the grid's place. */
 .fd-grid-lines[data-cards] { container: fd-grid / inline-size; }

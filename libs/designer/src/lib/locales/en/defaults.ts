@@ -36,4 +36,8 @@ export const defaults = {
   /** A scale made NPS: the words at its ends. */
   npsStart: 'Not at all likely',
   npsEnd: 'Extremely likely',
+  /** Priority stars' levels, after the first (none), and a state's dot's states. */
+  priorityNone: 'Normal',
+  priorityLevels: ['High', 'Very high'] as readonly string[],
+  dotStates: ['In progress', 'Blocked', 'Ready'] as readonly string[],
 };

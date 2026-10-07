@@ -187,6 +187,15 @@ export interface CellRules {
   bold?: Modifier;
   /** A choice drawn as a coloured pill, toned by `tones`: Flectra's widget="badge". */
   badge?: boolean;
+  /**
+   * How its cells are shown, as a field node's `widget` — Flectra's widget= on
+   * a list's column: a `progressbar`, `priority` stars, a `duration` as HH:MM,
+   * a `percentage`, a state `dot`. Text widgets are typed into as the field's
+   * box is; drawn ones (bars, stars, dots) are used in the cell itself.
+   */
+  widget?: string;
+  /** Its widget's settings, as a field node's `options`; one ending in "Field" names a field of the line. */
+  options?: WidgetOptions;
   /** How wide the column is, in characters of its text. */
   width?: number;
 }
@@ -520,6 +529,10 @@ export interface SheetTitle {
   placeholder?: string;
   /** Fields over the title, such as an Individual/Company choice. */
   above?: FieldNode[];
+  /** Fields on the title's line before it, such as a priority star — Flectra's <h1> holding the priority and the name. */
+  before?: FieldNode[];
+  /** Fields on the title's line after it, such as a state's dot. */
+  after?: FieldNode[];
   /** Fields under the title, such as "Can be sold" and "Can be purchased". */
   below?: FieldNode[];
 }
@@ -639,6 +652,8 @@ export const CellRulesSchema = z
     tones: z.array(ToneWhenSchema).min(1).optional(),
     bold: ModifierSchema.optional(),
     badge: z.boolean().optional(),
+    widget: z.string().min(1).optional(),
+    options: z.object({ clear: z.boolean().optional() }).catchall(JsonValueSchema).optional(),
     width: z.int().min(1).max(200).optional(),
   })
   .meta({ id: 'CellRules' });
@@ -889,6 +904,8 @@ export const SheetNodeSchema = z.strictObject({
       avatarField: fieldName.optional(),
       placeholder: z.string().optional(),
       above: z.array(FieldNodeSchema).optional(),
+      before: z.array(FieldNodeSchema).optional(),
+      after: z.array(FieldNodeSchema).optional(),
       below: z.array(FieldNodeSchema).optional(),
     })
     .optional(),

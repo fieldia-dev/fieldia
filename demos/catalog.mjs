@@ -102,6 +102,21 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'business',
+    name: 'Business widgets',
+    category: 'fields',
+    query: 'page=business&skin=underline',
+    blurb: 'The widgets an ERP’s screens lean on, on one fit-out task: priority stars and a state’s dot on the title’s line, a live timer, hours as HH:MM, a range of dates, tag colours, values to copy, a PDF shown inline, an analytic distribution, tax totals, payments, and properties the task’s project defines.',
+    howTo: [
+      'Click the third star by the title: the priority goes up; click it again and it goes back to none.',
+      'Open the dot after the title and pick Blocked: it turns red.',
+      'Press Start timer: the time logged starts running; Stop timer and log adds the minutes it ran.',
+      'Pick a range of dates on the calendar: the first day, then the last.',
+      'Change the project: its own properties take the task’s, and Add a property adds one of your own.',
+      'In Invoicing, type a share for an account, and correct a tax amount: the total follows.',
+    ],
+  },
+  {
     id: 'signup',
     name: 'Workshop sign-up',
     category: 'forms',

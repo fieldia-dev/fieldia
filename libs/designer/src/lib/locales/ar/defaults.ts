@@ -30,4 +30,7 @@ export const defaults: DesignerWords['defaults'] = {
   button: 'زر',
   npsStart: 'غير مرجّح إطلاقًا',
   npsEnd: 'مرجّح للغاية',
+  priorityNone: 'عادية',
+  priorityLevels: ['عالية', 'عالية جدًا'],
+  dotStates: ['قيد التنفيذ', 'متوقفة', 'جاهزة'],
 };

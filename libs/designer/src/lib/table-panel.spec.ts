@@ -53,6 +53,29 @@ describe('a field’s tone, in the panel', () => {
   });
 });
 
+describe('a column’s cells drawn by a widget, in the panel', () => {
+  it('offers the widgets that suit the column, and none for one that has none', () => {
+    const { host, row, node, designer } = screen('f-moves');
+    openTab(host, 'Rules');
+    choose(field(row('Line rules'), 'Column'), 'quantity');
+    const shown = field(row('Line rules'), 'Shown as') as HTMLSelectElement;
+    expect([...shown.options].map((o) => o.textContent)).toEqual(['As its kind shows it', 'Hours and minutes', 'Percentage', 'Progress']);
+    choose(shown, 'duration');
+    expect(node('f-moves').cells).toEqual({ quantity: { widget: 'duration' } });
+    designer.undo();
+    expect(node('f-moves').cells).toBeUndefined();
+    choose(field(row('Line rules'), 'Column'), 'product');
+    // Text has no widget of its own: the choice is not shown.
+    expect(field(row('Line rules'), 'Shown as')).toBeUndefined();
+  });
+
+  it('refuses a widget that does not suit the column, saying why in Arabic', () => {
+    const { designer } = screen('f-moves', 'ar');
+    expect(designer.setCellLook('f-moves', 'product', { widget: 'duration' })).toBe(false);
+    expect(designer.getState().issues[0]).toBe('لا يمكن عرض «Product» بشكل ساعات ودقائق: فهو لا يحمل ما يعرضه');
+  });
+});
+
 describe('a table’s own rules, in the panel', () => {
   it('sets a column’s cells by their line, the column hidden by the record, a pill and a width', () => {
     const { host, row, node } = screen('f-moves');

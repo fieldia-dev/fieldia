@@ -268,6 +268,71 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     };
   }
 
+  /**
+   * A field of the page an option names (`endField`, `startField`,
+   * `currencyField`, `dueField`): those the kind can read, none at the start.
+   */
+  function fieldPick(label: string, key: string, suits: (field: Field, name: string, own: string) => boolean): Part {
+    const pick = select(label, []);
+    pick.addEventListener('change', () => designer.setWidgetOptions(id, { [key]: pick.value || null }));
+    return {
+      element: word(label, pick),
+      refresh(page, node) {
+        const fields = Object.entries(page.fields).filter(([name, field]) => name !== node.field && suits(field, name, node.field));
+        const keyOf = JSON.stringify(fields.map(([name, field]) => [name, field.label]));
+        if (pick.dataset['fields'] !== keyOf) {
+          pick.dataset['fields'] = keyOf;
+          pick.replaceChildren(el('option', { value: '' }, w.noField), ...fields.map(([name, field]) => el('option', { value: name }, field.label || name)));
+        }
+        show(pick, node.options?.[key]);
+      },
+    };
+  }
+
+  /** A box whose text, once typed, is a widget's option: a model's name. */
+  function optionText(label: string, key: string, placeholder: string): Part {
+    const input = el('input', { class: 'fd-inline-input', 'aria-label': label, placeholder, autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
+    input.addEventListener('change', () => designer.setWidgetOptions(id, { [key]: input.value.trim() || null }));
+    return { element: word(label, input), refresh: (_page, node) => show(input, node.options?.[key]) };
+  }
+
+  /** A switch that sets a widget's option to true, or takes it away. */
+  function optionToggle(label: string, key: string): Part {
+    const on = toggle(label, (yes) => designer.setWidgetOptions(id, { [key]: yes || null }));
+    return { element: on.element, refresh: (_page, node) => on.button.setAttribute('aria-checked', String(node.options?.[key] === true)) };
+  }
+
+  /** A frame's height in pixels. */
+  function height(): Part {
+    const box = numberBox(w.heightPx, { min: '120', step: '20', placeholder: '480' });
+    box.addEventListener('change', () => {
+      const n = numberOrNull(box.value);
+      designer.setWidgetOptions(id, { height: n !== null && n > 0 ? Math.round(n) : null });
+    });
+    return { element: word(w.heightPx, box), refresh: (_page, node) => show(box, node.options?.['height']) };
+  }
+
+  /** A duration's words after it, inside its box: "hours". */
+  function after(): Part {
+    const input = el('input', { class: 'fd-inline-input fd-inline-unit', 'aria-label': w.unitAfter, placeholder: 'hours', autocomplete: 'off' }) as HTMLInputElement;
+    input.addEventListener('input', () => designer.setWidgetOptions(id, { suffix: input.value.trim() || null }));
+    return { element: word(w.unitAfter, input), refresh: (_page, node) => show(input, node.options?.['suffix']) };
+  }
+
+  /** What a timer's hours are kept in: hours, or minutes as a work order's are. */
+  function keptIn(): Part {
+    const unit = select(w.keptIn, [['', w.inHours], ['minutes', w.inMinutes]]);
+    unit.addEventListener('change', () => designer.setWidgetOptions(id, { unit: unit.value || null }));
+    return { element: word(w.keptIn, unit), refresh: (_page, node) => show(unit, node.options?.['unit']) };
+  }
+
+  /** How many columns properties take, one or two. */
+  function propertyColumns(): Part {
+    const count = select(w.propertyColumns, [['', '1'], ['2', '2']]);
+    count.addEventListener('change', () => designer.setWidgetOptions(id, { columns: count.value ? 2 : null }));
+    return { element: word(w.propertyColumns, count), refresh: (_page, node) => show(count, node.options?.['columns'] === 2 ? '2' : '') };
+  }
+
   const parts: Part[] = [];
   if (kind === 'short-answer' || kind === 'paragraph') parts.push(most());
   if (kind === 'paragraph') parts.push(rows());
@@ -282,6 +347,18 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
   if (kind === 'date-time' || kind === 'time') parts.push(minutes());
   if (kind === 'keywords') parts.push(keywords());
   if (kind === 'progress') parts.push(progress());
+  // The business kinds: the fields they read beside their own, and their looks.
+  const sameType = (field: Field, _name: string, own: string) => field.type === designer.getPage().fields[own]?.type;
+  if (kind === 'duration') parts.push(after());
+  if (kind === 'date-range') parts.push(fieldPick(w.endsOn, 'endField', sameType));
+  if (kind === 'timer') parts.push(fieldPick(w.runsFrom, 'startField', (field) => field.type === 'datetime'), keptIn());
+  if (kind === 'state-dot') parts.push(optionToggle(w.wordsBeside, 'label'));
+  if (kind === 'pdf' || kind === 'embed') parts.push(height());
+  if (kind === 'distribution') parts.push(optionText(w.accountsFrom, 'model', 'account.analytic.account'));
+  if (kind === 'tax-totals' || kind === 'payments') parts.push(fieldPick(w.currencyFrom, 'currencyField', (field) => field.type === 'many2one' || field.type === 'char'));
+  if (kind === 'tax-totals') parts.push(optionToggle(w.taxTyped, 'editable'));
+  if (kind === 'payments') parts.push(fieldPick(w.amountDueFrom, 'dueField', (field) => field.type === 'monetary' || field.type === 'float'));
+  if (kind === 'properties') parts.push(propertyColumns(), optionToggle(w.canAddProperty, 'add'));
   if (!parts.length) return null;
   return { elements: parts.map((p) => p.element), refresh: (page, node) => parts.forEach((p) => p.refresh(page, node)) };
 }

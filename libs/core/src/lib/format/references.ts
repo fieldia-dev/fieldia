@@ -316,6 +316,7 @@ export class ReferenceCheck {
         def.filter.forEach((item, i) => this.checkFilterItem(item, `${path}.filter[${i}]`, { fields, lines }));
       }
       if (def.type === 'selection') def.optionsFrom?.dependsOn?.forEach((other, i) => this.need(other, `${path}.optionsFrom.dependsOn[${i}]`, fields));
+      if (def.type === 'properties') def.definitionsFrom?.dependsOn?.forEach((other, i) => this.need(other, `${path}.definitionsFrom.dependsOn[${i}]`, fields));
       if (def.type === 'properties' && def.definitions) {
         const seen = new Set<string>();
         def.definitions.forEach((property, i) => {
@@ -534,7 +535,7 @@ export class ReferenceCheck {
       this.claim(badge.id, `${path}.badges[${i}]`);
       this.checkModifiers(badge, `${path}.badges[${i}]`);
     });
-    for (const place of ['above', 'below'] as const) {
+    for (const place of ['above', 'before', 'after', 'below'] as const) {
       sheet.title?.[place]?.forEach((node, i) => this.walkNode(node, `${path}.title.${place}[${i}]`));
     }
     sheet.alerts?.forEach((alert, i) => {
@@ -613,6 +614,10 @@ export class ReferenceCheck {
           this.checkModifiers(rules, `${path}.cells.${column}`, ['invisible', 'readonly', 'required', 'bold'], line);
           this.checkModifiers(rules, `${path}.cells.${column}`, ['hidden']);
           rules.tones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.cells.${column}.tones[${i}]`, ['when'], line));
+          // Its widget's options that point at a field: one of the line's.
+          for (const [key, value] of Object.entries(rules.options ?? {})) {
+            if (key.endsWith('Field') && typeof value === 'string') this.need(value, `${path}.cells.${column}.options.${key}`, def.fields);
+          }
         }
         node.rowTones?.forEach((tone, i) => this.checkModifiers(tone, `${path}.rowTones[${i}]`, ['when'], line));
         this.checkModifiers(node, path, ['rowBold'], line);

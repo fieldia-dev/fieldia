@@ -111,7 +111,7 @@ export function shownFields(page: Page): Set<string> {
       for (const [key, value] of Object.entries(part)) if (typeof value === 'string' && (key === 'field' || key.endsWith('Field'))) shown.add(value);
       if (typeof part['message'] === 'string') for (const name of valuesIn(part['message'])) shown.add(name);
     }
-    for (const node of [...(title?.above ?? []), ...(title?.below ?? [])]) shown.add(node.field);
+    for (const node of [...(title?.above ?? []), ...(title?.before ?? []), ...(title?.after ?? []), ...(title?.below ?? [])]) shown.add(node.field);
   }
   // A list names its fields in its columns, order, search, filters and groupings.
   if (root.type === 'list') {

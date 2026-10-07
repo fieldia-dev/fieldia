@@ -29,6 +29,9 @@ export const tables = {
   columnHiddenWhen: 'Column hidden when',
   columnHiddenHint: 'Read on the record, not a line: the whole column goes.',
   badge: 'As a pill',
+  /** A column's cells drawn by a widget: as its type shows them, or one that suits it. */
+  shownAs: 'Shown as',
+  asItsType: 'As its kind shows it',
   width: 'Width, in characters',
   // ---- buttons
   onEachLine: 'On each line',
@@ -59,6 +62,7 @@ export const tables = {
   onlyTables: 'Only a table of lines has rules for its lines, buttons and cards',
   notAColumn: (name: string) => `“${name}” is not a column of this table`,
   widthRange: 'A width is 1 to 200 characters',
+  widgetUnsuited: (column: string, widget: string) => `${column} cannot be shown as ${widget}: it does not hold what that shows`,
   buttonNeedsWords: 'A button needs words',
   // ---- what changed, for the Publish dialog
   tableChanged: (name: string) => `“${name}”: its table’s rules changed`,

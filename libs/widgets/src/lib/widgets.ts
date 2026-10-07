@@ -42,6 +42,17 @@ import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { linksTableWidget } from './links-table';
 import { layOut, limiter } from './choice-rules';
+import { durationWidget, percentageWidget } from './duration';
+import { priorityWidget } from './priority';
+import { stateDotWidget } from './state-dot';
+import { colourWidget } from './colour';
+import { copyWidget } from './copy';
+import { dateRangeWidget } from './date-range';
+import { timerWidget } from './timer';
+import { embedWidget, pdfWidget } from './embed';
+import { distributionWidget } from './distribution';
+import { taxTotalsWidget } from './tax-totals';
+import { paymentsWidget } from './payments';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -595,11 +606,40 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'float.label': labelWidget,
   'monetary.label': labelWidget,
   'float.progressbar': progressbarWidget,
+  // Hours as HH:MM (Flectra's float_time), a fraction as a per cent (its percentage).
+  'float.duration': durationWidget,
+  'float.percentage': percentageWidget,
   'monetary.progressbar': progressbarWidget,
   boolean: checkboxWidget(),
   'boolean.toggle': checkboxWidget('switch'),
   'boolean.tick': checkboxWidget('tick'),
   'boolean.buttons': yesNoWidget,
+  // Stars over a selection, the first option none, or one over a yes or no: Flectra's priority.
+  'boolean.priority': priorityWidget,
+  'selection.priority': priorityWidget,
+  // A grey, red or green dot with a menu of the states: Flectra's state_selection.
+  'selection.dot': stateDotWidget,
+  // A tag colour from Flectra's twelve (0 none … 11), or a colour as #rrggbb.
+  'integer.color': colourWidget,
+  'char.color': colourWidget,
+  // A value and a button that copies it: Flectra's CopyClipboardChar and CopyClipboardText.
+  'char.copy': copyWidget,
+  'text.copy': copyWidget,
+  // One box from → to, a range picked on a calendar, writing two date fields: Flectra's daterange.
+  'date.daterange': dateRangeWidget,
+  'datetime.daterange': dateRangeWidget,
+  // A live timer, the time logged and the time running from a start: Flectra's mrp_timer.
+  'float.timer': timerWidget,
+  'datetime.timer': timerWidget,
+  // A PDF, or a web page at an address, shown inline: Flectra's pdf_viewer and embed_viewer.
+  'binary.pdf': pdfWidget,
+  'char.embed': embedWidget,
+  // Shares of accounts, {accountId: percent}, as lines adding up to 100 %: Flectra's analytic_distribution.
+  'json.distribution': distributionWidget,
+  // Untaxed amount, a line per tax group, the total, from a value the app works out: Flectra's tax_totals.
+  'json.tax-totals': taxTotalsWidget,
+  // Each payment's date and amount, its details in a popover: Flectra's invoice_payments_widget.
+  'json.payments': paymentsWidget,
   selection: selectWidget,
   'selection.radio': choiceGroup('radio'),
   'selection.checkboxes': choiceGroup('checkbox'),

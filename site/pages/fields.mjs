@@ -1,24 +1,24 @@
 import { c, code } from '../layout.mjs';
 
 const ROWS = [
-  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM)', 'size, pattern'],
-  ['text', 'Several lines of text', '', 'size'],
+  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline)', 'size, pattern'],
+  ['text', 'Several lines of text', 'copy', 'size'],
   ['html', 'Formatted text with a toolbar, cleaned of scripts on every change', '', ''],
-  ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label', 'min, max'],
-  ['float', 'A decimal number', 'progressbar, label', 'min, max, digits'],
+  ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label, color (a tag colour, 0 to 11)', 'min, max'],
+  ['float', 'A decimal number', 'progressbar, label, duration (HH:MM), percentage, timer', 'min, max, digits'],
   ['monetary', 'An amount of money', 'progressbar, label', 'currencyField or currency, min, max, digits'],
-  ['boolean', 'Yes or no', 'toggle', ''],
-  ['date', 'A date', '', 'min, max, days'],
-  ['datetime', 'A date and a time', '', 'min, max, days'],
-  ['selection', 'One choice from a list, or several with multiple', 'radio, checkboxes, statusbar', 'options, multiple'],
+  ['boolean', 'Yes or no', 'toggle, priority (one star)', ''],
+  ['date', 'A date', 'daterange', 'min, max, days'],
+  ['datetime', 'A date and a time', 'daterange, timer', 'min, max, days'],
+  ['selection', 'One choice from a list, or several with multiple', 'radio, checkboxes, statusbar, priority (stars), dot (a state’s dot)', 'options, multiple'],
   ['many2one', 'A link to one record of another model, found by typing', 'statusbar', 'relation, filter'],
   ['many2many', 'Links to several records', 'tags, checkboxes', 'relation, filter'],
   ['one2many', 'A table of lines that belong to this record', '', 'relation, fields; columns on the node'],
   ['reference', 'A link to a record of one of several models', '', 'models'],
-  ['binary', 'A file, uploaded or dropped; several with multiple, as a list, thumbnails or cards, each opening in a viewer', '', 'accept, maxSize, multiple, minFiles, maxFiles'],
+  ['binary', 'A file, uploaded or dropped; several with multiple, as a list, thumbnails or cards, each opening in a viewer', 'pdf (shown inline)', 'accept, maxSize, multiple, minFiles, maxFiles'],
   ['image', 'An image, with a preview; several with multiple, as thumbnails, cards or a list', '', 'maxSize, multiple, minFiles, maxFiles'],
-  ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code)', ''],
-  ['properties', 'Extra values, each edited with the field for its type', '', 'definitions'],
+  ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code), address, distribution, tax-totals, payments', ''],
+  ['properties', 'Extra values, each edited with the field for its type', '', 'definitions, definitionsFrom'],
 ];
 
 /** "currencyField or currency" → both names as code; "columns on the node" → the name as code. */
@@ -78,6 +78,19 @@ ${code(
     <tr><td>${c('signature')} on a ${c('binary')}</td><td>${c('color')} (${c('"#1b2a5c"')}) and ${c('penWidth')} (3): the pen; the node's ${c('placeholder')}: words on the blank pad; ${c('footerLabel')}: words kept under it; ${c('upload')}: ${c('true')} lets a picture of a signature be uploaded. Undo takes the last stroke away; a typed name is kept as the value's ${c('text')}</td></tr>
     <tr><td>${c('address')} on a ${c('json')}</td><td>${c('parts')}: which, of ${c('street')}, ${c('line2')}, ${c('city')}, ${c('region')}, ${c('postcode')}, ${c('country')} (the first, third, fifth and sixth unless it says); ${c('requiredParts')}: those that must be filled, each asked for by name; ${c('country')}: the ISO code it starts on. The country is chosen from a list in the page's language and kept as its code, ${c('"EG"')}</td></tr>
     <tr><td>a ${c('one2many')} as a table</td><td>${c('min')}: lines at least, a new table starting with them; ${c('max')}: at most; ${c('addLabel')}: the Add button's words, and ${c('addSectionLabel')}, ${c('addNoteLabel')} those of its section's and note's (the grid takes the three too); ${c('emptyLabel')}: a sentence while there is no line; ${c('confirmDelete')}: ${c('true')} asks before a line with something in it goes. A line moves by its grip, or by Alt+↑/↓ from inside it</td></tr>
+    <tr><td>${c('duration')} on a ${c('float')}</td><td>Hours as HH:MM, typed so or as ${c('6.5')}: Flectra's ${c('float_time')}. ${c('suffix')}: words after it in its box, ${c('"hours"')}</td></tr>
+    <tr><td>${c('percentage')} on a ${c('float')}</td><td>A fraction shown and typed as a per cent: ${c('0.25')} is 25 %, with the field's ${c('digits')} at the most</td></tr>
+    <tr><td>${c('priority')}</td><td>Stars over a ${c('selection')}, the first option none — ${c('"0"')}…${c('"3"')} is three — or one over a ${c('boolean')}; the star picked, clicked again, takes them back to none</td></tr>
+    <tr><td>${c('dot')} on a ${c('selection')}</td><td>A state's dot with a menu of the states. ${c('tones')}: a tone by value, ${c('{ "blocked": "danger" }')} (else ${c('normal')} grey, ${c('blocked')} red, ${c('done')} green, then by place); ${c('label')}: ${c('true')} shows the state's words beside it</td></tr>
+    <tr><td>${c('daterange')} on a ${c('date')} or ${c('datetime')}</td><td>${c('endField')}: the field of the last day. One box from → to, typed in or picked on a calendar</td></tr>
+    <tr><td>${c('timer')}</td><td>On a ${c('float')}: the time logged, ${c('unit')} ${c('"minutes"')} when kept in minutes, and ${c('startField')}, a ${c('datetime')} it runs from while set. On a ${c('datetime')}: the time since it</td></tr>
+    <tr><td>${c('color')}</td><td>On an ${c('integer')}, Flectra's twelve tag colours from a palette (0 none); on a ${c('char')}, a colour as ${c('#rrggbb')}</td></tr>
+    <tr><td>${c('copy')}</td><td>The value and a Copy button</td></tr>
+    <tr><td>${c('pdf')} on a ${c('binary')}, ${c('embed')} on a ${c('char')}</td><td>${c('height')} in pixels (480): the browser's own viewer of a PDF, or of the web page at the address, beside a link to open it in a tab</td></tr>
+    <tr><td>${c('distribution')} on a ${c('json')}</td><td>${c('model')}: the accounts' (${c('"account.analytic.account"')})</td></tr>
+    <tr><td>${c('tax-totals')} on a ${c('json')}</td><td>${c('currencyField')} or ${c('currency')}; ${c('editable')}: ${c('true')} lets the tax amounts be typed while the field is not read-only</td></tr>
+    <tr><td>${c('payments')} on a ${c('json')}</td><td>${c('currencyField')}, ${c('dueField')} (the amount still due), ${c('model')} of a payment's page (${c('"account.payment"')})</td></tr>
+    <tr><td>a ${c('properties')} field</td><td>${c('columns')}: ${c('2')} lays them side by side; ${c('add')}: ${c('true')}, with ${c('definitionsFrom')}, offers Add a property in place</td></tr>
     <tr><td>${c('cards')} on a ${c('one2many')}</td><td>${c('min')}, ${c('max')}, ${c('itemLabel')} (a card's title), ${c('addLabel')}. Each card moves up and down by its arrows, and is copied, answers and all, right after itself</td></tr>
   </tbody>
 </table>
@@ -343,6 +356,46 @@ ${code(
   "tones": [{ "tone": "danger", "when": "deadline_status == 'late'" }, { "tone": "success", "when": "deadline_status == 'ok'" }] }`
 )}
 <p>${c('form.fieldTone(node)')} says the tone and bold now.</p>
+
+<h2 id="business">Business widgets</h2>
+<p>The widgets an ERP's screens lean on, each the Flectra widget it stands for. Open <a href="/demos/plain/?page=business&amp;skin=underline">the business widgets demo</a> to use them all on one task.</p>
+<ul>
+  <li><strong>Priority and a state's dot on the title's line.</strong> A sheet's ${c('title')} takes ${c('before')} and ${c('after')}: fields on its line, as Flectra's ${c('&lt;h1&gt;')} holds the priority star, the name and the state. Each is a field like any other, with its conditions.</li>
+  <li><strong>Hours as HH:MM.</strong> ${c('duration')} writes ${c('6.5')} as ${c('06:30')}, in fields, cells and totals alike.</li>
+  <li><strong>A live timer.</strong> ${c('timer')} ticks each second while its ${c('startField')} is set, on top of the time logged; buttons with ${c('call')} steps start and stop it, the app answering with the new values.</li>
+  <li><strong>A range of dates.</strong> ${c('daterange')} writes two fields: the node's and ${c('endField')}.</li>
+  <li><strong>Structured data the app works out.</strong> ${c('tax-totals')} reads Flectra's own ${c('tax_totals')} — ${c('subtotals')}, ${c('groups_by_subtotal')}, ${c('amount_total')} — or ${c('{ untaxed, groups: [{ name, amount }], total }')}; ${c('payments')} reads Flectra's ${c('invoice_payments_widget')} (${c('{ content: [{ date, amount, name, journal_name, ref, account_payment_id }] }')}) or a plain list; ${c('distribution')} keeps ${c('{ "12": 60, "14": 40 }')}, shares by account id.</li>
+</ul>
+${code(
+  'json',
+  `
+"title": {
+  "field": "name",
+  "before": [{ "type": "field", "id": "f-priority", "field": "priority", "widget": "priority" }],
+  "after": [{ "type": "field", "id": "f-state", "field": "kanban_state", "widget": "dot" }]
+}
+
+{ "type": "field", "id": "f-dates", "field": "request_date_from", "widget": "daterange", "options": { "endField": "request_date_to" } }
+{ "type": "field", "id": "f-duration", "field": "duration", "widget": "timer", "options": { "startField": "timer_start", "unit": "minutes" } }`
+)}
+<p>In a table, a column's cells take a widget of their own, and its options — Flectra's ${c('widget=')} on a list's column: ${c('progressbar')}, ${c('priority')}, ${c('dot')}, ${c('color')} and ${c('timer')} are used in the cell itself, in the plain table and the grid; ${c('duration')} and ${c('percentage')} are typed in the cell as in their field, and say their totals the same way.</p>
+${code(
+  'json',
+  `
+"cells": {
+  "priority": { "widget": "priority" },
+  "allocated_hours": { "widget": "duration" },
+  "progress": { "widget": "progressbar", "options": { "maxField": "allocated_hours" } }
+}`
+)}
+<p><strong>Properties defined by a linked record.</strong> A properties field with ${c('definitionsFrom')} takes its definitions from the app — those its link's record keeps, as a task's properties are its project's — through the data source's ${c('definitions')}, again as the link changes. With ${c('"add": true')} a property is added in place, its name and its kind, and handed to ${c('saveDefinitions')}.</p>
+${code(
+  'json',
+  `
+"task_properties": { "type": "properties", "label": "Properties", "definitionsFrom": { "list": "task_properties", "dependsOn": ["project_id"] } }
+
+{ "type": "field", "id": "f-props", "field": "task_properties", "options": { "columns": 2, "add": true } }`
+)}
 
 <h2 id="code">JSON in a code editor</h2>
 <p>${c('@fieldia/code')} shows a ${c('json')} field in CodeMirror, bundled with the package, so it works offline and loads only where it is used. Valid JSON reaches the form as it is typed; text that is not valid is said so, and the last good value stays.</p>

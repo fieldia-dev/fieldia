@@ -16,7 +16,7 @@ import {
 } from 'ag-grid-community';
 import { fill, isRightToLeft, lineKind, type ButtonNode, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
-import { createWidget, displayValue, drawIcon, openLineDialog, kindTextField, lineForm, WIDGET_LABELS, type WidgetDialogs, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
+import { cellText, createWidget, DRAWN_IN_CELLS, drawIcon, openLineDialog, kindTextField, lineForm, WIDGET_LABELS, type WidgetDialogs, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
 
 /**
  * A one2many as a spreadsheet, on AG Grid. Each cell is edited with the same
@@ -63,6 +63,8 @@ interface CellContext {
   locale?: Locale;
   /** Dialogs a cell's link may open: Search more…, Create and edit…. */
   dialogs?: WidgetDialogs;
+  /** The widgets columns are typed with, by column: hours as HH:MM, a per cent. */
+  looks?: Record<string, { widget: string; options?: FieldNode['options'] }>;
 }
 
 /** The grid's own columns (the drag handle, the delete button) start with two underscores. */
@@ -192,6 +194,59 @@ class BadgeRenderer implements ICellRendererComp<Line> {
     if (tone) this.pill.dataset['tone'] = tone;
     else delete this.pill.dataset['tone'];
     return true;
+  }
+}
+
+/** What a cell drawn by a widget of its own needs: the widget, and whether its line's cell is read-only now. */
+interface DrawnParams {
+  cell: CellContext;
+  subfield: string;
+  look: { widget: string; options?: FieldNode['options'] };
+  locked(line: Line | undefined): boolean;
+}
+
+/**
+ * A cell drawn by a widget of its own — a progress bar, priority stars, a
+ * state's dot — used in the cell itself with a click, as the plain table's
+ * are: the same Fieldia widget, wired to its line.
+ */
+class DrawnRenderer implements ICellRendererComp<Line> {
+  private box!: HTMLElement;
+  private widget: Widget | null = null;
+  init(params: ICellRendererParams<Line> & DrawnParams) {
+    this.box = document.createElement('span');
+    this.box.className = 'fd-grid-drawn';
+    const { cell, subfield, look, data } = params;
+    if (data) {
+      const node: FieldNode = { type: 'field', id: `${cell.fieldId}.${data.key}.${subfield}`, field: subfield, widget: look.widget, ...(look.options ? { options: look.options } : {}) };
+      this.widget = createWidget(
+        { form: lineForm(cell.form, cell.field, data.key), name: subfield, field: cell.defs[subfield] as Field, node, id: `${cell.fieldId}-${data.key}-${subfield}-cell`, document, labels: cell.labels, locale: cell.locale, dialogs: cell.dialogs },
+        cell.registry
+      );
+      // Named by its column, as the plain table's cell is by its hidden label.
+      const named = this.widget.element.matches('[role]') ? this.widget.element : this.widget.element.querySelector('[role]');
+      named?.setAttribute('aria-label', cell.defs[subfield].label);
+      this.box.append(this.widget.element);
+    }
+    this.refresh(params);
+  }
+  getGui() {
+    return this.box;
+  }
+  refresh(params: ICellRendererParams<Line> & DrawnParams) {
+    const { cell, subfield, data } = params;
+    this.widget?.update({
+      value: data?.values[subfield],
+      values: data?.values ?? {},
+      parent: cell.form.getState().values,
+      readonly: params.locked(data),
+      required: false,
+      invalid: false,
+    });
+    return true;
+  }
+  destroy() {
+    this.widget?.destroy?.();
   }
 }
 
@@ -355,7 +410,9 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     const kind = cell.kindOf(params.data);
     const column = (this.column = kind && cell.kinds ? cell.kinds.text : params.subfield);
     const def = (this.def = kind ? kindTextField(cell.defs[column], kind) : cell.defs[column]);
-    const node: FieldNode = { type: 'field', id: `${cell.fieldId}.${key}.${column}`, field: column };
+    // A cell typed in its own way (hours as HH:MM, a per cent) is typed so in its editor too.
+    const look = kind ? undefined : cell.looks?.[column];
+    const node: FieldNode = { type: 'field', id: `${cell.fieldId}.${key}.${column}`, field: column, ...(look ? { widget: look.widget, ...(look.options ? { options: look.options } : {}) } : {}) };
     const context: WidgetContext = {
       form: lineForm(cell.form, cell.field, key),
       name: column,
@@ -573,6 +630,10 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     layer: element,
     locale,
     dialogs,
+    // Columns typed in a widget's own way: drawn ones are used in their cells instead.
+    looks: Object.fromEntries(
+      Object.entries(node.cells ?? {}).flatMap(([column, rules]) => (rules.widget && !DRAWN_IN_CELLS.has(rules.widget) ? [[column, { widget: rules.widget, ...(rules.options ? { options: rules.options } : {}) }]] : []))
+    ),
   };
   installGridStyles(document);
 
@@ -728,7 +789,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
           : // Hidden by its line, the cell stays, blank, so the column lines up.
             ruleOf(p.data, column)?.invisible
             ? ''
-            : displayValue(sub, p.value as Value, p.data?.values ?? {}, locale, form.getState().values),
+            : cellText(sub, p.value as Value, p.data?.values ?? {}, locale, form.getState().values, node.cells?.[column]),
       type: numeric ? 'rightAligned' : undefined,
       // A section or note runs across every column but the delete button.
       colSpan: (p) => (kindOf(p.data) && spans(p.api) ? spanWidth(p.api) : 1),
@@ -758,7 +819,22 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       cellEditor: FieldiaCellEditor,
       cellEditorParams: { cell, subfield: column },
     };
-    if (node.cells?.[column]?.badge) {
+    const drawn = node.cells?.[column]?.widget;
+    if (drawn && DRAWN_IN_CELLS.has(drawn) && drawn !== 'badge') {
+      const look = { widget: drawn, ...(node.cells?.[column]?.options ? { options: node.cells[column].options } : {}) };
+      return {
+        ...base,
+        // Used in the cell itself: no editor opens over it.
+        editable: false,
+        cellRendererSelector: (p) =>
+          kindOf(p.data) || p.node.rowPinned
+            ? undefined
+            : { component: DrawnRenderer, params: { cell, subfield: column, look, locked: (line: Line | undefined) => readonly || locked(sub) || !!ruleOf(line, column)?.readonly } },
+        // Keys inside the widget are its own: its stars' arrows, its menu's.
+        suppressKeyboardEvent: (p) => (p.event.target as Element | null)?.closest?.('.fd-grid-drawn') ? true : keys(p),
+      };
+    }
+    if (node.cells?.[column]?.badge || drawn === 'badge') {
       return {
         ...base,
         cellRendererSelector: (p) => (kindOf(p.data) || p.node.rowPinned ? undefined : { component: BadgeRenderer, params: { toneOf: (line: Line | undefined) => ruleOf(line, column)?.tone ?? null } }),
@@ -1148,7 +1224,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       card.classList.toggle('fd-line-bold', !!state?.bold);
       const shownHere = shownColumns.filter((column) => !state?.cells[column]?.invisible);
       const [first, ...rest] = shownHere;
-      const text = (column: string) => displayValue(def.fields[column], line.values[column] as Value, line.values, locale, parent);
+      const text = (column: string) => cellText(def.fields[column], line.values[column] as Value, line.values, locale, parent, node.cells?.[column]);
       const title = document.createElement(dialogs ? 'button' : 'div');
       title.className = 'fd-line-card-title';
       title.textContent = first ? text(first) || fill(labels.lineN, { n: current.indexOf(line) + 1 }) : '';
@@ -1191,7 +1267,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const items = current.filter((line) => !kindOf(line));
     const sums = totals.filter((column) => !hidden.has(column)).map((column) => {
       const sum = items.reduce((total, line) => total + Number(line.values[column] ?? 0), 0);
-      return `${def.fields[column].label}: ${displayValue(def.fields[column], sum, items[0]?.values ?? {}, locale, parent)}`;
+      return `${def.fields[column].label}: ${cellText(def.fields[column], sum, items[0]?.values ?? {}, locale, parent, node.cells?.[column])}`;
     });
     const total = sums.length ? Object.assign(document.createElement('div'), { className: 'fd-line-cards-total', textContent: sums.join(' · ') }) : null;
     cardList.replaceChildren(...cards, ...(total ? [total] : []));

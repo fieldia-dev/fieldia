@@ -18,6 +18,7 @@ import big from '../../examples/pages/big.page.json';
 import reading from '../../examples/pages/reading.page.json';
 import { customPage } from './custom-page';
 import { real } from './real';
+import { businessData, businessPage } from './business';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -27,6 +28,8 @@ export const pages: Record<string, Page> = {
   customers: customers as Page,
   fields: fields as Page,
   kinds: kinds as Page,
+  // The business widgets on one task: shared/business.ts.
+  business: businessPage,
   order: order as Page,
   rules: rules as Page,
   layout: layout as Page,
@@ -365,6 +368,8 @@ export function sampleDataSource() {
           settings: { badge_readers: 4, visitor_hours: '08:00-18:00', zones: ['reception', 'open-plan'] },
           door_schedule: { weekdays: '07:00-20:00', weekends: 'closed', holidays: ['2026-10-06'] },
           extra: { floor: 12, lift_access: 'Freight lift, 08:00-10:00', parking: 6, sprinklers: true, zone: 'b' },
+          time_on_site: 6.5,
+          margin: 0.18,
         },
       },
     },
@@ -399,7 +404,8 @@ function withReal(options: Parameters<typeof createMemoryDataSource>[0] & object
   };
   return {
     ...options,
-    records: merge(options.records, real.records),
+    records: merge(merge(options.records, real.records), businessData.records),
+    definitions: { ...options.definitions, ...businessData.definitions },
     onchange: merge(options.onchange, real.onchange),
     warnings: merge(options.warnings, real.warnings),
     lists: { ...options.lists, ...real.lists },

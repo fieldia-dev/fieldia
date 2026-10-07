@@ -39,7 +39,7 @@ describe('a new page and its parts, in Arabic', () => {
     const designer = arabic(blankPage('sheet', 'عميل', { locale: 'ar' }), { visits: { type: 'integer', label: 'Visits' } });
     const id = designer.addModelField('visits') as string;
     expect(designer.changeKind(id, 'email')).toBe(false);
-    expect(designer.getState().issues[0]).toBe('«\u2068Visits\u2069» في نموذج البيانات من نوع: عدد صحيح، لذا لا يُعرض إلا على هيئة: تقييم أو مقياس خطي أو رقم أو شريط تمرير أو نسبة الإنجاز');
+    expect(designer.getState().issues[0]).toBe('«\u2068Visits\u2069» في نموذج البيانات من نوع: عدد صحيح، لذا لا يُعرض إلا على هيئة: تقييم أو مقياس خطي أو رقم أو شريط تمرير أو نسبة الإنجاز أو لون');
   });
 });
 

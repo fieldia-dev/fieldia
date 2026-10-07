@@ -1392,6 +1392,9 @@
               "items": {
                 "$ref": "#/$defs/PropertyDefinition"
               }
+            },
+            "definitionsFrom": {
+              "$ref": "#/$defs/DefinitionsFrom"
             }
           },
           "required": [
@@ -3304,6 +3307,9 @@
               "items": {
                 "$ref": "#/$defs/PropertyDefinition"
               }
+            },
+            "definitionsFrom": {
+              "$ref": "#/$defs/DefinitionsFrom"
             }
           },
           "required": [
@@ -3395,6 +3401,27 @@
       ],
       "additionalProperties": false
     },
+    "DefinitionsFrom": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dependsOn": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          }
+        }
+      },
+      "required": [
+        "list"
+      ],
+      "additionalProperties": false
+    },
     "LineKinds": {
       "type": "object",
       "properties": {
@@ -3473,6 +3500,858 @@
               "type": "string"
             },
             "above": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "field"
+                  },
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                  },
+                  "field": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "widget": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "clear": {
+                        "type": "boolean"
+                      }
+                    },
+                    "additionalProperties": {
+                      "$ref": "#/$defs/JsonValue"
+                    }
+                  },
+                  "placeholder": {
+                    "type": "string"
+                  },
+                  "help": {
+                    "type": "string"
+                  },
+                  "colspan": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 12
+                  },
+                  "columns": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                    }
+                  },
+                  "totals": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                    }
+                  },
+                  "optionalColumns": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                    },
+                    "additionalProperties": {
+                      "type": "string",
+                      "enum": [
+                        "show",
+                        "hide"
+                      ]
+                    }
+                  },
+                  "cells": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                    },
+                    "additionalProperties": {
+                      "$ref": "#/$defs/CellRules"
+                    }
+                  },
+                  "rowTones": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ToneWhen"
+                    }
+                  },
+                  "rowBold": {
+                    "$ref": "#/$defs/Modifier"
+                  },
+                  "rowButtons": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "button"
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "steps": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ActionStep"
+                          }
+                        },
+                        "action": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "params": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "$ref": "#/$defs/JsonValue"
+                          }
+                        },
+                        "style": {
+                          "type": "string",
+                          "enum": [
+                            "primary",
+                            "secondary",
+                            "danger",
+                            "link"
+                          ]
+                        },
+                        "confirm": {
+                          "type": "string"
+                        },
+                        "icon": {
+                          "type": "string"
+                        },
+                        "hotkey": {
+                          "type": "string",
+                          "pattern": "^(shift\\+)?[a-z0-9]$"
+                        },
+                        "colspan": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 12
+                        },
+                        "invisible": {
+                          "$ref": "#/$defs/Modifier"
+                        },
+                        "roles": {
+                          "$ref": "#/$defs/Roles"
+                        },
+                        "hideOn": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ScreenWidth"
+                          }
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id",
+                        "label"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "selectedButtons": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "button"
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "steps": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ActionStep"
+                          }
+                        },
+                        "action": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "params": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "$ref": "#/$defs/JsonValue"
+                          }
+                        },
+                        "style": {
+                          "type": "string",
+                          "enum": [
+                            "primary",
+                            "secondary",
+                            "danger",
+                            "link"
+                          ]
+                        },
+                        "confirm": {
+                          "type": "string"
+                        },
+                        "icon": {
+                          "type": "string"
+                        },
+                        "hotkey": {
+                          "type": "string",
+                          "pattern": "^(shift\\+)?[a-z0-9]$"
+                        },
+                        "colspan": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 12
+                        },
+                        "invisible": {
+                          "$ref": "#/$defs/Modifier"
+                        },
+                        "roles": {
+                          "$ref": "#/$defs/Roles"
+                        },
+                        "hideOn": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ScreenWidth"
+                          }
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id",
+                        "label"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "controlButtons": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "button"
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "steps": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ActionStep"
+                          }
+                        },
+                        "action": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "params": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "$ref": "#/$defs/JsonValue"
+                          }
+                        },
+                        "style": {
+                          "type": "string",
+                          "enum": [
+                            "primary",
+                            "secondary",
+                            "danger",
+                            "link"
+                          ]
+                        },
+                        "confirm": {
+                          "type": "string"
+                        },
+                        "icon": {
+                          "type": "string"
+                        },
+                        "hotkey": {
+                          "type": "string",
+                          "pattern": "^(shift\\+)?[a-z0-9]$"
+                        },
+                        "colspan": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 12
+                        },
+                        "invisible": {
+                          "$ref": "#/$defs/Modifier"
+                        },
+                        "roles": {
+                          "$ref": "#/$defs/Roles"
+                        },
+                        "hideOn": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ScreenWidth"
+                          }
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id",
+                        "label"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "lineOpens": {
+                    "type": "string",
+                    "enum": [
+                      "fields",
+                      "record"
+                    ]
+                  },
+                  "cards": {
+                    "type": "string",
+                    "enum": [
+                      "narrow",
+                      "always"
+                    ]
+                  },
+                  "fit": {
+                    "type": "string",
+                    "const": "content"
+                  },
+                  "editMode": {
+                    "type": "string",
+                    "enum": [
+                      "cell",
+                      "row"
+                    ]
+                  },
+                  "labels": {
+                    "type": "string",
+                    "enum": [
+                      "above",
+                      "beside",
+                      "hidden"
+                    ]
+                  },
+                  "helpShown": {
+                    "$ref": "#/$defs/HelpShown"
+                  },
+                  "tones": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ToneWhen"
+                    }
+                  },
+                  "bold": {
+                    "$ref": "#/$defs/Modifier"
+                  },
+                  "validate": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/AnswerRule"
+                    }
+                  },
+                  "invisible": {
+                    "$ref": "#/$defs/Modifier"
+                  },
+                  "roles": {
+                    "$ref": "#/$defs/Roles"
+                  },
+                  "hideOn": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ScreenWidth"
+                    }
+                  },
+                  "readonly": {
+                    "$ref": "#/$defs/Modifier"
+                  },
+                  "required": {
+                    "$ref": "#/$defs/Modifier"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "field"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "before": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "field"
+                  },
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                  },
+                  "field": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "widget": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "clear": {
+                        "type": "boolean"
+                      }
+                    },
+                    "additionalProperties": {
+                      "$ref": "#/$defs/JsonValue"
+                    }
+                  },
+                  "placeholder": {
+                    "type": "string"
+                  },
+                  "help": {
+                    "type": "string"
+                  },
+                  "colspan": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 12
+                  },
+                  "columns": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                    }
+                  },
+                  "totals": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                    }
+                  },
+                  "optionalColumns": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                    },
+                    "additionalProperties": {
+                      "type": "string",
+                      "enum": [
+                        "show",
+                        "hide"
+                      ]
+                    }
+                  },
+                  "cells": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                    },
+                    "additionalProperties": {
+                      "$ref": "#/$defs/CellRules"
+                    }
+                  },
+                  "rowTones": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ToneWhen"
+                    }
+                  },
+                  "rowBold": {
+                    "$ref": "#/$defs/Modifier"
+                  },
+                  "rowButtons": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "button"
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "steps": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ActionStep"
+                          }
+                        },
+                        "action": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "params": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "$ref": "#/$defs/JsonValue"
+                          }
+                        },
+                        "style": {
+                          "type": "string",
+                          "enum": [
+                            "primary",
+                            "secondary",
+                            "danger",
+                            "link"
+                          ]
+                        },
+                        "confirm": {
+                          "type": "string"
+                        },
+                        "icon": {
+                          "type": "string"
+                        },
+                        "hotkey": {
+                          "type": "string",
+                          "pattern": "^(shift\\+)?[a-z0-9]$"
+                        },
+                        "colspan": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 12
+                        },
+                        "invisible": {
+                          "$ref": "#/$defs/Modifier"
+                        },
+                        "roles": {
+                          "$ref": "#/$defs/Roles"
+                        },
+                        "hideOn": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ScreenWidth"
+                          }
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id",
+                        "label"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "selectedButtons": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "button"
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "steps": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ActionStep"
+                          }
+                        },
+                        "action": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "params": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "$ref": "#/$defs/JsonValue"
+                          }
+                        },
+                        "style": {
+                          "type": "string",
+                          "enum": [
+                            "primary",
+                            "secondary",
+                            "danger",
+                            "link"
+                          ]
+                        },
+                        "confirm": {
+                          "type": "string"
+                        },
+                        "icon": {
+                          "type": "string"
+                        },
+                        "hotkey": {
+                          "type": "string",
+                          "pattern": "^(shift\\+)?[a-z0-9]$"
+                        },
+                        "colspan": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 12
+                        },
+                        "invisible": {
+                          "$ref": "#/$defs/Modifier"
+                        },
+                        "roles": {
+                          "$ref": "#/$defs/Roles"
+                        },
+                        "hideOn": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ScreenWidth"
+                          }
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id",
+                        "label"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "controlButtons": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "button"
+                        },
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "steps": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ActionStep"
+                          }
+                        },
+                        "action": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "params": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "additionalProperties": {
+                            "$ref": "#/$defs/JsonValue"
+                          }
+                        },
+                        "style": {
+                          "type": "string",
+                          "enum": [
+                            "primary",
+                            "secondary",
+                            "danger",
+                            "link"
+                          ]
+                        },
+                        "confirm": {
+                          "type": "string"
+                        },
+                        "icon": {
+                          "type": "string"
+                        },
+                        "hotkey": {
+                          "type": "string",
+                          "pattern": "^(shift\\+)?[a-z0-9]$"
+                        },
+                        "colspan": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 12
+                        },
+                        "invisible": {
+                          "$ref": "#/$defs/Modifier"
+                        },
+                        "roles": {
+                          "$ref": "#/$defs/Roles"
+                        },
+                        "hideOn": {
+                          "minItems": 1,
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/$defs/ScreenWidth"
+                          }
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id",
+                        "label"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "lineOpens": {
+                    "type": "string",
+                    "enum": [
+                      "fields",
+                      "record"
+                    ]
+                  },
+                  "cards": {
+                    "type": "string",
+                    "enum": [
+                      "narrow",
+                      "always"
+                    ]
+                  },
+                  "fit": {
+                    "type": "string",
+                    "const": "content"
+                  },
+                  "editMode": {
+                    "type": "string",
+                    "enum": [
+                      "cell",
+                      "row"
+                    ]
+                  },
+                  "labels": {
+                    "type": "string",
+                    "enum": [
+                      "above",
+                      "beside",
+                      "hidden"
+                    ]
+                  },
+                  "helpShown": {
+                    "$ref": "#/$defs/HelpShown"
+                  },
+                  "tones": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ToneWhen"
+                    }
+                  },
+                  "bold": {
+                    "$ref": "#/$defs/Modifier"
+                  },
+                  "validate": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/AnswerRule"
+                    }
+                  },
+                  "invisible": {
+                    "$ref": "#/$defs/Modifier"
+                  },
+                  "roles": {
+                    "$ref": "#/$defs/Roles"
+                  },
+                  "hideOn": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/ScreenWidth"
+                    }
+                  },
+                  "readonly": {
+                    "$ref": "#/$defs/Modifier"
+                  },
+                  "required": {
+                    "$ref": "#/$defs/Modifier"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "field"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "after": {
               "type": "array",
               "items": {
                 "type": "object",
@@ -4931,6 +5810,21 @@
         },
         "badge": {
           "type": "boolean"
+        },
+        "widget": {
+          "type": "string",
+          "minLength": 1
+        },
+        "options": {
+          "type": "object",
+          "properties": {
+            "clear": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
         },
         "width": {
           "type": "integer",
