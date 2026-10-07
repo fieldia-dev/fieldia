@@ -100,7 +100,10 @@ export const SHEET_CSS = /* css */ `
 .fd-form .fd-oneline-row > .fd-field > * { grid-column: auto !important; }
 .fd-oneline-row > .fd-field:not([data-labels="beside"]):not([data-labels="above"]) > .fd-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .fd-oneline-row > .fd-field > :is(.fd-error, .fd-warning) { flex-basis: 100%; }
-.fd-oneline-row .fd-input { width: 12em; }
+.fd-oneline-row .fd-input { width: 12em; max-width: 100%; }
+/* On a narrow screen each part gives way to the row's width rather than run past it. */
+.fd-form .fd-oneline-row > .fd-field { max-width: 100%; }
+.fd-oneline-row > .fd-field > * { max-width: 100%; min-width: 0; }
 .fd-oneline-row > .fd-field:is([data-type="many2one"], [data-type="reference"]) .fd-input { width: 15em; }
 .fd-oneline-row > .fd-field:is([data-type="integer"], [data-type="float"]) .fd-input { width: 7em; }
 .fd-oneline-row > .fd-field[data-type="monetary"] .fd-input { width: 8.5em; }
