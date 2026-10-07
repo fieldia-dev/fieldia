@@ -115,7 +115,7 @@ describe('the grid', () => {
     const page = JSON.parse(JSON.stringify(order)) as Page;
     const node = (page.layout as unknown as { children: { children: Record<string, unknown>[] }[] }).children[0].children[1];
     node['cells'] = { delivery: { options: { weekNumbers: true } } };
-    const { box, api, form } = await mount(page);
+    const { api, form } = await mount(page);
     api!.startEditingCell({ rowIndex: 1, colKey: 'delivery' });
     await frames();
     // Over its cell, so its month has room: a popup, as a link's list is.
