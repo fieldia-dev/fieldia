@@ -12,6 +12,24 @@ export const GRID_CSS = /* css */ `
 .fd-grid-lines .fd-grid-tools { padding: 0; display: flex; align-items: center; justify-content: center; }
 /* A cell the form found wrong: an inset red edge, so the row keeps its height. */
 .fd-grid-lines .ag-cell-inline-editing.fd-grid-invalid, .ag-popup-editor .fd-grid-editor.fd-grid-editor-invalid { border-color: var(--fd-error) !important; }
+.fd-grid-lines .fd-tone-info { --fd-line-tone: var(--fd-info); --fd-line-tone-soft: var(--fd-info-soft); }
+.fd-grid-lines .fd-tone-success { --fd-line-tone: var(--fd-success); --fd-line-tone-soft: var(--fd-success-soft); }
+.fd-grid-lines .fd-tone-warning { --fd-line-tone: var(--fd-warning); --fd-line-tone-soft: var(--fd-warning-soft); }
+.fd-grid-lines .fd-tone-danger { --fd-line-tone: var(--fd-error); --fd-line-tone-soft: var(--fd-error-soft); }
+.fd-grid-lines .fd-tone-muted { --fd-line-tone: var(--fd-muted); --fd-line-tone-soft: color-mix(in srgb, var(--fd-muted) 16%, transparent); }
+.fd-grid-lines :is(.ag-row[class*="fd-tone-"] .ag-cell, .ag-cell[class*="fd-tone-"]) { color: var(--fd-line-tone); }
+.fd-grid-lines :is(.fd-line-bold .ag-cell, .ag-cell.fd-cell-bold) { font-weight: 600; }
+.fd-grid-badge { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; line-height: 20px; font-weight: 500; color: var(--fd-muted); background: color-mix(in srgb, var(--fd-muted) 14%, transparent); }
+.fd-grid-badge[data-tone] { color: var(--fd-line-tone); background: var(--fd-line-tone-soft); }
+.fd-grid-badge[data-tone="info"] { --fd-line-tone: var(--fd-info); --fd-line-tone-soft: var(--fd-info-soft); }
+.fd-grid-badge[data-tone="success"] { --fd-line-tone: var(--fd-success); --fd-line-tone-soft: var(--fd-success-soft); }
+.fd-grid-badge[data-tone="warning"] { --fd-line-tone: var(--fd-warning); --fd-line-tone-soft: var(--fd-warning-soft); }
+.fd-grid-badge[data-tone="danger"] { --fd-line-tone: var(--fd-error); --fd-line-tone-soft: var(--fd-error-soft); }
+.fd-grid-row-buttons { display: inline-flex; gap: 2px; }
+.fd-grid-row-buttons .fd-line-button { padding: 2px 6px; font-size: 12.5px; }
+.fd-grid-row-buttons .fd-line-button-icon { padding: 4px; color: var(--fd-muted); }
+.fd-grid-row-buttons .fd-line-button-icon:hover { color: var(--fd-accent); }
+.fd-grid-row-buttons svg { width: 15px; height: 15px; display: block; }
 .fd-grid-lines .ag-cell.fd-grid-invalid { box-shadow: inset 0 0 0 1px var(--fd-error); background: var(--fd-error-soft); }
 .fd-grid-lines .fd-line-open { border: none; background: none; cursor: pointer; color: var(--fd-accent); font-size: 14px; padding: 4px 6px; border-radius: 4px; }
 .fd-grid-lines .fd-line-open:hover { background: var(--fd-page); }

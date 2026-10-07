@@ -14,9 +14,9 @@ import {
   type IHeaderParams,
   type SuppressKeyboardEventParams,
 } from 'ag-grid-community';
-import { fill, lineKind, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type Value, type Values } from '@fieldia/core';
+import { fill, isRightToLeft, lineKind, type ButtonNode, type Field, type Locale, type FieldNode, type Form, type Line, type LineField, type LineKinds, type LineState, type Value, type Values } from '@fieldia/core';
 import { installGridStyles } from './styles';
-import { createWidget, displayValue, kindTextField, lineForm, WIDGET_LABELS, type WidgetDialogs, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
+import { createWidget, displayValue, drawIcon, kindTextField, lineForm, WIDGET_LABELS, type WidgetDialogs, type Widget, type WidgetContext, type WidgetFactory, type WidgetLabels } from '@fieldia/widgets';
 
 /**
  * A one2many as a spreadsheet, on AG Grid. Each cell is edited with the same
@@ -37,6 +37,9 @@ export function gridApiOf(element: HTMLElement): GridApi<Line> | undefined {
 }
 
 /** Everything a cell needs, handed to AG Grid's editors and renderers. */
+/** The tones a line or a cell can take. */
+const TONES = ['info', 'success', 'warning', 'danger', 'muted'] as const;
+
 interface CellContext {
   form: Form;
   field: string;
@@ -115,6 +118,79 @@ class OpenRenderer implements ICellRendererComp<Line> {
     return this.button;
   }
   refresh() {
+    return true;
+  }
+}
+
+/** A line's own buttons, each shown by its condition on the line; a press runs with the line. */
+class RowButtonsRenderer implements ICellRendererComp<Line> {
+  private box!: HTMLElement;
+  private params!: ICellRendererParams<Line> & RowButtonsParams;
+  init(params: ICellRendererParams<Line> & RowButtonsParams) {
+    this.params = params;
+    this.box = document.createElement('span');
+    this.box.className = 'fd-grid-row-buttons';
+    for (const own of params.buttons) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      const icon = drawIcon(document, own.icon);
+      button.className = `fd-button fd-button-link fd-line-button${icon ? ' fd-line-button-icon' : ''}`;
+      button.dataset['rowButton'] = own.id;
+      button.setAttribute('aria-label', own.label);
+      button.title = own.label;
+      button.append(icon ?? own.label);
+      button.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        const key = this.params.data?.key;
+        if (!key || button.hasAttribute('aria-busy')) return;
+        button.setAttribute('aria-busy', 'true');
+        try {
+          await params.press(own.id, key);
+        } finally {
+          button.removeAttribute('aria-busy');
+        }
+      });
+      this.box.append(button);
+    }
+    this.show();
+  }
+  private show() {
+    const state = this.params.data ? this.params.stateOf(this.params.data.key) : undefined;
+    for (const button of this.box.querySelectorAll<HTMLButtonElement>('button')) button.hidden = !state?.buttons[button.dataset['rowButton'] as string];
+  }
+  getGui() {
+    return this.box;
+  }
+  refresh(params: ICellRendererParams<Line> & RowButtonsParams) {
+    this.params = params;
+    this.show();
+    return true;
+  }
+}
+
+interface RowButtonsParams {
+  buttons: readonly ButtonNode[];
+  stateOf(key: string): LineState | undefined;
+  press(id: string, key: string): Promise<unknown>;
+}
+
+/** A choice drawn as a pill in the tone its rules give it: Flectra's widget="badge". */
+class BadgeRenderer implements ICellRendererComp<Line> {
+  private pill!: HTMLElement;
+  init(params: ICellRendererParams<Line> & { toneOf(line: Line | undefined): string | null }) {
+    this.pill = document.createElement('span');
+    this.refresh(params);
+  }
+  getGui() {
+    return this.pill;
+  }
+  refresh(params: ICellRendererParams<Line> & { toneOf(line: Line | undefined): string | null }) {
+    const text = params.valueFormatted ?? String(params.value ?? '');
+    this.pill.className = text ? 'fd-grid-badge' : '';
+    this.pill.textContent = text;
+    const tone = params.toneOf(params.data);
+    if (tone) this.pill.dataset['tone'] = tone;
+    else delete this.pill.dataset['tone'];
     return true;
   }
 }
@@ -375,6 +451,16 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   // The fields that say what a line is and keep the lines' order never show as columns.
   const columns = (node.columns ?? Object.keys(def.fields)).filter((column) => def.fields[column] && column !== kinds?.field && column !== sequence);
   const kindOf = (line: Line | undefined) => (line ? lineKind(def, line.values) : null);
+  // Its columns run the way the page reads; a column held at the start or the end of the line is held at that side.
+  const rtl = !!locale && isRightToLeft(locale);
+  const lineStart = rtl ? 'right' : 'left';
+  const lineEnd = rtl ? 'left' : 'right';
+  // The table's own rules, read by the form for each line as the form changes; a table with none asks nothing.
+  const ruled = !!(node.cells || node.rowTones || node.rowBold !== undefined || node.rowButtons);
+  let lineStates = new Map<string, LineState>();
+  const ruleOf = (line: Line | undefined, column: string) => (line ? lineStates.get(line.key)?.cells[column] : undefined);
+  /** Columns hidden by the record now. */
+  let ruleHidden = new Set<string>();
   // Columns a person may hide or show, and where their choices (and widths, and order) are kept.
   const optional = node.optionalColumns ?? {};
   const optionalIds = columns.filter((column) => column in optional);
@@ -510,7 +596,12 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         return kinds && spans(p.api) ? p.data?.values[kinds.text] : null;
       },
       valueFormatter: (p) =>
-        kindOf(p.data) || (p.node?.rowPinned && !totals.includes(column)) ? String(p.value ?? '') : displayValue(sub, p.value as Value, p.data?.values ?? {}, locale),
+        kindOf(p.data) || (p.node?.rowPinned && !totals.includes(column))
+          ? String(p.value ?? '')
+          : // Hidden by its line, the cell stays, blank, so the column lines up.
+            ruleOf(p.data, column)?.invisible
+            ? ''
+            : displayValue(sub, p.value as Value, p.data?.values ?? {}, locale),
       type: numeric ? 'rightAligned' : undefined,
       // A section or note runs across every column but the delete button.
       colSpan: (p) => (kindOf(p.data) && spans(p.api) ? spanWidth(p.api) : 1),
@@ -519,6 +610,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       cellClassRules: {
         'fd-grid-kind-text': (p) => !!kindOf(p.data),
         'fd-grid-invalid': (p) => !p.node.rowPinned && !!problemAt(p.data, column, p.api),
+        'fd-cell-bold': (p) => !!ruleOf(p.data, column)?.bold,
+        ...Object.fromEntries(TONES.map((tone) => [`fd-tone-${tone}`, (p: { data: Line | undefined }) => ruleOf(p.data, column)?.tone === tone])),
       },
       tooltipValueGetter: (p) => (p.node?.rowPinned ? undefined : problemAt(p.data, column, p.api)),
       suppressKeyboardEvent: keys,
@@ -526,14 +619,22 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       minWidth: wide ? 140 : sub.type === 'monetary' ? 150 : 96,
       flex: wide ? 2 : sub.type === 'monetary' ? 1.3 : 1,
       hide: optional[column] === 'hide',
+      ...(node.cells?.[column]?.width ? { width: node.cells[column].width! * 8 + 32, flex: 0 } : {}),
       editable: (p) => {
         if (readonly || p.node.rowPinned) return false;
         if (kindOf(p.data)) return spans(p.api);
-        return sub.type !== 'boolean' && EDITABLE.has(sub.type) && !locked(sub);
+        const rules = ruleOf(p.data, column);
+        return sub.type !== 'boolean' && EDITABLE.has(sub.type) && !locked(sub) && !rules?.readonly && !rules?.invisible;
       },
       cellEditor: FieldiaCellEditor,
       cellEditorParams: { cell, subfield: column },
     };
+    if (node.cells?.[column]?.badge) {
+      return {
+        ...base,
+        cellRendererSelector: (p) => (kindOf(p.data) || p.node.rowPinned ? undefined : { component: BadgeRenderer, params: { toneOf: (line: Line | undefined) => ruleOf(line, column)?.tone ?? null } }),
+      };
+    }
     if (sub.type === 'boolean') {
       return {
         ...base,
@@ -558,7 +659,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       resizable: false,
       sortable: false,
       suppressMovable: true,
-      lockPosition: 'left',
+      lockPosition: lineStart,
       suppressKeyboardEvent: keys,
     });
   }
@@ -573,6 +674,24 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     // Written in one go, so the form recalculates once.
     form.setValue(name, lines().map((l) => (l.key === line.key ? { ...l, values: { ...l.values, ...values } } : l)));
   };
+  if (node.rowButtons?.length) {
+    columnDefs.push({
+      colId: '__row_buttons',
+      headerName: '',
+      // An icon takes a small square; words, what they need.
+      width: 16 + node.rowButtons.reduce((total, b) => total + (b.icon ? 28 : 16 + b.label.length * 7), 0),
+      cellClass: 'fd-grid-tools',
+      resizable: false,
+      sortable: false,
+      suppressMovable: true,
+      lockPosition: lineEnd,
+      cellRendererSelector: (p) =>
+        p.node.rowPinned || kindOf(p.data)
+          ? undefined
+          : { component: RowButtonsRenderer, params: { buttons: node.rowButtons, stateOf: (key: string) => lineStates.get(key), press: (id: string, key: string) => form.runRowAction(node.id, id, key) } },
+      suppressKeyboardEvent: keys,
+    });
+  }
   if (dialogs) {
     columnDefs.push({
       colId: '__open',
@@ -584,7 +703,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       resizable: false,
       sortable: false,
       suppressMovable: true,
-      lockPosition: 'right',
+      lockPosition: lineEnd,
       cellRendererSelector: (p) => (p.node.rowPinned || kindOf(p.data) ? undefined : { component: OpenRenderer, params: { open: openLine, label: labels.openLine } }),
       suppressKeyboardEvent: keys,
     });
@@ -593,7 +712,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   columnDefs.push({
     colId: '__delete',
     headerName: '',
-    lockPosition: 'right',
+    lockPosition: lineEnd,
     ...(optionalIds.length ? { headerComponent: ChooserHeader, headerComponentParams: { chooser } } : {}),
     width: 44,
     minWidth: 44,
@@ -623,6 +742,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         headerHeight: HEADER_HEIGHT,
       }),
       columnDefs,
+      enableRtl: rtl,
       rowData: lines(),
       pinnedBottomRowData: totals.length ? [totalsRow(lines())] : undefined,
       getRowId: (p) => p.data.key,
@@ -631,6 +751,13 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         const kind = kindOf(p.data);
         return kind ? `fd-grid-${kind}` : undefined;
       },
+      // A line's tone and bold, read again whenever its rules may have changed.
+      rowClassRules: ruled
+        ? {
+            'fd-line-bold': (p) => !!(p.data && lineStates.get(p.data.key)?.bold),
+            ...Object.fromEntries(TONES.map((tone) => [`fd-tone-${tone}`, (p: { data: Line | undefined }) => !!p.data && lineStates.get(p.data.key)?.tone === tone])),
+          }
+        : undefined,
       domLayout: 'autoHeight',
       // Lines have few columns: all of them are drawn.
       suppressColumnVirtualisation: true,
@@ -689,14 +816,19 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   function remember(source: string) {
     // A grid taking itself apart also sends column events: they are not choices.
     if (automatic.has(source) || !preferences || api.isDestroyed()) return;
-    const state = (api.getColumnState() ?? []).map(({ colId, width, flex, hide }) => ({ colId, width: width ?? null, flex: flex ?? null, hide: !!hide }));
+    // A column the record hides is kept as the person last had it: the rule's hiding is not their choice.
+    const state = (api.getColumnState() ?? []).map(({ colId, width, flex, hide }) => ({ colId, width: width ?? null, flex: flex ?? null, hide: ruleHidden.has(colId) ? personHidden.has(colId) : !!hide }));
     preferences.set(columnsKey, state);
   }
+  /** The columns the person hid with the chooser, or the page starts hidden. */
+  const personHidden = new Set(optionalIds.filter((column) => optional[column] === 'hide'));
+  const hiddenByPerson = (column: string) => personHidden.has(column);
   const saved = preferences?.get(columnsKey);
   if (Array.isArray(saved)) {
     const known = new Set(api.getColumns()?.map((c) => c.getColId()));
     const state = (saved as { colId?: unknown }[]).filter((s) => typeof s?.colId === 'string' && known.has(s.colId)) as ColumnState[];
     api.applyColumnState({ state, applyOrder: true });
+    for (const s of state) if (optionalIds.includes(s.colId)) (s.hide ? personHidden.add(s.colId) : personHidden.delete(s.colId));
   }
 
   // ---- the column chooser: a short list of the columns a person may hide ----
@@ -717,13 +849,18 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     if (!chooserBox.hidden) return closeChooser(fromKeyboard);
     opener = button;
     chooserBox.replaceChildren(
-      ...optionalIds.map((column) => {
+      // A column the record hides now is not the person's to show.
+      ...optionalIds.filter((column) => !ruleHidden.has(column)).map((column) => {
         const label = document.createElement('label');
         const box = document.createElement('input');
         box.type = 'checkbox';
         box.className = 'fd-checkbox';
         box.checked = api.getColumn(column)?.isVisible() ?? false;
-        box.addEventListener('change', () => api.setColumnsVisible([column], box.checked));
+        box.addEventListener('change', () => {
+          if (box.checked) personHidden.delete(column);
+          else personHidden.add(column);
+          api.setColumnsVisible([column], box.checked);
+        });
         label.append(box, document.createTextNode(def.fields[column].label));
         return label;
       })
@@ -847,6 +984,20 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
         api.setGridOption('rowData', current);
         fitHeight(current.length);
         if (totals.length) api.setGridOption('pinnedBottomRowData', [totalsRow(current)]);
+      }
+      // The table's own rules as the form has them now: redrawn only when they changed.
+      if (ruled) {
+        const states = new Map(current.filter((line) => !kindOf(line)).map((line) => [line.key, form.lineState(node.id, line.key)] as const));
+        const hidden = new Set(columns.filter((column) => form.columnHidden(node.id, column)));
+        const before = JSON.stringify([[...lineStates], [...ruleHidden]]);
+        lineStates = states;
+        if (JSON.stringify([[...states], [...hidden]]) !== before) {
+          const turned = columns.filter((column) => hidden.has(column) !== ruleHidden.has(column));
+          ruleHidden = hidden;
+          for (const column of turned) api.setColumnsVisible([column], !hidden.has(column) && !hiddenByPerson(column));
+          api.refreshCells({ force: true, suppressFlash: true });
+          api.redrawRows();
+        }
       }
       const found = readonly ? [] : lineProblems();
       const signature = found.map((p) => `${p.index}.${p.column}:${p.message}`).join('|');
