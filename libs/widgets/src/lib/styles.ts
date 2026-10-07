@@ -639,14 +639,15 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-ribbon-frame { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
 .fd-ribbon {
   position: absolute; inset-block-start: 18px; inset-inline-end: -42px; transform: rotate(45deg); width: 160px;
-  text-align: center; font-size: 12px; font-weight: 700; padding: 4px 0; color: #fff; background: var(--fd-muted);
+  text-align: center; font-size: 12px; font-weight: 700; padding: 4px 0; color: #fff; background: #5f6670;
   text-transform: uppercase; letter-spacing: 0.06em; pointer-events: none;
 }
 [dir="rtl"] .fd-ribbon { transform: rotate(-45deg); }
-.fd-ribbon.fd-tone-danger { background: var(--fd-error); }
-.fd-ribbon.fd-tone-success { background: var(--fd-success); }
-.fd-ribbon.fd-tone-warning { background: #d97706; }
-.fd-ribbon.fd-tone-info { background: var(--fd-info); }
+/* White words on a ribbon in either scheme: fixed, deep colours, each at least 5:1 against white. */
+.fd-ribbon.fd-tone-danger { background: #c63c3d; }
+.fd-ribbon.fd-tone-success { background: #2e7d32; }
+.fd-ribbon.fd-tone-warning { background: #a14f00; }
+.fd-ribbon.fd-tone-info { background: #1365d9; }
 .fd-alert { padding: 10px 14px; border-radius: var(--fd-control-radius); border: 1px solid; font-size: 13.5px; display: flex; align-items: flex-start; gap: 10px; }
 .fd-alert-message { flex: 1 1 auto; min-width: 0; }
 .fd-alert-close { border: none; background: none; color: inherit; cursor: pointer; font: inherit; font-size: 18px; line-height: 1; padding: 0 4px; border-radius: 4px; opacity: 0.75; }
