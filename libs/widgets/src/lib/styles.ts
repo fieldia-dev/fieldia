@@ -342,11 +342,11 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-line-delete { border: none; background: none; cursor: pointer; color: var(--fd-muted); font-size: 16px; line-height: 1; padding: 4px 6px; border-radius: 4px; }
 .fd-line-delete:hover { color: var(--fd-error); background: var(--fd-error-soft); }
 /* A table's own rules: a line's or a cell's tone and bold (Flectra's decoration-*), and buttons on a line. */
-.fd-lines-table [data-tone="info"] { --fd-line-tone: var(--fd-info); }
-.fd-lines-table [data-tone="success"] { --fd-line-tone: var(--fd-success); }
-.fd-lines-table [data-tone="warning"] { --fd-line-tone: var(--fd-warning); }
-.fd-lines-table [data-tone="danger"] { --fd-line-tone: var(--fd-error); }
-.fd-lines-table [data-tone="muted"] { --fd-line-tone: var(--fd-muted); }
+.fd-lines-table [data-tone="info"] { --fd-line-tone: var(--fd-info); --fd-tone: var(--fd-info); --fd-tone-soft: var(--fd-info-soft); }
+.fd-lines-table [data-tone="success"] { --fd-line-tone: var(--fd-success); --fd-tone: var(--fd-success); --fd-tone-soft: var(--fd-success-soft); }
+.fd-lines-table [data-tone="warning"] { --fd-line-tone: var(--fd-warning); --fd-tone: var(--fd-warning); --fd-tone-soft: var(--fd-warning-soft); }
+.fd-lines-table [data-tone="danger"] { --fd-line-tone: var(--fd-error); --fd-tone: var(--fd-error); --fd-tone-soft: var(--fd-error-soft); }
+.fd-lines-table [data-tone="muted"] { --fd-line-tone: var(--fd-muted); --fd-tone: var(--fd-muted); --fd-tone-soft: color-mix(in srgb, var(--fd-muted) 14%, transparent); }
 .fd-lines-table [data-tone] :is(input, select, textarea, .fd-input, .fd-display) { color: var(--fd-line-tone); -webkit-text-fill-color: var(--fd-line-tone); }
 .fd-lines-table :is(.fd-line-bold, .fd-cell-bold) :is(input, select, textarea, .fd-input, .fd-display) { font-weight: 600; }
 .fd-lines-table td.fd-lines-tools { white-space: nowrap; }
@@ -666,6 +666,17 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-progress { display: grid; gap: 8px; }
 .fd-progress-text { color: var(--fd-muted); font-size: 13px; }
 .fd-value-text { display: block; padding-block: 6px; font-variant-numeric: tabular-nums; }
+/* A field's own value in a tone while a condition holds, and in bold (Flectra's decoration-* on a field). */
+.fd-field[data-tone="info"] { --fd-tone: var(--fd-info); --fd-tone-soft: var(--fd-info-soft); }
+.fd-field[data-tone="success"] { --fd-tone: var(--fd-success); --fd-tone-soft: var(--fd-success-soft); }
+.fd-field[data-tone="warning"] { --fd-tone: var(--fd-warning); --fd-tone-soft: var(--fd-warning-soft); }
+.fd-field[data-tone="danger"] { --fd-tone: var(--fd-error); --fd-tone-soft: var(--fd-error-soft); }
+.fd-field[data-tone="muted"] { --fd-tone: var(--fd-muted); --fd-tone-soft: color-mix(in srgb, var(--fd-muted) 14%, transparent); }
+.fd-field[data-tone] :is(input, select, textarea, .fd-value-text, .fd-pending) { color: var(--fd-tone); -webkit-text-fill-color: var(--fd-tone); }
+.fd-field.fd-value-bold :is(input, select, textarea, .fd-value-text, .fd-pending, .fd-value-badge) { font-weight: 700; }
+/* A value as a pill (widget badge): grey, or its tone's colour on its soft shade. */
+.fd-value-badge { justify-self: start; align-self: center; display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; line-height: 18px; font-weight: 500; color: var(--fd-tone, var(--fd-muted)); background: var(--fd-tone-soft, color-mix(in srgb, var(--fd-tone, var(--fd-muted)) 14%, transparent)); }
+.fd-value-badge[hidden] { display: none; }
 .fd-date-pick { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; }
 .fd-date-pick > .fd-input { flex: 1 1 auto; min-width: 0; }
 .fd-calendar-button {

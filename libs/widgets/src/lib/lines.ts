@@ -175,7 +175,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   });
   function makeCell(tr: HTMLTableRowElement, line: Line, column: string, sub: LineField, span = 1) {
     const cellId = `${id}-${line.key}-${column}`;
-    const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column };
+    // A cell the page draws as a pill in its tone (Flectra's widget="badge"), never edited.
+    const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column, ...(!lineKind(def, line.values) && node.cells?.[column]?.badge ? { widget: 'badge' } : {}) };
     const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs });
     const td = document.createElement('td');
     td.colSpan = span;

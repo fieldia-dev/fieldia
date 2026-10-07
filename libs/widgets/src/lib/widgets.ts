@@ -38,6 +38,7 @@ import { currencySymbol } from './units';
 import { drawIcon } from './icons';
 import { listChoices } from './choices-from';
 import { yesNoWidget } from './yes-no';
+import { badgeWidget } from './badge';
 import { layOut, limiter } from './choice-rules';
 
 /**
@@ -618,4 +619,6 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'json.address': addressWidget,
   properties: propertiesWidget,
   matrix: matrixWidget,
+  // A value as a pill in its tone: Flectra's widget="badge".
+  ...Object.fromEntries(['char', 'integer', 'float', 'monetary', 'date', 'datetime', 'selection', 'many2one'].map((type) => [`${type}.badge`, badgeWidget])),
 };
