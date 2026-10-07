@@ -429,8 +429,8 @@
         },
         {
           "feature": "analytic_distribution widget (groups analytic.group_analytic_accounting), optional hide",
-          "status": "missing",
-          "needs": "the distribution widget in a grid cell (it exists on a json field, not as a line column); roles on a column"
+          "status": "covered",
+          "how": "the distribution widget as an order line column (cells.analytic_distribution.widget: distribution, model account.analytic.account): its cell says each account by its name with its share, its editor opens the lines in the grid; roles [analytic.group_analytic_accounting] on the column hide it from people without the group; optionalColumns hide, as Flectra's optional"
         },
         {
           "feature": "product_uom_qty",

@@ -182,6 +182,40 @@ for (const variant of VARIANTS) {
       expect(problems).toEqual([]);
     });
 
+    test('sales order: the analytic distribution as a line column, for the analytic accounting group only', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      let { problems } = await open(page, variant, ORDER);
+      await expect.poll(() => value(page, 'name')).toBe('S00071');
+      const grid = node(page, 'f-order-line');
+      // Optional, hidden as Flectra starts it: shown from the column chooser.
+      await expect(grid.locator('.ag-header-cell[col-id="analytic_distribution"]')).toHaveCount(0);
+      await grid.getByRole('button', { name: 'Choose columns' }).click();
+      await grid.locator('.fd-grid-chooser').getByRole('checkbox', { name: 'Analytic Distribution' }).check();
+      await page.keyboard.press('Escape');
+      // Its cell says each account by its name, with its share.
+      await expect(cell(page, 'f-order-line', 1, 'analytic_distribution')).toHaveText('Heliopolis rollout 70%, Sales department 30%');
+      // Its editor opens the lines: a share changed is the line's at once.
+      await cell(page, 'f-order-line', 1, 'analytic_distribution').click();
+      const editor = page.locator('.fd-grid-editor .fd-distribution');
+      await expect(editor).toBeVisible();
+      await expect(editor.locator('input.fd-share')).toHaveCount(2);
+      await editor.locator('input.fd-share').first().fill('60');
+      await expect(editor).toContainText('90%');
+      await editor.locator('input.fd-share').first().press('Enter');
+      await expect(editor).toBeHidden();
+      await expect(cell(page, 'f-order-line', 1, 'analytic_distribution')).toHaveText('Heliopolis rollout 60%, Sales department 30%');
+      if (variant === 'plain') await screen(page, 'real-sale-order-analytic');
+      expect(problems).toEqual([]);
+
+      // Without the analytic accounting group the column is gone, from the chooser too.
+      ({ problems } = await open(page, variant, `${ORDER}&roles=base.group_user,sales_team.group_sale_salesman`));
+      await expect.poll(() => value(page, 'name')).toBe('S00071');
+      await expect(grid.locator('.ag-header-cell[col-id="analytic_distribution"]')).toHaveCount(0);
+      await grid.getByRole('button', { name: 'Choose columns' }).click();
+      await expect(grid.locator('.fd-grid-chooser').getByRole('checkbox', { name: 'Analytic Distribution' })).toHaveCount(0);
+      expect(problems).toEqual([]);
+    });
+
     test('Create invoices on its own: the down payment’s fields follow the choice, a warning over what is left, three orders at once', async ({ page }) => {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, WIZARD);

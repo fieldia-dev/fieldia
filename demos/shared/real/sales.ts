@@ -141,7 +141,7 @@ const num = (value: unknown) => (typeof value === 'number' ? value : Number(valu
 const idOf = (value: unknown) => (value && typeof value === 'object' && 'id' in value ? Number((value as RelatedRecord).id) : null);
 
 /** A sales line: an item, priced and taxed as Flectra's compute does. */
-function item(key: string, id: number, sequence: number, productId: number, qty: number, options: { discount?: number; price?: number; delivered?: number; invoiced?: number; status?: string } = {}): Line {
+function item(key: string, id: number, sequence: number, productId: number, qty: number, options: { discount?: number; price?: number; delivered?: number; invoiced?: number; status?: string; analytic?: Record<string, number> } = {}): Line {
   const p = PRODUCTS[productId];
   const price = options.price ?? p.price;
   return {
@@ -163,6 +163,8 @@ function item(key: string, id: number, sequence: number, productId: number, qty:
       is_downpayment: false,
       qty_delivered_method: p.type === 'service' ? 'manual' : 'stock_move',
       invoice_status: options.status ?? 'no',
+      // Shares by analytic account id, as Flectra's analytic_distribution (the accounting lane's accounts).
+      analytic_distribution: options.analytic ?? null,
     }),
   };
 }
@@ -199,8 +201,8 @@ function taxTotals(items: Line[], untaxed: number, total: number): Values {
 
 const QUOTATION_LINES: Line[] = [
   section('q1', 710101, 10, 'ICU monitoring'),
-  item('q2', 710102, 20, 7301, 4),
-  item('q3', 710103, 30, 7302, 6, { discount: 5 }),
+  item('q2', 710102, 20, 7301, 4, { analytic: { '4101': 70, '4102': 30 } }),
+  item('q3', 710103, 30, 7302, 6, { discount: 5, analytic: { '4101': 100 } }),
   section('q4', 710104, 40, 'Services'),
   item('q5', 710105, 50, 7305, 2),
   note('q6', 710106, 60, 'Delivered to the 3rd-floor ICU by the service lift.\nThe hospital’s biomedical engineer signs the handover.'),

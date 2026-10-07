@@ -126,7 +126,8 @@
             { "value": "to invoice", "label": "To Invoice" },
             { "value": "no", "label": "Nothing to Invoice" }
           ]
-        }
+        },
+        "analytic_distribution": { "type": "json", "label": "Analytic Distribution" }
       }
     },
     "sale_order_option_ids": {
@@ -555,6 +556,7 @@
                 "columns": [
                   "product_id",
                   "name",
+                  "analytic_distribution",
                   "product_uom_qty",
                   "qty_delivered",
                   "qty_invoiced",
@@ -568,6 +570,7 @@
                 ],
                 "optionalColumns": {
                   "name": "show",
+                  "analytic_distribution": "hide",
                   "qty_delivered": "show",
                   "qty_invoiced": "show",
                   "product_uom": "show",
@@ -603,7 +606,12 @@
                   "price_unit": { "readonly": "qty_invoiced > 0" },
                   "tax_id": { "readonly": "qty_invoiced > 0" },
                   "price_subtotal": { "invisible": "is_downpayment" },
-                  "price_total": { "hidden": "tax_calculation_rounding_method == 'round_globally'" }
+                  "price_total": { "hidden": "tax_calculation_rounding_method == 'round_globally'" },
+                  "analytic_distribution": {
+                    "widget": "distribution",
+                    "options": { "model": "account.analytic.account" },
+                    "roles": ["analytic.group_analytic_accounting"]
+                  }
                 },
                 "controlButtons": [
                   {

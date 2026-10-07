@@ -10,6 +10,7 @@ export default [
       'Press Send by Email: the quotation is emailed and moves to Quotation Sent; press Confirm and it becomes a sales order, the Delivery stat button appears and Expiration gives way to Order Date.',
       'In the grid, change the patient monitors’ Quantity from 4 to 5: the line’s Tax excl. and the totals under the grid follow.',
       'Add a product and pick the Defibrillator AED-3: its description, unit, VAT 14% and the hospital price come with it.',
+      'Show Analytic Distribution from the grid’s column chooser (⋮): each line’s accounts with their shares; click a cell to change them. Opened with roles=base.group_user, the column is not there.',
       'Change the Customer to Delta Care Clinics: the addresses, pricelist and terms follow, and the credit-limit warning shows over the sheet.',
       'Open S00068 (record=7102) and press Create Invoice: the Create invoices dialog opens over the order.',
     ],
