@@ -38,7 +38,7 @@ interface DataSource {
     <tr><td>${c('list')}</td><td>A list opens, is searched, sorted or paged</td><td>Lists of records — see <a href="/lists/#data">lists</a></td></tr>
     <tr><td>${c('groups')}</td><td>A list is grouped by a field</td><td>Group By</td></tr>
     <tr><td>${c('archive')} · ${c('copy')} · ${c('delete')}</td><td>The gear menu's Archive, Unarchive, Duplicate or Delete, or those steps, run</td><td>The record's own operations — without one, your app's action of the step's name is called. See <a href="/record/#toolbar">Around a record</a></td></tr>
-    <tr><td>${c('attachments')}</td><td>A sheet with an ${c('attachmentPreview')} shows a record</td><td>The PDF or picture beside the sheet</td></tr>
+    <tr><td>${c('attachments')}</td><td>A sheet that shows the record's attachment beside it opens a record</td><td>The PDF or picture beside the sheet</td></tr>
   </tbody>
 </table>
 
