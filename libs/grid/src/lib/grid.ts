@@ -828,7 +828,11 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const known = new Set(api.getColumns()?.map((c) => c.getColId()));
     const state = (saved as { colId?: unknown }[]).filter((s) => typeof s?.colId === 'string' && known.has(s.colId)) as ColumnState[];
     api.applyColumnState({ state, applyOrder: true });
-    for (const s of state) if (optionalIds.includes(s.colId)) (s.hide ? personHidden.add(s.colId) : personHidden.delete(s.colId));
+    for (const s of state) {
+      if (!optionalIds.includes(s.colId)) continue;
+      if (s.hide) personHidden.add(s.colId);
+      else personHidden.delete(s.colId);
+    }
   }
 
   // ---- the column chooser: a short list of the columns a person may hide ----
