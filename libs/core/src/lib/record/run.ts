@@ -30,6 +30,17 @@ export interface ActionRequest {
   recordIds?: RecordId[];
   /** The line a button on a table's line was pressed on: the table's field, the line's key and values. */
   line?: { field: string; key: string; values: Values };
+  /** The lines chosen in a table when a button for them was pressed: the table's field, their keys, the ids of those saved, and their values. */
+  lines?: ChosenLines;
+}
+
+/** Lines chosen in a table, as a button for them hands them on. */
+export interface ChosenLines {
+  field: string;
+  keys: string[];
+  /** The saved records among them, by id: a new line has none yet. */
+  ids: RecordId[];
+  values: Values[];
 }
 
 /**
@@ -144,6 +155,7 @@ export interface RunScope {
   id: string;
   recordIds?: RecordId[];
   line?: { field: string; key: string; values: Values };
+  lines?: ChosenLines;
   chain: readonly string[];
 }
 
@@ -327,6 +339,7 @@ export function createRunner(form: RunForm) {
       values: structuredCopy(form.values() as Values),
       ...(scope.recordIds ? { recordIds: [...scope.recordIds] } : {}),
       ...(scope.line ? { line: structuredCopy(scope.line) } : {}),
+      ...(scope.lines ? { lines: structuredCopy(scope.lines) } : {}),
     };
     if (!form.onAction) return null;
     let answer: ActionResult | undefined;

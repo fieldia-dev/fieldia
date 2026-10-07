@@ -113,6 +113,15 @@ export interface FieldNode {
   rowBold?: Modifier;
   /** For one2many: buttons on each line, each shown by a condition on it; a press runs its steps with the line. */
   rowButtons?: ButtonNode[];
+  /**
+   * For one2many: buttons for the lines chosen in the table — Flectra's list
+   * header buttons, such as Start and Done on the work orders ticked. Each is
+   * shown by a condition on the record; a press runs with the chosen lines,
+   * and every call of it carries them.
+   */
+  selectedButtons?: ButtonNode[];
+  /** For one2many: buttons in the table's control row, beside Add a line — Flectra's <control>, such as Catalog. Buttons of the record, as any. */
+  controlButtons?: ButtonNode[];
   /** Where the label sits, when not where its group or the page puts labels. */
   labels?: LabelPlace;
   /** Where its help shows, when not where the page shows help: under it, behind a (?) by its label, or both. */
@@ -572,6 +581,12 @@ export const FieldNodeSchema = z.strictObject({
   rowTones: z.array(ToneWhenSchema).min(1).optional(),
   rowBold: ModifierSchema.optional(),
   get rowButtons(): z.ZodOptional<z.ZodArray<typeof ButtonNodeSchema>> {
+    return z.array(ButtonNodeSchema).min(1).optional();
+  },
+  get selectedButtons(): z.ZodOptional<z.ZodArray<typeof ButtonNodeSchema>> {
+    return z.array(ButtonNodeSchema).min(1).optional();
+  },
+  get controlButtons(): z.ZodOptional<z.ZodArray<typeof ButtonNodeSchema>> {
     return z.array(ButtonNodeSchema).min(1).optional();
   },
   editMode: z.enum(['cell', 'row']).optional(),

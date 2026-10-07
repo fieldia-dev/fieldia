@@ -222,8 +222,14 @@ export interface Form {
   lineState(nodeId: string, key: string): LineState;
   /** Whether a table's column is hidden now by its `hidden` rule, read on the record. */
   columnHidden(nodeId: string, column: string): boolean;
-  /** Press a button on a table's line: its steps, then its action, each call carrying the line. Hidden on that line, it does not run. */
+  /** Press a button on a table's line: its confirmation, its steps, then its action, each call carrying the line. Hidden on that line, it does not run. */
   runRowAction(nodeId: string, buttonId: string, key: string): Promise<RunResult>;
+  /**
+   * Press a button for the lines chosen in a table (its `selectedButtons`),
+   * by their keys: its confirmation, its steps, then its action, each call
+   * carrying the lines. Hidden, or with no line chosen, it does not run.
+   */
+  runLinesAction(nodeId: string, buttonId: string, keys: readonly string[]): Promise<RunResult>;
   /** Run steps on this form, as a button would: `context.id` is what their calls carry (`run` when left out). */
   run(steps: readonly ActionStep[], context?: RunContext): Promise<RunResult>;
   /** A tab was shown: the viewer says so, and the page's `show` steps for it run. */
@@ -1048,6 +1054,23 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   });
   const moment = createMoments((key, list, chain) => runTop(list, { id: key, chain }));
 
+  /** A press of a button: its confirmation first, then its steps and its app action as a final call, in `scope`. */
+  function press(source: ButtonNode | StatButton, scope: RunScope): Promise<RunResult> {
+    const list: ActionStep[] = [...(source.steps ?? [])];
+    if (source.action !== undefined) list.push({ do: 'call', action: source.action, ...('params' in source && source.params ? { params: source.params } : {}) });
+    const confirm = 'confirm' in source ? source.confirm : undefined;
+    return track(
+      (async (): Promise<RunResult> => {
+        if (confirm && !(await runner.ask(confirm))) {
+          const result: RunResult = { done: false, reason: 'no', message: confirm };
+          emit('run', { id: scope.id, steps: list, result });
+          return result;
+        }
+        return runTop(list, scope);
+      })()
+    );
+  }
+
   const form: Form = {
     page,
     getState: () => state,
@@ -1252,22 +1275,11 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       const node = index.get(id);
       if (!node || (node.kind !== 'button' && node.kind !== 'stat')) throw new Error(`The page has no button "${id}"`);
       if (nodeState(id).invisible) return { done: false, reason: 'cannot', message: `The button "${id}" is hidden` };
-      const source = node.source as ButtonNode | StatButton;
-      // Its steps, then its app action as a final call.
-      const list: ActionStep[] = [...(source.steps ?? [])];
-      if (source.action !== undefined) list.push({ do: 'call', action: source.action, ...('params' in source && source.params ? { params: source.params } : {}) });
-      const scope: RunScope = { id, chain: [], ...(chosen ? { recordIds: [...chosen.recordIds] } : {}) };
-      const confirm = 'confirm' in source ? source.confirm : undefined;
-      return track(
-        (async (): Promise<RunResult> => {
-          if (confirm && !(await runner.ask(confirm))) {
-            const result: RunResult = { done: false, reason: 'no', message: confirm };
-            emit('run', { id, steps: list, result });
-            return result;
-          }
-          return runTop(list, scope);
-        })()
-      );
+      // A button for a table's chosen lines runs with them: runLinesAction.
+      if (node.parent && (index.get(node.parent)?.source as FieldNode | undefined)?.selectedButtons?.some((b) => b.id === id)) {
+        return { done: false, reason: 'cannot', message: `The button "${id}" runs with the lines chosen in its table` };
+      }
+      return press(node.source as ButtonNode | StatButton, { id, chain: [], ...(chosen ? { recordIds: [...chosen.recordIds] } : {}) });
     },
 
     fieldTone(nodeId) {
@@ -1291,9 +1303,25 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
       if (!table || !button) throw new Error(`The table "${nodeId}" has no button "${buttonId}"`);
       if (!lineStateOf(nodeId, key).buttons[buttonId]) return { done: false, reason: 'cannot', message: `The button "${buttonId}" is hidden on this line` };
       const line = ((state.values[table.field] as Line[] | null) ?? []).find((l) => l.key === key) as Line;
-      const list: ActionStep[] = [...(button.steps ?? [])];
-      if (button.action !== undefined) list.push({ do: 'call', action: button.action, ...(button.params ? { params: button.params } : {}) });
-      return track(runTop(list, { id: buttonId, chain: [], line: { field: table.field, key, values: structuredCopy(line.values) } }));
+      return press(button, { id: buttonId, chain: [], line: { field: table.field, key, values: structuredCopy(line.values) } });
+    },
+    async runLinesAction(nodeId, buttonId, keys) {
+      const node = index.get(nodeId);
+      const source = node?.source as FieldNode | undefined;
+      const button = source?.selectedButtons?.find((b) => b.id === buttonId);
+      if (!node || !source || !button) throw new Error(`The table "${nodeId}" has no button "${buttonId}" for its chosen lines`);
+      const all = (state.values[source.field] as Line[] | null) ?? [];
+      const chosen = keys.map((key) => all.find((line) => line.key === key) ?? null);
+      const missing = keys.find((_, i) => !chosen[i]);
+      if (missing !== undefined) throw new Error(`"${source.field}" has no line "${missing}"`);
+      if (nodeState(buttonId).invisible) return { done: false, reason: 'cannot', message: `The button "${buttonId}" is hidden` };
+      if (!keys.length) return { done: false, reason: 'cannot', message: `The button "${buttonId}" runs with lines chosen: none is` };
+      const lines = chosen as Line[];
+      return press(button, {
+        id: buttonId,
+        chain: [],
+        lines: { field: source.field, keys: [...keys], ids: lines.flatMap((line) => (line.id === undefined ? [] : [line.id])), values: lines.map((line) => structuredCopy(line.values)) },
+      });
     },
     run: (list, context = {}) => track(runTop(list, { id: context.id ?? 'run', chain: [], ...(context.recordIds ? { recordIds: [...context.recordIds] } : {}) })),
 
@@ -1465,6 +1493,8 @@ function indexLayout(root: RootLayout): Map<string, IndexedNode> {
     for (const node of nodes) {
       if (node.type === 'field') {
         add(node, parent, 'field', { invisible: node.invisible, readonly: node.readonly, required: node.required, field: node.field });
+        // A table's buttons for its chosen lines and in its control row: buttons of the record, inside the table.
+        for (const button of [...(node.selectedButtons ?? []), ...(node.controlButtons ?? [])]) add(button, node.id, 'button', { invisible: button.invisible });
       } else if (node.type === 'button') {
         add(node, parent, 'button', { invisible: node.invisible });
       } else if (node.type === 'tabs') {

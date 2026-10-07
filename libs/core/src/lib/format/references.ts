@@ -580,6 +580,16 @@ export class ReferenceCheck {
         });
       }
     }
+    // Buttons for the chosen lines and in the control row: buttons of the record, as any.
+    for (const key of ['selectedButtons', 'controlButtons'] as const) {
+      if (!node[key]) continue;
+      if (def && def.type !== 'one2many') this.report(`${path}.${key}`, `${key} only apply to one2many fields; "${node.field}" is a ${def.type}`);
+      node[key].forEach((button, i) => {
+        this.claim(button.id, `${path}.${key}[${i}]`);
+        this.checkModifiers(button, `${path}.${key}[${i}]`);
+        this.checkPress(button, `${path}.${key}[${i}]`);
+      });
+    }
     if (def && node.optionalColumns) {
       if (def.type !== 'one2many') {
         this.report(`${path}.optionalColumns`, `optional columns only apply to one2many fields; "${node.field}" is a ${def.type}`);
