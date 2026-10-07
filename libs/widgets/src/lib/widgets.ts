@@ -42,6 +42,7 @@ import { yesNoWidget } from './yes-no';
 import { badgeWidget } from './badge';
 import { linksTableWidget } from './links-table';
 import { layOut, limiter } from './choice-rules';
+import { durationWidget, percentageWidget } from './duration';
 
 /**
  * Field inputs in plain DOM. Each widget builds its element once and then only
@@ -595,6 +596,9 @@ export const builtInWidgets: Record<string, WidgetFactory> = {
   'float.label': labelWidget,
   'monetary.label': labelWidget,
   'float.progressbar': progressbarWidget,
+  // Hours as HH:MM (Flectra's float_time), a fraction as a per cent (its percentage).
+  'float.duration': durationWidget,
+  'float.percentage': percentageWidget,
   'monetary.progressbar': progressbarWidget,
   boolean: checkboxWidget(),
   'boolean.toggle': checkboxWidget('switch'),

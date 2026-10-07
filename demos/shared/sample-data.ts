@@ -359,6 +359,8 @@ export function sampleDataSource() {
           settings: { badge_readers: 4, visitor_hours: '08:00-18:00', zones: ['reception', 'open-plan'] },
           door_schedule: { weekdays: '07:00-20:00', weekends: 'closed', holidays: ['2026-10-06'] },
           extra: { floor: 12, lift_access: 'Freight lift, 08:00-10:00', parking: 6, sprinklers: true, zone: 'b' },
+          time_on_site: 6.5,
+          margin: 0.18,
         },
       },
     },

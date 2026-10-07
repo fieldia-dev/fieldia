@@ -1,5 +1,6 @@
 import type { LineField, Locale, Value } from '@fieldia/core';
 import { formatMoney, formatNumber } from './numbers';
+import { shownNumber } from './duration';
 
 
 function localDate(text: string): Date | null {
@@ -72,3 +73,25 @@ export function displayValue(def: LineField, value: Value | undefined, values: R
       return String(value);
   }
 }
+
+/** How a value is shown where it is not edited: by the widget it is drawn with (a cell's, a field's), and its options. */
+export interface ShownWith {
+  widget?: string;
+  options?: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * A value as words in the widget it is shown with — hours as HH:MM
+ * (`duration`), a fraction as a per cent (`percentage`) — else as its type
+ * says it (`displayValue`). For a table's cells and totals, plain and grid.
+ */
+export function cellText(def: LineField, value: Value | undefined, values: Record<string, Value> = {}, locale: Locale = 'en', parent?: Readonly<Record<string, Value>>, shown: ShownWith = {}): string {
+  return shownNumber(shown.widget, def as never, value, locale, shown.options as Record<string, unknown>) ?? displayValue(def, value, values, locale, parent);
+}
+
+/**
+ * The widgets a cell is drawn with rather than typed into: a bar, stars, a
+ * state's dot, a colour, a pill. A grid shows them in the cell itself, used
+ * there with a click; the rest are typed into as the field's own box.
+ */
+export const DRAWN_IN_CELLS: ReadonlySet<string> = new Set(['progressbar', 'priority', 'dot', 'color', 'badge']);

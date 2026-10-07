@@ -1,5 +1,5 @@
 import { isEmpty, lineKind, type Field, type FieldNode, type Form, type FormState, type Line, type LineField, type Value, type Values } from '@fieldia/core';
-import { currencyOf, displayValue } from './display';
+import { cellText, currencyOf } from './display';
 import { drawIcon } from './icons';
 import { askFirst, fillIn, maker } from './kind-parts';
 import { WIDGET_LABELS } from './labels';
@@ -273,8 +273,10 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   });
   function makeCell(tr: HTMLTableRowElement, line: Line, column: string, sub: LineField, span = 1) {
     const cellId = `${id}-${line.key}-${column}`;
-    // A cell the page draws as a pill in its tone (Flectra's widget="badge"), never edited.
-    const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column, ...(!lineKind(def, line.values) && node.cells?.[column]?.badge ? { widget: 'badge' } : {}) };
+    // A cell the page draws as a pill in its tone (Flectra's widget="badge"), never edited, or with a widget of its own.
+    const rules = lineKind(def, line.values) ? undefined : node.cells?.[column];
+    const look = rules?.badge ? { widget: 'badge' } : rules?.widget ? { widget: rules.widget, ...(rules.options ? { options: rules.options } : {}) } : {};
+    const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column, ...look };
     const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs });
     const td = document.createElement('td');
     td.colSpan = span;
@@ -463,7 +465,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
       });
       for (const [column, td] of sums) {
         const sum = current.filter((line) => !lineKind(def, line.values)).reduce((total, line) => total + Number(line.values[column] ?? 0), 0);
-        td.textContent = displayValue(def.fields[column], sum, current[0]?.values ?? {}, locale, state.values);
+        td.textContent = cellText(def.fields[column], sum, current[0]?.values ?? {}, locale, state.values, node.cells?.[column]);
       }
       for (const { id, button } of controls) button.hidden = form.node(id).invisible;
       showChosen();
