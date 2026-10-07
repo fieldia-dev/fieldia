@@ -67,7 +67,7 @@ for (const variant of VARIANTS) {
       await page.setViewportSize(WIDE);
       const { problems } = await open(page, variant, 'page=real-invoice&record=4101&skin=underline');
       await expect(page.getByRole('button', { name: 'Confirm', exact: true })).toBeVisible();
-      await expect.poll(() => shown(page, 'f-amount-total')).toContain('58,117.20');
+      await expect.poll(() => shown(page, 'f-tax-totals')).toContain('58,117.20');
       // A draft has no number yet, and no Register Payment.
       await expect(page.getByRole('button', { name: 'Register Payment' })).toHaveCount(0);
       // One stat button shown: Sale Orders.
@@ -81,7 +81,7 @@ for (const variant of VARIANTS) {
       await typeInCell(page, 'f-invoice-lines', 6, 'quantity', '2');
       await expect.poll(() => value(page, 'amount_untaxed')).toBe(63380);
       await expect.poll(() => value(page, 'amount_tax')).toBe(8873.2);
-      await expect.poll(() => shown(page, 'f-amount-total')).toContain('72,253.20');
+      await expect.poll(() => shown(page, 'f-tax-totals')).toContain('72,253.20');
       if (variant === 'plain') await screen(page, 'real-invoice-line-added');
 
       // The journal items followed: the desk's income, the VAT, and the receivable for the whole, balanced.
@@ -132,7 +132,7 @@ for (const variant of VARIANTS) {
       await expect(toast(page, 'Payment of EGP 50,000.00 registered: EGP 22,253.20 left to pay')).toBeVisible();
       await expect.poll(() => value(page, 'payment_state')).toBe('partial');
       await expect.poll(() => value(page, 'amount_residual')).toBe(22253.2);
-      await expect(page.locator('.fd-badge', { hasText: 'Partial' })).toBeVisible();
+      await expect(page.locator('.fd-ribbon', { hasText: 'Partial' })).toBeVisible();
       await expect.poll(() => shown(page, 'f-payments')).toContain('50,000.00');
 
       // The rest: the dialog offers what is left, and paid, the ribbon says so.
@@ -153,6 +153,38 @@ for (const variant of VARIANTS) {
       expect(problems).toEqual([]);
     });
 
+    test('an invoice’s own parts: keys, the gear menu, the customer’s address, an outstanding credit added, the bill’s PDF beside it', async ({ page, context }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, 'page=real-invoice&record=4101&skin=underline');
+      await expect(page.getByRole('button', { name: 'Confirm', exact: true })).toHaveAttribute('title', /Alt\+Q/i);
+      await expect(node(page, 'f-customer')).toContainText('17 El Merghany Street');
+      await expect(node(page, 'f-tax-totals')).toContainText('VAT 14%');
+      // Preview: the customer's own page, in a new tab.
+      const [portal] = await Promise.all([context.waitForEvent('page'), page.getByRole('button', { name: 'Preview', exact: true }).click()]);
+      expect(portal.url()).toContain('/my/invoices/4101');
+      await portal.close();
+      // Posted: the outstanding credit is offered with its own Add; added, what is left to pay drops by it.
+      await page.getByRole('button', { name: 'Confirm', exact: true }).click();
+      await expect.poll(() => value(page, 'state')).toBe('posted');
+      await node(page, 'f-outstanding').locator('[data-row-button="b-add-outstanding"]').first().click();
+      await expect(toast(page, /added to INV\/2026/)).toBeVisible();
+      await expect.poll(() => value(page, 'amount_residual')).toBe(48117.2);
+      await expect(page.locator('.fd-ribbon', { hasText: 'Partial' })).toBeVisible();
+      await expect.poll(() => shown(page, 'f-payments')).toContain('10,000.00');
+      // The gear menu: Debit Note once posted, Duplicate, and Print's Invoice.
+      await page.getByRole('button', { name: 'Actions' }).click();
+      await expect(page.getByRole('menuitem', { name: 'Debit Note' })).toBeVisible();
+      await expect(page.getByRole('menuitem', { name: 'Duplicate' })).toBeVisible();
+      await expect(page.getByRole('menuitem', { name: 'Invoice' })).toBeVisible();
+      await page.getByRole('menuitem', { name: 'Debit Note' }).click();
+      await expect(toast(page, /debit note/i)).toBeVisible();
+      // A vendor bill: its PDF beside the sheet, and the duplicate's link inside the alert's sentence.
+      await page.goto(`/${variant}/?page=real-invoice&record=4103&skin=underline`);
+      await expect(page.locator('.fd-attachment-name')).toHaveText('GPM-2026-0912.pdf');
+      await expect(page.locator('.fd-alert', { hasText: 'might be a duplicate' }).getByRole('button', { name: 'one of those bills' })).toBeVisible();
+      expect(problems).toEqual([]);
+    });
+
     test('the same page as a bill, a USD invoice and a journal entry: what each type shows, and an unbalanced entry refused', async ({ page }) => {
       await page.setViewportSize(WIDE);
       // A vendor bill: Vendor and Bill Date, the possible duplicate, Set as Checked, an editable tax.
@@ -167,15 +199,16 @@ for (const variant of VARIANTS) {
       await expect(toast(page, 'Marked as checked')).toBeVisible();
       await expect(page.getByRole('button', { name: 'Set as Checked', exact: true })).toHaveCount(0);
       // The vendor's own rounding: the tax typed, the total follows.
-      await amountBox(page.locator('body'), 'f-amount-tax').fill('5488.50');
-      await amountBox(page.locator('body'), 'f-amount-tax').press('Tab');
+      const taxBox = node(page, 'f-tax-totals').getByRole('textbox', { name: 'VAT 14% (Purchases)' });
+      await taxBox.fill('5488.50');
+      await taxBox.press('Tab');
       await expect.poll(() => value(page, 'amount_total')).toBe(44688.5);
       if (variant === 'plain') await screen(page, 'real-bill');
       expect(bill.problems).toEqual([]);
 
       // A USD invoice partly paid: its rate, its total in EGP, its Currency Details, and Partial.
       const usd = await open(page, variant, 'page=real-invoice&record=4102&skin=underline');
-      await expect(page.locator('.fd-badge', { hasText: 'Partial' })).toBeVisible();
+      await expect(page.locator('.fd-ribbon', { hasText: 'Partial' })).toBeVisible();
       await expect.poll(() => shown(page, 'f-amount-total-base')).toContain('315,153.00');
       await expect(page.getByRole('tab', { name: 'Currency Details' })).toBeVisible();
       await expect.poll(() => shown(page, 'f-amount-residual')).toContain('3,498.00');
@@ -309,7 +342,7 @@ for (const variant of VARIANTS) {
 test('the invoice at a phone’s width: nothing scrolls sideways', async ({ page }) => {
   await page.setViewportSize(PHONE);
   const { problems } = await open(page, 'plain', 'page=real-invoice&record=4101&skin=underline');
-  await expect.poll(() => shown(page, 'f-amount-total')).toContain('58,117.20');
+  await expect.poll(() => shown(page, 'f-tax-totals')).toContain('58,117.20');
   await expectNoSidewaysScroll(page);
   await screen(page, 'real-invoice-phone');
   expect(problems).toEqual([]);

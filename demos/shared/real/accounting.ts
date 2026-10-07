@@ -136,10 +136,10 @@ const METHODS: Record<number, { name: string; journal: number; type: 'inbound' |
 };
 const method = (id: number) => link(id, METHODS[id].name);
 
-const PARTNERS: Record<number, { name: string; is_company: boolean; email?: string; term?: number; creditLimit?: number; due?: number; bank?: number }> = {
-  4101: { name: 'Heliopolis Medical Center', is_company: true, email: 'accounts@heliopolis-medical.example', term: 4103, creditLimit: 500000, due: 112400 },
-  4102: { name: 'Nile Pharma Egypt', is_company: true, email: 'ap@nilepharma.example', term: 4103 },
-  4103: { name: 'Giza Paper Mills', is_company: true, email: 'billing@gizapapermills.example', term: 4102, bank: 4102 },
+const PARTNERS: Record<number, { name: string; is_company: boolean; email?: string; term?: number; creditLimit?: number; due?: number; bank?: number; street?: string; city?: string; vat?: string }> = {
+  4101: { name: 'Heliopolis Medical Center', street: '17 El Merghany Street', city: 'Heliopolis, Cairo', vat: 'EG 318-552-904', is_company: true, email: 'accounts@heliopolis-medical.example', term: 4103, creditLimit: 500000, due: 112400 },
+  4102: { name: 'Nile Pharma Egypt', street: '5 Corniche El Nil', city: 'Maadi, Cairo', vat: 'EG 221-470-118', is_company: true, email: 'ap@nilepharma.example', term: 4103 },
+  4103: { name: 'Giza Paper Mills', street: 'Industrial Zone, Plot 44', city: '6th of October City', vat: 'EG 405-337-260', is_company: true, email: 'billing@gizapapermills.example', term: 4102, bank: 4102 },
   4104: { name: 'Cairo Telecom Services', is_company: true, email: 'billing@cairotelecom.example', term: 4101 },
   4105: { name: 'Omar Hassan', is_company: false, email: 'omar.hassan@zamalek-office.example', bank: 4103 },
   4106: { name: 'Zamalek Office Supplies S.A.E.', is_company: true, bank: 4101 },
@@ -347,6 +347,8 @@ function recomputeMove(values: Values): Values {
     amount_untaxed: untaxed,
     amount_tax: tax,
     amount_total: total,
+    tax_totals: taxTotals(lines.filter(isAccountLine), untaxed, total),
+    invoice_payments_widget: paymentsWidget(values['invoice_payment_ids']),
     ...(draft ? { amount_residual: total } : {}),
     exchange_rate_used: rate,
     exchange_rate_date: values['exchange_rate_date'] ?? values['date'] ?? TODAY,
@@ -427,7 +429,8 @@ function taxTyped(values: Values): Values {
     if (line.values['display_type'] === 'payment_term') return { ...line, values: { ...line.values, amount_currency: -total, debit: 0, credit: round(total * rate) } };
     return line;
   });
-  return { amount_total: total, amount_residual: total, amount_total_base: round(total * rateOf(values)), line_ids: items };
+  const shown = (values['tax_totals'] ?? {}) as Values;
+  return { amount_total: total, amount_residual: total, amount_total_base: round(total * rateOf(values)), line_ids: items, tax_totals: { ...shown, total } };
 }
 
 // ---------------------------------------------------------------------------
@@ -481,13 +484,62 @@ const MOVE_DEFAULTS: Values = {
   invoice_payment_ids: [],
   outstanding_ids: [],
   narration: null,
+  edi_document_ids: [],
+  edi_error_message: null,
+  invoice_pdf: null,
+  partner_shipping_id: null,
+  invoice_cash_rounding_id: null,
+  campaign_id: null,
+  medium_id: null,
+  source_id: null,
 };
+
+/**
+ * Flectra's tax_totals as the tax-totals widget reads it: the untaxed amount, a
+ * row per tax (VAT 14%, WHT 1%), the total.
+ */
+function taxTotals(lines: Line[], untaxed: number, total: number): Values {
+  const byTax = new Map<string, number>();
+  for (const line of lines) {
+    for (const t of links(line.values['tax_ids'])) {
+      const found = TAXES[Number(t.id)];
+      if (!found) continue;
+      byTax.set(found.name, round((byTax.get(found.name) ?? 0) + (num(line.values['price_subtotal']) * found.amount) / 100));
+    }
+  }
+  return { untaxed, groups: [...byTax].map(([name, amount]) => ({ name, amount })), total };
+}
+
+/** The payments made, as Flectra's invoice_payments_widget gives them to the payments widget. */
+function paymentsWidget(lines: unknown): Values {
+  return {
+    content: ((lines as Line[] | null) ?? []).map((line) => ({
+      date: line.values['date'] ?? null,
+      amount: num(line.values['amount']),
+      name: line.values['ref'] ?? null,
+      journal_name: line.values['journal_name'] ?? null,
+      ref: line.values['ref'] ?? null,
+      account_payment_id: line.id ?? null,
+    })),
+  };
+}
+
+/** A tax amount typed in the totals of a draft bill (the vendor's rounding): the tax, the total and the tax item follow. */
+function taxTotalsTyped(values: Values): Values {
+  const totals = (values['tax_totals'] ?? {}) as { groups?: { amount: number }[] };
+  const tax = round((totals.groups ?? []).reduce((sum, group) => sum + num(group.amount), 0));
+  return { amount_tax: tax, ...taxTyped({ ...values, amount_tax: tax }) };
+}
 
 /** A move as stored: its lines priced and its journal items made, as the server keeps them. */
 function stored(id: number, values: Values): Values {
   const move = { ...MOVE_DEFAULTS, id, ...values };
   return { ...move, ...recomputeMove(move) };
 }
+
+/** The vendor's bill, as the PDF it sent: a page of its words. */
+const BILL_PDF =
+  'JVBERi0xLjQKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PgplbmRvYmoKMiAwIG9iago8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PgplbmRvYmoKMyAwIG9iago8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL01lZGlhQm94WzAgMCA1OTUgODQyXS9Db250ZW50cyA0IDAgUi9SZXNvdXJjZXM8PC9Gb250PDwvRjEgNSAwIFI+Pj4+Pj4KZW5kb2JqCjQgMCBvYmoKPDwvTGVuZ3RoIDM1Nz4+c3RyZWFtCkJUIC9GMSAxMiBUZiA2MCA3ODAgVGQgMTYgVEwgKEdpemEgUGFwZXIgTWlsbHMgLSBJbmR1c3RyaWFsIFpvbmUsIFBsb3QgNDQsIDZ0aCBvZiBPY3RvYmVyIENpdHkpICcgKFRBWCBJTlZPSUNFICBHUE0vMjAyNi8wOTEyKSAnIChCaWxsIHRvOiBaYW1hbGVrIE9mZmljZSBTdXBwbGllcyBTLkEuRS4pICcgKDQwIHggQTQgY29weSBwYXBlciwgYm94IG9mIDUgcmVhbXMgICA5ODAuMDAgICAzOSwyMDAuMDApICcgKFZBVCAxNCUgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDUsNDg4LjAwKSAnIChUT1RBTCBFR1AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDQ0LDY4OC4wMCkgJyBFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwvVHlwZS9Gb250L1N1YnR5cGUvVHlwZTEvQmFzZUZvbnQvSGVsdmV0aWNhPj4KZW5kb2JqCnhyZWYKMCA2CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDU0IDAwMDAwIG4gCjAwMDAwMDAxMDUgMDAwMDAgbiAKMDAwMDAwMDIxNyAwMDAwMCBuIAowMDAwMDAwNjIyIDAwMDAwIG4gCnRyYWlsZXIKPDwvU2l6ZSA2L1Jvb3QgMSAwIFI+PgpzdGFydHhyZWYKNjg1CiUlRU9GCg==';
 
 const MOVES: Record<number, Values> = {
   // A customer invoice in draft, in EGP: add a line, confirm it, register its payment.
@@ -558,6 +610,8 @@ const MOVES: Record<number, Values> = {
   }),
   // A vendor bill in draft that may repeat one already entered.
   4103: stored(4103, {
+    // The vendor's own PDF, beside the bill as Flectra's attachment preview shows it.
+    invoice_pdf: { name: 'GPM-2026-0912.pdf', type: 'application/pdf', size: 865, data: BILL_PDF },
     name: null,
     move_type: 'in_invoice',
     state: 'draft',
@@ -760,6 +814,10 @@ function reconcilePayment(values: Values): ActionResult {
   const found = JOURNALS[Number(idOf(values['payment_journal_id']))];
   const code = String(codeOf(values['currency_id']) ?? 'EGP');
   const left = residual > 0 ? `: ${money(residual, code)} left to pay` : ': paid in full';
+  const payments: Line[] = [
+    ...lines,
+    { key: `pay-${Date.now()}`, values: { date: values['payment_paid_on'] ?? TODAY, journal_name: found?.name ?? '', ref: values['payment_memo'] ?? null, amount: paid, currency_id: values['currency_id'] ?? EGP } },
+  ];
   return {
     // Said here, by the invoice: words the dialog said as it closed would be lost with it.
     say: { message: `Payment of ${money(paid, code)} registered${left}`, tone: 'success' },
@@ -767,10 +825,8 @@ function reconcilePayment(values: Values): ActionResult {
       amount_residual: residual,
       // A real Flectra 17 says In Payment until the bank statement is matched; the sample marks it paid.
       payment_state: residual <= 0 ? 'paid' : 'partial',
-      invoice_payment_ids: [
-        ...lines,
-        { key: `pay-${Date.now()}`, values: { date: values['payment_paid_on'] ?? TODAY, journal_name: found?.name ?? '', ref: values['payment_memo'] ?? null, amount: paid, currency_id: values['currency_id'] ?? EGP } },
-      ],
+      invoice_payment_ids: payments,
+      invoice_payments_widget: paymentsWidget(payments),
       // Outstanding credits are offered only while something is left to pay.
       ...(residual <= 0 ? { invoice_has_outstanding: false, outstanding_ids: [] } : {}),
       payment_amount: null,
@@ -865,6 +921,36 @@ function invoiceAction(request: ActionRequest): ActionResult | undefined {
         values: { invoice_pdf_report_id: link(4101 + Number(v['id'] ?? 0), `${name.replaceAll('/', '_')}.pdf`) },
         say: { message: `${name} sent to ${customer?.email ?? 'the customer'}, with its PDF`, tone: 'success' },
       };
+    case 'print_invoice':
+      return { say: { message: `${name || 'The draft'}: the invoice PDF opens to print`, tone: 'info' } };
+    case 'js_assign_outstanding_line': {
+      // The outstanding credit on this line, set against what is left to pay.
+      const line = request.line;
+      if (!line) return undefined;
+      const residual = Math.max(0, round(num(v['amount_residual']) - num(line.values['amount'])));
+      const payments: Line[] = [
+        ...((v['invoice_payment_ids'] as Line[] | null) ?? []),
+        { key: `out-${line.key}`, values: { date: line.values['date'] ?? TODAY, journal_name: 'Bank — CIB', ref: line.values['ref'] ?? null, amount: num(line.values['amount']), currency_id: v['currency_id'] ?? EGP } },
+      ];
+      const left = ((v['outstanding_ids'] as Line[] | null) ?? []).filter((other) => other.key !== line.key);
+      return {
+        values: {
+          amount_residual: residual,
+          payment_state: residual <= 0 ? 'paid' : 'partial',
+          invoice_payment_ids: payments,
+          invoice_payments_widget: paymentsWidget(payments),
+          outstanding_ids: residual <= 0 ? [] : left,
+          invoice_has_outstanding: residual > 0 && left.length > 0,
+        },
+        say: { message: `${line.values['ref']} added to ${name}`, tone: 'success' },
+      };
+    }
+    case 'action_automatic_entry':
+      return { say: { message: `The Cut-Off dialog opens here in Flectra, for “${request.line?.values['name'] ?? ''}”: the dates to spread it over`, tone: 'info' } };
+    case 'action_export_xml':
+    case 'action_process_edi_web_services':
+    case 'action_retry_edi_documents_error':
+      return { say: { message: `${request.action}: the e-invoicing service is asked again`, tone: 'info' } };
     case 'preview_invoice':
       return { say: { message: `The customer's own page for ${name} opens: /my/invoices/${v['id']}`, tone: 'info' } };
     case 'reconcile_payment':
@@ -872,7 +958,7 @@ function invoiceAction(request: ActionRequest): ActionResult | undefined {
     case 'button_cancel':
       return { values: { state: 'cancel' } };
     case 'button_draft':
-      return { values: { state: 'draft', payment_state: 'not_paid', amount_residual: num(v['amount_total']), invoice_payment_ids: [], outstanding_ids: [], invoice_has_outstanding: false, invoice_pdf_report_id: null } };
+      return { values: { state: 'draft', payment_state: 'not_paid', amount_residual: num(v['amount_total']), invoice_payment_ids: [], invoice_payments_widget: paymentsWidget([]), outstanding_ids: [], invoice_has_outstanding: false, invoice_pdf_report_id: null } };
     case 'action_reverse':
       return { say: { message: `A credit note for ${name} is made in draft from the Reverse wizard (account.move.reversal)`, tone: 'info' } };
     case 'action_reverse_entry':
@@ -1132,7 +1218,7 @@ export const lane: RealLane = {
     'sherkety.expense': EXPENSES,
     'res.currency': { 7461: { name: 'EGP' }, 7462: { name: 'USD' } },
     'res.company': { 4101: { name: COMPANY.label, currency_id: EGP } },
-    'res.partner': rows(PARTNERS, (p) => ({ name: p.name, is_company: p.is_company, email: p.email ?? null })),
+    'res.partner': rows(PARTNERS, (p) => ({ name: p.name, is_company: p.is_company, email: p.email ?? null, street: p.street ?? null, city: p.city ?? null, vat: p.vat ?? null })),
     'res.partner.bank': rows(BANKS, ([name, owner]) => ({ name, partner_id: partner(owner) })),
     'res.users': rows(USERS, (name) => ({ name, share: false })),
     'hr.employee': rows(EMPLOYEES, (e) => ({ name: e.name, work_contact_id: partner(e.contact), parent_user_id: user(e.manager) })),
@@ -1170,6 +1256,7 @@ export const lane: RealLane = {
       fiscal_position_id: (values) => ({ show_update_fpos: values['state'] === 'draft' }),
       purchase_vendor_bill_id: autoComplete,
       amount_tax: taxTyped,
+      tax_totals: taxTotalsTyped,
     },
     'account.payment.register': {
       journal_id: (values) => journalPicked(values),

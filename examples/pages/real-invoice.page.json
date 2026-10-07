@@ -5,6 +5,7 @@
   "description": "Sherkety ERP's invoice, bill, credit note and journal entry: one page (account.move, view_move_form) whose type decides what shows. With what account (currency), sherkety_manual_currency_rate, account_payment, account_debit_note, account_edi, account_distribution_extras, sale and purchase add to it.",
   "data": { "kind": "record", "model": "account.move" },
   "maxWidth": "full",
+  "look": { "helpShown": "tooltip" },
   "fields": {
     "id": { "type": "integer", "label": "ID", "readonly": true },
     "name": { "type": "char", "label": "Number" },
@@ -25,6 +26,21 @@
         { "value": "out_receipt", "label": "Sales Receipt" },
         { "value": "in_receipt", "label": "Purchase Receipt" }
       ]
+    },
+    "invoice_filter_type_domain": {
+      "type": "char",
+      "label": "Invoice Filter Type Domain",
+      "compute": "if(move_type in ('out_invoice', 'out_refund', 'out_receipt'), 'sale', if(move_type in ('in_invoice', 'in_refund', 'in_receipt'), 'purchase', None))"
+    },
+    "product_sale_filter": {
+      "type": "boolean",
+      "label": "Products sold",
+      "compute": "if(move_type in ('out_invoice', 'out_refund', 'out_receipt'), True, None)"
+    },
+    "product_purchase_filter": {
+      "type": "boolean",
+      "label": "Products bought",
+      "compute": "if(move_type in ('in_invoice', 'in_refund', 'in_receipt'), True, None)"
     },
     "state": {
       "type": "selection",
@@ -57,6 +73,7 @@
     "need_cancel_request": { "type": "boolean", "label": "Need Cancel Request" },
     "is_being_sent": { "type": "boolean", "label": "Is Being Sent" },
     "invoice_pdf_report_id": { "type": "many2one", "label": "PDF Attachment", "relation": "ir.attachment", "readonly": true },
+    "invoice_pdf": { "type": "binary", "label": "Bill", "accept": ["application/pdf"], "readonly": true },
     "duplicated_ref_ids": { "type": "many2many", "label": "Duplicated Ref", "relation": "account.move", "readonly": true },
     "tax_lock_date_message": { "type": "char", "label": "Tax Lock Date Message", "readonly": true },
     "partner_credit_warning": { "type": "text", "label": "Partner Credit Warning", "readonly": true },
@@ -97,13 +114,50 @@
     },
     "edi_error_message": { "type": "html", "label": "Edi Error Message", "readonly": true },
     "edi_web_services_to_process": { "type": "text", "label": "Edi Web Services To Process", "readonly": true },
+    "edi_document_ids": {
+      "type": "one2many",
+      "label": "Electronic invoicing",
+      "relation": "account.edi.document",
+      "readonly": true,
+      "fields": {
+        "name": { "type": "char", "label": "Name" },
+        "edi_format_name": { "type": "char", "label": "Format" },
+        "state": {
+          "type": "selection",
+          "label": "Status",
+          "options": [
+            { "value": "to_send", "label": "To Send" },
+            { "value": "sent", "label": "Sent" },
+            { "value": "to_cancel", "label": "To Cancel" },
+            { "value": "cancelled", "label": "Cancelled" }
+          ]
+        },
+        "error": { "type": "text", "label": "Error" },
+        "blocking_level": {
+          "type": "selection",
+          "label": "Blocking Level",
+          "options": [{ "value": "info", "label": "Info" }, { "value": "warning", "label": "Warning" }, { "value": "error", "label": "Error" }]
+        }
+      }
+    },
     "tax_calculation_rounding_method": {
       "type": "selection",
       "label": "Tax calculation rounding method",
       "readonly": true,
       "options": [{ "value": "round_per_line", "label": "Round per Line" }, { "value": "round_globally", "label": "Round Globally" }]
     },
-    "partner_id": { "type": "many2one", "label": "Partner", "relation": "res.partner", "filter": [{ "field": "is_company", "op": "=", "value": true }] },
+    "partner_id": {
+      "type": "many2one",
+      "label": "Partner",
+      "relation": "res.partner",
+      "filter": [{ "any": [{ "field": "company_id", "op": "notset" }, { "field": "company_id", "op": "=", "valueFrom": "company_id" }] }]
+    },
+    "partner_shipping_id": {
+      "type": "many2one",
+      "label": "Delivery Address",
+      "relation": "res.partner",
+      "help": "The delivery address will be used in the computation of the fiscal position."
+    },
     "commercial_partner_id": { "type": "many2one", "label": "Commercial Entity", "relation": "res.partner", "readonly": true },
     "bank_partner_id": { "type": "many2one", "label": "Bank Partner", "relation": "res.partner", "readonly": true },
     "quick_edit_total_amount": { "type": "monetary", "label": "Total (Tax inc.)", "currencyField": "currency_id" },
@@ -124,7 +178,7 @@
     },
     "invoice_date": { "type": "date", "label": "Invoice/Bill Date" },
     "date": { "type": "date", "label": "Date", "required": true },
-    "payment_reference": { "type": "char", "label": "Payment Reference" },
+    "payment_reference": { "type": "char", "label": "Payment Reference", "help": "The payment reference to set on journal items." },
     "partner_bank_id": {
       "type": "many2one",
       "label": "Recipient Bank",
@@ -152,7 +206,15 @@
           "default": "product",
           "options": [{ "value": "product", "label": "Product" }, { "value": "line_section", "label": "Section" }, { "value": "line_note", "label": "Note" }]
         },
-        "product_id": { "type": "many2one", "label": "Product", "relation": "product.product" },
+        "product_id": {
+          "type": "many2one",
+          "label": "Product",
+          "relation": "product.product",
+          "filter": [
+            { "field": "sale_ok", "op": "=?", "valueFrom": "parent.product_sale_filter" },
+            { "field": "purchase_ok", "op": "=?", "valueFrom": "parent.product_purchase_filter" }
+          ]
+        },
         "name": { "type": "char", "label": "Label" },
         "account_id": {
           "type": "many2one",
@@ -179,7 +241,12 @@
         "discount_4_amount": { "type": "monetary", "label": "Discount 4 Amount", "currencyField": "currency_id" },
         "discount_4_overridden": { "type": "boolean", "label": "Discount 4 Overridden" },
         "price_subtotal_after_discounts": { "type": "monetary", "label": "Net After Discounts", "currencyField": "currency_id", "readonly": true },
-        "tax_ids": { "type": "many2many", "label": "Taxes", "relation": "account.tax" },
+        "tax_ids": {
+          "type": "many2many",
+          "label": "Taxes",
+          "relation": "account.tax",
+          "filter": [{ "field": "type_tax_use", "op": "=?", "valueFrom": "parent.invoice_filter_type_domain" }]
+        },
         "price_subtotal": { "type": "monetary", "label": "Tax excl.", "currencyField": "currency_id", "readonly": true },
         "price_total": { "type": "monetary", "label": "Tax incl.", "currencyField": "currency_id", "readonly": true },
         "purchase_order_id": { "type": "many2one", "label": "Purchase Order", "relation": "purchase.order", "readonly": true },
@@ -190,6 +257,7 @@
     "amount_untaxed": { "type": "monetary", "label": "Untaxed Amount", "currencyField": "currency_id", "readonly": true },
     "amount_tax": { "type": "monetary", "label": "Tax", "currencyField": "currency_id" },
     "amount_total": { "type": "monetary", "label": "Total", "currencyField": "currency_id", "readonly": true },
+    "tax_totals": { "type": "json", "label": "Invoice Totals" },
     "invoice_payment_ids": {
       "type": "one2many",
       "label": "Payments",
@@ -203,6 +271,7 @@
         "currency_id": { "type": "many2one", "label": "Currency", "relation": "res.currency" }
       }
     },
+    "invoice_payments_widget": { "type": "json", "label": "Invoice Payments Widget", "readonly": true },
     "amount_residual": { "type": "monetary", "label": "Amount Due", "currencyField": "currency_id", "readonly": true },
     "exchange_rate_used": { "type": "float", "label": "Exchange Rate", "digits": [12, 6], "readonly": true },
     "exchange_rate_date": { "type": "date", "label": "Exchange Rate Date", "readonly": true },
@@ -276,7 +345,18 @@
     "qr_code_method": { "type": "selection", "label": "Payment QR-code", "options": [{ "value": "emv_qr", "label": "EMV Merchant-Presented QR-code" }] },
     "invoice_incoterm_id": { "type": "many2one", "label": "Incoterm", "relation": "account.incoterms" },
     "incoterm_location": { "type": "char", "label": "Incoterm Location" },
-    "fiscal_position_id": { "type": "many2one", "label": "Fiscal Position", "relation": "account.fiscal.position" },
+    "fiscal_position_id": {
+      "type": "many2one",
+      "label": "Fiscal Position",
+      "relation": "account.fiscal.position",
+      "help": "Fiscal positions are used to adapt taxes and accounts for particular customers or sales orders/invoices. The default value comes from the customer."
+    },
+    "invoice_cash_rounding_id": {
+      "type": "many2one",
+      "label": "Cash Rounding Method",
+      "relation": "account.cash.rounding",
+      "help": "Defines the smallest coinage of the currency that can be used to pay by cash."
+    },
     "invoice_source_email": { "type": "char", "label": "Source Email" },
     "auto_post": {
       "type": "selection",
@@ -289,10 +369,18 @@
         { "value": "monthly", "label": "Monthly" },
         { "value": "quarterly", "label": "Quarterly" },
         { "value": "yearly", "label": "Yearly" }
-      ]
+      ],
+      "help": "Specify whether this entry is posted automatically on its accounting date, and any similar recurring invoices."
     },
     "auto_post_until": { "type": "date", "label": "Auto-post until" },
-    "to_check": { "type": "boolean", "label": "To Check" },
+    "to_check": {
+      "type": "boolean",
+      "label": "To Check",
+      "help": "If this checkbox is ticked, it means that the user was not sure of all the related information at the time of the creation of the move and that the move needs to be checked again."
+    },
+    "campaign_id": { "type": "many2one", "label": "Campaign", "relation": "utm.campaign" },
+    "medium_id": { "type": "many2one", "label": "Medium", "relation": "utm.medium" },
+    "source_id": { "type": "many2one", "label": "Source", "relation": "utm.source" },
     "reversed_entry_id": { "type": "many2one", "label": "Reversal of", "relation": "account.move", "readonly": true },
     "payment_amount": { "type": "monetary", "label": "Payment just registered: amount", "currencyField": "payment_currency_id", "readonly": true },
     "payment_currency_id": { "type": "many2one", "label": "Payment just registered: currency", "relation": "res.currency", "readonly": true },
@@ -312,16 +400,7 @@
     "title": {
       "field": "name",
       "placeholder": "Draft",
-      "above": [{ "type": "field", "id": "f-move-type", "field": "move_type", "labels": "hidden", "readonly": true, "invisible": "move_type == 'entry'" }],
-      "below": [
-        {
-          "type": "field",
-          "id": "f-highest-name",
-          "field": "highest_name",
-          "help": "You might want to put a higher number here.",
-          "invisible": "not show_name_warning"
-        }
-      ]
+      "above": [{ "type": "field", "id": "f-move-type", "field": "move_type", "labels": "hidden", "readonly": true, "invisible": "move_type == 'entry'" }]
     },
     "statusbar": { "field": "state", "visibleStates": ["draft", "posted"] },
     "buttons": [
@@ -331,7 +410,9 @@
         "label": "Post",
         "style": "primary",
         "invisible": "hide_post_button or move_type != 'entry'",
-        "steps": [{ "do": "check" }, { "do": "call", "action": "action_post" }, { "do": "save" }]
+        "steps": [{ "do": "check" }, { "do": "call", "action": "action_post" }, { "do": "save" }],
+        "hotkey": "q",
+        "roles": ["account.group_account_invoice"]
       },
       {
         "type": "button",
@@ -339,7 +420,9 @@
         "label": "Confirm",
         "style": "primary",
         "invisible": "hide_post_button or move_type == 'entry' or display_inactive_currency_warning",
-        "steps": [{ "do": "check" }, { "do": "call", "action": "action_post" }, { "do": "save" }]
+        "steps": [{ "do": "check" }, { "do": "call", "action": "action_post" }, { "do": "save" }],
+        "hotkey": "q",
+        "roles": ["account.group_account_invoice"]
       },
       {
         "type": "button",
@@ -347,14 +430,18 @@
         "label": "Send & Print",
         "style": "primary",
         "invisible": "state != 'posted' or is_being_sent or invoice_pdf_report_id or move_type not in ['out_invoice', 'out_refund']",
-        "steps": [{ "do": "call", "action": "action_invoice_sent" }, { "do": "save" }]
+        "steps": [{ "do": "call", "action": "action_invoice_sent" }, { "do": "save" }],
+        "hotkey": "y",
+        "roles": ["account.group_account_invoice"]
       },
       {
         "type": "button",
         "id": "b-send-print",
         "label": "Send & Print",
         "invisible": "state != 'posted' or (not is_being_sent and not invoice_pdf_report_id) or move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund']",
-        "steps": [{ "do": "call", "action": "action_invoice_sent" }, { "do": "save" }]
+        "steps": [{ "do": "call", "action": "action_invoice_sent" }, { "do": "save" }],
+        "hotkey": "y",
+        "roles": ["account.group_account_invoice"]
       },
       {
         "type": "button",
@@ -391,7 +478,9 @@
             },
             "then": [{ "do": "call", "action": "reconcile_payment" }, { "do": "save" }]
           }
-        ]
+        ],
+        "hotkey": "g",
+        "roles": ["account.group_account_invoice"]
       },
       {
         "type": "button",
@@ -414,7 +503,8 @@
         "id": "b-preview",
         "label": "Preview",
         "invisible": "move_type not in ['out_invoice', 'out_refund'] or state == 'cancel'",
-        "action": "preview_invoice"
+        "hotkey": "o",
+        "steps": [{ "do": "openUrl", "url": "'/my/invoices/' + id" }]
       },
       {
         "type": "button",
@@ -425,28 +515,34 @@
           { "do": "ask", "message": "Reverse this entry? A reversal is posted on today's date." },
           { "do": "call", "action": "action_reverse_entry" },
           { "do": "save" }
-        ]
+        ],
+        "hotkey": "z",
+        "roles": ["account.group_account_invoice"]
       },
       {
         "type": "button",
         "id": "b-credit-note",
         "label": "Credit Note",
         "invisible": "move_type not in ['out_invoice', 'in_invoice'] or state != 'posted'",
-        "action": "action_reverse"
+        "action": "action_reverse",
+        "hotkey": "z",
+        "roles": ["account.group_account_invoice"]
       },
       {
         "type": "button",
         "id": "b-cancel-entry",
         "label": "Cancel Entry",
         "invisible": "not id or state != 'draft' or move_type != 'entry'",
-        "steps": [{ "do": "call", "action": "button_cancel" }, { "do": "save" }]
+        "steps": [{ "do": "call", "action": "button_cancel" }, { "do": "save" }],
+        "hotkey": "x"
       },
       {
         "type": "button",
         "id": "b-cancel",
         "label": "Cancel",
         "invisible": "not id or state != 'draft' or move_type == 'entry'",
-        "steps": [{ "do": "call", "action": "button_cancel" }, { "do": "save" }]
+        "steps": [{ "do": "call", "action": "button_cancel" }, { "do": "save" }],
+        "hotkey": "x"
       },
       {
         "type": "button",
@@ -467,21 +563,25 @@
         "id": "b-reset-draft",
         "label": "Reset to Draft",
         "invisible": "not show_reset_to_draft_button",
-        "steps": [{ "do": "call", "action": "button_draft" }, { "do": "save" }]
+        "steps": [{ "do": "call", "action": "button_draft" }, { "do": "save" }],
+        "hotkey": "r",
+        "roles": ["account.group_account_invoice"]
       },
       {
         "type": "button",
         "id": "b-request-cancel",
         "label": "Request Cancel",
         "invisible": "state != 'posted' or show_reset_to_draft_button or not need_cancel_request",
-        "action": "button_request_cancel"
+        "action": "button_request_cancel",
+        "hotkey": "w"
       },
       {
         "type": "button",
         "id": "b-set-checked",
         "label": "Set as Checked",
         "invisible": "not to_check",
-        "steps": [{ "do": "set", "field": "to_check", "value": "False" }, { "do": "save" }, { "do": "say", "message": "Marked as checked", "tone": "success" }]
+        "steps": [{ "do": "set", "field": "to_check", "value": "False" }, { "do": "save" }, { "do": "say", "message": "Marked as checked", "tone": "success" }],
+        "hotkey": "k"
       }
     ],
     "statButtons": [
@@ -538,50 +638,39 @@
         "invisible": "purchase_order_count == 0 or move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt']"
       }
     ],
-    "ribbon": {
-      "id": "r-paid",
-      "label": "Paid",
-      "tone": "success",
-      "invisible": "payment_state != 'paid' or move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt']"
-    },
-    "badges": [
-      {
-        "id": "b-in-payment",
-        "label": "In Payment",
-        "tone": "info",
-        "invisible": "payment_state != 'in_payment' or move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt']"
-      },
-      {
-        "id": "b-partial",
-        "label": "Partial",
-        "tone": "warning",
-        "invisible": "payment_state != 'partial' or move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt']"
-      },
-      { "id": "b-reversed", "label": "Reversed", "tone": "danger", "invisible": "payment_state != 'reversed'" },
-      { "id": "b-legacy", "label": "Invoicing App Legacy", "tone": "info", "invisible": "payment_state != 'invoicing_legacy'" }
-    ],
     "alerts": [
       {
         "id": "a-edi-to-process",
         "message": "The invoice will soon be sent to the tax authority's e-invoicing service.",
         "tone": "info",
-        "invisible": "not edi_web_services_to_process or state == 'draft'"
+        "invisible": "not edi_web_services_to_process or state == 'draft'",
+        "buttons": [{ "type": "button", "id": "b-edi-process", "label": "Process now", "action": "action_process_edi_web_services" }]
       },
       {
         "id": "a-edi-error",
-        "message": "The tax authority's e-invoicing service refused this invoice: see the errors on the EDI Documents tab.",
+        "message": "The tax authority’s e-invoicing service refused this invoice: {edi_error_message}",
         "tone": "danger",
-        "invisible": "edi_error_count == 0 or edi_blocking_level != 'error'"
+        "invisible": "edi_error_count == 0 or edi_blocking_level != 'error'",
+        "buttons": [
+          { "type": "button", "id": "b-edi-retry", "label": "Retry", "action": "action_retry_edi_documents_error" },
+          {
+            "type": "button",
+            "id": "b-edi-see-errors",
+            "label": "See errors",
+            "steps": [{ "do": "goTo", "target": "edi_documents" }],
+            "roles": ["base.group_no_one"]
+          }
+        ]
       },
       {
         "id": "a-edi-warning",
-        "message": "The e-invoicing service warned about this invoice.",
+        "message": "The e-invoicing service warned about this invoice: {edi_error_message}",
         "tone": "warning",
         "invisible": "edi_error_count == 0 or edi_blocking_level != 'warning'"
       },
       {
         "id": "a-edi-info",
-        "message": "The e-invoicing service has a message about this invoice.",
+        "message": "The e-invoicing service has a message about this invoice: {edi_error_message}",
         "tone": "info",
         "invisible": "edi_error_count == 0 or edi_blocking_level != 'info'"
       },
@@ -589,122 +678,87 @@
         "id": "a-duplicate",
         "message": "Warning: this bill might be a duplicate of one of those bills.",
         "tone": "warning",
-        "invisible": "state != 'draft' or not duplicated_ref_ids"
+        "invisible": "state != 'draft' or not duplicated_ref_ids",
+        "buttons": [{ "type": "button", "id": "b-open-duplicates", "label": "one of those bills", "action": "open_duplicated_ref_bill_view" }]
       },
       { "id": "a-being-sent", "message": "This invoice is being sent in the background.", "tone": "info", "invisible": "not is_being_sent" },
       {
         "id": "a-tax-lock",
-        "message": "The tax lock date has passed: this entry's taxes will be reported in the next open period.",
+        "message": "The tax lock date has passed.",
         "tone": "warning",
-        "invisible": "state != 'draft' or not tax_lock_date_message"
+        "invisible": "state != 'draft' or not tax_lock_date_message",
+        "messageField": "tax_lock_date_message"
       },
       {
         "id": "a-outstanding-customer",
         "message": "You have outstanding credits for this customer. You can allocate them to mark this invoice as paid.",
         "tone": "info",
-        "invisible": "move_type not in ['out_invoice', 'out_receipt'] or not invoice_has_outstanding or payment_state not in ['not_paid', 'partial']"
+        "invisible": "move_type not in ['out_invoice', 'out_receipt'] or not invoice_has_outstanding or payment_state not in ['not_paid', 'partial']",
+        "buttons": [{ "type": "button", "id": "b-outstanding-customer", "label": "See them", "steps": [{ "do": "goTo", "target": "invoice_tab" }] }]
       },
       {
         "id": "a-outstanding-vendor",
         "message": "You have outstanding debits for this vendor. You can allocate them to mark this bill as paid.",
         "tone": "info",
-        "invisible": "move_type not in ['in_invoice', 'in_receipt'] or not invoice_has_outstanding or payment_state not in ['not_paid', 'partial']"
+        "invisible": "move_type not in ['in_invoice', 'in_receipt'] or not invoice_has_outstanding or payment_state not in ['not_paid', 'partial']",
+        "buttons": [{ "type": "button", "id": "b-outstanding-vendor", "label": "See them", "steps": [{ "do": "goTo", "target": "invoice_tab" }] }]
       },
       {
         "id": "a-outstanding-customer-refund",
         "message": "You have outstanding debits for this customer. You can allocate them to mark this credit note as paid.",
         "tone": "info",
-        "invisible": "move_type != 'out_refund' or not invoice_has_outstanding or payment_state not in ['not_paid', 'partial']"
+        "invisible": "move_type != 'out_refund' or not invoice_has_outstanding or payment_state not in ['not_paid', 'partial']",
+        "buttons": [{ "type": "button", "id": "b-outstanding-customer-refund", "label": "See them", "steps": [{ "do": "goTo", "target": "invoice_tab" }] }]
       },
       {
         "id": "a-outstanding-vendor-refund",
         "message": "You have outstanding credits for this vendor. You can allocate them to mark this credit note as paid.",
         "tone": "info",
-        "invisible": "move_type != 'in_refund' or not invoice_has_outstanding or payment_state not in ['not_paid', 'partial']"
+        "invisible": "move_type != 'in_refund' or not invoice_has_outstanding or payment_state not in ['not_paid', 'partial']",
+        "buttons": [{ "type": "button", "id": "b-outstanding-vendor-refund", "label": "See them", "steps": [{ "do": "goTo", "target": "invoice_tab" }] }]
       },
       {
         "id": "a-auto-post-at-date",
-        "message": "This move is configured to be posted automatically at the accounting date.",
+        "message": "This move is configured to be posted automatically at the accounting date: {date}.",
         "tone": "info",
         "invisible": "state != 'draft' or auto_post != 'at_date'"
       },
       {
         "id": "a-auto-post-recurring",
-        "message": "Recurring auto-posting is enabled: it is posted on each accounting date until the end date.",
+        "message": "This move is configured to be auto-posted on {date}, and its copies until {auto_post_until}.",
         "tone": "info",
-        "invisible": "state != 'draft' or auto_post == 'no' or auto_post == 'at_date'"
+        "invisible": "state != 'draft' or auto_post in ('no', 'at_date')"
       },
-      { "id": "a-credit-limit", "message": "This customer has reached its credit limit.", "tone": "warning", "invisible": "not partner_credit_warning" },
+      {
+        "id": "a-credit-limit",
+        "message": "This customer has reached its credit limit.",
+        "tone": "warning",
+        "invisible": "not partner_credit_warning",
+        "messageField": "partner_credit_warning"
+      },
       {
         "id": "a-inactive-currency-bill",
         "message": "In order to validate this bill, you must activate the currency of the bill. The journal entries need to be computed by Flectra before being posted in your company's currency.",
         "tone": "warning",
-        "invisible": "not display_inactive_currency_warning or move_type not in ['in_invoice', 'in_refund', 'in_receipt']"
+        "invisible": "not display_inactive_currency_warning or move_type not in ['in_invoice', 'in_refund', 'in_receipt']",
+        "buttons": [{ "type": "button", "id": "b-activate-bill", "label": "Activate the currency", "action": "action_activate_currency" }]
       },
       {
         "id": "a-inactive-currency-invoice",
         "message": "In order to validate this invoice, you must activate the currency of the invoice. The journal entries need to be computed by Flectra before being posted in your company's currency.",
         "tone": "warning",
-        "invisible": "not display_inactive_currency_warning or move_type not in ['out_invoice', 'out_refund', 'out_receipt']"
+        "invisible": "not display_inactive_currency_warning or move_type not in ['out_invoice', 'out_refund', 'out_receipt']",
+        "buttons": [{ "type": "button", "id": "b-activate-invoice", "label": "Activate the currency", "action": "action_activate_currency" }]
       }
     ],
     "children": [
       {
-        "type": "section",
-        "id": "alert-fields",
-        "style": "plain",
-        "columns": 2,
-        "invisible": "not ((state == 'draft' and tax_lock_date_message) or partner_credit_warning or (state == 'draft' and auto_post != 'no') or (state == 'draft' and duplicated_ref_ids) or display_inactive_currency_warning)",
-        "children": [
-          {
-            "type": "field",
-            "id": "f-tax-lock-message",
-            "field": "tax_lock_date_message",
-            "labels": "hidden",
-            "colspan": 2,
-            "invisible": "state != 'draft' or not tax_lock_date_message"
-          },
-          {
-            "type": "field",
-            "id": "f-credit-warning",
-            "field": "partner_credit_warning",
-            "labels": "hidden",
-            "colspan": 2,
-            "invisible": "not partner_credit_warning"
-          },
-          {
-            "type": "field",
-            "id": "f-auto-post-date",
-            "field": "date",
-            "label": "Next accounting date",
-            "readonly": true,
-            "invisible": "state != 'draft' or auto_post == 'no'"
-          },
-          {
-            "type": "field",
-            "id": "f-auto-post-until-alert",
-            "field": "auto_post_until",
-            "label": "The recurrence will end on (included)",
-            "readonly": true,
-            "invisible": "state != 'draft' or auto_post in ['no', 'at_date'] or not auto_post_until"
-          },
-          {
-            "type": "button",
-            "id": "b-activate-currency",
-            "label": "Activate the currency",
-            "style": "link",
-            "action": "action_activate_currency",
-            "invisible": "not display_inactive_currency_warning"
-          },
-          {
-            "type": "button",
-            "id": "b-open-duplicates",
-            "label": "Open the possible duplicates",
-            "style": "link",
-            "action": "open_duplicated_ref_bill_view",
-            "invisible": "state != 'draft' or not duplicated_ref_ids"
-          }
-        ]
+        "type": "text",
+        "id": "t-highest-name",
+        "text": "The current highest number is {highest_name}. You might want to put a higher number here.",
+        "style": "alert",
+        "tone": "warning",
+        "invisible": "not show_name_warning"
       },
       {
         "type": "section",
@@ -722,7 +776,7 @@
                 "id": "f-customer",
                 "field": "partner_id",
                 "label": "Customer",
-                "options": { "create": false },
+                "options": { "create": false, "details": true },
                 "invisible": "move_type not in ['out_invoice', 'out_refund', 'out_receipt']",
                 "readonly": "state != 'draft'"
               },
@@ -731,7 +785,7 @@
                 "id": "f-vendor",
                 "field": "partner_id",
                 "label": "Vendor",
-                "options": { "create": false },
+                "options": { "create": false, "details": true },
                 "invisible": "move_type not in ['in_invoice', 'in_refund', 'in_receipt']",
                 "readonly": "state != 'draft'"
               },
@@ -744,6 +798,14 @@
                 "confirm": "This will update all taxes and accounts based on the currently selected fiscal position.",
                 "invisible": "not show_update_fpos or state in ['cancel', 'posted']",
                 "action": "action_update_fpos_values"
+              },
+              {
+                "type": "field",
+                "id": "f-partner-shipping",
+                "field": "partner_shipping_id",
+                "roles": ["account.group_delivery_invoice_address"],
+                "invisible": "move_type not in ('out_invoice', 'out_refund', 'out_receipt')",
+                "readonly": "state != 'draft'"
               },
               {
                 "type": "field",
@@ -824,21 +886,29 @@
                 "readonly": "state != 'draft'"
               },
               {
-                "type": "field",
-                "id": "f-due-date",
-                "field": "invoice_date_due",
-                "placeholder": "Date",
-                "invisible": "move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'] or invoice_payment_term_id",
-                "readonly": "state in ['cancel', 'posted']"
-              },
-              {
-                "type": "field",
-                "id": "f-payment-terms",
-                "field": "invoice_payment_term_id",
-                "label": "Payment terms",
-                "placeholder": "Payment Terms",
-                "readonly": "state in ['cancel', 'posted']",
-                "invisible": "move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt']"
+                "type": "section",
+                "id": "due-row",
+                "title": "Due Date",
+                "style": "inline",
+                "invisible": "move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')",
+                "children": [
+                  {
+                    "type": "field",
+                    "id": "f-due-date",
+                    "field": "invoice_date_due",
+                    "placeholder": "Date",
+                    "invisible": "invoice_payment_term_id",
+                    "readonly": "state in ['cancel', 'posted']"
+                  },
+                  { "type": "text", "id": "t-due-or", "text": "or", "invisible": "invoice_date_due or invoice_payment_term_id" },
+                  {
+                    "type": "field",
+                    "id": "f-payment-terms",
+                    "field": "invoice_payment_term_id",
+                    "placeholder": "Payment Terms",
+                    "readonly": "state in ['cancel', 'posted']"
+                  }
+                ]
               },
               { "type": "field", "id": "f-delivery-date", "field": "delivery_date", "invisible": "not show_delivery_date", "readonly": "state != 'draft'" },
               {
@@ -854,7 +924,8 @@
                 "field": "currency_id",
                 "options": { "create": false },
                 "invisible": "move_type == 'entry'",
-                "readonly": "state != 'draft'"
+                "readonly": "state != 'draft'",
+                "roles": ["base.group_multi_currency"]
               },
               { "type": "field", "id": "f-edi-state", "field": "edi_state", "invisible": "not edi_state or state == 'draft'" }
             ]
@@ -922,7 +993,14 @@
                   "tax_ids": "show",
                   "price_total": "hide",
                   "purchase_order_id": "hide"
-                }
+                },
+                "cells": {
+                  "product_uom_id": { "hidden": "'uom.group_uom' not in user.roles" },
+                  "analytic_distribution": { "hidden": "'analytic.group_analytic_accounting' not in user.roles" },
+                  "price_total": { "hidden": "tax_calculation_rounding_method == 'round_globally'" },
+                  "purchase_order_id": { "hidden": "move_type not in ('in_invoice', 'in_refund', 'in_receipt')" }
+                },
+                "cards": "narrow"
               },
               {
                 "type": "section",
@@ -938,22 +1016,23 @@
                     "labels": "beside",
                     "invisible": "move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'] or payment_state == 'invoicing_legacy'",
                     "children": [
-                      { "type": "field", "id": "f-amount-untaxed", "field": "amount_untaxed" },
                       {
                         "type": "field",
-                        "id": "f-amount-tax",
-                        "field": "amount_tax",
-                        "readonly": "state != 'draft' or (move_type not in ['in_invoice', 'in_refund', 'in_receipt'] and not quick_edit_mode)",
-                        "label": "Taxes"
+                        "id": "f-tax-totals",
+                        "field": "tax_totals",
+                        "widget": "tax-totals",
+                        "labels": "hidden",
+                        "readonly": "state != 'draft' or (move_type not in ('in_invoice', 'in_refund', 'in_receipt') and not quick_edit_mode)",
+                        "options": { "currencyField": "currency_id", "editable": true }
                       },
-                      { "type": "field", "id": "f-amount-total", "field": "amount_total" },
                       {
                         "type": "field",
                         "id": "f-payments",
-                        "field": "invoice_payment_ids",
+                        "field": "invoice_payments_widget",
+                        "widget": "payments",
                         "labels": "hidden",
-                        "columns": ["date", "amount"],
-                        "invisible": "not invoice_payment_ids"
+                        "invisible": "not invoice_payment_ids",
+                        "options": { "currencyField": "currency_id", "model": "account.payment" }
                       },
                       { "type": "field", "id": "f-amount-residual", "field": "amount_residual", "invisible": "state == 'draft'" },
                       { "type": "field", "id": "f-exchange-rate", "field": "exchange_rate_used", "invisible": "currency_id == company_currency_id" },
@@ -970,7 +1049,8 @@
                         "id": "f-outstanding",
                         "field": "outstanding_ids",
                         "columns": ["ref", "amount"],
-                        "invisible": "state != 'posted' or not outstanding_ids"
+                        "invisible": "state != 'posted' or not outstanding_ids",
+                        "rowButtons": [{ "type": "button", "id": "b-add-outstanding", "label": "Add", "action": "js_assign_outstanding_line" }]
                       }
                     ],
                     "colspan": 1
@@ -1021,7 +1101,30 @@
                   "tax_tag_ids": "show",
                   "tax_tag_invert": "hide"
                 },
-                "totals": ["debit", "credit"]
+                "totals": ["debit", "credit"],
+                "cells": {
+                  "partner_id": { "hidden": "move_type != 'entry'" },
+                  "analytic_distribution": { "hidden": "'analytic.group_analytic_accounting' not in user.roles" },
+                  "amount_currency": { "hidden": "'base.group_multi_currency' not in user.roles", "readonly": "display_type in ('payment_term', 'tax')" },
+                  "currency_id": { "hidden": "'base.group_multi_currency' not in user.roles" },
+                  "tax_ids": { "invisible": "display_type in ('line_section', 'line_note')", "readonly": "display_type in ('payment_term', 'tax')" },
+                  "tax_tag_ids": { "invisible": "display_type in ('line_section', 'line_note')" },
+                  "tax_tag_invert": { "hidden": "'base.group_no_one' not in user.roles" },
+                  "debit": { "readonly": "display_type in ('payment_term', 'tax') and parent.move_type != 'entry'" },
+                  "credit": { "readonly": "display_type in ('payment_term', 'tax') and parent.move_type != 'entry'" }
+                },
+                "rowTones": [{ "tone": "muted", "when": "display_type in ('line_section', 'line_note')" }],
+                "rowButtons": [
+                  {
+                    "type": "button",
+                    "id": "b-cut-off",
+                    "label": "Cut-Off",
+                    "icon": "clock",
+                    "invisible": "parent.state != 'posted' or display_type != 'product'",
+                    "action": "action_automatic_entry"
+                  }
+                ],
+                "cards": "narrow"
               },
               {
                 "type": "text",
@@ -1113,7 +1216,7 @@
                     "invisible": "move_type not in ['out_invoice', 'out_refund']",
                     "children": [
                       { "type": "field", "id": "f-customer-ref", "field": "ref", "label": "Customer Reference" },
-                      { "type": "field", "id": "f-salesperson", "field": "invoice_user_id" },
+                      { "type": "field", "id": "f-salesperson", "field": "invoice_user_id", "options": { "avatar": true } },
                       { "type": "field", "id": "f-team", "field": "team_id" },
                       { "type": "field", "id": "f-debit-origin", "field": "debit_origin_id", "invisible": "not debit_origin_id" },
                       { "type": "field", "id": "f-company-bank", "field": "partner_bank_id", "readonly": "state != 'draft'" },
@@ -1128,10 +1231,18 @@
                     "style": "line",
                     "invisible": "move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund']",
                     "children": [
-                      { "type": "field", "id": "f-company", "field": "company_id" },
+                      { "type": "field", "id": "f-company", "field": "company_id", "roles": ["base.group_multi_company"] },
                       { "type": "field", "id": "f-incoterm", "field": "invoice_incoterm_id" },
                       { "type": "field", "id": "f-incoterm-location", "field": "incoterm_location" },
                       { "type": "field", "id": "f-fiscal-position", "field": "fiscal_position_id", "readonly": "state in ['cancel', 'posted']" },
+                      {
+                        "type": "field",
+                        "id": "f-cash-rounding",
+                        "field": "invoice_cash_rounding_id",
+                        "roles": ["account.group_cash_rounding"],
+                        "invisible": "move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund')",
+                        "readonly": "state != 'draft'"
+                      },
                       {
                         "type": "field",
                         "id": "f-source-email",
@@ -1148,6 +1259,19 @@
                         "readonly": "state != 'draft'"
                       },
                       { "type": "field", "id": "f-to-check", "field": "to_check" }
+                    ]
+                  },
+                  {
+                    "type": "section",
+                    "id": "marketing",
+                    "title": "Marketing",
+                    "style": "line",
+                    "roles": ["base.group_no_one"],
+                    "invisible": "move_type not in ('out_invoice', 'out_refund')",
+                    "children": [
+                      { "type": "field", "id": "f-campaign", "field": "campaign_id" },
+                      { "type": "field", "id": "f-medium", "field": "medium_id" },
+                      { "type": "field", "id": "f-source", "field": "source_id" }
                     ]
                   }
                 ]
@@ -1189,17 +1313,87 @@
                     "style": "plain",
                     "children": [
                       { "type": "field", "id": "f-entry-fiscal-position", "field": "fiscal_position_id", "readonly": "state in ['cancel', 'posted']" },
-                      { "type": "field", "id": "f-entry-company", "field": "company_id", "required": true }
+                      { "type": "field", "id": "f-entry-company", "field": "company_id", "required": true, "roles": ["base.group_multi_company"] }
                     ]
                   }
                 ]
               },
               { "type": "field", "id": "f-internal-note", "field": "narration", "labels": "hidden", "placeholder": "Add an internal note..." }
             ]
+          },
+          {
+            "type": "tab",
+            "id": "edi_documents",
+            "label": "EDI Documents",
+            "roles": ["base.group_no_one"],
+            "invisible": "not edi_document_ids",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-edi-documents",
+                "field": "edi_document_ids",
+                "labels": "hidden",
+                "columns": ["name", "edi_format_name", "state", "error"],
+                "rowTones": [{ "tone": "danger", "when": "blocking_level == 'error'" }, { "tone": "warning", "when": "blocking_level == 'warning'" }],
+                "rowButtons": [
+                  {
+                    "type": "button",
+                    "id": "b-edi-download",
+                    "label": "Download",
+                    "icon": "file",
+                    "invisible": "state != 'sent'",
+                    "action": "action_export_xml"
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
     ],
-    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" }
+    "sidePanel": { "type": "slot", "id": "chatter", "name": "chatter" },
+    "ribbons": [
+      {
+        "id": "r-paid",
+        "label": "Paid",
+        "tone": "success",
+        "invisible": "payment_state != 'paid' or move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')"
+      },
+      {
+        "id": "r-in-payment",
+        "label": "In Payment",
+        "tone": "info",
+        "invisible": "payment_state != 'in_payment' or move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')"
+      },
+      {
+        "id": "r-partial",
+        "label": "Partial",
+        "tone": "info",
+        "invisible": "payment_state != 'partial' or move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')"
+      },
+      { "id": "r-reversed", "label": "Reversed", "tone": "danger", "invisible": "payment_state != 'reversed'" },
+      {
+        "id": "r-legacy",
+        "label": "Invoicing App Legacy",
+        "tone": "info",
+        "tooltip": "This entry has been generated through the Invoicing app, before installing Accounting. It has been disabled by the 'Invoicing Switch Threshold Date' setting so that it does not impact your accounting.",
+        "invisible": "payment_state != 'invoicing_legacy'"
+      }
+    ],
+    "toolbar": {
+      "menu": [
+        { "id": "m-print", "label": "Invoice", "group": "print", "action": "print_invoice", "invisible": "move_type not in ('out_invoice', 'out_refund')" },
+        {
+          "id": "m-debit-note",
+          "label": "Debit Note",
+          "action": "action_debit_note",
+          "roles": ["account.group_account_invoice"],
+          "invisible": "state != 'posted' or move_type not in ('out_invoice', 'in_invoice')"
+        },
+        { "id": "m-duplicate", "builtin": "duplicate" },
+        { "id": "m-delete", "builtin": "delete", "invisible": "state != 'draft'" }
+      ]
+    },
+    "attachmentPreview": { "field": "invoice_pdf", "invisible": "move_type not in ('in_invoice', 'in_refund', 'in_receipt')" }
   }
 }
