@@ -66,10 +66,18 @@ export interface FieldiaFormProps extends Omit<ViewerOptions, 'slots'> {
   onStep?: (event: FormEvents['step']) => void;
   /** A run of steps ended — a button's, a moment's — and how. */
   onRun?: (event: FormEvents['run']) => void;
+  /** The form has its values: a record loaded — the pager moved on, a copy shown — or a new one. */
+  onRecord?: (event: FormEvents['open']) => void;
+  /** The record was archived or brought back by a step, such as the gear menu's Archive. */
+  onArchive?: (event: FormEvents['archive']) => void;
+  /** The record was copied by a step; the form shows the copy. */
+  onDuplicate?: (event: FormEvents['duplicate']) => void;
+  /** The record was deleted by a step. */
+  onDelete?: (event: FormEvents['delete']) => void;
 }
 
 /** The form's events a prop hears, by the prop's name. */
-const EVENTS = { onChange: 'change', onSave: 'save', onSend: 'send', onStep: 'step', onRun: 'run' } as const;
+const EVENTS = { onChange: 'change', onSave: 'save', onSend: 'send', onStep: 'step', onRun: 'run', onRecord: 'open', onArchive: 'archive', onDuplicate: 'duplicate', onDelete: 'delete' } as const;
 
 /** A form's state as React state: the component re-renders on every change. */
 export function useFormState(form: Form): FormState {
@@ -185,7 +193,7 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
       };
     }
 
-    const { fieldTypes: _fields, slots: _slots, className: _class, style: _style, onReady: _ready, onChange: _change, onSave: _save, onSend: _send, onStep: _step, onRun: _run, ...options } = latest.current;
+    const { fieldTypes: _fields, slots: _slots, className: _class, style: _style, onReady: _ready, onChange: _change, onSave: _save, onSend: _send, onStep: _step, onRun: _run, onRecord: _record, onArchive: _archive, onDuplicate: _duplicate, onDelete: _delete, ...options } = latest.current;
     const mounted = mountViewer(element, {
       ...options,
       widgets,

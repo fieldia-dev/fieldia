@@ -55,7 +55,7 @@ interface Portal {
 }
 
 /** The form's events, each emitted under its own name. */
-const EVENTS = ['change', 'save', 'send', 'step', 'run'] as const;
+const EVENTS = ['change', 'save', 'send', 'step', 'run', 'archive', 'duplicate', 'delete'] as const;
 
 const EMPTY_STATE: WidgetState = { value: undefined, values: {}, readonly: false, required: false, invalid: false };
 
@@ -100,6 +100,10 @@ export const FieldiaForm = defineComponent({
     onOpen: { type: Function as PropType<ViewerOptions['onOpen']>, default: undefined },
     /** Any of the viewer's host done your own way: words said, a question asked, a page opened, a tab shown. */
     host: { type: Object as PropType<ViewerOptions['host']>, default: undefined },
+    /** The records round this one, for the pager over it: their ids, or how many, where this one is, and the id at a place. */
+    records: { type: [Array, Object] as PropType<ViewerOptions['records']>, default: undefined },
+    /** The trail to this record, for the breadcrumbs over it. */
+    breadcrumbs: { type: Array as PropType<ViewerOptions['breadcrumbs']>, default: undefined },
   },
   emits: {
     ready: (_handle: ViewerHandle) => true,
@@ -115,6 +119,12 @@ export const FieldiaForm = defineComponent({
     step: (_event: FormEvents['step']) => true,
     /** A run of steps ended — a button's, a moment's — and how. */
     run: (_event: FormEvents['run']) => true,
+    /** The form has its values: a record loaded — the pager moved on, a copy shown — or a new one. */
+    record: (_event: FormEvents['open']) => true,
+    /** The record was archived or brought back, copied, or deleted, by a step such as the gear menu's. */
+    archive: (_event: FormEvents['archive']) => true,
+    duplicate: (_event: FormEvents['duplicate']) => true,
+    delete: (_event: FormEvents['delete']) => true,
   },
   setup(props, { slots, emit, expose }) {
     const host = ref<HTMLElement>();
@@ -198,8 +208,11 @@ export const FieldiaForm = defineComponent({
         onOpen: props.onOpen,
         host: props.host ? toRaw(props.host) : undefined,
         onOpenRecord: (id) => emit('openRecord', id),
+        records: props.records ? toRaw(props.records) : undefined,
+        breadcrumbs: props.breadcrumbs ? toRaw(props.breadcrumbs) : undefined,
       });
       for (const event of EVENTS) handle.on(event, (payload) => (emit as (event: string, payload: unknown) => void)(event, payload));
+      handle.on('open', (payload) => emit('record', payload));
       portals.value = found;
       emit('ready', handle);
     }

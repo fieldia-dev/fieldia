@@ -41,6 +41,19 @@ const pricing: Page = {
   },
 };
 
+/** Two employees over a sheet with a gear menu, for the pager, the trail and the record's events. */
+const staffPage: Page = {
+  fieldia: '0.1',
+  id: 'staff',
+  data: { kind: 'record', model: 'hr.employee' },
+  fields: { name: { type: 'char', label: 'Name' } },
+  layout: { type: 'sheet', id: 'sheet', title: { field: 'name' }, toolbar: { menu: [{ id: 'm-dup', builtin: 'duplicate' }] }, children: [] },
+};
+const staff = () => createMemoryDataSource({ records: { 'hr.employee': { 1: { name: 'Mona Adel' }, 2: { name: 'Karim Fathy' } } } });
+const waitFor = async (check: () => unknown) => {
+  for (let waited = 0; !check() && waited < 2000; waited += 10) await new Promise((resolve) => setTimeout(resolve, 10));
+};
+
 function Shout({ value, onChange, id, readonly }: FieldComponentProps) {
   return (
     <span>
@@ -219,6 +232,17 @@ describe('<FieldiaForm>', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
     expect(sent).toEqual([{ product: 'Desk lamp', price: null }]);
+  });
+
+  it('draws the pager and the breadcrumbs the app gives, and tells each record the form shows', async () => {
+    const shown: unknown[] = [];
+    const { container } = render(<FieldiaForm page={staffPage} dataSource={staff()} recordId={1} records={[1, 2]} breadcrumbs={[{ label: 'Employees' }]} onRecord={(event) => shown.push(event.recordId)} />);
+    await waitFor(() => container.querySelector('.fd-crumb-current')?.textContent === 'Mona Adel');
+    expect(container.querySelector('.fd-record-pager-text')?.textContent).toBe('1 / 2');
+    fireEvent.click(screen.getByRole('button', { name: 'Next record' }));
+    await waitFor(() => container.querySelector('.fd-record-pager-text')?.textContent === '2 / 2');
+    await waitFor(() => shown.length === 2);
+    expect(shown).toEqual([1, 2]);
   });
 
   it('cleans up when it unmounts', () => {

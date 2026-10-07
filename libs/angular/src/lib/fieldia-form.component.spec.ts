@@ -88,6 +88,31 @@ class ListHostComponent {
   readonly opened: RecordId[] = [];
 }
 
+/** Two employees over a sheet with a gear menu, for the pager, the trail and the record's events. */
+const staffPage: Page = {
+  fieldia: '0.1',
+  id: 'staff',
+  data: { kind: 'record', model: 'hr.employee' },
+  fields: { name: { type: 'char', label: 'Name' } },
+  layout: { type: 'sheet', id: 'sheet', title: { field: 'name' }, toolbar: { menu: [{ id: 'm-dup', builtin: 'duplicate' }] }, children: [] },
+};
+const staff = () => createMemoryDataSource({ records: { 'hr.employee': { 1: { name: 'Mona Adel' }, 2: { name: 'Karim Fathy' } } } });
+const waitFor = async (check: () => unknown) => {
+  for (let waited = 0; !check() && waited < 2000; waited += 10) await new Promise((resolve) => setTimeout(resolve, 10));
+};
+
+@Component({
+  imports: [FieldiaFormComponent],
+  template: `<fieldia-form [page]="page" [dataSource]="dataSource" [recordId]="1" [records]="records" [breadcrumbs]="trail" (record)="shown.push($event.recordId)" />`,
+})
+class StaffHostComponent {
+  readonly page = staffPage;
+  readonly dataSource = staff();
+  readonly records = [1, 2];
+  readonly trail = [{ label: 'Employees' }];
+  readonly shown: unknown[] = [];
+}
+
 /** A product priced by the app, saved as a record. */
 const pricing: Page = {
   fieldia: '0.1',
@@ -340,6 +365,18 @@ describe('<fieldia-form> for Angular', () => {
     await fixture.whenStable();
     expect(document.querySelector('[data-node="f-name"] .fd-label')?.textContent).toBe('Nom complet');
     fixture.destroy();
+  });
+
+  it('draws the pager and the breadcrumbs it is given, and tells each record the form shows', async () => {
+    const fixture = TestBed.createComponent(StaffHostComponent);
+    fixture.autoDetectChanges();
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    await waitFor(() => el.querySelector('.fd-crumb-current')?.textContent === 'Mona Adel');
+    expect(el.querySelector('.fd-record-pager-text')?.textContent).toBe('1 / 2');
+    (el.querySelector('[aria-label="Next record"]') as HTMLButtonElement).click();
+    await waitFor(() => fixture.componentInstance.shown.length === 2);
+    expect(fixture.componentInstance.shown).toEqual([1, 2]);
   });
 
   it('cleans up when it is destroyed', async () => {
