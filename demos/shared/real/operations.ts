@@ -670,6 +670,7 @@ function explode(bomId: number, quantity: number, stored = false): Values {
         state: 'pending',
         working_state: 'normal',
         is_user_working: false,
+        timer_start: null,
       },
     })),
   };
@@ -677,7 +678,7 @@ function explode(bomId: number, quantity: number, stored = false): Values {
 
 const productionRecord: Values = {
   name: 'WH/MO/00031',
-  priority: null,
+  priority: '0',
   state: 'draft',
   reservation_state: null,
   show_serial_mass_produce: false,
@@ -727,7 +728,8 @@ const productionRecord: Values = {
   location_dest_id: LOCATIONS.stock,
   origin: 'S00231',
   date_deadline: '2026-10-12T17:00',
-  analytic_distribution: [link(5295, 'Nile Towers 12F')],
+  // Shares by analytic account id, as Flectra's analytic_distribution.
+  analytic_distribution: { 5295: 100 },
 };
 
 /** A product or a bill of materials picked brings the bill's components, by-products and work orders. */
@@ -930,6 +932,41 @@ function productionAction(request: ActionRequest): ActionResult | undefined {
 }
 
 // ---------------------------------------------------------------------------
+// A work order's own buttons, on its line or on the lines chosen.
+// ---------------------------------------------------------------------------
+
+const minutesSince = (from: unknown) => (typeof from === 'string' ? Math.max(0, Math.round((Date.now() - new Date(from).getTime()) / 60000)) : 0);
+
+/** mrp.workorder's buttons: the line (or lines) changed as the server would, the timer running while someone works. */
+function workorderAction(request: ActionRequest): ActionResult | undefined {
+  const what = request.action.slice('mrp.workorder.'.length);
+  const one = request.line ? [request.line.key] : [];
+  const chosen = new Set<string>(request.lines ? request.lines.keys.map(String) : one.map(String));
+  if (!chosen.size) return undefined;
+  const change = (v: Values): Values => {
+    switch (what) {
+      case 'button_start':
+        return { ...v, state: 'progress', is_user_working: true, timer_start: now(), date_start: v['date_start'] ?? now() };
+      case 'button_pending':
+        return { ...v, is_user_working: false, duration: Number(v['duration'] ?? 0) + minutesSince(v['timer_start']), timer_start: null };
+      case 'button_finish':
+      case 'action_mark_as_done':
+        return { ...v, state: 'done', is_user_working: false, duration: Number(v['duration'] ?? 0) + minutesSince(v['timer_start']), timer_start: null, date_finished: now(), qty_remaining: 0 };
+      case 'button_block':
+        return { ...v, working_state: 'blocked', is_user_working: false, duration: Number(v['duration'] ?? 0) + minutesSince(v['timer_start']), timer_start: null };
+      case 'button_unblock':
+        return { ...v, working_state: 'normal' };
+      default:
+        return v;
+    }
+  };
+  const workorders = linesOf(request.values, 'workorder_ids').map((line) => (chosen.has(String(line.key)) ? { ...line, values: change(line.values) } : line));
+  const names = workorders.filter((line) => chosen.has(String(line.key))).map((line) => line.values['name']).join(', ');
+  const said: Record<string, string> = { button_start: 'started', button_pending: 'paused', button_finish: 'done', action_mark_as_done: 'done', button_block: 'blocked', button_unblock: 'unblocked' };
+  return { values: { workorder_ids: workorders, ...(what === 'button_start' ? { state: 'progress' } : {}) }, say: { message: `${names}: ${said[what] ?? what}.`, tone: 'info' } };
+}
+
+// ---------------------------------------------------------------------------
 // The lane.
 // ---------------------------------------------------------------------------
 
@@ -941,6 +978,7 @@ const OPERATIONS_USER = {
     'base.group_user',
     'base.group_multi_company',
     'stock.group_stock_user',
+    'uom.group_uom',
     'project.group_project_manager',
     'project.group_project_rating',
     'project.group_project_recurring_tasks',
@@ -1012,6 +1050,7 @@ export const lane: RealLane = {
   navigation: {
     'real-task': { records: [TASK_ID, 5205, 5207], breadcrumbs: [{ label: 'Nile Towers 12th floor fit-out', href: '#tasks' }] },
     'real-transfer': { records: [PICKING_ID, 5302], breadcrumbs: [{ label: 'Receipts', href: '#receipts' }] },
+    'real-manufacturing-order': { records: [PRODUCTION_ID], breadcrumbs: [{ label: 'Manufacturing Orders', href: '#manufacturing' }] },
   },
   shows: {
     'res.users': { avatar: 'image_128' },
@@ -1127,7 +1166,9 @@ export const lane: RealLane = {
         ? pickingAction(request)
         : request.action.startsWith('mrp.production.')
           ? productionAction(request)
-          : undefined;
+          : request.action.startsWith('mrp.workorder.')
+            ? workorderAction(request)
+            : undefined;
     if (answer === undefined) return undefined;
     return new Promise((resolve) => setTimeout(() => resolve(answer), ANSWER_MS));
   },

@@ -764,12 +764,16 @@
         {
           "feature": "Produce part of the quantity: backorder wizard (mrp.production.backorder)",
           "status": "approximated",
-          "how": "the app makes the backorder at once and the Backorders stat button shows; the wizard is not shown"
+          "how": "the app makes the backorder at once and the Backorders stat button shows; the wizard is not shown",
+          "app": true,
+          "why": "mrp.production.backorder is the app's own wizard: a dialog page with its own footer buttons, as the transfer's, which the app's answer opens"
         },
         {
           "feature": "Consumption warning wizard (consumption warning / strict)",
           "status": "missing",
-          "needs": "not built: would be a dialog page the app opens, as the transfer's backorder; and dialog pages need their own buttons"
+          "needs": "a dialog page the app opens, as the transfer's backorder, with its own footer buttons (now built)",
+          "app": true,
+          "why": "the consumption check is the server's; its wizard is one more page the app opens from its answer"
         },
         {
           "feature": "Confirm: reserve components, readiness, availability",
@@ -788,7 +792,9 @@
         {
           "feature": "Scrap (stock.scrap wizard), Unbuild (mrp.unbuild wizard), Mass Produce (serial wizard), Print Labels",
           "status": "approximated",
-          "how": "calls the app answers directly; the wizards are not shown"
+          "how": "calls the app answers directly; the wizards are not shown",
+          "app": true,
+          "why": "Scrap, Unbuild, Mass Produce and Print Labels open the app's own wizards and reports"
         },
         {
           "feature": "Lock / Unlock (manager group)",
@@ -806,8 +812,8 @@
         },
         {
           "feature": "\"MO Reference\" label over the title, priority star, name placeholder",
-          "status": "approximated",
-          "how": "the title takes no label; priority as a one-star rating"
+          "status": "covered",
+          "how": "title.label \"MO Reference\" over the title, the priority star before it (title.before, a '0'/'1' selection), the name's placeholder (shown in the e2e)"
         },
         {
           "feature": "Product (readonly once confirmed, placeholder, domain on type)",
@@ -819,13 +825,13 @@
         },
         {
           "feature": "Quantity row: qty_producing / product_qty unit \"To Produce\" on one line",
-          "status": "approximated",
-          "how": "three fields in a row; the \"/\" and \"To Produce\" words are labels"
+          "status": "covered",
+          "how": "a section with style inline: qty_producing / product_qty, the unit (roles uom.group_uom) and \"To Produce\", on one line, as Flectra's o_row (shown in the e2e)"
         },
         {
           "feature": "product_qty as a link that opens Change Quantity To Produce once confirmed",
           "status": "approximated",
-          "how": "a separate link button; the wizard is the app's answer"
+          "how": "a separate link button, invisible while draft, done, cancelled or not id; the wizard is the app's answer — a field's value as a button's words is not there"
         },
         {
           "feature": "Forecast Report buttons, red when forecasted_issue",
@@ -843,22 +849,22 @@
         {
           "feature": "Scheduled Date / Start Date label by state; coloured when late; rescheduling popover",
           "status": "approximated",
-          "how": "date_start placed twice with each label and condition; colour and popover missing"
+          "how": "date_start placed twice with each label and condition, red and bold once past (tones, bold); the rescheduling popover is not drawn"
         },
         {
           "feature": "Component Status, coloured by readiness",
-          "status": "approximated",
-          "how": "the text, plus badges by the title: Components available / expected / not available"
+          "status": "covered",
+          "how": "the text green, amber or red by readiness (tones), plus the badges by the title"
         },
         {
           "feature": "Responsible (many2one_avatar)",
-          "status": "approximated",
-          "how": "without the avatar"
+          "status": "covered",
+          "how": "avatar: true: the user's face before the name"
         },
         {
           "feature": "Finished moves table (move_finished_ids, invisible)",
-          "status": "approximated",
-          "how": "not declared: the app keeps finished moves"
+          "status": "covered",
+          "how": "not declared: invisible in Flectra's view, so nothing is drawn in either; the app keeps the finished moves"
         },
         {
           "feature": "Components editable list (mrp_production_components_x2many)",
@@ -877,23 +883,23 @@
         },
         {
           "feature": "Component domain excluding the produced product (parent.product_id)",
-          "status": "missing",
-          "needs": "line filters reading the parent record"
+          "status": "covered",
+          "how": "the line's product filtered id != parent.product_id: a component is never the product made"
         },
         {
           "feature": "To Consume shown two ways by parent.show_produce_all (mrp_should_consume: \"should / total\")",
           "status": "approximated",
-          "how": "one column of the demand"
+          "how": "one column of the demand; Flectra's mrp_should_consume widget (\"should / total\") is not there"
         },
         {
           "feature": "Quantity: success/warning by consumption, mrp_consumed widget, hidden in draft",
-          "status": "missing",
-          "needs": "cell decorations and column conditions"
+          "status": "approximated",
+          "how": "cells.quantity: green when it is what should be consumed, amber above, hidden while draft, read-only for tracked products (shown in the e2e); the mrp_consumed widget's own look is not there"
         },
         {
           "feature": "Consumed and Lot/Serial columns hidden in draft or without lots",
-          "status": "missing",
-          "needs": "column conditions"
+          "status": "covered",
+          "how": "cells hidden: Consumed while draft, Lot/Serial while draft or without lots"
         },
         {
           "feature": "Components table read-only when cancelled, or done and locked",
@@ -907,38 +913,38 @@
         },
         {
           "feature": "Work Orders tab (routings group) with the editable work-order list",
-          "status": "approximated",
-          "how": "grid: Operation, Work Center, Product, Quantity Remaining/Produced, Lot, Start, End, Expected and Real Duration with totals, Status; group not checked"
+          "status": "covered",
+          "how": "grid as before, the tab with roles [mrp.group_mrp_routings]: without it, no tab (shown in the e2e)"
         },
         {
           "feature": "Work-order durations as HH:MM (float_time) and a live timer (mrp_timer)",
-          "status": "missing",
-          "needs": "a duration widget and a timer"
+          "status": "covered",
+          "how": "cells: expected duration with widget duration (180:00, as float_time writes minutes), real duration with widget timer running from the line's timer_start while someone works"
         },
         {
           "feature": "Work-order status badge with tones",
-          "status": "approximated",
-          "how": "plain text"
+          "status": "covered",
+          "how": "cells.state badge: true with tones — amber in progress, green done, red cancelled, blue otherwise (shown in the e2e)"
         },
         {
           "feature": "Work-order row buttons Start, Pause, Done, Block, Unblock, open",
-          "status": "missing",
-          "needs": "buttons in table rows with per-line conditions"
+          "status": "covered",
+          "how": "rowButtons Start, Pause, Done, Block, Unblock with Flectra's conditions on the line and the record; each call carries its line and the app answers with the line changed (shown in the e2e); ↗ opens the line"
         },
         {
           "feature": "Work-order list header buttons on selected rows (Start, Pause, Done) and multi_edit",
-          "status": "missing",
-          "needs": "actions on selected lines of a table"
+          "status": "approximated",
+          "how": "selectedButtons Start, Pause and Done on the chosen lines (shown in the e2e); multi_edit, one change written to every chosen line, is not there"
         },
         {
           "feature": "By-Products tab (byproducts group): Product, To, To Produce, Produced, Unit, Cost Share, Lot/Serial; muted when done",
-          "status": "approximated",
-          "how": "grid with optional columns; tones missing; group not checked"
+          "status": "covered",
+          "how": "grid with optional columns, roles [mrp.group_mrp_byproducts], rows muted once done (rowTones), Produced hidden while draft"
         },
         {
           "feature": "Miscellaneous tab: operation type, locations (multi-locations group), source, deadline, analytic distribution, company",
-          "status": "approximated",
-          "how": "all placed with Flectra's conditions; distribution as account tags"
+          "status": "covered",
+          "how": "all placed with Flectra's conditions; the locations with roles [stock.group_stock_multi_locations], the company [base.group_multi_company], the deadline red once past, the analytic distribution with the distribution widget: accounts and their shares (json, {account id: per cent})"
         },
         {
           "feature": "Chatter: followers, activities, messages (oe_chatter)",
@@ -947,43 +953,43 @@
         },
         {
           "feature": "Access groups on fields, buttons, tabs and columns (groups=\"…\", \"!group\")",
-          "status": "missing",
-          "needs": "a way to show a part only to some roles: a condition on the person (e.g. user.groups) or a role list on a node; every group-gated part is shown to everyone here"
+          "status": "covered",
+          "how": "roles as the views gate them: Lock and Unlock, Generate BOM, the Work Orders and By-Products tabs, stat buttons, locations, unit and company; the person handed in by the app (shown in the e2e)"
         },
         {
           "feature": "context on fields and buttons (default_* for new lines and linked records, search_default_*, form_view_ref)",
-          "status": "approximated",
-          "how": "new lines get their defaults from the app's onchange; a link's context and view refs are lost"
+          "status": "covered",
+          "how": "lineDefaults: a new component starts in the components' location, a by-product in the finished products'; the rest of a move's defaults the app's onchange gives"
         },
         {
           "feature": "decoration-* on fields and list rows (danger/warning/success/muted/bf)",
-          "status": "missing",
-          "needs": "decorations: a tone for a field or a table row (and cell) while a condition holds"
+          "status": "covered",
+          "how": "field tones and bold, cell tones, badges and rowTones as Flectra's decorations (shown in the e2e)"
         },
         {
           "feature": "data-hotkey on header buttons (Alt+Q, Alt+V…)",
-          "status": "missing",
-          "needs": "a key for a button"
+          "status": "covered",
+          "how": "hotkeys as Flectra's: Produce g, Confirm q, Plan and Unplan z, Check availability c, Unreserve w, Scrap y, Lock/Unlock l, Cancel x, Unbuild shift+v"
         },
         {
           "feature": "js_class custom form controller",
-          "status": "missing",
-          "needs": "Flectra's own JS behaviour for this form (form-level hooks beyond steps)"
+          "status": "covered",
+          "how": "mrp_production_form_view sets no js_class: nothing beyond the steps and the app's answers"
         },
         {
           "feature": "Conditions written with tuples, e.g. state in ('a', 'b')",
-          "status": "approximated",
-          "how": "Fieldia's expressions take lists: every tuple rewritten as ['a', 'b']; tuples would let Flectra conditions be pasted unchanged"
+          "status": "covered",
+          "how": "the page's conditions are written as Flectra writes them, with tuples — state in ('done', 'cancel') — read as lists"
         },
         {
           "feature": "Conditions on the record id (not id, … and id)",
-          "status": "missing",
-          "needs": "the record's id readable in conditions (or a \"new record\" flag); \"not id\" parts were dropped"
+          "status": "covered",
+          "how": "not id read in conditions: Cancel's invisible \"not id or state in ('done', 'cancel')\", Change quantity to produce"
         },
         {
           "feature": "Field help shown as a tooltip on the label",
-          "status": "approximated",
-          "how": "Fieldia shows help as text under the field, which turned these long Flectra helps into noise: they were left out of the page (they stay in Flectra)"
+          "status": "covered",
+          "how": "look.helpShown \"tooltip\": each field's help behind a (?) by its label, as Flectra shows it, with Flectra's own help texts back on the fields"
         },
         {
           "feature": "Technical invisible fields (invisible=\"1\") read by conditions",
