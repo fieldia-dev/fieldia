@@ -52,7 +52,7 @@ export const SHEET_CSS = /* css */ `
   .fd-card:has(> .fd-ribbon-frame > .fd-ribbon:not([hidden])) .fd-stat:nth-child(4 of :not([hidden])) { padding-inline-end: 36px; }
 }
 /* A statusbar's time spent in a step, after its words; its folded stages under More, in a menu fixed to the page so the bar's scrolling never cuts it. */
-.fd-step-time { margin-inline-start: 6px; font-size: 11.5px; font-weight: 400; opacity: 0.8; font-variant-numeric: tabular-nums; }
+.fd-step-time { margin-inline-start: 6px; font-size: 11.5px; font-weight: 400; font-variant-numeric: tabular-nums; }
 .fd-statusbar li.fd-step-more > button { padding-inline: 16px 20px; letter-spacing: 1px; }
 .fd-statusbar li.fd-step-more > .fd-step-menu {
   position: fixed; z-index: 30; display: grid; min-width: 160px; margin: 0; padding: 4px 0; clip-path: none; transform: none;
