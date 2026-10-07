@@ -152,6 +152,40 @@ describe('arrangements: parts side by side or one under another, with nothing dr
   });
 });
 
+describe('a row of twelfths', () => {
+  const row = (children: LayoutNode[], extra: Record<string, unknown> = {}): LayoutNode =>
+    ({ type: 'section', id: 'row', style: 'plain', columns: { wide: 12, medium: 12 }, children, ...extra }) as LayoutNode;
+  const inColumn = (inner: LayoutNode): LayoutNode => ({
+    type: 'section', id: 'two', columns: 2, children: [{ type: 'section', id: 'left', style: 'plain', children: [field('team')] }, { type: 'section', id: 'right', style: 'plain', children: [field('role'), inner] }],
+  }) as LayoutNode;
+
+  it('marks its grid as twelfths, so its gaps shrink to fit a narrow column rather than overflow it', () => {
+    const host = mount(page([inColumn(row([field('a', { colspan: 2 }), field('b', { colspan: 10, labels: 'hidden' })]))]));
+    expect(gridOf(at(host, 'row')).hasAttribute('data-twelfths')).toBe(true);
+    expect(gridOf(at(host, 'two')).hasAttribute('data-twelfths')).toBe(false);
+  });
+
+  it('is a labelled row when its first part’s label sits beside: that label in the column’s labels, the parts sharing the value’s room', () => {
+    const host = mount(page([inColumn(row([field('a', { colspan: 2 }), field('b', { colspan: 10, labels: 'hidden' })]))]));
+    expect(at(host, 'row').hasAttribute('data-row')).toBe(true);
+  });
+
+  it('is no labelled row when its first label is hidden or above, its first part no field, or it is alone', () => {
+    const cases: LayoutNode[] = [
+      row([field('a', { colspan: 6, labels: 'hidden' }), field('b', { colspan: 6 })]),
+      row([field('a', { colspan: 6 }), field('b', { colspan: 6 })], { labels: 'above' }),
+      row([{ type: 'text', id: 't', text: 'Hi' } as LayoutNode, field('b', { colspan: 6 })]),
+      row([field('a', { colspan: 12 })]),
+      { ...(row([field('a', { colspan: 6 }), field('b', { colspan: 6 })]) as object), title: 'Named' } as LayoutNode,
+    ];
+    for (const inner of cases) {
+      const host = mount(page([inColumn(inner)]));
+      expect(at(host, 'row').hasAttribute('data-row')).toBe(false);
+      handle?.destroy();
+    }
+  });
+});
+
 describe('how a group looks', () => {
   it('names its style for the stylesheet: a card unless it says otherwise', () => {
     const host = mount(page([personal, sideBySide, role]));

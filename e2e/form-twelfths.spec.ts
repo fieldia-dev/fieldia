@@ -44,8 +44,9 @@ function measure(page: Page) {
     const grid = document.querySelector('.fd-section[data-node="visit"] > .fd-grid') as HTMLElement;
     const style = getComputedStyle(grid);
     const tracks = style.gridTemplateColumns.split(' ').map(parseFloat);
-    const gap = parseFloat(style.columnGap) || 0;
     const g = grid.getBoundingClientRect();
+    // The gap as drawn: twelfths' is min(the page's gap, a share of the width), which the computed style leaves unresolved.
+    const gap = tracks.length > 1 ? (g.width - tracks.reduce((sum, t) => sum + t, 0)) / (tracks.length - 1) : 0;
     const starts: number[] = [];
     const ends: number[] = [];
     let x = g.left;

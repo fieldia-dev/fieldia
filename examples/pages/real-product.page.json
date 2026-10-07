@@ -261,7 +261,7 @@
                     "children": [
                       { "type": "field", "id": "f-detailed-type", "field": "detailed_type" },
                       { "type": "field", "id": "f-invoice-policy", "field": "invoice_policy" },
-                      { "type": "field", "id": "f-expense-policy", "field": "expense_policy", "widget": "radio", "invisible": "not visible_expense_policy" },
+                      { "type": "field", "id": "f-expense-policy", "field": "expense_policy", "widget": "radio", "invisible": "not visible_expense_policy", "options": { "clear": false } },
                       { "type": "field", "id": "f-tooltip", "field": "product_tooltip", "labels": "hidden", "invisible": "(type == 'service' and not sale_ok) or not product_tooltip" },
                       {
                         "type": "text",
@@ -396,7 +396,7 @@
                     "style": "line",
                     "children": [
                       { "type": "field", "id": "f-supplier-taxes", "field": "supplier_taxes_id", "widget": "tags" },
-                      { "type": "field", "id": "f-purchase-method", "field": "purchase_method", "widget": "radio" }
+                      { "type": "field", "id": "f-purchase-method", "field": "purchase_method", "widget": "radio", "options": { "clear": false } }
                     ]
                   },
                   {

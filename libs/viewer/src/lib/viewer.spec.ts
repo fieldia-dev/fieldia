@@ -693,6 +693,7 @@ describe('a record sheet', () => {
     expect(form.getState().values['state']).toBe('blocked');
     expect(visible(host.querySelector('.fd-ribbon'))).toBe(true);
     expect(host.querySelector('.fd-ribbon')?.textContent).toBe('Blocked');
+    (host.querySelector('.fd-tab[data-node="tab-billing"]') as HTMLButtonElement).click();
     expect(input(host, 'f-credit-limit').readOnly).toBe(true);
   });
 
@@ -706,6 +707,117 @@ describe('a record sheet', () => {
     expect(visible(at(host, 'f-notes'))).toBe(true);
     form.setValue('is_company', false);
     expect(visible(tab('Contacts'))).toBe(false);
+  });
+
+  it('scrolls a tab strip too long for its room: a fade and a button at each edge with more past it', async () => {
+    for (const dir of ['ltr', 'rtl'] as const) {
+      const { host, form } = sheet({ dir });
+      await form.settled();
+      const bar = host.querySelector('.fd-tabbar') as HTMLElement;
+      const list = bar.querySelector('[role=tablist]') as HTMLElement;
+      const [before, after] = [bar.querySelector('.fd-tabs-before') as HTMLButtonElement, bar.querySelector('.fd-tabs-after') as HTMLButtonElement];
+      // Not for the keyboard, which moves along the tabs with the arrows; nor read out.
+      for (const b of [before, after]) expect([b.tabIndex, b.getAttribute('aria-hidden')]).toEqual([-1, 'true']);
+      // Room for every tab: nothing more to either side.
+      expect([before.hidden, after.hidden, bar.dataset['more'] ?? '']).toEqual([true, true, '']);
+      // 600 wide in 300: more at the end; scrolled to the middle, at both; at the end, at the start alone.
+      let left = 0;
+      const scrolled: number[] = [];
+      Object.defineProperties(list, {
+        scrollWidth: { get: () => 600 },
+        clientWidth: { get: () => 300 },
+        scrollLeft: { get: () => left, set: (v: number) => (left = v) },
+      });
+      list.scrollBy = ((options: ScrollToOptions) => scrolled.push(options.left ?? 0)) as never;
+      const sign = dir === 'rtl' ? -1 : 1;
+      list.dispatchEvent(new Event('scroll'));
+      expect([before.hidden, after.hidden, bar.dataset['more']]).toEqual([true, false, 'end']);
+      left = sign * 150;
+      list.dispatchEvent(new Event('scroll'));
+      expect(bar.dataset['more']).toBe('start end');
+      left = sign * 300;
+      list.dispatchEvent(new Event('scroll'));
+      expect([before.hidden, after.hidden, bar.dataset['more']]).toEqual([false, true, 'start']);
+      // The buttons move a strip's width, less a tab's room, toward their own edge: the end is left, right to left.
+      before.click();
+      after.click();
+      expect(scrolled.map((n) => Math.sign(n))).toEqual([-sign, sign]);
+      handle?.destroy();
+    }
+  });
+
+  it('brings a tab into sight in its strip however it is chosen: a click, the keyboard or a step', async () => {
+    const { host, form, handle: viewer } = sheet();
+    await form.settled();
+    const list = host.querySelector('[role=tablist]') as HTMLElement;
+    let left = 0;
+    Object.defineProperties(list, { scrollWidth: { get: () => 600 }, clientWidth: { get: () => 200 }, scrollLeft: { get: () => left, set: (v: number) => (left = v) } });
+    list.getBoundingClientRect = () => ({ left: 0, right: 200, width: 200 }) as DOMRect;
+    // Each tab 150 wide, where the strip scrolled now puts it.
+    const tabs = [...list.querySelectorAll<HTMLElement>('[role=tab]')].filter((t) => !t.hidden);
+    tabs.forEach((t, i) => (t.getBoundingClientRect = () => ({ left: i * 150 - left, right: i * 150 + 150 - left, width: 150 }) as DOMRect));
+    const last = tabs[tabs.length - 1];
+    last.click();
+    expect(last.getBoundingClientRect().right).toBeLessThanOrEqual(200);
+    // Back to the first by the keyboard: in sight again.
+    tabs[tabs.length - 1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+    expect(tabs[0].getBoundingClientRect().left).toBeGreaterThanOrEqual(0);
+    // And a step that shows the last one.
+    await viewer.run([{ do: 'goTo', target: last.dataset['node'] as string }]);
+    expect(last.getBoundingClientRect().right).toBeLessThanOrEqual(200);
+    expect(last.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('builds a tab’s parts when it is first shown, by a click or a step', async () => {
+    const { host, form, handle: viewer } = sheet();
+    await form.settled();
+    // The tabs shown so far are built — Billing while the record loaded, Contacts hidden till then; Notes waits.
+    expect(at(host, 'f-contacts')).not.toBeNull();
+    expect(at(host, 'f-notes')).toBeNull();
+    (host.querySelector('.fd-tab[data-node="tab-billing"]') as HTMLButtonElement).click();
+    expect(input(host, 'f-credit-limit').value).toBe('5,000.00');
+    await viewer.run([{ do: 'goTo', target: 'tab-notes' }]);
+    expect(visible(at(host, 'f-notes'))).toBe(true);
+    // Built once: shown again, it is the same.
+    const notes = at(host, 'f-notes');
+    (host.querySelector('.fd-tab[data-node="tab-billing"]') as HTMLButtonElement).click();
+    (host.querySelector('.fd-tab[data-node="tab-notes"]') as HTMLButtonElement).click();
+    expect(at(host, 'f-notes')).toBe(notes);
+  });
+
+  it('leaves a tab out of sight alone as values change, and brings it up to date when shown', async () => {
+    const { host, form } = sheet();
+    await form.settled();
+    const tab = (id: string) => host.querySelector(`.fd-tab[data-node="${id}"]`) as HTMLButtonElement;
+    tab('tab-billing').click();
+    const limit = input(host, 'f-credit-limit');
+    tab('tab-notes').click();
+    form.setValue('credit_limit', 7500);
+    // Not drawn again while nobody can see it…
+    expect(limit.value).toBe('5,000.00');
+    // …and as it is the moment it is shown.
+    tab('tab-billing').click();
+    expect(limit.value).toBe('7,500.00');
+    // Its conditions too: a field hidden meanwhile is hidden when it shows.
+    expect(visible(at(host, 'f-credit-limit'))).toBe(true);
+  });
+
+  it('marks a tab with a problem in it, and a save stopped there shows that tab, at the problem', async () => {
+    const strict = page('customer') as any;
+    strict.fields.credit_limit = { ...strict.fields.credit_limit, required: true };
+    const dataSource = createMemoryDataSource({ records: { partner: { 1: { ...customer, credit_limit: null } } } });
+    const again = document.createElement('div');
+    document.body.append(again);
+    handle = mountViewer(again, { page: strict, dataSource, recordId: 1 });
+    await handle.form.settled();
+    type(input(again, 'f-website'), 'https://nile.example');
+    expect(await handle.save()).toBe(false);
+    const billing = again.querySelector('.fd-tab[data-node="tab-billing"]') as HTMLButtonElement;
+    expect(billing.hasAttribute('data-problem')).toBe(true);
+    expect(billing.getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).toBe(input(again, 'f-credit-limit'));
+    handle.form.setValue('credit_limit', 100);
+    expect(billing.hasAttribute('data-problem')).toBe(false);
   });
 
   it('opens the first tab that is visible once the record loads, until someone picks one', async () => {
@@ -830,6 +942,17 @@ describe('the parts of a sheet', () => {
     expect(at(host, 't-website').closest('.fd-title-below')).not.toBeNull();
     expect(follows(at(host, 't-company'), title)).toBe(true);
     expect(follows(title, at(host, 't-website'))).toBe(true);
+  });
+
+  it('draws no row of stat buttons while every one is hidden, and brings it back when one shows', () => {
+    const { host, form } = mountCustomer((layout) => {
+      for (const stat of layout.statButtons) stat.invisible = 'not is_company';
+    });
+    const stats = host.querySelector('.fd-stats') as HTMLElement;
+    form.setValue('is_company', false);
+    expect(stats.hidden).toBe(true);
+    form.setValue('is_company', true);
+    expect(stats.hidden).toBe(false);
   });
 
   it('puts the statusbar under the title when asked, leaving the header its buttons', () => {

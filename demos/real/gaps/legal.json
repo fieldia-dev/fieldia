@@ -29,17 +29,17 @@
         "open": {
           "legalCaseMs": "196–215 when the machine is quiet (235–260 with the wait for the frame); 242–306 inside the e2e runs",
           "forComparison": "the Sales order example 93–99 ms, the Survey page 87–89 ms",
-          "why": "Every tab is built at mount and only hidden: all 15 panels and all 12 AG Grids exist before anything is shown — 4,393 DOM elements. Opening costs about twice a small sheet; nothing is put off until a tab is first shown."
+          "why": "Before: every tab was built at mount and only hidden — all 15 panels and 12 AG Grids, 4,393 DOM elements. Now a tab's parts are built when it is first shown, so opening builds the header and one tab: inside the e2e, the timing test's opening went from 370–475 ms to 93–120 ms, measured side by side with the old build on the same machine."
         },
-        "tabSwitch": { "medianMs": "16–20 in all four frameworks", "maxMs": "45–67 (a tab whose grid draws for the first time at its real width)" },
-        "keystroke": { "medianMs": "19.7–23.5 in all four frameworks", "maxMs": "24–63", "note": "Over the one-frame (16 ms) budget e2e/perf.spec.ts holds the 500-field page to: every keystroke re-checks the 36 conditions, 5 worked-out values and 12 tables' state, and asks the data source's onchange." },
-        "verdict": "Usable — no click or key took longer than 70 ms — but a page this size would gain from building a tab's content when it is first shown, which Fieldia does not offer."
+        "tabSwitch": { "medianMs": "21–26 in all four frameworks (before: 18–26 side by side); the harness shows each tab once, so every switch it times is a first show that builds the tab", "maxMs": "55–65 (a tab whose grids are built and drawn for the first time)" },
+        "keystroke": { "medianMs": "5.2–8.9 in all four frameworks (before: 20.7–22.5 side by side)", "maxMs": "15–20", "note": "A tab out of sight is no longer brought up to date as values change, only when shown again; and a table hidden as display: none no longer measures itself every frame (AG Grid did, 120 frames a second each, idle or not). Under the one-frame (16 ms) budget." },
+        "verdict": "Quick: opening about a quarter of before, a keystroke well within one frame; the first show of each tab carries its own building."
       },
       "wayfinding": {
         "flectra": "Flectra's notebook wraps its 15 tab labels onto a second line, so every tab is in sight; the smart buttons open each related list in its own view.",
         "fieldia": [
-          "The 15 tab labels sit on one line that scrolls sideways: 1,466 px of labels in a 974 px strip at a 1,440 px window, so Billing, Trust, Timesheets, Correspondence and Internal are out of sight, with no arrows, menu or fade to say there are more. At a phone's width 3½ tabs show.",
-          "A step's goTo opens a tab without scrolling the strip to it: after Close Case, the Outcome tab is open and its label is off to the right, unseen.",
+          "The 15 tab labels sit on one line that scrolls sideways: 1,466 px of labels in a 974 px strip at a 1,440 px window, so Billing, Trust, Timesheets, Correspondence and Internal are out of sight; but the tabs fade out at an edge with more past it, under a button that scrolls the strip along (right to left too, and at a phone's width, where 3 tabs show). Shown in the e2e.",
+          "A tab chosen however — a click, the arrow keys, Home or End, or a step's goTo — is scrolled into sight in the strip: after Close Case, the Outcome tab's label is in view.",
           "The stat buttons double as a way in: Hearings, Tasks, Expenses, Documents, POAs, Hours, Correspondence and Trust Balance open their tab (goTo).",
           "Help texts show under their fields (Flectra keeps them in a tooltip), so the header groups run to about 1,500 px and the tabs start below the fold of a 900 px window.",
           "Arrow keys, Home and End move along the tab strip, and a hidden tab (Outcome, Contract Reviews) leaves no gap."
@@ -172,7 +172,7 @@
         { "feature": "user_id many2one_avatar_user, domain share = False", "status": "approximated", "how": "a plain link with the filter; no avatar" },
         { "feature": "Questions: question_and_page_ids, sections in bold between questions (is_page)", "status": "approximated", "how": "lineKinds: sections are wide bold rows. lineKinds reads a value, not a boolean, so a helper selection 'kind' stands for is_page, and the format asks it for a note value too — the grid then offers Add a note, which a survey has not.", "needs": "lineKinds on a boolean (is_page), and lines with sections but no notes" },
         { "feature": "sequence widget=handle", "status": "covered", "how": "sequenceField: a grip, and Alt+↑/↓; moved lines are numbered again — shown in the e2e" },
-        { "feature": "Add a question / Add a section controls", "status": "approximated", "how": "Add a line / Add a section (/ Add a note)", "needs": "the table's add buttons named by the page" },
+        { "feature": "Add a question / Add a section controls", "status": "approximated", "how": "Add a question (addLabel) / Add a section, and an Add a note Flectra has not: the helper selection 'kind' that stands for is_page offers a note" },
         { "feature": "title widget survey_description_page (marks a section with a description)", "status": "missing" },
         { "feature": "question_type column; constr_mandatory optional", "status": "covered", "how": "columns and optionalColumns" },
         { "feature": "random_questions_count: column shown only when questions are randomized (column_invisible on parent.questions_selection), cell only on sections", "status": "missing", "how": "an optional column, hidden by default; a section's row spans the table, so its count cannot be edited at all", "needs": "a column shown by a condition on the record, cells hidden per line, and fields on a section's row" },

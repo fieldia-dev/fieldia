@@ -385,9 +385,8 @@
         },
         {
           "feature": "Control: Add a product / Add a section / Add a note",
-          "status": "approximated",
-          "how": "the grid's own add buttons; options.addLabel is not taken by the grid, so the first reads 'Add a line'",
-          "needs": "the grid honouring addLabel (and labels for its section and note buttons)"
+          "status": "covered",
+          "how": "the grid's add buttons named by the node: addLabel \"Add a product\"; Add a section and Add a note are the defaults (addSectionLabel, addNoteLabel would rename them)"
         },
         {
           "feature": "Catalog button in the lines' control row (action_add_from_catalog)",
@@ -787,8 +786,8 @@
         {
           "feature": "priority widget priority (a star) beside the name; a selection '0'/'1'",
           "status": "approximated",
-          "how": "an integer with widget rating, max 1, over the title; it shows 'Clear selection' under the star",
-          "needs": "a priority (star) widget on a selection field"
+          "how": "an integer with widget rating, max 1, over the title: a second click takes the star away, and no 'Clear selection' shows",
+          "needs": "the star on a selection field ('0'/'1')"
         },
         {
           "feature": "name with placeholder, line_breaks false",

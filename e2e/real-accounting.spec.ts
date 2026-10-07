@@ -70,6 +70,8 @@ for (const variant of VARIANTS) {
       await expect.poll(() => shown(page, 'f-amount-total')).toContain('58,117.20');
       // A draft has no number yet, and no Register Payment.
       await expect(page.getByRole('button', { name: 'Register Payment' })).toHaveCount(0);
+      // One stat button shown: Sale Orders.
+      await expect(page.locator('.fd-stats')).toBeVisible();
 
       // A desk added: its price comes from the product, and the taxes and totals follow.
       await addLine(page, 'f-invoice-lines', 6, 'desk', 'Office desk 140 × 70');
@@ -117,8 +119,13 @@ for (const variant of VARIANTS) {
       if (variant === 'plain') await screen(page, 'real-invoice-payment-difference', { viewport: true });
       await dialog.getByRole('radio', { name: 'Keep open' }).check();
       await expect(dialog.locator('[data-node="f-writeoff-account"]')).toBeHidden();
+      // Words said show over the dialog: the toasts sit above its backdrop.
+      const layer = (selector: string) => page.locator(selector).first().evaluate((el) => Number(getComputedStyle(el).zIndex));
+      expect(await layer('.fd-says')).toBeGreaterThan(await layer('.fd-dialog-backdrop'));
       await dialog.getByRole('button', { name: 'Save & Close' }).click();
       await expect(dialog).toBeHidden();
+      // The dialog's own words, said as it saved, outlive it: the page under it says them.
+      await expect(toast(page, /^Payment P\S+ of EGP 50,000\.00 posted/)).toBeVisible();
       await expect(toast(page, 'Payment of EGP 50,000.00 registered: EGP 22,253.20 left to pay')).toBeVisible();
       await expect.poll(() => value(page, 'payment_state')).toBe('partial');
       await expect.poll(() => value(page, 'amount_residual')).toBe(22253.2);
@@ -150,6 +157,8 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-vendor')).toBeVisible();
       await expect(node(page, 'f-customer')).toBeHidden();
       await expect(node(page, 'f-bill-date')).toBeVisible();
+      // Every stat button hidden by its condition: no empty row of them, as in Flectra.
+      await expect(page.locator('.fd-stats')).toBeHidden();
       await expect(page.getByText('Warning: this bill might be a duplicate of one of those bills.')).toBeVisible();
       await page.getByRole('button', { name: 'Set as Checked', exact: true }).click();
       await expect(toast(page, 'Marked as checked')).toBeVisible();
@@ -196,6 +205,8 @@ for (const variant of VARIANTS) {
       await page.getByRole('radio', { name: 'Mark as fully paid' }).check();
       await expect(node(page, 'f-writeoff-account')).toBeVisible();
       await expect(node(page, 'f-writeoff-label')).toBeVisible();
+      // Not required, yet no "Clear selection" under the radio, as Flectra has none (clear: false).
+      await expect(node(page, 'f-difference-handling').locator('.fd-choice-clear')).toBeHidden();
       if (variant === 'plain') await screen(page, 'real-register-payment');
 
       // Paid in EGP: the amount due worked out at the day's rate, the difference gone, and no manual rate.

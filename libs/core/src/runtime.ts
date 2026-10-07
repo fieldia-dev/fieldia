@@ -42,6 +42,7 @@ export type {
   SpacerNode,
   ImageNode,
   FormNode,
+  WidgetOptions,
 } from './lib/format/layout';
 export { wideColumns } from './lib/format/columns';
 export type {

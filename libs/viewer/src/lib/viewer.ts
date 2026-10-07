@@ -46,6 +46,7 @@ import { labelPlace, planSection, type Place } from './place';
 import { setAttr, setHidden, setText } from './dom';
 import { openPage } from './open';
 import { sayer } from './say';
+import { tabStrip } from './tab-strip';
 
 export type Skin = 'underline' | 'outlined';
 
@@ -202,7 +203,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   };
   const locale = ownLocale(tag);
   const preferences = options.preferences ?? browserPreferences();
-  const dialogs = pageDialogs(options);
+  const dialogs = pageDialogs(options, (message, tone) => actionHost.say(message, tone));
   const ownsForm = !options.form;
   const labels: ViewerLabels = { ...VIEWER_LABELS[locale], ...options.labels };
   /**
@@ -212,7 +213,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
    */
   const actionHost: ActionHost = {
     open: (request) =>
-      openPage({ options, place: host, root, title: (other) => shownAs(other).title || other.id, back: labels.back, missing: (id) => fill(labels.pageMissing, { page: id }) }, request),
+      openPage({ options, place: host, root, title: (other) => shownAs(other).title || other.id, back: labels.back, missing: (id) => fill(labels.pageMissing, { page: id }), say: (message, tone) => actionHost.say(message, tone) }, request),
     say: (message, tone) => say(message, tone),
     ask: (message) => confirm(message),
     show: (target) => {
@@ -228,6 +229,11 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   const dir = options.dir ?? (tag && isRightToLeft(tag) ? 'rtl' : undefined);
   const prefix = `fd${++mounts}`;
   const updaters: Updater[] = [];
+  /**
+   * Where a part's updater goes as it is drawn: the form's own list, or the list
+   * of the tab it is drawn in, which runs only while that tab is shown.
+   */
+  let sink: Updater[] = updaters;
   const cleanups: (() => void)[] = [];
   const ownUid = (id: string) => `${prefix}-${id.replace(/[^A-Za-z0-9_-]/g, '_')}`;
   const uid = ownUid;
@@ -260,6 +266,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   const say = sayer(root, el, labels.dismiss);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
   const tabs = new Map<string, () => boolean>();
+  /** For each field in a tab, how to show its tab: a problem there is shown before the focus goes to it. */
+  const problemTabs = new Map<string, () => boolean>();
 
   /**
    * A press runs its steps one run at a time: the button busy meanwhile, and
@@ -308,7 +316,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     const { form, page } = scope;
     const uid = (id: string) => ownUid(scope.prefix + id);
     /** A part's updater, handed the state of the part's own form. */
-    const watch = (update: Updater) => updaters.push(scope.root ? update : () => update(form.getState()));
+    const watch = (update: Updater) => sink.push(scope.root ? update : () => update(form.getState()));
 
 
     /** A field with its label, help and messages. `place` is where labels sit where it is put; the title's own fields take none. */
@@ -466,6 +474,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const box = el('div', { class: 'fd-grid' });
       if (columns !== null) {
         box.style.setProperty('--fd-columns', String(wideColumns(columns)));
+        // Twelfths: eleven gaps between them, which shrink in a narrow column rather than push past it.
+        if (wideColumns(columns) === 12) box.setAttribute('data-twelfths', '');
         // Counts given for the narrower widths replace the skin's own stacking there.
         if (typeof columns === 'object') {
           for (const width of ['medium', 'narrow'] as const) {
@@ -480,6 +490,20 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       return box;
     }
 
+    /**
+     * A row of twelfths led by a field whose label sits beside it, as Flectra's
+     * `<label/><div class="o_row">`: that label goes with the labels round it,
+     * and the parts share the room their values have.
+     */
+    function labelledRow(node: SectionNode, plan: ReturnType<typeof planSection>): 'skin' | 'beside' | null {
+      const [first] = node.children;
+      if (!plan.arrangement || plan.at === 'tracks' || wideColumns(node.columns) !== 12 || node.children.length < 2 || first?.type !== 'field') return null;
+      const type = page.fields[first.field]?.type;
+      const where = type ? labelPlace(first, type, plan.inner.labels) : 'hidden';
+      // The skin's place: beside in the underline skin, above in the outlined one, as the stylesheet says.
+      return where === undefined ? 'skin' : where === 'beside' ? 'beside' : null;
+    }
+
     function sectionItem(node: SectionNode, place: Place): HTMLElement {
       const plan = planSection(node, place);
       // An arrangement is no group to name, and a fieldset cannot lay its parts on the columns round it.
@@ -491,6 +515,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         'data-on-page': plan.style === 'card' && place.onPage ? '' : undefined,
       });
       spans(section, node.colspan);
+      const row = labelledRow(node, plan);
+      if (row) section.setAttribute('data-row', row);
       if (node.labelWidth) section.style.setProperty('--fd-label-width', `${node.labelWidth}px`);
       const description = node.description ? el('p', { class: 'fd-section-description' }, node.description) : null;
       const content = grid(node.children, plan.at === 'tracks' ? null : node.columns, plan.inner);
@@ -541,12 +567,33 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         const tabId = uid(`${tab.id}-tab`);
         const panelId = uid(`${tab.id}-panel`);
         const button = el('button', { type: 'button', class: 'fd-tab', role: 'tab', id: tabId, 'aria-controls': panelId, 'data-node': tab.id }, ...withIcon(tab.icon, tab.label));
-        // A tab's parts sit where the tabs do: on the page, or in the box round them.
-        const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId }, grid(tab.children, 1, { columns: 1, onPage: place.onPage, labels: place.labels }));
+        const panel = el('div', { class: 'fd-tabpanel', role: 'tabpanel', id: panelId, 'aria-labelledby': tabId });
+        /**
+         * A tab's parts are drawn when it is first shown, and kept up to date
+         * only while it is shown: a page of many tabs costs one tab's work.
+         */
+        const own: Updater[] = [];
+        let built = false;
+        const build = () => {
+          if (built) return;
+          built = true;
+          const outer = sink;
+          sink = own;
+          try {
+            // A tab's parts sit where the tabs do: on the page, or in the box round them.
+            panel.append(grid(tab.children, 1, { columns: 1, onPage: place.onPage, labels: place.labels }));
+          } finally {
+            sink = outer;
+          }
+        };
+        const open = () => !form.node(tab.id).invisible && (show(tab.id), true);
         button.addEventListener('click', () => show(tab.id));
-        if (!tabs.has(tab.id)) tabs.set(tab.id, () => !form.node(tab.id).invisible && (show(tab.id), true));
+        if (!tabs.has(tab.id)) tabs.set(tab.id, open);
+        // The fields it holds, to mark it while one has a problem and to open it at one.
+        const fields = fieldsIn(tab.children);
+        if (scope.root) for (const name of fields) if (!problemTabs.has(name)) problemTabs.set(name, open);
         list.append(button);
-        return { tab, button, panel };
+        return { tab, button, panel, own, build, fields };
       });
       list.addEventListener('keydown', (event) => {
         const shown = parts.filter((p) => !p.button.hidden);
@@ -559,22 +606,56 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         show(next.tab.id);
         next.button.focus();
       });
-      box.append(list, ...parts.map((p) => p.panel));
-      watch(() => {
-        box.hidden = form.node(node.id).invisible;
+      // Too long for its room, the strip scrolls; the tab chosen, however, comes into sight in it.
+      const strip = tabStrip(list, el);
+      cleanups.push(strip.destroy);
+      box.append(strip.element, ...parts.map((p) => p.panel));
+      let shownKey = '';
+      let revealed = '';
+      watch((state) => {
+        const tabsHidden = form.node(node.id).invisible;
+        setHidden(box, tabsHidden);
         const shown = parts.filter((p) => !form.node(p.tab.id).invisible);
         const keep = picked !== null && shown.some((p) => p.tab.id === picked);
         if (keep) active = picked as string;
         else if (shown.length) active = shown[0].tab.id;
+        const errors = form.getState().errors;
         for (const p of parts) {
           const selected = p.tab.id === active;
-          p.button.hidden = !shown.includes(p);
-          p.button.setAttribute('aria-selected', String(selected));
-          p.button.tabIndex = selected ? 0 : -1;
-          p.panel.hidden = !selected;
+          setHidden(p.button, !shown.includes(p));
+          setAttr(p.button, 'aria-selected', String(selected));
+          if (p.button.tabIndex !== (selected ? 0 : -1)) p.button.tabIndex = selected ? 0 : -1;
+          setAttr(p.button, 'data-problem', p.fields.some((name) => errors[name]) ? '' : null);
+          setHidden(p.panel, !selected);
+          // The tab shown: drawn if it is new, and brought up to date — it was left alone while out of sight.
+          if (selected && !tabsHidden) {
+            p.build();
+            for (const update of p.own) update(state);
+          }
+        }
+        // Measured only when it can have changed: the strip's tabs, or the one chosen.
+        const key = shown.map((p) => p.tab.id).join(' ');
+        if (key !== shownKey) {
+          shownKey = key;
+          strip.measure();
+        }
+        if (active !== revealed && list.clientWidth) {
+          revealed = active;
+          const chosen = parts.find((p) => p.tab.id === active);
+          if (chosen) strip.reveal(chosen.button);
         }
       });
       return box;
+    }
+
+    /** The fields a tab holds, in its sections and tabs inside it; a saved form placed in it keeps its own. */
+    function fieldsIn(children: readonly LayoutNode[]): string[] {
+      return children.flatMap((child) =>
+        child.type === 'field' ? [child.field]
+        : child.type === 'section' ? fieldsIn(child.children)
+        : child.type === 'tabs' ? child.children.flatMap((tab) => fieldsIn(tab.children))
+        : []
+      );
     }
 
     function item(node: LayoutNode, place: Place): HTMLElement {
@@ -824,7 +905,14 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   });
 
   function focusFirstProblem() {
-    const invalid = root.querySelector<HTMLElement>('[aria-invalid="true"]');
+    // A problem in a tab out of sight, or not drawn yet: its tab shown first, the first such in the page's order.
+    const seen = [...root.querySelectorAll<HTMLElement>('[aria-invalid="true"]')].find((e) => !e.closest('.fd-tabpanel[hidden]'));
+    if (!seen) {
+      const errors = form.getState().errors;
+      const first = [...problemTabs.keys()].find((name) => errors[name]);
+      if (first) problemTabs.get(first)?.();
+    }
+    const invalid = [...root.querySelectorAll<HTMLElement>('[aria-invalid="true"]')].find((e) => !e.closest('.fd-tabpanel[hidden]')) ?? null;
     if (!invalid) return;
     for (let folded = invalid.closest<HTMLElement>('.fd-section-folded'); folded; folded = folded.parentElement?.closest<HTMLElement>('.fd-section-folded') ?? null) {
       folds.get(folded)?.();
@@ -1014,6 +1102,10 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         });
         stats.append(button);
       }
+      // No empty row while every button is hidden, as with the badges.
+      updaters.push(() => {
+        stats.hidden = [...stats.children].every((stat) => (stat as HTMLElement).hidden);
+      });
       card.append(stats);
     }
     for (const alert of node.alerts ?? []) {

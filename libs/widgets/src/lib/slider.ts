@@ -29,7 +29,7 @@ export const sliderWidget: WidgetFactory = ({ form, name, field, node, id, docum
   const clear = clearSelection(document, words, () => {
     form.setValue(name, null);
     input.focus();
-  });
+  }, node);
   const element = make('div', { class: 'fd-slider' }, make('div', { class: 'fd-slider-track' }, input, output), ends, clear.button);
   if (endWords.some(Boolean)) input.setAttribute('aria-description', endWords.filter(Boolean).join(' … '));
   input.addEventListener('input', () => form.setValue(name, Number(input.value)));

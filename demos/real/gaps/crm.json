@@ -5,7 +5,7 @@
     "Help: Flectra shows a field's help as a tooltip on its label; Fieldia writes it under the field. The longest helps on the busiest groups were left out of the pages so they read like Flectra's.",
     "Expressions: Flectra's tuples, `x in (a, b)`, are not read; Fieldia's lists, `x in [a, b]`, are. Translated by hand.",
     "Sizes: `size` counts the Flectra view as seen with the inherited views listed (fields include the invisible technical ones; conditions are invisible/readonly/required attributes that are expressions). `built` counts the Fieldia page.",
-    "Placeholders: a node's placeholder is shown by text, number and date boxes, but not by a many2one, a many2many or an html field, which always say “Search…” or nothing — so Flectra's “Company Name...”, “e.g. Mister”, “Internal notes...” and the tags' examples are lost."
+    "Placeholders: a node's placeholder was shown by text, number and date boxes, but not by a many2one, a many2many or an html field, which always said “Search…” or nothing; fixed since, so Flectra's “Company Name...”, “e.g. Mister”, “Internal notes...” and the tags' examples show (the contact's e2e)."
   ],
   "pages": [
     {
@@ -41,7 +41,7 @@
         { "feature": "Name in h1, required when type == 'contact'", "status": "approximated", "how": "the title field is required always: a sheet's title takes no required/readonly condition", "needs": "modifiers on the title field" },
         { "feature": "Two name fields (id company/individual) with placeholders “e.g. Lumber Inc” / “e.g. Brandom Freeman” by is_company", "status": "missing", "how": "one placeholder, the company's", "needs": "a placeholder (or the title field node) chosen by condition" },
         { "feature": "Related Company (parent_id, res_partner_many2one) under the name: domain is_company, its invisible expression with company_name", "status": "covered", "how": "title.below field with filter is_company = true and the same condition" },
-        { "feature": "parent_id placeholder “Company Name...”", "status": "missing", "needs": "placeholder on a many2one" },
+        { "feature": "parent_id placeholder “Company Name...”", "status": "covered", "how": "the node's placeholder on the many2one" },
         { "feature": "parent_id context: defaults for a company made from the link (default_is_company, default_user_id, show_vat)", "status": "missing", "needs": "values/defaults for Create and edit… from a link (Fieldia's Create “…” sends the name only)" },
         { "feature": "company_name shown when set and not a company", "status": "covered", "how": "title.below, readonly, condition" },
         { "feature": "Create company button (create_company) beside the name, edit mode only", "status": "approximated", "how": "a link button at the top of the body (title.below takes fields only); the app answers with an open of this Contact page in a dialog, filled from company_name and the address, into parent_id, then clears company_name and saves — Flectra makes the company in one click", "needs": "buttons in the title rows" },
@@ -68,7 +68,7 @@
         { "feature": "Email (widget email, gravatar context) required when user_ids", "status": "covered", "how": "required condition; gravatar image onchange left to the app" },
         { "feature": "mail: unblacklist button (fa-ban, icon only) inline before the email in an o_row", "status": "approximated", "how": "a danger button over the email, shown while is_blacklisted", "needs": "an icon-only button inside a field's row" },
         { "feature": "Website (url) with placeholder", "status": "covered" },
-        { "feature": "Title placeholder “e.g. Mister”", "status": "missing", "needs": "placeholder on a many2one" },
+        { "feature": "Title placeholder “e.g. Mister”", "status": "covered", "how": "the node's placeholder on the many2one" },
         { "feature": "Language hidden when only one language is active; options = installed languages", "status": "approximated", "how": "condition covered; the options are written in the page (optionsFrom could load them from the app)" },
         { "feature": "Tags (category_id many2many_tags, color_field color, no_create_edit)", "status": "approximated", "how": "tags widget, create: false; no colours", "needs": "tag colours from a colour field" },
         { "feature": "Contacts & Addresses tab: child_ids as kanban cards (avatar, name, function, email, address when not a contact, phone, mobile)", "status": "approximated", "how": "one2many.cards: an editable card per line with nine of its fields", "needs": "read-only summary cards from a template, with rows shown by the line's values, an avatar, and a click that opens the line" },
@@ -90,7 +90,7 @@
         { "feature": "Bank Accounts: tree with handle, account number, bank, Send Money; widget auto_save_res_partner", "status": "approximated", "how": "table with the sequence grip; no saving of the partner before a bank line opens" },
         { "feature": "Accounting Entries: receivable and payable accounts by account type", "status": "covered", "how": "many2one filters on account_type" },
         { "feature": "Credit Limits group (show_credit_limit), Total Receivable, DSO, Partner Limit with the limit inline while ticked", "status": "covered", "how": "conditions; the limit on its own row instead of inline" },
-        { "feature": "Internal Notes (comment html) with placeholder", "status": "approximated", "how": "html field; its placeholder is not shown" },
+        { "feature": "Internal Notes (comment html) with placeholder", "status": "covered", "how": "html field showing the node's placeholder while empty" },
         { "feature": "Warnings on the Sales Order, Invoice and Purchase Order: a choice and a message shown and required unless No Message", "status": "covered", "how": "titled sections, labels hidden, invisible and required expressions" },
         { "feature": "Edit-only parts (oe_edit_only)", "status": "missing", "needs": "a condition on edit/read mode (the viewer's Edit/Done switch exists, but parts cannot follow it)" },
         { "feature": "default_focus on the name", "status": "missing", "needs": "a field to focus when the record opens" },
@@ -153,7 +153,7 @@
         { "feature": "Lost Reason shown once lost", "status": "covered", "how": "invisible active" },
         { "feature": "Lead's contact group: Contact Name and Title on one row, Email, Job Position, Phone, Mobile with unblacklist buttons", "status": "covered", "how": "a twelfths row for name and title; buttons by condition" },
         { "feature": "email_cc (developer mode)", "status": "approximated", "how": "left out: base.group_no_one" },
-        { "feature": "Salesperson (avatar), Expected Closing with the priority stars on one row, Tags", "status": "covered", "how": "a twelfths row; avatar missing as on the contact" },
+        { "feature": "Salesperson (avatar), Expected Closing with the priority stars on one row, Tags", "status": "covered", "how": "a twelfths row (7/5): Expected Closing's label with the others, the date and the stars in the values' room; avatar missing as on the contact" },
         { "feature": "Priority widget on a selection ('0'…'3')", "status": "approximated", "how": "an integer 1–3 with the rating widget; empty is Low", "needs": "the priority (stars) widget on a selection" },
         { "feature": "Tags with colours (color_field)", "status": "missing", "needs": "tag colours" },
         { "feature": "Lead's Salesperson and Sales Team, Priority and Tags groups", "status": "covered" },

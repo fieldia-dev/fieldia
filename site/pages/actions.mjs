@@ -66,7 +66,7 @@ mountViewer(host, {
 <h2 id="host">What the viewer draws</h2>
 <ul>
   <li><strong>A page opened</strong> comes from ${c('pages')} by ${c('{ id, version }')} — in a dialog or a side panel with the same data source, pages, language, skin and look; or in this form's place, with Back over it: saved, the form comes back and the steps go on; Back brings it back as it was, and they stop. A page your app has none of stops them, saying so. A page opened gets a host of its own, so its own steps run there, and a ${c('close')} step closes it.</li>
-  <li><strong>Words</strong> are toasts at the foot of the screen, each in its tone, read out politely, one over another, going after a moment — not while the pointer or the focus is on one — or with their ×.</li>
+  <li><strong>Words</strong> are toasts at the foot of the screen, each in its tone, read out politely, one over another, going after a moment — not while the pointer or the focus is on one — or with their ×. A page opened in a dialog or a panel says its words through the page that opened it: they show over the dialog and outlive it, and a screen reader hears them inside it too.</li>
   <li><strong>A question</strong> is the viewer's own box, Cancel and OK, or your ${c('confirm')}. Escape answers No there and closes nothing under it.</li>
   <li><strong>A tab</strong> a step goes to is shown, and its ${c('show')} steps run, as for a tab a person picks.</li>
   <li><strong>A button</strong> is busy while its steps run — marked so, a ring turning beside its words — and is not run twice. A check that stops it takes the focus to the first problem.</li>

@@ -52,6 +52,8 @@ for (const variant of VARIANTS) {
       await expect(button(page, 'create_invoice')).toBeHidden();
       await expect(node(page, 'f-validity')).toBeVisible();
       await expect(node(page, 'f-date-order')).toBeHidden();
+      // The grid's add buttons in the page's words, as Flectra's.
+      await expect(node(page, 'f-order-line').locator('.fd-lines-add')).toHaveText(['+ Add a product', '+ Add a section', '+ Add a note']);
       if (variant === 'plain') await screen(page, 'real-sale-order');
 
       // Four monitors become five: the line's Tax excl. and the order's totals follow, worked out by the server's rules.

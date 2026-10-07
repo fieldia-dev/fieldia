@@ -379,7 +379,7 @@ function choiceGroup(kind: 'radio' | 'checkbox'): WidgetFactory {
             form.setValue(name, null);
             // The link goes; the cursor stays in the question.
             (inputs[0] ?? otherChoice)?.focus();
-          })
+          }, node)
         : null;
     return {
       element: clear ? make(document, 'div', { class: 'fd-choices-box' }, group, clear.button) : group,
@@ -427,11 +427,16 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
     const nps = style === 'scale' && node.options?.['nps'] === true && min === 0 && max === 10;
     const group = make(document, 'div', { id, class: `fd-points fd-${filling ? 'rating' : 'scale'}${filling ? ` fd-rating-${icon ?? 'star'}` : ''}${nps ? ' fd-nps' : ''}`, role: 'radiogroup' });
     const points: HTMLButtonElement[] = [];
+    // One star, as an ERP's priority, or stars without "Clear selection" (options.clear false): the star
+    // picked, clicked again, takes the answer away — so one star needs no "Clear selection".
+    const single = style === 'rating' && min === max;
+    const toggles = style === 'rating' && (single || node.options?.clear === false);
+    let required = false;
     for (let n = min; n <= max; n++) {
       const point = make(document, 'button', { type: 'button', role: 'radio', 'aria-label': fillIn(words.ofMax, { n, max }), 'data-value': String(n) }, icon === 'thumb' ? (drawIcon(document, 'thumb') as SVGSVGElement) : icon === 'heart' ? '♥' : filling ? '★' : String(n));
       if (style === 'scale') point.removeAttribute('aria-label');
       if (nps) point.dataset['tone'] = n < 7 ? 'low' : n < 9 ? 'mid' : 'high';
-      point.addEventListener('click', () => form.setValue(name, n));
+      point.addEventListener('click', () => form.setValue(name, toggles && !required && form.getState().values[name] === n ? null : n));
       points.push(point);
       group.append(point);
     }
@@ -450,7 +455,7 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
     const clear = clearSelection(document, words, () => {
       form.setValue(name, null);
       points[0]?.focus();
-    });
+    }, node, !single);
     const shown = ends.some(Boolean)
       ? make(document, 'div', { class: 'fd-scale-box' }, group, make(document, 'div', { class: 'fd-scale-ends', 'aria-hidden': 'true' }, make(document, 'span', {}, ends[0]), make(document, 'span', {}, ends[1])))
       : group;
@@ -460,6 +465,7 @@ function pointsWidget(style: 'rating' | 'scale'): WidgetFactory {
       focus: () => (points.find((p) => p.getAttribute('aria-checked') === 'true') ?? points[0])?.focus(),
       update(state) {
         const value = typeof state.value === 'number' ? state.value : null;
+        required = state.required;
         points.forEach((point, i) => {
           const n = min + i;
           setAttr(point, 'aria-checked', String(n === value));
@@ -488,6 +494,8 @@ const dateWidget: WidgetFactory = (context) => {
       const text = textOf(state.value);
       if (input.value !== text) input.value = text;
       if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
+      // Empty, its mask is no answer: read-only, it is not drawn.
+      input.classList.toggle('fd-blank', !text);
       describe(input, state);
     },
   };
@@ -518,6 +526,7 @@ const dateTimeWidget: WidgetFactory = (context) => {
       const text = local(state.value);
       if (input.value !== text) input.value = text;
       if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
+      input.classList.toggle('fd-blank', !text);
       describe(input, state);
     },
   };

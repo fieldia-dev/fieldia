@@ -122,6 +122,9 @@ const SKINS_CSS = /* css */ `
   align-items: start;
 }
 .fd-grid > * { grid-column: span min(var(--fd-span, 1), var(--fd-cols)); }
+/* Twelfths keep the page's gap while it takes under half their width, so they line up with the columns
+   round them; in a narrow column it shrinks with them instead of pushing past its edge. */
+.fd-grid[data-twelfths] { column-gap: min(var(--fd-gap-x), 100% / 24); }
 .fd-field { display: grid; gap: 4px; min-width: 0; }
 .fd-label { font-weight: var(--fd-label-weight); color: var(--fd-text); }
 /* The ✓ of a field filled in right, by its label. */
@@ -163,6 +166,18 @@ const SKINS_CSS = /* css */ `
 .fd-form[data-fd-skin="underline"] .fd-field[data-type="one2many"] { grid-template-columns: minmax(0, 1fr); }
 .fd-form[data-fd-skin="underline"] .fd-field[data-type="one2many"] > * { grid-column: 1 !important; }
 .fd-form[data-fd-skin="underline"] .fd-field:where(:not([data-labels])) > :not(.fd-label) { grid-column: 2; }
+/* A row of twelfths led by a field with its label beside — the skin's (data-row="skin") or the page's
+   ("beside") — Flectra's o_row: that label sits with the labels round it, the parts share the values' room. */
+.fd-form[data-fd-skin="underline"] .fd-section[data-row="skin"] { --fd-row-label: var(--fd-label-width, 11em); --fd-row-gap: 12px; --fd-row-place: absolute; --fd-row-drop: max(0px, calc((var(--fd-control-height, 30px) - 1.45em) / 2)); }
+.fd-form .fd-section[data-row="beside"] { --fd-row-label: var(--fd-label-width, 140px); --fd-row-gap: 14px; --fd-row-place: absolute; --fd-row-drop: max(0px, calc((var(--fd-control-height, 30px) - 1.45em) / 2)); }
+.fd-form .fd-section[data-row] { padding-inline-start: calc(var(--fd-row-label, 0px) + var(--fd-row-gap, 0px)); }
+.fd-form .fd-section[data-row] > .fd-grid > .fd-field:first-child { grid-template-columns: minmax(0, 1fr); position: relative; }
+.fd-form .fd-section[data-row] > .fd-grid > .fd-field:first-child > :not(.fd-label) { grid-column: 1; }
+.fd-form .fd-section[data-row] > .fd-grid > .fd-field:first-child > .fd-label {
+  /* Out of the field's own box, back over the row's room for it — where the row has one. */
+  position: var(--fd-row-place, static); inset-inline-start: calc(-1 * (var(--fd-row-label, 0px) + var(--fd-row-gap, 0px))); inset-block-start: 0;
+  width: var(--fd-row-label, auto); padding-block-start: var(--fd-row-drop, 0px);
+}
 /* A label beside every value needs room twice over: the underline skin stacks its columns sooner. */
 @container (max-width: 760px) {
   .fd-form[data-fd-skin="underline"] .fd-grid { --fd-cols: 1; }
@@ -174,6 +189,9 @@ const SKINS_CSS = /* css */ `
 }
 @container (max-width: 520px) {
   .fd-grid { --fd-cols: 1; }
+  /* Labels go above here: a row's first one too, the parts stacked under it. */
+  .fd-form .fd-section.fd-section[data-row] { --fd-row-label: auto; --fd-row-gap: 0px; --fd-row-place: static; --fd-row-drop: 0px; }
+  .fd-form .fd-section[data-row] { padding-inline-start: 0; }
   .fd-form[data-fd-skin="underline"] .fd-field:where(:not([data-labels])) { grid-template-columns: minmax(0, 1fr); }
   .fd-form[data-fd-skin="underline"] .fd-field:where(:not([data-labels])) > * { grid-column: 1 !important; }
   /* The narrow count, or one column when only the medium one was given. */
@@ -208,6 +226,9 @@ const SKINS_CSS = /* css */ `
 /* A whole form locked reads as a record: plain values in either skin, no boxes, and no prompts to type. */
 .fd-form[data-readonly] .fd-input[readonly] { background: transparent; border-color: transparent; padding-inline: 0; color: var(--fd-text); }
 .fd-form[data-readonly] .fd-input::placeholder { color: transparent; }
+/* Nothing to read in a read-only box draws nothing, in either skin: no prompt to type, and no date's dd.mm.yyyy or its calendar. */
+.fd-input[readonly]::placeholder, .fd-form .fd-input.fd-blank[readonly] { color: transparent; }
+.fd-blank[readonly]::-webkit-calendar-picker-indicator { display: none; }
 .fd-form[data-readonly] select.fd-input:disabled { appearance: none; background: transparent; border-color: transparent; padding-inline: 0; color: var(--fd-text); opacity: 1; }
 .fd-input[aria-invalid="true"] { border-color: var(--fd-error); }
 .fd-form[data-fd-skin="outlined"] .fd-input[aria-invalid="true"]:focus { box-shadow: 0 0 0 2px rgba(255, 38, 5, 0.06); }
@@ -438,6 +459,7 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-richtext-tool svg circle { fill: currentColor; stroke: none; }
 .fd-link-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; border: 1px solid var(--fd-border); border-block-end: none; background: var(--fd-surface); }
 .fd-link-row > .fd-input { flex: 1 1 200px; min-width: 0; }
+.fd-richtext.fd-blank[contenteditable="true"]::before { content: attr(data-placeholder); position: absolute; color: var(--fd-muted); opacity: 0.8; pointer-events: none; }
 .fd-richtext[contenteditable="false"] { background: transparent; border-color: transparent; padding-inline: 0; min-height: 0; }
 .fd-richtext p { margin: 0 0 6px; }
 .fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; min-height: 96px; }
@@ -470,12 +492,35 @@ button.fd-chip-label:hover { text-decoration: underline; }
 /* A saved form placed in another: a quiet line while its page comes, and words in a dashed box when it cannot be shown. */
 .fd-form-part-note { margin: 0; color: var(--fd-muted); font-size: 13px; }
 .fd-form-part-problem { padding: 10px 12px; border: 1px dashed var(--fd-border); border-radius: var(--fd-radius); }
-.fd-tablist { display: flex; gap: 2px; border-block-end: 1px solid var(--fd-border); overflow-x: auto; }
+.fd-tablist { display: flex; gap: 2px; border-block-end: 1px solid var(--fd-border); overflow-x: auto; scrollbar-width: none; }
+.fd-tablist::-webkit-scrollbar { display: none; }
+/* Too long for its room: the tabs fade out at an edge with more past it, under a button that scrolls them along. */
+.fd-tabbar { position: relative; min-width: 0; --fd-fade: to right; }
+[dir="rtl"] .fd-tabbar { --fd-fade: to left; }
+/* Nothing shows under a button (28px); the tabs fade in over the next 36. */
+.fd-tabbar[data-more="start"] > .fd-tablist { mask-image: linear-gradient(var(--fd-fade), transparent 28px, #000 64px); }
+.fd-tabbar[data-more="end"] > .fd-tablist { mask-image: linear-gradient(var(--fd-fade), #000 calc(100% - 64px), transparent calc(100% - 28px)); }
+.fd-tabbar[data-more="start end"] > .fd-tablist { mask-image: linear-gradient(var(--fd-fade), transparent 28px, #000 64px, #000 calc(100% - 64px), transparent calc(100% - 28px)); }
+.fd-tabs-scroll {
+  position: absolute; inset-block: 0 1px; z-index: 1; width: 28px; padding: 0; border: none; background: none; cursor: pointer;
+  color: var(--fd-muted); display: grid; place-items: center;
+}
+.fd-tabs-scroll[hidden] { display: none; }
+.fd-tabs-scroll:hover { color: var(--fd-accent); }
+.fd-tabs-scroll::before { content: ""; width: 7px; height: 7px; border: solid currentColor; border-width: 0 0 2px 2px; }
+.fd-tabs-before { inset-inline-start: 0; }
+.fd-tabs-after { inset-inline-end: 0; }
+.fd-tabs-before::before { transform: translateX(2px) rotate(45deg); }
+.fd-tabs-after::before { transform: translateX(-2px) rotate(-135deg); }
+[dir="rtl"] .fd-tabs-before::before { transform: translateX(-2px) rotate(-135deg); }
+[dir="rtl"] .fd-tabs-after::before { transform: translateX(2px) rotate(45deg); }
 .fd-tab {
   font: inherit; background: none; border: none; cursor: pointer; padding: 8px 14px; color: var(--fd-muted);
   border-block-end: 2px solid transparent; margin-block-end: -1px; white-space: nowrap;
 }
 .fd-tab[aria-selected="true"] { color: var(--fd-accent); border-block-end-color: var(--fd-accent); font-weight: 600; }
+/* A tab with a problem in it, seen or not: a dot in the error colour after its words. */
+.fd-tab[data-problem]::after { content: ""; display: inline-block; width: 6px; height: 6px; margin-inline-start: 6px; border-radius: 50%; background: var(--fd-error); vertical-align: 0.15em; }
 .fd-tabpanel { padding-block: 16px; display: grid; gap: 16px; }
 
 /* ---- buttons ---------------------------------------------------------- */
@@ -741,9 +786,9 @@ button.fd-chip-label:hover { text-decoration: underline; }
   border: 1px solid var(--fd-edge, transparent);
 }
 .fd-dialog p { margin: 0; }
-/* Words a step says: toasts at the foot of the screen, one over another, each in its tone; over the page, under a dialog. */
+/* Words a step says: toasts at the foot of the screen, one over another, each in its tone; over the page and over a dialog or panel, whose own words they are too. */
 .fd-says {
-  position: fixed; inset-inline: 16px; inset-block-end: max(20px, env(safe-area-inset-bottom, 0px)); z-index: 990;
+  position: fixed; inset-inline: 16px; inset-block-end: max(20px, env(safe-area-inset-bottom, 0px)); z-index: 1100;
   display: grid; justify-items: center; gap: 8px; pointer-events: none;
 }
 .fd-say {

@@ -341,6 +341,7 @@
               {
                 "type": "field",
                 "id": "f-type",
+                "options": { "clear": false },
                 "field": "maintenance_type",
                 "widget": "radio"
               }
@@ -385,25 +386,16 @@
                 "invisible": "maintenance_type == 'corrective'"
               },
               {
-                "type": "field",
-                "id": "f-repeat-interval",
-                "field": "repeat_interval",
+                "type": "section",
+                "id": "g-repeat",
+                "style": "plain",
+                "columns": { "wide": 12, "medium": 12 },
                 "invisible": "not recurring_maintenance",
-                "required": "recurring_maintenance"
-              },
-              {
-                "type": "field",
-                "id": "f-repeat-unit",
-                "field": "repeat_unit",
-                "invisible": "not recurring_maintenance",
-                "required": "recurring_maintenance"
-              },
-              {
-                "type": "field",
-                "id": "f-repeat-type",
-                "field": "repeat_type",
-                "invisible": "not recurring_maintenance",
-                "required": "recurring_maintenance"
+                "children": [
+                  { "type": "field", "id": "f-repeat-interval", "field": "repeat_interval", "colspan": 2, "required": "recurring_maintenance" },
+                  { "type": "field", "id": "f-repeat-unit", "field": "repeat_unit", "colspan": 5, "labels": "hidden", "required": "recurring_maintenance" },
+                  { "type": "field", "id": "f-repeat-type", "field": "repeat_type", "colspan": 5, "labels": "hidden", "required": "recurring_maintenance" }
+                ]
               },
               {
                 "type": "field",
@@ -415,6 +407,7 @@
               {
                 "type": "field",
                 "id": "f-priority",
+                "options": { "clear": false },
                 "field": "priority",
                 "widget": "rating"
               },
@@ -462,6 +455,7 @@
                   {
                     "type": "field",
                     "id": "f-instruction-type",
+                    "options": { "clear": false },
                     "field": "instruction_type",
                     "widget": "radio"
                   },

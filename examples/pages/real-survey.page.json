@@ -269,7 +269,8 @@
                 "widget": "grid",
                 "labels": "hidden",
                 "columns": ["title", "question_type", "constr_mandatory", "random_questions_count", "triggering_question_ids"],
-                "optionalColumns": { "constr_mandatory": "show", "random_questions_count": "hide" }
+                "optionalColumns": { "constr_mandatory": "show", "random_questions_count": "hide" },
+                "options": { "addLabel": "Add a question" }
               }
             ]
           },
@@ -300,6 +301,7 @@
                       {
                         "type": "field",
                         "id": "f-progression",
+                        "options": { "clear": false },
                         "field": "progression_mode",
                         "widget": "radio",
                         "invisible": "questions_layout == 'one_page' or survey_type == 'live_session'"

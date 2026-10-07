@@ -76,7 +76,7 @@ export const imageChoiceWidget: WidgetFactory = ({ form, name, field, node, id, 
     : clearSelection(document, words, () => {
         form.setValue(name, null);
         cards[0]?.focus();
-      });
+      }, node);
 
   if (limit?.element) group.append(limit.element);
   return {

@@ -21,7 +21,7 @@ const SURVEY = 'page=real-survey&record=7&skin=underline';
 const value = (page: Page, name: string) => page.evaluate((n) => (window as any).fieldiaDemo.handle.form.getState().values[n], name);
 const stored = (page: Page, model: string, id: number) => page.evaluate(([m, i]) => (window as any).fieldiaDemo.dataSource.records[m][i], [model, id] as const);
 const toast = (page: Page, words: string) => page.locator('.fd-say', { hasText: words });
-const tab = (page: Page, label: string) => page.locator('[data-node="notebook"] > .fd-tablist > .fd-tab', { hasText: label });
+const tab = (page: Page, label: string) => page.locator('[data-node="notebook"] > .fd-tabbar > .fd-tablist > .fd-tab', { hasText: label });
 const shownPanel = (page: Page) => page.locator('[data-node="notebook"] > .fd-tabpanel:not([hidden])');
 const gridCell = (page: Page, grid: string, row: number, col: string) => node(page, grid).locator(`.ag-row[row-index="${row}"]:not(.fd-grid-totals) .ag-cell[col-id="${col}"]`);
 const gridEditor = (page: Page, grid: string) => node(page, grid).locator('.ag-cell-inline-editing input, .ag-cell-inline-editing select, .ag-popup-editor input').first();
@@ -264,7 +264,9 @@ for (const variant of VARIANTS) {
       if (variant === 'plain') await screen(page, 'real-survey');
 
       // A question added at the end, typed in its cell.
-      await node(page, 'f-questions').getByRole('button', { name: 'Add a line' }).click();
+      // Named as Flectra names them: Add a question, Add a section.
+      await expect(node(page, 'f-questions').locator('.fd-lines-add')).toHaveText(['+ Add a question', '+ Add a section', '+ Add a note']);
+      await node(page, 'f-questions').getByRole('button', { name: 'Add a question' }).click();
       await expect(gridEditor(page, 'f-questions')).toBeFocused();
       await page.keyboard.type('Would you recommend us to a colleague?');
       // Done typing, the person clicks away: the line is kept.
@@ -312,6 +314,91 @@ for (const variant of VARIANTS) {
       await expect(page.locator('.fd-ribbon', { hasText: 'Archived' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Reopen' })).toBeVisible();
       expect(problems).toEqual([]);
+    });
+
+    test('a table in a tab out of sight rests: nothing redrawn frame after frame while nobody types', async ({ page }) => {
+      await page.setViewportSize(WIDE);
+      const { problems } = await open(page, variant, CASE);
+      await expect(node(page, '#title').locator('input')).toHaveValue('LEG/2026/LIT/0042');
+      // The tabs with tables, shown once and left: Expenses, then Billing's two.
+      for (const label of ['Expenses', 'Billing', 'Description']) {
+        await tab(page, label).scrollIntoViewIfNeeded();
+        await tab(page, label).click();
+      }
+      // Three tables built: Expenses', and Billing's split and flat-fee lines (hidden by its condition).
+      await expect(page.locator('.fd-grid-lines')).toHaveCount(3);
+      const frames = await page.evaluate(
+        () =>
+          new Promise<number>((resolve) => {
+            const ask = window.requestAnimationFrame.bind(window);
+            let asked = 0;
+            window.requestAnimationFrame = (callback) => (asked++, ask(callback));
+            setTimeout(() => resolve(asked), 1000);
+          })
+      );
+      // A grid hidden as display: none measured itself every frame for ever: 120 frames a second each.
+      expect(frames).toBeLessThan(10);
+      // Shown again, a table is back as it was, drawn to fit.
+      await tab(page, 'Expenses').click();
+      await expect(node(page, 'f-expenses').locator('.ag-root-wrapper')).toBeVisible();
+      await expect(node(page, 'f-expenses').locator('.ag-header-cell').first()).toBeVisible();
+      expect(problems).toEqual([]);
+    });
+
+    test('the notebook’s tabs too long for their room: faded at the edge with more, scrolled by its button, the tab chosen in sight', async ({ page }) => {
+      const strip = page.locator('[data-node="notebook"] > .fd-tabbar');
+      const list = strip.locator('> .fd-tablist');
+      /** The selected tab's edges inside the strip's own, less the room the fade and button keep. */
+      const inSight = () =>
+        list.evaluate((l) => {
+          const room = l.getBoundingClientRect();
+          const at = (l.querySelector('[aria-selected="true"]') as HTMLElement).getBoundingClientRect();
+          return at.left >= room.left - 1 && at.right <= room.right + 1;
+        });
+      for (const [look, width] of [['', 390], ['&scheme=dark', 390], ['&locale=ar&dir=rtl', 390], ['', 1440], ['&locale=ar&dir=rtl', 1440]] as const) {
+        await page.setViewportSize({ width, height: 900 });
+        const { problems } = await open(page, variant, `${CASE}${look}`);
+        await expect(node(page, '#title').locator('input')).toHaveValue('LEG/2026/LIT/0042');
+        const overflows = await list.evaluate((l) => l.scrollWidth > l.clientWidth + 1);
+        if (!overflows) {
+          // Room for every tab: no fade, no buttons.
+          await expect(strip).not.toHaveAttribute('data-more', /./);
+          await expect(strip.locator('.fd-tabs-scroll:visible')).toHaveCount(0);
+          expect(problems).toEqual([]);
+          continue;
+        }
+        // At the start, more past the end only: its button there, at the end of the line — the left, right to left.
+        await expect(strip).toHaveAttribute('data-more', 'end');
+        const after = strip.locator('.fd-tabs-after');
+        await expect(after).toBeVisible();
+        await expect(strip.locator('.fd-tabs-before')).toBeHidden();
+        const [bar, button] = [await strip.boundingBox(), await after.boundingBox()];
+        const rtl = look.includes('rtl');
+        expect(rtl ? button!.x - bar!.x : bar!.x + bar!.width - (button!.x + button!.width)).toBeLessThan(2);
+        if (variant === 'plain') await screen(page, `real-legal-case-tabs-${width}${look.replace(/&|=/g, '-')}`);
+        // Its button moves the strip along: more at both edges now, or at the start alone.
+        await after.click();
+        await expect(strip).toHaveAttribute('data-more', /start/);
+        await expect(strip.locator('.fd-tabs-before')).toBeVisible();
+        if (variant === 'plain') await screen(page, `real-legal-case-tabs-${width}${look.replace(/&|=/g, '-')}-scrolled`);
+        // The last tab by the keyboard, then the first: each comes into sight.
+        const tabs = list.locator('> .fd-tab:visible');
+        await tabs.first().click();
+        expect(await inSight()).toBe(true);
+        await page.keyboard.press('End');
+        await expect(tabs.last()).toHaveAttribute('aria-selected', 'true');
+        await expect.poll(inSight).toBe(true);
+        await page.keyboard.press('Home');
+        await expect(tabs.first()).toHaveAttribute('aria-selected', 'true');
+        await expect.poll(inSight).toBe(true);
+        // A step that shows a tab far along: in sight too.
+        const last = await tabs.last().getAttribute('data-node');
+        await page.evaluate((target) => (window as any).fieldiaDemo.handle.run([{ do: 'goTo', target }]), last);
+        await expect(tabs.last()).toHaveAttribute('aria-selected', 'true');
+        await expect.poll(inSight).toBe(true);
+        await expectNoSidewaysScroll(page);
+        expect(problems).toEqual([]);
+      }
     });
 
     test('at a phone’s width: the case and the survey fit, nothing scrolls sideways', async ({ page }) => {

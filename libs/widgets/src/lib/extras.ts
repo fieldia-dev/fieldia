@@ -83,6 +83,11 @@ export const htmlWidget: WidgetFactory = ({ form, name, node, id, document, labe
   area.setAttribute('role', 'textbox');
   area.setAttribute('aria-multiline', 'true');
   area.setAttribute('contenteditable', 'true');
+  // The page's words in the empty box, drawn by the stylesheet while it can be typed in.
+  if (node.placeholder) {
+    area.setAttribute('data-placeholder', node.placeholder);
+    area.setAttribute('aria-placeholder', node.placeholder);
+  }
   const withToolbar = node.options?.['toolbar'] !== false;
   let last = '';
   area.addEventListener('input', () => {
@@ -119,6 +124,7 @@ export const htmlWidget: WidgetFactory = ({ form, name, node, id, document, labe
         last = clean;
       }
       area.setAttribute('contenteditable', String(!state.readonly));
+      area.classList.toggle('fd-blank', !clean.trim());
       area.setAttribute('aria-readonly', String(state.readonly));
       area.setAttribute('aria-invalid', String(state.invalid));
       if (state.describedBy) area.setAttribute('aria-describedby', state.describedBy);

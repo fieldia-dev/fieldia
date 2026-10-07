@@ -185,7 +185,7 @@
       "field": "name",
       "avatarField": "image_1920",
       "placeholder": "e.g. Lumber Inc",
-      "above": [{ "type": "field", "id": "f-company-type", "field": "company_type", "widget": "radio", "labels": "hidden" }],
+      "above": [{ "type": "field", "id": "f-company-type", "field": "company_type", "widget": "radio", "labels": "hidden", "options": { "clear": false } }],
       "below": [
         {
           "type": "field",

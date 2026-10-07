@@ -344,7 +344,7 @@ describe('statusbar', () => {
     const refresh = () => widget.update({ value: form.getState().values[node.field], values: form.getState().values, readonly, required: false, invalid: false });
     form.subscribe(refresh);
     refresh();
-    return { form, el: widget.element };
+    return { form, el: widget.element, refresh };
   }
   const steps = (el: Element) => [...el.querySelectorAll('li')].map((li) => li.textContent);
   const current = (el: Element) => el.querySelector('[aria-current="step"]')?.textContent;
@@ -375,6 +375,66 @@ describe('statusbar', () => {
     expect(current(el)).toBe('Design');
     (el.querySelectorAll('button')[2] as HTMLButtonElement).click();
     expect(form.getState().values['phase_id']).toEqual({ id: 3, label: 'Build' });
+  });
+
+  it('searches its steps again when a value its filter reads changes, as when the record loads', async () => {
+    const page = {
+      fieldia: '0.1',
+      id: 'tasks',
+      data: { kind: 'record', model: 'task' },
+      fields: {
+        project_id: { type: 'many2one', label: 'Project', relation: 'project' },
+        stage_id: { type: 'many2one', label: 'Stage', relation: 'stage', filter: [{ field: 'project_id', op: '=', valueFrom: 'project_id' }] },
+      },
+      layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'n', field: 'stage_id', widget: 'statusbar' }] },
+    } as unknown as Page;
+    const office = { id: 1, label: 'Office' };
+    const dataSource = createMemoryDataSource({
+      records: {
+        task: { 5: { stage_id: { id: 11, label: 'Design' }, project_id: office } },
+        stage: { 10: { name: 'Brief', project_id: office }, 11: { name: 'Design', project_id: office }, 20: { name: 'Survey', project_id: { id: 2, label: 'Villa' } } },
+      },
+    });
+    const form = createForm({ page, dataSource, recordId: 5 });
+    const node = (page.layout as { children: FieldNode[] }).children[0];
+    const widget = createWidget({ form, name: 'stage_id', field: page.fields['stage_id'] as Field, node, id: 'fd-bar', document, labels: WIDGET_LABELS.en });
+    document.body.replaceChildren(widget.element);
+    const refresh = () => widget.update({ value: form.getState().values['stage_id'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    form.subscribe(refresh);
+    // Drawn before the record is there: its project is not known yet.
+    refresh();
+    await form.load();
+    await settle();
+    expect(steps(widget.element)).toEqual(['Brief', 'Design']);
+    form.setValue('project_id', { id: 2, label: 'Villa' });
+    await settle();
+    expect(steps(widget.element)).toEqual(['Survey', 'Design']);
+  });
+
+  it('keeps the focus on a step clicked, now the current one, after the bar is drawn again', () => {
+    const { form, el } = mountBar({ field: 'state', widget: 'statusbar', options: { clickable: true } });
+    const done = el.querySelectorAll('button')[2] as HTMLButtonElement;
+    done.focus();
+    done.click();
+    expect(form.getState().values['state']).toBe('done');
+    expect(document.activeElement?.textContent).toBe('Done');
+    expect(document.activeElement?.getAttribute('aria-current')).toBe('step');
+  });
+
+  it('draws itself again only when its steps, its current one or its lock change: a form that redraws as focus leaves comes to rest', async () => {
+    const { el, refresh } = mountBar({ field: 'state', widget: 'statusbar', options: { clickable: true } });
+    const before = el.querySelectorAll('button')[1];
+    refresh();
+    expect(el.querySelectorAll('button')[1]).toBe(before);
+    // As the viewer does: focus leaving a field brings it up to date a moment later — once, not for ever.
+    let redraws = 0;
+    el.addEventListener('focusout', () => queueMicrotask(() => redraws++ < 20 && refresh()));
+    const done = el.querySelectorAll('button')[2] as HTMLButtonElement;
+    done.focus();
+    done.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(redraws).toBeLessThan(3);
+    expect(document.activeElement?.textContent).toBe('Done');
   });
 
   it('cannot be clicked when read-only', () => {

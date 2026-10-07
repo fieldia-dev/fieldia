@@ -47,9 +47,19 @@ for (const variant of VARIANTS) {
       const { problems } = await open(page, variant, TASK);
       await expect.poll(() => value(page, 'name')).toBe('Fit acoustic ceiling panels, meeting rooms A and B');
       await expect(stage(page, 'In Progress').locator('xpath=ancestor-or-self::*[@aria-current="step"]')).toHaveCount(1);
+      // The stages are the task's project's, searched once its record has loaded.
+      await expect(page.locator('.fd-header .fd-statusbar li')).toHaveText(['New', 'In Progress', 'Client Review', 'Done', 'Cancelled']);
       // Stat buttons as Flectra shows them: the sub-tasks counted, no Parent Task on a task without a parent.
       await expect(page.locator('button[data-node="subtasks"] .fd-stat-value')).toHaveText('3');
       await expect(page.locator('button[data-node="action_open_parent_task"]')).toBeHidden();
+      // The priority star toggles, as Flectra's: a second click takes it away, and no "Clear selection" shows.
+      const star = node(page, 'f-priority').getByRole('radio');
+      const priority = await value(page, 'priority');
+      await star.click();
+      expect(await value(page, 'priority')).toBe(priority === 1 ? null : 1);
+      await expect(node(page, 'f-priority').locator('.fd-choice-clear')).toBeHidden();
+      await star.click();
+      expect(await value(page, 'priority')).toBe(priority ?? null);
       if (variant === 'plain') await screen(page, 'real-task');
 
       // Timesheets: 17.5 hours logged; another 2.5 makes 20, and the hours under the grid follow.
@@ -70,7 +80,7 @@ for (const variant of VARIANTS) {
 
       // Sub-tasks: a fourth one, which takes the task's project and customer.
       await page.getByRole('tab', { name: 'Sub-tasks' }).click();
-      await node(page, 'f-subtasks').getByRole('button', { name: /Add a line/ }).click();
+      await node(page, 'f-subtasks').getByRole('button', { name: 'Add a sub-task' }).click();
       await expect(node(page, 'f-subtasks').locator('.ag-row[row-index="3"]')).toBeVisible();
       // A whole line is edited at once here: a click outside the grid keeps it.
       await typeIn(page, 'f-subtasks', 3, 'name', 'Snag walk, both rooms', '');
@@ -103,6 +113,8 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-partner-outgoing')).toBeHidden();
       await expect(node(page, 'f-location')).toBeHidden();
       await expect(cell(page, 'f-moves', 2, 'product_uom_qty')).toHaveText('16.00');
+      // The grid's add button in the page's words, as Flectra's.
+      await expect(node(page, 'f-moves').locator('.fd-lines-add')).toHaveText(['+ Add a Product']);
       if (variant === 'plain') await screen(page, 'real-transfer');
 
       await page.getByRole('button', { name: 'Mark as Todo' }).click();

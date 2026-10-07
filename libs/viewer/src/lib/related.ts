@@ -1,4 +1,4 @@
-import type { CreateRequest, DataSource, Field, Page, SearchRequest } from '@fieldia/core';
+import type { CreateRequest, DataSource, Field, Page, SearchRequest, Tone } from '@fieldia/core';
 import type { WidgetDialogs } from '@fieldia/widgets';
 import { openFormDialog, openSearchDialog } from './dialog';
 import type { ViewerOptions } from './viewer';
@@ -62,8 +62,12 @@ function lookupsOf(source: DataSource | undefined): DataSource | undefined {
   };
 }
 
-/** The dialogs a page's widgets may open, made from the viewer's own options. */
-export function pageDialogs(options: ViewerOptions): WidgetDialogs {
+/**
+ * The dialogs a page's widgets may open, made from the viewer's own options.
+ * A linked record's page says its words through `say`, the opener's, so they
+ * show over the dialog and outlive it.
+ */
+export function pageDialogs(options: ViewerOptions, say?: (message: string, tone: Tone) => void): WidgetDialogs {
   const pageFor = (model: string) => findPage(options, { model });
   // A dialog's page looks and reads like the page that opened it, and can open dialogs of its own.
   const shared = {
@@ -91,6 +95,7 @@ export function pageDialogs(options: ViewerOptions): WidgetDialogs {
         values: request.name || request.values ? { ...(request.values ?? {}), ...(request.name && nameField ? { [nameField]: request.name } : {}) } : undefined,
         title: request.title,
         size: 'large',
+        ...(say ? { host: { say } } : {}),
       });
       if (!result.saved || result.recordId === null) return null;
       const name = nameField ? result.values[nameField] : null;
@@ -106,6 +111,7 @@ export function pageDialogs(options: ViewerOptions): WidgetDialogs {
         title: request.title,
         mode: 'values',
         ...(request.recompute ? { recompute: request.recompute } : {}),
+        ...(say ? { host: { say } } : {}),
       });
       return result.saved ? result.values : null;
     },

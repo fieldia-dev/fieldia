@@ -226,6 +226,13 @@ for (const variant of VARIANTS) {
       // Two stars of three: Normal.
       await node(page, 'f-priority').locator('button[data-value="2"]').click();
       expect(await value(page, 'priority')).toBe(2);
+      // No "Clear selection", as Flectra has none (clear: false): the star picked, clicked again, goes back to Very Low.
+      await expect(node(page, 'f-priority').locator('.fd-choice-clear')).toBeHidden();
+      await expect(node(page, 'f-type').locator('.fd-choice-clear')).toBeHidden();
+      await node(page, 'f-priority').locator('button[data-value="2"]').click();
+      expect(await value(page, 'priority')).toBeNull();
+      await node(page, 'f-priority').locator('button[data-value="2"]').click();
+      expect(await value(page, 'priority')).toBe(2);
       const duration = node(page, 'f-duration').locator('input');
       await duration.fill('3.75');
       await duration.press('Tab');
@@ -235,7 +242,9 @@ for (const variant of VARIANTS) {
       await page.locator('.fd-header .fd-statusbar').getByRole('button', { name: 'Repaired' }).click();
       await expect(current(page)).toHaveText('Repaired');
       await expect(node(page, 'f-close-date')).toBeVisible();
-      await page.locator('.fd-header').getByRole('button', { name: 'Save' }).click();
+      // The step clicked keeps the focus, so the keys still save: Ctrl+Enter, as Flectra's Alt+S.
+      await expect(page.locator('.fd-header .fd-statusbar').getByRole('button', { name: 'Repaired' })).toBeFocused();
+      await page.keyboard.press('ControlOrMeta+Enter');
       await settled(page);
       const saved = await stored(page, 'maintenance.request', 4371);
       expect(saved.priority).toBe(2);
@@ -254,6 +263,44 @@ for (const variant of VARIANTS) {
       await expect(node(page, 'f-repeat-until')).toBeVisible();
       expect(problems).toEqual([]);
     });
+
+    test('maintenance request: Repeat Every on one row in its column, its label with the others, at any width', async ({ page }) => {
+      const box = async (selector: string) => (await page.locator(selector).first().boundingBox())!;
+      for (const [width, look] of [[1440, ''], [1100, ''], [900, ''], [1440, '&locale=ar&dir=rtl'], [390, '']] as const) {
+        await page.setViewportSize({ width, height: 900 });
+        const { problems } = await open(page, variant, `page=real-maintenance-request&record=4372&skin=underline${look}`);
+        await expect(node(page, 'g-repeat')).toBeVisible();
+        const column = await box('[data-node="g-main-right"]');
+        const parts = await Promise.all(['f-repeat-interval', 'f-repeat-unit', 'f-repeat-type'].map((id) => box(`[data-node="${id}"] :is(input, select)`)));
+        // Inside the column, every part: nothing past either edge.
+        for (const part of parts) {
+          expect(part.x).toBeGreaterThanOrEqual(column.x - 1);
+          expect(part.x + part.width).toBeLessThanOrEqual(column.x + column.width + 1);
+        }
+        const label = await box('[data-node="f-repeat-interval"] .fd-label');
+        const team = await box('[data-node="f-team"] .fd-label');
+        const teamValue = await box('[data-node="f-team"] input');
+        if (width === 390) {
+          // A phone: the label above, the parts one under another.
+          expect(label.y + label.height).toBeLessThanOrEqual(parts[0].y + 1);
+          expect(parts[1].y).toBeGreaterThan(parts[0].y);
+        } else {
+          // One row, in the values' room, its label where the column's labels are.
+          expect(new Set(parts.map((p) => Math.round(p.y))).size).toBe(1);
+          expect(Math.abs(label.x - team.x)).toBeLessThan(2);
+          const rtl = look.includes('rtl');
+          const valueEdge = rtl ? teamValue.x + teamValue.width : teamValue.x;
+          const first = rtl ? parts[0].x + parts[0].width : parts[0].x;
+          expect(Math.abs(first - valueEdge)).toBeLessThan(2);
+          // Level with its boxes, as the column's other labels are with theirs.
+          const level = (l: { y: number; height: number }, b: { y: number; height: number }) => Math.abs(l.y + l.height / 2 - (b.y + b.height / 2));
+          expect(Math.abs(level(label, parts[0]) - level(team, teamValue))).toBeLessThan(3);
+        }
+        if (variant === 'plain') await screen(page, `real-maintenance-repeat-${width}${look.replace(/[&=]/g, '-')}`);
+        await expectNoSidewaysScroll(page);
+        expect(problems).toEqual([]);
+      }
+    });
   });
 }
 
@@ -271,4 +318,26 @@ test('the people pages at a phone’s width: nothing scrolls sideways', async ({
   }
   await open(page, 'plain', 'page=real-time-off&record=4171&skin=underline');
   await screen(page, 'real-time-off-phone');
+});
+
+test('an empty read-only field draws empty: no “Search…”, no date mask', async ({ page }) => {
+  await page.setViewportSize(WIDE);
+  const { problems } = await open(page, 'plain', 'page=real-clinic-appointment&record=4001&skin=underline');
+  const link = node(page, 'f-deposit-payment').locator('input');
+  const date = node(page, 'f-arrival').locator('input');
+  await expect(link).toHaveJSProperty('readOnly', true);
+  await expect(link).toHaveValue('');
+  await expect(date).toHaveJSProperty('readOnly', true);
+  await expect(date).toHaveValue('');
+  const transparent = 'rgba(0, 0, 0, 0)';
+  expect(await link.evaluate((el) => getComputedStyle(el, '::placeholder').color)).toBe(transparent);
+  // The date's dd.mm.yyyy is drawn in the box's own colour.
+  expect(await date.evaluate((el) => getComputedStyle(el).color)).toBe(transparent);
+  await screen(page, 'real-clinic-appointment-empty-read-only');
+  // A read-only date with a value keeps its look.
+  const set = node(page, 'f-stop').locator('input');
+  await expect(set).toHaveJSProperty('readOnly', true);
+  await expect(set).not.toHaveValue('');
+  expect(await set.evaluate((el) => getComputedStyle(el).color)).not.toBe(transparent);
+  expect(problems).toEqual([]);
 });

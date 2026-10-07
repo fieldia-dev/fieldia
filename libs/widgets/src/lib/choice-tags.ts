@@ -20,7 +20,7 @@ import type { WidgetContext, WidgetFactory } from './widgets';
 export const choiceTagsWidget: WidgetFactory = (context) => combo(context, false);
 export const searchWidget: WidgetFactory = (context) => combo(context, true);
 
-function combo({ form, name, field, id, document, labels, locale }: WidgetContext, single: boolean) {
+function combo({ form, name, field, node, id, document, labels, locale }: WidgetContext, single: boolean) {
   const words = wordsFor(labels, locale);
   const make = maker(document);
   const options: Option[] = field.type === 'selection' ? field.options : [];
@@ -35,7 +35,7 @@ function combo({ form, name, field, id, document, labels, locale }: WidgetContex
     'aria-expanded': 'false',
     'aria-controls': listId,
     autocomplete: 'off',
-    placeholder: words.search,
+    placeholder: node.placeholder || words.search,
   });
   const list = make('ul', { id: listId, class: 'fd-listbox', role: 'listbox', hidden: '' });
   const chips = make('ul', { class: 'fd-chips' });

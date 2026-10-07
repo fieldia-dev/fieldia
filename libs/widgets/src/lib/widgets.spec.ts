@@ -471,6 +471,37 @@ describe('choice widgets', () => {
     expect(q<HTMLButtonElement>(rating.el, '.fd-choice-clear').textContent).toBe('محو التحديد');
   });
 
+  it('offers no “Clear selection” on a radio or a rating whose page says clear: false', () => {
+    const radio = setup({ type: 'selection', options }, { widget: 'radio', options: { clear: false } });
+    radio.el.querySelectorAll<HTMLInputElement>('input[type=radio]')[1].click();
+    expect(valueOf(radio.form)).toBe(options[1].value);
+    expect(radio.el.querySelector('.fd-choice-clear:not([hidden])')).toBeNull();
+    const rating = setup({ type: 'integer', min: 1, max: 5 }, { widget: 'rating', options: { clear: false } });
+    const stars = rating.el.querySelectorAll<HTMLButtonElement>('[role=radio]');
+    stars[2].click();
+    expect(valueOf(rating.form)).toBe(3);
+    expect(rating.el.querySelector('.fd-choice-clear:not([hidden])')).toBeNull();
+    // Its stars take the answer away themselves, as an ERP's priority: the one picked, clicked again.
+    stars[2].click();
+    expect(valueOf(rating.form)).toBeNull();
+  });
+
+  it('takes a single star away with a second click, and never offers “Clear selection” for it', () => {
+    const { form, el, refresh } = setup({ type: 'integer', min: 1, max: 1 }, { widget: 'rating' });
+    const star = q<HTMLButtonElement>(el, '[role=radio]');
+    star.click();
+    expect(valueOf(form)).toBe(1);
+    expect(el.querySelector('.fd-choice-clear:not([hidden])')).toBeNull();
+    star.click();
+    expect(valueOf(form)).toBeNull();
+    expect(star.getAttribute('aria-checked')).toBe('false');
+    // An answer that must be given keeps its star.
+    star.click();
+    refresh({ required: true });
+    star.click();
+    expect(valueOf(form)).toBe(1);
+  });
+
   it('puts words at the ends of a scale, when it has them', () => {
     const { el } = setup({ type: 'integer', min: 1, max: 5 }, { widget: 'scale', options: { startLabel: 'Not likely', endLabel: 'Very likely' } });
     expect([...el.querySelectorAll('.fd-scale-ends > span')].map((s) => s.textContent)).toEqual(['Not likely', 'Very likely']);

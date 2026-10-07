@@ -15,7 +15,8 @@ import { createWidget, type Widget, type WidgetFactory } from './widgets';
  *
  * A line moves by the grip at its start, or by Alt+↑/↓ from inside it, said
  * aloud. The node's `options`: `min` lines at least — a new table starts with
- * them — and `max` at most; `addLabel`, the Add button's words; `emptyLabel`,
+ * them — and `max` at most; `addLabel`, the Add button's words (and
+ * `addSectionLabel`, `addNoteLabel`, its section's and note's); `emptyLabel`,
  * a sentence while there is no line; `confirmDelete`, asking before a line
  * with something in it goes.
  */
@@ -124,8 +125,8 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
   };
   addButton(words('addLabel') ?? labels.addLine, {}, 'line');
   if (kinds) {
-    addButton(labels.addSection, { [kinds.field]: kinds.section ?? 'section' }, 'section');
-    addButton(labels.addNote, { [kinds.field]: kinds.note ?? 'note' }, 'note');
+    addButton(words('addSectionLabel') ?? labels.addSection, { [kinds.field]: kinds.section ?? 'section' }, 'section');
+    addButton(words('addNoteLabel') ?? labels.addNote, { [kinds.field]: kinds.note ?? 'note' }, 'note');
   }
   const emptyWords = words('emptyLabel');
   const empty = emptyWords ? make('div', { class: 'fd-help fd-lines-empty' }, emptyWords) : null;

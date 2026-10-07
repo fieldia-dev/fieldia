@@ -211,7 +211,7 @@
         {
           "feature": "Read-only fields shown as text",
           "status": "approximated",
-          "how": "an empty read-only link still draws \"Search…\", an empty read-only date its dd.mm.yyyy mask, a read-only selection a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+          "how": "an empty read-only field draws empty, as Flectra's (no \"Search…\", no dd.mm.yyyy mask: shown in the e2e); but a read-only selection is a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
         },
         {
           "feature": "Object buttons save the record first, run the method, then reload it",
@@ -476,7 +476,7 @@
         {
           "feature": "Read-only fields shown as text",
           "status": "approximated",
-          "how": "an empty read-only link still draws \"Search…\", an empty read-only date its dd.mm.yyyy mask, a read-only selection a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+          "how": "an empty read-only field draws empty, as Flectra's (no \"Search…\", no dd.mm.yyyy mask: shown in the e2e); but a read-only selection is a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
         },
         {
           "feature": "Object buttons save the record first, run the method, then reload it",
@@ -769,7 +769,7 @@
         {
           "feature": "Read-only fields shown as text",
           "status": "approximated",
-          "how": "an empty read-only link still draws \"Search…\", an empty read-only date its dd.mm.yyyy mask, a read-only selection a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+          "how": "an empty read-only field draws empty, as Flectra's (no \"Search…\", no dd.mm.yyyy mask: shown in the e2e); but a read-only selection is a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
         },
         {
           "feature": "Object buttons save the record first, run the method, then reload it",
@@ -846,8 +846,8 @@
         },
         {
           "feature": "Keyboard after a stage is clicked (Flectra: Alt+S saves from anywhere)",
-          "status": "missing",
-          "needs": "clicking a statusbar step redraws the bar and the focus falls to <body>, so Ctrl+Enter no longer saves until a field is focused again (checked in the browser); needs the clicked step to keep the focus, or the save keys heard on the whole page"
+          "status": "covered",
+          "how": "the step clicked keeps the focus as the bar is drawn again, so Ctrl+Enter saves (shown in the e2e)"
         },
         {
           "feature": "Stage statusbar invisible=\"archive\"",
@@ -891,8 +891,8 @@
         },
         {
           "feature": "Maintenance Type (radio)",
-          "status": "approximated",
-          "how": "radio; Fieldia adds a \"Clear selection\" link Flectra has not"
+          "status": "covered",
+          "how": "radio with `clear: false`: no \"Clear selection\", as in Flectra"
         },
         {
           "feature": "Team (required, no_create, no_open), Responsible (user_id relabelled), Scheduled Date",
@@ -911,8 +911,8 @@
         },
         {
           "feature": "Repeat Every / unit / Until / End Date on one row (d-flex), required while recurrent, End Date only for \"until\"",
-          "status": "approximated",
-          "how": "one field per row with Flectra's conditions: twelfths inside one column of a two-column group overflow the column by about 11 px and put labels above — needs twelfths that fit a nested column"
+          "status": "covered",
+          "how": "a row of twelfths (2/5/5) in the right-hand column: \"Repeat Every\" with the column's labels, the number, unit and Forever/Until in the values' room, fitting at every width (shown in the e2e); End Date on a row of its own under it, only for \"until\""
         },
         {
           "feature": "Repeat interval at least 1 (constraint)",
@@ -922,7 +922,7 @@
         {
           "feature": "Priority (widget priority: three stars over a selection '0'..'3')",
           "status": "approximated",
-          "how": "an integer from 1 to 3 with the rating widget, cleared for Very Low; the value is a number, not Flectra's string key, and a \"Clear selection\" link shows — needs the rating widget on a selection"
+          "how": "an integer from 1 to 3 with the rating widget and `clear: false`: no \"Clear selection\", and the star picked, clicked again, goes back to Very Low, as Flectra's (shown in the e2e); the value is a number, not Flectra's string key — needs the rating widget on a selection"
         },
         {
           "feature": "Email cc (groups base.group_no_one: developer mode only)",
@@ -936,8 +936,8 @@
         },
         {
           "feature": "Notes tab: description html, placeholder \"Internal Notes\"",
-          "status": "approximated",
-          "how": "html field; the editor shows no placeholder"
+          "status": "covered",
+          "how": "html field showing the node's placeholder while empty"
         },
         {
           "feature": "Instructions tab: PDF / Google Slide / Text (radio, no label)",
@@ -997,7 +997,7 @@
         {
           "feature": "Read-only fields shown as text",
           "status": "approximated",
-          "how": "an empty read-only link still draws \"Search…\", an empty read-only date its dd.mm.yyyy mask, a read-only selection a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
+          "how": "an empty read-only field draws empty, as Flectra's (no \"Search…\", no dd.mm.yyyy mask: shown in the e2e); but a read-only selection is a greyed dropdown with its arrow, and a long read-only char is cut at its box rather than wrapped; needs a read-only display mode that draws the value as text, as Flectra does"
         },
         {
           "feature": "Object buttons save the record first, run the method, then reload it",

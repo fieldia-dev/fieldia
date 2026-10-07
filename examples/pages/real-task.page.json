@@ -21,7 +21,7 @@
         { "value": "04_waiting_normal", "label": "Waiting" }
       ]
     },
-    "stage_id": { "type": "many2one", "label": "Stage", "relation": "project.task.type" },
+    "stage_id": { "type": "many2one", "label": "Stage", "relation": "project.task.type", "filter": [{ "field": "project_id", "op": "=", "valueFrom": "project_id" }] },
     "personal_stage_type_id": { "type": "many2one", "label": "Personal Stage", "relation": "project.task.type", "filter": [{ "field": "user_id", "op": "set" }] },
     "approval_required": { "type": "boolean", "label": "Approval Required", "readonly": true },
     "approval_status": {

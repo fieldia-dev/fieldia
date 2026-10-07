@@ -94,6 +94,30 @@ describe('the screen editor with saved forms', () => {
     expect(button(shown, 'Open it')).toBeUndefined();
   });
 
+  it('keeps apart the parts the form inside draws after it is placed: a tab when first shown, a saved form when its page comes', async () => {
+    const tabbed: Page = {
+      fieldia: '0.1',
+      id: 'tabbed',
+      title: 'Tabbed',
+      data: { kind: 'responses' },
+      fields: { a: { type: 'char', label: 'A' }, b: { type: 'char', label: 'B' } },
+      layout: { type: 'tabs', id: 'root', children: [{ type: 'tab', id: 'one', label: 'One', children: [{ type: 'field', id: 'a', field: 'a' }] }, { type: 'tab', id: 'two', label: 'Two', children: [{ type: 'field', id: 'b', field: 'b' }] }] },
+    };
+    const store = createMemoryPageStore();
+    await store.publish(tabbed);
+    const designer = createDesigner({ page: blankPage('screen', 'Site visit'), store });
+    const { host } = mount(designer, { mode: 'advanced' });
+    await place(host, 'tabbed');
+    const [part] = parts(designer.getPage());
+    const body = frame(host, part.id).querySelector('.fd-canvas-form-body') as HTMLElement;
+    expect(body.querySelector('[data-saved-node="a"]')).not.toBeNull();
+    // The second tab drawn later, as a step or a click there would: its parts kept apart all the same.
+    (body.querySelector('[data-saved-node="two"]') as HTMLButtonElement).click();
+    await settle();
+    expect(body.querySelector('[data-saved-node="b"]')).not.toBeNull();
+    expect(body.querySelector('[data-node]')).toBeNull();
+  });
+
   it('opens the saved form where it is made, the app’s way', async () => {
     const opened: string[] = [];
     const { designer, host } = await editor({ openForm: (id) => opened.push(id) });

@@ -663,6 +663,20 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   );
   apis.set(element, api);
 
+  // Out of sight under display: none — a tab not shown, a field hidden by its condition — AG Grid measures
+  // itself again every frame, for as long as it stays hidden. Taken off the page meanwhile, it rests;
+  // put back the moment it has a box again, it draws itself to fit.
+  const away = document.createComment('fd-grid-away');
+  const View = document.defaultView;
+  const sizes = View && 'ResizeObserver' in View
+    ? new View.ResizeObserver(([entry]) => {
+        const hidden = entry.contentRect.width === 0 && entry.contentRect.height === 0;
+        if (hidden && host.isConnected) host.replaceWith(away);
+        else if (!hidden && away.isConnected) away.replaceWith(host);
+      })
+    : null;
+  sizes?.observe(element);
+
   // ---- columns a person arranged: kept, and brought back ----
   // A person's widths, order and choices are kept for the next visit. AG Grid
   // tells of each change a moment after it; bringing a layout back is told too,
@@ -758,10 +772,15 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     button.addEventListener('click', () => addAndEdit(values));
     adds.append(button);
   };
-  addButton(labels.addLine, {}, 'line');
+  // The buttons' words, as the plain table takes them from the node's options.
+  const words = (key: string) => {
+    const said = node.options?.[key];
+    return typeof said === 'string' && said.trim() ? said : null;
+  };
+  addButton(words('addLabel') ?? labels.addLine, {}, 'line');
   if (kinds) {
-    addButton(labels.addSection, { [kinds.field]: kinds.section ?? 'section' }, 'section');
-    addButton(labels.addNote, { [kinds.field]: kinds.note ?? 'note' }, 'note');
+    addButton(words('addSectionLabel') ?? labels.addSection, { [kinds.field]: kinds.section ?? 'section' }, 'section');
+    addButton(words('addNoteLabel') ?? labels.addNote, { [kinds.field]: kinds.note ?? 'note' }, 'note');
   }
 
   // A focused cell that has no editor still answers keys: Space ticks yes/no,
@@ -843,6 +862,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     },
     destroy() {
       document.removeEventListener('mousedown', outside);
+      sizes?.disconnect();
       api.destroy();
       apis.delete(element);
     },

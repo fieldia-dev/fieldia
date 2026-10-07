@@ -914,7 +914,7 @@
               { "type": "field", "id": "f-court-name", "field": "court_name" },
               { "type": "field", "id": "f-court-ref", "field": "court_reference" },
               { "type": "field", "id": "f-jurisdiction", "field": "jurisdiction_id" },
-              { "type": "field", "id": "f-priority", "field": "priority", "widget": "radio" },
+              { "type": "field", "id": "f-priority", "field": "priority", "widget": "radio", "options": { "clear": false } },
               { "type": "field", "id": "f-risk", "field": "risk_level" }
             ]
           },

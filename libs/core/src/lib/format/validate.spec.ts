@@ -72,6 +72,14 @@ describe('validatePage — structure', () => {
     expect(messages(page).join('\n')).toMatch(/^fieldia: /m);
   });
 
+  it('takes a widget’s clear option as true or false, and nothing else', () => {
+    const page = example('survey');
+    page['layout'].children[0].children[1].options = { clear: false };
+    expect(messages(page)).toEqual([]);
+    page['layout'].children[0].children[1].options = { clear: 'no' };
+    expect(messages(page).join('\n')).toMatch(/options\.clear/);
+  });
+
   it('rejects a selection without options', () => {
     const page = example('survey');
     page['fields'].uses_product.options = [];
