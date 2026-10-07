@@ -1,6 +1,17 @@
 import type { ButtonNode, CellRules, Field, FieldNode, LayoutNode, Page, ScreenWidth, ToneWhen } from '@fieldia/core';
 import { findNode } from './page-tree';
 import { Refusal } from './refusal';
+
+/** The widgets a column's cells may be drawn with, by what the column holds. */
+export const CELL_WIDGETS: Readonly<Record<string, readonly string[]>> = {
+  float: ['duration', 'percentage', 'progressbar'],
+  integer: ['progressbar', 'color'],
+  monetary: ['progressbar'],
+  selection: ['priority', 'dot'],
+  boolean: ['priority'],
+};
+/** The kind each cell widget is named by. */
+export const CELL_WIDGET_KINDS: Readonly<Record<string, string>> = { duration: 'duration', percentage: 'percentage', progressbar: 'progress', color: 'colour', priority: 'priority', dot: 'state-dot' };
 import { formulaProblem, problemWords } from './rules-formula';
 
 /**
@@ -50,7 +61,8 @@ export interface TableCommands {
   /** A column's cells' tones, each while a condition on its line holds. */
   setCellTones(id: string, column: string, tones: ToneWhen[] | null): boolean;
   /** A column's cells drawn as pills, and its width in characters; `null` takes either back. */
-  setCellLook(id: string, column: string, look: { badge?: boolean | null; width?: number | null }): boolean;
+  /** A column's look: a pill, a width, or a widget its cells are drawn with — one that suits what the column holds (`CELL_WIDGETS`). */
+  setCellLook(id: string, column: string, look: { badge?: boolean | null; width?: number | null; widget?: string | null }): boolean;
   /** The lines' tones, each while a condition on the line holds. */
   setRowTones(id: string, tones: ToneWhen[] | null): boolean;
   /** The lines in bold while a condition on the line holds. */
@@ -157,6 +169,16 @@ export function tableCommands({ apply }: TableCommandsDeps): TableCommands {
         const { node, def } = table(draft, id);
         const cell = cellsOf(node, column, def);
         if (look.badge !== undefined) put(cell, 'badge', look.badge ? true : undefined);
+        if (look.widget !== undefined) {
+          const sub = def.fields[column];
+          if (look.widget !== null && !(CELL_WIDGETS[sub?.type ?? ''] ?? []).includes(look.widget)) {
+            const widget = look.widget;
+            throw new Refusal((w) => w.tables.widgetUnsuited(sub?.label ?? column, w.kinds.names[CELL_WIDGET_KINDS[widget] as keyof typeof w.kinds.names] ?? widget));
+          }
+          put(cell, 'widget', look.widget ?? undefined);
+          // A widget's settings go with it.
+          put(cell, 'options', undefined);
+        }
         if (look.width !== undefined) {
           if (look.width !== null && !(Number.isInteger(look.width) && look.width >= 1 && look.width <= 200)) throw new Refusal((w) => w.tables.widthRange);
           put(cell, 'width', look.width ?? undefined);
