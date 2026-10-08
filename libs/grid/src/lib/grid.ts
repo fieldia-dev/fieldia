@@ -900,9 +900,11 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     let longest = sub.type === 'boolean' ? 0 : lines.reduce((most, line) => Math.max(most, cellText(sub, line.values[column] as Value, line.values, locale, form.getState().values, node.cells?.[column]).length), 0);
     // A badge may turn to any of its choices: room for the longest, though no line holds it yet.
     if (badged(column) && sub.type === 'selection') longest = sub.options.reduce((most, option) => Math.max(most, option.label.length), longest);
-    // A long label over short numbers is cut, as Flectra's are, rather than widen its column.
-    return Math.round(Math.min(Math.max(longest, least, Math.min(sub.label.length, 6)), 40) * 7.6 + 40);
+    // A long label over short numbers wraps onto a second line rather than widen its column; only its longest word sets a floor.
+    return Math.round(Math.min(Math.max(longest, least, labelWord(column)), 40) * 7.6 + 40);
   };
+  /** Its label's longest word, in characters: a wrapping header breaks between words, never inside one. */
+  const labelWord = (column: string) => Math.min(Math.max(0, ...def.fields[column].label.split(/\s+/).map((word) => word.length)), 12);
   /** The column a line is named by: its first of words (a name, a description, a link), else its first. */
   const titleColumn = (shown: string[]) => shown.find((column) => WORDS.has(def.fields[column].type)) ?? shown[0];
   /** A line's name by its place, "Line 3", when it has none to show. */
@@ -957,7 +959,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       tooltipValueGetter: (p) => (p.node?.rowPinned ? undefined : problemAt(p.data, column, p.api)),
       suppressKeyboardEvent: keys,
       // Numbers, money and dates as wide as their values, never cut; words share the rest by the room they need, giving way when it is tight.
-      minWidth: fixedWidth(column) ? 48 : 96,
+      minWidth: fixedWidth(column) ? 48 : Math.max(96, Math.round(labelWord(column) * 7.6 + 40)),
       ...(fixedWidth(column) ? { width: room } : { flex: room }),
       hide: optional[column] === 'hide',
       ...(node.cells?.[column]?.width ? { width: node.cells[column].width! * 8 + 32, flex: 0 } : {}),

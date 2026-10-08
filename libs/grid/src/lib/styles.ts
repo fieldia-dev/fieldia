@@ -101,6 +101,8 @@ button.fd-line-card-title { color: var(--fd-accent); }
 .fd-grid-editor .fd-combo-input { padding-inline-end: 24px; }
 /* The cell's frame already marks the edit; outrank the underline skin's focus line. */
 .fd-form .fd-grid-lines .fd-grid-editor .fd-input:focus { box-shadow: none; }
+/* A wrapping header breaks between its words, never inside one (its column has room for the longest). */
+.fd-grid-lines .ag-header-cell-text { word-break: normal; overflow-wrap: normal; }
 /* A popup editor (links) covers its cell exactly and looks like one being edited in place. */
 .ag-popup-editor .fd-grid-editor {
   background: var(--ag-background-color); border: var(--ag-cell-editing-border); border-radius: var(--ag-border-radius);

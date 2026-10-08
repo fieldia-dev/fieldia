@@ -575,7 +575,8 @@ describe('a grid’s columns by what they hold', () => {
     expect(state('name')?.flex).toBeGreaterThan(state('product_id')?.flex as number);
     // Numbers and money are as wide as their values, not a share: never cut when the grid is tight.
     expect(state('qty')?.flex).toBeFalsy();
-    expect(state('qty')?.width).toBe(Math.round(6 * 7.6 + 40));
+    // Room for its label's longest word, which a wrapping header never breaks: "Quantity".
+    expect(state('qty')?.width).toBe(Math.round(8 * 7.6 + 40));
     // Money keeps room for a total in the millions.
     expect(state('price')?.width).toBe(Math.round(14 * 7.6 + 40));
   });
@@ -647,7 +648,11 @@ describe('a cell’s editor', () => {
 
 describe('a grid’s headers', () => {
   it('wraps a long label onto a second line rather than cut it, and says the whole label on pointing at it', async () => {
-    const { api } = await mount();
+    const worded = JSON.parse(JSON.stringify(order)) as Page & { fields: Record<string, any> };
+    worded.fields['line_ids'].fields.name.label = 'Customer reference';
+    const { api } = await mount(worded);
+    // A header wraps between its words, never inside one: its column has room for the longest.
+    expect(api?.getColumnDef('name')?.minWidth).toBeGreaterThanOrEqual(Math.round('reference'.length * 7.6 + 40));
     for (const column of ['product_id', 'qty', 'price', 'delivery', 'taxed']) {
       expect(api?.getColumnDef(column)).toEqual(expect.objectContaining({ wrapHeaderText: true, autoHeaderHeight: true }));
     }
