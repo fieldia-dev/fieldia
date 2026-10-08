@@ -452,10 +452,12 @@ function recalculateLeave(values: Values): Values {
     : employees.map((e) => e.label).join(', ');
   let display: string | null = null;
   if (type && from) {
+    // Its mode chosen and its tag, department or company not yet: the leave type alone, never "undefined on …".
+    const what = target ? `${target} on ${type.name}` : type.name;
     display =
       type.unit === 'hour'
-        ? `${target} on ${type.name}: ${hours.toFixed(2)} hours on ${usDate(from)}`
-        : `${target} on ${type.name}: ${days.toFixed(2)} days (${usDate(from)}${days > 1 && to ? ` - ${usDate(to)}` : ''})`;
+        ? `${what}: ${hours.toFixed(2)} hours on ${usDate(from)}`
+        : `${what}: ${days.toFixed(2)} days (${usDate(from)}${days > 1 && to ? ` - ${usDate(to)}` : ''})`;
   }
   const who = single ? Number(single.id) : null;
   return {
