@@ -131,10 +131,10 @@ const SKINS_CSS = /* css */ `
 .fd-label { font-weight: var(--fd-label-weight); color: var(--fd-text); }
 /* The ✓ of a field filled in right, by its label. */
 .fd-valid-mark { color: var(--fd-success); width: 1em; height: 1em; margin-inline-start: 6px; vertical-align: -0.15em; stroke-width: 2.4; }
-/* A no-break space (U+00A0) joins the star to the label's last word, so it never wraps alone. */
-.fd-field.fd-required > .fd-label::after { content: " *"; color: var(--fd-error); }
-.fd-form[data-fd-skin="outlined"] .fd-field.fd-required > .fd-label::after { content: ""; }
-.fd-form[data-fd-skin="outlined"] .fd-field.fd-required > .fd-label::before { content: "* "; color: var(--fd-error); }
+/* No space between the star and the label's last word, its gap a margin: a line never breaks before it. */
+.fd-field.fd-required > .fd-label::after { content: "*"; margin-inline-start: 0.25em; color: var(--fd-error); }
+.fd-form[data-fd-skin="outlined"] .fd-field.fd-required > .fd-label::after { content: none; }
+.fd-form[data-fd-skin="outlined"] .fd-field.fd-required > .fd-label::before { content: "*"; margin-inline-end: 0.25em; color: var(--fd-error); }
 .fd-help { color: var(--fd-muted); font-size: 12.5px; }
 /* A field's help behind a (?) by its label: a bubble on hover, focus or a tap. */
 .fd-help-tip-wrap { position: relative; display: inline-flex; vertical-align: 0.05em; margin-inline-start: 6px; }
@@ -144,6 +144,7 @@ const SKINS_CSS = /* css */ `
 .fd-label > .fd-help-tip-wrap { position: absolute; margin-block-start: 0.15em; }
 .fd-label:has(> .fd-help-tip-wrap) { padding-inline-end: 22px; }
 .fd-field.fd-required > .fd-label:has(> .fd-help-tip-wrap)::after { padding-inline-start: 22px; }
+.fd-form:not([data-fd-skin="outlined"]) .fd-field.fd-required > .fd-label:has(> .fd-help-tip-wrap) { padding-inline-end: 0; }
 .fd-help-tip { all: unset; box-sizing: border-box; display: inline-grid; place-items: center; width: 16px; height: 16px; border: 1px solid var(--fd-border); border-radius: 50%; color: var(--fd-muted); font-size: 11px; font-weight: 600; line-height: 1; cursor: help; }
 .fd-help-tip:hover, .fd-help-tip[aria-expanded="true"] { color: var(--fd-accent); border-color: var(--fd-accent); }
 .fd-help-tip:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }
