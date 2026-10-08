@@ -216,6 +216,8 @@ const SKINS_CSS = /* css */ `
   border-radius: var(--fd-control-radius);
   padding: var(--fd-pad-y) var(--fd-pad-x);
   min-height: var(--fd-control-height, 30px);
+  /* A value longer than its box ends in "…", not cut mid-letter (the whole of it shows on hover). */
+  text-overflow: ellipsis;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .fd-input::placeholder { color: var(--fd-muted); opacity: 0.8; }
@@ -301,6 +303,10 @@ const SKINS_CSS = /* css */ `
 .fd-combo-clear:hover { color: var(--fd-text); background: var(--fd-page); }
 /* A link that can be opened has its open button beside the clear button. */
 .fd-combo:has(> .fd-combo-open:not([hidden])) .fd-combo-input { padding-inline-end: 56px; }
+/* Read-only, its clear button is gone: its words take the room, and an open button moves to the end. */
+.fd-combo:not(.fd-choice-search .fd-combo):has(> .fd-combo-clear[hidden]) .fd-combo-input[readonly] { padding-inline-end: var(--fd-pad-x); }
+.fd-combo:not(.fd-choice-search .fd-combo):has(> .fd-combo-clear[hidden]):has(> .fd-combo-open:not([hidden])) .fd-combo-input[readonly] { padding-inline-end: 30px; }
+.fd-combo:has(> .fd-combo-input[readonly]) > .fd-combo-clear[hidden] ~ .fd-combo-open { inset-inline-end: 3px; }
 .fd-combo-open {
   position: absolute; inset-inline-end: 29px; border: none; background: none; cursor: pointer; color: var(--fd-accent);
   font-size: 14px; line-height: 1; padding: 0 4px; border-radius: 4px; min-width: 24px; min-height: 24px; display: inline-grid; place-items: center;

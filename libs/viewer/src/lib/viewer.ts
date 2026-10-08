@@ -1483,6 +1483,17 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     content.prepend(status);
   }
 
+  // A value too long for its box ends in an ellipsis; the pointer over it shows all of it.
+  // Set as the pointer comes, when the box's width is known, and never over a title of the box's own.
+  root.addEventListener('mouseover', (event) => {
+    const box = event.target as HTMLInputElement;
+    if (box.tagName !== 'INPUT' || !box.classList.contains('fd-input')) return;
+    if (box.title && !box.hasAttribute('data-cut-title')) return;
+    const cut = box.scrollWidth > box.clientWidth && box.value !== '';
+    setAttr(box, 'title', cut ? box.value : null);
+    setAttr(box, 'data-cut-title', cut ? '' : null);
+  });
+
   root.addEventListener('submit', (event) => {
     event.preventDefault();
     if (layout.type === 'list') return;
