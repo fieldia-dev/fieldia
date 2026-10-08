@@ -188,7 +188,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // help, a distribution's words in a cell, a column for some roles, a calendar's pick announced — add 6, to 422.4.
 // What using the real pages showed: a line that follows the pointer as it is dragged, lists that float over the page
 // where no table or cell clips them, tables' columns sized by their values and cells quiet until worked in — add 4.4, to 426.8.
-const BUDGET_KB = 427;
+// The form fields' defects mended (a (?) that only shows its help, kept on screen; values cut with an ellipsis and shown
+// whole on hover; links and dates filling their one-line rows; a number edited without grouping) — add 2.4, to 429.2.
+const BUDGET_KB = 429.5;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -210,7 +212,8 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // Phase 26's last ten (a line's own form, placeholders by condition, focus on open, order, a line kept, context,
 // a stat button's help, a distribution's words, a column's roles, a calendar's pick), 2.2 more, to 128.2.
 // what using the real pages showed (a dragged line following the pointer, floating lists, columns by their values), 1.5 more, to 129.7.
-const GZIP_BUDGET_KB = 130.2;
+// the form fields' defects mended (help kept on screen, cut values shown whole, one-line rows, numbers edited plain), 0.7 more, to 130.4.
+const GZIP_BUDGET_KB = 130.9;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
