@@ -851,7 +851,19 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   /** Write values someone or something changed. `fresh` values are a starting point instead (a restored draft). */
   function writeValues(written: Values, extra: Partial<FormState> = {}, fresh = false) {
     const values = syncParts(fresh ? startFrom(written) : settle(written), fresh ? 'fresh' : 'edit');
-    const errors = Object.keys(state.errors).length ? revalidateShown(values) : state.errors;
+    let errors = Object.keys(state.errors).length ? revalidateShown(values) : state.errors;
+    // Words typed where a number goes are said at once, as Flectra marks a box it cannot read; what is missing waits for sending.
+    const unread: Record<string, string> = {};
+    for (const name of Object.keys(written)) {
+      const def = page.fields[name];
+      if (written[name] === state.values[name] || !def) continue;
+      if (notANumber(def, written[name])) unread[name] = checkValue(def, written[name], false, messages) as string;
+      if (def.type !== 'one2many') continue;
+      for (const line of (written[name] as Line[] | null) ?? []) {
+        for (const [sub, v] of Object.entries(line.values)) if (notANumber(def.fields[sub] as Field | undefined, v)) unread[`${name}.${line.key}.${sub}`] = checkValue(def.fields[sub], v, false, messages) as string;
+      }
+    }
+    if (Object.keys(unread).length) errors = { ...errors, ...unread };
     set({ values, dirty: dirtyFields(values), errors, warnings: withValues(values, collectWarnings), ...extra });
   }
 
@@ -912,6 +924,8 @@ function innerForm(options: FormOptions, within: string[]): InnerForm {
   function runOnchange(changed: string) {
     const source = options.dataSource;
     if (!source?.onchange || page.data.kind !== 'record') return;
+    // Words in a number box are not a value to work anything out from: the server is asked once they read as one.
+    if (unreadIn(page.fields[changed], state.values[changed])) return;
     const seq = ++onchangeSeq;
     const request = { model: page.data.model, id: state.recordId, changed, values: structuredCopy(state.values as Values) };
     void track(
@@ -1849,4 +1863,15 @@ function wordsOfValue(def: Field, value: Value | undefined): string {
   if (def.type === 'html') return String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   const one = (item: unknown): string => (item && typeof item === 'object' && 'label' in item ? String((item as { label: unknown }).label) : item && typeof item === 'object' && 'name' in item ? String((item as { name: unknown }).name) : String(item));
   return Array.isArray(value) ? value.map(one).join(', ') : one(value);
+}
+
+/** Words held where a number goes ("4.001234567.5"): a box the person typed in and the browser could not read as one. */
+export function notANumber(def: Field | undefined, value: unknown): boolean {
+  return !!def && (def.type === 'integer' || def.type === 'float' || def.type === 'monetary') && typeof value === 'string' && value.trim() !== '';
+}
+
+/** A number box holding words, the field's own or a line's cell. */
+function unreadIn(def: Field | undefined, value: unknown): boolean {
+  if (def?.type !== 'one2many') return notANumber(def, value);
+  return ((value as Line[] | null) ?? []).some((line) => Object.entries(line.values).some(([sub, v]) => notANumber(def.fields[sub] as Field | undefined, v)));
 }

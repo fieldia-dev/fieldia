@@ -378,3 +378,18 @@ test('the receipt at a phone’s width: nothing scrolls sideways, and the button
   await screen(page, 'real-transfer-phone');
   expect(problems).toEqual([]);
 });
+
+test('a quantity typed with two decimal marks is said to be no number at once, and nothing is worked out from it', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const { problems } = await open(page, 'plain', PRODUCTION);
+  const quantity = page.locator('[data-node="f-product-qty"] input').first();
+  await quantity.click();
+  await page.keyboard.press('End');
+  await page.keyboard.type('1234567.5');
+  await page.keyboard.press('Tab');
+  await expect(quantity).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.locator('[data-node="f-product-qty"] .fd-error')).toHaveText(/must be a number/);
+  // The components' quantities and the work orders' durations keep what they held: no NaN anywhere.
+  await expect(page.locator('body')).not.toContainText('NaN');
+  expect(problems).toEqual([]);
+});

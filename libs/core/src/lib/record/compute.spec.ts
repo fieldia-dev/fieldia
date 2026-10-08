@@ -59,6 +59,33 @@ describe('compute — values worked out from others', () => {
     expect(form.getState().dirty).toEqual(expect.arrayContaining(['qty', 'price', 'total']));
   });
 
+  it('says at once that typed words are not a number, and works out nothing from them rather than NaN', () => {
+    const form = createForm({ page: page({ price: { type: 'float', label: 'Price' }, qty: { type: 'float', label: 'Quantity' }, total: { type: 'float', label: 'Total', compute: 'price * qty' } }) });
+    form.setValue('price', 2.5);
+    form.setValue('qty', 4);
+    expect(form.getState().errors).toEqual({});
+    // "4.00" with more typed at its end: two decimal marks, no number.
+    form.setValue('qty', '4.001234567.5');
+    expect(form.getState().errors).toEqual({ qty: 'Quantity must be a number' });
+    expect(form.getState().values['total']).toBeNull();
+    // Put right, the error goes and the total comes back.
+    form.setValue('qty', 4.5);
+    expect(form.getState().errors).toEqual({});
+    expect(form.getState().values['total']).toBe(11.25);
+  });
+
+  it('says at once that words in a line’s number cell are not a number, and works out nothing from them', () => {
+    const form = createForm({ page: page(orderFields) });
+    const key = form.addLine('lines', { name: 'Desk', qty: 2, price: 10 });
+    expect(form.getState().values['total']).toBe(20);
+    form.updateLine('lines', key, 'qty', '2.00.5');
+    expect(form.getState().errors).toEqual({ [`lines.${key}.qty`]: 'Quantity must be a number' });
+    expect(form.getState().values['total']).toBe(0);
+    form.updateLine('lines', key, 'qty', 3);
+    expect(form.getState().errors).toEqual({});
+    expect(form.getState().values['total']).toBe(30);
+  });
+
   it('works out each after the values it reads, whatever order the page lists them in', () => {
     const form = createForm({
       page: page({

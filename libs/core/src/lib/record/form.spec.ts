@@ -506,6 +506,18 @@ describe('createForm — onchange', () => {
     expect(form.getState()).toMatchObject({ warning: null, warningField: null });
   });
 
+  it('never asks about a number box holding words it cannot read, so nothing is worked out from them', async () => {
+    const asked: unknown[] = [];
+    const dataSource: DataSource = { onchange: async ({ values }) => (asked.push(values['credit_limit']), {}) };
+    const form = createForm({ page: page('customer'), dataSource });
+    form.setValue('credit_limit', '25.00.5');
+    await form.settled();
+    expect(asked).toEqual([]);
+    form.setValue('credit_limit', 25.5);
+    await form.settled();
+    expect(asked).toEqual([25.5]);
+  });
+
   it('ignores an answer that arrives after a newer change', async () => {
     // The first request is answered last, the way a slow network reorders them.
     const answers: Array<(website: string) => void> = [];
