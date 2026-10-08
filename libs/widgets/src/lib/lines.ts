@@ -23,6 +23,8 @@ import { createWidget, type Widget, type WidgetDialogs, type WidgetFactory } fro
  */
 
 /** The kinds of field whose column is as wide as its values, so the columns of words and links have the rest. */
+/** Columns of numbers, which grow past their kind's width for a long value. */
+const NUMERIC = new Set(['integer', 'float', 'monetary']);
 const FIXED_WIDTH = new Set(['boolean', 'integer', 'float', 'monetary', 'date', 'datetime']);
 
 /** A line being dragged by its grip. */
@@ -496,8 +498,15 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
       const resize = sizedFor !== columnsSizedFor;
       columnsSizedFor = sizedFor;
       for (const [column, th] of resize ? heads : new Map<string, HTMLTableCellElement>()) {
-        if (th.dataset['fit'] || node.cells?.[column]?.width) continue;
+        if (node.cells?.[column]?.width) continue;
         const sub = def.fields[column];
+        if (th.dataset['fit']) {
+          // A number keeps its kind's width at the least, and has room for its longest value too ("E£ 21,600,000.00"), never cut.
+          if (!NUMERIC.has(sub.type)) continue;
+          const widest = current.reduce((most, line) => (lineKind(def, line.values) ? most : Math.max(most, cellText(sub, line.values[column], line.values, locale).length)), 0);
+          th.style.setProperty('--fd-fit-need', `${widest + 4}ch`);
+          continue;
+        }
         const longest = current.reduce((most, line) => (lineKind(def, line.values) ? most : Math.max(most, cellText(sub, line.values[column], line.values, locale).length)), 0);
         // A link's box holds its open and clear buttons too.
         const buttons = sub.type === 'many2one' ? 5 : 0;

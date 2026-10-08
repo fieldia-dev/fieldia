@@ -360,9 +360,9 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-lines-table thead th:not(.fd-lines-grip, .fd-lines-tools) { white-space: normal; }
 .fd-lines-table thead th { vertical-align: bottom; }
 .fd-lines-table th[data-fit="boolean"] { width: 5em; min-width: 5em; }
-.fd-lines-table th[data-fit="integer"] { width: 7em; min-width: 7em; }
-.fd-lines-table th[data-fit="float"] { width: 7.5em; min-width: 7.5em; }
-.fd-lines-table th[data-fit="monetary"] { width: 11.5em; min-width: 11.5em; }
+.fd-lines-table th[data-fit="integer"] { width: max(7em, var(--fd-fit-need, 0px)); min-width: max(7em, var(--fd-fit-need, 0px)); }
+.fd-lines-table th[data-fit="float"] { width: max(7.5em, var(--fd-fit-need, 0px)); min-width: max(7.5em, var(--fd-fit-need, 0px)); }
+.fd-lines-table th[data-fit="monetary"] { width: max(11.5em, var(--fd-fit-need, 0px)); min-width: max(11.5em, var(--fd-fit-need, 0px)); }
 .fd-lines-table th[data-fit="date"] { width: 9em; min-width: 9em; }
 .fd-lines-table th[data-fit="datetime"] { width: 12.5em; min-width: 12.5em; }
 /* Numbers and money read from the end, as Flectra's lists align them. */

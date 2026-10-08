@@ -301,4 +301,16 @@ describe('a table’s columns by their values', () => {
     // A line came: the columns are measured again, with the long name.
     expect(width()).not.toBe(before);
   });
+
+  it('gives a number column its kind’s width at the least, and room for its longest value', () => {
+    const { form, el } = mount();
+    const need = () => (el.querySelector('thead th[data-column="quantity"]') as HTMLElement).style.getPropertyValue('--fd-fit-need');
+    form.addLine('line_ids', { quantity: 3 });
+    const small = parseFloat(need());
+    form.addLine('line_ids', { quantity: 216000000 });
+    // "216,000,000" needs more than "3": the column grows as the line comes, never cut.
+    expect(parseFloat(need())).toBeGreaterThanOrEqual('216,000,000'.length);
+    expect(parseFloat(need())).toBeGreaterThan(small);
+    expect(need()).toMatch(/ch$/);
+  });
 });
