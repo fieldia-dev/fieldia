@@ -574,3 +574,120 @@ describe('a grid’s columns by what they hold', () => {
   });
 });
 
+
+describe('a cell’s editor', () => {
+  /** The order, its description a paragraph of several lines. */
+  const paragraphs = JSON.parse(JSON.stringify(order)) as Page & { fields: Record<string, any> };
+  paragraphs.fields['line_ids'].fields.name = { type: 'text', label: 'Description' };
+  const popupEditor = () => document.querySelector('.ag-popup-editor .fd-grid-editor') as HTMLElement | null;
+
+  it('opens a date over its cell, as wide as its value needs and never narrower than its cell', async () => {
+    const { api } = await mount();
+    api!.startEditingCell({ rowIndex: 0, colKey: 'delivery' });
+    await frames();
+    const editor = popupEditor();
+    expect(editor?.dataset['type']).toBe('date');
+    expect(editor?.querySelector('input[type="date"]')).not.toBeNull();
+    // Its width is the value's (the stylesheet's max-content), its cell's at the least; never a fixed one.
+    expect(editor?.style.minWidth).toMatch(/px$/);
+    expect(editor?.style.width).toBe('');
+  });
+
+  it('opens a paragraph in a box of several lines over its cell, where Enter starts a new line', async () => {
+    const { api, form } = await mount(paragraphs);
+    api!.startEditingCell({ rowIndex: 1, colKey: 'name' });
+    await frames();
+    const editor = popupEditor();
+    const area = editor?.querySelector('textarea') as HTMLTextAreaElement;
+    expect(area).not.toBeNull();
+    expect(parseFloat(editor!.style.minWidth)).toBeGreaterThanOrEqual(320);
+    expect(area.rows).toBeGreaterThanOrEqual(3);
+    area.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    await frames();
+    expect(api!.getEditingCells()).toHaveLength(1);
+    area.value = 'LED,\nwarm white';
+    area.dispatchEvent(new Event('input', { bubbles: true }));
+    // Ctrl/Cmd+Enter finishes it, as a note's.
+    area.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }));
+    await frames();
+    expect(api!.getEditingCells()).toHaveLength(0);
+    expect(formLines(form)[1].values['name']).toBe('LED,\nwarm white');
+  });
+
+  it('shows a value from its start when its text is selected on the way in', async () => {
+    const { box, api } = await mount();
+    api!.setFocusedCell(0, 'name');
+    api!.startEditingCell({ rowIndex: 0, colKey: 'name' });
+    await frames();
+    const input = box.querySelector('.ag-cell-inline-editing input') as HTMLInputElement;
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, input.value.length]);
+    // Selected backwards, the caret's end is the start: the browser scrolls there, not to the value's end.
+    expect(input.selectionDirection).toBe('backward');
+  });
+
+  it('gives a value too long for its cell the whole cell, padding and all', async () => {
+    const widths = jest.spyOn(HTMLInputElement.prototype, 'scrollWidth', 'get').mockReturnValue(120);
+    const room = jest.spyOn(HTMLInputElement.prototype, 'clientWidth', 'get').mockReturnValue(64);
+    const { box, api } = await mount();
+    api!.startEditingCell({ rowIndex: 0, colKey: 'price' });
+    await frames();
+    expect(box.querySelector('.ag-cell-inline-editing .fd-grid-editor')?.classList).toContain('fd-grid-editor-tight');
+    widths.mockRestore();
+    room.mockRestore();
+  });
+});
+
+describe('a grid’s headers', () => {
+  it('wraps a long label onto a second line rather than cut it, and says the whole label on pointing at it', async () => {
+    const { api } = await mount();
+    for (const column of ['product_id', 'qty', 'price', 'delivery', 'taxed']) {
+      expect(api?.getColumnDef(column)).toEqual(expect.objectContaining({ wrapHeaderText: true, autoHeaderHeight: true }));
+    }
+    expect(api?.getColumnDef('qty')?.headerTooltip).toBe('Quantity');
+  });
+});
+
+describe('a status drawn as a badge', () => {
+  it('takes the room its longest status needs, never sharing it away', async () => {
+    const badged = JSON.parse(JSON.stringify(order)) as Page & { fields: Record<string, any>; layout: any };
+    badged.fields['line_ids'].fields.state = {
+      type: 'selection',
+      label: 'Status',
+      options: [{ value: 'draft', label: 'Draft' }, { value: 'pending', label: 'Pending Clearance' }],
+    };
+    badged.layout.children[0].children[1].cells = { state: { badge: true } };
+    const { api } = await mount(badged);
+    const state = api?.getColumnState().find((c) => c.colId === 'state');
+    // Its longest status, though no line holds it yet.
+    expect(state?.flex).toBeFalsy();
+    expect(state?.width).toBeGreaterThanOrEqual(Math.round('Pending Clearance'.length * 7.6 + 40));
+  });
+});
+
+describe('a line being dragged', () => {
+  /** The order, its lines in an order, its first column a yes or no. */
+  const ordered = JSON.parse(JSON.stringify(order)) as Page & { fields: Record<string, any>; layout: any };
+  ordered.fields['line_ids'].sequenceField = 'sequence';
+  ordered.fields['line_ids'].fields.sequence = { type: 'integer', label: 'Sequence' };
+  ordered.layout.children[0].children[1].columns = ['taxed', 'qty', 'product_id', 'name'];
+  const dragText = (api: ReturnType<typeof gridApiOf>, index: number) =>
+    (api?.getGridOption('rowDragText') as (p: unknown, count: number) => string)({ rowNode: api?.getDisplayedRowAtIndex(index), defaultTextValue: '' }, 1);
+
+  it('is named by its first column of words, never by a yes or no', async () => {
+    const { api } = await mount(ordered);
+    expect(dragText(api, 0)).toBe('Office chair');
+  });
+
+  it('is named by its place when that column is empty', async () => {
+    const unnamed = lines.map((line, i) => (i === 1 ? { ...line, values: { ...line.values, product_id: null } } : line));
+    const { api } = await mount(ordered, unnamed);
+    expect(dragText(api, 1)).toBe('Line 2');
+  });
+
+  it('heads its card with that column too', async () => {
+    const carded = JSON.parse(JSON.stringify(ordered));
+    carded.layout.children[0].children[1].cards = 'always';
+    const { box } = await mount(carded);
+    expect([...box.querySelectorAll('.fd-line-card-title')].map((t) => t.textContent)).toEqual(['Office chair', 'Desk lamp']);
+  });
+});
