@@ -452,8 +452,8 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   /** The line field this editor writes: the column's, or a section's or note's text. */
   private column = '';
   private def!: LineField;
-  /** A date typed beside Fieldia's own calendar (options.weekNumbers): its month needs room the cell does not have. */
-  private calendar = false;
+  /** A section or note being edited, not an item. */
+  private kind: 'section' | 'note' | null = null;
   private note: HTMLTextAreaElement | null = null;
 
   init(params: ICellEditorParams<Line> & { cell: CellContext; subfield: string }) {
@@ -461,13 +461,12 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     // Not `column`: AG Grid's own params carry the column object under that name.
     const { cell } = params;
     const key = params.data.key;
-    const kind = cell.kindOf(params.data);
+    const kind = (this.kind = cell.kindOf(params.data));
     const column = (this.column = kind && cell.kinds ? cell.kinds.text : params.subfield);
     const def = (this.def = kind ? kindTextField(cell.defs[column], kind) : cell.defs[column]);
     // A cell typed in its own way (hours as HH:MM, a per cent) is typed so in its editor too.
     const look = kind ? undefined : cell.looks?.[column];
     const node: FieldNode = { type: 'field', id: `${cell.fieldId}.${key}.${column}`, field: column, ...(look?.widget ? { widget: look.widget } : {}), ...(look?.options ? { options: look.options } : {}) };
-    this.calendar = (def.type === 'date' || def.type === 'datetime') && look?.options?.['weekNumbers'] === true;
     const context: WidgetContext = {
       form: lineForm(cell.form, cell.field, key),
       name: column,
@@ -487,12 +486,17 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     this.box.setAttribute('aria-label', def.label);
     this.box.append(this.widget.element);
     if (kind === 'note') this.growing(this.box.querySelector('textarea'));
+    else if (def.type === 'text') this.paragraph(this.box.querySelector('textarea'));
     if (this.isPopup()) {
       // AG Grid places a popup over its cell but leaves its size to the editor; a distribution's lines take the room they need.
       const { width, height } = params.eGridCell.getBoundingClientRect();
       if (def.type === 'json') Object.assign(this.box.style, { minWidth: `${Math.max(width, 360)}px` });
       // Tags wrap in a box of their own, as wide as a few need and as tall as they take, never spilling over the lines around.
       else if (def.type === 'many2many') Object.assign(this.box.style, { minWidth: `${Math.max(width, 280)}px`, minHeight: `${height}px` });
+      // A paragraph is typed in a box of several lines, wide enough to read them, never spilling over the rows around.
+      else if (def.type === 'text') Object.assign(this.box.style, { minWidth: `${Math.max(width, 320)}px`, minHeight: `${height}px` });
+      // A date is as wide as its day and time need (the stylesheet's max-content), its cell's width at the least.
+      else if (def.type === 'date' || def.type === 'datetime') Object.assign(this.box.style, { minWidth: `${width}px`, height: `${height}px` });
       else Object.assign(this.box.style, { width: `${width}px`, height: `${height}px` });
     }
     // The form never changes values in place, so holding them is enough.
@@ -522,9 +526,11 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     this.box.addEventListener('pointerdown', () => (pointing = true));
     this.box.addEventListener('focusin', (event) => {
       const input = event.target;
-      if (!pointing && input instanceof HTMLInputElement && input.type !== 'checkbox' && input.type !== 'radio') input.select();
+      if (!pointing && input instanceof HTMLInputElement && input.type !== 'checkbox' && input.type !== 'radio') selectFromStart(input);
       pointing = false;
     });
+    // A value longer than its cell has room for takes the cell's padding too.
+    this.box.addEventListener('input', () => this.fit());
     const show = () => {
       const line = this.line();
       // A cell the form found wrong stays marked while it is fixed.
@@ -556,9 +562,27 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     });
   }
   /**
-   * In a cell, a link's list would be cut off by the rows around it, so it
-   * floats in the grid's own box, under its input, while the line is open.
+   * A paragraph (a text field) is typed in a box of several lines over its
+   * cell: Enter makes a new line there, and Ctrl/Cmd+Enter finishes it, as a
+   * note's does.
    */
+  private paragraph(area: HTMLTextAreaElement | null) {
+    if (!area) return;
+    area.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' || event.shiftKey || event.altKey) return;
+      _stopPropagationForAgGrid(event);
+      if (!(event.ctrlKey || event.metaKey)) return;
+      event.preventDefault();
+      this.params.api.stopEditing();
+    });
+  }
+  /** A value wider than the room inside the cell's padding takes the padding too, so more of it shows. */
+  private fit() {
+    const input = this.box.querySelector<HTMLInputElement>('input:not([type="checkbox"]):not([type="radio"])');
+    if (!input || this.isPopup()) return;
+    if (input.scrollWidth > input.clientWidth) this.box.classList.add('fd-grid-editor-tight');
+  }
+  /** A note's box as tall as its text, and its row with it. */
   private resize() {
     const area = this.note;
     if (!area) return;
@@ -586,6 +610,7 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     return this.box;
   }
   afterGuiAttached() {
+    this.fit();
     // With a whole line open, every editor is attached: only the one clicked takes the focus.
     if (this.params.cellStartedEdit === false) return;
     this.widget.focus();
@@ -595,16 +620,19 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
       return;
     }
     const input = this.box.querySelector('input');
-    if (input && input.type !== 'checkbox' && document.activeElement === input) input.select();
+    if (input && input.type !== 'checkbox' && document.activeElement === input) selectFromStart(input);
   }
   getValue() {
     return this.line()?.values[this.column];
   }
-  /** Lists that open below their input need room the cell does not have (a whole open line floats them instead); so do a distribution's lines. */
+  /**
+   * Lists that open below their input need room the cell does not have (a whole open line floats them instead); so do a
+   * distribution's lines, a date wider than its cell, and a paragraph's several lines (a note's grow in its own row).
+   */
   isPopup() {
     if (this.params.cell.rowMode) return false;
     const type = this.def.type;
-    return type === 'many2one' || type === 'many2many' || type === 'reference' || type === 'json' || this.calendar;
+    return type === 'many2one' || type === 'many2many' || type === 'reference' || type === 'json' || type === 'date' || type === 'datetime' || (type === 'text' && !this.kind);
   }
   getPopupPosition(): 'over' {
     return 'over';
@@ -624,6 +652,19 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   }
 }
 
+/**
+ * A box's text selected so typing replaces it, the caret at its start: a
+ * browser scrolls a long value to the caret, and its start is what reads.
+ * (A date's or a number's own input has no text selection to set.)
+ */
+function selectFromStart(input: HTMLInputElement) {
+  try {
+    input.setSelectionRange(0, input.value.length, 'backward');
+  } catch {
+    input.select();
+  }
+}
+
 // ---- the widget -------------------------------------------------------------------
 
 /** Past this many lines a table stops growing and scrolls inside, drawing only the rows in view. */
@@ -632,6 +673,9 @@ const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 38;
 
 const EDITABLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'date', 'datetime', 'selection', 'many2one', 'many2many', 'reference']);
+
+/** The kinds of field that hold words: a line is named by the first of them. */
+const WORDS = new Set(['char', 'text', 'html', 'many2one', 'reference']);
 
 /** The kinds of field whose column is as wide as its values need, in characters, as Flectra's lists size them. */
 const FIXED_CHARS: Partial<Record<string, number>> = { boolean: 4, integer: 4, float: 6, monetary: 14, date: 11, datetime: 17 };
@@ -831,15 +875,26 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   // their kind, words and links by the longest the lines have — a long name gets the room a short code does not need.
   const linesOf = (value: unknown) => ((value as Line[] | null) ?? []).filter((line) => !kindOf(line));
   const drawnFirst = linesOf(form.getState().values[name]);
-  /** Whether a column is as wide as its values, not a share of the width: yes/no, numbers, money and dates, unless the grid shrinks to fit. */
-  const fixedWidth = (column: string) => !!FIXED_CHARS[def.fields[column].type] && node.fit !== 'shrink';
+  /** A column whose values are drawn as pills (widget="badge"). */
+  const badged = (column: string) => !!node.cells?.[column]?.badge || node.cells?.[column]?.widget === 'badge';
+  /** Whether a column is as wide as its values, not a share of the width: yes/no, numbers, money, dates and badges, unless the grid shrinks to fit. */
+  const fixedWidth = (column: string) => (!!FIXED_CHARS[def.fields[column].type] || badged(column)) && node.fit !== 'shrink';
   /** The room a column's values need, in pixels: its longest value, its kind's least, a short label — and the cell's padding. */
   const roomOf = (column: string, lines = drawnFirst) => {
     const sub = def.fields[column];
     const least = FIXED_CHARS[sub.type] ?? 6;
-    const longest = sub.type === 'boolean' ? 0 : lines.reduce((most, line) => Math.max(most, cellText(sub, line.values[column] as Value, line.values, locale, form.getState().values, node.cells?.[column]).length), 0);
+    let longest = sub.type === 'boolean' ? 0 : lines.reduce((most, line) => Math.max(most, cellText(sub, line.values[column] as Value, line.values, locale, form.getState().values, node.cells?.[column]).length), 0);
+    // A badge may turn to any of its choices: room for the longest, though no line holds it yet.
+    if (badged(column) && sub.type === 'selection') longest = sub.options.reduce((most, option) => Math.max(most, option.label.length), longest);
     // A long label over short numbers is cut, as Flectra's are, rather than widen its column.
     return Math.round(Math.min(Math.max(longest, least, Math.min(sub.label.length, 6)), 40) * 7.6 + 40);
+  };
+  /** The column a line is named by: its first of words (a name, a description, a link), else its first. */
+  const titleColumn = (shown: string[]) => shown.find((column) => WORDS.has(def.fields[column].type)) ?? shown[0];
+  /** A line's name by its place, "Line 3", when it has none to show. */
+  const placeName = (n: number) => {
+    const text = fill(labels.lineN, { n });
+    return text.charAt(0).toLocaleUpperCase(locale) + text.slice(1);
   };
 
   const columnDefs: ColDef<Line>[] = columns.map((column) => {
@@ -855,6 +910,10 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     const base: ColDef<Line> = {
       colId: column,
       headerName: sub.label,
+      // A long label wraps onto a second line rather than be cut, so two columns never read the same; all of it on pointing at it.
+      headerTooltip: sub.label,
+      wrapHeaderText: true,
+      autoHeaderHeight: true,
       valueGetter: (p) => {
         if (p.node?.rowPinned) {
           if (totals.includes(column)) return p.data?.values[column];
@@ -891,7 +950,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       // Columns as wide as what they hold (fit: content), sized once the lines are drawn.
       ...(node.fit === 'content' && !node.cells?.[column]?.width ? { flex: undefined, minWidth: 64 } : {}),
       // Columns that shrink to fit (fit: shrink), as Flectra's list beside a chatter: narrower before the table scrolls, headers wrapping.
-      ...(node.fit === 'shrink' ? { minWidth: wide ? 72 : sub.type === 'monetary' ? 80 : 48, wrapHeaderText: true, autoHeaderHeight: true } : {}),
+      ...(node.fit === 'shrink' ? { minWidth: wide ? 72 : sub.type === 'monetary' ? 80 : 48 } : {}),
       editable: (p) => {
         if (readonly || p.node.rowPinned) return false;
         if (kindOf(p.data)) return spans(p.api);
@@ -1166,10 +1225,13 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       // A line dragged by its handle moves among the others as it goes; where
       // it is let go, the form moves it too and numbers the lines again.
       rowDragManaged: !!sequence,
+      // A line dragged is named by its words (a yes or no names nothing), else by its place.
       rowDragText: (p) => {
         const line = p.rowNode?.data;
-        const text = line && (kindOf(line) && kinds ? line.values[kinds.text] : line.values[columns[0]]);
-        return text && typeof text === 'object' ? String((text as { label?: string }).label ?? '') : String(text ?? '');
+        const column = titleColumn(columns.filter((c) => api.getColumn(c)?.isVisible() !== false));
+        const value = line && (kindOf(line) && kinds ? line.values[kinds.text] : column ? line.values[column] : null);
+        const text = value && typeof value === 'object' ? String((value as { label?: string }).label ?? '') : String(value ?? '');
+        return text.trim() || placeName((p.rowNode?.rowIndex ?? 0) + 1);
       },
       onRowDragEnd: (event) => {
         const key = event.node.data?.key;
@@ -1358,7 +1420,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       if (state?.tone) card.dataset['tone'] = state.tone;
       card.classList.toggle('fd-line-bold', !!state?.bold);
       const shownHere = shownColumns.filter((column) => !state?.cells[column]?.invisible);
-      const [first, ...rest] = shownHere;
+      const first = titleColumn(shownHere);
+      const rest = shownHere.filter((column) => column !== first);
       const text = (column: string) => {
         // A distribution says its accounts by their names, as its cell does, once they are found.
         const shares = distributions.get(column);
@@ -1369,7 +1432,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       };
       const title = document.createElement(dialogs ? 'button' : 'div');
       title.className = 'fd-line-card-title';
-      title.textContent = first ? text(first) || fill(labels.lineN, { n: current.indexOf(line) + 1 }) : '';
+      title.textContent = first ? text(first) || placeName(current.indexOf(line) + 1) : '';
       if (dialogs && title instanceof HTMLButtonElement) {
         title.type = 'button';
         title.addEventListener('click', () => void openLine(line));

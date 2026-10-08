@@ -19,7 +19,7 @@ export const GRID_CSS = /* css */ `
 .fd-grid-lines .fd-tone-muted { --fd-line-tone: var(--fd-muted); --fd-line-tone-soft: color-mix(in srgb, var(--fd-muted) 16%, transparent); }
 .fd-grid-lines :is(.ag-row[class*="fd-tone-"] .ag-cell, .ag-cell[class*="fd-tone-"]) { color: var(--fd-line-tone); }
 .fd-grid-lines :is(.fd-line-bold .ag-cell, .ag-cell.fd-cell-bold) { font-weight: 600; }
-.fd-grid-badge { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; line-height: 20px; font-weight: 500; color: var(--fd-muted); background: color-mix(in srgb, var(--fd-muted) 14%, transparent); }
+.fd-grid-badge { display: inline-block; max-width: 100%; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; padding: 1px 9px; border-radius: 999px; font-size: 12px; line-height: 20px; font-weight: 500; color: var(--fd-muted); background: color-mix(in srgb, var(--fd-muted) 14%, transparent); }
 .fd-grid-badge[data-tone] { color: var(--fd-line-tone); background: var(--fd-line-tone-soft); }
 .fd-grid-badge[data-tone="info"] { --fd-line-tone: var(--fd-info); --fd-line-tone-soft: var(--fd-info-soft); }
 .fd-grid-badge[data-tone="success"] { --fd-line-tone: var(--fd-success); --fd-line-tone-soft: var(--fd-success-soft); }
@@ -88,6 +88,16 @@ button.fd-line-card-title { color: var(--fd-accent); }
 .ag-cell-wrapper > .fd-grid-editor { flex: 1 1 auto; min-width: 0; align-self: stretch; }
 .fd-grid-editor > * { flex: 1; min-width: 0; }
 .fd-grid-editor .fd-input { border: 0; box-shadow: none; background: transparent; padding-inline: 0; min-height: 0; }
+/* An input keeps a line's height of its own, not the cell's tall line, so it sits inside its row. */
+.fd-grid-editor input.fd-input { line-height: 20px; }
+/* A value too long for the room inside the padding takes the padding too. */
+.fd-grid-editor.fd-grid-editor-tight { padding-inline: 4px; }
+/* A date over its cell: as wide as its day and time need, never cut. */
+.ag-popup-editor .fd-grid-editor:is([data-type="date"], [data-type="datetime"]) { width: max-content; }
+.ag-popup-editor .fd-grid-editor:is([data-type="date"], [data-type="datetime"]) .fd-input { width: auto; }
+/* A paragraph over its cell: several lines, scrolling once it is long. */
+.ag-popup-editor .fd-grid-editor[data-type="text"] { height: auto; align-items: stretch; padding-block: 6px; }
+.ag-popup-editor .fd-grid-editor[data-type="text"] textarea { min-height: 84px; max-height: 240px; overflow-y: auto; resize: vertical; line-height: 20px; padding-block: 2px; }
 .fd-grid-editor .fd-combo-input { padding-inline-end: 24px; }
 /* The cell's frame already marks the edit; outrank the underline skin's focus line. */
 .fd-form .fd-grid-lines .fd-grid-editor .fd-input:focus { box-shadow: none; }

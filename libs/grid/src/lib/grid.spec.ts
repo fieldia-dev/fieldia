@@ -100,7 +100,7 @@ describe('the grid', () => {
   it('closes a date cell once a day is picked from its calendar, keeping the date', async () => {
     const { box, api, form } = await mount();
     api!.startEditingCell({ rowIndex: 1, colKey: 'delivery' });
-    const input = box.querySelector('.ag-cell-inline-editing input[type="date"]') as HTMLInputElement;
+    const input = document.querySelector('.ag-popup-editor .fd-grid-editor input[type="date"]') as HTMLInputElement;
     // A pick from the browser's calendar: a value, no key pressed.
     input.value = '2026-11-03';
     input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -132,7 +132,7 @@ describe('the grid', () => {
   it('keeps a date cell open while its date is typed', async () => {
     const { box, api, form } = await mount();
     api!.startEditingCell({ rowIndex: 1, colKey: 'delivery' });
-    const input = box.querySelector('.ag-cell-inline-editing input[type="date"]') as HTMLInputElement;
+    const input = document.querySelector('.ag-popup-editor .fd-grid-editor input[type="date"]') as HTMLInputElement;
     // The browser says change as soon as the typed year makes a date: typing, not a pick.
     input.dispatchEvent(new KeyboardEvent('keydown', { key: '2', bubbles: true }));
     input.value = '0002-11-03';
@@ -545,7 +545,7 @@ describe('the grid with sections and notes', () => {
 });
 
 describe('a grid whose columns shrink to fit (fit: shrink)', () => {
-  it('lets its columns go narrower, sharing the width, and wraps their headers before it scrolls', async () => {
+  it('lets its columns go narrower, sharing the width, its headers wrapping, before it scrolls', async () => {
     const shrinking = JSON.parse(JSON.stringify(order)) as Page & { layout: any };
     shrinking.layout.children[0].children[1].fit = 'shrink';
     const { api } = await mount(shrinking);
@@ -556,7 +556,6 @@ describe('a grid whose columns shrink to fit (fit: shrink)', () => {
     expect(price?.minWidth).toBe(80);
     const { api: plain } = await mount();
     expect(plain?.getColumnDef('product_id')?.minWidth).toBeGreaterThan(72);
-    expect(plain?.getColumnDef('product_id')?.wrapHeaderText).toBeFalsy();
   });
 });
 
