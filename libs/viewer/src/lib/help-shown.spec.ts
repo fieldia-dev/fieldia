@@ -66,6 +66,62 @@ describe('where a field’s help shows', () => {
     expect(document.activeElement).not.toBe(input());
   });
 
+  it('only toggles the help when the (?) of a picker is pressed: its list stays shut and the box keeps no focus', () => {
+    const page: Page = {
+      ...contact({ helpShown: 'tooltip' }),
+      fields: { vat: { type: 'many2one', label: 'Incoterm', relation: 'incoterm', help: 'The trade terms of the delivery.' } },
+    };
+    const { tip, bubble, field } = mount(page);
+    const input = field.querySelector('input') as HTMLInputElement;
+    tip()!.click();
+    expect(bubble()?.hidden).toBe(false);
+    expect(document.activeElement).not.toBe(input);
+    // A press on the bubble's words does not reach the box either.
+    bubble()!.click();
+    expect(document.activeElement).not.toBe(input);
+    // The label's own words still move into the box.
+    (field.querySelector('.fd-label') as HTMLElement).click();
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('keeps an open bubble on the screen: moved back in from whichever edge it ran past', () => {
+    const { tip, bubble } = mount(contact({ helpShown: 'tooltip' }));
+    Object.defineProperty(document.documentElement, 'clientWidth', { configurable: true, value: 390 });
+    const at = (left: number, width: number) => ({ left, right: left + width, width, top: 0, bottom: 20, height: 20, x: left, y: 0, toJSON: () => ({}) });
+    // Past the right edge: pulled left by what runs over, and a margin.
+    bubble()!.getBoundingClientRect = () => at(164, 273) as DOMRect;
+    tip()!.click();
+    expect(bubble()!.style.transform).toBe('translateX(-55px)');
+    tip()!.click();
+    // Past the left edge, as in a right-to-left page: pushed right.
+    bubble()!.getBoundingClientRect = () => at(-30, 273) as DOMRect;
+    tip()!.click();
+    expect(bubble()!.style.transform).toBe('translateX(38px)');
+    tip()!.click();
+    // On the screen already: left where it is.
+    bubble()!.getBoundingClientRect = () => at(40, 273) as DOMRect;
+    tip()!.click();
+    expect(bubble()!.style.transform).toBe('');
+    delete (document.documentElement as unknown as Record<string, unknown>)['clientWidth'];
+  });
+
+  it('keeps a label’s (?) and a lone mark at its end on the line of its last word', () => {
+    const { field } = mount(contact({ helpShown: 'tooltip' }));
+    const label = field.querySelector('.fd-label') as HTMLElement;
+    // A word joiner between the words and the (?): no line may break there.
+    const wrap = label.querySelector('.fd-help-tip-wrap') as HTMLElement;
+    expect(wrap.previousSibling?.textContent).toBe('\u2060');
+    // The words are still the label's first part, as an error list reads them.
+    expect(label.firstChild?.textContent).toBe('Tax ID');
+    const percent = mount({ ...contact(), fields: { vat: { type: 'float', label: 'Milestone Completion %' } } });
+    expect(percent.field.querySelector('.fd-label')?.textContent).toBe('Milestone Completion\u00a0%');
+    const question = mount({ ...contact(), fields: { vat: { type: 'char', label: 'Would you come again ?' } } });
+    expect(question.field.querySelector('.fd-label')?.textContent).toBe('Would you come again\u00a0?');
+    // A word at the end is left as written.
+    const words = mount({ ...contact(), fields: { vat: { type: 'char', label: 'Tax ID' } } });
+    expect(words.field.querySelector('.fd-label')?.textContent).toBe('Tax ID');
+  });
+
   it('lets a field have its own way over the page’s, both included', () => {
     const { under, tip } = mount(contact({ helpShown: 'tooltip' }, 'both'));
     expect(under()?.textContent).toBe('The number on the tax card, 9 digits.');

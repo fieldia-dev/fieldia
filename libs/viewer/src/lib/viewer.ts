@@ -368,7 +368,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const wrapper = el('div', { class: 'fd-field', 'data-node': node.id, 'data-field': node.field, 'data-path': scope.path + node.field, 'data-type': def.type, 'data-labels': labelsAt, 'data-focus': node.focus && scope.root ? '' : undefined });
       if (node.colspan) wrapper.style.setProperty('--fd-span', String(node.colspan));
       const labelText = node.label ?? def.label;
-      const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, labelText);
+      const label = el('label', { class: 'fd-label', id: `${id}-label`, for: id }, keepMarkWithWord(labelText));
       // The ✓ of a field filled in right; never on a yes/no box, a table or a file, where it would say nothing.
       const mark = options.showValid && !NO_VALID_MARK.has(def.type) ? drawIcon(doc, 'check') : null;
       if (mark) {
@@ -391,7 +391,10 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         // A group inside a box of its own (a radio group with "Clear selection" under it) is named too.
         const named = widget.element.getAttribute('role') ? widget.element : widget.element.querySelector(`[id="${id}"][role]`);
         named?.setAttribute('aria-labelledby', label.id);
-        label.addEventListener('click', () => widget.focus());
+        // Not a press on its (?) or the help bubble beside it: they show the help, and must not open a picker's list.
+        label.addEventListener('click', (event) => {
+          if (!(event.target as Element).closest?.('.fd-help-tip-wrap')) widget.focus();
+        });
       }
       const helpText = node.help ?? def.help;
       // Under the field, behind a (?) by its label, or both: the field's own way, else the page's.
@@ -400,7 +403,8 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const tip = helpText && helpWay !== 'below' ? helpTip(`${id}-tip`, helpText, fill(labels.helpFor, { label: labelText })) : null;
       // In the label, as Flectra's: a press on it does not move into the box. A label out of sight keeps it after the box.
       if (tip && labelsAt === 'hidden') widget.element.after(tip.element);
-      else if (tip) label.append(tip.element);
+      // A word joiner before it: the (?) never wraps onto a line of its own.
+      else if (tip) label.append('\u2060', tip.element);
       // Not an alert of its own: a refused save is announced once, naming every field to look at.
       const error = el('div', { class: 'fd-error', id: `${id}-error`, hidden: '' });
       // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.
@@ -479,6 +483,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const show = (open: boolean) => {
         bubble.hidden = !open;
         button.setAttribute('aria-expanded', String(open));
+        if (open) keepOnScreen(bubble);
       };
       button.addEventListener('mouseenter', () => show(true));
       button.addEventListener('mouseleave', () => show(kept));
@@ -497,6 +502,16 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
         show(false);
       });
       return { element: el('span', { class: 'fd-help-tip-wrap' }, button, bubble), bubble };
+    }
+
+    /** A bubble hangs from its (?): near the edge of a phone's screen it runs past it, so it is moved back in. */
+    function keepOnScreen(bubble: HTMLElement) {
+      bubble.style.transform = '';
+      const at = bubble.getBoundingClientRect();
+      const width = doc.documentElement.clientWidth;
+      const margin = 8;
+      const shift = at.right > width - margin ? width - margin - at.right : at.left < margin ? margin - at.left : 0;
+      if (shift) bubble.style.transform = `translateX(${Math.round(shift)}px)`;
     }
 
     function hideWhen(element: HTMLElement, id: string) {
@@ -1681,3 +1696,12 @@ const TEXT_BOX = 'input:not([type="checkbox"]):not([type="radio"]):not([type="fi
 
 /** Fields whose ✓ would say nothing: a yes/no box is never wrong, a table or a file has its own look. */
 const NO_VALID_MARK = new Set(['boolean', 'one2many', 'binary', 'image', 'html', 'json', 'properties']);
+
+/**
+ * A label's words with a lone mark at their end ("Completion %", "Come
+ * again ?") held to the word before it, so the mark never wraps onto a line
+ * of its own.
+ */
+function keepMarkWithWord(text: string): string {
+  return text.replace(/\s+([^\p{L}\p{N}\s]{1,3})$/u, '\u00a0$1');
+}
