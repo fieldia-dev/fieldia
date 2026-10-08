@@ -328,3 +328,19 @@ for (const variant of VARIANTS) {
     });
   });
 }
+
+test('the properties line up with the fields round them: their labels as the sheet’s, their values in its column', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const { problems } = await open(page, 'plain', 'page=real-opportunity&record=7701&skin=underline');
+  const props = page.locator('.fd-field[data-type="properties"] .fd-property');
+  await expect(props.first()).toBeVisible();
+  const value = (await props.first().locator(':scope > :last-child').boundingBox())!;
+  const rightLabel = (await props.nth(1).locator(':scope > label').boundingBox())!;
+  const customer = (await page.locator('[data-node="f-customer"] input').first().boundingBox())!;
+  const userLabel = (await page.locator('[data-node="f-user"] .fd-label').boundingBox())!;
+  expect(Math.abs(value.x - customer.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(rightLabel.x - userLabel.x)).toBeLessThanOrEqual(1);
+  const look = (sel: string) => page.locator(sel).first().evaluate((el) => { const s = getComputedStyle(el); return [s.fontWeight, s.fontSize, s.color]; });
+  expect(await look('.fd-field[data-type="properties"] .fd-property > label')).toEqual(await look('[data-node="f-user"] .fd-label'));
+  expect(problems).toEqual([]);
+});

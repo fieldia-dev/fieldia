@@ -108,7 +108,7 @@ export const BUSINESS_CSS = /* css */ `
 .fd-payment-due { display: flex; justify-content: space-between; gap: 16px; padding-top: 6px; border-top: 1px solid var(--fd-border); font-weight: 600; }
 /* Properties: in two columns when asked, one on a narrow form; adding one in place, its name and kind in a row. */
 .fd-properties-list { display: grid; gap: 8px; min-width: 0; }
-.fd-properties[data-columns="2"] > .fd-properties-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; }
+.fd-properties[data-columns="2"] > .fd-properties-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--fd-gap-x, 24px); }
 @container (max-width: 520px) { .fd-properties[data-columns="2"] > .fd-properties-list { grid-template-columns: minmax(0, 1fr); } }
 .fd-property-add { justify-self: start; }
 .fd-property-new { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
