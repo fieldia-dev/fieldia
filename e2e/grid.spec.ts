@@ -169,10 +169,12 @@ for (const variant of VARIANTS) {
       await grid(page).getByRole('button', { name: '+ Add a line' }).click();
       await expect.poll(() => editing(page)).toEqual([NEW, 'product_id']);
       await expect(editor(page)).toBeFocused();
-      // The search box covers its cell exactly, so the value underneath never shows through.
+      // The search box covers its cell, so the value underneath never shows through: on its line, from its start,
+      // at least as wide, and wide enough to read a product's name however narrow the column.
       const box = (await grid(page).locator('.ag-popup-editor .fd-grid-editor').boundingBox())!;
       const under = (await cell(page, NEW, 'product_id').boundingBox())!;
-      for (const side of ['x', 'y', 'width', 'height'] as const) expect(Math.abs(box[side] - under[side]), `search box ${side}`).toBeLessThanOrEqual(1);
+      for (const side of ['x', 'y', 'height'] as const) expect(Math.abs(box[side] - under[side]), `search box ${side}`).toBeLessThanOrEqual(1);
+      expect(box.width, 'search box width').toBeGreaterThanOrEqual(Math.max(under.width, 240) - 1);
       expect(await editor(page).evaluate((el) => getComputedStyle(el).boxShadow)).toBe('none');
       await page.keyboard.type('monitor');
       await expect(grid(page).getByRole('option', { name: 'Monitor arm, dual' })).toBeVisible();
