@@ -468,6 +468,8 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   /** A section or note being edited, not an item. */
   private kind: 'section' | 'note' | null = null;
   private note: HTMLTextAreaElement | null = null;
+  /** A tags box in a whole line open at once, which makes its line as tall as it needs. */
+  private grows = false;
 
   init(params: ICellEditorParams<Line> & { cell: CellContext; subfield: string }) {
     this.params = params;
@@ -498,6 +500,12 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     if (kind) this.box.dataset['kind'] = kind;
     this.box.setAttribute('aria-label', def.label);
     this.box.append(this.widget.element);
+    // A whole line open at once keeps its editors in the line (AG Grid has no popups then): a tags box makes the line as tall as it needs.
+    if (cell.rowMode && def.type === 'many2many') {
+      this.grows = true;
+      this.box.classList.add('fd-grid-editor-grows');
+      if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => this.fitLine()).observe(this.box);
+    }
     if (kind === 'note') this.growing(this.box.querySelector('textarea'));
     else if (def.type === 'text') this.paragraph(this.box.querySelector('textarea'));
     if (this.isPopup()) {
@@ -610,6 +618,15 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     }
     if (input.scrollWidth > input.clientWidth) this.box.classList.add('fd-grid-editor-tight');
   }
+  /** A line as tall as its tags box needs, never shorter than a line. */
+  private fitLine() {
+    const { node, api } = this.params;
+    if (!this.box.isConnected || api.isDestroyed()) return;
+    const height = Math.max(ROW_HEIGHT, this.box.scrollHeight + 2);
+    if (height <= (node.rowHeight ?? 0)) return;
+    node.setRowHeight(height);
+    api.onRowHeightChanged();
+  }
   /** A note's box as tall as its text, and its row with it. */
   private resize() {
     const area = this.note;
@@ -639,6 +656,7 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   }
   afterGuiAttached() {
     this.fit();
+    if (this.grows) this.fitLine();
     // With a whole line open, every editor is attached: only the one clicked takes the focus.
     if (this.params.cellStartedEdit === false) return;
     this.widget.focus();
@@ -670,6 +688,11 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     this.widget.destroy?.();
     const { node, api, cell, data } = this.params;
     cell.finish(data.key);
+    // The line closed: it gives back the height its tags box took.
+    if (this.grows && !api.isDestroyed()) {
+      node.setRowHeight(null);
+      api.onRowHeightChanged();
+    }
     // A note's row grew by hand while it was typed; drawing it afresh measures
     // it again from its text (resetting the height would make it one line tall).
     if (this.note) {

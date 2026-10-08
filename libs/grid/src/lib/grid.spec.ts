@@ -289,6 +289,25 @@ describe('editing a whole line', () => {
     warn.mockRestore();
   });
 
+  it('makes its line as tall as a tags box needs while the line is open, and gives the height back after', async () => {
+    const tagged = JSON.parse(JSON.stringify(rowMode)) as Page & { fields: Record<string, any>; layout: any };
+    tagged.fields['line_ids'].fields.tag_ids = { type: 'many2many', label: 'Tags', relation: 'tag' };
+    const rows = lines.map((line) => ({ ...line, values: { ...line.values, tag_ids: [{ id: 1, label: 'Urgent' }, { id: 2, label: 'Fragile' }] } }));
+    // The tags and the box to search in need two lines: 70 px.
+    const tall = jest.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains('fd-grid-editor') && this.dataset['type'] === 'many2many' ? 70 : 0;
+    });
+    const { api } = await mount(tagged, rows);
+    const before = api?.getDisplayedRowAtIndex(1)?.rowHeight;
+    api?.startEditingCell({ rowIndex: 1, colKey: 'qty' });
+    await frames();
+    expect(api?.getDisplayedRowAtIndex(1)?.rowHeight).toBeGreaterThanOrEqual(72);
+    api?.stopEditing();
+    await frames();
+    expect(api?.getDisplayedRowAtIndex(1)?.rowHeight).toBe(before);
+    tall.mockRestore();
+  });
+
   it('puts the whole line back on Escape, whichever editor the key was pressed in', async () => {
     const { box, form, api } = await mount(rowMode);
     api?.startEditingCell({ rowIndex: 1, colKey: 'qty' });

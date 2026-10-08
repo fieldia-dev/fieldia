@@ -127,6 +127,8 @@ button.fd-line-card-title { color: var(--fd-accent); }
 /* An analytic distribution's lines, opened from its cell: room round them, each share clear of its % sign. */
 .ag-popup-editor .fd-grid-editor[data-type="json"] { height: auto; align-items: stretch; padding: 8px 12px; }
 .ag-popup-editor .fd-grid-editor[data-type="many2many"] { height: auto; padding-block: 6px; }
+/* A tags box in a whole line open at once: its tags and its search on their own lines, the line grown to hold them. */
+.fd-grid-editor.fd-grid-editor-grows { height: auto; min-height: 100%; align-items: flex-start; padding-block: 4px; }
 .fd-grid-editor .fd-chip { white-space: nowrap; }
 .fd-grid-editor .fd-distribution .fd-share { padding-inline-end: calc(var(--fd-pad-x, 10px) + 2ch); }
 .fd-grid-distribution { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
