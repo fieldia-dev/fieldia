@@ -403,8 +403,11 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       const tip = helpText && helpWay !== 'below' ? helpTip(`${id}-tip`, helpText, fill(labels.helpFor, { label: labelText })) : null;
       // In the label, as Flectra's: a press on it does not move into the box. A label out of sight keeps it after the box.
       if (tip && labelsAt === 'hidden') widget.element.after(tip.element);
-      // A word joiner before it: the (?) never wraps onto a line of its own.
-      else if (tip) label.append('\u2060', tip.element);
+      // Its side of the words and the gap before it follow the way the words run: English on an Arabic page too.
+      else if (tip) {
+        label.append(tip.element);
+        label.dir = 'auto';
+      }
       // Not an alert of its own: a refused save is announced once, naming every field to look at.
       const error = el('div', { class: 'fd-error', id: `${id}-error`, hidden: '' });
       // A warning from an answer rule, and one from the data source's onchange beside the field whose change brought it.

@@ -138,6 +138,12 @@ const SKINS_CSS = /* css */ `
 .fd-help { color: var(--fd-muted); font-size: 12.5px; }
 /* A field's help behind a (?) by its label: a bubble on hover, focus or a tap. */
 .fd-help-tip-wrap { position: relative; display: inline-flex; vertical-align: 0.05em; margin-inline-start: 6px; }
+/* In a label it stands just after the last word, out of the line's flow: a browser may always break a line
+   before a box such as the (?), no-break space or not, and it would wrap onto a line of its own.
+   The label keeps room for it at its end, and a required star moves past it. */
+.fd-label > .fd-help-tip-wrap { position: absolute; margin-block-start: 0.15em; }
+.fd-label:has(> .fd-help-tip-wrap) { padding-inline-end: 22px; }
+.fd-field.fd-required > .fd-label:has(> .fd-help-tip-wrap)::after { padding-inline-start: 22px; }
 .fd-help-tip { all: unset; box-sizing: border-box; display: inline-grid; place-items: center; width: 16px; height: 16px; border: 1px solid var(--fd-border); border-radius: 50%; color: var(--fd-muted); font-size: 11px; font-weight: 600; line-height: 1; cursor: help; }
 .fd-help-tip:hover, .fd-help-tip[aria-expanded="true"] { color: var(--fd-accent); border-color: var(--fd-accent); }
 .fd-help-tip:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; }

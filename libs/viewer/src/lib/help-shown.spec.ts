@@ -105,14 +105,14 @@ describe('where a field’s help shows', () => {
     delete (document.documentElement as unknown as Record<string, unknown>)['clientWidth'];
   });
 
-  it('keeps a label’s (?) and a lone mark at its end on the line of its last word', () => {
+  it('keeps a label’s (?) after its words, and a lone mark at its end with its last word', () => {
     const { field } = mount(contact({ helpShown: 'tooltip' }));
     const label = field.querySelector('.fd-label') as HTMLElement;
-    // A word joiner between the words and the (?): no line may break there.
-    const wrap = label.querySelector('.fd-help-tip-wrap') as HTMLElement;
-    expect(wrap.previousSibling?.textContent).toBe('\u2060');
-    // The words are still the label's first part, as an error list reads them.
+    // Right after the words, which are still the label's first part, as an error list reads them.
+    expect(label.querySelector('.fd-help-tip-wrap')?.previousSibling).toBe(label.firstChild);
     expect(label.firstChild?.textContent).toBe('Tax ID');
+    // Laid out the way its words run, so the (?) and a star stand after them on an Arabic page too.
+    expect(label.dir).toBe('auto');
     const percent = mount({ ...contact(), fields: { vat: { type: 'float', label: 'Milestone Completion %' } } });
     expect(percent.field.querySelector('.fd-label')?.textContent).toBe('Milestone Completion\u00a0%');
     const question = mount({ ...contact(), fields: { vat: { type: 'char', label: 'Would you come again ?' } } });
