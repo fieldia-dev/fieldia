@@ -70,7 +70,7 @@ for (const variant of VARIANTS) {
       await expect(warning).toBeHidden();
       await pick(page, 'f-partner', 'delta', 'Delta Care Clinics');
       await expect(warning).toBeVisible();
-      await expect.poll(() => value(page, 'payment_term_id')).toEqual({ id: 7141, label: 'Immediate Payment' });
+      await expect.poll(() => value(page, 'payment_term_id')).toEqual({ id: 4101, label: 'Immediate Payment' });
       await expect(node(page, 'f-partner-invoice').getByRole('combobox')).toHaveValue('Delta Care Clinics');
 
       // Sent by email: Quotation Sent. Confirmed: a sales order, the Delivery stat button, the order date in Expiration's place.

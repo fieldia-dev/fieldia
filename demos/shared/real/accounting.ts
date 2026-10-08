@@ -86,7 +86,8 @@ const tax = (id: number) => link(id, TAXES[id].name);
 const TAGS: Record<number, string> = { 4101: '+Taxable sales 14% (base)', 4102: '+Output VAT 14%', 4103: '+Taxable purchases 14% (base)', 4104: '+Input VAT 14%' };
 const tag = (id: number) => link(id, TAGS[id]);
 
-const UOM = { units: link(4101, 'Units'), hours: link(4102, 'Hours'), boxes: link(4103, 'Boxes') };
+// The sales lane's units, by their ids: one "Units" in every list, as the taxes are one.
+const UOM = { units: link(7401, 'Units'), hours: link(7404, 'Hours'), boxes: link(7402, 'Boxes') };
 
 interface Product {
   name: string;
@@ -1231,8 +1232,8 @@ export const lane: RealLane = {
     'account.payment.term': rows(TERMS, ([name]) => ({ name })),
     'account.fiscal.position': { 4101: { name: 'Local Customers (Egypt)' }, 4102: { name: 'Free Zone and Export' } },
     'account.incoterms': { 4101: { name: 'EXW Ex Works' }, 4102: { name: 'FCA Free Carrier' }, 4103: { name: 'CIF Cost, Insurance and Freight' }, 4104: { name: 'DAP Delivered at Place' } },
-    'crm.team': { 4101: { name: 'Direct Sales' }, 4102: { name: 'Key Accounts' } },
-    'uom.uom': { 4101: { name: 'Units' }, 4102: { name: 'Hours' }, 4103: { name: 'Boxes' } },
+    // Direct Sales is the CRM lane's team; the units, the sales lane's.
+    'crm.team': { 4102: { name: 'Key Accounts' } },
     'product.product': rows(PRODUCTS, (p) => ({ name: p.name, list_price: p.price, standard_price: p.cost, can_be_expensed: p.expensed ?? false, sale_ok: !p.expensed, purchase_ok: true })),
     'purchase.order': { 4101: { name: 'P00027', partner_id: partner(4103) } },
     'purchase.bill.union': { 4101: { name: 'P00027', partner_id: partner(4103) }, 4102: { name: 'BILL/2026/09/0031', partner_id: partner(4103) } },

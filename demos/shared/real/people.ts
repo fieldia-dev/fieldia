@@ -608,14 +608,16 @@ const portrait = (initials: string, colour: string) => {
   return { name: `${initials.toLowerCase()}.svg`, type: 'image/svg+xml', size: svg.length, data };
 };
 
-const COUNTRIES: Record<number, string> = { 4281: 'Egypt', 4282: 'Saudi Arabia', 4283: 'Jordan', 4284: 'Sudan' };
+// Egypt and Saudi Arabia, and their regions, are the CRM lane's (7401, 7402; 7411–7415): each once in every list. This lane writes only its own.
+const COUNTRIES: Record<number, string> = { 7401: 'Egypt', 7402: 'Saudi Arabia', 4283: 'Jordan', 4284: 'Sudan' };
+const SHARED_PLACES = new Set([7401, 7402, 7411, 7412, 7413, 7415]);
 const country = (id: number) => link(id, COUNTRIES[id]);
 const REGIONS: Record<number, { name: string; country: number }> = {
-  4291: { name: 'Cairo', country: 4281 },
-  4292: { name: 'Giza', country: 4281 },
-  4293: { name: 'Dakahlia', country: 4281 },
-  4294: { name: 'Alexandria', country: 4281 },
-  4295: { name: 'Riyadh', country: 4282 },
+  7411: { name: 'Cairo', country: 7401 },
+  7412: { name: 'Giza', country: 7401 },
+  4293: { name: 'Dakahlia', country: 7401 },
+  7413: { name: 'Alexandria', country: 7401 },
+  7415: { name: 'Riyadh', country: 7402 },
   4296: { name: 'Amman', country: 4283 },
 };
 const WORK_ADDRESSES: Record<number, string> = { 4011: 'Glow Aesthetic Clinic, Zamalek', 4012: 'Glow Aesthetic Clinic, New Cairo' };
@@ -677,9 +679,9 @@ const salma: Values = {
   private_street: '14 Shagaret El Dor Street',
   private_street2: 'Apartment 7',
   private_city: 'Zamalek',
-  private_state_id: link(4291, 'Cairo'),
+  private_state_id: link(7411, 'Cairo'),
   private_zip: '11211',
-  private_country_id: country(4281),
+  private_country_id: country(7401),
   private_email: 'salma.adel.85@gmail.example',
   private_phone: '+20 122 404 1187',
   bank_account_id: link(4241, 'EG38 0019 0005 0000 0000 2631 8000 2 (CIB)'),
@@ -700,14 +702,14 @@ const salma: Values = {
   visa_expire: null,
   work_permit_expiration_date: null,
   has_work_permit: null,
-  country_id: country(4281),
+  country_id: country(7401),
   identification_id: '29103150104562',
   ssnid: '7731045',
   passport_id: 'A27741903',
   gender: 'female',
   birthday: '1991-03-15',
   place_of_birth: 'Mansoura',
-  country_of_birth: country(4281),
+  country_of_birth: country(7401),
   employee_type: 'employee',
   user_id: link(4103, 'Salma Adel'),
   pin: '4471',
@@ -1053,8 +1055,8 @@ export const lane: RealLane = {
     'clinic.treatment.session': named({ 4701: 'S-00417' }),
     'account.payment': named({ 4801: 'PBNK1/2026/00038' }),
     'account.move': named({ 4851: 'INV/2026/01187' }),
-    'res.country': named(COUNTRIES),
-    'res.country.state': Object.fromEntries(Object.entries(REGIONS).map(([id, r]) => [id, { name: r.name, country_id: country(r.country) }])),
+    'res.country': named(Object.fromEntries(Object.entries(COUNTRIES).filter(([id]) => !SHARED_PLACES.has(Number(id))))),
+    'res.country.state': Object.fromEntries(Object.entries(REGIONS).filter(([id]) => !SHARED_PLACES.has(Number(id))).map(([id, r]) => [id, { name: r.name, country_id: country(r.country) }])),
     'hr.work.location': Object.fromEntries(Object.entries(WORK_LOCATIONS).map(([id, l]) => [id, { name: l.name, address_id: link(l.address, WORK_ADDRESSES[l.address]) }])),
     'resource.calendar': named({ 4271: 'Standard 40 hours/week, Sunday to Thursday', 4272: 'Part-time 24 hours/week' }),
     'res.partner.bank': named({ 4241: 'EG38 0019 0005 0000 0000 2631 8000 2 (CIB)' }),

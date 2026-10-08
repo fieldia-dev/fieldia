@@ -25,15 +25,19 @@ import type { RealLane } from './lane';
 const NAMES: Record<string, Record<number, string>> = {
   'res.company': { 7001: 'Nile Medical Equipment Co.' },
   'res.currency': { 7461: 'EGP', 7462: 'USD', 7463: 'EUR' },
-  'res.users': { 7121: 'Salma Nabil', 7122: 'Omar Khaled', 7123: 'Youssef Kamal', 7124: 'Mariam Adel' },
+  // Salma Nabil and Youssef Kamal are the CRM's people (7101, 7104), written by another lane: see SHARED.
+  'res.users': { 7122: 'Omar Khaled', 7124: 'Mariam Adel' },
   'crm.team': { 7131: 'Cairo Corporate Sales', 7132: 'Alexandria Branch', 7133: 'Delta Region' },
-  'account.payment.term': { 7141: 'Immediate Payment', 7142: '30 Days', 7143: '45 Days End of Month', 7144: '50% Advance, 50% on Delivery' },
+  // Immediate Payment and 30 Days are the accounting lane's terms (4101, 4103): each once in every list.
+  'account.payment.term': { 4101: 'Immediate Payment', 4103: '30 Days', 7143: '45 Days End of Month', 7144: '50% Advance, 50% on Delivery' },
   'product.pricelist': { 7151: 'Public Pricelist (EGP)', 7152: 'Hospitals 2026 (EGP)' },
   'account.fiscal.position': { 7161: 'Domestic (Egypt)', 7162: 'Free Zone (VAT exempt)' },
   'crm.tag': { 7171: 'Hospitals', 7172: 'Tender', 7173: 'Repeat customer', 7174: 'Private clinics' },
-  'account.incoterms': { 7191: 'EXW Ex Works', 7192: 'FOB Free On Board', 7193: 'CIF Cost, Insurance and Freight', 7194: 'DAP Delivered At Place' },
+  // EXW, CIF and DAP are the accounting lane's (4101, 4103, 4104): each once in every list.
+  'account.incoterms': { 4101: 'EXW Ex Works', 7192: 'FOB Free On Board', 4103: 'CIF Cost, Insurance and Freight', 4104: 'DAP Delivered at Place' },
   'utm.campaign': { 7201: 'Q4 hospital push', 7202: 'ICU upgrade 2026' },
-  'utm.medium': { 7211: 'Email', 7212: 'Phone', 7213: 'Trade show' },
+  // Email and Phone are the CRM lane's mediums (7744, 7742): each once in every list.
+  'utm.medium': { 7744: 'Email', 7742: 'Phone', 7213: 'Trade show' },
   'utm.source': { 7221: 'Cairo Health Expo 2026', 7222: 'Ministry of Health tenders portal', 7223: 'Referral' },
   'sale.order.template': { 7231: 'ICU starter pack', 7232: 'Ward beds, 10 or more' },
   'uom.uom': { 7401: 'Units', 7402: 'Boxes', 7403: 'Days', 7404: 'Hours' },
@@ -47,7 +51,6 @@ const NAMES: Record<string, Record<number, string>> = {
   'product.attribute.value': { 7481: '220 V', 7482: '110 V', 7483: 'Wall mount', 7484: 'Rolling stand' },
   'crm.lead': { 7501: 'Dar El Shifa — ICU monitors renewal', 7502: 'Alexandria Medical Center — maintenance' },
   'tender.opportunity': { 7511: 'Tender 2026/114 — Ministry of Health, ICU equipment' },
-  'res.country': { 7491: 'Egypt' },
   'stock.warehouse': { 7495: 'Cairo Main Warehouse' },
 };
 
@@ -66,9 +69,16 @@ const CATEGORY_PROPERTIES: Record<number, PropertyDefinition[]> = {
 const TAG_COLORS: Record<number, number> = { 7171: 4, 7172: 2, 7173: 10, 7174: 9 };
 
 /** A link to a record of a model, by its id: what a many2one holds. */
+/** Records this lane points at that another lane writes, with all they hold: each person and country once in every list. */
+const SHARED: Record<string, Record<number, string>> = {
+  'res.users': { 7101: 'Salma Nabil', 7104: 'Youssef Kamal' },
+  'res.country': { 7401: 'Egypt' },
+};
+
 function link(model: string, id: number): RelatedRecord {
   const label =
     NAMES[model]?.[id] ??
+    SHARED[model]?.[id] ??
     (model === 'res.partner' ? PARTNERS[id]?.name : model.startsWith('product.') ? PRODUCTS[id]?.name : model === 'sale.order' ? (SALE_ORDERS[id]?.['name'] as string | undefined) : undefined);
   if (label === undefined) throw new Error(`sales lane: no ${model} ${id}`);
   return { id, label };
@@ -98,9 +108,9 @@ interface Partner {
 }
 
 const PARTNERS: Record<number, Partner> = {
-  7101: { name: 'Dar El Shifa Hospital', street: '27 Ramses Street', vat: 'EG 205-118-332', city: 'Abbassia, Cairo', email: 'procurement@darelshifa.example', phone: '+20 2 2683 1100', pricelist: 7152, term: 7142, fiscal: 7161, user: 7121, team: 7131 },
+  7101: { name: 'Dar El Shifa Hospital', street: '27 Ramses Street', vat: 'EG 205-118-332', city: 'Abbassia, Cairo', email: 'procurement@darelshifa.example', phone: '+20 2 2683 1100', pricelist: 7152, term: 4103, fiscal: 7161, user: 7101, team: 7131 },
   7102: { name: 'Alexandria Medical Center', street: '14 Victor Emmanuel Square', vat: 'EG 310-442-907', city: 'Smouha, Alexandria', email: 'supply@alexmedcenter.example', phone: '+20 3 425 7700', pricelist: 7152, term: 7143, fiscal: 7161, user: 7122, team: 7132 },
-  7103: { name: 'Delta Care Clinics', street: '8 El Bahr Street', vat: 'EG 412-090-516', city: 'Tanta', email: 'admin@deltacare.example', phone: '+20 40 334 2200', pricelist: 7151, term: 7141, fiscal: 7161, user: 7123, team: 7133, creditLimit: 150000, owed: 128400 },
+  7103: { name: 'Delta Care Clinics', street: '8 El Bahr Street', vat: 'EG 412-090-516', city: 'Tanta', email: 'admin@deltacare.example', phone: '+20 40 334 2200', pricelist: 7151, term: 4101, fiscal: 7161, user: 7104, team: 7133, creditLimit: 150000, owed: 128400 },
   7104: { name: 'Suez Canal Free Zone Hospital', street: 'Free Zone, Gate 2', city: 'Port Said', email: 'buying@scfzh.example', phone: '+20 66 332 9000', pricelist: 7151, term: 7144, fiscal: 7162, user: 7122, team: 7132 },
   7105: { name: 'Mindray Medical International', city: 'Shenzhen', email: 'export@mindray.example' },
   7106: { name: 'Siemens Healthineers Egypt', city: 'New Cairo', email: 'orders.eg@siemens-healthineers.example' },
@@ -247,7 +257,7 @@ const header = (partnerId: number, invoiceId: number, shippingId: number): Value
     show_update_pricelist: false,
     show_update_fpos: false,
     tax_calculation_rounding_method: 'round_per_line',
-    tax_country_id: link('res.country', 7491),
+    tax_country_id: link('res.country', 7401),
     warehouse_id: link('stock.warehouse', 7495),
     analytic_account_id: null,
     journal_id: null,
@@ -280,7 +290,7 @@ const SALE_ORDERS: Record<number, Values> = {
     reference: null,
     client_order_ref: 'DSH-PO-2026-0412',
     tag_ids: links('crm.tag', 7171, 7172),
-    incoterm: link('account.incoterms', 7194),
+    incoterm: link('account.incoterms', 4104),
     incoterm_location: 'Abbassia, Cairo',
     picking_policy: 'one',
     commitment_date: null,
@@ -289,7 +299,7 @@ const SALE_ORDERS: Record<number, Values> = {
     delivery_status: null,
     origin: 'Tender 2026/114',
     campaign_id: link('utm.campaign', 7202),
-    medium_id: link('utm.medium', 7211),
+    medium_id: link('utm.medium', 7744),
     source_id: link('utm.source', 7222),
   },
   // A confirmed order, partly delivered, with a down payment invoiced: Create Invoice opens the dialog.
@@ -318,7 +328,7 @@ const SALE_ORDERS: Record<number, Values> = {
     reference: 'S00068',
     client_order_ref: 'AMC/SUP/2026/337',
     tag_ids: links('crm.tag', 7171, 7173),
-    incoterm: link('account.incoterms', 7194),
+    incoterm: link('account.incoterms', 4104),
     incoterm_location: 'Smouha, Alexandria',
     picking_policy: 'direct',
     commitment_date: '2026-10-10T10:00',
@@ -327,7 +337,7 @@ const SALE_ORDERS: Record<number, Values> = {
     delivery_status: 'partial',
     origin: null,
     campaign_id: link('utm.campaign', 7201),
-    medium_id: link('utm.medium', 7212),
+    medium_id: link('utm.medium', 7742),
     source_id: link('utm.source', 7223),
   },
 };
@@ -660,10 +670,10 @@ const CONTRACTS: Record<number, Values> = {
     invoice_count: 0,
     document_count: 2,
     milestone_ids: [
-      milestone('m1', 760101, 10, 'Lot 1: 20 monitors delivered and installed', '2026-12-15', 600000, 7123, 'in_progress', 70),
-      milestone('m2', 760102, 20, 'Lot 2: 20 monitors', '2027-04-15', 600000, 7123, 'pending', 191),
-      milestone('m3', 760103, 30, 'Lot 3: 20 monitors', '2027-10-15', 600000, 7123, 'pending', 374),
-      milestone('m4', 760104, 40, 'Lot 4: 20 monitors and the central station', '2028-04-15', 600000, 7123, 'pending', 557),
+      milestone('m1', 760101, 10, 'Lot 1: 20 monitors delivered and installed', '2026-12-15', 600000, 7104, 'in_progress', 70),
+      milestone('m2', 760102, 20, 'Lot 2: 20 monitors', '2027-04-15', 600000, 7104, 'pending', 191),
+      milestone('m3', 760103, 30, 'Lot 3: 20 monitors', '2027-10-15', 600000, 7104, 'pending', 374),
+      milestone('m4', 760104, 40, 'Lot 4: 20 monitors and the central station', '2028-04-15', 600000, 7104, 'pending', 557),
     ],
     has_escalation: true,
     escalation_type: 'fixed',
@@ -689,7 +699,7 @@ const CONTRACTS: Record<number, Values> = {
     partner_id: link('res.partner', 7102),
     partner_contact_id: link('res.partner', 7114),
     contract_type: 'sla',
-    user_id: link('res.users', 7121),
+    user_id: link('res.users', 7101),
     start_date: '2026-01-01',
     end_date: '2026-12-31',
     duration_months: 12,
@@ -701,9 +711,9 @@ const CONTRACTS: Record<number, Values> = {
     invoice_count: 2,
     document_count: 3,
     milestone_ids: [
-      milestone('n1', 760201, 10, 'Q1 preventive maintenance visit', '2026-03-31', 120000, 7123, 'paid'),
-      milestone('n2', 760202, 20, 'Q2 preventive maintenance visit', '2026-06-30', 120000, 7123, 'invoiced'),
-      milestone('n3', 760203, 30, 'Q3 preventive maintenance visit', '2026-09-30', 120000, 7123, 'completed'),
+      milestone('n1', 760201, 10, 'Q1 preventive maintenance visit', '2026-03-31', 120000, 7104, 'paid'),
+      milestone('n2', 760202, 20, 'Q2 preventive maintenance visit', '2026-06-30', 120000, 7104, 'invoiced'),
+      milestone('n3', 760203, 30, 'Q3 preventive maintenance visit', '2026-09-30', 120000, 7104, 'completed'),
       milestone('n4', 760204, 40, 'Q4 preventive maintenance visit', '2026-12-20', 120000, 7124, 'in_progress', 75),
     ],
     has_escalation: false,
@@ -1064,7 +1074,7 @@ const later = (answer: ActionResult | undefined) => (answer === undefined ? unde
  * (base.group_no_one), stay hidden, as they do in Sherkety's own setup.
  */
 const SALES_MANAGER = {
-  id: 7121,
+  id: 7101,
   name: 'Salma Nabil',
   roles: [
     'base.group_user',

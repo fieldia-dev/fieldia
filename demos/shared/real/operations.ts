@@ -26,13 +26,14 @@ import type { RealLane } from './lane';
 
 const link = (id: number, label: string): RelatedRecord => ({ id, label });
 
+// Karim, Mona, Salma and Youssef are the same people as in the CRM and sales pages, by the CRM's ids: each once in every list.
 const USERS = {
-  karim: link(5101, 'Karim Fathy'),
-  mona: link(5102, 'Mona Adel'),
-  salma: link(5103, 'Salma Nabil'),
+  karim: link(7102, 'Karim Fathy'),
+  mona: link(7103, 'Mona Adel'),
+  salma: link(7101, 'Salma Nabil'),
   omar: link(5104, 'Omar Hegazy'),
   hany: link(5105, 'Hany Saad'),
-  youssef: link(5106, 'Youssef Kamal'),
+  youssef: link(7104, 'Youssef Kamal'),
 };
 const EMPLOYEES = { karim: link(5111, 'Karim Fathy'), omar: link(5112, 'Omar Hegazy'), hany: link(5113, 'Hany Saad'), laila: link(5114, 'Laila Mostafa') };
 const PARTNERS = {
@@ -40,7 +41,8 @@ const PARTNERS = {
   timber: link(5122, 'Alexandria Timber Co.'),
   hardware: link(5123, 'Delta Hardware Supplies'),
 };
-const UOM = { units: link(5151, 'Units'), m: link(5152, 'm'), kg: link(5153, 'kg'), l: link(5154, 'L') };
+// Units are the sales lane's (7401): one "Units" in every list.
+const UOM = { units: link(7401, 'Units'), m: link(5152, 'm'), kg: link(5153, 'kg'), l: link(5154, 'L') };
 const LOCATIONS = { vendors: link(5161, 'Partners/Vendors'), stock: link(5162, 'WH/Stock'), production: link(5163, 'Virtual Locations/Production'), customers: link(5164, 'Partners/Customers') };
 const PICKING_TYPES = {
   receipts: link(5171, 'Sherkety Furniture: Receipts'),
@@ -348,7 +350,7 @@ function taskSubtasksChanged(values: Values): Values {
 
 /** A new timesheet line is today's, by whoever the task is assigned to first. */
 function taskTimesheetsChanged(values: Values): Values {
-  const firstEmployee: Record<number, RelatedRecord> = { 5101: EMPLOYEES.karim, 5104: EMPLOYEES.omar, 5105: EMPLOYEES.hany };
+  const firstEmployee: Record<number, RelatedRecord> = { 7102: EMPLOYEES.karim, 5104: EMPLOYEES.omar, 5105: EMPLOYEES.hany };
   const assignee = ((values['user_ids'] as RelatedRecord[] | null) ?? [])[0];
   const lines = linesOf(values, 'timesheet_ids').map((line) => {
     if (line.id !== undefined || line.values['employee_id']) return line;
@@ -977,7 +979,7 @@ function workorderAction(request: ActionRequest): ActionResult | undefined {
 
 /** The person using the demo: a project manager and salesman with the timesheet, rating, recurrence and dependency groups — not developer mode. */
 const OPERATIONS_USER = {
-  id: 5102,
+  id: 7103,
   name: 'Mona Adel',
   roles: [
     'base.group_user',
