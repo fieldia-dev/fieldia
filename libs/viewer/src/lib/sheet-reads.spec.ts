@@ -652,8 +652,13 @@ describe('parts on one line, and a label over the title', () => {
     expect(line.getAttribute('data-style')).toBe('inline');
     expect(line.querySelector(':scope > .fd-label')?.textContent).toBe('Limit attempts');
     const row = line.querySelector(':scope > .fd-oneline-row') as HTMLElement;
-    expect([...row.children].map((c) => c.getAttribute('data-node'))).toEqual(['f-limited', 't-to', 'f-attempts', 't-attempts']);
+    expect([...row.querySelectorAll('[data-node]')].map((c) => c.getAttribute('data-node'))).toEqual(['f-limited', 't-to', 'f-attempts', 't-attempts']);
     expect(row.querySelector('[data-node="t-to"]')?.tagName).toBe('SPAN');
+    // Words stay with the value they introduce or follow, "to 3 attempts", so a line too narrow for all of it never parts them.
+    const pair = row.querySelector('[data-node="f-attempts"]')?.parentElement as HTMLElement;
+    expect(pair.classList.contains('fd-oneline-pair')).toBe(true);
+    expect([...pair.children].map((c) => c.getAttribute('data-node'))).toEqual(['t-to', 'f-attempts', 't-attempts']);
+    expect(row.querySelector('[data-node="f-limited"]')?.parentElement).toBe(row);
     const attempts = row.querySelector('[data-node="f-attempts"] input') as HTMLInputElement;
     expect(attempts.labels?.[0]?.textContent).toBe('Attempts');
   });

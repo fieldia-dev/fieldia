@@ -101,32 +101,35 @@ export const SHEET_CSS = /* css */ `
 .fd-chip[data-color="10"] { --fd-tag: #30c381; } .fd-chip[data-color="11"] { --fd-tag: #9365b8; }
 /* A line of parts, as Flectra's o_row: its title the line's label, its parts each as wide as they need, words and buttons among them. */
 .fd-oneline-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; min-height: var(--fd-control-height, 30px); }
-.fd-form .fd-oneline-row > .fd-field { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; flex: 0 1 auto; width: auto; min-width: 0; grid-template-columns: none; }
-.fd-form .fd-oneline-row > .fd-field > * { grid-column: auto !important; }
-.fd-oneline-row > .fd-field:not([data-labels="beside"]):not([data-labels="above"]) > .fd-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.fd-oneline-row > .fd-field > :is(.fd-error, .fd-warning) { flex-basis: 100%; }
+.fd-form :is(.fd-oneline-row, .fd-oneline-pair) > .fd-field { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; flex: 0 1 auto; width: auto; min-width: 0; grid-template-columns: none; }
+.fd-form :is(.fd-oneline-row, .fd-oneline-pair) > .fd-field > * { grid-column: auto !important; }
+:is(.fd-oneline-row, .fd-oneline-pair) > .fd-field:not([data-labels="beside"]):not([data-labels="above"]) > .fd-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:is(.fd-oneline-row, .fd-oneline-pair) > .fd-field > :is(.fd-error, .fd-warning) { flex-basis: 100%; }
 .fd-oneline-row .fd-input { width: 12em; max-width: 100%; }
+/* Words and the value they go with wrap as one, never parted at a line's end; a run with nothing shown takes no room. */
+.fd-form .fd-oneline-pair { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: 6px 10px; flex: 0 1 auto; max-width: 100%; min-width: 0; }
+.fd-form .fd-oneline-pair:not(:has(> :not([hidden]))) { display: none; }
 /* On a narrow screen each part gives way to the row's width rather than run past it. */
-.fd-form .fd-oneline-row > .fd-field { max-width: 100%; }
-.fd-oneline-row > .fd-field > * { max-width: 100%; min-width: 0; }
-.fd-oneline-row > .fd-field:is([data-type="many2one"], [data-type="reference"]) .fd-input { width: 15em; }
-.fd-oneline-row > .fd-field:is([data-type="integer"], [data-type="float"]) .fd-input { width: 7em; }
-.fd-oneline-row > .fd-field[data-type="monetary"] .fd-input { width: 8.5em; }
-.fd-oneline-row > .fd-field:is([data-type="date"], [data-type="datetime"]) .fd-input { width: 9.5em; }
+.fd-form :is(.fd-oneline-row, .fd-oneline-pair) > .fd-field { max-width: 100%; }
+:is(.fd-oneline-row, .fd-oneline-pair) > .fd-field > * { max-width: 100%; min-width: 0; }
+:is(.fd-oneline-row, .fd-oneline-pair) > .fd-field:is([data-type="many2one"], [data-type="reference"]) .fd-input { width: 15em; }
+:is(.fd-oneline-row, .fd-oneline-pair) > .fd-field:is([data-type="integer"], [data-type="float"]) .fd-input { width: 7em; }
+:is(.fd-oneline-row, .fd-oneline-pair) > .fd-field[data-type="monetary"] .fd-input { width: 8.5em; }
+:is(.fd-oneline-row, .fd-oneline-pair) > .fd-field:is([data-type="date"], [data-type="datetime"]) .fd-input { width: 9.5em; }
 /* A date and time needs room for "dd.mm.yyyy, --:--" and its calendar button, or its minutes are cut. */
-.fd-oneline-row > .fd-field[data-type="datetime"] .fd-input { width: 14em; }
+:is(.fd-oneline-row, .fd-oneline-pair) > .fd-field[data-type="datetime"] .fd-input { width: 14em; }
 /* A link or a date fills what its line leaves, as Flectra's o_row: as wide as the boxes above and below it,
    a button or words beside it moving to a line of their own where they do not fit. */
-.fd-form .fd-oneline-row > .fd-field:is([data-type="many2one"], [data-type="reference"], [data-type="date"], [data-type="datetime"]) { flex: 1 1 auto; }
-.fd-form .fd-oneline-row > .fd-field:is([data-type="many2one"], [data-type="reference"], [data-type="date"], [data-type="datetime"]) > :not(.fd-label) { flex: 1 1 auto; }
-.fd-oneline-row > .fd-field:is([data-type="many2one"], [data-type="reference"], [data-type="date"], [data-type="datetime"]) .fd-input { width: 100%; min-width: min(100%, var(--fd-oneline-min, 9.5em)); }
-.fd-oneline-row > .fd-field[data-type="datetime"] { --fd-oneline-min: 14em; }
+.fd-form :is(.fd-oneline-row, .fd-oneline-pair) > .fd-field:is([data-type="many2one"], [data-type="reference"], [data-type="date"], [data-type="datetime"]) { flex: 1 1 auto; }
+.fd-form :is(.fd-oneline-row, .fd-oneline-pair) > .fd-field:is([data-type="many2one"], [data-type="reference"], [data-type="date"], [data-type="datetime"]) > :not(.fd-label) { flex: 1 1 auto; }
+:is(.fd-oneline-row, .fd-oneline-pair) > .fd-field:is([data-type="many2one"], [data-type="reference"], [data-type="date"], [data-type="datetime"]) .fd-input { width: 100%; min-width: min(100%, var(--fd-oneline-min, 9.5em)); }
+:is(.fd-oneline-row, .fd-oneline-pair) > .fd-field[data-type="datetime"] { --fd-oneline-min: 14em; }
 .fd-form .fd-oneline-words { margin: 0; padding: 0; border: 0; background: none; color: var(--fd-text); }
 .fd-form .fd-oneline-words.fd-text-note { color: var(--fd-muted); font-size: 12.5px; }
 /* A line with no title of its own takes the whole row, its fields' labels beside them where they ask. */
 .fd-form .fd-oneline:not(:has(> .fd-label)) > .fd-oneline-row { grid-column: 1 / -1 !important; }
-.fd-oneline-row > .fd-button-link { padding-inline: 0; min-height: 0; }
-.fd-oneline-row > .fd-field > .fd-read-text { min-height: 0; padding-block: 0; }
+:is(.fd-oneline-row, .fd-oneline-pair) > .fd-button-link { padding-inline: 0; min-height: 0; }
+:is(.fd-oneline-row, .fd-oneline-pair) > .fd-field > .fd-read-text { min-height: 0; padding-block: 0; }
 /* Words over a sheet's title, as Flectra's label over its h1. */
 .fd-title-label { font-size: 12.5px; font-weight: 600; color: var(--fd-muted); }
 `;

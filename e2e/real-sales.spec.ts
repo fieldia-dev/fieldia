@@ -164,6 +164,11 @@ for (const variant of VARIANTS) {
       // Other Info: the salesperson with initials, the tags in their colours, the prepayment as a per cent on Online payment's row.
       await tab(page, 'Other Info').click();
       await expect(node(page, 'online-payment-row').locator('[data-node="f-prepayment"] input')).toHaveValue(/30/);
+      // "Expected:" and its date on one line, wherever the row wraps: words never parted from their value.
+      const expectedWords = await node(page, 't-expected').boundingBox();
+      const expectedValue = await node(page, 'f-expected-date').locator('input').boundingBox();
+      expect(Math.abs(expectedWords!.y + expectedWords!.height / 2 - (expectedValue!.y + expectedValue!.height / 2))).toBeLessThan(4);
+      expect(expectedValue!.x).toBeGreaterThan(expectedWords!.x + expectedWords!.width - 1);
       if (variant === 'plain') await screen(page, 'real-sale-order-other-info');
 
       // A confirmed order: quantities to invoice in the info tone; Delivered and Invoiced shown, as the order is a sale.

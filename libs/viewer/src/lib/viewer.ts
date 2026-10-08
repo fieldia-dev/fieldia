@@ -603,7 +603,10 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     function inlineItem(node: SectionNode, place: Place): HTMLElement {
       const line = el('div', { class: 'fd-field fd-oneline', 'data-node': node.id, 'data-style': 'inline', 'data-labels': place.labels });
       spans(line, node.colspan);
-      const row = el('div', { class: 'fd-oneline-row', role: 'group' }, ...node.children.map((child) => item(child, { columns: 1, onPage: false, inline: true })));
+      const row = el('div', { class: 'fd-oneline-row', role: 'group' }, ...onelineRuns(node.children).map((run) => {
+        const parts = run.map((child) => item(child, { columns: 1, onPage: false, inline: true }));
+        return parts.length === 1 ? parts[0] : el('span', { class: 'fd-oneline-pair' }, ...parts);
+      }));
       if (node.title) {
         const title = el('span', { class: 'fd-label', id: uid(`${node.id}-label`) }, node.title);
         row.setAttribute('aria-labelledby', title.id);
@@ -1718,4 +1721,27 @@ const NO_VALID_MARK = new Set(['boolean', 'one2many', 'binary', 'image', 'html',
  */
 function keepMarkWithWord(text: string): string {
   return text.replace(/\s+([^\p{L}\p{N}\s]{1,3})$/u, '\u00a0$1');
+}
+
+/**
+ * A one-line row's parts in runs that wrap as one: words before a field
+ * ("Expected:", "to") go with it, and words after it that no field follows
+ * ("attempts") too, as Flectra keeps them in one span; any other part runs
+ * alone.
+ */
+export function onelineRuns(children: readonly LayoutNode[]): LayoutNode[][] {
+  const runs: LayoutNode[][] = [];
+  let i = 0;
+  while (i < children.length) {
+    const run = [children[i]];
+    let field = children[i].type === 'field';
+    if (!field && children[i].type === 'text' && children[i + 1]?.type === 'field') {
+      run.push(children[++i]);
+      field = true;
+    }
+    i++;
+    if (field) while (children[i]?.type === 'text' && children[i + 1]?.type !== 'field') run.push(children[i++]);
+    runs.push(run);
+  }
+  return runs;
 }
