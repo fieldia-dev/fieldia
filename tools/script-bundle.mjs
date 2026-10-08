@@ -189,8 +189,10 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // What using the real pages showed: a line that follows the pointer as it is dragged, lists that float over the page
 // where no table or cell clips them, tables' columns sized by their values and cells quiet until worked in — add 4.4, to 426.8.
 // The form fields' defects mended (a (?) that only shows its help, kept on screen; values cut with an ellipsis and shown
-// whole on hover; links and dates filling their one-line rows; a number edited without grouping) — add 2.4, to 429.2.
-const BUDGET_KB = 429.5;
+// whole on hover; links and dates filling their one-line rows; a number edited without grouping) — add 2.4, to 429.2;
+// the grid's editors as wide as their values, headers wrapping, an empty grid saying so, and a floating list that
+// follows its control however the page moves it — 0.6 more, to 429.8.
+const BUDGET_KB = 430.2;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time

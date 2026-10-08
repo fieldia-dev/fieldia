@@ -3,7 +3,8 @@
  * the page's top layer where the browser has one, so no scrolling table, grid
  * cell or folded part clips it. At least as wide as its control, above it when
  * there is more room there, kept on the screen, and following the control
- * while the page scrolls.
+ * wherever it goes while the list is open: a scroll, a resize, or the page
+ * moving it some other way (a line added above, a screenshot's resize).
  */
 export function floatUnder(anchor: HTMLElement, box: HTMLElement) {
   const doc = anchor.ownerDocument;
@@ -11,6 +12,9 @@ export function floatUnder(anchor: HTMLElement, box: HTMLElement) {
   const topLayer = typeof box.showPopover === 'function';
   if (topLayer) box.setAttribute('popover', 'manual');
   let shown = false;
+  /** Where the control was when the list was last placed, watched each frame while it is open. */
+  let placedAt = '';
+  let watching = 0;
 
   function place() {
     const at = anchor.getBoundingClientRect();
@@ -26,6 +30,7 @@ export function floatUnder(anchor: HTMLElement, box: HTMLElement) {
       maxWidth: `${Math.max(at.width, Math.min(448, width - 16))}px`,
       maxHeight: `${Math.max(96, Math.min(240, up ? above : below))}px`,
     });
+    placedAt = `${at.left},${at.top},${at.width},${width},${height}`;
     const own = box.offsetWidth;
     const rtl = win?.getComputedStyle(anchor).direction === 'rtl';
     const left = Math.max(8, Math.min(rtl ? at.right - own : at.left, width - own - 8));
@@ -36,6 +41,13 @@ export function floatUnder(anchor: HTMLElement, box: HTMLElement) {
     if (!shown) return;
     if (!anchor.isConnected) return floating.hide();
     place();
+  };
+  // Moved by anything but a scroll or a resize, it is placed again on the next frame.
+  const watch = () => {
+    if (!shown) return;
+    const at = anchor.getBoundingClientRect();
+    if (`${at.left},${at.top},${at.width},${doc.documentElement.clientWidth},${doc.documentElement.clientHeight}` !== placedAt) follow();
+    watching = win?.requestAnimationFrame(watch) ?? 0;
   };
 
   const floating = {
@@ -48,6 +60,7 @@ export function floatUnder(anchor: HTMLElement, box: HTMLElement) {
         win?.addEventListener('resize', follow);
       }
       shown = true;
+      if (!watching && win?.requestAnimationFrame) watching = win.requestAnimationFrame(watch);
     },
     /** Placed again: its words changed, and with them its height. */
     place: follow,
@@ -58,6 +71,8 @@ export function floatUnder(anchor: HTMLElement, box: HTMLElement) {
         doc.removeEventListener('scroll', follow, true);
         win?.removeEventListener('resize', follow);
       }
+      if (watching) win?.cancelAnimationFrame(watching);
+      watching = 0;
       shown = false;
     },
   };
