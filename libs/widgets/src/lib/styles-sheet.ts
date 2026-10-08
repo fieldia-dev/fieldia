@@ -108,6 +108,14 @@ export const SHEET_CSS = /* css */ `
 .fd-oneline-row > .fd-field:is([data-type="integer"], [data-type="float"]) .fd-input { width: 7em; }
 .fd-oneline-row > .fd-field[data-type="monetary"] .fd-input { width: 8.5em; }
 .fd-oneline-row > .fd-field:is([data-type="date"], [data-type="datetime"]) .fd-input { width: 9.5em; }
+/* A date and time needs room for "dd.mm.yyyy, --:--" and its calendar button, or its minutes are cut. */
+.fd-oneline-row > .fd-field[data-type="datetime"] .fd-input { width: 14em; }
+/* A link or a date fills what its line leaves, as Flectra's o_row: as wide as the boxes above and below it,
+   a button or words beside it moving to a line of their own where they do not fit. */
+.fd-form .fd-oneline-row > .fd-field:is([data-type="many2one"], [data-type="reference"], [data-type="date"], [data-type="datetime"]) { flex: 1 1 auto; }
+.fd-form .fd-oneline-row > .fd-field:is([data-type="many2one"], [data-type="reference"], [data-type="date"], [data-type="datetime"]) > :not(.fd-label) { flex: 1 1 auto; }
+.fd-oneline-row > .fd-field:is([data-type="many2one"], [data-type="reference"], [data-type="date"], [data-type="datetime"]) .fd-input { width: 100%; min-width: min(100%, var(--fd-oneline-min, 9.5em)); }
+.fd-oneline-row > .fd-field[data-type="datetime"] { --fd-oneline-min: 14em; }
 .fd-form .fd-oneline-words { margin: 0; padding: 0; border: 0; background: none; color: var(--fd-text); }
 .fd-form .fd-oneline-words.fd-text-note { color: var(--fd-muted); font-size: 12.5px; }
 /* A line with no title of its own takes the whole row, its fields' labels beside them where they ask. */
