@@ -14,6 +14,11 @@ export const SHEET_CSS = /* css */ `
 /* A record's words read their own way — English on a page read right to left keeps its order — lined up with the page. */
 .fd-read-text { unicode-bidi: plaintext; text-align: left; }
 [dir="rtl"] .fd-read-text { text-align: right; }
+/* Its words start where a box's words do, inside the box's padding (and an outlined box's border). */
+.fd-read-text { padding-inline: var(--fd-pad-x); }
+.fd-form[data-fd-skin="outlined"] .fd-read-text { padding-inline: calc(var(--fd-pad-x) + 1px); }
+/* A sheet's title stays flush with the labels under it, as it was drawn. */
+.fd-form :is(.fd-title, .fd-title-line) .fd-read-text { padding-inline: 0; }
 .fd-read-text a, .fd-read-link { color: var(--fd-accent); text-decoration: none; }
 .fd-read-link { border: none; background: none; padding: 0; font: inherit; cursor: pointer; text-align: start; }
 .fd-read-text a:hover, .fd-read-link:hover { text-decoration: underline; }
