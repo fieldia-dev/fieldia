@@ -67,6 +67,21 @@ describe('many2one', () => {
     expect((el.querySelector('[role=listbox]') as HTMLElement).hidden).toBe(true);
   });
 
+  it('opens its list again when its box is clicked after Escape closed it, the focus never having left', async () => {
+    const { el } = mount('n-country');
+    const input = el.querySelector('input[role=combobox]') as HTMLInputElement;
+    const list = el.querySelector('[role=listbox]') as HTMLElement;
+    input.focus();
+    await settle();
+    expect(list.hidden).toBe(false);
+    key(input, 'Escape');
+    expect(list.hidden).toBe(true);
+    input.click();
+    await settle();
+    expect(list.hidden).toBe(false);
+    expect(options(el)).toEqual(expect.arrayContaining(['Egypt', 'Jordan', 'Japan']));
+  });
+
   it('shows the chosen record and finds others as you type', async () => {
     const { form, el } = mount('n-country');
     form.setValue('country_id', { id: 1, label: 'Egypt' });

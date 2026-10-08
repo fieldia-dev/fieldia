@@ -177,6 +177,10 @@ function combobox(options: {
   input.addEventListener('focus', () => {
     if (!readonly) lookUp('');
   });
+  // A click on the box opens its list, as a focus does: after Escape closed it, the focus has not left to come back.
+  input.addEventListener('click', () => {
+    if (!readonly && list.hidden && doc.activeElement === input) lookUp(editing ? input.value : '');
+  });
   input.addEventListener('keydown', (event) => {
     if (readonly) return;
     switch (event.key) {
