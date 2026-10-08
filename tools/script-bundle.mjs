@@ -194,8 +194,9 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // follows its control however the page moves it — 0.6 more, to 429.8;
 // the live real pages swept again (a link's editor wide enough to read, words kept with their value, a line's
 // buttons held in sight, words in a number box said at once, a link reopened by a click, numbers' columns as wide
-// as their values) — 2 more, to 431.8.
-const BUDGET_KB = 432.2;
+// as their values) — 2 more, to 431.8; the merged demo records' money spaced from its symbol, properties laid out
+// as the sheet's fields — 0.7 more, to 432.5.
+const BUDGET_KB = 432.9;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
