@@ -441,6 +441,19 @@ class ChooserHeader implements IHeaderComp {
   }
 }
 
+/** What an empty grid says in its body: the page's words (`emptyLabel`), or a short line of its own. */
+class EmptyOverlay {
+  private line!: HTMLElement;
+  init(params: { words: string }) {
+    this.line = document.createElement('span');
+    this.line.className = 'fd-help fd-grid-empty';
+    this.line.textContent = params.words;
+  }
+  getGui() {
+    return this.line;
+  }
+}
+
 /** A cell being edited: the field's own Fieldia widget, writing straight into its line. */
 class FieldiaCellEditor implements ICellEditorComp<Line> {
   private box!: HTMLElement;
@@ -653,9 +666,9 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
 }
 
 /**
- * A box's text selected so typing replaces it, the caret at its start: a
- * browser scrolls a long value to the caret, and its start is what reads.
- * (A date's or a number's own input has no text selection to set.)
+ * A box's text selected so typing replaces it, shown from its start: a
+ * browser scrolls a long value to its end as it is selected, and its start is
+ * what reads. (A date's own input has no text selection to set.)
  */
 function selectFromStart(input: HTMLInputElement) {
   try {
@@ -663,6 +676,7 @@ function selectFromStart(input: HTMLInputElement) {
   } catch {
     input.select();
   }
+  input.scrollLeft = 0;
 }
 
 // ---- the widget -------------------------------------------------------------------
@@ -1177,6 +1191,11 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     suppressKeyboardEvent: keys,
   });
 
+  // The buttons' words and the empty table's, as the plain table takes them from the node's options.
+  const words = (key: string) => {
+    const said = node.options?.[key];
+    return typeof said === 'string' && said.trim() ? said : null;
+  };
   const api: GridApi<Line> = createGrid<Line>(
     host,
     {
@@ -1214,8 +1233,9 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       // Lines have few columns: all of them are drawn.
       suppressColumnVirtualisation: true,
       readOnlyEdit: true,
-      // An empty table shows its Add a line button below, not a message inside.
-      suppressNoRowsOverlay: true,
+      // An empty table says so in a short line where its rows would be, never a blank row.
+      noRowsOverlayComponent: EmptyOverlay,
+      noRowsOverlayComponentParams: { words: words('emptyLabel') ?? labels.noLines },
       singleClickEdit: true,
       // A page may ask for a whole line to open at once.
       editType: node.editMode === 'row' ? 'fullRow' : undefined,
@@ -1376,11 +1396,6 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     button.textContent = `+ ${text}`;
     button.addEventListener('click', () => addAndEdit(values));
     adds.append(button);
-  };
-  // The buttons' words, as the plain table takes them from the node's options.
-  const words = (key: string) => {
-    const said = node.options?.[key];
-    return typeof said === 'string' && said.trim() ? said : null;
   };
   addButton(words('addLabel') ?? labels.addLine, {}, 'line');
   if (kinds) {

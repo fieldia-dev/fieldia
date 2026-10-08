@@ -11,6 +11,7 @@ export const de: WidgetLabels = {
   addNote: 'Notiz hinzufügen',
   deleteLine: 'Zeile löschen',
   lineN: 'Zeile {n}',
+  noLines: 'Noch keine Zeilen',
   total: 'Summe',
   lineProblem: 'Zeile {n}: {message}',
   moreProblems: 'und {n} weitere',

@@ -11,6 +11,7 @@ export const ar: WidgetLabels = {
   addNote: 'إضافة ملاحظة',
   deleteLine: 'حذف السطر',
   lineN: 'السطر {n}',
+  noLines: 'لا توجد سطور بعد',
   total: 'الإجمالي',
   lineProblem: 'السطر {n}: {message}',
   moreProblems: 'و{n} أخرى',

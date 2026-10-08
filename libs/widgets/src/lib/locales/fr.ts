@@ -11,6 +11,7 @@ export const fr: WidgetLabels = {
   addNote: 'Ajouter une note',
   deleteLine: 'Supprimer la ligne',
   lineN: 'ligne {n}',
+  noLines: 'Aucune ligne pour l’instant',
   total: 'Total',
   lineProblem: 'Ligne {n} : {message}',
   moreProblems: 'et {n} de plus',

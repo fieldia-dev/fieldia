@@ -13,6 +13,8 @@ export interface WidgetLabels {
   deleteLine: string;
   /** A line of a table, as a person is told of it: `{n}` counts from 1. */
   lineN: string;
+  /** Said in a table with no lines yet, unless the page has words of its own (`emptyLabel`). */
+  noLines: string;
   /** Heads the row that adds up a table's number columns. */
   total: string;
   /** A problem on one line of a table, under the table. `{n}` counts from 1. */
@@ -187,6 +189,7 @@ const en: WidgetLabels = {
   addNote: 'Add a note',
   deleteLine: 'Delete line',
   lineN: 'line {n}',
+  noLines: 'No lines yet',
   total: 'Total',
   lineProblem: 'Line {n}: {message}',
   moreProblems: 'and {n} more',

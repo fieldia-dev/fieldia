@@ -321,15 +321,23 @@ describe('editing a whole line', () => {
 });
 
 describe('an empty grid', () => {
-  it('shows its columns and no message, and its first line is added from the button and edited at once', async () => {
+  it('shows its columns and a short line saying it has none, and its first line is added from the button and edited at once', async () => {
     const { box, form, api } = await mount(order, []);
     expect(box.querySelectorAll('.ag-header-cell').length).toBeGreaterThan(0);
     expect(box.querySelectorAll('.ag-row').length).toBe(0);
-    expect(box.querySelector('.ag-overlay-no-rows-wrapper, .ag-overlay')?.textContent?.trim() ?? '').toBe('');
+    expect(box.querySelector('.fd-grid-empty')?.textContent).toBe('No lines yet');
     (box.querySelector('[data-add="line"]') as HTMLButtonElement).click();
     await frames();
     expect(formLines(form)).toHaveLength(1);
+    expect(box.querySelector('.fd-grid-empty')).toBeNull();
     expect(api?.getEditingCells().map((c) => [c.rowIndex, c.column?.getColId()])).toEqual([[0, 'product_id']]);
+  });
+
+  it('says the page’s own words while empty, as the plain table does', async () => {
+    const worded = JSON.parse(JSON.stringify(order)) as Page & { layout: any };
+    worded.layout.children[0].children[1].options = { emptyLabel: 'No products ordered yet.' };
+    const { box } = await mount(worded, []);
+    expect(box.querySelector('.fd-grid-empty')?.textContent).toBe('No products ordered yet.');
   });
 });
 
@@ -622,6 +630,7 @@ describe('a cell’s editor', () => {
     expect([input.selectionStart, input.selectionEnd]).toEqual([0, input.value.length]);
     // Selected backwards, the caret's end is the start: the browser scrolls there, not to the value's end.
     expect(input.selectionDirection).toBe('backward');
+    expect(input.scrollLeft).toBe(0);
   });
 
   it('gives a value too long for its cell the whole cell, padding and all', async () => {
