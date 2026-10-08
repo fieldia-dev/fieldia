@@ -30,6 +30,15 @@ pre.code:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 .top-nav { display: flex; gap: 20px; margin-inline-start: auto; }
 .top-nav a { color: var(--muted); text-decoration: none; font-size: 15px; }
 .top-nav a:hover, .top-nav a[aria-current] { color: var(--ink); }
+/* A phone's bar keeps every link: closer together, then the brand's word only for screen readers, its mark still home. */
+@media (max-width: 480px) {
+  .top { gap: 14px; }
+  .top-nav { gap: 13px; }
+  .top-nav a { font-size: 14.5px; }
+}
+@media (max-width: 420px) {
+  .brand-word { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
 
 /* ---- front page ---- */
 main#main { display: block; }

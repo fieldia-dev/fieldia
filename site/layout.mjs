@@ -45,12 +45,13 @@ ${head}</head>
 <body>
 <a class="skip" href="#main">Skip to the content</a>
 <header class="top">
-  <a class="brand" href="/"><span class="mark" aria-hidden="true"></span>Fieldia</a>
+  <a class="brand" href="/"><span class="mark" aria-hidden="true"></span><span class="brand-word">Fieldia</span></a>
   <nav class="top-nav" aria-label="Site">
     <a href="/start/"${docs ? ' aria-current="true"' : ''}>Docs</a>
     <a href="/demos/"${path === '/demos/' ? ' aria-current="page"' : ''}>Demos</a>
     <a href="/designer/"${path === '/designer/' ? ' aria-current="page"' : ''}>Designer</a>
     <a href="https://github.com/fieldia-dev/fieldia">GitHub</a>
+    <a href="https://www.npmjs.com/org/fieldia">npm</a>
   </nav>
 </header>
 ${
