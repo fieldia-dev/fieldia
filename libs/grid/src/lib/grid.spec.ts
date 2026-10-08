@@ -512,6 +512,27 @@ describe('the grid with sections and notes', () => {
     expect(formLines(form)[4].values['name']).toBe('Lighting');
   });
 
+  it('holds a line’s handle at its start and its buttons at its end, in sight however far the lines scroll sideways', async () => {
+    const ordered = JSON.parse(JSON.stringify(sectioned)) as Page & { fields: Record<string, any> };
+    ordered.fields['line_ids'].sequenceField = 'sequence';
+    ordered.fields['line_ids'].fields.sequence = { type: 'integer', label: 'Sequence' };
+    const { api } = await mount(ordered, withKinds.map((line, i) => ({ ...line, values: { ...line.values, sequence: (i + 1) * 10 } })));
+    expect(api?.getColumnDef('__handle')?.pinned).toBe('left');
+    expect(api?.getColumnDef('__delete')?.pinned).toBe('right');
+    // Right to left, the line starts at the right.
+    handle?.destroy();
+    const rtl = { ...ordered, language: 'ar' } as Page;
+    const host = document.createElement('div');
+    document.body.append(host);
+    const dataSource = createMemoryDataSource({ records: { 'sale.order': { 1: { name: 'S00118', line_ids: withKinds } } } });
+    handle = mountViewer(host, { page: rtl, dataSource, recordId: 1, widgets: gridWidgets, locale: 'ar' });
+    await handle.form.settled();
+    await frames();
+    const mirrored = gridApiOf(host.querySelector('[data-node="f-lines"] .fd-grid-lines') as HTMLElement);
+    expect(mirrored?.getColumnDef('__handle')?.pinned).toBe('right');
+    expect(mirrored?.getColumnDef('__delete')?.pinned).toBe('left');
+  });
+
   it('leads each line with a drag handle when the lines keep an order, and never shows that field', async () => {
     const ordered = JSON.parse(JSON.stringify(sectioned)) as Page & { fields: Record<string, any> };
     ordered.fields['line_ids'].sequenceField = 'sequence';

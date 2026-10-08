@@ -6,6 +6,12 @@ export const GRID_CSS = /* css */ `
 .fd-grid-lines .ag-grid-scrolling-rows.ag-layout-auto-height { min-height: 40px; }
 /* AG Grid keeps room for a sideways scroll bar it has marked invisible; give the room back until it is needed. */
 .fd-grid-lines .ag-body-horizontal-scroll.ag-invisible { display: none; }
+/* When the lines scroll sideways the bar sits under them, never over the last line (AG Grid lays it over, as if no
+   browser drew a bar there: Chrome on Windows and Linux does, and cut a note's last words in half). */
+.fd-grid-lines .ag-body-horizontal-scroll { position: relative; }
+/* A line's handle and buttons are held at its ends without a rule beside them: the lines read as one table. */
+/* AG Grid's own rule outranks any selector of ours, so this one insists. */
+.fd-grid-lines :is(.ag-grid-container-wrapper, .ag-pinned-left-header, .ag-pinned-right-header, .ag-cell-last-left-pinned, .ag-cell-first-right-pinned) { border-inline-color: transparent !important; }
 /* Lists that open from a cell leave the table: the body keeps the rounded corners instead of the frame. */
 .fd-grid-lines .ag-root-wrapper { overflow: visible; }
 .fd-grid-lines .ag-root-wrapper-body { overflow: hidden; border-radius: inherit; }

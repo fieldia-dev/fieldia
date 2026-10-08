@@ -1088,6 +1088,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       sortable: false,
       suppressMovable: true,
       lockPosition: lineStart,
+      // Held in sight at the line's start, however far the lines scroll sideways.
+      pinned: lineStart,
       suppressKeyboardEvent: keys,
     });
   }
@@ -1126,6 +1128,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       sortable: false,
       suppressMovable: true,
       lockPosition: lineStart,
+      // Held in sight at the line's start, however far the lines scroll sideways.
+      pinned: lineStart,
       cellRendererSelector: (p) => (p.node.rowPinned || kindOf(p.data) ? undefined : { component: PickRenderer, params: { picking } }),
       suppressKeyboardEvent: keys,
     });
@@ -1156,6 +1160,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       sortable: false,
       suppressMovable: true,
       lockPosition: lineEnd,
+      pinned: lineEnd,
       cellRendererSelector: (p) => (p.node.rowPinned || kindOf(p.data) ? undefined : { component: CopyRenderer, params: { copy: copyLine, label: (n: number) => fill(labels.copy, { name: fill(labels.lineN, { n }) }) } }),
       suppressKeyboardEvent: keys,
     });
@@ -1175,6 +1180,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       sortable: false,
       suppressMovable: true,
       lockPosition: lineEnd,
+      pinned: lineEnd,
       cellRendererSelector: (p) =>
         p.node.rowPinned || kindOf(p.data)
           ? undefined
@@ -1194,6 +1200,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
       sortable: false,
       suppressMovable: true,
       lockPosition: lineEnd,
+      pinned: lineEnd,
       cellRendererSelector: (p) => (p.node.rowPinned || kindOf(p.data) ? undefined : { component: OpenRenderer, params: { open: openLine, label: labels.openLine } }),
       suppressKeyboardEvent: keys,
     });
@@ -1203,6 +1210,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     colId: '__delete',
     headerName: '',
     lockPosition: lineEnd,
+    // A line's buttons held in sight at its end, however far the lines scroll sideways.
+    pinned: lineEnd,
     ...(optionalIds.length ? { headerComponent: ChooserHeader, headerComponentParams: { chooser } } : {}),
     width: 44,
     minWidth: 44,

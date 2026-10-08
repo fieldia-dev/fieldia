@@ -159,6 +159,17 @@ for (const variant of VARIANTS) {
       await expect(page.getByRole('button', { name: 'Confirm', exact: true })).toHaveAttribute('title', /Alt\+Q/i);
       await expect(node(page, 'f-customer')).toContainText('17 El Merghany Street');
       await expect(node(page, 'f-tax-totals')).toContainText('VAT 14%');
+      // Lines wider than their box scroll sideways, but a line's handle and its ↗ and × stay in sight,
+      // and the bar under them never covers the last line (a note's words were cut in half).
+      const lines = await grid(page, 'f-invoice-lines').locator('.ag-root-wrapper').boundingBox();
+      for (const col of ['__handle', '__open', '__delete']) {
+        const box = await cell(page, 'f-invoice-lines', 1, col).boundingBox();
+        expect(box!.x).toBeGreaterThanOrEqual(lines!.x - 1);
+        expect(box!.x + box!.width).toBeLessThanOrEqual(lines!.x + lines!.width + 1);
+      }
+      const last = await grid(page, 'f-invoice-lines').locator('.ag-row.ag-row-last').last().boundingBox();
+      const bar = await grid(page, 'f-invoice-lines').locator('.ag-body-horizontal-scroll').boundingBox();
+      if (bar && bar.height > 0) expect(last!.y + last!.height).toBeLessThanOrEqual(bar.y + 1);
       // Preview: the customer's own page, in a new tab.
       const [portal] = await Promise.all([context.waitForEvent('page'), page.getByRole('button', { name: 'Preview', exact: true }).click()]);
       expect(portal.url()).toContain('/my/invoices/4101');
