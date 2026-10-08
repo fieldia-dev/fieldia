@@ -14,6 +14,8 @@ export const INPUTS_CSS = /* css */ `
 .fd-count-near { color: var(--fd-warning); font-weight: 600; }
 /* A unit inside the number's box, at its start or end; the box keeps room for it. */
 .fd-number:not(.fd-currency-picked) { position: relative; display: block; }
+/* As tall as its box, not its row: a label on two lines would stretch it, and the unit would sit below the value. */
+.fd-field > .fd-number:not(.fd-currency-picked) { align-self: start; }
 .fd-number > .fd-unit { position: absolute; inset-block: 0; display: flex; align-items: center; pointer-events: none; color: var(--fd-muted); }
 .fd-number > .fd-unit:first-child { inset-inline-start: var(--fd-pad-x); }
 .fd-number > .fd-unit:last-child { inset-inline-end: var(--fd-pad-x); }
