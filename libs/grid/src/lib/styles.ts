@@ -8,7 +8,8 @@ export const GRID_CSS = /* css */ `
 .fd-grid-lines .ag-body-horizontal-scroll.ag-invisible { display: none; }
 /* When the lines scroll sideways the bar sits under them, never over the last line (AG Grid lays it over, as if no
    browser drew a bar there: Chrome on Windows and Linux does, and cut a note's last words in half). */
-.fd-grid-lines .ag-body-horizontal-scroll { position: relative; }
+/* In the flow, AG Grid's own offset (above a totals row, for a bar it lays over) would lift it over the totals: dropped. */
+.fd-grid-lines .ag-body-horizontal-scroll { position: relative; inset-block: auto !important; }
 /* A line's handle and buttons are held at its ends without a rule beside them: the lines read as one table. */
 /* AG Grid's own rule outranks any selector of ours, so this one insists. */
 .fd-grid-lines :is(.ag-grid-container-wrapper, .ag-pinned-left-header, .ag-pinned-right-header, .ag-cell-last-left-pinned, .ag-cell-first-right-pinned) { border-inline-color: transparent !important; }

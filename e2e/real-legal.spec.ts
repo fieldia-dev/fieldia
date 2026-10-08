@@ -530,3 +530,20 @@ for (const variant of VARIANTS) {
     });
   });
 }
+
+test('lines wider than their box: the scroll bar sits under the last line and the totals, never over them', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  const { problems } = await open(page, 'plain', 'page=real-legal-case&record=42&skin=underline');
+  await page.getByRole('tab', { name: 'Expenses', exact: true }).click();
+  const lines = page.locator('[role="tabpanel"]:visible .ag-root-wrapper').first();
+  await expect(lines.locator('.ag-row-pinned').first()).toBeVisible();
+  // Its columns sized to their values, the lines scroll sideways: the bar shows.
+  await expect(lines.locator('.ag-body-horizontal-scroll')).not.toHaveClass(/ag-invisible/);
+  const bar = (await lines.locator('.ag-body-horizontal-scroll').boundingBox())!;
+  const total = (await lines.locator('.ag-row-pinned').first().boundingBox())!;
+  const last = (await lines.locator('.ag-row.ag-row-last:not(.ag-row-pinned)').first().boundingBox())!;
+  expect(bar.height).toBeGreaterThan(0);
+  expect(bar.y).toBeGreaterThanOrEqual(total.y + total.height - 1);
+  expect(bar.y).toBeGreaterThanOrEqual(last.y + last.height - 1);
+  expect(problems).toEqual([]);
+});
