@@ -208,10 +208,10 @@ describe('the grid’s money in its record’s currency', () => {
     const grid = host.querySelector('.fd-grid-lines') as HTMLElement;
     // The line's cell, then the total's under it.
     const prices = () => [...grid.querySelectorAll('.ag-cell[col-id="price"]')].map((c) => c.textContent);
-    expect(prices()).toEqual(['€1,200.00', '€1,200.00']);
+    expect(prices()).toEqual(['€\u00a01,200.00', '€\u00a01,200.00']);
     handle.form.setValue('currency_id', { id: 2, label: 'USD' });
     await frames();
-    expect(prices()).toEqual(['$1,200.00', '$1,200.00']);
+    expect(prices()).toEqual(['$\u00a01,200.00', '$\u00a01,200.00']);
     // Opened in its dialog, which has no record round it, the line's money keeps the record's currency.
     (grid.querySelector('button[aria-label="Open line"]') as HTMLButtonElement).click();
     await frames();

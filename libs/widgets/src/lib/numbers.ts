@@ -20,13 +20,15 @@ function format(locale: Locale, decimals: number): Intl.NumberFormat {
 
 /**
  * An amount with its currency, as the page's language writes money: the
- * symbol before or after, grouped, in Latin digits ("E£425,000.00",
+ * symbol before or after, grouped, in Latin digits ("E£ 425,000.00",
  * "1.850.000,50 €"). A currency named by words that are no code is written
  * before the amount as it is.
  */
 export function formatMoney(value: number, currency: string, decimals: number, locale: Locale = 'en'): string {
   try {
-    return new Intl.NumberFormat(locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol', numberingSystem: 'latn', minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(value);
+    const parts = new Intl.NumberFormat(locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol', numberingSystem: 'latn', minimumFractionDigits: decimals, maximumFractionDigits: decimals }).formatToParts(value);
+    // A symbol written right against the amount is parted from it by a space that never breaks ("E£ 425,000.00"), as Flectra writes money and a box shows it.
+    return parts.map((part, i) => (part.type === 'currency' && /^(integer|minusSign)$/.test(parts[i + 1]?.type ?? '') ? `${part.value}\u00a0` : part.value)).join('');
   } catch {
     return `${currency} ${formatNumber(value, decimals, locale)}`;
   }

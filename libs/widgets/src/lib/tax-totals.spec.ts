@@ -40,10 +40,10 @@ describe('tax totals', () => {
   it('shows the untaxed amount, a line per tax group and the total, in the record’s currency', () => {
     const { el } = mount();
     expect(lines(el)).toEqual([
-      ['Untaxed Amount', 'E£1,000.00'],
-      ['VAT 14%', 'E£140.00'],
-      ['Stamp duty', 'E£50.00'],
-      ['Total', 'E£1,190.00'],
+      ['Untaxed Amount', 'E£\u00a01,000.00'],
+      ['VAT 14%', 'E£\u00a0140.00'],
+      ['Stamp duty', 'E£\u00a050.00'],
+      ['Total', 'E£\u00a01,190.00'],
     ]);
     expect(el.querySelector('tr.fd-tax-total')).not.toBeNull();
   });
@@ -51,7 +51,7 @@ describe('tax totals', () => {
   it('takes a plainer value too: untaxed, groups and total', () => {
     const { el } = mount({}, false, 'en', { untaxed: 200, groups: [{ name: 'VAT', amount: 28 }], total: 228 });
     expect(lines(el).map(([label]) => label)).toEqual(['Untaxed amount', 'VAT', 'Total']);
-    expect(lines(el)[2][1]).toBe('E£228.00');
+    expect(lines(el)[2][1]).toBe('E£\u00a0228.00');
   });
 
   it('lets a draft’s tax amounts be typed, the total following', () => {

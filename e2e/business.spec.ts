@@ -99,16 +99,16 @@ test.describe('the business widgets', () => {
     const totals = node(page, 'f-tax-totals');
     await totals.getByLabel('VAT 14%').fill('25000');
     await totals.getByLabel('VAT 14%').press('Tab');
-    await expect(totals.locator('.fd-tax-total td')).toHaveText('E£210,800.00');
+    await expect(totals.locator('.fd-tax-total td')).toHaveText('E£ 210,800.00');
 
     const payments = node(page, 'f-payments');
-    await payments.getByRole('button', { name: 'Payment of E£40,000.00' }).click();
-    const details = page.getByRole('dialog', { name: 'Payment of E£40,000.00' });
+    await payments.getByRole('button', { name: 'Payment of E£ 40,000.00' }).click();
+    const details = page.getByRole('dialog', { name: 'Payment of E£ 40,000.00' });
     await expect(details).toContainText('Site deposit');
     await page.keyboard.press('Escape');
     await expect(details).toBeHidden();
-    await expect(payments.getByRole('button', { name: 'Payment of E£40,000.00' })).toBeFocused();
-    await expect(payments.locator('.fd-payment-due')).toContainText('E£51,560.00');
+    await expect(payments.getByRole('button', { name: 'Payment of E£ 40,000.00' })).toBeFocused();
+    await expect(payments.locator('.fd-payment-due')).toContainText('E£ 51,560.00');
   });
 
   test('a PDF is shown inline, and a page at an address typed in', async ({ page }) => {

@@ -317,7 +317,7 @@ describe('stat buttons that format what they show', () => {
 
   it('writes a value as its field shows it: money with its currency, hours with their digits, a date, a count grouped', () => {
     const { host } = mount(page(), { values });
-    expect(read(host, 's-money')[0]).toMatch(/^value:E£6,750\.00$|^value:EGP\s?6,750\.00$/);
+    expect(read(host, 's-money')[0]).toMatch(/^value:E£\u00a06,750\.00$|^value:EGP\s?6,750\.00$/);
     expect(read(host, 's-hours')).toEqual(['value:24.80', 'label:Hours']);
     expect(read(host, 's-orders')).toEqual(['value:1,240', 'label:Orders']);
   });

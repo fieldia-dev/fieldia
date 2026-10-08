@@ -123,7 +123,7 @@ for (const variant of VARIANTS) {
       await dialog.locator('button[data-node="create_invoices"]').click();
       await expect(dialog).toBeHidden();
       // Said inside the dialog, and still said once it is gone.
-      await expect(toast(page, 'Draft down payment invoice INV/2026/00118 created for E£36,765.00.')).toBeVisible();
+      await expect(toast(page, 'Draft down payment invoice INV/2026/00118 created for E£ 36,765.00.')).toBeVisible();
       await expect.poll(() => value(page, 'invoice_count')).toBe(2);
       await expect.poll(() => value(page, 'amount_invoiced')).toBe(66765);
       // The order gets a Down Payments section and the down payment's line.

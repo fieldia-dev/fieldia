@@ -12,16 +12,17 @@ const plain = (text: string) => text.replace(/[\u200e\u200f\u00a0\u202f]/g, (c) 
 
 describe('an amount at rest', () => {
   it('wears its currency’s symbol where the page’s language writes it, as its box does', () => {
-    expect(displayValue(money({ currency: 'EGP' }), 425000)).toBe('E£425,000.00');
-    expect(displayValue(money({ currency: 'USD' }), 1850000.5)).toBe('$1,850,000.50');
+    // A symbol before the amount is parted from it by a space that never breaks, as Flectra writes money and as a box shows it.
+    expect(displayValue(money({ currency: 'EGP' }), 425000)).toBe('E£\u00a0425,000.00');
+    expect(displayValue(money({ currency: 'USD' }), 1850000.5)).toBe('$\u00a01,850,000.50');
     expect(plain(displayValue(money({ currency: 'EUR' }), 1850000.5, {}, 'de'))).toBe('1.850.000,50 €');
     expect(plain(displayValue(money({ currency: 'EGP' }), 425000, {}, 'ar'))).toBe('425,000.00 E£');
   });
 
   it('keeps the field’s decimals, and a currency named by a record’s words as written', () => {
-    expect(displayValue(money({ currency: 'EGP', digits: [16, 0] } as Partial<LineField>), 425000)).toBe('E£425,000');
+    expect(displayValue(money({ currency: 'EGP', digits: [16, 0] } as Partial<LineField>), 425000)).toBe('E£\u00a0425,000');
     const byRecord = money({ currencyField: 'currency_id' } as Partial<LineField>);
-    expect(displayValue(byRecord, 12, { currency_id: { id: 1, label: 'USD' } })).toBe('$12.00');
+    expect(displayValue(byRecord, 12, { currency_id: { id: 1, label: 'USD' } })).toBe('$\u00a012.00');
     expect(displayValue(byRecord, 12, { currency_id: { id: 2, label: 'Egyptian pound' } })).toBe('Egyptian pound 12.00');
     expect(displayValue(money(), 12)).toBe('12.00');
   });

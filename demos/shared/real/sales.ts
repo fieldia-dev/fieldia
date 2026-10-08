@@ -774,7 +774,7 @@ function contractDates(values: Values): Values {
 /** The invoice the Create invoices dialog made last, as the server would know it. */
 let lastInvoice: { method: string; amount: number; number: string } | null = null;
 let invoiceNumber = 117;
-const egp = (n: number) => `E£${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const egp = (n: number) => `E£\u00a0${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const nowStamp = () => {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');

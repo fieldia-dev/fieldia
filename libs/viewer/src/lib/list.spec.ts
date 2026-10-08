@@ -25,8 +25,8 @@ describe('a list of records', () => {
     const host = await mount();
     expect([...host.querySelectorAll('.fd-list-table thead th')].slice(1).map((th) => th.textContent)).toEqual(['Name', 'Country', 'Status', 'Credit limit']);
     expect(rows(host).map(cells)).toEqual([
-      ['Amira Clinics', 'Egypt', 'Draft', 'E£50,000.00'],
-      ['Nile Traders', 'Egypt', 'Active', 'E£250,000.00'],
+      ['Amira Clinics', 'Egypt', 'Draft', 'E£\u00a050,000.00'],
+      ['Nile Traders', 'Egypt', 'Active', 'E£\u00a0250,000.00'],
     ]);
     expect(host.querySelector('.fd-pager-text')?.textContent).toBe('1–2 / 4');
     expect(button(host, 'Previous page')?.disabled).toBe(true);

@@ -41,14 +41,14 @@ describe('a list of payments', () => {
   it('shows each payment’s date and amount, and the amount still due', () => {
     const { el } = mount();
     expect(rows(el).map((row) => row.querySelector('.fd-payment-date')?.textContent)).toEqual(['Paid on 1 Oct 2026', 'Paid on 5 Oct 2026']);
-    expect(rows(el).map((row) => row.querySelector('.fd-payment-amount')?.textContent)).toEqual(['E£600.00', 'E£400.50']);
-    expect(el.querySelector('.fd-payment-due')?.textContent).toBe('Amount dueE£140.00');
+    expect(rows(el).map((row) => row.querySelector('.fd-payment-amount')?.textContent)).toEqual(['E£\u00a0600.00', 'E£\u00a0400.50']);
+    expect(el.querySelector('.fd-payment-due')?.textContent).toBe('Amount dueE£\u00a0140.00');
   });
 
   it('opens a payment’s details by its button, and closes them with Escape', () => {
     const { el } = mount();
     const info = rows(el)[0].querySelector('button') as HTMLButtonElement;
-    expect(info.getAttribute('aria-label')).toBe('Payment of E£600.00');
+    expect(info.getAttribute('aria-label')).toBe('Payment of E£\u00a0600.00');
     expect(info.getAttribute('aria-expanded')).toBe('false');
     info.click();
     const details = document.querySelector('.fd-payment-details') as HTMLElement;

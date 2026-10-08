@@ -41,15 +41,15 @@ describe('a line’s money in its record’s currency', () => {
   it('shows each line’s amount and the total in the record’s currency, and follows it when it changes', () => {
     const { form, el } = mount('EUR');
     expect(unit(el, 'a')).toBe('€');
-    expect(total(el)).toBe('€1,500.00');
+    expect(total(el)).toBe('€\u00a01,500.00');
     form.setValue('currency_id', { id: 2, label: 'USD' });
     expect(unit(el, 'b')).toBe('$');
-    expect(total(el)).toBe('$1,500.00');
+    expect(total(el)).toBe('$\u00a01,500.00');
   });
 
   it('is written in that currency where a value is only shown, given the record', () => {
     const def = (order.fields['line_ids'] as Extract<Field, { type: 'one2many' }>).fields['price'];
-    expect(displayValue(def, 12, {}, 'en', { currency_id: { id: 1, label: 'EUR' } })).toBe('€12.00');
+    expect(displayValue(def, 12, {}, 'en', { currency_id: { id: 1, label: 'EUR' } })).toBe('€\u00a012.00');
     expect(displayValue(def, 12, {}, 'en')).toBe('12.00');
   });
 });

@@ -286,7 +286,7 @@ test.describe('every field', () => {
     await open(page, variant, 'page=fields&skin=outlined');
     const totals = node(page, 'f-milestones').locator('tfoot td');
     // The first column holds each line's grip.
-    await expect(totals).toHaveText(['', 'Total', '', '76.0', 'E£425,000.00', '', '', '']);
+    await expect(totals).toHaveText(['', 'Total', '', '76.0', 'E£ 425,000.00', '', '', '']);
     const hours = node(page, 'f-milestones').locator('tbody tr').first().getByLabel('Hours');
     await hours.fill('20');
     await expect(totals.nth(3)).toHaveText('84.0');
