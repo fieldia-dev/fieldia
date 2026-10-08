@@ -414,3 +414,18 @@ test('the sales order at a phone’s width: nothing scrolls sideways', async ({ 
   await screen(page, 'real-sale-order-phone');
   expect(problems).toEqual([]);
 });
+
+test('a table wider than its box scrolls under its lines’ grips and buttons, which stay at its ends', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const { problems } = await open(page, 'plain', CONTRACT);
+  await page.getByRole('tab', { name: 'Milestones', exact: true }).click();
+  const scroller = page.locator('[role="tabpanel"]:visible .fd-lines-scroll').first();
+  await scroller.evaluate((el) => (el.scrollLeft = el.scrollWidth));
+  const box = (await scroller.boundingBox())!;
+  const first = page.locator('[role="tabpanel"]:visible .fd-lines-table tbody tr').first();
+  const grip = (await first.locator('td.fd-lines-grip').boundingBox())!;
+  const tools = (await first.locator('td.fd-lines-tools').boundingBox())!;
+  expect(grip.x).toBeGreaterThanOrEqual(box.x - 1);
+  expect(tools.x + tools.width).toBeLessThanOrEqual(box.x + box.width + 1);
+  expect(problems).toEqual([]);
+});
