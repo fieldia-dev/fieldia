@@ -439,13 +439,16 @@ for (const variant of VARIANTS) {
       }
       // Three tables built: Expenses', and Billing's split and flat-fee lines (hidden by its condition).
       await expect(page.locator('.fd-grid-lines')).toHaveCount(3);
+      // Counted once the tabs have settled: a grid just put out of sight measures its wrapping headers once more.
       const frames = await page.evaluate(
         () =>
           new Promise<number>((resolve) => {
-            const ask = window.requestAnimationFrame.bind(window);
-            let asked = 0;
-            window.requestAnimationFrame = (callback) => (asked++, ask(callback));
-            setTimeout(() => resolve(asked), 1000);
+            setTimeout(() => {
+              const ask = window.requestAnimationFrame.bind(window);
+              let asked = 0;
+              window.requestAnimationFrame = (callback) => (asked++, ask(callback));
+              setTimeout(() => resolve(asked), 1000);
+            }, 500);
           })
       );
       // A grid hidden as display: none measured itself every frame for ever: 120 frames a second each.
