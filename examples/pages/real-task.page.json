@@ -693,7 +693,8 @@
                   "date_deadline": { "invisible": "state in ('1_done', '1_canceled')", "tones": [{ "tone": "danger", "when": "date_deadline and date_deadline < today()" }] }
                 },
                 "rowTones": [{ "tone": "muted", "when": "state in ('1_done', '1_canceled')" }],
-                "lineOpens": "record"
+                "lineOpens": "record",
+                "cards": "narrow"
               }
             ]
           },
