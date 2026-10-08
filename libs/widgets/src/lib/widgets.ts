@@ -352,7 +352,8 @@ const selectWidget: WidgetFactory = (context) => {
   const search = node.options?.['search'];
   if (search === true || (search !== false && options(field).length > 15)) return searchWidget(context);
   const choices = shownOptions(options(field), form, name, node);
-  const select = make(document, 'select', { id, class: 'fd-input fd-select' }, make(document, 'option', { value: '' }));
+  const blank = make(document, 'option', { value: '' });
+  const select = make(document, 'select', { id, class: 'fd-input fd-select' }, blank);
   choices.forEach((option, i) => select.append(make(document, 'option', { value: String(i) }, option.label)));
   select.addEventListener('change', () => form.setValue(name, select.value === '' ? null : choices[Number(select.value)].value));
   return {
@@ -361,6 +362,8 @@ const selectWidget: WidgetFactory = (context) => {
     update(state) {
       const index = choices.findIndex((option) => option.value === state.value);
       select.value = index === -1 ? '' : String(index);
+      // A required choice made is never taken back to nothing from its list, as Flectra hides the blank.
+      blank.hidden = state.required && index !== -1;
       if (select.disabled !== state.readonly) select.disabled = state.readonly;
       describe(select, state);
     },

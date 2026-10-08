@@ -357,6 +357,21 @@ describe('choice widgets', () => {
     expect(valueOf(form)).toBe('no');
   });
 
+  it('offers no blank choice once a required dropdown holds a value, as Flectra hides it', () => {
+    const { form, el, refresh } = setup({ type: 'selection', options });
+    const select = q<HTMLSelectElement>(el, 'select');
+    const blank = select.options[0];
+    refresh({ required: true });
+    // Nothing chosen yet: the blank stands for that.
+    expect(blank.hidden).toBe(false);
+    form.setValue('x', 'yes');
+    refresh({ required: true });
+    expect(blank.hidden).toBe(true);
+    // Not required: the blank clears it.
+    refresh({ required: false });
+    expect(blank.hidden).toBe(false);
+  });
+
   it('keeps numeric option values numeric', () => {
     const { form, el } = setup({ type: 'selection', options: [{ value: 1, label: 'One' }, { value: 2, label: 'Two' }] });
     const select = q<HTMLSelectElement>(el, 'select');
