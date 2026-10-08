@@ -24,7 +24,7 @@ export function code(lang, text) {
 /** Inline code. */
 export const c = (text) => `<code>${escape(text)}</code>`;
 
-export function layout({ path, title, description, body, wide = false }) {
+export function layout({ path, title, description, body, wide = false, head = '' }) {
   const docs = DOCS.some((d) => d.path === path);
   const nav = DOCS.map((d) => `<a href="${d.path}"${d.path === path ? ' aria-current="page"' : ''}>${d.title}</a>`).join('');
   const fullTitle = path === '/' ? 'Fieldia — forms and app screens as JSON, for every framework' : `${title} · Fieldia`;
@@ -41,7 +41,7 @@ export function layout({ path, title, description, body, wide = false }) {
 <meta property="og:url" content="https://fieldia.dev${path}">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/site.css">
-</head>
+${head}</head>
 <body>
 <a class="skip" href="#main">Skip to the content</a>
 <header class="top">

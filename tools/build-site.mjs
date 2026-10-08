@@ -38,7 +38,7 @@ writeFileSync(
   layout({ path: '/404', title: 'Not found', description: 'This page does not exist.', body: '<section class="band"><h2>This page does not exist</h2><p><a href="/">Back to the start</a> or <a href="/start/">read the docs</a>.</p></section>' })
 );
 
-for (const file of ['site.css', 'live.js', 'favicon.svg']) cpSync(join(WORKSPACE, 'site', file), join(OUT, file));
+for (const file of ['site.css', 'live.js', 'home.css', 'home.js', 'favicon.svg']) cpSync(join(WORKSPACE, 'site', file), join(OUT, file));
 cpSync(BUNDLE, join(OUT, 'fieldia.js'));
 // Each language's add-on beside it: the live form fetches one when its language is picked.
 for (const locale of ['ar', 'de', 'fr']) cpSync(BUNDLE.replace(/\.js$/, `.${locale}.js`), join(OUT, `fieldia.${locale}.js`));

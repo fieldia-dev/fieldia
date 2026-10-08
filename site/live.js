@@ -2,10 +2,10 @@
 (function () {
   // One page per language, as the docs advise: Fieldia translates its own words, the page author the rest.
   var WORDS = {
-    en: ['Ask for early access', 'Your name', 'Email', 'You build with', 'Something else', 'Which one?', 'How many forms does your app have?'],
-    ar: ['اطلب الوصول المبكر', 'اسمك', 'البريد الإلكتروني', 'تبني باستخدام', 'شيء آخر', 'أيّها؟', 'كم نموذجًا في تطبيقك؟'],
-    de: ['Frühen Zugang anfragen', 'Ihr Name', 'E-Mail', 'Sie entwickeln mit', 'Etwas anderem', 'Womit?', 'Wie viele Formulare hat Ihre App?'],
-    fr: ['Demander un accès anticipé', 'Votre nom', 'E-mail', 'Vous développez avec', 'Autre chose', 'Lequel ?', 'Combien de formulaires compte votre application ?'],
+    en: ['Tell us what you build', 'Your name', 'Email', 'You build with', 'Something else', 'Which one?', 'How many forms does your app have?'],
+    ar: ['أخبرنا بما تبنيه', 'اسمك', 'البريد الإلكتروني', 'تبني باستخدام', 'شيء آخر', 'أيّها؟', 'كم نموذجًا في تطبيقك؟'],
+    de: ['Erzählen Sie uns, was Sie bauen', 'Ihr Name', 'E-Mail', 'Sie entwickeln mit', 'Etwas anderem', 'Womit?', 'Wie viele Formulare hat Ihre App?'],
+    fr: ['Dites-nous ce que vous construisez', 'Votre nom', 'E-mail', 'Vous développez avec', 'Autre chose', 'Lequel ?', 'Combien de formulaires compte votre application ?'],
   };
   function pageIn(locale) {
     var w = WORDS[locale] || WORDS.en;
