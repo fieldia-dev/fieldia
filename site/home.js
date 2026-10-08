@@ -1,5 +1,5 @@
 // fieldia.dev's front page: the stage that writes a page and draws it, the record that runs itself,
-// the framework tabs, the counters and the meter. Every form here is the real viewer (fieldia.js),
+// the framework tabs and the counters. Every form here is the real viewer (fieldia.js),
 // driven through its public API; with reduced motion, each part shows its finished state at once.
 (function () {
   'use strict';
@@ -248,9 +248,7 @@
     });
   });
 
-  // ---- the meter and the counters: they fill and count once seen ----
-  var meter = document.querySelector('.meter');
-  whenSeen(meter, function () { meter.classList.add('on'); }, 0.6);
+  // ---- the counters: they count once seen ----
   Array.prototype.forEach.call(document.querySelectorAll('.count'), function (el) {
     var to = Number(el.dataset.to);
     if (calm || !to) return;

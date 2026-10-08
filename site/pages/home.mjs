@@ -34,7 +34,9 @@ const REAL = [
 const card = ([id, record, name]) =>
   `<a class="reel-card" href="/demos/plain/?page=${id}&amp;record=${record}&amp;skin=underline"><img src="/demos/thumbs/${id}.png" alt="" loading="lazy" width="320" height="200"><span>${name}</span></a>`;
 const half = Math.ceil(REAL.length / 2);
-const row = (items) => `<div class="reel-track">${items.map(card).join('')}</div>`;
+/** A row drawn twice, so it drifts by one copy's width and loops without a seam; the copy is for the eye only. */
+const row = (items) =>
+  `<div class="reel-track"><div class="reel-set">${items.map(card).join('')}</div><div class="reel-set" aria-hidden="true">${items.map(card).join('').replace(/<a /g, '<a tabindex="-1" ')}</div></div>`;
 
 /** The page the hero writes, as it is mounted at its last step; home.js writes it again, line by line. */
 const HERO_JSON = `{
@@ -198,11 +200,7 @@ export class OrderComponent {}`
   <div class="chapter-copy">
     <p class="chapter-no">4 · Proven</p>
     <h2 id="real-h">Nineteen real ERP screens, already drawn by it</h2>
-    <p>We rebuilt nineteen screens of a working ERP, from a two-field dialog to a legal case with fifteen tabs and twelve tables, and counted every feature their original views use. Open any of them: each works in all four frameworks.</p>
-  </div>
-  <div class="meter" role="img" aria-label="851 of 1,010 features done the same way as the original">
-    <div class="meter-bar"><span class="meter-fill" style="--to: 84.3%"></span></div>
-    <p class="meter-words"><b class="count" data-to="851">851</b> of 1,010 features done the same way as the original · 97 another way · 61 are the app’s own · <b>1</b> still to build</p>
+    <p>We rebuilt nineteen screens of a working ERP, from a two-field dialog to a legal case with fifteen tabs and twelve tables, each with its own records, buttons and rules. Open any of them: each works in all four frameworks.</p>
   </div>
   <div class="reel" role="region" aria-label="The nineteen real pages">
     ${row(REAL.slice(0, half))}
