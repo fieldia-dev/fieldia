@@ -204,17 +204,18 @@ describe('number widgets — in the reader’s language', () => {
   };
 
   it.each([
-    ['en', '1,850,000.50', '1850000.5'],
-    ['de', '1.850.000,50', '1850000,5'],
-    ['fr', '1\u202f850\u202f000,50', '1850000,5'],
-    ['ar', '1,850,000.50', '1850000.5'],
-  ] as const)('%s: grouped, with its decimals; entering the box changes nothing, and typing is read back', (locale, shown, typing) => {
+    ['en', '1,850,000.50', '1850000.50', '1850000.5'],
+    ['de', '1.850.000,50', '1850000,50', '1850000,5'],
+    ['fr', '1\u202f850\u202f000,50', '1850000,50', '1850000,5'],
+    ['ar', '1,850,000.50', '1850000.50', '1850000.5'],
+  ] as const)('%s: grouped, with its decimals; entered, the plain number to edit; typing is read back', (locale, shown, editing, typing) => {
     const { form, el } = setup({ type: 'float', digits: [12, 2] }, {}, undefined, locale);
     form.setValue('x', 1850000.5);
     const input = q<HTMLInputElement>(el, 'input');
     expect(input.value).toBe(shown);
     focusIn(input);
-    expect(input.value).toBe(shown);
+    // No grouping marks to type among: a digit typed mid-number never reads "600,1000.00".
+    expect(input.value).toBe(editing);
     type(input, typing);
     expect(valueOf(form)).toBe(1850000.5);
     focusOut(input);
@@ -233,12 +234,13 @@ describe('number widgets — in the reader’s language', () => {
     expect(valueOf(form)).toBe(value);
   });
 
-  it('keeps a whole-text selection as the box is entered, so typing replaces it', () => {
+  it('keeps a whole-text selection as the box is entered and its number unformatted, so typing replaces it', () => {
     const { form, el } = setup({ type: 'monetary', currency: 'EGP' });
     form.setValue('x', 250000);
     const input = q<HTMLInputElement>(el, 'input');
     input.select(); // as a browser does on Tab, and a test tool before it types
     focusIn(input);
+    expect(input.value).toBe('250000.00');
     expect([input.selectionStart, input.selectionEnd]).toEqual([0, input.value.length]);
     type(input, '5000');
     expect(valueOf(form)).toBe(5000);

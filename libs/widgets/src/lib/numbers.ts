@@ -38,6 +38,15 @@ function marks(locale: Locale): { group: string; decimal: string } {
   return { group: parts.find((p) => p.type === 'group')?.value ?? ',', decimal: parts.find((p) => p.type === 'decimal')?.value ?? '.' };
 }
 
+/** A number being edited: its decimals and the language's decimal mark, no grouping ("1850000.50", "1850000,50"). */
+export function formatPlain(value: number, decimals: number, locale: Locale = 'en'): string {
+  return format(locale, decimals)
+    .formatToParts(value)
+    .filter((part) => part.type !== 'group')
+    .map((part) => part.value)
+    .join('');
+}
+
 /** A number at rest: "1,850,000.50", "1.850.000,50". */
 export function formatNumber(value: number, decimals: number, locale: Locale = 'en'): string {
   return format(locale, decimals).format(value);

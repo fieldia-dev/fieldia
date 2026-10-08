@@ -14,7 +14,7 @@ import type {
   Values,
 } from '@fieldia/core';
 import type { PreferenceStore } from './preferences';
-import { formatNumber, normalizeNumber } from './numbers';
+import { formatNumber, formatPlain, normalizeNumber } from './numbers';
 import type { WidgetLabels } from './labels';
 import { charTagsWidget, linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
 import { linesWidget } from './lines';
@@ -229,9 +229,11 @@ const UNFINISHED = /^-?\.?$/;
 
 /**
  * Numbers are written as readers of the page's language write them, grouped,
- * with the field's decimals, and read back the same way. What is typed stays
- * as typed while focused: "1." means 1 now and 1.5 a keystroke later. The box
- * keeps its spelling when entered, so a selection made on the way in holds.
+ * with the field's decimals, and read back the same way. Entered, the box
+ * shows the plain number, no grouping marks — a digit typed mid-number would
+ * leave them in the wrong places ("600,1000.00") — and a whole-text selection
+ * made on the way in holds, so typing replaces it. What is typed stays as
+ * typed while focused: "1." means 1 now and 1.5 a keystroke later.
  */
 const numberWidget: WidgetFactory = (context) => {
   const { form, name, field, node, id, document, locale = 'en' } = context;
@@ -252,6 +254,15 @@ const numberWidget: WidgetFactory = (context) => {
   input.addEventListener('input', () => {
     const value = parse(input.value);
     if (value !== undefined) form.setValue(name, value);
+  });
+  input.addEventListener('focus', () => {
+    const value = form.getState().values[name];
+    if (input.readOnly || typeof value !== 'number') return;
+    const whole = input.value !== '' && input.selectionStart === 0 && input.selectionEnd === input.value.length;
+    const plain = formatPlain(value, decimals, locale);
+    if (input.value === plain) return;
+    input.value = plain;
+    if (whole) input.select();
   });
   input.addEventListener('blur', () => {
     input.value = shown(form.getState().values[name]);
@@ -289,7 +300,8 @@ const numberWidget: WidgetFactory = (context) => {
       const parsed = parse(input.value);
       const showsSame = parsed === undefined || parsed === state.value;
       if (!(typing && showsSame)) {
-        const text = shown(state.value);
+        // A value changed under the person editing it shows as they edit: plain.
+        const text = typing && !state.readonly && typeof state.value === 'number' ? formatPlain(state.value, decimals, locale) : shown(state.value);
         if (input.value !== text) input.value = text;
       }
       if (input.readOnly !== state.readonly) input.readOnly = state.readonly;
