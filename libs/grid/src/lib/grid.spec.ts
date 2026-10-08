@@ -130,7 +130,7 @@ describe('the grid', () => {
   });
 
   it('keeps a date cell open while its date is typed', async () => {
-    const { box, api, form } = await mount();
+    const { api, form } = await mount();
     api!.startEditingCell({ rowIndex: 1, colKey: 'delivery' });
     const input = document.querySelector('.ag-popup-editor .fd-grid-editor input[type="date"]') as HTMLInputElement;
     // The browser says change as soon as the typed year makes a date: typing, not a pick.
