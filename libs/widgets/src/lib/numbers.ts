@@ -40,11 +40,13 @@ function marks(locale: Locale): { group: string; decimal: string } {
 
 /** A number being edited: its decimals and the language's decimal mark, no grouping ("1850000.50", "1850000,50"). */
 export function formatPlain(value: number, decimals: number, locale: Locale = 'en'): string {
-  return format(locale, decimals)
-    .formatToParts(value)
-    .filter((part) => part.type !== 'group')
-    .map((part) => part.value)
-    .join('');
+  return ungroup(formatNumber(value, decimals, locale), locale);
+}
+
+/** Written number's words without the language's grouping marks: "1,850,000.50" → "1850000.50". */
+export function ungroup(text: string, locale: Locale = 'en'): string {
+  const { group } = marks(locale);
+  return text.split(group).join('');
 }
 
 /** A number at rest: "1,850,000.50", "1.850.000,50". */

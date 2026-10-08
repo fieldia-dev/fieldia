@@ -14,7 +14,7 @@ import type {
   Values,
 } from '@fieldia/core';
 import type { PreferenceStore } from './preferences';
-import { formatNumber, formatPlain, normalizeNumber } from './numbers';
+import { formatNumber, formatPlain, normalizeNumber, ungroup } from './numbers';
 import type { WidgetLabels } from './labels';
 import { charTagsWidget, linkCheckboxesWidget, many2oneWidget, referenceWidget, tagsWidget } from './relations';
 import { linesWidget } from './lines';
@@ -256,13 +256,18 @@ const numberWidget: WidgetFactory = (context) => {
     if (value !== undefined) form.setValue(name, value);
   });
   input.addEventListener('focus', () => {
-    const value = form.getState().values[name];
-    if (input.readOnly || typeof value !== 'number') return;
-    const whole = input.value !== '' && input.selectionStart === 0 && input.selectionEnd === input.value.length;
-    const plain = formatPlain(value, decimals, locale);
-    if (input.value === plain) return;
-    input.value = plain;
-    if (whole) input.select();
+    // Once the browser has put its selection in the box: a selection made before focus() is put back only after
+    // the focus event, and a click places its caret after it, against the plain words.
+    queueMicrotask(() => {
+      const value = form.getState().values[name];
+      if (document.activeElement !== input || input.readOnly || typeof value !== 'number' || input.value !== shown(value)) return;
+      const grouped = input.value;
+      const [start, end] = [input.selectionStart ?? grouped.length, input.selectionEnd ?? grouped.length];
+      // Where the selection stands among the digits, the grouping marks taken out.
+      const at = (index: number) => ungroup(grouped.slice(0, index), locale).length;
+      input.value = ungroup(grouped, locale);
+      input.setSelectionRange(at(start), at(end));
+    });
   });
   input.addEventListener('blur', () => {
     input.value = shown(form.getState().values[name]);
