@@ -673,7 +673,8 @@ describe('a status drawn as a badge', () => {
     const state = api?.getColumnState().find((c) => c.colId === 'state');
     // Its longest status, though no line holds it yet.
     expect(state?.flex).toBeFalsy();
-    expect(state?.width).toBeGreaterThanOrEqual(Math.round('Pending Clearance'.length * 7.6 + 40));
+    // And the pill's own padding round its words.
+    expect(state?.width).toBeGreaterThanOrEqual(Math.round('Pending Clearance'.length * 7.6 + 40) + 18);
   });
 });
 

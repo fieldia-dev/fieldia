@@ -688,6 +688,9 @@ const HEADER_HEIGHT = 38;
 
 const EDITABLE = new Set(['char', 'text', 'html', 'integer', 'float', 'monetary', 'date', 'datetime', 'selection', 'many2one', 'many2many', 'reference']);
 
+/** A badge's pill round its words, both sides: room its column keeps besides theirs. */
+const BADGE_PADDING = 20;
+
 /** The kinds of field that hold words: a line is named by the first of them. */
 const WORDS = new Set(['char', 'text', 'html', 'many2one', 'reference']);
 
@@ -901,7 +904,7 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     // A badge may turn to any of its choices: room for the longest, though no line holds it yet.
     if (badged(column) && sub.type === 'selection') longest = sub.options.reduce((most, option) => Math.max(most, option.label.length), longest);
     // A long label over short numbers wraps onto a second line rather than widen its column; only its longest word sets a floor.
-    return Math.round(Math.min(Math.max(longest, least, labelWord(column)), 40) * 7.6 + 40);
+    return Math.round(Math.min(Math.max(longest, least, labelWord(column)), 40) * 7.6 + 40) + (badged(column) ? BADGE_PADDING : 0);
   };
   /** Its label's longest word, in characters: a wrapping header breaks between words, never inside one. */
   const labelWord = (column: string) => Math.min(Math.max(0, ...def.fields[column].label.split(/\s+/).map((word) => word.length)), 12);
