@@ -510,6 +510,8 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
       else if (def.type === 'text') Object.assign(this.box.style, { minWidth: `${Math.max(width, 320)}px`, minHeight: `${height}px` });
       // A date is as wide as its day and time need (the stylesheet's max-content), its cell's width at the least.
       else if (def.type === 'date' || def.type === 'datetime') Object.assign(this.box.style, { minWidth: `${width}px`, height: `${height}px` });
+      // A link is searched by its name: wide enough to read one over a narrow column, on its row's line.
+      else if (def.type === 'many2one' || def.type === 'reference') Object.assign(this.box.style, { minWidth: `${Math.max(width, 240)}px`, height: `${height}px` });
       else Object.assign(this.box.style, { width: `${width}px`, height: `${height}px` });
     }
     // The form never changes values in place, so holding them is enough.
@@ -595,7 +597,17 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
   /** A value wider than the room inside the cell's padding takes the padding too, so more of it shows. */
   private fit() {
     const input = this.box.querySelector<HTMLInputElement>('input:not([type="checkbox"]):not([type="radio"])');
-    if (!input || this.isPopup()) return;
+    if (!input) return;
+    if (this.isPopup()) {
+      // A link's name longer than its box widens the box to show it whole, as far as the window allows.
+      const short = input.scrollWidth - input.clientWidth;
+      if ((this.def.type === 'many2one' || this.def.type === 'reference') && short > 0) {
+        const { left, width } = this.box.getBoundingClientRect();
+        const room = this.box.ownerDocument.defaultView!.innerWidth - left - 16;
+        this.box.style.minWidth = `${Math.round(Math.max(width, Math.min(width + short + 8, LINK_EDITOR_MOST, room)))}px`;
+      }
+      return;
+    }
     if (input.scrollWidth > input.clientWidth) this.box.classList.add('fd-grid-editor-tight');
   }
   /** A note's box as tall as its text, and its row with it. */
@@ -698,6 +710,8 @@ const BADGE_PADDING = 20;
 const WORDS = new Set(['char', 'text', 'html', 'many2one', 'reference']);
 
 /** The kinds of field whose column is as wide as its values need, in characters, as Flectra's lists size them. */
+/** The widest a link's editor grows to show a long name, in pixels. */
+const LINK_EDITOR_MOST = 480;
 const FIXED_CHARS: Partial<Record<string, number>> = { boolean: 4, integer: 4, float: 6, monetary: 14, date: 11, datetime: 17 };
 
 export const gridWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, preferences, locale, dialogs }) => {

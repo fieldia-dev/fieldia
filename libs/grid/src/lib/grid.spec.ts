@@ -625,6 +625,38 @@ describe('a cell’s editor', () => {
     rect.mockRestore();
   });
 
+  it('opens a link over a narrow cell wide enough to read its name, as tall as its row', async () => {
+    const rect = jest.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({ top: 10, left: 10, bottom: 50, right: 106, width: 96, height: 40, x: 10, y: 10, toJSON: () => ({}) });
+    const { api } = await mount();
+    api!.startEditingCell({ rowIndex: 0, colKey: 'product_id' });
+    await frames();
+    const editor = popupEditor();
+    expect(editor?.dataset['type']).toBe('many2one');
+    // Not the cell's 96 px, which shows "[PM-1" of "[PM-12] Patient monitor PM-12".
+    expect(parseFloat(editor!.style.minWidth)).toBeGreaterThanOrEqual(240);
+    expect(editor!.style.width).toBe('');
+    expect(editor!.style.height).toBe('40px');
+    rect.mockRestore();
+  });
+
+  it('widens a link’s editor to show a longer name whole, as far as the window allows', async () => {
+    const rect = jest.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({ top: 10, left: 10, bottom: 50, right: 250, width: 240, height: 40, x: 10, y: 10, toJSON: () => ({}) });
+    // The name needs 330 px where the box gives 200.
+    const scroll = jest.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(330);
+    const client = jest.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(200);
+    const { api } = await mount();
+    api!.startEditingCell({ rowIndex: 0, colKey: 'product_id' });
+    await frames();
+    expect(parseFloat(popupEditor()!.style.minWidth)).toBe(240 + 130 + 8);
+    // Never wider than the most it grows to.
+    scroll.mockReturnValue(2000);
+    api!.stopEditing(true);
+    api!.startEditingCell({ rowIndex: 0, colKey: 'product_id' });
+    await frames();
+    expect(parseFloat(popupEditor()!.style.minWidth)).toBe(480);
+    [rect, scroll, client].forEach((spy) => spy.mockRestore());
+  });
+
   it('shows a value from its start when its text is selected on the way in', async () => {
     const { box, api } = await mount();
     api!.setFocusedCell(0, 'name');
