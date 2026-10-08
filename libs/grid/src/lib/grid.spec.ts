@@ -602,6 +602,8 @@ describe('a cell’s editor', () => {
   });
 
   it('opens a paragraph in a box of several lines over its cell, where Enter starts a new line', async () => {
+    // A cell with a box of its own: AG Grid closes a popup whose cell has none (jsdom draws nothing).
+    const rect = jest.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({ top: 10, left: 10, bottom: 50, right: 110, width: 100, height: 40, x: 10, y: 10, toJSON: () => ({}) });
     const { api, form } = await mount(paragraphs);
     api!.startEditingCell({ rowIndex: 1, colKey: 'name' });
     await frames();
@@ -620,6 +622,7 @@ describe('a cell’s editor', () => {
     await frames();
     expect(api!.getEditingCells()).toHaveLength(0);
     expect(formLines(form)[1].values['name']).toBe('LED,\nwarm white');
+    rect.mockRestore();
   });
 
   it('shows a value from its start when its text is selected on the way in', async () => {

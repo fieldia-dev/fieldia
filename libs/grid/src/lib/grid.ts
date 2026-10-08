@@ -568,21 +568,24 @@ class FieldiaCellEditor implements ICellEditorComp<Line> {
     });
     // Enter makes a new line; Ctrl/Cmd+Enter finishes the note.
     area.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return;
-      event.preventDefault();
+      if (event.key !== 'Enter' || event.shiftKey || event.altKey) return;
+      // The popup's own handler hears the key as well as the cell's (whose suppressKeyboardEvent leaves Enter alone).
       _stopPropagationForAgGrid(event);
+      if (!(event.ctrlKey || event.metaKey)) return;
+      event.preventDefault();
       this.params.api.stopEditing();
     });
   }
   /**
    * A paragraph (a text field) is typed in a box of several lines over its
-   * cell: Enter makes a new line there, and Ctrl/Cmd+Enter finishes it, as a
-   * note's does.
+   * cell: Enter makes a new line there (the grid leaves it alone), and
+   * Ctrl/Cmd+Enter finishes it, as a note's does.
    */
   private paragraph(area: HTMLTextAreaElement | null) {
     if (!area) return;
     area.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' || event.shiftKey || event.altKey) return;
+      // The popup's own handler hears the key as well as the cell's (whose suppressKeyboardEvent leaves Enter alone).
       _stopPropagationForAgGrid(event);
       if (!(event.ctrlKey || event.metaKey)) return;
       event.preventDefault();
@@ -864,6 +867,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     api.setFocusedCell(index, column);
     api.startEditingCell({ rowIndex: index, colKey: column });
   };
+  /** A paragraph (a text field) of an item, edited in its box of several lines over the cell. */
+  const paragraphCell = (line: Line | undefined, column: string) => !cell.rowMode && !kindOf(line) && def.fields[column]?.type === 'text';
   /**
    * Keys the grid must leave alone, and the two that run off the end of the
    * table while editing: Enter on the last line and Tab on its last editable
@@ -873,8 +878,8 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
     if (event.defaultPrevented) return true;
     // Alt+Up/Down moves the line (below), it does not move the focus.
     if (!editing && event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) return true;
-    // In a note, Enter is a new line of the note (Ctrl/Cmd+Enter finishes it).
-    if (editing && event.key === 'Enter' && !event.ctrlKey && !event.metaKey && kindOf(node.data) === 'note') return true;
+    // In a note, or a paragraph opened over its cell, Enter is a new line (Ctrl/Cmd+Enter finishes it).
+    if (editing && event.key === 'Enter' && !event.ctrlKey && !event.metaKey && (kindOf(node.data) === 'note' || paragraphCell(node.data, column.getColId()))) return true;
     if (!editing || event.type !== 'keydown' || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return false;
     if (node.rowIndex !== lines().length - 1) return false;
     const shown = api.getAllDisplayedColumns();
