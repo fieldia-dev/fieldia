@@ -37,7 +37,8 @@ const NAMES: Record<string, Record<number, string>> = {
   'utm.source': { 7221: 'Cairo Health Expo 2026', 7222: 'Ministry of Health tenders portal', 7223: 'Referral' },
   'sale.order.template': { 7231: 'ICU starter pack', 7232: 'Ward beds, 10 or more' },
   'uom.uom': { 7401: 'Units', 7402: 'Boxes', 7403: 'Days', 7404: 'Hours' },
-  'account.tax': { 7411: 'VAT 14%', 7412: 'VAT 0% (exempt)', 7413: 'VAT 14% (purchases)' },
+  // The accounting lane's own taxes, by their ids: one "VAT 14%" in every list, as the currencies are one.
+  'account.tax': { 4101: 'VAT 14%', 4103: 'Exempt 0%', 4102: 'VAT 14% (Purchases)' },
   'product.category': { 7421: 'All / Medical devices', 7422: 'All / Consumables', 7423: 'All / Services' },
   'product.tag': { 7431: 'Best seller', 7432: 'Imported', 7433: 'Needs installation' },
   'account.account': { 7441: '400100 Product Sales', 7442: '400200 Service Revenue', 7443: '500100 Cost of Goods Sold', 7444: '212000 Customer Deposits' },
@@ -122,17 +123,17 @@ interface Product {
 }
 
 const PRODUCTS: Record<number, Product> = {
-  7301: { name: '[PM-12] Patient monitor PM-12', price: 42750, type: 'product', uom: 7401, taxes: [7411], lead: 14, description: '12.1" touch screen: ECG, SpO2, NIBP and temperature. 220 V.' },
-  7302: { name: '[IP-200] Infusion pump IP-200', price: 18500, type: 'product', uom: 7401, taxes: [7411], lead: 10, description: 'Volumetric pump, drug library, 8-hour battery.' },
-  7303: { name: '[HB-3E] Electric hospital bed, 3 functions', price: 27900, type: 'product', uom: 7401, taxes: [7411], lead: 21, description: 'Back, knee and height by the remote; side rails and castors.' },
-  7304: { name: '[GL-100] Nitrile examination gloves, box of 100', price: 185, type: 'product', uom: 7402, taxes: [7411], lead: 2, description: 'Powder free, size M.' },
-  7305: { name: 'Installation and training', price: 6500, type: 'service', uom: 7403, taxes: [7411], description: 'On-site installation, and a day of training for the nurses and the biomedical engineers.' },
-  7306: { name: 'Annual preventive maintenance', price: 12000, type: 'service', uom: 7401, taxes: [7411], description: 'Two visits a year, parts extra.' },
-  7307: { name: 'Down payment', price: 0, type: 'service', uom: 7401, taxes: [7411], saleOk: false },
-  7308: { name: '[AED-3] Defibrillator AED-3', price: 64000, type: 'product', uom: 7401, taxes: [7411], lead: 30, description: 'Automated external defibrillator, adult and child pads.' },
+  7301: { name: '[PM-12] Patient monitor PM-12', price: 42750, type: 'product', uom: 7401, taxes: [4101], lead: 14, description: '12.1" touch screen: ECG, SpO2, NIBP and temperature. 220 V.' },
+  7302: { name: '[IP-200] Infusion pump IP-200', price: 18500, type: 'product', uom: 7401, taxes: [4101], lead: 10, description: 'Volumetric pump, drug library, 8-hour battery.' },
+  7303: { name: '[HB-3E] Electric hospital bed, 3 functions', price: 27900, type: 'product', uom: 7401, taxes: [4101], lead: 21, description: 'Back, knee and height by the remote; side rails and castors.' },
+  7304: { name: '[GL-100] Nitrile examination gloves, box of 100', price: 185, type: 'product', uom: 7402, taxes: [4101], lead: 2, description: 'Powder free, size M.' },
+  7305: { name: 'Installation and training', price: 6500, type: 'service', uom: 7403, taxes: [4101], description: 'On-site installation, and a day of training for the nurses and the biomedical engineers.' },
+  7306: { name: 'Annual preventive maintenance', price: 12000, type: 'service', uom: 7401, taxes: [4101], description: 'Two visits a year, parts extra.' },
+  7307: { name: 'Down payment', price: 0, type: 'service', uom: 7401, taxes: [4101], saleOk: false },
+  7308: { name: '[AED-3] Defibrillator AED-3', price: 64000, type: 'product', uom: 7401, taxes: [4101], lead: 30, description: 'Automated external defibrillator, adult and child pads.' },
 };
 
-const TAX_RATES: Record<number, number> = { 7411: 14, 7412: 0, 7413: 14 };
+const TAX_RATES: Record<number, number> = { 4101: 14, 4103: 0, 4102: 14 };
 /** What a pricelist takes off the list price, in a hundred. */
 const PRICELIST_DISCOUNT: Record<number, number> = { 7151: 0, 7152: 8 };
 
@@ -365,7 +366,7 @@ function pricedFor(productId: number, pricelist: number | null) {
 
 /** Free Zone: VAT 14% becomes VAT 0%, as the fiscal position maps it. */
 function mappedTaxes(taxes: number[], fiscal: number | null) {
-  return fiscal === 7162 ? taxes.map((tax) => (tax === 7411 ? 7412 : tax)) : taxes;
+  return fiscal === 7162 ? taxes.map((tax) => (tax === 4101 ? 4103 : tax)) : taxes;
 }
 
 /** Order lines: a product picked brings its description, unit, taxes, lead time and price; every line is priced; the order gets its totals. */
@@ -483,7 +484,7 @@ const PRODUCT_TEMPLATES: Record<number, Values> = {
     currency_id: EGP(),
     cost_currency_id: link('res.currency', 7462),
     list_price: 42750,
-    taxes_id: links('account.tax', 7411),
+    taxes_id: links('account.tax', 4101),
     tax_string: '(= 48,735.00 EGP Incl. Taxes)',
     standard_price: 1890,
     categ_id: link('product.category', 7421),
@@ -503,7 +504,7 @@ const PRODUCT_TEMPLATES: Record<number, Values> = {
       { key: 's1', id: 730111, values: { sequence: 1, partner_id: link('res.partner', 7105), product_code: 'MR-PM12-EU', min_qty: 10, price: 1890, currency_id: link('res.currency', 7462), delay: 45 } },
       { key: 's2', id: 730112, values: { sequence: 2, partner_id: link('res.partner', 7106), product_code: null, min_qty: 1, price: 2240, currency_id: link('res.currency', 7463), delay: 14 } },
     ],
-    supplier_taxes_id: links('account.tax', 7413),
+    supplier_taxes_id: links('account.tax', 4102),
     purchase_method: 'receive',
     description_purchase: 'EU plug kit and the English/Arabic quick guide in every box.',
     purchase_line_warn: 'no-message',
@@ -559,7 +560,7 @@ const PRODUCT_TEMPLATES: Record<number, Values> = {
     currency_id: EGP(),
     cost_currency_id: EGP(),
     list_price: 6500,
-    taxes_id: links('account.tax', 7411),
+    taxes_id: links('account.tax', 4101),
     tax_string: '(= 7,410.00 EGP Incl. Taxes)',
     standard_price: 2800,
     categ_id: link('product.category', 7423),
@@ -1143,9 +1144,10 @@ export const lane: RealLane = {
       Object.entries(PRODUCTS).map(([id, p]) => [id, { name: p.name, type: p.type, sale_ok: p.saleOk ?? true, lst_price: p.price }]),
     ),
     'account.tax': {
-      7411: { name: 'VAT 14%', type_tax_use: 'sale', amount: 14, company_id: COMPANY(), country_id: link('res.country', 7491) },
-      7412: { name: 'VAT 0% (exempt)', type_tax_use: 'sale', amount: 0, company_id: COMPANY(), country_id: link('res.country', 7491) },
-      7413: { name: 'VAT 14% (purchases)', type_tax_use: 'purchase', amount: 14, company_id: COMPANY(), country_id: link('res.country', 7491) },
+      // As the accounting lane keeps them, so the two are one record and not two of the same name.
+      4101: { name: 'VAT 14%', amount: 14, type_tax_use: 'sale' },
+      4102: { name: 'VAT 14% (Purchases)', amount: 14, type_tax_use: 'purchase' },
+      4103: { name: 'Exempt 0%', amount: 0, type_tax_use: 'sale' },
     },
     'product.attribute.value': Object.fromEntries(
       Object.entries(ATTRIBUTE_VALUES).map(([id, v]) => [id, { name: NAMES['product.attribute.value'][Number(id)], attribute_id: link('product.attribute', v.attribute), color: v.color }]),
