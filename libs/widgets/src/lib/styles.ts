@@ -354,6 +354,10 @@ button.fd-chip-label:hover { text-decoration: underline; }
 /* A yes/no cell sits level with the inputs beside it. */
 .fd-lines-table td > .fd-checkbox, .fd-lines-table td > .fd-switch { margin-block-start: 6px; }
 .fd-lines-table .fd-lines-grip { width: 1px; min-width: 0; padding-inline: 6px 2px; }
+/* A table wider than its box scrolls sideways under a line's grip and its delete button, which stay at its ends. */
+.fd-lines:not([data-cards="always"]) .fd-lines-table :is(th, td):is(.fd-lines-grip, .fd-lines-tools) { position: sticky; z-index: 1; background-color: var(--fd-surface); }
+.fd-lines:not([data-cards="always"]) .fd-lines-table :is(th, td).fd-lines-grip { inset-inline-start: 0; }
+.fd-lines:not([data-cards="always"]) .fd-lines-table :is(th, td).fd-lines-tools { inset-inline-end: 0; }
 /* A column of yes/no, numbers, money or dates as wide as its values, as Flectra's lists size them: words and links have the rest. */
 .fd-lines-table td[data-fit] { min-width: 0; }
 /* A head may take two lines rather than widen a column of short values: "Delivery Lead Time" over "45". */
