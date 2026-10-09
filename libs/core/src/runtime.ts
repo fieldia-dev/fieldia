@@ -78,8 +78,8 @@ export type {
   PostStep,
 } from './lib/format/actions';
 export { FORMAT_VERSION } from './lib/format/version';
-export type { Page, PageData, PageLook, Theme } from './lib/format/page';
-export { THEMES } from './lib/format/page';
+export type { Page, PageData, PageLook } from './lib/format/page';
+export { THEMES, type Theme } from './lib/format/themes';
 export { PART_LOOKS, type PartLook, type PartLookKind, type PartsLook } from './lib/format/part-look';
 export { checkPage } from './lib/format/check-page';
 export { fillValues, splitValues, valuesIn } from './lib/format/words';

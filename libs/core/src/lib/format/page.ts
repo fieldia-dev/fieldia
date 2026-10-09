@@ -3,6 +3,8 @@ import { PageEventsSchema, type PageEvents } from './actions';
 import { FieldsSchema, type Fields } from './field';
 import { HelpShownSchema, RootLayoutSchema, type HelpShown, type RootLayout } from './layout';
 import { PART_LOOKS, type PartLook, type PartsLook } from './part-look';
+import { THEMES, type Theme } from './themes';
+export { THEMES, type Theme } from './themes';
 
 import { FORMAT_VERSION } from './version';
 export { FORMAT_VERSION } from './version';
@@ -14,15 +16,6 @@ export { FORMAT_VERSION } from './version';
  */
 export type PageData = { kind: 'record'; model: string } | { kind: 'responses' };
 
-/**
- * Themes in the style of design systems people already know, so a form looks
- * at home in the app round it: Material, Fluent, Apple's, Bootstrap, shadcn,
- * Ant Design, Odoo's and Google Forms'. Each is a set of the form's tokens
- * over a skin (Odoo's over `underline`, the rest over `outlined`), light and
- * dark; the page's own accent, font, room and corners still win over it.
- */
-export const THEMES = ['material', 'fluent', 'apple', 'bootstrap', 'shadcn', 'ant', 'odoo', 'google-forms'] as const;
-export type Theme = (typeof THEMES)[number];
 
 /**
  * How the page looks: these become the form's own tokens, so every widget
