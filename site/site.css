@@ -169,6 +169,15 @@ tr:last-child td { border-bottom: none; }
 .template-howto p { max-width: 72ch; color: var(--muted); font-size: 15px; }
 .hidden-words { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* ---- the Features page: the six areas ---- */
+.feature-areas { list-style: none; margin: 30px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; }
+.feature-area { position: relative; display: grid; gap: 8px; height: 100%; padding: 22px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; color: var(--ink); text-decoration: none; transition: border-color 0.12s, box-shadow 0.12s; }
+.feature-area:hover { border-color: var(--brand); box-shadow: 0 10px 26px rgba(27, 31, 36, 0.1); color: var(--ink); }
+.feature-area:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.feature-area b { font-size: 19px; padding-inline-end: 26px; }
+.feature-area span { color: var(--muted); font-size: 15px; line-height: 1.55; }
+.feature-area .feature-area-go { position: absolute; inset-block-start: 20px; inset-inline-end: 22px; color: var(--brand); font-weight: 700; }
+
 /* ---- the themes' gallery on /look/: the same short form in each theme ---- */
 .theme-gallery { display: grid; gap: 12px; margin-block: 18px 8px; }
 .theme-dark { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
