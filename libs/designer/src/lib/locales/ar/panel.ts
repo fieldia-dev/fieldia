@@ -36,6 +36,7 @@ const NAMES: Record<string, string> = {
   Width: 'العرض',
   Labels: 'التسميات',
   'Label width': 'عرض التسمية',
+  Theme: 'السمة',
   Help: 'المساعدة',
   'Read-only fields': 'الحقول للقراءة فقط',
   'Shown only to': 'يظهر فقط لـ',
