@@ -48,7 +48,7 @@ function drawHeader() {
   const skin = params.get('skin') ?? (theme === 'odoo' || !theme ? 'underline' : 'outlined');
   const skins = demo?.app
     ? ''
-    : `<div class="dh-looks"><nav class="dh-pills dh-skins" aria-label="Skin">${['underline', 'outlined']
+    : `<div class="dh-looks"><nav class="dh-pills dh-skins" aria-label="Look">${['underline', 'outlined']
         .map((s) => `<a href="${esc(withParam('skin', s))}"${s === skin ? ' aria-current="page"' : ''}>${s[0].toUpperCase()}${s.slice(1)}</a>`)
         .join('')}</nav><label class="dh-theme">Theme <select id="dh-theme">${[['', 'None'], ...THEMES]
         .map(([id, name]) => `<option value="${id}"${id === theme ? ' selected' : ''}>${name}</option>`)
