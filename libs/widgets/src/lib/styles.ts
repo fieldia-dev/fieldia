@@ -19,6 +19,7 @@ import { BUSINESS_CSS } from './styles-business';
  * form mirrors without a second stylesheet.
  */
 import { LAYOUT_CSS } from './layout-styles';
+import { THEME_RULES_CSS, THEME_TOKENS_CSS } from './styles-themes';
 
 /**
  * The widths of a form at which its groups take their medium and their narrow
@@ -999,7 +1000,9 @@ button.fd-chip-label:hover { text-decoration: underline; }
 `;
 
 /** Fieldia's whole stylesheet: the skins, then the layout over them, the inputs' details, the question kinds and the choices' details. */
-export const FIELDIA_CSS = SKINS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + KINDS_CSS + CHOICES_CSS + PARTS_CSS;
+// Themes' tokens after the skins' and before the page's look; their own shapes after the parts they reshape, and
+// before the page's own looks for each kind of part, which win over a theme as the page's look does.
+export const FIELDIA_CSS = SKINS_CSS + THEME_TOKENS_CSS + LAYOUT_CSS + INPUTS_CSS + SHEET_CSS + BUSINESS_CSS + THEME_RULES_CSS + KINDS_CSS + CHOICES_CSS + PARTS_CSS;
 
 const STYLE_ID = 'fieldia-styles';
 
