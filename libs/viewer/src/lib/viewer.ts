@@ -43,7 +43,7 @@ import {
 import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { listView } from './list';
-import { applyLook, skinFor } from './look';
+import { applyLook, skinFor, wearTokens, type Tokens } from './look';
 import { labelPlace, planSection, type Place } from './place';
 import { setAttr, setHidden, setText } from './dom';
 import { openPage } from './open';
@@ -74,6 +74,13 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   skin?: Skin;
   /** A theme in the style of a known design system, over the page's own (`look.theme`). */
   theme?: Theme;
+  /**
+   * The host's own colours, corners and font, over the skin's, the theme's, the
+   * scheme's and the page's: `{ text, surface, accent, … }` (`TOKEN_NAMES`). The
+   * supported way to dress a form in an app's theme; a host's own stylesheet
+   * rule on the form does the same.
+   */
+  tokens?: Tokens;
   /** Widgets that replace or add to the built-in ones, by `type` or `type.widget`. */
   widgets?: Record<string, WidgetFactory>;
   slots?: Record<string, SlotRenderer>;
@@ -174,6 +181,8 @@ export interface ViewerHandle {
   setSkin(skin: Skin): void;
   /** Wear another theme; the skin follows it unless the viewer was given one. */
   setTheme(theme: Theme | null): void;
+  /** Wear the host's tokens in place of those given before, as when its app turns dark; null takes them off. Dialogs opened after wear them too. */
+  setTokens(tokens: Tokens | null): void;
   /** Save the record, or take the focus to the first problem when the form refuses. */
   save(): Promise<boolean>;
   /** Check the form without saving, taking the focus to the first problem. */
@@ -215,7 +224,9 @@ let mounts = 0;
  * React, Angular and Vue bindings are thin shells around this function.
  * Throws when the page does not validate, listing every problem.
  */
-export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHandle {
+export function mountViewer(host: HTMLElement, given: ViewerOptions): ViewerHandle {
+  // Its own copy: setTokens changes what the dialogs it opens later wear, never the app's object.
+  const options: ViewerOptions = { ...given };
   const doc = host.ownerDocument;
   // The quick check of names and conditions: the full one, with its validation library, belongs where pages are made.
   // A line's own form reads the record the line is on as parent.
@@ -308,6 +319,7 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
   const theme = options.theme ?? page.look?.theme;
   const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': skinFor(options.skin, theme), dir, lang: tag, 'data-max-width': page.maxWidth });
   applyLook(root, theme ? { ...page.look, theme } : page.look);
+  wearTokens(root, options.tokens);
   const confirm = options.confirm ?? dialogConfirm;
   const say = sayer(root, el, labels.dismiss);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
@@ -1685,6 +1697,10 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
       if (next) root.setAttribute('data-fd-theme', next);
       else root.removeAttribute('data-fd-theme');
       root.setAttribute('data-fd-skin', skinFor(options.skin, next ?? undefined));
+    },
+    setTokens(next) {
+      options.tokens = next ?? undefined;
+      wearTokens(root, next);
     },
     async save() {
       const saved = await form.save();

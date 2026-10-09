@@ -138,6 +138,30 @@ export function skinFor(skin: 'underline' | 'outlined' | undefined, theme: Theme
   return skin ?? (theme ? THEME_SKINS[theme] : 'underline');
 }
 
+/**
+ * The tokens a host may set from outside, without a stylesheet: Fieldia's
+ * colours, corners and font, as `--fd-<name>`. Set on the form (and on the
+ * dialogs it opens) they win over its skin, theme, scheme and page look.
+ */
+export const TOKEN_NAMES = [
+  'text', 'muted', 'page', 'surface', 'fill', 'border', 'border-strong', 'edge',
+  'accent', 'accent-text', 'accent-soft', 'accent-hover', 'focus', 'focus-ring',
+  'error', 'error-soft', 'success', 'success-soft', 'warning', 'warning-soft', 'info', 'info-soft',
+  'radius', 'control-radius', 'font', 'label-weight',
+] as const;
+export type TokenName = (typeof TOKEN_NAMES)[number];
+/** A host's own values for Fieldia's tokens, by name: `{ accent: '#0f766e', surface: '#1b2320' }`. */
+export type Tokens = Partial<Record<TokenName, string>>;
+
+/** Wear a host's tokens, in place of any worn before; none, or null, takes them all off. */
+export function wearTokens(element: HTMLElement, tokens: Tokens | null | undefined): void {
+  for (const name of TOKEN_NAMES) {
+    const value = tokens?.[name];
+    if (value) element.style.setProperty(`--fd-${name}`, value);
+    else element.style.removeProperty(`--fd-${name}`);
+  }
+}
+
 /** Put the page's look on the form's root. */
 export function applyLook(root: HTMLElement, look: PageLook | undefined): void {
   if (!look) return;

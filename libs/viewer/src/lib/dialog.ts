@@ -2,7 +2,7 @@ import type { PageLook, PanelSide, RecordId, RelatedRecord, Theme, Values } from
 import { WIDGET_LABELS } from '@fieldia/widgets';
 import { ownLocale } from './labels';
 import { keepTabIn } from './focus-trap';
-import { applyLook, skinFor } from './look';
+import { applyLook, skinFor, wearTokens, type Tokens } from './look';
 import { hotkeyOf, hotkeyOn } from './hotkeys';
 import { mountViewer, VIEWER_LABELS, type Skin, type ViewerHandle, type ViewerOptions } from './viewer';
 
@@ -125,6 +125,7 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
   if (side) box.setAttribute('data-side', side);
   if (options.dir) box.setAttribute('dir', options.dir);
   applyLook(box, theme ? { ...look, theme } : look);
+  wearTokens(box, options.tokens);
   box.append(make('div', { class: 'fd-form-dialog-head' }), body, make('div', { class: 'fd-actions fd-actions-end fd-form-dialog-foot' }));
   box.firstElementChild?.append(title, closeButton);
   // A page's own buttons at its foot, as a wizard's, stand in place of Discard and Save & Close.
@@ -309,6 +310,8 @@ export interface SearchDialogOptions {
   look?: PageLook;
   /** The opener's theme, over its look's. */
   theme?: Theme;
+  /** The opener's host's tokens, over everything else. */
+  tokens?: Tokens;
 }
 
 /**
@@ -340,6 +343,7 @@ export function openSearchDialog(options: SearchDialogOptions): Promise<RelatedR
   if (options.dir) box.setAttribute('dir', options.dir);
   const searchTheme = options.theme ?? options.look?.theme;
   applyLook(box, searchTheme ? { ...options.look, theme: searchTheme } : options.look);
+  wearTokens(box, options.tokens);
   const head = make('div', { class: 'fd-form-dialog-head' });
   head.append(title, closeButton);
   const body = make('div', { class: 'fd-form-dialog-body fd-search-body' });
