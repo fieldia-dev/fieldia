@@ -117,6 +117,18 @@ test.describe('the demo frame', () => {
   });
 });
 
+test('embed=1: the demo alone, as a feature page frames it — no header, menu, how-to or code drawer', async ({ page }) => {
+  await asVisitor(page);
+  const problems = watch(page);
+  await page.goto('/plain/?page=real-sale-order&record=7101&skin=underline&embed=1');
+  await expect(page.locator('.fd-form').first()).toBeVisible();
+  await expect(page.locator('#demo-head, #demo-nav, #demo-howto, #demo-code, .dh-menu')).toHaveCount(0);
+  // Still the working demo: its buttons run.
+  await page.getByRole('button', { name: 'Send by Email' }).click();
+  await expect(page.locator('.fd-header .fd-statusbar [aria-current="step"]')).toHaveText('Quotation Sent');
+  expect(problems).toEqual([]);
+});
+
 for (const framework of FRAMEWORKS) {
   test(`${framework.id} · every demo of the gallery opens, with its name and no error`, async ({ page }) => {
     const demos = DEMOS.filter((d) => !d.app);

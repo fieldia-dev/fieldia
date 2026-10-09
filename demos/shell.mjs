@@ -4,6 +4,8 @@
  * the "how to try it" panel, and the code drawer with the page's JSON and how
  * to mount it in each framework. Browser tests (navigator.webdriver) get the
  * header alone, so what they measure is the demo, not the frame around it.
+ * `embed=1`: the demo alone, no frame at all, as fieldia.dev's feature pages
+ * show it inside their own.
  */
 import { CATEGORIES, DEMOS, FEATURED, FRAMEWORKS, demoAt, demoHref } from './catalog.mjs';
 
@@ -11,7 +13,8 @@ const head = document.getElementById('demo-head');
 const app = head?.dataset['app'] ?? 'plain';
 const params = new URLSearchParams(location.search);
 const demo = demoAt(app, params);
-const visitor = !navigator.webdriver;
+const embedded = params.get('embed') === '1';
+const visitor = !navigator.webdriver && !embedded;
 const framework = FRAMEWORKS.some((f) => f.id === app) ? app : 'plain';
 const esc = (text) => String(text).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const remember = (key, value) => {
@@ -239,7 +242,8 @@ function drawCode() {
   });
 }
 
-drawHeader();
+if (embedded) head?.remove();
+else drawHeader();
 // A theme picked: the page again in it, on the theme's own skin.
 document.getElementById('dh-theme')?.addEventListener('change', (event) => {
   const next = new URLSearchParams(params);
