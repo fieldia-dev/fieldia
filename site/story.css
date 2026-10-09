@@ -19,10 +19,12 @@
 .story-caption p { margin: 0; color: var(--h-muted); font-size: 17px; line-height: 1.6; }
 
 /* ---- the rail: where the story stands, and a way to any chapter ---- */
-.story-rail { display: grid; gap: 10px; justify-items: center; }
-.story-rail button { width: 10px; height: 10px; padding: 0; border-radius: 50%; border: 2px solid var(--h-navy); background: transparent; cursor: pointer; transition: transform 0.2s ease, background-color 0.2s ease; }
-.story-rail button[aria-current="step"] { background: var(--h-navy); transform: scale(1.3); }
-.story-rail button:focus-visible { outline: 2px solid var(--h-signal); outline-offset: 3px; }
+/* Each a 24px target (WCAG 2.2's least), its dot drawn inside it. */
+.story-rail { display: grid; gap: 0; justify-items: center; }
+.story-rail button { display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; }
+.story-rail button::before { content: ""; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--h-navy); box-sizing: border-box; transition: transform 0.2s ease, background-color 0.2s ease; }
+.story-rail button[aria-current="step"]::before { background: var(--h-navy); transform: scale(1.3); }
+.story-rail button:focus-visible { outline: 2px solid var(--h-signal); outline-offset: 1px; }
 
 /* ---- the stage ---- */
 .story-stage { position: relative; aspect-ratio: 900 / 600; max-height: calc(100vh - 140px); min-width: 0; }
@@ -120,7 +122,7 @@
 .story-still .story-rail { display: none; }
 .story-still .story-stage { position: sticky; top: 80px; }
 @media (prefers-reduced-motion: reduce) {
-  .story-window, .story-app, .story-list, .story-toast, .story-rule, .story-server, .story-frameworks, .story-frameworks li, .story-caption, .story-rail button { transition: none !important; }
+  .story-window, .story-app, .story-list, .story-toast, .story-rule, .story-server, .story-frameworks, .story-frameworks li, .story-caption, .story-rail button::before { transition: none !important; }
   .story-form .story-arrive, .story-chatter p { animation: none !important; }
   .story-packet { display: none; }
 }

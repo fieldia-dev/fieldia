@@ -252,7 +252,7 @@ test.describe('axe on the designers', () => {
 
 /** The site, served on its own port: its docs, the galleries, and the accessibility statement. */
 const SITE = `http://127.0.0.1:${process.env['FIELDIA_SITE_PORT'] ?? 4322}`;
-const SITE_PAGES = ['/', '/start/', '/pages/', '/fields/', '/data/', '/behaviour/', '/lists/', '/chatter/', '/look/', '/demos/', '/designer/', '/accessibility/'];
+const SITE_PAGES = ['/', '/start/', '/pages/', '/fields/', '/data/', '/behaviour/', '/lists/', '/chatter/', '/look/', '/demos/', '/designer/', '/templates/', '/features/records/', '/accessibility/'];
 
 test.describe('axe on fieldia.dev', () => {
   for (const path of SITE_PAGES) {
