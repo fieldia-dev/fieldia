@@ -2,10 +2,58 @@ import { c, code } from '../layout.mjs';
 
 export default {
   path: '/look/',
-  title: 'Skins and languages',
-  description: 'Fieldia’s two skins, the CSS custom properties that restyle them, a look for each kind of part, and the four languages with right-to-left Arabic.',
+  wide: true,
+  title: 'Themes, skins and languages',
+  description: 'Eight themes in the style of Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo and Google Forms; Fieldia’s two skins, the CSS custom properties that restyle them, a look for each kind of part, and the four languages with right-to-left Arabic.',
   body: `
 <p class="lead">How a form looks is set per form, not per page: the same page can be a quiet business sheet in one place and a friendly survey in another.</p>
+
+<h2 id="themes">Eight themes</h2>
+<p>A theme makes a form look at home in an app built on a design system people know. Each is a set of the form’s own tokens, light and dark, over the skin it suits, with a few shapes of its own: Material’s filled boxes, Apple’s pill buttons, shadcn’s segmented tabs, Google Forms’ question cards. They are looks in those systems’ style, not their kits. A theme names its typeface (Roboto, Segoe, SF, Geist) and falls back to the system’s when your app has not loaded it. Every pair of colours people read is checked at WCAG AA, light and dark.</p>
+${code('json', `"look": { "theme": "material" }`)}
+${code('ts', `mountViewer(host, { page, dataSource, theme: 'google-forms' });   // viewer.setTheme('fluent') switches it live`)}
+<p>The page’s own accent, font, spacing, corners and colours still win over its theme, so ${c('{ "theme": "bootstrap", "accent": "#1f7a4d" }')} is Bootstrap in green. A skin given to the viewer wins over the theme’s. The themes are ${c('material')}, ${c('fluent')}, ${c('apple')}, ${c('bootstrap')}, ${c('shadcn')}, ${c('ant')}, ${c('odoo')} (labels beside, as in a record sheet) and ${c('google-forms')}.</p>
+<div class="theme-gallery">
+  <label class="theme-dark"><input type="checkbox" id="theme-dark"> Dark</label>
+  <div class="theme-grid" id="theme-grid" aria-label="The same form in each theme"></div>
+</div>
+<script src="/fieldia.js"></script>
+<script>
+(function () {
+  var NAMES = { material: 'Material', fluent: 'Fluent', apple: 'Apple', bootstrap: 'Bootstrap', shadcn: 'shadcn', ant: 'Ant Design', odoo: 'Odoo', 'google-forms': 'Google Forms' };
+  var grid = document.getElementById('theme-grid');
+  var dark = document.getElementById('theme-dark');
+  function page(theme, i) {
+    return {
+      fieldia: '0.1', id: 'theme-' + theme, title: NAMES[theme], data: { kind: 'responses' },
+      look: { theme: theme, scheme: dark.checked ? 'dark' : 'light' },
+      fields: {
+        name: { type: 'char', label: 'Your name', required: true },
+        plan: { type: 'selection', label: 'Plan', options: [{ value: 'team', label: 'Team' }, { value: 'business', label: 'Business' }] },
+        seats: { type: 'integer', label: 'Seats' },
+        notes: { type: 'boolean', label: 'Send me the notes' },
+      },
+      layout: { type: 'sections', id: 'root', children: [{ type: 'section', id: 's', children: [
+        { type: 'field', id: 'n', field: 'name' }, { type: 'field', id: 'p', field: 'plan', widget: 'radio' },
+        { type: 'field', id: 'c', field: 'seats' }, { type: 'field', id: 'x', field: 'notes' },
+      ] }] },
+    };
+  }
+  var viewers = [];
+  function draw() {
+    viewers.forEach(function (v) { v.destroy(); });
+    grid.textContent = '';
+    viewers = Object.keys(NAMES).map(function (theme, i) {
+      var cell = document.createElement('div');
+      cell.className = 'theme-cell';
+      grid.append(cell);
+      return Fieldia.mountViewer(cell, { page: page(theme, i), dataSource: Fieldia.createMemoryDataSource(), values: { name: 'Lina Haddad', plan: 'team', seats: 12 } });
+    });
+  }
+  dark.addEventListener('change', draw);
+  draw();
+})();
+</script>
 
 <h2 id="skins">Two skins</h2>
 <ul>

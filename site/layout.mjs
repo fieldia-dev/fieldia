@@ -10,7 +10,7 @@ export const DOCS = [
   { path: '/record/', title: 'Around a record' },
   { path: '/lists/', title: 'Lists and search' },
   { path: '/chatter/', title: 'Chatter' },
-  { path: '/look/', title: 'Skins and languages' },
+  { path: '/look/', title: 'Themes and languages' },
 ];
 
 const escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
