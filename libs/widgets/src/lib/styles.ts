@@ -176,9 +176,12 @@ const SKINS_CSS = /* css */ `
   /* One label width for every field, so a field spanning two columns lines up with its neighbours. */
   grid-template-columns: var(--fd-label-width, 11em) minmax(0, 1fr);
   column-gap: 12px;
-  align-items: baseline;
 }
-.fd-form[data-fd-skin="underline"] .fd-field:where(:not([data-labels])) > .fd-label { grid-column: 1; }
+/* The label at its value's top, its words level with a one-line box's, as labels set beside by a page sit: never
+   by the value's baseline, which a box of several lines (a code box, rich text, files) puts at its foot. */
+.fd-form[data-fd-skin="underline"] .fd-field:where(:not([data-labels])) > .fd-label {
+  grid-column: 1; align-self: start; padding-block-start: max(0px, calc((var(--fd-control-height, 30px) - 1.45em) / 2));
+}
 /* A table of lines needs the full width: its label sits above it. */
 .fd-form[data-fd-skin="underline"] .fd-field[data-type="one2many"] { grid-template-columns: minmax(0, 1fr); }
 .fd-form[data-fd-skin="underline"] .fd-field[data-type="one2many"] > * { grid-column: 1 !important; }
