@@ -1,6 +1,6 @@
 {
   "name": "@fieldia/angular",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Angular binding for Fieldia: <fieldia-form> over the plain-DOM viewer, with custom fields as Angular components and slots as ng-templates.",
   "license": "MIT",
   "homepage": "https://fieldia.dev",
@@ -15,9 +15,9 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@fieldia/core": "0.12.0",
-    "@fieldia/viewer": "0.12.0",
-    "@fieldia/widgets": "0.12.0",
+    "@fieldia/core": "0.13.0",
+    "@fieldia/viewer": "0.13.0",
+    "@fieldia/widgets": "0.13.0",
     "tslib": "^2.8.1"
   },
   "peerDependencies": {
