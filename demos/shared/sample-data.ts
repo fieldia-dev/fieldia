@@ -55,8 +55,8 @@ export const pages: Record<string, Page> = {
 
 /**
  * The page the query string names, with the page-wide choices it may also make:
- * `maxWidth` (narrow, medium, wide, full), `actions` (top, bottom) and `scheme`
- * (light, dark, auto). The viewer shows it in the query's `locale`, in the
+ * `maxWidth` (narrow, medium, wide, full), `actions` (top, bottom), `scheme`
+ * (light, dark, auto) and `labels` (above, beside, hidden). The viewer shows it in the query's `locale`, in the
  * page's own words when it keeps them in that language.
  */
 export function pageFromQuery(params: URLSearchParams): Page {
@@ -64,13 +64,16 @@ export function pageFromQuery(params: URLSearchParams): Page {
   const maxWidth = params.get('maxWidth');
   const actions = params.get('actions');
   const scheme = params.get('scheme') as NonNullable<Page['look']>['scheme'] | null;
+  const labels = params.get('labels') as NonNullable<Page['look']>['labels'] | null;
   // A look for each kind of part, as JSON: `parts={"inputs":{"corners":"round"}}`.
   const parts = params.get('parts');
   return {
     ...page,
     ...(maxWidth ? { maxWidth: maxWidth as Page['maxWidth'] } : {}),
     ...(actions ? { actionsPosition: actions as Page['actionsPosition'] } : {}),
-    ...(scheme || parts ? { look: { ...page.look, ...(scheme ? { scheme } : {}), ...(parts ? { parts: JSON.parse(parts) } : {}) } } : {}),
+    ...(scheme || labels || parts
+      ? { look: { ...page.look, ...(scheme ? { scheme } : {}), ...(labels ? { labels } : {}), ...(parts ? { parts: JSON.parse(parts) } : {}) } }
+      : {}),
   };
 }
 
