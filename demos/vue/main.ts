@@ -1,7 +1,7 @@
 import { FieldiaForm, useFormState } from '@fieldia/vue';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
-import type { ActionRequest, Form, Locale, Value } from '@fieldia/core';
+import type { ActionRequest, Form, Locale, Theme, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { createApp, defineComponent, h, onBeforeUnmount, onMounted, ref, type PropType } from 'vue';
 import { chatterSlot } from '@fieldia/chatter';
@@ -79,7 +79,8 @@ createApp({
         dataSource,
         recordId: recordFromQuery(params, page),
         onOpenRecord: (id: string | number) => openRecord(params, id),
-        skin: (params.get('skin') as Skin) ?? 'underline',
+        skin: (params.get('skin') as Skin | null) ?? undefined,
+        theme: (params.get('theme') as Theme | null) ?? undefined,
         dir: params.get('dir') === 'rtl' ? 'rtl' : undefined,
         locale: (params.get('locale') as Locale | null) ?? undefined,
         fieldTypes: { 'char.shout': Shout },

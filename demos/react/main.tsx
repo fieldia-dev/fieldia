@@ -1,4 +1,4 @@
-import type { ActionRequest, Locale } from '@fieldia/core';
+import type { ActionRequest, Locale, Theme } from '@fieldia/core';
 import { FieldiaForm, useFormState, type FieldComponentProps, type SlotComponentProps } from '@fieldia/react';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
@@ -59,7 +59,8 @@ function Demo() {
       dataSource={dataSource}
       recordId={recordFromQuery(params, page)}
       onOpenRecord={(id) => openRecord(params, id)}
-      skin={(params.get('skin') as Skin) ?? 'underline'}
+      skin={(params.get('skin') as Skin | null) ?? undefined}
+      theme={(params.get('theme') as Theme | null) ?? undefined}
       dir={params.get('dir') === 'rtl' ? 'rtl' : undefined}
       locale={(params.get('locale') as Locale | null) ?? undefined}
       onAction={(request) => {

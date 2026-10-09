@@ -27,6 +27,9 @@ const remember = (key, value) => {
 // ---- the header ------------------------------------------------------------------------
 
 /** This page with one setting changed, keeping the others. */
+/** The themes, as a page's look names them, with the names people know them by. */
+const THEMES = [['material', 'Material'], ['fluent', 'Fluent'], ['apple', 'Apple'], ['bootstrap', 'Bootstrap'], ['shadcn', 'shadcn'], ['ant', 'Ant Design'], ['odoo', 'Odoo'], ['google-forms', 'Google Forms']];
+
 function withParam(key, value) {
   const next = new URLSearchParams(params);
   next.set(key, value);
@@ -40,12 +43,16 @@ function drawHeader() {
     : `<nav class="dh-pills" aria-label="Framework">${FRAMEWORKS.map(
         (f) => `<a href="../${f.id}/${esc(location.search)}"${f.id === app ? ' aria-current="page"' : ''}>${f.label}</a>`
       ).join('')}</nav>`;
-  const skin = params.get('skin') ?? 'underline';
+  const theme = params.get('theme') ?? '';
+  // A theme brings its own skin: the skin's pills show which, and picking one keeps the theme over it.
+  const skin = params.get('skin') ?? (theme === 'odoo' || !theme ? 'underline' : 'outlined');
   const skins = demo?.app
     ? ''
-    : `<nav class="dh-pills dh-skins" aria-label="Look">${['underline', 'outlined']
+    : `<div class="dh-looks"><nav class="dh-pills dh-skins" aria-label="Skin">${['underline', 'outlined']
         .map((s) => `<a href="${esc(withParam('skin', s))}"${s === skin ? ' aria-current="page"' : ''}>${s[0].toUpperCase()}${s.slice(1)}</a>`)
-        .join('')}</nav>`;
+        .join('')}</nav><label class="dh-theme">Theme <select id="dh-theme">${[['', 'None'], ...THEMES]
+        .map(([id, name]) => `<option value="${id}"${id === theme ? ' selected' : ''}>${name}</option>`)
+        .join('')}</select></label></div>`;
   head.innerHTML = `
     <div class="dh-row">
       ${visitor ? '<button type="button" class="dh-menu" aria-label="All demos" aria-controls="demo-nav" aria-expanded="false"><span></span></button>' : ''}
@@ -153,6 +160,7 @@ function optionsAsCode(indent) {
   const options = [];
   const skin = params.get('skin');
   if (skin) options.push(`skin: '${skin}'`);
+  if (params.get('theme')) options.push(`theme: '${params.get('theme')}'`);
   for (const key of ['locale', 'dir', 'saveStatus']) if (params.get(key)) options.push(`${key}: '${params.get(key)}'`);
   for (const key of ['readonly', 'editSwitch', 'showValid']) if (params.get(key) === '1') options.push(`${key}: true`);
   if (params.get('enterToNext') === '1') options.push('keys: { enterMovesToNext: true }');
@@ -163,7 +171,7 @@ function optionsAsCode(indent) {
 function snippets(page) {
   const name = page?.id ?? 'page';
   const attrs = (pattern) =>
-    ['skin', 'locale', 'dir']
+    ['skin', 'theme', 'locale', 'dir']
       .filter((key) => params.get(key))
       .map((key) => pattern(key, params.get(key)))
       .join(' ');
@@ -232,6 +240,14 @@ function drawCode() {
 }
 
 drawHeader();
+// A theme picked: the page again in it, on the theme's own skin.
+document.getElementById('dh-theme')?.addEventListener('change', (event) => {
+  const next = new URLSearchParams(params);
+  next.delete('skin');
+  if (event.target.value) next.set('theme', event.target.value);
+  else next.delete('theme');
+  location.search = next.toString();
+});
 // The tab names the demo, as a page of the gallery.
 if (demo) document.title = `${demo.name} — Fieldia demos`;
 if (visitor) {

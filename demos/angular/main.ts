@@ -9,7 +9,7 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { FieldiaFormComponent, FieldiaSlotDirective, formState } from '@fieldia/angular';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
-import type { ActionRequest, Form, FormState, Locale, RecordId, Value } from '@fieldia/core';
+import type { ActionRequest, Form, FormState, Locale, RecordId, Theme, Value } from '@fieldia/core';
 import type { Skin, ViewerHandle } from '@fieldia/viewer';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { appPages, openRecord, optionsFromQuery, pageFromQuery, recordFromQuery, sampleDataSource } from '../shared/sample-data';
@@ -90,6 +90,7 @@ class NoteComponent implements OnInit {
     [dataSource]="dataSource"
     [recordId]="recordId"
     [skin]="skin"
+    [theme]="theme"
     [dir]="dir"
     [locale]="locale"
     [fieldTypes]="fieldTypes"
@@ -119,7 +120,8 @@ class DemoComponent {
   readonly page = page;
   readonly dataSource = dataSource;
   readonly recordId = recordFromQuery(params, page);
-  readonly skin = ((params.get('skin') as Skin) ?? 'underline') as Skin;
+  readonly skin = (params.get('skin') as Skin | null) ?? undefined;
+  readonly theme = (params.get('theme') as Theme | null) ?? undefined;
   readonly dir: 'ltr' | 'rtl' | undefined = params.get('dir') === 'rtl' ? 'rtl' : undefined;
   readonly locale = (params.get('locale') as Locale | null) ?? undefined;
   readonly fieldTypes = { 'char.shout': ShoutComponent };
