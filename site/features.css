@@ -1,0 +1,17 @@
+/* fieldia.dev's feature pages: the front page's story (home.css), one area at a time.
+   The opening holds a live demo in a frame; each part pairs its words with a real picture. */
+.feature-opening { padding-block-end: 64px; }
+.feature-frame { padding: 0; background: var(--h-surface); }
+.feature-frame iframe { display: block; width: 100%; height: clamp(560px, 70vh, 820px); border: 0; background: var(--h-surface); }
+.feature-links { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; margin: 6px 0 0; }
+.feature-links a:not(.btn) { color: var(--h-navy); font-weight: 600; text-underline-offset: 3px; }
+.chapter-copy .feature-links { margin-top: 8px; }
+/* A picture no wider than it was taken (its max-width, from the page), centred in its card. */
+.feature-page .shot img { margin-inline: auto; }
+.feature-facts b { font-size: clamp(22px, 2.2vw, 28px); line-height: 1.15; }
+.feature-templates { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.feature-templates a { display: inline-block; padding: 10px 16px; border: 1px solid var(--h-line); border-radius: 999px; background: var(--h-surface); color: var(--h-ink); font-weight: 600; text-decoration: none; }
+.feature-templates a:hover { border-color: var(--h-navy); }
+.feature-templates a:focus-visible { outline: 2px solid var(--h-signal); outline-offset: 3px; }
+/* Above a wide picture: the heading and words on the left, what it has and where to try it on the right. */
+.feature-page .chapter-stack .chapter-copy > .feature-links { grid-column: 1; }
