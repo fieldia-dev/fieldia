@@ -6,6 +6,7 @@
  */
 
 import { REAL_DEMOS } from './real/index.mjs';
+import TEMPLATE_DEMOS from './templates.mjs';
 
 export const FRAMEWORKS = [
   { id: 'plain', label: 'JavaScript' },
@@ -21,6 +22,7 @@ export const CATEGORIES = [
   { id: 'fields', label: 'Fields and widgets', colour: '#b45309' },
   { id: 'behaviour', label: 'Keys, feedback and languages', colour: '#be185d' },
   { id: 'script', label: 'No build step', colour: '#475569' },
+  { id: 'templates', label: 'Templates to start from', colour: '#4f46e5' },
   { id: 'real', label: 'Real pages from Sherkety ERP', colour: '#9a3412' },
 ];
 
@@ -325,6 +327,8 @@ export const DEMOS = [
       'Read the page’s source: one script tag, a page as JSON, and one call.',
     ],
   },
+  // The template library, each in its theme: templates.mjs.
+  ...TEMPLATE_DEMOS,
   // Sherkety ERP's own screens, rebuilt in Fieldia: one file per lane in real/.
   ...REAL_DEMOS,
 ];

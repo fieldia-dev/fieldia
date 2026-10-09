@@ -15,7 +15,8 @@ import addressPage from '../../examples/pages/address.page.json';
  * with the customer's model behind it, its fields first in the toolbox, and
  * `?start=list` the customers' list, on the same model, and `?start=layout`
  * the "New employee" page: groups side by side, arrangements, tabs and blocks,
- * and `?start=big` a supplier's file of 500 fields, for timing.
+ * `?start=big` a supplier's file of 500 fields, for timing, and
+ * `?start=template-<id>` a page of the template library, to change.
  * `?assistant-delay=` sets how long the demo assistant takes, in ms.
  * `?locale=ar` shows the designer in Arabic, its sample pages written in
  * Arabic too, and `?dir=rtl` puts it on a page written right to left, in
@@ -134,8 +135,11 @@ const customerPage: Page = {
 store.pages.set('customer-card', { draft: null, versions: [published(customerPage, 1)] });
 const start = params.get('start');
 const model = start === 'sheet' || start === 'list' ? customer : undefined;
-const first =
-  start === 'blank' ? blankPage('screen', say('New screen', 'شاشة جديدة'), { locale }) : start === 'sheet' ? blankPage('sheet', say('Customer', 'عميل'), { locale }) : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : start === 'big' ? pages['big'] : siteVisit();
+// `?start=template-<id>`: a page of the template library, to change. A survey's steps are the survey editor's (designer/).
+const template = start?.startsWith('template-') && pages[start]?.layout.type !== 'wizard' ? pages[start] : undefined;
+const first = template
+  ? (structuredClone(template) as Page)
+  : start === 'blank' ? blankPage('screen', say('New screen', 'شاشة جديدة'), { locale }) : start === 'sheet' ? blankPage('sheet', say('Customer', 'عميل'), { locale }) : start === 'list' ? customers() : start === 'layout' ? (layoutPage as unknown as Page) : start === 'big' ? pages['big'] : siteVisit();
 // The app's own kind, an IBAN, and the widget that draws it.
 const opened = timeFirstPaint('screen');
 // No `looks` given: the looks people save are kept in this browser, and offered by both designer demos.

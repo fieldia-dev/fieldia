@@ -20,6 +20,7 @@ import { customPage } from './custom-page';
 import { BILLS, billAttachments, billNavigation, vendorBill } from './vendor-bill';
 import { real } from './real';
 import { businessData, businessPage } from './business';
+import { templatePages } from './templates';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -48,6 +49,8 @@ export const pages: Record<string, Page> = {
   'vendor-bill': vendorBill,
   // Sherkety ERP's own screens, rebuilt: one file per lane in shared/real/.
   ...real.pages,
+  // The template library, ready pages to start from: shared/templates.ts.
+  ...templatePages,
 };
 
 /**
@@ -74,6 +77,8 @@ export function pageFromQuery(params: URLSearchParams): Page {
 /** The record a record's page opens: `record=…`, or the first one. A list shows many, and opens none. */
 export function recordFromQuery(params: URLSearchParams, page: Page): number | null {
   if (page.data.kind !== 'record' || page.layout.type === 'list') return null;
+  // `record=new`: a new record, as a template opens.
+  if (params.get('record') === 'new') return null;
   return Number(params.get('record') ?? 1);
 }
 

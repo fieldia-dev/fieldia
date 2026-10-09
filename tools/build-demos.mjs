@@ -14,7 +14,7 @@ const variants = process.argv.slice(2).length ? process.argv.slice(2) : ['plain'
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 // The frame every demo shares, and the list of demos it shows.
-for (const file of ['demo.css', 'shell.css', 'shell.mjs', 'catalog.mjs']) cpSync(join(WORKSPACE, 'demos', file), join(OUT, file));
+for (const file of ['demo.css', 'shell.css', 'shell.mjs', 'catalog.mjs', 'templates.mjs']) cpSync(join(WORKSPACE, 'demos', file), join(OUT, file));
 // The catalog's real pages, one file per lane, beside it: the shell reads the catalog in the browser.
 cpSync(join(WORKSPACE, 'demos/real'), join(OUT, 'real'), { recursive: true, filter: (from) => !/(gaps|README\.md)$/.test(from) });
 cpSync(join(WORKSPACE, 'site/favicon.svg'), join(OUT, 'logo.svg'));
