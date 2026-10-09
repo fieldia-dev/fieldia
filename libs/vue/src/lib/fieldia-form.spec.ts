@@ -121,6 +121,17 @@ describe('<FieldiaForm> for Vue', () => {
     wrapper.unmount();
   });
 
+  it('wears the host’s tokens, and new ones in their place as they change, without mounting again', async () => {
+    const wrapper = mount(FieldiaForm, { props: { page: page('survey'), tokens: { accent: '#0f766e' } }, attachTo: document.body });
+    const form = () => wrapper.find('.fd-form').element as HTMLElement;
+    expect(form().style.getPropertyValue('--fd-accent')).toBe('#0f766e');
+    await wrapper.setProps({ tokens: { accent: '#b45309', surface: '#1b2320' } });
+    expect(form().style.getPropertyValue('--fd-accent')).toBe('#b45309');
+    expect(form().style.getPropertyValue('--fd-surface')).toBe('#1b2320');
+    expect(wrapper.emitted('ready')).toHaveLength(1);
+    wrapper.unmount();
+  });
+
   it('switches skin without mounting again', async () => {
     const wrapper = mount(FieldiaForm, { props: { page: page('survey'), skin: 'underline' }, attachTo: document.body });
     await wrapper.setProps({ skin: 'outlined' });

@@ -1,5 +1,5 @@
 import type { DataSource, DraftStore, Field, FieldNode, Form, FormEvents, FormState, FormUser, Locale, OnAction, Page, RecordId, Scheduler, Theme, Value, Values } from '@fieldia/core';
-import { mountViewer, skinFor, type Skin, type SlotRenderer, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
+import { mountViewer, skinFor, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import type { PreferenceStore, WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
   defineComponent,
@@ -75,6 +75,8 @@ export const FieldiaForm = defineComponent({
     skin: { type: String as PropType<Skin>, default: undefined },
     /** A theme in the style of a known design system, over the page's own. */
     theme: { type: String as PropType<Theme>, default: undefined },
+    /** The host's own colours, corners and font, over everything else (`TOKEN_NAMES`). */
+    tokens: { type: Object as PropType<Tokens>, default: undefined },
     dir: { type: String as PropType<'ltr' | 'rtl'>, default: undefined },
     locale: { type: String as PropType<Locale>, default: undefined },
     labels: { type: Object as PropType<Partial<ViewerLabels>>, default: undefined },
@@ -191,6 +193,7 @@ export const FieldiaForm = defineComponent({
         values: props.values,
         skin: props.skin,
         theme: props.theme,
+        tokens: props.tokens,
         dir: props.dir,
         locale: props.locale,
         labels: props.labels,
@@ -238,6 +241,12 @@ export const FieldiaForm = defineComponent({
         unmount();
         mount();
       }
+    );
+    // The host's tokens, worn in place as its app changes them.
+    watch(
+      () => props.tokens,
+      (tokens) => handle?.setTokens(tokens ?? null),
+      { deep: true }
     );
     // A theme and a skin switch in place: the theme brings its skin, unless one is given.
     watch(

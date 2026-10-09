@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { Component, DestroyRef, inject, input, signal, type OnInit, type Signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { createMemoryDataSource, type ActionRequest, type Form, type FormState, type FormUser, type Page, type RecordId, type Theme, type Value } from '@fieldia/core';
-import type { ViewerHandle } from '@fieldia/viewer';
+import type { Tokens, ViewerHandle } from '@fieldia/viewer';
 import { FieldiaFormComponent, FieldiaSlotDirective, formState } from './fieldia-form.component';
 
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', 'examples', 'pages');
@@ -61,6 +61,7 @@ class NoteComponent implements OnInit {
     [page]="page()"
     [skin]="skin()"
     [theme]="theme()"
+    [tokens]="tokens()"
     [fieldTypes]="fieldTypes"
     (ready)="onReady($event)"
     (action)="actions.push($event)"
@@ -72,6 +73,7 @@ class HostComponent {
   readonly page = signal<Page>(custom);
   readonly skin = signal<'underline' | 'outlined' | undefined>('underline');
   readonly theme = signal<Theme | undefined>(undefined);
+  readonly tokens = signal<Tokens | undefined>(undefined);
   readonly fieldTypes = { 'char.shout': ShoutComponent };
   readonly actions: ActionRequest[] = [];
   readonly ready: ViewerHandle[] = [];
@@ -231,6 +233,19 @@ describe('<fieldia-form> for Angular', () => {
     host.theme.set('odoo');
     await fixture.whenStable();
     expect(el.querySelector('.fd-form')?.getAttribute('data-fd-skin')).toBe('underline');
+    expect(host.ready).toHaveLength(1);
+  });
+
+  it('wears the host’s tokens, and new ones in their place as they change, without mounting again', async () => {
+    const { fixture, host, el } = await setup(page('survey'));
+    host.tokens.set({ accent: '#0f766e' });
+    await fixture.whenStable();
+    const form = () => el.querySelector('.fd-form') as HTMLElement;
+    expect(form().style.getPropertyValue('--fd-accent')).toBe('#0f766e');
+    host.tokens.set({ accent: '#b45309', surface: '#1b2320' });
+    await fixture.whenStable();
+    expect(form().style.getPropertyValue('--fd-accent')).toBe('#b45309');
+    expect(form().style.getPropertyValue('--fd-surface')).toBe('#1b2320');
     expect(host.ready).toHaveLength(1);
   });
 

@@ -24,7 +24,7 @@ import {
   type Type,
 } from '@angular/core';
 import type { ActionRequest, DataSource, DraftStore, Form, FormEvents, FormState, FormUser, Locale, OnAction, Page, RecordId, Scheduler, Theme, Value, Values } from '@fieldia/core';
-import { mountViewer, skinFor, type Skin, type SlotRenderer, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
+import { mountViewer, skinFor, type Skin, type SlotRenderer, type Tokens, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import type { PreferenceStore, WidgetFactory, WidgetState } from '@fieldia/widgets';
 
 /**
@@ -84,6 +84,8 @@ export class FieldiaFormComponent implements OnDestroy {
   readonly skin = input<Skin | undefined>(undefined);
   /** A theme in the style of a known design system, over the page's own. */
   readonly theme = input<Theme | undefined>(undefined);
+  /** The host's own colours, corners and font, over everything else (`TOKEN_NAMES`). */
+  readonly tokens = input<Tokens | undefined>(undefined);
   readonly dir = input<'ltr' | 'rtl' | undefined>(undefined);
   readonly locale = input<Locale | undefined>(undefined);
   readonly labels = input<Partial<ViewerLabels> | undefined>(undefined);
@@ -185,6 +187,11 @@ export class FieldiaFormComponent implements OnDestroy {
       };
       untracked(() => this.mount(options));
     });
+    // The host's tokens, worn in place as its app changes them.
+    effect(() => {
+      const tokens = this.tokens();
+      untracked(() => this.handle?.setTokens(tokens ?? null));
+    });
     // A theme and a skin switch in place: the theme brings its skin, unless one is given.
     effect(() => {
       const skin = this.skin();
@@ -258,6 +265,7 @@ export class FieldiaFormComponent implements OnDestroy {
       values: this.values(),
       skin: this.skin(),
       theme: this.theme(),
+      tokens: this.tokens(),
       dir: options.dir,
       locale: options.locale,
       labels: options.labels,

@@ -229,6 +229,12 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
     handle.setSkin(skinFor(props.skin, theme));
   }, [handle, props.skin, props.theme]);
 
+  // The host's tokens, worn in place as its app changes them (light to dark): by their values, not the object.
+  const tokensKey = JSON.stringify(props.tokens ?? null);
+  useEffect(() => {
+    if (handle) handle.setTokens(props.tokens ?? null);
+  }, [handle, tokensKey]);
+
   // Locked or not, the same viewer: only a change of `readonly` is forwarded, so Edit inside it keeps working.
   useEffect(() => {
     if (handle && props.readonly !== undefined && handle.isReadonly() !== props.readonly) handle.setReadonly(props.readonly);

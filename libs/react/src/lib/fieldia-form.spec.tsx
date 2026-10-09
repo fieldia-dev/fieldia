@@ -128,6 +128,18 @@ describe('<FieldiaForm>', () => {
     expect(mounts).toBe(1);
   });
 
+  it('wears the host’s tokens, and new ones in their place as they change, without mounting again', () => {
+    let mounts = 0;
+    const survey = page('survey');
+    const { container, rerender } = render(<FieldiaForm page={survey} tokens={{ accent: '#0f766e' }} onReady={() => mounts++} />);
+    const form = () => container.querySelector('.fd-form') as HTMLElement;
+    expect(form().style.getPropertyValue('--fd-accent')).toBe('#0f766e');
+    rerender(<FieldiaForm page={survey} tokens={{ accent: '#b45309', surface: '#1b2320' }} onReady={() => mounts++} />);
+    expect(form().style.getPropertyValue('--fd-accent')).toBe('#b45309');
+    expect(form().style.getPropertyValue('--fd-surface')).toBe('#1b2320');
+    expect(mounts).toBe(1);
+  });
+
   it('locks and unlocks the form as its readonly changes, without mounting again', () => {
     let mounts = 0;
     const signup = page('signup');
