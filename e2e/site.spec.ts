@@ -71,6 +71,8 @@ test('a link to a heading shows the heading below the bar, not under it', async 
 });
 
 test('the gallery shows every demo with its thumbnail, featured first, and each opens a working form', async ({ page }) => {
+  // Time by the gallery's size: each demo opened, each thumbnail loaded.
+  test.setTimeout(DEMOS.length * 3000);
   const problems = watch(page);
   await page.goto(SITE + '/demos/');
   const sections = await page.locator('.gallery-section h2').allTextContents();
@@ -111,5 +113,32 @@ test('the Designer page opens the designer at each starting point, with a way ba
   }
   await page.getByRole('link', { name: 'All starting points' }).click();
   await expect(page).toHaveURL(/\/designer\/$/);
+  expect(problems).toEqual([]);
+});
+
+test('the Templates page: every template with its picture, and each tried, changed in its editor, and taken as JSON', async ({ page, request }) => {
+  const problems = watch(page);
+  const templates = DEMOS.filter((demo) => demo.category === 'templates');
+  test.setTimeout(templates.length * 6000);
+  await page.goto(SITE + '/templates/');
+  await expect(page.locator('.top-nav a[aria-current="page"]')).toHaveText('Templates');
+  const cards = page.locator('.template-card');
+  await expect(cards).toHaveCount(templates.length);
+  for (const image of await page.locator('.template-card .demo-thumb img').all()) {
+    await image.scrollIntoViewIfNeeded();
+    await expect.poll(() => image.evaluate((img) => (img as HTMLImageElement).naturalWidth)).toBe(600);
+  }
+  const links = await cards.evaluateAll((all) => all.map((card) => [...card.querySelectorAll<HTMLAnchorElement>('.template-uses a')].map((a) => a.getAttribute('href') as string)));
+  for (const [tried, changed, json] of links) {
+    const file = await request.get(SITE + json);
+    expect(file.status(), json).toBe(200);
+    expect((await file.json()).fieldia, json).toBe('0.1');
+    await page.goto(SITE + tried);
+    await expect(page.locator('.fd-form').first(), tried).toBeVisible();
+    await page.goto(SITE + changed);
+    // The template itself in the editor, not its usual starting page.
+    await expect(page.locator('.fd-designer, .fd-survey-editor, [class*="fd-editor"]').first(), changed).toBeVisible();
+    await expect(page.locator('input').first(), changed).toHaveValue((await file.json()).title);
+  }
   expect(problems).toEqual([]);
 });
