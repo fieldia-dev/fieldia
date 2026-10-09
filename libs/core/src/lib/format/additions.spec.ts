@@ -1,4 +1,4 @@
-import { checkPage, localizePage, validatePage, type Page } from '../../index';
+import { checkPage, localizePage, THEMES, validatePage, type Page } from '../../index';
 import { checkValue } from '../record/check';
 
 /**
@@ -109,6 +109,14 @@ describe('the page’s look', () => {
   it('takes an accent, a font, spacing, corners, where labels sit and a colour scheme', () => {
     const p = base(sections(), undefined, { look: { accent: '#1f7a4d', font: 'serif', density: 'compact', corners: 'round', labels: 'above', labelWidth: 120, scheme: 'auto' } });
     expect(problems(p)).toEqual([]);
+  });
+
+  it('takes a theme in the style of a design system people know, and refuses one it does not have', () => {
+    for (const theme of THEMES) expect(problems(base(sections(), undefined, { look: { theme } }))).toEqual([]);
+    expect(THEMES).toEqual(['material', 'fluent', 'apple', 'bootstrap', 'shadcn', 'ant', 'odoo', 'google-forms']);
+    // A theme and the page's own accent together: the accent wins over the theme's.
+    expect(problems(base(sections(), undefined, { look: { theme: 'material', accent: '#1f7a4d', scheme: 'dark' } }))).toEqual([]);
+    expect(problems(base(sections(), undefined, { look: { theme: 'windows95' } }))).toEqual([expect.stringMatching(/theme/)]);
   });
 
   it('wants the accent as a #rrggbb colour', () => {

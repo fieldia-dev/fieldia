@@ -83,6 +83,19 @@
     "look": {
       "type": "object",
       "properties": {
+        "theme": {
+          "type": "string",
+          "enum": [
+            "material",
+            "fluent",
+            "apple",
+            "bootstrap",
+            "shadcn",
+            "ant",
+            "odoo",
+            "google-forms"
+          ]
+        },
         "accent": {
           "type": "string",
           "pattern": "^#[0-9a-fA-F]{6}$"

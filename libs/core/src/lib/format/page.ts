@@ -15,10 +15,22 @@ export { FORMAT_VERSION } from './version';
 export type PageData = { kind: 'record'; model: string } | { kind: 'responses' };
 
 /**
+ * Themes in the style of design systems people already know, so a form looks
+ * at home in the app round it: Material, Fluent, Apple's, Bootstrap, shadcn,
+ * Ant Design, Odoo's and Google Forms'. Each is a set of the form's tokens
+ * over a skin (Odoo's over `underline`, the rest over `outlined`), light and
+ * dark; the page's own accent, font, room and corners still win over it.
+ */
+export const THEMES = ['material', 'fluent', 'apple', 'bootstrap', 'shadcn', 'ant', 'odoo', 'google-forms'] as const;
+export type Theme = (typeof THEMES)[number];
+
+/**
  * How the page looks: these become the form's own tokens, so every widget
  * follows them and a dark scheme keeps working.
  */
 export interface PageLook {
+  /** A theme in the style of a known design system: see `THEMES`. The settings below win over it. */
+  theme?: Theme;
   /** The accent: buttons, focus, the picked tab, a band under the title. `#rrggbb`. */
   accent?: string;
   font?: 'system' | 'serif' | 'rounded';
@@ -108,6 +120,7 @@ export const PageSchema = z
     actionsPosition: z.enum(['top', 'bottom']).optional(),
     look: z
       .strictObject({
+        theme: z.enum(THEMES).optional(),
         accent: COLOUR.optional(),
         font: z.enum(['system', 'serif', 'rounded']).optional(),
         density: z.enum(['compact', 'comfortable', 'roomy']).optional(),
