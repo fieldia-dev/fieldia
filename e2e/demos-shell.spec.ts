@@ -119,8 +119,11 @@ test.describe('the demo frame', () => {
 
 for (const framework of FRAMEWORKS) {
   test(`${framework.id} · every demo of the gallery opens, with its name and no error`, async ({ page }) => {
+    const demos = DEMOS.filter((d) => !d.app);
+    // Time by the gallery's size, not one test's: about a second a demo, three in hand, the slowest framework too.
+    test.setTimeout(demos.length * 3000);
     const problems = watch(page);
-    for (const demo of DEMOS.filter((d) => !d.app)) {
+    for (const demo of demos) {
       await page.goto(`/${demoHref(demo, framework.id)}`);
       await expect(page.locator('.fd-form').first(), demo.id).toBeVisible();
       await expect(page.locator('.dh-title'), demo.id).toHaveText(demo.name);
