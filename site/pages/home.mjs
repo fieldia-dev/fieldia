@@ -39,6 +39,9 @@ const half = Math.ceil(REAL.length / 2);
 const row = (items) =>
   `<div class="reel-track"><div class="reel-set">${items.map(card).join('')}</div><div class="reel-set" aria-hidden="true">${items.map(card).join('').replace(/<a /g, '<a tabindex="-1" ')}</div></div>`;
 
+/** The released version, as npm has it: read from the viewer's package, so the page never names an old one. */
+const VERSION = JSON.parse(readFileSync(new URL('../../libs/viewer/package.json', import.meta.url), 'utf8')).version.split('.').slice(0, 2).join('.');
+
 /** The template library, as the Templates page lists it; six of them shown here, forms and records. */
 const TEMPLATES = JSON.parse(readFileSync(new URL('../../examples/templates/index.json', import.meta.url), 'utf8'));
 const SHOWN = ['contact-us', 'customer-feedback', 'job-application', 'invoice', 'task', 'product'];
@@ -134,7 +137,7 @@ export default {
 
 <section class="opening" aria-labelledby="opening-h">
   <div class="opening-copy">
-    <p class="kicker">Open source · MIT · 0.12</p>
+    <p class="kicker">Open source · MIT · ${VERSION}</p>
     <h1 id="opening-h">Write the screen once.<br><span>Fieldia runs it everywhere.</span></h1>
     <p class="lede">A page is a short piece of JSON: its fields, its layout, its rules and its buttons. Fieldia runs it in plain JavaScript, React, Vue or Angular: it draws the form, checks what people type, works out the totals, follows the page’s rules, runs its buttons, and hands the record to your backend.</p>
     <div class="opening-actions">
