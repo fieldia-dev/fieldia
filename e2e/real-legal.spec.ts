@@ -532,7 +532,8 @@ for (const variant of VARIANTS) {
 }
 
 test('lines wider than their box: the scroll bar sits under the last line and the totals, never over them', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 1100 });
+  // Lines about 900px wide, the chatter under the sheet: their columns need more.
+  await page.setViewportSize({ width: 1000, height: 1100 });
   const { problems } = await open(page, 'plain', 'page=real-legal-case&record=42&skin=underline');
   await page.getByRole('tab', { name: 'Expenses', exact: true }).click();
   const lines = page.locator('[role="tabpanel"]:visible .ag-root-wrapper').first();
