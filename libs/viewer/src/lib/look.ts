@@ -1,4 +1,4 @@
-import type { PageLook, PartLook } from '@fieldia/core';
+import type { PageLook, PartLook, Theme } from '@fieldia/core';
 
 /**
  * The page's look, worn by the form: what the page says about its accent,
@@ -128,9 +128,20 @@ function applyParts(root: HTMLElement, look: PageLook): void {
   }
 }
 
+/** The skin each theme is drawn over: Odoo's labels sit beside their boxes, the others' above. */
+export const THEME_SKINS: Record<Theme, 'underline' | 'outlined'> = {
+  material: 'outlined', fluent: 'outlined', apple: 'outlined', bootstrap: 'outlined', shadcn: 'outlined', ant: 'outlined', odoo: 'underline', 'google-forms': 'outlined',
+};
+
+/** The skin a form wears: the one given, else its theme's, else the underline skin. */
+export function skinFor(skin: 'underline' | 'outlined' | undefined, theme: Theme | undefined): 'underline' | 'outlined' {
+  return skin ?? (theme ? THEME_SKINS[theme] : 'underline');
+}
+
 /** Put the page's look on the form's root. */
 export function applyLook(root: HTMLElement, look: PageLook | undefined): void {
   if (!look) return;
+  if (look.theme) root.setAttribute('data-fd-theme', look.theme);
   for (const name of ['font', 'density', 'corners', 'scheme'] as const) {
     const value = look[name];
     if (value) root.setAttribute(`data-${name}`, value);

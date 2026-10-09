@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createMemoryDataSource, saveRefused, type DraftStore, type Page } from '@fieldia/core';
+import { openFormDialog, openSearchDialog } from './dialog';
 import { mountViewer, type ViewerHandle, type ViewerOptions } from './viewer';
 
 const EXAMPLES = join(__dirname, '..', '..', '..', '..', 'examples', 'pages');
@@ -1060,6 +1061,44 @@ describe('the viewer itself', () => {
     expect(document.querySelectorAll('style#fieldia-styles')).toHaveLength(1);
     expect(second.element.getAttribute('data-fd-skin')).toBe('underline');
     second.destroy();
+  });
+
+  it('wears the page’s theme on the skin it is drawn over, the viewer’s own theme and skin winning, and switches it', () => {
+    const themed = { ...page('signup'), look: { theme: 'material' as const } };
+    const host = document.body.appendChild(document.createElement('div'));
+    handle = mountViewer(host, { page: themed });
+    expect(handle.element.getAttribute('data-fd-theme')).toBe('material');
+    // Material's boxes are outlined ones, its labels above them.
+    expect(handle.element.getAttribute('data-fd-skin')).toBe('outlined');
+    handle.setTheme('odoo');
+    expect(handle.element.getAttribute('data-fd-theme')).toBe('odoo');
+    expect(handle.element.getAttribute('data-fd-skin')).toBe('underline');
+    handle.destroy();
+    // The viewer's theme wins over the page's; a skin given wins over the theme's.
+    handle = mountViewer(host, { page: themed, theme: 'google-forms' });
+    expect(handle.element.getAttribute('data-fd-theme')).toBe('google-forms');
+    handle.destroy();
+    handle = mountViewer(host, { page: themed, skin: 'underline' });
+    expect(handle.element.getAttribute('data-fd-skin')).toBe('underline');
+    expect(handle.element.getAttribute('data-fd-theme')).toBe('material');
+    handle.destroy();
+    // No theme: as before, the underline skin and no theme at all.
+    handle = mountViewer(host, { page: page('signup') });
+    expect(handle.element.hasAttribute('data-fd-theme')).toBe(false);
+    expect(handle.element.getAttribute('data-fd-skin')).toBe('underline');
+  });
+
+  it('dresses a dialog it opens in the opener’s theme, on that theme’s skin', async () => {
+    void openFormDialog({ page: page('signup'), title: 'Sign up', theme: 'apple', mode: 'values' });
+    const box = document.querySelector('.fd-form-dialog') as HTMLElement;
+    expect(box.getAttribute('data-fd-theme')).toBe('apple');
+    expect(box.getAttribute('data-fd-skin')).toBe('outlined');
+    expect(box.querySelector('.fd-form')?.getAttribute('data-fd-theme')).toBe('apple');
+    document.body.replaceChildren();
+    void openSearchDialog({ title: 'Search', search: async () => [], theme: 'odoo' });
+    const search = document.querySelector('.fd-search-dialog') as HTMLElement;
+    expect(search.getAttribute('data-fd-theme')).toBe('odoo');
+    expect(search.getAttribute('data-fd-skin')).toBe('underline');
   });
 
   it('takes translated labels and runs right to left', () => {

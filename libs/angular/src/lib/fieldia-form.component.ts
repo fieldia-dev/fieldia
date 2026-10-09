@@ -23,8 +23,8 @@ import {
   type Signal,
   type Type,
 } from '@angular/core';
-import type { ActionRequest, DataSource, DraftStore, Form, FormEvents, FormState, FormUser, Locale, OnAction, Page, RecordId, Scheduler, Value, Values } from '@fieldia/core';
-import { mountViewer, type Skin, type SlotRenderer, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
+import type { ActionRequest, DataSource, DraftStore, Form, FormEvents, FormState, FormUser, Locale, OnAction, Page, RecordId, Scheduler, Theme, Value, Values } from '@fieldia/core';
+import { mountViewer, skinFor, type Skin, type SlotRenderer, type ViewerHandle, type ViewerLabels, type ViewerOptions } from '@fieldia/viewer';
 import type { PreferenceStore, WidgetFactory, WidgetState } from '@fieldia/widgets';
 
 /**
@@ -80,7 +80,10 @@ export class FieldiaFormComponent implements OnDestroy {
   /** Values the app passes in, as Flectra's context: what conditions and filters read as `context`. */
   readonly context = input<ViewerOptions['context']>(undefined);
   readonly values = input<Values | undefined>(undefined);
-  readonly skin = input<Skin>('underline');
+  /** The skin: the theme's own when left out, else underline. */
+  readonly skin = input<Skin | undefined>(undefined);
+  /** A theme in the style of a known design system, over the page's own. */
+  readonly theme = input<Theme | undefined>(undefined);
   readonly dir = input<'ltr' | 'rtl' | undefined>(undefined);
   readonly locale = input<Locale | undefined>(undefined);
   readonly labels = input<Partial<ViewerLabels> | undefined>(undefined);
@@ -182,9 +185,16 @@ export class FieldiaFormComponent implements OnDestroy {
       };
       untracked(() => this.mount(options));
     });
+    // A theme and a skin switch in place: the theme brings its skin, unless one is given.
     effect(() => {
       const skin = this.skin();
-      untracked(() => this.handle?.setSkin(skin));
+      const theme = this.theme();
+      untracked(() => {
+        if (!this.handle) return;
+        const worn = theme ?? this.page().look?.theme;
+        this.handle.setTheme(worn ?? null);
+        this.handle.setSkin(skinFor(skin, worn));
+      });
     });
     effect(() => {
       const readonly = this.readonly();
@@ -247,6 +257,7 @@ export class FieldiaFormComponent implements OnDestroy {
       context: options.context,
       values: this.values(),
       skin: this.skin(),
+      theme: this.theme(),
       dir: options.dir,
       locale: options.locale,
       labels: options.labels,

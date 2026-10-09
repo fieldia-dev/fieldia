@@ -110,6 +110,17 @@ describe('<FieldiaForm> for Vue', () => {
     wrapper.unmount();
   });
 
+  it('wears a theme on its own skin, and switches it without mounting again', async () => {
+    const wrapper = mount(FieldiaForm, { props: { page: page('survey'), theme: 'material' }, attachTo: document.body });
+    expect(wrapper.find('.fd-form').attributes('data-fd-theme')).toBe('material');
+    expect(wrapper.find('.fd-form').attributes('data-fd-skin')).toBe('outlined');
+    await wrapper.setProps({ theme: 'odoo' });
+    expect(wrapper.find('.fd-form').attributes('data-fd-theme')).toBe('odoo');
+    expect(wrapper.find('.fd-form').attributes('data-fd-skin')).toBe('underline');
+    expect(wrapper.emitted('ready')).toHaveLength(1);
+    wrapper.unmount();
+  });
+
   it('switches skin without mounting again', async () => {
     const wrapper = mount(FieldiaForm, { props: { page: page('survey'), skin: 'underline' }, attachTo: document.body });
     await wrapper.setProps({ skin: 'outlined' });

@@ -1,5 +1,5 @@
 import type { Field, FieldNode, Form, FormEvents, FormState, Value } from '@fieldia/core';
-import { mountViewer, type SlotRenderer, type ViewerHandle, type ViewerOptions } from '@fieldia/viewer';
+import { mountViewer, skinFor, type SlotRenderer, type ViewerHandle, type ViewerOptions } from '@fieldia/viewer';
 import type { WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
 import {
   forwardRef,
@@ -221,9 +221,13 @@ export const FieldiaForm = forwardRef<ViewerHandle | null, FieldiaFormProps>(fun
     };
   }, [props.page, props.form, props.dataSource, props.recordId, userKey, contextKey, props.dir, labelsKey, fieldKeys, slotKeys]);
 
+  // A theme and a skin switch in place: the theme brings its skin, unless one is given.
   useEffect(() => {
-    handle?.setSkin(props.skin ?? 'underline');
-  }, [handle, props.skin]);
+    if (!handle) return;
+    const theme = props.theme ?? props.page.look?.theme;
+    handle.setTheme(theme ?? null);
+    handle.setSkin(skinFor(props.skin, theme));
+  }, [handle, props.skin, props.theme]);
 
   // Locked or not, the same viewer: only a change of `readonly` is forwarded, so Edit inside it keeps working.
   useEffect(() => {

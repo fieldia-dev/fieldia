@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Component, DestroyRef, inject, input, signal, type OnInit, type Signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { createMemoryDataSource, type ActionRequest, type Form, type FormState, type FormUser, type Page, type RecordId, type Value } from '@fieldia/core';
+import { createMemoryDataSource, type ActionRequest, type Form, type FormState, type FormUser, type Page, type RecordId, type Theme, type Value } from '@fieldia/core';
 import type { ViewerHandle } from '@fieldia/viewer';
 import { FieldiaFormComponent, FieldiaSlotDirective, formState } from './fieldia-form.component';
 
@@ -60,6 +60,7 @@ class NoteComponent implements OnInit {
   template: `<fieldia-form
     [page]="page()"
     [skin]="skin()"
+    [theme]="theme()"
     [fieldTypes]="fieldTypes"
     (ready)="onReady($event)"
     (action)="actions.push($event)"
@@ -69,7 +70,8 @@ class NoteComponent implements OnInit {
 })
 class HostComponent {
   readonly page = signal<Page>(custom);
-  readonly skin = signal<'underline' | 'outlined'>('underline');
+  readonly skin = signal<'underline' | 'outlined' | undefined>('underline');
+  readonly theme = signal<Theme | undefined>(undefined);
   readonly fieldTypes = { 'char.shout': ShoutComponent };
   readonly actions: ActionRequest[] = [];
   readonly ready: ViewerHandle[] = [];
@@ -216,6 +218,19 @@ describe('<fieldia-form> for Angular', () => {
     host.skin.set('outlined');
     await fixture.whenStable();
     expect(el.querySelector('.fd-form')?.getAttribute('data-fd-skin')).toBe('outlined');
+    expect(host.ready).toHaveLength(1);
+  });
+
+  it('wears a theme on its own skin, and switches it without mounting again', async () => {
+    const { fixture, host, el } = await setup(page('survey'));
+    host.skin.set(undefined);
+    host.theme.set('material');
+    await fixture.whenStable();
+    expect(el.querySelector('.fd-form')?.getAttribute('data-fd-theme')).toBe('material');
+    expect(el.querySelector('.fd-form')?.getAttribute('data-fd-skin')).toBe('outlined');
+    host.theme.set('odoo');
+    await fixture.whenStable();
+    expect(el.querySelector('.fd-form')?.getAttribute('data-fd-skin')).toBe('underline');
     expect(host.ready).toHaveLength(1);
   });
 

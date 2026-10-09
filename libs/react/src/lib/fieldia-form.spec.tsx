@@ -115,6 +115,19 @@ describe('<FieldiaForm>', () => {
     expect(mounts).toBe(1);
   });
 
+  it('wears a theme on its own skin, and switches it without mounting again', () => {
+    let mounts = 0;
+    const survey = page('survey');
+    const { container, rerender } = render(<FieldiaForm page={survey} theme="material" onReady={() => mounts++} />);
+    const form = () => container.querySelector('.fd-form');
+    expect(form()?.getAttribute('data-fd-theme')).toBe('material');
+    expect(form()?.getAttribute('data-fd-skin')).toBe('outlined');
+    rerender(<FieldiaForm page={survey} theme="odoo" onReady={() => mounts++} />);
+    expect(form()?.getAttribute('data-fd-theme')).toBe('odoo');
+    expect(form()?.getAttribute('data-fd-skin')).toBe('underline');
+    expect(mounts).toBe(1);
+  });
+
   it('locks and unlocks the form as its readonly changes, without mounting again', () => {
     let mounts = 0;
     const signup = page('signup');

@@ -16,6 +16,7 @@ import {
   type JsonValue,
   type LayoutNode,
   type Page,
+  type Theme,
   type RecordId,
   type ResolvedFilter,
   type SectionNode,
@@ -42,7 +43,7 @@ import {
 import { browserPreferences, createWidget, displayValue, drawIcon, installStyles, readsAsText, readText, WIDGET_LABELS, type IconSet, type PreferenceStore, type WidgetFactory } from '@fieldia/widgets';
 import { findPage, pageDialogs, type PageFinder } from './related';
 import { listView } from './list';
-import { applyLook } from './look';
+import { applyLook, skinFor } from './look';
 import { labelPlace, planSection, type Place } from './place';
 import { setAttr, setHidden, setText } from './dom';
 import { openPage } from './open';
@@ -69,7 +70,10 @@ export interface ViewerOptions extends Omit<FormOptions, 'page' | 'host'> {
   page: Page;
   /** A form made elsewhere, to share one record between two views. */
   form?: Form;
+  /** The skin: a theme's own when it is left out (see `THEME_SKINS`), else `underline`. */
   skin?: Skin;
+  /** A theme in the style of a known design system, over the page's own (`look.theme`). */
+  theme?: Theme;
   /** Widgets that replace or add to the built-in ones, by `type` or `type.widget`. */
   widgets?: Record<string, WidgetFactory>;
   slots?: Record<string, SlotRenderer>;
@@ -168,6 +172,8 @@ export interface ViewerHandle {
   readonly form: Form;
   readonly element: HTMLElement;
   setSkin(skin: Skin): void;
+  /** Wear another theme; the skin follows it unless the viewer was given one. */
+  setTheme(theme: Theme | null): void;
   /** Save the record, or take the focus to the first problem when the form refuses. */
   save(): Promise<boolean>;
   /** Check the form without saving, taking the focus to the first problem. */
@@ -299,8 +305,9 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     return icon ? [icon, words] : [words];
   }
 
-  const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': options.skin ?? 'underline', dir, lang: tag, 'data-max-width': page.maxWidth });
-  applyLook(root, page.look);
+  const theme = options.theme ?? page.look?.theme;
+  const root = el('form', { class: 'fd-form', novalidate: '', 'data-fd-skin': skinFor(options.skin, theme), dir, lang: tag, 'data-max-width': page.maxWidth });
+  applyLook(root, theme ? { ...page.look, theme } : page.look);
   const confirm = options.confirm ?? dialogConfirm;
   const say = sayer(root, el, labels.dismiss);
   /** The tabs a step can show, by id: each shows its tab, false when it is hidden. */
@@ -1673,6 +1680,11 @@ export function mountViewer(host: HTMLElement, options: ViewerOptions): ViewerHa
     element: root,
     setSkin(skin) {
       root.setAttribute('data-fd-skin', skin);
+    },
+    setTheme(next) {
+      if (next) root.setAttribute('data-fd-theme', next);
+      else root.removeAttribute('data-fd-theme');
+      root.setAttribute('data-fd-skin', skinFor(options.skin, next ?? undefined));
     },
     async save() {
       const saved = await form.save();

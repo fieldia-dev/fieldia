@@ -1,8 +1,8 @@
-import type { PageLook, PanelSide, RecordId, RelatedRecord, Values } from '@fieldia/core';
+import type { PageLook, PanelSide, RecordId, RelatedRecord, Theme, Values } from '@fieldia/core';
 import { WIDGET_LABELS } from '@fieldia/widgets';
 import { ownLocale } from './labels';
 import { keepTabIn } from './focus-trap';
-import { applyLook } from './look';
+import { applyLook, skinFor } from './look';
 import { hotkeyOf, hotkeyOn } from './hotkeys';
 import { mountViewer, VIEWER_LABELS, type Skin, type ViewerHandle, type ViewerOptions } from './viewer';
 
@@ -110,10 +110,13 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
   const body = make('div', { class: 'fd-form-dialog-body' });
   const discard = make('button', { type: 'button', class: 'fd-button' }, labels.discard);
   const saveClose = make('button', { type: 'button', class: 'fd-button fd-button-primary' }, panel && options.mode === 'values' ? labels.done : labels.saveClose);
+  // One look for the box and the page in it: the page's own, else the opener's; the viewer's theme over either.
+  const look = options.page.look ?? options.look;
+  const theme = options.theme ?? look?.theme;
   const box = make('div', {
     // Its own tokens and skin: the dialog sits outside the page that opened it.
     class: `fd-theme fd-form-dialog ${shape}`,
-    'data-fd-skin': options.skin ?? 'underline',
+    'data-fd-skin': skinFor(options.skin, theme),
     role: 'dialog',
     'aria-modal': 'true',
     'aria-labelledby': title.id,
@@ -121,9 +124,7 @@ function openForm(options: FormDialogOptions, shape: string, side?: PanelSide): 
   });
   if (side) box.setAttribute('data-side', side);
   if (options.dir) box.setAttribute('dir', options.dir);
-  // One look for the box and the page in it: the page's own, else the opener's.
-  const look = options.page.look ?? options.look;
-  applyLook(box, look);
+  applyLook(box, theme ? { ...look, theme } : look);
   box.append(make('div', { class: 'fd-form-dialog-head' }), body, make('div', { class: 'fd-actions fd-actions-end fd-form-dialog-foot' }));
   box.firstElementChild?.append(title, closeButton);
   // A page's own buttons at its foot, as a wizard's, stand in place of Discard and Save & Close.
@@ -306,6 +307,8 @@ export interface SearchDialogOptions {
   container?: HTMLElement;
   /** The look of the page that opened it: its accent, scheme, font, room and corners. */
   look?: PageLook;
+  /** The opener's theme, over its look's. */
+  theme?: Theme;
 }
 
 /**
@@ -329,13 +332,14 @@ export function openSearchDialog(options: SearchDialogOptions): Promise<RelatedR
   const cancel = make('button', { type: 'button', class: 'fd-button' }, labels.cancel);
   const box = make('div', {
     class: `fd-theme fd-form-dialog fd-search-dialog fd-size-small`,
-    'data-fd-skin': options.skin ?? 'underline',
+    'data-fd-skin': skinFor(options.skin, options.theme ?? options.look?.theme),
     role: 'dialog',
     'aria-modal': 'true',
     'aria-labelledby': title.id,
   });
   if (options.dir) box.setAttribute('dir', options.dir);
-  applyLook(box, options.look);
+  const searchTheme = options.theme ?? options.look?.theme;
+  applyLook(box, searchTheme ? { ...options.look, theme: searchTheme } : options.look);
   const head = make('div', { class: 'fd-form-dialog-head' });
   head.append(title, closeButton);
   const body = make('div', { class: 'fd-form-dialog-body fd-search-body' });
