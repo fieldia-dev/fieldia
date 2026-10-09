@@ -1,0 +1,192 @@
+{
+  "fieldia": "0.1",
+  "id": "course-evaluation",
+  "title": "Course evaluation",
+  "description": "Your answers are anonymous and help us make the next course better.",
+  "data": {
+    "kind": "responses"
+  },
+  "maxWidth": "medium",
+  "look": {
+    "theme": "google-forms"
+  },
+  "fields": {
+    "course": {
+      "type": "selection",
+      "label": "Which course did you take?",
+      "required": true,
+      "options": [
+        {
+          "value": "intro",
+          "label": "Introduction to data"
+        },
+        {
+          "value": "design",
+          "label": "Design foundations"
+        },
+        {
+          "value": "leadership",
+          "label": "Leading a team"
+        }
+      ]
+    },
+    "parts": {
+      "type": "matrix",
+      "label": "How was each part?",
+      "rows": [
+        {
+          "value": "content",
+          "label": "The content"
+        },
+        {
+          "value": "pace",
+          "label": "The pace"
+        },
+        {
+          "value": "materials",
+          "label": "The materials"
+        },
+        {
+          "value": "trainer",
+          "label": "The trainer"
+        }
+      ],
+      "columns": [
+        {
+          "value": 1,
+          "label": "Poor"
+        },
+        {
+          "value": 2,
+          "label": "Fair"
+        },
+        {
+          "value": 3,
+          "label": "Good"
+        },
+        {
+          "value": 4,
+          "label": "Very good"
+        },
+        {
+          "value": 5,
+          "label": "Excellent"
+        }
+      ]
+    },
+    "overall": {
+      "type": "integer",
+      "label": "Overall, how would you rate the course?",
+      "required": true,
+      "min": 1,
+      "max": 5
+    },
+    "recommend": {
+      "type": "selection",
+      "label": "Would you recommend it to a colleague?",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes"
+        },
+        {
+          "value": "maybe",
+          "label": "Maybe"
+        },
+        {
+          "value": "no",
+          "label": "No"
+        }
+      ]
+    },
+    "best": {
+      "type": "text",
+      "label": "What was the most useful part?"
+    },
+    "change": {
+      "type": "text",
+      "label": "What should we change?"
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "evaluation",
+    "children": [
+      {
+        "type": "section",
+        "id": "q-course",
+        "columns": 1,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-course",
+            "field": "course",
+            "widget": "radio"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "q-parts",
+        "columns": 1,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-parts",
+            "field": "parts"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "q-overall",
+        "columns": 1,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-overall",
+            "field": "overall",
+            "widget": "rating"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "q-recommend",
+        "columns": 1,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-recommend",
+            "field": "recommend",
+            "widget": "radio"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "q-best",
+        "columns": 1,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-best",
+            "field": "best"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "q-change",
+        "columns": 1,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-change",
+            "field": "change"
+          }
+        ]
+      }
+    ]
+  }
+}

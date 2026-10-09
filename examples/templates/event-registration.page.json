@@ -1,0 +1,206 @@
+{
+  "fieldia": "0.1",
+  "id": "event-registration",
+  "title": "Register for the summit",
+  "description": "A day of talks and workshops. Cairo, 14 November, 9:00 to 17:00.",
+  "data": {
+    "kind": "responses"
+  },
+  "maxWidth": "medium",
+  "look": {
+    "theme": "material"
+  },
+  "fields": {
+    "full_name": {
+      "type": "char",
+      "label": "Full name",
+      "required": true
+    },
+    "email": {
+      "type": "char",
+      "label": "Email",
+      "required": true,
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    },
+    "phone": {
+      "type": "char",
+      "label": "Phone"
+    },
+    "organisation": {
+      "type": "char",
+      "label": "Organisation"
+    },
+    "ticket": {
+      "type": "selection",
+      "label": "Ticket",
+      "required": true,
+      "options": [
+        {
+          "value": "standard",
+          "label": "Standard"
+        },
+        {
+          "value": "student",
+          "label": "Student"
+        },
+        {
+          "value": "vip",
+          "label": "VIP, with the dinner"
+        }
+      ],
+      "default": "standard"
+    },
+    "price": {
+      "type": "monetary",
+      "label": "Price",
+      "currency": "USD",
+      "compute": "if(ticket == 'vip', 250, if(ticket == 'student', 40, 120))"
+    },
+    "student_id": {
+      "type": "char",
+      "label": "Student card number"
+    },
+    "sessions": {
+      "type": "selection",
+      "label": "Workshops you would like to join",
+      "multiple": true,
+      "options": [
+        {
+          "value": "design",
+          "label": "Design that people finish"
+        },
+        {
+          "value": "data",
+          "label": "Data you can trust"
+        },
+        {
+          "value": "ai",
+          "label": "AI in everyday work"
+        },
+        {
+          "value": "growth",
+          "label": "Growing a small team"
+        }
+      ]
+    },
+    "diet": {
+      "type": "selection",
+      "label": "Food",
+      "options": [
+        {
+          "value": "none",
+          "label": "No needs"
+        },
+        {
+          "value": "vegetarian",
+          "label": "Vegetarian"
+        },
+        {
+          "value": "vegan",
+          "label": "Vegan"
+        },
+        {
+          "value": "gluten",
+          "label": "Gluten-free"
+        },
+        {
+          "value": "other",
+          "label": "Something else"
+        }
+      ]
+    },
+    "access": {
+      "type": "text",
+      "label": "Anything we should arrange for you to take part?",
+      "size": 500
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "registration",
+    "children": [
+      {
+        "type": "section",
+        "id": "about",
+        "title": "About you",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-name",
+            "field": "full_name"
+          },
+          {
+            "type": "field",
+            "id": "f-email",
+            "field": "email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-phone",
+            "field": "phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-org",
+            "field": "organisation"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "ticket",
+        "title": "Your ticket",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-ticket",
+            "field": "ticket",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-price",
+            "field": "price"
+          },
+          {
+            "type": "field",
+            "id": "f-student",
+            "field": "student_id",
+            "invisible": "ticket != 'student'",
+            "required": "ticket == 'student'"
+          },
+          {
+            "type": "field",
+            "id": "f-sessions",
+            "field": "sessions",
+            "widget": "checkboxes",
+            "colspan": 2
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "needs",
+        "title": "On the day",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-diet",
+            "field": "diet"
+          },
+          {
+            "type": "field",
+            "id": "f-access",
+            "field": "access",
+            "colspan": 2
+          }
+        ]
+      }
+    ]
+  }
+}

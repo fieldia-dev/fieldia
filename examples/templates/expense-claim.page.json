@@ -1,0 +1,267 @@
+{
+  "fieldia": "0.1",
+  "id": "expense-claim",
+  "title": "Expense claim",
+  "description": "Expenses to pay back to an employee, line by line, sent for approval.",
+  "data": {
+    "kind": "record",
+    "model": "expense.claim"
+  },
+  "maxWidth": "wide",
+  "look": {
+    "theme": "fluent"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "What for",
+      "required": true
+    },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "submitted",
+          "label": "Submitted"
+        },
+        {
+          "value": "approved",
+          "label": "Approved"
+        },
+        {
+          "value": "paid",
+          "label": "Paid"
+        }
+      ],
+      "default": "draft"
+    },
+    "employee_id": {
+      "type": "many2one",
+      "label": "Employee",
+      "relation": "employee",
+      "required": true
+    },
+    "paid_by": {
+      "type": "selection",
+      "label": "Paid by",
+      "options": [
+        {
+          "value": "employee",
+          "label": "The employee, to pay back"
+        },
+        {
+          "value": "company",
+          "label": "The company card"
+        }
+      ],
+      "default": "employee"
+    },
+    "line_ids": {
+      "type": "one2many",
+      "label": "Expenses",
+      "relation": "expense.line",
+      "fields": {
+        "date": {
+          "type": "date",
+          "label": "Date",
+          "required": true
+        },
+        "category": {
+          "type": "selection",
+          "label": "Kind",
+          "required": true,
+          "options": [
+            {
+              "value": "travel",
+              "label": "Travel"
+            },
+            {
+              "value": "meals",
+              "label": "Meals"
+            },
+            {
+              "value": "lodging",
+              "label": "Hotel"
+            },
+            {
+              "value": "supplies",
+              "label": "Supplies"
+            },
+            {
+              "value": "other",
+              "label": "Other"
+            }
+          ]
+        },
+        "name": {
+          "type": "char",
+          "label": "Description"
+        },
+        "amount": {
+          "type": "monetary",
+          "label": "Amount",
+          "currency": "USD",
+          "min": 0
+        }
+      }
+    },
+    "total": {
+      "type": "monetary",
+      "label": "Total",
+      "currency": "USD",
+      "compute": "sum(line_ids, 'amount')"
+    },
+    "notes": {
+      "type": "text",
+      "label": "Notes for the approver"
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "label": "Expense claim",
+      "placeholder": "e.g. Client visit, Alexandria"
+    },
+    "statusbar": {
+      "field": "state"
+    },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "b-submit",
+        "label": "Submit",
+        "style": "primary",
+        "steps": [
+          {
+            "do": "set",
+            "field": "state",
+            "value": "'submitted'"
+          },
+          {
+            "do": "save"
+          }
+        ],
+        "invisible": "state != 'draft'"
+      },
+      {
+        "type": "button",
+        "id": "b-approve",
+        "label": "Approve",
+        "style": "primary",
+        "steps": [
+          {
+            "do": "set",
+            "field": "state",
+            "value": "'approved'"
+          },
+          {
+            "do": "save"
+          }
+        ],
+        "invisible": "state != 'submitted'"
+      },
+      {
+        "type": "button",
+        "id": "b-refuse",
+        "label": "Send back",
+        "steps": [
+          {
+            "do": "set",
+            "field": "state",
+            "value": "'draft'"
+          },
+          {
+            "do": "save"
+          }
+        ],
+        "invisible": "state != 'submitted'"
+      },
+      {
+        "type": "button",
+        "id": "b-paid",
+        "label": "Mark as paid",
+        "style": "primary",
+        "steps": [
+          {
+            "do": "set",
+            "field": "state",
+            "value": "'paid'"
+          },
+          {
+            "do": "save"
+          }
+        ],
+        "invisible": "state != 'approved'"
+      }
+    ],
+    "children": [
+      {
+        "type": "section",
+        "id": "header",
+        "columns": {
+          "wide": 2,
+          "medium": 1
+        },
+        "children": [
+          {
+            "type": "field",
+            "id": "f-employee",
+            "field": "employee_id",
+            "readonly": "state != 'draft'"
+          },
+          {
+            "type": "field",
+            "id": "f-paid-by",
+            "field": "paid_by",
+            "widget": "radio",
+            "readonly": "state != 'draft'",
+            "options": {
+              "clear": false
+            }
+          }
+        ]
+      },
+      {
+        "type": "field",
+        "id": "f-lines",
+        "field": "line_ids",
+        "readonly": "state != 'draft'"
+      },
+      {
+        "type": "section",
+        "id": "foot",
+        "columns": {
+          "wide": 2,
+          "medium": 1
+        },
+        "children": [
+          {
+            "type": "field",
+            "id": "f-notes",
+            "field": "notes"
+          },
+          {
+            "type": "section",
+            "id": "foot-totals",
+            "columns": 1,
+            "labels": "beside",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-total",
+                "field": "total"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,301 @@
+{
+  "fieldia": "0.1",
+  "id": "purchase-order",
+  "title": "Purchase order",
+  "description": "What you buy from a vendor, when it should arrive, and what it costs.",
+  "data": {
+    "kind": "record",
+    "model": "purchase.order"
+  },
+  "maxWidth": "full",
+  "look": {
+    "theme": "ant"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Reference",
+      "readonly": true,
+      "default": "New"
+    },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Request for quotation"
+        },
+        {
+          "value": "sent",
+          "label": "Sent"
+        },
+        {
+          "value": "purchase",
+          "label": "Purchase order"
+        },
+        {
+          "value": "done",
+          "label": "Received"
+        }
+      ],
+      "default": "draft"
+    },
+    "partner_id": {
+      "type": "many2one",
+      "label": "Vendor",
+      "relation": "partner",
+      "required": true
+    },
+    "vendor_ref": {
+      "type": "char",
+      "label": "Vendor reference"
+    },
+    "order_date": {
+      "type": "date",
+      "label": "Order date",
+      "required": true
+    },
+    "expected_date": {
+      "type": "date",
+      "label": "Expected arrival"
+    },
+    "deliver_to": {
+      "type": "selection",
+      "label": "Deliver to",
+      "options": [
+        {
+          "value": "main",
+          "label": "Main warehouse"
+        },
+        {
+          "value": "shop",
+          "label": "Shop"
+        },
+        {
+          "value": "office",
+          "label": "Office"
+        }
+      ],
+      "default": "main"
+    },
+    "line_ids": {
+      "type": "one2many",
+      "label": "Products",
+      "relation": "purchase.order.line",
+      "fields": {
+        "product_id": {
+          "type": "many2one",
+          "label": "Product",
+          "relation": "product"
+        },
+        "name": {
+          "type": "char",
+          "label": "Description"
+        },
+        "quantity": {
+          "type": "float",
+          "label": "Quantity",
+          "digits": [
+            8,
+            2
+          ],
+          "default": 1,
+          "min": 0
+        },
+        "price_unit": {
+          "type": "monetary",
+          "label": "Unit price",
+          "currency": "USD",
+          "min": 0
+        },
+        "discount": {
+          "type": "float",
+          "label": "Disc. %",
+          "digits": [
+            5,
+            1
+          ],
+          "min": 0,
+          "max": 100,
+          "default": 0
+        },
+        "subtotal": {
+          "type": "monetary",
+          "label": "Subtotal",
+          "currency": "USD",
+          "compute": "quantity * price_unit * (1 - discount / 100)"
+        }
+      }
+    },
+    "amount_untaxed": {
+      "type": "monetary",
+      "label": "Untaxed amount",
+      "currency": "USD",
+      "compute": "sum(line_ids, 'subtotal')"
+    },
+    "amount_tax": {
+      "type": "monetary",
+      "label": "Tax 14%",
+      "currency": "USD",
+      "compute": "round(amount_untaxed * 0.14, 2)"
+    },
+    "amount_total": {
+      "type": "monetary",
+      "label": "Total",
+      "currency": "USD",
+      "compute": "amount_untaxed + amount_tax"
+    },
+    "terms": {
+      "type": "text",
+      "label": "Terms"
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "label": "Purchase order"
+    },
+    "statusbar": {
+      "field": "state",
+      "clickable": true
+    },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "b-send",
+        "label": "Send by email",
+        "style": "primary",
+        "steps": [
+          {
+            "do": "set",
+            "field": "state",
+            "value": "'sent'"
+          },
+          {
+            "do": "save"
+          }
+        ],
+        "invisible": "state != 'draft'"
+      },
+      {
+        "type": "button",
+        "id": "b-confirm",
+        "label": "Confirm order",
+        "style": "primary",
+        "steps": [
+          {
+            "do": "set",
+            "field": "state",
+            "value": "'purchase'"
+          },
+          {
+            "do": "save"
+          }
+        ],
+        "invisible": "state not in ('draft', 'sent')"
+      },
+      {
+        "type": "button",
+        "id": "b-receive",
+        "label": "Receive products",
+        "steps": [
+          {
+            "do": "set",
+            "field": "state",
+            "value": "'done'"
+          },
+          {
+            "do": "save"
+          }
+        ],
+        "invisible": "state != 'purchase'"
+      }
+    ],
+    "children": [
+      {
+        "type": "section",
+        "id": "header",
+        "columns": {
+          "wide": 2,
+          "medium": 1
+        },
+        "children": [
+          {
+            "type": "field",
+            "id": "f-partner",
+            "field": "partner_id"
+          },
+          {
+            "type": "field",
+            "id": "f-order-date",
+            "field": "order_date"
+          },
+          {
+            "type": "field",
+            "id": "f-vendor-ref",
+            "field": "vendor_ref"
+          },
+          {
+            "type": "field",
+            "id": "f-expected",
+            "field": "expected_date"
+          },
+          {
+            "type": "field",
+            "id": "f-deliver",
+            "field": "deliver_to"
+          }
+        ]
+      },
+      {
+        "type": "field",
+        "id": "f-lines",
+        "field": "line_ids",
+        "readonly": "state == 'done'"
+      },
+      {
+        "type": "section",
+        "id": "foot",
+        "columns": {
+          "wide": 2,
+          "medium": 1
+        },
+        "children": [
+          {
+            "type": "field",
+            "id": "f-terms",
+            "field": "terms",
+            "labels": "hidden",
+            "placeholder": "Terms: delivery, payment, warranty"
+          },
+          {
+            "type": "section",
+            "id": "foot-totals",
+            "columns": 1,
+            "labels": "beside",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-untaxed",
+                "field": "amount_untaxed"
+              },
+              {
+                "type": "field",
+                "id": "f-tax",
+                "field": "amount_tax"
+              },
+              {
+                "type": "field",
+                "id": "f-total",
+                "field": "amount_total"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

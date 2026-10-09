@@ -1,0 +1,200 @@
+{
+  "fieldia": "0.1",
+  "id": "task",
+  "title": "Task",
+  "description": "A piece of work: who does it, by when, how far along it is, and what done looks like.",
+  "data": {
+    "kind": "record",
+    "model": "project.task"
+  },
+  "maxWidth": "wide",
+  "look": {
+    "theme": "apple"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Task",
+      "required": true
+    },
+    "stage": {
+      "type": "selection",
+      "label": "Stage",
+      "options": [
+        {
+          "value": "todo",
+          "label": "To do"
+        },
+        {
+          "value": "doing",
+          "label": "In progress"
+        },
+        {
+          "value": "review",
+          "label": "In review"
+        },
+        {
+          "value": "done",
+          "label": "Done"
+        }
+      ],
+      "default": "todo"
+    },
+    "priority": {
+      "type": "selection",
+      "label": "Priority",
+      "options": [
+        {
+          "value": "0",
+          "label": "Normal"
+        },
+        {
+          "value": "1",
+          "label": "Important"
+        },
+        {
+          "value": "2",
+          "label": "Urgent"
+        }
+      ],
+      "default": "0"
+    },
+    "user_ids": {
+      "type": "many2many",
+      "label": "Assigned to",
+      "relation": "employee"
+    },
+    "deadline": {
+      "type": "date",
+      "label": "Deadline"
+    },
+    "tag_ids": {
+      "type": "many2many",
+      "label": "Tags",
+      "relation": "project.tag"
+    },
+    "planned_hours": {
+      "type": "float",
+      "label": "Time planned",
+      "min": 0
+    },
+    "checklist_ids": {
+      "type": "one2many",
+      "label": "Checklist",
+      "relation": "task.checklist",
+      "fields": {
+        "done": {
+          "type": "boolean",
+          "label": "Done"
+        },
+        "name": {
+          "type": "char",
+          "label": "Item",
+          "required": true
+        }
+      }
+    },
+    "progress": {
+      "type": "integer",
+      "label": "Progress",
+      "compute": "if(count(checklist_ids) > 0, round(100 * count(checklist_ids, \"done\") / count(checklist_ids)), 0)"
+    },
+    "description": {
+      "type": "html",
+      "label": "Description"
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "label": "Task",
+      "placeholder": "e.g. Send the quarterly report"
+    },
+    "statusbar": {
+      "field": "stage",
+      "clickable": true
+    },
+    "children": [
+      {
+        "type": "section",
+        "id": "header",
+        "columns": {
+          "wide": 2,
+          "medium": 1
+        },
+        "children": [
+          {
+            "type": "field",
+            "id": "f-assigned",
+            "field": "user_ids",
+            "widget": "tags"
+          },
+          {
+            "type": "field",
+            "id": "f-deadline",
+            "field": "deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-priority",
+            "field": "priority",
+            "widget": "priority"
+          },
+          {
+            "type": "field",
+            "id": "f-tags",
+            "field": "tag_ids",
+            "widget": "tags"
+          },
+          {
+            "type": "field",
+            "id": "f-planned",
+            "field": "planned_hours",
+            "widget": "duration"
+          },
+          {
+            "type": "field",
+            "id": "f-progress",
+            "field": "progress",
+            "widget": "progressbar"
+          }
+        ]
+      },
+      {
+        "type": "tabs",
+        "id": "notebook",
+        "children": [
+          {
+            "type": "tab",
+            "id": "tab-description",
+            "label": "Description",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-description",
+                "field": "description",
+                "labels": "hidden",
+                "placeholder": "What needs doing, and what done looks like"
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-checklist",
+            "label": "Checklist",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-checklist",
+                "field": "checklist_ids",
+                "labels": "hidden"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

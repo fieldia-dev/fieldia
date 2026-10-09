@@ -1,0 +1,301 @@
+{
+  "fieldia": "0.1",
+  "id": "invoice",
+  "title": "Invoice",
+  "description": "A customer invoice: lines, tax and totals worked out as you type, confirmed and then paid.",
+  "data": {
+    "kind": "record",
+    "model": "invoice"
+  },
+  "maxWidth": "full",
+  "look": {
+    "theme": "odoo"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Number",
+      "readonly": true,
+      "default": "Draft"
+    },
+    "state": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        {
+          "value": "draft",
+          "label": "Draft"
+        },
+        {
+          "value": "posted",
+          "label": "Posted"
+        },
+        {
+          "value": "paid",
+          "label": "Paid"
+        }
+      ],
+      "default": "draft"
+    },
+    "partner_id": {
+      "type": "many2one",
+      "label": "Customer",
+      "relation": "partner",
+      "required": true
+    },
+    "reference": {
+      "type": "char",
+      "label": "Customer reference"
+    },
+    "invoice_date": {
+      "type": "date",
+      "label": "Invoice date"
+    },
+    "payment_terms": {
+      "type": "selection",
+      "label": "Payment terms",
+      "options": [
+        {
+          "value": "now",
+          "label": "Immediate payment"
+        },
+        {
+          "value": "15",
+          "label": "15 days"
+        },
+        {
+          "value": "30",
+          "label": "30 days"
+        },
+        {
+          "value": "60",
+          "label": "60 days"
+        }
+      ],
+      "default": "30"
+    },
+    "due_date": {
+      "type": "date",
+      "label": "Due date"
+    },
+    "line_ids": {
+      "type": "one2many",
+      "label": "Invoice lines",
+      "relation": "invoice.line",
+      "fields": {
+        "product_id": {
+          "type": "many2one",
+          "label": "Product",
+          "relation": "product"
+        },
+        "name": {
+          "type": "char",
+          "label": "Description"
+        },
+        "quantity": {
+          "type": "float",
+          "label": "Quantity",
+          "digits": [
+            8,
+            2
+          ],
+          "default": 1,
+          "min": 0
+        },
+        "price_unit": {
+          "type": "monetary",
+          "label": "Unit price",
+          "currency": "USD",
+          "min": 0
+        },
+        "discount": {
+          "type": "float",
+          "label": "Disc. %",
+          "digits": [
+            5,
+            1
+          ],
+          "min": 0,
+          "max": 100,
+          "default": 0
+        },
+        "subtotal": {
+          "type": "monetary",
+          "label": "Subtotal",
+          "currency": "USD",
+          "compute": "quantity * price_unit * (1 - discount / 100)"
+        }
+      }
+    },
+    "amount_untaxed": {
+      "type": "monetary",
+      "label": "Untaxed amount",
+      "currency": "USD",
+      "compute": "sum(line_ids, 'subtotal')"
+    },
+    "amount_tax": {
+      "type": "monetary",
+      "label": "Tax 14%",
+      "currency": "USD",
+      "compute": "round(amount_untaxed * 0.14, 2)"
+    },
+    "amount_total": {
+      "type": "monetary",
+      "label": "Total",
+      "currency": "USD",
+      "compute": "amount_untaxed + amount_tax"
+    },
+    "notes": {
+      "type": "text",
+      "label": "Terms and conditions"
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "label": "Invoice"
+    },
+    "statusbar": {
+      "field": "state"
+    },
+    "buttons": [
+      {
+        "type": "button",
+        "id": "b-confirm",
+        "label": "Confirm",
+        "style": "primary",
+        "steps": [
+          {
+            "do": "set",
+            "field": "state",
+            "value": "'posted'"
+          },
+          {
+            "do": "save"
+          }
+        ],
+        "invisible": "state != 'draft'"
+      },
+      {
+        "type": "button",
+        "id": "b-pay",
+        "label": "Register payment",
+        "style": "primary",
+        "steps": [
+          {
+            "do": "set",
+            "field": "state",
+            "value": "'paid'"
+          },
+          {
+            "do": "save"
+          }
+        ],
+        "invisible": "state != 'posted'"
+      },
+      {
+        "type": "button",
+        "id": "b-draft",
+        "label": "Reset to draft",
+        "steps": [
+          {
+            "do": "set",
+            "field": "state",
+            "value": "'draft'"
+          },
+          {
+            "do": "save"
+          }
+        ],
+        "invisible": "state != 'posted'"
+      }
+    ],
+    "children": [
+      {
+        "type": "section",
+        "id": "header",
+        "columns": {
+          "wide": 2,
+          "medium": 1
+        },
+        "children": [
+          {
+            "type": "field",
+            "id": "f-partner",
+            "field": "partner_id",
+            "readonly": "state != 'draft'"
+          },
+          {
+            "type": "field",
+            "id": "f-date",
+            "field": "invoice_date",
+            "readonly": "state != 'draft'"
+          },
+          {
+            "type": "field",
+            "id": "f-reference",
+            "field": "reference"
+          },
+          {
+            "type": "field",
+            "id": "f-terms",
+            "field": "payment_terms"
+          },
+          {
+            "type": "field",
+            "id": "f-due",
+            "field": "due_date"
+          }
+        ]
+      },
+      {
+        "type": "field",
+        "id": "f-lines",
+        "field": "line_ids",
+        "readonly": "state != 'draft'"
+      },
+      {
+        "type": "section",
+        "id": "foot",
+        "columns": {
+          "wide": 2,
+          "medium": 1
+        },
+        "children": [
+          {
+            "type": "field",
+            "id": "f-notes",
+            "field": "notes",
+            "labels": "hidden",
+            "placeholder": "Terms and conditions"
+          },
+          {
+            "type": "section",
+            "id": "foot-totals",
+            "columns": 1,
+            "labels": "beside",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-untaxed",
+                "field": "amount_untaxed"
+              },
+              {
+                "type": "field",
+                "id": "f-tax",
+                "field": "amount_tax"
+              },
+              {
+                "type": "field",
+                "id": "f-total",
+                "field": "amount_total"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

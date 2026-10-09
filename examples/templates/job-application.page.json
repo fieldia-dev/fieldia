@@ -1,0 +1,195 @@
+{
+  "fieldia": "0.1",
+  "id": "job-application",
+  "title": "Apply to join us",
+  "description": "It takes about five minutes. We reply to everyone within two weeks.",
+  "data": {
+    "kind": "responses"
+  },
+  "maxWidth": "medium",
+  "look": {
+    "theme": "fluent"
+  },
+  "fields": {
+    "role": {
+      "type": "selection",
+      "label": "Role",
+      "required": true,
+      "options": [
+        {
+          "value": "frontend",
+          "label": "Front-end engineer"
+        },
+        {
+          "value": "backend",
+          "label": "Back-end engineer"
+        },
+        {
+          "value": "design",
+          "label": "Product designer"
+        },
+        {
+          "value": "support",
+          "label": "Customer success"
+        }
+      ]
+    },
+    "work_mode": {
+      "type": "selection",
+      "label": "How would you like to work?",
+      "required": true,
+      "options": [
+        {
+          "value": "office",
+          "label": "In the office"
+        },
+        {
+          "value": "hybrid",
+          "label": "Hybrid"
+        },
+        {
+          "value": "remote",
+          "label": "Remote"
+        }
+      ],
+      "default": "hybrid"
+    },
+    "start": {
+      "type": "date",
+      "label": "Earliest start date"
+    },
+    "salary": {
+      "type": "monetary",
+      "label": "Expected monthly salary",
+      "currency": "USD",
+      "min": 0
+    },
+    "full_name": {
+      "type": "char",
+      "label": "Full name",
+      "required": true
+    },
+    "email": {
+      "type": "char",
+      "label": "Email",
+      "required": true,
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    },
+    "phone": {
+      "type": "char",
+      "label": "Phone",
+      "required": true
+    },
+    "profile": {
+      "type": "char",
+      "label": "LinkedIn or portfolio"
+    },
+    "cv": {
+      "type": "binary",
+      "label": "CV",
+      "required": true,
+      "help": "PDF or Word, up to 10 MB."
+    },
+    "years": {
+      "type": "integer",
+      "label": "Years of experience",
+      "min": 0,
+      "max": 50
+    },
+    "why": {
+      "type": "text",
+      "label": "Why this role?",
+      "size": 2000
+    }
+  },
+  "layout": {
+    "type": "wizard",
+    "id": "application",
+    "finishLabel": "Send my application",
+    "children": [
+      {
+        "type": "step",
+        "id": "step-role",
+        "label": "The role",
+        "icon": "building",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-role",
+            "field": "role"
+          },
+          {
+            "type": "field",
+            "id": "f-mode",
+            "field": "work_mode",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-start",
+            "field": "start"
+          },
+          {
+            "type": "field",
+            "id": "f-salary",
+            "field": "salary"
+          }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "step-you",
+        "label": "About you",
+        "icon": "user",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-name",
+            "field": "full_name"
+          },
+          {
+            "type": "field",
+            "id": "f-email",
+            "field": "email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-phone",
+            "field": "phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-profile",
+            "field": "profile",
+            "widget": "url"
+          }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "step-experience",
+        "label": "Experience",
+        "icon": "file",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-cv",
+            "field": "cv"
+          },
+          {
+            "type": "field",
+            "id": "f-years",
+            "field": "years"
+          },
+          {
+            "type": "field",
+            "id": "f-why",
+            "field": "why"
+          }
+        ]
+      }
+    ]
+  }
+}

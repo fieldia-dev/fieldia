@@ -1,0 +1,135 @@
+[
+  {
+    "id": "contact-us",
+    "name": "Contact us",
+    "group": "forms",
+    "theme": "apple",
+    "blurb": "A short contact form: who is writing, what about, and their message, with the topic steering where it goes."
+  },
+  {
+    "id": "newsletter",
+    "name": "Newsletter sign-up",
+    "group": "forms",
+    "theme": "shadcn",
+    "blurb": "An email and a name, the topics wanted and how often: the smallest form, done in seconds."
+  },
+  {
+    "id": "customer-feedback",
+    "name": "Customer feedback",
+    "group": "forms",
+    "theme": "google-forms",
+    "blurb": "A rating, how likely they are to recommend you, what they liked and what to do better, and a reply only if they want one."
+  },
+  {
+    "id": "event-registration",
+    "name": "Event registration",
+    "group": "forms",
+    "theme": "material",
+    "blurb": "Who is coming, which ticket and sessions, food and access needs, with the ticket's price worked out as they choose."
+  },
+  {
+    "id": "job-application",
+    "name": "Job application",
+    "group": "forms",
+    "theme": "fluent",
+    "blurb": "Three steps: the role and when they can start, who they are, and their experience with a CV, each step checked before the next."
+  },
+  {
+    "id": "support-request",
+    "name": "Support request",
+    "group": "forms",
+    "theme": "bootstrap",
+    "blurb": "What is wrong and how urgent, with the steps to reproduce asked only for a fault, and a screenshot attached."
+  },
+  {
+    "id": "appointment-booking",
+    "name": "Book an appointment",
+    "group": "forms",
+    "theme": "apple",
+    "blurb": "A service, a day and a free time, then who is coming and a reminder: a booking in one screen."
+  },
+  {
+    "id": "patient-intake",
+    "name": "Patient intake",
+    "group": "forms",
+    "theme": "material",
+    "blurb": "A clinic's first-visit form in three steps: the patient, their medical history with details asked only where they apply, and consent with a signature."
+  },
+  {
+    "id": "course-evaluation",
+    "name": "Course evaluation",
+    "group": "forms",
+    "theme": "google-forms",
+    "blurb": "Each part of a course rated on one grid, an overall score and two open questions: what worked and what to change."
+  },
+  {
+    "id": "quote-request",
+    "name": "Request a quote",
+    "group": "forms",
+    "theme": "ant",
+    "blurb": "A business enquiry: the company, the services wanted, the budget and the deadline, and a brief to attach."
+  },
+  {
+    "id": "property-enquiry",
+    "name": "Property enquiry",
+    "group": "forms",
+    "theme": "material",
+    "blurb": "For an estate agent: buy or rent, the kind of home, bedrooms and budget, and a viewing asked for on a day that suits."
+  },
+  {
+    "id": "invoice",
+    "name": "Invoice",
+    "group": "records",
+    "theme": "odoo",
+    "blurb": "A customer invoice on a sheet: its status, the customer and terms, lines whose subtotals and totals work themselves out, and Confirm then Register payment."
+  },
+  {
+    "id": "purchase-order",
+    "name": "Purchase order",
+    "group": "records",
+    "theme": "ant",
+    "blurb": "An order to a vendor: the vendor and dates, products with quantities and prices, totals, and Send then Confirm on its statusbar."
+  },
+  {
+    "id": "expense-claim",
+    "name": "Expense claim",
+    "group": "records",
+    "theme": "fluent",
+    "blurb": "An employee's expenses, one line each with its date, kind and amount, totalled, then submitted and approved."
+  },
+  {
+    "id": "leave-request",
+    "name": "Time-off request",
+    "group": "records",
+    "theme": "bootstrap",
+    "blurb": "Leave asked for: its kind, the dates with the days counted, half a day if so, and a reason, approved or refused."
+  },
+  {
+    "id": "customer",
+    "name": "Customer",
+    "group": "records",
+    "theme": "odoo",
+    "blurb": "A customer record: person or company, how to reach them, tags, an address, contacts in a table, sales terms and notes in tabs."
+  },
+  {
+    "id": "product",
+    "name": "Product",
+    "group": "records",
+    "theme": "shadcn",
+    "blurb": "A product card: picture, prices with the margin worked out, sold or bought, stock details and a description in tabs."
+  },
+  {
+    "id": "employee-onboarding",
+    "name": "Employee onboarding",
+    "group": "records",
+    "theme": "fluent",
+    "blurb": "A new hire set up in four steps: who they are, their job and manager, pay details, and the equipment to have ready on day one."
+  },
+  {
+    "id": "task",
+    "name": "Task",
+    "group": "records",
+    "theme": "apple",
+    "blurb": "A project task: its stage on a clickable statusbar, priority stars, who it is assigned to, a deadline, a checklist whose progress counts itself, and a description."
+  }
+]

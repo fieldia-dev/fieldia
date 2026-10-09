@@ -1,0 +1,158 @@
+{
+  "fieldia": "0.1",
+  "id": "contact-us",
+  "title": "Contact us",
+  "description": "Tell us what you need and we will reply within one working day.",
+  "data": {
+    "kind": "responses"
+  },
+  "maxWidth": "medium",
+  "look": {
+    "theme": "apple"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Your name",
+      "required": true,
+      "size": 80
+    },
+    "email": {
+      "type": "char",
+      "label": "Email",
+      "required": true,
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    },
+    "phone": {
+      "type": "char",
+      "label": "Phone"
+    },
+    "company": {
+      "type": "char",
+      "label": "Company"
+    },
+    "topic": {
+      "type": "selection",
+      "label": "What is it about?",
+      "required": true,
+      "options": [
+        {
+          "value": "sales",
+          "label": "Buying from us"
+        },
+        {
+          "value": "support",
+          "label": "Help with something"
+        },
+        {
+          "value": "partnership",
+          "label": "Working together"
+        },
+        {
+          "value": "press",
+          "label": "Press"
+        },
+        {
+          "value": "other",
+          "label": "Something else"
+        }
+      ]
+    },
+    "order_ref": {
+      "type": "char",
+      "label": "Order or account number"
+    },
+    "message": {
+      "type": "text",
+      "label": "Your message",
+      "required": true,
+      "size": 2000
+    },
+    "reply_by": {
+      "type": "selection",
+      "label": "Reply to me by",
+      "required": true,
+      "options": [
+        {
+          "value": "email",
+          "label": "Email"
+        },
+        {
+          "value": "phone",
+          "label": "Phone"
+        }
+      ],
+      "default": "email"
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "contact",
+    "children": [
+      {
+        "type": "section",
+        "id": "you",
+        "title": "About you",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-name",
+            "field": "name",
+            "placeholder": "Sara Hassan"
+          },
+          {
+            "type": "field",
+            "id": "f-email",
+            "field": "email",
+            "widget": "email",
+            "placeholder": "sara@example.com"
+          },
+          {
+            "type": "field",
+            "id": "f-phone",
+            "field": "phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-company",
+            "field": "company"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "message",
+        "title": "Your message",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-topic",
+            "field": "topic"
+          },
+          {
+            "type": "field",
+            "id": "f-order",
+            "field": "order_ref",
+            "invisible": "topic != 'support'",
+            "help": "On your receipt or in your account."
+          },
+          {
+            "type": "field",
+            "id": "f-message",
+            "field": "message",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-reply",
+            "field": "reply_by",
+            "widget": "radio"
+          }
+        ]
+      }
+    ]
+  }
+}

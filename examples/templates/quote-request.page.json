@@ -1,0 +1,196 @@
+{
+  "fieldia": "0.1",
+  "id": "quote-request",
+  "title": "Request a quote",
+  "description": "Tell us about your project and we will send a quote within three working days.",
+  "data": {
+    "kind": "responses"
+  },
+  "maxWidth": "medium",
+  "look": {
+    "theme": "ant"
+  },
+  "fields": {
+    "company": {
+      "type": "char",
+      "label": "Company",
+      "required": true
+    },
+    "contact": {
+      "type": "char",
+      "label": "Your name",
+      "required": true
+    },
+    "email": {
+      "type": "char",
+      "label": "Work email",
+      "required": true,
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    },
+    "phone": {
+      "type": "char",
+      "label": "Phone"
+    },
+    "company_size": {
+      "type": "selection",
+      "label": "Company size",
+      "options": [
+        {
+          "value": "1-10",
+          "label": "1–10 people"
+        },
+        {
+          "value": "11-50",
+          "label": "11–50"
+        },
+        {
+          "value": "51-250",
+          "label": "51–250"
+        },
+        {
+          "value": "250+",
+          "label": "More than 250"
+        }
+      ]
+    },
+    "services": {
+      "type": "selection",
+      "label": "What do you need?",
+      "multiple": true,
+      "required": true,
+      "options": [
+        {
+          "value": "website",
+          "label": "A website"
+        },
+        {
+          "value": "app",
+          "label": "A mobile app"
+        },
+        {
+          "value": "integration",
+          "label": "Connecting our systems"
+        },
+        {
+          "value": "support",
+          "label": "Ongoing support"
+        }
+      ]
+    },
+    "budget": {
+      "type": "selection",
+      "label": "Budget",
+      "options": [
+        {
+          "value": "small",
+          "label": "Under $10,000"
+        },
+        {
+          "value": "medium",
+          "label": "$10,000 – $50,000"
+        },
+        {
+          "value": "large",
+          "label": "More than $50,000"
+        },
+        {
+          "value": "unsure",
+          "label": "Not sure yet"
+        }
+      ]
+    },
+    "deadline": {
+      "type": "date",
+      "label": "Needed by"
+    },
+    "brief": {
+      "type": "text",
+      "label": "About the project",
+      "required": true,
+      "size": 4000
+    },
+    "attachment": {
+      "type": "binary",
+      "label": "A brief or a drawing"
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "quote",
+    "children": [
+      {
+        "type": "section",
+        "id": "company",
+        "title": "Your company",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-company",
+            "field": "company"
+          },
+          {
+            "type": "field",
+            "id": "f-size",
+            "field": "company_size"
+          },
+          {
+            "type": "field",
+            "id": "f-contact",
+            "field": "contact"
+          },
+          {
+            "type": "field",
+            "id": "f-email",
+            "field": "email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-phone",
+            "field": "phone",
+            "widget": "phone"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "project",
+        "title": "The project",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-services",
+            "field": "services",
+            "widget": "checkboxes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-budget",
+            "field": "budget",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-deadline",
+            "field": "deadline"
+          },
+          {
+            "type": "field",
+            "id": "f-brief",
+            "field": "brief",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-attachment",
+            "field": "attachment",
+            "colspan": 2
+          }
+        ]
+      }
+    ]
+  }
+}

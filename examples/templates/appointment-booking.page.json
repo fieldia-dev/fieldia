@@ -1,0 +1,202 @@
+{
+  "fieldia": "0.1",
+  "id": "appointment-booking",
+  "title": "Book an appointment",
+  "description": "Pick a service and a time that suits you. We confirm by email straight away.",
+  "data": {
+    "kind": "responses"
+  },
+  "maxWidth": "medium",
+  "look": {
+    "theme": "apple"
+  },
+  "fields": {
+    "service": {
+      "type": "selection",
+      "label": "Service",
+      "required": true,
+      "options": [
+        {
+          "value": "consultation",
+          "label": "First consultation, 30 min"
+        },
+        {
+          "value": "follow_up",
+          "label": "Follow-up, 20 min"
+        },
+        {
+          "value": "review",
+          "label": "Full review, 60 min"
+        }
+      ]
+    },
+    "date": {
+      "type": "date",
+      "label": "Day",
+      "required": true
+    },
+    "time": {
+      "type": "selection",
+      "label": "Time",
+      "required": true,
+      "options": [
+        {
+          "value": "09:00",
+          "label": "09:00"
+        },
+        {
+          "value": "10:00",
+          "label": "10:00"
+        },
+        {
+          "value": "11:00",
+          "label": "11:00"
+        },
+        {
+          "value": "12:00",
+          "label": "12:00"
+        },
+        {
+          "value": "14:00",
+          "label": "14:00"
+        },
+        {
+          "value": "15:00",
+          "label": "15:00"
+        },
+        {
+          "value": "16:00",
+          "label": "16:00"
+        }
+      ]
+    },
+    "visit": {
+      "type": "selection",
+      "label": "Where",
+      "required": true,
+      "options": [
+        {
+          "value": "in_person",
+          "label": "In person"
+        },
+        {
+          "value": "video",
+          "label": "Video call"
+        }
+      ],
+      "default": "in_person"
+    },
+    "name": {
+      "type": "char",
+      "label": "Your name",
+      "required": true
+    },
+    "phone": {
+      "type": "char",
+      "label": "Phone",
+      "required": true
+    },
+    "email": {
+      "type": "char",
+      "label": "Email",
+      "required": true,
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    },
+    "first_visit": {
+      "type": "boolean",
+      "label": "This is my first visit",
+      "default": true
+    },
+    "notes": {
+      "type": "text",
+      "label": "Anything we should know?",
+      "size": 1000
+    },
+    "reminder": {
+      "type": "boolean",
+      "label": "Text me a reminder the day before",
+      "default": true
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "booking",
+    "children": [
+      {
+        "type": "section",
+        "id": "when",
+        "title": "When",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-service",
+            "field": "service",
+            "widget": "radio",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-date",
+            "field": "date"
+          },
+          {
+            "type": "field",
+            "id": "f-time",
+            "field": "time"
+          },
+          {
+            "type": "field",
+            "id": "f-visit",
+            "field": "visit",
+            "widget": "radio",
+            "colspan": 2
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "who",
+        "title": "Who is coming",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-name",
+            "field": "name"
+          },
+          {
+            "type": "field",
+            "id": "f-phone",
+            "field": "phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-email",
+            "field": "email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-first",
+            "field": "first_visit"
+          },
+          {
+            "type": "field",
+            "id": "f-notes",
+            "field": "notes",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-reminder",
+            "field": "reminder",
+            "widget": "toggle",
+            "colspan": 2
+          }
+        ]
+      }
+    ]
+  }
+}

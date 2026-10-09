@@ -1,0 +1,102 @@
+{
+  "fieldia": "0.1",
+  "id": "newsletter",
+  "title": "Stay in the loop",
+  "description": "Our best guides and news, never more than you ask for. Leave whenever you like.",
+  "data": {
+    "kind": "responses"
+  },
+  "maxWidth": "narrow",
+  "look": {
+    "theme": "shadcn"
+  },
+  "fields": {
+    "email": {
+      "type": "char",
+      "label": "Email",
+      "required": true,
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    },
+    "first_name": {
+      "type": "char",
+      "label": "First name"
+    },
+    "topics": {
+      "type": "selection",
+      "label": "What would you like to hear about?",
+      "multiple": true,
+      "required": true,
+      "options": [
+        {
+          "value": "product",
+          "label": "New in the product"
+        },
+        {
+          "value": "guides",
+          "label": "Guides and tips"
+        },
+        {
+          "value": "events",
+          "label": "Events near you"
+        },
+        {
+          "value": "offers",
+          "label": "Offers"
+        }
+      ]
+    },
+    "frequency": {
+      "type": "selection",
+      "label": "How often",
+      "required": true,
+      "options": [
+        {
+          "value": "weekly",
+          "label": "Every week"
+        },
+        {
+          "value": "monthly",
+          "label": "Once a month"
+        }
+      ],
+      "default": "monthly"
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "newsletter",
+    "children": [
+      {
+        "type": "section",
+        "id": "signup",
+        "columns": 1,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-email",
+            "field": "email",
+            "widget": "email",
+            "placeholder": "you@example.com"
+          },
+          {
+            "type": "field",
+            "id": "f-first",
+            "field": "first_name"
+          },
+          {
+            "type": "field",
+            "id": "f-topics",
+            "field": "topics",
+            "widget": "checkboxes"
+          },
+          {
+            "type": "field",
+            "id": "f-frequency",
+            "field": "frequency",
+            "widget": "radio"
+          }
+        ]
+      }
+    ]
+  }
+}

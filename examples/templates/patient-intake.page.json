@@ -1,0 +1,251 @@
+{
+  "fieldia": "0.1",
+  "id": "patient-intake",
+  "title": "New patient form",
+  "description": "Please fill this in before your first visit. Your answers stay between you and your care team.",
+  "data": {
+    "kind": "responses"
+  },
+  "maxWidth": "medium",
+  "look": {
+    "theme": "material"
+  },
+  "fields": {
+    "full_name": {
+      "type": "char",
+      "label": "Full name",
+      "required": true
+    },
+    "birth_date": {
+      "type": "date",
+      "label": "Date of birth",
+      "required": true
+    },
+    "sex": {
+      "type": "selection",
+      "label": "Sex",
+      "options": [
+        {
+          "value": "female",
+          "label": "Female"
+        },
+        {
+          "value": "male",
+          "label": "Male"
+        },
+        {
+          "value": "other",
+          "label": "Prefer not to say"
+        }
+      ]
+    },
+    "phone": {
+      "type": "char",
+      "label": "Phone",
+      "required": true
+    },
+    "email": {
+      "type": "char",
+      "label": "Email",
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    },
+    "address": {
+      "type": "text",
+      "label": "Address",
+      "size": 300
+    },
+    "has_allergies": {
+      "type": "boolean",
+      "label": "I have allergies"
+    },
+    "allergies": {
+      "type": "text",
+      "label": "Which allergies, and what happens?"
+    },
+    "medication": {
+      "type": "text",
+      "label": "Medicines you take now"
+    },
+    "conditions": {
+      "type": "selection",
+      "label": "Have you ever had any of these?",
+      "multiple": true,
+      "options": [
+        {
+          "value": "diabetes",
+          "label": "Diabetes"
+        },
+        {
+          "value": "info",
+          "label": "Heart disease"
+        },
+        {
+          "value": "blood_pressure",
+          "label": "High blood pressure"
+        },
+        {
+          "value": "asthma",
+          "label": "Asthma"
+        },
+        {
+          "value": "none",
+          "label": "None of these"
+        }
+      ]
+    },
+    "smoker": {
+      "type": "selection",
+      "label": "Do you smoke?",
+      "options": [
+        {
+          "value": "no",
+          "label": "No"
+        },
+        {
+          "value": "former",
+          "label": "I used to"
+        },
+        {
+          "value": "yes",
+          "label": "Yes"
+        }
+      ]
+    },
+    "emergency_name": {
+      "type": "char",
+      "label": "Emergency contact",
+      "required": true
+    },
+    "emergency_phone": {
+      "type": "char",
+      "label": "Their phone",
+      "required": true
+    },
+    "consent": {
+      "type": "boolean",
+      "label": "I agree to be treated and to my records being kept as the clinic's privacy notice says"
+    },
+    "signature": {
+      "type": "binary",
+      "label": "Signature",
+      "required": true
+    }
+  },
+  "layout": {
+    "type": "wizard",
+    "id": "intake",
+    "clickable": true,
+    "finishLabel": "Send to the clinic",
+    "children": [
+      {
+        "type": "step",
+        "id": "step-patient",
+        "label": "You",
+        "icon": "user",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-name",
+            "field": "full_name"
+          },
+          {
+            "type": "field",
+            "id": "f-birth",
+            "field": "birth_date"
+          },
+          {
+            "type": "field",
+            "id": "f-sex",
+            "field": "sex",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-phone",
+            "field": "phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-email",
+            "field": "email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-address",
+            "field": "address"
+          }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "step-history",
+        "label": "Your health",
+        "icon": "info",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-has-allergies",
+            "field": "has_allergies",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-allergies",
+            "field": "allergies",
+            "invisible": "not has_allergies",
+            "required": "has_allergies"
+          },
+          {
+            "type": "field",
+            "id": "f-medication",
+            "field": "medication"
+          },
+          {
+            "type": "field",
+            "id": "f-conditions",
+            "field": "conditions",
+            "widget": "checkboxes"
+          },
+          {
+            "type": "field",
+            "id": "f-smoker",
+            "field": "smoker",
+            "widget": "radio"
+          }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "step-consent",
+        "label": "Consent",
+        "icon": "check",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-emergency",
+            "field": "emergency_name"
+          },
+          {
+            "type": "field",
+            "id": "f-emergency-phone",
+            "field": "emergency_phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-consent",
+            "field": "consent"
+          },
+          {
+            "type": "field",
+            "id": "f-signature",
+            "field": "signature",
+            "widget": "signature"
+          }
+        ]
+      }
+    ]
+  }
+}

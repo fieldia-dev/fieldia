@@ -1,0 +1,211 @@
+{
+  "fieldia": "0.1",
+  "id": "property-enquiry",
+  "title": "Find your next home",
+  "description": "Tell us what you are looking for and an agent will call you with homes that fit.",
+  "data": {
+    "kind": "responses"
+  },
+  "maxWidth": "medium",
+  "look": {
+    "theme": "material"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Your name",
+      "required": true
+    },
+    "phone": {
+      "type": "char",
+      "label": "Phone",
+      "required": true
+    },
+    "email": {
+      "type": "char",
+      "label": "Email",
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    },
+    "purpose": {
+      "type": "selection",
+      "label": "Are you looking to",
+      "required": true,
+      "options": [
+        {
+          "value": "buy",
+          "label": "Buy"
+        },
+        {
+          "value": "rent",
+          "label": "Rent"
+        }
+      ],
+      "default": "buy"
+    },
+    "property_type": {
+      "type": "selection",
+      "label": "Kind of home",
+      "required": true,
+      "options": [
+        {
+          "value": "apartment",
+          "label": "Apartment"
+        },
+        {
+          "value": "villa",
+          "label": "Villa"
+        },
+        {
+          "value": "townhouse",
+          "label": "Townhouse"
+        },
+        {
+          "value": "duplex",
+          "label": "Duplex"
+        },
+        {
+          "value": "office",
+          "label": "Office"
+        }
+      ]
+    },
+    "area": {
+      "type": "char",
+      "label": "Preferred area",
+      "help": "A district, a compound or a street."
+    },
+    "bedrooms": {
+      "type": "integer",
+      "label": "Bedrooms",
+      "required": true,
+      "min": 1,
+      "max": 6,
+      "default": 2
+    },
+    "budget": {
+      "type": "monetary",
+      "label": "Budget",
+      "currency": "EGP",
+      "min": 0
+    },
+    "rent_budget": {
+      "type": "monetary",
+      "label": "Monthly rent up to",
+      "currency": "EGP",
+      "min": 0
+    },
+    "move_in": {
+      "type": "date",
+      "label": "Move in by"
+    },
+    "viewing": {
+      "type": "boolean",
+      "label": "I would like to arrange a viewing"
+    },
+    "viewing_date": {
+      "type": "date",
+      "label": "A good day for a viewing"
+    },
+    "notes": {
+      "type": "text",
+      "label": "Anything else?",
+      "size": 1000
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "enquiry",
+    "children": [
+      {
+        "type": "section",
+        "id": "looking",
+        "title": "What you are looking for",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-purpose",
+            "field": "purpose",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-type",
+            "field": "property_type"
+          },
+          {
+            "type": "field",
+            "id": "f-area",
+            "field": "area"
+          },
+          {
+            "type": "field",
+            "id": "f-bedrooms",
+            "field": "bedrooms",
+            "widget": "slider"
+          },
+          {
+            "type": "field",
+            "id": "f-budget",
+            "field": "budget",
+            "invisible": "purpose != 'buy'"
+          },
+          {
+            "type": "field",
+            "id": "f-rent",
+            "field": "rent_budget",
+            "invisible": "purpose != 'rent'"
+          },
+          {
+            "type": "field",
+            "id": "f-move",
+            "field": "move_in"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "contact",
+        "title": "How to reach you",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-name",
+            "field": "name"
+          },
+          {
+            "type": "field",
+            "id": "f-phone",
+            "field": "phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-email",
+            "field": "email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-viewing",
+            "field": "viewing",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-viewing-date",
+            "field": "viewing_date",
+            "invisible": "not viewing"
+          },
+          {
+            "type": "field",
+            "id": "f-notes",
+            "field": "notes",
+            "colspan": 2
+          }
+        ]
+      }
+    ]
+  }
+}

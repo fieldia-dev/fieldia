@@ -1,0 +1,264 @@
+{
+  "fieldia": "0.1",
+  "id": "product",
+  "title": "Product",
+  "description": "What you sell or buy: its picture, prices and margin, codes and stock.",
+  "data": {
+    "kind": "record",
+    "model": "product"
+  },
+  "maxWidth": "wide",
+  "look": {
+    "theme": "shadcn"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Product name",
+      "required": true
+    },
+    "image": {
+      "type": "image",
+      "label": "Picture"
+    },
+    "kind": {
+      "type": "selection",
+      "label": "Kind",
+      "options": [
+        {
+          "value": "goods",
+          "label": "Goods"
+        },
+        {
+          "value": "service",
+          "label": "Service"
+        }
+      ],
+      "default": "goods"
+    },
+    "category": {
+      "type": "selection",
+      "label": "Category",
+      "options": [
+        {
+          "value": "hardware",
+          "label": "Hardware"
+        },
+        {
+          "value": "software",
+          "label": "Software"
+        },
+        {
+          "value": "furniture",
+          "label": "Furniture"
+        },
+        {
+          "value": "services",
+          "label": "Services"
+        }
+      ]
+    },
+    "sale_ok": {
+      "type": "boolean",
+      "label": "Can be sold",
+      "default": true
+    },
+    "purchase_ok": {
+      "type": "boolean",
+      "label": "Can be bought",
+      "default": true
+    },
+    "list_price": {
+      "type": "monetary",
+      "label": "Sales price",
+      "currency": "USD",
+      "min": 0
+    },
+    "cost": {
+      "type": "monetary",
+      "label": "Cost",
+      "currency": "USD",
+      "min": 0
+    },
+    "margin": {
+      "type": "monetary",
+      "label": "Margin",
+      "currency": "USD",
+      "compute": "list_price - cost"
+    },
+    "sku": {
+      "type": "char",
+      "label": "Internal reference"
+    },
+    "barcode": {
+      "type": "char",
+      "label": "Barcode"
+    },
+    "weight": {
+      "type": "float",
+      "label": "Weight (kg)",
+      "digits": [
+        8,
+        2
+      ],
+      "min": 0
+    },
+    "stock": {
+      "type": "integer",
+      "label": "In stock",
+      "min": 0
+    },
+    "reorder_at": {
+      "type": "integer",
+      "label": "Reorder below",
+      "min": 0
+    },
+    "description": {
+      "type": "html",
+      "label": "Description"
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "label": "Product",
+      "placeholder": "e.g. Office chair",
+      "below": [
+        {
+          "type": "field",
+          "id": "f-sale-ok",
+          "field": "sale_ok"
+        },
+        {
+          "type": "field",
+          "id": "f-purchase-ok",
+          "field": "purchase_ok"
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "section",
+        "id": "main",
+        "columns": {
+          "wide": 2,
+          "medium": 1
+        },
+        "children": [
+          {
+            "type": "section",
+            "id": "prices",
+            "columns": 1,
+            "children": [
+              {
+                "type": "field",
+                "id": "f-kind",
+                "field": "kind",
+                "widget": "radio",
+                "options": {
+                  "clear": false
+                }
+              },
+              {
+                "type": "field",
+                "id": "f-category",
+                "field": "category"
+              },
+              {
+                "type": "field",
+                "id": "f-price",
+                "field": "list_price"
+              },
+              {
+                "type": "field",
+                "id": "f-cost",
+                "field": "cost"
+              },
+              {
+                "type": "field",
+                "id": "f-margin",
+                "field": "margin"
+              }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "codes",
+            "columns": 1,
+            "children": [
+              {
+                "type": "field",
+                "id": "f-image",
+                "field": "image"
+              },
+              {
+                "type": "field",
+                "id": "f-sku",
+                "field": "sku"
+              },
+              {
+                "type": "field",
+                "id": "f-barcode",
+                "field": "barcode"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "tabs",
+        "id": "notebook",
+        "children": [
+          {
+            "type": "tab",
+            "id": "tab-stock",
+            "label": "Inventory",
+            "invisible": "kind == 'service'",
+            "children": [
+              {
+                "type": "section",
+                "id": "stock",
+                "columns": {
+                  "wide": 2,
+                  "medium": 1
+                },
+                "children": [
+                  {
+                    "type": "field",
+                    "id": "f-stock",
+                    "field": "stock"
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-reorder",
+                    "field": "reorder_at"
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-weight",
+                    "field": "weight"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-description",
+            "label": "Description",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-description",
+                "field": "description",
+                "labels": "hidden"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

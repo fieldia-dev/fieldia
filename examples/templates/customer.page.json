@@ -1,0 +1,278 @@
+{
+  "fieldia": "0.1",
+  "id": "customer",
+  "title": "Customer",
+  "description": "A customer and everything you keep about them: contacts, address, terms and notes.",
+  "data": {
+    "kind": "record",
+    "model": "partner"
+  },
+  "maxWidth": "full",
+  "look": {
+    "theme": "odoo"
+  },
+  "fields": {
+    "company_type": {
+      "type": "selection",
+      "label": "Kind",
+      "options": [
+        {
+          "value": "person",
+          "label": "Person"
+        },
+        {
+          "value": "company",
+          "label": "Company"
+        }
+      ],
+      "default": "company"
+    },
+    "name": {
+      "type": "char",
+      "label": "Name",
+      "required": true
+    },
+    "email": {
+      "type": "char",
+      "label": "Email",
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    },
+    "phone": {
+      "type": "char",
+      "label": "Phone"
+    },
+    "website": {
+      "type": "char",
+      "label": "Website"
+    },
+    "tag_ids": {
+      "type": "many2many",
+      "label": "Tags",
+      "relation": "partner.tag"
+    },
+    "street": {
+      "type": "char",
+      "label": "Street"
+    },
+    "city": {
+      "type": "char",
+      "label": "City"
+    },
+    "country_id": {
+      "type": "many2one",
+      "label": "Country",
+      "relation": "country"
+    },
+    "vat": {
+      "type": "char",
+      "label": "Tax ID"
+    },
+    "child_ids": {
+      "type": "one2many",
+      "label": "Contacts",
+      "relation": "partner.contact",
+      "fields": {
+        "name": {
+          "type": "char",
+          "label": "Name",
+          "required": true
+        },
+        "function": {
+          "type": "char",
+          "label": "Job"
+        },
+        "email": {
+          "type": "char",
+          "label": "Email"
+        },
+        "phone": {
+          "type": "char",
+          "label": "Phone"
+        }
+      }
+    },
+    "payment_terms": {
+      "type": "selection",
+      "label": "Payment terms",
+      "options": [
+        {
+          "value": "now",
+          "label": "Immediate payment"
+        },
+        {
+          "value": "30",
+          "label": "30 days"
+        },
+        {
+          "value": "60",
+          "label": "60 days"
+        }
+      ]
+    },
+    "credit_limit": {
+      "type": "monetary",
+      "label": "Credit limit",
+      "currency": "USD",
+      "min": 0
+    },
+    "notes": {
+      "type": "html",
+      "label": "Notes"
+    }
+  },
+  "layout": {
+    "type": "sheet",
+    "id": "sheet",
+    "title": {
+      "field": "name",
+      "label": "Customer",
+      "placeholder": "e.g. Nile Traders",
+      "placeholderWhen": [
+        {
+          "when": "company_type == 'person'",
+          "text": "e.g. Sara Hassan"
+        }
+      ],
+      "above": [
+        {
+          "type": "field",
+          "id": "f-kind",
+          "field": "company_type",
+          "widget": "radio",
+          "options": {
+            "clear": false
+          }
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "section",
+        "id": "header",
+        "columns": {
+          "wide": 2,
+          "medium": 1
+        },
+        "children": [
+          {
+            "type": "section",
+            "id": "left",
+            "columns": 1,
+            "children": [
+              {
+                "type": "field",
+                "id": "f-street",
+                "field": "street"
+              },
+              {
+                "type": "field",
+                "id": "f-city",
+                "field": "city"
+              },
+              {
+                "type": "field",
+                "id": "f-country",
+                "field": "country_id"
+              },
+              {
+                "type": "field",
+                "id": "f-vat",
+                "field": "vat"
+              }
+            ]
+          },
+          {
+            "type": "section",
+            "id": "right",
+            "columns": 1,
+            "children": [
+              {
+                "type": "field",
+                "id": "f-phone",
+                "field": "phone",
+                "widget": "phone"
+              },
+              {
+                "type": "field",
+                "id": "f-email",
+                "field": "email",
+                "widget": "email"
+              },
+              {
+                "type": "field",
+                "id": "f-website",
+                "field": "website",
+                "widget": "url"
+              },
+              {
+                "type": "field",
+                "id": "f-tags",
+                "field": "tag_ids",
+                "widget": "tags"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "tabs",
+        "id": "notebook",
+        "children": [
+          {
+            "type": "tab",
+            "id": "tab-contacts",
+            "label": "Contacts",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-contacts",
+                "field": "child_ids",
+                "labels": "hidden"
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-sales",
+            "label": "Sales and payment",
+            "children": [
+              {
+                "type": "section",
+                "id": "terms",
+                "columns": {
+                  "wide": 2,
+                  "medium": 1
+                },
+                "children": [
+                  {
+                    "type": "field",
+                    "id": "f-terms",
+                    "field": "payment_terms"
+                  },
+                  {
+                    "type": "field",
+                    "id": "f-credit",
+                    "field": "credit_limit"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "tab",
+            "id": "tab-notes",
+            "label": "Notes",
+            "children": [
+              {
+                "type": "field",
+                "id": "f-notes",
+                "field": "notes",
+                "labels": "hidden"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,188 @@
+{
+  "fieldia": "0.1",
+  "id": "support-request",
+  "title": "Get help",
+  "description": "Tell us what happened. The more we know, the faster we can fix it.",
+  "data": {
+    "kind": "responses"
+  },
+  "maxWidth": "medium",
+  "look": {
+    "theme": "bootstrap"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Your name",
+      "required": true
+    },
+    "email": {
+      "type": "char",
+      "label": "Email",
+      "required": true,
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    },
+    "product": {
+      "type": "selection",
+      "label": "Product",
+      "required": true,
+      "options": [
+        {
+          "value": "web",
+          "label": "Web app"
+        },
+        {
+          "value": "mobile",
+          "label": "Mobile app"
+        },
+        {
+          "value": "api",
+          "label": "API"
+        },
+        {
+          "value": "billing",
+          "label": "Billing"
+        }
+      ]
+    },
+    "kind": {
+      "type": "selection",
+      "label": "What kind of request?",
+      "required": true,
+      "options": [
+        {
+          "value": "question",
+          "label": "A question"
+        },
+        {
+          "value": "bug",
+          "label": "Something is broken"
+        },
+        {
+          "value": "idea",
+          "label": "An idea"
+        }
+      ]
+    },
+    "priority": {
+      "type": "selection",
+      "label": "How urgent is it?",
+      "options": [
+        {
+          "value": "0",
+          "label": "Low"
+        },
+        {
+          "value": "1",
+          "label": "Normal"
+        },
+        {
+          "value": "2",
+          "label": "High"
+        },
+        {
+          "value": "3",
+          "label": "Urgent"
+        }
+      ],
+      "default": "1"
+    },
+    "subject": {
+      "type": "char",
+      "label": "Subject",
+      "required": true,
+      "size": 120
+    },
+    "description": {
+      "type": "text",
+      "label": "What happened?",
+      "required": true,
+      "size": 4000
+    },
+    "steps": {
+      "type": "text",
+      "label": "Steps to make it happen again"
+    },
+    "screenshot": {
+      "type": "binary",
+      "label": "Screenshot or file"
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "support",
+    "children": [
+      {
+        "type": "section",
+        "id": "who",
+        "title": "You",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-name",
+            "field": "name"
+          },
+          {
+            "type": "field",
+            "id": "f-email",
+            "field": "email",
+            "widget": "email"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "request",
+        "title": "Your request",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-product",
+            "field": "product"
+          },
+          {
+            "type": "field",
+            "id": "f-priority",
+            "field": "priority",
+            "widget": "priority"
+          },
+          {
+            "type": "field",
+            "id": "f-kind",
+            "field": "kind",
+            "widget": "radio",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-subject",
+            "field": "subject",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-description",
+            "field": "description",
+            "colspan": 2
+          },
+          {
+            "type": "field",
+            "id": "f-steps",
+            "field": "steps",
+            "colspan": 2,
+            "invisible": "kind != 'bug'",
+            "placeholder": "1. Open…  2. Click…  3. See…"
+          },
+          {
+            "type": "field",
+            "id": "f-file",
+            "field": "screenshot",
+            "colspan": 2
+          }
+        ]
+      }
+    ]
+  }
+}

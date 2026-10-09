@@ -1,0 +1,152 @@
+{
+  "fieldia": "0.1",
+  "id": "customer-feedback",
+  "title": "How did we do?",
+  "description": "Two minutes of your time. Every answer is read, and it changes what we do next.",
+  "data": {
+    "kind": "responses"
+  },
+  "maxWidth": "medium",
+  "look": {
+    "theme": "google-forms"
+  },
+  "fields": {
+    "overall": {
+      "type": "integer",
+      "label": "How would you rate your experience?",
+      "required": true,
+      "min": 1,
+      "max": 5
+    },
+    "recommend": {
+      "type": "integer",
+      "label": "How likely are you to recommend us to a friend?",
+      "required": true,
+      "min": 0,
+      "max": 10
+    },
+    "liked": {
+      "type": "selection",
+      "label": "What went well?",
+      "multiple": true,
+      "options": [
+        {
+          "value": "speed",
+          "label": "It was quick"
+        },
+        {
+          "value": "staff",
+          "label": "Friendly people"
+        },
+        {
+          "value": "quality",
+          "label": "Quality"
+        },
+        {
+          "value": "price",
+          "label": "Fair price"
+        },
+        {
+          "value": "easy",
+          "label": "Easy to use"
+        }
+      ]
+    },
+    "better": {
+      "type": "text",
+      "label": "What could we do better?",
+      "size": 2000
+    },
+    "follow_up": {
+      "type": "boolean",
+      "label": "You may contact me about my answers"
+    },
+    "email": {
+      "type": "char",
+      "label": "Email",
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "feedback",
+    "children": [
+      {
+        "type": "section",
+        "id": "q-overall",
+        "columns": 1,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-overall",
+            "field": "overall",
+            "widget": "rating"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "q-recommend",
+        "columns": 1,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-recommend",
+            "field": "recommend",
+            "widget": "scale",
+            "options": {
+              "startLabel": "Not likely",
+              "endLabel": "Very likely"
+            }
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "q-liked",
+        "columns": 1,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-liked",
+            "field": "liked",
+            "widget": "checkboxes"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "q-better",
+        "columns": 1,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-better",
+            "field": "better"
+          }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "q-contact",
+        "columns": 1,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-follow",
+            "field": "follow_up",
+            "widget": "toggle"
+          },
+          {
+            "type": "field",
+            "id": "f-email",
+            "field": "email",
+            "widget": "email",
+            "invisible": "not follow_up",
+            "required": "follow_up"
+          }
+        ]
+      }
+    ]
+  }
+}

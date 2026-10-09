@@ -1,0 +1,303 @@
+{
+  "fieldia": "0.1",
+  "id": "employee-onboarding",
+  "title": "Welcome a new hire",
+  "description": "Everything to set up before their first day, one step at a time.",
+  "data": {
+    "kind": "record",
+    "model": "employee"
+  },
+  "maxWidth": "medium",
+  "look": {
+    "theme": "fluent"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Full name",
+      "required": true
+    },
+    "private_email": {
+      "type": "char",
+      "label": "Personal email",
+      "required": true,
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    },
+    "phone": {
+      "type": "char",
+      "label": "Phone"
+    },
+    "birthday": {
+      "type": "date",
+      "label": "Date of birth"
+    },
+    "address": {
+      "type": "text",
+      "label": "Home address"
+    },
+    "job_title": {
+      "type": "char",
+      "label": "Job title",
+      "required": true
+    },
+    "department": {
+      "type": "selection",
+      "label": "Department",
+      "required": true,
+      "options": [
+        {
+          "value": "sales",
+          "label": "Sales"
+        },
+        {
+          "value": "operations",
+          "label": "Operations"
+        },
+        {
+          "value": "engineering",
+          "label": "Engineering"
+        },
+        {
+          "value": "finance",
+          "label": "Finance"
+        },
+        {
+          "value": "people",
+          "label": "People"
+        }
+      ]
+    },
+    "manager_id": {
+      "type": "many2one",
+      "label": "Manager",
+      "relation": "employee"
+    },
+    "start_date": {
+      "type": "date",
+      "label": "First day",
+      "required": true
+    },
+    "contract": {
+      "type": "selection",
+      "label": "Contract",
+      "required": true,
+      "options": [
+        {
+          "value": "permanent",
+          "label": "Permanent"
+        },
+        {
+          "value": "fixed",
+          "label": "Fixed term"
+        },
+        {
+          "value": "intern",
+          "label": "Internship"
+        }
+      ],
+      "default": "permanent"
+    },
+    "contract_end": {
+      "type": "date",
+      "label": "Contract ends"
+    },
+    "bank_name": {
+      "type": "char",
+      "label": "Bank"
+    },
+    "iban": {
+      "type": "char",
+      "label": "IBAN",
+      "pattern": "^[A-Z]{2}[0-9]{2}[A-Z0-9 ]{10,30}$",
+      "help": "Two letters, two digits, then the account: EG38 0019 0005 0000 0000 2631 8000 2."
+    },
+    "tax_id": {
+      "type": "char",
+      "label": "Tax number"
+    },
+    "laptop": {
+      "type": "selection",
+      "label": "Laptop",
+      "required": true,
+      "options": [
+        {
+          "value": "mac",
+          "label": "Mac"
+        },
+        {
+          "value": "windows",
+          "label": "Windows"
+        },
+        {
+          "value": "linux",
+          "label": "Linux"
+        },
+        {
+          "value": "none",
+          "label": "None needed"
+        }
+      ],
+      "default": "mac"
+    },
+    "accessories": {
+      "type": "selection",
+      "label": "Also have ready",
+      "multiple": true,
+      "options": [
+        {
+          "value": "monitor",
+          "label": "A second screen"
+        },
+        {
+          "value": "headset",
+          "label": "A headset"
+        },
+        {
+          "value": "phone",
+          "label": "A work phone"
+        },
+        {
+          "value": "badge",
+          "label": "An office badge"
+        }
+      ]
+    },
+    "first_day_notes": {
+      "type": "text",
+      "label": "Notes for their first day"
+    }
+  },
+  "layout": {
+    "type": "wizard",
+    "id": "onboarding",
+    "clickable": true,
+    "finishLabel": "Finish onboarding",
+    "children": [
+      {
+        "type": "step",
+        "id": "step-person",
+        "label": "The person",
+        "icon": "user",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-name",
+            "field": "name"
+          },
+          {
+            "type": "field",
+            "id": "f-email",
+            "field": "private_email",
+            "widget": "email"
+          },
+          {
+            "type": "field",
+            "id": "f-phone",
+            "field": "phone",
+            "widget": "phone"
+          },
+          {
+            "type": "field",
+            "id": "f-birthday",
+            "field": "birthday"
+          },
+          {
+            "type": "field",
+            "id": "f-address",
+            "field": "address"
+          }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "step-job",
+        "label": "The job",
+        "icon": "building",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-title",
+            "field": "job_title"
+          },
+          {
+            "type": "field",
+            "id": "f-department",
+            "field": "department"
+          },
+          {
+            "type": "field",
+            "id": "f-manager",
+            "field": "manager_id"
+          },
+          {
+            "type": "field",
+            "id": "f-start",
+            "field": "start_date"
+          },
+          {
+            "type": "field",
+            "id": "f-contract",
+            "field": "contract",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-contract-end",
+            "field": "contract_end",
+            "invisible": "contract == 'permanent'",
+            "required": "contract != 'permanent'"
+          }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "step-pay",
+        "label": "Pay",
+        "icon": "money",
+        "optional": true,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-bank",
+            "field": "bank_name"
+          },
+          {
+            "type": "field",
+            "id": "f-iban",
+            "field": "iban"
+          },
+          {
+            "type": "field",
+            "id": "f-tax",
+            "field": "tax_id"
+          }
+        ]
+      },
+      {
+        "type": "step",
+        "id": "step-equipment",
+        "label": "Day one",
+        "icon": "box",
+        "children": [
+          {
+            "type": "field",
+            "id": "f-laptop",
+            "field": "laptop",
+            "widget": "radio"
+          },
+          {
+            "type": "field",
+            "id": "f-accessories",
+            "field": "accessories",
+            "widget": "checkboxes"
+          },
+          {
+            "type": "field",
+            "id": "f-notes",
+            "field": "first_day_notes"
+          }
+        ]
+      }
+    ]
+  }
+}
