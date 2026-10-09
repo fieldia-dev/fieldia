@@ -81,16 +81,16 @@ const storyCaption = ([title, words], i) =>
 
 /** What every page can use: a tile each, with what it holds and where to read or see more. */
 const POWERS = [
-  ['Fields', '19 types, over 35 widgets', 'Money in its currency, signatures, ratings, matrices, tags, files and pictures, rich text, a code editor.', '/fields/'],
-  ['Rules', 'As people type', 'Show, hide, require or lock a field by a condition; values worked out with sum, count and days; answers checked.', '/pages/'],
-  ['Buttons that act', '16 kinds of step', 'Save, ask first, call your server, open a page as a dialog or side panel, post to the chatter, archive.', '/actions/'],
+  ['Fields', '19 types, over 35 widgets', 'Money in its currency, signatures, ratings, matrices, tags, files and pictures, rich text, a code editor.', '/features/forms/'],
+  ['Rules', 'As people type', 'Show, hide, require or lock a field by a condition; values worked out with sum, count and days; answers checked.', '/features/rules/'],
+  ['Buttons that act', '16 kinds of step', 'Save, ask first, call your server, open a page as a dialog or side panel, post to the chatter, archive.', '/features/rules/#buttons'],
   ['Business records', 'Status to totals', 'Status bars, stat buttons, lines that add up in a spreadsheet grid, a PDF beside the sheet, a pager.', '/features/records/'],
-  ['The chatter', 'On every record', 'Messages, notes and @mentions, scheduled activities, followers and files, beside the sheet.', '/chatter/'],
-  ['Lists and search', 'Find, group, act', 'Filters, grouping, favourites, sorting and pages; buttons for the records chosen; rows that open.', '/lists/'],
-  ['Surveys in steps', 'Branching', 'Pages that follow the answers, a progress bar, optional steps, and a Google Forms look.', '/demos/plain/?page=survey&skin=outlined'],
-  ['Looks', '2 skins, 8 themes', 'Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo and Google Forms, light and dark, in your colours.', '/look/'],
-  ['Languages and access', '4 languages, AA', 'English, Arabic, German and French, right to left in full, WCAG 2.2 AA, and every part by keyboard.', '/accessibility/'],
-  ['Your backend', 'One small interface', 'Load and save through a data source; your server fills in fields as they change and puts its refusals on them.', '/data/'],
+  ['The chatter', 'On every record', 'Messages, notes and @mentions, scheduled activities, followers and files, beside the sheet.', '/features/records/#chatter'],
+  ['Lists and search', 'Find, group, act', 'Filters, grouping, favourites, sorting and pages; buttons for the records chosen; rows that open.', '/features/lists/'],
+  ['Surveys in steps', 'Branching', 'Pages that follow the answers, a progress bar, optional steps, and a Google Forms look.', '/features/forms/#steps'],
+  ['Looks', '2 skins, 8 themes', 'Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo and Google Forms, light and dark, in your colours.', '/features/looks/'],
+  ['Languages and access', '4 languages, AA', 'English, Arabic, German and French, right to left in full, WCAG 2.2 AA, and every part by keyboard.', '/features/looks/#arabic'],
+  ['Your backend', 'One small interface', 'Load and save through a data source; your server fills in fields as they change and puts its refusals on them.', '/features/backend/'],
 ];
 const power = ([name, figure, words, href]) =>
   `<li><a class="power" href="${href}"><span class="power-figure">${figure}</span><b>${name}</b><span class="power-words">${words}</span><span class="power-go" aria-hidden="true">→</span></a></li>`;
