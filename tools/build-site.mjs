@@ -43,7 +43,9 @@ cpSync(BUNDLE, join(OUT, 'fieldia.js'));
 // Each language's add-on beside it: the live form fetches one when its language is picked.
 for (const locale of ['ar', 'de', 'fr']) cpSync(BUNDLE.replace(/\.js$/, `.${locale}.js`), join(OUT, `fieldia.${locale}.js`));
 cpSync(join(WORKSPACE, 'examples/pages'), join(OUT, 'examples'), { recursive: true });
-for (const file of ['demo.css', 'shell.css', 'shell.mjs', 'catalog.mjs', 'logo.svg']) cpSync(join(DEMOS, file), join(OUT, 'demos', file));
+// The template library's pages, each beside its gallery: /templates/<id>.page.json.
+for (const file of readdirSync(join(WORKSPACE, 'examples/templates')).filter((f) => f.endsWith('.json'))) cpSync(join(WORKSPACE, 'examples/templates', file), join(OUT, 'templates', file));
+for (const file of ['demo.css', 'shell.css', 'shell.mjs', 'catalog.mjs', 'templates.mjs', 'logo.svg']) cpSync(join(DEMOS, file), join(OUT, 'demos', file));
 cpSync(join(DEMOS, 'thumbs'), join(OUT, 'demos/thumbs'), { recursive: true });
 // The catalog imports the real pages' cards from here: without it the shell cannot load.
 cpSync(join(DEMOS, 'real'), join(OUT, 'demos/real'), { recursive: true });

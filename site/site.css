@@ -39,6 +39,12 @@ pre.code:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 @media (max-width: 420px) {
   .brand-word { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
+/* Where even that is too wide, the links scroll on their own, under a fade that says there are more; the page never does. */
+@media (max-width: 560px) {
+  .top-nav { min-width: 0; overflow-x: auto; scrollbar-width: none; padding-block: 8px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); padding-inline-end: 24px; }
+  .top-nav::-webkit-scrollbar { display: none; }
+  .top-nav a { flex: none; }
+}
 
 /* ---- front page ---- */
 main#main { display: block; }
@@ -152,6 +158,16 @@ tr:last-child td { border-bottom: none; }
 .demo-blurb { margin: 5px 15px 8px; font-size: 13px; line-height: 1.5; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .demo-where { margin: auto 15px 13px; font-size: 11.5px; letter-spacing: 0.03em; color: var(--muted); }
 
+/* ---- the template library on /templates/: the gallery's cards, with three ways to use each ---- */
+.template-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--cat); border-radius: 12px; transition: border-color 0.12s, box-shadow 0.12s; }
+.template-card:hover { border-color: var(--cat); box-shadow: 0 10px 26px rgba(27, 31, 36, 0.12); }
+.template-card:hover .demo-thumb img { transform: scale(1.03); }
+.template-card h3.demo-name { margin: 0; flex-wrap: wrap; }
+.template-theme { margin-left: auto; padding: 2px 9px; border: 1px solid var(--line); border-radius: 999px; font-size: 11.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.template-uses { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: auto 15px 13px; font-size: 13.5px; font-weight: 600; }
+.template-howto .code { margin: 14px 0 10px; }
+.template-howto p { max-width: 72ch; color: var(--muted); font-size: 15px; }
+.hidden-words { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---- the themes' gallery on /look/: the same short form in each theme ---- */
 .theme-gallery { display: grid; gap: 12px; margin-block: 18px 8px; }

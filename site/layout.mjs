@@ -49,6 +49,7 @@ ${head}</head>
   <nav class="top-nav" aria-label="Site">
     <a href="/start/"${docs ? ' aria-current="true"' : ''}>Docs</a>
     <a href="/demos/"${path === '/demos/' ? ' aria-current="page"' : ''}>Demos</a>
+    <a href="/templates/"${path === '/templates/' ? ' aria-current="page"' : ''}>Templates</a>
     <a href="/designer/"${path === '/designer/' ? ' aria-current="page"' : ''}>Designer</a>
     <a href="https://github.com/fieldia-dev/fieldia">GitHub</a>
     <a href="https://www.npmjs.com/org/fieldia">npm</a>
