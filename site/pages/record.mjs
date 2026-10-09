@@ -75,7 +75,7 @@ mountViewer(host, { page, dataSource: { ...dataSource, attachments: chatterAttac
 )}
 
 <h2 id="chatter">The chatter beside it</h2>
-<p>The side panel goes under the sheet once the form is narrower than 1000px. ${c('"sidePanelBeside": "always"')} keeps it beside, narrower, down to 600px, the sheet's columns stacking inside it as they need. A grid of many columns beside it can ${c('"fit": "shrink"')}: its columns go narrower, their headers wrapping, before it scrolls.</p>
+<p>As Flectra's chatter, the side panel sits beside the sheet on a form 1534px wide or more, the page growing by its width so the sheet keeps its own; on a narrower one it goes under the sheet, which takes the whole width. ${c('"sidePanelBeside": "always"')} keeps it beside, narrower, down to 600px, the sheet's columns stacking inside it as they need. A grid of many columns beside it can ${c('"fit": "shrink"')}: its columns go narrower, their headers wrapping, before it scrolls.</p>
 <p>A ${c('post')} step puts words in the record's conversation — ${c('{ "do": "post", "message": "Lost: {lost_reason}" }')}, a note unless ${c('"kind": "message"')} — and so does your app's answer, ${c('{ post: "Debit note DN/0001 made" }')}. In a page opened over the record, such as the Mark as Lost wizard, it posts in the record's conversation. The chatter fetches again after a save and after the record is loaded again, so what your server posts — tracked changes, a server action's note — shows.</p>
 
 <h2 id="controllers">Flectra's own form controllers</h2>
