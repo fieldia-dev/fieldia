@@ -707,8 +707,9 @@ export interface SheetNode {
   sidePanel?: SlotNode;
   /**
    * Where the side panel stays beside the sheet: on a wide form (the
-   * default: from 1000px), or `always` — the sheet narrower, its columns
-   * stacking in it as they need — going under it only on a phone.
+   * default: from 1534px, as Flectra's chatter, under the sheet below), or
+   * `always` — the sheet narrower, its columns stacking in it as they need —
+   * going under it only on a phone.
    */
   sidePanelBeside?: 'wide' | 'always';
   /** The gear menu, and whether the pager and breadcrumbs the app gives show. */

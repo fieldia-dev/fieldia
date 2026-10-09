@@ -2,13 +2,13 @@ import { expect, test, type Page } from '@playwright/test';
 import { expectNoSidewaysScroll, node, open, screen } from './support';
 import { VARIANTS } from './variants';
 
-/** The chatter beside the customer sheet, in every framework. */
+/** The chatter by the customer sheet, in every framework. */
 const chatter = (page: Page) => page.locator('.fd-slot[data-slot="chatter"] .fd-chatter');
 const posted = (page: Page) => page.evaluate(() => (window as any).fieldiaDemo.chatter.posted as { kind: string; body: string; parentId?: number; mentions?: { name: string }[]; attachments?: { name: string }[] }[]);
 
 for (const variant of VARIANTS) {
   test.describe(`${variant} · chatter`, () => {
-    test('sits beside the sheet without stretching it, and lays its parts out to read', async ({ page }) => {
+    test('sits by the sheet without stretching it, and lays its parts out to read', async ({ page }) => {
       await open(page, variant, 'page=customer&skin=underline');
       await expect(chatter(page).locator('.fd-activity')).toHaveCount(3);
       // The sheet keeps its own height: a badge stays a badge, the title follows close behind.
@@ -118,3 +118,40 @@ for (const variant of VARIANTS) {
     });
   });
 }
+
+/**
+ * As Flectra: the chatter goes beside the sheet only on a screen of 1534px or
+ * more, the page growing by its width; under that it sits under the sheet and
+ * the sheet has the whole width — a sale order's lines read whole.
+ */
+test('the chatter sits under the sheet below 1534px, and beside a sheet as wide as before from 1534px', async ({ page }) => {
+  const boxes = async () => {
+    const card = (await page.locator('.fd-sheet-layout > .fd-card').first().boundingBox())!;
+    const side = (await page.locator('.fd-sheet-layout > .fd-side').first().boundingBox())!;
+    return { card, side };
+  };
+  for (const width of [1280, 1533]) {
+    await page.setViewportSize({ width, height: 900 });
+    await open(page, 'plain', 'page=real-sale-order&record=7101');
+    await expect(chatter(page)).toBeVisible();
+    const { card, side } = await boxes();
+    expect(side.y, `under the sheet at ${width}px`).toBeGreaterThanOrEqual(card.y + card.height);
+    expect(card.width, `the sheet's whole width at ${width}px`).toBeGreaterThan(width - 80);
+    await expectNoSidewaysScroll(page);
+  }
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await open(page, 'plain', 'page=real-sale-order&record=7101');
+  let { card, side } = await boxes();
+  expect(side.x, 'beside the sheet at 1600px').toBeGreaterThanOrEqual(card.x + card.width);
+  expect(card.width, 'the sheet as wide as before beside it').toBeGreaterThan(1100);
+  await screen(page, 'chatter-beside-1600', { viewport: true });
+  // A narrower page grows by the chatter's width: its sheet keeps its own.
+  await open(page, 'plain', 'page=real-employee');
+  ({ card, side } = await boxes());
+  expect(side.x, 'beside a wide page’s sheet').toBeGreaterThanOrEqual(card.x + card.width);
+  expect(card.width, 'a wide page’s sheet keeps its width beside the chatter').toBeGreaterThan(1100);
+  // Right to left, beside it on the other side.
+  await open(page, 'plain', 'page=real-sale-order&record=7101&locale=ar&dir=rtl');
+  ({ card, side } = await boxes());
+  expect(side.x + side.width, 'on the left, right to left').toBeLessThanOrEqual(card.x);
+});

@@ -668,9 +668,13 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-sheet-layout { align-items: start; }
 /* Save and Discard closing the sheet, when the page puts them at its foot. */
 .fd-sheet-foot { margin: 4px -28px -28px; padding: 12px 28px; border-block-start: 1px solid var(--fd-border); border-end-start-radius: inherit; border-end-end-radius: inherit; }
-.fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr) minmax(260px, 360px); }
-/* The side panel goes under the sheet before the sheet is left too narrow for a label beside its value. */
-@container (max-width: 1000px) { .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr); } }
+/* The side panel under the sheet, the sheet taking the whole width; beside it, as Flectra's chatter, on a form of
+   1534px or more — the page growing by the panel's width, so the sheet keeps its own ("none" plus a width is no
+   width: a full page stays full). A page that asks keeps it beside down to 600px (record-styles). */
+@container (min-width: 1534px) {
+  .fd-sheet-layout.fd-has-side { grid-template-columns: minmax(0, 1fr) minmax(260px, 360px); max-width: calc(var(--fd-page-max, 1180px) + 376px); }
+}
+.fd-sheet-layout.fd-has-side[data-side-beside="always"] { grid-template-columns: minmax(0, 1fr) minmax(260px, 360px); }
 /* A part hidden at some widths of the form (hideOn): narrow up to 520px, medium up to 760px, wide above — the form's own width, as its columns. */
 .fd-form { container-name: fd-form; }
 @container fd-form (max-width: 520px) { .fd-form [data-hide-on~="narrow"] { display: none !important; } }
