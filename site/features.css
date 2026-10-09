@@ -15,3 +15,9 @@
 .feature-templates a:focus-visible { outline: 2px solid var(--h-signal); outline-offset: 3px; }
 /* Above a wide picture: the heading and words on the left, what it has and where to try it on the right. */
 .feature-page .chapter-stack .chapter-copy > .feature-links { grid-column: 1; }
+/* A part shown in code rather than a picture, and an opening that is code: the stage's own navy. */
+.feature-code { min-width: 0; }
+.feature-code pre.code, .feature-stage-code pre.code { margin: 0; padding: 22px 24px; border: 0; border-radius: 14px; background: var(--h-stage); color: var(--h-stage-ink); font: 13.5px/1.65 var(--h-mono); overflow-x: auto; }
+.feature-code pre.code code, .feature-stage-code pre.code code { background: none; padding: 0; color: inherit; font-size: inherit; }
+.feature-stage-code { padding: 0; }
+.feature-stage-code pre.code { border-radius: 0; font-size: 15px; padding: 28px 30px; }

@@ -1,30 +1,13 @@
 import { readFileSync } from 'node:fs';
+import { demoHref as demo, featurePage } from '../feature-page.mjs';
 
 /**
  * A feature page: Business records. What a record screen built with Fieldia
- * has, each part shown from a real demo with a way to try it and to read how;
- * the home page tours, this page shows everything in one area.
+ * has, each part shown from a real demo with a way to try it and to read how.
  */
 
 const TEMPLATES = JSON.parse(readFileSync(new URL('../../examples/templates/index.json', import.meta.url), 'utf8'));
 const RECORD_TEMPLATES = TEMPLATES.filter((t) => t.group === 'records');
-const demo = (query) => `/demos/plain/?${query}`;
-
-/** One part of a record: words beside its picture, what it has, and where to try it and read how. */
-function part({ id, no, title, body, ticks, shot, alt, width, height, tryIt, docs, flip }) {
-  // A picture of a whole screen spans the page, its words above it; a narrow one sits beside them.
-  const wide = width >= 900;
-  return `<section class="chapter${wide ? ' chapter-stack' : flip ? ' chapter-flip' : ''}" id="${id}" aria-labelledby="${id}-h">
-  <div class="chapter-copy">
-    <p class="chapter-no">${no}</p>
-    <h2 id="${id}-h">${title}</h2>
-    <p>${body}</p>
-    <ul class="ticks">${ticks.map((t) => `<li>${t}</li>`).join('')}</ul>
-    <p class="feature-links"><a class="btn btn-solid" href="${tryIt[1]}">${tryIt[0]}</a><a href="${docs[1]}">${docs[0]} →</a></p>
-  </div>
-  <a class="chapter-live shot" href="${tryIt[1]}" tabindex="-1" aria-hidden="true"><img src="/img/records/${shot}" alt="${alt}" loading="lazy" width="${width}" height="${height}" style="max-width: min(100%, ${width}px)"></a>
-</section>`;
-}
 
 const PARTS = [
   {
@@ -62,7 +45,6 @@ const PARTS = [
     height: 408,
     tryIt: ['Try the sales order', demo('page=order&skin=underline')],
     docs: ['Tables of lines, in the docs', '/fields/'],
-    flip: true,
   },
   {
     id: 'layout',
@@ -99,7 +81,6 @@ const PARTS = [
     height: 734,
     tryIt: ['Try it on the customer record', demo('page=customer&skin=underline')],
     docs: ['The chatter, in the docs', '/chatter/'],
-    flip: true,
   },
   {
     id: 'around',
@@ -121,47 +102,28 @@ const PARTS = [
   },
 ];
 
-export default {
+export default featurePage({
   path: '/features/records/',
+  folder: 'records',
   title: 'Business records',
   description: 'Business records with Fieldia: status bars, stat buttons, lines that add up, tabs, a chatter, the PDF beside the sheet, a pager and a gear menu, all from one JSON page.',
-  head: `<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
-<link rel="stylesheet" href="/home.css">
-<link rel="stylesheet" href="/features.css">
-`,
-  body: `
-<div class="story feature-page">
-
-<section class="opening feature-opening" aria-labelledby="opening-h">
-  <div class="opening-copy">
-    <p class="kicker">Features · Business records</p>
-    <h1 id="opening-h">The screens a business runs on.<br><span>Each one a page of JSON.</span></h1>
-    <p class="lede">A quotation, an invoice, a legal case, an employee: the record screens an ERP is made of, with their status, their buttons, their lines and their conversation. This one is live. Send it, change a quantity, confirm it.</p>
-  </div>
-  <div class="stage feature-frame">
-    <iframe src="${demo('page=real-sale-order&record=7101&skin=underline&embed=1')}" title="A live sales order, from a working ERP" loading="eager"></iframe>
-  </div>
-</section>
-
-${PARTS.map(part).join('\n\n')}
-
-<section class="chapter chapter-center" id="kept-right" aria-labelledby="kept-right-h">
-  <div class="chapter-copy">
-    <p class="chapter-no">Kept right</p>
-    <h2 id="kept-right-h">What a record needs to be trusted</h2>
-  </div>
-  <ul class="figures feature-facts">
-    <li><b>Server checks</b><span>Your server’s answer to a changed field fills in the others; a save it refuses puts each problem on its field.</span></li>
-    <li><b>Nothing lost</b><span>Unsaved changes are kept when the person leaves, and Ctrl+Enter saves from anywhere.</span></li>
-    <li><b>By role</b><span>Fields, buttons and tabs shown, hidden or locked by who is looking, and whole records locked once done.</span></li>
-    <li><b>Said clearly</b><span>Saving, saved and failed are said where the person looks, and to screen readers.</span></li>
-  </ul>
-  <p class="feature-links"><a href="/behaviour/">Behaviour, in the docs →</a><a href="/data/">Your backend, in the docs →</a></p>
-</section>
-
-<section class="chapter chapter-center" id="start" aria-labelledby="start-h">
+  kicker: 'Business records',
+  headline: ['The screens a business runs on.', 'Each one a page of JSON.'],
+  lede: 'A quotation, an invoice, a legal case, an employee: the record screens an ERP is made of, with their status, their buttons, their lines and their conversation. This one is live. Send it, change a quantity, confirm it.',
+  opening: { frame: 'page=real-sale-order&record=7101&skin=underline', title: 'A live sales order, from a working ERP' },
+  parts: PARTS,
+  facts: {
+    no: 'Kept right',
+    title: 'What a record needs to be trusted',
+    items: [
+      ['Server checks', 'Your server’s answer to a changed field fills in the others; a save it refuses puts each problem on its field.'],
+      ['Nothing lost', 'Unsaved changes are kept when the person leaves, and Ctrl+Enter saves from anywhere.'],
+      ['By role', 'Fields, buttons and tabs shown, hidden or locked by who is looking, and whole records locked once done.'],
+      ['Said clearly', 'Saving, saved and failed are said where the person looks, and to screen readers.'],
+    ],
+  },
+  factLinks: [['Behaviour, in the docs', '/behaviour/'], ['Your backend, in the docs', '/data/']],
+  start: `<section class="chapter chapter-center" id="start" aria-labelledby="start-h">
   <div class="chapter-copy">
     <p class="chapter-no">Start from one</p>
     <h2 id="start-h">${RECORD_TEMPLATES.length} record templates, and nineteen real ERP screens</h2>
@@ -172,16 +134,6 @@ ${PARTS.map(part).join('\n\n')}
   </ul>
   <p class="feature-links"><a class="btn btn-solid" href="/templates/">All templates</a><a href="/demos/#real">The nineteen real screens →</a></p>
 </section>
-
-<section class="finale" aria-labelledby="finale-h">
-  <h2 id="finale-h">Build your first record in an afternoon</h2>
-  <p>Write the page, give Fieldia a data source for your backend, and mount it in plain JavaScript, React, Vue or Angular.</p>
-  <div class="opening-actions">
-    <a class="btn btn-solid" href="/start/">Read Get started</a>
-    <a class="btn btn-ghost" href="/designer/">Open the designer</a>
-  </div>
-</section>
-
-</div>
 `,
-};
+  finale: { title: 'Build your first record in an afternoon', words: 'Write the page, give Fieldia a data source for your backend, and mount it in plain JavaScript, React, Vue or Angular.' },
+});
