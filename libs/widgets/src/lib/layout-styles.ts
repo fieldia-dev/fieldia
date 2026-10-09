@@ -81,7 +81,9 @@ fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
 /* A note: words set apart in a soft panel, a shade off whatever it stands on — a card, the page, or the dark. */
 .fd-form .fd-text-note { background: color-mix(in srgb, var(--fd-text) 6%, transparent); color: var(--fd-text); border-radius: var(--fd-control-radius, 6px); padding: 10px 12px; }
 
-/* ---- the page's look: worn by the form, and by a dialog it opens (its box and the page in it) ---- */
+/* ---- the page's look: worn by the form, and by a dialog it opens (its box and the page in it) ----
+   Its tokens in Fieldia's tokens' layer (styles.ts): a host's own rule sets them over the page's. */
+@layer fieldia-tokens {
 :is(.fd-form, .fd-form-dialog)[data-font="serif"] { --fd-font: "Source Serif 4", Georgia, serif; }
 :is(.fd-form, .fd-form-dialog)[data-font="rounded"] { --fd-font: Nunito, "Varela Round", system-ui; }
 /* Room between and inside parts: gaps, the height of a box, a group's padding, the space between groups. */
@@ -91,15 +93,20 @@ fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
 :is(.fd-form, .fd-form-dialog)[data-corners="square"] { --fd-radius: 0px; --fd-control-radius: 0px; }
 :is(.fd-form, .fd-form-dialog)[data-corners="soft"] { --fd-radius: 10px; --fd-control-radius: 6px; }
 :is(.fd-form, .fd-form-dialog)[data-corners="round"] { --fd-radius: 16px; --fd-control-radius: 12px; }
+.fd-form[data-scheme] { --fd-ground: var(--fd-page); }
+}
 
-/* Light or dark: a page that names its scheme paints its own ground, so it reads the same on any page round it. */
-.fd-form[data-scheme] { color-scheme: light; background: var(--fd-page); color: var(--fd-text); border-radius: var(--fd-radius); --fd-ground: var(--fd-page); }
+/* Light or dark: a page that names its scheme paints its own ground, so it reads the same on any page round it.
+   Its native controls (scroll bars, date pickers) follow it. */
+.fd-form[data-scheme] { color-scheme: light; background: var(--fd-page); color: var(--fd-text); border-radius: var(--fd-radius); }
+:is(.fd-form, .fd-form-dialog)[data-scheme="dark"] { color-scheme: dark; }
+@media (prefers-color-scheme: dark) { :is(.fd-form, .fd-form-dialog)[data-scheme="auto"] { color-scheme: dark; } }
 .fd-form[data-scheme] > .fd-content:not(:has(> .fd-sheet-page)) { padding: 20px; }
 /* A page in a dialog paints no ground of its own and adds no room: the dialog is its ground. */
 .fd-form-dialog-body > .fd-form[data-scheme] { background: none; border-radius: 0; }
 .fd-form-dialog-body > .fd-form[data-scheme] > .fd-content:not(:has(> .fd-sheet-page)) { padding: 0; }
+@layer fieldia-tokens {
 :is(.fd-form, .fd-form-dialog)[data-scheme="dark"] {
-  color-scheme: dark;
   --fd-text: #e8eaed;
   --fd-muted: #a3a9b2;
   --fd-page: #16191e;
@@ -123,7 +130,6 @@ fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
 /* Auto follows the reader's system: the same dark tokens, when it is dark. */
 @media (prefers-color-scheme: dark) {
   :is(.fd-form, .fd-form-dialog)[data-scheme="auto"] {
-    color-scheme: dark;
     --fd-text: #e8eaed;
     --fd-muted: #a3a9b2;
     --fd-page: #16191e;
@@ -168,6 +174,7 @@ fieldset.fd-section[data-style] { background-color: var(--fd-ground); }
   }
 }
 :is(.fd-form, .fd-form-dialog)[data-fd-skin="outlined"][data-accent] { --fd-focus-ring: 0 0 0 2px color-mix(in srgb, var(--fd-accent) 22%, transparent); }
+}
 :is(.fd-form, .fd-form-dialog)[data-accent] .fd-button-primary:hover { filter: none; background: var(--fd-accent-hover); border-color: var(--fd-accent-hover); }
 /* A band of the accent under the page's title. */
 .fd-form[data-accent] .fd-page-head { border-block-end: 3px solid var(--fd-accent); padding-block-end: 14px; }

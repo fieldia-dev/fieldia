@@ -130,16 +130,20 @@ const CARDS = ':is(.fd-sections > .fd-section:not([data-style]), .fd-section[dat
  * The themes' tokens: after the skins' (they win over them), before the page's
  * look (whose accent, room, corners and scheme win over them). A theme's dark
  * tokens are more specific than the plain dark scheme's, so they win over it.
+ * All in Fieldia's tokens' layer, under any rule of a host's own.
  */
 export const THEME_TOKENS_CSS = (Object.keys(THEME_TOKENS) as Theme[])
   .map((theme) => {
     const { light, dark } = THEME_TOKENS[theme];
     const darkOn = `${forms(theme)}[data-scheme="dark"]`;
     return `${forms(theme)} { ${block(light)} }
-${darkOn} { color-scheme: dark; ${block(dark)} }
-@media (prefers-color-scheme: dark) { ${forms(theme)}[data-scheme="auto"] { color-scheme: dark; ${block(dark)} } }`;
+${darkOn} { ${block(dark)} }
+@media (prefers-color-scheme: dark) { ${forms(theme)}[data-scheme="auto"] { ${block(dark)} } }`;
   })
-  .join('\n');
+  .join('\n')
+  // In Fieldia's tokens' layer (styles.ts), after the skins': a host's own rule sets them over a theme's too.
+  .replace(/^/, '@layer fieldia-tokens {\n')
+  .concat('\n}');
 
 /** What tokens cannot say: each theme's own shapes. After every other rule, so they win at the same weight. */
 export const THEME_RULES_CSS = /* css */ `

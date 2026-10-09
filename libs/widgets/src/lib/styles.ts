@@ -31,8 +31,11 @@ export const FORM_WIDTHS = { medium: 760, narrow: 520 } as const;
 
 /** The skins and the parts' chrome. One literal, so the script bundle can minify it as CSS. */
 const SKINS_CSS = /* css */ `
-/* .fd-theme carries the same tokens for things outside a form, such as a dialog over the page. One inside a form
+/* Fieldia's tokens (its colours, sizes and fonts) live in a cascade layer: a host's own rule, of any weight, sets
+   them over Fieldia's, whole. The skins, themes, page looks and schemes keep their order inside it.
+   .fd-theme carries the same tokens for things outside a form, such as a dialog over the page. One inside a form
    with no skin of its own (the conversation beside a record) wears the form's skin and scheme instead. */
+@layer fieldia-tokens {
 .fd-form, .fd-theme:is([data-fd-skin], :not(.fd-form *)) {
   --fd-font: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", sans-serif;
   --fd-text: #212529;
@@ -62,12 +65,6 @@ const SKINS_CSS = /* css */ `
   --fd-label-weight: 600;
   --fd-gap-x: 32px;
   --fd-gap-y: 14px;
-  container-type: inline-size;
-  font-family: var(--fd-font);
-  font-size: 14px;
-  line-height: 1.45;
-  color: var(--fd-text);
-  -webkit-text-size-adjust: 100%;
 }
 /* Ant Design's blue and red, a shade darker: words in them read at 4.5:1 (WCAG AA) on white, the page and their soft shades. */
 .fd-form[data-fd-skin="outlined"], .fd-theme[data-fd-skin="outlined"] {
@@ -90,6 +87,15 @@ const SKINS_CSS = /* css */ `
   --fd-label-weight: 400;
   --fd-gap-x: 24px;
   --fd-gap-y: 18px;
+}
+}
+.fd-form, .fd-theme:is([data-fd-skin], :not(.fd-form *)) {
+  container-type: inline-size;
+  font-family: var(--fd-font);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--fd-text);
+  -webkit-text-size-adjust: 100%;
 }
 .fd-form *, .fd-form *::before, .fd-form *::after { box-sizing: border-box; }
 .fd-form [hidden] { display: none !important; }
@@ -235,7 +241,7 @@ const SKINS_CSS = /* css */ `
 .fd-form[data-fd-skin="underline"] .fd-input:focus { box-shadow: 0 1px 0 0 var(--fd-focus); }
 .fd-form[data-fd-skin="underline"] .fd-field.fd-required .fd-input { border-color: var(--fd-accent); }
 .fd-input[readonly] { background: transparent; border-color: transparent; padding-inline: 0; }
-.fd-form[data-fd-skin="outlined"] .fd-input[readonly] { background: rgba(0, 0, 0, 0.04); border-color: var(--fd-border); padding-inline: var(--fd-pad-x); color: var(--fd-muted); }
+.fd-form[data-fd-skin="outlined"] .fd-input[readonly] { background: color-mix(in srgb, var(--fd-text) 5%, var(--fd-surface)); border-color: var(--fd-border); padding-inline: var(--fd-pad-x); color: var(--fd-muted); }
 /* A whole form locked reads as a record: plain values in either skin, no boxes, and no prompts to type. */
 .fd-form[data-readonly] .fd-input[readonly] { background: transparent; border-color: transparent; padding-inline: 0; color: var(--fd-text); }
 .fd-form[data-readonly] .fd-input::placeholder { color: transparent; }
@@ -636,7 +642,8 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-button-primary { background: var(--fd-accent); border-color: var(--fd-accent); color: var(--fd-accent-text); }
 .fd-button-primary:hover { color: var(--fd-accent-text); filter: brightness(1.12); }
 .fd-button-danger { color: var(--fd-error); border-color: var(--fd-error); }
-.fd-button-danger:hover { background: var(--fd-error); color: #fff; }
+/* The surface's colour on the error's: white on a light page's deep red, near-black on a dark page's coral. */
+.fd-button-danger:hover { background: var(--fd-error); color: var(--fd-surface); }
 .fd-button-link { border-color: transparent; background: none; color: var(--fd-accent); padding-inline: 4px; }
 .fd-form[data-fd-skin="underline"] .fd-button { border-radius: 3px; }
 .fd-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
