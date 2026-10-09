@@ -804,6 +804,18 @@ export const gridWidget: WidgetFactory = ({ form, name, field, node, id, documen
   element.setAttribute('role', 'group');
   const host = document.createElement('div');
   host.className = 'fd-grid-host';
+  // A press on a tick in a line — chosen, or a yes or no — is the tick's alone: the grid focusing its cell would
+  // scroll a cell cut by the screen's edge into view, moving the tick from under the pointer, and the click would
+  // land on the cell instead. (A button in a cell the grid leaves alone.) The tick still takes the focus and the click.
+  for (const type of ['pointerdown', 'mousedown'] as const) {
+    host.addEventListener(
+      type,
+      (event) => {
+        if ((event.target as Element).closest?.('.ag-cell input[type="checkbox"]')) event.stopPropagation();
+      },
+      true
+    );
+  }
   // What is wrong on which line, once a save has been refused.
   const problems = document.createElement('div');
   problems.className = 'fd-error fd-grid-problems';

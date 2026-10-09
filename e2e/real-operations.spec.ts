@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { expectNoSidewaysScroll, node, open, screen } from './support';
 import { VARIANTS } from './variants';
 
@@ -351,8 +351,11 @@ for (const variant of VARIANTS) {
 
       // The two others chosen, Done for both at once (Flectra's list header buttons).
       const rows = node(page, 'f-workorders');
-      await rows.locator('.ag-row[row-index="1"]:not(.fd-grid-totals) [role="checkbox"], .ag-row[row-index="1"]:not(.fd-grid-totals) input[type="checkbox"]').first().click();
-      await rows.locator('.ag-row[row-index="2"]:not(.fd-grid-totals) [role="checkbox"], .ag-row[row-index="2"]:not(.fd-grid-totals) input[type="checkbox"]').first().click();
+      // Each chosen before the next: the first brings the chosen lines' buttons, and the lines move down under them.
+      for (const line of ['Choose line 2', 'Choose line 3']) {
+        await rows.getByRole('checkbox', { name: line }).click();
+        await expect(rows.getByRole('checkbox', { name: line })).toBeChecked();
+      }
       await rows.getByRole('button', { name: 'Done', exact: true }).first().click();
       await expect(toast(page, 'Assembly, Finishing: done.')).toBeVisible();
       await expect.poll(async () => (await lineValues(page, 'workorder_ids')).map((w) => w['state'])).toEqual(['progress', 'done', 'done']);
@@ -392,4 +395,37 @@ test('a quantity typed with two decimal marks is said to be no number at once, a
   // The components' quantities and the work orders' durations keep what they held: no NaN anywhere.
   await expect(page.locator('body')).not.toContainText('NaN');
   expect(problems).toEqual([]);
+});
+
+/**
+ * A line's tick at the screen's lower edge takes the click: pressing it must
+ * not focus its cell and scroll the page, which moved the line from under the
+ * pointer and lost the click — the tick never ticked. Its buttons, which the
+ * grid never focused, keep taking theirs.
+ */
+test('a line’s tick takes the click at the screen’s lower edge, as its buttons do', async ({ page }) => {
+  await page.setViewportSize(WIDE);
+  await open(page, 'plain', PRODUCTION);
+  await page.getByRole('button', { name: 'Confirm', exact: true }).click();
+  await expect(page.locator('.fd-header .fd-statusbar [aria-current="step"]')).toHaveText('Confirmed');
+  await page.getByRole('tab', { name: 'Work Orders' }).click();
+  const rows = node(page, 'f-workorders');
+  /** Clicked low on the control, as a hand may, the screen ending just under that point and cutting off the cell's foot. */
+  const clickAtEdge = async (control: Locator) => {
+    await page.setViewportSize(WIDE);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const before = (await control.boundingBox())!;
+    const y = before.y + before.height * 0.75;
+    await page.setViewportSize({ width: WIDE.width, height: Math.floor(y) + 2 });
+    expect(await control.evaluate((e) => e.closest('.ag-cell')!.getBoundingClientRect().bottom)).toBeGreaterThan(Math.floor(y) + 2);
+    await page.mouse.click(before.x + before.width / 2, y);
+  };
+  // Another line's cell focused first, as after any click in the table.
+  await rows.getByRole('checkbox', { name: 'Choose line 2' }).click();
+  await expect(rows.getByRole('checkbox', { name: 'Choose line 2' })).toBeChecked();
+  const tick = rows.getByRole('checkbox', { name: 'Choose line 3' });
+  await clickAtEdge(tick);
+  await expect(tick).toBeChecked();
+  await clickAtEdge(rows.locator('.ag-row[row-index="0"]:not(.fd-grid-totals)').first().getByRole('button', { name: 'Start' }));
+  await expect(toast(page, 'Cutting: started.')).toBeVisible();
 });
