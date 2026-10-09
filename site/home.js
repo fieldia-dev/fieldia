@@ -227,6 +227,51 @@
   // Seen by its card: the empty host has no height to be seen by.
   if (sheet && window.Fieldia) whenSeen(sheet.closest('.sheet-live'), runSheet, 0.25);
 
+  // ---- a template in each theme: the real file, the real viewer, the theme changed in place ----
+  var tplHost = document.getElementById('tpl-form');
+  var tplCaption = document.getElementById('tpl-caption');
+  var picks = Array.prototype.slice.call(document.querySelectorAll('.theme-picks button'));
+  var tplViewer = null;
+  var cycling = null;
+  var held = false;
+  /** Dress the form in a theme, on the theme's own skin; the answers typed stay. */
+  function wear(theme) {
+    if (!tplViewer) return;
+    tplViewer.setTheme(theme);
+    tplViewer.setSkin(Fieldia.skinFor(undefined, theme));
+    picks.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.theme === theme)); });
+    var name = picks.filter(function (b) { return b.dataset.theme === theme; })[0];
+    tplCaption.textContent = 'The newsletter template · ' + (name ? name.textContent : theme) + (held ? '' : ' · changing as you watch');
+  }
+  function stop() {
+    held = true;
+    if (cycling) clearInterval(cycling);
+    cycling = null;
+  }
+  function startTemplates() {
+    fetch('/templates/newsletter.page.json').then(function (r) { return r.json(); }).then(function (page) {
+      var order = picks.map(function (b) { return b.dataset.theme; });
+      tplViewer = Fieldia.mountViewer(tplHost, { page: page, dataSource: Fieldia.createMemoryDataSource() });
+      // With reduced motion, one theme, still, until one is picked.
+      if (calm) held = true;
+      wear(order[0]);
+      if (calm) return;
+      var at = 0;
+      cycling = setInterval(function () {
+        // Not while someone is reading or typing in it.
+        if (tplHost.matches(':hover, :focus-within')) return;
+        at = (at + 1) % order.length;
+        wear(order[at]);
+      }, 2600);
+    });
+  }
+  picks.forEach(function (b) {
+    b.addEventListener('click', function () { stop(); wear(b.dataset.theme); });
+  });
+  // Someone using the form keeps the theme it is in.
+  if (tplHost) tplHost.addEventListener('input', stop);
+  if (tplHost && window.Fieldia) whenSeen(tplHost.closest('.tpl-live'), startTemplates, 0.25);
+
   // ---- the framework tabs ----
   var tabs = Array.prototype.slice.call(document.querySelectorAll('.tabs [role="tab"]'));
   function choose(tab, focus) {

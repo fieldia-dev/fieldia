@@ -1,11 +1,12 @@
+import { readFileSync } from 'node:fs';
 import { code } from '../layout.mjs';
 
 /**
  * The front page tells one story, top to bottom: a page of JSON is written and
  * drawn as it grows (the hero's stage); it starts as a question people answer;
  * then it runs a business record; it is the same in every framework; it already
- * draws nineteen real ERP screens; it is built in an open designer; and it is
- * small and open. Every moving part is the real viewer, driven by home.js.
+ * starts from a template in any of eight themes; it already draws nineteen
+ * real ERP screens; it is built in an open designer; and it is small and open. Every moving part is the real viewer, driven by home.js.
  */
 
 /** The real pages, by the thumbnails the demos gallery already draws. */
@@ -37,6 +38,26 @@ const half = Math.ceil(REAL.length / 2);
 /** A row drawn twice, so it drifts by one copy's width and loops without a seam; the copy is for the eye only. */
 const row = (items) =>
   `<div class="reel-track"><div class="reel-set">${items.map(card).join('')}</div><div class="reel-set" aria-hidden="true">${items.map(card).join('').replace(/<a /g, '<a tabindex="-1" ')}</div></div>`;
+
+/** The template library, as the Templates page lists it; six of them shown here, forms and records. */
+const TEMPLATES = JSON.parse(readFileSync(new URL('../../examples/templates/index.json', import.meta.url), 'utf8'));
+const SHOWN = ['contact-us', 'customer-feedback', 'job-application', 'invoice', 'task', 'product'];
+const THEMES = [
+  ['material', 'Material'],
+  ['fluent', 'Fluent'],
+  ['apple', 'Apple'],
+  ['bootstrap', 'Bootstrap'],
+  ['shadcn', 'shadcn'],
+  ['ant', 'Ant Design'],
+  ['odoo', 'Odoo'],
+  ['google-forms', 'Google Forms'],
+];
+const themeName = (id) => THEMES.find(([t]) => t === id)[1];
+const isRecord = (id) => JSON.parse(readFileSync(new URL(`../../examples/templates/${id}.page.json`, import.meta.url), 'utf8')).data.kind === 'record';
+const templateCard = (id) => {
+  const t = TEMPLATES.find((x) => x.id === id);
+  return `<a class="reel-card tpl-card" href="/demos/plain/?page=template-${id}&amp;theme=${t.theme}${isRecord(id) ? '&amp;record=new' : ''}"><img src="/demos/thumbs/template-${id}.png" alt="" loading="lazy" width="320" height="200"><span>${t.name}<small>${themeName(t.theme)}</small></span></a>`;
+};
 
 /** The page the hero writes, as it is mounted at its last step; home.js writes it again, line by line. */
 const HERO_JSON = `{
@@ -196,9 +217,31 @@ export class OrderComponent {}`
   </div>
 </section>
 
+<section class="chapter" id="templates" aria-labelledby="templates-h">
+  <div class="chapter-copy">
+    <p class="chapter-no">4 · Ready to start</p>
+    <h2 id="templates-h">Start from a template, in the look you know</h2>
+    <p>${TEMPLATES.length} ready pages — contact forms, surveys, bookings, invoices, orders, tasks — each one JSON file. Eight themes dress any of them as Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo or Google Forms, light or dark. This one changes as you watch; pick a theme to keep it.</p>
+    <div class="theme-picks" role="group" aria-label="Theme">
+      ${THEMES.map(([id, name]) => `<button type="button" data-theme="${id}" aria-pressed="false">${name}</button>`).join('\n      ')}
+    </div>
+    <pre class="tpl-code" tabindex="0" aria-label="Showing a template"><code>const page = await fetch('/templates/newsletter.page.json')
+  .then((r) => r.json());
+Fieldia.mountViewer(host, { page, theme: 'fluent' });</code></pre>
+  </div>
+  <div class="chapter-live tpl-live">
+    <div class="tpl-host" id="tpl-form" role="region" aria-label="A template, in each theme"></div>
+    <p class="sheet-caption" id="tpl-caption" aria-live="polite">The newsletter template</p>
+  </div>
+  <div class="tpl-strip">
+    ${SHOWN.map(templateCard).join('\n    ')}
+  </div>
+  <p class="tpl-more"><a class="btn btn-solid" href="/templates/">See all ${TEMPLATES.length} templates</a></p>
+</section>
+
 <section class="chapter chapter-wide" id="real" aria-labelledby="real-h">
   <div class="chapter-copy">
-    <p class="chapter-no">4 · Proven</p>
+    <p class="chapter-no">5 · Proven</p>
     <h2 id="real-h">Nineteen real ERP screens, already drawn by it</h2>
     <p>We rebuilt nineteen screens of a working ERP, from a two-field dialog to a legal case with fifteen tabs and twelve tables, each with its own records, buttons and rules. Open any of them: each works in all four frameworks.</p>
   </div>
@@ -210,7 +253,7 @@ export class OrderComponent {}`
 
 <section class="chapter chapter-flip" id="designer" aria-labelledby="designer-h">
   <div class="chapter-copy">
-    <p class="chapter-no">5 · No code needed</p>
+    <p class="chapter-no">6 · No code needed</p>
     <h2 id="designer-h">Build it in a designer that is open too</h2>
     <p>Drag fields in, type labels where they stand, set when a field shows in plain sentences, try it at a phone’s width in Arabic, and publish a version. The designer writes the same JSON. It is MIT like the rest, where other form libraries sell their builder.</p>
     <p class="chapter-cta"><a class="btn btn-solid" href="/designer/">Open the designer</a></p>
@@ -222,11 +265,11 @@ export class OrderComponent {}`
 
 <section class="chapter chapter-center" id="numbers" aria-labelledby="numbers-h">
   <div class="chapter-copy">
-    <p class="chapter-no">6 · Small and open</p>
+    <p class="chapter-no">7 · Small and open</p>
     <h2 id="numbers-h">Everything, in a small package</h2>
   </div>
   <ul class="figures">
-    <li><b class="count" data-to="131">131</b><span>KB gzipped: the whole engine in one script tag, no build step</span></li>
+    <li><b class="count" data-to="135">135</b><span>KB gzipped: the whole engine in one script tag, no build step</span></li>
     <li><b class="count" data-to="4">4</b><span>frameworks from one viewer: plain JavaScript, React, Vue, Angular</span></li>
     <li><b class="count" data-to="10">10</b><span>packages on npm, the designer included, all MIT</span></li>
     <li><b>AA</b><span>WCAG 2.2, checked with axe on every demo, by keyboard and in Arabic</span></li>
