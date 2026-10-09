@@ -97,9 +97,11 @@ describe('the presets on the Look tab', () => {
     return { designer, host, row, pressed, own, pick, canvas };
   }
 
-  it('leads the tab, a button for each, and says a page with no look is as the skin draws it', () => {
+  it('comes right after the theme, a button for each, and says a page with no look is as the skin draws it', () => {
     const { host, row, pressed, own } = lookTab();
-    expect([...host.querySelectorAll('.fd-properties [role="tabpanel"]:not([hidden]) [data-setting]')][0]).toBe(row());
+    const settings = [...host.querySelectorAll('.fd-properties [role="tabpanel"]:not([hidden]) [data-setting]')];
+    expect(settings[0].getAttribute('data-setting')).toBe('Theme');
+    expect(settings[1]).toBe(row());
     expect([...row().querySelectorAll('.fd-look-preset-name')].map((n) => n.textContent)).toEqual(['Fieldia', 'Calm', 'Compact', 'Rounded', 'Night']);
     expect(pressed()).toEqual([]);
     expect(own().hidden).toBe(false);

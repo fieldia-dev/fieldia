@@ -1,5 +1,5 @@
-import { PART_LOOKS, type Page, type PageLook, type SectionNode } from '@fieldia/core';
-import { applyLook } from '@fieldia/viewer';
+import { PART_LOOKS, THEMES, type Page, type PageLook, type SectionNode, type Theme } from '@fieldia/core';
+import { applyLook, THEME_SKINS } from '@fieldia/viewer';
 import type { ElementFactory } from './chrome';
 import type { Designer, LookPatch } from './designer';
 import { isSection, nodeOf } from './layout-tree';
@@ -65,9 +65,23 @@ function lookChoice(w: DesignerWords['panel'], key: Key, value: string): Choice<
 const lookName = (w: DesignerWords['panel'], key: Key) => ({ font: w.font, density: w.spacing, corners: w.corners, labels: w.labels, helpShown: w.help, readonlyShown: w.readonlyFields, scheme: w.colours })[key];
 const lookHint = (w: DesignerWords['panel'], key: Key) => (key === 'density' ? w.spacingHint : key === 'labels' ? w.labelsHint : key === 'helpShown' ? w.helpShownHint : key === 'readonlyShown' ? w.readonlyShownHint : undefined);
 
+/** The themes by the names people know them by: names, so the same in every language. */
+const THEME_NAMES: Record<Theme, string> = {
+  material: 'Material', fluent: 'Fluent', apple: 'Apple', bootstrap: 'Bootstrap', shadcn: 'shadcn', ant: 'Ant Design', odoo: 'Odoo', 'google-forms': 'Google Forms',
+};
+
 /** The page's look, setting by setting. Pressing what is pressed gives the setting back to the skin. */
 export function pageLookSettings(el: ElementFactory, designer: Designer): LookSetting {
   const w = designer.words.panel;
+  // ---- a theme in a known system's style: the settings below still change it ----
+  const themes = el(
+    'select',
+    { class: 'fd-input fd-insp-theme', 'aria-label': w.theme },
+    el('option', { value: '' }, w.themeNone),
+    ...THEMES.map((theme) => el('option', { value: theme }, THEME_NAMES[theme]))
+  ) as HTMLSelectElement;
+  themes.addEventListener('change', () => designer.setLook({ theme: (themes.value || null) as Theme | null }));
+  const themeRow = setting(el, 'look', 'Theme', themes, { hint: w.themeHint, words: w.theme });
   const presets = lookRow(el, designer);
   // ---- the accent: a swatch, or any colour ----
   const swatches = segmented<string>(
@@ -112,11 +126,12 @@ export function pageLookSettings(el: ElementFactory, designer: Designer): LookSe
   const parts = partLookSettings(el, designer);
   const note = onTab(el('p', { class: 'fd-properties-hint' }, w.tokensNote), 'look');
   return {
-    rows: [...presets.rows, accent, ...rows, parts.row, note],
+    rows: [themeRow, ...presets.rows, accent, ...rows, parts.row, note],
     update(page) {
       presets.update(page);
       parts.update(page);
       const look: PageLook = page.look ?? {};
+      themes.value = look.theme ?? '';
       swatches.set(look.accent?.toLowerCase());
       skins.hidden = !look.accent;
       if (any.ownerDocument.activeElement !== any) any.value = look.accent?.toLowerCase() ?? '#1677ff';
@@ -167,7 +182,7 @@ export function groupStyleSetting(el: ElementFactory, designer: Designer, id: st
   };
 }
 
-const WORN = ['data-font', 'data-density', 'data-corners', 'data-scheme', 'data-accent'];
+const WORN = ['data-fd-theme', 'data-font', 'data-density', 'data-corners', 'data-scheme', 'data-accent'];
 /** The tokens of each kind of part's look, as the viewer names them: `--fd-inputs-bg`, … */
 const PART_TOKENS = ['bg', 'border', 'radius', 'size', 'accent', 'accent-text'];
 const WORN_TOKENS = ['--fd-label-width', '--fd-look-accent', '--fd-look-accent-text', '--fd-look-accent-dark', '--fd-look-accent-dark-text'];
@@ -178,7 +193,8 @@ const WORN_TOKENS = ['--fd-label-width', '--fd-look-accent', '--fd-look-accent-t
  * off too. It wears the skin of the editor round it.
  */
 export function wearLook(element: HTMLElement, look: PageLook | undefined): void {
-  const skin = element.parentElement?.closest('[data-fd-skin]')?.getAttribute('data-fd-skin') ?? null;
+  // A theme brings its own skin; else the editor's round it.
+  const skin = look?.theme ? THEME_SKINS[look.theme] : (element.parentElement?.closest('[data-fd-skin]')?.getAttribute('data-fd-skin') ?? null);
   // The same look and skin as last time: worn already. Taken off and put on again, the whole part would be styled anew.
   const was = worn.get(element);
   if (was && was.look === look && was.skin === skin) return;

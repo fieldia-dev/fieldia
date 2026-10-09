@@ -54,10 +54,10 @@ describe('the panel, in Arabic', () => {
     expect(panel.querySelector('.fd-insp-none')?.textContent).toBe('لا إعداد باسم «⁨zebra⁩».');
   });
 
-  it('lists the page’s look in Arabic, from its presets to its colours', () => {
+  it('lists the page’s look in Arabic, from its theme and presets to its colours', () => {
     const { panel, names } = visit();
     openTab(panel, 'المظهر');
-    expect(names()).toEqual(['ابدأ من', 'لون التمييز', 'الخط', 'التباعد', 'الزوايا', 'التسميات', 'المساعدة', 'الحقول للقراءة فقط', 'الألوان', 'كل نوع من الأجزاء']);
+    expect(names()).toEqual(['السمة', 'ابدأ من', 'لون التمييز', 'الخط', 'التباعد', 'الزوايا', 'التسميات', 'المساعدة', 'الحقول للقراءة فقط', 'الألوان', 'كل نوع من الأجزاء']);
     expect([...panel.querySelectorAll('.fd-look-preset-name')].map((n) => n.textContent)).toEqual(['Fieldia', 'هادئ', 'متقارب', 'مستدير', 'ليلي']);
     expect([...panel.querySelectorAll('[data-setting="Spacing"] .fd-seg-words')].map((n) => n.textContent)).toEqual(['متقارب', 'مريح', 'واسع']);
   });

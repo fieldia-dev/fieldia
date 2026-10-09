@@ -80,7 +80,7 @@ describe('the Look tab’s “Each kind of part”', () => {
   it('comes last among the page’s look, in Advanced; Simple keeps the look as it is', () => {
     const { host, row } = screenEditor();
     const names = [...host.querySelectorAll('.fd-properties [role="tabpanel"]:not([hidden]) [data-setting]')].map((r) => r.getAttribute('data-setting'));
-    expect(names).toEqual(['Look presets', 'Accent colour', 'Font', 'Spacing', 'Corners', 'Labels', 'Label width', 'Help', 'Read-only fields', 'Colours', 'Each kind of part']);
+    expect(names).toEqual(['Theme', 'Look presets', 'Accent colour', 'Font', 'Spacing', 'Corners', 'Labels', 'Label width', 'Help', 'Read-only fields', 'Colours', 'Each kind of part']);
     expect(row().hidden).toBe(false);
   });
 

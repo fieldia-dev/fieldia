@@ -31,7 +31,23 @@ describe('the Look tab — the page', () => {
     const { host, panel } = screenEditor();
     expect([...panel.querySelectorAll('[role="tab"]')].map((t) => t.textContent)).toEqual(['Content', 'Layout', 'Look', 'Rules']);
     openTab(host, 'Look');
-    expect([...panel.querySelectorAll('[role="tabpanel"]:not([hidden]) [data-setting]')].map((r) => r.getAttribute('data-setting'))).toEqual(['Look presets', 'Accent colour', 'Font', 'Spacing', 'Corners', 'Labels', 'Label width', 'Help', 'Read-only fields', 'Colours', 'Each kind of part']);
+    expect([...panel.querySelectorAll('[role="tabpanel"]:not([hidden]) [data-setting]')].map((r) => r.getAttribute('data-setting'))).toEqual(['Theme', 'Look presets', 'Accent colour', 'Font', 'Spacing', 'Corners', 'Labels', 'Label width', 'Help', 'Read-only fields', 'Colours', 'Each kind of part']);
+  });
+
+  it('picks a theme in a known system’s style, the canvas wearing it on the theme’s own skin, and takes it off', () => {
+    const { host, canvas, shown, look } = screenEditor();
+    openTab(host, 'Look');
+    const theme = shown().querySelector('[data-setting="Theme"] select') as HTMLSelectElement;
+    expect([...theme.options].map((o) => o.textContent)).toEqual(['None', 'Material', 'Fluent', 'Apple', 'Bootstrap', 'shadcn', 'Ant Design', 'Odoo', 'Google Forms']);
+    theme.value = 'material';
+    theme.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(look()).toEqual({ theme: 'material' });
+    expect(canvas.getAttribute('data-fd-theme')).toBe('material');
+    expect(canvas.getAttribute('data-fd-skin')).toBe('outlined');
+    theme.value = '';
+    theme.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(look()?.theme).toBeUndefined();
+    expect(canvas.hasAttribute('data-fd-theme')).toBe(false);
   });
 
   it('sets the spacing, the font, the corners and the colours, and the canvas wears each as it is set', () => {
