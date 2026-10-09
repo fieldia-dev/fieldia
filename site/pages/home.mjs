@@ -59,6 +59,22 @@ const templateCard = (id) => {
   return `<a class="reel-card tpl-card" href="/demos/plain/?page=template-${id}&amp;theme=${t.theme}${isRecord(id) ? '&amp;record=new' : ''}"><img src="/demos/thumbs/template-${id}.png" alt="" loading="lazy" width="320" height="200"><span>${t.name}<small>${themeName(t.theme)}</small></span></a>`;
 };
 
+/** What every page can use: a tile each, with what it holds and where to read or see more. */
+const POWERS = [
+  ['Fields', '19 types, over 35 widgets', 'Money in its currency, signatures, ratings, matrices, tags, files and pictures, rich text, a code editor.', '/fields/'],
+  ['Rules', 'As people type', 'Show, hide, require or lock a field by a condition; values worked out with sum, count and days; answers checked.', '/pages/'],
+  ['Buttons that act', '16 kinds of step', 'Save, ask first, call your server, open a page as a dialog or side panel, post to the chatter, archive.', '/actions/'],
+  ['Business records', 'Status to totals', 'Status bars, stat buttons, lines that add up in a spreadsheet grid, a PDF beside the sheet, a pager.', '/features/records/'],
+  ['The chatter', 'On every record', 'Messages, notes and @mentions, scheduled activities, followers and files, beside the sheet.', '/chatter/'],
+  ['Lists and search', 'Find, group, act', 'Filters, grouping, favourites, sorting and pages; buttons for the records chosen; rows that open.', '/lists/'],
+  ['Surveys in steps', 'Branching', 'Pages that follow the answers, a progress bar, optional steps, and a Google Forms look.', '/demos/plain/?page=survey&skin=outlined'],
+  ['Looks', '2 skins, 8 themes', 'Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo and Google Forms, light and dark, in your colours.', '/look/'],
+  ['Languages and access', '4 languages, AA', 'English, Arabic, German and French, right to left in full, WCAG 2.2 AA, and every part by keyboard.', '/accessibility/'],
+  ['Your backend', 'One small interface', 'Load and save through a data source; your server fills in fields as they change and puts its refusals on them.', '/data/'],
+];
+const power = ([name, figure, words, href]) =>
+  `<li><a class="power" href="${href}"><span class="power-figure">${figure}</span><b>${name}</b><span class="power-words">${words}</span><span class="power-go" aria-hidden="true">→</span></a></li>`;
+
 /** The page the hero writes, as it is mounted at its last step; home.js writes it again, line by line. */
 const HERO_JSON = `{
   "fieldia": "0.1",
@@ -89,7 +105,7 @@ const HERO_JSON = `{
 export default {
   path: '/',
   title: 'Fieldia',
-  description: 'Write a form or an app screen once, as JSON, and Fieldia draws it in plain JavaScript, React, Vue or Angular: from a survey to a full ERP record, with an open designer. MIT.',
+  description: 'Write a form or an app screen once, as JSON, and Fieldia runs it in plain JavaScript, React, Vue or Angular: from a survey to a full ERP record, with an open designer. MIT.',
   head: `<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -101,8 +117,8 @@ export default {
 <section class="opening" aria-labelledby="opening-h">
   <div class="opening-copy">
     <p class="kicker">Open source · MIT · 0.12</p>
-    <h1 id="opening-h">Write the screen once.<br><span>Fieldia draws it everywhere.</span></h1>
-    <p class="lede">A page is a short piece of JSON: its fields, its layout, when a field shows or is required. Fieldia draws it in plain JavaScript, React, Vue or Angular, checks what people type, and hands the record to your backend.</p>
+    <h1 id="opening-h">Write the screen once.<br><span>Fieldia runs it everywhere.</span></h1>
+    <p class="lede">A page is a short piece of JSON: its fields, its layout, its rules and its buttons. Fieldia runs it in plain JavaScript, React, Vue or Angular: it draws the form, checks what people type, works out the totals, follows the page’s rules, runs its buttons, and hands the record to your backend.</p>
     <div class="opening-actions">
       <a class="btn btn-solid" href="/start/">Get started</a>
       <button class="btn btn-copy" type="button" id="copy-install" data-copy="npm install @fieldia/viewer"><code>npm install @fieldia/viewer</code><span class="copy-word" aria-hidden="true">Copy</span></button>
@@ -158,11 +174,23 @@ export default {
     <div class="sheet-host" id="sheet-form" role="region" aria-label="A live sales order"></div>
     <p class="sheet-caption" id="sheet-caption" aria-live="polite">S00071 · a quotation for Dar El Shifa Hospital</p>
   </div>
+  <p class="chapter-more"><a href="/features/records/">Everything a business record has →</a></p>
+</section>
+
+<section class="chapter chapter-center" id="everything" aria-labelledby="everything-h">
+  <div class="chapter-copy">
+    <p class="chapter-no">3 · Everything in it</p>
+    <h2 id="everything-h">Everything a business screen needs, already built</h2>
+    <p>The form and the order above are two pages. These are the parts every page can use, each tested in all four frameworks.</p>
+  </div>
+  <ul class="powers">
+    ${POWERS.map(power).join('\n    ')}
+  </ul>
 </section>
 
 <section class="chapter chapter-center" id="frameworks" aria-labelledby="frameworks-h">
   <div class="chapter-copy">
-    <p class="chapter-no">3 · Any framework</p>
+    <p class="chapter-no">4 · Any framework</p>
     <h2 id="frameworks-h">One page, written once, in every framework</h2>
     <p>Every binding is a thin shell around one plain-DOM viewer, so the same page draws the same form, to the pixel, wherever you mount it.</p>
   </div>
@@ -219,7 +247,7 @@ export class OrderComponent {}`
 
 <section class="chapter" id="templates" aria-labelledby="templates-h">
   <div class="chapter-copy">
-    <p class="chapter-no">4 · Ready to start</p>
+    <p class="chapter-no">5 · Ready to start</p>
     <h2 id="templates-h">Start from a template, in the look you know</h2>
     <p>${TEMPLATES.length} ready pages — contact forms, surveys, bookings, invoices, orders, tasks — each one JSON file. Eight themes dress any of them as Material, Fluent, Apple, Bootstrap, shadcn, Ant Design, Odoo or Google Forms, light or dark. This one changes as you watch; pick a theme to keep it.</p>
     <div class="theme-picks" role="group" aria-label="Theme">
@@ -241,8 +269,8 @@ Fieldia.mountViewer(host, { page, theme: 'fluent' });</code></pre>
 
 <section class="chapter chapter-wide" id="real" aria-labelledby="real-h">
   <div class="chapter-copy">
-    <p class="chapter-no">5 · Proven</p>
-    <h2 id="real-h">Nineteen real ERP screens, already drawn by it</h2>
+    <p class="chapter-no">6 · Proven</p>
+    <h2 id="real-h">Nineteen real ERP screens, already running on it</h2>
     <p>We rebuilt nineteen screens of a working ERP, from a two-field dialog to a legal case with fifteen tabs and twelve tables, each with its own records, buttons and rules. Open any of them: each works in all four frameworks.</p>
   </div>
   <div class="reel" role="region" aria-label="The nineteen real pages">
@@ -253,7 +281,7 @@ Fieldia.mountViewer(host, { page, theme: 'fluent' });</code></pre>
 
 <section class="chapter chapter-flip" id="designer" aria-labelledby="designer-h">
   <div class="chapter-copy">
-    <p class="chapter-no">6 · No code needed</p>
+    <p class="chapter-no">7 · No code needed</p>
     <h2 id="designer-h">Build it in a designer that is open too</h2>
     <p>Drag fields in, type labels where they stand, set when a field shows in plain sentences, try it at a phone’s width in Arabic, and publish a version. The designer writes the same JSON. It is MIT like the rest, where other form libraries sell their builder.</p>
     <p class="chapter-cta"><a class="btn btn-solid" href="/designer/">Open the designer</a></p>
@@ -265,19 +293,19 @@ Fieldia.mountViewer(host, { page, theme: 'fluent' });</code></pre>
 
 <section class="chapter chapter-center" id="numbers" aria-labelledby="numbers-h">
   <div class="chapter-copy">
-    <p class="chapter-no">7 · Small and open</p>
-    <h2 id="numbers-h">Everything, in a small package</h2>
+    <p class="chapter-no">8 · Tested and open</p>
+    <h2 id="numbers-h">Tested on every change, and small enough for a script tag</h2>
   </div>
   <ul class="figures">
+    <li><b class="count" data-to="1586">1,586</b><span>browser tests, driving the demos by mouse and keyboard in every framework</span></li>
+    <li><b class="count" data-to="3605">3,605</b><span>unit tests across the ten packages</span></li>
     <li><b class="count" data-to="135">135</b><span>KB gzipped: the whole engine in one script tag, no build step</span></li>
-    <li><b class="count" data-to="4">4</b><span>frameworks from one viewer: plain JavaScript, React, Vue, Angular</span></li>
-    <li><b class="count" data-to="10">10</b><span>packages on npm, the designer included, all MIT</span></li>
-    <li><b>AA</b><span>WCAG 2.2, checked with axe on every demo, by keyboard and in Arabic</span></li>
+    <li><b>AA</b><span>WCAG 2.2, checked with axe on every demo, light and dark, and in Arabic</span></li>
   </ul>
 </section>
 
 <section class="finale" aria-labelledby="finale-h">
-  <h2 id="finale-h">Draw your first page in five minutes</h2>
+  <h2 id="finale-h">Build your first page in five minutes</h2>
   <p>One script tag, or a package for your framework. Fieldia has no backend of its own: your app loads and saves records through a small interface.</p>
   <div class="opening-actions">
     <a class="btn btn-solid" href="/start/">Read Get started</a>
