@@ -1,6 +1,9 @@
 import type { Theme } from '@fieldia/core';
 
 /**
+ * (Not a `styles-*.ts`: its rules are written with the selectors they share, so the script bundle's
+ * minifier, which takes a static stylesheet, leaves it as it is.)
+ *
  * Themes in the style of design systems people know: the form's own tokens,
  * light and dark, over the skin each is drawn on (Odoo's over `underline`,
  * the rest over `outlined`), and a few rules of their own for what tokens
@@ -8,7 +11,7 @@ import type { Theme } from '@fieldia/core';
  * question cards. They are looks in those systems' style, not their kits: a
  * theme names its typeface and falls back to the system's when the app has
  * not loaded it. Every colour pair a reader reads is checked against WCAG AA
- * (styles-themes.spec.ts), so a few are a shade darker than the original.
+ * (themes.spec.ts), so a few are a shade darker than the original.
  */
 
 /** The tokens a theme sets, by their names without `--fd-`. */
@@ -56,7 +59,7 @@ export const THEME_TOKENS: Record<Theme, { light: ThemeTokens; dark: ThemeTokens
   // Bootstrap 5: its blue, a soft blue ring on focus, six-pixel corners.
   bootstrap: {
     light: {
-      font: SYSTEM, text: '#212529', muted: '#6c757d', page: '#f8f9fa', surface: '#ffffff', border: '#dee2e6', 'border-strong': '#adb5bd',
+      font: SYSTEM, text: '#212529', muted: '#5c636a', page: '#f8f9fa', surface: '#ffffff', border: '#dee2e6', 'border-strong': '#adb5bd',
       accent: '#0a58ca', 'accent-text': '#ffffff', 'accent-soft': '#cfe2ff', focus: '#86b7fe', 'focus-ring': '0 0 0 0.25rem rgba(13, 110, 253, 0.25)', error: '#b02a37', 'error-soft': '#f8d7da',
       radius: '6px', 'control-radius': '6px', 'control-height': '38px', 'pad-y': '6px', 'pad-x': '12px', 'input-border': '1px', 'label-weight': '400', 'gap-x': '24px', 'gap-y': '16px',
     },
@@ -68,7 +71,7 @@ export const THEME_TOKENS: Record<Theme, { light: ThemeTokens; dark: ThemeTokens
   // shadcn/ui on zinc: near-black primary, quiet borders, a grey ring, segmented tabs.
   shadcn: {
     light: {
-      font: `Geist, Inter, ${SYSTEM}`, text: '#09090b', muted: '#71717a', page: '#fafafa', surface: '#ffffff', border: '#e4e4e7', 'border-strong': '#a1a1aa',
+      font: `Geist, Inter, ${SYSTEM}`, text: '#09090b', muted: '#64646c', page: '#fafafa', surface: '#ffffff', border: '#e4e4e7', 'border-strong': '#a1a1aa',
       accent: '#18181b', 'accent-text': '#fafafa', 'accent-soft': '#f4f4f5', focus: '#a1a1aa', 'focus-ring': '0 0 0 3px rgba(161, 161, 170, 0.5)', error: '#dc2626', 'error-soft': '#fef2f2',
       radius: '10px', 'control-radius': '8px', 'control-height': '36px', 'pad-y': '6px', 'pad-x': '12px', 'input-border': '1px', 'label-weight': '500', 'gap-x': '24px', 'gap-y': '16px',
     },

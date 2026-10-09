@@ -1,7 +1,7 @@
 import { THEMES } from '@fieldia/core';
 import { FIELDIA_CSS } from './styles';
 import { PARTS_CSS } from './styles-parts';
-import { THEME_RULES_CSS, THEME_TOKENS, THEME_TOKENS_CSS, type ThemeTokens } from './styles-themes';
+import { THEME_RULES_CSS, THEME_TOKENS, THEME_TOKENS_CSS, type ThemeTokens } from './themes';
 
 /** A colour as [r, g, b, a], from #rrggbb or rgb(a)(). */
 function parse(colour: string): [number, number, number, number] {
@@ -46,16 +46,21 @@ describe('the themes', () => {
   // tab) and words on it (a primary button), and an error — WCAG 2.2 AA, 4.5:1, in light and in dark.
   it.each(THEMES.flatMap((theme) => (['light', 'dark'] as const).map((scheme) => [theme, scheme] as const)))('%s, %s: every word reads at 4.5:1 or more', (theme, scheme) => {
     const t: ThemeTokens = scheme === 'light' ? THEME_TOKENS[theme].light : { ...THEME_TOKENS[theme].light, ...THEME_TOKENS[theme].dark };
-    const pairs: [string, keyof ThemeTokens, keyof ThemeTokens][] = [
+    // A read-only box in the outlined skin: a 4% shade over the card (styles.ts), as the browser paints it.
+    const shaded = over('rgba(0, 0, 0, 0.04)', t.surface as string).map((c) => Math.round(c).toString(16).padStart(2, '0'));
+    const colours: Record<string, string> = { ...(t as Record<string, string>), readonly: `#${shaded.join('')}` };
+    const pairs: [string, string, string][] = [
       ['words on a card', 'text', 'surface'],
       ['words on the page', 'text', 'page'],
       ['quiet words on a card', 'muted', 'surface'],
+      ['quiet words on the page', 'muted', 'page'],
+      ['quiet words in a read-only box', 'muted', 'readonly'],
       ['the accent as words on a card', 'accent', 'surface'],
       ['words on the accent', 'accent-text', 'accent'],
       ['an error on a card', 'error', 'surface'],
     ];
     const low = pairs
-      .map(([what, fore, ground]) => ({ what, ratio: Math.round(contrast(t[fore] as string, t[ground] as string) * 100) / 100 }))
+      .map(([what, fore, ground]) => ({ what, ratio: Math.round(contrast(colours[fore], colours[ground]) * 100) / 100 }))
       .filter((p) => p.ratio < 4.5);
     expect(low).toEqual([]);
   });

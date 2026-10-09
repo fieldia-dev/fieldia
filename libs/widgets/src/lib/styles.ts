@@ -19,7 +19,7 @@ import { BUSINESS_CSS } from './styles-business';
  * form mirrors without a second stylesheet.
  */
 import { LAYOUT_CSS } from './layout-styles';
-import { THEME_RULES_CSS, THEME_TOKENS_CSS } from './styles-themes';
+import { THEME_RULES_CSS, THEME_TOKENS_CSS } from './themes';
 
 /**
  * The widths of a form at which its groups take their medium and their narrow
