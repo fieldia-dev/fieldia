@@ -38,7 +38,7 @@ writeFileSync(
   layout({ path: '/404', title: 'Not found', description: 'This page does not exist.', body: '<section class="band"><h2>This page does not exist</h2><p><a href="/">Back to the start</a> or <a href="/start/">read the docs</a>.</p></section>' })
 );
 
-for (const file of ['site.css', 'live.js', 'home.css', 'home.js', 'features.css', 'favicon.svg']) cpSync(join(WORKSPACE, 'site', file), join(OUT, file));
+for (const file of ['site.css', 'live.js', 'home.css', 'home.js', 'story.js', 'story.css', 'features.css', 'favicon.svg']) cpSync(join(WORKSPACE, 'site', file), join(OUT, file));
 // The feature pages' pictures, taken from the real demos (tools/feature-shots.mjs).
 cpSync(join(WORKSPACE, 'site/img'), join(OUT, 'img'), { recursive: true });
 cpSync(BUNDLE, join(OUT, 'fieldia.js'));

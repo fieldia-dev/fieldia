@@ -59,6 +59,23 @@ const templateCard = (id) => {
   return `<a class="reel-card tpl-card" href="/demos/plain/?page=template-${id}&amp;theme=${t.theme}${isRecord(id) ? '&amp;record=new' : ''}"><img src="/demos/thumbs/template-${id}.png" alt="" loading="lazy" width="320" height="200"><span>${t.name}<small>${themeName(t.theme)}</small></span></a>`;
 };
 
+/** The story of chapter 3, one caption a chapter: its heading and its words. site/story.js plays it. */
+const STORY = [
+  ['A page is a list of fields', 'Write down what the record holds. Fieldia draws each field with its label, and checks what is typed in it.'],
+  ['Over 35 widgets', 'Money in its currency, a rating, tags, a date, a switch: each field drawn the way its value reads best.'],
+  ['Rules, as people type', 'Turn on the site visit and its date appears, now required, because the page says so, not your code.'],
+  ['Buttons that act', 'Confirm runs its steps: the status moves, the record is saved, and your server hears about it.'],
+  ['Lines that add up', 'Quantities change and every subtotal and the total follow, as they would in a spreadsheet.'],
+  ['The conversation beside it', 'Messages, notes, @mentions, files and to-dos stay with the record, beside the sheet.'],
+  ['In a list, with search', 'The record takes its place among the others: filter them, group them, act on several at once.'],
+  ['In any of eight themes', 'Material, Fluent, Odoo, Google Forms, Apple and more: the same page, dressed to fit your product.'],
+  ['In Arabic, right to left', 'Every part turns, from the labels to the status bar. English, Arabic, German and French are built in.'],
+  ['Saved by your backend', 'One small interface loads and saves. Your server fills in fields as they change, and its refusals land on them.'],
+  ['One page. Every framework.', 'All of it from one JSON page, in plain JavaScript, React, Vue or Angular. Open source, MIT.'],
+];
+const storyCaption = ([title, words], i) =>
+  `<li class="story-caption${i ? '' : ' is-on'}"><span class="story-count">${String(i + 1).padStart(2, '0')} / ${STORY.length}</span><h3>${title}</h3><p>${words}</p></li>`;
+
 /** What every page can use: a tile each, with what it holds and where to read or see more. */
 const POWERS = [
   ['Fields', '19 types, over 35 widgets', 'Money in its currency, signatures, ratings, matrices, tags, files and pictures, rich text, a code editor.', '/fields/'],
@@ -110,6 +127,7 @@ export default {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
 <link rel="stylesheet" href="/home.css">
+<link rel="stylesheet" href="/story.css">
 `,
   body: `
 <div class="story">
@@ -177,11 +195,64 @@ export default {
   <p class="chapter-more"><a href="/features/records/">Everything a business record has →</a></p>
 </section>
 
+<section class="story-chapter" id="story" aria-labelledby="story-h">
+  <div class="chapter-copy story-intro">
+    <p class="chapter-no">3 · Everything in it</p>
+    <h2 id="story-h">Watch one record grow into everything a business screen needs</h2>
+    <p>Keep scrolling. Every change below happens to the same page of JSON, in the real viewer.</p>
+  </div>
+  <div class="story-scroll" style="--steps: ${STORY.length}">
+    <div class="story-sticky">
+      <ol class="story-captions">
+        ${STORY.map(storyCaption).join('\n        ')}
+      </ol>
+      <div class="story-stage" data-step="0" inert>
+        <div class="story-screen">
+          <div class="story-window">
+            <div class="story-chrome"><span></span><span></span><span></span><b>app.example.com/quotes/0142</b></div>
+            <div class="story-app">
+              <div id="story-form" class="story-form"></div>
+              <div class="story-chatter">
+                <p class="story-chatter-bar"><b>Send message</b><span>Log note</span><span>Activity</span></p>
+                <p class="story-activity"><i>Today</i> Call Nadia about the delivery day</p>
+                <p class="story-message"><b>Nadia Farouk</b> The meeting rooms first, please. Can you start on the 2nd?</p>
+                <p class="story-message story-mine"><b>You</b> @Nadia yes, the 2nd. The plan is attached.</p>
+                <p class="story-file">fit-out-plan.pdf</p>
+              </div>
+            </div>
+          </div>
+          <div class="story-list">
+            <p class="story-search"><span class="story-chip">Status: Confirmed ×</span> Search quotes…</p>
+            <table>
+              <thead><tr><th>Quote</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr class="story-dim"><td>Q-2026-0139</td><td>Nile Traders</td><td>$8,120.00</td><td>Quotation</td></tr>
+                <tr class="story-ours"><td>Q-2026-0142</td><td>Delta Foods</td><td>$13,360.00</td><td>Confirmed</td></tr>
+                <tr><td>Q-2026-0144</td><td>Amira Clinics</td><td>$5,400.00</td><td>Confirmed</td></tr>
+                <tr class="story-dim"><td>Q-2026-0147</td><td>Sahel Resorts</td><td>$21,900.00</td><td>Sent</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="story-toast">✓ Quote confirmed</p>
+          <code class="story-rule">"invisible": "not site_visit"</code>
+          <p class="story-theme"></p>
+          <div class="story-server">
+            <svg viewBox="0 0 200 60" aria-hidden="true"><path d="M4 30 C 60 0, 140 60, 196 30" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5 6"/><circle class="story-packet" r="6" fill="currentColor"><animateMotion dur="1.4s" repeatCount="indefinite" path="M4 30 C 60 0, 140 60, 196 30"/></circle></svg>
+            <div class="story-db"><b>Your server</b><code>PUT /quotes/142</code><span>✓ Saved</span></div>
+          </div>
+          <ul class="story-frameworks"><li>JavaScript</li><li>React</li><li>Vue</li><li>Angular</li></ul>
+        </div>
+      </div>
+      <nav class="story-rail" aria-label="The story's chapters">
+        ${STORY.map((s, i) => `<button type="button" aria-label="${s[0]}" aria-current="${i ? 'false' : 'step'}"></button>`).join('')}
+      </nav>
+    </div>
+  </div>
+</section>
+
 <section class="chapter chapter-center" id="everything" aria-labelledby="everything-h">
   <div class="chapter-copy">
-    <p class="chapter-no">3 · Everything in it</p>
-    <h2 id="everything-h">Everything a business screen needs, already built</h2>
-    <p>The form and the order above are two pages. These are the parts every page can use, each tested in all four frameworks.</p>
+    <h2 id="everything-h" class="everything-h">Each part, in more depth</h2>
   </div>
   <ul class="powers">
     ${POWERS.map(power).join('\n    ')}
@@ -319,5 +390,6 @@ Fieldia.mountViewer(host, { page, theme: 'fluent' });</code></pre>
 <script src="/fieldia.js"></script>
 <script src="/live.js"></script>
 <script src="/home.js"></script>
+<script src="/story.js"></script>
 `,
 };
