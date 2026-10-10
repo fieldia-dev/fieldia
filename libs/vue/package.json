@@ -1,6 +1,6 @@
 {
   "name": "@fieldia/vue",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Vue binding for Fieldia: <FieldiaForm> over the plain-DOM viewer, with custom fields as Vue components and slots as Vue slots.",
   "license": "MIT",
   "homepage": "https://fieldia.dev",
@@ -21,9 +21,9 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@fieldia/core": "0.13.0",
-    "@fieldia/viewer": "0.13.0",
-    "@fieldia/widgets": "0.13.0",
+    "@fieldia/core": "0.13.1",
+    "@fieldia/viewer": "0.13.1",
+    "@fieldia/widgets": "0.13.1",
     "tslib": "^2.8.1"
   },
   "sideEffects": false,
