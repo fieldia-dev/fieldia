@@ -251,7 +251,9 @@ export interface CellRules {
    * How its cells are shown, as a field node's `widget` — Flectra's widget= on
    * a list's column: a `progressbar`, `priority` stars, a `duration` as HH:MM,
    * a `percentage`, a state `dot`. Text widgets are typed into as the field's
-   * box is; drawn ones (bars, stars, dots) are used in the cell itself.
+   * box is; drawn ones (bars, stars, dots) are used in the cell itself. An
+   * app's own widget, given to the viewer as `<type>.<widget>`, is named the
+   * same way and drawn in every line's cell, writing to that line.
    */
   widget?: string;
   /** Its widget's settings, as a field node's `options`; one ending in "Field" names a field of the line. */

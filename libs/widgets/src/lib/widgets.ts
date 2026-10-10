@@ -79,6 +79,12 @@ export interface WidgetContext {
   locale?: Locale;
   /** Dialogs the page can open: a related record, a searchable list, values to edit. Left out, widgets offer none. */
   dialogs?: WidgetDialogs;
+  /**
+   * The app's widgets, by `type` or `type.widget`, as given to the viewer. A
+   * widget that draws fields of its own (a table's cells, a property's value)
+   * draws them from these too, so a column can name one as a field can.
+   */
+  widgets?: Record<string, WidgetFactory>;
 }
 
 /** What a widget may ask of the page around it in a dialog. The viewer provides these. */
@@ -137,7 +143,9 @@ export type WidgetFactory = (context: WidgetContext) => Widget;
  * `type.widget` (such as `selection.radio`), then for the type alone. A type
  * with no editor yet shows its value read-only.
  */
-export function createWidget(context: WidgetContext, registry: Record<string, WidgetFactory> = {}): Widget {
+export function createWidget(given: WidgetContext, registry: Record<string, WidgetFactory> = given.widgets ?? {}): Widget {
+  // The fields it draws of its own are found where it was.
+  const context = given.widgets === registry ? given : { ...given, widgets: registry };
   const { field, node } = context;
   const keys = [
     node.widget ? `${field.type}.${node.widget}` : null,

@@ -115,7 +115,7 @@ export async function openLineDialog(form: Form, name: string, node: FieldNode, 
   if (values) write(values);
 }
 
-export const linesWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, locale, dialogs }) => {
+export const linesWidget: WidgetFactory = ({ form, name, field, node, id, document, labels = WIDGET_LABELS.en, locale, dialogs, widgets }) => {
   const def = field as Extract<Field, { type: 'one2many' }>;
   const kinds = def.lineKinds;
   const make = maker(document);
@@ -360,7 +360,7 @@ export const linesWidget: WidgetFactory = ({ form, name, field, node, id, docume
     // Its settings reach its widget even without a widget named: a calendar's week numbers.
     const look = rules?.badge ? { widget: 'badge' } : rules?.widget ? { widget: rules.widget, ...(rules.options ? { options: rules.options } : {}) } : rules?.options ? { options: rules.options } : {};
     const subNode: FieldNode = { type: 'field', id: `${node.id}.${line.key}.${column}`, field: column, ...look };
-    const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs });
+    const widget = createWidget({ form: lineForm(form, name, line.key), name: column, field: sub as Field, node: subNode, id: cellId, document, labels, locale, dialogs, widgets });
     const td = document.createElement('td');
     td.colSpan = span;
     td.dataset['column'] = column;

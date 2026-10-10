@@ -71,3 +71,27 @@ describe('a table’s cells drawn by a widget of their own', () => {
     expect(cellText(def as never, 1.5, {}, 'en')).toBe('1.50');
   });
 });
+
+describe('a table’s column drawn by the app’s own widget', () => {
+  it('finds it among the widgets given to the table, and it writes to its own line', () => {
+    const appPage = { ...page, layout: { type: 'sections', id: 'root', children: [{ type: 'field', id: 'f-lines', field: 'child_ids', cells: { name: { widget: 'app-words' } } }] } } as unknown as Page;
+    const values = { child_ids: [{ key: 'a', values: { name: 'Survey' } }, { key: 'b', values: { name: 'Drawings' } }] };
+    const form = createForm({ page: appPage, values: values as never });
+    const node = (appPage.layout as { children: FieldNode[] }).children[0];
+    const widgets = {
+      'char.app-words': ({ form: line, name, document: doc }: { form: typeof form; name: string; document: Document }) => {
+        const element = doc.createElement('button');
+        element.className = 'app-words';
+        element.addEventListener('click', () => line.setValue(name, 'Chosen'));
+        return { element, update: (state: { value: unknown }) => (element.textContent = String(state.value ?? '')), focus: () => element.focus() };
+      },
+    };
+    const widget = createWidget({ form, name: 'child_ids', field: appPage.fields['child_ids'] as Field, node, id: 'fd-lines', document, labels: WIDGET_LABELS.en }, widgets as never);
+    document.body.replaceChildren(widget.element);
+    widget.update({ value: form.getState().values['child_ids'], values: form.getState().values, readonly: false, required: false, invalid: false });
+    expect([...widget.element.querySelectorAll('td[data-column="name"] .app-words')].map((b) => b.textContent)).toEqual(['Survey', 'Drawings']);
+    (cell(widget.element, 'b', 'name').querySelector('.app-words') as HTMLButtonElement).click();
+    const lines = form.getState().values['child_ids'] as unknown as { values: { name: string } }[];
+    expect(lines.map((line) => line.values.name)).toEqual(['Survey', 'Chosen']);
+  });
+});
