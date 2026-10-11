@@ -94,9 +94,9 @@ footer { padding-top: 28px; border-top: 1px solid var(--line); color: var(--mute
   <p class="kicker">Fieldia · plan for review · 11 October 2026</p>
   <h1>Fieldia Maps</h1>
   <p class="lede">A new package, <code>@fieldia/map</code>, with the map features apps usually spend weeks building, ready to use. Any map provider. Pins and cards are described by the page. Places and areas can be fields on a form. Records go on a map beside their list. Routes with a driver on the way. Positions that move live. Areas coloured by their numbers.</p>
-  <div class="meta"><span>Status: proposed, nothing built yet</span><span>Package: separate, like <code>@fieldia/code</code></span><span>Main script: unchanged in size</span></div>
+  <div class="meta"><span>Status: decisions taken 11 Oct (all as recommended); phase 1 being built</span><span>Package: separate, like <code>@fieldia/code</code></span><span>Main script: unchanged in size</span></div>
   <nav class="toc" aria-label="Contents">
-    <a href="#examples">Four example apps</a><a href="#shape">How it stacks</a><a href="#parts">The parts</a><a href="#providers">Providers</a><a href="#phases">Phases</a><a href="#proof">How each part is proved</a><a href="#decide">Decisions for you</a>
+    <a href="#examples">Four example apps</a><a href="#shape">How it stacks</a><a href="#parts">The parts</a><a href="#providers">Providers</a><a href="#phases">Phases</a><a href="#proof">How each part is proved</a><a href="#decide">Decisions</a>
   </nav>
 </header>
 
@@ -278,10 +278,10 @@ geofences: [{ area: 'zone', when: 'enter', layer: 'courier',
   <pre><code>import { mapWidgets, azureMaps } from '@fieldia/map';
 
 mountViewer(host, { page, dataSource,
-  widgets: { ...mapWidgets },
-  map: { provider: azureMaps({ tokenUrl: '/maps/token' }),
-         route: myRouteFunction,          // optional: the app's own
-         search: myAddressSearch } });    // optional: the app's own</code></pre>
+  widgets: { ...mapWidgets({
+    provider: azureMaps({ token: () =&gt; fetch('/maps/token').then((r) =&gt; r.text()) }),
+    route: myRouteFunction,                // optional: the app's own
+    search: myAddressSearch }) } });       // optional: the app's own</code></pre>
 </section>
 
 <section id="phases">
@@ -346,13 +346,13 @@ mountViewer(host, { page, dataSource,
 </section>
 
 <section id="decide">
-  <div class="stack"><h2>Decisions for you</h2><p>My recommendation is marked on each.</p></div>
+  <div class="stack"><h2>Decisions</h2><p>All five taken on 11 October, as recommended.</p></div>
   <ol class="decide">
-    <li><b>Map engine: Leaflet or MapLibre</b><span>Leaflet draws map images: small, simple, works everywhere. MapLibre draws vector maps with WebGL: smoother zoom and rotation, but about six times larger and harder on old phones. <span class="rec">Recommended: Leaflet now. The core is written so MapLibre could be added later as a second engine.</span></span></li>
-    <li><b>Google: Map Tiles API only, or also Google's own JavaScript map</b><span>The Map Tiles API fits the same engine as the others. Google's own map would be a second, larger adapter for apps that must use it. <span class="rec">Recommended: Map Tiles API first; the second adapter only if an app asks.</span></span></li>
-    <li><b>Keys</b><span>The app can pass a key in the browser, restricted to its site, or a URL on its own server that hands out short-lived tokens. <span class="rec">Recommended: support both; the docs and demos show the token URL.</span></span></li>
-    <li><b>Where to start</b><span>Phases 1 and 2 give the most-asked-for parts (fields, a property-style search). Phase 3 is what makes it stand out (live courier, routes). <span class="rec">Recommended: in order, 1 → 4, releasing after each.</span></span></li>
-    <li><b>Our own sites</b><span>Once phase 2 ships, the property map we run today could move onto it and drop its own map code. <span class="rec">Recommended: yes, after phase 2, as a separate task.</span></span></li>
+    <li><b>Map engine: Leaflet or MapLibre</b><span>Leaflet draws map images: small, simple, works everywhere. MapLibre draws vector maps with WebGL: smoother zoom and rotation, but about six times larger and harder on old phones. <span class="rec">Decided: Leaflet now. The core is written so MapLibre could be added later as a second engine.</span></span></li>
+    <li><b>Google: Map Tiles API only, or also Google's own JavaScript map</b><span>The Map Tiles API fits the same engine as the others. Google's own map would be a second, larger adapter for apps that must use it. <span class="rec">Decided: Map Tiles API first; the second adapter only if an app asks.</span></span></li>
+    <li><b>Keys</b><span>The app can pass a key in the browser, restricted to its site, or a URL on its own server that hands out short-lived tokens. <span class="rec">Decided: support both; the docs and demos show the token URL.</span></span></li>
+    <li><b>Where to start</b><span>Phases 1 and 2 give the most-asked-for parts (fields, a property-style search). Phase 3 is what makes it stand out (live courier, routes). <span class="rec">Decided: in order, 1 → 4, releasing after each.</span></span></li>
+    <li><b>Our own sites</b><span>Once phase 2 ships, the property map we run today could move onto it and drop its own map code. <span class="rec">Decided: yes, after phase 2, as a separate task.</span></span></li>
   </ol>
 </section>
 
