@@ -1,11 +1,11 @@
 import { c, code } from '../layout.mjs';
 
 const ROWS = [
-  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline)', 'size, pattern'],
-  ['text', 'Several lines of text', 'copy', 'size'],
+  ['char', 'One line of text', 'email, phone, url, password, tags (free text), time (HH:MM), color (#rrggbb), copy, embed (a page shown inline), code (with @fieldia/code)', 'size, pattern'],
+  ['text', 'Several lines of text', 'copy, code (with @fieldia/code), monaco (with @fieldia/monaco)', 'size'],
   ['html', 'Formatted text with a toolbar, cleaned of scripts on every change', '', ''],
   ['integer', 'A whole number', 'rating (stars), scale (1 to 10 buttons), progressbar, label, color (a tag colour, 0 to 11)', 'min, max'],
-  ['float', 'A decimal number', 'progressbar, label, duration (HH:MM), percentage, timer', 'min, max, digits'],
+  ['float', 'A decimal number', 'progressbar, label, duration (HH:MM), percentage, timer, place (a latitude, with @fieldia/map)', 'min, max, digits'],
   ['monetary', 'An amount of money', 'progressbar, label', 'currencyField or currency, min, max, digits'],
   ['boolean', 'Yes or no', 'toggle, priority (one star)', ''],
   ['date', 'A date', 'daterange', 'min, max, days'],
@@ -17,7 +17,7 @@ const ROWS = [
   ['reference', 'A link to a record of one of several models', '', 'models'],
   ['binary', 'A file, uploaded or dropped; several with multiple, as a list, thumbnails or cards, each opening in a viewer', 'pdf (shown inline)', 'accept, maxSize, multiple, minFiles, maxFiles'],
   ['image', 'An image, with a preview; several with multiple, as thumbnails, cards or a list', '', 'maxSize, multiple, minFiles, maxFiles'],
-  ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code), place and area (with @fieldia/map), address, distribution, tax-totals, payments', ''],
+  ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code), monaco (with @fieldia/monaco), place and area (with @fieldia/map), address, distribution, tax-totals, payments', ''],
   ['properties', 'Extra values, each edited with the field for its type', '', 'definitions, definitionsFrom'],
 ];
 
@@ -404,15 +404,25 @@ ${code(
 { "type": "field", "id": "f-props", "field": "task_properties", "options": { "columns": 2, "add": true } }`
 )}
 
-<h2 id="code">JSON in a code editor</h2>
-<p>${c('@fieldia/code')} shows a ${c('json')} field in CodeMirror, bundled with the package, so it works offline and loads only where it is used. Valid JSON reaches the form as it is typed; text that is not valid is said so, and the last good value stays.</p>
+<h2 id="code">Code in a code editor</h2>
+<p>${c('@fieldia/code')} shows a ${c('json')}, ${c('text')} or ${c('char')} field in CodeMirror, coloured in the language its node names: 44 of them, from Python, SQL and TypeScript to YAML, shell and C#, each loaded only when a field uses it. Tab still moves to the next field (Ctrl+] and Ctrl+[ indent), code reads left to right on an Arabic page, and the colours follow the page's light or dark scheme. In a ${c('json')} field, valid JSON reaches the form as it is typed; text that is not valid is said so, and the last good value stays. <a href="/demos/plain/?page=code">Try it</a>.</p>
 ${code(
   'ts',
   `
 import { codeWidgets } from '@fieldia/code';
 
 mountViewer(host, { page, dataSource, widgets: { ...gridWidgets, ...codeWidgets } });
-// a json node with "widget": "code" now shows the editor`
+// { "widget": "code" } on a json field, or with { "options": { "language": "python" } } on a text field`
+)}
+<p><strong>VS Code's editor.</strong> ${c('@fieldia/monaco')} draws the same fields in Monaco, VS Code's own editor: find and replace, folding, several cursors, VS Code's keys, in the form's theme. It is large (about 800 KB gzipped), so it loads only when a page has such a field, and the field is a plain text box until then. Language services (checking JSON or TypeScript as it is typed) run when the app hands it their workers.</p>
+${code(
+  'ts',
+  `
+import { monacoWidgets, createMonacoWidgets } from '@fieldia/monaco';
+
+mountViewer(host, { page, dataSource, widgets: monacoWidgets });
+// { "widget": "monaco", "options": { "language": "typescript" } } on a text field
+// with workers: createMonacoWidgets({ getWorker: (_id, label) => new Worker(…), services: ['json'] })`
 )}
 
 <h2 id="map">Places and areas on a map</h2>
