@@ -21,8 +21,9 @@ const KEPT = [
   ...['Ctrl', 'Shift', 'Alt', 'Enter', 'Esc', 'Tab', 'Home', 'End', 'Delete', 'Backspace', 'K', 'J', 'Z', 'Y', 'D', 'C', 'V', 'X', 'A', 'G'],
   // Formats and currencies, written so in Arabic too.
   ...['JSON', 'CSV', 'PDF', 'USD', 'EGP', 'IBAN', 'URL', 'https'],
-  // Fieldia's own name, as its look's.
+  // Fieldia's own name, as its look's; an editor's, as people know it (the VS Code editor kind).
   'Fieldia',
+  ...['VS', 'Code'],
   // Names in code, in an example of where a saved form's answers go: { "home": { "street": … } }.
   ...['home', 'street'],
   // JSON's own words, and language tags, as examples of what to type.
