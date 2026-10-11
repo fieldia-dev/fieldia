@@ -84,6 +84,7 @@ const EXPECT = {
   '@fieldia/viewer': ['mountViewer', 'VIEWER_LABELS', 'addLanguage'],
   '@fieldia/grid': ['gridWidgets', 'gridWidget', 'gridApiOf'],
   '@fieldia/code': ['codeWidgets', 'codeWidget'],
+  '@fieldia/map': ['mapWidgets', 'mapKinds', 'azureMaps', 'googleMaps', 'mapbox', 'openStreetMap', 'tiles', 'readArea', 'writePoint', 'MAP_LABELS'],
   '@fieldia/chatter': ['mountChatter', 'chatterSlot', 'createMemoryChatter', 'CHATTER_LABELS'],
   '@fieldia/react': ['FieldiaForm', 'useFormState'],
   '@fieldia/vue': ['FieldiaForm', 'useFormState'],
@@ -133,6 +134,7 @@ writeFileSync(
 import { mountViewer, type ViewerHandle } from '@fieldia/viewer';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
+import { mapKinds, mapWidgets, openStreetMap } from '@fieldia/map';
 import { chatterSlot, createMemoryChatter, type ChatterSource } from '@fieldia/chatter';
 import type { FieldiaFormProps } from '@fieldia/react';
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor, type Designer } from '@fieldia/designer';
@@ -140,9 +142,9 @@ declare const page: Page;
 declare const host: HTMLElement;
 const form = createForm({ page, dataSource: createMemoryDataSource() });
 const source: ChatterSource = createMemoryChatter({ me: { id: 1, name: 'Sara' } });
-const viewer: ViewerHandle = mountViewer(host, { page, form, skin: 'outlined', widgets: { ...gridWidgets, ...codeWidgets }, slots: { chatter: chatterSlot({ source }) } });
+const viewer: ViewerHandle = mountViewer(host, { page, form, skin: 'outlined', widgets: { ...gridWidgets, ...codeWidgets, ...mapWidgets({ provider: openStreetMap() }) }, slots: { chatter: chatterSlot({ source }) } });
 const props: FieldiaFormProps = { page, skin: 'underline' };
-const designer: Designer = createDesigner({ page: blankPage('screen', 'Site visit'), store: createMemoryPageStore() });
+const designer: Designer = createDesigner({ page: blankPage('screen', 'Site visit'), store: createMemoryPageStore(), kinds: mapKinds({ locale: 'ar' }) });
 mountScreenEditor(host, { designer });
 export { viewer, props, designer };
 `
