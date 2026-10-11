@@ -1,0 +1,53 @@
+/**
+ * The languages a code field can be written in, as the designer offers them:
+ * the name a page keeps (`"options": { "language": "python" }`) and the
+ * language's own name, the same in every language the designer speaks.
+ * @fieldia/code draws each of them, and @fieldia/monaco takes the same names
+ * (code-kinds.spec.ts holds the list to @fieldia/code's).
+ */
+export const CODE_LANGUAGE_CHOICES: readonly (readonly [id: string, name: string])[] = [
+  ['javascript', 'JavaScript'],
+  ['typescript', 'TypeScript'],
+  ['jsx', 'JavaScript with JSX'],
+  ['tsx', 'TypeScript with JSX'],
+  ['python', 'Python'],
+  ['sql', 'SQL'],
+  ['postgresql', 'PostgreSQL'],
+  ['mysql', 'MySQL'],
+  ['sqlite', 'SQLite'],
+  ['mssql', 'SQL Server'],
+  ['html', 'HTML'],
+  ['css', 'CSS'],
+  ['xml', 'XML'],
+  ['yaml', 'YAML'],
+  ['markdown', 'Markdown'],
+  ['json', 'JSON'],
+  ['java', 'Java'],
+  ['c', 'C'],
+  ['cpp', 'C++'],
+  ['php', 'PHP'],
+  ['rust', 'Rust'],
+  ['go', 'Go'],
+  ['shell', 'Shell'],
+  ['powershell', 'PowerShell'],
+  ['ruby', 'Ruby'],
+  ['perl', 'Perl'],
+  ['lua', 'Lua'],
+  ['r', 'R'],
+  ['swift', 'Swift'],
+  ['kotlin', 'Kotlin'],
+  ['csharp', 'C#'],
+  ['scala', 'Scala'],
+  ['dart', 'Dart'],
+  ['dockerfile', 'Dockerfile'],
+  ['toml', 'TOML'],
+  ['ini', 'INI'],
+  ['diff', 'Diff'],
+  ['nginx', 'nginx'],
+  ['protobuf', 'Protocol Buffers'],
+  ['haskell', 'Haskell'],
+  ['clojure', 'Clojure'],
+  ['erlang', 'Erlang'],
+  ['groovy', 'Groovy'],
+  ['julia', 'Julia'],
+];

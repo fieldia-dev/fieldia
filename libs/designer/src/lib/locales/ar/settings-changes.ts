@@ -75,4 +75,7 @@ export const settingsChanges: DesignerWords['settingsChanges'] = {
   propertyColumns: (n) => (n === 2 ? 'خصائصه في عمودين' : 'خصائصه في عمود واحد'),
   canAddProperty: 'يمكن للناس إضافة خاصية',
   cannotAddProperty: 'لا يمكن للناس إضافة خاصية',
+  // ---- code
+  writtenIn: (language) => `مكتوبة بلغة ${language}`,
+  plainText: 'نص عادي',
 };

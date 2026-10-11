@@ -1,4 +1,5 @@
 import type { Field, FieldNode } from '@fieldia/core';
+import { CODE_LANGUAGE_CHOICES } from './code-languages';
 import { kindOfField } from './kinds';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
@@ -80,6 +81,7 @@ const OPTION_WORDS: Record<string, Words> = {
   dueField: (v, _now, kind, w) => (kind !== 'payments' ? null : v ? w.amountDueFrom(String(v)) : w.noAmountDue),
   columns: (v, _now, kind, w) => (kind !== 'properties' ? null : w.propertyColumns(v === 2 ? 2 : 1)),
   add: (v, _now, kind, w) => (kind !== 'properties' ? null : v ? w.canAddProperty : w.cannotAddProperty),
+  language: (v, _now, kind, w) => (kind !== 'code' && kind !== 'vscode' ? null : v ? w.writtenIn(CODE_LANGUAGE_CHOICES.find(([id]) => id === v)?.[1] ?? String(v)) : w.plainText),
   step: (v, _now, kind, w) => (kind === 'time' || kind === 'date-time' ? (v ? w.everyMinutes(v as number) : w.anyMinute) : kind === 'slider' ? w.stepsBy((v as number | undefined) ?? 1) : null),
 };
 

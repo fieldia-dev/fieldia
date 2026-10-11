@@ -119,6 +119,21 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'code',
+    name: 'Code in many languages',
+    category: 'fields',
+    // VS Code's editor is in the plain demo alone: the code page is shown there.
+    app: 'plain',
+    query: 'page=code&skin=outlined',
+    blurb: 'Code fields coloured in their own language: SQL, Python, CSS, YAML and JavaScript in CodeMirror; TypeScript, JSON and Markdown in VS Code’s editor. Each language’s grammar loads only when a field shows it.',
+    howTo: [
+      'Type in the cleanup script: Python’s keywords take their colour as you type.',
+      'Press Tab in any editor: the focus moves on to the next field, as it does from any box.',
+      'Break the sample payload’s JSON: it says so, and keeps the last good value.',
+      'Click in the webhook handler and press Ctrl+F: VS Code’s find opens over the code.',
+    ],
+  },
+  {
     id: 'signup',
     name: 'Workshop sign-up',
     category: 'forms',

@@ -261,4 +261,7 @@ export const questions: DesignerWords['questions'] = {
   amountDueFrom: 'المبلغ المستحق من',
   propertyColumns: 'الأعمدة',
   canAddProperty: 'يمكن للناس إضافة خاصية',
+  // ---- code
+  codeLanguage: 'اللغة',
+  plainText: 'نص عادي',
 };

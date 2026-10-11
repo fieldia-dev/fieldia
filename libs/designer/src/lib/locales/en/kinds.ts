@@ -32,6 +32,8 @@ export const kinds = {
     progress: 'Progress',
     status: 'Status steps',
     'rich-text': 'Rich text',
+    code: 'Code',
+    vscode: 'VS Code editor',
     keywords: 'Keywords',
     website: 'Website',
     image: 'Image',

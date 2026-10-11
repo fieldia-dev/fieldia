@@ -37,7 +37,7 @@ const fail = (message) => {
 
 // ---- which packages, in what order --------------------------------------------
 /** Dependencies before dependants, so a publish never points at a version npm does not have yet. */
-const ORDER = ['core', 'widgets', 'viewer', 'grid', 'code', 'chatter', 'react', 'vue', 'angular', 'designer'];
+const ORDER = ['core', 'widgets', 'viewer', 'grid', 'code', 'monaco', 'chatter', 'react', 'vue', 'angular', 'designer'];
 const packages = ORDER.map((dir) => ({ dir, manifest: read(join(WORKSPACE, 'libs', dir, 'package.json')) })).filter((p) => !p.manifest.private);
 const version = packages[0].manifest.version;
 for (const { dir, manifest } of packages) {
@@ -83,7 +83,8 @@ const EXPECT = {
   '@fieldia/widgets': ['createWidget', 'installStyles', 'sanitizeHtml'],
   '@fieldia/viewer': ['mountViewer', 'VIEWER_LABELS', 'addLanguage'],
   '@fieldia/grid': ['gridWidgets', 'gridWidget', 'gridApiOf'],
-  '@fieldia/code': ['codeWidgets', 'codeWidget'],
+  '@fieldia/code': ['codeWidgets', 'codeWidget', 'textCodeWidget', 'CODE_LANGUAGES', 'loadCodeLanguage'],
+  '@fieldia/monaco': ['monacoWidgets', 'createMonacoWidgets', 'MONACO_LANGUAGES', 'monacoTheme'],
   '@fieldia/chatter': ['mountChatter', 'chatterSlot', 'createMemoryChatter', 'CHATTER_LABELS'],
   '@fieldia/react': ['FieldiaForm', 'useFormState'],
   '@fieldia/vue': ['FieldiaForm', 'useFormState'],
@@ -126,6 +127,35 @@ ${languagesCheck('await import(name)')}`
 );
 run('node', ['import.mjs'], SMOKE);
 
+// What the code editors load only when a page asks (a language's grammar, Monaco and its parts): each
+// resolves where the packages are installed. A name mistyped would fail only on that language's first use.
+writeFileSync(
+  join(SMOKE, 'lazy.mjs'),
+  `import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+const found = new Set();
+for (const name of ['code', 'monaco']) {
+  const dir = 'node_modules/@fieldia/' + name + '/src/lib';
+  for (const file of readdirSync(dir).filter((f) => f.endsWith('.mjs'))) {
+    for (const [, specifier] of readFileSync(dir + '/' + file, 'utf8').matchAll(/import\\(['"]([^'".][^'"]*)['"]\\)/g)) found.add(specifier);
+  }
+}
+if (found.size < 100) throw new Error('only ' + found.size + ' modules loaded on demand were found in @fieldia/code and @fieldia/monaco');
+// Resolved by the import conditions a bundler uses, to a file that is there.
+const missing = [...found].filter((specifier) => {
+  try {
+    return !existsSync(fileURLToPath(import.meta.resolve(specifier)));
+  } catch {
+    return true;
+  }
+});
+if (missing.length) throw new Error('these modules loaded on demand do not resolve: ' + missing.join(', '));
+console.log(found.size);
+`
+);
+const lazy = run('node', ['lazy.mjs'], SMOKE).trim();
+console.log(`  the code editors' ${lazy} modules loaded on demand all resolve`);
+
 // Types, both ways a project resolves them: an .mts file reads the ESM types, a .cts file the CommonJS ones.
 writeFileSync(
   join(SMOKE, 'types.mts'),
@@ -133,6 +163,7 @@ writeFileSync(
 import { mountViewer, type ViewerHandle } from '@fieldia/viewer';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
+import { createMonacoWidgets, monacoWidgets, type MonacoLoader } from '@fieldia/monaco';
 import { chatterSlot, createMemoryChatter, type ChatterSource } from '@fieldia/chatter';
 import type { FieldiaFormProps } from '@fieldia/react';
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor, type Designer } from '@fieldia/designer';
@@ -140,11 +171,13 @@ declare const page: Page;
 declare const host: HTMLElement;
 const form = createForm({ page, dataSource: createMemoryDataSource() });
 const source: ChatterSource = createMemoryChatter({ me: { id: 1, name: 'Sara' } });
-const viewer: ViewerHandle = mountViewer(host, { page, form, skin: 'outlined', widgets: { ...gridWidgets, ...codeWidgets }, slots: { chatter: chatterSlot({ source }) } });
+const viewer: ViewerHandle = mountViewer(host, { page, form, skin: 'outlined', widgets: { ...gridWidgets, ...codeWidgets, ...monacoWidgets }, slots: { chatter: chatterSlot({ source }) } });
+declare const loader: MonacoLoader;
+const withWorkers = createMonacoWidgets({ getWorker: (_id, label) => new Worker(label + '.js', { type: 'module' }), loader });
 const props: FieldiaFormProps = { page, skin: 'underline' };
 const designer: Designer = createDesigner({ page: blankPage('screen', 'Site visit'), store: createMemoryPageStore() });
 mountScreenEditor(host, { designer });
-export { viewer, props, designer };
+export { viewer, props, designer, withWorkers };
 `
 );
 writeFileSync(

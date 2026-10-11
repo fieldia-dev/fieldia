@@ -32,6 +32,8 @@ const SHAPES: Record<string, string> = {
   link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   links: '<path d="M2 11V4h7l9 9-7 7z"/><path d="M12 4h2.5l7 7-6.5 6.5"/><circle cx="6" cy="8" r="1"/>',
   lines: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14.5h18M9 9v11"/>',
+  code: '<path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/>',
+  vscode: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8h18M9 11l-3 3 3 3M15 11l3 3-3 3"/>',
   'rich-text': '<path d="M4 16l4-10 4 10M5.6 12.5h4.8M15 8h6M15 12h6M4 20h17"/>',
   image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
   file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',

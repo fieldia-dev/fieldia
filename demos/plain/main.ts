@@ -3,6 +3,7 @@ import { mountViewer, type FormDialogResult, type Skin } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
+import { createMonacoWidgets, monacoWidgets } from '@fieldia/monaco';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
@@ -45,6 +46,18 @@ const shoutWidget: WidgetFactory = ({ form, name: field, id, document }) => {
   };
 };
 
+/**
+ * VS Code's editor for the code page's `"widget": "monaco"` fields: code coloured with no worker, or, with
+ * `?workers=1`, JSON checked as it is typed by Monaco's own JSON worker, built beside the demo (workers/).
+ */
+const monaco =
+  params.get('workers') === '1'
+    ? createMonacoWidgets({
+        getWorker: (_id, label) => new Worker(new URL(`./workers/${label === 'json' ? 'json' : 'editor'}.worker.js`, import.meta.url), { type: 'module' }),
+        services: ['json'],
+      })
+    : monacoWidgets;
+
 const opened = timeFirstPaint('viewer');
 const handle = mountViewer(document.getElementById('app') as HTMLElement, {
   page,
@@ -61,7 +74,7 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
     // The shop's answers to the pages' steps: the stock checked for "Order by phone".
     return answerAction(request, params.get('locale') ?? undefined);
   },
-  widgets: { 'char.shout': shoutWidget, ...gridWidgets, ...codeWidgets },
+  widgets: { 'char.shout': shoutWidget, ...gridWidgets, ...codeWidgets, ...monaco },
   pages: appPages,
   ...optionsFromQuery(params),
   slots: {

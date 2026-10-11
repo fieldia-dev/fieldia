@@ -2,6 +2,7 @@ import { localizePage, type Field, type Page } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor } from '@fieldia/designer';
 import type { Skin } from '@fieldia/viewer';
 import { APP_LISTS, APP_LISTS_AR, pages, sampleDataSource } from '../shared/sample-data';
+import { codeWidgets } from '@fieldia/code';
 import { APP_KINDS, APP_WIDGETS } from '../shared/app-kinds';
 import { demoAssistant } from '../shared/assistant';
 import { timeFirstPaint } from '../shared/timing';
@@ -153,12 +154,14 @@ const skin = (params.get('skin') as Skin) ?? 'outlined';
 // A stand-in for the app's own assistant.
 const assistant = demoAssistant({ delay: Number(params.get('assistant-delay') ?? 1200), locale });
 const app = document.getElementById('app') as HTMLElement;
-const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource, widgets: APP_WIDGETS, assistant }), reopen };
+/** The app's own widgets, and the code editor for the Code kind's fields, on the canvas and in Try it. */
+const widgets = { ...APP_WIDGETS, ...codeWidgets };
+const demo = { designer, store, handle: mountScreenEditor(app, { designer, skin, dataSource, widgets, assistant }), reopen };
 opened();
 /** Close the editor and open the page again from the store, as an app does the next day — or another page, a saved form opened. */
 async function reopen(id = demo.designer.getPage().id) {
   demo.handle.destroy();
   demo.designer = await createDesigner.open(id, store, { model, lists, kinds: APP_KINDS, openForm, locale });
-  demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource, widgets: APP_WIDGETS, assistant });
+  demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource, widgets, assistant });
 }
 Object.assign(window, { fieldiaDesigner: demo });

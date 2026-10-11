@@ -44,14 +44,18 @@ for (const variant of variants) {
   if (variant === 'designer-angular' && !existsSync(join(WORKSPACE, 'dist/libs/designer/angular/index.mjs'))) {
     throw new Error('demos/designer-angular needs the built designer: run `npx nx build designer` first');
   }
+  // The plain demo is ES modules, split as an app's bundler splits them: the code editors' grammars and
+  // VS Code's editor are files of their own (chunks/), loaded only by a page that shows them. Monaco's CSS
+  // is written beside it, as main.css, which its page links.
+  const split = variant === 'plain';
   await build({
     entryPoints: [entry],
     jsx: 'automatic',
     bundle: true,
-    format: 'iife',
+    format: split ? 'esm' : 'iife',
     target: 'es2022',
     sourcemap: true,
-    outfile: join(OUT, variant, 'main.js'),
+    ...(split ? { splitting: true, outdir: join(OUT, variant), entryNames: '[name]', chunkNames: 'chunks/[name]-[hash]', assetNames: 'chunks/[name]-[hash]', loader: { '.ttf': 'file' } } : { outfile: join(OUT, variant, 'main.js') }),
     tsconfig: existsSync(ownConfig) ? ownConfig : join(WORKSPACE, 'tsconfig.base.json'),
     logLevel: 'warning',
     define: {
@@ -62,6 +66,18 @@ for (const variant of variants) {
       __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
     },
   });
+  if (split) {
+    // Monaco's workers, for the code page with ?workers=1: the editor's own and JSON's, each a module.
+    const monaco = join(WORKSPACE, 'node_modules/monaco-editor/esm/vs');
+    await build({
+      entryPoints: { 'editor.worker': join(monaco, 'editor/editor.worker.js'), 'json.worker': join(monaco, 'languages/features/json/json.worker.js') },
+      bundle: true,
+      format: 'esm',
+      target: 'es2022',
+      outdir: join(OUT, variant, 'workers'),
+      logLevel: 'warning',
+    });
+  }
   cpSync(join(WORKSPACE, 'demos', variant, 'index.html'), join(OUT, variant, 'index.html'));
   console.log(`demo ${variant}: ${join('dist/demos', variant)}`);
 }
