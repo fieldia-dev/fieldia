@@ -1,0 +1,276 @@
+import type { JsonValue, Value } from '@fieldia/core';
+import { WIDGET_LABELS, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
+import { defaultLoader } from './loader';
+import { installMonacoStyles } from './styles';
+import { monacoTheme, readColours } from './theme';
+import type { MonacoApi, MonacoEditor, MonacoLoader, MonacoModel } from './types';
+
+/**
+ * Text and JSON fields in VS Code's editor, Monaco: `"widget": "monaco"`,
+ * with `"options": { "language": "python" }` on a text field. Until Monaco
+ * has loaded — it is large, and loads only when a page has such a field —
+ * the field is a plain text box that works as one; if Monaco cannot be
+ * loaded, it stays one. Tab moves on to the next field, as in every field
+ * (Ctrl+] and Ctrl+[ indent). The editor wears a theme made from the page's
+ * tokens, and reads left to right on an Arabic page too.
+ */
+
+export interface MonacoWidgetsOptions {
+  /**
+   * Workers for Monaco's language services — JSON checked as it is typed,
+   * suggestions and checks for TypeScript, JavaScript, CSS and HTML — as
+   * Monaco asks for them (`MonacoEnvironment.getWorker`): by the label of
+   * the service (`json`, `typescript`, `javascript`, `css`, `html`, or
+   * `editorWorkerService` for the editor's own). Left out, there are none:
+   * the code is coloured, and no worker is started.
+   */
+  getWorker?: (workerId: string, label: string) => Worker | Promise<Worker>;
+  /** How Monaco and each language are loaded: monaco-editor's own modules unless an app, or a test, hands its own. */
+  loader?: MonacoLoader;
+}
+
+/** The editor's settings: VS Code's look, kept to a field's size; Tab left to the page; the page scrolling past it. */
+const EDITOR_OPTIONS = {
+  automaticLayout: true,
+  tabFocusMode: true,
+  // A text area takes the keyboard: labelled by the field's label, and read-only when the field is.
+  editContext: false,
+  minimap: { enabled: false },
+  scrollBeyondLastLine: false,
+  scrollbar: { alwaysConsumeMouseWheel: false, verticalScrollbarSize: 10, horizontalScrollbarSize: 10 },
+  overviewRulerLanes: 0,
+  hideCursorInOverviewRuler: true,
+  fixedOverflowWidgets: true,
+  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+  fontSize: 13,
+  lineHeight: 20,
+  lineNumbersMinChars: 3,
+  glyphMargin: false,
+  padding: { top: 6, bottom: 6 },
+  links: false,
+};
+
+/** Between a few lines and a screenful, as the field's text grows. */
+const LEAST = 96;
+const MOST = 360;
+
+/** Each Monaco's themes defined so far, by name: one is defined once, and worn by any editor that wants it. */
+const THEMES = new WeakMap<MonacoApi, Set<string>>();
+
+/** A short name for a theme, the same for the same colours. */
+function nameOf(data: unknown): string {
+  const text = JSON.stringify(data);
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) hash = (Math.imul(31, hash) + text.charCodeAt(i)) | 0;
+  return `fieldia-${(hash >>> 0).toString(36)}`;
+}
+
+/** Tell Monaco of the app's workers, unless the app has told it already. */
+function giveWorkers(getWorker: NonNullable<MonacoWidgetsOptions['getWorker']>) {
+  const scope = globalThis as { MonacoEnvironment?: { getWorker?: unknown } };
+  scope.MonacoEnvironment ??= { getWorker };
+}
+
+const textOf = (value: Value | undefined) => (value === null || value === undefined ? '' : String(value));
+/** The text as JSON, `null` for nothing, or `undefined` when it is not valid. */
+function readJson(text: string): JsonValue | undefined {
+  if (text.trim() === '') return null;
+  try {
+    return JSON.parse(text) as JsonValue;
+  } catch {
+    return undefined;
+  }
+}
+
+function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoader, getWorker: MonacoWidgetsOptions['getWorker']) {
+  const { form, name, node, id, document, labels = WIDGET_LABELS.en } = context;
+  installMonacoStyles(document);
+  const services = typeof getWorker === 'function';
+  const element = document.createElement('div');
+  element.className = 'fd-monaco';
+  element.dir = 'ltr';
+
+  /** The value as text, as the editor shows it. */
+  const show = (value: Value | undefined) => (json ? (value === null || value === undefined ? '' : JSON.stringify(value, null, 2)) : textOf(value));
+  /** The value as the widget compares it with what the form holds. */
+  const keyOf = (value: Value | undefined) => (json ? JSON.stringify(value ?? null) : textOf(value));
+
+  // Until Monaco is here, and for good if it cannot be loaded: a plain box that works as one.
+  const plain = document.createElement('textarea');
+  plain.id = id;
+  plain.className = 'fd-input fd-textarea fd-code fd-monaco-plain';
+  plain.rows = 4;
+  plain.spellcheck = false;
+  if (node.placeholder) plain.placeholder = node.placeholder;
+  plain.value = show(form.getState().values[name]);
+  const error = json ? document.createElement('div') : null;
+  if (error) {
+    error.className = 'fd-error fd-monaco-error';
+    error.setAttribute('role', 'alert');
+    error.textContent = labels.invalidJson;
+    error.hidden = true;
+  }
+  element.append(plain, ...(error ? [error] : []));
+
+  /** What the form holds, as last written or shown: its echo of what was typed changes nothing. */
+  let known = keyOf(form.getState().values[name]);
+  let valid = true;
+  let last: WidgetState | null = null;
+  let writing = false;
+  let gone = false;
+  let monaco: MonacoApi | null = null;
+  let editor: MonacoEditor | null = null;
+  let model: MonacoModel | null = null;
+  let box: HTMLElement | null = null;
+  let worn = '';
+  const leave: (() => void)[] = [];
+
+  /** Monaco's own input, or the plain box while there is no Monaco. */
+  const input = (): HTMLElement => box?.querySelector<HTMLElement>('textarea.inputarea, textarea') ?? plain;
+
+  /** Its state, said on the box that takes the keyboard. */
+  function describe() {
+    const at = input();
+    at.setAttribute('aria-invalid', String(!valid || !!last?.invalid));
+    if (last?.describedBy) at.setAttribute('aria-describedby', last.describedBy);
+    else at.removeAttribute('aria-describedby');
+    if (at === plain) at.setAttribute('aria-required', String(!!last?.required));
+    element.toggleAttribute('data-invalid', !valid);
+  }
+
+  function typed(text: string) {
+    if (!json) {
+      known = text;
+      form.setValue(name, text === '' ? null : text);
+      return;
+    }
+    const parsed = readJson(text);
+    valid = parsed !== undefined;
+    if (error) error.hidden = valid;
+    describe();
+    if (parsed === undefined) return;
+    known = JSON.stringify(parsed);
+    form.setValue(name, parsed);
+  }
+  plain.addEventListener('input', () => typed(plain.value));
+
+  /** The theme made from the page's tokens as they are now, worn when they changed. */
+  function wear() {
+    if (!monaco || !element.isConnected) return;
+    const data = monacoTheme(readColours(element));
+    const themeName = nameOf(data);
+    if (themeName === worn) return;
+    const defined = THEMES.get(monaco) ?? new Set<string>();
+    if (!defined.has(themeName)) monaco.editor.defineTheme(themeName, data);
+    THEMES.set(monaco, defined.add(themeName));
+    monaco.editor.setTheme(themeName);
+    worn = themeName;
+  }
+
+  /** The page's look or scheme changing — or the reader's system going dark — gives the editor its colours again. */
+  function follow() {
+    const root = element.closest('.fd-form, .fd-form-dialog, .fd-theme');
+    const view = document.defaultView;
+    if (root && view && 'MutationObserver' in view) {
+      const observer = new view.MutationObserver(() => wear());
+      observer.observe(root, { attributes: true, attributeFilter: ['data-scheme', 'data-fd-theme', 'data-fd-skin', 'data-accent', 'style', 'class'] });
+      leave.push(() => observer.disconnect());
+    }
+    const dark = typeof view?.matchMedia === 'function' ? view.matchMedia('(prefers-color-scheme: dark)') : null;
+    if (dark) {
+      dark.addEventListener('change', wear);
+      leave.push(() => dark.removeEventListener('change', wear));
+    }
+  }
+
+  function fit(contentHeight: number) {
+    if (!box || !editor) return;
+    box.style.height = `${Math.min(MOST, Math.max(LEAST, contentHeight + 2))}px`;
+    editor.layout();
+  }
+
+  async function start() {
+    if (getWorker) giveWorkers(getWorker);
+    const loaded = await loader.monaco(services);
+    const language = await loader.language(loaded, json ? 'json' : node.options?.['language'], services);
+    if (gone) return;
+    monaco = loaded;
+    box = document.createElement('div');
+    box.className = 'fd-monaco-box';
+    element.insertBefore(box, plain);
+    const focused = document.activeElement === plain;
+    model = monaco.editor.createModel(plain.value, language);
+    editor = monaco.editor.create(box, {
+      ...EDITOR_OPTIONS,
+      model,
+      readOnly: !!last?.readonly,
+      domReadOnly: !!last?.readonly,
+      ariaRequired: !!last?.required,
+      wordBasedSuggestions: services ? 'currentDocument' : 'off',
+      quickSuggestions: services,
+      ...(plain.placeholder ? { placeholder: plain.placeholder } : {}),
+    });
+    wear();
+    follow();
+    // The field's label names Monaco's input now, and points at it.
+    plain.remove();
+    plain.removeAttribute('id');
+    const area = input();
+    area.id = id;
+    area.setAttribute('aria-labelledby', `${id}-label`);
+    describe();
+    const current = model;
+    editor.onDidChangeModelContent(() => {
+      if (!writing) typed(current.getValue());
+    });
+    editor.onDidContentSizeChange(({ contentHeight }) => fit(contentHeight));
+    fit(editor.getContentHeight());
+    if (focused) editor.focus();
+  }
+  // Monaco not loaded: the plain box stays, and works.
+  start().catch(() => undefined);
+
+  return {
+    element,
+    focus: () => (editor ? editor.focus() : plain.focus()),
+    destroy() {
+      gone = true;
+      for (const stop of leave.splice(0)) stop();
+      editor?.dispose();
+      model?.dispose();
+    },
+    update(state: WidgetState) {
+      last = state;
+      plain.readOnly = state.readonly;
+      editor?.updateOptions({ readOnly: state.readonly, domReadOnly: state.readonly, ariaRequired: state.required });
+      if (!worn) wear();
+      describe();
+      // A value from elsewhere (loaded, discarded, set by a step) replaces the text; the echo of what was typed does not.
+      const incoming = keyOf(state.value);
+      if (incoming === known) return;
+      known = incoming;
+      valid = true;
+      if (error) error.hidden = true;
+      const text = show(state.value);
+      if (model) {
+        writing = true;
+        model.setValue(text);
+        writing = false;
+      } else plain.value = text;
+      describe();
+    },
+  };
+}
+
+/**
+ * The widgets, made with the app's choices: `text.monaco` for text in a
+ * language, `json.monaco` for JSON. Pass them to the viewer (`widgets`).
+ */
+export function createMonacoWidgets(options: MonacoWidgetsOptions = {}): Record<string, WidgetFactory> {
+  const loader = options.loader ?? defaultLoader;
+  const factory = (json: boolean): WidgetFactory => (context) => monacoWidget(context, json, loader, options.getWorker);
+  return { 'text.monaco': factory(false), 'json.monaco': factory(true) };
+}
+
+/** The widgets with no language services: code coloured, no worker started. */
+export const monacoWidgets: Record<string, WidgetFactory> = createMonacoWidgets();
