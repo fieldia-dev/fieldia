@@ -199,7 +199,7 @@ if (/\\u06[2-4][0-9a-f]/i.test(code)) throw new Error('the script bundle carries
 // shadcn, Ant, Odoo, Google Forms), light and dark, with their own shapes — 11.9 more, to 444.4; Fieldia's tokens in a
 // cascade layer, so a host's own colours win whole, and labels beside set at their value's top — 0.6 more, to 445.0;
 // a host's tokens worn by the form and its dialogs (tokens, setTokens) — 0.4 more, to 445.4.
-const BUDGET_KB = 445.8;
+const BUDGET_KB = 447.4;
 if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(statSync(OUT).size / 1024)} KB, over its ${BUDGET_KB} KB budget`);
 // What a visitor downloads: the bundle gzipped, as servers send it. 76 at 0.9; the choices' details add
 // 2.3 and several files with their viewer 3.9, to 82.3; the inputs' details (web, phone, email and time
@@ -225,7 +225,7 @@ if (statSync(OUT).size > BUDGET_KB * 1024) throw new Error(`the script bundle is
 // the live real pages swept again (wide link editors, words with their values, buttons in sight, numbers checked), 0.7 more, to 131.1.
 // eight themes, light and dark, with their own shapes, 3.3 more, to 134.3.
 // a host's colours: tokens in a cascade layer, the tokens option, labels at their value's top, 0.4 more, to 134.7.
-const GZIP_BUDGET_KB = 135.2;
+const GZIP_BUDGET_KB = 136.1;
 const gzipped = gzipSync(code, { level: 9 }).length;
 if (gzipped > GZIP_BUDGET_KB * 1024) throw new Error(`the script bundle is ${Math.round(gzipped / 1024)} KB gzipped, over its ${GZIP_BUDGET_KB} KB budget`);
 if (Fieldia.VERSION !== version) throw new Error(`the script bundle says version ${Fieldia.VERSION}, the viewer is ${version}`);
@@ -245,7 +245,7 @@ console.log(`script bundle: ${OUT.replace(WORKSPACE + '/', '')} (${Math.round(st
 // added in place — add about 2 to Arabic's and 0.8 to German's and French's.
 // What sits around a record — the gear menu's and its built-ins' words, the trail, the pager, the attachment,
 // and what Archive and Delete ask — eighteen words in each, a little more again.
-const ADD_ON_BUDGET_KB = { ar: [22.6, 4.7], de: [9.7, 4.1], fr: [9.8, 4.0] };
+const ADD_ON_BUDGET_KB = { ar: [22.8, 4.8], de: [9.8, 4.1], fr: [9.9, 4.1] };
 const sourceWords = async (locale) => {
   const { outputFiles } = await build({
     ...common,

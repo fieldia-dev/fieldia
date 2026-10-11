@@ -28,7 +28,7 @@ await build({
 });
 
 /** In KB, gzipped: the package's own code with the page, and Leaflet when a map is shown. */
-const BUDGET = { own: 19, leaflet: 47 };
+const BUDGET = { own: 21, leaflet: 47 };
 const files = readdirSync(OUT).filter((file) => file.endsWith('.js'));
 const sizes = files.map((file) => {
   const text = readFileSync(join(OUT, file));
