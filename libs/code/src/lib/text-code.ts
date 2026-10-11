@@ -100,6 +100,8 @@ export const textCodeWidget: WidgetFactory = ({ form, name, field, node, id, doc
         effects.push(editable.reconfigure([EditorView.editable.of(!readonly), EditorState.readOnly.of(readonly)]));
       }
       const said: Record<string, string> = { 'aria-invalid': String(state.invalid), 'aria-required': String(state.required), 'aria-readonly': String(state.readonly) };
+      // Read-only code is still reached by Tab, as a read-only text box is: to read it, and copy from it.
+      if (state.readonly) said['tabindex'] = '0';
       if (state.describedBy) said['aria-describedby'] = state.describedBy;
       if (JSON.stringify(said) !== attributes) {
         attributes = JSON.stringify(said);

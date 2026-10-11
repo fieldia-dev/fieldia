@@ -1,4 +1,4 @@
-import { StreamLanguage, type StreamParser } from '@codemirror/language';
+import { StreamLanguage, indentUnit, type StreamParser } from '@codemirror/language';
 import type { Extension } from '@codemirror/state';
 
 /**
@@ -68,6 +68,12 @@ const LOADERS: Record<string, () => Promise<Extension>> = {
   groovy: () => import('@codemirror/legacy-modes/mode/groovy').then((m) => stream(m.groovy)),
   julia: () => import('@codemirror/legacy-modes/mode/julia').then((m) => stream(m.julia)),
 };
+
+/** How a language is usually indented, where it is not by two spaces: four for Python, C and their kin, a tab for Go. */
+const INDENTS: Record<string, string> = Object.fromEntries([
+  ...['python', 'java', 'c', 'cpp', 'csharp', 'php', 'rust', 'kotlin', 'swift', 'powershell', 'perl', 'julia', 'groovy'].map((id) => [id, '    ']),
+  ['go', '\t'],
+]);
 
 const language = (id: string, name: string, ...aliases: string[]): CodeLanguage => ({ id, name, aliases });
 
@@ -139,7 +145,7 @@ export function loadCodeLanguage(name: unknown): Promise<Extension | null> {
   if (!found) return Promise.resolve(null);
   let load = loading.get(found.id);
   if (!load) {
-    load = LOADERS[found.id]().catch(() => {
+    load = LOADERS[found.id]().then((support): Extension => [support, indentUnit.of(INDENTS[found.id] ?? '  ')], () => {
       // Not fetched (offline, say): plain text this time, and another try next time.
       loading.delete(found.id);
       return null;

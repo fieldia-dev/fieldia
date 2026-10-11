@@ -2,7 +2,8 @@ import { CODE_COLOURS_CSS } from './palette';
 
 /** The editor in Fieldia's colours, so it sits among the other fields. Installed once per document. */
 export const CODE_CSS = `
-.fd-code { display: grid; gap: 4px; min-width: 0; }
+/* One column, as wide as the field: a long line scrolls inside the editor, never widens the page. */
+.fd-code { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-width: 0; }
 .fd-code .cm-editor {
   border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius); background: var(--fd-surface);
   color: var(--fd-text); font-size: 13px; min-height: 96px; max-height: 360px;

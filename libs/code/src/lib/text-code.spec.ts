@@ -1,4 +1,4 @@
-import { language } from '@codemirror/language';
+import { indentUnit, language } from '@codemirror/language';
 import { EditorView, runScopeHandlers } from '@codemirror/view';
 import { createMemoryDataSource, type Field, type FieldNode, type Page } from '@fieldia/core';
 import { mountViewer, type ViewerHandle } from '@fieldia/viewer';
@@ -120,9 +120,20 @@ describe('text in a code editor', () => {
     expect(content.getAttribute('contenteditable')).toBe('true');
   });
 
-  it('cannot be edited when the field is read-only', async () => {
+  it('cannot be edited when the field is read-only, and is still reached by Tab, to read and copy from', async () => {
     const { content } = await mount(pageWith({ type: 'text', readonly: true }, { language: 'python' }));
     expect(content.getAttribute('contenteditable')).toBe('false');
+    expect(content.getAttribute('tabindex')).toBe('0');
+  });
+
+  it('indents as its language does: Python by four spaces, SQL by two', async () => {
+    const python = await mount(pageWith({ type: 'text' }, { language: 'python' }));
+    await grammarOf(python.view);
+    expect(python.view.state.facet(indentUnit)).toBe('    ');
+    handle?.destroy();
+    const sql = await mount(pageWith({ type: 'text' }, { language: 'sql' }));
+    await grammarOf(sql.view);
+    expect(sql.view.state.facet(indentUnit)).toBe('  ');
   });
 
   it('says it is required, invalid and where the message is, as the form does', async () => {
