@@ -42,8 +42,8 @@ describe('the colours code is drawn in', () => {
 
   it('are tokens a host can set, light on any code box and dark where the page is dark', () => {
     expect(CODE_COLOURS_CSS).toContain('@layer fieldia-tokens');
-    expect(CODE_COLOURS_CSS).toContain(`.fd-code-text { --fd-code-keyword: ${CODE_COLOURS.light.keyword};`);
-    expect(CODE_COLOURS_CSS).toContain(`[data-scheme="dark"] .fd-code-text { --fd-code-keyword: ${CODE_COLOURS.dark.keyword};`);
-    expect(CODE_COLOURS_CSS).toMatch(/@media \(prefers-color-scheme: dark\) \{ [^{]*\[data-scheme="auto"\] \.fd-code-text \{ --fd-code-keyword: #ff7b72;/);
+    expect(CODE_COLOURS_CSS).toContain(`.fd-code { --fd-code-keyword: ${CODE_COLOURS.light.keyword};`);
+    expect(CODE_COLOURS_CSS).toContain(`[data-scheme="dark"] .fd-code { --fd-code-keyword: ${CODE_COLOURS.dark.keyword};`);
+    expect(CODE_COLOURS_CSS).toMatch(/@media \(prefers-color-scheme: dark\) \{ [^{]*\[data-scheme="auto"\] \.fd-code \{ --fd-code-keyword: #ff7b72;/);
   });
 });

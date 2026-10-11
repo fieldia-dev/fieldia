@@ -1,4 +1,6 @@
 import { EditorView } from '@codemirror/view';
+import { tags } from '@lezer/highlight';
+import { codeHighlightStyle } from './palette';
 import { createMemoryDataSource, type Page } from '@fieldia/core';
 import { mountViewer, type ViewerHandle } from '@fieldia/viewer';
 import { codeWidgets } from './code';
@@ -63,6 +65,13 @@ describe('JSON in a code editor', () => {
     replaceAll(view, '[]');
     expect(message.hidden).toBe(true);
     expect(form.getState().values['settings']).toEqual([]);
+  });
+
+  it('colours JSON as the other code editors do, readable in a dark scheme too, and reads left to right on an Arabic page', async () => {
+    const { box } = await mount();
+    const key = [...box.querySelectorAll('.cm-line span')].find((span) => span.textContent === '"badge_readers"');
+    expect(key?.className).toBe(codeHighlightStyle.style([tags.propertyName]));
+    expect(box.querySelector('.fd-code')?.getAttribute('dir')).toBe('ltr');
   });
 
   it('cannot be edited when read-only', async () => {

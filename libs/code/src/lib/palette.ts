@@ -25,9 +25,9 @@ const declare = (scheme: 'light' | 'dark') =>
 
 /** The colours as CSS: light on any code box, dark where the page's scheme is dark, or follows a dark system. */
 export const CODE_COLOURS_CSS = `@layer fieldia-tokens {
-.fd-code-text { ${declare('light')} }
-:is(.fd-form, .fd-form-dialog, .fd-theme)[data-scheme="dark"] .fd-code-text { ${declare('dark')} }
-@media (prefers-color-scheme: dark) { :is(.fd-form, .fd-form-dialog, .fd-theme)[data-scheme="auto"] .fd-code-text { ${declare('dark')} } }
+.fd-code { ${declare('light')} }
+:is(.fd-form, .fd-form-dialog, .fd-theme)[data-scheme="dark"] .fd-code { ${declare('dark')} }
+@media (prefers-color-scheme: dark) { :is(.fd-form, .fd-form-dialog, .fd-theme)[data-scheme="auto"] .fd-code { ${declare('dark')} } }
 }`;
 
 const v = (role: CodeRole) => `var(--fd-code-${role})`;

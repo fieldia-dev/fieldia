@@ -1,10 +1,11 @@
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { json } from '@codemirror/lang-json';
-import { bracketMatching, defaultHighlightStyle, indentOnInput, syntaxHighlighting } from '@codemirror/language';
+import { bracketMatching, indentOnInput, syntaxHighlighting } from '@codemirror/language';
 import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import type { JsonValue, Value } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetFactory } from '@fieldia/widgets';
+import { codeHighlightStyle } from './palette';
 import { installCodeStyles } from './styles';
 import { textCodeWidget } from './text-code';
 
@@ -34,6 +35,8 @@ export const codeWidget: WidgetFactory = ({ form, name, id, document, labels = W
   installCodeStyles(document);
   const element = document.createElement('div');
   element.className = 'fd-code';
+  // JSON reads left to right, on an Arabic page too: drawn right to left, its punctuation moves.
+  element.dir = 'ltr';
   const error = document.createElement('div');
   error.className = 'fd-error fd-code-error';
   error.setAttribute('role', 'alert');
@@ -54,7 +57,8 @@ export const codeWidget: WidgetFactory = ({ form, name, id, document, labels = W
         history(),
         bracketMatching(),
         indentOnInput(),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        // The code colours, light or dark with the page: CodeMirror's own are for light pages only.
+        syntaxHighlighting(codeHighlightStyle),
         json(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         editable.of([EditorView.editable.of(true), EditorState.readOnly.of(false)]),
