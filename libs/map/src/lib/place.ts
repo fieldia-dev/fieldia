@@ -238,7 +238,12 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
             return centre ? { lat: centre.lat, lng: centre.lng } : (point ?? settings.center);
           },
           zoom: () => shown?.getZoom(),
-          pick: (place) => set({ lat: place.lat, lng: place.lng }, { fly: true, address: place.label }),
+          // A place picked: where it is (looked up now, when the provider's suggestions carry no place), and its whole address for Address.
+          pick: async (place) => {
+            const located = place.lat !== undefined && place.lng !== undefined ? { lat: place.lat, lng: place.lng, address: undefined } : await place.locate?.().catch(() => null);
+            if (!located) return say(labels.searchFailed, 'error');
+            set({ lat: located.lat, lng: located.lng }, { fly: true, address: located.address ?? [place.label, place.detail].filter(Boolean).join(', ') });
+          },
           say,
         })
       : null;

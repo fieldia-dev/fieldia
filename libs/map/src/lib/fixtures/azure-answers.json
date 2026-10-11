@@ -1,0 +1,456 @@
+{
+ "geocode": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      31.2300206845206,
+      30.0565786550162
+     ]
+    },
+    "bbox": [
+     31.224070478497882,
+     30.052715937445523,
+     31.235970890543317,
+     30.060441372586876
+    ],
+    "properties": {
+     "type": "Address",
+     "confidence": "Medium",
+     "matchCodes": [
+      "Ambiguous"
+     ],
+     "geocodePoints": [
+      {
+       "calculationMethod": "Interpolation",
+       "usageTypes": [
+        "Display"
+       ],
+       "geometry": {
+        "type": "Point",
+        "coordinates": [
+         31.2300206845206,
+         30.0565786550162
+        ]
+       }
+      }
+     ],
+     "address": {
+      "addressLine": "26 July Street",
+      "locality": "Qesm Bolak",
+      "formattedAddress": "26 July Street, Abo El Ela, Qesm Bolak, Cairo, Egypt",
+      "countryRegion": {
+       "name": "Egypt",
+       "ISO": "EG"
+      },
+      "adminDistricts": [
+       {
+        "shortName": "Cairo"
+       },
+       {
+        "shortName": "Cairo"
+       }
+      ]
+     }
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      31.2230945501083,
+      30.0595511500819
+     ]
+    },
+    "bbox": [
+     31.2171441654678,
+     30.055688432511225,
+     31.2290449347488,
+     30.063413867652578
+    ],
+    "properties": {
+     "type": "Address",
+     "confidence": "Medium",
+     "matchCodes": [
+      "Ambiguous"
+     ],
+     "geocodePoints": [
+      {
+       "calculationMethod": "Interpolation",
+       "usageTypes": [
+        "Display"
+       ],
+       "geometry": {
+        "type": "Point",
+        "coordinates": [
+         31.2230945501083,
+         30.0595511500819
+        ]
+       }
+      }
+     ],
+     "address": {
+      "addressLine": "26 July Street",
+      "locality": "Qesm El Zamalek",
+      "formattedAddress": "26 July Street, Mohamed Mazhar, Qesm El Zamalek, Cairo, Egypt",
+      "countryRegion": {
+       "name": "Egypt",
+       "ISO": "EG"
+      },
+      "adminDistricts": [
+       {
+        "shortName": "Cairo"
+       },
+       {
+        "shortName": "Cairo"
+       }
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "geocodeArabic": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      31.234582901000977,
+      30.04606056213379
+     ]
+    },
+    "bbox": [
+     31.22863332679776,
+     30.042197844563113,
+     31.240532475204194,
+     30.049923279704466
+    ],
+    "properties": {
+     "type": "PointOfInterest",
+     "confidence": "High",
+     "geocodePoints": [
+      {
+       "calculationMethod": "",
+       "usageTypes": [
+        "Display"
+       ],
+       "geometry": {
+        "type": "Point",
+        "coordinates": [
+         31.234582901000977,
+         30.04606056213379
+        ]
+       }
+      }
+     ],
+     "address": {
+      "locality": "القاهرة",
+      "countryRegion": {
+       "name": "مصر",
+       "ISO": "EG"
+      },
+      "adminDistricts": [
+       {
+        "shortName": "القاهرة"
+       }
+      ],
+      "formattedAddress": "ميدان التحرير, مصر"
+     }
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      42.94267272949219,
+      14.795307159423828
+     ]
+    },
+    "bbox": [
+     42.93734591693181,
+     14.791444441853152,
+     42.947999542052564,
+     14.799169876994505
+    ],
+    "properties": {
+     "type": "Neighborhood",
+     "confidence": "Medium",
+     "geocodePoints": [
+      {
+       "calculationMethod": "",
+       "usageTypes": [
+        "Display"
+       ],
+       "geometry": {
+        "type": "Point",
+        "coordinates": [
+         42.94267272949219,
+         14.795307159423828
+        ]
+       }
+      }
+     ],
+     "address": {
+      "neighborhood": "ميدان التحرير",
+      "locality": "مديرية الميناء",
+      "countryRegion": {
+       "name": "اليمن",
+       "ISO": "YE"
+      },
+      "adminDistricts": [
+       {
+        "shortName": "محافظة الحديدة"
+       }
+      ],
+      "formattedAddress": "ميدان التحرير, اليمن"
+     }
+    }
+   }
+  ]
+ },
+ "reverseArabic": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      31.2359,
+      30.0441
+     ]
+    },
+    "properties": {
+     "geocodePoints": [
+      {
+       "geometry": {
+        "type": "Point",
+        "coordinates": [
+         31.2359,
+         30.0441
+        ]
+       },
+       "calculationMethod": "Rooftop",
+       "usageTypes": [
+        "Display"
+       ]
+      }
+     ],
+     "address": {
+      "addressLine": "7 ميدان التحرير",
+      "adminDistricts": [
+       {
+        "name": "القاهرة"
+       }
+      ],
+      "countryRegion": {
+       "name": "مصر",
+       "iso": "EG"
+      },
+      "intersection": {
+       "baseStreet": "ميدان التحرير",
+       "displayName": "ميدان التحرير, between شارع القصر العيني and مجمع التحرير",
+       "intersectionType": "Between",
+       "secondaryStreet1": "شارع القصر العيني",
+       "secondaryStreet2": "مجمع التحرير"
+      },
+      "locality": "Cairo",
+      "neighborhood": "",
+      "postalCode": "",
+      "formattedAddress": "‏7 ميدان‏ التحرير‏, Cairo, القاهرة‏, مصر"
+     },
+     "confidence": "High",
+     "matchCodes": [
+      "Good"
+     ],
+     "type": "Address"
+    },
+    "bbox": [
+     31.229950543530308,
+     30.040237282429324,
+     31.241849456469694,
+     30.047962717570677
+    ]
+   }
+  ]
+ },
+ "attribution": {
+  "copyrights": [
+   "<a data-azure-maps-attribution-dynamic=\"true\" data-azure-maps-attribution-tileset=\"microsoft.core.raster.road\">&copy;2026 OSM</a>",
+   "<a data-azure-maps-attribution-dynamic=\"true\" data-azure-maps-attribution-tileset=\"microsoft.core.raster.road\">&copy;2026 TomTom</a>"
+  ]
+ },
+ "autocompleteArabic": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": null,
+    "properties": {
+     "typeGroup": "Place",
+     "type": "Other",
+     "address": {
+      "locality": "القاهرة",
+      "adminDistricts": [
+       {
+        "name": "القاهرة"
+       }
+      ],
+      "countryRegion": {
+       "ISO": "EG",
+       "name": "مصر"
+      },
+      "formattedAddress": "ميدان التحرير, مصر"
+     },
+     "name": "ميدان التحرير"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": null,
+    "properties": {
+     "typeGroup": "Address",
+     "type": "RoadBlock",
+     "address": {
+      "locality": "الإسماعيلية",
+      "adminDistricts": [
+       {
+        "name": "القاهرة"
+       },
+       {
+        "name": "القاهرة"
+       }
+      ],
+      "countryRegion": {
+       "ISO": "EG",
+       "name": "مصر"
+      },
+      "streetName": "ميدان التحرير",
+      "addressLine": "ميدان التحرير",
+      "formattedAddress": "ميدان‏ التحرير‏, الإسماعيلية‏, القاهرة‏, مصر"
+     }
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": null,
+    "properties": {
+     "typeGroup": "Address",
+     "type": "RoadBlock",
+     "address": {
+      "locality": "قصر الدوبارة",
+      "adminDistricts": [
+       {
+        "name": "القاهرة"
+       },
+       {
+        "name": "القاهرة"
+       }
+      ],
+      "countryRegion": {
+       "ISO": "EG",
+       "name": "مصر"
+      },
+      "streetName": "ميدان التحرير",
+      "addressLine": "ميدان التحرير",
+      "formattedAddress": "ميدان‏ التحرير‏, قصر‏ الدوبارة‏, القاهرة‏, مصر"
+     }
+    }
+   }
+  ]
+ },
+ "autocomplete": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": null,
+    "properties": {
+     "typeGroup": "Address",
+     "type": "Address",
+     "address": {
+      "locality": "El Sheikh Ali",
+      "adminDistricts": [
+       {
+        "name": "Cairo"
+       },
+       {
+        "name": "Cairo"
+       }
+      ],
+      "countryRegion": {
+       "ISO": "EG",
+       "name": "Egypt"
+      },
+      "streetNumber": "26",
+      "streetName": "26 July Street",
+      "addressLine": "26 26 July Street",
+      "formattedAddress": "26 26 July Street, El Sheikh Ali, Cairo, Egypt"
+     }
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": null,
+    "properties": {
+     "typeGroup": "Address",
+     "type": "Address",
+     "address": {
+      "locality": "Mohamed Mazhar",
+      "adminDistricts": [
+       {
+        "name": "Cairo"
+       },
+       {
+        "name": "Cairo"
+       }
+      ],
+      "countryRegion": {
+       "ISO": "EG",
+       "name": "Egypt"
+      },
+      "streetNumber": "26",
+      "streetName": "26 July Street",
+      "addressLine": "26 26 July Street",
+      "formattedAddress": "26 26 July Street, Mohamed Mazhar, Cairo, Egypt"
+     }
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": null,
+    "properties": {
+     "typeGroup": "Address",
+     "type": "Address",
+     "address": {
+      "locality": "El Alaya",
+      "adminDistricts": [
+       {
+        "name": "Cairo"
+       },
+       {
+        "name": "Cairo"
+       }
+      ],
+      "countryRegion": {
+       "ISO": "EG",
+       "name": "Egypt"
+      },
+      "streetNumber": "26",
+      "streetName": "26 July Street",
+      "addressLine": "26 26 July Street",
+      "formattedAddress": "26 26 July Street, El Alaya, Cairo, Egypt"
+     }
+    }
+   }
+  ]
+ }
+}

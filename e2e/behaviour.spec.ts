@@ -491,7 +491,8 @@ test.describe('every field', () => {
     await page.keyboard.type('{ "weekdays": "08:00-18:00", "weekends": "closed" }');
     await expect.poll(() => value(page, 'door_schedule')).toEqual({ weekdays: '08:00-18:00', weekends: 'closed' });
     await page.keyboard.press('Backspace'); // the closing brace: no longer valid
-    await expect(doors.getByRole('alert')).toHaveText('Not valid JSON');
+    // Said where: the end of the line, where the brace was.
+    await expect(doors.getByRole('alert')).toHaveText('Not valid JSON: line 1, column 51');
     expect(await value(page, 'door_schedule')).toEqual({ weekdays: '08:00-18:00', weekends: 'closed' });
     await doors.scrollIntoViewIfNeeded();
     await screen(page, `${variant}-fields-code-editor`);

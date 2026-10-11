@@ -126,7 +126,8 @@ test('a search suggests places as people type, nearest the map first, each on tw
   // Enter takes the first, the nearest.
   await search.press('Enter');
   await expect.poll(() => valueOf(page, 'deliver_to')).toEqual({ type: 'Point', coordinates: [31.2357, 30.0444] });
-  expect(await valueOf(page, 'street')).toBe('Tahrir Square');
+  // Address takes the whole address, both lines.
+  expect(await valueOf(page, 'street')).toBe('Tahrir Square, Downtown, Cairo, Egypt');
   await expect(field.getByRole('listbox')).toBeHidden();
   // Enter in the search never sends the form.
   await expect(page.locator('.fd-form')).toBeVisible();
@@ -141,7 +142,7 @@ test('a search suggests places as people type, nearest the map first, each on tw
   await expect(search).toHaveAttribute('aria-activedescendant', (await options.nth(1).getAttribute('id'))!);
   await search.press('Enter');
   await expect.poll(() => valueOf(page, 'deliver_to')).toEqual({ type: 'Point', coordinates: [31.2197, 30.0609] });
-  expect(await valueOf(page, 'street')).toBe('Zamalek');
+  expect(await valueOf(page, 'street')).toBe('Zamalek, Cairo, Egypt');
 });
 
 test('a search that finds nothing says so; a search that fails says so', async ({ page }) => {

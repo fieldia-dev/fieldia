@@ -36,8 +36,10 @@ export interface PlaceFound {
   label: string;
   /** Where it is, on the line under it: its district, city, country. */
   detail?: string;
-  lat: number;
-  lng: number;
+  /** Where it is on the map; or, for a provider whose suggestions carry none (Google's), `locate` finds it when the place is picked. */
+  lat?: number;
+  lng?: number;
+  locate?: () => Promise<{ lat: number; lng: number; address?: string }>;
 }
 
 export interface SearchRequest {
@@ -85,6 +87,19 @@ async function getJson(fetchWith: Fetch, url: string, init?: RequestInit): Promi
 type Json = { [key: string]: unknown };
 const isObject = (value: unknown): value is Json => typeof value === 'object' && value !== null && !Array.isArray(value);
 const pathOf = (value: unknown, ...path: string[]): unknown => path.reduce<unknown>((at, key) => (isObject(at) ? at[key] : undefined), value);
+
+/** A provider's words, without the direction marks some put in Arabic: unseen, they would stay in an address field and its searches. */
+const clean = (value: unknown) => (typeof value === 'string' ? value.replace(/[\u200e\u200f\u061c]/g, '').trim() : '');
+
+const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', copy: '©', reg: '®' };
+/** A credit a provider sends as HTML (Azure's are links), as the words a reader sees: never put on the page as HTML. */
+const textOfHtml = (html: string) =>
+  html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, (all, name: string) =>
+      name[0] === '#' ? String.fromCodePoint(parseInt(name.slice(name[1] === 'x' || name[1] === 'X' ? 2 : 1), name[1] === 'x' || name[1] === 'X' ? 16 : 10)) : (ENTITIES[name.toLowerCase()] ?? all)
+    )
+    .trim();
 
 /** The words of a list that are there, once each, joined: "Downtown, Cairo, Egypt". */
 const joined = (...parts: unknown[]) => {
@@ -244,21 +259,61 @@ export function azureMaps(options: AzureMapsOptions): MapProvider {
       try {
         const answer = await ask('map/attribution', { 'api-version': '2024-04-01', tilesetId: AZURE_TILESET[kind], zoom: Math.round(zoom), bounds: [bounds.west, bounds.south, bounds.east, bounds.north].join(',') });
         const copyrights = pathOf(answer, 'copyrights');
-        if (Array.isArray(copyrights) && copyrights.length) return copyrights.filter((c): c is string => typeof c === 'string').map((text) => ({ text }));
+        if (Array.isArray(copyrights) && copyrights.length) return copyrights.filter((c): c is string => typeof c === 'string').map((html) => ({ text: textOfHtml(html) })).filter((c) => c.text);
       } catch {
         // Its credits stay said even when the service that lists them is down.
       }
       return [{ text: '© Microsoft' }];
     },
     async search({ text, near, locale, signal }) {
-      const found = await ask('geocode', { 'api-version': '2023-06-01', top: 5, query: text, coordinates: near ? `${near.lng},${near.lat}` : undefined }, locale, signal);
-      return placesFrom(found, [['properties', 'address', 'formattedAddress']], (p) => joined(pathOf(p, 'address', 'locality'), pathOf(p, 'address', 'countryRegion', 'name')));
+      const coordinates = near ? `${near.lng},${near.lat}` : undefined;
+      // Its autocomplete reads a word half typed, as geocoding does not; its suggestions carry no place, so a picked one is geocoded then.
+      const found = await ask('geocode:autocomplete', { 'api-version': '2026-01-01', top: 5, query: text, coordinates }, locale, signal);
+      return azurePlaces(found).map((place) => ({
+        ...place,
+        locate: async () => {
+          const address = [place.label, place.detail].filter(Boolean).join(', ');
+          const [hit] = azurePlaces(await ask('geocode', { 'api-version': '2023-06-01', top: 1, query: place.whole ?? address, coordinates }, locale));
+          if (hit?.lat === undefined || hit.lng === undefined) throw new Error('Azure Maps found no place');
+          // The address as its two lines read: with its town, which Azure's own may leave out.
+          return { lat: hit.lat, lng: hit.lng, address };
+        },
+      })).map(({ whole: _whole, ...place }) => place);
     },
     async reverse({ lat, lng, locale, signal }) {
       const found = await ask('reverseGeocode', { 'api-version': '2023-06-01', coordinates: `${lng},${lat}` }, locale, signal);
-      return placesFrom(found, [['properties', 'address', 'formattedAddress']])[0]?.label ?? null;
+      const features = pathOf(found, 'features');
+      const formatted = Array.isArray(features) ? clean(pathOf(features[0], 'properties', 'address', 'formattedAddress')) : '';
+      return formatted || null;
     },
   };
+}
+
+/**
+ * Azure's addresses on two lines: the street (or the place's name), then the
+ * rest of the address, its town always in it; where it is, when the answer
+ * says (geocoding does, autocomplete does not); and the whole address as Azure
+ * wrote it, to geocode a suggestion by.
+ */
+function azurePlaces(found: unknown): (PlaceFound & { whole?: string })[] {
+  const features = pathOf(found, 'features');
+  if (!Array.isArray(features)) return [];
+  return features.flatMap((feature) => {
+    const [lng, lat] = (pathOf(feature, 'geometry', 'coordinates') as number[] | undefined) ?? [];
+    const address = pathOf(feature, 'properties', 'address');
+    const whole = clean(pathOf(address, 'formattedAddress'));
+    const parts = whole
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const label = clean(pathOf(address, 'addressLine')) || parts[0];
+    if (!label) return [];
+    let rest = parts.filter((part, i) => !(i === 0 && part === label) && part !== label);
+    const town = clean(pathOf(address, 'locality'));
+    if (town && !rest.includes(town)) rest = [town, ...rest];
+    const at = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : {};
+    return [{ label, ...(rest.length ? { detail: rest.join(', ') } : {}), ...at, ...(whole ? { whole } : {}) }];
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -275,9 +330,11 @@ export interface GoogleMapsOptions {
 const GOOGLE_MAP_TYPE: Partial<Record<BaseMap, string>> = { road: 'roadmap', satellite: 'satellite' };
 
 /**
- * Google's map images through its Map Tiles API: a session for each kind and
- * language, credits for the view, and Google's mark in the corner its terms
- * name. Address search is the app's own here.
+ * Google's map images through its Map Tiles API (a session for each kind and
+ * language, credits for the view, Google's mark in the corner its terms
+ * name), its Places API's suggestions as people type, and its Geocoding API
+ * to name a point. The key needs those three APIs enabled, and should be
+ * restricted to the app's sites.
  */
 export function googleMaps(options: GoogleMapsOptions): MapProvider {
   const fetchWith = options.fetch ?? ((...args: Parameters<Fetch>) => globalThis.fetch(...args));
@@ -310,9 +367,64 @@ export function googleMaps(options: GoogleMapsOptions): MapProvider {
       return opening;
     }
   }
+  /** One session from the first letter typed to the place picked: Google charges the suggestions of a session that ends in a pick as the pick. */
+  let searching: string | undefined;
+  const newSession = () => (globalThis.crypto?.randomUUID?.() ?? 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => ((Math.random() * 16) | (c === 'x' ? 0 : 8)).toString(16).slice(0, 1)));
+  /** How far "near" reaches at a zoom: about what the map shows, within Google's bounds. */
+  const radiusAt = (zoom: number | undefined) => Math.round(Math.min(50_000, Math.max(100, 40_075_016 / 2 ** (zoom ?? 12))));
   return {
     id: 'google',
     logo: { text: 'Google Maps', ...(options.logo ? { image: options.logo } : {}) },
+    searchAsYouType: true,
+    async search({ text, near, zoom, locale, signal }) {
+      searching ??= newSession();
+      const token = searching;
+      const answer = await getJson(fetchWith, 'https://places.googleapis.com/v1/places:autocomplete', {
+        method: 'POST',
+        signal,
+        headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': options.key },
+        body: JSON.stringify({
+          input: text,
+          languageCode: locale,
+          ...(options.region ? { regionCode: options.region } : {}),
+          sessionToken: token,
+          ...(near ? { locationBias: { circle: { center: { latitude: near.lat, longitude: near.lng }, radius: radiusAt(zoom) } } } : {}),
+        }),
+      });
+      const suggestions = pathOf(answer, 'suggestions');
+      if (!Array.isArray(suggestions)) return [];
+      return suggestions.flatMap((suggestion) => {
+        const prediction = pathOf(suggestion, 'placePrediction');
+        const placeId = pathOf(prediction, 'placeId');
+        const label = clean(pathOf(prediction, 'structuredFormat', 'mainText', 'text')) || clean(pathOf(prediction, 'text', 'text'));
+        if (typeof placeId !== 'string' || !label) return [];
+        const detail = clean(pathOf(prediction, 'structuredFormat', 'secondaryText', 'text'));
+        return [
+          {
+            label,
+            ...(detail ? { detail } : {}),
+            locate: async () => {
+              const place = await getJson(fetchWith, `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?${query({ languageCode: locale, sessionToken: token })}`, {
+                headers: { 'X-Goog-Api-Key': options.key, 'X-Goog-FieldMask': 'location,formattedAddress' },
+              });
+              // Picked: the session is over, the next letter typed opens another.
+              if (searching === token) searching = undefined;
+              const latitude = pathOf(place, 'location', 'latitude');
+              const longitude = pathOf(place, 'location', 'longitude');
+              if (typeof latitude !== 'number' || typeof longitude !== 'number') throw new Error('Google gave no place');
+              const address = clean(pathOf(place, 'formattedAddress'));
+              return { lat: latitude, lng: longitude, ...(address ? { address } : {}) };
+            },
+          },
+        ];
+      });
+    },
+    async reverse({ lat, lng, locale, signal }) {
+      const answer = await getJson(fetchWith, `https://maps.googleapis.com/maps/api/geocode/json?${query({ latlng: `${lat},${lng}`, language: locale, key: options.key })}`, { signal });
+      const results = pathOf(answer, 'results');
+      const named = Array.isArray(results) ? clean(pathOf(results[0], 'formatted_address')) : '';
+      return named || null;
+    },
     async tiles(kind, locale) {
       if (!GOOGLE_MAP_TYPE[kind]) return null;
       const { session: id } = await session(kind, locale);

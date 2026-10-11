@@ -21,7 +21,7 @@ export interface SearchBoxOptions {
   near: () => LatLng | undefined;
   /** How close the map is: how far "near" reaches. */
   zoom?: () => number | undefined;
-  pick: (place: PlaceFound) => void;
+  pick: (place: PlaceFound) => void | Promise<void>;
   /** Says how the search is going, under the map. */
   say: (words: string | null, tone?: 'error') => void;
 }

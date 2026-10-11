@@ -1,5 +1,10 @@
 /** @jest-environment node */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { azureMaps, googleMaps, mapbox, openStreetMap, tiles } from './providers';
+
+/** Azure Maps' own answers, as it gave them on 12 Oct 2026 (the key taken out): its HTML credits, its addresses' parts, its Arabic with direction marks. */
+const AZURE = JSON.parse(readFileSync(join(__dirname, 'fixtures/azure-answers.json'), 'utf8'));
 
 /** A stand-in for the network: every request kept, each answered from the table by the start of its URL. */
 function network(answers: Record<string, unknown>) {
@@ -79,10 +84,10 @@ describe('Azure Maps', () => {
     expect(await road?.headers?.()).toEqual({ Authorization: 'Bearer T', 'x-ms-client-id': 'C' });
   });
 
-  it('reads its credits for the view from its attribution service', async () => {
-    const { fetch, asked } = network({ 'https://atlas.microsoft.com/map/attribution': { copyrights: ['© 2026 TomTom', '© 2026 Microsoft Corporation'] } });
+  it('reads its credits for the view from its attribution service, as words: Azure sends them as HTML links', async () => {
+    const { fetch, asked } = network({ 'https://atlas.microsoft.com/map/attribution': AZURE.attribution });
     const azure = azureMaps({ key: 'K', fetch });
-    expect(await azure.credits('road', view, 'en')).toEqual([{ text: '© 2026 TomTom' }, { text: '© 2026 Microsoft Corporation' }]);
+    expect(await azure.credits('road', view, 'en')).toEqual([{ text: '©2026 OSM' }, { text: '©2026 TomTom' }]);
     expect(asked[0].url).toBe('https://atlas.microsoft.com/map/attribution?api-version=2024-04-01&tilesetId=microsoft.base.road&zoom=12&bounds=31.1%2C29.9%2C31.4%2C30.2&subscription-key=K');
   });
 
@@ -91,20 +96,33 @@ describe('Azure Maps', () => {
     expect(await azureMaps({ key: 'K', fetch }).credits('road', view, 'en')).toEqual([{ text: '© Microsoft' }]);
   });
 
-  it('searches addresses near the map, and names a place', async () => {
-    const found = {
-      type: 'FeatureCollection',
-      features: [
-        { type: 'Feature', geometry: { type: 'Point', coordinates: [31.2357, 30.0444] }, properties: { type: 'Address', address: { formattedAddress: '1 Tahrir Square, Cairo', locality: 'Cairo', countryRegion: { name: 'Egypt' } } } },
-      ],
-    };
-    const { fetch, asked } = network({ 'https://atlas.microsoft.com/geocode': found, 'https://atlas.microsoft.com/reverseGeocode': found });
+  it('suggests addresses as people type (its autocomplete), near the map, each on two lines; a place picked is located then', async () => {
+    const { fetch, asked } = network({ 'https://atlas.microsoft.com/geocode:autocomplete': AZURE.autocomplete, 'https://atlas.microsoft.com/geocode': AZURE.geocode });
     const azure = azureMaps({ key: 'K', fetch });
     expect(azure.searchAsYouType).toBe(true);
-    expect(await azure.search!({ text: 'tahrir', near: { lat: 30, lng: 31 }, locale: 'ar' })).toEqual([{ label: '1 Tahrir Square, Cairo', detail: 'Cairo, Egypt', lat: 30.0444, lng: 31.2357 }]);
-    expect(asked[0].url).toBe('https://atlas.microsoft.com/geocode?api-version=2023-06-01&top=5&query=tahrir&coordinates=31%2C30&subscription-key=K');
-    expect((asked[0].init?.headers as Record<string, string>)['Accept-Language']).toBe('ar');
-    expect(await azure.reverse!({ lat: 30.0444, lng: 31.2357, locale: 'en' })).toBe('1 Tahrir Square, Cairo');
+    const [first] = await azure.search!({ text: '26 july st', near: { lat: 30.05, lng: 31.24 }, locale: 'en' });
+    expect(first).toMatchObject({ label: '26 26 July Street', detail: 'El Sheikh Ali, Cairo, Egypt' });
+    // Its suggestions carry no place: looked up when one is picked.
+    expect(first.lat).toBeUndefined();
+    expect(asked[0].url).toBe('https://atlas.microsoft.com/geocode:autocomplete?api-version=2026-01-01&top=5&query=26%20july%20st&coordinates=31.24%2C30.05&subscription-key=K');
+    expect((asked[0].init?.headers as Record<string, string>)['Accept-Language']).toBe('en-US');
+    expect(await first.locate!()).toEqual({ lat: 30.0565786550162, lng: 31.2300206845206, address: '26 26 July Street, El Sheikh Ali, Cairo, Egypt' });
+    expect(asked[1].url).toBe('https://atlas.microsoft.com/geocode?api-version=2023-06-01&top=1&query=26%2026%20July%20Street%2C%20El%20Sheikh%20Ali%2C%20Cairo%2C%20Egypt&coordinates=31.24%2C30.05&subscription-key=K');
+  });
+
+  it('suggests what a half-typed Arabic name may be, in Arabic, without direction marks', async () => {
+    const { fetch } = network({ 'https://atlas.microsoft.com/geocode:autocomplete': AZURE.autocompleteArabic });
+    const found = await azureMaps({ key: 'K', fetch }).search!({ text: 'ميدان التح', locale: 'ar' });
+    expect(found.map((place) => place.label)).toEqual(['ميدان التحرير', 'ميدان التحرير', 'ميدان التحرير']);
+    expect(found[1].detail).toBe('الإسماعيلية, القاهرة, مصر');
+    expect(found.every((place) => !/[\u200e\u200f\u061c]/.test(`${place.label}${place.detail}`))).toBe(true);
+  });
+
+  it('names a point without the direction marks Azure puts in Arabic, which would sit unseen in an address field', async () => {
+    const { fetch } = network({ 'https://atlas.microsoft.com/reverseGeocode': AZURE.reverseArabic });
+    const named = await azureMaps({ key: 'K', fetch }).reverse!({ lat: 30.0444, lng: 31.2357, locale: 'ar' });
+    expect(named).toBe('7 ميدان التحرير, Cairo, القاهرة, مصر');
+    expect(named).not.toMatch(/[\u200e\u200f\u061c]/);
   });
 });
 
@@ -133,8 +151,45 @@ describe('Google', () => {
     expect(asked[1].url).toBe('https://tile.googleapis.com/tile/v1/viewport?session=S1&key=G&zoom=12&north=30.2&south=29.9&east=31.4&west=31.1');
     expect(google.logo).toEqual({ text: 'Google Maps' });
     expect(googleMaps({ key: 'G', logo: '/google.png' }).logo).toEqual({ text: 'Google Maps', image: '/google.png' });
-    // No address search of its own here: the app passes one.
-    expect(google.search).toBeUndefined();
+  });
+
+  it('suggests places as people type (Places), near the map, in one session; a place picked is located then, closing the session', async () => {
+    const suggestions = {
+      suggestions: [
+        { placePrediction: { place: 'places/A1', placeId: 'A1', text: { text: 'Tahrir Square, Cairo, Egypt' }, structuredFormat: { mainText: { text: 'Tahrir Square' }, secondaryText: { text: 'Cairo, Egypt' } } } },
+        { queryPrediction: { text: { text: 'tahrir restaurants' } } },
+      ],
+    };
+    const details = { location: { latitude: 30.0444, longitude: 31.2357 }, formattedAddress: 'Tahrir Square, Qasr El Nil, Cairo, Egypt' };
+    const { fetch, asked } = network({ 'https://places.googleapis.com/v1/places:autocomplete': suggestions, 'https://places.googleapis.com/v1/places/A1': details });
+    const google = googleMaps({ key: 'G', region: 'EG', fetch });
+    expect(google.searchAsYouType).toBe(true);
+    const found = await google.search!({ text: 'tahr', near: { lat: 30.05, lng: 31.24 }, zoom: 13, locale: 'ar' });
+    // A suggestion of words, not of a place, is left out.
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({ label: 'Tahrir Square', detail: 'Cairo, Egypt' });
+    expect(found[0].lat).toBeUndefined();
+    const sent = JSON.parse(String(asked[0].init?.body));
+    expect(asked[0].url).toBe('https://places.googleapis.com/v1/places:autocomplete');
+    expect((asked[0].init?.headers as Record<string, string>)['X-Goog-Api-Key']).toBe('G');
+    expect(sent).toMatchObject({ input: 'tahr', languageCode: 'ar', regionCode: 'EG', locationBias: { circle: { center: { latitude: 30.05, longitude: 31.24 }, radius: 4892 } } });
+    expect(sent.sessionToken).toMatch(/^[0-9a-f-]{36}$/);
+    // The same session while the person types on.
+    await google.search!({ text: 'tahri', locale: 'ar' });
+    expect(JSON.parse(String(asked[1].init?.body)).sessionToken).toBe(sent.sessionToken);
+
+    expect(await found[0].locate!()).toEqual({ lat: 30.0444, lng: 31.2357, address: 'Tahrir Square, Qasr El Nil, Cairo, Egypt' });
+    expect(asked[2].url).toBe(`https://places.googleapis.com/v1/places/A1?languageCode=ar&sessionToken=${sent.sessionToken}`);
+    expect((asked[2].init?.headers as Record<string, string>)['X-Goog-FieldMask']).toBe('location,formattedAddress');
+    // Picked: the next search is a new session.
+    await google.search!({ text: 'zam', locale: 'ar' });
+    expect(JSON.parse(String(asked[3].init?.body)).sessionToken).not.toBe(sent.sessionToken);
+  });
+
+  it('names a point through the Geocoding API', async () => {
+    const { fetch, asked } = network({ 'https://maps.googleapis.com/maps/api/geocode/json': { status: 'OK', results: [{ formatted_address: '7 Tahrir Square, Cairo, Egypt' }] } });
+    expect(await googleMaps({ key: 'G', fetch }).reverse!({ lat: 30.0444, lng: 31.2357, locale: 'fr' })).toBe('7 Tahrir Square, Cairo, Egypt');
+    expect(asked[0].url).toBe('https://maps.googleapis.com/maps/api/geocode/json?latlng=30.0444%2C31.2357&language=fr&key=G');
   });
 });
 

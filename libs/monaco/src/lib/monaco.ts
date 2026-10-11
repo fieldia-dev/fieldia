@@ -1,5 +1,5 @@
 import type { JsonValue, Value } from '@fieldia/core';
-import { WIDGET_LABELS, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
+import { jsonProblem, WIDGET_LABELS, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
 import { MONACO_SERVICES, serviceOf, type MonacoService } from './languages';
 import { defaultLoader } from './loader';
 import { installMonacoStyles } from './styles';
@@ -118,6 +118,7 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
   const error = json ? document.createElement('div') : null;
   if (error) {
     error.className = 'fd-error fd-monaco-error';
+    error.dir = 'auto';
     error.setAttribute('role', 'alert');
     error.textContent = labels.invalidJson;
     error.hidden = true;
@@ -158,7 +159,12 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
     }
     const parsed = readJson(text);
     valid = parsed !== undefined;
-    if (error) error.hidden = valid;
+    if (error) {
+      error.hidden = valid;
+      // Where it goes wrong, as the CodeMirror editor and the plain JSON box say it.
+      const problem = valid ? null : jsonProblem(text);
+      if (problem) error.textContent = labels.invalidJsonAt.replace('{line}', String(problem.line)).replace('{column}', String(problem.column));
+    }
     describe();
     if (parsed === undefined) return;
     known = JSON.stringify(parsed);

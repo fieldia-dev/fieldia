@@ -354,7 +354,7 @@ describe('JSON in VS Code’s editor', () => {
     expect(form.getState().values['script']).toEqual({ readers: 4 });
     const message = box.querySelector('.fd-monaco-error') as HTMLElement;
     expect(message.hidden).toBe(false);
-    expect(message.textContent).toBe('Not valid JSON');
+    expect(message.textContent).toBe('Not valid JSON: line 1, column 14');
     expect(editor().input.getAttribute('aria-invalid')).toBe('true');
     editor().type('[]');
     expect(message.hidden).toBe(true);

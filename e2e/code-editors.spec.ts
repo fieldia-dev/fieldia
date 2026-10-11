@@ -14,7 +14,8 @@ import { expectNoSidewaysScroll, open, screen } from './support';
 
 /** The code colours (libs/code/src/lib/palette.ts), as the browser computes them. */
 const KEYWORD = { light: 'rgb(207, 34, 46)', dark: 'rgb(255, 123, 114)' };
-const LITERAL = { light: 'rgb(5, 80, 174)', dark: 'rgb(121, 192, 255)' };
+// Numbers in orange: JSON's key, string and number each a colour of its own (libs/code/src/lib/palette.ts).
+const LITERAL = { light: 'rgb(149, 56, 0)', dark: 'rgb(255, 166, 87)' };
 const CODE = 'page=code&skin=outlined';
 
 const mod = process.platform === 'darwin' ? 'Meta' : 'Control';
@@ -118,7 +119,7 @@ test.describe('code in VS Code’s editor', () => {
     await page.keyboard.type('{"orderId": 7');
     await expect.poll(async () => (await values(page))['payload']).toEqual({ orderId: 7 });
     await page.keyboard.type(', "total": ');
-    await expect(field(page, 'payload').getByRole('alert')).toHaveText('Not valid JSON');
+    await expect(field(page, 'payload').getByRole('alert')).toHaveText(/^Not valid JSON: line \d+, column \d+$/);
     await expect(field(page, 'payload').locator('textarea.inputarea')).toHaveAttribute('aria-invalid', 'true');
     expect((await values(page))['payload']).toEqual({ orderId: 7 });
     await page.keyboard.type('12');
