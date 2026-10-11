@@ -382,9 +382,13 @@ export function demoHref(demo, framework = 'plain') {
 }
 
 /** The demo a page shows: the one whose query the address holds, the most specific first. */
+/** What a reader may change about a demo without it becoming another: how it looks. */
+const LOOK = new Set(['skin', 'theme']);
+
 export function demoAt(app, params) {
   const candidates = DEMOS.filter((demo) => (demo.app ? demo.app === app : FRAMEWORKS.some((f) => f.id === app)));
-  const holds = (demo) => [...new URLSearchParams(demo.query)].every(([key, value]) => params.get(key) === value);
+  // The look (skin, theme) is the reader's to change: in another look it is the same demo.
+  const holds = (demo) => [...new URLSearchParams(demo.query)].every(([key, value]) => LOOK.has(key) || params.get(key) === value);
   const size = (demo) => [...new URLSearchParams(demo.query)].length;
   return candidates.filter(holds).sort((a, b) => size(b) - size(a))[0] ?? null;
 }

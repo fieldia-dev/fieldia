@@ -49,7 +49,8 @@ function drawHeader() {
   const theme = params.get('theme') ?? '';
   // A theme brings its own skin: the skin's pills show which, and picking one keeps the theme over it.
   const skin = params.get('skin') ?? (theme === 'odoo' || !theme ? 'underline' : 'outlined');
-  const skins = demo?.app
+  // A demo the plain page runs alone still changes its look; one with an app of its own (the script tag) does not.
+  const skins = demo?.app && demo.app !== 'plain'
     ? ''
     : `<div class="dh-looks"><nav class="dh-pills dh-skins" aria-label="Look">${['underline', 'outlined']
         .map((s) => `<a href="${esc(withParam('skin', s))}"${s === skin ? ' aria-current="page"' : ''}>${s[0].toUpperCase()}${s.slice(1)}</a>`)

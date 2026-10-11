@@ -94,6 +94,24 @@ test.describe('the demo frame', () => {
     await page.getByRole('navigation', { name: 'Look' }).getByRole('link', { name: 'Outlined' }).click();
     await expect(page).toHaveURL(/\/vue\/\?page=order&skin=outlined$/);
     await expect(page.locator('.fd-form').first()).toHaveAttribute('data-fd-skin', 'outlined');
+    // Another look is the same demo: its name, its how-to, its place in the menu.
+    await expect(page.locator('.dh-title')).toHaveText('Sales order');
+  });
+
+  test('a demo of one framework keeps its name and its look switch, whatever the look it opens in', async ({ page }) => {
+    await asVisitor(page);
+    // Opened without a look, as a link from the docs opens it.
+    await page.goto('/plain/?page=code');
+    await expect(page.locator('.dh-title')).toHaveText('Code in many languages');
+    const looks = page.getByRole('navigation', { name: 'Look' });
+    await expect(looks.getByRole('link', { name: 'Underline' })).toHaveAttribute('aria-current', 'page');
+    // It runs in plain JavaScript alone: no framework to switch to.
+    await expect(page.getByRole('navigation', { name: 'Framework' })).toHaveCount(0);
+    await looks.getByRole('link', { name: 'Outlined' }).click();
+    await expect(page).toHaveURL(/\/plain\/\?page=code&skin=outlined$/);
+    await expect(page.locator('.dh-title')).toHaveText('Code in many languages');
+    await expect(page.getByRole('navigation', { name: 'Look' }).getByRole('link', { name: 'Outlined' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('.fd-form').first()).toHaveAttribute('data-fd-skin', 'outlined');
   });
 
   test('fits a phone: the menu waits behind its button, and the page does not scroll sideways', async ({ page }) => {
