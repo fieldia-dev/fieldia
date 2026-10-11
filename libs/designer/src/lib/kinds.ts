@@ -82,7 +82,7 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
   // Code in the language its setting names: CodeMirror where the app has it (`codeWidgets`), VS Code's
   // editor where the app has that (`monacoWidgets`), the plain box where it does not.
   { id: 'code', label: 'Code', group: 'more', field: (label) => ({ type: 'text', label }), widget: 'code' },
-  { id: 'vscode', label: 'Code in VS Code’s editor', group: 'more', field: (label) => ({ type: 'text', label }), widget: 'monaco' },
+  { id: 'vscode', label: 'VS Code editor', group: 'more', field: (label) => ({ type: 'text', label }), widget: 'monaco' },
   { id: 'keywords', label: 'Keywords', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'tags' },
   { id: 'website', label: 'Website', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'url' },
   { id: 'image', label: 'Image', group: 'more', field: (label) => ({ type: 'image', label }) },

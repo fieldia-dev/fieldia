@@ -33,7 +33,7 @@ export const kinds = {
     status: 'Status steps',
     'rich-text': 'Rich text',
     code: 'Code',
-    vscode: 'Code in VS Code’s editor',
+    vscode: 'VS Code editor',
     keywords: 'Keywords',
     website: 'Website',
     image: 'Image',
