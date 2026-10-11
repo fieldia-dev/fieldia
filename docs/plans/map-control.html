@@ -1,0 +1,362 @@
+<title>Fieldia Maps</title>
+<meta name="description" content="The plan for @fieldia/map: maps on any provider, pins and cards the page describes, routes, live positions and coloured areas.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column with a contents strip; each phase is a band with its parts, tests and demo. Fieldia's own navy and signal blue. */
+:root {
+  --ink: #10192b; --muted: #4f5b70; --paper: #f4f6fa; --surface: #ffffff; --line: #dfe4ec;
+  --brand: #002855; --signal: #1f6fd6; --signal-soft: #e5effc; --route: #c25a00; --route-soft: #fdf0e3;
+  --ok: #217a4f; --ok-soft: #e3f3ea; --check: #8a5a00; --check-soft: #fbf1d9; --no: #6b7487; --code: #eef1f6;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --ink: #e8eef8; --muted: #a4b3cc; --paper: #071a35; --surface: #0d2445; --line: #1f3a63;
+  --brand: #cfe0ff; --signal: #6fb0ff; --signal-soft: #12345f; --route: #ffad5c; --route-soft: #3a2a17;
+  --ok: #7fd6a6; --ok-soft: #12382a; --check: #ffd28a; --check-soft: #3a3016; --no: #8d9ab2; --code: #0a1f3d;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --ink: #e8eef8; --muted: #a4b3cc; --paper: #071a35; --surface: #0d2445; --line: #1f3a63;
+  --brand: #cfe0ff; --signal: #6fb0ff; --signal-soft: #12345f; --route: #ffad5c; --route-soft: #3a2a17;
+  --ok: #7fd6a6; --ok-soft: #12382a; --check: #ffd28a; --check-soft: #3a3016; --no: #8d9ab2; --code: #0a1f3d;
+  color-scheme: dark }
+body { background: var(--paper); color: var(--ink); font: 16px/1.6 var(--body); }
+.page { max-width: 1040px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; margin: 0; color: var(--brand); }
+h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 1.75rem; font-weight: 700; }
+h3 { font-size: 1.15rem; font-weight: 700; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--signal); }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--code); padding: 0.1em 0.35em; border-radius: 4px; }
+pre { font-family: var(--mono); font-size: 0.82rem; line-height: 1.55; background: var(--code); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 0; overflow-x: auto; }
+pre code { background: none; padding: 0; font-size: inherit; }
+.kicker { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.stack { display: grid; gap: 14px; }
+section { display: grid; gap: 18px; padding-block: 36px; border-top: 1px solid var(--line); }
+header { display: grid; gap: 16px; padding-bottom: 28px; }
+.lede { font-size: 1.15rem; color: var(--ink); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: 0.9rem; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+nav.toc a { font-size: 0.88rem; text-decoration: none; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); }
+nav.toc a:hover, nav.toc a:focus-visible { border-color: var(--signal); color: var(--signal); outline: none; }
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.card h3 { font-size: 1.02rem; }
+.card p, .card li { font-size: 0.93rem; color: var(--muted); }
+.card ul { margin: 0; padding-inline-start: 18px; display: grid; gap: 3px; }
+.tag { display: inline-block; font-family: var(--mono); font-size: 0.72rem; padding: 1px 8px; border-radius: 999px; background: var(--signal-soft); color: var(--signal); width: max-content; }
+.tag.route { background: var(--route-soft); color: var(--route); }
+.part { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); align-items: start; padding-block: 18px; border-top: 1px dashed var(--line); }
+.part:first-of-type { border-top: 0; }
+.part > div { display: grid; gap: 10px; min-width: 0; }
+.part ul { margin: 0; padding-inline-start: 18px; display: grid; gap: 4px; }
+@media (max-width: 760px) { .part { grid-template-columns: minmax(0, 1fr); } }
+.layers { display: grid; gap: 6px; }
+.layer { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; align-items: center; padding: 10px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); }
+.layer b { font-family: var(--display); color: var(--brand); }
+.layer span { color: var(--muted); font-size: 0.92rem; }
+.layer.core { background: var(--signal-soft); border-color: transparent; }
+.layer.prov { background: var(--code); }
+@media (max-width: 560px) { .layer { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; min-width: 680px; }
+th, td { text-align: start; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--display); font-weight: 700; color: var(--brand); background: var(--paper); }
+tr:last-child td { border-bottom: 0; }
+td.y, td.c, td.n { font-family: var(--mono); font-size: 0.8rem; white-space: nowrap; }
+td.y { color: var(--ok); } td.c { color: var(--check); } td.n { color: var(--no); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.85rem; color: var(--muted); }
+.legend b { font-family: var(--mono); font-weight: 600; }
+.phase { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; }
+.phase-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.phase-head .no { font-family: var(--mono); font-size: 0.8rem; color: var(--signal); font-weight: 600; }
+.phase-cols { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.phase-cols h4 { margin: 0 0 6px; font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.phase-cols ul { margin: 0; padding-inline-start: 18px; display: grid; gap: 4px; font-size: 0.93rem; }
+.note { border-inline-start: 3px solid var(--check); background: var(--check-soft); padding: 12px 16px; border-radius: 0 10px 10px 0; display: grid; gap: 6px; }
+.note p { color: var(--ink); font-size: 0.95rem; }
+.decide { display: grid; gap: 10px; counter-reset: d; }
+.decide li { list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; display: grid; gap: 4px; }
+.decide { margin: 0; padding: 0; }
+.decide li b { font-family: var(--display); color: var(--brand); }
+.decide li span { color: var(--muted); font-size: 0.93rem; }
+.rec { color: var(--ok); font-weight: 600; }
+footer { padding-top: 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
+@media (prefers-reduced-motion: no-preference) { nav.toc a { transition: border-color .15s, color .15s; } }
+</style>
+
+<div class="page">
+<header>
+  <p class="kicker">Fieldia · plan for review · 11 October 2026</p>
+  <h1>Fieldia Maps</h1>
+  <p class="lede">A new package, <code>@fieldia/map</code>, with the map features apps usually spend weeks building, ready to use. Any map provider. Pins and cards are described by the page. Places and areas can be fields on a form. Records go on a map beside their list. Routes with a driver on the way. Positions that move live. Areas coloured by their numbers.</p>
+  <div class="meta"><span>Status: proposed, nothing built yet</span><span>Package: separate, like <code>@fieldia/code</code></span><span>Main script: unchanged in size</span></div>
+  <nav class="toc" aria-label="Contents">
+    <a href="#examples">Four example apps</a><a href="#shape">How it stacks</a><a href="#parts">The parts</a><a href="#providers">Providers</a><a href="#phases">Phases</a><a href="#proof">How each part is proved</a><a href="#decide">Decisions for you</a>
+  </nav>
+</header>
+
+<section id="examples">
+  <div class="stack">
+    <h2>Four example apps</h2>
+    <p>Each one becomes a live demo on fieldia.dev. Between them they use every part, and none of them hard-wires what a pin or a card shows. A price on a pin is one page's choice, a courier's face is another's.</p>
+  </div>
+  <div class="grid">
+    <div class="card"><span class="tag">phase 2</span><h3>A property search</h3><p>Homes on a map beside their list.</p><ul><li>Each pin shows its price, coloured by sale or rent</li><li>Bubbles where pins crowd</li><li>A card with photo, price and rooms</li><li>"Search this area" and a drawn area as filters</li><li>Hovering a row lights its pin</li></ul></div>
+    <div class="card"><span class="tag route">phase 3</span><h3>A food order coming to me</h3><p>One order with three kinds of point on it.</p><ul><li>The kitchen, my door, and the courier's photo with "4 min" under it</li><li>The route on the roads, the part already driven fading</li><li>The courier's pin gliding along as the position updates</li></ul></div>
+    <div class="card"><span class="tag route">phase 3</span><h3>A ride map</h3><p>Drivers as cars, each facing the way it drives.</p><ul><li>Grey when busy</li><li>Pressing a car shows the driver and an Assign button</li><li>Choosing several cars feeds the list's buttons for chosen records</li></ul></div>
+    <div class="card"><span class="tag">phase 4</span><h3>Delivery zones</h3><p>Districts shaded by orders this week, with a legend.</p><ul><li>Hovering a district shows its numbers</li><li>Clicking one filters the orders</li><li>A zone drawn on a form becomes the zone's shape</li><li>"Within 15 minutes' drive" of a kitchen</li></ul></div>
+  </div>
+</section>
+
+<section id="shape">
+  <div class="stack">
+    <h2>How it stacks</h2>
+    <p>One map engine, Leaflet (about 40 KB compressed, BSD-licensed), drawn by Fieldia's own code. Each provider plugs in underneath, and every feature sits on top of the same engine. A feature the chosen provider can't do is hidden, with a line saying why.</p>
+  </div>
+  <div class="layers" role="list">
+    <div class="layer" role="listitem"><b>On a form</b><span>Place field (a point) · Area field (a drawn shape) · a map of a record's points, its route and live positions</span></div>
+    <div class="layer" role="listitem"><b>Beside a list</b><span>Records as pins, bubbles, cards, choosing pins, "search this area", a drawn area as a filter</span></div>
+    <div class="layer" role="listitem"><b>Layers</b><span>Pins · routes · coloured areas · heat map — each described by the page, any number on one map</span></div>
+    <div class="layer core" role="listitem"><b>Map core</b><span>Pan and zoom, keyboard, finger and pen, right to left, Fieldia's themes and dark scheme, attribution, languages</span></div>
+    <div class="layer prov" role="listitem"><b>Providers</b><span>Map images · address search · routes · reachable area — each from Azure Maps, Google, Mapbox, a self-hosted server, or the app's own function</span></div>
+  </div>
+</section>
+
+<section id="parts">
+  <div class="stack">
+    <h2>The parts</h2>
+    <p>The page uses the words Fieldia already uses: a field node with a <code>widget</code> and <code>options</code>, an option ending in <code>Field</code> names a field, colours by condition as table rows have them, and a card is a small layout of the record. Anything the page can't describe, the app draws with its own widget, as it can for fields and, since 0.13.1, for table columns.</p>
+  </div>
+
+  <div class="part" id="place">
+    <div><h3>1 · Place field</h3>
+      <p>A point on a form: click the map, drag the pin, search an address, or press "My location". The point is saved to two number fields, the way Odoo stores a partner's place.</p>
+      <ul><li>Address search goes through the app's geocoder, so Fieldia holds no keys.</li><li>Latitude and longitude stay typeable: that is the keyboard and screen-reader way in.</li><li>Optional: fill an address field from the point (reverse search).</li><li>Read-only shows the pin and nothing to drag.</li></ul>
+    </div>
+    <pre><code>{ type: 'field', id: 'where', field: 'latitude', widget: 'place',
+  options: { longitudeField: 'longitude', addressField: 'street',
+             myLocation: true, zoom: 16 } }</code></pre>
+  </div>
+
+  <div class="part" id="area">
+    <div><h3>2 · Area field</h3>
+      <p>A shape on a form, such as a delivery zone or a service area: a polygon, a box or a circle. It's saved as GeoJSON in a json field.</p>
+      <ul><li>Grips to reshape it, and the whole shape drags to move.</li><li>Enter finishes, Escape gives up, Backspace takes back a point.</li><li>Works the same by mouse, finger and pen (pointer events).</li><li>A hint bar says what to do at each step; Clear removes the shape.</li><li>A list of named areas can stand in for drawing, for keyboard use.</li></ul>
+    </div>
+    <pre><code>{ type: 'field', id: 'zone', field: 'zone', widget: 'area',
+  options: { shapes: ['polygon', 'box', 'circle'], one: true } }
+
+// saved value (GeoJSON):
+{ "type": "Polygon", "coordinates": [[[31.21, 30.04], …]] }</code></pre>
+  </div>
+
+  <div class="part" id="pins">
+    <div><h3>3 · Pins, labels and cards</h3>
+      <p>What every pin looks like, from the record's fields:</p>
+      <ul><li><b>look</b>: a pin, an icon, a round photo, a label only, or a dot</li><li><b>icon</b>: a fixed one, or one chosen by a field (car / scooter / bike)</li><li><b>image</b>: an image field, such as a driver's photo</li><li><b>label</b>: any field, written as its type is written ("9.5M", "4 min", "Table 12")</li><li><b>tones</b>: colour by condition</li><li><b>turn</b>: a field in degrees, so a car faces its way</li><li><b>widget</b>: the app draws the pin itself</li></ul>
+      <p>The card a pin opens is a small layout of the same record: fields, an image, words and buttons, the same parts a form uses. It can be left out, or drawn by the app's own widget. Hovering can open it on a desktop; on a phone a tap does.</p>
+    </div>
+    <pre><code>pin: { look: 'icon', icon: 'car', turn: 'heading', label: 'name',
+       tones: [{ when: [['status', '=', 'busy']], tone: 'muted' }] },
+card: [ { field: 'driver_photo' }, { field: 'name' },
+        { field: 'rating' }, { button: 'assign' } ],
+cluster: { label: 'count' }   // or false
+
+// anything else:
+pin: { widget: 'my-pin' }     // the app's own, from mountViewer({ widgets })</code></pre>
+  </div>
+
+  <div class="part" id="records">
+    <div><h3>4 · Records on a map, beside the list</h3>
+      <p>The list page gains a map view. Its pins come from the data source.</p>
+      <ul><li>Moving the map asks for what is in view; "Search this area" turns the view into a filter in the search bar.</li><li>A drawn area becomes a filter too, and it can be saved as a favourite like any other.</li><li>Pins chosen on the map, with a tick or a lasso, feed the list's buttons for chosen records.</li><li>Hovering a row lights its pin, and hovering a pin lights its row.</li><li>Bubbles: drawn by Fieldia from the pins it has, or sent ready-grouped by the app's server when there are many thousands.</li></ul>
+      <p>New in the data source: an optional "records in this area" call. A source without it can still show its records, but the area filter is hidden.</p>
+    </div>
+    <pre><code>// the data source, optional:
+searchArea({ model, area, filters, zoom })
+  → { records, clusters? }
+
+// the list page:
+views: ['list', 'map'],
+map: { at: { latitude: 'lat', longitude: 'lng' },
+       pin: { look: 'label', label: 'price',
+              tones: [{ when: [['offer', '=', 'rent']], tone: 'info' }] },
+       card: [{ field: 'photo' }, { field: 'name' }, { field: 'price' }] }</code></pre>
+  </div>
+
+  <div class="part" id="layers">
+    <div><h3>5 · Several kinds of point on one record</h3>
+      <p>A map on a form can show any number of layers from one record: its own fields (the kitchen, the door, the courier), its lines (a delivery round's stops, in order), or related records. Each layer has its own pin and its own card.</p>
+    </div>
+    <pre><code>{ type: 'map', id: 'order-map', layers: [
+  { id: 'kitchen', at: { latitude: 'kitchen_lat', longitude: 'kitchen_lng' },
+    pin: { look: 'icon', icon: 'shop' } },
+  { id: 'door', at: { latitude: 'lat', longitude: 'lng' },
+    pin: { look: 'icon', icon: 'home' } },
+  { id: 'courier', at: { latitude: 'courier_lat', longitude: 'courier_lng',
+                         heading: 'courier_heading' },
+    pin: { look: 'photo', image: 'courier_photo', label: 'eta_text' } },
+  { id: 'stops', lines: 'stop_ids', pin: { look: 'pin', label: 'sequence' } },
+] }</code></pre>
+  </div>
+
+  <div class="part" id="live">
+    <div><h3>6 · Positions that move</h3>
+      <p>When a point's fields change, its pin glides to the new spot along the shortest path on screen, or along the route when there is one. The map never redraws.</p>
+      <ul><li>The app sends new positions with <code>setValues</code> today. Later, an optional data-source call can stream changes.</li><li>"Last seen 2 min ago" shows when a position goes stale (the page sets after how long).</li><li>Following a pin keeps it in view as it moves, until the person pans away.</li></ul>
+    </div>
+    <pre><code>handle.setValues({ courier_lat: 30.0512, courier_lng: 31.2337,
+                   courier_heading: 84 });
+
+layers: [{ id: 'courier', …, live: { staleAfter: 120, follow: true } }]</code></pre>
+  </div>
+
+  <div class="part" id="routes">
+    <div><h3>7 · Routes</h3>
+      <p>A line along the roads between points: from the courier to my door, or through a round's stops in order.</p>
+      <ul><li>"My location" comes from the browser once the person allows it, or from a typed address.</li><li>Live progress: the part already driven fades, and the time and distance left become values for labels and cards.</li><li>A new route is fetched when the driver leaves the old one.</li><li>A route's distance, time and roads can be saved on the record. That's the ground for later features: price by distance, a "running late" warning, proof of the route driven.</li><li>Routes come from the provider, or from the app's own function.</li></ul>
+    </div>
+    <pre><code>{ id: 'way', route: { from: 'courier', to: 'door', mode: 'car' },
+  progress: true,
+  write: { seconds: 'eta_seconds', metres: 'distance_m',
+           line: 'route_geojson' } }
+
+// the provider or the app gives:
+route({ from, to, via, mode }) → { line, metres, seconds }</code></pre>
+  </div>
+
+  <div class="part" id="regions">
+    <div><h3>8 · Areas by colour</h3>
+      <p>Municipalities, districts or zones, shaded by category or by a number, with a legend.</p>
+      <ul><li>Hover brightens an area and shows its card (the page decides what is on it).</li><li>A click filters the records to that area, or chooses it as a field's value ("which district").</li><li>Borders come as GeoJSON from the app: a file, a field or a function. Fieldia doesn't ship borders; the docs point to open sources such as OpenStreetMap and geoBoundaries.</li><li>Colours come from Fieldia's theme and pass contrast in light and dark.</li></ul>
+    </div>
+    <pre><code>{ id: 'districts',
+  regions: { from: '/geo/districts.json', key: 'code' },
+  colour: { by: 'orders_week', scale: 'sequential', legend: true },
+  hover: { card: [{ field: 'name' }, { field: 'orders_week' }] },
+  click: 'filter' }   // or { choose: 'district_id' }</code></pre>
+  </div>
+
+  <div class="part" id="extras">
+    <div><h3>9 · The rest of the box</h3>
+      <ul><li><b>Heat map</b> where pins are too many to read.</li><li><b>Nearest first</b>: sort a list by distance from a point, such as my location.</li><li><b>Reachable area</b>: "within 15 minutes' drive" as an area, from providers that compute it.</li><li><b>Geofences</b>: "courier entered the zone" runs the page's own steps, the same steps a button runs.</li><li><b>Base maps</b>: road, satellite and traffic, where the provider has them.</li><li><b>Measure</b> a distance, and <b>full screen</b>.</li></ul>
+    </div>
+    <pre><code>map: { heat: { weight: 'orders' },
+       baseMaps: ['road', 'satellite', 'traffic'],
+       tools: ['measure', 'fullscreen'] }
+
+layers: [{ id: 'reach', reachable: { from: 'kitchen', minutes: 15 } }]
+
+geofences: [{ area: 'zone', when: 'enter', layer: 'courier',
+              run: [{ action: 'notify_customer' }] }]</code></pre>
+  </div>
+</section>
+
+<section id="providers">
+  <div class="stack">
+    <h2>Providers</h2>
+    <p>The app picks one, or mixes them: map images from one provider, routes from another, address search from its own server. Keys never live in Fieldia. The app passes them, or better, a URL on its own server that adds the key.</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Provider</th><th>Road map</th><th>Satellite</th><th>Traffic</th><th>Address search</th><th>Routes</th><th>Reachable area</th><th>Rules to follow</th></tr></thead>
+      <tbody>
+        <tr><td>Azure Maps</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td><td class="c">check</td><td>Its language codes are strict: Arabic must be sent as <code>ar</code>, never <code>ar-001</code>, or every map image is refused. Route Range has been a preview API; confirm the version before relying on it.</td></tr>
+        <tr><td>Google</td><td class="y">yes</td><td class="y">yes</td><td class="c">check</td><td class="y">yes</td><td class="y">yes</td><td class="n">no</td><td>Map images through Google's Map Tiles API need a session token. Google's logo goes bottom-left and its credits bottom-right, never covered. No caching, and display only. An optional second adapter could use Google's own JavaScript map instead.</td></tr>
+        <tr><td>Mapbox</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td><td>Logo and credits shown, as its terms set.</td></tr>
+        <tr><td>Self-hosted (OSRM, Valhalla, own map images)</td><td class="y">yes</td><td class="c">own</td><td class="n">no</td><td class="c">own</td><td class="y">yes</td><td class="y">Valhalla</td><td>No per-use fees. The app runs the servers.</td></tr>
+        <tr><td>OpenStreetMap public map images</td><td class="y">yes</td><td class="n">no</td><td class="n">no</td><td class="n">no</td><td class="n">no</td><td class="n">no</td><td>Demos and development only. Its usage policy treats a production app as heavy use, so Fieldia's docs and its warning in the console say to choose a provider.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="legend"><span><b>yes</b> offered</span><span><b>check</b> to confirm before building on it</span><span><b>own</b> whatever the app's server provides</span><span><b>no</b> not offered; the matching tools are hidden</span></div>
+  <pre><code>import { mapWidgets, azureMaps } from '@fieldia/map';
+
+mountViewer(host, { page, dataSource,
+  widgets: { ...mapWidgets },
+  map: { provider: azureMaps({ tokenUrl: '/maps/token' }),
+         route: myRouteFunction,          // optional: the app's own
+         search: myAddressSearch } });    // optional: the app's own</code></pre>
+</section>
+
+<section id="phases">
+  <div class="stack">
+    <h2>Phases</h2>
+    <p>Each phase ends with its tests passing, its demo live on fieldia.dev, the designer able to set it up, and a release. Later phases build on earlier ones and never reopen them.</p>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><span class="no">PHASE 1</span><h3>The engine, providers, Place and Area fields</h3></div>
+    <div class="phase-cols">
+      <div><h4>Builds</h4><ul><li>The package, the map core and provider adapters: Azure Maps, Google (Map Tiles API), Mapbox, any map-image URL, and OpenStreetMap for demos</li><li>Place field and Area field (parts 1 and 2)</li><li>Keyboard, finger, right to left, themes, words in English, Arabic, French and German</li></ul></div>
+      <div><h4>Designer</h4><ul><li>Choose Place or Area for a field, and set its options</li><li>A preview with a demo provider</li></ul></div>
+      <div><h4>Demo</h4><ul><li>An address picker on a delivery form</li><li>A service-area form with a drawn zone</li></ul></div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><span class="no">PHASE 2</span><h3>Pins, cards and records on a map</h3></div>
+    <div class="phase-cols">
+      <div><h4>Builds</h4><ul><li>Part 3 (pins, labels, cards, bubbles) and part 4 (the map view beside a list)</li><li>The data source's optional "records in this area" call</li><li>Area and "this area" filters in the search bar and favourites</li><li>Choosing pins for the list's buttons</li></ul></div>
+      <div><h4>Designer</h4><ul><li>Add a map view to a list page</li><li>Set what a pin shows and lay out its card, by picking fields</li></ul></div>
+      <div><h4>Demo</h4><ul><li>The property search</li></ul></div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><span class="no">PHASE 3</span><h3>Layers, live positions and routes</h3></div>
+    <div class="phase-cols">
+      <div><h4>Builds</h4><ul><li>Parts 5, 6 and 7: several kinds of point, moving pins, routes with progress</li><li>"My location", with permission</li><li>Saving a route's distance, time and line on the record</li></ul></div>
+      <div><h4>Designer</h4><ul><li>Add layers to a form's map, choose fields for each</li><li>Add a route between two layers</li></ul></div>
+      <div><h4>Demo</h4><ul><li>The food order coming to me, with a simulated courier</li><li>The ride map</li></ul></div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head"><span class="no">PHASE 4</span><h3>Areas by colour and the rest of the box</h3></div>
+    <div class="phase-cols">
+      <div><h4>Builds</h4><ul><li>Part 8 (coloured areas, legend, hover, click to filter or choose)</li><li>Part 9: heat map, nearest first, reachable area, geofences that run steps, base maps, measure, full screen</li></ul></div>
+      <div><h4>Designer</h4><ul><li>Add an areas layer, choose the number it shades by</li><li>Add a geofence and the steps it runs</li></ul></div>
+      <div><h4>Demo</h4><ul><li>Delivery zones</li><li>A features page for maps on fieldia.dev, with all four demos</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="proof">
+  <div class="stack">
+    <h2>How each part is proved</h2>
+    <p>The same rules as every Fieldia release, plus what maps need on top.</p>
+  </div>
+  <div class="grid">
+    <div class="card"><h3>Test first, and see it fail</h3><p>Every browser test is written before the code and fails first. Each one is also run once with its fix taken out, to prove it would catch the bug.</p></div>
+    <div class="card"><h3>Used the way people use it</h3><p>Drawn and dragged by mouse at hand speed, by finger (touch emulation), and by keyboard alone. Typed into, never only read. Screenshots of each part open are looked at, not just taken.</p></div>
+    <div class="card"><h3>Every look</h3><p>Light and dark, all eight themes, an Arabic page right to left. Accessibility checks (axe) on every demo, and contrast checks on labels over the map and on area colours.</p></div>
+    <div class="card"><h3>Stand-in providers</h3><p>Tests never call a real provider. Each stand-in returns exactly the shape the real one does, errors included, taken from that provider's reference. A short manual check against each real provider runs before a release.</p></div>
+    <div class="card"><h3>Size</h3><p>The main script doesn't grow. <code>@fieldia/map</code> gets its own size budget, checked in CI. Provider adapters load only when used.</p></div>
+    <div class="card"><h3>Release check</h3><p>Installed from the packs into an empty project: require, import and types all check, as for the other ten packages.</p></div>
+  </div>
+  <div class="note">
+    <p><b>The hard part is a map without a mouse.</b> Panning and zooming by keys is easy. Pins become a list in reading order: Tab moves through them, Enter opens the card. Drawing a polygon by keyboard is not realistic, so the Area field always offers a list of named areas or typed coordinates beside the drawing tools. Screen readers get the same list, and the map itself is described ("12 homes in view").</p>
+  </div>
+</section>
+
+<section id="decide">
+  <div class="stack"><h2>Decisions for you</h2><p>My recommendation is marked on each.</p></div>
+  <ol class="decide">
+    <li><b>Map engine: Leaflet or MapLibre</b><span>Leaflet draws map images: small, simple, works everywhere. MapLibre draws vector maps with WebGL: smoother zoom and rotation, but about six times larger and harder on old phones. <span class="rec">Recommended: Leaflet now. The core is written so MapLibre could be added later as a second engine.</span></span></li>
+    <li><b>Google: Map Tiles API only, or also Google's own JavaScript map</b><span>The Map Tiles API fits the same engine as the others. Google's own map would be a second, larger adapter for apps that must use it. <span class="rec">Recommended: Map Tiles API first; the second adapter only if an app asks.</span></span></li>
+    <li><b>Keys</b><span>The app can pass a key in the browser, restricted to its site, or a URL on its own server that hands out short-lived tokens. <span class="rec">Recommended: support both; the docs and demos show the token URL.</span></span></li>
+    <li><b>Where to start</b><span>Phases 1 and 2 give the most-asked-for parts (fields, a property-style search). Phase 3 is what makes it stand out (live courier, routes). <span class="rec">Recommended: in order, 1 → 4, releasing after each.</span></span></li>
+    <li><b>Our own sites</b><span>Once phase 2 ships, the property map we run today could move onto it and drop its own map code. <span class="rec">Recommended: yes, after phase 2, as a separate task.</span></span></li>
+  </ol>
+</section>
+
+<footer>
+  <p>Fieldia is MIT-licensed and public: this plan names no private product, and its code will be written fresh. Sources for the provider rules: <a href="https://developers.google.com/maps/documentation/tile/policies">Google Map Tiles API policies</a>, <a href="https://developers.google.com/maps/documentation/tile/session_tokens">Google Map Tiles session tokens</a>, <a href="https://operations.osmfoundation.org/policies/tiles/">OpenStreetMap tile usage policy</a>, <a href="https://learn.microsoft.com/en-us/azure/azure-maps/migrate-route-v1-api">Azure Maps Route API migration</a>.</p>
+</footer>
+</div>
