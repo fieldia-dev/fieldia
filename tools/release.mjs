@@ -37,7 +37,7 @@ const fail = (message) => {
 
 // ---- which packages, in what order --------------------------------------------
 /** Dependencies before dependants, so a publish never points at a version npm does not have yet. */
-const ORDER = ['core', 'widgets', 'viewer', 'grid', 'code', 'chatter', 'react', 'vue', 'angular', 'designer'];
+const ORDER = ['core', 'widgets', 'viewer', 'grid', 'code', 'map', 'chatter', 'react', 'vue', 'angular', 'designer'];
 const packages = ORDER.map((dir) => ({ dir, manifest: read(join(WORKSPACE, 'libs', dir, 'package.json')) })).filter((p) => !p.manifest.private);
 const version = packages[0].manifest.version;
 for (const { dir, manifest } of packages) {
