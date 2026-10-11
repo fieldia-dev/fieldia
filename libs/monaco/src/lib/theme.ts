@@ -110,6 +110,7 @@ export function monacoTheme(given: FieldiaColours): MonacoThemeData {
       'editor.wordHighlightBackground': see('accent', '1a'),
       'editor.findMatchBackground': see('accent', '59'),
       'editor.findMatchHighlightBackground': see('accent', '2e'),
+      'editor.rangeHighlightBackground': see('accent', '14'),
       'editor.lineHighlightBackground': see('text', '0a'),
       'editor.lineHighlightBorder': '#00000000',
       'editorIndentGuide.background1': c.border,

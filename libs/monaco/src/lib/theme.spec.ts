@@ -44,6 +44,8 @@ describe('Monaco’s theme from Fieldia’s tokens', () => {
     expect(theme.colors['focusBorder']).toBe('#002855');
     // Chosen text in the accent, see-through, so the words stay readable over it.
     expect(theme.colors['editor.selectionBackground']).toMatch(/^#002855[0-9a-f]{2}$/);
+    // Found text's line too, rather than Monaco's own yellow.
+    expect(theme.colors['editor.rangeHighlightBackground']).toMatch(/^#002855[0-9a-f]{2}$/);
   });
 
   it('is Monaco’s dark base on a dark surface', () => {
