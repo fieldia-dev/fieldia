@@ -46,23 +46,34 @@ export const TILE = (() => {
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', header), chunk('IDAT', deflateSync(Buffer.concat(rows))), chunk('IEND', Buffer.alloc(0))]);
 })();
 
-export interface NominatimPlace {
-  lat: string;
-  lon: string;
-  display_name: string;
+/** A place as Photon answers it: GeoJSON, longitude first, its name and where it is in `properties`. */
+export interface PhotonPlace {
+  lat: number;
+  lon: number;
+  name?: string;
+  street?: string;
+  housenumber?: string;
+  district?: string;
+  city?: string;
+  country?: string;
 }
 
-/** Every request a map made, and the stand-in answers to them. */
-export async function stubMaps(page: Page, answers: { search?: NominatimPlace[]; reverse?: string | null } = {}) {
+const photonAnswer = (places: PhotonPlace[]) => ({
+  type: 'FeatureCollection',
+  features: places.map(({ lat, lon, ...properties }) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [lon, lat] }, properties: { osm_key: 'place', ...properties } })),
+});
+
+/** Every request a map made, and the stand-in answers to them: Photon's search and naming, OpenStreetMap's map images. */
+export async function stubMaps(page: Page, answers: { search?: PhotonPlace[]; reverse?: PhotonPlace | null } = {}) {
   const asked: string[] = [];
   await page.route('https://tile.openstreetmap.org/**', (route) => {
     asked.push(route.request().url());
     return route.fulfill({ status: 200, contentType: 'image/png', body: TILE, headers: { 'access-control-allow-origin': '*' } });
   });
-  await page.route('https://nominatim.openstreetmap.org/**', (route) => {
+  await page.route('https://photon.komoot.io/**', (route) => {
     const url = route.request().url();
     asked.push(url);
-    const json = url.includes('/search') ? (answers.search ?? []) : answers.reverse ? { place_id: 1, lat: '0', lon: '0', display_name: answers.reverse } : { error: 'Unable to geocode' };
+    const json = photonAnswer(url.includes('/reverse') ? (answers.reverse ? [answers.reverse] : []) : (answers.search ?? []));
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(json), headers: { 'access-control-allow-origin': '*' } });
   });
   return asked;

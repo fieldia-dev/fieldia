@@ -16,6 +16,10 @@ export interface MapLabels {
   locating: string;
   locationBlocked: string;
   locationFailed: string;
+  /** Said when the reader's location is rough, as a desktop's often is: `{distance}` is how rough. */
+  locatedWithin: string;
+  kilometres: string;
+  metres: string;
   clear: string;
   latitude: string;
   longitude: string;
@@ -68,6 +72,9 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     locating: 'Finding your location…',
     locationBlocked: 'This site may not ask for your location.',
     locationFailed: 'Your location could not be found.',
+    locatedWithin: 'Placed within about {distance} of where you are. Drag the pin to the right spot.',
+    kilometres: '{n} km',
+    metres: '{n} m',
     clear: 'Clear',
     latitude: 'Latitude',
     longitude: 'Longitude',
@@ -118,6 +125,9 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     locating: 'جارٍ تحديد موقعك…',
     locationBlocked: 'لا يُسمح لهذا الموقع بطلب موقعك.',
     locationFailed: 'تعذّر تحديد موقعك.',
+    locatedWithin: 'وُضع على بُعد نحو {distance} من مكانك. اسحب الدبوس إلى المكان الصحيح.',
+    kilometres: '{n} كم',
+    metres: '{n} م',
     clear: 'مسح',
     latitude: 'خط العرض',
     longitude: 'خط الطول',
@@ -168,6 +178,9 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     locating: 'Recherche de votre position…',
     locationBlocked: 'Ce site ne peut pas demander votre position.',
     locationFailed: 'Votre position est introuvable.',
+    locatedWithin: 'Placé à environ {distance} de l’endroit où vous êtes. Faites glisser l’épingle au bon endroit.',
+    kilometres: '{n} km',
+    metres: '{n} m',
     clear: 'Effacer',
     latitude: 'Latitude',
     longitude: 'Longitude',
@@ -218,6 +231,9 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     locating: 'Standort wird ermittelt …',
     locationBlocked: 'Diese Seite darf Ihren Standort nicht abfragen.',
     locationFailed: 'Ihr Standort wurde nicht gefunden.',
+    locatedWithin: 'Auf etwa {distance} genau gesetzt. Ziehen Sie die Nadel an die richtige Stelle.',
+    kilometres: '{n} km',
+    metres: '{n} m',
     clear: 'Leeren',
     latitude: 'Breitengrad',
     longitude: 'Längengrad',

@@ -25,11 +25,38 @@ describe('OpenStreetMap', () => {
     expect(await osm.credits('road', view, 'en')).toEqual([{ text: '© OpenStreetMap contributors', href: 'https://www.openstreetmap.org/copyright' }]);
   });
 
-  it('searches Nominatim only when asked, never as people type', async () => {
-    const { fetch, asked } = network({ 'https://nominatim.openstreetmap.org/search': [{ lat: '30.0444', lon: '31.2357', display_name: 'Cairo, Egypt' }] });
+  it('searches as people type through Photon, nearest the map first, each place on two lines', async () => {
+    const found = {
+      type: 'FeatureCollection',
+      features: [
+        { type: 'Feature', geometry: { type: 'Point', coordinates: [31.2357, 30.0444] }, properties: { name: 'Tahrir Square', district: 'Downtown', city: 'Cairo', country: 'Egypt', osm_key: 'place' } },
+        { type: 'Feature', geometry: { type: 'Point', coordinates: [31.2391, 30.0487] }, properties: { street: 'Tahrir Street', housenumber: '12', city: 'Cairo', country: 'Egypt' } },
+      ],
+    };
+    const { fetch, asked } = network({ 'https://photon.komoot.io/api': found });
     const osm = openStreetMap({ fetch });
+    expect(osm.searchAsYouType).toBe(true);
+    expect(await osm.search!({ text: 'tahrir', near: { lat: 30.05, lng: 31.24 }, zoom: 13, locale: 'en' })).toEqual([
+      { label: 'Tahrir Square', detail: 'Downtown, Cairo, Egypt', lat: 30.0444, lng: 31.2357 },
+      { label: 'Tahrir Street 12', detail: 'Cairo, Egypt', lat: 30.0487, lng: 31.2391 },
+    ]);
+    expect(asked[0].url).toBe('https://photon.komoot.io/api?q=tahrir&limit=6&lang=en&lat=30.05&lon=31.24&zoom=13');
+    // Photon names places in English, German and French; in Arabic it gives the places' own names.
+    await osm.search!({ text: 'tahrir', locale: 'ar' });
+    expect(asked[1].url).toBe('https://photon.komoot.io/api?q=tahrir&limit=6');
+  });
+
+  it('names a point through Photon too', async () => {
+    const { fetch, asked } = network({ 'https://photon.komoot.io/reverse': { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: [31.22, 30.06] }, properties: { street: '26 July Street', housenumber: '3', district: 'Zamalek', city: 'Cairo', country: 'Egypt' } }] } });
+    expect(await openStreetMap({ fetch }).reverse!({ lat: 30.06, lng: 31.22, locale: 'fr' })).toBe('26 July Street 3, Zamalek, Cairo, Egypt');
+    expect(asked[0].url).toBe('https://photon.komoot.io/reverse?lat=30.06&lon=31.22&limit=1&lang=fr');
+  });
+
+  it('searches Nominatim instead when asked, and only on Enter, as its policy says', async () => {
+    const { fetch, asked } = network({ 'https://nominatim.openstreetmap.org/search': [{ lat: '30.0444', lon: '31.2357', name: 'Cairo', display_name: 'Cairo, Cairo Governorate, Egypt' }] });
+    const osm = openStreetMap({ fetch, search: 'nominatim' });
     expect(osm.searchAsYouType).toBe(false);
-    expect(await osm.search!({ text: 'cairo', locale: 'ar' })).toEqual([{ label: 'Cairo, Egypt', lat: 30.0444, lng: 31.2357 }]);
+    expect(await osm.search!({ text: 'cairo', locale: 'ar' })).toEqual([{ label: 'Cairo', detail: 'Cairo Governorate, Egypt', lat: 30.0444, lng: 31.2357 }]);
     expect(asked[0].url).toBe('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=cairo&accept-language=ar');
   });
 });
@@ -68,13 +95,13 @@ describe('Azure Maps', () => {
     const found = {
       type: 'FeatureCollection',
       features: [
-        { type: 'Feature', geometry: { type: 'Point', coordinates: [31.2357, 30.0444] }, properties: { type: 'Address', address: { formattedAddress: '1 Tahrir Square, Cairo' } } },
+        { type: 'Feature', geometry: { type: 'Point', coordinates: [31.2357, 30.0444] }, properties: { type: 'Address', address: { formattedAddress: '1 Tahrir Square, Cairo', locality: 'Cairo', countryRegion: { name: 'Egypt' } } } },
       ],
     };
     const { fetch, asked } = network({ 'https://atlas.microsoft.com/geocode': found, 'https://atlas.microsoft.com/reverseGeocode': found });
     const azure = azureMaps({ key: 'K', fetch });
     expect(azure.searchAsYouType).toBe(true);
-    expect(await azure.search!({ text: 'tahrir', near: { lat: 30, lng: 31 }, locale: 'ar' })).toEqual([{ label: '1 Tahrir Square, Cairo', lat: 30.0444, lng: 31.2357 }]);
+    expect(await azure.search!({ text: 'tahrir', near: { lat: 30, lng: 31 }, locale: 'ar' })).toEqual([{ label: '1 Tahrir Square, Cairo', detail: 'Cairo, Egypt', lat: 30.0444, lng: 31.2357 }]);
     expect(asked[0].url).toBe('https://atlas.microsoft.com/geocode?api-version=2023-06-01&top=5&query=tahrir&coordinates=31%2C30&subscription-key=K');
     expect((asked[0].init?.headers as Record<string, string>)['Accept-Language']).toBe('ar');
     expect(await azure.reverse!({ lat: 30.0444, lng: 31.2357, locale: 'en' })).toBe('1 Tahrir Square, Cairo');
@@ -122,10 +149,10 @@ describe('Mapbox', () => {
   });
 
   it('searches as people type, asking for results it may keep', async () => {
-    const found = { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: [2.3522, 48.8566] }, properties: { full_address: 'Paris, France' } }] };
+    const found = { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: [2.3522, 48.8566] }, properties: { name: 'Paris', full_address: 'Paris, France', place_formatted: 'Île-de-France, France' } }] };
     const { fetch, asked } = network({ 'https://api.mapbox.com/search/geocode/v6/forward': found, 'https://api.mapbox.com/search/geocode/v6/reverse': found });
     const box = mapbox({ token: 'M', fetch });
-    expect(await box.search!({ text: 'paris', near: { lat: 48, lng: 2 }, locale: 'fr' })).toEqual([{ label: 'Paris, France', lat: 48.8566, lng: 2.3522 }]);
+    expect(await box.search!({ text: 'paris', near: { lat: 48, lng: 2 }, locale: 'fr' })).toEqual([{ label: 'Paris', detail: 'Île-de-France, France', lat: 48.8566, lng: 2.3522 }]);
     expect(asked[0].url).toBe('https://api.mapbox.com/search/geocode/v6/forward?q=paris&limit=5&language=fr&proximity=2%2C48&permanent=true&access_token=M');
     expect(await box.reverse!({ lat: 48.8566, lng: 2.3522, locale: 'en' })).toBe('Paris, France');
   });

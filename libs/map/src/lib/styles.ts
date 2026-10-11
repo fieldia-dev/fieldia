@@ -16,7 +16,9 @@ export const MAP_CSS = `
   background: var(--fd-surface); color: var(--fd-text); border: 1px solid var(--fd-border); border-radius: var(--fd-control-radius);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16); max-height: 240px; overflow: auto;
 }
-.fd-map-results [role="option"] { padding: 6px 8px; border-radius: 4px; cursor: pointer; line-height: 1.35; }
+.fd-map-results [role="option"] { padding: 6px 8px; border-radius: 4px; cursor: pointer; line-height: 1.35; display: grid; gap: 1px; }
+.fd-map-result-name { color: var(--fd-text); font-weight: 600; overflow-wrap: anywhere; }
+.fd-map-result-detail { color: var(--fd-muted); font-size: 12.5px; overflow-wrap: anywhere; }
 .fd-map-results [role="option"][aria-selected="true"], .fd-map-results [role="option"]:hover { background: var(--fd-accent-soft); }
 .fd-map-results .fd-map-results-note { padding: 6px 8px; color: var(--fd-muted); cursor: default; }
 .fd-map-box {
@@ -78,6 +80,7 @@ export const MAP_CSS = `
 .fd-map-pin:focus-visible { outline: 2px solid var(--fd-focus); outline-offset: 2px; border-radius: 4px; }
 path.fd-map-shape { stroke: var(--fd-accent); fill: var(--fd-accent); stroke-width: 2; fill-opacity: 0.16; }
 path.fd-map-shape.fd-map-movable { cursor: move; }
+path.fd-map-accuracy { stroke: var(--fd-accent); fill: var(--fd-accent); stroke-width: 1; fill-opacity: 0.08; stroke-dasharray: 4 4; pointer-events: none; }
 path.fd-map-trace { stroke: var(--fd-accent); fill: var(--fd-accent); stroke-width: 2; fill-opacity: 0.08; stroke-dasharray: 6 5; pointer-events: none; }
 .fd-map-grip { width: 24px; height: 24px; display: grid; place-items: center; cursor: grab; }
 .fd-map-grip::after {

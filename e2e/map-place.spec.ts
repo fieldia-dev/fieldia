@@ -12,8 +12,8 @@ import { node, open, screen } from './support';
  */
 
 const QUERY = 'page=map-delivery&skin=outlined';
-const TAHRIR = { lat: '30.0444', lon: '31.2357', display_name: 'Tahrir Square, Downtown, Cairo, Egypt' };
-const ZAMALEK = { lat: '30.0609', lon: '31.2197', display_name: 'Zamalek, Cairo, Egypt' };
+const TAHRIR = { lat: 30.0444, lon: 31.2357, name: 'Tahrir Square', district: 'Downtown', city: 'Cairo', country: 'Egypt' };
+const ZAMALEK = { lat: 30.0609, lon: 31.2197, name: 'Zamalek', city: 'Cairo', country: 'Egypt' };
 
 async function openPlace(page: Page, query = QUERY, answers: Parameters<typeof stubMaps>[1] = {}) {
   const asked = await stubMaps(page, answers);
@@ -99,52 +99,68 @@ test('typed coordinates move the pin there; a wrong one is said and changes noth
   expect(await valueOf(page, 'deliver_to')).toEqual({ type: 'Point', coordinates: [31.22, 30.05] });
 });
 
-test('a search asks when Enter is pressed (OpenStreetMap’s terms forbid asking as people type); the arrows and Enter pick a place, and Address takes its name', async ({ page }) => {
-  const { field, asked } = await openPlace(page, QUERY, { search: [TAHRIR, ZAMALEK] });
+test('a search suggests places as people type, nearest the map first, each on two lines; Enter takes the first, the arrows another, and Address takes its name', async ({ page }) => {
+  const { field, asked, map } = await openPlace(page, QUERY, { search: [TAHRIR, ZAMALEK] });
+  // The map moved east first: the search asks near where it now is, not where it opened.
+  await map.focus();
+  for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(400);
   const search = field.getByRole('combobox');
-  await search.pressSequentially('tahrir', { delay: 40 });
-  await page.waitForTimeout(500);
-  expect(asked.filter((url) => url.includes('/search'))).toEqual([]);
-  await search.press('Enter');
+  await search.pressSequentially('tah', { delay: 60 });
   const options = field.getByRole('option');
-  await expect(options).toHaveText([TAHRIR.display_name, ZAMALEK.display_name]);
+  // No Enter: the suggestions come as the typing pauses.
+  await expect(options).toHaveCount(2);
+  await expect(options.nth(0).locator('.fd-map-result-name')).toHaveText('Tahrir Square');
+  await expect(options.nth(0).locator('.fd-map-result-detail')).toHaveText('Downtown, Cairo, Egypt');
+  await expect(options.nth(1).locator('.fd-map-result-name')).toHaveText('Zamalek');
   await expect(search).toHaveAttribute('aria-expanded', 'true');
-  const searched = asked.find((url) => url.includes('/search'))!;
-  expect(searched).toContain('q=tahrir');
-  expect(searched).toContain('accept-language=en');
+  // Asked near where the map is, at its zoom: the nearest come first.
+  const searched = asked.filter((url) => url.includes('photon.komoot.io/api')).at(-1)!;
+  expect(searched).toContain('q=tah');
+  const lon = Number(/lon=([\d.]+)/.exec(searched)?.[1]);
+  expect(lon).toBeGreaterThan(31.25);
+  expect(searched).toMatch(/lat=30\.04\d*&lon=[\d.]+&zoom=12/);
+  expect(searched).toContain('lang=en');
   await screen(page, 'map-place-search');
 
+  // Enter takes the first, the nearest.
+  await search.press('Enter');
+  await expect.poll(() => valueOf(page, 'deliver_to')).toEqual({ type: 'Point', coordinates: [31.2357, 30.0444] });
+  expect(await valueOf(page, 'street')).toBe('Tahrir Square');
+  await expect(field.getByRole('listbox')).toBeHidden();
+  // Enter in the search never sends the form.
+  await expect(page.locator('.fd-form')).toBeVisible();
+
+  // The arrows choose another.
+  await search.fill('');
+  await search.pressSequentially('zam', { delay: 60 });
+  await expect(options).toHaveCount(2);
   await search.press('ArrowDown');
   await search.press('ArrowDown');
   await expect(options.nth(1)).toHaveAttribute('aria-selected', 'true');
   await expect(search).toHaveAttribute('aria-activedescendant', (await options.nth(1).getAttribute('id'))!);
   await search.press('Enter');
   await expect.poll(() => valueOf(page, 'deliver_to')).toEqual({ type: 'Point', coordinates: [31.2197, 30.0609] });
-  expect(await valueOf(page, 'street')).toBe(ZAMALEK.display_name);
-  await expect(search).toHaveValue(ZAMALEK.display_name);
-  await expect(field.getByRole('listbox')).toBeHidden();
-  // Enter in the search never sends the form.
-  await expect(page.locator('.fd-form')).toBeVisible();
+  expect(await valueOf(page, 'street')).toBe('Zamalek');
 });
 
 test('a search that finds nothing says so; a search that fails says so', async ({ page }) => {
   const { field } = await openPlace(page, QUERY, { search: [] });
   await field.getByRole('combobox').fill('nowhere at all');
-  await field.getByRole('combobox').press('Enter');
   await expect(field.locator('.fd-map-note')).toHaveText('No address found');
-  await page.route('https://nominatim.openstreetmap.org/**', (route) => route.fulfill({ status: 503, body: 'busy' }));
-  await field.getByRole('combobox').press('Enter');
+  await page.route('https://photon.komoot.io/**', (route) => route.fulfill({ status: 503, body: 'busy' }));
+  await field.getByRole('combobox').fill('nowhere at all, again');
   await expect(field.locator('.fd-map-note')).toHaveText('The search did not answer. Try again.');
 });
 
 test('a place pressed on the map names Address, but never writes over an address a person typed', async ({ page }) => {
-  const { map } = await openPlace(page, QUERY, { reverse: '26 July Street, Zamalek, Cairo' });
+  const { map } = await openPlace(page, QUERY, { reverse: { lat: 30.06, lon: 31.22, street: '26 July Street', housenumber: '3', district: 'Zamalek', city: 'Cairo' } });
   const first = await at(map, 0.5, 0.5);
   await page.mouse.click(first.x, first.y);
-  await expect.poll(() => valueOf(page, 'street')).toBe('26 July Street, Zamalek, Cairo');
+  await expect.poll(() => valueOf(page, 'street')).toBe('26 July Street 3, Zamalek, Cairo');
   // Pressed again: the name it gave is its own to change.
-  await page.route('https://nominatim.openstreetmap.org/reverse**', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ display_name: 'Brazil Street, Zamalek, Cairo' }) })
+  await page.route('https://photon.komoot.io/reverse**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: [31.21, 30.07] }, properties: { street: 'Brazil Street', district: 'Zamalek', city: 'Cairo' } }] }) })
   );
   const second = await at(map, 0.6, 0.4);
   await page.mouse.click(second.x, second.y);
@@ -191,13 +207,38 @@ test('by keyboard: Tab reaches the map and shows its cross; Enter puts the place
   await expect(map.locator('.fd-map-crosshair')).toBeHidden();
 });
 
-test.describe('My location, allowed', () => {
-  test.use({ permissions: ['geolocation'], geolocation: { latitude: 30.0566, longitude: 31.2296 } });
+test.describe('My location, sure of itself', () => {
+  test.use({ permissions: ['geolocation'], geolocation: { latitude: 30.0566, longitude: 31.2296, accuracy: 15 } });
 
-  test('My location puts the place where the reader is', async ({ page }) => {
+  test('My location puts the place where the reader is, and says nothing more', async ({ page }) => {
     const { field } = await openPlace(page);
     await field.getByRole('button', { name: 'My location' }).click();
     await expect.poll(() => valueOf(page, 'deliver_to')).toEqual({ type: 'Point', coordinates: [31.2296, 30.0566] });
+    await expect(field.locator('.fd-map-note')).toBeHidden();
+  });
+});
+
+test.describe('My location, rough (a desktop placed by its network)', () => {
+  test.use({ permissions: ['geolocation'], geolocation: { latitude: 50.1109, longitude: 8.6821, accuracy: 3200 } });
+
+  test('says how rough, draws the circle it may be anywhere in, fits the map to it, and names no address from it; a press elsewhere takes the circle away', async ({ page }) => {
+    const { field, map } = await openPlace(page, QUERY, { reverse: { lat: 50.11, lon: 8.68, street: 'Zeil', city: 'Frankfurt' } });
+    await field.getByRole('button', { name: 'My location' }).click();
+    await expect.poll(() => valueOf(page, 'deliver_to')).toEqual({ type: 'Point', coordinates: [8.6821, 50.1109] });
+    await expect(field.locator('.fd-map-note')).toHaveText('Placed within about 3 km of where you are. Drag the pin to the right spot.');
+    const circle = map.locator('path.fd-map-accuracy');
+    await expect(circle).toHaveCount(1);
+    // The whole circle in view.
+    const drawn = (await circle.boundingBox())!;
+    const box = (await map.boundingBox())!;
+    expect(drawn.y).toBeGreaterThanOrEqual(box.y);
+    expect(drawn.y + drawn.height).toBeLessThanOrEqual(box.y + box.height);
+    await screen(page, 'map-place-rough-location');
+    await page.waitForTimeout(500);
+    expect(await valueOf(page, 'street')).toBeNull();
+    const spot = await at(map, 0.3, 0.3);
+    await page.mouse.click(spot.x, spot.y);
+    await expect(circle).toHaveCount(0);
   });
 });
 

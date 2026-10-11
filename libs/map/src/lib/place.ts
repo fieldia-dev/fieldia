@@ -1,8 +1,8 @@
 import type * as Leaflet from 'leaflet';
 import type { Value } from '@fieldia/core';
-import type { Widget, WidgetContext, WidgetFactory, WidgetState } from '@fieldia/widgets';
+import { formatNumber, type Widget, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
 import { asJson, isLatLng, parseCoordinate, readPoint, writePoint, type LatLng } from './geo';
-import { mapLabels } from './labels';
+import { fill, mapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
 import { createMapBox } from './map-core';
 import { searchBox } from './search-box';
@@ -134,8 +134,10 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
         .catch(() => undefined);
     }
 
-    function set(next: LatLng | null, how: { fly?: boolean; name?: boolean; address?: string } = {}) {
+    function set(next: LatLng | null, how: { fly?: boolean; name?: boolean; address?: string; within?: number } = {}) {
       if (readonly) return;
+      // How sure "My location" was: a circle while the place is the one it gave.
+      showAccuracy(next && how.within !== undefined ? { at: next, metres: how.within } : null);
       if (next) next = { lat: round6(next.lat), lng: round6(next.lng) };
       point = next;
       show(how.fly);
@@ -148,6 +150,20 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
 
     // ---- the map and its pin ---------------------------------------------------
     let marker: Leaflet.Marker | null = null;
+    let accuracy: Leaflet.Circle | null = null;
+    /** The map, once it is there: where it is and how close, for the search's "near". */
+    let shown: Leaflet.Map | null = null;
+
+    /** The circle a rough location may be anywhere in, fitted into view; a desktop's is often kilometres wide. */
+    function showAccuracy(within: { at: LatLng; metres: number } | null) {
+      box.ready((map, L) => {
+        accuracy?.remove();
+        accuracy = null;
+        if (!within) return;
+        accuracy = L.circle([within.at.lat, within.at.lng], { radius: within.metres, className: 'fd-map-accuracy', interactive: false }).addTo(map);
+        map.fitBounds(accuracy.getBounds(), { padding: [24, 24], maxZoom: zoom });
+      });
+    }
     function show(fly = false) {
       clear.hidden = readonly || !point;
       box.ready((map, L) => {
@@ -165,7 +181,8 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
         }
         marker.getElement()?.setAttribute('aria-label', `${field.label}: ${point.lat}, ${point.lng}`);
         if (fly) map.setView(at, Math.max(map.getZoom(), zoom));
-        else if (!map.getBounds().contains(at)) map.setView(at, map.getZoom() < 5 ? zoom : map.getZoom());
+        // A rough location's circle has fitted the map already.
+        else if (!accuracy && !map.getBounds().contains(at)) map.setView(at, map.getZoom() < 5 ? zoom : map.getZoom());
       });
     }
 
@@ -190,6 +207,7 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
     }
 
     box.ready((map) => {
+      shown = map;
       map.on('click', (event: Leaflet.LeafletMouseEvent) => set({ lat: event.latlng.lat, lng: event.latlng.lng }, { name: true }));
       // Enter on the map: the place at its centre, where the cross is.
       box.element.addEventListener('keydown', (event) => {
@@ -201,6 +219,10 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
       show(true);
     });
 
+    /** "3 km", "400 m", in the page's language and its way of writing numbers. */
+    const distance = (metres: number) =>
+      metres >= 1000 ? fill(labels.kilometres, { n: formatNumber(Math.round(metres / 1000), 0, context.locale ?? 'en') }) : fill(labels.metres, { n: formatNumber(Math.round(metres / 10) * 10, 0, context.locale ?? 'en') });
+
     // ---- search, my location, clear ---------------------------------------------
     const found = search
       ? searchBox({
@@ -210,7 +232,12 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
           search,
           asYouType: asYouType,
           locale: context.locale ?? 'en',
-          near: () => point ?? settings.center,
+          // Nearest where the map is looking first, as a map's own search does.
+          near: () => {
+            const centre = shown?.getCenter();
+            return centre ? { lat: centre.lat, lng: centre.lng } : (point ?? settings.center);
+          },
+          zoom: () => shown?.getZoom(),
           pick: (place) => set({ lat: place.lat, lng: place.lng }, { fly: true, address: place.label }),
           say,
         })
@@ -229,8 +256,12 @@ export function placeWidget(settings: MapSettings): WidgetFactory {
       say(labels.locating);
       geolocation.getCurrentPosition(
         (position) => {
-          say(null);
-          set({ lat: position.coords.latitude, lng: position.coords.longitude }, { fly: true, name: true });
+          const metres = Math.round(position.coords.accuracy);
+          // Named only when it is sure: an address from a point kilometres off would be someone else's.
+          set({ lat: position.coords.latitude, lng: position.coords.longitude }, { name: metres <= 100, within: metres });
+          // A rough location says how rough: a desktop's comes from its network, and may be a city away.
+          if (metres > 100) say(fill(labels.locatedWithin, { distance: distance(metres) }));
+          else say(null);
         },
         (error) => {
           if (error.code === error.PERMISSION_DENIED) {

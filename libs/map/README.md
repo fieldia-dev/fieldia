@@ -71,15 +71,22 @@ move the map.
 | `googleMaps({ key, region, logo })` (Map Tiles API) | yes | no | yes | the app's own (`search`) |
 | `mapbox({ token })` | yes | yes | yes | yes, as people type |
 | `tiles({ url, credit })` | the app's own map images | | | the app's own |
-| `openStreetMap()` | yes, **for demos only** | no | no | Nominatim, on Enter |
+| `openStreetMap()` | yes, **for demos only** | no | no | Photon, as people type, nearest first (or `{ search: 'nominatim' }`, on Enter) |
 
 Keys never live in Fieldia: pass one restricted to your sites, or a function
 fetching a short-lived token from your server. Each provider's credits are shown
 in the map's corner, and its mark where its terms ask. Read your provider's
 terms on keeping search results: a place field keeps what it finds (Mapbox's
-permanent geocoding is asked for by default). OpenStreetMap's public map images
-and Nominatim are for trying things out: their policies treat an app in use as
-heavy use.
+permanent geocoding is asked for by default). OpenStreetMap's public map images,
+Photon's public server and Nominatim are for trying things out: their policies
+treat an app in use as heavy use. Photon can run on your own server
+(`openStreetMap({ photonUrl })`).
+
+Suggestions come as people type where the provider allows it, nearest where the
+map is looking first, each on two lines (the place, then where it is); Enter
+takes the first. "My location" says how sure it is: a rough location (a
+desktop's, placed by its network) shows the circle it may be anywhere in, says
+how wide, and names no address from it.
 
 Pass your own `search` (and `reverse`) to `mapWidgets` to use your own address
 search with any provider.

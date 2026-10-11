@@ -17,8 +17,10 @@ export interface SearchBoxOptions {
   search: AddressSearch;
   asYouType: boolean;
   locale: Locale;
-  /** Where to look first: the map's place, or its centre. */
+  /** Where to look first: where the map is. */
   near: () => LatLng | undefined;
+  /** How close the map is: how far "near" reaches. */
+  zoom?: () => number | undefined;
   pick: (place: PlaceFound) => void;
   /** Says how the search is going, under the map. */
   say: (words: string | null, tone?: 'error') => void;
@@ -86,7 +88,17 @@ export function searchBox(options: SearchBoxOptions) {
         option.id = `${listId}-${i}`;
         option.setAttribute('role', 'option');
         option.setAttribute('aria-selected', 'false');
-        option.textContent = place.label;
+        // The place on one line, where it is on the next, as a map's own search shows them.
+        const name = doc.createElement('span');
+        name.className = 'fd-map-result-name';
+        name.textContent = place.label;
+        option.append(name);
+        if (place.detail) {
+          const detail = doc.createElement('span');
+          detail.className = 'fd-map-result-detail';
+          detail.textContent = place.detail;
+          option.append(detail);
+        }
         // Picked on the press, the box keeping its focus.
         option.addEventListener('mousedown', (event) => event.preventDefault());
         option.addEventListener('click', () => choose(place));
@@ -104,7 +116,7 @@ export function searchBox(options: SearchBoxOptions) {
     clearTimeout(timer);
     const text = input.value.trim();
     asking?.abort();
-    if (text.length < (options.asYouType ? 3 : 1)) {
+    if (text.length < (options.asYouType ? 2 : 1)) {
       close();
       options.say(null);
       return;
@@ -112,7 +124,7 @@ export function searchBox(options: SearchBoxOptions) {
     const mine = (asking = new AbortController());
     options.say(labels.searching);
     options
-      .search({ text, near: options.near(), locale: options.locale, signal: mine.signal })
+      .search({ text, near: options.near(), zoom: options.zoom?.(), locale: options.locale, signal: mine.signal })
       .then((found) => mine === asking && show(found))
       .catch((error: Error) => {
         if (mine !== asking || error.name === 'AbortError') return;
@@ -127,7 +139,7 @@ export function searchBox(options: SearchBoxOptions) {
       return;
     }
     clearTimeout(timer);
-    timer = setTimeout(run, 350);
+    timer = setTimeout(run, 250);
   });
   input.addEventListener('keydown', (event) => {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -138,7 +150,8 @@ export function searchBox(options: SearchBoxOptions) {
     } else if (event.key === 'Enter') {
       // Never the form's own Enter.
       event.preventDefault();
-      if (!list.hidden && active >= 0) choose(places[active]);
+      // Enter takes the place chosen with the arrows, or the first: the one nearest and likeliest.
+      if (!list.hidden && places.length) choose(places[Math.max(active, 0)]);
       else run();
     } else if (event.key === 'Escape') {
       if (!list.hidden) {

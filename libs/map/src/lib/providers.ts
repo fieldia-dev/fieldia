@@ -32,7 +32,10 @@ export interface MapView {
 }
 
 export interface PlaceFound {
+  /** The place itself: a name, or a street and its number. */
   label: string;
+  /** Where it is, on the line under it: its district, city, country. */
+  detail?: string;
   lat: number;
   lng: number;
 }
@@ -41,6 +44,8 @@ export interface SearchRequest {
   text: string;
   /** Where the map is: results near it first. */
   near?: LatLng;
+  /** How close the map is, for how far "near" reaches. */
+  zoom?: number;
   locale: Locale;
   signal?: AbortSignal;
 }
@@ -81,57 +86,124 @@ type Json = { [key: string]: unknown };
 const isObject = (value: unknown): value is Json => typeof value === 'object' && value !== null && !Array.isArray(value);
 const pathOf = (value: unknown, ...path: string[]): unknown => path.reduce<unknown>((at, key) => (isObject(at) ? at[key] : undefined), value);
 
-/** Places from a GeoJSON FeatureCollection, each named by the first of `labels` it has. */
-function placesFrom(collection: unknown, ...labels: string[][]): PlaceFound[] {
+/** The words of a list that are there, once each, joined: "Downtown, Cairo, Egypt". */
+const joined = (...parts: unknown[]) => {
+  const seen: string[] = [];
+  for (const part of parts) if (typeof part === 'string' && part.trim() && !seen.includes(part.trim())) seen.push(part.trim());
+  return seen.join(', ');
+};
+
+/** Places from a GeoJSON FeatureCollection: each named by the first of `labels` it has, with the line under it from `detail`. */
+function placesFrom(collection: unknown, labels: string[][], detail?: (properties: unknown) => string): PlaceFound[] {
   const features = pathOf(collection, 'features');
   if (!Array.isArray(features)) return [];
   return features.flatMap((feature) => {
     const [lng, lat] = (pathOf(feature, 'geometry', 'coordinates') as number[] | undefined) ?? [];
     const label = labels.map((path) => pathOf(feature, ...path)).find((text) => typeof text === 'string' && text.trim());
-    return typeof lat === 'number' && typeof lng === 'number' && typeof label === 'string' ? [{ label, lat, lng }] : [];
+    if (typeof lat !== 'number' || typeof lng !== 'number' || typeof label !== 'string') return [];
+    const under = detail?.(pathOf(feature, 'properties'));
+    return [{ label, ...(under && under !== label ? { detail: under } : {}), lat, lng }];
   });
 }
 
 // ---------------------------------------------------------------------------
 
 export interface OpenStreetMapOptions {
+  /**
+   * Whose search: Photon (komoot's, on OpenStreetMap's data), which answers as
+   * people type, nearest the map first; or Nominatim, OpenStreetMap's own,
+   * whose policy allows a search only when Enter is pressed.
+   */
+  search?: 'photon' | 'nominatim';
+  /** Photon's address, for a copy of it the app runs: `https://photon.komoot.io` unless said. */
+  photonUrl?: string;
   fetch?: Fetch;
 }
 
+/** Languages Photon names places in; in any other it gives the places' own names. */
+const PHOTON_LANGUAGES = new Set(['en', 'de', 'fr']);
+
+/** Photon's places: each one's name (or its street and number) on one line, where it is on the next. */
+function photonPlaces(found: unknown): PlaceFound[] {
+  const features = pathOf(found, 'features');
+  if (!Array.isArray(features)) return [];
+  return features.flatMap((feature) => {
+    const [lng, lat] = (pathOf(feature, 'geometry', 'coordinates') as number[] | undefined) ?? [];
+    const p = pathOf(feature, 'properties');
+    const name = pathOf(p, 'name');
+    const label = typeof name === 'string' && name.trim() ? name.trim() : streetOf(p);
+    if (typeof lat !== 'number' || typeof lng !== 'number' || !label) return [];
+    // Under a named place, its street when it has one; then its district, city and country.
+    const detail = joined(label === streetOf(p) ? '' : streetOf(p), pathOf(p, 'district'), pathOf(p, 'city'), pathOf(p, 'state'), pathOf(p, 'country'));
+    return [{ label, ...(detail ? { detail } : {}), lat, lng }];
+  });
+}
+
 /**
- * OpenStreetMap's own map images and Nominatim's search: free, for demos and
- * development only. Their usage policies treat an app in production as heavy
- * use, and Nominatim's forbids searching as people type.
+ * OpenStreetMap's own map images, for demos and development only (its usage
+ * policy treats an app in production as heavy use), with Photon's search,
+ * which answers as people type, or Nominatim's.
  */
 export function openStreetMap(options: OpenStreetMapOptions = {}): MapProvider {
   const fetchWith = options.fetch ?? ((...args: Parameters<Fetch>) => globalThis.fetch(...args));
-  return {
+  const photon = (options.photonUrl ?? 'https://photon.komoot.io').replace(/\/$/, '');
+  const base = {
     id: 'openstreetmap',
     demoOnly: true,
-    searchAsYouType: false,
-    async tiles(kind) {
+    async tiles(kind: BaseMap) {
       return kind === 'road' ? { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', maxZoom: 19 } : null;
     },
     async credits() {
       return [{ text: '© OpenStreetMap contributors', href: 'https://www.openstreetmap.org/copyright' }];
     },
-    async search({ text, locale, signal }) {
-      const found = await getJson(fetchWith, `https://nominatim.openstreetmap.org/search?${query({ format: 'jsonv2', limit: 5, q: text, 'accept-language': locale })}`, { signal });
-      return Array.isArray(found)
-        ? found.flatMap((place) => {
-            const lat = Number(pathOf(place, 'lat'));
-            const lng = Number(pathOf(place, 'lon'));
-            const label = pathOf(place, 'display_name');
-            return Number.isFinite(lat) && Number.isFinite(lng) && typeof label === 'string' ? [{ label, lat, lng }] : [];
-          })
-        : [];
+  };
+  if (options.search === 'nominatim') {
+    return {
+      ...base,
+      searchAsYouType: false,
+      async search({ text, locale, signal }) {
+        const found = await getJson(fetchWith, `https://nominatim.openstreetmap.org/search?${query({ format: 'jsonv2', limit: 5, q: text, 'accept-language': locale })}`, { signal });
+        return Array.isArray(found)
+          ? found.flatMap((place) => {
+              const lat = Number(pathOf(place, 'lat'));
+              const lng = Number(pathOf(place, 'lon'));
+              const whole = pathOf(place, 'display_name');
+              if (!Number.isFinite(lat) || !Number.isFinite(lng) || typeof whole !== 'string') return [];
+              const name = pathOf(place, 'name');
+              const label = typeof name === 'string' && name.trim() ? name : whole.split(',')[0];
+              const rest = whole.split(',').map((part) => part.trim()).filter((part, i) => !(i === 0 && part === label));
+              return [{ label, ...(rest.length ? { detail: rest.join(', ') } : {}), lat, lng }];
+            })
+          : [];
+      },
+      async reverse({ lat, lng, locale, signal }) {
+        const found = await getJson(fetchWith, `https://nominatim.openstreetmap.org/reverse?${query({ format: 'jsonv2', lat, lon: lng, 'accept-language': locale })}`, { signal });
+        const label = pathOf(found, 'display_name');
+        return typeof label === 'string' ? label : null;
+      },
+    };
+  }
+  const lang = (locale: Locale) => (PHOTON_LANGUAGES.has(locale) ? locale : undefined);
+  return {
+    ...base,
+    searchAsYouType: true,
+    async search({ text, near, zoom, locale, signal }) {
+      const found = await getJson(fetchWith, `${photon}/api?${query({ q: text, limit: 6, lang: lang(locale), lat: near?.lat, lon: near?.lng, zoom: near && zoom !== undefined ? Math.round(zoom) : undefined })}`, { signal });
+      return photonPlaces(found);
     },
     async reverse({ lat, lng, locale, signal }) {
-      const found = await getJson(fetchWith, `https://nominatim.openstreetmap.org/reverse?${query({ format: 'jsonv2', lat, lon: lng, 'accept-language': locale })}`, { signal });
-      const label = pathOf(found, 'display_name');
-      return typeof label === 'string' ? label : null;
+      const found = await getJson(fetchWith, `${photon}/reverse?${query({ lat, lon: lng, limit: 1, lang: lang(locale) })}`, { signal });
+      const [place] = photonPlaces(found);
+      return place ? joined(place.label, place.detail) : null;
     },
   };
+}
+
+/** A street with its number, as a place without a name of its own is called. */
+function streetOf(properties: unknown): string {
+  const street = pathOf(properties, 'street');
+  const number = pathOf(properties, 'housenumber');
+  return typeof street === 'string' ? [street, typeof number === 'string' ? number : ''].filter(Boolean).join(' ') : '';
 }
 
 // ---------------------------------------------------------------------------
@@ -180,11 +252,11 @@ export function azureMaps(options: AzureMapsOptions): MapProvider {
     },
     async search({ text, near, locale, signal }) {
       const found = await ask('geocode', { 'api-version': '2023-06-01', top: 5, query: text, coordinates: near ? `${near.lng},${near.lat}` : undefined }, locale, signal);
-      return placesFrom(found, ['properties', 'address', 'formattedAddress']);
+      return placesFrom(found, [['properties', 'address', 'formattedAddress']], (p) => joined(pathOf(p, 'address', 'locality'), pathOf(p, 'address', 'countryRegion', 'name')));
     },
     async reverse({ lat, lng, locale, signal }) {
       const found = await ask('reverseGeocode', { 'api-version': '2023-06-01', coordinates: `${lng},${lat}` }, locale, signal);
-      return placesFrom(found, ['properties', 'address', 'formattedAddress'])[0]?.label ?? null;
+      return placesFrom(found, [['properties', 'address', 'formattedAddress']])[0]?.label ?? null;
     },
   };
 }
@@ -306,10 +378,10 @@ export function mapbox(options: MapboxOptions): MapProvider {
       ];
     },
     async search({ text, near, locale, signal }) {
-      return placesFrom(await ask('forward', { q: text, limit: 5, language: locale, proximity: near ? `${near.lng},${near.lat}` : undefined }, signal), ['properties', 'full_address'], ['properties', 'name']);
+      return placesFrom(await ask('forward', { q: text, limit: 5, language: locale, proximity: near ? `${near.lng},${near.lat}` : undefined }, signal), [['properties', 'name'], ['properties', 'full_address']], (p) => joined(pathOf(p, 'place_formatted')));
     },
     async reverse({ lat, lng, locale, signal }) {
-      return placesFrom(await ask('reverse', { longitude: lng, latitude: lat, language: locale, limit: 1 }, signal), ['properties', 'full_address'], ['properties', 'name'])[0]?.label ?? null;
+      return placesFrom(await ask('reverse', { longitude: lng, latitude: lat, language: locale, limit: 1 }, signal), [['properties', 'full_address'], ['properties', 'name']])[0]?.label ?? null;
     },
   };
 }
