@@ -2,6 +2,7 @@ import type { ActionRequest, Locale, Theme } from '@fieldia/core';
 import { FieldiaForm, useFormState, type FieldComponentProps, type SlotComponentProps } from '@fieldia/react';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
+import { demoMapWidgets } from '../shared/maps';
 import type { Skin } from '@fieldia/viewer';
 import { StrictMode, useEffect, useRef, useState } from 'react';
 import { chatterSlot } from '@fieldia/chatter';
@@ -70,7 +71,7 @@ function Demo() {
         return answerAction(request, params.get('locale') ?? undefined);
       }}
       fieldTypes={{ 'char.shout': Shout }}
-      widgets={{ ...gridWidgets, ...codeWidgets }}
+      widgets={{ ...gridWidgets, ...codeWidgets, ...demoMapWidgets }}
       pages={appPages}
       {...optionsFromQuery(params)}
       slots={{ chatter: Chatter, note: Note }}

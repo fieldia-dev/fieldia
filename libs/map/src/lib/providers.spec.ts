@@ -1,0 +1,142 @@
+/** @jest-environment node */
+import { azureMaps, googleMaps, mapbox, openStreetMap, tiles } from './providers';
+
+/** A stand-in for the network: every request kept, each answered from the table by the start of its URL. */
+function network(answers: Record<string, unknown>) {
+  const asked: { url: string; init?: RequestInit }[] = [];
+  const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    asked.push({ url, init });
+    const key = Object.keys(answers).find((start) => url.startsWith(start));
+    if (!key) return new Response('not found', { status: 404 });
+    return new Response(JSON.stringify(answers[key]), { status: 200, headers: { 'content-type': 'application/json' } });
+  }) as typeof globalThis.fetch;
+  return { fetch, asked };
+}
+
+const view = { zoom: 12, bounds: { south: 29.9, west: 31.1, north: 30.2, east: 31.4 } };
+
+describe('OpenStreetMap', () => {
+  it('draws its own map images with its credit, for demos only', async () => {
+    const osm = openStreetMap();
+    expect(osm.demoOnly).toBe(true);
+    expect(await osm.tiles('road', 'en')).toEqual({ url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', maxZoom: 19 });
+    expect(await osm.tiles('satellite', 'en')).toBeNull();
+    expect(await osm.credits('road', view, 'en')).toEqual([{ text: '© OpenStreetMap contributors', href: 'https://www.openstreetmap.org/copyright' }]);
+  });
+
+  it('searches Nominatim only when asked, never as people type', async () => {
+    const { fetch, asked } = network({ 'https://nominatim.openstreetmap.org/search': [{ lat: '30.0444', lon: '31.2357', display_name: 'Cairo, Egypt' }] });
+    const osm = openStreetMap({ fetch });
+    expect(osm.searchAsYouType).toBe(false);
+    expect(await osm.search!({ text: 'cairo', locale: 'ar' })).toEqual([{ label: 'Cairo, Egypt', lat: 30.0444, lng: 31.2357 }]);
+    expect(asked[0].url).toBe('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=cairo&accept-language=ar');
+  });
+});
+
+describe('Azure Maps', () => {
+  it('draws road, dark and satellite map images in the page’s language, the key in the address', async () => {
+    const azure = azureMaps({ key: 'K' });
+    const road = await azure.tiles('road', 'ar');
+    // Azure refuses "ar-001" and every other tag it does not list: Arabic is plain "ar".
+    expect(road?.url).toBe('https://atlas.microsoft.com/map/tile?api-version=2024-04-01&tilesetId=microsoft.base.road&zoom={z}&x={x}&y={y}&tileSize=256&language=ar&view=Auto&subscription-key=K');
+    expect((await azure.tiles('dark', 'en'))?.url).toContain('tilesetId=microsoft.base.darkgrey');
+    expect((await azure.tiles('satellite', 'fr'))?.url).toContain('tilesetId=microsoft.imagery');
+    expect((await azure.tiles('road', 'de'))?.url).toContain('language=de-DE');
+  });
+
+  it('sends a token in a header instead, when the app gives one', async () => {
+    const azure = azureMaps({ token: async () => 'T', clientId: 'C' });
+    const road = await azure.tiles('road', 'en');
+    expect(road?.url).not.toContain('subscription-key');
+    expect(await road?.headers?.()).toEqual({ Authorization: 'Bearer T', 'x-ms-client-id': 'C' });
+  });
+
+  it('reads its credits for the view from its attribution service', async () => {
+    const { fetch, asked } = network({ 'https://atlas.microsoft.com/map/attribution': { copyrights: ['© 2026 TomTom', '© 2026 Microsoft Corporation'] } });
+    const azure = azureMaps({ key: 'K', fetch });
+    expect(await azure.credits('road', view, 'en')).toEqual([{ text: '© 2026 TomTom' }, { text: '© 2026 Microsoft Corporation' }]);
+    expect(asked[0].url).toBe('https://atlas.microsoft.com/map/attribution?api-version=2024-04-01&tilesetId=microsoft.base.road&zoom=12&bounds=31.1%2C29.9%2C31.4%2C30.2&subscription-key=K');
+  });
+
+  it('keeps a credit when its attribution service fails', async () => {
+    const { fetch } = network({});
+    expect(await azureMaps({ key: 'K', fetch }).credits('road', view, 'en')).toEqual([{ text: '© Microsoft' }]);
+  });
+
+  it('searches addresses near the map, and names a place', async () => {
+    const found = {
+      type: 'FeatureCollection',
+      features: [
+        { type: 'Feature', geometry: { type: 'Point', coordinates: [31.2357, 30.0444] }, properties: { type: 'Address', address: { formattedAddress: '1 Tahrir Square, Cairo' } } },
+      ],
+    };
+    const { fetch, asked } = network({ 'https://atlas.microsoft.com/geocode': found, 'https://atlas.microsoft.com/reverseGeocode': found });
+    const azure = azureMaps({ key: 'K', fetch });
+    expect(azure.searchAsYouType).toBe(true);
+    expect(await azure.search!({ text: 'tahrir', near: { lat: 30, lng: 31 }, locale: 'ar' })).toEqual([{ label: '1 Tahrir Square, Cairo', lat: 30.0444, lng: 31.2357 }]);
+    expect(asked[0].url).toBe('https://atlas.microsoft.com/geocode?api-version=2023-06-01&top=5&query=tahrir&coordinates=31%2C30&subscription-key=K');
+    expect((asked[0].init?.headers as Record<string, string>)['Accept-Language']).toBe('ar');
+    expect(await azure.reverse!({ lat: 30.0444, lng: 31.2357, locale: 'en' })).toBe('1 Tahrir Square, Cairo');
+  });
+});
+
+describe('Google', () => {
+  const session = { session: 'S1', expiry: '1893456000', tileWidth: 256, tileHeight: 256, imageFormat: 'png' };
+
+  it('opens a session for its map images, once for each kind and language', async () => {
+    const { fetch, asked } = network({ 'https://tile.googleapis.com/v1/createSession': session });
+    const google = googleMaps({ key: 'G', region: 'EG', fetch });
+    const road = await google.tiles('road', 'ar');
+    expect(road).toEqual({ url: 'https://tile.googleapis.com/v1/2dtiles/{z}/{x}/{y}?session=S1&key=G', maxZoom: 22 });
+    await google.tiles('road', 'ar');
+    expect(asked).toHaveLength(1);
+    expect(asked[0].url).toBe('https://tile.googleapis.com/v1/createSession?key=G');
+    expect(JSON.parse(String(asked[0].init?.body))).toEqual({ mapType: 'roadmap', language: 'ar', region: 'EG' });
+    await google.tiles('satellite', 'ar');
+    expect(JSON.parse(String(asked[1].init?.body))).toMatchObject({ mapType: 'satellite' });
+    // Google's map images have no dark kind through this service.
+    expect(await google.tiles('dark', 'ar')).toBeNull();
+  });
+
+  it('shows its credits for the view, and its name where its logo goes', async () => {
+    const { fetch, asked } = network({ 'https://tile.googleapis.com/v1/createSession': session, 'https://tile.googleapis.com/tile/v1/viewport': { copyright: 'Map data ©2026 Google', maxZoomRects: [] } });
+    const google = googleMaps({ key: 'G', fetch });
+    expect(await google.credits('road', view, 'en')).toEqual([{ text: 'Map data ©2026 Google' }]);
+    expect(asked[1].url).toBe('https://tile.googleapis.com/tile/v1/viewport?session=S1&key=G&zoom=12&north=30.2&south=29.9&east=31.4&west=31.1');
+    expect(google.logo).toEqual({ text: 'Google Maps' });
+    expect(googleMaps({ key: 'G', logo: '/google.png' }).logo).toEqual({ text: 'Google Maps', image: '/google.png' });
+    // No address search of its own here: the app passes one.
+    expect(google.search).toBeUndefined();
+  });
+});
+
+describe('Mapbox', () => {
+  it('draws its styles at 512 pixels, with its credits and its name', async () => {
+    const box = mapbox({ token: 'M' });
+    expect(await box.tiles('road', 'en')).toEqual({ url: 'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/512/{z}/{x}/{y}@2x?access_token=M', maxZoom: 22, tileSize: 512, zoomOffset: -1 });
+    expect((await box.tiles('dark', 'en'))?.url).toContain('/mapbox/dark-v11/');
+    expect((await box.tiles('satellite', 'en'))?.url).toContain('/mapbox/satellite-streets-v12/');
+    expect((await box.credits('road', view, 'en')).map((c) => c.text)).toEqual(['© Mapbox', '© OpenStreetMap', 'Improve this map']);
+    expect(box.logo).toEqual({ text: 'mapbox', href: 'https://www.mapbox.com/' });
+  });
+
+  it('searches as people type, asking for results it may keep', async () => {
+    const found = { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: [2.3522, 48.8566] }, properties: { full_address: 'Paris, France' } }] };
+    const { fetch, asked } = network({ 'https://api.mapbox.com/search/geocode/v6/forward': found, 'https://api.mapbox.com/search/geocode/v6/reverse': found });
+    const box = mapbox({ token: 'M', fetch });
+    expect(await box.search!({ text: 'paris', near: { lat: 48, lng: 2 }, locale: 'fr' })).toEqual([{ label: 'Paris, France', lat: 48.8566, lng: 2.3522 }]);
+    expect(asked[0].url).toBe('https://api.mapbox.com/search/geocode/v6/forward?q=paris&limit=5&language=fr&proximity=2%2C48&permanent=true&access_token=M');
+    expect(await box.reverse!({ lat: 48.8566, lng: 2.3522, locale: 'en' })).toBe('Paris, France');
+  });
+});
+
+describe('any map images', () => {
+  it('draws from the app’s own address, with its own credit', async () => {
+    const own = tiles({ url: 'https://maps.example.com/{z}/{x}/{y}.png', credit: { text: '© Example' }, darkUrl: 'https://maps.example.com/dark/{z}/{x}/{y}.png' });
+    expect(await own.tiles('road', 'en')).toEqual({ url: 'https://maps.example.com/{z}/{x}/{y}.png', maxZoom: 19 });
+    expect((await own.tiles('dark', 'en'))?.url).toBe('https://maps.example.com/dark/{z}/{x}/{y}.png');
+    expect(await own.tiles('satellite', 'en')).toBeNull();
+    expect(await own.credits('road', view, 'en')).toEqual([{ text: '© Example' }]);
+  });
+});

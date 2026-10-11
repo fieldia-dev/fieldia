@@ -2,6 +2,8 @@ import { createMemoryDataSource, type FormUser, type JsonValue, type Line, type 
 import type { PageRequest } from '@fieldia/viewer';
 import address from '../../examples/pages/address.page.json';
 import delivery from '../../examples/pages/delivery.page.json';
+import mapDelivery from '../../examples/pages/map-delivery.page.json';
+import mapZone from '../../examples/pages/map-zone.page.json';
 import customer from '../../examples/pages/customer.page.json';
 import fields from '../../examples/pages/fields.page.json';
 import kinds from '../../examples/pages/kinds.page.json';
@@ -44,6 +46,9 @@ export const pages: Record<string, Page> = {
   delivery: delivery as Page,
   // Its buttons and moments run steps: a page opened by its id (see `openedPages`), the app's answers (shared/order-desk.ts).
   'quick-order': quickOrder as Page,
+  // A place and an area on a map: @fieldia/map, on OpenStreetMap (shared/maps.ts).
+  'map-delivery': mapDelivery as Page,
+  'map-zone': mapZone as Page,
   // 500 fields, for timing: e2e/perf.spec.ts opens it; no card in the gallery (see e2e/demos-shell.spec.ts).
   big: big as Page,
   // How a dense sheet reads, as Flectra's: values as words, formatted stat buttons, links with pictures, lines, alerts, keys, ribbons.

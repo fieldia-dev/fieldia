@@ -1,8 +1,8 @@
-import type { Page } from '@fieldia/core';
+import type { Locale, Page } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, mountSurveyEditor } from '@fieldia/designer';
 import { APP_LISTS, APP_LISTS_AR, pages, sampleDataSource } from '../shared/sample-data';
 import type { Skin } from '@fieldia/viewer';
-import { APP_KINDS, APP_WIDGETS } from '../shared/app-kinds';
+import { APP_WIDGETS, appKinds } from '../shared/app-kinds';
 import { demoAssistant } from '../shared/assistant';
 import { bigSurvey } from '../shared/big-page';
 import { timeFirstPaint } from '../shared/timing';
@@ -29,7 +29,7 @@ const start = template ? (structuredClone(template) as Page) : params.get('start
 const assistant = demoAssistant({ delay: Number(params.get('assistant-delay') ?? 1200), locale });
 const opened = timeFirstPaint('designer');
 // No `looks` given: the looks people save are kept in this browser, and offered by both designer demos.
-const designer = createDesigner({ page: start, store, lists: arabic ? APP_LISTS_AR : APP_LISTS, kinds: APP_KINDS, assistant, locale });
+const designer = createDesigner({ page: start, store, lists: arabic ? APP_LISTS_AR : APP_LISTS, kinds: appKinds(locale as Locale | undefined), assistant, locale });
 const handle = mountSurveyEditor(document.getElementById('app') as HTMLElement, { designer, skin: (params.get('skin') as Skin) ?? 'outlined', dataSource: sampleDataSource(), widgets: APP_WIDGETS });
 opened();
 Object.assign(window, { fieldiaDesigner: { designer, store, handle } });

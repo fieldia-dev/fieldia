@@ -1,9 +1,9 @@
-import { localizePage, type Field, type Page } from '@fieldia/core';
+import { localizePage, type Field, type Locale, type Page } from '@fieldia/core';
 import { blankPage, createDesigner, createMemoryPageStore, mountScreenEditor } from '@fieldia/designer';
 import type { Skin } from '@fieldia/viewer';
 import { APP_LISTS, APP_LISTS_AR, pages, sampleDataSource } from '../shared/sample-data';
 import { codeWidgets } from '@fieldia/code';
-import { APP_KINDS, APP_WIDGETS } from '../shared/app-kinds';
+import { APP_WIDGETS, appKinds } from '../shared/app-kinds';
 import { demoAssistant } from '../shared/assistant';
 import { timeFirstPaint } from '../shared/timing';
 import layoutPage from '../../examples/pages/layout.page.json';
@@ -147,7 +147,7 @@ const opened = timeFirstPaint('screen');
 const lists = arabic ? APP_LISTS_AR : APP_LISTS;
 /** “Open it” on a saved form: the editor closes, and opens that form from the store. */
 const openForm = (id: string) => void reopen(id);
-const designer = createDesigner({ page: first, store, model, lists, kinds: APP_KINDS, openForm, locale });
+const designer = createDesigner({ page: first, store, model, lists, kinds: appKinds(locale as Locale | undefined), openForm, locale });
 // The app's lists' choices, for Try it.
 const dataSource = sampleDataSource();
 const skin = (params.get('skin') as Skin) ?? 'outlined';
@@ -161,7 +161,7 @@ opened();
 /** Close the editor and open the page again from the store, as an app does the next day — or another page, a saved form opened. */
 async function reopen(id = demo.designer.getPage().id) {
   demo.handle.destroy();
-  demo.designer = await createDesigner.open(id, store, { model, lists, kinds: APP_KINDS, openForm, locale });
+  demo.designer = await createDesigner.open(id, store, { model, lists, kinds: appKinds(locale as Locale | undefined), openForm, locale });
   demo.handle = mountScreenEditor(app, { designer: demo.designer, skin, dataSource, widgets, assistant });
 }
 Object.assign(window, { fieldiaDesigner: demo });
