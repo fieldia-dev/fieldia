@@ -1,0 +1,64 @@
+{
+  "fieldia": "0.1",
+  "id": "map-zone",
+  "title": "Delivery zone",
+  "description": "A zone drawn on the map as a polygon, a box or a circle, or chosen from the named ones, with its fee and its time.",
+  "data": { "kind": "responses" },
+  "fields": {
+    "name": { "type": "char", "label": "Zone name", "required": true },
+    "zone": { "type": "json", "label": "Area", "required": true, "help": "Draw the zone, or choose a named one. Drag its points to change it." },
+    "fee": { "type": "monetary", "label": "Delivery fee", "currency": "EGP" },
+    "minutes": { "type": "integer", "label": "Minutes to deliver" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "zone-form",
+    "children": [
+      {
+        "type": "section",
+        "id": "zone-parts",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "name", "field": "name", "colspan": 2 },
+          {
+            "type": "field",
+            "id": "zone",
+            "field": "zone",
+            "colspan": 2,
+            "widget": "area",
+            "options": {
+              "height": 360,
+              "areas": [
+                {
+                  "label": "Zamalek (about)",
+                  "value": { "type": "Feature", "properties": { "shape": "polygon" }, "geometry": { "type": "Polygon", "coordinates": [[[31.2205, 30.0495], [31.2265, 30.0555], [31.2255, 30.0705], [31.2185, 30.0735], [31.2155, 30.0605], [31.2205, 30.0495]]] } }
+                },
+                {
+                  "label": "Downtown (about)",
+                  "value": { "type": "Feature", "properties": { "shape": "box" }, "geometry": { "type": "Polygon", "coordinates": [[[31.235, 30.04], [31.25, 30.04], [31.25, 30.055], [31.235, 30.055], [31.235, 30.04]]] } }
+                },
+                {
+                  "label": "Within 2 km of Tahrir Square",
+                  "value": { "type": "Feature", "properties": { "shape": "circle", "radius": 2000 }, "geometry": { "type": "Point", "coordinates": [31.2357, 30.0444] } }
+                }
+              ]
+            }
+          },
+          { "type": "field", "id": "fee", "field": "fee" },
+          { "type": "field", "id": "minutes", "field": "minutes" }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Delivery zone": "منطقة التوصيل",
+      "A zone drawn on the map as a polygon, a box or a circle, or chosen from the named ones, with its fee and its time.": "منطقة تُرسم على الخريطة مضلّعًا أو مستطيلًا أو دائرة، أو تُختار من المناطق المسمّاة، مع رسومها ووقتها.",
+      "Zone name": "اسم المنطقة",
+      "Area": "المنطقة",
+      "Draw the zone, or choose a named one. Drag its points to change it.": "ارسم المنطقة أو اختر واحدة مسمّاة. اسحب نقاطها لتغييرها.",
+      "Delivery fee": "رسوم التوصيل",
+      "Minutes to deliver": "دقائق التوصيل"
+    }
+  }
+}

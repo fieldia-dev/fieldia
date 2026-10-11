@@ -226,7 +226,11 @@ export function googleMaps(options: GoogleMapsOptions): MapProvider {
         if (typeof value !== 'string') throw new Error('Google gave no session');
         const expiry = Number(pathOf(answer, 'expiry')) * 1000;
         // A session lasts about two weeks; one near its end is opened again.
-        if (Number.isFinite(expiry)) setTimeout(() => sessions.delete(id), Math.max(0, expiry - Date.now() - 3_600_000)).unref?.();
+        if (Number.isFinite(expiry)) {
+          const timer = setTimeout(() => sessions.delete(id), Math.min(2 ** 31 - 1, Math.max(0, expiry - Date.now() - 3_600_000)));
+          // In Node (a test, a server), a timer waiting two weeks must not keep the process alive.
+          (timer as unknown as { unref?: () => void }).unref?.();
+        }
         return { session: value, expiry };
       });
       opening.catch(() => sessions.delete(id));

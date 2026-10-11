@@ -1,0 +1,58 @@
+{
+  "fieldia": "0.1",
+  "id": "map-delivery",
+  "title": "Where to deliver",
+  "description": "A delivery address with its place on a map: found by searching, by a press on the map, or from where you are.",
+  "data": { "kind": "responses" },
+  "fields": {
+    "deliver_to": { "type": "json", "label": "Delivery to", "required": true, "help": "Search for the address, or press the map where the door is." },
+    "street": { "type": "char", "label": "Address" },
+    "flat": { "type": "char", "label": "Building, floor or flat" },
+    "customer": { "type": "char", "label": "Name", "required": true },
+    "phone": { "type": "char", "label": "Phone" },
+    "notes": { "type": "text", "label": "Notes for the courier" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "delivery",
+    "children": [
+      {
+        "type": "section",
+        "id": "where",
+        "title": "Where",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "deliver_to", "field": "deliver_to", "colspan": 2, "widget": "place", "options": { "addressField": "street", "zoom": 17 } },
+          { "type": "field", "id": "street", "field": "street", "colspan": 2 },
+          { "type": "field", "id": "flat", "field": "flat", "colspan": 2 }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "who",
+        "title": "Who",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "customer", "field": "customer" },
+          { "type": "field", "id": "phone", "field": "phone" },
+          { "type": "field", "id": "notes", "field": "notes", "colspan": 2 }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "Where to deliver": "مكان التوصيل",
+      "A delivery address with its place on a map: found by searching, by a press on the map, or from where you are.": "عنوان توصيل ومكانه على الخريطة: بالبحث، أو بالضغط على الخريطة، أو من حيث أنت.",
+      "Delivery to": "التوصيل إلى",
+      "Search for the address, or press the map where the door is.": "ابحث عن العنوان، أو اضغط على الخريطة حيث الباب.",
+      "Address": "العنوان",
+      "Building, floor or flat": "المبنى أو الطابق أو الشقة",
+      "Name": "الاسم",
+      "Phone": "الهاتف",
+      "Notes for the courier": "ملاحظات لمندوب التوصيل",
+      "Where": "أين",
+      "Who": "مَن"
+    }
+  }
+}

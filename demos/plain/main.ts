@@ -3,6 +3,7 @@ import { mountViewer, type FormDialogResult, type Skin } from '@fieldia/viewer';
 import type { WidgetFactory } from '@fieldia/widgets';
 import { gridWidgets } from '@fieldia/grid';
 import { codeWidgets } from '@fieldia/code';
+import { demoMapWidgets } from '../shared/maps';
 import { clicked, greeting, shout } from '../shared/custom-page';
 import { chatterSlot } from '@fieldia/chatter';
 import { sampleChatter } from '../shared/sample-chatter';
@@ -61,7 +62,7 @@ const handle = mountViewer(document.getElementById('app') as HTMLElement, {
     // The shop's answers to the pages' steps: the stock checked for "Order by phone".
     return answerAction(request, params.get('locale') ?? undefined);
   },
-  widgets: { 'char.shout': shoutWidget, ...gridWidgets, ...codeWidgets },
+  widgets: { 'char.shout': shoutWidget, ...gridWidgets, ...codeWidgets, ...demoMapWidgets },
   pages: appPages,
   ...optionsFromQuery(params),
   slots: {

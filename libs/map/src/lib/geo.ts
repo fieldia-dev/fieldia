@@ -20,6 +20,9 @@ export type Area =
   | { shape: 'polygon' | 'box'; points: LatLng[] }
   | { shape: 'circle'; center: LatLng; radius: number };
 
+export type PointsArea = Extract<Area, { points: LatLng[] }>;
+export type CircleArea = Extract<Area, { shape: 'circle' }>;
+
 export interface Bounds {
   south: number;
   west: number;

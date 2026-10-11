@@ -39,9 +39,18 @@ export interface MapLabels {
   centre: string;
   edge: string;
   gripKeys: string;
+  drawKeys: string;
+  addPoint: string;
   placeKind: string;
   areaKind: string;
   mapsGroup: string;
+  settingMyLocation: string;
+  settingSearch: string;
+  settingHeight: string;
+  heightSmall: string;
+  heightMedium: string;
+  heightLarge: string;
+  settingShapes: string;
 }
 
 export const MAP_LABELS: Record<Locale, MapLabels> = {
@@ -82,9 +91,18 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     centre: 'Centre',
     edge: 'Edge',
     gripKeys: 'Arrow keys move it.',
+    drawKeys: 'With the keyboard: Space puts a point at the centre of the map, Enter finishes, Backspace takes the last point back, Escape stops.',
+    addPoint: 'Drag to add a point here',
     placeKind: 'Place',
     areaKind: 'Area',
     mapsGroup: 'Maps',
+    settingMyLocation: '“My location” button',
+    settingSearch: 'Address search',
+    settingHeight: 'Map height',
+    heightSmall: 'Small',
+    heightMedium: 'Medium',
+    heightLarge: 'Large',
+    settingShapes: 'Shapes',
   },
   ar: {
     mapOf: '{label}، خريطة',
@@ -123,9 +141,18 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     centre: 'المركز',
     edge: 'الحافة',
     gripKeys: 'تحرّكها مفاتيح الأسهم.',
+    drawKeys: 'بلوحة المفاتيح: تضع المسافة نقطة في وسط الخريطة، وينهي Enter الرسم، ويحذف Backspace آخر نقطة، ويوقف Escape الرسم.',
+    addPoint: 'اسحب لإضافة نقطة هنا',
     placeKind: 'مكان',
     areaKind: 'منطقة',
     mapsGroup: 'الخرائط',
+    settingMyLocation: 'زر «موقعي»',
+    settingSearch: 'البحث عن عنوان',
+    settingHeight: 'ارتفاع الخريطة',
+    heightSmall: 'صغير',
+    heightMedium: 'متوسط',
+    heightLarge: 'كبير',
+    settingShapes: 'الأشكال',
   },
   fr: {
     mapOf: '{label}, carte',
@@ -164,9 +191,18 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     centre: 'Centre',
     edge: 'Bord',
     gripKeys: 'Les flèches le déplacent.',
+    drawKeys: 'Au clavier : Espace place un point au centre de la carte, Entrée termine, Retour arrière retire le dernier point, Échap arrête.',
+    addPoint: 'Faites glisser pour ajouter un point ici',
     placeKind: 'Lieu',
     areaKind: 'Zone',
     mapsGroup: 'Cartes',
+    settingMyLocation: 'Bouton « Ma position »',
+    settingSearch: 'Recherche d’adresse',
+    settingHeight: 'Hauteur de la carte',
+    heightSmall: 'Petite',
+    heightMedium: 'Moyenne',
+    heightLarge: 'Grande',
+    settingShapes: 'Formes',
   },
   de: {
     mapOf: '{label}, Karte',
@@ -205,9 +241,18 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     centre: 'Mitte',
     edge: 'Rand',
     gripKeys: 'Pfeiltasten verschieben ihn.',
+    drawKeys: 'Mit der Tastatur: Leertaste setzt einen Punkt in die Kartenmitte, Eingabe schließt ab, Rücktaste nimmt den letzten Punkt zurück, Escape bricht ab.',
+    addPoint: 'Ziehen, um hier einen Punkt einzufügen',
     placeKind: 'Ort',
     areaKind: 'Gebiet',
     mapsGroup: 'Karten',
+    settingMyLocation: 'Schaltfläche „Mein Standort“',
+    settingSearch: 'Adresssuche',
+    settingHeight: 'Kartenhöhe',
+    heightSmall: 'Klein',
+    heightMedium: 'Mittel',
+    heightLarge: 'Groß',
+    settingShapes: 'Formen',
   },
 };
 

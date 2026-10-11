@@ -196,6 +196,33 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'map-delivery',
+    name: 'A place on a map',
+    category: 'fields',
+    query: 'page=map-delivery&skin=outlined',
+    blurb: 'A delivery address with its place on a map: found by searching, by a press on the map, from where you are, or typed as coordinates. Any map provider; OpenStreetMap here.',
+    howTo: [
+      'Type an address in the search box and press Enter, then pick a place from the list: the pin drops there and Address fills in.',
+      'Press the map anywhere: the pin moves there. Drag it to the door.',
+      'Tab to the map and press Enter: the place goes to the cross at its centre. The arrow keys move the map, plus and minus zoom.',
+      'Type a latitude and a longitude under the map: the pin follows.',
+    ],
+  },
+  {
+    id: 'map-zone',
+    name: 'An area on a map',
+    category: 'fields',
+    query: 'page=map-zone&skin=outlined',
+    blurb: 'A delivery zone drawn as a polygon, a box or a circle, or chosen from named ones, kept as GeoJSON. Its points, corners and edge drag to change it.',
+    howTo: [
+      'Press Polygon and click points on the map; click the first point again, double-click, or press Enter to close it.',
+      'Press Box and drag across the map, or Circle and drag out from its centre.',
+      'Drag a point or a corner to reshape the area, the small point between two to add one, or the area itself to move it.',
+      'Choose “Within 2 km of Tahrir Square” from the list instead of drawing.',
+      'Without a mouse: Tab to the map, press Space to put points at the cross, and Enter to finish.',
+    ],
+  },
+  {
     id: 'custom',
     name: 'Your own parts',
     category: 'fields',
