@@ -1,5 +1,8 @@
+import type { Locale } from '@fieldia/core';
 import type { AppKind } from '@fieldia/designer';
+import { mapKinds } from '@fieldia/map';
 import type { WidgetFactory } from '@fieldia/widgets';
+import { demoMapWidgets } from './maps';
 
 /**
  * The demos' own kind of field, as an app adds one: an IBAN. It is kept as
@@ -144,6 +147,9 @@ export const IBAN_KIND: AppKind = {
   settings: countrySetting,
 };
 
+/** The app's kinds in the designer's language: its IBAN, and the maps' Place and Area (@fieldia/map). */
+export const appKinds = (locale?: Locale): AppKind[] => [IBAN_KIND, ...mapKinds({ locale })];
+
 /** The app's kinds, and the widgets that draw them, as the demos give them to the designer and the editors. */
-export const APP_KINDS: AppKind[] = [IBAN_KIND];
-export const APP_WIDGETS: Record<string, WidgetFactory> = { 'char.iban': ibanWidget };
+export const APP_KINDS: AppKind[] = appKinds();
+export const APP_WIDGETS: Record<string, WidgetFactory> = { 'char.iban': ibanWidget, ...demoMapWidgets };

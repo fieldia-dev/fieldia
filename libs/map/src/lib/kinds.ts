@@ -36,13 +36,23 @@ const HEIGHTS = [
   ['heightLarge', 400],
 ] as const;
 
+/** A setting: words then a choice, or a tick then its words, as the designer's own ticks read. */
 function row(doc: Document, words: string, control: HTMLElement) {
   const label = doc.createElement('label');
   label.className = 'fd-inline-setting';
   const span = doc.createElement('span');
   span.textContent = words;
-  label.append(span, control);
+  if (control instanceof HTMLInputElement && control.type === 'checkbox') label.append(control, span);
+  else label.append(span, control);
   return label;
+}
+
+/** The settings side by side, spaced so each tick plainly goes with its own words. */
+function settingsRow(doc: Document) {
+  const element = doc.createElement('div');
+  element.className = 'fd-map-settings';
+  element.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;';
+  return element;
 }
 
 function checkbox(doc: Document, onChange: (on: boolean) => void) {
@@ -85,7 +95,7 @@ export function mapKinds(options: { locale?: Locale; labels?: Partial<MapLabels>
       const myLocation = checkbox(doc, (on) => set({ myLocation: on ? null : false }));
       const search = checkbox(doc, (on) => set({ search: on ? null : false }));
       const height = heightSetting(doc, words, set);
-      const element = doc.createElement('div');
+      const element = settingsRow(doc);
       element.append(row(doc, words.settingMyLocation, myLocation), row(doc, words.settingSearch, search), height.element);
       return {
         element,
@@ -107,7 +117,7 @@ export function mapKinds(options: { locale?: Locale; labels?: Partial<MapLabels>
     field: (label) => ({ type: 'json', label }) as Field,
     fits: (field) => field.type === 'json',
     settings({ document: doc, set }) {
-      const element = doc.createElement('div');
+      const element = settingsRow(doc);
       const boxes = (['polygon', 'box', 'circle'] as const).map((shape) => {
         const box = checkbox(doc, () => {
           const on = boxes.filter((b) => b.box.checked).map((b) => b.shape);
@@ -121,8 +131,9 @@ export function mapKinds(options: { locale?: Locale; labels?: Partial<MapLabels>
         element.append(row(doc, words[shape], box));
         return { shape, box };
       });
-      const legend = doc.createElement('p');
-      legend.className = 'fd-inline-setting-title';
+      const legend = doc.createElement('span');
+      legend.className = 'fd-map-settings-title';
+      legend.style.cssText = 'font-weight:600;';
       legend.textContent = words.settingShapes;
       element.prepend(legend);
       const height = heightSetting(doc, words, set);
