@@ -20,6 +20,7 @@ import { customPage } from './custom-page';
 import { BILLS, billAttachments, billNavigation, vendorBill } from './vendor-bill';
 import { real } from './real';
 import { businessData, businessPage } from './business';
+import { codeData, codePage } from './code-page';
 import { templatePages } from './templates';
 
 /** The example pages every demo can show, by name. */
@@ -32,6 +33,8 @@ export const pages: Record<string, Page> = {
   kinds: kinds as Page,
   // The business widgets on one task: shared/business.ts.
   business: businessPage,
+  // Code in its own language, in CodeMirror and in VS Code's editor: shared/code-page.ts.
+  code: codePage,
   order: order as Page,
   rules: rules as Page,
   layout: layout as Page,
@@ -441,7 +444,7 @@ function withReal(options: Parameters<typeof createMemoryDataSource>[0] & object
   };
   return {
     ...options,
-    records: merge(merge(options.records, real.records), businessData.records),
+    records: merge(merge(merge(options.records, real.records), businessData.records), codeData.records),
     onchange: merge(options.onchange, real.onchange),
     warnings: merge(options.warnings, real.warnings),
     lists: { ...options.lists, ...real.lists },
