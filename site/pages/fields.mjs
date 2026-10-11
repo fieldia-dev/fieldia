@@ -17,7 +17,7 @@ const ROWS = [
   ['reference', 'A link to a record of one of several models', '', 'models'],
   ['binary', 'A file, uploaded or dropped; several with multiple, as a list, thumbnails or cards, each opening in a viewer', 'pdf (shown inline)', 'accept, maxSize, multiple, minFiles, maxFiles'],
   ['image', 'An image, with a preview; several with multiple, as thumbnails, cards or a list', '', 'maxSize, multiple, minFiles, maxFiles'],
-  ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code), address, distribution, tax-totals, payments', ''],
+  ['json', 'Structured data, checked as it is typed', 'code (with @fieldia/code), place and area (with @fieldia/map), address, distribution, tax-totals, payments', ''],
   ['properties', 'Extra values, each edited with the field for its type', '', 'definitions, definitionsFrom'],
 ];
 
@@ -413,6 +413,20 @@ import { codeWidgets } from '@fieldia/code';
 
 mountViewer(host, { page, dataSource, widgets: { ...gridWidgets, ...codeWidgets } });
 // a json node with "widget": "code" now shows the editor`
+)}
+
+<h2 id="map">Places and areas on a map</h2>
+<p>${c('@fieldia/map')} adds a place and an area as fields, on the map provider you choose: Azure Maps, Google, Mapbox, your own map images, or OpenStreetMap's for a demo. A place is set by a press on the map, a dragged pin, an address found, typed coordinates or “My location”, and kept as a GeoJSON Point (or in two number fields, as Odoo keeps a partner's place). An area is a polygon, a box or a circle, drawn by mouse, finger or keyboard, reshaped by its grips, and kept as a GeoJSON Feature. Leaflet draws them, loaded only when a map is shown. <a href="/demos/plain/?page=map-delivery&skin=outlined">Try a place</a> · <a href="/demos/plain/?page=map-zone&skin=outlined">try an area</a>.</p>
+${code(
+  'ts',
+  `
+import { mapWidgets, azureMaps } from '@fieldia/map';
+
+mountViewer(host, { page, dataSource, widgets: mapWidgets({
+  provider: azureMaps({ token: () => fetch('/maps/token').then((r) => r.text()) }),
+}) });
+// { "widget": "place", "options": { "addressField": "street" } } on a json field
+// { "widget": "area", "options": { "shapes": ["polygon", "box"] } } on a json field`
 )}
 
 <h2 id="custom">Your own widget</h2>
