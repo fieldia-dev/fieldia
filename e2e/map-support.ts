@@ -83,7 +83,8 @@ export async function zoomOf(map: Locator): Promise<number> {
 }
 
 /** A value of the demo's form. */
-export const valueOf = (page: Page, field: string) => page.evaluate((name) => (window as any).fieldiaDemo.handle.form.getState().values[name], field);
+type Demo = { fieldiaDemo: { handle: { form: { getState(): { values: Record<string, unknown> } } } } };
+export const valueOf = (page: Page, field: string) => page.evaluate((name) => (window as unknown as Demo).fieldiaDemo.handle.form.getState().values[name], field);
 
 /** A point on a map, as a share of its width and height. */
 export async function at(map: Locator, x: number, y: number) {

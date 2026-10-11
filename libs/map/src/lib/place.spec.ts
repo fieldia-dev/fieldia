@@ -1,0 +1,83 @@
+import { createForm, type Field, type FieldNode, type Page } from '@fieldia/core';
+import { createWidget } from '@fieldia/widgets';
+import { tiles } from './providers';
+import { mapWidgets } from './widgets';
+
+/**
+ * The place widget's own parts, without a map on screen (the browser tests
+ * drive the map): kept in two number fields, typed as coordinates, shown
+ * read-only. Leaflet loads in jsdom but draws nothing there.
+ */
+
+const page = {
+  fieldia: '0.1',
+  id: 'site',
+  data: { kind: 'responses' },
+  fields: {
+    lat: { type: 'float', label: 'Latitude of the site' },
+    lng: { type: 'float', label: 'Longitude of the site' },
+    note: { type: 'json', label: 'Elsewhere' },
+  },
+  layout: { type: 'sections', id: 'r', children: [{ type: 'field', id: 'f-lat', field: 'lat', widget: 'place', options: { longitudeField: 'lng', search: false } }] },
+} as unknown as Page;
+
+const widgets = mapWidgets({ provider: tiles({ url: 'https://example.test/{z}/{x}/{y}.png', credit: { text: '© Example' } }) });
+
+function mount(node: FieldNode = (page.layout as { children: FieldNode[] }).children[0], field = 'lat') {
+  const form = createForm({ page });
+  const widget = createWidget({ form, name: field, field: page.fields[field] as Field, node, id: 'fd-site', document, labels: undefined }, widgets);
+  document.body.replaceChildren(widget.element);
+  const refresh = () => {
+    const state = form.getState();
+    widget.update({ value: state.values[field], values: state.values, readonly: form.page === page && readonly, required: false, invalid: false });
+  };
+  let readonly = false;
+  form.subscribe(refresh);
+  refresh();
+  return { form, widget, setReadonly: (on: boolean) => ((readonly = on), refresh()) };
+}
+
+const input = (label: string) => [...document.querySelectorAll('label')].find((l) => l.textContent?.startsWith(label))!.querySelector('input')!;
+
+describe('a place kept in two number fields', () => {
+  it('writes its latitude and its longitude, each to its own field, as they are typed', () => {
+    const { form } = mount();
+    input('Latitude').value = '30.0444';
+    input('Longitude').value = '31,2357';
+    input('Longitude').dispatchEvent(new Event('change'));
+    expect(form.getState().values).toMatchObject({ lat: 30.0444, lng: 31.2357 });
+  });
+
+  it('shows the coordinates it is given, and empties both when they are cleared', () => {
+    const { form } = mount();
+    form.setValues({ lat: 48.8566, lng: 2.3522 });
+    expect(input('Latitude').value).toBe('48.8566');
+    expect(input('Longitude').value).toBe('2.3522');
+    input('Latitude').value = '';
+    input('Longitude').value = '';
+    input('Latitude').dispatchEvent(new Event('change'));
+    expect(form.getState().values).toMatchObject({ lat: null, lng: null });
+  });
+
+  it('keeps out a coordinate past the poles, saying so', () => {
+    const { form } = mount();
+    input('Latitude').value = '95';
+    input('Longitude').value = '31';
+    input('Longitude').dispatchEvent(new Event('change'));
+    expect(form.getState().values['lat']).toBeNull();
+    expect(input('Latitude').getAttribute('aria-invalid')).toBe('true');
+    expect(document.querySelector('.fd-map-note')?.textContent).toBe('Not a coordinate');
+  });
+
+  it('read-only: its tools go and its coordinates cannot be typed in', () => {
+    const { setReadonly } = mount();
+    setReadonly(true);
+    expect((document.querySelector('.fd-map-tools') as HTMLElement).hidden).toBe(true);
+    expect(input('Latitude').readOnly).toBe(true);
+  });
+
+  it('refuses a number field with no field named for its longitude, saying which', () => {
+    const node = { type: 'field', id: 'f', field: 'lat', widget: 'place' } as FieldNode;
+    expect(() => mount(node)).toThrow('The place on "lat" keeps its latitude there and needs options.longitudeField for its longitude');
+  });
+});
