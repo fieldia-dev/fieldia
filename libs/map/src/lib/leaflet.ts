@@ -18,6 +18,23 @@ export function loadLeaflet(): Promise<LeafletModule> {
 
 /** A layer of map images: plain addresses, or each fetched with the provider's headers (a token kept out of the address). */
 export function tileLayer(L: LeafletModule, spec: TileSpec): Leaflet.TileLayer {
+  return overlapped(makeLayer(L, spec), spec.tileSize ?? 256);
+}
+
+/**
+ * Each image a pixel larger than its place, so it overlaps the next: at a
+ * screen scale of 125% or 80% (Windows' settings, a zoomed page) images
+ * placed edge to edge leave a hairline between them.
+ */
+function overlapped(layer: Leaflet.TileLayer, size: number): Leaflet.TileLayer {
+  layer.on('tileloadstart', (event: Leaflet.TileEvent) => {
+    event.tile.style.width = `${size + 1}px`;
+    event.tile.style.height = `${size + 1}px`;
+  });
+  return layer;
+}
+
+function makeLayer(L: LeafletModule, spec: TileSpec): Leaflet.TileLayer {
   const options: Leaflet.TileLayerOptions = {
     maxZoom: spec.maxZoom,
     ...(spec.tileSize ? { tileSize: spec.tileSize } : {}),

@@ -246,6 +246,21 @@ test('a scroll over the map scrolls the page and says how to zoom; Ctrl with it 
   await expect.poll(() => zoomOf(map)).toBeGreaterThan(zoom);
 });
 
+test('map images overlap their neighbours by a pixel, so no hairline shows between them at 125%', async ({ page }) => {
+  const { map } = await openPlace(page);
+  const tiles = await map.locator('.leaflet-tile-loaded').evaluateAll((els) => els.map((el) => el.getBoundingClientRect()).map((r) => ({ x: r.x, y: r.y, w: r.width, h: r.height })));
+  expect(tiles.length).toBeGreaterThan(1);
+  for (const t of tiles) {
+    expect(t.w).toBe(257);
+    expect(t.h).toBe(257);
+  }
+  // Two side by side: the second begins a pixel before the first ends.
+  const row = tiles.filter((t) => t.y === tiles[0].y).sort((a, b) => a.x - b.x);
+  expect(row[1].x).toBeLessThan(row[0].x + row[0].w);
+  // Drawn plainly over each other: Leaflet's own fix adds their light, which turns every overlap into a white line.
+  expect(await map.locator('.leaflet-tile-loaded').first().evaluate((el) => getComputedStyle(el).mixBlendMode)).toBe('normal');
+});
+
 test('the zoom buttons zoom, and a press on them is not a place', async ({ page }) => {
   const { map, field } = await openPlace(page);
   const zoom = await zoomOf(map);

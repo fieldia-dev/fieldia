@@ -95,6 +95,8 @@ path.fd-map-trace { stroke: var(--fd-accent); fill: var(--fd-accent); stroke-wid
 .fd-map-box.leaflet-container[data-drawing] { touch-action: none; }
 .fd-map-box .leaflet-marker-draggable { touch-action: none; }
 .fd-map-grip-add::after { width: 10px; height: 10px; opacity: 0.7; }
+/* Each image overlaps the next by a pixel (leaflet.ts): drawn plainly over it, not added to it as Leaflet's own seam fix adds light. */
+.fd-map-box.leaflet-container img.leaflet-tile { mix-blend-mode: normal; }
 `;
 
 /** Leaflet's own stylesheet and the maps' own, once per document. */
