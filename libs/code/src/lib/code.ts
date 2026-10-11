@@ -6,6 +6,9 @@ import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import type { JsonValue, Value } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetFactory } from '@fieldia/widgets';
 import { installCodeStyles } from './styles';
+import { textCodeWidget } from './text-code';
+
+export { textCodeWidget } from './text-code';
 
 /**
  * A JSON field in a code editor: CodeMirror 6, bundled with the package, so it
@@ -93,5 +96,9 @@ export const codeWidget: WidgetFactory = ({ form, name, id, document, labels = W
   };
 };
 
-/** Pass these to the viewer (`widgets`) to show json nodes marked `"widget": "code"` in the editor. */
-export const codeWidgets: Record<string, WidgetFactory> = { 'json.code': codeWidget };
+/**
+ * Pass these to the viewer (`widgets`) to show nodes marked `"widget": "code"`
+ * in the editor: json as JSON, text and char in the language the node names
+ * (`"options": { "language": "python" }`).
+ */
+export const codeWidgets: Record<string, WidgetFactory> = { 'json.code': codeWidget, 'text.code': textCodeWidget, 'char.code': textCodeWidget };
