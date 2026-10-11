@@ -34,6 +34,8 @@ export const kinds: DesignerWords['kinds'] = {
     progress: 'نسبة الإنجاز',
     status: 'مراحل الحالة',
     'rich-text': 'نص منسّق',
+    code: 'شيفرة برمجية',
+    vscode: 'شيفرة في محرّر VS Code',
     keywords: 'كلمات مفتاحية',
     website: 'موقع إلكتروني',
     image: 'صورة',

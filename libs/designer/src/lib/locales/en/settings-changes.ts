@@ -79,4 +79,7 @@ export const settingsChanges = {
   propertyColumns: (n: number): string => (n === 2 ? 'its properties in two columns' : 'its properties in one column'),
   canAddProperty: 'people may add a property',
   cannotAddProperty: 'people may not add a property',
+  // ---- code
+  writtenIn: (language: string) => `written in ${language}`,
+  plainText: 'plain text',
 };

@@ -28,8 +28,9 @@ export const LATIN_KEPT = [
   ...['true', 'false', 'null'],
   // Language tags, as examples of what to type.
   ...['ar', 'es', 'pt-BR'],
-  // Fieldia's own name, as its look's.
+  // Fieldia's own name, as its look's; an editor's, as people know it.
   'Fieldia',
+  ...['VS', 'Code'],
   // Names in code, in examples.
   ...['contact', 'confirm', 'open_invoices', 'archive', 'active', 'home', 'street'],
 ];

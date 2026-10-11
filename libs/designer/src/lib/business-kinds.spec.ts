@@ -30,7 +30,7 @@ describe('the business kinds', () => {
     expect(kinds('priority')).toEqual(expect.arrayContaining(['priority', 'state-dot']));
     expect(kinds('request_date_from')).toEqual(['date', 'date-range']);
     expect(kinds('timer_start')).toEqual(['date-time', 'timer', 'date-range']);
-    expect(kinds('tax_totals')).toEqual(['address', 'distribution', 'tax-totals', 'payments']);
+    expect(kinds('tax_totals')).toEqual(['address', 'code', 'vscode', 'distribution', 'tax-totals', 'payments']);
   });
 
   it('show a model’s field as one, keeping what it holds, as one undo step', () => {

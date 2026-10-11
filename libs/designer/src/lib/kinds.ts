@@ -79,6 +79,10 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
     widget: 'statusbar',
   },
   { id: 'rich-text', label: 'Rich text', group: 'more', field: (label) => ({ type: 'html', label }) },
+  // Code in the language its setting names: CodeMirror where the app has it (`codeWidgets`), VS Code's
+  // editor where the app has that (`monacoWidgets`), the plain box where it does not.
+  { id: 'code', label: 'Code', group: 'more', field: (label) => ({ type: 'text', label }), widget: 'code' },
+  { id: 'vscode', label: 'Code in VS Code’s editor', group: 'more', field: (label) => ({ type: 'text', label }), widget: 'monaco' },
   { id: 'keywords', label: 'Keywords', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'tags' },
   { id: 'website', label: 'Website', group: 'more', field: (label) => ({ type: 'char', label }), widget: 'url' },
   { id: 'image', label: 'Image', group: 'more', field: (label) => ({ type: 'image', label }) },
@@ -112,7 +116,7 @@ export const SCREEN_KINDS: readonly QuestionKind[] = [
 ];
 
 /** The business kinds whose own settings are the widget's alone: shown for a field of the model too, which keeps what it holds. */
-export const WIDGET_ONLY_KINDS: ReadonlySet<string> = new Set(['priority', 'state-dot', 'duration', 'percentage', 'timer', 'date-range', 'colour', 'copy', 'pdf', 'embed', 'distribution', 'tax-totals', 'payments', 'properties']);
+export const WIDGET_ONLY_KINDS: ReadonlySet<string> = new Set(['code', 'vscode', 'priority', 'state-dot', 'duration', 'percentage', 'timer', 'date-range', 'colour', 'copy', 'pdf', 'embed', 'distribution', 'tax-totals', 'payments', 'properties']);
 
 /** The kind a field was made as, from its type and widget — an app's kind by the widget that draws it; null for one no kind makes. */
 export function kindOfField(field: Field, node: FieldNode): string | null {
@@ -126,10 +130,11 @@ function builtInKindOf(field: Field, node: FieldNode): string | null {
   switch (field.type) {
     case 'char':
       if (node.widget === 'color') return 'colour';
+      if (node.widget === 'code') return 'code';
       if (node.widget === 'copy' || node.widget === 'embed') return node.widget;
       return node.widget === 'email' ? 'email' : node.widget === 'phone' ? 'phone' : node.widget === 'url' ? 'website' : node.widget === 'tags' ? 'keywords' : node.widget === 'time' ? 'time' : 'short-answer';
     case 'text':
-      return node.widget === 'copy' ? 'copy' : 'paragraph';
+      return node.widget === 'copy' ? 'copy' : node.widget === 'code' ? 'code' : node.widget === 'monaco' ? 'vscode' : 'paragraph';
     case 'html':
       return 'rich-text';
     case 'selection':
@@ -165,6 +170,8 @@ function builtInKindOf(field: Field, node: FieldNode): string | null {
     case 'matrix':
       return 'matrix';
     case 'json':
+      if (node.widget === 'code') return 'code';
+      if (node.widget === 'monaco') return 'vscode';
       return node.widget === 'address' || node.widget === 'distribution' || node.widget === 'tax-totals' || node.widget === 'payments' ? node.widget : null;
     case 'properties':
       return 'properties';
@@ -262,6 +269,9 @@ const BUSINESS_FITS: Record<string, (field: Field) => boolean> = {
   distribution: (field) => field.type === 'json',
   'tax-totals': (field) => field.type === 'json',
   payments: (field) => field.type === 'json',
+  // Text kept as it is, in a language; JSON, as JSON. VS Code's editor takes no one-line field.
+  code: (field) => field.type === 'text' || field.type === 'char' || field.type === 'json',
+  vscode: (field) => field.type === 'text' || field.type === 'json',
 };
 
 /**

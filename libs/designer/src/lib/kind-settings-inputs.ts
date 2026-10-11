@@ -1,6 +1,7 @@
 import type { Field, FieldNode, Page } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
+import { CODE_LANGUAGE_CHOICES } from './code-languages';
 import type { InputLimits } from './input-commands';
 
 /**
@@ -333,7 +334,22 @@ export function inputSettings(el: ElementFactory, designer: Designer, id: string
     return { element: word(w.propertyColumns, count), refresh: (_page, node) => show(count, node.options?.['columns'] === 2 ? '2' : '') };
   }
 
+  /** The language code is written in, for its colours; none for JSON, which is JSON. */
+  function codeLanguage(): Part {
+    const list = select(w.codeLanguage, [['', w.plainText], ...CODE_LANGUAGE_CHOICES.map(([value, name]): [string, string] => [value, name])]);
+    list.addEventListener('change', () => designer.setWidgetOptions(id, { language: list.value || null }));
+    const element = word(w.codeLanguage, list);
+    return {
+      element,
+      refresh(page, node) {
+        element.hidden = page.fields[node.field]?.type === 'json';
+        show(list, node.options?.['language']);
+      },
+    };
+  }
+
   const parts: Part[] = [];
+  if (kind === 'code' || kind === 'vscode') parts.push(codeLanguage());
   if (kind === 'short-answer' || kind === 'paragraph') parts.push(most());
   if (kind === 'paragraph') parts.push(rows());
   if (kind === 'number' || kind === 'amount') parts.push(range());

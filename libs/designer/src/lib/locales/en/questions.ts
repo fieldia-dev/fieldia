@@ -267,4 +267,7 @@ export const questions = {
   amountDueFrom: 'Amount due from',
   propertyColumns: 'Columns',
   canAddProperty: 'People may add a property',
+  // ---- code
+  codeLanguage: 'Language',
+  plainText: 'Plain text',
 };
