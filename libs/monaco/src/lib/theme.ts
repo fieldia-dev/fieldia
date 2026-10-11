@@ -10,8 +10,8 @@ import type { MonacoThemeData } from './types';
 
 /** The colours code is drawn in, by what a word is: @fieldia/code's (a spec holds the two together). */
 export const CODE_COLOURS = {
-  light: { keyword: '#cf222e', string: '#0a3069', literal: '#0550ae', function: '#6639ba', type: '#953800', tag: '#116329', property: '#0550ae' },
-  dark: { keyword: '#ff7b72', string: '#a5d6ff', literal: '#79c0ff', function: '#d2a8ff', type: '#ffa657', tag: '#7ee787', property: '#79c0ff' },
+  light: { keyword: '#cf222e', string: '#0a3069', literal: '#953800', function: '#6639ba', type: '#8250df', tag: '#116329', property: '#116329' },
+  dark: { keyword: '#ff7b72', string: '#a5d6ff', literal: '#ffa657', function: '#d2a8ff', type: '#f2cc60', tag: '#7ee787', property: '#7ee787' },
 } as const;
 
 export type CodeRole = keyof (typeof CODE_COLOURS)['light'];
@@ -78,11 +78,11 @@ export function monacoTheme(given: FieldiaColours): MonacoThemeData {
   const roles: [string[], keyof FieldiaColours][] = [
     [['keyword', 'keyword.flow', 'keyword.control', 'storage'], 'keyword'],
     [['string', 'string.escape', 'string.value.json', 'regexp', 'attribute.value'], 'string'],
-    [['number', 'number.hex', 'number.float', 'constant', 'variable.predefined'], 'literal'],
+    [['number', 'number.hex', 'number.float', 'constant', 'variable.predefined', 'attribute.name'], 'literal'],
     [['predefined', 'function'], 'function'],
     [['type', 'type.identifier', 'namespace', 'annotation'], 'type'],
     [['tag', 'metatag'], 'tag'],
-    [['attribute.name', 'string.key.json', 'key', 'variable.name'], 'property'],
+    [['string.key.json', 'key', 'variable.name'], 'property'],
     [['delimiter', 'operator', 'identifier', 'variable'], 'text'],
   ];
   return {

@@ -12,8 +12,9 @@ import { tags as t } from '@lezer/highlight';
  * tokens' layer: a host sets its own over them as it sets any token.
  */
 export const CODE_COLOURS = {
-  light: { keyword: '#cf222e', string: '#0a3069', literal: '#0550ae', function: '#6639ba', type: '#953800', tag: '#116329', property: '#0550ae' },
-  dark: { keyword: '#ff7b72', string: '#a5d6ff', literal: '#79c0ff', function: '#d2a8ff', type: '#ffa657', tag: '#7ee787', property: '#79c0ff' },
+  // JSON's three parts in three families, so it reads at a glance: a key (YAML's, a CSS property) green, a string blue, a number orange.
+  light: { keyword: '#cf222e', string: '#0a3069', literal: '#953800', function: '#6639ba', type: '#8250df', tag: '#116329', property: '#116329' },
+  dark: { keyword: '#ff7b72', string: '#a5d6ff', literal: '#ffa657', function: '#d2a8ff', type: '#f2cc60', tag: '#7ee787', property: '#7ee787' },
 } as const;
 
 export type CodeRole = keyof (typeof CODE_COLOURS)['light'];
@@ -40,7 +41,9 @@ export const codeHighlightStyle = HighlightStyle.define([
   { tag: [t.function(t.variableName), t.function(t.propertyName), t.function(t.definition(t.variableName)), t.macroName], color: v('function') },
   { tag: [t.typeName, t.className, t.namespace, t.labelName], color: v('type') },
   { tag: [t.tagName, t.angleBracket], color: v('tag') },
-  { tag: [t.attributeName, t.propertyName], color: v('property') },
+  { tag: t.propertyName, color: v('property') },
+  // An HTML attribute in the numbers' colour, apart from its tag's green.
+  { tag: t.attributeName, color: v('literal') },
   { tag: [t.comment, t.lineComment, t.blockComment, t.docComment, t.meta, t.processingInstruction, t.documentMeta], color: 'var(--fd-muted)', fontStyle: 'italic' },
   { tag: t.heading, color: v('keyword'), fontWeight: 'bold' },
   { tag: t.strong, fontWeight: 'bold' },

@@ -574,7 +574,7 @@ button.fd-chip-label:hover { text-decoration: underline; }
 .fd-richtext.fd-blank[contenteditable="true"]::before { content: attr(data-placeholder); position: absolute; color: var(--fd-muted); opacity: 0.8; pointer-events: none; }
 .fd-richtext[contenteditable="false"] { background: transparent; border-color: transparent; padding-inline: 0; min-height: 0; }
 .fd-richtext p { margin: 0 0 6px; }
-.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; min-height: 96px; }
+textarea.fd-code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; min-height: 96px; }
 
 /* ---- sections, tabs ---------------------------------------------------- */
 .fd-sections { display: grid; gap: var(--fd-gap-block, 24px); }

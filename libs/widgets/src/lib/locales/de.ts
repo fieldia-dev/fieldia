@@ -80,6 +80,7 @@ export const de: WidgetLabels = {
   asCards: 'Kacheln',
   asThumbnails: 'Miniaturen',
   invalidJson: 'Kein gültiges JSON',
+  invalidJsonAt: 'Kein gültiges JSON: Zeile {line}, Spalte {column}',
   signaturePad: 'Unterschriftenfeld: Unterschrift zeichnen',
   signHere: 'Hier unterschreiben',
   typeSignature: 'Oder Namen eingeben',

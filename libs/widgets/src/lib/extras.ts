@@ -1,5 +1,6 @@
 import { WIDGET_LABELS, type WidgetLabels } from './labels';
 import type { WidgetFactory } from './widgets';
+import { jsonProblem } from './json-problem';
 
 /**
  * Formatted text and JSON. Formatted text is edited in place, with a toolbar
@@ -283,14 +284,11 @@ export const jsonWidget: WidgetFactory = ({ form, name, id, document, labels = W
       form.setValue(name, null);
       return;
     }
-    try {
-      const parsed = JSON.parse(area.value);
-      error.hidden = true;
-      form.setValue(name, parsed);
-    } catch {
-      error.hidden = false;
-      error.textContent = labels.invalidJson;
-    }
+    // Where it goes wrong, by line and column: a long document is not read again to find it.
+    const problem = jsonProblem(area.value);
+    error.hidden = !problem;
+    if (problem) error.textContent = labels.invalidJsonAt.replace('{line}', String(problem.line)).replace('{column}', String(problem.column));
+    else form.setValue(name, JSON.parse(area.value));
   });
   return {
     element,

@@ -54,16 +54,28 @@ describe('JSON in a code editor', () => {
     expect(form.getState().values['settings']).toEqual({ badge_readers: 6 });
   });
 
-  it('says when the text is not valid JSON, and keeps the last good value', async () => {
+  it('says where the text stops being JSON once typing pauses, marks the place, and keeps the last good value', async () => {
     const { box, view, form } = await mount();
-    replaceAll(view, '{ "badge_readers": ');
+    replaceAll(view, '{\n  "badge_readers": 4,\n  zones: []\n}');
     expect(form.getState().values['settings']).toEqual({ badge_readers: 4, zones: ['reception'] });
     const message = box.querySelector('.fd-code-error') as HTMLElement;
-    expect(message.hidden).toBe(false);
-    expect(message.textContent).toBe('Not valid JSON');
-    expect((box.querySelector('.cm-content') as HTMLElement).getAttribute('aria-invalid')).toBe('true');
-    replaceAll(view, '[]');
+    // Not at every key: once typing pauses.
     expect(message.hidden).toBe(true);
+    await new Promise((done) => setTimeout(done, 600));
+    expect(message.hidden).toBe(false);
+    expect(message.textContent).toBe('Not valid JSON: line 3, column 3');
+    // Its own direction, from its words: an Arabic message is not drawn left to right with the code.
+    expect(message.getAttribute('dir')).toBe('auto');
+    const content = box.querySelector('.cm-content') as HTMLElement;
+    expect(content.getAttribute('aria-invalid')).toBe('true');
+    expect(content.getAttribute('aria-describedby')).toContain(message.id);
+    expect(box.querySelector('.fd-code-bad-line')?.textContent).toBe('  zones: []');
+    expect(box.querySelector('.fd-code-bad-spot')?.textContent).toBe('z');
+    replaceAll(view, '[]');
+    await new Promise((done) => setTimeout(done, 0));
+    expect(message.hidden).toBe(true);
+    expect(box.querySelector('.fd-code-bad-line')).toBeNull();
+    expect(content.getAttribute('aria-invalid')).toBe('false');
     expect(form.getState().values['settings']).toEqual([]);
   });
 

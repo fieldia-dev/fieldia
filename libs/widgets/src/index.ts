@@ -5,6 +5,7 @@ export * from './lib/relations';
 export * from './lib/lines';
 export * from './lib/files';
 export * from './lib/extras';
+export { jsonProblem, type JsonProblem } from './lib/json-problem';
 export * from './lib/display';
 export * from './lib/preferences';
 export * from './lib/numbers';

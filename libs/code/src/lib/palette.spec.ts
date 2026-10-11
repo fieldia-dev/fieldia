@@ -40,6 +40,21 @@ describe('the colours code is drawn in', () => {
     }
   });
 
+  it('draw a key, a string and a number in colours of different families, so JSON reads at a glance', () => {
+    const hue = (hex: string) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+      const max = Math.max(r, g, b);
+      const d = max - Math.min(r, g, b);
+      const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      return (h * 60 + 360) % 360;
+    };
+    const apart = (a: string, b: string) => Math.min(Math.abs(hue(a) - hue(b)), 360 - Math.abs(hue(a) - hue(b)));
+    for (const scheme of ['light', 'dark'] as const) {
+      const { property, string, literal } = CODE_COLOURS[scheme];
+      for (const [x, y] of [[property, string], [property, literal], [string, literal]]) expect([scheme, x, y, apart(x, y) >= 40]).toEqual([scheme, x, y, true]);
+    }
+  });
+
   it('are tokens a host can set, light on any code box and dark where the page is dark', () => {
     expect(CODE_COLOURS_CSS).toContain('@layer fieldia-tokens');
     expect(CODE_COLOURS_CSS).toContain(`.fd-code { --fd-code-keyword: ${CODE_COLOURS.light.keyword};`);

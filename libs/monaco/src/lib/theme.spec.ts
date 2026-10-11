@@ -61,7 +61,7 @@ describe('Monaco’s theme from Fieldia’s tokens', () => {
     expect(rule(theme, 'number')?.foreground).toBe(CODE_COLOURS.light.literal.slice(1));
     expect(rule(theme, 'type')?.foreground).toBe(CODE_COLOURS.light.type.slice(1));
     expect(rule(theme, 'tag')?.foreground).toBe(CODE_COLOURS.light.tag.slice(1));
-    expect(rule(theme, 'attribute.name')?.foreground).toBe(CODE_COLOURS.light.property.slice(1));
+    expect(rule(theme, 'attribute.name')?.foreground).toBe(CODE_COLOURS.light.literal.slice(1));
     expect(rule(theme, 'string.key.json')?.foreground).toBe(CODE_COLOURS.light.property.slice(1));
     expect(rule(theme, 'comment')).toEqual({ token: 'comment', foreground: '636976', fontStyle: 'italic' });
     expect(rule(theme, 'invalid')?.foreground).toBe('c62828');

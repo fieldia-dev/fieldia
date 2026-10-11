@@ -91,7 +91,8 @@ describe('json', () => {
     area.value = '{"a": ';
     area.dispatchEvent(new Event('input', { bubbles: true }));
     expect(form.getState().values['x']).toEqual({ a: 1 });
-    expect(el.querySelector('.fd-cell-error')?.textContent).toBe('Not valid JSON');
+    // Where it stops: the end of the text, line 1, column 7.
+    expect(el.querySelector('.fd-cell-error')?.textContent).toBe('Not valid JSON: line 1, column 7');
   });
 });
 

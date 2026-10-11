@@ -104,6 +104,8 @@ export interface WidgetLabels {
   asCards: string;
   asThumbnails: string;
   invalidJson: string;
+  /** Where JSON goes wrong, as a person finds it: `{line}` and `{column}` count from 1. */
+  invalidJsonAt: string;
   /** A signature: the pad, the words on it while it is blank, the box to type a name in instead, and wiping it. */
   signaturePad: string;
   signHere: string;
@@ -258,6 +260,7 @@ const en: WidgetLabels = {
   asCards: 'Cards',
   asThumbnails: 'Thumbnails',
   invalidJson: 'Not valid JSON',
+  invalidJsonAt: 'Not valid JSON: line {line}, column {column}',
   signaturePad: 'Signature pad: draw your signature',
   signHere: 'Sign here',
   typeSignature: 'Or type your name',

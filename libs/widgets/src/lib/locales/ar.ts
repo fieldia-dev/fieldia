@@ -80,6 +80,7 @@ export const ar: WidgetLabels = {
   asCards: 'بطاقات',
   asThumbnails: 'صور مصغّرة',
   invalidJson: 'ليس JSON صالحًا',
+  invalidJsonAt: 'ليس JSON صالحًا: السطر {line}، العمود {column}',
   signaturePad: 'لوحة التوقيع: ارسم توقيعك',
   signHere: 'وقّع هنا',
   typeSignature: 'أو اكتب اسمك',
