@@ -3,16 +3,19 @@ import type { TileSpec } from './providers';
 
 export type LeafletModule = typeof Leaflet;
 
-let loading: Promise<LeafletModule> | undefined;
+let loading: Promise<{ L: LeafletModule; css: string }> | undefined;
 
 /**
- * Leaflet, loaded the first time a map is shown. It reads `window` as it
- * loads, so it must never load where there is none (a server, a test in
- * Node, the release check's `require`); and a page without a map never pays
- * for it.
+ * Leaflet and its stylesheet, loaded the first time a map is shown. Leaflet
+ * reads `window` as it loads, so it must never load where there is none (a
+ * server, a test in Node, the release check's `require`); and a page
+ * without a map never pays for either.
  */
-export function loadLeaflet(): Promise<LeafletModule> {
-  loading ??= import('leaflet').then((module) => ((module as unknown as { default?: LeafletModule }).default ?? module) as LeafletModule);
+export function loadLeaflet(): Promise<{ L: LeafletModule; css: string }> {
+  loading ??= Promise.all([import('leaflet'), import('./leaflet-css')]).then(([module, styles]) => ({
+    L: ((module as unknown as { default?: LeafletModule }).default ?? module) as LeafletModule,
+    css: styles.LEAFLET_CSS,
+  }));
   return loading;
 }
 

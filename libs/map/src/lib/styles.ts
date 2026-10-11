@@ -1,5 +1,3 @@
-import { LEAFLET_CSS } from './leaflet-css';
-
 /**
  * The maps in Fieldia's colours: every colour a token, so a theme, a host's
  * tokens and the dark scheme reach the map's buttons, search, shapes and
@@ -99,15 +97,23 @@ path.fd-map-trace { stroke: var(--fd-accent); fill: var(--fd-accent); stroke-wid
 .fd-map-box.leaflet-container img.leaflet-tile { mix-blend-mode: normal; }
 `;
 
-/** Leaflet's own stylesheet and the maps' own, once per document. */
+/** The maps' own stylesheet, once per document: the tools, the search and the box are drawn before Leaflet has loaded. */
 export function installMapStyles(doc: Document) {
   if (doc.getElementById('fieldia-map-styles')) return;
-  const leaflet = doc.createElement('style');
-  leaflet.id = 'fieldia-leaflet-styles';
-  leaflet.textContent = LEAFLET_CSS;
   const own = doc.createElement('style');
   own.id = 'fieldia-map-styles';
   own.textContent = MAP_CSS;
   // Before the page's own styles, so an app's rule for a map wins over these.
-  doc.head.prepend(leaflet, own);
+  doc.head.prepend(own);
+}
+
+/** Leaflet's stylesheet, once per document, before the maps' own (which add to it): it comes with Leaflet. */
+export function installLeafletStyles(doc: Document, css: string) {
+  if (doc.getElementById('fieldia-leaflet-styles')) return;
+  const leaflet = doc.createElement('style');
+  leaflet.id = 'fieldia-leaflet-styles';
+  leaflet.textContent = css;
+  const own = doc.getElementById('fieldia-map-styles');
+  if (own) own.before(leaflet);
+  else doc.head.prepend(leaflet);
 }

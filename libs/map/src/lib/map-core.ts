@@ -4,7 +4,7 @@ import type { LatLng } from './geo';
 import { fill, type MapLabels } from './labels';
 import { loadLeaflet, tileLayer, type LeafletModule } from './leaflet';
 import type { BaseMap, Credit, MapProvider } from './providers';
-import { installMapStyles } from './styles';
+import { installLeafletStyles, installMapStyles } from './styles';
 
 /**
  * One map in a box: the provider's map images for the page's scheme, its
@@ -273,8 +273,9 @@ export function createMapBox(options: MapBoxOptions): MapBox {
     element.removeEventListener('touchend', touchend, { capture: true });
   });
 
-  void loadLeaflet().then((leaflet) => {
+  void loadLeaflet().then(({ L: leaflet, css }) => {
     if (destroyed) return;
+    installLeafletStyles(doc, css);
     L = leaflet;
     map = leaflet.map(element, {
       zoomControl: false,
