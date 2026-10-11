@@ -1,5 +1,6 @@
 import type { JsonValue, Value } from '@fieldia/core';
 import { WIDGET_LABELS, type WidgetContext, type WidgetFactory, type WidgetState } from '@fieldia/widgets';
+import { MONACO_SERVICES, serviceOf, type MonacoService } from './languages';
 import { defaultLoader } from './loader';
 import { installMonacoStyles } from './styles';
 import { monacoTheme, readColours } from './theme';
@@ -25,6 +26,12 @@ export interface MonacoWidgetsOptions {
    * the code is coloured, and no worker is started.
    */
   getWorker?: (workerId: string, label: string) => Worker | Promise<Worker>;
+  /**
+   * The language services `getWorker` has workers for — `json`, `typescript`
+   * (for JavaScript too), `css` (SCSS and Less too), `html` — each turned on
+   * for the fields in its languages. Every one, when left out.
+   */
+  services?: readonly MonacoService[];
   /** How Monaco and each language are loaded: monaco-editor's own modules unless an app, or a test, hands its own. */
   loader?: MonacoLoader;
 }
@@ -48,6 +55,8 @@ const EDITOR_OPTIONS = {
   glyphMargin: false,
   padding: { top: 6, bottom: 6 },
   links: false,
+  // Several on a form: only the one being typed in marks its line.
+  renderLineHighlightOnlyWhenFocus: true,
 };
 
 /** Between a few lines and a screenful, as the field's text grows. */
@@ -82,10 +91,13 @@ function readJson(text: string): JsonValue | undefined {
   }
 }
 
-function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoader, getWorker: MonacoWidgetsOptions['getWorker']) {
+function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoader, { getWorker, services: named = MONACO_SERVICES }: MonacoWidgetsOptions) {
   const { form, name, node, id, document, labels = WIDGET_LABELS.en } = context;
   installMonacoStyles(document);
-  const services = typeof getWorker === 'function';
+  const language = json ? 'json' : node.options?.['language'];
+  // This field's language service, when it has one and the app gives a worker for it.
+  const service = serviceOf(language);
+  const services = typeof getWorker === 'function' && service !== null && named.includes(service);
   const element = document.createElement('div');
   element.className = 'fd-monaco';
   element.dir = 'ltr';
@@ -192,14 +204,14 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
   async function start() {
     if (getWorker) giveWorkers(getWorker);
     const loaded = await loader.monaco(services);
-    const language = await loader.language(loaded, json ? 'json' : node.options?.['language'], services);
+    const monacoId = await loader.language(loaded, language, services);
     if (gone) return;
     monaco = loaded;
     box = document.createElement('div');
     box.className = 'fd-monaco-box';
     element.insertBefore(box, plain);
     const focused = document.activeElement === plain;
-    model = monaco.editor.createModel(plain.value, language);
+    model = monaco.editor.createModel(plain.value, monacoId);
     editor = monaco.editor.create(box, {
       ...EDITOR_OPTIONS,
       model,
@@ -242,6 +254,7 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
     update(state: WidgetState) {
       last = state;
       plain.readOnly = state.readonly;
+      element.toggleAttribute('data-readonly', state.readonly);
       editor?.updateOptions({ readOnly: state.readonly, domReadOnly: state.readonly, ariaRequired: state.required });
       if (!worn) wear();
       describe();
@@ -268,7 +281,7 @@ function monacoWidget(context: WidgetContext, json: boolean, loader: MonacoLoade
  */
 export function createMonacoWidgets(options: MonacoWidgetsOptions = {}): Record<string, WidgetFactory> {
   const loader = options.loader ?? defaultLoader;
-  const factory = (json: boolean): WidgetFactory => (context) => monacoWidget(context, json, loader, options.getWorker);
+  const factory = (json: boolean): WidgetFactory => (context) => monacoWidget(context, json, loader, options);
   return { 'text.monaco': factory(false), 'json.monaco': factory(true) };
 }
 

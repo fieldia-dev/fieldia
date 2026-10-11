@@ -20,6 +20,8 @@ export const MONACO_CSS = `
 .fd-monaco-box:focus-within { outline: 2px solid var(--fd-focus); outline-offset: 1px; }
 .fd-monaco[data-invalid] .fd-monaco-box { border-color: var(--fd-error); }
 .fd-monaco-plain { min-height: 96px; }
+/* Only to be read: shaded as Fieldia shades such a box, over the colours Monaco's theme gives it. */
+.fd-monaco[data-readonly] .monaco-editor { --vscode-editor-background: color-mix(in srgb, var(--fd-text) 4%, var(--fd-surface)); }
 @layer fieldia-tokens {
 .fd-monaco { ${declare('light')} }
 :is(.fd-form, .fd-form-dialog, .fd-theme)[data-scheme="dark"] .fd-monaco { ${declare('dark')} }

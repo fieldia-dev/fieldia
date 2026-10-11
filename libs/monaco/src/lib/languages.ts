@@ -114,3 +114,15 @@ const BY_NAME = new Map(MONACO_LANGUAGES.flatMap((found) => [found.id, ...found.
 export function monacoLanguage(name: unknown): MonacoLanguage | null {
   return typeof name === 'string' ? BY_NAME.get(name.trim().toLowerCase()) ?? null : null;
 }
+
+/** Monaco's language services: each runs in a worker of its own, which the app gives (`getWorker`). */
+export type MonacoService = 'json' | 'typescript' | 'css' | 'html';
+export const MONACO_SERVICES: readonly MonacoService[] = ['json', 'typescript', 'css', 'html'];
+
+const SERVICE_OF: Record<string, MonacoService> = { json: 'json', typescript: 'typescript', javascript: 'typescript', css: 'css', scss: 'css', less: 'css', html: 'html' };
+
+/** The language service a language a page names has in Monaco, or null for one with none. */
+export function serviceOf(name: unknown): MonacoService | null {
+  const found = monacoLanguage(name);
+  return found ? SERVICE_OF[found.monaco] ?? null : null;
+}

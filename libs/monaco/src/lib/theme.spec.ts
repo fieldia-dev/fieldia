@@ -90,3 +90,10 @@ describe('the code colours', () => {
     expect(low).toEqual([]);
   });
 });
+
+describe('the editor’s frame', () => {
+  it('shades a read-only editor as Fieldia shades a box only to be read, over Monaco’s own colours', () => {
+    const { MONACO_CSS } = jest.requireActual('./styles') as typeof import('./styles');
+    expect(MONACO_CSS).toContain('.fd-monaco[data-readonly] .monaco-editor { --vscode-editor-background: color-mix(in srgb, var(--fd-text) 4%, var(--fd-surface));');
+  });
+});

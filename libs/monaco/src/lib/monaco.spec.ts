@@ -231,6 +231,8 @@ describe('text in VS Code’s editor', () => {
     const { arrive, editor } = await mount(pageWith('text', { language: 'python' }));
     await arrive();
     expect(editor().options).toMatchObject({ tabFocusMode: true, editContext: false, automaticLayout: true });
+    // Several on a form: only the one being typed in marks its line.
+    expect(editor().options).toMatchObject({ renderLineHighlightOnlyWhenFocus: true });
     expect(editor().options['scrollbar']).toMatchObject({ alwaysConsumeMouseWheel: false });
   });
 
@@ -255,8 +257,11 @@ describe('text in VS Code’s editor', () => {
     expect(plain.readOnly).toBe(true);
     await arrive();
     expect(editor().options).toMatchObject({ readOnly: true, domReadOnly: true });
+    // Shaded as a box only to be read is.
+    expect(box.querySelector('.fd-monaco')?.hasAttribute('data-readonly')).toBe(true);
     form.setValue('locked', false);
     expect(editor().options).toMatchObject({ readOnly: false, domReadOnly: false });
+    expect(box.querySelector('.fd-monaco')?.hasAttribute('data-readonly')).toBe(false);
   });
 
   it('says it is required, invalid and where the message is, on Monaco’s input', async () => {
@@ -375,6 +380,24 @@ describe('language services, when the app gives workers', () => {
     expect(asked.languages).toEqual(['json+services']);
     const environment = (globalThis as { MonacoEnvironment?: { getWorker?: unknown } }).MonacoEnvironment;
     expect(environment?.getWorker).toBe(getWorker);
+  });
+
+  it('are only those the app names workers for: a TypeScript field asks for none when the app has JSON’s alone', async () => {
+    const getWorker = jest.fn();
+    const typescript = await mount(pageWith('text', { language: 'typescript' }), 'let total = 1', { getWorker, services: ['json'] });
+    await typescript.arrive();
+    expect(typescript.asked.languages).toEqual(['typescript']);
+    expect(typescript.asked.monaco).toEqual([false]);
+    drop();
+    const json = await mount(pageWith('json'), {}, { getWorker, services: ['json'] });
+    await json.arrive();
+    expect(json.asked.languages).toEqual(['json+services']);
+  });
+
+  it('are every one Monaco has — JSON, TypeScript and JavaScript, CSS, HTML — when the app names none', async () => {
+    const typescript = await mount(pageWith('text', { language: 'js' }), 'let total = 1', { getWorker: jest.fn() });
+    await typescript.arrive();
+    expect(typescript.asked.languages).toEqual(['js+services']);
   });
 
   it('leave an environment the app set itself as it is', async () => {

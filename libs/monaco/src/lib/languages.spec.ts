@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { CODE_LANGUAGES } from '../../../code/src/lib/languages';
 import { JSON_GRAMMAR } from './json';
 import { DEFINITIONS, SERVICES, defaultLoader } from './loader';
-import { MONACO_LANGUAGES, monacoLanguage } from './languages';
+import { MONACO_LANGUAGES, monacoLanguage, serviceOf } from './languages';
 import type { MonacoApi } from './types';
 
 const DEFINITIONS_DIR = join(__dirname, '../../../../node_modules/monaco-editor/esm/vs/languages/definitions');
@@ -50,6 +50,17 @@ describe('the languages a field in VS Code’s editor can be written in', () => 
     expect(monacoLanguage('klingon')).toBeNull();
     expect(monacoLanguage(undefined)).toBeNull();
     expect(monacoLanguage(7)).toBeNull();
+  });
+
+  it('know which language service each language has', () => {
+    expect(serviceOf('json')).toBe('json');
+    expect(serviceOf('ts')).toBe('typescript');
+    expect(serviceOf('javascript')).toBe('typescript');
+    expect(serviceOf('jsx')).toBe('typescript');
+    expect(serviceOf('scss')).toBe('css');
+    expect(serviceOf('html')).toBe('html');
+    expect(serviceOf('python')).toBeNull();
+    expect(serviceOf('klingon')).toBeNull();
   });
 
   it('have language services, given workers, for JSON, JavaScript, TypeScript, CSS and HTML', () => {

@@ -62,6 +62,8 @@ const widgets = createMonacoWidgets({
     if (label === 'typescript' || label === 'javascript') return new TsWorker();
     return new EditorWorker();
   },
+  // The services these workers are for; CSS's and HTML's fields ask for none.
+  services: ['json', 'typescript'],
 });
 ```
 
@@ -69,6 +71,12 @@ const widgets = createMonacoWidgets({
 `languages/features/css` and `languages/features/html`.) The function becomes
 `MonacoEnvironment.getWorker`, unless your app has set a `MonacoEnvironment`
 of its own, which is kept.
+
+Each field turns on the service of its language, for every service Monaco
+has. When you give workers for some of them only, name those, so the others'
+fields ask for none: `createMonacoWidgets({ getWorker, services: ['json'] })`
+(`json`, `typescript` — JavaScript's too —, `css` — SCSS's and Less's too —
+and `html`).
 
 ## Every editor
 
