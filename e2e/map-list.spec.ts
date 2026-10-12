@@ -193,14 +193,18 @@ test('a bubble opens into its pins: the map zooms in on them', async ({ page }) 
 
 test('an open card is not covered: Search this area steps aside while it is open and is back when it closes', async ({ page }) => {
   await openList(page);
-  await bubbles(page).first().click();
+  await zamalek(page);
+  // A move of the person's own, by the keys: Search this area is offered.
+  await theMap(page).focus();
+  await page.keyboard.press('ArrowUp');
   const here = page.getByRole('button', { name: 'Search this area' });
   await expect(here).toBeVisible();
-  const pin = await pinInView(page);
+  let pin!: Locator;
+  await expect(async () => void (pin = await pinInView(page))).toPass();
   await pin.click();
   await cardShown(page);
   await expect(here).toBeHidden();
-  await page.keyboard.press('Escape');
+  await card(page).getByRole('button', { name: 'Close' }).click();
   await expect(card(page)).toBeHidden();
   await expect(here).toBeVisible();
 });
@@ -515,7 +519,7 @@ test('in Arabic, each text in its own direction: an English name as typed, its l
   await expect(priceOn(page, 2)).toHaveText('10.8 مليون');
   await expect(priceOn(page, 25)).toHaveText('\u206847 ألف\u2069/شهر');
   // A symbol kept whole, isolated left to right: "US$", never "$US".
-  await expect.poll(() => priceOn(page, 6).evaluate((face) => face.textContent)).toBe('\u2068\u2066US$\u2069\u00a04.6\u00a0ألف\u2069/شهر');
+  await expect.poll(() => priceOn(page, 6).evaluate((face) => face.textContent)).toBe('\u2068\u2068US$\u2069\u00a04.6\u00a0ألف\u2069/شهر');
   // The table's amount reads left to right in its right-to-left row, as Dawarly writes prices.
   const amount = rowOf(page, '15').locator('td').nth(3).locator('bdi');
   await expect(amount).toHaveText('460,000 USD');
