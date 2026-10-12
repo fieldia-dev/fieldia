@@ -133,4 +133,9 @@ export const fr: WidgetLabels = {
   add: 'Ajouter',
   cancel: 'Annuler',
   loading: 'Chargement…',
+  perDay: '/jour',
+  perNight: '/nuit',
+  perWeek: '/semaine',
+  perMonth: '/mois',
+  perYear: '/an',
 };

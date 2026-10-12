@@ -103,6 +103,38 @@ describe('a record’s pin', () => {
     expect(pins({}).name({ id: 9, values: {} })).toBe('9');
   });
 
+  it('writes a price as the page says: short, the home currency unsaid, another named, per month on a rent', () => {
+    const dawarly = { label: 'price', money: { home: 'EGP', currency: 'symbol', at: 'before', per: [{ period: 'month', when: "offer == 'rent'" }] } } as Pin;
+    const said = (values: Record<string, unknown>, locale: 'en' | 'ar' = 'en', pin: Pin = dawarly) =>
+      pins(pin, { locale }).face({ id: 1, values: { name: 'Villa', ...values } as never }).element.textContent;
+    expect(said({ price: 13_900_000, currency: 'EGP', offer: 'sale' })).toBe('13.9M');
+    expect(said({ price: 450_000, currency: 'USD', offer: 'sale' })).toBe('$\u00a0450K');
+    expect(said({ price: 25_000, currency: 'EGP', offer: 'rent' })).toBe('25K/month');
+    // Arabic: its own short words, Latin digits, a symbol kept whole.
+    expect(said({ price: 13_900_000, currency: 'EGP', offer: 'sale' }, 'ar')).toBe('13.9\u00a0مليون');
+    expect(said({ price: 25_000, currency: 'EGP', offer: 'rent' }, 'ar')).toBe('25\u00a0ألف/شهر');
+    expect(said({ price: 450_000, currency: 'USD', offer: 'sale' }, 'ar')).toBe('\u2066US$\u2069\u00a0450\u00a0ألف');
+    // The fields its words read are asked for with the records: the currency, and the condition's.
+    expect(pins(dawarly).fields).toEqual(['name', 'price', 'currency', 'offer']);
+    // The app's home currency, under the page's own.
+    expect(said({ price: 9_500_000, currency: 'EGP' }, 'en', { label: 'price' })).toBe('E£9.5M');
+    expect(pins({ label: 'price' }, { homeCurrency: 'EGP' }).face(villa).element.textContent).toBe('9.5M');
+    expect(pins({ label: 'price', money: { home: 'USD' } }, { homeCurrency: 'EGP' }).face(villa).element.textContent).toBe('E£\u00a09.5M');
+    // In full, when the page says: the field's own money look over a pin's short.
+    expect(said({ price: 13_900_000, currency: 'EGP' }, 'en', { label: 'price', money: { short: false, currency: 'code', at: 'after' } })).toBe('13,900,000.00\u00a0EGP');
+  });
+
+  it('names a priced pin in full, its currency named and what it is for', () => {
+    const dawarly = { label: 'price', money: { home: 'EGP', per: [{ period: 'month', when: "offer == 'rent'" }] } } as Pin;
+    expect(pins(dawarly).name(villa)).toBe('Villa <b>Nile</b>, E£\u00a09,500,000.00/month');
+  });
+
+  it('writes a record’s words on its pin in their own direction', () => {
+    expect(pins({ label: 'name' }).face(villa).element.querySelector<HTMLElement>('.fd-map-face-text')!.dir).toBe('auto');
+    const photo = pins({ look: 'photo', image: 'face', label: 'name' }).face(villa);
+    expect(photo.element.querySelector<HTMLElement>('.fd-map-face-text')!.dir).toBe('auto');
+  });
+
   it('reads a picture from its data, its address, or the first of several', () => {
     expect(imageSource({ name: 'a', type: 'image/jpeg', size: 1, url: 'https://x.test/a.jpg' })).toBe('https://x.test/a.jpg');
     expect(imageSource([{ name: 'a', type: 'image/png', size: 1, data: 'QQ' }])).toBe('data:image/png;base64,QQ');

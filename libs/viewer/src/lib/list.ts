@@ -16,7 +16,7 @@ import {
   type SortOrder,
   type Value,
 } from '@fieldia/core';
-import { displayValue, type IconSet, type PreferenceStore } from '@fieldia/widgets';
+import { displayValue, moneyReads, type IconSet, type PreferenceStore } from '@fieldia/widgets';
 import type { El } from './dom';
 import { startingFacets } from './favourites';
 import type { ViewerLabels } from './labels';
@@ -134,11 +134,8 @@ export function listView(context: ListContext): ListView {
   let asking = 0;
   let destroyed = false;
 
-  // The columns, and what an amount needs to be read: its currency, from the record.
-  const fields = [...new Set(node.columns.flatMap((name) => {
-    const def = page.fields[name];
-    return def.type === 'monetary' && def.currencyField ? [name, def.currencyField] : [name];
-  }))];
+  // The columns, and what an amount needs to be read: its currency, from the record, and what its money look's conditions read ("/month" on a rent).
+  const fields = [...new Set(node.columns.flatMap((name) => [name, ...moneyReads(page.fields[name])]))];
   const show = (name: string, values: Record<string, Value>) => displayValue(page.fields[name] as LineField, values[name], values, locale);
 
   // ---- the table ---------------------------------------------------------------

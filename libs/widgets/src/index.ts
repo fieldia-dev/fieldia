@@ -9,6 +9,7 @@ export { jsonProblem, type JsonProblem } from './lib/json-problem';
 export * from './lib/display';
 export * from './lib/preferences';
 export * from './lib/numbers';
+export { moneyReads, shortNumber, writeMoney } from './lib/money';
 export * from './lib/progress';
 export * from './lib/label';
 export * from './lib/statusbar';

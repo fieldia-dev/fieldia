@@ -5,7 +5,7 @@
  */
 export type { JsonValue } from './lib/format/json';
 export { FIELD_NAME, FIELD_TYPES, type FieldType } from './lib/format/names';
-export type { Field, Fields, LineField, LineKinds, Option, OptionsFrom, DefinitionsFrom, PropertyDefinition, FilterCondition, FilterItem, SetWhen } from './lib/format/field';
+export type { Field, Fields, LineField, LineKinds, Option, OptionsFrom, DefinitionsFrom, PropertyDefinition, FilterCondition, FilterItem, SetWhen, MoneyLook, Period } from './lib/format/field';
 export type {
   Modifier,
   Roles,
@@ -43,6 +43,9 @@ export type {
   ListNode,
   ListMap,
   MapCard,
+  CardLine,
+  CardPart,
+  PluralWords,
   MapLayer,
   MapNode,
   MapRoute,
@@ -62,6 +65,7 @@ export type {
   WidgetOptions,
 } from './lib/format/layout';
 export { wideColumns } from './lib/format/columns';
+export { cardLines, cardLineFields, cardPart, type CardLinePart } from './lib/format/card-lines';
 export type {
   ActionStep,
   PageEvents,

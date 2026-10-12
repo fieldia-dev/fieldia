@@ -133,4 +133,9 @@ export const ar: WidgetLabels = {
   add: 'إضافة',
   cancel: 'إلغاء',
   loading: 'جارٍ التحميل…',
+  perDay: '/يوم',
+  perNight: '/ليلة',
+  perWeek: '/أسبوع',
+  perMonth: '/شهر',
+  perYear: '/سنة',
 };

@@ -1,0 +1,77 @@
+import { compileModifier, isRightToLeft, type Field, type LineField, type Locale, type MoneyLook, type Period, type Value } from '@fieldia/core';
+import { WIDGET_LABELS, type WidgetLabels } from './labels';
+import { formatNumber } from './numbers';
+import { currencySymbol } from './units';
+
+/**
+ * An amount as a page's money look (`money` on a monetary field) writes it:
+ * its currency by symbol or by code, before or after it, short, the home
+ * currency left unsaid, and what it is for ("/month"). Each in its own
+ * direction: Latin digits and a code read left to right in Arabic too
+ * ("1,610,000 EGP"), Arabic's short words right to left ("13.9 مليون"),
+ * and a symbol such as "E£" is kept whole, never turned round to "£E".
+ */
+
+/** The marks Intl puts round Arabic numbers to say their direction: the text says its own. */
+const MARKS = /[\u200e\u200f\u061c]/g;
+/** Left-to-right isolation, round a symbol on a right-to-left page: "E£" stays "E£". */
+const isolate = (text: string) => `\u2066${text}\u2069`;
+
+const shortFormats = new Map<Locale, Intl.NumberFormat>();
+/** A number short, in the page's language and Latin digits: "13.9M", "450K", "13.9 مليون", "13,9 Mio.". */
+export function shortNumber(value: number, locale: Locale = 'en'): string {
+  let found = shortFormats.get(locale);
+  if (!found) shortFormats.set(locale, (found = new Intl.NumberFormat(locale, { notation: 'compact', numberingSystem: 'latn', maximumFractionDigits: 1 })));
+  return found.format(value).replace(MARKS, '');
+}
+
+const PER_KEYS: Record<Period, keyof WidgetLabels> = { day: 'perDay', night: 'perNight', week: 'perWeek', month: 'perMonth', year: 'perYear' };
+const compiled = new WeakMap<object, { period: Period; holds: (values: Record<string, unknown>) => boolean }[]>();
+
+/** What the amount is for on this record, by the first of the look's conditions that holds: a rent's month. */
+function periodOf(look: MoneyLook, values: Readonly<Record<string, Value>>): Period | null {
+  if (!look.per) return null;
+  let rules = compiled.get(look.per);
+  if (!rules) {
+    rules = look.per.map(({ period, when }) => {
+      const condition = when === undefined ? null : compileModifier(when);
+      return { period, holds: (context) => !condition || condition.evaluate(context) };
+    });
+    compiled.set(look.per, rules);
+  }
+  // A link reads as its id in a condition, as a form's own conditions read it.
+  const context: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(values)) context[name] = value && typeof value === 'object' && !Array.isArray(value) && 'id' in value ? (value as { id: unknown }).id : value;
+  return rules.find((rule) => rule.holds(context))?.period ?? null;
+}
+
+/**
+ * An amount written as `look` says: `currency` a code ("EGP") or the words
+ * a record keeps for it, null for none; `decimals` its digits after the
+ * point when written in full; `values` the record's, for what it is for.
+ */
+export function writeMoney(value: number, currency: string | null, decimals: number, locale: Locale, look: MoneyLook, values: Readonly<Record<string, Value>> = {}): string {
+  const amount = look.short ? shortNumber(value, locale) : formatNumber(value, decimals, locale);
+  let money = amount;
+  if (currency && currency !== look.home) {
+    const code = /^[A-Z]{3}$/.test(currency);
+    const where = code ? currencySymbol(currency, locale) : null;
+    const text = (look.currency === 'code' || !where ? currency : where.text).replace(MARKS, '');
+    const after = look.at ? look.at === 'after' : !!where?.after;
+    // Only letters ("EGP") keep their order anywhere; a symbol is kept whole on a right-to-left page.
+    const said = isRightToLeft(locale) && !/^\p{L}+$/u.test(text) ? isolate(text) : text;
+    money = after ? `${amount}\u00a0${said}` : `${said}\u00a0${amount}`;
+  }
+  const period = periodOf(look, values);
+  if (!period) return money;
+  const words = WIDGET_LABELS[locale] ?? WIDGET_LABELS.en;
+  return `${money}${words[PER_KEYS[period]]}`;
+}
+
+/** The fields an amount's words read besides its own: its currency's, and those its look's conditions read. */
+export function moneyReads(def: Field | LineField | undefined, over?: MoneyLook): string[] {
+  if (def?.type !== 'monetary') return [];
+  const reads = def.currencyField && !def.currencyField.startsWith('parent.') ? [def.currencyField] : [];
+  for (const look of [def.money, over]) for (const item of look?.per ?? []) if (item.when !== undefined) reads.push(...compileModifier(item.when).fields);
+  return [...new Set(reads)];
+}

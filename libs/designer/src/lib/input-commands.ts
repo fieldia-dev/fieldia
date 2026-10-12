@@ -1,4 +1,4 @@
-import { dayOf, type Field, type FieldNode, type Page } from '@fieldia/core';
+import { dayOf, type Field, type FieldNode, type MoneyLook, type Page } from '@fieldia/core';
 import { findNode } from './page-tree';
 import { Refusal } from './refusal';
 import type { DesignerWords } from './designer-words';
@@ -24,6 +24,13 @@ export interface InputLimits {
   days?: number[] | null;
   /** A date that starts on the day the form is opened. */
   startsToday?: boolean;
+}
+
+/** How an amount is written where it is read: its currency by code ("EGP"), before or after it, short ("4.5M"). Null, or the usual, takes one away. */
+export interface MoneyLookPatch {
+  currency?: 'symbol' | 'code' | null;
+  at?: 'before' | 'after' | null;
+  short?: boolean | null;
 }
 
 export interface InputCommandsDeps {
@@ -109,6 +116,23 @@ export function inputCommands({ apply, fromModel, words }: InputCommandsDeps) {
         // Typing in one of a field's limits is one undo step.
         `limits:${id}:${Object.keys(limits).join(',')}`
       );
+    },
+
+    /** How an amount is written where it is read — a list, a field shown as words, a map's card and pins — in its field's money look. */
+    setMoneyLook(id: string, patch: MoneyLookPatch): boolean {
+      return apply((draft) => {
+        const { field, owned } = question(draft, id);
+        if (field.type !== 'monetary') throw new Refusal((w) => w.refusals.onlyAmountCurrency);
+        if (!owned) throw new Refusal((w) => w.refusals.currencyFromModel(field.label));
+        const look: Record<string, unknown> = { ...field.money };
+        // The usual is said by leaving it out: a symbol, where the language puts it, in full.
+        for (const [key, value] of Object.entries(patch)) {
+          if (value === null || value === undefined || value === false || value === 'symbol') delete look[key];
+          else look[key] = value;
+        }
+        if (Object.keys(look).length) field.money = look as MoneyLook;
+        else delete field.money;
+      });
     },
 
     /** A list among the widget's settings, such as keywords' suggestions; empty takes it away. Typing in it is one undo step. */

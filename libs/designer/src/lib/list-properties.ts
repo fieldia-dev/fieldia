@@ -1,4 +1,4 @@
-import type { ButtonNode, Field, FilterCondition, ListMap, ListNode, MapTool, Page, Pin } from '@fieldia/core';
+import { cardLines, type ButtonNode, type Field, type FilterCondition, type ListMap, type ListNode, type MapTool, type Page, type Pin } from '@fieldia/core';
 import type { ElementFactory } from './chrome';
 import type { Designer } from './designer';
 import type { DesignerWords } from './designer-words';
@@ -189,6 +189,11 @@ function mapSection(el: ElementFactory, designer: Designer) {
   const picture = el('select', { class: 'fd-input fd-select', 'aria-label': w.cardPicture }) as HTMLSelectElement;
   const cardFields = el('div', { class: 'fd-chips' });
   const addToCard = el('button', { type: 'button', class: 'fd-button' }, w.addToCard);
+  const cardLink = el('select', { class: 'fd-input fd-select', 'aria-label': w.cardLink }) as HTMLSelectElement;
+  const cardLabels = el('input', { type: 'checkbox' }) as HTMLInputElement;
+  const cardLead = el('input', { type: 'checkbox' }) as HTMLInputElement;
+  const cardChoose = el('input', { type: 'checkbox' }) as HTMLInputElement;
+  const home = el('input', { class: 'fd-input', 'aria-label': w.homeCurrency, placeholder: 'EGP', maxlength: '3', autocomplete: 'off', spellcheck: 'false' }) as HTMLInputElement;
   const opens = select(el, w.opensAs, (['list', 'map', 'both'] as const).map((k) => [k, w.opensAsChoices[k]]));
   const bubbles = el('input', { type: 'checkbox' }) as HTMLInputElement;
   const toolTicks = LIST_TOOLS.map((tool) => ({ tool, box: el('input', { type: 'checkbox' }) as HTMLInputElement }));
@@ -205,6 +210,7 @@ function mapSection(el: ElementFactory, designer: Designer) {
     icon: prop(el, w.pinIcon, icon),
     iconFrom: prop(el, w.iconFrom, iconFrom),
     turn: prop(el, w.turnedBy, turn),
+    home: prop(el, w.homeCurrency, home),
     weight: prop(el, w.heatWeight, weight),
     areaField: prop(el, w.areaField, areaField),
     areas: prop(el, w.areas, areas),
@@ -221,9 +227,14 @@ function mapSection(el: ElementFactory, designer: Designer) {
     rows.icon,
     rows.iconFrom,
     rows.turn,
+    rows.home,
     prop(el, w.cardTitle, title),
     prop(el, w.cardPicture, picture),
     el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.cardShows), cardFields, addToCard),
+    el('label', { class: 'fd-q-required' }, cardLabels, el('span', {}, w.cardLabels)),
+    el('label', { class: 'fd-q-required' }, cardLead, el('span', {}, w.cardLead)),
+    prop(el, w.cardLink, cardLink),
+    el('label', { class: 'fd-q-required' }, cardChoose, el('span', {}, w.cardChoose)),
     prop(el, w.opensAs, opens),
     el('label', { class: 'fd-q-required' }, bubbles, el('span', {}, w.bubbles)),
     el('div', { class: 'fd-prop' }, el('span', { class: 'fd-prop-name' }, w.mapTools), tools),
@@ -249,6 +260,11 @@ function mapSection(el: ElementFactory, designer: Designer) {
     if (pin && !Object.keys(pin).length) delete map.pin;
     const card = map.card as Record<string, unknown> | undefined;
     if (card) for (const key of Object.keys(card)) if (card[key] === '' || card[key] === undefined || (Array.isArray(card[key]) && !(card[key] as unknown[]).length)) delete card[key];
+    // A pin's money look: its home currency alone, here.
+    const money = pin?.['money'] as Record<string, unknown> | undefined;
+    if (money) for (const key of Object.keys(money)) if (money[key] === '' || money[key] === undefined) delete money[key];
+    if (pin && money && !Object.keys(money).length) delete pin['money'];
+    if (pin && !Object.keys(pin).length) delete map.pin;
     if (card && !Object.keys(card).length) delete map.card;
     designer.setListOptions({ map });
   };
@@ -290,6 +306,17 @@ function mapSection(el: ElementFactory, designer: Designer) {
   turn.addEventListener('change', () => change((map) => (pinOf(map).turn = turn.value)));
   title.addEventListener('change', () => change((map) => ((map.card ??= {}).title = title.value)));
   picture.addEventListener('change', () => change((map) => ((map.card ??= {}).image = picture.value)));
+  cardLink.addEventListener('change', () => change((map) => ((map.card ??= {}).href = cardLink.value)));
+  // On is the usual for labels and the box to choose, said by leaving them out; the first line leads only when asked.
+  cardLabels.addEventListener('change', () => change((map) => ((map.card ??= {}).labels = cardLabels.checked ? undefined : false)));
+  cardLead.addEventListener('change', () => change((map) => ((map.card ??= {}).lead = cardLead.checked || undefined)));
+  cardChoose.addEventListener('change', () => change((map) => ((map.card ??= {}).choose = cardChoose.checked ? undefined : false)));
+  home.addEventListener('input', () => {
+    const code = home.value.trim().toUpperCase();
+    // Three letters make a currency; until then nothing is saved, and empty takes it away.
+    if (code && !/^[A-Z]{3}$/.test(code)) return;
+    change((map) => (((pinOf(map).money ??= {}) as Record<string, unknown>)['home'] = code || undefined));
+  });
   opens.addEventListener('change', () => change((map) => (map.view = opens.value as ListMap['view'])));
   bubbles.addEventListener('change', () =>
     change((map) => {
@@ -325,14 +352,15 @@ function mapSection(el: ElementFactory, designer: Designer) {
   areaField.addEventListener('change', () => change((map) => map.regions && (map.regions.field = areaField.value)));
   addToCard.addEventListener('click', () => {
     const page = designer.getPage();
-    const shown = new Set(current()?.card?.fields ?? []);
+    const lines = current()?.card?.fields ?? [];
+    const shown = new Set(cardLines({ fields: lines }).flatMap((parts) => parts.map((part) => part.field)));
     const choices = fieldsOf(page, (f) => SAYABLE.has(f.type)).filter(({ name }) => !shown.has(name));
     openMenu({
       el,
       anchor: addToCard,
       title: w.cardShows,
       items: choices.map(({ name, field }) => ({ id: name, label: field.label })),
-      onPick: (name) => change((map) => ((map.card ??= {}).fields = [...shown, name])),
+      onPick: (name) => change((map) => ((map.card ??= {}).fields = [...lines, name])),
     });
   });
 
@@ -369,19 +397,28 @@ function mapSection(el: ElementFactory, designer: Designer) {
       fill(turn, numbers, w.nothing);
       turn.value = pin.turn ?? '';
       rows.icon.hidden = rows.iconFrom.hidden = rows.turn.hidden = shownLook !== 'icon';
+      // A pin that says an amount: the currency it leaves unsaid.
+      rows.home.hidden = page.fields[pin.label ?? '']?.type !== 'monetary';
+      if (!focused(home)) home.value = pin.money?.home ?? '';
       fill(title, fieldsOf(page, (f) => SAYABLE.has(f.type)));
       title.value = map.card?.title ?? listOf(page).columns[0];
       fill(picture, fieldsOf(page, (f) => PICTURES.has(f.type)), w.nothing);
       picture.value = map.card?.image ?? '';
       const onCard = map.card?.fields ?? [];
+      // Each line a chip: a field, or several on one line, named by their labels.
       cardFields.replaceChildren(
-        ...onCard.map((name) => {
-          const named = page.fields[name]?.label ?? name;
+        ...cardLines({ fields: onCard }).map((parts, i) => {
+          const named = parts.map((part) => page.fields[part.field]?.label ?? part.field).join(' · ');
           const remove = el('button', { type: 'button', class: 'fd-chip-remove', 'aria-label': w.takeOffCard(named) }, '×');
-          remove.addEventListener('click', () => change((next) => ((next.card ??= {}).fields = onCard.filter((n) => n !== name))));
+          remove.addEventListener('click', () => change((next) => ((next.card ??= {}).fields = onCard.filter((_, j) => j !== i))));
           return el('span', { class: 'fd-chip' }, named, remove);
         })
       );
+      fill(cardLink, fieldsOf(page, (f) => f.type === 'char' || f.type === 'text'), w.nothing);
+      cardLink.value = map.card?.href ?? '';
+      cardLabels.checked = map.card?.labels !== false;
+      cardLead.checked = !!map.card?.lead;
+      cardChoose.checked = map.card?.choose !== false;
       opens.value = map.view ?? 'list';
       bubbles.checked = map.cluster !== false;
       for (const { tool, box } of toolTicks) box.checked = !!map.tools?.includes(tool);

@@ -18,9 +18,29 @@ const TEXT_KEYS = new Set(['title', 'description', 'label', 'help', 'placeholder
  */
 const NOT_TEXT = new Set(['lineKinds', 'filter', 'default', 'data', 'translations', 'optionalColumns', 'values', 'into', 'params', 'map']);
 
-/** A map's layer: its own label is words; the rest names fields and layers, and stays as it is. */
-const wordsOfLayer = (text: (words: string) => string) => (layer: unknown) =>
-  layer !== null && typeof layer === 'object' && typeof (layer as { label?: unknown }).label === 'string' ? { ...layer, label: text((layer as { label: string }).label) } : layer;
+/** A part of a card's line: the words after its value are words ("m²", "beds", each plural form); its field stays. */
+const wordsOfPart = (text: (words: string) => string) => (part: unknown) => {
+  if (part === null || typeof part !== 'object' || Array.isArray(part)) return part;
+  const unit = (part as { unit?: unknown }).unit;
+  if (typeof unit === 'string') return { ...part, unit: text(unit) };
+  if (unit === null || typeof unit !== 'object') return part;
+  return { ...part, unit: Object.fromEntries(Object.entries(unit).map(([form, words]) => [form, typeof words === 'string' ? text(words) : words])) };
+};
+
+/** A map's card: only the words after its lines' values; the rest names fields. */
+const wordsOfCard = (text: (words: string) => string) => (owner: unknown) => {
+  if (owner === null || typeof owner !== 'object') return owner;
+  const card = (owner as { card?: { fields?: unknown } }).card;
+  if (!card || !Array.isArray(card.fields)) return owner;
+  const part = wordsOfPart(text);
+  return { ...owner, card: { ...card, fields: card.fields.map((line: unknown) => (Array.isArray(line) ? line.map(part) : part(line))) } };
+};
+
+/** A map's layer: its own label is words, and its card's units; the rest names fields and layers, and stays as it is. */
+const wordsOfLayer = (text: (words: string) => string) => (layer: unknown) => {
+  const named = layer !== null && typeof layer === 'object' && typeof (layer as { label?: unknown }).label === 'string' ? { ...layer, label: text((layer as { label: string }).label) } : layer;
+  return wordsOfCard(text)(named);
+};
 
 /**
  * Every word a person reads in `value` passed through `text`, the rest copied
@@ -36,6 +56,8 @@ function walk(value: unknown, key: string | null, text: (words: string) => strin
   for (const [name, inner] of Object.entries(value)) {
     // A field node's `options` are its widget's settings, not a list of choices.
     if (name === 'layers' && Array.isArray(inner)) out[name] = inner.map(wordsOfLayer(text));
+    // A list's map names fields, but for the words after its card's values.
+    else if (name === 'map' && inner !== null && typeof inner === 'object' && !Array.isArray(inner)) out[name] = wordsOfCard(text)(inner);
     else out[name] = NOT_TEXT.has(name) ? inner : walk(inner, name, text, enter, widget || (name === 'options' && !Array.isArray(inner)));
   }
   return out;

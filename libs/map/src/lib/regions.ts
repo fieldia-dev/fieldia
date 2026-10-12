@@ -191,10 +191,26 @@ export function drawRegions(options: {
     const value = values?.get(border.key);
     return value === undefined ? border.name : fill(labels.areaValue, { name: border.name, value: number(value) });
   };
+  /** An area's words over the map: in the page's direction, its name in its own ("Zamalek" on an Arabic page), and only ever as text. */
+  const tip = (border: Border) => {
+    const element = doc.createElement('span');
+    const page = box.element.parentElement && doc.defaultView?.getComputedStyle(box.element.parentElement).direction;
+    element.dir = page === 'rtl' ? 'rtl' : 'ltr';
+    const value = values?.get(border.key);
+    for (const piece of (value === undefined ? '{name}' : labels.areaValue).split(/(\{name\})/)) {
+      if (piece !== '{name}') element.append(fill(piece, { value: value === undefined ? '' : number(value) }));
+      else {
+        const name = doc.createElement('bdi');
+        name.textContent = border.name;
+        element.append(name);
+      }
+    }
+    return element;
+  };
   for (const border of ordered) {
     const latLngs = border.polygons.map((rings) => rings.map((ring) => ring.map(([lng, lat]) => [lat, lng] as [number, number])));
     const path = L.polygon(latLngs, { className: 'fd-map-region', pane: 'fd-regions', interactive: true, bubblingMouseEvents: false }).addTo(group);
-    path.bindTooltip(() => words(border), { sticky: true, direction: 'top', offset: [0, -8], className: 'fd-map-tip', opacity: 1 });
+    path.bindTooltip(() => tip(border), { sticky: true, direction: 'top', offset: [0, -8], className: 'fd-map-tip', opacity: 1 });
     if (options.press) path.on('click', () => options.press?.(border));
     paths.set(border.key, path);
   }

@@ -1,4 +1,4 @@
-import { compileModifier, valuesIn, type FieldNode, type FilterItem, type LayoutNode, type ListMap, type MapNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
+import { cardLineFields, compileModifier, valuesIn, type FieldNode, type FilterItem, type LayoutNode, type ListMap, type MapNode, type Page, type SectionNode, type SheetNode, type StepNode, type TabNode, type TabsNode } from '@fieldia/core';
 import type { DesignerWords } from './designer-words';
 import { en } from './locales/en';
 
@@ -141,7 +141,7 @@ export function mapNodeFields(node: MapNode): string[] {
   ];
 }
 
-/** The fields a list's map names: where each record is, what its pin and its card show, what its pin's tones read, its areas' field and its heat's weight. */
+/** The fields a list's map names: where each record is, what its pin and its card show and link to, what its pin's tones and money look read, its areas' field and its heat's weight. */
 export function listMapFields(map: Pick<ListMap, 'point' | 'latitude' | 'longitude' | 'pin' | 'card'> & { regions?: { from: string; field?: string }; heat?: ListMap['heat'] }): string[] {
   const pin = map.pin ?? {};
   const read = (when: string | boolean) => {
@@ -160,9 +160,11 @@ export function listMapFields(map: Pick<ListMap, 'point' | 'latitude' | 'longitu
     pin.image,
     pin.turn,
     ...(pin.tones ?? []).flatMap((t) => read(t.when)),
+    ...(pin.money?.per ?? []).flatMap((p) => (p.when === undefined ? [] : read(p.when))),
     map.card?.title,
     map.card?.image,
-    ...(map.card?.fields ?? []),
+    map.card?.href,
+    ...cardLineFields(map.card),
     map.regions?.field,
     typeof map.heat === 'object' ? map.heat.weight : undefined,
   ];

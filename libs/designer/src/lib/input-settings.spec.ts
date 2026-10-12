@@ -138,6 +138,33 @@ describe('a number’s range, decimals and unit', () => {
     expect(host.querySelector('.fd-canvas-field.fd-editing .fd-currency')?.textContent).toBe('$');
     expect(inline(host, 'Unit after')).toBeNull();
   });
+
+  it('writes an amount by its currency’s code, after it, short, as the amount itself sets it; the usual by leaving it out', () => {
+    const { designer, id, host } = screenWith('amount');
+    expect(inline(host, 'Currency as')?.value).toBe('symbol');
+    expect(inline(host, 'Currency goes')?.value).toBe('');
+    choose(inline(host, 'Currency as') ?? undefined, 'code');
+    choose(inline(host, 'Currency goes') ?? undefined, 'after');
+    inline(host, 'Short, as 4.5M')?.click();
+    expect(fieldOf(designer, id)).toMatchObject({ type: 'monetary', money: { currency: 'code', at: 'after', short: true } });
+    // Its box follows: the code, after the amount.
+    expect(host.querySelector('.fd-canvas-field.fd-editing .fd-currency')?.textContent).toBe('USD');
+    choose(inline(host, 'Currency as') ?? undefined, 'symbol');
+    choose(inline(host, 'Currency goes') ?? undefined, '');
+    inline(host, 'Short, as 4.5M')?.click();
+    expect(fieldOf(designer, id)).not.toHaveProperty('money');
+    expect(validatePage(designer.getPage()).ok).toBe(true);
+  });
+
+  it('refuses a money look on what is no amount, or on the model’s', () => {
+    const designer = createDesigner({ page: blankPage('screen', 'Visit'), model: { price: { type: 'monetary', label: 'Price', currency: 'EGP' } } });
+    const number = designer.addQuestion('number', { parent: 'section-1' }) as string;
+    expect(designer.setMoneyLook(number, { currency: 'code' })).toBe(false);
+    expect(designer.getState().issues).toEqual(['Only an amount has a currency']);
+    const owned = designer.addModelField('price') as string;
+    expect(designer.setMoneyLook(owned, { currency: 'code' })).toBe(false);
+    expect(designer.getState().issues).toEqual(['The currency of Price comes from the model']);
+  });
 });
 
 describe('a rating’s look, and its words at each end', () => {
@@ -353,6 +380,21 @@ describe('the words for what changed, when published', () => {
     designer.setLimits(q, { min: null, decimals: 3 });
     designer.setWidgetOptions(q, { suffix: null, prefix: '≈' });
     expect(pageChanges(later, designer.getPage())).toEqual(['“Weight”: at most 300', '“Weight”: 3 decimals', '“Weight”: no unit after the number', '“Weight”: shows “≈” before the number']);
+  });
+
+  it('says how an amount is written, by an example', () => {
+    const designer = createDesigner({ page: blankPage('survey', 'Move') });
+    const q = designer.addQuestion('amount') as string;
+    designer.updateQuestion(q, { label: 'Price' });
+    const before = designer.getPage();
+    designer.setMoneyLook(q, { currency: 'code', at: 'after' });
+    expect(pageChanges(before, designer.getPage())).toEqual(['“Price”: written as 1,610,000.00 USD']);
+    const later = designer.getPage();
+    designer.setMoneyLook(q, { short: true });
+    expect(pageChanges(later, designer.getPage())).toEqual(['“Price”: written as 1.6M USD']);
+    const last = designer.getPage();
+    designer.setMoneyLook(q, { currency: null, at: null, short: null });
+    expect(pageChanges(last, designer.getPage())).toEqual(['“Price”: written as usual']);
   });
 
   it('says a rating’s look', () => {

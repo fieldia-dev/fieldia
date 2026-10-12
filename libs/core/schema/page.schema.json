@@ -666,6 +666,9 @@
               "items": false,
               "minItems": 2,
               "maxItems": 2
+            },
+            "money": {
+              "$ref": "#/$defs/MoneyLook"
             }
           },
           "required": [
@@ -1599,6 +1602,60 @@
         }
       ]
     },
+    "MoneyLook": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string",
+          "enum": [
+            "symbol",
+            "code"
+          ]
+        },
+        "at": {
+          "type": "string",
+          "enum": [
+            "before",
+            "after"
+          ]
+        },
+        "short": {
+          "type": "boolean"
+        },
+        "home": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "per": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "period": {
+                "type": "string",
+                "enum": [
+                  "day",
+                  "night",
+                  "week",
+                  "month",
+                  "year"
+                ]
+              },
+              "when": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "period"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "Option": {
       "type": "object",
       "properties": {
@@ -2034,6 +2091,9 @@
               "items": false,
               "minItems": 2,
               "maxItems": 2
+            },
+            "money": {
+              "$ref": "#/$defs/MoneyLook"
             }
           },
           "required": [
@@ -2673,6 +2733,9 @@
               "items": false,
               "minItems": 2,
               "maxItems": 2
+            },
+            "money": {
+              "$ref": "#/$defs/MoneyLook"
             }
           },
           "required": [
@@ -3844,6 +3907,9 @@
               "items": false,
               "minItems": 2,
               "maxItems": 2
+            },
+            "money": {
+              "$ref": "#/$defs/MoneyLook"
             }
           },
           "required": [
@@ -7326,6 +7392,9 @@
         "widget": {
           "type": "string",
           "minLength": 1
+        },
+        "money": {
+          "$ref": "#/$defs/MoneyLook"
         }
       },
       "additionalProperties": false
@@ -7345,14 +7414,95 @@
           "minItems": 1,
           "type": "array",
           "items": {
-            "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            "anyOf": [
+              {
+                "$ref": "#/$defs/CardPart"
+              },
+              {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/CardPart"
+                }
+              }
+            ]
           }
         },
         "open": {
           "type": "boolean"
+        },
+        "labels": {
+          "type": "boolean"
+        },
+        "lead": {
+          "type": "boolean"
+        },
+        "href": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "choose": {
+          "type": "boolean"
         }
       },
+      "additionalProperties": false
+    },
+    "CardPart": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "unit": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/$defs/PluralWords"
+                }
+              ]
+            }
+          },
+          "required": [
+            "field"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "PluralWords": {
+      "type": "object",
+      "properties": {
+        "zero": {
+          "type": "string"
+        },
+        "one": {
+          "type": "string"
+        },
+        "two": {
+          "type": "string"
+        },
+        "few": {
+          "type": "string"
+        },
+        "many": {
+          "type": "string"
+        },
+        "other": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "other"
+      ],
       "additionalProperties": false
     },
     "MapRoute": {

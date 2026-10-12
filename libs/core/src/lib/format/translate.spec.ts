@@ -78,6 +78,30 @@ describe('translatePage', () => {
     expect(after.buttons[0].label).toBe('«Log»');
   });
 
+  it('translates the words after a map card’s values, each plural form, and leaves its fields alone', () => {
+    const homes: Page = {
+      ...page('customer'),
+      layout: {
+        type: 'list',
+        id: 'homes',
+        columns: ['name'],
+        map: {
+          point: 'spot',
+          pin: { label: 'price', money: { per: [{ period: 'month', when: "offer == 'rent'" }] } },
+          card: { title: 'name', fields: ['price', ['district', { field: 'rooms', unit: { one: 'room', other: 'rooms' } }, { field: 'area', unit: 'm²' }]] },
+        },
+      } as any,
+    };
+    const map = (translatePage(homes, marked).layout as any).map;
+    expect(map.card.fields).toEqual(['price', ['district', { field: 'rooms', unit: { one: '«room»', other: '«rooms»' } }, { field: 'area', unit: '«m²»' }]]);
+    expect(map.card.title).toBe('name');
+    expect(map.pin).toEqual({ label: 'price', money: { per: [{ period: 'month', when: "offer == 'rent'" }] } });
+    // A form's map: a layer's card too.
+    const order = { ...page('customer'), layout: { type: 'sheet', children: [{ type: 'map', id: 'm', layers: [{ id: 'stop', label: 'Stop', point: 'spot', card: { fields: [{ field: 'area', unit: 'm²' }] } }] }] } as any };
+    const layer = (translatePage(order, marked).layout as any).children[0].layers[0];
+    expect(layer).toEqual({ id: 'stop', label: '«Stop»', point: 'spot', card: { fields: [{ field: 'area', unit: '«m²»' }] } });
+  });
+
   it('gives back a new page and leaves the one it was given alone', () => {
     const before = page('signup');
     const copy = JSON.stringify(before);

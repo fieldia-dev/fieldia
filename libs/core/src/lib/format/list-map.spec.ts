@@ -19,6 +19,7 @@ const fields = {
   kind: { type: 'selection', label: 'Kind', options: [{ value: 'car', label: 'Car' }] },
   district: { type: 'char', label: 'District' },
   rooms: { type: 'integer', label: 'Rooms' },
+  link: { type: 'char', label: 'Link' },
 };
 
 const page = (map: Record<string, unknown>) => ({
@@ -87,6 +88,49 @@ describe('a list on a map', () => {
     expect(problems(page({ point: 'spot', heat: { weight: 'name' } }))).toEqual(['layout.map.heat.weight: "name" is a char; a weight is a number field']);
     expect(problems(page({ point: 'spot', heat: { weight: 'rooms' } }))).toEqual([]);
     expect(problems(page({ point: 'spot', tools: ['compass'] }))).not.toEqual([]);
+  });
+
+  it('takes a card for a map people only look at: lines without labels, the first leading, a joined line with its words, a link, no Choose', () => {
+    expect(
+      problems(
+        page({
+          point: 'spot',
+          card: {
+            title: 'name',
+            image: 'photo',
+            href: 'link',
+            labels: false,
+            lead: true,
+            choose: false,
+            open: false,
+            fields: ['price', ['district', { field: 'rooms', unit: { one: 'room', other: 'rooms' } }, { field: 'rooms', unit: 'm²' }]],
+          },
+        })
+      )
+    ).toEqual([]);
+    // Each part of a line is a field of the page, said where it stands.
+    expect(problems(page({ point: 'spot', card: { fields: [['district', { field: 'beds', unit: 'beds' }, 'size']] } }))).toEqual([
+      'layout.map.card.fields[0][1].field: no field "beds"',
+      'layout.map.card.fields[0][2]: no field "size"',
+    ]);
+    expect(problems(page({ point: 'spot', card: { fields: [{ field: 'nope' }] } }))).toEqual(['layout.map.card.fields[0].field: no field "nope"']);
+    // A link is a text field holding an address.
+    expect(problems(page({ point: 'spot', card: { href: 'price' } }))).toEqual(['layout.map.card.href: "price" is a monetary; a card\'s link is a text field holding a web address']);
+    expect(problems(page({ point: 'spot', card: { href: 'where' } }))).toEqual(['layout.map.card.href: no field "where"']);
+    // A plural's words need their `other`; a line needs a part.
+    expect(problems(page({ point: 'spot', card: { fields: [{ field: 'rooms', unit: { one: 'room' } }] } }))).not.toEqual([]);
+    expect(problems(page({ point: 'spot', card: { fields: [[]] } }))).not.toEqual([]);
+  });
+
+  it('takes a pin’s price as a page says it: short, the home currency unsaid, per month on a rent', () => {
+    expect(problems(page({ point: 'spot', pin: { label: 'price', money: { home: 'EGP', currency: 'symbol', at: 'before', per: [{ period: 'month', when: "offer == 'rent'" }] } } }))).toEqual([]);
+    expect(problems(page({ point: 'spot', pin: { label: 'price', money: { short: false, per: [{ period: 'night' }] } } }))).toEqual([]);
+    expect(problems(page({ point: 'spot', pin: { label: 'price', money: { per: [{ period: 'month', when: "kind_of == 'rent'" }] } } }))).toEqual([
+      `layout.map.pin.money.per[0].when: "kind_of == 'rent'" reads "kind_of", which is not a field of this page`,
+    ]);
+    expect(problems(page({ point: 'spot', pin: { money: { home: 'pound' } } }))).toEqual(['layout.map.pin.money.home: a home currency is a code of three capitals, such as EGP']);
+    expect(problems(page({ point: 'spot', pin: { money: { per: [{ period: 'fortnight' }] } } }))).not.toEqual([]);
+    expect(problems(page({ point: 'spot', pin: { money: { currency: 'name' } } }))).not.toEqual([]);
   });
 
   it('refuses a look, a view or a limit that is none', () => {
