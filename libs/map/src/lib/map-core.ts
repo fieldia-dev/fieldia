@@ -30,7 +30,12 @@ export interface MapBoxOptions {
   zoom?: number;
   /** Height in pixels, or as CSS says it (`clamp(…)`); 280 pixels unless said. */
   height?: number | string;
+  /** Tools under the zoom: the satellite's images, full screen, measuring a distance. */
+  tools?: readonly MapTool[];
 }
+
+/** A tool a map can have under its zoom. */
+export type MapTool = 'satellite' | 'fullscreen' | 'measure';
 
 export interface MapBox {
   element: HTMLElement;
@@ -46,6 +51,8 @@ export interface MapBox {
   shield(element: HTMLElement): void;
   /** Words over the map, written in the page's direction though the map itself is left to right. */
   follow(element: HTMLElement): void;
+  /** A tool of the map's user's own under the zoom, drawn as the others are: an SVG drawing on a 24-unit square. */
+  tool(words: string, drawing: string): HTMLButtonElement;
   destroy(): void;
 }
 
@@ -89,6 +96,19 @@ export function createMapBox(options: MapBoxOptions): MapBox {
   const zoomIn = zoomButton(labels.zoomIn, '+');
   const zoomOut = zoomButton(labels.zoomOut, '−');
   zoom.append(zoomIn, zoomOut);
+  /** A tool's button under the zoom: pressed while it is on. */
+  const toolButton = (words: string, drawing: string) => {
+    const button = doc.createElement('button');
+    button.type = 'button';
+    button.className = 'fd-map-tool';
+    button.setAttribute('aria-label', words);
+    button.title = words;
+    button.setAttribute('aria-pressed', 'false');
+    button.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${drawing}</svg>`;
+    zoom.append(button);
+    return button;
+  };
+  const tools = new Set(options.tools ?? []);
   const credits = doc.createElement('div');
   credits.className = 'fd-map-credits';
   const veilElement = doc.createElement('div');
@@ -126,6 +146,8 @@ export function createMapBox(options: MapBoxOptions): MapBox {
   let destroyed = false;
   let pannable = true;
   let baseMap: BaseMap | null = null;
+  /** The satellite's images, by the person's choice; the scheme's own otherwise. */
+  let satellite = false;
   let baseLayer: Leaflet.TileLayer | null = null;
   let creditsAsked = 0;
   let creditsTimer: ReturnType<typeof setTimeout> | undefined;
@@ -219,7 +241,7 @@ export function createMapBox(options: MapBoxOptions): MapBox {
     zoom.dataset['side'] = page === 'rtl' ? 'left' : 'right';
     element.dataset['side'] = zoom.dataset['side'];
     for (const words of following) words.dir = page === 'rtl' ? 'rtl' : 'ltr';
-    if (map) void setBaseMap(dark() ? 'dark' : 'road');
+    if (map) void setBaseMap(satellite ? 'satellite' : dark() ? 'dark' : 'road');
   }
 
   function setPannable(on: boolean) {
@@ -299,6 +321,7 @@ export function createMapBox(options: MapBoxOptions): MapBox {
     element.append(...overlays);
     for (const over of overlays) shield(over);
     zoomIn.addEventListener('click', () => map?.zoomIn());
+    wireTools(leaflet);
     zoomOut.addEventListener('click', () => map?.zoomOut());
     map.on('moveend', askCredits);
     // Shown at last in a tab or a dialog: the map measures itself again.
@@ -312,7 +335,71 @@ export function createMapBox(options: MapBoxOptions): MapBox {
     for (const use of waiting.splice(0)) use(map, leaflet);
   });
 
-  return {
+  // ---- the tools under the zoom ----------------------------------------------------------
+
+  function wireTools(leaflet: LeafletModule) {
+    if (tools.has('satellite')) {
+      const button = toolButton(labels.satellite, '<circle cx="12" cy="12" r="3"/><path d="M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/><rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="2 3"/>');
+      // A provider with no such images: no such button.
+      void provider.tiles('satellite', locale).then((spec) => (button.hidden = !spec), () => (button.hidden = true));
+      button.addEventListener('click', () => {
+        satellite = !satellite;
+        button.setAttribute('aria-pressed', String(satellite));
+        refresh();
+      });
+    }
+    if (tools.has('fullscreen')) {
+      const button = toolButton(labels.fullScreen, '<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>');
+      const mark = (on: boolean) => {
+        element.toggleAttribute('data-full', on);
+        button.setAttribute('aria-pressed', String(on));
+        button.setAttribute('aria-label', on ? labels.leaveFullScreen : labels.fullScreen);
+        button.title = button.getAttribute('aria-label') ?? '';
+        setTimeout(() => map?.invalidateSize({ pan: false }), 50);
+      };
+      // Where the browser refuses the screen (a frame that may not), the map fills the window instead.
+      const fill = (on: boolean) => {
+        element.classList.toggle('fd-map-fixed', on);
+        mark(on);
+      };
+      const change = () => mark(doc.fullscreenElement === element);
+      doc.addEventListener('fullscreenchange', change);
+      cleanups.push(() => doc.removeEventListener('fullscreenchange', change));
+      button.addEventListener('click', () => {
+        if (element.hasAttribute('data-full')) {
+          if (doc.fullscreenElement === element) void doc.exitFullscreen();
+          else fill(false);
+        } else if (element.requestFullscreen) element.requestFullscreen().catch(() => fill(true));
+        else fill(true);
+      });
+      element.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && element.classList.contains('fd-map-fixed')) fill(false);
+      });
+    }
+    if (tools.has('measure')) {
+      const button = toolButton(labels.measure, '<path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>');
+      let stop: (() => void) | null = null;
+      // Its code is asked for as the map is ready, not at the press: keys pressed straight after it are not lost.
+      const measuring = import('./measure');
+      button.addEventListener('click', async () => {
+        if (stop) {
+          stop();
+          return;
+        }
+        button.setAttribute('aria-pressed', 'true');
+        const { measure } = await measuring;
+        if (!map) return;
+        stop = measure({ box: api, map, L: leaflet, labels, locale, stopped: () => {
+          stop = null;
+          button.setAttribute('aria-pressed', 'false');
+          button.focus();
+        } });
+      });
+    }
+    for (const button of zoom.querySelectorAll<HTMLElement>('.fd-map-tool')) shield(button);
+  }
+
+  const api: MapBox = {
     element,
     ready(use) {
       if (map && L) use(map, L);
@@ -326,6 +413,11 @@ export function createMapBox(options: MapBoxOptions): MapBox {
       following.push(words);
       refresh();
     },
+    tool(words, drawing) {
+      const button = toolButton(words, drawing);
+      shield(button);
+      return button;
+    },
     destroy() {
       destroyed = true;
       clearTimeout(creditsTimer);
@@ -335,4 +427,5 @@ export function createMapBox(options: MapBoxOptions): MapBox {
       map = null;
     },
   };
+  return api;
 }

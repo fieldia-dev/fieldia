@@ -125,6 +125,12 @@ export type ResolvedFilterCondition = Omit<FilterCondition, 'valueFrom' | 'value
 export interface SortOrder {
   field: string;
   desc?: boolean;
+  /**
+   * Nearest this place first, for a list's "Nearest first": the field is a
+   * place (a GeoJSON point), or a latitude when `longitude` names its pair.
+   * A data source that cannot sort by distance leaves the order as it is.
+   */
+  near?: { lat: number; lng: number; longitude?: string };
 }
 
 export interface ListRequest {

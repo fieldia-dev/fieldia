@@ -126,22 +126,23 @@ export function shownFields(page: Page): Set<string> {
   return shown;
 }
 
-/** The record's fields a form's map names: each layer's place, pin and card, a layer's lines, and where a route's numbers are written. */
+/** The record's fields a form's map names: each layer's place, pin and card, a layer's lines, where a route's numbers are written, the field an area is chosen into, and the areas its fences watch. */
 export function mapNodeFields(node: MapNode): string[] {
   return [
-    ...new Set(
-      node.layers.flatMap((layer) => {
+    ...new Set([
+      ...node.layers.flatMap((layer) => {
         // A layer of lines names its line's fields inside the field of lines: that field is the record's.
         if (layer.lines) return [layer.lines];
         const write = layer.route?.write;
-        return [...listMapFields(layer), write?.seconds, write?.metres, write?.line].filter((name): name is string => !!name);
-      })
-    ),
+        return [...listMapFields(layer), write?.seconds, write?.metres, write?.line, layer.regions?.choose].filter((name): name is string => !!name);
+      }),
+      ...(node.fences ?? []).flatMap((fence) => (fence.area ? [fence.area] : [])),
+    ]),
   ];
 }
 
-/** The fields a list's map names: where each record is, what its pin and its card show, and what its pin's tones read. */
-export function listMapFields(map: ListMap): string[] {
+/** The fields a list's map names: where each record is, what its pin and its card show, what its pin's tones read, its areas' field and its heat's weight. */
+export function listMapFields(map: Pick<ListMap, 'point' | 'latitude' | 'longitude' | 'pin' | 'card'> & { regions?: { from: string; field?: string }; heat?: ListMap['heat'] }): string[] {
   const pin = map.pin ?? {};
   const read = (when: string | boolean) => {
     try {
@@ -150,7 +151,21 @@ export function listMapFields(map: ListMap): string[] {
       return [];
     }
   };
-  const named = [map.point, map.latitude, map.longitude, pin.label, pin.iconField, pin.image, pin.turn, ...(pin.tones ?? []).flatMap((t) => read(t.when)), map.card?.title, map.card?.image, ...(map.card?.fields ?? [])];
+  const named = [
+    map.point,
+    map.latitude,
+    map.longitude,
+    pin.label,
+    pin.iconField,
+    pin.image,
+    pin.turn,
+    ...(pin.tones ?? []).flatMap((t) => read(t.when)),
+    map.card?.title,
+    map.card?.image,
+    ...(map.card?.fields ?? []),
+    map.regions?.field,
+    typeof map.heat === 'object' ? map.heat.weight : undefined,
+  ];
   return [...new Set(named.filter((name): name is string => !!name))];
 }
 

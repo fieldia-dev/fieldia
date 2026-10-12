@@ -70,6 +70,10 @@ export interface ListViewContext {
   highlight(id: RecordId | null): void;
   /** Put a search into the search bar, as a person's own: "In this area". */
   addSearch(search: { label: string; filter: Resolved[] }): void;
+  /** The list's order now: the map asks for its records in it, so it shows the same first ones. */
+  sort(): SortOrder[];
+  /** Put the table and the map in this order, as a header does ("Nearest first"); null puts back the list's own. */
+  sortBy(order: SortOrder[] | null): void;
   /** The list's buttons for the records chosen, to offer on one record's card too: "Assign", for this driver alone. */
   actions: { id: string; label: string; style?: ButtonNode['style'] }[];
   /** Press one of them for these records, `button` busy meanwhile: its confirmation, its steps, then the records again. */
@@ -284,7 +288,8 @@ export function listView(context: ListContext): ListView {
 
   function drawSort() {
     for (const th of headers) {
-      const order = sort[0]?.field === th.dataset['field'] ? sort[0] : null;
+      // Nearest a place is no column's order.
+      const order = !sort[0]?.near && sort[0]?.field === th.dataset['field'] ? sort[0] : null;
       if (order) th.setAttribute('aria-sort', order.desc ? 'descending' : 'ascending');
       else th.removeAttribute('aria-sort');
     }
@@ -418,6 +423,13 @@ export function listView(context: ListContext): ListView {
         }
       },
       addSearch: ({ label, filter }) => search.add({ kind: 'custom', label, filter }),
+      sort: () => sort,
+      sortBy(order) {
+        sort = order ?? defaultSort;
+        offset = 0;
+        void load();
+        void mapPart?.reload();
+      },
       actions: (node.actions ?? []).map((action) => ({ id: action.id, label: action.label, ...(action.style ? { style: action.style } : {}) })),
       act: (id, ids, button) =>
         context.press(button, async () => {

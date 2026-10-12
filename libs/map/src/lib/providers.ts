@@ -75,6 +75,21 @@ export interface RouteFound {
 
 export type RouteFinder = (request: RouteRequest) => Promise<RouteFound>;
 
+/** The area within some minutes of a place, for a map's reachable area. */
+export interface ReachRequest {
+  at: LatLng;
+  minutes: number;
+  mode: TravelMode;
+  signal?: AbortSignal;
+}
+
+/** A reachable area: its outer rings, as places (a ring for each part of it). */
+export interface ReachFound {
+  rings: LatLng[][];
+}
+
+export type ReachFinder = (request: ReachRequest) => Promise<ReachFound>;
+
 /** The providers' routes, loaded the first time one is asked for: a form with only a place or an area never carries them. */
 const routes = () => import('./routes');
 
@@ -94,6 +109,8 @@ export interface MapProvider {
   readonly demoOnly?: boolean;
   /** A route along the roads, for a map's routes. */
   readonly route?: RouteFinder;
+  /** The area within some minutes of a place, for a map's reachable area. */
+  readonly reach?: ReachFinder;
 }
 
 const query = (params: Record<string, string | number | undefined>) =>
@@ -314,6 +331,9 @@ export function azureMaps(options: AzureMapsOptions): MapProvider {
     async route(request) {
       return (await routes()).azureRoute({ fetchWith, auth, headers }, request);
     },
+    async reach(request) {
+      return (await routes()).azureReach({ fetchWith, auth, headers }, request);
+    },
   };
 }
 
@@ -532,6 +552,9 @@ export function mapbox(options: MapboxOptions): MapProvider {
     async route(request) {
       return (await routes()).mapboxRoute({ fetchWith, token }, request);
     },
+    async reach(request) {
+      return (await routes()).mapboxReach({ fetchWith, token }, request);
+    },
   };
 }
 
@@ -551,6 +574,8 @@ export interface TilesOptions {
   searchAsYouType?: boolean;
   /** The app's own routes. */
   route?: RouteFinder;
+  /** The app's own reachable areas. */
+  reach?: ReachFinder;
 }
 
 /** Map images from any address, such as the app's own server, with their credit. */
@@ -562,6 +587,7 @@ export function tiles(options: TilesOptions): MapProvider {
     search: options.search,
     reverse: options.reverse,
     route: options.route,
+    reach: options.reach,
     searchAsYouType: options.searchAsYouType ?? !!options.search,
     async tiles(kind) {
       const url = urls[kind];

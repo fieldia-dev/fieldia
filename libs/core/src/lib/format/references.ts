@@ -473,6 +473,11 @@ export class ReferenceCheck {
     if (map.point !== undefined && pair) this.report(path, 'a map takes point, or latitude and longitude, not both');
     else if (map.point === undefined && (map.latitude === undefined || map.longitude === undefined)) this.report(path, 'a map needs where each record is: point, or latitude and longitude');
     this.checkPlace(map, path, this.here(), map.pin, map.card);
+    if (map.regions) this.need(map.regions.field, `${path}.regions.field`);
+    if (typeof map.heat === 'object' && map.heat.weight !== undefined) {
+      const def = this.need(map.heat.weight, `${path}.heat.weight`);
+      if (def && def.type !== 'float' && def.type !== 'integer' && def.type !== 'monetary') this.report(`${path}.heat.weight`, `"${map.heat.weight}" is a ${def.type}; a weight is a number field`);
+    }
   }
 
   /**
@@ -516,8 +521,9 @@ export class ReferenceCheck {
       if (layers.has(layer.id)) this.report(`${at}.id`, `two layers are called "${layer.id}"`);
       const pair = layer.latitude !== undefined || layer.longitude !== undefined;
       const placed = layer.point !== undefined || pair;
-      const kinds = [placed, !!layer.route, !!layer.myLocation].filter(Boolean).length;
-      if (kinds !== 1) this.report(at, 'a layer is one of: a place (point, or latitude and longitude, for the record or for each of its lines), a route, or myLocation');
+      const kinds = [placed, !!layer.route, !!layer.myLocation, !!layer.regions, !!layer.reachable].filter(Boolean).length;
+      if (kinds !== 1) this.report(at, 'a layer is one of: a place (point, or latitude and longitude, for the record or for each of its lines), a route, myLocation, regions, or reachable');
+      if (layer.regions?.choose !== undefined) this.need(layer.regions.choose, `${at}.regions.choose`);
       if (layer.point !== undefined && pair) this.report(at, 'a layer takes point, or latitude and longitude, not both');
       else if (layer.point === undefined && pair && (layer.latitude === undefined || layer.longitude === undefined)) this.report(at, 'a layer needs both latitude and longitude');
       if (layer.lines !== undefined && !placed) this.report(`${at}.lines`, "a layer of lines needs where each line is: point, or latitude and longitude, of the line's fields");
@@ -558,6 +564,25 @@ export class ReferenceCheck {
       written(route.write?.seconds, 'seconds', number, 'seconds are a number field');
       written(route.write?.metres, 'metres', number, 'metres are a number field');
       written(route.write?.line, 'line', (type) => type === 'json', 'a line is kept in a json field');
+    });
+    node.layers.forEach((layer, i) => {
+      if (!layer.reachable) return;
+      const found = layers.get(layer.reachable.from);
+      const at = `${path}.layers[${i}].reachable.from`;
+      if (!found) this.report(at, `no layer "${layer.reachable.from}" on this map`);
+      else if (!found.place || found.lines) this.report(at, `a reachable area is worked out from a layer of one place, or the reader's own; "${layer.reachable.from}" is not`);
+    });
+    node.fences?.forEach((fence, i) => {
+      const at = `${path}.fences[${i}]`;
+      const watched = node.layers.find((layer) => layer.id === fence.layer);
+      if (!watched) this.report(`${at}.layer`, `no layer "${fence.layer}" on this map`);
+      else if (!watched.live && !watched.myLocation) this.report(`${at}.layer`, `a fence watches a place that moves: a live layer, or the reader's own; "${fence.layer}" is not`);
+      if (fence.area !== undefined) {
+        const def = this.need(fence.area, `${at}.area`);
+        if (def && def.type !== 'json') this.report(`${at}.area`, `"${fence.area}" is a ${def.type}; an area is kept in a json field`);
+      }
+      if (fence.within !== undefined && !node.layers.some((layer) => layer.id === fence.within && layer.reachable)) this.report(`${at}.within`, `a fence is within a reachable area of this map; "${fence.within}" is not one`);
+      this.checkSteps(fence.steps, `${at}.steps`);
     });
   }
 

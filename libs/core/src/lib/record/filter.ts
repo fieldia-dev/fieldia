@@ -97,18 +97,9 @@ const isObject = (value: unknown): value is Record<string, unknown> => value !==
  */
 function within(values: Values, raw: unknown, area: JsonValue): boolean {
   if (!isObject(area)) return false;
-  let lat: unknown;
-  let lng: unknown;
-  if (typeof area['longitude'] === 'string') {
-    lat = raw;
-    lng = values[area['longitude']];
-  } else {
-    const geometry = isObject(raw) && raw['type'] === 'Feature' ? raw['geometry'] : raw;
-    const coordinates = isObject(geometry) && geometry['type'] === 'Point' ? geometry['coordinates'] : null;
-    if (!Array.isArray(coordinates)) return false;
-    [lng, lat] = coordinates;
-  }
-  if (typeof lat !== 'number' || typeof lng !== 'number') return false;
+  const place = placeOf(values, raw, area['longitude']);
+  if (!place) return false;
+  const { lat, lng } = place;
   if (Array.isArray(area['polygon'])) return insideRing(lng, lat, area['polygon'] as number[][]);
   if (Array.isArray(area['center'])) {
     const [centreLng, centreLat] = area['center'] as number[];
@@ -117,6 +108,28 @@ function within(values: Values, raw: unknown, area: JsonValue): boolean {
   const { south, west, north, east } = area as Record<string, number>;
   if (lat < south || lat > north) return false;
   return west <= east ? lng >= west && lng <= east : lng >= west || lng <= east;
+}
+
+/** A record's place: a GeoJSON point (or a Feature holding one) in `raw`, or `raw` a latitude and `longitude` the field of its pair. */
+function placeOf(values: Values, raw: unknown, longitude: unknown): { lat: number; lng: number } | null {
+  let lat: unknown;
+  let lng: unknown;
+  if (typeof longitude === 'string') {
+    lat = raw;
+    lng = values[longitude];
+  } else {
+    const geometry = isObject(raw) && raw['type'] === 'Feature' ? raw['geometry'] : raw;
+    const coordinates = isObject(geometry) && geometry['type'] === 'Point' ? geometry['coordinates'] : null;
+    if (!Array.isArray(coordinates)) return null;
+    [lng, lat] = coordinates;
+  }
+  return typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : null;
+}
+
+/** How far a record's place in `field` is from `near`, in metres, for "Nearest first"; null when it has none. */
+export function distanceFrom(values: Values, field: string, near: { lat: number; lng: number; longitude?: string }): number | null {
+  const place = placeOf(values, values[field], near.longitude);
+  return place ? metresApart(place.lat, place.lng, near.lat, near.lng) : null;
 }
 
 /** Inside a ring when a line from the point crosses its edges an odd number of times. */

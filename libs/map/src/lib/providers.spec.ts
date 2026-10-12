@@ -315,3 +315,42 @@ describe('routes along the roads', () => {
     expect(tiles({ url: 'https://x.test/{z}/{x}/{y}.png', credit: { text: 'x' } }).route).toBeUndefined();
   });
 });
+
+describe('reachable areas', () => {
+  const TAHRIR = { lat: 30.0444, lng: 31.2357 };
+  /** Azure's answer for 15 minutes' drive from Tahrir, as it gave it on 12 Oct 2026. */
+  const AZURE_RANGE = JSON.parse(readFileSync(join(__dirname, 'fixtures/azure-range.json'), 'utf8'));
+
+  it('asks Azure Maps’ Route Range for the time in seconds by car, and reads its boundary', async () => {
+    const { fetch, asked } = network({ 'https://atlas.microsoft.com/route/range': AZURE_RANGE });
+    const area = await azureMaps({ key: 'k', fetch }).reach!({ at: TAHRIR, minutes: 15, mode: 'car' });
+    expect(asked[0].url).toBe('https://atlas.microsoft.com/route/range?api-version=2025-01-01&subscription-key=k');
+    expect(JSON.parse(String(asked[0].init!.body))).toEqual({ type: 'Feature', geometry: { type: 'Point', coordinates: [31.2357, 30.0444] }, properties: { timeBudgetInSec: 900, travelMode: 'driving' } });
+    expect(area.rings).toHaveLength(1);
+    expect(area.rings[0].length).toBeGreaterThan(20);
+    // Not the centre it also sends: the boundary.
+    expect(area.rings[0][0]).toEqual({ lat: 30.09273, lng: 31.23572 });
+  });
+
+  it('says plainly that Azure Maps reaches by car alone, and what an area-less answer is', async () => {
+    const { fetch } = network({ 'https://atlas.microsoft.com/route/range': { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: [31.2, 30] }, properties: { type: 'center' } }] } });
+    await expect(azureMaps({ key: 'k', fetch }).reach!({ at: TAHRIR, minutes: 15, mode: 'foot' })).rejects.toThrow('Azure Maps works out reachable areas by car, not by bike or on foot');
+    await expect(azureMaps({ key: 'k', fetch }).reach!({ at: TAHRIR, minutes: 15, mode: 'car' })).rejects.toThrow('Azure Maps found no reachable area');
+  });
+
+  it('asks Mapbox’s Isochrone by its profile, as polygons', async () => {
+    // The answer as Mapbox's reference shows it.
+    const ring = [[31.2, 30.0], [31.3, 30.0], [31.3, 30.1], [31.2, 30.0]];
+    const { fetch, asked } = network({ 'https://api.mapbox.com/isochrone/v1/': { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { contour: 10 }, geometry: { type: 'Polygon', coordinates: [ring] } }] } });
+    const area = await mapbox({ token: 't', fetch }).reach!({ at: TAHRIR, minutes: 10, mode: 'foot' });
+    expect(asked[0].url).toBe('https://api.mapbox.com/isochrone/v1/mapbox/walking/31.2357,30.0444?contours_minutes=10&polygons=true&access_token=t');
+    expect(area.rings).toEqual([ring.map(([lng, lat]) => ({ lat, lng }))]);
+  });
+
+  it('has none from OpenStreetMap or Google, and takes the app’s own', async () => {
+    expect(openStreetMap({}).reach).toBeUndefined();
+    expect(googleMaps({ key: 'g' }).reach).toBeUndefined();
+    const own = jest.fn(async () => ({ rings: [[TAHRIR, TAHRIR, TAHRIR]] }));
+    expect(tiles({ url: 'https://x.test/{z}/{x}/{y}.png', credit: { text: 'x' }, reach: own }).reach).toBe(own);
+  });
+});

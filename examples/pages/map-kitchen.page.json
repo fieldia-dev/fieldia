@@ -1,0 +1,263 @@
+{
+  "fieldia": "0.1",
+  "id": "map-kitchen",
+  "title": "Downtown kitchen tonight",
+  "description": "A kitchen's map: the districts shaded by their delivery fee, the area within fifteen minutes' drive, and the courier on the way, the page's steps running as they reach the drop-off zone.",
+  "data": {
+    "kind": "record",
+    "model": "shop.kitchen"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Kitchen",
+      "required": true
+    },
+    "kitchen": {
+      "type": "json",
+      "label": "Where it is"
+    },
+    "offer_district": {
+      "type": "selection",
+      "label": "Tonight's offer goes to",
+      "options": [
+        {
+          "value": "downtown",
+          "label": "Downtown"
+        },
+        {
+          "value": "zamalek",
+          "label": "Zamalek"
+        },
+        {
+          "value": "garden_city",
+          "label": "Garden City"
+        },
+        {
+          "value": "dokki",
+          "label": "Dokki"
+        },
+        {
+          "value": "mohandessin",
+          "label": "Mohandessin"
+        },
+        {
+          "value": "imbaba",
+          "label": "Imbaba"
+        },
+        {
+          "value": "shubra",
+          "label": "Shubra"
+        },
+        {
+          "value": "abbasia",
+          "label": "Abbasia"
+        },
+        {
+          "value": "heliopolis",
+          "label": "Heliopolis"
+        },
+        {
+          "value": "nasr_city",
+          "label": "Nasr City"
+        },
+        {
+          "value": "mokattam",
+          "label": "Mokattam"
+        },
+        {
+          "value": "old_cairo",
+          "label": "Old Cairo"
+        },
+        {
+          "value": "giza",
+          "label": "Giza"
+        },
+        {
+          "value": "maadi",
+          "label": "Maadi"
+        }
+      ],
+      "help": "Press a district on the map, or pick it here."
+    },
+    "drop_zone": {
+      "type": "json",
+      "label": "Drop-off zone",
+      "help": "Draw the area round the next door: the courier's arrival is said when they reach it."
+    },
+    "courier_lat": {
+      "type": "float",
+      "label": "Courier latitude",
+      "digits": [
+        16,
+        6
+      ]
+    },
+    "courier_lng": {
+      "type": "float",
+      "label": "Courier longitude",
+      "digits": [
+        16,
+        6
+      ]
+    },
+    "courier_heading": {
+      "type": "integer",
+      "label": "Heading"
+    },
+    "state": {
+      "type": "selection",
+      "label": "Delivery",
+      "options": [
+        {
+          "value": "on_the_way",
+          "label": "On the way"
+        },
+        {
+          "value": "delivered",
+          "label": "Delivered"
+        }
+      ]
+    },
+    "arriving": {
+      "type": "boolean",
+      "label": "In the drop-off zone"
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "kitchen",
+    "children": [
+      {
+        "type": "section",
+        "id": "tonight",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-name",
+            "field": "name"
+          },
+          {
+            "type": "field",
+            "id": "f-offer",
+            "field": "offer_district"
+          },
+          {
+            "type": "field",
+            "id": "f-state",
+            "field": "state",
+            "readonly": true
+          },
+          {
+            "type": "field",
+            "id": "f-arriving",
+            "field": "arriving",
+            "readonly": true
+          },
+          {
+            "type": "map",
+            "id": "kitchen-map",
+            "label": "Tonight's deliveries",
+            "height": 440,
+            "colspan": 12,
+            "tools": [
+              "fullscreen",
+              "measure"
+            ],
+            "layers": [
+              {
+                "id": "districts",
+                "label": "Delivery fee, EGP",
+                "regions": {
+                  "from": "cairo-districts",
+                  "key": "code",
+                  "name": "name",
+                  "shade": "fee",
+                  "choose": "offer_district"
+                }
+              },
+              {
+                "id": "near",
+                "label": "Within 15 minutes' drive",
+                "reachable": {
+                  "from": "kitchen",
+                  "minutes": 15
+                }
+              },
+              {
+                "id": "kitchen",
+                "label": "Kitchen",
+                "point": "kitchen",
+                "pin": {
+                  "look": "icon",
+                  "icon": "food"
+                }
+              },
+              {
+                "id": "courier",
+                "label": "Courier",
+                "latitude": "courier_lat",
+                "longitude": "courier_lng",
+                "pin": {
+                  "look": "icon",
+                  "icon": "scooter",
+                  "turn": "courier_heading"
+                },
+                "live": {
+                  "follow": false
+                }
+              }
+            ],
+            "fences": [
+              {
+                "layer": "courier",
+                "area": "drop_zone",
+                "when": "enter",
+                "steps": [
+                  {
+                    "do": "set",
+                    "field": "arriving",
+                    "value": "true"
+                  },
+                  {
+                    "do": "say",
+                    "message": "The courier is in the drop-off zone: tell the customer they are almost there.",
+                    "tone": "success"
+                  }
+                ]
+              },
+              {
+                "layer": "courier",
+                "area": "drop_zone",
+                "when": "leave",
+                "steps": [
+                  {
+                    "do": "set",
+                    "field": "arriving",
+                    "value": "false"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "field",
+            "id": "f-zone",
+            "field": "drop_zone",
+            "widget": "area",
+            "colspan": 12,
+            "options": {
+              "shapes": [
+                "polygon",
+                "box",
+                "circle"
+              ],
+              "height": 280
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

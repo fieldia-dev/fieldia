@@ -21,7 +21,7 @@ import type {
   ArchiveRequest,
   RecordRequest,
 } from './data-source';
-import { matchesFilter } from './filter';
+import { distanceFrom, matchesFilter } from './filter';
 import { wait, type Scheduler } from './scheduler';
 import { structuredCopy, type FileValue, type Line, type RecordId, type RelatedRecord, type Value, type Values } from './values';
 
@@ -197,7 +197,10 @@ export function createMemoryDataSource(options: MemoryDataSourceOptions = {}): M
         .map(([key, values]) => ({ id: asId(key), values }));
       matching.sort((a, b) => {
         for (const order of request.sort) {
-          const compared = compareValues(a.values[order.field], b.values[order.field]);
+          // Nearest first: by how far each is, those with no place last.
+          const compared = order.near
+            ? compareValues(distanceFrom(a.values, order.field, order.near), distanceFrom(b.values, order.field, order.near))
+            : compareValues(a.values[order.field], b.values[order.field]);
           // Empty last, whichever way the rest goes.
           if (compared.empty) return compared.result;
           if (compared.result) return order.desc ? -compared.result : compared.result;

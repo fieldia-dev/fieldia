@@ -7141,6 +7141,24 @@
           "minimum": 160,
           "maximum": 1200
         },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "satellite",
+              "fullscreen",
+              "measure"
+            ]
+          }
+        },
+        "fences": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MapFence"
+          }
+        },
         "colspan": {
           "type": "integer",
           "minimum": 1,
@@ -7218,6 +7236,42 @@
         },
         "myLocation": {
           "type": "boolean"
+        },
+        "regions": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string",
+              "minLength": 1
+            },
+            "key": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "shade": {
+              "type": "string",
+              "minLength": 1
+            },
+            "legend": {
+              "type": "boolean"
+            },
+            "choose": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            }
+          },
+          "required": [
+            "from",
+            "key"
+          ],
+          "additionalProperties": false
+        },
+        "reachable": {
+          "$ref": "#/$defs/MapReach"
         },
         "invisible": {
           "$ref": "#/$defs/Modifier"
@@ -7347,6 +7401,70 @@
       },
       "required": [
         "from"
+      ],
+      "additionalProperties": false
+    },
+    "MapReach": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "minutes": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 120
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "car",
+            "bike",
+            "foot"
+          ]
+        }
+      },
+      "required": [
+        "from",
+        "minutes"
+      ],
+      "additionalProperties": false
+    },
+    "MapFence": {
+      "type": "object",
+      "properties": {
+        "layer": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "area": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "within": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "when": {
+          "type": "string",
+          "enum": [
+            "enter",
+            "leave"
+          ]
+        },
+        "steps": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ActionStep"
+          }
+        }
+      },
+      "required": [
+        "layer",
+        "when",
+        "steps"
       ],
       "additionalProperties": false
     },
@@ -7905,6 +8023,69 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 5000
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "satellite",
+              "fullscreen",
+              "measure",
+              "nearest"
+            ]
+          }
+        },
+        "regions": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string",
+              "minLength": 1
+            },
+            "key": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "shade": {
+              "type": "string",
+              "minLength": 1
+            },
+            "legend": {
+              "type": "boolean"
+            },
+            "field": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            }
+          },
+          "required": [
+            "from",
+            "key",
+            "field"
+          ],
+          "additionalProperties": false
+        },
+        "heat": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "weight": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
         }
       },
       "additionalProperties": false

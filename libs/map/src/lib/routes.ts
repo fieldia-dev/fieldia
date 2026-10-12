@@ -1,11 +1,12 @@
 import type { LatLng } from './geo';
 import { getJson, pathOf, type Fetch } from './answers';
-import type { RouteFound, RouteRequest } from './providers';
+import type { ReachFound, ReachRequest, RouteFound, RouteRequest } from './providers';
 
 /**
- * The providers' routes along the roads, loaded the first time a map asks
- * for one: a form with only a place or an area never carries them. Each
- * reads its provider's answer into one line, its metres and its seconds.
+ * The providers' routes along the roads and reachable areas, loaded the
+ * first time a map asks for one: a form with only a place or an area never
+ * carries them. Each reads its provider's answer into one line, its metres
+ * and its seconds; or an area's rings.
  */
 
 /** Google's encoded polyline, as its Routes API sends a line: five decimals, each number a run of five-bit groups. */
@@ -111,4 +112,40 @@ export async function mapboxRoute(ask: { fetchWith: Fetch; token: string }, { po
   const found = await getJson(ask.fetchWith, `https://api.mapbox.com/directions/v5/mapbox/${profile}/${points.map((p) => `${p.lng},${p.lat}`).join(';')}?geometries=geojson&overview=full&access_token=${ask.token}`, { signal });
   const route = (pathOf(found, 'routes') as unknown[] | undefined)?.[0];
   return routed({ line: lineOf(pathOf(route, 'geometry', 'coordinates')), metres: Number(pathOf(route, 'distance')), seconds: Number(pathOf(route, 'duration')) }, 'Mapbox');
+}
+
+/** The outer rings of a GeoJSON Polygon's or MultiPolygon's, as places. */
+function ringsOf(geometry: unknown): LatLng[][] {
+  const type = pathOf(geometry, 'type');
+  const coordinates = pathOf(geometry, 'coordinates');
+  const polygons = type === 'Polygon' ? [coordinates] : type === 'MultiPolygon' && Array.isArray(coordinates) ? coordinates : [];
+  return polygons.flatMap((polygon) => (Array.isArray(polygon) ? [lineOf(polygon[0])] : [])).filter((ring) => ring.length > 2);
+}
+
+/** An area that is no area: refused in words a developer can act on. */
+function reached(found: ReachFound, provider: string): ReachFound {
+  if (!found.rings.length) throw new Error(`${provider} found no reachable area`);
+  return found;
+}
+
+/** Azure Maps' Route Range of 2025: the area within a time from a point, by car (or truck) alone. */
+export async function azureReach(ask: { fetchWith: Fetch; auth: string; headers: () => Promise<Record<string, string>> }, { at, minutes, mode, signal }: ReachRequest): Promise<ReachFound> {
+  if (mode !== 'car') throw new Error('Azure Maps works out reachable areas by car, not by bike or on foot');
+  const found = await getJson(ask.fetchWith, `https://atlas.microsoft.com/route/range?api-version=2025-01-01${ask.auth}`, {
+    method: 'POST',
+    signal,
+    headers: { 'Content-Type': 'application/geo+json', ...(await ask.headers()) },
+    body: JSON.stringify({ type: 'Feature', geometry: { type: 'Point', coordinates: [at.lng, at.lat] }, properties: { timeBudgetInSec: Math.round(minutes * 60), travelMode: 'driving' } }),
+  });
+  const features = pathOf(found, 'features');
+  const boundary = Array.isArray(features) ? features.find((f) => pathOf(f, 'properties', 'type') === 'boundary') : undefined;
+  return reached({ rings: ringsOf(pathOf(boundary, 'geometry')) }, 'Azure Maps');
+}
+
+/** Mapbox Isochrone: the area within some minutes, by its profile, as polygons. */
+export async function mapboxReach(ask: { fetchWith: Fetch; token: string }, { at, minutes, mode, signal }: ReachRequest): Promise<ReachFound> {
+  const profile = mode === 'bike' ? 'cycling' : mode === 'foot' ? 'walking' : 'driving';
+  const found = await getJson(ask.fetchWith, `https://api.mapbox.com/isochrone/v1/mapbox/${profile}/${at.lng},${at.lat}?contours_minutes=${Math.round(minutes)}&polygons=true&access_token=${ask.token}`, { signal });
+  const features = pathOf(found, 'features');
+  return reached({ rings: Array.isArray(features) ? features.flatMap((f) => ringsOf(pathOf(f, 'geometry'))) : [] }, 'Mapbox');
 }

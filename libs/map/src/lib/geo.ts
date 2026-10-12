@@ -141,6 +141,21 @@ export function metresBetween(a: LatLng, b: LatLng): number {
   return 2 * EARTH * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
+/** Whether a place is inside a ring of places: a line from it crosses the ring's edges an odd number of times. */
+export function insideRing(at: LatLng, ring: readonly LatLng[]): boolean {
+  let odd = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [a, b] = [ring[i], ring[j]];
+    if (a.lat > at.lat !== b.lat > at.lat && at.lng < ((b.lng - a.lng) * (at.lat - a.lat)) / (b.lat - a.lat) + a.lng) odd = !odd;
+  }
+  return odd;
+}
+
+/** Whether a place is inside an area as an area field keeps it: within a circle's radius, or inside a polygon or a box. */
+export function insideArea(at: LatLng, area: Area): boolean {
+  return area.shape === 'circle' ? metresBetween(area.center, at) <= area.radius : insideRing(at, area.points);
+}
+
 /** The place `metres` due east: where a circle's edge grip sits. */
 export function offsetEast(from: LatLng, metres: number): LatLng {
   return { lat: from.lat, lng: from.lng + deg(metres / (EARTH * Math.cos(rad(from.lat)))) };

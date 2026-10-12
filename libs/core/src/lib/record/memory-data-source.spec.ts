@@ -1,5 +1,6 @@
 import { createMemoryDataSource } from './memory-data-source';
 import type { Fields } from '../format/field';
+import type { SortOrder } from './data-source';
 
 const fields = {
   name: { type: 'char', label: 'Name' },
@@ -148,6 +149,26 @@ describe('createMemoryDataSource — lists and groups', () => {
     expect(byCountry.records.map((r) => r.id)).toEqual([2, 1, 3, 4]);
     const byLimit = await ds.list!({ model: 'partner', fields: ['name'], filter: [], sort: [{ field: 'credit_limit', desc: true }], offset: 0, limit: 10 });
     expect(byLimit.records.map((r) => r.id)).toEqual([1, 3, 2, 4]);
+  });
+
+  it('sorts nearest a place first, by a point field or a latitude and its longitude, those with no place last', async () => {
+    const point = (lng: number, lat: number) => ({ type: 'Point', coordinates: [lng, lat] });
+    const ds = createMemoryDataSource({
+      records: {
+        shop: {
+          1: { name: 'Heliopolis', spot: point(31.3225, 30.0911), lat: 30.0911, lng: 31.3225 },
+          2: { name: 'Zamalek', spot: point(31.2196, 30.0609), lat: 30.0609, lng: 31.2196 },
+          3: { name: 'Nowhere', spot: null, lat: null, lng: null },
+          4: { name: 'Downtown', spot: point(31.2422, 30.0478), lat: 30.0478, lng: 31.2422 },
+        },
+      },
+    });
+    const tahrir = { lat: 30.0444, lng: 31.2357 };
+    const ask = (sort: SortOrder[]) => ds.list!({ model: 'shop', fields: ['name'], filter: [], sort, offset: 0, limit: 10 }).then((r) => r.records.map((x) => x.values['name']));
+    expect(await ask([{ field: 'spot', near: tahrir }])).toEqual(['Downtown', 'Zamalek', 'Heliopolis', 'Nowhere']);
+    expect(await ask([{ field: 'lat', near: { ...tahrir, longitude: 'lng' } }])).toEqual(['Downtown', 'Zamalek', 'Heliopolis', 'Nowhere']);
+    // From Heliopolis, the other way round.
+    expect(await ask([{ field: 'spot', near: { lat: 30.09, lng: 31.32 } }])).toEqual(['Heliopolis', 'Downtown', 'Zamalek', 'Nowhere']);
   });
 
   it('counts the records under each value of a field: a link by its record, nothing as its own group, last', async () => {

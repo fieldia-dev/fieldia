@@ -430,7 +430,56 @@ export interface MapLayer {
   route?: MapRoute;
   /** The reader's own place, from the browser once they allow it. */
   myLocation?: boolean;
+  /** Areas shaded by colour; a click on one writes its key into `choose`. */
+  regions?: MapRegions & { choose?: string };
+  /** The area within a few minutes' travel of a place, as the map's provider works it out. */
+  reachable?: MapReach;
   invisible?: Modifier;
+}
+
+/** A tool a map offers under its zoom: the satellite's images, full screen, measuring a way; on a list's map, its records nearest first. */
+export type MapTool = 'satellite' | 'fullscreen' | 'measure' | 'nearest';
+
+/**
+ * Areas shaded by colour: districts, zones, municipalities. Their borders come
+ * from the app, never from Fieldia: its maps' `regions`, a set of GeoJSON
+ * borders by name. Each border is known by one of its properties (`key`), the
+ * value a record keeps, and named by another.
+ */
+export interface MapRegions {
+  /** The app's set of borders, by the name its maps' settings give it. */
+  from: string;
+  /** The property of each border that is its key: what a record's field holds. */
+  key: string;
+  /** The property of each border that names it: its key unless said. */
+  name?: string;
+  /** What shades an area: on a list's map, `count` (its records: the default there), or a number among each border's properties. */
+  shade?: string;
+  /** A legend of the shades over the map: on unless false. */
+  legend?: boolean;
+}
+
+/** The area within `minutes` of a layer's place, by car unless said. */
+export interface MapReach {
+  /** The layer it is worked out from: a place, or the reader's own. */
+  from: string;
+  minutes: number;
+  mode?: 'car' | 'bike' | 'foot';
+}
+
+/**
+ * A fence on a form's map: when a layer's place goes into an area, or comes
+ * out of it, the page's steps run, as a button's do ("the courier is near:
+ * tell the customer"). The area is a field holding one (`area`, as an area
+ * field keeps it) or a reachable area of the map (`within`, a layer's id).
+ */
+export interface MapFence {
+  /** The layer whose place is watched: one that moves. */
+  layer: string;
+  area?: string;
+  within?: string;
+  when: 'enter' | 'leave';
+  steps: ActionStep[];
 }
 
 /** A map on a form: the record's places, its lines' places, the routes between them, and the reader's own place, as layers. */
@@ -442,6 +491,10 @@ export interface MapNode {
   layers: MapLayer[];
   /** Height in pixels: 360 unless said. */
   height?: number;
+  /** The tools under its zoom: satellite, fullscreen, measure. */
+  tools?: Exclude<MapTool, 'nearest'>[];
+  /** Steps run when a layer's place goes into an area or comes out of it. */
+  fences?: MapFence[];
   /** Grid columns it spans inside a section. */
   colspan?: number;
   invisible?: Modifier;
@@ -867,6 +920,12 @@ export interface ListMap {
   view?: 'list' | 'map' | 'both';
   /** How many records the map shows at most: 500 unless said. */
   limit?: number;
+  /** The tools under its zoom: satellite, fullscreen, measure, nearest (the records nearest the reader first). */
+  tools?: MapTool[];
+  /** Areas shaded by their records (or a number of their own); `field` is the records' field holding an area's key. A click on one searches for its records. */
+  regions?: MapRegions & { field: string };
+  /** The records as a heat map while the map is far out, each weighing one unless `weight` names a number field; their pins come back close in, at the streets. */
+  heat?: boolean | { weight?: string };
 }
 
 /** Anything that can sit inside a section, tab, step or sheet. */
@@ -1075,6 +1134,30 @@ export const MapRouteSchema = z
   })
   .meta({ id: 'MapRoute' });
 
+const mapTools = ['satellite', 'fullscreen', 'measure'] as const;
+
+/** Areas shaded by colour, their borders from the app's set by name, each known by a property of its own. */
+export const MapRegionsSchema = z
+  .strictObject({
+    from: z.string().min(1),
+    key: z.string().min(1),
+    name: z.string().min(1).optional(),
+    shade: z.string().min(1).optional(),
+    legend: z.boolean().optional(),
+  })
+  .meta({ id: 'MapRegions' });
+
+/** The area within some minutes' travel of a layer's place. */
+export const MapReachSchema = z
+  .strictObject({ from: id, minutes: z.number().positive().max(120), mode: z.enum(['car', 'bike', 'foot']).optional() })
+  .meta({ id: 'MapReach' });
+
+/** Steps run when a layer's place goes into an area, or comes out of it. */
+export const MapFenceSchema = z
+  .strictObject({ layer: id, area: fieldName.optional(), within: id.optional(), when: z.enum(['enter', 'leave']), steps: ActionStepsSchema })
+  .refine((fence) => (fence.area === undefined) !== (fence.within === undefined), { message: 'a fence is an area field (`area`) or a reachable area of the map (`within`), one of the two' })
+  .meta({ id: 'MapFence' });
+
 /** One layer of a form's map: the record's own place, a place for each of its lines, a route, or the reader's own place. */
 export const MapLayerSchema = z
   .strictObject({
@@ -1089,6 +1172,8 @@ export const MapLayerSchema = z
     live: z.strictObject({ staleAfter: z.int().min(5).max(86400).optional(), follow: z.boolean().optional() }).optional(),
     route: MapRouteSchema.optional(),
     myLocation: z.boolean().optional(),
+    regions: MapRegionsSchema.extend({ choose: fieldName.optional() }).optional(),
+    reachable: MapReachSchema.optional(),
     invisible,
   })
   .meta({ id: 'MapLayer' });
@@ -1100,6 +1185,8 @@ export const MapNodeSchema = z
     label: z.string().optional(),
     layers: z.array(MapLayerSchema).min(1),
     height: z.int().min(160).max(1200).optional(),
+    tools: z.array(z.enum(mapTools)).optional(),
+    fences: z.array(MapFenceSchema).min(1).optional(),
     colspan: span,
     invisible, roles, hideOn,
   })
@@ -1321,6 +1408,9 @@ export const ListMapSchema = z
     view: z.enum(['list', 'map', 'both']).optional(),
     /** How many records the map shows at most: 500 unless said. */
     limit: z.int().min(1).max(5000).optional(),
+    tools: z.array(z.enum([...mapTools, 'nearest'])).optional(),
+    regions: MapRegionsSchema.extend({ field: fieldName }).optional(),
+    heat: z.union([z.boolean(), z.strictObject({ weight: fieldName.optional() })]).optional(),
   })
   .meta({ id: 'ListMap' });
 

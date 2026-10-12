@@ -1,0 +1,168 @@
+{
+  "fieldia": "0.1",
+  "id": "map-heat",
+  "title": "Where orders come from",
+  "description": "The week's orders as a heat map, each weighing what it came to: the city glows where the money is. Close in, at the streets, each order's pin comes back.",
+  "data": {
+    "kind": "record",
+    "model": "shop.order"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Order"
+    },
+    "customer": {
+      "type": "char",
+      "label": "Customer"
+    },
+    "district": {
+      "type": "selection",
+      "label": "District",
+      "options": [
+        {
+          "value": "downtown",
+          "label": "Downtown"
+        },
+        {
+          "value": "zamalek",
+          "label": "Zamalek"
+        },
+        {
+          "value": "garden_city",
+          "label": "Garden City"
+        },
+        {
+          "value": "dokki",
+          "label": "Dokki"
+        },
+        {
+          "value": "mohandessin",
+          "label": "Mohandessin"
+        },
+        {
+          "value": "imbaba",
+          "label": "Imbaba"
+        },
+        {
+          "value": "shubra",
+          "label": "Shubra"
+        },
+        {
+          "value": "abbasia",
+          "label": "Abbasia"
+        },
+        {
+          "value": "heliopolis",
+          "label": "Heliopolis"
+        },
+        {
+          "value": "nasr_city",
+          "label": "Nasr City"
+        },
+        {
+          "value": "mokattam",
+          "label": "Mokattam"
+        },
+        {
+          "value": "old_cairo",
+          "label": "Old Cairo"
+        },
+        {
+          "value": "giza",
+          "label": "Giza"
+        },
+        {
+          "value": "maadi",
+          "label": "Maadi"
+        }
+      ]
+    },
+    "place": {
+      "type": "json",
+      "label": "Deliver to"
+    },
+    "total": {
+      "type": "monetary",
+      "label": "Total",
+      "currency": "EGP"
+    },
+    "status": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        {
+          "value": "new",
+          "label": "New"
+        },
+        {
+          "value": "on_the_way",
+          "label": "On the way"
+        },
+        {
+          "value": "delivered",
+          "label": "Delivered"
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "list",
+    "id": "orders",
+    "columns": [
+      "name",
+      "customer",
+      "district",
+      "total",
+      "status"
+    ],
+    "sort": [
+      {
+        "field": "name"
+      }
+    ],
+    "pageSize": 20,
+    "searchFields": [
+      "name",
+      "customer",
+      "district",
+      "status"
+    ],
+    "filters": [
+      {
+        "id": "big",
+        "label": "Over EGP 800",
+        "filter": [
+          {
+            "field": "total",
+            "op": ">",
+            "value": 800
+          }
+        ]
+      }
+    ],
+    "map": {
+      "point": "place",
+      "pin": {
+        "look": "label",
+        "label": "total"
+      },
+      "card": {
+        "title": "name",
+        "fields": [
+          "customer",
+          "district",
+          "total"
+        ]
+      },
+      "heat": {
+        "weight": "total"
+      },
+      "tools": [
+        "fullscreen",
+        "satellite"
+      ],
+      "view": "map"
+    }
+  }
+}

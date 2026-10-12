@@ -1,0 +1,157 @@
+{
+  "fieldia": "0.1",
+  "id": "map-week-order",
+  "title": "Order",
+  "description": "One of the week's orders: who it is for, where it goes, what it came to.",
+  "data": {
+    "kind": "record",
+    "model": "shop.order"
+  },
+  "fields": {
+    "name": {
+      "type": "char",
+      "label": "Order"
+    },
+    "customer": {
+      "type": "char",
+      "label": "Customer"
+    },
+    "district": {
+      "type": "selection",
+      "label": "District",
+      "options": [
+        {
+          "value": "downtown",
+          "label": "Downtown"
+        },
+        {
+          "value": "zamalek",
+          "label": "Zamalek"
+        },
+        {
+          "value": "garden_city",
+          "label": "Garden City"
+        },
+        {
+          "value": "dokki",
+          "label": "Dokki"
+        },
+        {
+          "value": "mohandessin",
+          "label": "Mohandessin"
+        },
+        {
+          "value": "imbaba",
+          "label": "Imbaba"
+        },
+        {
+          "value": "shubra",
+          "label": "Shubra"
+        },
+        {
+          "value": "abbasia",
+          "label": "Abbasia"
+        },
+        {
+          "value": "heliopolis",
+          "label": "Heliopolis"
+        },
+        {
+          "value": "nasr_city",
+          "label": "Nasr City"
+        },
+        {
+          "value": "mokattam",
+          "label": "Mokattam"
+        },
+        {
+          "value": "old_cairo",
+          "label": "Old Cairo"
+        },
+        {
+          "value": "giza",
+          "label": "Giza"
+        },
+        {
+          "value": "maadi",
+          "label": "Maadi"
+        }
+      ]
+    },
+    "place": {
+      "type": "json",
+      "label": "Deliver to"
+    },
+    "total": {
+      "type": "monetary",
+      "label": "Total",
+      "currency": "EGP"
+    },
+    "status": {
+      "type": "selection",
+      "label": "Status",
+      "options": [
+        {
+          "value": "new",
+          "label": "New"
+        },
+        {
+          "value": "on_the_way",
+          "label": "On the way"
+        },
+        {
+          "value": "delivered",
+          "label": "Delivered"
+        }
+      ]
+    }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "order",
+    "children": [
+      {
+        "type": "section",
+        "id": "main",
+        "columns": 2,
+        "children": [
+          {
+            "type": "field",
+            "id": "f-name",
+            "field": "name"
+          },
+          {
+            "type": "field",
+            "id": "f-customer",
+            "field": "customer"
+          },
+          {
+            "type": "field",
+            "id": "f-district",
+            "field": "district"
+          },
+          {
+            "type": "field",
+            "id": "f-status",
+            "field": "status"
+          },
+          {
+            "type": "field",
+            "id": "f-total",
+            "field": "total"
+          },
+          {
+            "type": "field",
+            "id": "f-place",
+            "field": "place",
+            "widget": "place",
+            "colspan": 12,
+            "options": {
+              "height": 240
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

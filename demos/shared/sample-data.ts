@@ -10,6 +10,10 @@ import mapCouriers from '../../examples/pages/map-couriers.page.json';
 import mapCourier from '../../examples/pages/map-courier.page.json';
 import mapOrder from '../../examples/pages/map-order.page.json';
 import mapRound from '../../examples/pages/map-round.page.json';
+import mapZones from '../../examples/pages/map-zones.page.json';
+import mapHeat from '../../examples/pages/map-heat.page.json';
+import mapKitchen from '../../examples/pages/map-kitchen.page.json';
+import mapWeekOrder from '../../examples/pages/map-week-order.page.json';
 import customer from '../../examples/pages/customer.page.json';
 import fields from '../../examples/pages/fields.page.json';
 import kinds from '../../examples/pages/kinds.page.json';
@@ -31,6 +35,7 @@ import { businessData, businessPage } from './business';
 import { codeData, codePage } from './code-page';
 import { templatePages } from './templates';
 import { sampleCouriers, sampleHomes, sampleOrder, sampleRound } from './homes';
+import { sampleKitchen, sampleWeekOrders } from './districts';
 
 /** The example pages every demo can show, by name. */
 export const pages: Record<string, Page> = {
@@ -65,6 +70,10 @@ export const pages: Record<string, Page> = {
   'map-order': mapOrder as Page,
   // A place for each line: a van's round through its stops, in order.
   'map-round': mapRound as Page,
+  'map-zones': mapZones as Page,
+  'map-heat': mapHeat as Page,
+  'map-kitchen': mapKitchen as Page,
+  'map-week-order': mapWeekOrder as Page,
   // 500 fields, for timing: e2e/perf.spec.ts opens it; no card in the gallery (see e2e/demos-shell.spec.ts).
   big: big as Page,
   // How a dense sheet reads, as Flectra's: values as words, formatted stat buttons, links with pictures, lines, alerts, keys, ribbons.
@@ -109,8 +118,8 @@ export function recordFromQuery(params: URLSearchParams, page: Page): number | n
   return Number(params.get('record') ?? 1);
 }
 
-/** Each list's record page: a home's for the homes on a map, a courier's for the couriers; the customer's for the rest. */
-const RECORD_PAGES: Record<string, string> = { 'map-homes': 'map-home', 'map-couriers': 'map-courier' };
+/** Each list's record page: a home's for the homes on a map, a courier's for the couriers, an order's for the week's orders; the customer's for the rest. */
+const RECORD_PAGES: Record<string, string> = { 'map-homes': 'map-home', 'map-couriers': 'map-courier', 'map-zones': 'map-week-order', 'map-heat': 'map-week-order' };
 
 /** A list's row opens its record on its own page, keeping the skin, language and direction. */
 export function openRecord(params: URLSearchParams, id: string | number): void {
@@ -274,6 +283,8 @@ export function sampleDataSource() {
       courier: sampleCouriers(),
       'food.order': { 1: sampleOrder() },
       'delivery.round': { 1: sampleRound() },
+      'shop.order': sampleWeekOrders(),
+      'shop.kitchen': { 1: sampleKitchen() },
       partner: {
         1: {
           name: 'Nile Traders',

@@ -20,6 +20,8 @@ const fields = {
   eta_seconds: { type: 'integer', label: 'Seconds left' },
   distance_m: { type: 'float', label: 'Metres left' },
   route_line: { type: 'json', label: 'Route' },
+  zone: { type: 'json', label: 'Delivery zone' },
+  district: { type: 'char', label: 'District' },
   stop_ids: {
     type: 'one2many',
     label: 'Stops',
@@ -45,8 +47,10 @@ const page = (layers: unknown[]) => ({
   fields,
   layout: { type: 'sections', id: 'order', children: [{ type: 'section', id: 's', children: [{ type: 'field', id: 'f-name', field: 'name' }, { type: 'map', id: 'order-map', label: 'Where it is', layers }] }] },
 });
-const problems = (layers: unknown[]) => {
-  const r = validatePage(page(layers));
+const problems = (layers: unknown[], map: Record<string, unknown> = {}) => {
+  const made = page(layers);
+  Object.assign(made.layout.children[0].children[1], map);
+  const r = validatePage(made);
   return r.ok ? [] : r.issues.map((i) => `${i.path.replace('layout.children[0].children[1].', '')}: ${i.message}`);
 };
 
@@ -56,9 +60,9 @@ describe('a map on a form', () => {
   });
 
   it('makes each layer one kind, with all it needs', () => {
-    expect(problems([{ id: 'nothing' }])).toEqual(['layers[0]: a layer is one of: a place (point, or latitude and longitude, for the record or for each of its lines), a route, or myLocation']);
+    expect(problems([{ id: 'nothing' }])).toEqual(['layers[0]: a layer is one of: a place (point, or latitude and longitude, for the record or for each of its lines), a route, myLocation, regions, or reachable']);
     expect(problems([{ id: 'both', point: 'door', myLocation: true }])).toEqual([
-      'layers[0]: a layer is one of: a place (point, or latitude and longitude, for the record or for each of its lines), a route, or myLocation',
+      'layers[0]: a layer is one of: a place (point, or latitude and longitude, for the record or for each of its lines), a route, myLocation, regions, or reachable',
     ]);
     expect(problems([{ id: 'half', latitude: 'kitchen_lat' }])).toEqual(['layers[0]: a layer needs both latitude and longitude']);
     expect(problems([{ id: 'stops', lines: 'stop_ids', myLocation: true }])).toContain("layers[0].lines: a layer of lines needs where each line is: point, or latitude and longitude, of the line's fields");
@@ -89,6 +93,44 @@ describe('a map on a form', () => {
     expect(validatePage(page([{ id: 'way', route: { from: 'a', to: 'b', mode: 'boat' } }])).ok).toBe(false);
     expect(validatePage({ ...page(LAYERS), layout: { type: 'sections', id: 'o', children: [{ type: 'map', id: 'm', layers: LAYERS, height: 50 }] } }).ok).toBe(false);
     expect(validatePage(page([{ ...LAYERS[2], live: { staleAfter: 1 } }])).ok).toBe(false);
+  });
+
+  it('shades areas by the borders the app gives, a click choosing one into a field the page has', () => {
+    const districts = { id: 'districts', label: 'Districts', regions: { from: 'cairo', key: 'code', name: 'name', shade: 'population', choose: 'district' } };
+    expect(problems([districts])).toEqual([]);
+    expect(problems([{ ...districts, regions: { ...districts.regions, choose: 'quarter' } }])).toEqual(['layers[0].regions.choose: no field "quarter"']);
+    expect(problems([{ ...districts, point: 'door' }])[0]).toMatch(/^layers\[0\]: a layer is one of/);
+    expect(validatePage(page([{ id: 'districts', regions: { key: 'code' } }])).ok).toBe(false);
+  });
+
+  it('works out a reachable area from a layer of one place, or the reader’s own', () => {
+    const [kitchen, , , stops] = LAYERS;
+    expect(problems([kitchen, { id: 'near', reachable: { from: 'kitchen', minutes: 15 } }])).toEqual([]);
+    expect(problems([{ id: 'me', myLocation: true }, { id: 'near', reachable: { from: 'me', minutes: 10, mode: 'foot' } }])).toEqual([]);
+    expect(problems([{ id: 'near', reachable: { from: 'kitchen', minutes: 15 } }])).toEqual(['layers[0].reachable.from: no layer "kitchen" on this map']);
+    expect(problems([stops, { id: 'near', reachable: { from: 'stops', minutes: 15 } }])).toEqual([`layers[1].reachable.from: a reachable area is worked out from a layer of one place, or the reader's own; "stops" is not`]);
+    expect(validatePage(page([kitchen, { id: 'near', reachable: { from: 'kitchen', minutes: 0 } }])).ok).toBe(false);
+  });
+
+  it('runs a fence’s steps for a place that moves, going into an area field or a reachable area of the map', () => {
+    const [kitchen, door, courier] = LAYERS;
+    const near = { id: 'near', reachable: { from: 'kitchen', minutes: 15 } };
+    const tell = [{ do: 'call', action: 'tell_customer' }];
+    expect(problems([kitchen, courier, near], { fences: [{ layer: 'courier', area: 'zone', when: 'enter', steps: tell }, { layer: 'courier', within: 'near', when: 'leave', steps: tell }] })).toEqual([]);
+    expect(problems([kitchen, door, courier], { fences: [{ layer: 'door', area: 'zone', when: 'enter', steps: tell }] })).toEqual([
+      `fences[0].layer: a fence watches a place that moves: a live layer, or the reader's own; "door" is not`,
+    ]);
+    expect(problems([courier], { fences: [{ layer: 'courier', area: 'district', when: 'enter', steps: tell }] })).toEqual(['fences[0].area: "district" is a char; an area is kept in a json field']);
+    expect(problems([kitchen, courier], { fences: [{ layer: 'courier', within: 'kitchen', when: 'enter', steps: tell }] })).toEqual([`fences[0].within: a fence is within a reachable area of this map; "kitchen" is not one`]);
+    expect(problems([courier], { fences: [{ layer: 'courier', area: 'zone', when: 'enter', steps: [{ do: 'set', field: 'nowhere', value: "'near'" }] }] })).toEqual(['fences[0].steps[0].field: no field "nowhere"']);
+    // One area: a field, or a reachable area of the map; a moment of the two.
+    expect(problems([courier], { fences: [{ layer: 'courier', when: 'enter', steps: tell }] })).not.toEqual([]);
+    expect(problems([courier], { fences: [{ layer: 'courier', area: 'zone', when: 'near', steps: tell }] })).not.toEqual([]);
+  });
+
+  it('offers the tools a form’s map has: satellite, full screen, measuring; nearest first is a list’s', () => {
+    expect(problems(LAYERS, { tools: ['satellite', 'fullscreen', 'measure'] })).toEqual([]);
+    expect(problems(LAYERS, { tools: ['nearest'] })).not.toEqual([]);
   });
 
   it('is translated by its words alone, its own label and its layers’: its layers name fields, never words', () => {

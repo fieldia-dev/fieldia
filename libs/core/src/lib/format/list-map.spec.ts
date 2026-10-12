@@ -17,6 +17,8 @@ const fields = {
   photo: { type: 'image', label: 'Photo' },
   heading: { type: 'float', label: 'Heading' },
   kind: { type: 'selection', label: 'Kind', options: [{ value: 'car', label: 'Car' }] },
+  district: { type: 'char', label: 'District' },
+  rooms: { type: 'integer', label: 'Rooms' },
 };
 
 const page = (map: Record<string, unknown>) => ({
@@ -65,6 +67,26 @@ describe('a list on a map', () => {
     expect(problems(page({ point: 'spot', pin: { look: 'photo', image: 'name' } }))).toEqual(['layout.map.pin.image: "name" is a char; a pin\'s photo is an image or binary field']);
     expect(problems(page({ point: 'spot', pin: { turn: 'name' } }))).toEqual(['layout.map.pin.turn: "name" is a char; a turn is a number field, in degrees']);
     expect(problems(page({ point: 'spot', pin: { tones: [{ tone: 'info', when: 'nope == 1' }] } }))).not.toEqual([]);
+  });
+
+  it('shades areas by their records, searches one by a click, draws a heat map and offers its tools', () => {
+    expect(
+      problems(
+        page({
+          point: 'spot',
+          regions: { from: 'cairo', key: 'code', name: 'name', field: 'district', shade: 'count', legend: true },
+          heat: { weight: 'price' },
+          tools: ['satellite', 'fullscreen', 'measure', 'nearest'],
+        })
+      )
+    ).toEqual([]);
+    expect(problems(page({ point: 'spot', heat: true }))).toEqual([]);
+    expect(problems(page({ point: 'spot', regions: { from: 'cairo', key: 'code', field: 'quarter' } }))).toEqual(['layout.map.regions.field: no field "quarter"']);
+    // An area's records are those whose field holds its key: the field is needed.
+    expect(problems(page({ point: 'spot', regions: { from: 'cairo', key: 'code' } }))).not.toEqual([]);
+    expect(problems(page({ point: 'spot', heat: { weight: 'name' } }))).toEqual(['layout.map.heat.weight: "name" is a char; a weight is a number field']);
+    expect(problems(page({ point: 'spot', heat: { weight: 'rooms' } }))).toEqual([]);
+    expect(problems(page({ point: 'spot', tools: ['compass'] }))).not.toEqual([]);
   });
 
   it('refuses a look, a view or a limit that is none', () => {

@@ -7,7 +7,9 @@ import { SHAPE_ICONS, shapeDrawing } from './drawing';
 import { readPoint, type Area, type LatLng, type Shape } from './geo';
 import { fill, listMapLabels } from './labels';
 import type { LeafletModule } from './leaflet';
-import { createMapBox } from './map-core';
+import type { HeatLayer } from './heat';
+import { createMapBox, warnOnce, type MapTool } from './map-core';
+import type { Border, RegionsLayer } from './regions';
 import { anchor, byKeys, MOVE_KEYS, onPress, popCard, SIZED_BY_FACE } from './marks';
 import { installListMapStyles } from './styles';
 import { makePins, withCurrency, type MapRecord } from './pins';
@@ -31,6 +33,10 @@ export function mapListViews(settings: MapSettings): Record<string, ListViewFact
 const CROWD = 48;
 /** Room kept around the records when the map fits them, in pixels. */
 const ROOM = 40;
+/** The zoom from which a heat map gives way to the records' pins: the streets. */
+const PINS_FROM = 15;
+/** A place as an arrow points it out: "Nearest first". */
+const NEAREST_ICON = '<path d="M3 11l18-8-8 18-2-8z"/>';
 /** Moves the person makes; a fit, a card's own pan and a resize are not: MOVE_KEYS. */
 
 interface Drawn {
@@ -49,7 +55,18 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
   const cardFields = spec.card?.fields ?? node.columns.filter((name) => name !== title).slice(0, 4);
   const pins = makePins({ document: doc, page, locale, pin: spec.pin ?? {}, title, icons: context.icons, drawers: settings.pins });
   const where = spec.point ? [spec.point] : [spec.latitude as string, spec.longitude as string];
-  const fields = [...new Set([...where, ...pins.fields, ...(spec.card?.image ? [spec.card.image] : []), ...cardFields.flatMap((name) => withCurrency(page, name))])];
+  const heatSpec = spec.heat ? (spec.heat === true ? {} : spec.heat) : null;
+  const areaSpec = spec.regions;
+  const fields = [
+    ...new Set([
+      ...where,
+      ...pins.fields,
+      ...(spec.card?.image ? [spec.card.image] : []),
+      ...cardFields.flatMap((name) => withCurrency(page, name)),
+      ...(heatSpec?.weight ? [heatSpec.weight] : []),
+      ...(areaSpec ? [areaSpec.field] : []),
+    ]),
+  ];
   const count = (n: number) => new Intl.NumberFormat(locale, { numberingSystem: 'latn' }).format(n);
 
   installListMapStyles(doc);
@@ -65,6 +82,7 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     center: settings.center,
     zoom: settings.zoom,
     height: 'clamp(320px, 64vh, 640px)',
+    tools: (spec.tools ?? []).filter((tool): tool is MapTool => tool !== 'nearest'),
   });
   element.append(box.element);
   const here = doc.createElement('button');
@@ -118,6 +136,143 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
   });
   /** The areas drawn that the search holds, on the map under the pins. */
   const searched: Leaflet.Path[] = [];
+
+  // ---- nearest first ---------------------------------------------------------------
+  const nearest = spec.tools?.includes('nearest') ? box.tool(labels.nearestFirst, NEAREST_ICON) : null;
+  const isNearest = () => !!context.sort()[0]?.near;
+  nearest?.addEventListener('click', () => {
+    nearestWords = '';
+    if (isNearest()) return context.sortBy(null);
+    const from = (at: LatLng) => context.sortBy([{ field: where[0], near: { lat: at.lat, lng: at.lng, ...(spec.point ? {} : { longitude: where[1] }) } }]);
+    const middle = () =>
+      box.ready((map) => {
+        const c = map.getCenter();
+        // Said, and kept under the map for as long as the order is from there.
+        nearestWords = labels.nearestFromMiddle;
+        announce(nearestWords);
+        from({ lat: c.lat, lng: c.lng });
+      });
+    const geolocation = doc.defaultView?.navigator.geolocation;
+    if (!geolocation) return middle();
+    nearest.setAttribute('aria-busy', 'true');
+    geolocation.getCurrentPosition(
+      (found) => {
+        nearest.removeAttribute('aria-busy');
+        from({ lat: found.coords.latitude, lng: found.coords.longitude });
+      },
+      () => {
+        nearest.removeAttribute('aria-busy');
+        middle();
+      },
+      { timeout: 8000, maximumAge: 60000 }
+    );
+  });
+
+  // ---- areas shaded by their records ----------------------------------------------------
+  let regions: Promise<RegionsLayer | null> | null = null;
+  let borders: Border[] = [];
+  function regionsLayer(): Promise<RegionsLayer | null> {
+    if (!areaSpec) return Promise.resolve(null);
+    regions ??= (async () => {
+      const { drawRegions, loadBorders, readBorders } = await import('./regions');
+      let set: unknown;
+      try {
+        set = await loadBorders(settings.regions, areaSpec.from);
+      } catch (error) {
+        warnOnce(`The borders "${areaSpec.from}" did not load: ${String(error)}`);
+        return null;
+      }
+      if (set === undefined) {
+        warnOnce(`No borders "${areaSpec.from}" in the maps' regions: give them as regions: { ${JSON.stringify(areaSpec.from)}: () => fetch(…).then((r) => r.json()) }.`);
+        return null;
+      }
+      borders = readBorders(set, areaSpec);
+      return new Promise<RegionsLayer | null>((resolve) =>
+        box.ready((map, L) =>
+          resolve(
+            destroyed
+              ? null
+              : drawRegions({
+                  box,
+                  map,
+                  L,
+                  document: doc,
+                  locale,
+                  labels,
+                  borders,
+                  title: page.title ?? model,
+                  legend: areaSpec.legend !== false,
+                  press: (border) => {
+                    ownSearch = false;
+                    context.addSearch({ label: fill(labels.inRegion, { name: border.name }), filter: [{ field: areaSpec.field, op: '=', value: border.value }] });
+                  },
+                })
+          )
+        )
+      );
+    })();
+    return regions;
+  }
+  /** Each area's number: its records under the search but for the area searched itself, or a number of its own. */
+  async function shadeRegions(filter: readonly ResolvedFilter[], asked: number) {
+    if (!areaSpec) return;
+    const layer = await regionsLayer();
+    if (!layer || asked !== asking || destroyed) return;
+    const isArea = (item: ResolvedFilter) => 'field' in item && item.field === areaSpec.field && item.op === '=';
+    const picked = filter.find(isArea);
+    const chosen = picked && 'value' in picked ? String(picked.value) : null;
+    const shade = areaSpec.shade ?? 'count';
+    const values = new Map<string, number>();
+    if (shade !== 'count') {
+      for (const border of borders) {
+        const value = Number(border.properties[shade]);
+        if (Number.isFinite(value)) values.set(border.key, value);
+      }
+    } else if (context.dataSource?.groups) {
+      try {
+        const groups = await context.dataSource.groups({ model, field: areaSpec.field, filter: filter.filter((item) => !isArea(item)) });
+        for (const group of groups) if (group.value !== null) values.set(String(group.value), group.count);
+      } catch {
+        return;
+      }
+    } else {
+      // Without a way to count, the records the map has.
+      for (const record of records) {
+        const raw = record.values[areaSpec.field];
+        const key = raw !== null && typeof raw === 'object' && 'id' in raw ? (raw as { id: unknown }).id : raw;
+        if (key !== null && key !== undefined && key !== false) values.set(String(key), (values.get(String(key)) ?? 0) + 1);
+      }
+    }
+    if (asked !== asking || destroyed) return;
+    layer.shade(values, chosen);
+  }
+
+  // ---- a heat map, from afar ---------------------------------------------------------
+  let heat: Promise<HeatLayer> | null = null;
+  const heatShown = (map: Leaflet.Map) => !!heatSpec && map.getZoom() < PINS_FROM;
+  function drawHeat(map: Leaflet.Map, L: LeafletModule) {
+    if (!heatSpec) return;
+    const shown = heatShown(map);
+    if (!shown && !heat) return;
+    heat ??= import('./heat').then(({ drawHeat: make }) =>
+      make({
+        map,
+        L,
+        document: doc,
+        colours: () => {
+          const style = doc.defaultView?.getComputedStyle(box.element);
+          return ['--fd-accent', '--fd-warning', '--fd-error'].map((name) => style?.getPropertyValue(name).trim() || '#2563eb');
+        },
+      })
+    );
+    const points = records.flatMap((record, i) => {
+      const at = places[i];
+      if (!at) return [];
+      const weight = heatSpec.weight ? Number(record.values[heatSpec.weight]) : 1;
+      return Number.isFinite(weight) && weight > 0 ? [{ lat: at.lat, lng: at.lng, weight }] : [];
+    });
+    void heat.then((layer) => !destroyed && layer.draw(points, heatShown(map)));
+  }
 
   let records: MapRecord[] = [];
   let places: (LatLng | null)[] = [];
@@ -268,6 +423,14 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     layer.clearLayers();
     drawn = [];
     drawnOf.clear();
+    drawHeat(map, L);
+    drawNote(map);
+    // From afar, the heat map in place of the pins.
+    if (heatShown(map)) {
+      ghost?.remove();
+      ghost = null;
+      return;
+    }
     const placed = records.flatMap((record, i) => (places[i] ? [{ record, at: places[i] as LatLng }] : []));
     const zoom = map.getZoom();
     const groups =
@@ -377,6 +540,15 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     }
   }
 
+  /** What the map says under its pins: how many it shows of how many, those with no place, and a heat map's way in. */
+  let noteWords: string[] = [];
+  let nearestWords = '';
+  function drawNote(map: Leaflet.Map) {
+    const words = [...noteWords, ...(nearestWords && isNearest() ? [nearestWords] : []), ...(heatShown(map) && records.length ? [labels.heatNote] : [])];
+    note.textContent = words.join(' ');
+    note.hidden = !words.length;
+  }
+
   function fit(map: Leaflet.Map) {
     const at = places.filter((p): p is LatLng => !!p);
     if (!at.length) return;
@@ -410,7 +582,8 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     const key = JSON.stringify(filter);
     let result: ListResult;
     try {
-      result = await source.list({ model, fields, filter, sort: node.sort ?? [], offset: 0, limit: spec.limit ?? 500 });
+      // The list's order, so the map shows the same first records: nearest first, when asked.
+      result = await source.list({ model, fields, filter, sort: context.sort(), offset: 0, limit: spec.limit ?? 500 });
     } catch {
       if (asked !== asking || destroyed) return;
       note.textContent = labels.mapFailed;
@@ -424,12 +597,12 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     lastFilter = key;
     ownSearch = false;
     const missing = places.filter((p) => !p).length;
-    const words = [
+    noteWords = [
       result.total > records.length ? fill(labels.mapShowsFirst, { n: count(records.length), total: count(result.total) }) : '',
       missing ? fill(labels.notOnMap, { n: count(missing) }) : '',
     ].filter(Boolean);
-    note.textContent = words.join(' ');
-    note.hidden = !words.length;
+    nearest?.setAttribute('aria-pressed', String(isNearest()));
+    void shadeRegions(filter, asked);
     box.ready((map, L) => {
       if (destroyed) return;
       if (refit) {
@@ -464,6 +637,8 @@ function listMap(settings: MapSettings, context: ListViewContext): ListViewPart 
     },
     destroy() {
       destroyed = true;
+      void regions?.then((layer) => layer?.destroy());
+      void heat?.then((layer) => layer.destroy());
       box.element.removeEventListener('pointerdown', pressed, { capture: true });
       box.element.removeEventListener('keydown', keyed, { capture: true });
       box.element.removeEventListener('wheel', wheeled, { capture: true });

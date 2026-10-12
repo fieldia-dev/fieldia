@@ -98,6 +98,20 @@ path.fd-map-trace { stroke: var(--fd-accent); fill: var(--fd-accent); stroke-wid
 .fd-map-grip-add::after { width: 10px; height: 10px; opacity: 0.7; }
 /* Each image overlaps the next by a pixel (leaflet.ts): drawn plainly over it, not added to it as Leaflet's own seam fix adds light. */
 .fd-map-box.leaflet-container img.leaflet-tile { mix-blend-mode: normal; }
+/* The tools under the zoom: drawn as its buttons are, pressed while on. */
+.fd-map-zoom .fd-map-tool { margin-top: 4px; }
+.fd-map-zoom .fd-map-tool svg { width: 18px; height: 18px; }
+.fd-map-zoom .fd-map-tool[aria-pressed="true"] { color: var(--fd-accent); border-color: var(--fd-accent); background: var(--fd-accent-soft); }
+.fd-map-zoom .fd-map-tool[hidden] { display: none; }
+.fd-map-box.fd-map-fixed { position: fixed; inset: 0; z-index: 2147483000; height: auto; border-radius: 0; }
+.fd-map-box[data-full] { border-radius: 0; }
+.fd-map-box[data-measuring] .fd-map-mark { pointer-events: none; }
+path.fd-map-measure { stroke: var(--fd-text); stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+path.fd-map-measure-trace { stroke-dasharray: 4 6; stroke-opacity: 0.7; }
+.fd-map-measure-tag span {
+  display: inline-block; translate: 8px -50%; padding: 2px 8px; border-radius: 999px; white-space: nowrap; font-size: 12.5px; font-weight: 700;
+  background: var(--fd-surface); color: var(--fd-text); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); font-variant-numeric: tabular-nums;
+}
 `;
 
 /** The maps' own stylesheet, once per document: the tools, the search and the box are drawn before Leaflet has loaded. */
@@ -272,6 +286,8 @@ export const FORM_MAP_CSS = `
 .fd-map-form-label { margin: 0; font-weight: 600; color: var(--fd-text); }
 path.fd-map-route { stroke: var(--fd-accent); stroke-width: 5; stroke-opacity: 0.85; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 path.fd-map-route-done { stroke: var(--fd-muted); stroke-width: 4; stroke-opacity: 0.55; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 8; }
+path.fd-map-reach { stroke: var(--fd-accent); stroke-width: 2; stroke-dasharray: 6 5; fill: var(--fd-accent); fill-opacity: 0.1; }
+path.fd-map-fence { stroke: var(--fd-warning); stroke-width: 2.5; stroke-dasharray: 2 5; stroke-linecap: round; fill: var(--fd-warning); fill-opacity: 0.12; }
 .fd-map-face[data-stale] { filter: grayscale(1); opacity: 0.75; }
 .fd-map-face-stale {
   position: absolute; top: calc(100% + 4px); left: 50%; translate: -50% 0; z-index: 1; padding: 1px 6px; border-radius: 999px; white-space: nowrap;

@@ -58,6 +58,18 @@ export interface MapLabels {
   /** The designer's setting naming the field a place's address is written into. */
   settingAddress: string;
   settingNowhere: string;
+  /** The tools under the zoom. */
+  satellite: string;
+  fullScreen: string;
+  leaveFullScreen: string;
+  measure: string;
+  measureHint: string;
+  /** A way measured: `{distance}` its length. */
+  measured: string;
+  /** An area of a map's shaded areas, with its number. */
+  areaValue: string;
+  /** The legend's step for areas with nothing to shade them. */
+  areasNone: string;
 }
 
 export const MAP_LABELS: Record<Locale, MapLabels> = {
@@ -115,6 +127,14 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     settingShapes: 'Shapes',
     settingAddress: 'Address goes into',
     settingNowhere: 'Nowhere',
+    satellite: 'Satellite',
+    fullScreen: 'Full screen',
+    leaveFullScreen: 'Leave full screen',
+    measure: 'Measure a distance',
+    measureHint: 'Click points along the way; double-click or press Enter to finish. Escape clears.',
+    measured: 'The way measures {distance}.',
+    areaValue: '{name}: {value}',
+    areasNone: 'None',
   },
   ar: {
     mapOf: '{label}، خريطة',
@@ -170,6 +190,14 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     settingShapes: 'الأشكال',
     settingAddress: 'يُكتب العنوان في',
     settingNowhere: 'لا مكان',
+    satellite: 'القمر الصناعي',
+    fullScreen: 'ملء الشاشة',
+    leaveFullScreen: 'الخروج من ملء الشاشة',
+    measure: 'قِس مسافة',
+    measureHint: 'انقر نقاطًا على طول الطريق؛ انقر مرتين أو اضغط Enter للإنهاء، ويمسح Escape القياس.',
+    measured: 'يبلغ الطريق {distance}.',
+    areaValue: '{name}: {value}',
+    areasNone: 'لا شيء',
   },
   fr: {
     mapOf: '{label}, carte',
@@ -225,6 +253,14 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     settingShapes: 'Formes',
     settingAddress: 'L’adresse va dans',
     settingNowhere: 'Nulle part',
+    satellite: 'Satellite',
+    fullScreen: 'Plein écran',
+    leaveFullScreen: 'Quitter le plein écran',
+    measure: 'Mesurer une distance',
+    measureHint: 'Cliquez des points le long du trajet ; double-cliquez ou appuyez sur Entrée pour terminer. Échap efface.',
+    measured: 'Le trajet mesure {distance}.',
+    areaValue: '{name} : {value}',
+    areasNone: 'Aucun',
   },
   de: {
     mapOf: '{label}, Karte',
@@ -280,6 +316,14 @@ export const MAP_LABELS: Record<Locale, MapLabels> = {
     settingShapes: 'Formen',
     settingAddress: 'Adresse kommt in',
     settingNowhere: 'Nirgends',
+    satellite: 'Satellit',
+    fullScreen: 'Vollbild',
+    leaveFullScreen: 'Vollbild verlassen',
+    measure: 'Entfernung messen',
+    measureHint: 'Punkte entlang des Weges anklicken; Doppelklick oder Eingabe beendet, Escape löscht.',
+    measured: 'Der Weg misst {distance}.',
+    areaValue: '{name}: {value}',
+    areasNone: 'Keine',
   },
 };
 
@@ -304,6 +348,14 @@ export interface ListMapLabels {
   /** The tools that draw an area on a list's map, and the search the area becomes. */
   drawArea: string;
   inDrawnArea: string;
+  /** A search for one shaded area's records: `{name}` the area. */
+  inRegion: string;
+  /** The tool that puts the records nearest the reader first. */
+  nearestFirst: string;
+  /** Said when the reader's place was not given: the records nearest the map's middle come first instead. */
+  nearestFromMiddle: string;
+  /** Said under a heat map. */
+  heatNote: string;
 }
 
 export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
@@ -321,6 +373,10 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     mapFailed: 'The map could not load the records.',
     drawArea: 'Draw an area to search in',
     inDrawnArea: 'In the area drawn',
+    inRegion: 'In {name}',
+    nearestFirst: 'Nearest first',
+    nearestFromMiddle: 'Nearest the middle of the map first: your place was not given.',
+    heatNote: 'A heat map from afar: zoom in to the streets to see each one.',
   },
   ar: {
     pinKeys: 'ينتقل Tab بين الدبابيس. يفتح Enter بطاقة الدبوس، ويغلقها Escape.',
@@ -336,6 +392,10 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     mapFailed: 'تعذّر تحميل السجلات على الخريطة.',
     drawArea: 'ارسم منطقة للبحث فيها',
     inDrawnArea: 'في المنطقة المرسومة',
+    inRegion: 'في {name}',
+    nearestFirst: 'الأقرب أولًا',
+    nearestFromMiddle: 'الأقرب إلى منتصف الخريطة أولًا: لم يُعطَ موقعك.',
+    heatNote: 'خريطة حرارية من بعيد: قرّب إلى الشوارع لترى كلًّا منها.',
   },
   fr: {
     pinKeys: 'Tab parcourt les épingles. Entrée ouvre la fiche d’une épingle, Échap la ferme.',
@@ -351,6 +411,10 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     mapFailed: 'La carte n’a pas pu charger les enregistrements.',
     drawArea: 'Tracer une zone où chercher',
     inDrawnArea: 'Dans la zone tracée',
+    inRegion: 'À {name}',
+    nearestFirst: 'Les plus proches d’abord',
+    nearestFromMiddle: 'Les plus proches du centre de la carte d’abord : votre position n’a pas été donnée.',
+    heatNote: 'Une carte de chaleur vue de loin : zoomez jusqu’aux rues pour voir chacun.',
   },
   de: {
     pinKeys: 'Tab springt von Nadel zu Nadel. Eingabe öffnet die Karte einer Nadel, Escape schließt sie.',
@@ -366,6 +430,10 @@ export const LIST_MAP_LABELS: Record<Locale, ListMapLabels> = {
     mapFailed: 'Die Karte konnte die Datensätze nicht laden.',
     drawArea: 'Ein Gebiet zum Suchen zeichnen',
     inDrawnArea: 'Im gezeichneten Gebiet',
+    inRegion: 'In {name}',
+    nearestFirst: 'Nächste zuerst',
+    nearestFromMiddle: 'Die der Kartenmitte nächsten zuerst: Ihr Standort wurde nicht freigegeben.',
+    heatNote: 'Eine Heatmap aus der Ferne: bis zu den Straßen zoomen, um jeden zu sehen.',
   },
 };
 

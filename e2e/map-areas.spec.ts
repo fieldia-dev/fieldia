@@ -1,0 +1,309 @@
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import { axeFindings } from './a11y-support';
+import { at, mapReady, stubMaps, valueOf } from './map-support';
+import { open } from './support';
+
+/**
+ * Areas by colour and the rest of the map's box: the week's orders by
+ * district (each district shaded by its orders, a legend, a district pressed
+ * searching for them, Nearest first, measuring a way), the same orders as a
+ * heat map, and a kitchen's map (districts shaded by their fee, one chosen by
+ * a press, the area within fifteen minutes, a fence whose steps run as the
+ * courier reaches the drop-off zone). The districts are the demo's own rough
+ * shapes; every map image is a stand-in (map-support.ts).
+ */
+
+const ZONES = 'page=map-zones&skin=outlined';
+const HEAT = 'page=map-heat&skin=outlined';
+const KITCHEN = 'page=map-kitchen&skin=outlined&ride=off';
+const theMap = (page: Page) => page.locator('.fd-map-box').first();
+const regions = (page: Page) => page.locator('path.fd-map-region');
+const region = (page: Page, name: string) => page.locator(`path.fd-map-region[aria-label^="${name}"]`);
+const legend = (page: Page) => page.locator('.fd-map-legend');
+const rows = (page: Page) => page.locator('.fd-list-row');
+const range = (page: Page) => page.locator('.fd-pager-text');
+const chips = (page: Page) => page.locator('.fd-facet .fd-facet-text');
+const tool = (page: Page, name: string) => theMap(page).getByRole('button', { name, exact: true });
+const total = async (page: Page) => Number((await range(page).textContent())!.split('/ ')[1]);
+
+async function openMap(page: Page, query: string) {
+  await stubMaps(page);
+  const opened = await open(page, 'plain', query);
+  await mapReady(theMap(page));
+  return opened;
+}
+
+/**
+ * A spot of an area a person can point at: inside it, with no pin over it.
+ * Found in the page, as the pointer finds what is under it.
+ */
+async function spotOf(page: Page, area: Locator) {
+  const box = (await area.boundingBox())!;
+  const spot = await area.evaluate((path, b) => {
+    for (let y = 0.3; y <= 0.7; y += 0.05)
+      for (let x = 0.3; x <= 0.7; x += 0.05) {
+        const px = b.x + b.width * x;
+        const py = b.y + b.height * y;
+        if (document.elementFromPoint(px, py) === path) return { x: px, y: py };
+      }
+    return null;
+  }, box);
+  expect(spot, 'a spot of the area with nothing over it').not.toBeNull();
+  return spot!;
+}
+
+test.describe('orders by district', () => {
+  test('each district shaded by its orders, with a legend from the least to the most', async ({ page }) => {
+    await openMap(page, ZONES);
+    await expect(regions(page)).toHaveCount(14);
+    await expect(legend(page)).toBeVisible();
+    await expect(legend(page).locator('.fd-map-legend-title')).toHaveText('Orders this week');
+    // Counts step by whole numbers, from 1: "1–5", "6–10"…
+    const steps = await legend(page).locator('li').allTextContents();
+    expect(steps[0]).toMatch(/^1–\d+$/);
+    expect(steps.length).toBeGreaterThanOrEqual(3);
+    // Every district has orders this week: each one shaded, none called None.
+    await expect(page.locator('path.fd-map-region[data-shade]')).toHaveCount(14);
+    expect(steps).not.toContain('None');
+    // Downtown, with more orders than Mokattam, is shaded deeper.
+    const shade = async (name: string) => Number(await region(page, name).getAttribute('data-shade'));
+    expect(await shade('Downtown')).toBeGreaterThan(await shade('Mokattam'));
+  });
+
+  test('pointing at a district says its orders; a click searches for them, and the shades stay', async ({ page }) => {
+    await openMap(page, ZONES);
+    const spot = await spotOf(page, region(page, 'Zamalek'));
+    await page.mouse.move(spot.x, spot.y);
+    const tip = page.locator('.leaflet-tooltip.fd-map-tip');
+    await expect(tip).toHaveText(/^Zamalek: \d+$/);
+    const orders = Number((await tip.textContent())!.split(': ')[1]);
+    await page.mouse.click(spot.x, spot.y);
+    await expect(chips(page)).toHaveText(['In Zamalek']);
+    await expect.poll(() => total(page)).toBe(orders);
+    await expect(rows(page).locator('td:nth-child(4)').first()).toHaveText('Zamalek');
+    await expect(region(page, 'Zamalek')).toHaveAttribute('data-chosen', '');
+    // The other districts keep their shades: the counts leave the district searched out.
+    await expect(page.locator('path.fd-map-region[data-shade]')).toHaveCount(14);
+    // The chip taken away: every order again, no district chosen.
+    const search = page.locator('.fd-search').getByRole('combobox');
+    await search.focus();
+    await search.press('Backspace');
+    await expect.poll(() => total(page)).toBe(180);
+    await expect(page.locator('path.fd-map-region[data-chosen]')).toHaveCount(0);
+  });
+
+  test('the search menu changes the shades: Not delivered counts the orders still out', async ({ page }) => {
+    await openMap(page, ZONES);
+    const spot = await spotOf(page, region(page, 'Downtown'));
+    await page.mouse.move(spot.x, spot.y);
+    const tip = page.locator('.leaflet-tooltip.fd-map-tip');
+    const all = Number((await tip.textContent())!.split(': ')[1]);
+    await page.mouse.move(5, 5);
+    await page.getByRole('button', { name: 'Search options' }).click();
+    await page.locator('.fd-search-panel').getByRole('button', { name: 'Not delivered' }).click();
+    await expect.poll(() => total(page)).toBeLessThan(180);
+    await page.keyboard.press('Escape');
+    await page.mouse.move(spot.x, spot.y);
+    await expect.poll(async () => Number(((await tip.textContent()) ?? '').split(': ')[1])).toBeLessThan(all);
+  });
+
+  test('by the keyboard: the districts are one stop, the arrows go from one to the next, Enter searches it', async ({ page }) => {
+    await openMap(page, ZONES);
+    await theMap(page).focus();
+    await page.keyboard.press('Tab');
+    const focused = page.locator('path.fd-map-region:focus');
+    await expect(focused).toHaveCount(1);
+    await expect(focused).toHaveAttribute('aria-label', /^[A-Z][a-z ]+: \d+ · Orders this week$/);
+    // Its words shown as the pointer would show them.
+    await expect(page.locator('.leaflet-tooltip.fd-map-tip')).toBeVisible();
+    const first = (await focused.getAttribute('aria-label'))!;
+    await page.keyboard.press('ArrowRight');
+    await expect(focused).not.toHaveAttribute('aria-label', first);
+    const name = (await focused.getAttribute('aria-label'))!.split(':')[0];
+    await page.keyboard.press('Enter');
+    await expect(chips(page)).toHaveText([`In ${name}`]);
+    // The keys stay on the district, to go on from there; Tab leaves the districts for what comes after them: one stop.
+    await expect(focused).toHaveAttribute('aria-label', new RegExp(`^${name}:`));
+    await page.keyboard.press('Tab');
+    await expect(page.locator('path.fd-map-region:focus')).toHaveCount(0);
+  });
+
+  test.describe('nearest first, from where the reader is', () => {
+    test.use({ geolocation: { latitude: 30.0444, longitude: 31.2357 }, permissions: ['geolocation'] });
+    test('the orders nearest Tahrir come first; pressed again, the list’s own order', async ({ page }) => {
+      await openMap(page, ZONES);
+      await expect(rows(page).first().locator('td').nth(1)).toHaveText('#1041');
+      await tool(page, 'Nearest first').click();
+      await expect(tool(page, 'Nearest first')).toHaveAttribute('aria-pressed', 'true');
+      await expect(rows(page).first().locator('td').nth(3)).toHaveText(/Downtown|Garden City/);
+      // No column claims the order.
+      await expect(page.locator('th[aria-sort]')).toHaveCount(0);
+      await tool(page, 'Nearest first').click();
+      await expect(tool(page, 'Nearest first')).toHaveAttribute('aria-pressed', 'false');
+      await expect(rows(page).first().locator('td').nth(1)).toHaveText('#1041');
+    });
+  });
+
+  test('nearest first without the reader’s place: from the middle of the map, and said so', async ({ page }) => {
+    await openMap(page, ZONES);
+    await tool(page, 'Nearest first').click();
+    await expect(page.locator('.fd-map-list-note')).toHaveText('Nearest the middle of the map first: your place was not given.');
+    await expect(tool(page, 'Nearest first')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('measuring a way: points clicked along it, its length said as it grows, a double-click to finish, Escape to clear', async ({ page }) => {
+    await openMap(page, ZONES);
+    const map = theMap(page);
+    await tool(page, 'Measure a distance').click();
+    await expect(tool(page, 'Measure a distance')).toHaveAttribute('aria-pressed', 'true');
+    await expect(map.locator('.fd-map-measure-hint')).toContainText('Click points along the way');
+    // Points where the districts are not, so the clicks reach the map: over the legend's side is the map's own ground.
+    const a = await at(map, 0.06, 0.4);
+    const b = await at(map, 0.06, 0.8);
+    await page.mouse.click(a.x, a.y);
+    await page.mouse.click(b.x, b.y);
+    const tag = map.locator('.fd-map-measure-tag span');
+    await expect(tag).toHaveText(/^\d+(\.\d)? km$/);
+    await expect(map.locator('.fd-sr-only[aria-live]').last()).toHaveText(/^The way measures \d+(\.\d)? km\.$/);
+    const two = await tag.textContent();
+    // Over a district and its orders: while measuring, the press is the map's, never the district's search.
+    const c = await at(map, 0.5, 0.5);
+    await page.mouse.dblclick(c.x, c.y);
+    await expect(chips(page)).toHaveCount(0);
+    await expect(tag).not.toHaveText(two!);
+    await expect(map.locator('.fd-map-measure-hint')).toHaveCount(0);
+    // Done: the map keeps it until Escape.
+    await map.focus();
+    await page.keyboard.press('Escape');
+    await expect(tag).toHaveCount(0);
+    await expect(tool(page, 'Measure a distance')).toHaveAttribute('aria-pressed', 'false');
+    await expect(tool(page, 'Measure a distance')).toBeFocused();
+  });
+
+  test('measuring by the keys: Space puts a point at the cross, Backspace takes it back, Enter finishes', async ({ page }) => {
+    await openMap(page, ZONES);
+    const map = theMap(page);
+    await tool(page, 'Measure a distance').press('Enter');
+    await map.focus();
+    await page.keyboard.press('Space');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(400);
+    await page.keyboard.press('Space');
+    const tag = map.locator('.fd-map-measure-tag span');
+    await expect(tag).toHaveText(/^\d+(\.\d)? (km|m)$/);
+    await page.keyboard.press('Backspace');
+    await expect(tag).toHaveCount(0);
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(400);
+    await page.keyboard.press('Space');
+    await expect(tag).toHaveCount(1);
+    await page.keyboard.press('Enter');
+    await expect(map.locator('.fd-map-measure-hint')).toHaveCount(0);
+  });
+
+  test('axe finds nothing with a district lit and the way measured', async ({ page }) => {
+    await openMap(page, ZONES);
+    const spot = await spotOf(page, region(page, 'Dokki'));
+    await page.mouse.move(spot.x, spot.y);
+    await expect(page.locator('.leaflet-tooltip.fd-map-tip')).toBeVisible();
+    expect(await axeFindings(page, 'map-zones, a district lit')).toEqual([]);
+  });
+});
+
+test.describe('orders as a heat map', () => {
+  test('from afar a heat map, no pins, and said; close in at the streets, each order’s pin', async ({ page }) => {
+    await openMap(page, HEAT);
+    const map = theMap(page);
+    await expect(map.locator('canvas.fd-map-heat')).toBeVisible();
+    await expect(map.locator('.fd-map-mark')).toHaveCount(0);
+    await expect(map.locator('.fd-map-list-note')).toHaveText('A heat map from afar: zoom in to the streets to see each one.');
+    // It glows: some of its pixels are coloured.
+    const lit = () => map.locator('canvas.fd-map-heat').evaluate((canvas: HTMLCanvasElement) => {
+      const data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+      let n = 0;
+      for (let i = 3; i < data.length; i += 4) if (data[i] > 0) n++;
+      return n;
+    });
+    expect(await lit()).toBeGreaterThan(1000);
+    for (let i = 0; i < 5; i++) {
+      await tool(page, 'Zoom in').click();
+      await page.waitForTimeout(350);
+    }
+    await expect(map.locator('.fd-map-mark').first()).toBeVisible();
+    await expect(map.locator('canvas.fd-map-heat')).toBeHidden();
+    await expect(map.locator('.fd-map-list-note')).toBeHidden();
+  });
+
+  test('a provider with no satellite images: no Satellite button; Full screen and back', async ({ page }) => {
+    await openMap(page, HEAT);
+    // OpenStreetMap has no satellite images: the button is not there at all.
+    await expect(tool(page, 'Satellite')).toBeHidden();
+    await tool(page, 'Full screen').click();
+    await expect(theMap(page)).toHaveAttribute('data-full', '');
+    await expect(tool(page, 'Leave full screen')).toHaveAttribute('aria-pressed', 'true');
+    const size = (await theMap(page).boundingBox())!;
+    expect(size.width).toBeGreaterThanOrEqual(1270);
+    await tool(page, 'Leave full screen').click();
+    await expect(theMap(page)).not.toHaveAttribute('data-full', '');
+    await expect(tool(page, 'Full screen')).toHaveAttribute('aria-pressed', 'false');
+  });
+});
+
+test.describe('a kitchen’s map', () => {
+  type Demo = { fieldiaDemo: { handle: { form: { setValues(values: Record<string, unknown>): void } } } };
+  const send = (page: Page, lat: number, lng: number) =>
+    page.evaluate(([la, ln]) => (window as unknown as Demo).fieldiaDemo.handle.form.setValues({ courier_lat: la, courier_lng: ln }), [lat, lng] as const);
+
+  test('the districts shaded by their fee from 11, the one chosen drawn strong, the area within fifteen minutes', async ({ page }) => {
+    await openMap(page, KITCHEN);
+    await expect(regions(page)).toHaveCount(14);
+    await expect(legend(page).locator('.fd-map-legend-title')).toHaveText('Delivery fee, EGP');
+    // Fees of 15 to 40: steps from 11, none empty, no None.
+    await expect(legend(page).locator('li')).toHaveText(['11–20', '21–30', '31–40']);
+    await expect(region(page, 'Zamalek')).toHaveAttribute('data-chosen', '');
+    await expect(page.locator('path.fd-map-reach')).toHaveCount(1);
+    // The drop-off zone the fence watches, drawn faintly.
+    await expect(page.locator('path.fd-map-fence')).toHaveCount(1);
+  });
+
+  test('a district pressed is chosen into the field; by the keys too', async ({ page }) => {
+    await openMap(page, KITCHEN);
+    const spot = await spotOf(page, region(page, 'Mohandessin'));
+    await page.mouse.click(spot.x, spot.y);
+    await expect.poll(() => valueOf(page, 'offer_district')).toBe('mohandessin');
+    await expect(region(page, 'Mohandessin')).toHaveAttribute('data-chosen', '');
+    await expect(region(page, 'Zamalek')).not.toHaveAttribute('data-chosen', '');
+    const offer = page.getByRole('combobox', { name: "Tonight's offer goes to" });
+    await expect(offer.locator('option:checked')).toHaveText('Mohandessin');
+    // The keys: from the chosen one, the next, and Enter.
+    await region(page, 'Mohandessin').focus();
+    await page.keyboard.press('ArrowRight');
+    const next = (await page.locator('path.fd-map-region:focus').getAttribute('aria-label'))!.split(':')[0];
+    await page.keyboard.press('Enter');
+    await expect(offer.locator('option:checked')).toHaveText(next);
+  });
+
+  test('a fence: the steps run as the courier goes into the drop-off zone, and again as they leave it; not at first sight', async ({ page }) => {
+    await openMap(page, KITCHEN);
+    // At the kitchen, outside the zone: nothing ran.
+    expect(await valueOf(page, 'arriving')).toBe(false);
+    await send(page, 30.0525, 31.2318);
+    await page.waitForTimeout(300);
+    expect(await valueOf(page, 'arriving')).toBe(false);
+    // Into the zone: its steps run.
+    await send(page, 30.0601, 31.2201);
+    await expect.poll(() => valueOf(page, 'arriving')).toBe(true);
+    await expect(page.getByText('The courier is in the drop-off zone: tell the customer they are almost there.')).toBeVisible();
+    // Moving inside it runs nothing again; out of it, the leaving fence's.
+    await send(page, 30.0612, 31.2215);
+    await send(page, 30.0525, 31.2318);
+    await expect.poll(() => valueOf(page, 'arriving')).toBe(false);
+  });
+
+  test('axe finds nothing on the kitchen’s map, a district focused', async ({ page }) => {
+    await openMap(page, KITCHEN);
+    await region(page, 'Zamalek').focus();
+    expect(await axeFindings(page, 'map-kitchen, a district focused')).toEqual([]);
+  });
+});
