@@ -1,0 +1,55 @@
+{
+  "fieldia": "0.1",
+  "id": "map-address",
+  "title": "A customer’s address",
+  "description": "An address typed on one line, the map service’s suggestions under it as you type. Pick one: its parts and its place fill in.",
+  "data": { "kind": "responses" },
+  "fields": {
+    "customer": { "type": "char", "label": "Name", "required": true },
+    "phone": { "type": "char", "label": "Phone" },
+    "address": { "type": "char", "label": "Address", "required": true, "help": "Type the street: pick a suggestion, or keep what you typed." },
+    "parts": { "type": "json", "label": "Address in parts" },
+    "spot": { "type": "json", "label": "On the map" }
+  },
+  "layout": {
+    "type": "sections",
+    "id": "new-customer",
+    "children": [
+      {
+        "type": "section",
+        "id": "who",
+        "title": "Who",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "customer", "field": "customer" },
+          { "type": "field", "id": "phone", "field": "phone", "widget": "phone" }
+        ]
+      },
+      {
+        "type": "section",
+        "id": "where",
+        "title": "Where",
+        "columns": 2,
+        "children": [
+          { "type": "field", "id": "address", "field": "address", "colspan": 2, "widget": "address-search", "options": { "placeField": "spot", "partsField": "parts", "countries": ["EG"] } },
+          { "type": "field", "id": "parts", "field": "parts", "widget": "address", "options": { "parts": ["street", "line2", "city", "region", "postcode", "country"], "country": "EG" } },
+          { "type": "field", "id": "spot", "field": "spot", "widget": "place", "options": { "search": false, "myLocation": false, "zoom": 16, "height": 240 } }
+        ]
+      }
+    ]
+  },
+  "translations": {
+    "ar": {
+      "A customer’s address": "عنوان عميل",
+      "An address typed on one line, the map service’s suggestions under it as you type. Pick one: its parts and its place fill in.": "عنوان يُكتب في سطر واحد، تحته اقتراحات خدمة الخرائط أثناء الكتابة. اختر واحدًا: تُملأ أجزاؤه ومكانه.",
+      "Name": "الاسم",
+      "Phone": "الهاتف",
+      "Address": "العنوان",
+      "Type the street: pick a suggestion, or keep what you typed.": "اكتب الشارع: اختر اقتراحًا، أو احتفظ بما كتبت.",
+      "Address in parts": "العنوان مفصّلًا",
+      "On the map": "على الخريطة",
+      "Who": "مَن",
+      "Where": "أين"
+    }
+  }
+}

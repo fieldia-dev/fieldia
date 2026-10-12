@@ -225,6 +225,18 @@ export const DEMOS = [
     ],
   },
   {
+    id: 'map-address',
+    name: 'An address as you type',
+    category: 'fields',
+    query: 'page=map-address&skin=outlined',
+    blurb: 'An address on one line, with the map service’s suggestions under it as you type and no map of its own. Pick one: the address’s parts and its place on the map fill in. Or keep what you typed.',
+    howTo: [
+      'Type a street in Egypt, such as Tahrir: the suggestions come as the typing pauses.',
+      'Press the down arrow to move through them and Enter to pick one: Address in parts and the map fill in.',
+      'Type an address of your own and press Escape: the list closes and your words stay.',
+    ],
+  },
+  {
     id: 'map-zone',
     name: 'An area on a map',
     category: 'fields',

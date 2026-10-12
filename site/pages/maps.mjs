@@ -27,7 +27,7 @@ mountViewer(host, {
 <p>In React they are props of the same names, in Vue props, in Angular inputs. Leaflet, the map engine, loads the first time a map is shown, and a provider's routes the first time one is asked for: a page without a map carries none of it.</p>
 
 <h2 id="fields">A place and an area</h2>
-<p>A place is a field set by a press on the map, a dragged pin, an address found as it is typed, typed coordinates or “My location”; an area is a polygon, a box or a circle. See <a href="/fields/#map">maps among the fields</a>.</p>
+<p>A place is a field set by a press on the map, a dragged pin, an address found as it is typed, typed coordinates or “My location”; an area is a polygon, a box or a circle. An address with suggestions (${c('address-search')} on a char field) is the same search without a map: a suggestion picked fills a place field (${c('placeField')}) and an address's parts (${c('partsField')}), within the countries the page names (${c('countries')}), near a point (${c('near')}) or where the app's maps open. See <a href="/fields/#map">maps among the fields</a>.</p>
 
 <h2 id="list">A list's records on a map</h2>
 <p>A list page with ${c('map')} shows its records on a map beside the table or instead of it, its pins drawn as the page says, its search and choice shared with the table. See <a href="/lists/#map">lists on a map</a>.</p>
